@@ -92,6 +92,9 @@ use App\Models\SysAdmin\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use App\Actions\UI\Grp\GetFirstLoadProps;
+use App\Models\DevOps\AppDeployment;
+use Illuminate\Support\Facades\DB;
 use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Stubs\Migrations\HasSysAdminStats;
 use Illuminate\Database\Schema\Blueprint;
@@ -2205,10 +2208,9 @@ test('changing group permissions leaves the cached ui props in sync with the men
     CleanUserCaches::run($admin);
 
     $cachedNavigation = function (User $target) {
-        return data_get(
-            Cache::tags('grp-first-load-props:'.$target->id)->get('grp-first-load-props:'.$target->id.':'.$target->language->code),
-            'layout.navigation.grp'
-        );
+        setPermissionsTeamId($target->group_id);
+
+        return data_get(GetFirstLoadProps::make()->handle(User::find($target->id)), 'layout.navigation.grp');
     };
     $freshNavigation = function (User $target) {
         setPermissionsTeamId($target->group_id);
@@ -2223,6 +2225,7 @@ test('changing group permissions leaves the cached ui props in sync with the men
 
     // Production shape: an admin edits somebody else, who is signed in elsewhere.
     $victim = User::where('group_id', $admin->group_id)->where('id', '!=', $admin->id)->firstOrFail();
+    $cachedNavigation($victim);
 
     $editPermissionsOf($victim, [$code]);
     expect($cachedNavigation($victim))->not->toBeNull()
@@ -2260,7 +2263,7 @@ test('employee job position edit flushes menu cache even if recache job never ru
 
     Queue::fake();
 
-    $menuCacheKey = 'grp-first-load-props:'.$user->id.':'.$user->language->code;
+    $menuCacheKey = 'grp-first-load-props:'.$user->id.':'.$user->language->code.':'.(AppDeployment::latest()->first()?->id ?? 0);
     Cache::tags('grp-first-load-props:'.$user->id)->put($menuCacheKey, ['layout' => 'stale'], 3600);
     Cache::tags('auth-user:'.$user->id)->put('can:probe', true, 3600);
 
@@ -2273,20 +2276,21 @@ test('employee job position edit flushes menu cache even if recache job never ru
     BreakUserUiProps::assertPushed();
 })->depends('employee job position in another organisation');
 
-test('recache is immune to relations loaded under the wrong permissions team', function (Employee $employee) {
+test('breaking ui props only flushes them, and the next page rebuilds them fresh', function (Employee $employee) {
     config()->set('ui.cache.layout', true);
     $user = $employee->getUser();
-
-    setPermissionsTeamId(999999);
-    $user->load('roles');
-    expect($user->roles->count())->toBe(0);
-
-    BreakUserUiProps::run($user);
-
     setPermissionsTeamId($user->group_id);
-    $cached = Cache::tags('grp-first-load-props:'.$user->id)->get('grp-first-load-props:'.$user->id.':'.$user->language->code);
-    $fresh  = GetGroupNavigation::run(User::find($user->id));
-    expect(data_get($cached, 'layout.navigation.grp'))->toEqual($fresh);
+
+    $deploymentId = AppDeployment::latest()->first()?->id ?? 0;
+    Cache::tags('grp-first-load-props:'.$user->id)->put('grp-first-load-props:'.$user->id.':'.$user->language->code.':'.$deploymentId, ['layout' => 'stale'], 3600);
+
+    DB::enableQueryLog();
+    BreakUserUiProps::run($user);
+    expect(DB::getQueryLog())->toBeEmpty();
+    DB::disableQueryLog();
+
+    $firstLoad = GetFirstLoadProps::make()->handle(User::find($user->id));
+    expect(data_get($firstLoad, 'layout.navigation.grp'))->toEqual(GetGroupNavigation::run(User::find($user->id)));
 })->depends('employee job position in another organisation');
 
 

@@ -27,6 +27,11 @@ use Illuminate\Support\Facades\DB;
 
 trait HasOrdersPipeline
 {
+    /**
+     * @var \Illuminate\Database\Eloquent\Collection<int, InvoiceCategory>|null
+     */
+    private ?\Illuminate\Database\Eloquent\Collection $invoiceCategories = null;
+
     public const array PIPELINE_STATES = [
         OrderStateEnum::SUBMITTED,
         OrderStateEnum::IN_WAREHOUSE,
@@ -38,23 +43,17 @@ trait HasOrdersPipeline
     ];
 
     /**
-     * @return array{amount: float, orders: int, submitted_amount: float, in_warehouse_amount: float}
-     */
-    private function pipeline(Shop|Organisation|Group $parent): array
-    {
-        return $this->sumPipelines($this->pipelineByShop($parent));
-    }
-
-    /**
      * @return array<int, array{amount: float, orders: int, submitted_amount: float, in_warehouse_amount: float}>
      */
-    private function pipelineByShop(Shop|Organisation|Group $parent): array
+    private function pipelineByShop(Shop|Organisation|Group $parent, ?string $currency = null): array
     {
+        $currency ??= $parent instanceof Group ? 'grp' : 'org';
+
         $rows = DB::table('orders')
             ->whereIn('orders.shop_id', $this->salesShopIds($parent))
             ->whereIn('orders.state', array_map(fn (OrderStateEnum $state) => $state->value, self::PIPELINE_STATES))
             ->whereNull('orders.deleted_at')
-            ->selectRaw('orders.shop_id, orders.state = ? as is_submitted, count(*) as orders, coalesce(sum(orders.'.($parent instanceof Group ? 'grp_net_amount' : 'org_net_amount').'), 0) as amount', [OrderStateEnum::SUBMITTED->value])
+            ->selectRaw('orders.shop_id, orders.state = ? as is_submitted, count(*) as orders, coalesce(sum(orders.'.$currency.'_net_amount), 0) as amount', [OrderStateEnum::SUBMITTED->value])
             ->groupByRaw('1, 2')
             ->get();
 
@@ -109,21 +108,30 @@ trait HasOrdersPipeline
     }
 
     /**
-     * @return array<int, int> invoice category id (0 for none) => invoices
+     * @return array<int, array<int, int>> shop id => invoice category id (0 for none) => invoices
      */
-    private function invoiceCountsByCategory(Shop $shop, Carbon $from, Carbon $to): array
+    private function invoiceCountsByShopAndCategory(array $shopIds, Carbon $from, Carbon $to): array
     {
-        return DB::table('invoices')
-            ->where('shop_id', $shop->id)
+        if (!$shopIds) {
+            return [];
+        }
+
+        $counts = [];
+        $rows   = DB::table('invoices')
+            ->whereIn('shop_id', $shopIds)
             ->where('type', InvoiceTypeEnum::INVOICE->value)
             ->where('in_process', false)
             ->whereNull('deleted_at')
             ->whereBetween('date', [$from->toDateString(), $to->copy()->endOfDay()->toDateTimeString()])
-            ->groupBy('invoice_category_id')
-            ->selectRaw('coalesce(invoice_category_id, 0) as category_key, count(*) as invoices')
-            ->pluck('invoices', 'category_key')
-            ->map(fn ($invoices) => (int) $invoices)
-            ->all();
+            ->groupBy('shop_id', 'invoice_category_id')
+            ->selectRaw('shop_id, coalesce(invoice_category_id, 0) as category_key, count(*) as invoices')
+            ->get();
+
+        foreach ($rows as $row) {
+            $counts[$row->shop_id][(int) $row->category_key] = (int) $row->invoices;
+        }
+
+        return $counts;
     }
 
     /**
@@ -157,8 +165,11 @@ trait HasOrdersPipeline
      */
     private function salesExpression(Shop|Organisation|Group $parent): string
     {
-        $currency = $parent instanceof Group ? 'grp' : 'org';
+        return $this->salesExpressionIn($parent instanceof Group ? 'grp' : 'org');
+    }
 
+    private function salesExpressionIn(string $currency): string
+    {
         return "shop_time_series_records.sales_{$currency}_currency_external + coalesce(shop_time_series_records.sales_{$currency}_currency_internal, 0)";
     }
 
@@ -238,9 +249,7 @@ trait HasOrdersPipeline
             $sales[$categoryId] ??= ['daily' => [], 'last_year_daily' => []];
         }
 
-        $ofOtherShopIds = InvoiceCategory::whereIn('id', array_filter(array_keys($sales)))->get(['id', 'settings'])
-            ->filter(fn (InvoiceCategory $invoiceCategory) => !empty($invoiceCategory->settings['shop_ids']) && !in_array($shopId, $invoiceCategory->settings['shop_ids']))
-            ->pluck('id')->all();
+        $ofOtherShopIds = array_filter(array_keys($sales), fn (int $categoryId) => $this->isCategoryOfOtherShop($categoryId, $shopId));
         $sales          = array_diff_key($sales, array_flip($ofOtherShopIds));
 
         $lastYearTotal = array_sum(array_map(fn (array $categorySales) => array_sum($categorySales['last_year_daily']), $sales));
@@ -274,61 +283,123 @@ trait HasOrdersPipeline
      */
     private function categorySales(int $shopId, Carbon $monthStart, Carbon $until): array
     {
-        $lastYearStart = $monthStart->copy()->subYear();
-        $lastYearEnd   = $lastYearStart->copy()->endOfMonth();
-
-        return Cache::tags(["dashboard-shop-$shopId"])->remember(
-            "shop-category-daily-sales:$shopId:{$monthStart->toDateString()}:{$until->toDateString()}",
-            now()->addSeconds(300),
-            function () use ($shopId, $monthStart, $until, $lastYearStart, $lastYearEnd) {
-                $sales = [];
-                $rows  = DB::table('invoices')
-                    ->where('shop_id', $shopId)
-                    ->where('in_process', false)
-                    ->whereNull('deleted_at')
-                    ->where(fn ($query) => $query->whereBetween('date', [$monthStart->toDateString(), $until->copy()->endOfDay()->toDateTimeString()])
-                        ->orWhereBetween('date', [$lastYearStart->toDateString(), $lastYearEnd->toDateTimeString()]))
-                    ->groupBy('invoice_category_id', DB::raw('cast(date as date)'))
-                    ->selectRaw('coalesce(invoice_category_id, 0) as category_key, cast(date as date) as day, sum(org_net_amount) as sales')
-                    ->get();
-
-                foreach ($rows as $row) {
-                    $series = $row->day >= $monthStart->toDateString() ? 'daily' : 'last_year_daily';
-                    $sales[(int) $row->category_key] ??= ['daily' => [], 'last_year_daily' => []];
-                    $sales[(int) $row->category_key][$series][(int) substr($row->day, 8, 2)] = (float) $row->sales;
-                }
-
-                return $sales;
-            }
-        );
+        return $this->categorySalesOfShops([$shopId], $monthStart, $until)[$shopId];
     }
 
     /**
-     * The shop's orders in the pipeline per the invoice category they will be invoiced under.
+     * The category sales of several shops: each from the cache, the ones not in it read with one
+     * query and cached for five minutes.
      *
-     * @return array<int, array{amount: float, orders: int, submitted_amount: float, in_warehouse_amount: float}>
+     * @param  list<int>  $shopIds
+     *
+     * @return array<int, array<int, array{daily: array<int, float>, last_year_daily: array<int, float>}>> shop id => category sales
      */
-    private function pipelineByCategory(Shop $shop): array
+    private function categorySalesOfShops(array $shopIds, Carbon $monthStart, Carbon $until): array
     {
-        $categoriser = CategoriseInvoice::make();
-        $categories  = $categoriser->getActiveInvoiceCategories($shop->organisation);
-        $pipelines   = [];
+        $sales   = [];
+        $missing = [];
+        foreach ($shopIds as $shopId) {
+            $cached = Cache::tags(["dashboard-shop-$shopId"])->get($this->categorySalesCacheKey($shopId, $monthStart, $until));
+            if ($cached === null) {
+                $missing[] = $shopId;
+            } else {
+                $sales[$shopId] = $cached;
+            }
+        }
+        if (!$missing) {
+            return $sales;
+        }
 
-        $orders = Order::where('shop_id', $shop->id)
+        $lastYearStart = $monthStart->copy()->subYear();
+        $lastYearEnd   = $lastYearStart->copy()->endOfMonth();
+        $read          = array_fill_keys($missing, []);
+        $rows          = DB::table('invoices')
+            ->whereIn('shop_id', $missing)
+            ->where('in_process', false)
+            ->whereNull('deleted_at')
+            ->where(fn ($query) => $query->whereBetween('date', [$monthStart->toDateString(), $until->copy()->endOfDay()->toDateTimeString()])
+                ->orWhereBetween('date', [$lastYearStart->toDateString(), $lastYearEnd->toDateTimeString()]))
+            ->groupBy('shop_id', 'invoice_category_id', DB::raw('cast(date as date)'))
+            ->selectRaw('shop_id, coalesce(invoice_category_id, 0) as category_key, cast(date as date) as day, sum(org_net_amount) as sales')
+            ->get();
+
+        foreach ($rows as $row) {
+            $series = $row->day >= $monthStart->toDateString() ? 'daily' : 'last_year_daily';
+            $read[$row->shop_id][(int) $row->category_key] ??= ['daily' => [], 'last_year_daily' => []];
+            $read[$row->shop_id][(int) $row->category_key][$series][(int) substr($row->day, 8, 2)] = (float) $row->sales;
+        }
+
+        foreach ($read as $shopId => $shopSales) {
+            Cache::tags(["dashboard-shop-$shopId"])->put($this->categorySalesCacheKey($shopId, $monthStart, $until), $shopSales, now()->addSeconds(300));
+        }
+
+        return $sales + $read;
+    }
+
+    private function categorySalesCacheKey(int $shopId, Carbon $monthStart, Carbon $until): string
+    {
+        return "shop-category-daily-sales:$shopId:{$monthStart->toDateString()}:{$until->toDateString()}";
+    }
+
+    /**
+     * Any invoice category, all of them read once.
+     */
+    private function invoiceCategory(int $categoryId): ?InvoiceCategory
+    {
+        $this->invoiceCategories ??= InvoiceCategory::get(['id', 'name', 'settings'])->keyBy('id');
+
+        return $this->invoiceCategories->get($categoryId);
+    }
+
+    /**
+     * A category that now belongs to another shop (Faire once it got its own shop).
+     */
+    private function isCategoryOfOtherShop(int $categoryId, int $shopId): bool
+    {
+        $shopIds = $this->invoiceCategory($categoryId)?->settings['shop_ids'] ?? [];
+
+        return !empty($shopIds) && !in_array($shopId, $shopIds);
+    }
+
+    /**
+     * Each shop's orders in the pipeline per the invoice category they will be invoiced under.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection<int, Shop>  $shops
+     *
+     * @return array<int, array<int, array{amount: float, orders: int, submitted_amount: float, in_warehouse_amount: float}>> shop id => category id (0 for none) => pipeline
+     */
+    private function pipelineByShopAndCategory(\Illuminate\Database\Eloquent\Collection $shops): array
+    {
+        if ($shops->isEmpty()) {
+            return [];
+        }
+
+        $categoriser              = CategoriseInvoice::make();
+        $shopsById                = $shops->loadMissing('organisation')->keyBy('id');
+        $categoriesByOrganisation = [];
+        $pipelines                = array_fill_keys($shopsById->keys()->all(), []);
+
+        $orders = Order::whereIn('shop_id', $shopsById->keys())
             ->whereIn('state', self::PIPELINE_STATES)
+            ->orderBy('id')
             ->get(['id', 'shop_id', 'state', 'org_net_amount', 'billing_country_id', 'is_vip', 'as_organisation_id', 'sales_channel_id']);
 
         foreach ($orders as $order) {
+            $shop = $shopsById->get($order->shop_id);
             $order->setRelation('shop', $shop);
+            $categories  = $categoriesByOrganisation[$shop->organisation_id] ??= $categoriser->getActiveInvoiceCategories($shop->organisation);
             $categoryKey = $categoriser->getInvoiceCategory($order, $categories)?->id ?? 0;
             $amountKey   = $order->state === OrderStateEnum::SUBMITTED ? 'submitted_amount' : 'in_warehouse_amount';
 
-            $pipelines[$categoryKey] ??= ['amount' => 0.0, 'orders' => 0, 'submitted_amount' => 0.0, 'in_warehouse_amount' => 0.0];
-            $pipelines[$categoryKey]['amount']     += (float) $order->org_net_amount;
-            $pipelines[$categoryKey][$amountKey]   += (float) $order->org_net_amount;
-            $pipelines[$categoryKey]['orders']++;
+            $pipelines[$shop->id][$categoryKey] ??= ['amount' => 0.0, 'orders' => 0, 'submitted_amount' => 0.0, 'in_warehouse_amount' => 0.0];
+            $pipelines[$shop->id][$categoryKey]['amount']   += (float) $order->org_net_amount;
+            $pipelines[$shop->id][$categoryKey][$amountKey] += (float) $order->org_net_amount;
+            $pipelines[$shop->id][$categoryKey]['orders']++;
         }
 
-        return array_map(fn (array $pipeline) => [...$pipeline, 'amount' => round($pipeline['amount'], 2), 'submitted_amount' => round($pipeline['submitted_amount'], 2), 'in_warehouse_amount' => round($pipeline['in_warehouse_amount'], 2)], $pipelines);
+        return array_map(
+            fn (array $shopPipelines) => array_map(fn (array $pipeline) => [...$pipeline, 'amount' => round($pipeline['amount'], 2), 'submitted_amount' => round($pipeline['submitted_amount'], 2), 'in_warehouse_amount' => round($pipeline['in_warehouse_amount'], 2)], $shopPipelines),
+            $pipelines
+        );
     }
 }

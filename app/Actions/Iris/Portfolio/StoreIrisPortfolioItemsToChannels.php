@@ -8,6 +8,7 @@
 
 namespace App\Actions\Iris\Portfolio;
 
+use App\Actions\Dropshipping\Portfolio\CheckNewPortfoliosInPlatform;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\IrisAction;
@@ -45,9 +46,10 @@ class StoreIrisPortfolioItemsToChannels extends IrisAction
             ->get()
             ->keyBy(fn ($p) => "$p->customer_sales_channel_id-$p->item_id");
 
-        DB::transaction(function () use ($channels, $items, $existingPortfolios) {
-            $channels->each(function ($customerSalesChannel) use ($items, $existingPortfolios) {
-                $items->each(function ($item) use ($customerSalesChannel, $existingPortfolios) {
+        $newPortfolioIds = DB::transaction(function () use ($channels, $items, $existingPortfolios) {
+            $newPortfolioIds = [];
+            $channels->each(function ($customerSalesChannel) use ($items, $existingPortfolios, &$newPortfolioIds) {
+                $items->each(function ($item) use ($customerSalesChannel, $existingPortfolios, &$newPortfolioIds) {
                     $compositeKey = $customerSalesChannel->id . '-' . $item->id;
                     if ($existingPortfolios->has($compositeKey)) {
                         /** @var Portfolio $portfolio */
@@ -56,10 +58,18 @@ class StoreIrisPortfolioItemsToChannels extends IrisAction
                             UpdatePortfolio::make()->action($portfolio, ['status' => true]);
                         }
                     } else {
-                        StorePortfolio::make()->action($customerSalesChannel, $item, []);
+                        $newPortfolioIds[$customerSalesChannel->id][] = StorePortfolio::make()->action($customerSalesChannel, $item, [], checkInPlatform: false)->id;
                     }
                 });
             });
+
+            return $newPortfolioIds;
+        });
+
+        $channels->each(function ($customerSalesChannel) use ($newPortfolioIds) {
+            if (isset($newPortfolioIds[$customerSalesChannel->id]) && StorePortfolio::checksPortfoliosInPlatform($customerSalesChannel->platform->type)) {
+                CheckNewPortfoliosInPlatform::dispatch($customerSalesChannel, $newPortfolioIds[$customerSalesChannel->id])->afterCommit();
+            }
         });
     }
 }

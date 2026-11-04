@@ -8,14 +8,11 @@
 
 namespace App\Actions\UI\Grp;
 
-use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Sentry;
-use Throwable;
 
 class BreakUserUiProps implements ShouldBeUnique
 {
@@ -30,36 +27,16 @@ class BreakUserUiProps implements ShouldBeUnique
         return $user->id;
     }
 
+    /**
+     * Only flushes: GetFirstLoadProps rebuilds the props on the user's next page, under a key that
+     * carries the deployment id. Rebuilding them here cost about 200 queries per profile save and
+     * wrote them under a key without that id, which nothing ever read.
+     */
     public function handle(User $user): void
     {
         setPermissionsTeamId($user->group_id);
         $user->unsetRelations();
         Cache::tags('grp-first-load-props:'.$user->id)->flush();
-
-        $language = $user->language;
-        $this->reCache($user, $language);
-
-        if ($user->language->code != 'en') {
-            $english = Language::where('code', 'en')->first();
-            $this->reCache($user, $english);
-        }
-    }
-
-    public function reCache(User $user, Language $language): void
-    {
-        $cacheKey = 'grp-first-load-props:'.$user->id.':'.$language->code;
-        $ttl      = now()->addHours(24);
-
-        $compute           = fn () => GetFirstLoadProps::make()->getUserUiProps($user, $language);
-        $shouldCacheLayout = (bool)config('ui.cache.layout');
-
-        try {
-            $shouldCacheLayout
-                ? Cache::tags('grp-first-load-props:'.$user->id)->put($cacheKey, $compute(), $ttl)
-                : $compute();
-        } catch (Throwable $e) {
-            Sentry::captureException($e);
-        }
     }
 
     public function redoAllUsers(): void
