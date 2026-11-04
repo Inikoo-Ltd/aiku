@@ -25,7 +25,7 @@ class SendTicketBadgeUpdateToUsers
      */
     public function handle(array $userIds, ?array $notification = null): void
     {
-        $users = User::where('status', true)->whereIn('id', array_values(array_unique($userIds)))->get();
+        $users = User::where('status', true)->whereIn('id', array_values(array_unique($userIds)))->with(['roles.permissions', 'permissions'])->get();
 
         foreach ($users as $user) {
             BroadcastTicketBadgeUpdate::dispatch(
