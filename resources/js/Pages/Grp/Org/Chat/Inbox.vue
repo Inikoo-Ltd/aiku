@@ -2920,45 +2920,45 @@ const onMetaChatListEvent = (e: any) => {
 
 const timings = useInboxTimings()
 
-// What the address asks for wins over what was last looked at.
-if (!props.preselectShopId && !props.selectedSessionUlid) {
-    restoreSelection()
-}
-
-applyChannelFromUrl()
-warm(loadMessageArea)
-warm(loadSidePanel)
-
-const urlChannel = selectedChannel.value
-
-// Preselect the shop when opened from the shop-level nav entry.
-if (props.preselectShopId && props.inboxes?.some((i) => i.id === props.preselectShopId)) {
-    revealInbox(props.preselectShopId, urlChannel)
-}
-
-// Registered after the restore so putting the stored choice back does not write it again.
-watch([selectedShopIds, selectedCells, selectedStatuses, mailTab], storeSelection, { deep: true })
-
-// Jump to the shop (inbox) the opened chat belongs to.
-if (props.initialSession?.shop?.id) {
-    revealInbox(props.initialSession.shop.id, (props.initialSession as any).channel ?? urlChannel)
-}
-
-const initContact = props.initialSession ? mapSession(props.initialSession) : null
-
-if (initContact) {
-    revealViewFor(initContact)
-}
-
-// Registered once the restored filters are in place, which the first list load below
-// already asks for: registered earlier, putting them back loaded the list a second time.
-dropWaitingInTeamView()
-watch([selectedStatuses, viewMode, promisedOnly, mailTab], onListFiltersChanged)
-
-const firstListLoad = reloadContacts()
-
 onMounted(async () => {
     const inboxOpening = timings.start()
+
+    // What the address asks for wins over what was last looked at.
+    if (!props.preselectShopId && !props.selectedSessionUlid) {
+        restoreSelection()
+    }
+
+    applyChannelFromUrl()
+    warm(loadMessageArea)
+    warm(loadSidePanel)
+
+    const urlChannel = selectedChannel.value
+
+    // Preselect the shop when opened from the shop-level nav entry.
+    if (props.preselectShopId && props.inboxes?.some((i) => i.id === props.preselectShopId)) {
+        revealInbox(props.preselectShopId, urlChannel)
+    }
+
+    // Registered after the restore so putting the stored choice back does not write it again.
+    watch([selectedShopIds, selectedCells, selectedStatuses, mailTab], storeSelection, { deep: true })
+
+    const init = props.initialSession
+
+    // Jump to the shop (inbox) the opened chat belongs to.
+    if (init?.shop?.id) {
+        revealInbox(init.shop.id, (init as any).channel ?? urlChannel)
+    }
+
+    const initContact = init ? mapSession(init) : null
+
+    if (initContact) {
+        revealViewFor(initContact)
+    }
+
+    // Registered once the restored filters are in place, which the first list load below
+    // already asks for: registered earlier, putting them back loaded the list a second time.
+    dropWaitingInTeamView()
+    watch([selectedStatuses, viewMode, promisedOnly, mailTab], onListFiltersChanged)
 
     // Asked once the shops are settled, so the first answer is not for the wrong ones. The rail's
     // counts came with the page, except when Back put the page back as it was left.
@@ -2971,19 +2971,22 @@ onMounted(async () => {
         reloadInboxCountsSoon()
     }
 
+    let isListLoaded: boolean
+
     // The thread opens once the list is on screen, so the list is not held back by it. A tab in
     // the background paints nothing, so there it does not wait for a paint.
     const listPainted = (isLoaded: boolean) => document.visibilityState === "hidden"
         ? nextTick()
         : inboxOpening.listPainted(isLoaded)
 
-    const isListLoaded = await firstListLoad
-
     if (initContact) {
+        await nextTick()
+        isListLoaded = await reloadContacts()
         linkedContact.value = initContact
         await listPainted(isListLoaded)
         openChat(initContact)
     } else {
+        isListLoaded = await reloadContacts()
         await listPainted(isListLoaded)
         openSelectedFromProp()
     }
