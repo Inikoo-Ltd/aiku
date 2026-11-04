@@ -26363,5 +26363,10 @@
     "ordered :quantity": "objednané :quantity",
     "Carried from": "Prenesené z",
     ":quantity carried to": ":quantity prenesené do",
-    ":quantity of this artefact from this job were carried to :reference, add anyway?": ":quantity kusov tohto artefaktu z tohto príkazu bolo prenesených do :reference, pridať aj tak?"
+    ":quantity of this artefact from this job were carried to :reference, add anyway?": ":quantity kusov tohto artefaktu z tohto príkazu bolo prenesených do :reference, pridať aj tak?",
+    "Remove this line?": "Odstrániť tento riadok?",
+    "Only a line on an open job order can be removed.": "Odstrániť sa dá len riadok otvorenej výrobnej zákazky.",
+    "Work is already recorded on this line, it can no longer be removed.": "Na tomto riadku je už zaznamenaná práca, nedá sa odstrániť.",
+    "This line is part of a carried job, change it on the job it was carried from.": "Tento riadok je súčasťou prenesenej zákazky, zmeňte ho v zákazke, z ktorej bol prenesený.",
+    "This is the only line on the job order, cancel the job order instead.": "Toto je jediný riadok zákazky, zrušte radšej celú zákazku."
 }

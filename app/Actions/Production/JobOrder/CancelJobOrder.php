@@ -107,7 +107,7 @@ class CancelJobOrder extends OrgAction
                     }
                 }
             } else {
-                $this->leaveCombinedBatches($taskIds->all());
+                self::leaveCombinedBatches($taskIds->all());
             }
 
             $data                 = $lockedJobOrder->data;
@@ -137,7 +137,7 @@ class CancelJobOrder extends OrgAction
      *
      * @param  array<int, int>  $taskIds
      */
-    private function leaveCombinedBatches(array $taskIds): void
+    public static function leaveCombinedBatches(array $taskIds): void
     {
         $leadIds = JobOrderItemTask::whereIn('id', $taskIds)->whereNotNull('combined_task_id')->distinct()->pluck('combined_task_id');
         JobOrderItemTask::whereIn('id', $taskIds)->update(['combined_task_id' => null]);

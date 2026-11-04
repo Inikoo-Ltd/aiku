@@ -26368,5 +26368,10 @@
     "ordered :quantity": "pedido :quantity",
     "Carried from": "Procede de",
     ":quantity carried to": ":quantity trasladado a",
-    ":quantity of this artefact from this job were carried to :reference, add anyway?": ":quantity de este artefacto de esta orden se trasladaron a :reference, ¿añadir de todos modos?"
+    ":quantity of this artefact from this job were carried to :reference, add anyway?": ":quantity de este artefacto de esta orden se trasladaron a :reference, ¿añadir de todos modos?",
+    "Remove this line?": "¿Quitar esta línea?",
+    "Only a line on an open job order can be removed.": "Solo se puede quitar una línea de una orden de trabajo abierta.",
+    "Work is already recorded on this line, it can no longer be removed.": "Ya hay trabajo registrado en esta línea, ya no se puede quitar.",
+    "This line is part of a carried job, change it on the job it was carried from.": "Esta línea forma parte de un trabajo traspasado, cámbiala en el trabajo del que se traspasó.",
+    "This is the only line on the job order, cancel the job order instead.": "Es la única línea de la orden de trabajo, cancela la orden en su lugar."
 }

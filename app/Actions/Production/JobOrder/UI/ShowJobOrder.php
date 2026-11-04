@@ -20,6 +20,7 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
+use App\Actions\Production\JobOrderItem\DeleteJobOrderItem;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
@@ -118,6 +119,10 @@ class ShowJobOrder extends OrgAction
                     ] : null,
                     'split_route'        => $this->canEdit && $isOpen && !$received ? [
                         'name'       => 'grp.models.job-order-item.split',
+                        'parameters' => ['jobOrderItem' => $item->id],
+                    ] : null,
+                    'delete_route'       => $this->canHold && !DeleteJobOrderItem::refusal($item, $subJobs) ? [
+                        'name'       => 'grp.models.job-order-item.delete',
                         'parameters' => ['jobOrderItem' => $item->id],
                     ] : null,
                     'produced_quantity'  => (float)$subJobs->sum(fn (JobOrderItem $subJob) => $subJob->finalTask()?->quantity_made ?? 0),

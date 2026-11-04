@@ -25684,5 +25684,10 @@
     "Share your experience with this product": "Podziel się swoim doświadczeniem z tym produktem",
     "Share your experience with this shop": "Podziel się swoim doświadczeniem z tym sklepem",
     "Share your experience": "Podziel się swoim doświadczeniem",
-    "Filled circle": "Koło"
+    "Filled circle": "Koło",
+    "Remove this line?": "Usunąć tę pozycję?",
+    "Only a line on an open job order can be removed.": "Usunąć można tylko pozycję otwartego zlecenia produkcyjnego.",
+    "Work is already recorded on this line, it can no longer be removed.": "Na tej pozycji zapisano już pracę, nie można jej usunąć.",
+    "This line is part of a carried job, change it on the job it was carried from.": "Ta pozycja jest częścią przeniesionego zlecenia, zmień ją w zleceniu, z którego została przeniesiona.",
+    "This is the only line on the job order, cancel the job order instead.": "To jedyna pozycja zlecenia, zamiast tego anuluj zlecenie."
 }

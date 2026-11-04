@@ -92,6 +92,7 @@ interface Item {
     suggested_quantity: number | null
     update_route: null | { name: string, parameters: object }
     split_route: null | { name: string, parameters: object }
+    delete_route: null | { name: string, parameters: object }
     produced_quantity: number
     waiting_for: { code: string, needed: number, on_hand: number }[]
     tasks: ItemTask[]
@@ -216,6 +217,21 @@ function saveQuantity(item: { id: number, update_route: null | { name: string, p
         {
             preserveScroll: true,
             onSuccess: () => editingItemId.value = null,
+            onError: (errors) => quantityErrors.value[item.id] = Object.values(errors).join(' '),
+        }
+    )
+}
+
+const removingItemId = ref<number | null>(null)
+
+function removeItem(item: { id: number, delete_route: null | { name: string, parameters: object } }) {
+    if (!item.delete_route) return
+    delete quantityErrors.value[item.id]
+    router.delete(
+        route(item.delete_route.name, item.delete_route.parameters),
+        {
+            preserveScroll: true,
+            onSuccess: () => removingItemId.value = null,
             onError: (errors) => quantityErrors.value[item.id] = Object.values(errors).join(' '),
         }
     )
@@ -537,12 +553,21 @@ function receiveIntoStock() {
                     <button type="submit" class="text-sm font-medium text-[--app-accent]">{{ ctrans('Save') }}</button>
                     <button type="button" class="text-sm text-gray-500" @click="editingItemId = null">{{ ctrans('Cancel') }}</button>
                 </form>
-                <div v-else class="tabular-nums text-gray-700">
+                <div v-else-if="removingItemId === item.id" class="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm">
+                    <span class="text-gray-700">{{ ctrans('Remove this line?') }}</span>
+                    <button type="button" class="font-medium text-red-600" @click="removeItem(item)">{{ ctrans('Remove') }}</button>
+                    <button type="button" class="text-gray-500" @click="removingItemId = null">{{ ctrans('Cancel') }}</button>
+                </div>
+                <div v-else class="shrink-0 whitespace-nowrap tabular-nums text-gray-700">
                     × {{ item.quantity }}
-                    <button v-if="item.update_route" type="button" class="ml-2 text-sm text-[--app-accent]" @click="startEditingQuantity(item)">{{ ctrans('Change') }}</button>
-                    <button v-if="item.split_route" type="button" class="ml-3 text-sm text-[--app-accent]" @click="openSplit(item)">
+                    <button v-if="item.update_route" type="button" class="ml-2 text-sm text-[var(--app-accent)]" @click="startEditingQuantity(item)">{{ ctrans('Change') }}</button>
+                    <button v-if="item.split_route" type="button" class="ml-3 text-sm text-[var(--app-accent)]" @click="openSplit(item)">
                         <FontAwesomeIcon :icon="['fal', 'users']" fixed-width class="mr-0.5" />
                         {{ item.sub_jobs.length ? ctrans('Change artisans') : ctrans('Split / Assign multiple artisans') }}
+                    </button>
+                    <button v-if="item.delete_route" type="button" class="ml-3 text-sm text-gray-500 hover:text-red-600" @click="removingItemId = item.id">
+                        <FontAwesomeIcon :icon="['fal', 'trash-alt']" fixed-width class="mr-0.5" />
+                        {{ ctrans('Remove') }}
                     </button>
                 </div>
             </div>

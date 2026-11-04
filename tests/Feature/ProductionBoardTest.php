@@ -1693,3 +1693,24 @@ test('both job orders of a carried job keep a card on the to produce board, whic
         [$carried->id, 'open', 2.0, null],
     ]);
 });
+
+test('a job order line nobody has worked on can be removed, a worked or only line cannot', function () {
+    $jobOrder  = StoreJobOrder::make()->action($this->production, []);
+    $kept      = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 200]);
+    $duplicate = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 100]);
+    $taskIds   = $duplicate->tasks()->pluck('id');
+
+    actingAs($this->guest->getUser());
+
+    $kept->tasks()->update(['quantity_made' => 10]);
+    $this->delete(route('grp.models.job-order-item.delete', [$kept->id]))->assertSessionHasErrors('line');
+
+    $this->delete(route('grp.models.job-order-item.delete', [$duplicate->id]))->assertSessionHasNoErrors();
+
+    expect(JobOrderItem::find($duplicate->id))->toBeNull()
+        ->and(\App\Models\Production\JobOrderItemTask::whereIn('id', $taskIds)->count())->toBe(0)
+        ->and(JobOrderItem::find($kept->id))->not->toBeNull();
+
+    $kept->tasks()->update(['quantity_made' => 0]);
+    $this->delete(route('grp.models.job-order-item.delete', [$kept->id]))->assertSessionHasErrors('line');
+});
