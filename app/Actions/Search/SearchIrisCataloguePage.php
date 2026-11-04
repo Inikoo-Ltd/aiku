@@ -44,7 +44,12 @@ class SearchIrisCataloguePage extends IrisAction
         $pageNumber  = (int) Arr::get($modelData, 'page', 1);
         $sort        = Arr::get($modelData, 'sort');
 
-        ['ids' => $matchedIds, 'arm_counts' => $armCounts] = $this->matchedProductIds($query);
+        [
+            'ids'         => $matchedIds,
+            'arm_counts'  => $armCounts,
+            'facets'      => $facets,
+            'collections' => $collections,
+        ] = $this->queryMatches($query);
         $orders   = $pageNumber === 1 ? $this->matchedCustomerDocuments($query, SearchIrisOrders::class) : [];
         $invoices = $pageNumber === 1 ? $this->matchedCustomerDocuments($query, SearchIrisInvoices::class) : [];
 
@@ -122,14 +127,45 @@ class SearchIrisCataloguePage extends IrisAction
                 'page'        => $pageNumber,
                 'last_page'   => $lastPage,
                 'per_page'    => $perPage,
-                'facets'      => array_merge(
-                    $this->categoryFacets($matchedIds),
-                    $this->brandTagFacets($matchedIds),
-                    ['price' => $this->priceRange($matchedIds)],
-                ),
-                'collections' => $this->matchedCollections($query),
+                'facets'      => $facets,
+                'collections' => $collections,
             ],
         ];
+    }
+
+    /**
+     * Everything on the page that depends on the query alone: the matched ids, the facets
+     * and the collections. Paging, sorting and filtering re-ask the same query (about half
+     * of these requests repeat a query seen in the last minute), so this part is shared for
+     * a minute; the product list itself, its total and the customer's own orders and invoices
+     * stay live.
+     *
+     * @return array{ids: array<int, int>, arm_counts: array{keyword: int, vector: int}, facets: array<string, mixed>|null, collections: array<int, array<string, mixed>>}
+     */
+    private function queryMatches(string $query): array
+    {
+        return cache()->remember(
+            'iris-search-page:'.$this->website->id.':'.md5($query),
+            60,
+            function () use ($query) {
+                ['ids' => $matchedIds, 'arm_counts' => $armCounts] = $this->matchedProductIds($query);
+
+                if (empty($matchedIds)) {
+                    return ['ids' => [], 'arm_counts' => $armCounts, 'facets' => null, 'collections' => []];
+                }
+
+                return [
+                    'ids'         => $matchedIds,
+                    'arm_counts'  => $armCounts,
+                    'facets'      => array_merge(
+                        $this->categoryFacets($matchedIds),
+                        $this->brandTagFacets($matchedIds),
+                        ['price' => $this->priceRange($matchedIds)],
+                    ),
+                    'collections' => $this->matchedCollections($query),
+                ];
+            }
+        );
     }
 
     /**
@@ -277,7 +313,7 @@ class SearchIrisCataloguePage extends IrisAction
 
         $categories = ProductCategory::query()
             ->whereIn('id', $allCategoryIds)
-            ->with(['image', 'webpage' => fn ($webpageQuery) => $webpageQuery->where('website_id', $this->website->id)->with('shop')])
+            ->with(['image', 'webpage' => fn ($webpageQuery) => $webpageQuery->where('website_id', $this->website->id)])
             ->get()
             ->keyBy('id');
 
@@ -292,7 +328,7 @@ class SearchIrisCataloguePage extends IrisAction
                     'id'    => $category->id,
                     'name'  => $category->name,
                     'count' => $count,
-                    'url'   => $category->webpage?->getCanonicalUrl() ?: null,
+                    'url'   => $this->canonicalUrl($category->webpage) ?: null,
                     'image' => $category->imageSources(200, 200) ?: Arr::get($category->web_images ?? [], 'main.thumbnail'),
                 ];
             })
@@ -392,15 +428,15 @@ class SearchIrisCataloguePage extends IrisAction
 
         return Collection::query()
             ->whereIn('id', $ids)
-            ->with(['image', 'webpage' => fn ($webpageQuery) => $webpageQuery->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE)->with('shop')])
+            ->with(['image', 'webpage' => fn ($webpageQuery) => $webpageQuery->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE)])
             ->get()
-            ->filter(fn (Collection $collection) => $collection->webpage?->getCanonicalUrl())
+            ->filter(fn (Collection $collection) => $this->canonicalUrl($collection->webpage))
             ->map(fn (Collection $collection) => [
                 'id'    => $collection->id,
                 'code'  => $collection->code,
                 'name'  => $collection->name,
                 'image' => $collection->imageSources(200, 200) ?: Arr::get($collection->web_images ?? [], 'main.thumbnail'),
-                'url'   => $collection->webpage?->getCanonicalUrl() ?: null,
+                'url'   => $this->canonicalUrl($collection->webpage) ?: null,
             ])
             ->values()
             ->all();

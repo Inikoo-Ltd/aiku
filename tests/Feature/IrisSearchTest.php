@@ -738,3 +738,71 @@ test('full page search category facets read every category picture in one query,
         ->and(collect($expected)->pluck('image')->filter()->count())->toBe(3)
         ->and($queriesForThreeFamilies)->toBe($queriesForOneFamily);
 });
+
+test('the search stats broadcast is queued, so the headline aggregate never runs inside a search request', function () {
+    $event = new WebsiteSearchStatsUpdated($this->website);
+
+    expect($event)->toBeInstanceOf(\Illuminate\Contracts\Broadcasting\ShouldBroadcast::class)
+        ->and($event)->not->toBeInstanceOf(\Illuminate\Contracts\Broadcasting\ShouldBroadcastNow::class);
+});
+
+test('full page search reuses the query-only part for a minute while the product list stays live', function () {
+    [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
+    ($product->webpage ?: StoreProductWebpage::make()->action($product))->update(['state' => WebpageStateEnum::LIVE]);
+    expect((bool) $product->refresh()->is_in_website)->toBeTrue();
+
+    $search = function (array $modelData) {
+        $action  = \App\Actions\Search\SearchIrisCataloguePage::make();
+        $shop    = $this->shop;
+        $website = $this->website;
+        (function () use ($shop, $website) {
+            $this->shop    = $shop;
+            $this->website = $website;
+        })->call($action);
+
+        return $action->handle($modelData);
+    };
+
+    $cacheKey = 'iris-search-page:'.$this->website->id.':'.md5('candles');
+    Cache::forget($cacheKey);
+
+    expect($search(['q' => 'candles'])['results']['products'])->toBe([])
+        ->and(Cache::has($cacheKey))->toBeTrue();
+
+    $facets = ['departments' => [], 'sub_departments' => [], 'families' => [], 'brands' => [], 'tags' => [], 'price' => ['min' => 1.0, 'max' => 2.0]];
+    Cache::put($cacheKey, ['ids' => [$product->id], 'arm_counts' => ['keyword' => 1, 'vector' => 0], 'facets' => $facets, 'collections' => []], 60);
+
+    $results = $search(['q' => 'candles', 'page' => 1])['results'];
+    expect($results['facets'])->toBe($facets)
+        ->and($results['total'])->toBe(1)
+        ->and(collect($results['products'])->pluck('id')->all())->toBe([$product->id]);
+
+    $product->update(['is_for_sale' => false]);
+    expect($search(['q' => 'candles'])['results']['total'])->toBe(0);
+});
+
+test('catalogue queries of up to three characters are shared for 30 seconds, longer ones are not', function () {
+    $options = ['shop_id' => $this->shop->id, 'is_in_website' => true];
+    $key     = fn (string $query) => 'search:catalogue:'.md5(json_encode($options)).':'.mb_strtolower($query);
+    Cache::forget($key('cnd'));
+    Cache::forget($key('cndl'));
+
+    Search::run('catalogue', 'cnd', $options);
+    Search::run('catalogue', 'cndl', $options);
+
+    expect(Cache::has($key('cnd')))->toBeTrue()
+        ->and(Cache::has($key('cndl')))->toBeFalse();
+});
+
+test('ticket searches are never served from the shared short-query cache, their results depend on who is looking', function () {
+    $user = createAdminGuest($this->organisation->group)->getUser();
+    request()->setUserResolver(fn () => $user);
+
+    $key = 'search:tickets:'.md5(json_encode([])).':abc';
+    Cache::forget($key);
+
+    Search::run('tickets', 'abc');
+
+    expect(Cache::has($key))->toBeFalse();
+});

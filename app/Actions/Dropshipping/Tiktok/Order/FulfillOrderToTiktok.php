@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dropshipping\Tiktok\Order;
 
+use App\Actions\Dropshipping\WithPlatformFulfilmentFailure;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
@@ -26,6 +27,9 @@ class FulfillOrderToTiktok extends OrgAction
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
+    use WithPlatformFulfilmentFailure;
+
+    public string $jobQueue = 'tiktok';
 
     public function handle(Order|PalletReturn $order): ?array
     {

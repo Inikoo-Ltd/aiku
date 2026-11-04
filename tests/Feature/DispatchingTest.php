@@ -2245,8 +2245,37 @@ test('delivery note finalise and dispatch combined and pick as employee', functi
     $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
     StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
 
+    $shop             = $deliveryNote->shop;
+    $originalMasterId = $shop->master_shop_id;
+    $masterShop       = \App\Actions\Masters\MasterShop\StoreMasterShop::make()->action($this->group, [
+        'type' => $shop->type,
+        'code' => 'FDM'.Str::random(6),
+        'name' => 'Finalise dispatch master',
+    ]);
+    $shop->update(['master_shop_id' => $masterShop->id]);
+
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseAndDispatchDeliveryNote::make()->action($deliveryNote->refresh());
-    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
+
+    $shop->update(['master_shop_id' => $originalMasterId]);
+
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and($deliveryNote->orders->first()->state)->toBe(OrderStateEnum::DISPATCHED)
+        ->and($masterShop->orderingStats->refresh()->last_order_dispatched_at)->not->toBeNull();
+});
+
+test('a shipping update the sales channel keeps refusing is noted on the order and given to customer services', function () {
+    $order = freshSubmittedOrder($this);
+    $order->update(['shipping_notes' => 'Leave at the back door']);
+
+    \App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify::make()->jobFailed(new \Exception('Fulfillment order is closed'), $order);
+
+    $task = \App\Models\Tasks\StaffTask::where('model_type', 'Order')->where('model_id', $order->id)->latest('id')->first();
+
+    expect($order->refresh()->shipping_notes)->toStartWith("Leave at the back door\n\n")
+        ->toContain('could not mark it as shipped')
+        ->and($task)->not->toBeNull()
+        ->and($task->department)->toBe('customer-services')
+        ->and($task->description)->toContain('Fulfillment order is closed')->toContain($order->reference);
 });
 
 test('pick delivery note as employee', function () {

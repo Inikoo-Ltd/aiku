@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment;
 
+use App\Actions\Dropshipping\WithPlatformFulfilmentFailure;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -24,6 +25,9 @@ class FulfillOrderToShopify extends OrgAction
 {
     use WithShopifyApi;
     use WithActionUpdate;
+    use WithPlatformFulfilmentFailure;
+
+    public string $jobQueue = 'shopify';
 
     /**
      * @throws \Illuminate\Validation\ValidationException

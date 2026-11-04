@@ -23,6 +23,8 @@ class FulfillOrderToWooCommerce extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
+    public string $jobQueue = 'woo';
+
     public function handle(Order $order): void
     {
         if ($order->is_bypass_platform_update) {
