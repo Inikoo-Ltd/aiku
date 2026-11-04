@@ -14,14 +14,18 @@ enum PalletReturnCourierEnum: string
 {
     use EnumHelperTrait;
 
-    case DPD        = 'dpd';
-    case ROYAL_MAIL = 'royal_mail';
+    case DPD         = 'dpd';
+    case ROYAL_MAIL  = 'royal_mail';
+    case GLS         = 'gls';
+    case SLOVAK_POST = 'slovak_post';
 
     public static function labels(): array
     {
         return [
-            'dpd'        => 'DPD',
-            'royal_mail' => 'Royal Mail',
+            'dpd'         => 'DPD',
+            'royal_mail'  => 'Royal Mail',
+            'gls'         => 'GLS',
+            'slovak_post' => 'Slovak Post',
         ];
     }
 

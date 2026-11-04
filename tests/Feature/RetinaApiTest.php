@@ -874,6 +874,12 @@ test('retina api fulfilment order takes the customer documents and courier', fun
     getJson(route('retina.api.fulfilment.order.show', $palletReturnId))
         ->assertOk()
         ->assertJsonPath('data.customer_courier', 'dpd');
+
+    foreach (['gls', 'slovak_post'] as $courier) {
+        patchJson(route('retina.api.fulfilment.order.update', $palletReturnId), [
+            'customer_courier' => $courier,
+        ])->assertOk()->assertJsonPath('data.customer_courier', $courier);
+    }
 });
 
 // ---- Fulfilment: portfolios ----
