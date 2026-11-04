@@ -34,7 +34,10 @@ use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementFlowEnum;
+use App\Actions\Catalogue\Product\StoreProduct;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Models\Catalogue\Product;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
@@ -324,6 +327,42 @@ describe('product available quantity resync', function () {
         OrgStockHydrateQuantityInLocations::run($orgStock->id);
 
         expect($product->refresh()->available_quantity)->toBe($expected);
+    });
+
+    test('a stock change updates every product of the SKO without loading their assets and webpages one by one', function () {
+        list(, , $shop) = createShop();
+        list(, $single) = createProduct($shop);
+        $pack           = UpdateProduct::make()->action(
+            StoreProduct::make()->action($single->family, array_merge(Product::factory()->definition(), [
+                'trade_units' => [['id' => createTradeUnits($shop->group)[0]->id, 'quantity' => 2]],
+                'price'       => 100,
+            ])),
+            ['state' => ProductStateEnum::ACTIVE]
+        );
+
+        $stock    = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock = StoreOrgStock::make()->action($this->organisation, $stock);
+        $single->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+        $pack->orgStocks()->sync([$orgStock->id => ['quantity' => 2]]);
+
+        $location         = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());
+        $locationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $location, []);
+        DB::table('location_org_stocks')->where('id', $locationOrgStock->id)->update(['quantity' => 9]);
+
+        $perProductLookups = 0;
+        DB::listen(function ($query) use (&$perProductLookups) {
+            if (preg_match('/^select \* from "(assets|webpages)" where "\1"\."(id|model_type)" = \?/', $query->sql)) {
+                $perProductLookups++;
+            }
+        });
+
+        OrgStockHydrateQuantityInLocations::run($orgStock->id);
+
+        $available = (float) $orgStock->refresh()->quantity_available;
+        expect($available)->toBeGreaterThan(0)
+            ->and($single->refresh()->available_quantity)->toBe((int) floor($available))
+            ->and($pack->refresh()->available_quantity)->toBe((int) floor($available / 2))
+            ->and($perProductLookups)->toBe(0);
     });
 });
 
