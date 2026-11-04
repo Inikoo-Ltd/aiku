@@ -44,6 +44,8 @@ class UpdateOrgStockTradeUnits extends OrgAction
             ->mapWithKeys(fn ($tradeUnit) => [$tradeUnit['id'] => ['quantity' => $tradeUnit['quantity']]])
             ->toArray();
 
+        SyncOrgStockTradeUnits::ensureNoDeliveryStillToPlace($orgStock, $tradeUnitsData);
+
         $stockStrategy    = Arr::get($modelData, 'stock_strategy');
         $stockedLocations = $orgStock->locationOrgStocks()->where('quantity', '!=', 0)->with('location')->get();
         $stockedChange    = $stockedLocations->isNotEmpty()

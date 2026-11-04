@@ -18,10 +18,14 @@ use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Actions\Tasks\StoreStaffTask;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SyncOrgStockTradeUnits
@@ -44,6 +48,42 @@ class SyncOrgStockTradeUnits
             ->sortKeys();
 
         return $currentPivot->toArray() != $newPivot->toArray();
+    }
+
+    /**
+     * Delivery lines store units and show SKOs through the packing, so changing the packing while a delivery
+     * is still to be put away silently re-means it (HELP-4506: 360 glasses of a twin set shown as 360 SKOs).
+     * Those lines have to be put away before the packing changes.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public static function ensureNoDeliveryStillToPlace(OrgStock $orgStock, array $tradeUnitsData): void
+    {
+        if (!self::pivotChanges($orgStock, $tradeUnitsData)) {
+            return;
+        }
+
+        $references = StockDelivery::whereNotIn('state', [
+            StockDeliveryStateEnum::PLACED,
+            StockDeliveryStateEnum::CANCELLED,
+            StockDeliveryStateEnum::NOT_RECEIVED,
+        ])->whereHas(
+            'items',
+            fn ($query) => $query->where('org_stock_id', $orgStock->id)->whereNotIn('state', [
+                StockDeliveryItemStateEnum::PLACED,
+                StockDeliveryItemStateEnum::CANCELLED,
+                StockDeliveryItemStateEnum::NOT_RECEIVED,
+            ])
+        )->pluck('reference');
+
+        if ($references->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'trade_units' => __(
+                    'The packing of :code cannot change while it is on deliveries not yet put away (:deliveries): their quantities would be counted in the new packing. Put those deliveries away, or cancel their lines for this SKO, first.',
+                    ['code' => $orgStock->code, 'deliveries' => $references->implode(', ')]
+                ),
+            ]);
+        }
     }
 
     /**

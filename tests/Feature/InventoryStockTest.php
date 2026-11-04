@@ -500,6 +500,45 @@ describe('packing change guard', function () {
             ->and($recountTask->subject)->toContain($warehouse->name)
             ->and($recountTask->description)->toContain($location->code.': 2');
     });
+
+    test('packing cannot change while the sko is on a delivery not yet put away', function () {
+        require_once __DIR__.'/../Support/ProcurementHelpers.php';
+
+        $stock     = StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+        $orgStock  = StoreOrgStock::make()->action($this->organisation, $stock);
+        $tradeUnit = StoreTradeUnit::make()->action($this->group, TradeUnit::factory()->definition());
+        $stock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 2]]);
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 2]]);
+
+        $this->stocks    = [$stock];
+        $this->orgStocks = [$orgStock];
+        $stockDelivery   = createStockDeliveryWithItems($this, 'PACKSD-'.\Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(6)), [360]);
+
+        $payload = ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]];
+
+        try {
+            \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, $payload);
+            $this->fail('Expected the packing change to be refused');
+        } catch (ValidationException $exception) {
+            expect($exception->errors()['trade_units'][0])->toContain($stockDelivery->reference);
+        }
+
+        expect(fn () => UpdateStock::make()->handle($stock, $payload))->toThrow(ValidationException::class)
+            ->and((float) $orgStock->tradeUnits()->first()->pivot->quantity)->toBe(2.0);
+
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 2]]]);
+
+        $stockDelivery->updateQuietly(['state' => \App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum::PLACED]);
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 3]]]);
+        expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(3.0);
+        $stockDelivery->updateQuietly(['state' => \App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum::CHECKED]);
+        $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 2]]);
+
+        $stockDelivery->items()->update(['state' => \App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum::PLACED]);
+        \App\Actions\Inventory\OrgStock\UpdateOrgStockTradeUnits::make()->handle($orgStock, $payload);
+
+        expect((float) $orgStock->refresh()->tradeUnits->first()->pivot->quantity)->toBe(1.0);
+    });
 });
 
 test('stock history archiver keeps a monthly snapshot and the readers read the archived days back', function () {
@@ -1114,8 +1153,22 @@ describe('out of stock forecast', function () {
         expect((float) $orgStock->stats->refresh()->predicted_daily_usage)->toEqualWithDelta((600 + 3 * 30) / 200, 0.0001);
         DB::table('delivery_note_items')->where('id', $oneOff)->delete();
 
-        DB::table('delivery_note_items')->where('org_stock_id', $orgStock->id)->update(['created_at' => DB::raw("created_at - interval '90 days'")]);
-        DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->update(['date' => DB::raw("date - interval '90 days'")]);
+        DB::table('delivery_note_items')->where('org_stock_id', $orgStock->id)->update(['created_at' => DB::raw("created_at - interval '300 days'")]);
+        DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->update(['date' => DB::raw("date - interval '300 days'")]);
+        OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
+        $stats = $orgStock->stats->refresh();
+        expect($stats->forecast_source)->toBe('history')
+            ->and((float) $stats->predicted_daily_usage)->toEqualWithDelta(600 / 200, 0.0001);
+
+        DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->where('running_quantity_org_stock', 0)
+            ->update(['date' => now()->subDays(95)->startOfDay()->addHours(8)]);
+        OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
+        expect($orgStock->stats->refresh()->forecast_source)->not->toBe('history');
+
+        DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->where('running_quantity_org_stock', 0)
+            ->update(['date' => now()->subDays(400)->startOfDay()->addHours(8)]);
+        DB::table('delivery_note_items')->where('org_stock_id', $orgStock->id)->update(['created_at' => DB::raw("created_at - interval '400 days'")]);
+        DB::table('org_stock_movements')->where('org_stock_id', $orgStock->id)->update(['date' => DB::raw("date - interval '400 days'")]);
         OrgStockHydrateOutOfStockForecast::run($orgStock->fresh());
         expect($orgStock->stats->refresh()->forecast_source)->not->toBe('history');
     });

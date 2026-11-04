@@ -46,8 +46,13 @@ class UpdateStock extends OrgAction
             ->toArray();
         $stockStrategy = Arr::pull($modelData, 'stock_strategy');
 
-        if ($hasTradeUnits && !$this->asAction && !$stockStrategy) {
-            $this->ensureStockedWarehousesAreDecided($stock, $tradeUnitData);
+        if ($hasTradeUnits && !$this->asAction) {
+            foreach ($stock->orgStocks()->get() as $orgStock) {
+                SyncOrgStockTradeUnits::ensureNoDeliveryStillToPlace($orgStock, $tradeUnitData);
+            }
+            if (!$stockStrategy) {
+                $this->ensureStockedWarehousesAreDecided($stock, $tradeUnitData);
+            }
         }
 
         $stock   = $this->update($stock, $modelData, ['data', 'settings']);
