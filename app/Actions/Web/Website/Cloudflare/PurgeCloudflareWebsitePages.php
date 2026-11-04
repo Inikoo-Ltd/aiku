@@ -11,7 +11,9 @@ use App\Models\Web\Website;
 use DateTime;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redis;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Decorators\JobDecorator;
 use RuntimeException;
@@ -40,7 +42,13 @@ class PurgeCloudflareWebsitePages
      */
     public static function schedule(Website $website): void
     {
-        if (self::isPurgeable($website) && Cache::add('cloudflare-page-purge:'.$website->id, true, self::DEBOUNCE_SECONDS)) {
+        if (!self::isPurgeable($website)) {
+            return;
+        }
+
+        self::countBan($website);
+
+        if (Cache::add('cloudflare-page-purge:'.$website->id, true, self::DEBOUNCE_SECONDS)) {
             static::dispatch($website)->delay(self::DEBOUNCE_SECONDS);
         }
     }
@@ -51,7 +59,60 @@ class PurgeCloudflareWebsitePages
     public static function purgeNow(Website $website): void
     {
         if (self::isPurgeable($website)) {
-            static::dispatch($website);
+            self::countBan($website);
+            static::dispatch($website, 'manual');
+        }
+    }
+
+    /**
+     * Counts the ban under the chain of aiku classes that led to it (UpdateWebpage>BreakWebpageCache>BanVarnishWebpage),
+     * so each purge row says which kinds of change keep wiping the site. A ban from a queued job starts the chain at
+     * the job's class. Bans burst to thousands a minute, so they are counted in Redis and stored once per purge.
+     */
+    protected static function countBan(Website $website): void
+    {
+        $chain = collect(debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 60))
+            ->map(fn (array $frame) => isset($frame['object']) ? get_class($frame['object']) : null)
+            ->filter(fn (?string $class) => $class && str_starts_with($class, 'App\\Actions\\') && $class !== self::class)
+            ->map(fn (string $class) => class_basename($class))
+            ->unique()
+            ->reverse()
+            ->implode('>');
+
+        try {
+            Redis::pipeline(function ($pipe) use ($website, $chain) {
+                $pipe->hincrby(self::banSourcesKey($website->id), $chain ?: 'unknown', 1);
+                $pipe->expire(self::banSourcesKey($website->id), 86400);
+            });
+        } catch (Throwable) {
+            return;
+        }
+    }
+
+    protected static function banSourcesKey(int $websiteId): string
+    {
+        return 'cloudflare-page-purge-ban-sources:'.$websiteId;
+    }
+
+    protected function recordPurge(Website $website, string $trigger): void
+    {
+        try {
+            [$banSources] = Redis::transaction(function ($redis) use ($website) {
+                $redis->hgetall(self::banSourcesKey($website->id));
+                $redis->del(self::banSourcesKey($website->id));
+            });
+            $banSources = array_map('intval', $banSources ?: []);
+            arsort($banSources);
+
+            DB::table('website_edge_purges')->insert([
+                'website_id'  => $website->id,
+                'trigger'     => $trigger,
+                'bans'        => array_sum($banSources),
+                'ban_sources' => json_encode($banSources ?: (object) []),
+                'created_at'  => now(),
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
         }
     }
 
@@ -70,7 +131,7 @@ class PurgeCloudflareWebsitePages
      *
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(Website $website): ?int
+    public function handle(Website $website, string $trigger = 'scheduled'): ?int
     {
         $response = Http::withToken(decrypt($website->cloudflare_token))
             ->acceptJson()
@@ -87,15 +148,17 @@ class PurgeCloudflareWebsitePages
             throw new RuntimeException("Cloudflare page purge failed for website $website->id: HTTP {$response->status()} ".json_encode($response->json('errors')));
         }
 
+        $this->recordPurge($website, $trigger);
+
         return null;
     }
 
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function asJob(JobDecorator $job, Website $website): void
+    public function asJob(JobDecorator $job, Website $website, string $trigger = 'scheduled'): void
     {
-        if ($retryAfter = $this->handle($website)) {
+        if ($retryAfter = $this->handle($website, $trigger)) {
             $job->release($retryAfter);
         }
     }
@@ -128,10 +191,10 @@ class PurgeCloudflareWebsitePages
         foreach ($websites as $website) {
             if ($waitSeconds === null) {
                 try {
-                    $waitSeconds = $this->handle($website);
+                    $waitSeconds = $this->handle($website, 'deploy');
                 } catch (Throwable $exception) {
                     report($exception);
-                    static::dispatch($website);
+                    static::dispatch($website, 'deploy');
                     $command?->line('failed, queued '.$website->slug);
 
                     continue;
@@ -144,7 +207,7 @@ class PurgeCloudflareWebsitePages
                 }
             }
 
-            static::dispatch($website)->delay($waitSeconds + intdiv($queued++, 5) * 60);
+            static::dispatch($website, 'deploy')->delay($waitSeconds + intdiv($queued++, 5) * 60);
             $command?->line('rate limited, queued '.$website->slug);
         }
     }
@@ -171,7 +234,7 @@ class PurgeCloudflareWebsitePages
         }
 
         $website    = Website::where('slug', $command->argument('website'))->firstOrFail();
-        $retryAfter = $this->handle($website);
+        $retryAfter = $this->handle($website, 'manual');
 
         $command->line($retryAfter ? "rate limited, retry in {$retryAfter}s" : 'purged '.$website->slug);
 

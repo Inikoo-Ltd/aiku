@@ -10,13 +10,29 @@ namespace App\Actions\UI\AikuPublic;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsController;
 
 class ShowDoc
 {
     use AsController;
 
-    public function handle(string $slug): View
+    /**
+     * Rendering parses every doc's markdown three times over (2 s), and the page depends on nothing
+     * but the slug, the doc files and the request's scheme, host and port (every link, the canonical).
+     * Proxies are trusted for X-Forwarded-Port/Proto, so only a request for the real address is cached,
+     * or one forged header would point every visitor's links at it.
+     */
+    public function handle(string $slug): string
+    {
+        if (request()->getSchemeAndHttpHost() !== 'https://'.config('app.domain')) {
+            return $this->render($slug)->render();
+        }
+
+        return Cache::remember('aiku-public-doc:'.$slug.':'.BlogPosts::version('docs'), now()->addDay(), fn () => $this->render($slug)->render());
+    }
+
+    private function render(string $slug): View
     {
         $doc = BlogPosts::find($slug, 'docs');
         abort_unless((bool) $doc, 404);

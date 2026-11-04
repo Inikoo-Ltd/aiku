@@ -182,12 +182,21 @@ class BlogPosts
      */
     private static function helpIndex(): array
     {
-        $files   = File::glob(self::directory('docs').'/*.md');
-        $version = md5(today()->toDateString().'|'.implode('|', array_map(fn (string $path) => $path.':'.File::lastModified($path), $files)));
-
-        return Cache::remember('grp-help-index:'.$version, now()->addDay(), fn () => self::everything('docs')
+        return Cache::remember('grp-help-index:'.self::version('docs'), now()->addDay(), fn () => self::everything('docs')
             ->map(fn (array $doc) => Arr::only($doc, ['slug', 'base_slug', 'lang', 'title', 'help_routes']))
             ->all());
+    }
+
+    /**
+     * Changes when any file in the directory is added, removed or edited, and each day, because a doc
+     * dated in the future appears on its day. Every deploy clones afresh, giving each file a new mtime,
+     * which is what clears pages cached against it when a view or style changes but no doc does.
+     */
+    public static function version(string $dir = 'blog'): string
+    {
+        $files = File::glob(self::directory($dir).'/*.md');
+
+        return md5(today()->toDateString().'|'.implode('|', array_map(fn (string $path) => $path.':'.File::lastModified($path), $files)));
     }
 
     /**

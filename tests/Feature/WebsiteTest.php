@@ -2343,7 +2343,7 @@ test('price, stock and offer changes ban varnish but leave the cloudflare copy, 
     Queue::fake();
 
     $product         = $catalogue['product']->fresh();
-    $originalProduct = $product->only(['status', 'state', 'is_for_sale', 'not_for_sale_since', 'name', 'price']);
+    $originalProduct = $product->only(['status', 'state', 'is_for_sale', 'not_for_sale_since', 'name', 'price', 'rrp']);
     $originalWebpage = $catalogue['productWebpage']->fresh()->only(['state']);
     $product->updateQuietly(['status' => ProductStatusEnum::FOR_SALE]);
 
@@ -2356,6 +2356,7 @@ test('price, stock and offer changes ban varnish but leave the cloudflare copy, 
     };
 
     expect($purgesEdge(['price' => $product->price + 1]))->toBe([false])
+        ->and($purgesEdge(['rrp' => ($product->rrp ?: 10) + 1]))->toBe([false])
         ->and($purgesEdge(['status' => ProductStatusEnum::OUT_OF_STOCK]))->toBe([false])
         ->and($purgesEdge(['name' => $product->name.' renamed']))->toBe([true])
         ->and($purgesEdge(['status' => ProductStatusEnum::DISCONTINUED]))->toBe([true]);
@@ -2403,6 +2404,36 @@ test('cloudflare page purge clears the website cache tag and waits out rate limi
 
     expect(PurgeCloudflareWebsitePages::run($website))->toBe(120)
         ->and(fn () => PurgeCloudflareWebsitePages::run($website))->toThrow(RuntimeException::class);
+})->depends('launch website');
+
+test('each cloudflare page purge is recorded with the bans that asked for it', function (Website $website) {
+    $website = Website::find($website->id);
+    config()->set('iris.cache.varnish', true);
+    config()->set('iris.cache.varnish_hosts', ['http://varnish.test']);
+    Http::fake(['api.cloudflare.com/*' => Http::response(['success' => true])]);
+    Queue::fake();
+    Cache::forget('cloudflare-page-purge:'.$website->id);
+    Redis::del('cloudflare-page-purge-ban-sources:'.$website->id);
+
+    $website->cloudflare_zone_id = 'zone-test';
+    $website->cloudflare_token   = encrypt('token-test');
+    $storefront                  = $website->storefront->setRelation('website', $website);
+
+    BanVarnishWebpage::run($storefront);
+    BanVarnishWebpage::run($storefront);
+    PurgeVarnishPath::run($website, '/old-path');
+
+    $lastId = DB::table('website_edge_purges')->max('id') ?? 0;
+    PurgeCloudflareWebsitePages::run($website);
+
+    $purge = DB::table('website_edge_purges')->where('id', '>', $lastId)->where('website_id', $website->id)->sole();
+    expect($purge->trigger)->toBe('scheduled')
+        ->and($purge->bans)->toBe(3)
+        ->and(json_decode($purge->ban_sources, true))->toEqual(['BanVarnishWebpage' => 2, 'PurgeVarnishPath' => 1]);
+
+    PurgeCloudflareWebsitePages::run($website, 'manual');
+    $purge = DB::table('website_edge_purges')->where('website_id', $website->id)->orderByDesc('id')->first();
+    expect($purge->trigger)->toBe('manual')->and($purge->bans)->toBe(0);
 })->depends('launch website');
 
 test('deploy purge of every website runs once and queues the rest when cloudflare rate limits', function (Website $website) {
