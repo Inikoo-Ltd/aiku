@@ -128,14 +128,14 @@ it('returns empty array for unknown search scope', function () {
     expect($action->handle('unknown-scope', 'john'))->toBe([]);
 });
 
-it('caches results for queries of two characters or fewer', function () {
+it('caches results for queries of three characters or fewer', function () {
     $expected = ['scope' => 'sysadmin', 'results' => ['users' => [], 'guests' => []]];
     SearchSysAdmin::mock()->shouldReceive('handle')->once()->andReturn($expected);
 
     $action = app(Search::class);
 
-    expect($action->handle('sysadmin', 'ab'))->toBe($expected)
-        ->and($action->handle('sysadmin', 'ab'))->toBe($expected);
+    expect($action->handle('sysadmin', 'abc'))->toBe($expected)
+        ->and($action->handle('sysadmin', 'abc'))->toBe($expected);
 });
 
 it('logs searches, records clicks and aggregates analytics', function () {
@@ -231,14 +231,14 @@ it('includes organisation_ids in Agent toSearchableArray', function () {
     expect($agent->toSearchableArray())->toHaveKey('organisation_ids');
 });
 
-it('does not cache results for queries longer than two characters', function () {
+it('does not cache results for queries longer than three characters', function () {
     $expected = ['scope' => 'sysadmin', 'results' => ['users' => [], 'guests' => []]];
     SearchSysAdmin::mock()->shouldReceive('handle')->twice()->andReturn($expected);
 
     $action = app(Search::class);
 
-    $action->handle('sysadmin', 'abc');
-    $action->handle('sysadmin', 'abc');
+    $action->handle('sysadmin', 'abcd');
+    $action->handle('sysadmin', 'abcd');
 });
 
 it('indexes the identity document number and no longer the retired eori and ukims columns', function () {

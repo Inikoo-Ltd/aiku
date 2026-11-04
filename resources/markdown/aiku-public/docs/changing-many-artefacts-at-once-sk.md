@@ -2,7 +2,7 @@
 title: Hromadná zmena viacerých artefaktov naraz
 summary: Zaškrtnite artefakty a potom v paneli, ktorý sa objaví, použite výber vpravo na nastavenie veľkosti dávky alebo trvanlivosti, nastavenie rovnakých výrobných krokov pre všetky, presun do inej rodiny alebo oddelenia, vyradenie z prevádzky alebo ich vrátenie späť.
 date: 2026-11-03
-source_date: 2026-10-08
+source_date: 2026-11-03
 tags: production, crafts
 category: production
 ---

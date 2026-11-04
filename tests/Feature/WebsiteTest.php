@@ -2488,7 +2488,7 @@ test('each cloudflare page purge is recorded with the bans that asked for it', f
     $website = Website::find($website->id);
     config()->set('iris.cache.varnish', true);
     config()->set('iris.cache.varnish_hosts', ['http://varnish.test']);
-    Http::fake(['api.cloudflare.com/*' => Http::response(['success' => true])]);
+    Http::fake(['api.cloudflare.com/*' => Http::response(['success' => true]), 'varnish.test*' => Http::response()]);
     Queue::fake();
     Cache::forget('cloudflare-page-purge:'.$website->id);
     Redis::del('cloudflare-page-purge-ban-sources:'.$website->id);

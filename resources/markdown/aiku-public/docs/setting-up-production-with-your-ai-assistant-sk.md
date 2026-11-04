@@ -2,7 +2,7 @@
 title: Nastavenie výroby s vaším AI asistentom
 summary: Požiadajte AI asistenta, ktorého pripojíte k aiku, aby vytvoril artefakty, suroviny a úlohy, nastavil jednotkové ceny a dal jednému artefaktu, zoznamu alebo celým rodinám ich výrobné kroky a ingrediencie. Zmenu vám vždy najprv ukáže a každú zmenu možno vrátiť späť.
 date: 2026-11-03
-source_date: 2026-10-08
+source_date: 2026-11-03
 tags: production, crafts, ai
 category: production
 ---

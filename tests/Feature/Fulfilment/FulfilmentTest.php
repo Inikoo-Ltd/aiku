@@ -3212,7 +3212,7 @@ test('customer documents of a return print in one click and its own shipping lab
     expect($labels)->toHaveCount(1)
         ->and($labels->first()->name)->toBe('label.pdf')
         ->and($printKeys())->toBe([])
-        ->and(fn () => SubmitPalletReturn::run($documentsReturn->refresh(), []))->toThrow(ValidationException::class, 'Choose the courier (DPD, Royal Mail) for the shipping label attached to this return.')
+        ->and(fn () => SubmitPalletReturn::run($documentsReturn->refresh(), []))->toThrow(ValidationException::class, 'Choose the courier ('.implode(', ', PalletReturnCourierEnum::labels()).') for the shipping label attached to this return.')
         ->and($documentsReturn->refresh()->state)->toBe(PalletReturnStateEnum::IN_PROCESS);
 
     $customer   = $documentsReturn->fulfilmentCustomer->customer;
@@ -3262,7 +3262,7 @@ test('customer documents of a return print in one click and its own shipping lab
     $documentsReturn->update(['customer_courier' => null]);
 
     expect(fn () => AttachPalletReturnAttachment::run($documentsReturn->refresh(), $pdf('late-label.pdf'), PalletReturnAttachmentScopeEnum::SHIPPING_LABEL))
-        ->toThrow(ValidationException::class, 'This return was submitted without a courier (DPD, Royal Mail), so a shipping label cannot be attached to it.');
+        ->toThrow(ValidationException::class, 'This return was submitted without a courier ('.implode(', ', PalletReturnCourierEnum::labels()).'), so a shipping label cannot be attached to it.');
 
     $documentsReturn->update(['customer_courier' => PalletReturnCourierEnum::ROYAL_MAIL]);
 

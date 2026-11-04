@@ -1627,6 +1627,8 @@ test('only the agent marks its container as dispatched, unless the agent lets bu
     $stockDelivery->updateQuietly(['agent_id' => $agent->id]);
     $showPage = fn () => $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]));
     $dispatch = fn () => $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id), ['reason' => 'Packing list comes with the goods']);
+    $buyer    = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($buyer, ["procurement.{$this->organisation->id}.view", "procurement.{$this->organisation->id}.edit"]);
 
     $showPage()->assertInertia(fn (AssertableInertia $page) => $page
         ->where('box_stats.invoice_entry.is_agent', true)
@@ -1652,6 +1654,7 @@ test('only the agent marks its container as dispatched, unless the agent lets bu
 
     expect($stockDelivery->refresh()->state)->toBe(StockDeliveryStateEnum::DISPATCHED)
         ->and($stockDelivery->is_costed)->toBeFalse();
+    actingAs($this->adminGuest->getUser());
 });
 
 test('an agent opens a shipment that goes as a full container, LCL, by air or as a parcel, and its pages call them shipments (HELP-4292)', function () {

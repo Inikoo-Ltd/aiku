@@ -2,7 +2,7 @@
 title: Configurar la producción con tu asistente de IA
 summary: Pide al asistente de IA que conectas a aiku que cree artefactos, materias primas y tareas, fije costes unitarios, y dé a un artefacto, a una lista o a familias enteras sus pasos de fabricación e ingredientes. Siempre te muestra el cambio primero, y todos los cambios se pueden deshacer.
 date: 2026-11-03
-source_date: 2026-10-08
+source_date: 2026-11-03
 tags: production, crafts, ai
 category: production
 ---

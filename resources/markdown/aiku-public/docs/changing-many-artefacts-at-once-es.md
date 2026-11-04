@@ -2,7 +2,7 @@
 title: Cambiar muchos artefactos a la vez
 summary: Marca los artefactos y usa el selector a la derecha de la barra que aparece para fijar un tamaño de lote o una vida útil, darles a todos los mismos pasos de fabricación, moverlos a otra familia o departamento, discontinuarlos, o recuperarlos.
 date: 2026-11-03
-source_date: 2026-10-08
+source_date: 2026-11-03
 tags: production, crafts
 category: production
 ---

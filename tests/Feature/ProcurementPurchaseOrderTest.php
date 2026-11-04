@@ -3996,7 +3996,10 @@ test('the agent asks the organisation about a new supplier price and confirms on
     actingAs($agentUser);
     $this->patch($confirmRoute)->assertSessionHasNoErrors();
     expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
-    $this->post($askRoute, ['unit_cost' => $oldUnitCost + 5])->assertSessionHasErrors('unit_cost');
+    $this->post($askRoute, ['unit_cost' => $oldUnitCost + 5])->assertSessionHasNoErrors();
+    expect($line->refresh()->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::PENDING);
+    $order->updateQuietly(['production_started_at' => now()]);
+    $this->post($askRoute, ['unit_cost' => $oldUnitCost + 6])->assertSessionHasErrors('unit_cost');
     actingAs($this->adminGuest->getUser());
 });
 

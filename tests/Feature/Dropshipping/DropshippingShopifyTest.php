@@ -1766,7 +1766,7 @@ test('a store missing the shipping scope is sent by the retina notice straight t
 
     Config::set('inertia.pages.paths', [resource_path('js/Pages/Retina')]);
     DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
-    actingAs(createWebUser($channel->customer), 'retina');
+    actingAs(StoreWebUser::make()->action($channel->customer, ['username' => 'missing-scope', 'email' => 'missing-scope@testmail.com', 'password' => 'test']), 'retina');
 
     $this->get(route('retina.dropshipping.customer_sales_channels.show', $channel->slug))
         ->assertOk()
