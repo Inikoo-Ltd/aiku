@@ -90,7 +90,7 @@ const nobodyWaiting = (): Waiting => ({ sessions: 0, oldest_at: null, url: null,
 export const chatsWaiting = ref<Waiting>(nobodyWaiting())
 export const emailsWaiting = ref<Waiting>(nobodyWaiting())
 export const channelsWaiting = ref<Record<"website" | "whatsapp" | "email", WaitingSpan> | null>(null)
-export const customerPeek = ref<{ key: string; channel: string; shop: string | null; language: string | null; isEmail: boolean; sender: string; subject: string | null; text: string; url: string | null } | null>(null)
+export const customerPeek = ref<{ key: string; channel: string; channelKey: string; shop: string | null; language: string | null; sender: string; subject: string | null; text: string; url: string | null } | null>(null)
 export const desktopAlerts = ref<NotificationPermission | "unsupported">(typeof Notification === "undefined" ? "unsupported" : Notification.permission)
 export const soundBlocked = ref(false)
 
@@ -540,9 +540,9 @@ export const startWorkAlerts = (staff: StaffAlertSource) => {
 			customerPeek.value = {
 				key: `${message.channel}:${message.id}`,
 				channel: channelLabel(message.channel),
+				channelKey: message.channel,
 				shop: message.shop_code ?? null,
 				language: message.language ?? null,
-				isEmail: message.channel === "email",
 				sender: message.sender_name,
 				subject: message.subject ?? null,
 				text: message.text ?? "",
@@ -748,7 +748,7 @@ export const previewAlertPopup = (kind: AlertPopupPreview) => {
 			customerPeek.value = {
 				key: `preview:${Date.now()}`,
 				channel: ctrans("Chat"),
-				isEmail: false,
+				channelKey: "website",
 				sender: ctrans("Sample customer"),
 				subject: null,
 				text: ctrans("Hi, where is my order?"),

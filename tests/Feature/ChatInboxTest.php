@@ -2255,3 +2255,47 @@ test('the inbox speed measured in the browser is stored for the person who waite
 
     expect(DB::table('chat_inbox_timings')->where('id', '>', $before)->count())->toBe(8);
 });
+
+test('a colleague searching their own list finds the conversations somebody else on the shop dealt with', function () {
+    setPermissionsTeamId($this->user->group_id);
+    \Illuminate\Support\Facades\Http::fake();
+    config(['scout.driver' => 'collection']);
+
+    $clerk = function () {
+        $user = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+        $user->assignRole(RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $this->shop));
+
+        return [$user, ChatAgent::create(['user_id' => $user->id, 'max_concurrent_chats' => 10])];
+    };
+
+    [, $holderProfile] = $clerk();
+    [$colleague]       = $clerk();
+    $outsider          = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    ChatAgent::create(['user_id' => $outsider->id, 'max_concurrent_chats' => 10]);
+
+    $term = 'quokka'.Str::lower(Str::random(6));
+
+    $closedEmail = noiseTestEmailSession($this->shop, 'closed@example.com', 'Refund', "Refund for $term please");
+    $closedEmail->update(['status' => ChatSessionStatusEnum::CLOSED, 'closed_at' => now()->subDays(3)]);
+    $closedEmail->assignments()->create(['chat_agent_id' => $holderProfile->id, 'status' => ChatAssignmentStatusEnum::RESOLVED->value, 'assigned_by' => ChatAssignmentAssignedByEnum::AGENT->value, 'assigned_at' => now()->subDays(4)]);
+
+    $heldEmail = noiseTestEmailSession($this->shop, 'held@example.com', 'Order', "Where is $term");
+    $heldEmail->update(['status' => ChatSessionStatusEnum::ACTIVE, 'last_agent_message_at' => now()->addMinute()]);
+    $heldEmail->assignments()->create(['chat_agent_id' => $holderProfile->id, 'status' => ChatAssignmentStatusEnum::ACTIVE->value, 'assigned_by' => ChatAssignmentAssignedByEnum::AGENT->value, 'assigned_at' => now()]);
+
+    $heldWhatsapp = noiseTestWhatsappSession($this->shop, '+4475000'.random_int(10000, 99999), "Hi about $term");
+    $heldWhatsapp->update(['status' => ChatSessionStatusEnum::ACTIVE, 'last_agent_message_at' => now()->addMinute()]);
+    $heldWhatsapp->assignments()->create(['meta_channel_id' => $heldWhatsapp->meta_channel_id, 'chat_agent_id' => $holderProfile->id, 'status' => ChatAssignmentStatusEnum::ACTIVE->value, 'assigned_by' => ChatAssignmentAssignedByEnum::AGENT->value, 'assigned_at' => now()]);
+
+    $searchedBy = fn (string $action, User $user) => collect($action::make()->handle([
+        'statuses'       => ['waiting', 'active', 'closed'],
+        'closed_period'  => 'all',
+        'assigned_to_me' => $user->id,
+        'search'         => $term,
+    ])->items())->pluck('id')->all();
+
+    expect($searchedBy(GetChatSessions::class, $colleague))->toEqualCanonicalizing([$closedEmail->id, $heldEmail->id])
+        ->and($searchedBy(GetMetaChatSessions::class, $colleague))->toBe([$heldWhatsapp->id])
+        ->and($searchedBy(GetChatSessions::class, $outsider))->toBe([])
+        ->and($searchedBy(GetMetaChatSessions::class, $outsider))->toBe([]);
+});
