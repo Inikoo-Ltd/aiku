@@ -28,6 +28,7 @@ class GetWebBlockCollections
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['collection']['data']['fieldValue'] ?? []);
+        data_set($webBlock, 'uses_website_layout', true);
         data_set($webBlock, 'web_block.layout.data.fieldValue.collections', WebBlockCollectionResource::collection($this->getCollections($webpage))->toArray(request()));
 
         return $webBlock;

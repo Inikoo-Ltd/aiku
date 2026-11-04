@@ -82,6 +82,24 @@ const collectStyleTargets = (forms: any[], parentPath: string[] = [], inButton =
 	return targets
 }
 
+const MAIN_CONTAINER_TEXT = [...MAIN_CONTAINER, "text"]
+
+const isOnMainContainer = (target: StyleTarget) =>
+	!target.isButton &&
+	target.path.length === 3 &&
+	target.path[0] === MAIN_CONTAINER[0] &&
+	target.path[1] === MAIN_CONTAINER[1] &&
+	target.path[2] !== "visibility"
+
+const withMainContainerText = (targets: StyleTarget[]): StyleTarget[] => {
+	const hasMainContainer = targets.some(isOnMainContainer)
+	const hasMainContainerText = targets.some((target) => target.path.join(".") === MAIN_CONTAINER_TEXT.join("."))
+
+	return hasMainContainer && !hasMainContainerText
+		? [...targets, { path: MAIN_CONTAINER_TEXT, type: "textProperty", isButton: false }]
+		: targets
+}
+
 interface StyleWriter {
 	changes: PageStyleChange[]
 	write: (layer: Layer, property: string, value: unknown) => void
@@ -224,7 +242,7 @@ export const applyPageStyleToBlock = (
 	const data = webBlock.web_block.layout.data
 	data.fieldValue ??= {}
 	const writer = createStyleWriter(data.fieldValue)
-	const targets = collectStyleTargets(blueprint ?? [])
+	const targets = withMainContainerText(collectStyleTargets(blueprint ?? []))
 
 	for (const field of fields) {
 		const value = get(style, field)

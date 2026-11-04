@@ -86,7 +86,7 @@ const isTrendingNow = computed(() => props.fieldValue?.settings?.products_data?.
   }" :dropdown-type="props.fieldValue?.settings?.products_data?.type">
     <!-- Title -->
     <div class="px-3 py-6 pb-2" :class="isTrendingNow ? 'text-center' : ''">
-      <div class="text-3xl font-semibold text-gray-800">
+      <div class="text-3xl font-semibold" :class="getStyles(fieldValue.container?.properties, screenType)?.color ? '' : 'text-gray-800'">
         <div v-html="fieldValue.title"></div>
       </div>
     </div>

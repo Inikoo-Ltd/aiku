@@ -180,7 +180,7 @@ watch(
 		}">
 		<!-- Header -->
 		<div class="mb-10">
-			<span :style="{ fontSize: '2rem' }" class="font-medium text-[#1d2d44]">
+			<span :style="{ fontSize: '2rem' }" class="font-medium" :class="getStyles(modelValue.container?.properties, screenType)?.color ? '' : 'text-[#1d2d44]'">
 				{{ ctrans("All") }}
 				{{
 					modelValue?.product_category_title || modelValue?.department?.name || "famlies"

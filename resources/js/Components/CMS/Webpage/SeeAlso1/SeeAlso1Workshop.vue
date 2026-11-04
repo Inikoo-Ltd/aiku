@@ -82,7 +82,7 @@ const isTrendingNow = computed(() => props.modelValue?.settings?.products_data?.
   }" :dropdown-type="props.modelValue?.settings?.products_data?.type">
     <!-- Title -->
     <div class="px-4 py-6 pb-2" :class="isTrendingNow ? 'text-center' : ''">
-      <div class="text-3xl font-semibold text-gray-800">
+      <div class="text-3xl font-semibold" :class="getStyles(modelValue.container?.properties, screenType)?.color ? '' : 'text-gray-800'">
         <EditorV2 v-model="modelValue.title" @focus="() => {
           sendMessageToParent('activeBlock', indexBlock)
         }" @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{

@@ -12,6 +12,7 @@ use App\Actions\Helpers\Ticket\ClassifyTicket;
 use App\Actions\Helpers\Ticket\RateTicket;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Helpers\Ticket\StoreTicketComment;
+use App\Actions\Helpers\Ticket\UI\ShowTicketsDashboard;
 use App\Actions\Helpers\Ticket\UI\ShowTicketsReports;
 use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Actions\Search\SearchTickets;
@@ -30,6 +31,8 @@ use App\Models\SysAdmin\Guest;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Database\Eloquent\Builder;
 use App\Notifications\TicketNotification;
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Events\BroadcastTicketBadgeUpdate;
@@ -943,6 +946,107 @@ test('the tickets reports load every avatar with its people instead of one perso
     $people->each(fn (User $person) => expect($avatarOf($report['assignees'], 'username', $person->username))->not->toBeNull()
         ->and($avatarOf($report['resolvers'], 'username', $person->username))->not->toBeNull()
         ->and($avatarOf($report['reporters'], 'key', "User-$person->id"))->not->toBeNull());
+});
+
+test('the tickets overview counts every tile, QA check and status in one query', function () {
+    Notification::fake();
+    $this->freezeTime();
+
+    $ticketIn = function (string $subject, array $state) {
+        $ticket = StoreTicket::make()->action($this->group, ['subject' => $subject]);
+        Ticket::whereKey($ticket->id)->update($state);
+    };
+    $ticketIn('Overview in progress', ['status' => TicketStatusEnum::IN_PROGRESS]);
+    $ticketIn('Overview waiting', ['status' => TicketStatusEnum::WAITING]);
+    $ticketIn('Overview passed', ['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::PASSED, 'resolved_at' => now()->subHours(5)]);
+    $ticketIn('Overview failed', ['status' => TicketStatusEnum::RESOLVED, 'qa_status' => TicketQaStatusEnum::FAILED, 'resolved_at' => now()->subHours(3)]);
+    $ticketIn('Overview to check', ['status' => TicketStatusEnum::PENDING_DEPLOY, 'qa_status' => TicketQaStatusEnum::REQUESTED]);
+    $ticketIn('Overview resolved last week', ['status' => TicketStatusEnum::RESOLVED, 'created_at' => now()->subWeeks(2), 'resolved_at' => now()->subDays(10)]);
+
+    $aggregates = 0;
+    DB::listen(function ($query) use (&$aggregates) {
+        if (str_contains($query->sql, 'count(') || str_contains($query->sql, 'percentile_cont')) {
+            $aggregates++;
+        }
+    });
+
+    $overview           = ShowTicketsDashboard::make()->handle($this->group, $this->user);
+    $overviewAggregates = $aggregates;
+
+    $tickets      = fn (): Builder => Ticket::where('group_id', $this->group->id);
+    $openStatuses = [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY];
+    $qaDone       = fn (): Builder => $tickets()->visibleTo($this->user)->whereIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY]);
+    $median       = $tickets()->where('resolved_at', '>=', now()->subMonth())
+        ->selectRaw('percentile_cont(0.5) within group (order by extract(epoch from resolved_at - created_at) / 3600) as median')
+        ->value('median');
+
+    expect($overviewAggregates)->toBe(1)
+        ->and($overview['stats'])->toBe([
+            'open'         => $tickets()->whereIn('status', $openStatuses)->count(),
+            'created_week' => $tickets()->where('created_at', '>=', now()->subWeek())->count(),
+            'done_week'    => $tickets()->where('resolved_at', '>=', now()->subWeek())->count(),
+            'median_hours' => $median === null ? null : round((float) $median, 1),
+        ])
+        ->and($overview['qa_stats'])->toBe([
+            'not_checked' => $qaDone()->whereNull('qa_status')->count(),
+            'passed'      => $qaDone()->where('qa_status', TicketQaStatusEnum::PASSED)->count(),
+            'failed'      => $qaDone()->where('qa_status', TicketQaStatusEnum::FAILED)->count(),
+            'requested'   => $tickets()->visibleTo($this->user)->where('qa_status', TicketQaStatusEnum::REQUESTED)->count(),
+        ])
+        ->and(collect($overview['by_status'])->pluck('total', 'status')->all())
+        ->toBe(collect($openStatuses)->mapWithKeys(fn (TicketStatusEnum $status) => [$status->value => $tickets()->where('status', $status)->count()])->all());
+});
+
+test('a person\'s ticket badges are counted in one query', function () {
+    Notification::fake();
+    StoreTicket::make()->action($this->group, ['subject' => 'Badge mine', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    StoreTicket::make()->action($this->group, ['subject' => 'Badge for the team']);
+
+    $counts = 0;
+    DB::listen(function ($query) use (&$counts) {
+        if (str_contains($query->sql, 'count(') && str_contains($query->sql, '"tickets"')) {
+            $counts++;
+        }
+    });
+
+    $badges      = GetTicketBadgeData::run($this->user);
+    $badgeCounts = $counts;
+    $tickets     = fn (): Builder => Ticket::where('group_id', $this->group->id);
+
+    expect($badgeCounts)->toBe(1)
+        ->and(array_keys($badges['queue']))->toBe(['new_unassigned', 'overdue', 'assigned_to_me', 'collaborating', 'waiting', 'replied', 'qa_failed', 'qa_passed', 'qa_to_check'])
+        ->and($badges['mine']['to_do']['count'])->toBe($tickets()->where('reporter_type', 'User')->where('reporter_id', $this->user->id)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED])->count())
+        ->and($badges['queue']['new_unassigned']['count'])->toBe($tickets()->visibleTo($this->user)->where('status', TicketStatusEnum::OPEN)->count());
+});
+
+test('updating a ticket refreshes the badges of every engineer and QA user with a few queries each', function () {
+    Queue::fake();
+    Notification::fake();
+    setPermissionsTeamId($this->group->id);
+
+    $addEngineers = fn (int $count) => collect(range(1, $count))->each(fn () => User::factory()->create(['group_id' => $this->group->id])->assignRole('help-desk-clerk'));
+    $addEngineers(2);
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Badges for everyone', 'assignee_id' => $this->user->id]);
+
+    $queries = 0;
+    DB::listen(function () use (&$queries) {
+        $queries++;
+    });
+
+    $resolve = function () use ($ticket, &$queries) {
+        Ticket::whereKey($ticket->id)->update(['status' => TicketStatusEnum::IN_PROGRESS, 'resolved_at' => null, 'closed_at' => null]);
+        app(PermissionRegistrar::class)->forgetWildcardPermissionIndex();
+        $queries = 0;
+        $this->withHeaders(['X-Inertia' => 'true'])->patch(route('grp.models.ticket.update', $ticket->id), ['status' => TicketStatusEnum::RESOLVED->value])->assertRedirect();
+
+        return $queries;
+    };
+
+    $resolve();
+    $fewer = $resolve();
+    $addEngineers(3);
+
+    expect($resolve())->toBeLessThanOrEqual($fewer + 3 * 3);
 });
 
 test('a ticket list refetches one changed row, and a confidential ticket is not handed to someone who cannot see it', function () {

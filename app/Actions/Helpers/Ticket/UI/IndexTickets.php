@@ -10,6 +10,7 @@ namespace App\Actions\Helpers\Ticket\UI;
 
 use App\Actions\Helpers\Ticket\ApplyTicketSearch;
 use App\Actions\Helpers\Ticket\GetTicketBadgeData;
+use App\Actions\Helpers\Ticket\WithTicketCounts;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -25,7 +26,6 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
-use BackedEnum;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -42,6 +42,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexTickets extends OrgAction
 {
     use WithTicketsScope;
+    use WithTicketCounts;
 
     /**
      * @var array<string, array<string, mixed>>|null
@@ -181,37 +182,6 @@ class IndexTickets extends OrgAction
                 },
             ],
         ];
-    }
-
-    /**
-     * @param  array<string, Closure(Builder): Builder>  $conditions
-     *
-     * @return array<string, int>
-     */
-    protected function countEach(Builder $base, array $conditions): array
-    {
-        $query = (clone $base)->toBase();
-
-        foreach (array_values($conditions) as $index => $condition) {
-            $where = $condition(Ticket::query()->withoutGlobalScopes())->toBase();
-            $query->selectRaw('count(*) filter ('.$query->getGrammar()->compileWheres($where).") as count_$index", $where->getBindings());
-        }
-
-        $row = $query->first();
-
-        return collect(array_keys($conditions))->mapWithKeys(fn (string $key, int $index) => [$key => (int) $row->{"count_$index"}])->all();
-    }
-
-    /**
-     * @param  array<int, BackedEnum>  $cases
-     *
-     * @return array<string, Closure(Builder): Builder>
-     */
-    protected function conditionPerCase(string $column, array $cases): array
-    {
-        return collect($cases)->mapWithKeys(fn (BackedEnum $case) => [
-            "$column.$case->value" => fn (Builder $query) => $query->where($column, $case),
-        ])->all();
     }
 
     /**

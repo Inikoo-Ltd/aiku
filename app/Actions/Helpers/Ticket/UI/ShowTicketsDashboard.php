@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Ticket\UI;
 
+use App\Actions\Helpers\Ticket\WithTicketCounts;
 use App\Actions\OrgAction;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
@@ -30,6 +31,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowTicketsDashboard extends OrgAction
 {
     use WithTicketsScope;
+    use WithTicketCounts;
 
     private const string PRIORITY_ORDER = "CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END";
 
@@ -40,18 +42,33 @@ class ShowTicketsDashboard extends OrgAction
 
     public function handle(Group $group, User $user): array
     {
-        $base       = Ticket::where('tickets.group_id', $group->id);
-        $open       = fn (): Builder => (clone $base)->whereIn('status', [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY]);
-        $reportedBy = fn (Builder $query): Builder => $query->where('reporter_type', 'User')->where('reporter_id', $user->id);
-        $weekAgo    = now()->subWeek();
-        $monthAgo   = now()->subMonth();
-
-        $medianHours = (clone $base)->where('resolved_at', '>=', $monthAgo)
-            ->selectRaw('percentile_cont(0.5) within group (order by extract(epoch from resolved_at - created_at) / 3600) as median')
-            ->value('median');
+        $base         = Ticket::where('tickets.group_id', $group->id);
+        $openStatuses = [TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY];
+        $open         = fn (): Builder => (clone $base)->whereIn('status', $openStatuses);
+        $reportedBy   = fn (Builder $query): Builder => $query->where('reporter_type', 'User')->where('reporter_id', $user->id);
+        $weekAgo      = now()->subWeek();
+        $monthAgo     = now()->subMonth();
 
         $canManage = Ticket::canBeManagedBy($user);
         $canQa     = Ticket::canCheckQa($user);
+
+        $qaVerdictable = fn (Builder $query): Builder => $query->visibleTo($user)->whereIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY]);
+
+        $counts = $this->countEach(
+            (clone $base)->selectRaw('percentile_cont(0.5) within group (order by extract(epoch from resolved_at - created_at) / 3600) filter (where resolved_at >= ?) as median_hours', [$monthAgo]),
+            [
+                'open'         => fn (Builder $query) => $query->whereIn('status', $openStatuses),
+                'created_week' => fn (Builder $query) => $query->where('created_at', '>=', $weekAgo),
+                'done_week'    => fn (Builder $query) => $query->where('resolved_at', '>=', $weekAgo),
+                ...($canQa ? [
+                    'qa.not_checked' => fn (Builder $query) => $qaVerdictable($query)->whereNull('qa_status'),
+                    'qa.passed'      => fn (Builder $query) => $qaVerdictable($query)->where('qa_status', TicketQaStatusEnum::PASSED),
+                    'qa.failed'      => fn (Builder $query) => $qaVerdictable($query)->where('qa_status', TicketQaStatusEnum::FAILED),
+                    'qa.requested'   => fn (Builder $query) => $query->visibleTo($user)->where('qa_status', TicketQaStatusEnum::REQUESTED),
+                ] : []),
+                ...($canManage ? $this->conditionPerCase('status', $openStatuses) : []),
+            ]
+        );
 
         $data = [
             'can_manage'      => $canManage,
@@ -59,10 +76,10 @@ class ShowTicketsDashboard extends OrgAction
             'mine'            => $reportedBy($open())->orderByDesc('updated_at'),
             'recently_closed' => $reportedBy((clone $base))->where('closed_at', '>=', $monthAgo)->orderByDesc('closed_at')->limit(10),
             'stats'           => [
-                'open'         => $open()->count(),
-                'created_week' => (clone $base)->where('created_at', '>=', $weekAgo)->count(),
-                'done_week'    => (clone $base)->where('resolved_at', '>=', $weekAgo)->count(),
-                'median_hours' => $medianHours === null ? null : round((float) $medianHours, 1),
+                'open'         => $counts['open'],
+                'created_week' => $counts['created_week'],
+                'done_week'    => $counts['done_week'],
+                'median_hours' => $counts['median_hours'] === null ? null : round((float) $counts['median_hours'], 1),
             ],
         ];
 
@@ -76,31 +93,26 @@ class ShowTicketsDashboard extends OrgAction
                ticket as "not checked" made the number large enough to say nothing. The urgent
                count stays on every status, because it is the length of the queue listed below it
                and the two disagreeing would be worse. */
-            $qaBase   = fn (): Builder => (clone $base)->visibleTo($user)->whereIn('status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY]);
-            $qaUrgent = fn (): Builder => (clone $base)->visibleTo($user);
-
             $data['qa_stats'] = [
-                'not_checked' => $qaBase()->whereNull('qa_status')->count(),
-                'passed'      => $qaBase()->where('qa_status', TicketQaStatusEnum::PASSED)->count(),
-                'failed'      => $qaBase()->where('qa_status', TicketQaStatusEnum::FAILED)->count(),
-                'requested'   => $qaUrgent()->where('qa_status', TicketQaStatusEnum::REQUESTED)->count(),
+                'not_checked' => $counts['qa.not_checked'],
+                'passed'      => $counts['qa.passed'],
+                'failed'      => $counts['qa.failed'],
+                'requested'   => $counts['qa.requested'],
             ];
 
-            $data['qa_checking'] = $qaUrgent()->where('qa_status', TicketQaStatusEnum::CHECKING)->orderByDesc('updated_at');
+            $data['qa_checking'] = (clone $base)->visibleTo($user)->where('qa_status', TicketQaStatusEnum::CHECKING)->orderByDesc('updated_at');
         }
 
         if ($canManage) {
-            $byStatus = $open()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
-
             $data['queue']       = (clone $base)->where('status', TicketStatusEnum::OPEN)->visibleTo($user)->orderByRaw(self::PRIORITY_ORDER)->orderBy('created_at')->limit(100);
             $data['assigned']    = $open()->where('assignee_id', $user->id)->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at');
             $data['collaborating'] = $open()->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->orderByRaw(self::PRIORITY_ORDER)->orderByDesc('updated_at');
             $data['waiting_due'] = (clone $base)->where('status', TicketStatusEnum::WAITING)->visibleTo($user)->where('waiting_until', '<=', now()->addDay())->orderBy('waiting_until');
-            $data['by_status']   = collect([TicketStatusEnum::OPEN, TicketStatusEnum::ASSIGNED, TicketStatusEnum::IN_PROGRESS, TicketStatusEnum::WAITING, TicketStatusEnum::ANSWERED, TicketStatusEnum::PENDING_DEPLOY])->map(fn (TicketStatusEnum $status) => [
+            $data['by_status']   = collect($openStatuses)->map(fn (TicketStatusEnum $status) => [
                 'status' => $status->value,
                 'label'  => TicketStatusEnum::labels()[$status->value],
                 'icon'   => TicketStatusEnum::stateIcon()[$status->value],
-                'total'  => (int) ($byStatus[$status->value] ?? 0),
+                'total'  => $counts["status.$status->value"],
             ])->values()->all();
         }
 

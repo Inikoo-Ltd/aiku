@@ -11,7 +11,7 @@ import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import FontNotFor from '@/Components/Workshop/Properties/FontNotFor.vue'
 import { fontsForCurrentShop } from '@/Composables/useFont'
-import { ctrans } from '@/Composables/useTrans'
+import { ctrans, ctransChoice } from '@/Composables/useTrans'
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
 import {
     applyPageStyleToBlock,
@@ -186,7 +186,7 @@ const websiteLayoutBlockCount = computed(() =>
         </p>
 
         <p v-if="websiteLayoutBlockCount" class="rounded-md border border-amber-200 bg-amber-50 p-2 leading-snug text-amber-800">
-            {{ ctrans(':count blocks on this page follow the website template and are not changed here. Change them in the website layout.', { count: websiteLayoutBlockCount }) }}
+            {{ ctransChoice(':count block on this page follows the website template and is not changed here. Change it in the website layout.|:count blocks on this page follow the website template and are not changed here. Change them in the website layout.', websiteLayoutBlockCount) }}
         </p>
 
         <section>
