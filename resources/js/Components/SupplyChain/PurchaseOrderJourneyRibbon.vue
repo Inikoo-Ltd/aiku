@@ -7,9 +7,9 @@ import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle } from "@fal"
+import { faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser } from "@fal"
 
-library.add(faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle)
+library.add(faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser)
 
 export interface JourneySegment {
     key: string
@@ -38,6 +38,7 @@ export interface JourneyRibbon {
     supplier_company: string | null
     supplier_nickname: string | null
     agent_name: string | null
+    agent_slug: string | null
     placed_by: string | null
     journey: "agent" | "supplier" | "partner"
     parent_code: string | null
@@ -70,9 +71,18 @@ const emit = defineEmits<{ mark: [ribbon: JourneyRibbon, segment: JourneySegment
 const isOpen = ref(props.expandAll)
 watch(() => props.expandAll, (value) => (isOpen.value = value))
 
+function toggleFromDetails(event: MouseEvent): void {
+    if ((event.target as HTMLElement).closest("a, button") || window.getSelection()?.toString()) {
+        return
+    }
+    isOpen.value = !isOpen.value
+}
+
 const segmentsByKey = computed(() => Object.fromEntries(props.ribbon.segments.map((segment) => [segment.key, segment])))
 
 const journeyIcon = { agent: "fal fa-user-tie", supplier: "fal fa-industry-alt", partner: "fal fa-building" }
+
+const journeyLabel = { agent: ctrans("Agent"), supplier: ctrans("Direct supplier"), partner: ctrans("Inter-company") }
 
 const isCurrent = (segment: JourneySegment) => ["on_track", "at_risk", "overdue"].includes(segment.state)
 
@@ -193,26 +203,44 @@ function isMarkable(segment: JourneySegment): boolean {
 <template>
     <tbody class="border-b border-gray-100 last:border-0">
         <tr>
-            <td class="min-w-[17rem] max-w-[22rem] py-2 pl-2 pr-3 align-middle">
+            <td class="min-w-[17rem] max-w-[22rem] cursor-pointer py-2 pl-2 pr-3 align-middle" @click="toggleFromDetails">
                 <div class="flex items-start gap-1.5">
                     <button
                         type="button"
-                        class="mt-0.5 shrink-0 rounded p-0.5 text-gray-400 hover:text-gray-700"
+                        class="shrink-0 self-center rounded p-0.5 text-gray-400 hover:text-gray-700"
                         :aria-expanded="isOpen"
                         :aria-label="isOpen ? ctrans('Hide details') : ctrans('Show details')"
                         @click="isOpen = !isOpen">
                         <FontAwesomeIcon icon="fal fa-chevron-right" class="transition-transform" :class="{ 'rotate-90': isOpen }" fixed-width aria-hidden="true" />
                     </button>
-                    <div class="min-w-0 flex-1 text-xs text-gray-600">
-                        <div class="flex items-center gap-1.5">
-                            <FontAwesomeIcon :icon="journeyIcon[ribbon.journey]" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
-                            <span class="text-sm font-semibold leading-snug text-gray-900" :title="ribbon.parent_code ?? ''">{{ ribbon.supplier_company ?? ribbon.parent_name ?? ribbon.parent_code }}</span>
+                    <div class="min-w-0 flex-1 space-y-1 text-xs text-gray-600">
+                        <div class="flex items-center gap-1.5 pb-1.5">
+                            <FontAwesomeIcon v-tooltip="journeyLabel[ribbon.journey]" :icon="journeyIcon[ribbon.journey]" class="shrink-0 text-gray-600" fixed-width aria-hidden="true" />
+                            <span class="min-w-0 text-sm font-semibold leading-snug text-gray-900" :title="ribbon.parent_code ?? ''">{{ ribbon.supplier_company ?? ribbon.parent_name ?? ribbon.parent_code }}</span>
+                            <span class="ml-auto flex shrink-0 flex-col items-end gap-0.5">
+                                <span class="whitespace-nowrap text-sm font-semibold text-gray-700" :title="ribbon.amount !== null ? amount(ribbon.amount, ribbon.currency_code, 2) : ''">
+                                    {{ ribbon.amount_grp !== null ? amount(ribbon.amount_grp, groupCurrency) : amount(ribbon.amount, ribbon.currency_code) }}
+                                </span>
+                                <span class="whitespace-nowrap rounded border border-gray-200 px-1.5 text-gray-600" :title="ctrans('Calendar days since the order was created (Day Zero)')">
+                                    {{ ctrans("Age") }} {{ zDay(new Date().toISOString()) }}
+                                </span>
+                            </span>
                         </div>
-                        <div>{{ ribbon.placed_by ? ctrans("Placed by :name", { name: ribbon.placed_by }) : ctrans("Placed by unknown") }}</div>
-                        <div :title="ribbon.organisation_code">{{ ctrans("For :organisation", { organisation: ribbon.organisation_name }) }}</div>
-                        <div v-if="ribbon.agent_name">{{ ctrans("Agent :agent", { agent: ribbon.agent_name }) }}</div>
+                        <div class="flex flex-wrap items-center gap-x-1">
+                            <span class="flex items-center gap-1">
+                                <FontAwesomeIcon v-tooltip="ctrans('Placed by')" icon="fal fa-user" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+                                {{ ribbon.placed_by ?? ctrans("Unknown") }}
+                            </span>
+                            <span class="text-gray-400">·</span>
+                            <span :title="ribbon.organisation_code">{{ ctrans("for :organisation", { organisation: ribbon.organisation_name }) }}</span>
+                        </div>
+                        <div v-if="ribbon.agent_name" class="flex items-center gap-1">
+                            <FontAwesomeIcon v-tooltip="ctrans('Agent')" icon="fal fa-people-arrows" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+                            <Link :href="route('grp.supply-chain.agents.show', { agent: ribbon.agent_slug! })" class="hover:text-gray-900 hover:underline">{{ ribbon.agent_name }}</Link>
+                        </div>
                         <div v-if="ribbon.supplier_nickname" class="text-gray-500">{{ ctrans("Nickname :nickname", { nickname: ribbon.supplier_nickname }) }}</div>
-                        <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1">
+                            <FontAwesomeIcon v-tooltip="ctrans('Purchase order')" icon="fal fa-clipboard-list" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
                             <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="min-w-0 truncate whitespace-nowrap text-gray-600 hover:underline" :title="ribbon.reference">
                                 {{ ribbon.reference }}
                             </Link>
@@ -223,14 +251,6 @@ function isMarkable(segment: JourneySegment): boolean {
                                 :class="ribbon.type === 'npo' ? 'text-gray-700' : 'text-gray-400'"
                                 fixed-width
                                 aria-hidden="true" />
-                        </div>
-                    </div>
-                    <div class="shrink-0 text-right text-xs">
-                        <div class="whitespace-nowrap font-semibold text-gray-700" :title="ribbon.amount !== null ? amount(ribbon.amount, ribbon.currency_code, 2) : ''">
-                            {{ ribbon.amount_grp !== null ? amount(ribbon.amount_grp, groupCurrency) : amount(ribbon.amount, ribbon.currency_code) }}
-                        </div>
-                        <div class="mt-0.5 inline-block whitespace-nowrap rounded border border-gray-200 px-1.5 text-gray-600" :title="ctrans('Calendar days since the order was created (Day Zero)')">
-                            {{ ctrans("Age") }} {{ zDay(new Date().toISOString()) }}
                         </div>
                     </div>
                 </div>
