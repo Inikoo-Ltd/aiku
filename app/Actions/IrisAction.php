@@ -17,6 +17,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
@@ -59,6 +60,19 @@ class IrisAction
         $this->validatedData = $this->validateAttributes();
 
         return $this;
+    }
+
+    /**
+     * Canonical url of a webpage of this website. Its shop is this website's shop, so the
+     * shop is not loaded per webpage (only the local environment reads it, to swap the domain).
+     */
+    protected function canonicalUrl(?Webpage $webpage): ?string
+    {
+        if (!$webpage) {
+            return null;
+        }
+
+        return Webpage::canonicalUrlForEnvironment($webpage->canonical_url, fn () => $this->shop->type);
     }
 
     /**

@@ -19,21 +19,23 @@ class GetPictureSources
 
     public function handle(Image $image): array
     {
+        $imgProxyUrl = GetImgProxyUrl::make();
+
         $sources = [
-            'original' => GetImgProxyUrl::run($image)
+            'original' => $imgProxyUrl->handle($image)
         ];
 
 
         if (in_array('avif', config('img-proxy.formats')) && !$image->is_animated) {
-            $sources['avif'] = GetImgProxyUrl::run($image->extension('avif'));
+            $sources['avif'] = $imgProxyUrl->handle($image->extension('avif'));
         }
 
         if (in_array('webp', config('img-proxy.formats'))) {
-            $sources['webp'] = GetImgProxyUrl::run($image->extension('webp'));
+            $sources['webp'] = $imgProxyUrl->handle($image->extension('webp'));
         }
 
         if (in_array('png', config('img-proxy.formats'))) {
-            $sources['png'] = GetImgProxyUrl::run($image->extension('png'));
+            $sources['png'] = $imgProxyUrl->handle($image->extension('png'));
         }
 
 
@@ -44,18 +46,18 @@ class GetPictureSources
             );
 
             if (Arr::has($sources, 'avif')) {
-                $sources['avif_2x']     = GetImgProxyUrl::run($image_2x->extension('avif'));
+                $sources['avif_2x']     = $imgProxyUrl->handle($image_2x->extension('avif'));
             }
 
             if (Arr::has($sources, 'webp')) {
-                $sources['webp_2x']     = GetImgProxyUrl::run($image_2x->extension('webp'));
+                $sources['webp_2x']     = $imgProxyUrl->handle($image_2x->extension('webp'));
             }
 
             if (Arr::has($sources, 'png')) {
-                $sources['png_2x']     = GetImgProxyUrl::run($image_2x->extension('png'));
+                $sources['png_2x']     = $imgProxyUrl->handle($image_2x->extension('png'));
             }
 
-            $sources['original_2x'] = GetImgProxyUrl::run($image_2x->extension(null));
+            $sources['original_2x'] = $imgProxyUrl->handle($image_2x->extension(null));
         }
 
         return $sources;

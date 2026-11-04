@@ -39,7 +39,7 @@ trait WithIrisSearchEnrichedItems
 
         $models = $modelClass::query()
             ->whereIn('id', $ids)
-            ->with(['webpage' => fn ($query) => $query->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE)->with('shop'), 'image'])
+            ->with(['webpage' => fn ($query) => $query->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE), 'image'])
             ->get()
             ->keyBy('id');
 
@@ -54,7 +54,7 @@ trait WithIrisSearchEnrichedItems
         $listed   = [];
         foreach ($items as $item) {
             $model = $models->get($item['id']);
-            $url   = $model?->webpage?->getCanonicalUrl();
+            $url   = $this->canonicalUrl($model?->webpage);
             if (!$url || !$model->is_in_website) {
                 continue;
             }

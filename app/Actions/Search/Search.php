@@ -35,6 +35,12 @@ class Search extends OrgAction
     protected const array WAREHOUSE_SCOPES = ['inventory', 'dispatching', 'locations'];
     protected const array PRODUCTION_SCOPES = ['production'];
 
+    /**
+     * Results filtered by who is looking (confidential tickets, internal notes). The short-query
+     * cache key does not carry the user, so these scopes are never served from it.
+     */
+    protected const array VIEWER_DEPENDENT_SCOPES = ['tickets'];
+
 
     public function handle(string $scope, string $query, array $options = []): array
     {
@@ -78,7 +84,7 @@ class Search extends OrgAction
             return [];
         }
 
-        if (mb_strlen($query) <= 2) {
+        if (mb_strlen($query) <= 3 && !in_array($scope, self::VIEWER_DEPENDENT_SCOPES, true)) {
             $cacheKey = 'search:'.$scope.':'.md5(json_encode($options)).':'.mb_strtolower($query);
 
             $results = cache()->remember($cacheKey, 30, $actions[$scope]);
