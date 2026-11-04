@@ -197,6 +197,7 @@ class UpdateSupplier extends OrgAction
             'contact_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'name'            => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'           => ['sometimes', 'nullable', 'email'],
             'phone'           => ['sometimes', 'nullable', new Phone()],
             'wechat'          => ['sometimes', 'nullable', 'string', 'max:255'],

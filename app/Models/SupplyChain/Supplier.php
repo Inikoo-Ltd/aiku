@@ -189,15 +189,34 @@ class Supplier extends Model implements HasMedia, Auditable
     {
         static::creating(
             function (Supplier $supplier) {
-                $supplier->name = $supplier->company_name == '' ? $supplier->contact_name : $supplier->company_name;
+                $supplier->name = self::nameFromContact($supplier->company_name, $supplier->contact_name);
             }
         );
 
         static::updating(function (Supplier $supplier) {
-            if ($supplier->isDirty(['contact_name', 'company_name'])) {
-                $supplier->name = $supplier->company_name == '' ? $supplier->contact_name : $supplier->company_name;
+            if ($supplier->isDirty('name')) {
+                if (blank($supplier->name)) {
+                    $supplier->name = self::nameFromContact($supplier->company_name, $supplier->contact_name);
+                }
+
+                return;
+            }
+
+            $hadNickname = $supplier->getOriginal('name') !== self::nameFromContact($supplier->getOriginal('company_name'), $supplier->getOriginal('contact_name'));
+            if (!$hadNickname && $supplier->isDirty(['contact_name', 'company_name'])) {
+                $supplier->name = self::nameFromContact($supplier->company_name, $supplier->contact_name);
             }
         });
+    }
+
+    public static function nameFromContact(?string $companyName, ?string $contactName): ?string
+    {
+        return $companyName == '' ? $contactName : $companyName;
+    }
+
+    public function nickname(): ?string
+    {
+        return $this->name !== self::nameFromContact($this->company_name, $this->contact_name) ? $this->name : null;
     }
 
     public function getSlugOptions(): SlugOptions

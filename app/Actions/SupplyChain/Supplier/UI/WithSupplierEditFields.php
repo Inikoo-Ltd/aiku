@@ -41,6 +41,12 @@ trait WithSupplierEditFields
                         'label' => __('Company'),
                         'value' => $supplier->company_name
                     ],
+                    'name'         => [
+                        'type'        => 'input',
+                        'label'       => __('Nickname'),
+                        'information' => __('The name we use for this supplier. Leave it empty to use the company name.'),
+                        'value'       => $supplier->nickname(),
+                    ],
                     'contact_name' => [
                         'type'  => 'input',
                         'label' => __('Contact name'),
