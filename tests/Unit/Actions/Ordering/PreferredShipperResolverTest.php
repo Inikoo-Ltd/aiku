@@ -102,3 +102,18 @@ it('matches postcode prefixes ignoring spaces and case', function () {
     expect($resolver->pickPreferredShipperId($rules, 10, 'SW1A 1AA'))->toBe(1)
         ->and($resolver->pickPreferredShipperId($rules, 10, 'EC1A 1BB'))->toBeNull();
 });
+
+it('a shop or priority-only rule beats a country rule, and a lock still beats both', function () {
+    $countryRule = makeRule(shipperId: 1, countryId: 10);
+    $shopRule = makeRule(shipperId: 2);
+    $shopRule->shop_id = 7;
+    $priorityRule = makeRule(shipperId: 3);
+    $priorityRule->shop_id = 7;
+    $priorityRule->priority_only = true;
+
+    $resolver = makePreferredShipperResolver();
+
+    expect($resolver->pickPreferredShipperId(collect([$countryRule, $shopRule]), 10, ''))->toBe(2)
+        ->and($resolver->pickPreferredShipperId(collect([$countryRule, $shopRule, $priorityRule]), 10, ''))->toBe(3)
+        ->and($resolver->pickPreferredShipperId(collect([makeRule(shipperId: 4, countryId: 10, important: true), $priorityRule]), 10, ''))->toBe(4);
+});

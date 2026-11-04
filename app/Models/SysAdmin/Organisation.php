@@ -509,7 +509,7 @@ class Organisation extends Model implements HasMedia, Auditable
 
     public function preferredShippings(): HasMany
     {
-        return $this->hasMany(PreferredShipping::class)->whereNull('shop_id');
+        return $this->hasMany(PreferredShipping::class);
     }
 
     public function orderFromActiveShops(): Builder

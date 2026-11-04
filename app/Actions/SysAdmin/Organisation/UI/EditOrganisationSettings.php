@@ -379,19 +379,21 @@ class EditOrganisationSettings extends OrgAction
                                         'id'           => $preferredShipping->id,
                                         'shipper_id'   => $preferredShipping->shipper_id,
                                         'shipper_name' => $preferredShipping->shipper?->name,
+                                        'shop_id'      => $preferredShipping->shop_id,
                                         'country_id'   => $preferredShipping->country_id,
                                         'country_name' => $preferredShipping->country?->name,
                                         'postcode'     => $preferredShipping->postcode,
                                         'important'    => $preferredShipping->important,
+                                        'priority_only' => $preferredShipping->priority_only,
                                         'trade_scope'  => $preferredShipping->trade_scope,
                                     ])->all(),
                                     'options' => [
                                         'scope_shops' => $organisation->shops()
                                             ->whereNot('state', ShopStateEnum::CLOSED)
                                             ->orderBy('code')
-                                            ->get(['code', 'name', 'type'])
+                                            ->get(['id', 'code', 'name', 'type'])
                                             ->groupBy(fn ($shop) => $this->tradeScopeForShopType($shop->type))
-                                            ->map(fn ($shops) => $shops->map(fn ($shop) => ['code' => $shop->code, 'name' => $shop->name])->values()),
+                                            ->map(fn ($shops) => $shops->map(fn ($shop) => ['id' => $shop->id, 'code' => $shop->code, 'name' => $shop->name])->values()),
                                         'shippers'  => Shipper::where('organisation_id', $organisation->id)
                                             ->where(function ($query) use ($usedShipperIds) {
                                                 $query->where('status', true)->orWhereIn('id', $usedShipperIds);

@@ -746,6 +746,30 @@ test('a label the platform already bought is recorded even when a shipping rule 
     actingAsUserWithRoles($user, $originalRoles);
 })->depends('create second delivery note', 'create shipper');
 
+test('a priority-only shipping rule applies only to priority delivery notes of its shop', function (DeliveryNote $deliveryNote) {
+    $priorityShipper = StoreShipper::make()->action($this->organisation, ['code' => 'PRIO', 'name' => 'Priority Shipping', 'trade_as' => 'prio']);
+    $rule            = \App\Models\Catalogue\PreferredShipping::create([
+        'group_id'        => $deliveryNote->group_id,
+        'organisation_id' => $deliveryNote->organisation_id,
+        'shop_id'         => $deliveryNote->shop_id,
+        'shipper_id'      => $priorityShipper->id,
+        'trade_scope'     => StoreShipment::make()->tradeScopeForShopType($deliveryNote->shop->type),
+        'important'       => true,
+        'priority_only'   => true,
+    ]);
+    $wasPremium = $deliveryNote->is_premium_dispatch;
+
+    $deliveryNote->update(['is_premium_dispatch' => false]);
+    expect(StoreShipment::make()->findPreferredShippingRule($deliveryNote->refresh())?->id)->not->toBe($rule->id);
+
+    $deliveryNote->update(['is_premium_dispatch' => true]);
+    expect(StoreShipment::make()->findPreferredShippingRule($deliveryNote->refresh())?->id)->toBe($rule->id);
+
+    $deliveryNote->update(['is_premium_dispatch' => $wasPremium]);
+    $rule->delete();
+    $priorityShipper->delete();
+})->depends('create second delivery note');
+
 test('update shipment', function ($lastShipment) {
     $arrayData = [
         'reference' => 'BBB'

@@ -4,7 +4,7 @@ import { ctrans } from "@/Composables/useTrans"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import InputText from "primevue/inputtext"
-import { Select } from "primevue"
+import { Select, ToggleSwitch } from "primevue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPlus, faTrashAlt, faLock, faLockOpen, faInfoCircle, faVial, faCheck, faTimes } from "@fal"
@@ -13,10 +13,12 @@ interface PreferredShippingRow {
     id: number | null
     shipper_id: number | null
     shipper_name: string | null
+    shop_id: number | null
     country_id: number | null
     country_name: string | null
     postcode: string | null
     important: boolean
+    priority_only: boolean
     trade_scope: "b2b" | "b2c"
 }
 
@@ -26,7 +28,7 @@ const props = defineProps<{
     options: {
         shippers: { id: number; name: string; code?: string; api_shipper?: string | null }[]
         countries: Record<string, { label: string; code: string; id: number | string }>
-        scope_shops?: Record<string, { code: string; name: string }[]>
+        scope_shops?: Record<string, { id: number; code: string; name: string }[]>
     }
 }>()
 
@@ -45,7 +47,7 @@ const countryOptions = computed(() =>
 )
 
 const rows = reactive<PreferredShippingRow[]>(
-    (props.form[props.fieldName] ?? []).map((row: PreferredShippingRow) => ({ trade_scope: "b2b", ...row }))
+    (props.form[props.fieldName] ?? []).map((row: PreferredShippingRow) => ({ trade_scope: "b2b", shop_id: null, priority_only: false, ...row }))
 )
 
 // Two independent rule sets: some carriers price and label wholesale (b2b) and
@@ -58,7 +60,10 @@ const scopes = [
 // A rule with no country and no postcode is the scope's catch-all: it loses to any
 // specific rule and to the customer's choice, which is exactly what a default is.
 // The UI surfaces it as the "Default shipper" select.
-const isDefaultRow = (row: PreferredShippingRow) => !row.country_id && !row.postcode
+const isDefaultRow = (row: PreferredShippingRow) => !row.country_id && !row.postcode && !row.shop_id && !row.priority_only
+
+const shopOptions = (scope: "b2b" | "b2c") =>
+    (props.options?.scope_shops?.[scope] ?? []).map((shop) => ({ label: `${shop.code} · ${shop.name}`, value: shop.id }))
 
 // Tracked by reference, not by shape: a freshly added, still-empty rule row is also
 // wildcard-shaped and must stay in the table while it is being edited.
@@ -87,10 +92,12 @@ const setDefaultShipper = (scope: "b2b" | "b2c", shipperId: number | null) => {
             id: null,
             shipper_id: shipperId,
             shipper_name: null,
+            shop_id: null,
             country_id: null,
             country_name: null,
             postcode: "",
             important: false,
+            priority_only: false,
             trade_scope: scope,
         }
         rows.push(row)
@@ -104,9 +111,11 @@ watch(
         props.form[props.fieldName] = rows.map((row) => ({
             id: row.id,
             shipper_id: row.shipper_id,
+            shop_id: row.shop_id,
             country_id: row.country_id,
             postcode: row.postcode,
             important: row.important,
+            priority_only: row.priority_only,
             trade_scope: row.trade_scope,
         }))
     },
@@ -118,10 +127,12 @@ const addRow = (scope: "b2b" | "b2c") => {
         id: null,
         shipper_id: null,
         shipper_name: null,
+        shop_id: null,
         country_id: null,
         country_name: null,
         postcode: "",
         important: false,
+        priority_only: false,
         trade_scope: scope,
     })
 }
@@ -132,7 +143,7 @@ const removeRow = (row: PreferredShippingRow) => {
 
 const setImportant = (target: PreferredShippingRow, value: boolean) => {
     rows.forEach((row: PreferredShippingRow) => {
-        if (row.trade_scope === target.trade_scope) {
+        if (row.trade_scope === target.trade_scope && row.shop_id === target.shop_id && row.priority_only === target.priority_only) {
             row.important = row === target ? value : false
         }
     })
@@ -201,7 +212,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                     <span class="inline-flex items-center gap-2">
                         <span
                             v-if="option.is_api"
-                            class="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                            class="rounded bg-[var(--app-accent)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent-text)]"
                         >
                             API
                         </span>
@@ -211,7 +222,22 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
             </Select>
         </div>
         <DataTable :value="rowsForScope(scope.value)" class="text-sm" removableSort>
-            <Column field="country_name" :header="ctrans('Country')" style="min-width: 10rem">
+            <Column field="shop_id" :header="ctrans('Shop')">
+                <template #body="{ data }">
+                    <Select
+                        v-model="data.shop_id"
+                        filter
+                        :options="shopOptions(scope.value)"
+                        optionLabel="label"
+                        optionValue="value"
+                        :placeholder="ctrans('Any')"
+                        showClear
+                        class="w-36"
+                    />
+                </template>
+            </Column>
+
+            <Column field="country_name" :header="ctrans('Country')">
                 <template #body="{ data }">
                     <Select
                         v-model="data.country_id"
@@ -221,7 +247,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                         optionValue="value"
                         :placeholder="ctrans('Any')"
                         showClear
-                        class="w-full"
+                        class="w-48"
                     />
                 </template>
             </Column>
@@ -246,7 +272,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                             v-tooltip="ctrans('Test against a postcode')"
                             type="button"
                             :disabled="!data.postcode"
-                            class="flex-none p-2 text-[--theme-color-0] hover:bg-gray-50 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            class="flex-none p-2 text-[var(--theme-color-0)] hover:bg-gray-50 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             @click="openPostcodeTest(data)"
                         >
                             <FontAwesomeIcon :icon="faVial" fixed-width aria-hidden="true" />
@@ -264,13 +290,13 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                         optionLabel="label"
                         optionValue="value"
                         :placeholder="ctrans('Select shipper')"
-                        class="w-full"
+                        class="w-64"
                     >
                         <template #option="{ option }">
                             <span class="inline-flex items-center gap-2">
                                 <span
                                     v-if="option.is_api"
-                                    class="rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                                    class="rounded bg-[var(--app-accent)] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--app-accent-text)]"
                                 >
                                     API
                                 </span>
@@ -278,6 +304,24 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                             </span>
                         </template>
                     </Select>
+                </template>
+            </Column>
+
+            <Column field="priority_only" style="width: 6rem">
+                <template #header>
+                    <span class="inline-flex items-center gap-1 whitespace-nowrap">
+                        {{ ctrans('Priority only') }}
+                        <FontAwesomeIcon
+                            :icon="faInfoCircle"
+                            class="text-gray-400"
+                            fixed-width
+                            aria-hidden="true"
+                            v-tooltip="ctrans('On: the rule applies only to orders the customer sent with Priority dispatch, and wins over rules that are not priority only.')"
+                        />
+                    </span>
+                </template>
+                <template #body="{ data }">
+                    <ToggleSwitch v-model="data.priority_only" />
                 </template>
             </Column>
 
@@ -299,7 +343,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                         type="button"
                         class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded-full cursor-pointer transition-colors"
                         :class="data.important
-                            ? 'text-indigo-700 bg-indigo-50 border-indigo-300 hover:bg-indigo-100'
+                            ? 'text-[var(--app-accent-strong)] bg-[var(--app-accent-soft)] border-[var(--app-accent-muted)] hover:bg-[var(--app-accent-soft)]'
                             : 'text-gray-500 bg-white border-gray-300 hover:border-gray-400 hover:bg-gray-50'"
                         :aria-pressed="data.important"
                         v-tooltip="data.important ? ctrans('Forced, packer cannot change it') : ctrans('Preselected only, packer can change it')"
@@ -332,7 +376,7 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
 
         <button
             type="button"
-            class="mt-3 inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-[--theme-color-0] border border-dashed border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            class="mt-3 inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-[var(--theme-color-0)] border border-dashed border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             @click="addRow(scope.value)"
         >
             <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />

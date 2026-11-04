@@ -101,6 +101,7 @@ trait WithPreferredShipperResolver
             ->where(function ($query) use ($deliveryNote) {
                 $query->where('shop_id', $deliveryNote->shop_id)->orWhereNull('shop_id');
             })
+            ->when(!$deliveryNote->is_premium_dispatch, fn ($query) => $query->where('priority_only', false))
             ->whereHas('shipper', fn ($query) => $query->where('status', true))
             ->get();
 
@@ -122,7 +123,9 @@ trait WithPreferredShipperResolver
                     && $this->postcodeMatchesRule($postalCode, $rule->postcode)
             )
             ->sortByDesc(
-                fn (PreferredShipping $rule) => ($rule->important ? 4 : 0)
+                fn (PreferredShipping $rule) => ($rule->important ? 16 : 0)
+                    + ($rule->priority_only ? 8 : 0)
+                    + ($rule->shop_id ? 4 : 0)
                     + ($rule->postcode ? 2 : 0)
                     + ($rule->country_id ? 1 : 0)
             )
@@ -151,7 +154,7 @@ trait WithPreferredShipperResolver
 
     private function describeRuleScope(PreferredShipping $rule): string
     {
-        return collect([$rule->country?->iso3, $rule->postcode])
+        return collect([$rule->shop?->code, $rule->priority_only ? __('Priority') : null, $rule->country?->iso3, $rule->postcode])
             ->filter()
             ->implode(' ') ?: __('all destinations');
     }

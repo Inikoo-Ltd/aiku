@@ -252,14 +252,14 @@ class UpdateOrganisation extends OrgAction
         if (Arr::has($modelData, 'preferred_shipping')) {
             $preferredShippingRows = Arr::pull($modelData, 'preferred_shipping');
 
-            $importantPerScope = collect($preferredShippingRows)->where('important', true)->countBy(fn ($row) => Arr::get($row, 'trade_scope', 'b2b'));
+            $importantPerScope = collect($preferredShippingRows)->where('important', true)->countBy(fn ($row) => Arr::get($row, 'trade_scope', 'b2b').'|'.Arr::get($row, 'shop_id').'|'.(int) Arr::get($row, 'priority_only', false));
             if ($importantPerScope->max() > 1) {
                 throw ValidationException::withMessages(['preferred_shipping' => __('Only one rule per set can be marked as important')]);
             }
 
             $keptIds = [];
             foreach ($preferredShippingRows as $row) {
-                $rowData = Arr::only($row, ['shipper_id', 'country_id', 'postcode', 'important', 'trade_scope']);
+                $rowData = Arr::only($row, ['shipper_id', 'shop_id', 'country_id', 'postcode', 'important', 'priority_only', 'trade_scope']);
 
                 $preferredShipping = Arr::get($row, 'id') ? $organisation->preferredShippings()->find($row['id']) : null;
                 if ($preferredShipping) {
@@ -419,11 +419,13 @@ class UpdateOrganisation extends OrgAction
             'banned_countries.banned_list.*.billing'  => ['required', 'boolean'],
             'banned_countries.banned_list.*.delivery' => ['required', 'boolean'],
             'preferred_shipping'                      => ['sometimes', 'array'],
-            'preferred_shipping.*.id'                 => ['sometimes', 'nullable', 'integer', Rule::exists('preferred_shippings', 'id')->where('organisation_id', $this->organisation->id)->whereNull('shop_id')],
+            'preferred_shipping.*.id'                 => ['sometimes', 'nullable', 'integer', Rule::exists('preferred_shippings', 'id')->where('organisation_id', $this->organisation->id)],
+            'preferred_shipping.*.shop_id'            => ['sometimes', 'nullable', 'integer', Rule::exists('shops', 'id')->where('organisation_id', $this->organisation->id)],
             'preferred_shipping.*.shipper_id'         => ['required', 'integer', Rule::exists('shippers', 'id')->where('organisation_id', $this->organisation->id)],
             'preferred_shipping.*.country_id'         => ['sometimes', 'nullable', 'integer', Rule::exists('countries', 'id')->where('status', true)],
             'preferred_shipping.*.postcode'           => ['sometimes', 'nullable', 'string', 'max:255'],
             'preferred_shipping.*.important'          => ['sometimes', 'boolean'],
+            'preferred_shipping.*.priority_only'      => ['sometimes', 'boolean'],
             'preferred_shipping.*.trade_scope'        => ['sometimes', Rule::in(['b2b', 'b2c'])],
             'box_packing_list'                           => ['sometimes', 'boolean'],
             'box_packing_list_destinations'              => ['sometimes', 'nullable', 'array'],
