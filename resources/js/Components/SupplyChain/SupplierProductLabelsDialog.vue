@@ -6,8 +6,9 @@
 -->
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, inject, ref, watch } from "vue"
 import axios from "axios"
+import { useLocalStorage } from "@vueuse/core"
 import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import InputNumber from "primevue/inputnumber"
@@ -50,14 +51,29 @@ const visible = defineModel<boolean>("visible", { default: false })
 const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 const fullWidthPt = { pcInputText: { root: { class: "!w-full" } } }
 
+const layout: any = inject("layout", {})
+const lastUsed = useLocalStorage<{
+	level: Level
+	organisationId: number | null
+	sizes: Partial<Record<Level, string>>
+	unitContent: Record<string, boolean>
+}>(
+	`supplier-product-labels:${layout?.user?.id ?? "anonymous"}`,
+	{ level: "unit", organisationId: null, sizes: {}, unitContent: {} },
+	{ mergeDefaults: true },
+)
+
 const plan = ref<LabelsPlan | null>(null)
 const isLoading = ref(false)
 const errorMessage = ref<string | null>(null)
-const level = ref<Level>("unit")
+const level = computed({
+	get: () => lastUsed.value.level,
+	set: (chosen: Level) => { lastUsed.value.level = chosen },
+})
 const organisationId = ref<number | null>(null)
-const sizes = ref<Partial<Record<Level, string>>>({})
+const sizes = computed(() => lastUsed.value.sizes)
 const copies = ref(1)
-const unitContent = ref<Record<string, boolean>>({})
+const unitContent = computed(() => lastUsed.value.unitContent)
 const checkboxAccentClass = "[&.p-checkbox-checked_.p-checkbox-box]:!border-[var(--app-accent)] [&.p-checkbox-checked_.p-checkbox-box]:!bg-[var(--app-accent)] [&.p-checkbox-checked_.p-checkbox-icon]:!text-[var(--app-accent-text)]"
 
 const fetchPlan = async (organisation: number | null = null) => {
@@ -83,11 +99,14 @@ const fetchPlan = async (organisation: number | null = null) => {
 
 watch(visible, (isVisible) => {
 	if (isVisible) {
-		fetchPlan(organisationId.value)
+		fetchPlan(lastUsed.value.organisationId)
 	}
 })
 
-const onChangeOrganisation = (organisation: number) => fetchPlan(organisation)
+const onChangeOrganisation = (organisation: number) => {
+	lastUsed.value.organisationId = organisation
+	fetchPlan(organisation)
+}
 
 const levelOptions = computed(() => ([
 	{ label: ctrans("Unit"), value: "unit" as Level, count: countPrintable("unit") },
@@ -129,7 +148,7 @@ const printLabels = () => {
 		size: selectedSize.value,
 		copies: copies.value || 1,
 		...(level.value === "unit"
-			? Object.fromEntries(Object.entries(unitContent.value).map(([key, isOn]) => [key, isOn ? 1 : 0]))
+			? Object.fromEntries((plan.value?.unit_content ?? []).map((option) => [option.key, unitContent.value[option.key] ? 1 : 0]))
 			: {}),
 	}), "_blank")
 }
