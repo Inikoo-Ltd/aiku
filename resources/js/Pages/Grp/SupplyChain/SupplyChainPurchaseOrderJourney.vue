@@ -320,7 +320,70 @@ function saveMark(date: string | null): void {
         </template>
     </div>
 
-    <div class="mx-4 mb-6 mt-3 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="mx-4 mt-3 grid gap-4 transition-opacity lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]" :class="{ 'opacity-60': isChangingPage }">
+        <div class="rounded-lg border border-gray-200 bg-white p-3">
+            <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
+                <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />
+                {{ ctrans("Urgent blockages") }}
+            </div>
+            <button
+                v-for="blockage in blockages"
+                :key="blockage.stage"
+                type="button"
+                class="flex w-full items-center gap-3 rounded-md px-1 py-1.5 text-left hover:bg-gray-50"
+                @click="visit({ stage: blockage.stage, status: 'overdue' })">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-red-50 text-sm font-semibold text-red-600">{{ blockage.count }}</span>
+                <span class="min-w-0">
+                    <span class="block truncate text-sm text-gray-800">{{ blockage.label }}</span>
+                    <span class="block text-xs text-gray-500">{{ ctrans("up to :days days overdue", { days: blockage.max_days_overdue }) }}</span>
+                </span>
+            </button>
+            <div v-if="!blockages.length" class="text-sm text-gray-500">{{ ctrans("Nothing overdue") }}</div>
+        </div>
+
+        <div class="rounded-lg border border-gray-200 bg-white p-3 text-sm">
+            <div class="mb-2 font-semibold text-gray-800">{{ ctrans("Quick stats") }}</div>
+            <div class="grid gap-x-6 sm:grid-cols-2 xl:grid-cols-3">
+                <div class="flex items-center gap-3 py-1.5">
+                    <FontAwesomeIcon icon="fal fa-stopwatch" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Average lead time, created to placed") }}</div>
+                        <div class="font-semibold">{{ quickStats.average_lead_days !== null ? ctrans(":days days", { days: quickStats.average_lead_days }) : "—" }}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 py-1.5">
+                    <FontAwesomeIcon icon="fal fa-globe" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Average days, placed to online") }}</div>
+                        <div class="font-semibold">{{ quickStats.average_online_days != null ? ctrans(":days days", { days: quickStats.average_online_days }) : "—" }}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 py-1.5">
+                    <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Oldest open order") }}</div>
+                        <div class="font-semibold">{{ quickStats.oldest_open_days !== null ? ctrans(":days days", { days: quickStats.oldest_open_days }) : "—" }}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 py-1.5">
+                    <FontAwesomeIcon icon="fal fa-coins" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Total on order") }}</div>
+                        <div class="font-semibold">{{ money(quickStats.open_value) }}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 py-1.5">
+                    <FontAwesomeIcon icon="fal fa-calendar-check" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <div>
+                        <div class="text-xs text-gray-500">{{ ctrans("Expected to finish in 30 days") }}</div>
+                        <div class="font-semibold">{{ ctrans(":count orders", { count: quickStats.due_30_days }) }} · {{ money(quickStats.due_30_days_value) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mx-4 mb-6 mt-4">
         <div class="min-w-0">
             <div class="mb-2 flex flex-wrap items-center gap-3 text-sm text-gray-600">
                 <span class="flex items-center gap-2">
@@ -388,67 +451,6 @@ function saveMark(date: string | null): void {
                 </span>
             </div>
         </div>
-
-        <div class="grid gap-4 transition-opacity md:grid-cols-2 2xl:grid-cols-1 2xl:content-start" :class="{ 'opacity-60': isChangingPage }">
-            <div class="rounded-lg border border-gray-200 bg-white p-3">
-                <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
-                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />
-                    {{ ctrans("Urgent blockages") }}
-                </div>
-                <button
-                    v-for="blockage in blockages"
-                    :key="blockage.stage"
-                    type="button"
-                    class="flex w-full items-center gap-3 rounded-md px-1 py-1.5 text-left hover:bg-gray-50"
-                    @click="visit({ stage: blockage.stage, status: 'overdue' })">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-red-50 text-sm font-semibold text-red-600">{{ blockage.count }}</span>
-                    <span class="min-w-0">
-                        <span class="block truncate text-sm text-gray-800">{{ blockage.label }}</span>
-                        <span class="block text-xs text-gray-500">{{ ctrans("up to :days days overdue", { days: blockage.max_days_overdue }) }}</span>
-                    </span>
-                </button>
-                <div v-if="!blockages.length" class="text-sm text-gray-500">{{ ctrans("Nothing overdue") }}</div>
-            </div>
-
-            <div class="rounded-lg border border-gray-200 bg-white p-3 text-sm">
-                <div class="mb-2 font-semibold text-gray-800">{{ ctrans("Quick stats") }}</div>
-                <div class="flex items-center gap-3 py-1.5">
-                    <FontAwesomeIcon icon="fal fa-stopwatch" class="text-gray-400" fixed-width aria-hidden="true" />
-                    <div>
-                        <div class="text-xs text-gray-500">{{ ctrans("Average lead time, created to placed") }}</div>
-                        <div class="font-semibold">{{ quickStats.average_lead_days !== null ? ctrans(":days days", { days: quickStats.average_lead_days }) : "—" }}</div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 py-1.5">
-                    <FontAwesomeIcon icon="fal fa-globe" class="text-gray-400" fixed-width aria-hidden="true" />
-                    <div>
-                        <div class="text-xs text-gray-500">{{ ctrans("Average days, placed to online") }}</div>
-                        <div class="font-semibold">{{ quickStats.average_online_days != null ? ctrans(":days days", { days: quickStats.average_online_days }) : "—" }}</div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 py-1.5">
-                    <FontAwesomeIcon icon="fal fa-hourglass-half" class="text-gray-400" fixed-width aria-hidden="true" />
-                    <div>
-                        <div class="text-xs text-gray-500">{{ ctrans("Oldest open order") }}</div>
-                        <div class="font-semibold">{{ quickStats.oldest_open_days !== null ? ctrans(":days days", { days: quickStats.oldest_open_days }) : "—" }}</div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 py-1.5">
-                    <FontAwesomeIcon icon="fal fa-coins" class="text-gray-400" fixed-width aria-hidden="true" />
-                    <div>
-                        <div class="text-xs text-gray-500">{{ ctrans("Total on order") }}</div>
-                        <div class="font-semibold">{{ money(quickStats.open_value) }}</div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3 py-1.5">
-                    <FontAwesomeIcon icon="fal fa-calendar-check" class="text-gray-400" fixed-width aria-hidden="true" />
-                    <div>
-                        <div class="text-xs text-gray-500">{{ ctrans("Expected to finish in 30 days") }}</div>
-                        <div class="font-semibold">{{ ctrans(":count orders", { count: quickStats.due_30_days }) }} · {{ money(quickStats.due_30_days_value) }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     </template>
@@ -463,7 +465,19 @@ function saveMark(date: string | null): void {
         <div class="mx-4 mt-2 flex flex-wrap gap-2">
             <div v-for="skeletonFilter in [8, 9, 8, 10, 7, 18]" :key="skeletonFilter" class="h-8 rounded-md bg-gray-200" :style="{ width: skeletonFilter + 'rem' }" />
         </div>
-        <div class="mx-4 mb-6 mt-3 grid gap-4 2xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div class="mx-4 mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+            <div v-for="skeletonCard in 2" :key="skeletonCard" class="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
+                <div class="h-4 w-1/3 rounded bg-gray-200" />
+                <div v-for="skeletonLine in 4" :key="skeletonLine" class="flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-md bg-gray-200" />
+                    <div class="flex-1 space-y-1.5">
+                        <div class="h-3.5 w-2/3 rounded bg-gray-200" />
+                        <div class="h-3 w-1/2 rounded bg-gray-100" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mx-4 mb-6 mt-4">
             <div class="rounded-lg border border-gray-200 bg-white">
                 <div class="h-9 border-b border-gray-200 bg-gray-50" />
                 <div v-for="skeletonRow in 8" :key="skeletonRow" class="flex items-center gap-3 border-b border-gray-100 px-3 py-3">
@@ -473,18 +487,6 @@ function saveMark(date: string | null): void {
                     </div>
                     <div class="h-5 flex-1 rounded bg-gray-100" />
                     <div class="h-5 w-16 rounded-full bg-gray-200" />
-                </div>
-            </div>
-            <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-1 2xl:content-start">
-                <div v-for="skeletonCard in 2" :key="skeletonCard" class="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
-                    <div class="h-4 w-1/3 rounded bg-gray-200" />
-                    <div v-for="skeletonLine in 4" :key="skeletonLine" class="flex items-center gap-3">
-                        <div class="h-8 w-8 rounded-md bg-gray-200" />
-                        <div class="flex-1 space-y-1.5">
-                            <div class="h-3.5 w-2/3 rounded bg-gray-200" />
-                            <div class="h-3 w-1/2 rounded bg-gray-100" />
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
