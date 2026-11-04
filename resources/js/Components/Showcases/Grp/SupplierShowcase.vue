@@ -25,6 +25,7 @@ import {
     faMoneyBillWaveAlt,
     faPersonDolly,
     faPhone,
+    faTag,
     faTruckContainer,
     faUser
 } from '@fal'
@@ -49,6 +50,7 @@ library.add(
     faMoneyBillWaveAlt,
     faPersonDolly,
     faPhone,
+    faTag,
     faTruckContainer,
     faUser
 )
@@ -58,6 +60,7 @@ const props = defineProps<{
         contactCard: {
             created_at?: string
             company?: string
+            nickname?: string | null
             contact?: string
             location?: string[]
             email?: string
@@ -129,6 +132,15 @@ const details = computed(() =>
             label: ctrans('Company'),
             icon: 'fal fa-building',
             value: contactCard.value?.company,
+            href: null as string | null,
+            external: false,
+            copyable: true
+        },
+        {
+            key: 'nickname',
+            label: ctrans('Nickname'),
+            icon: 'fal fa-tag',
+            value: contactCard.value?.nickname,
             href: null as string | null,
             external: false,
             copyable: true

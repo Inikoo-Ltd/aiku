@@ -23,6 +23,7 @@ class GetSupplierShowcase
             'contactCard' => [
                 'created_at' => $supplier->created_at,
                 'company'    => $supplier->company_name,
+                'nickname'   => $supplier->company_name && $supplier->name !== $supplier->company_name ? $supplier->name : null,
                 'contact'    => $supplier->contact_name,
                 'website'    => $supplier->contact_website,
                 'location'   => $supplier->location,
