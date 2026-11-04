@@ -14,6 +14,7 @@ use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
@@ -76,7 +77,7 @@ class ShowSupplierPortalPreview extends OrgAction
     {
         $products = IndexSupplierPortalProducts::make();
 
-        return $products->fromRequest($supplier, null, $request->validate($products->rules()));
+        return $products->fromRequest($supplier, null, Validator::make($request->query(), $products->rules())->validate());
     }
 
     public function blocked(): never
