@@ -89,8 +89,6 @@ class ShowGroupDashboard extends OrgAction
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($group, $userSettings),
                     ],
-                    'month_target' => GetShopMonthSalesTarget::run($group, $user),
-                    'year_target'  => GetShopYearSalesTarget::run($group, $user),
                     'blocks'    => [
                         [
                             'id'          => 'sales_table',
@@ -126,6 +124,10 @@ class ShowGroupDashboard extends OrgAction
                 'title'              => __('Dashboard Group'),
                 'breadcrumbs'        => $this->getBreadcrumbs(__('Dashboard')),
                 'dashboard'          => $dashboard,
+                'salesTargets'       => Inertia::defer(fn () => [
+                    'month' => GetShopMonthSalesTarget::run($group, $user),
+                    'year'  => GetShopYearSalesTarget::run($group, $user),
+                ]),
                 'stockHistoryGroup'  => $this->getGroupStockHistoryData($group),
                 'warehouseOverview'  => Inertia::defer(fn () => GetGroupWarehouseDashboardData::run($group)),
                 'operations'         => $operations,

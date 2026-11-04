@@ -31,6 +31,10 @@ const props = defineProps<{
 	isAgentOrganisation?: boolean
 	agentPurchaseOrders?: AgentDashboardPurchaseOrdersData
 	productDevelopmentsWaiting?: ProductDevelopmentWaitingWidgetData | null
+	salesTargets?: {
+		month: InstanceType<typeof ShopMonthTarget>["$props"]["monthTarget"]
+		year: InstanceType<typeof ShopMonthTarget>["$props"]["yearTarget"]
+	} | null
 }>()
 
 const isLoadingOnTable = ref(false)
@@ -82,20 +86,21 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			<template #fallback>
 				<div class="mx-4 mt-4 space-y-4">
 					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-						<div v-for="tile in 4" :key="tile" class="h-28 animate-pulse rounded-lg bg-gray-100" />
+						<div v-for="tile in 4" :key="tile" class="skeleton h-28 rounded-lg" />
 					</div>
-					<div class="h-24 animate-pulse rounded-lg bg-gray-100" />
-					<div class="h-64 animate-pulse rounded-lg bg-gray-100" />
+					<div class="skeleton h-24 rounded-lg" />
+					<div class="skeleton h-64 rounded-lg" />
 				</div>
 			</template>
 			<AgentDashboardPurchaseOrders v-if="props.agentPurchaseOrders" class="mx-4 mt-4" :data="props.agentPurchaseOrders" />
 		</Deferred>
 		<CleanHandoverPanel v-if="props.cleanHandover" class="mx-4 mt-4" :data="props.cleanHandover" />
-		<ShopMonthTarget
-			v-if="props.dashboard?.super_blocks?.[0]?.month_target"
-			:month-target="props.dashboard.super_blocks[0].month_target"
-			:year-target="props.dashboard.super_blocks[0].year_target"
-		/>
+		<Deferred v-if="props.dashboard?.super_blocks?.length" data="salesTargets">
+			<template #fallback>
+				<div class="skeleton mx-4 mt-4 h-72 rounded-lg" aria-busy="true" />
+			</template>
+			<ShopMonthTarget v-if="props.salesTargets" :month-target="props.salesTargets.month" :year-target="props.salesTargets.year" />
+		</Deferred>
 		<KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
 			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" gutterClass="px-4" />
 		</KeepAlive>
@@ -119,7 +124,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 		/>
 		<Deferred v-if="props.productDevelopmentsWaiting !== null" data="productDevelopmentsWaiting">
 			<template #fallback>
-				<div class="mx-4 my-4 h-40 animate-pulse rounded-lg bg-gray-100" />
+				<div class="skeleton mx-4 my-4 h-40 rounded-lg" />
 			</template>
 			<ProductDevelopmentWaitingWidget v-if="props.productDevelopmentsWaiting" class="mx-4 my-4" :data="props.productDevelopmentsWaiting" />
 		</Deferred>

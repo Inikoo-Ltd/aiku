@@ -68,6 +68,10 @@ const props = defineProps<{
 		}[]
 	} | null
 	warehouseOverview?: InstanceType<typeof GroupWarehouseOverview>['$props']['overview'] | null
+	salesTargets?: {
+		month: InstanceType<typeof ShopMonthTarget>["$props"]["monthTarget"]
+		year: InstanceType<typeof ShopMonthTarget>["$props"]["yearTarget"]
+	} | null
 	operations?: { section: string; route: { name: string } } | null
 	productDevelopmentsWaiting?: ProductDevelopmentWaitingWidgetData | null
 }>()
@@ -273,25 +277,25 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 					<tbody class="divide-y divide-gray-100">
 						<tr v-for="org in stockHistoryGroup.organisations" :key="org.slug" class="hover:bg-gray-50 transition-colors">
 							<td class="px-4 py-2.5 font-medium whitespace-nowrap">
-								<Link v-if="org.routes" :href="route(org.routes.dashboard.name, org.routes.dashboard.parameters)" class="text-gray-800 hover:text-blue-600 hover:underline">
+								<Link v-if="org.routes" :href="route(org.routes.dashboard.name, org.routes.dashboard.parameters)" class="text-gray-800 hover:underline">
 									{{ org.name }}
 								</Link>
 								<span v-else class="text-gray-800">{{ org.name }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
-								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
+								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:underline">
 									{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_lpp_value)) }}
 								</Link>
 								<span v-else class="text-gray-700">{{ locale.CurrencyShort(org.currency_code, Number(org.org_stock_lpp_value)) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
-								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:text-blue-600 hover:underline">
+								<Link v-if="org.routes" :href="route(org.routes.history.name, { ...org.routes.history.parameters, tab: 'org_stocks' })" class="text-gray-700 hover:underline">
 									{{ locale.numberShort(org.number_org_stocks) }}
 								</Link>
 								<span v-else class="text-gray-700">{{ locale.numberShort(org.number_org_stocks) }}</span>
 							</td>
 							<td class="px-4 py-2.5 text-right tabular-nums whitespace-nowrap">
-								<Link v-if="org.routes" :href="route(org.routes.locations.name, org.routes.locations.parameters)" class="text-gray-700 hover:text-blue-600 hover:underline">
+								<Link v-if="org.routes" :href="route(org.routes.locations.name, org.routes.locations.parameters)" class="text-gray-700 hover:underline">
 									{{ locale.numberShort(org.number_locations) }}
 								</Link>
 								<span v-else class="text-gray-700">{{ locale.numberShort(org.number_locations) }}</span>
@@ -327,7 +331,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			<Deferred data="warehouseOverview">
 				<template #fallback>
 					<div class="px-3 sm:px-6 mb-4 grid grid-cols-1 xl:grid-cols-3 gap-4" aria-busy="true">
-						<div v-for="index in 3" :key="index" class="h-72 animate-pulse rounded-lg bg-gray-100" />
+						<div v-for="index in 3" :key="index" class="skeleton h-72 rounded-lg" />
 					</div>
 				</template>
 				<GroupWarehouseOverview v-if="warehouseOverview" :overview="warehouseOverview" />
@@ -335,11 +339,12 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 		</div>
 
 		<div v-show="currentSection === 'sales'">
-		<ShopMonthTarget
-			v-if="props.dashboard?.super_blocks?.[0]?.month_target"
-			:month-target="props.dashboard.super_blocks[0].month_target"
-			:year-target="props.dashboard.super_blocks[0].year_target"
-		/>
+		<Deferred v-if="props.dashboard?.super_blocks?.length" data="salesTargets">
+			<template #fallback>
+				<div class="skeleton mx-4 mt-4 h-72 rounded-lg" aria-busy="true" />
+			</template>
+			<ShopMonthTarget v-if="props.salesTargets" :month-target="props.salesTargets.month" :year-target="props.salesTargets.year" />
+		</Deferred>
 
 		<KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
 			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" gutterClass="px-4" />
@@ -396,7 +401,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 
 		<Deferred v-if="productDevelopmentsWaiting !== null" data="productDevelopmentsWaiting">
 			<template #fallback>
-				<div class="mx-3 my-4 h-40 animate-pulse rounded-lg bg-gray-100 sm:mx-6" />
+				<div class="skeleton mx-3 my-4 h-40 rounded-lg sm:mx-6" />
 			</template>
 			<ProductDevelopmentWaitingWidget v-if="productDevelopmentsWaiting" class="mx-3 my-4 sm:mx-6" :data="productDevelopmentsWaiting" />
 		</Deferred>

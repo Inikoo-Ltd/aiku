@@ -55,6 +55,8 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Helpers\ImgProxy\Image;
 use App\Models\Analytics\AikuScopedSection;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
+use Laravel\Sanctum\Sanctum;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\DownloadPortfolioCustomerSalesChannel;
@@ -86,6 +88,7 @@ use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 
 function storeConnectedEbayUser(Customer $customer, string $name): EbayUser
 {
@@ -2002,4 +2005,91 @@ test('the queued platform check checks each new portfolio and tells the customer
     Event::assertDispatchedTimes(CloneRetinaPortfolioProgressEvent::class, 1);
     Event::assertDispatched(CloneRetinaPortfolioProgressEvent::class, fn (CloneRetinaPortfolioProgressEvent $event) => $event->userId === $webUser->id && $event->actionType === CheckNewPortfoliosInPlatform::PROGRESS_ACTION_TYPE
         && $event->actionId === $channel->id && $event->total === 2 && $event->done === 2 && $event->numberFails === 0);
+});
+
+function walkApiPages(string $routeName, array $parameters): array
+{
+    $rows = [];
+    $page = 1;
+    do {
+        $response = getJson(route($routeName, [...$parameters, 'page' => $page]))->assertOk();
+        $rows     = [...$rows, ...$response->json('data')];
+        $page++;
+    } while ($page <= $response->json('meta.last_page'));
+
+    return $rows;
+}
+
+test('retina api product pages list every product of the shop once, in code order', function () {
+    $products = storeActiveProductsInFamily($this->product, 11)->map(fn (Product $product) => UpdateProduct::make()->action($product, ['status' => ProductStatusEnum::FOR_SALE]));
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->firstOrFail();
+    $channel  = StoreCustomerSalesChannel::make()->action(createOwnCustomer($this->shop, 'api-product-pages'), $platform, ['reference' => 'api_product_pages']);
+    StorePortfolio::make()->action($channel, $products[0], []);
+    Sanctum::actingAs($channel, ['retina', 'retina:read', 'retina:write']);
+
+    $expected = Product::where('shop_id', $this->shop->id)
+        ->where('is_for_sale', true)
+        ->where('status', ProductStatusEnum::FOR_SALE)
+        ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+        ->where('id', '!=', $products[0]->id)
+        ->orderBy('code')->orderBy('id')
+        ->pluck('id')
+        ->all();
+
+    $rows    = walkApiPages('retina.api.dropshipping.products.index', ['per_page' => 10, 'include' => 'family']);
+    $product = $products[1]->refresh();
+
+    expect(array_column($rows, 'id'))->toBe($expected)
+        ->and(collect($rows)->firstWhere('id', $product->id))->toBe([
+            'id'                => $product->id,
+            'slug'              => $product->slug,
+            'code'              => $product->code,
+            'image'             => Arr::get($product->web_images, 'main.gallery'),
+            'price'             => $product->price,
+            'current_stock'     => $product->available_quantity,
+            'name'              => $product->name,
+            'ean_barcode'       => $product->barcode,
+            'description'       => $product->description,
+            'description_extra' => $product->description_extra,
+            'ingredients'       => $product->marketing_ingredients,
+            'family_name'       => $product->family->name,
+            'gross_weight'      => $product->gross_weight,
+            'currency_code'     => $product->currency->code,
+            'currency_id'       => $product->currency_id,
+        ]);
+});
+
+test('retina api my products pages list every portfolio once, oldest first', function () {
+    $products = storeActiveProductsInFamily($this->product, 11);
+    $platform = $this->group->platforms()->where('type', PlatformTypeEnum::MANUAL)->firstOrFail();
+    $channel  = StoreCustomerSalesChannel::make()->action(createOwnCustomer($this->shop, 'api-my-product-pages'), $platform, ['reference' => 'api_my_product_pages']);
+    $portfolioIds = $products->map(fn (Product $product) => StorePortfolio::make()->action($channel, $product, [])->id)->sort()->values()->all();
+    Sanctum::actingAs($channel, ['retina', 'retina:read', 'retina:write']);
+
+    $rows = walkApiPages('retina.api.dropshipping.products.my_product.index', ['per_page' => 10]);
+
+    expect(array_column($rows, 'id'))->toBe($portfolioIds)
+        ->and(collect($rows)->firstWhere('id', $portfolioIds[0]))->toMatchArray([
+            'item_id'       => $products[0]->id,
+            'code'          => $products[0]->code,
+            'family_name'   => $products[0]->family->name,
+            'currency_code' => $this->shop->currency->code,
+        ]);
+});
+
+test('products added from the storefront to a platform channel are checked in the platform by a queued job, not in the request', function () {
+    Queue::fake();
+    $products = storeActiveProductsInFamily($this->product, 2);
+    $channel  = storeConnectedEbayUser($this->customer, 'test-ebay-storefront-add')->customerSalesChannel;
+    $channel->update(['can_connect_to_platform' => true]);
+
+    CheckEbayPortfolio::mock()->shouldNotReceive('handle');
+
+    StoreIrisPortfolioItemsToChannels::run(collect([$channel->refresh()]), $products->pluck('id')->all());
+
+    $newPortfolioIds = $channel->portfolios()->whereIn('item_id', $products->pluck('id'))->orderBy('id')->pluck('id')->all();
+
+    expect($newPortfolioIds)->toHaveCount(2);
+    Queue::assertPushedOn('ds', JobDecorator::class, fn (JobDecorator $job) => $job->getAction() instanceof CheckNewPortfoliosInPlatform
+        && $job->getParameters()[1] === $newPortfolioIds);
 });

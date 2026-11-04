@@ -33,6 +33,7 @@ use App\Actions\UI\Grp\Layout\GetOrganisationNavigation;
 use App\Models\Production\Production;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Inertia\DeferProp;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -91,8 +92,6 @@ class ShowOrganisationDashboard extends OrgAction
                         'data_display_type'   => $this->dashboardDataDisplayTypeSettings($userSettings),
                         'currency_type'       => $this->dashboardCurrencyTypeSettings($organisation, $userSettings),
                     ],
-                    'month_target' => GetShopMonthSalesTarget::run($organisation, $request->user()),
-                    'year_target'  => GetShopYearSalesTarget::run($organisation, $request->user()),
                     'blocks'    => [
                         [
                             'id'          => 'sales_table',
@@ -115,10 +114,13 @@ class ShowOrganisationDashboard extends OrgAction
             ]
         ];
 
-        return $this->render($organisation, $request, $dashboard);
+        return $this->render($organisation, $request, $dashboard, Inertia::defer(fn () => [
+            'month' => GetShopMonthSalesTarget::run($organisation, $request->user()),
+            'year'  => GetShopYearSalesTarget::run($organisation, $request->user()),
+        ]));
     }
 
-    private function render(Organisation $organisation, ActionRequest $request, array $dashboard): Response
+    private function render(Organisation $organisation, ActionRequest $request, array $dashboard, ?DeferProp $salesTargets = null): Response
     {
         return Inertia::render(
             'Dashboard/OrganisationDashboard',
@@ -126,6 +128,7 @@ class ShowOrganisationDashboard extends OrgAction
                 'title'         => __('Dashboard').' '.$organisation->name,
                 'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
                 'dashboard'     => $dashboard,
+                'salesTargets'  => $salesTargets,
                 'cleanHandover' => $this->getCleanHandover($organisation, $request->user()),
                 'isAgentOrganisation' => $organisation->type === OrganisationTypeEnum::AGENT,
                 'agentPurchaseOrders' => $organisation->type === OrganisationTypeEnum::AGENT ? Inertia::defer(fn () => $this->getAgentPurchaseOrders($organisation)) : null,

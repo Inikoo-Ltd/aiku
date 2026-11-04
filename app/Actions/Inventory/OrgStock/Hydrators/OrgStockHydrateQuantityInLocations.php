@@ -123,7 +123,7 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             //                'updated_at'                => now(),
             //            ]);
 
-            foreach ($orgStock->products as $product) {
+            foreach ($orgStock->products()->with(['group', 'organisation', 'shop', 'family', 'webpage', 'asset', 'orgStocks'])->get() as $product) {
                 ProductHydrateAvailableQuantity::run($product);
             }
 
