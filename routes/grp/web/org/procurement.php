@@ -65,6 +65,10 @@ use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListIte
 use App\Actions\Procurement\OrgPartner\UI\ShowOrgPartner;
 use App\Actions\Procurement\OrgPartner\UI\EditOrgPartner;
 use App\Actions\Procurement\OrgPartner\UpdateOrgPartnerCosmeticSettings;
+use App\Actions\Dispatching\PartnerShipment\UI\IndexPartnerShipments;
+use App\Actions\Dispatching\PartnerShipment\UI\CreatePartnerShipment;
+use App\Actions\Dispatching\PartnerShipment\StorePartnerShipment;
+use App\Actions\Dispatching\PartnerShipment\ExportPartnerShipmentCustomsInvoice;
 use App\Actions\Procurement\OrgSupplier\UI\CreateOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgAgentSuppliers;
@@ -239,6 +243,12 @@ Route::prefix('partners')->as('org_partners.')->group(function () {
             Route::get('{stockDelivery}', [ShowStockDelivery::class, 'inOrgPartner'])->name('show');
         });
         Route::get('rescue', IndexPartnerRescueItems::class)->name('.rescue.index');
+        Route::prefix('customs-invoices')->as('.customs_invoices.')->group(function () {
+            Route::get('', IndexPartnerShipments::class)->name('index');
+            Route::get('create', CreatePartnerShipment::class)->name('create');
+            Route::post('', StorePartnerShipment::class)->name('store');
+            Route::get('{partnerShipment}/{split}', ExportPartnerShipmentCustomsInvoice::class)->name('export')->withoutScopedBindings();
+        });
         Route::redirect('shopping-list', '/org/{organisation}/procurement/partners/{orgPartner}/ongoing-po')->name('.shopping_list.legacy');
         Route::middleware(EnsurePartnerIsManufacturingHub::class)->group(function () {
             Route::prefix('shopping')->as('.shopping.')->group(function () {

@@ -54,6 +54,17 @@ trait WithOrgPartnerSubNavigation
                 ],
             ],
             [
+                "label"    => __("Customs invoices"),
+                "route"    => [
+                    "name"       => "grp.org.procurement.org_partners.show.customs_invoices.index",
+                    "parameters" => [$parent->organisation->slug, $parent->id],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-file-invoice"],
+                    "tooltip" => __("Customs invoices for the trucks we send them"),
+                ],
+            ],
+            [
                 "align"    => "right",
                 "route"    => [
                     "name"       => "grp.org.procurement.org_partners.show.purchase-orders.index",

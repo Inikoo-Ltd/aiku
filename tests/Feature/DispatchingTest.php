@@ -7824,3 +7824,96 @@ test('delivery notes index flags export orders of uk organisations, HELP-4446', 
     $this->organisation->update(['country_id' => $originalOrganisationCountryId]);
     $deliveryNote->update(['delivery_country_id' => $originalDeliveryCountryId]);
 });
+
+test('a partner shipment makes one customs invoice per split from packed quantities of notes from any shop (HELP-4482)', function () {
+    $partnerCode  = 'PSHIP'.random_int(100, 999);
+    $partner      = \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, [
+        'code' => $partnerCode,
+        'name' => $partnerCode,
+        'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP,
+    ] + \App\Models\SysAdmin\Organisation::factory()->definition());
+    $orgPartner = \App\Models\Procurement\OrgPartner::firstOrCreate(
+        ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id, 'partner_id' => $partner->id],
+        ['status' => true],
+    );
+    $orgPartner->update(['split_cosmetics' => true]);
+
+    $notes = collect([0, 1])->map(function (int $index) use ($partner) {
+        [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
+        $deliveryNote->customer->update(['as_organisation_id' => $partner->id]);
+        $deliveryNote->update(['state' => DeliveryNoteStateEnum::PACKED]);
+        $deliveryNoteItem->update(['quantity_packed' => 7]);
+        $deliveryNoteItem->orgStock->stock->update(['is_cosmetic' => $index === 1]);
+        \App\Actions\Goods\TradeUnit\UpdateTradeUnit::make()->action($deliveryNoteItem->orgStock->tradeUnits->first(), [
+            'tariff_code'       => $index === 1 ? '3304 99 0000' : '3301 29 4900',
+            'origin_country_id' => $this->organisation->country_id,
+        ]);
+
+        return $deliveryNote;
+    });
+    $noteIds = $notes->pluck('id')->all();
+    $packedItem = $notes->first()->deliveryNoteItems()->first();
+    $packedItem->replicate(['has_waiting_warehouse', 'has_waiting_crm'])->fill([
+        'org_stock_id'      => $notes->last()->deliveryNoteItems()->first()->org_stock_id,
+        'quantity_required' => 0,
+        'quantity_picked'   => 0,
+        'quantity_packed'   => 0,
+    ])->save();
+    \App\Models\Inventory\OrgStock::whereIn('id', $notes->map(fn ($note) => $note->deliveryNoteItems()->first()->org_stock_id))
+        ->update(['sku_commercial_value' => 0, 'current_supplier_sku_cost' => 0, 'sku_value' => 0]);
+    $orgPartner->update(['customer_id' => \App\Models\CRM\Customer::query()->whereNotIn('id', $notes->pluck('customer_id'))->value('id')]);
+
+    expect(\App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::eligibleDeliveryNotesQuery($orgPartner)->pluck('delivery_notes.id')->all())
+        ->toEqualCanonicalizing($noteIds);
+
+    $partnerRoute = [$this->organisation->slug, $orgPartner->id];
+    $this->get(route('grp.org.procurement.org_partners.show.customs_invoices.create', $partnerRoute))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/CreatePartnerShipment')
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect($noteIds)->sort()->values()->all()));
+
+    $partnerShipment = \App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::make()->action($orgPartner, [
+        'delivery_note_ids' => $noteIds,
+        'prefix'            => 'AR'.$partnerCode,
+        'first_number'      => 75,
+        'date'              => '2026-11-03',
+        'number_pallets'    => 10,
+    ]);
+
+    expect($partnerShipment->splits)->toBe(['main', 'cosmetic'])
+        ->and($partnerShipment->documentReference(1))->toBe('AR'.$partnerCode.'0076');
+
+    $lines = \App\Actions\Dispatching\PartnerShipment\GetPartnerShipmentCustomsLines::make()->handle($orgPartner, $noteIds);
+    expect($lines->get('main')->pluck('tariff_code')->all())->toBe(['3301 29 4900'])
+        ->and($lines->get('cosmetic')->pluck('tariff_code')->all())->toBe(['3304 99 0000'])
+        ->and((float) $lines->get('main')->first()->units)->toBe(7.0)
+        ->and((float) $lines->get('main')->first()->amount)->toBe(round((float) $packedItem->transaction->net_amount, 2))
+        ->and((float) $lines->get('cosmetic')->first()->amount)->toBe(round((float) $notes->last()->deliveryNoteItems()->first()->transaction->net_amount, 2));
+
+    $this->get(route('grp.org.procurement.org_partners.show.customs_invoices.index', $partnerRoute))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/PartnerShipments')
+            ->where('data.data.0.documents.1.reference', 'AR'.$partnerCode.'0076'));
+    $this->get(route('grp.org.procurement.org_partners.show.customs_invoices.export', [...$partnerRoute, $partnerShipment->id, 'cosmetic']))
+        ->assertOk()
+        ->assertDownload('AR'.$partnerCode.'0076.xlsx');
+
+    $export = new \App\Exports\Dispatching\PartnerShipmentCustomsInvoiceExport($partnerShipment->refresh(), 'cosmetic');
+    $rows   = $export->array();
+    $headings = collect($rows)->first(fn (array $row) => ($row[0] ?? null) === 'Product references');
+    $lineRow  = collect($rows)->first(fn (array $row) => in_array('3304 99 0000', $row, true));
+    expect($rows[3][1])->toStartWith($notes->first()->customer->company_name ?: $partner->name)
+        ->and(count($lineRow))->toBe(count($headings))
+        ->and($lineRow[array_search('Tariff code', $headings, true)])->toBe('3304 99 0000');
+    expect($rows[0][6])->toBe('AR'.$partnerCode.'0076')
+        ->and(collect($rows)->contains(fn (array $row) => in_array('3304 99 0000', $row, true)))->toBeTrue()
+        ->and(collect($rows)->contains(fn (array $row) => in_array('3301 29 4900', $row, true)))->toBeFalse();
+
+    expect(\App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::eligibleDeliveryNotesQuery($orgPartner)->exists())->toBeFalse()
+        ->and(fn () => \App\Actions\Dispatching\PartnerShipment\StorePartnerShipment::make()->action($orgPartner, [
+            'delivery_note_ids' => [$noteIds[0]],
+            'prefix'            => 'AR'.$partnerCode,
+            'first_number'      => 77,
+            'date'              => '2026-11-04',
+        ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
