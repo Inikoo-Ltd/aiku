@@ -14,6 +14,8 @@ use App\Actions\Discounts\Offer\VolGr\UpdateVolumeGrOfferFromMaster;
 use App\Actions\Helpers\Translations\GetCatalogueTranslationBrief;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
+use App\Actions\Masters\MasterCollection\AttachModelToMasterCollection;
+use App\Actions\Masters\MasterCollection\DetachMasterModelFromMasterCollection;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
@@ -27,6 +29,7 @@ use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Language;
+use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -155,10 +158,16 @@ class UpdateMasterProductCategory extends OrgAction
             }
         }
 
+        $masterCollectionIds = Arr::pull($modelData, 'master_collection_ids');
+
         $preOrderData = Arr::only($modelData, Product::PRE_ORDER_FIELDS);
         $modelData    = Arr::except($modelData, Product::PRE_ORDER_FIELDS);
 
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
+
+        if ($masterCollectionIds !== null) {
+            $this->syncMasterCollections($masterProductCategory, $masterCollectionIds);
+        }
 
         if ($preOrderData && $masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
             foreach ($masterProductCategory->masterAssets()->get() as $masterAsset) {
@@ -333,6 +342,25 @@ class UpdateMasterProductCategory extends OrgAction
         }
     }
 
+    /**
+     * The master collections a family is in, through the same attach and detach as the collection
+     * page, so the shop collections that follow the master get the family too.
+     *
+     * @param  array<int, int>  $masterCollectionIds
+     */
+    private function syncMasterCollections(MasterProductCategory $masterFamily, array $masterCollectionIds): void
+    {
+        $currentIds = MasterCollection::whereHas('masterFamilies', fn ($query) => $query->where('master_product_categories.id', $masterFamily->id))->pluck('id')->all();
+
+        foreach (MasterCollection::whereIn('id', array_diff($masterCollectionIds, $currentIds))->get() as $masterCollection) {
+            AttachModelToMasterCollection::make()->action($masterCollection, $masterFamily);
+        }
+
+        foreach (MasterCollection::whereIn('id', array_diff($currentIds, $masterCollectionIds))->get() as $masterCollection) {
+            DetachMasterModelFromMasterCollection::make()->action($masterCollection, $masterFamily);
+        }
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -398,6 +426,8 @@ class UpdateMasterProductCategory extends OrgAction
             'pre_order_deposit_percentage'  => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
             'pre_order_lead_time_days'      => ['sometimes', 'nullable', 'integer', 'min:1', 'max:1000'],
             'max_quantity_per_order'        => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'master_collection_ids'         => ['sometimes', 'array'],
+            'master_collection_ids.*'       => ['integer', Rule::exists('master_collections', 'id')->where('master_shop_id', $this->masterProductCategory->master_shop_id)],
             'faq'                           => ['sometimes', 'array'],
             'faq.*.question'                => ['sometimes', 'nullable', 'string'],
             'faq.*.answer'                  => ['sometimes', 'nullable', 'string'],

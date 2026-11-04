@@ -12,6 +12,7 @@ use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UI\GetMasterProductChecklist;
+use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\GetMasterFamilyCompleteness;
@@ -321,4 +322,36 @@ test('master product meta description and share image are saved like the webpage
         ->and($masterAsset->seo_image_url)->toBeNull()
         ->and($masterAsset->image_id)->toBe($catalogueImageId)
         ->and($masterAsset->images()->whereKey($masterAsset->seo_image_id)->exists())->toBeFalse();
+});
+
+test('edit master family page lists the master collections of its master shop and saving puts the family in or out of them', function () {
+    $masterFamily     = $this->masterFamily->fresh();
+    $masterDepartment = $masterFamily->masterDepartment;
+    $makeCollection   = fn (string $name) => StoreMasterCollection::make()->action($masterDepartment, ['code' => 'MCC-'.uniqid(), 'name' => $name], createChildren: false);
+    $firstCollection  = $makeCollection('first collection');
+    $secondCollection = $makeCollection('second collection');
+    $editPage         = route('grp.masters.master_shops.show.master_departments.show.master_families.edit', [$masterFamily->masterShop->slug, $masterDepartment->slug, $masterFamily->slug]);
+
+    get($editPage)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('masterFamily.master_collection_ids', [])
+        ->where('masterCollections', fn ($collections) => collect($collections)->pluck('id')->intersect([$firstCollection->id, $secondCollection->id])->count() === 2)
+        ->etc());
+
+    $this->patch(route('grp.models.master_product_category.update', $masterFamily->id), [
+        'master_collection_ids' => [$firstCollection->id, $secondCollection->id],
+    ])->assertSessionHasNoErrors();
+
+    expect($firstCollection->masterFamilies()->whereKey($masterFamily->id)->exists())->toBeTrue()
+        ->and($secondCollection->masterFamilies()->whereKey($masterFamily->id)->exists())->toBeTrue();
+
+    $this->patch(route('grp.models.master_product_category.update', $masterFamily->id), [
+        'master_collection_ids' => [$secondCollection->id],
+    ])->assertSessionHasNoErrors();
+
+    expect($firstCollection->masterFamilies()->whereKey($masterFamily->id)->exists())->toBeFalse()
+        ->and($secondCollection->masterFamilies()->whereKey($masterFamily->id)->exists())->toBeTrue();
+
+    get($editPage)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('masterFamily.master_collection_ids', [$secondCollection->id])
+        ->etc());
 });
