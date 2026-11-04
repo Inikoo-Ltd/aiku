@@ -48,8 +48,9 @@ trait WithDownloadPortfolios
         $normalizedProductStates = $this->normalizeProductStates($productStates);
 
         $portfolios = DB::table('portfolios')
-            ->select(
-                'products.*',
+            ->select([
+                ...static::DATA_FEED_PRODUCT_COLUMNS,
+                'products.status',
                 'family.code as family_code',
                 'family.name as family_name',
                 'department.code as department_code',
@@ -57,8 +58,9 @@ trait WithDownloadPortfolios
                 'sub_department.code as subdepartment_code',
                 'sub_department.name as subdepartment_name',
                 'portfolios.reference',
-                DB::raw(Product::sellableThroughSalesChannelsSql().' as is_for_sale')
-            )
+                'portfolios.id as portfolio_id',
+                DB::raw(Product::sellableThroughSalesChannelsSql().' as is_for_sale'),
+            ])
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->leftJoin('product_categories as department', 'products.department_id', '=', 'department.id')
             ->leftJoin('product_categories as sub_department', 'products.sub_department_id', '=', 'sub_department.id')
@@ -87,19 +89,15 @@ trait WithDownloadPortfolios
                 ->where('products.available_quantity', '>', 0);
         }
 
-        $portfolios
-            ->orderBy('portfolios.id')
-            ->chunk(500, function ($products) use ($file, $isExtendedProperties, $columns) {
-                foreach ($products as $row) {
-                    if ($isExtendedProperties) {
-                        $mappedData = $this->mapExtendedProperties($row, $columns);
-                    } else {
-                        $mappedData = $this->map($row);
-                        array_splice($mappedData, 2, 0, [$row->reference ?? '']);
-                    }
-                    fputcsv($file, $mappedData, ',', '"', '');
-                }
-            });
+        foreach ($portfolios->lazyById(2000, 'portfolios.id', 'portfolio_id') as $row) {
+            if ($isExtendedProperties) {
+                $mappedData = $this->mapExtendedProperties($row, $columns);
+            } else {
+                $mappedData = $this->map($row);
+                array_splice($mappedData, 2, 0, [$row->reference ?? '']);
+            }
+            fputcsv($file, $mappedData, ',', '"', '');
+        }
 
         fclose($file);
 

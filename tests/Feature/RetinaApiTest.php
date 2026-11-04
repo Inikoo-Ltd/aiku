@@ -11,6 +11,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Api\Retina\Dropshipping\Product\StoreDataFeed;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -39,6 +40,8 @@ use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Sanctum;
 
@@ -615,6 +618,7 @@ test('retina api dropshipping data feed csv', function () {
 });
 
 test('retina api data feed csv escapes quotes in descriptions', function () {
+    Storage::fake('data-feeds');
     Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
 
     UpdateProduct::make()->action($this->product, [
@@ -633,6 +637,35 @@ test('retina api data feed csv escapes quotes in descriptions', function () {
     $columnCounts = array_map(fn (string $line) => count(str_getcsv($line, ',', '"', '')), $lines);
     expect(array_unique($columnCounts))->toHaveCount(1);
 });
+
+test('retina api data feeds are served from the stored build and rebuilt in the background', function (string $routeName, string $extension) {
+    Storage::fake('data-feeds');
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+    StorePortfolio::make()->action($this->dropshippingChannel, $this->product, []);
+    $path = Storage::disk('data-feeds')->path("customer_sales_channel/{$this->dropshippingChannel->id}.$extension");
+    $read = fn () => $extension === 'csv' ? getJson(route($routeName))->getContent() : getJson(route($routeName))->streamedContent();
+
+    $original = $read();
+    expect($original)->toBe(file_get_contents($path));
+
+    $this->product->updateQuietly(['name' => 'Renamed for the data feed test']);
+    expect($read())->toBe($original);
+
+    Queue::fake();
+    touch($path, time() - 120);
+    expect($read())->toBe($original);
+    StoreDataFeed::assertPushed(1);
+
+    StoreDataFeed::run($this->dropshippingChannel, $extension);
+    expect($read())->toContain('Renamed for the data feed test');
+
+    $this->product->updateQuietly(['name' => 'Renamed again for the data feed test']);
+    touch($path, time() - 1000);
+    expect($read())->toContain('Renamed again for the data feed test');
+})->with([
+    'csv'  => ['retina.api.dropshipping.data_feed.csv', 'csv'],
+    'json' => ['retina.api.dropshipping.data_feed.json', 'json'],
+]);
 
 // ---- Fulfilment: clients ----
 

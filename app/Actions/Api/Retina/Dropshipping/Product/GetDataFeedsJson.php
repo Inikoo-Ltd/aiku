@@ -10,7 +10,6 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Product;
 
-use App\Actions\Retina\Dropshipping\Portfolio\PortfoliosJsonExport;
 use App\Actions\RetinaApiAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,9 +21,11 @@ class GetDataFeedsJson extends RetinaApiAction
     {
         $customer = $customerSalesChannel->customer;
         $fileName = 'data_feed_' . $customer->slug . '_' . now()->format('Ymd') . '_json.txt';
-        return response()->streamDownload(function () use ($customerSalesChannel) {
-            $jsonData = PortfoliosJsonExport::make()->handle($customerSalesChannel);
-            echo json_encode($jsonData, JSON_PRETTY_PRINT);
+        $file     = fopen(StoreDataFeed::make()->storedPath($customerSalesChannel, 'json'), 'r');
+
+        return response()->streamDownload(function () use ($file) {
+            fpassthru($file);
+            fclose($file);
         }, $fileName, [
             'Content-Type' => 'application/json; charset=utf-8',
             'Cache-Control' => 'max-age=0',

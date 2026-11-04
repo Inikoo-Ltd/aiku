@@ -5863,6 +5863,7 @@ test('a claim refunded to balance is paid out of the card payment and leaves not
     $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), []);
     $item         = $deliveryNote->deliveryNoteItems()->firstOrFail();
     $item->update(['quantity_picked' => $item->quantity_required, 'quantity_dispatched' => $item->quantity_required]);
+    $item->transaction->update(['quantity_dispatched' => (float) $item->transaction->quantity_ordered + (float) $item->transaction->quantity_bonus]);
     $invoice      = GenerateInvoiceFromOrder::make()->action($order->refresh());
     $claimed      = [['id' => $item->id, 'quantity' => 1]];
 

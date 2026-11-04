@@ -2834,6 +2834,7 @@ describe('customer service tools', function () {
         $deliveryNote = App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order->refresh(), []);
         $item         = $deliveryNote->deliveryNoteItems()->firstOrFail();
         $item->update(['quantity_picked' => $item->quantity_required, 'quantity_dispatched' => $item->quantity_required]);
+        $item->transaction->update(['quantity_dispatched' => (float) $item->transaction->quantity_ordered + (float) $item->transaction->quantity_bonus]);
         $invoice      = App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order->refresh());
         App\Actions\Accounting\Invoice\PayInvoice::make()->action(
             $invoice->refresh(),
@@ -2886,6 +2887,7 @@ describe('customer service tools', function () {
         $deliveryNote = App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order->refresh(), []);
         $item         = $deliveryNote->deliveryNoteItems()->firstOrFail();
         $item->update(['quantity_picked' => $item->quantity_required, 'quantity_dispatched' => $item->quantity_required]);
+        $item->transaction->update(['quantity_dispatched' => (float) $item->transaction->quantity_ordered + (float) $item->transaction->quantity_bonus]);
         $invoice      = App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order->refresh());
         App\Actions\Accounting\Invoice\PayInvoice::make()->action(
             $invoice->refresh(),
@@ -2985,6 +2987,7 @@ describe('customer service tools', function () {
         $deliveryNote = App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order->refresh(), []);
         $item         = $deliveryNote->deliveryNoteItems()->firstOrFail();
         $item->update(['quantity_picked' => $item->quantity_required, 'quantity_dispatched' => $item->quantity_required]);
+        $item->transaction->update(['quantity_dispatched' => (float) $item->transaction->quantity_ordered + (float) $item->transaction->quantity_bonus]);
         $order->update(['state' => OrderStateEnum::DISPATCHED, 'dispatched_at' => now()->subDay()]);
 
         expect((float) $item->quantity_required)->toBe(6.0);

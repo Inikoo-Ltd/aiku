@@ -283,6 +283,7 @@ class CustomerServiceChatTool extends AikuCustomerServiceTool
                         'code'      => $product['code'],
                         'name'      => $product['name'],
                         'ordered'   => $product['ordered'],
+                        'dispatched' => $product['dispatched'],
                         'claimable' => $product['claimable'],
                         'mentioned_by_customer' => $product['mentioned'],
                     ])

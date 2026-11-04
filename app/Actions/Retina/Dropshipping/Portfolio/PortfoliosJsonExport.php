@@ -98,6 +98,7 @@ class PortfoliosJsonExport
             ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
             ->where('portfolios.item_type', 'Product')
             ->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id)
+            ->orderBy('portfolios.id')
             ->cursor();
 
         return $portfolios->map(function ($row) {

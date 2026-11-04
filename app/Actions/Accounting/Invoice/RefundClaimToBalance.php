@@ -126,24 +126,26 @@ class RefundClaimToBalance extends OrgAction
     }
 
     /**
-     * The share of each order line being claimed, at most all of it. A product made of several
-     * stocks has one delivery note line each; the largest share claimed of any of them counts.
+     * The share of what was sent of each order line being claimed, at most all of it: the invoice
+     * billed what was dispatched, not what was ordered (PRE-63). A product made of several stocks
+     * has one delivery note line each; the largest share claimed of any of them counts. A line
+     * with nothing sent or billed is an infinite share, so CheckClaimCompensation refuses it.
      *
      * @param  array<int, array{id: int, quantity: float|int}>  $claimedItems
      * @return array<int, float>
      */
     public static function sharesByTransaction(Order $order, array $claimedItems, bool $capped = true): array
     {
-        $quantities = collect($claimedItems)->mapWithKeys(fn (array $item) => [(int) $item['id'] => (float) $item['quantity']]);
+        $quantities = collect($claimedItems)->mapWithKeys(fn (array $item) => [(int) $item['id'] => (float) $item['quantity']])->filter(fn (float $quantity) => $quantity > 0);
 
         return DeliveryNoteItem::query()
             ->whereIn('id', $quantities->keys())
             ->whereIn('delivery_note_id', $order->deliveryNotes()->pluck('delivery_notes.id'))
             ->whereNotNull('transaction_id')
-            ->where('quantity_required', '>', 0)
+            ->with('transaction')
             ->get()
             ->groupBy('transaction_id')
-            ->map(fn ($items) => $items->max(fn (DeliveryNoteItem $item) => $quantities[$item->id] / (float) $item->quantity_required))
+            ->map(fn ($items) => $items->max(fn (DeliveryNoteItem $item) => ($sent = CheckClaimCompensation::stockLineSent($item)) > 0 ? $quantities[$item->id] / $sent : INF))
             ->map(fn (float $share) => $capped ? min(1, $share) : $share)
             ->all();
     }
