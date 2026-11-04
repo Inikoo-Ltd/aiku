@@ -175,6 +175,39 @@ function amount(item: any) {
     return `${net} (${locale.currencyFormat(item.org_currency ?? 'EUR', item.org_net_amount)})`
 }
 
+function exchangeRateLabel(item: any) {
+    const rate = Number(item.org_exchange) || 1
+    const rounded = (value: number) => locale.number(Math.round(value * 10000) / 10000)
+
+    return rate >= 1
+        ? `1 ${item.net_currency} = ${rounded(rate)} ${item.org_currency}`
+        : `1 ${item.org_currency} = ${rounded(1 / rate)} ${item.net_currency}`
+}
+
+function amountTooltip(item: any) {
+    const currency = item.net_currency ?? 'EUR'
+    const explanation = [
+        ctrans('Unit cost :cost × :units units = :amount', {
+            cost: locale.currencyFormatUnitCost(currency, item.unit_cost),
+            units: formatQuantity(Number(item.quantity_ordered)),
+            amount: locale.currencyFormat(currency, item.net_amount ?? 0),
+        }),
+    ]
+
+    if (item.org_net_amount !== null && item.org_currency && item.org_currency !== item.net_currency) {
+        explanation.push(ctrans('In :currency at the order exchange rate (:rate)', {
+            currency: item.org_currency,
+            rate: exchangeRateLabel(item),
+        }))
+    }
+
+    if (item.agent_unit_expense) {
+        explanation.push(ctrans('Agent unit expense is not included'))
+    }
+
+    return explanation.join('. ')
+}
+
 const savingId = ref<number | null>(null)
 
 const isPriceEditable = computed(() => !props.isPartner && ['in_process', 'submitted'].includes(props.state ?? ''))
@@ -905,7 +938,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             <div v-else class="space-y-0.5">
                 <div class="text-gray-500">{{ quantityBreakdown(item) }}</div>
                 <div class="flex items-center gap-1.5">
-                    <span>{{ amount(item) }}</span>
+                    <span v-tooltip="amountTooltip(item)" class="cursor-help">{{ amount(item) }}</span>
                     <span v-if="item.weight !== null" class="text-gray-500">
                         {{ locale.number(item.weight) }}Kg
                     </span>
@@ -1085,7 +1118,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         </template>
 
         <template #cell(amount)="{ item }">
-            {{ amount(item) }}
+            <span v-tooltip="amountTooltip(item)" class="cursor-help">{{ amount(item) }}</span>
         </template>
 
         <template #cell(state)="{ item }">
