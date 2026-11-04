@@ -27,9 +27,9 @@ class GetDataFeedsCsv extends RetinaApiAction
     {
         $this->initialisationFromDropshipping($request);
 
-        $csvContent = $this->handle($this->customerSalesChannel);
+        $path = StoreDataFeed::make()->storedPath($this->customerSalesChannel, 'csv');
 
-        return response($csvContent, 200)
+        return response(file_get_contents($path), 200)
             ->header('Content-Type', 'text/csv; charset=UTF-8')
             ->header('Content-Disposition', 'inline; filename="portfolio_data_feed.csv"');
     }
