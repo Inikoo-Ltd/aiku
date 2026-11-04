@@ -15,6 +15,15 @@ const weekdaySlots = (times: string[], days: number): Record<string, string[]> =
     return slots
 }
 
+const DEMO_VISIT_TIMES = ["10:00", "10:45", "11:30", "14:00", "14:45", "15:30"]
+const DEMO_CALL_TIMES = ["09:00", "09:30", "13:00", "13:30"]
+
+export const withDemoSlots = (appointmentTypes: Omit<AppointmentTypeOption, "slots">[]): AppointmentTypeOption[] =>
+    appointmentTypes.map(appointmentType => ({
+        ...appointmentType,
+        slots: weekdaySlots(appointmentType.meeting_mode === "store_visit" ? DEMO_VISIT_TIMES : DEMO_CALL_TIMES, 30),
+    }))
+
 export const demoAppointmentTypes = (): AppointmentTypeOption[] => [
     {
         id: 1,
@@ -24,7 +33,7 @@ export const demoAppointmentTypes = (): AppointmentTypeOption[] => [
         meeting_mode_label: ctrans("Store visit"),
         location: ctrans("Our showroom"),
         duration_minutes: 45,
-        slots: weekdaySlots(["10:00", "10:45", "11:30", "14:00", "14:45", "15:30"], 30),
+        slots: weekdaySlots(DEMO_VISIT_TIMES, 30),
     },
     {
         id: 2,
@@ -34,7 +43,7 @@ export const demoAppointmentTypes = (): AppointmentTypeOption[] => [
         meeting_mode_label: ctrans("Video call"),
         location: null,
         duration_minutes: 30,
-        slots: weekdaySlots(["09:00", "09:30", "13:00", "13:30"], 30),
+        slots: weekdaySlots(DEMO_CALL_TIMES, 30),
     },
 ]
 

@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import { set } from "lodash-es"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { getStyles } from "@/Composables/styles"
 import AppointmentBooking from "@/Components/CMS/Webpage/Appointment/AppointmentBooking.vue"
-import type { AppointmentBookingPayload } from "@/Components/CMS/Webpage/Appointment/AppointmentBooking.vue"
-import { demoAppointmentTypes, demoBook } from "@/Components/CMS/Webpage/Appointment/demoAppointmentTypes"
+import type { AppointmentBookingPayload, AppointmentTypeOption } from "@/Components/CMS/Webpage/Appointment/AppointmentBooking.vue"
+import { demoAppointmentTypes, demoBook, withDemoSlots } from "@/Components/CMS/Webpage/Appointment/demoAppointmentTypes"
+import { orderAppointmentTypes } from "@/Components/CMS/Webpage/Appointment/orderAppointmentTypes"
 
 const props = defineProps<{
     modelValue: any
     webpageData?: any
-    blockData?: object
+    blockData?: { appointment_types?: Omit<AppointmentTypeOption, "slots">[] }
     screenType: "mobile" | "tablet" | "desktop"
 }>()
 
@@ -18,10 +20,16 @@ const emits = defineEmits<{
     (e: "autoSave"): void
 }>()
 
-const appointmentTypes = demoAppointmentTypes()
+const appointmentTypes = computed(() => {
+    const shopAppointmentTypes = props.blockData?.appointment_types ?? []
+    if (!shopAppointmentTypes.length) {
+        return demoAppointmentTypes()
+    }
+    return orderAppointmentTypes(withDemoSlots(shopAppointmentTypes), props.modelValue?.settings?.appointment_type_order)
+})
 
 const book = (payload: AppointmentBookingPayload) =>
-    demoBook(appointmentTypes.find(type => type.id === payload.appointment_type_id), payload.date, payload.time)
+    demoBook(appointmentTypes.value.find(type => type.id === payload.appointment_type_id), payload.date, payload.time)
 
 const hasText = (html?: string | null) => !!html?.replace(/<[^>]*>/g, "").trim()
 
