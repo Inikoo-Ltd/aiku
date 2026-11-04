@@ -10,6 +10,7 @@ namespace App\Http\Resources\Production;
 
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
+use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -47,6 +48,7 @@ class JobOrderPlanItemsResource extends JsonResource
             'artefact_name'   => $this->artefact_name,
             'artefact_department_id' => $this->artefact_department_id,
             'quantity'        => (float) $this->quantity,
+            'carry_over'      => JobOrderItem::carryOverLabel(JobOrderItem::carryOver(collect([$this->resource]))),
             'steps'           => $this->tasks->map(fn (JobOrderItemTask $task) => [
                 'id'                => $task->id,
                 'name'              => $task->manufactureTask->name,

@@ -25347,5 +25347,11 @@
     "Share your experience with this product": "Partilhe a sua experiência com este produto",
     "Share your experience with this shop": "Partilhe a sua experiência com esta loja",
     "Share your experience": "Partilhe a sua experiência",
-    "Filled circle": "Círculo cheio"
+    "Filled circle": "Círculo cheio",
+    "carried from :reference (ordered :quantity)": "transitado de :reference (encomendado :quantity)",
+    ":quantity carried to :reference": ":quantity transitado para :reference",
+    "ordered :quantity": "encomendado :quantity",
+    "Carried from": "Transitado de",
+    ":quantity carried to": ":quantity transitado para",
+    ":quantity of this artefact from this job were carried to :reference, add anyway?": ":quantity deste artefacto desta ordem foram transitados para :reference, adicionar mesmo assim?"
 }

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -112,6 +113,115 @@ class JobOrderItem extends Model
         $carriedToId = Arr::get($this->data, 'carried_to');
 
         return $carriedToId ? JobOrder::whereIn('state', JobOrderStateEnum::open())->find($carriedToId) : null;
+    }
+
+    /**
+     * Where a line closed short sent its rest and where it came from, so nobody reads a carried
+     * line as made short and orders the rest again (HELP-4499). A line is the item and its splits.
+     *
+     * @param  Collection<int, JobOrderItem>  $lineItems
+     * @return array{ordered_quantity: int, carried_to: list<array{reference: string, slug: string, quantity: int}>, carried_from: array{reference: string, slug: string, ordered_quantity: int}|null}|null
+     */
+    public static function carryOver(Collection $lineItems): ?array
+    {
+        $head         = $lineItems->firstWhere('split_from_id', null) ?? $lineItems->first();
+        $carriedLines = self::carriedLines($lineItems);
+        $isCarriedLine = Arr::has($head->jobOrder->data ?? [], 'carried_from')
+            && $head->id == JobOrderItem::where('job_order_id', $head->job_order_id)->where('artefact_id', $head->artefact_id)->whereNull('split_from_id')->min('id');
+        $source       = $isCarriedLine ? self::carriedFromItem($head) : null;
+        if ($carriedLines->isEmpty() && !$source) {
+            return null;
+        }
+
+        $root = $source;
+        while ($root && $previous = self::carriedFromItem($root)) {
+            $root = $previous;
+        }
+
+        return [
+            'ordered_quantity' => self::orderedQuantity($lineItems),
+            'carried_to'       => $carriedLines->map(fn (JobOrderItem $line) => [
+                'reference' => $line->jobOrder->reference,
+                'slug'      => $line->jobOrder->slug,
+                'quantity'  => self::orderedQuantity($line->withSplits()),
+            ])->values()->all(),
+            'carried_from'     => $source ? [
+                'reference'        => $source->jobOrder->reference,
+                'slug'             => $source->jobOrder->slug,
+                'ordered_quantity' => self::orderedQuantity(($root->splitFrom ?? $root)->withSplits()),
+            ] : null,
+        ];
+    }
+
+    /**
+     * @param  array{ordered_quantity: int, carried_to: list<array{reference: string, slug: string, quantity: int}>, carried_from: array{reference: string, slug: string, ordered_quantity: int}|null}|null  $carryOver
+     */
+    public static function carryOverLabel(?array $carryOver): ?string
+    {
+        if (!$carryOver) {
+            return null;
+        }
+
+        $parts = [];
+        if ($carryOver['carried_from']) {
+            $parts[] = __('carried from :reference (ordered :quantity)', ['reference' => $carryOver['carried_from']['reference'], 'quantity' => $carryOver['carried_from']['ordered_quantity']]);
+        }
+        foreach ($carryOver['carried_to'] as $carried) {
+            $parts[] = __(':quantity carried to :reference', ['quantity' => $carried['quantity'], 'reference' => $carried['reference']]);
+        }
+        if ($carryOver['carried_to']) {
+            array_unshift($parts, __('ordered :quantity', ['quantity' => $carryOver['ordered_quantity']]));
+        }
+
+        return implode(' · ', $parts);
+    }
+
+    /**
+     * @return Collection<int, JobOrderItem>
+     */
+    public function withSplits(): Collection
+    {
+        return JobOrderItem::where('id', $this->id)->orWhere('split_from_id', $this->id)->get();
+    }
+
+    /**
+     * @param  Collection<int, JobOrderItem>  $lineItems
+     */
+    private static function orderedQuantity(Collection $lineItems): int
+    {
+        return (int) $lineItems->sum('quantity') + self::carriedLines($lineItems)->sum(fn (JobOrderItem $line) => self::orderedQuantity($line->withSplits()));
+    }
+
+    /**
+     * @param  Collection<int, JobOrderItem>  $lineItems
+     * @return Collection<int, JobOrderItem>
+     */
+    private static function carriedLines(Collection $lineItems): Collection
+    {
+        $carriedToIds = $lineItems->map(fn (JobOrderItem $item) => Arr::get($item->data, 'carried_to'))->filter()->unique();
+        if ($carriedToIds->isEmpty()) {
+            return collect();
+        }
+
+        return JobOrderItem::whereIn('job_order_id', $carriedToIds)
+            ->whereIn('artefact_id', $lineItems->pluck('artefact_id')->unique())
+            ->whereNull('split_from_id')
+            ->whereHas('jobOrder', fn ($query) => $query->where('state', '!=', JobOrderStateEnum::NOT_RECEIVED))
+            ->with('jobOrder')
+            ->orderBy('id')
+            ->get()
+            ->unique('job_order_id')
+            ->values();
+    }
+
+    private static function carriedFromItem(JobOrderItem $item): ?JobOrderItem
+    {
+        return JobOrderItem::where('data->carried_to', $item->job_order_id)
+            ->where('artefact_id', $item->artefact_id)
+            ->whereHas('jobOrder')
+            ->with(['jobOrder', 'splitFrom'])
+            ->orderBy('id')
+            ->first();
     }
 
     public function artefact(): BelongsTo

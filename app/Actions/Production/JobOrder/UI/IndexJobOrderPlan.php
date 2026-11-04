@@ -73,6 +73,9 @@ class IndexJobOrderPlan extends OrgAction
             ->select([
                 'job_order_items.id',
                 'job_order_items.quantity',
+                'job_order_items.data',
+                'job_order_items.artefact_id',
+                'job_order_items.split_from_id',
                 'job_orders.id as job_order_id',
                 'job_orders.reference',
                 'job_orders.slug as job_order_slug',

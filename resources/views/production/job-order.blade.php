@@ -51,7 +51,7 @@
     @foreach($items as $item)
         <tr class="{{ $loop->last ? 'last' : '' }}">
             <td>{{ $item['code'] }}</td>
-            <td>{{ $item['description'] }}</td>
+            <td>{{ $item['description'] }}@if($item['carry_over'])<br><span style="font-size: 8pt; color: #555;">{{ $item['carry_over'] }}</span>@endif</td>
             <td style="text-align: right;">{{ $item['units'] }}</td>
             <td style="text-align: right;">{{ $item['skos'] }}</td>
             <td></td>

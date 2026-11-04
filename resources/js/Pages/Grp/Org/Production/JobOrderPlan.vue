@@ -48,6 +48,7 @@ type PlanItem = {
     planned_for: string
     plan_position: number | null
     is_carried_over: boolean
+    carry_over: string | null
     artefact_code: string | null
     artefact_name: string | null
     artefact_department_id: number | null
@@ -143,6 +144,7 @@ function setPosition(item: PlanItem, position: number | null) {
         <template #cell(reference)="{ item }">
             <Link :href="jobOrderRoute(item)" class="font-medium text-gray-700 hover:underline">{{ item.reference }}</Link>
             <div class="text-xs text-gray-500">{{ item.state_label }}</div>
+            <div v-if="item.carry_over" class="text-xs text-gray-500">{{ item.carry_over }}</div>
         </template>
 
         <template #cell(artefact_code)="{ item }">

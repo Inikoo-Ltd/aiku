@@ -26357,5 +26357,11 @@
     "Share your experience with this product": "Podeľte sa o svoje skúsenosti s týmto produktom",
     "Share your experience with this shop": "Podeľte sa o svoje skúsenosti s týmto obchodom",
     "Share your experience": "Podeľte sa o svoje skúsenosti",
-    "Filled circle": "Plný kruh"
+    "Filled circle": "Plný kruh",
+    "carried from :reference (ordered :quantity)": "prenesené z :reference (objednané :quantity)",
+    ":quantity carried to :reference": ":quantity prenesené do :reference",
+    "ordered :quantity": "objednané :quantity",
+    "Carried from": "Prenesené z",
+    ":quantity carried to": ":quantity prenesené do",
+    ":quantity of this artefact from this job were carried to :reference, add anyway?": ":quantity kusov tohto artefaktu z tohto príkazu bolo prenesených do :reference, pridať aj tak?"
 }

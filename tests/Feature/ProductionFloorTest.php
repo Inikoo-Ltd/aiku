@@ -466,7 +466,29 @@ test('closing short can finish the job or carry the shortfall to a new job order
 
     expect($carriedAgain->reference)->toBe($jobOrder->reference.'b');
 
+    $carriedItem = $carried->jobOrderItems()->first();
+    expect(\App\Models\Production\JobOrderItem::carryOver(collect([$item->refresh()])))->toBe([
+        'ordered_quantity' => 25,
+        'carried_to'       => [['reference' => $carried->reference, 'slug' => $carried->slug, 'quantity' => 15]],
+        'carried_from'     => null,
+    ])
+        ->and(\App\Models\Production\JobOrderItem::carryOver(collect([$carriedItem])))->toBe([
+            'ordered_quantity' => 15,
+            'carried_to'       => [['reference' => $carriedAgain->reference, 'slug' => $carriedAgain->slug, 'quantity' => 10]],
+            'carried_from'     => ['reference' => $jobOrder->reference, 'slug' => $jobOrder->slug, 'ordered_quantity' => 25],
+        ])
+        ->and(\App\Models\Production\JobOrderItem::carryOverLabel(\App\Models\Production\JobOrderItem::carryOver(collect([$carriedAgain->jobOrderItems()->first()]))))
+        ->toBe('carried from '.$carried->reference.' (ordered 25)');
+
+    $addedByHand = StoreJobOrderItem::make()->action($carried, ['artefact_id' => $this->artefact->id, 'quantity' => 15]);
+    expect(\App\Models\Production\JobOrderItem::carryOver(collect([$addedByHand])))->toBeNull()
+        ->and(\App\Models\Production\JobOrderItem::carryOver(collect([$carriedItem]))['carried_from']['reference'])->toBe($jobOrder->reference);
+    $addedByHand->delete();
+
     actingAs($user);
+    get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $jobOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('items.0.carry_over.ordered_quantity', 25)->where('items.0.carry_over.carried_to.0.reference', $carried->reference)->etc());
+    $this->get(route('grp.org.productions.show.operations.job-orders.pdf', [$this->organisation->slug, $this->production->slug, $jobOrder->slug]))->assertOk();
     $this->patch(route('grp.models.job-order-item.update', [$item->id]), ['quantity' => 25])->assertSessionHasErrors('quantity');
     $this->patch(route('grp.models.job-order-item.update', [$item->id]), ['quantity' => 10])->assertSessionHasErrors('quantity');
     $this->patch(route('grp.models.job-order-item.update', [$carried->jobOrderItems()->first()->id]), ['quantity' => 15])->assertSessionHasErrors('quantity');

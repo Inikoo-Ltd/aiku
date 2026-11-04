@@ -103,10 +103,12 @@ class ShowJobOrder extends OrgAction
 
                 return [
                     'id'                 => $item->id,
+                    'artefact_id'        => $item->artefact_id,
                     'artefact_code'      => $item->artefact->code,
                     'artefact_name'      => $item->artefact->name,
                     'quantity'           => (int)$subJobs->sum('quantity'),
                     'demand_skos'        => data_get($item->data, 'demand_skos'),
+                    'carry_over'         => JobOrderItem::carryOver($subJobs),
                     'suggested_quantity' => !$isSplit && $item->artefact->recommended_batch_size && $item->quantity % $item->artefact->recommended_batch_size
                         ? GetOpenJobOrderItemsOffBatch::make()->getSuggestedQuantity($item)
                         : null,

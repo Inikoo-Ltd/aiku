@@ -26362,5 +26362,11 @@
     "Share your experience with this product": "Comparta su experiencia con este producto",
     "Share your experience with this shop": "Comparta su experiencia con esta tienda",
     "Share your experience": "Comparta su experiencia",
-    "Filled circle": "Disco"
+    "Filled circle": "Disco",
+    "carried from :reference (ordered :quantity)": "procede de :reference (pedido :quantity)",
+    ":quantity carried to :reference": ":quantity trasladado a :reference",
+    "ordered :quantity": "pedido :quantity",
+    "Carried from": "Procede de",
+    ":quantity carried to": ":quantity trasladado a",
+    ":quantity of this artefact from this job were carried to :reference, add anyway?": ":quantity de este artefacto de esta orden se trasladaron a :reference, ¿añadir de todos modos?"
 }

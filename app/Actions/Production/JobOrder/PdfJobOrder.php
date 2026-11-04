@@ -34,13 +34,14 @@ class PdfJobOrder extends OrgAction
     public function handle(JobOrder $jobOrder): Response
     {
         $allItems = $jobOrder->jobOrderItems()->with('artefact.orgStock')->orderBy('id')->get();
-        $unitsByLine = $allItems->groupBy(fn (JobOrderItem $item) => $item->split_from_id ?? $item->id)
-            ->map(fn ($lineItems) => (int)$lineItems->sum('quantity'));
+        $itemsByLine = $allItems->groupBy(fn (JobOrderItem $item) => $item->split_from_id ?? $item->id);
+        $unitsByLine = $itemsByLine->map(fn ($lineItems) => (int)$lineItems->sum('quantity'));
 
         $items = $allItems->whereNull('split_from_id')
             ->map(fn (JobOrderItem $item) => [
                 'code'        => $item->artefact->code,
                 'description' => $item->artefact->name,
+                'carry_over'  => JobOrderItem::carryOverLabel(JobOrderItem::carryOver($itemsByLine[$item->id])),
                 'units'       => $unitsByLine[$item->id],
                 'skos'        => round($unitsByLine[$item->id] / $item->artefact->packedIn(), 2),
             ]);

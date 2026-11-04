@@ -75,8 +75,16 @@ interface SubJob {
     can_remove: boolean
 }
 
+interface CarryOver {
+    ordered_quantity: number
+    carried_to: { reference: string, slug: string, quantity: number }[]
+    carried_from: { reference: string, slug: string, ordered_quantity: number } | null
+}
+
 interface Item {
     id: number
+    artefact_id: number
+    carry_over: CarryOver | null
     artefact_code: string
     artefact_name: string
     quantity: number
@@ -160,6 +168,14 @@ watch(newArtefactId, () => {
         newQuantity.value = selectedArtefactOption.value.recommended_batch_size
     }
 })
+
+function jobOrderUrl(slug: string): string {
+    return route("grp.org.productions.show.operations.job-orders.show", { ...route().params, jobOrder: slug })
+}
+
+const newArtefactCarriedTo = computed(() =>
+    props.items.filter(item => item.artefact_id === newArtefactId.value).flatMap(item => item.carry_over?.carried_to ?? [])
+)
 
 function addItem() {
     if (!props.add_item_route || !newArtefactId.value || !newQuantity.value) return
@@ -531,6 +547,22 @@ function receiveIntoStock() {
                 </div>
             </div>
 
+            <div v-if="item.carry_over" class="mt-1 text-sm text-gray-500">
+                <template v-if="item.carry_over.carried_from">
+                    {{ ctrans('Carried from') }}
+                    <a :href="jobOrderUrl(item.carry_over.carried_from.slug)" class="font-medium text-gray-700 underline">{{ item.carry_over.carried_from.reference }}</a>
+                    ({{ ctrans('ordered :quantity', { quantity: item.carry_over.carried_from.ordered_quantity }) }})
+                </template>
+                <template v-if="item.carry_over.carried_to.length">
+                    <span v-if="item.carry_over.carried_from" class="mx-1">·</span>
+                    {{ ctrans('ordered :quantity', { quantity: item.carry_over.ordered_quantity }) }}
+                    <span v-for="carried in item.carry_over.carried_to" :key="carried.slug">
+                        · {{ ctrans(':quantity carried to', { quantity: carried.quantity }) }}
+                        <a :href="jobOrderUrl(carried.slug)" class="font-medium text-gray-700 underline">{{ carried.reference }}</a>
+                    </span>
+                </template>
+            </div>
+
             <div v-if="item.update_route && item.suggested_quantity && item.suggested_quantity !== item.quantity" class="mt-2 text-sm text-amber-600">
                 {{ ctrans('Raised with a different batch size') }}: {{ item.demand_skos }} {{ ctrans('SKOs asked for') }} &rarr; {{ item.suggested_quantity }}
                 <button type="button" class="ml-2 font-medium underline" @click="saveQuantity(item, item.suggested_quantity)">{{ ctrans('Set to') }} {{ item.suggested_quantity }}</button>
@@ -803,6 +835,11 @@ function receiveIntoStock() {
                 <FontAwesomeIcon :icon="['fal', 'plus']" fixed-width class="mr-1" />
                 {{ ctrans('Add item') }}
             </button>
+        </div>
+        <div v-if="add_item_route && newArtefactCarriedTo.length" class="mt-2 text-sm text-amber-600">
+            <span v-for="carried in newArtefactCarriedTo" :key="carried.slug" class="mr-3">
+                {{ ctrans(':quantity of this artefact from this job were carried to :reference, add anyway?', { quantity: carried.quantity, reference: carried.reference }) }}
+            </span>
         </div>
     </div>
 </template>
