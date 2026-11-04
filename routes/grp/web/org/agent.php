@@ -41,6 +41,8 @@ use App\Actions\Procurement\AgentGoodsReceipt\UploadAgentGoodsReceiptAttachments
 use App\Actions\Procurement\AgentWarehouseStock\UI\GetAgentProductsInProductionToReceive;
 use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentProductsInProduction;
 use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentReceivedProducts;
+use App\Actions\Procurement\AgentWarehouseStock\PackAgentWarehouseStock;
+use App\Actions\Procurement\AgentWarehouseStock\PackAgentWarehouseStocks;
 use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentWarehouseStocks;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
@@ -173,6 +175,8 @@ Route::prefix('containers')->as('stock_deliveries.')->group(function () {
 });
 
 Route::get('warehouse', IndexAgentWarehouseStocks::class)->name('warehouse.index');
+Route::patch('warehouse/pack', PackAgentWarehouseStocks::class)->name('warehouse.pack_many');
+Route::patch('warehouse/{agentWarehouseStock:id}/pack', PackAgentWarehouseStock::class)->name('warehouse.pack')->withoutScopedBindings();
 Route::get('warehouse/in-production', IndexAgentProductsInProduction::class)->name('warehouse.in_production');
 Route::get('warehouse/in-production/to-receive', GetAgentProductsInProductionToReceive::class)->name('warehouse.in_production.to_receive');
 Route::post('warehouse/in-production/receive', StoreAgentGoodsReceipt::class)->name('warehouse.in_production.receive');

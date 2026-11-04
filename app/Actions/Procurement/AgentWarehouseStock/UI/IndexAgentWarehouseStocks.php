@@ -71,6 +71,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'purchase_orders.reference as purchase_order_reference',
                 'purchase_orders.slug as purchase_order_slug',
                 DB::raw($this->productImageIdSql().' as image_id'),
+                DB::raw('exists(select 1 from agent_goods_receipt_items where agent_goods_receipt_items.agent_warehouse_stock_id = agent_warehouse_stocks.id and agent_goods_receipt_items.checked_at is null) as is_unchecked'),
             ])
             ->defaultSort('code')
             ->allowedSorts(['code', 'name', 'supplier_code', 'organisation_code', 'quantity', 'state'])
@@ -92,6 +93,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'purchase_order_reference' => $stock->purchase_order_reference,
                 'purchase_order_slug'      => $stock->purchase_order_slug,
                 'image_id'                 => $stock->image_id,
+                'is_unchecked'             => (bool) $stock->is_unchecked,
             ]));
     }
 
@@ -110,7 +112,8 @@ class IndexAgentWarehouseStocks extends OrgAction
                 ->column(key: 'supplier_code', label: __('Supplier'), canBeHidden: false, sortable: true)
                 ->column(key: 'purchase_order_reference', label: __('Purchase order'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('Units'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'notes', label: __('Notes'));
+                ->column(key: 'notes', label: __('Notes'))
+                ->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 
@@ -223,6 +226,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'data'          => $this->handle($agent),
                 'filterOptions' => $this->filterOptions($agent),
                 'cards'         => $this->organisationCards($agent, $request),
+                'canPack'       => $this->canEdit,
             ]
         )->table($this->tableStructure($agent));
     }

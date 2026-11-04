@@ -38,6 +38,7 @@ defineProps<{
 	data: object
 	filterOptions: { state: FilterOption[]; organisation: FilterOption[] }
 	cards: OrganisationCard[]
+	canPack?: boolean
 }>()
 
 const locale = useLocaleStore()
@@ -82,8 +83,8 @@ watch([state, organisation], () => {
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" />
-	<div class="mx-4 mt-3 flex gap-2 rounded-lg border border-[--app-accent-muted] bg-[--app-accent-soft] p-3 text-sm text-gray-700">
-		<FontAwesomeIcon :icon="faInfoCircle" class="mt-0.5 text-[--app-accent]" fixed-width aria-hidden="true" />
+	<div class="mx-4 mt-3 flex gap-2 rounded-lg border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] p-3 text-sm text-gray-700">
+		<FontAwesomeIcon :icon="faInfoCircle" class="mt-0.5 text-[var(--app-accent)]" fixed-width aria-hidden="true" />
 		<p>{{ ctrans("Goods in our warehouse, received from the suppliers and not in a container yet, by packing state. Quantities are in units.") }}</p>
 	</div>
 	<div class="flex flex-wrap gap-x-4 gap-y-2 px-4 pt-3">
@@ -91,7 +92,7 @@ watch([state, organisation], () => {
 		<PillFilterBar :label="ctrans('AW company')" :options="filterOptions.organisation" :selected="organisation" @select="(value) => (organisation = value)" />
 		<PillFilterBar :label="ctrans('State')" :options="filterOptions.state" :selected="state" @select="(value) => (state = value)" />
 	</div>
-	<TableAgentWarehouseStocks v-if="view === 'table'" :data="data" />
+	<TableAgentWarehouseStocks v-if="view === 'table'" :data="data" :canPack="canPack" />
 	<div v-else class="grid max-w-[120rem] gap-4 p-4 text-sm text-gray-700 md:grid-cols-2 xl:grid-cols-3">
 		<div v-if="!cards.length" class="text-gray-500">{{ ctrans("Nothing in the warehouse") }}</div>
 		<div v-for="card in cards" :key="card.code" class="flex flex-col rounded-lg border border-gray-200 bg-white pb-3 shadow-sm">
