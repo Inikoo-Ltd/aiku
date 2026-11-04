@@ -536,7 +536,9 @@ class IndexMasterFamilies extends OrgAction
                 'actions'       => $this->getActions(),
                 'subNavigation' => $subNavigation,
             ],
-            'shopsData'   => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
+            'shopsData'   => $masterShop
+                ? OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops'))
+                : ['data' => []],
         ];
 
         $baseData['storeRoute'] = match ($this->parent::class) {

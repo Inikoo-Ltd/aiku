@@ -48,7 +48,7 @@ const loadingChangeParent = ref(false)
 const tableKey = ref(1)
 
 const routeCurrent = route().current()
-const routeParams = route().routeParams
+const routeParams = (route().routeParams ?? {}) as RouteParams
 
 function familyRoute(masterFamily: MasterFamily) {
     if (routeCurrent == "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index") {
@@ -60,8 +60,8 @@ function familyRoute(masterFamily: MasterFamily) {
         return route(
             "grp.masters.master_shops.show.master_departments.show.master_families.show",
             {
-                masterShop: (routeParams as RouteParams).masterShop,
-                masterDepartment: (routeParams as RouteParams).masterDepartment,
+                masterShop: routeParams.masterShop,
+                masterDepartment: routeParams.masterDepartment,
                 masterFamily: masterFamily.slug
             });
     } else if (
@@ -75,7 +75,7 @@ function familyRoute(masterFamily: MasterFamily) {
         return route(
             "grp.masters.master_shops.show.master_families.show",
             {
-                masterShop: (routeParams as RouteParams).masterShop,
+                masterShop: routeParams.masterShop,
                 masterFamily: masterFamily.slug,
                 _query: {
                     'elements[status]': 'active'
@@ -85,7 +85,7 @@ function familyRoute(masterFamily: MasterFamily) {
         return route(
             "grp.masters.master_shops.show.master_families.show",
             {
-                masterShop: (routeParams as RouteParams).masterShop,
+                masterShop: routeParams.masterShop,
                 masterFamily: masterFamily.slug
             });
     } else if (routeCurrent == "grp.masters.master_shops.show.master_family.missing_image.index") {
@@ -116,7 +116,7 @@ function masterDepartmentRoute(masterFamily: MasterFamily) {
         return route(
             "grp.masters.master_shops.show.master_departments.show",
             {
-                masterShop: (routeParams as RouteParams).masterShop,
+                masterShop: masterFamily.master_shop_slug,
                 masterDepartment: masterFamily.master_department_slug
             });
     }
@@ -127,7 +127,7 @@ function masterSubDepartmentRoute(masterFamily: MasterFamily) {
     return route(
         "grp.masters.master_shops.show.master_sub_departments.show",
         {
-            masterShop: (routeParams as RouteParams).masterShop,
+            masterShop: masterFamily.master_shop_slug,
             masterSubDepartment: masterFamily.master_sub_department_slug
         }
     );
@@ -143,19 +143,10 @@ function masterShopRoute(masterFamily: MasterFamily) {
     );
 }
 
-function ProductRoute(masterFamily: MasterDepartment) {
-    if (routeCurrent == 'grp.masters.master_shops.show.master_families.index') {
-        return route('grp.masters.master_shops.show.master_families.master_products.index',
-            {
-                masterFamily: masterFamily.slug,
-                masterShop: (routeParams as RouteParams).masterShop
-            }
-        )
-    }
-
+function ProductRoute(masterFamily: MasterFamily) {
     return route('grp.masters.master_shops.show.master_families.master_products.index',
         {
-            masterShop: (routeParams as RouteParams).masterShop,
+            masterShop: masterFamily.master_shop_slug,
             masterFamily: masterFamily.slug
         }
     )
@@ -288,7 +279,7 @@ const chevronClass = (masterFamily: MasterFamily) =>
             </div>
         </template>
         <template #add-on-button>
-            <div v-if="selectedFamily.length != 0">
+            <div v-if="selectedFamily.length != 0 && routeParams.masterShop">
                 <Button :icon="faFolderTree" label="Assign to another" @click="visibleDialog = true" :size="'xs'"
                     type="secondary" />
             </div>
@@ -438,7 +429,7 @@ const chevronClass = (masterFamily: MasterFamily) =>
             <PureMultiselectInfiniteScroll :fetchRoute="{
                 name: 'grp.json.master_shop.master_departments_and_sub_departments',
                 parameters: {
-                    masterShop: (routeParams as RouteParams).masterShop
+                    masterShop: routeParams.masterShop
                 }
             }" :required="true" valueProp="id" type_label="department-and-sub-department" labelProp="code"
                 v-model="selectedParentId" />
