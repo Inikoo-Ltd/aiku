@@ -237,7 +237,8 @@ function isMarkable(segment: JourneySegment): boolean {
                         </div>
                         <div v-if="ribbon.agent_name" class="flex items-center gap-1">
                             <FontAwesomeIcon v-tooltip="ctrans('Agent')" icon="fal fa-people-arrows" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
-                            <Link :href="route('grp.supply-chain.agents.show', { agent: ribbon.agent_slug! })" class="hover:text-gray-900 hover:underline">{{ ribbon.agent_name }}</Link>
+                            <Link v-if="ribbon.agent_slug" :href="route('grp.supply-chain.agents.show', { agent: ribbon.agent_slug })" class="hover:text-gray-900 hover:underline">{{ ribbon.agent_name }}</Link>
+                            <span v-else>{{ ribbon.agent_name }}</span>
                         </div>
                         <div v-if="ribbon.supplier_nickname" class="text-gray-500">{{ ctrans("Nickname :nickname", { nickname: ribbon.supplier_nickname }) }}</div>
                         <div class="flex items-center gap-1">

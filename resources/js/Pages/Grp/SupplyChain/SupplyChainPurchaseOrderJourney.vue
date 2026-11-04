@@ -169,7 +169,7 @@ function visit(changes: Record<string, string | number | boolean | null>): void 
             params[key] = value
         }
     }
-    router.get(route("grp.supply-chain.dashboard"), params, {
+    router.get(window.location.pathname, params, {
         only: ["filters", "active", "summary", "blockages", "quickStats", "ribbons", "pagination"],
         preserveState: true,
         preserveScroll: true,
@@ -184,7 +184,7 @@ function changePage(page: number, perPage?: number): void {
     if (perPage) {
         params.set("per_page", String(perPage))
     }
-    router.get(route("grp.supply-chain.dashboard"), Object.fromEntries(params), {
+    router.get(window.location.pathname, Object.fromEntries(params), {
         only: ["ribbons", "pagination"],
         preserveState: true,
         preserveScroll: true,

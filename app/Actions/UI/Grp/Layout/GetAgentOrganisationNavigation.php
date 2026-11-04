@@ -28,6 +28,7 @@ class GetAgentOrganisationNavigation
             $topMenus = [
                 'agent_orders'                   => [
                     $this->procurementSubSection(__('Backlog'), 'fa-tasks', 'grp.org.agent.orders.', 'grp.org.agent.orders.index', $organisation),
+                    $this->procurementSubSection(__('PO Overview'), 'fa-route', 'grp.org.agent.purchase_orders.overview', 'grp.org.agent.purchase_orders.overview', $organisation),
                     $this->procurementSubSection(__('Purchase orders'), 'fa-clipboard-list', 'grp.org.agent.purchase_orders.index', 'grp.org.agent.purchase_orders.index', $organisation),
                     $this->procurementSubSection(__('PO board'), 'fa-columns', 'grp.org.agent.purchase_orders.board', 'grp.org.agent.purchase_orders.board', $organisation),
                     $this->procurementSubSection(__('Shared suppliers'), 'fa-people-carry', 'grp.org.agent.purchase_orders.shared_suppliers', 'grp.org.agent.purchase_orders.shared_suppliers', $organisation),
@@ -80,6 +81,7 @@ class GetAgentOrganisationNavigation
                         'agent_orders'  => [
                             'grp.org.agent.purchase_orders.index',
                             'grp.org.agent.purchase_orders.board',
+                            'grp.org.agent.purchase_orders.overview',
                             'grp.org.agent.purchase_orders.shared_suppliers',
                             'grp.org.agent.purchase_orders.show',
                             'grp.org.agent.purchase_orders.edit',

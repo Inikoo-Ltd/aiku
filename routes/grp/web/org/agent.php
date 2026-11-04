@@ -59,6 +59,7 @@ use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderChasePanel;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowAgentPurchaseOrdersBoard;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowAgentOrdersBacklog;
+use App\Actions\Procurement\PurchaseOrder\UI\ShowAgentPurchaseOrdersOverview;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexAgentOrderLines;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowAgentPurchaseOrdersDashboard;
 use App\Actions\Procurement\PurchaseOrder\UI\ShowAgentPurchaseOrdersReports;
@@ -134,6 +135,7 @@ Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {
     Route::get('shared-suppliers', IndexAgentSharedSuppliers::class)->name('shared_suppliers');
     Route::get('shared-suppliers/{supplier}/sheet', ExportCombinedSupplierSheet::class)->name('shared_suppliers.sheet');
     Route::get('board', ShowAgentPurchaseOrdersBoard::class)->name('board');
+    Route::get('overview', ShowAgentPurchaseOrdersOverview::class)->name('overview');
     Route::get('reports', ShowAgentPurchaseOrdersReports::class)->name('reports');
     Route::get('export', ExportPurchaseOrders::class)->name('export');
     Route::get('{purchaseOrder:id}/chase-panel', GetPurchaseOrderChasePanel::class)->name('chase_panel')->withoutScopedBindings();

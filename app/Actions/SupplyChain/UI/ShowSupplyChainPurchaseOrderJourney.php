@@ -59,10 +59,10 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         return [];
     }
 
-    public function handle(ActionRequest $request): array
+    public function handle(ActionRequest $request, ?Agent $agent = null): array
     {
         $today   = now()->startOfDay();
-        $ribbons = $this->ribbons($this->group);
+        $ribbons = $this->ribbons($agent ? $agent->group : $this->group, agent: $agent);
 
         $active = collect(self::FILTER_GROUPS)->mapWithKeys(fn (string $group) => [$group => $request->query($group) ?: null])->all();
 
@@ -124,15 +124,16 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
     /**
      * Every open order of the group, or the one asked for, with its stages planned, as the board shows them. With a
-     * supplier, only the orders sent to it, as its portal lists them: drafts were never sent, so they stay out.
+     * supplier, only the orders sent to it, as its portal lists them; with an agent, only the orders it handles.
+     * Drafts were never sent to either, so they stay out.
      */
-    public function ribbons(Group $group, ?int $purchaseOrderId = null, ?Supplier $supplier = null): Collection
+    public function ribbons(Group $group, ?int $purchaseOrderId = null, ?Supplier $supplier = null, ?Agent $agent = null): Collection
     {
         $this->group = $group;
         $this->rates = $purchaseOrderId || $supplier ? [] : $this->latestRates();
         $today       = now()->startOfDay();
 
-        return collect($this->rows($purchaseOrderId, $supplier))->map(fn (object $row) => $this->toRibbon($row, $today));
+        return collect($this->rows($purchaseOrderId, $supplier, $agent))->map(fn (object $row) => $this->toRibbon($row, $today));
     }
 
     /**
@@ -151,12 +152,13 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     /**
      * @return array<int, object>
      */
-    private function rows(?int $purchaseOrderId = null, ?Supplier $supplier = null): array
+    private function rows(?int $purchaseOrderId = null, ?Supplier $supplier = null, ?Agent $agent = null): array
     {
         $supplierCondition = $supplier
             ? " and po.state <> 'in_process' and po.parent_type = 'OrgSupplier'
                 and po.parent_id in (select org_suppliers.id from org_suppliers where org_suppliers.supplier_id = :supplier_id)"
             : '';
+        $agentCondition = $agent ? " and po.state <> 'in_process' and po.agent_id = :agent_id" : '';
 
         $finishedSince = now()->subDays(self::FINISHED_WINDOW_DAYS);
 
@@ -183,13 +185,14 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             {$this->deliveryLateral()}
             {$this->containersLateral()}
             {$this->linesLateral('purchase_order_transactions.purchase_order_id = po.id')}
-            where {$this->openPurchaseOrderCondition()}{$supplierCondition}".($purchaseOrderId ? ' and po.id = :purchase_order_id' : ''),
+            where {$this->openPurchaseOrderCondition()}{$supplierCondition}{$agentCondition}".($purchaseOrderId ? ' and po.id = :purchase_order_id' : ''),
             [
                 'group_id'                => $this->group->id,
                 'finished_since'          => $finishedSince,
                 'finished_since_unlinked' => $finishedSince,
                 ...($purchaseOrderId ? ['purchase_order_id' => $purchaseOrderId] : []),
                 ...($supplier ? ['supplier_id' => $supplier->id] : []),
+                ...($agent ? ['agent_id' => $agent->id] : []),
             ]
         );
     }
