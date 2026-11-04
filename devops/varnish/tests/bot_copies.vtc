@@ -1,0 +1,88 @@
+varnishtest "INI-193 bot copies"
+server s1 {
+    rxreq
+    expect req.http.X-Aiku-Bot == <undef>
+    txresp -hdr "x-aiku-website: 7" -hdr "x-aiku-webpage: 42" -hdr "Content-Type: text/html" -body "h1"
+    rxreq
+    expect req.http.X-Aiku-Bot == "1"
+    txresp -hdr "x-aiku-website: 7" -hdr "x-aiku-webpage: 42" -hdr "Content-Type: text/html" -body "b1"
+    rxreq
+    txresp -hdr "x-aiku-website: 7" -hdr "x-aiku-webpage: 42" -hdr "Content-Type: text/html" -body "h2"
+    rxreq
+    expect req.http.X-Aiku-Bot == "1"
+    txresp -hdr "x-aiku-website: 7" -hdr "x-aiku-webpage: 42" -hdr "Content-Type: text/html" -body "b2"
+    rxreq
+    txresp -hdr "x-aiku-website: 7" -hdr "x-aiku-webpage: 42" -hdr "Content-Type: text/html" -body "h3"
+    rxreq
+    txresp -hdr "x-aiku-website: 7" -hdr "x-aiku-webpage: 42" -hdr "Content-Type: text/html" -body "x4"
+    rxreq
+    txresp -hdr "x-aiku-website: 7" -hdr "x-aiku-webpage: 42" -hdr "Content-Type: text/html" -body "x5"
+} -start
+
+varnish v1 -vcl {
+__VCL__
+} -start
+
+logexpect l1 -v v1 -g raw {
+    expect * * TTL "^VCL 864000 "
+    expect * * TTL "^VCL 259200 "
+} -start
+
+client c1 {
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150"
+    rxresp
+    expect resp.body == "h1"
+    expect resp.http.X-Aiku-Bot-Copy == <undef>
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 (compatible; ClaudeBot/1.0)"
+    rxresp
+    expect resp.body == "b1"
+    expect resp.http.X-Aiku-Bot-Copy == "1"
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150"
+    rxresp
+    expect resp.body == "h1"
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1)"
+    rxresp
+    expect resp.body == "h1"
+    txreq -url /p -hdr "User-Agent: aiku-cache-warmer"
+    rxresp
+    expect resp.body == "h1"
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 (Linux; Android 10; CUBOT X30) AppleWebKit/537.36 Chrome/150 Mobile Safari/537.36"
+    rxresp
+    expect resp.body == "h1"
+    expect resp.http.X-Aiku-Bot-Copy == <undef>
+    txreq -url /p -hdr "User-Agent: Screaming Frog SEO Spider/19.1" -hdr "Cookie: iris_vua=1"
+    rxresp
+    expect resp.body == "h1"
+    expect resp.http.X-Aiku-Bot-Copy == <undef>
+} -run
+
+logexpect l1 -wait
+
+varnish v1 -cliok "ban obj.http.x-aiku-website ~ . && obj.http.x-aiku-bot-copy != 1"
+
+client c2 {
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150"
+    rxresp
+    expect resp.body == "h2"
+    txreq -url /p -hdr "User-Agent: Screaming Frog SEO Spider/19.1"
+    rxresp
+    expect resp.body == "b1"
+    txreq -req BAN -hdr "x-ban-webpage: 42"
+    rxresp
+    expect resp.status == 200
+    txreq -url /p -hdr "User-Agent: Screaming Frog SEO Spider/19.1"
+    rxresp
+    expect resp.body == "b2"
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150"
+    rxresp
+    expect resp.body == "h3"
+    txreq -req BAN -hdr "x-ban-all: 1"
+    rxresp
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150"
+    rxresp
+    expect resp.body == "x4"
+    txreq -url /p -hdr "User-Agent: python-requests/2.31"
+    rxresp
+    expect resp.body == "x5"
+    expect resp.http.X-Aiku-Bot-Copy == "1"
+} -run

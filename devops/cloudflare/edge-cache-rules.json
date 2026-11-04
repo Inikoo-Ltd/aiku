@@ -114,6 +114,18 @@
           }
         },
         "enabled": true
+      },
+      {
+        "description": "aiku iris: never store a bot's own copy (Varnish marks it X-Aiku-Bot-Copy): deploy flushes spare bot copies, so one stored here could hand a person a pre-deploy page",
+        "expression": "(http.host eq \"__HOST__\" and any(lower(http.response.headers.names[*])[*] eq \"x-aiku-bot-copy\"))",
+        "action": "set_cache_control",
+        "action_parameters": {
+          "no-store": {
+            "cloudflare_only": false,
+            "operation": "set"
+          }
+        },
+        "enabled": true
       }
     ]
   }

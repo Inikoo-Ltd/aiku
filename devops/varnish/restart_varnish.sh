@@ -5,6 +5,8 @@
 #
 
 echo "Restarting Varnish..."
-sudo varnishadm 'ban obj.http.x-aiku-host ~ .'
+# Bot copies (x-aiku-bot-copy) are spared: bots run no JS, so a pre-deploy page can't break for them.
+# varnish:restart (x-ban-all) still flushes everything.
+sudo varnishadm 'ban obj.http.x-aiku-website ~ . && obj.http.x-aiku-bot-copy != 1'
 echo "Done."
 id -un

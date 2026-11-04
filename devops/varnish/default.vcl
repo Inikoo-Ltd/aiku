@@ -195,6 +195,17 @@ sub vcl_recv {
         call set_login_flag_from_cookie;
     }
 
+    # Bots run no JavaScript, so old JS in an old page can't break anything for them:
+    # they get their own copy of logged-out pages, which the deploy flush in
+    # restart_varnish.sh spares (x-aiku-bot-copy). Search engines and the cache warmer
+    # stay with people, so a template change reaches Google at once.
+    unset req.http.X-Aiku-Bot;
+    if (req.http.X-Logged-Status == "Out"
+        && req.http.User-Agent ~ "(?i)(bot|crawl|spider|scrap|slurp|python|curl|wget|go-http|java/|node-fetch|axios|php-requests|libwww|okhttp|headless|ChatGPT-User|Perplexity-User|meta-externalagent|facebookexternalhit|importer)"
+        && req.http.User-Agent !~ "(?i)(googlebot|google-|googleother|adsbot|mediapartners|storebot|bingbot|bingpreview|msnbot|adidxbot|yandex|baiduspider|applebot|duckduck|seznam|petalbot|yeti|sogou|qwant|aiku-cache-warmer|cubot)") {
+        set req.http.X-Aiku-Bot = "1";
+    }
+
     # Select backend weights based on the derived login status
     if (req.http.X-Logged-Status == "In") {
         set req.backend_hint = logged_in_vdir.backend();
@@ -273,6 +284,11 @@ sub vcl_hash {
     hash_data(req.http.host);
     hash_data(req.url);
 
+    # Only bot copies get an extra key, so people's cache keys stay as they were.
+    if (req.http.X-Aiku-Bot) {
+        hash_data("Bot");
+    }
+
     # Categorize requests into two hash buckets based on X-Inertia header.
     if (req.http.X-Inertia) {
         hash_data("Inertia");
@@ -296,6 +312,12 @@ sub vcl_backend_response {
 
     set beresp.http.X-Aiku-Host = bereq.http.host;
     set beresp.http.X-Aiku-Url = bereq.url;
+
+    # Deploy flushes spare bot copies, so they live 3 days at most. The header also tells
+    # Cloudflare never to store them, or a person could get a bot's pre-deploy page.
+    if (bereq.http.X-Aiku-Bot) {
+        set beresp.http.X-Aiku-Bot-Copy = "1";
+    }
 
     # Never store responses that the backend marks private or uncacheable.
     #   if (beresp.http.Cache-Control ~ "(?i)(private|no-store|no-cache)") {
@@ -363,6 +385,7 @@ sub vcl_backend_response {
             set beresp.ttl = 10d;
             set beresp.grace = 2m;
             set beresp.keep = 10m;
+            call cap_bot_copy_ttl;
             unset beresp.http.X-Aiku-Cacheable-Redirect;
             return (deliver);
         }
@@ -411,6 +434,7 @@ sub vcl_backend_response {
             set beresp.grace = 1m;
             set beresp.do_gzip = true;
             call set_reviews_ttl;
+            call cap_bot_copy_ttl;
 
 
             if (beresp.http.Vary) {
@@ -439,6 +463,7 @@ sub vcl_backend_response {
     set beresp.grace = 2m;
     set beresp.keep = 10m;
     call set_reviews_ttl;
+    call cap_bot_copy_ttl;
 
 
     # Enable gzip on text-like content
@@ -447,6 +472,12 @@ sub vcl_backend_response {
     }
 
     return (deliver);
+}
+
+sub cap_bot_copy_ttl {
+    if (bereq.http.X-Aiku-Bot && beresp.ttl > 3d) {
+        set beresp.ttl = 3d;
+    }
 }
 
 sub set_reviews_ttl {
