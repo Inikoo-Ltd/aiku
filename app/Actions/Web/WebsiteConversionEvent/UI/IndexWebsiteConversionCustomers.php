@@ -8,7 +8,9 @@
 namespace App\Actions\Web\WebsiteConversionEvent\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
+use App\Enums\Web\WebsiteVisitor\WebsiteVisitorChannelEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Asset;
 use App\Models\CRM\Customer;
@@ -139,7 +141,39 @@ class IndexWebsiteConversionCustomers extends OrgAction
             ->selectRaw("SUM(CASE WHEN website_conversion_events.event_type = '$purchase' THEN 1 ELSE 0 END) as purchases")
             ->selectRaw("SUM(CASE WHEN website_conversion_events.event_type = '$purchase' THEN website_conversion_events.net_amount ELSE 0 END) as revenue")
             ->selectRaw('MAX(website_conversion_events.created_at) as last_event_at')
-            ->selectRaw('STRING_AGG(DISTINCT website_visitors.traffic_source_type, \',\') as traffic_source_types');
+            ->selectRaw('STRING_AGG(DISTINCT website_visitors.traffic_source_type, \',\') as traffic_source_types')
+            ->selectRaw('ARRAY_AGG(DISTINCT website_visitors.traffic_source_type) FILTER (WHERE website_visitors.traffic_source_type IS NOT NULL) as traffic_source_type_list');
+    }
+
+    /**
+     * How many customers of the period came in through each channel, most first; a customer whose
+     * visits came through several channels counts once in each.
+     *
+     * @return array<string, int>
+     */
+    private function channelCounts(Website $website, ?string $fromDate, ?string $toDate, ?string $productCode): array
+    {
+        return DB::query()
+            ->fromSub($this->conversionsByCustomer($website, $fromDate, $toDate, $productCode), 'conversions')
+            ->crossJoin(DB::raw('UNNEST(conversions.traffic_source_type_list) as channel'))
+            ->groupBy('channel')
+            ->orderByDesc('customers')
+            ->selectRaw('channel, COUNT(*) as customers')
+            ->pluck('customers', 'channel')
+            ->map(fn ($customers) => (int) $customers)
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function channelTypes(): array
+    {
+        return [
+            ...array_map(fn (TrafficSourcesTypeEnum $type) => $type->value, TrafficSourcesTypeEnum::cases()),
+            WebsiteVisitorChannelEnum::EMAIL_TYPE,
+            WebsiteVisitorChannelEnum::INTERNAL_TYPE,
+        ];
     }
 
     /**
@@ -176,10 +210,14 @@ class IndexWebsiteConversionCustomers extends OrgAction
      * With keeps the customers who did at least one of the ticked actions, Without those who did
      * none of them, so With add to basket + Without purchase lists the baskets that never became an order.
      *
+     * Channel keeps the customers whose visits came in through at least one of the ticked channels;
+     * it lists only the channels seen in the period.
+     *
      * @param  array<string, int>  $counts
+     * @param  array<string, int>|null  $channelCounts
      * @return array<string, array{label: string, elements: array<string, array{0: string, 1: int}>, engine: Closure}>
      */
-    private function getElementGroups(array $counts = []): array
+    private function getElementGroups(array $counts = [], ?array $channelCounts = null): array
     {
         $labels = [
             WebsiteConversionEventTypeEnum::ADD_TO_BASKET->value => __('Add to basket'),
@@ -213,6 +251,15 @@ class IndexWebsiteConversionCustomers extends OrgAction
                     }
                 },
             ],
+            'channel' => [
+                'label'    => __('Channel'),
+                'elements' => collect($channelCounts ?? array_fill_keys($this->channelTypes(), 0))
+                    ->map(fn (int $customers, string $type) => [WebsiteVisitorChannelEnum::typeLabel($type), $customers])
+                    ->all(),
+                'engine'   => function ($query, $elements) {
+                    $query->whereRaw('conversions.traffic_source_type_list && ?::varchar[]', ['{'.implode(',', $elements).'}']);
+                },
+            ],
         ];
     }
 
@@ -225,7 +272,17 @@ class IndexWebsiteConversionCustomers extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($this->elementCounts($website, $fromDate, $toDate, $this->productCode($prefix))) as $key => $elementGroup) {
+            $productCode   = $this->productCode($prefix);
+            $elementGroups = $this->getElementGroups(
+                $this->elementCounts($website, $fromDate, $toDate, $productCode),
+                $this->channelCounts($website, $fromDate, $toDate, $productCode)
+            );
+
+            foreach ($elementGroups as $key => $elementGroup) {
+                if ($elementGroup['elements'] === []) {
+                    continue;
+                }
+
                 $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], optional: true);
             }
 
