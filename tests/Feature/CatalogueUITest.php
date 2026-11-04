@@ -2300,7 +2300,8 @@ test('organisation target adds up its shops, leaving closed shops out of the tar
         ->and(GetShopYearSalesTarget::run($this->organisation, null, $today)['target']['amount'])->toEqualWithDelta(1000 * (1 + $growth) + 5000, 0.05);
 
     get(route('grp.org.dashboard.show', $this->organisation->slug))
-        ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target')
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('salesTargets')
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload->has('salesTargets.month.target')->has('salesTargets.year.target'))
             ->where('dashboard.super_blocks.0.tabs_box.navigation', fn ($boxes) => collect(collect($boxes)->firstWhere('tabs.0.tab_slug', 'returned')['children'] ?? [])
                 ->isNotEmpty() && collect(collect($boxes)->firstWhere('tabs.0.tab_slug', 'returned')['children'])->every(fn ($child) => is_int($child['tabs'][0]['value']))));
 
@@ -2428,7 +2429,44 @@ test('group target adds up every organisation in the group currency', function (
         ->and(GetShopYearSalesTarget::run($this->group, null, $today)['target']['amount'])->toEqualWithDelta(2000 * (1 + $growth), 0.05);
 
     get(route('grp.dashboard.show'))
-        ->assertInertia(fn (AssertableInertia $page) => $page->has('dashboard.super_blocks.0.month_target.target')->has('dashboard.super_blocks.0.year_target.target'));
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('salesTargets')
+            ->loadDeferredProps(fn (AssertableInertia $reload) => $reload->has('salesTargets.month.target')->has('salesTargets.year.target')));
+});
+
+test('organisation and group sales targets run the same number of queries however many shops there are', function () {
+    $today   = Carbon::parse('2034-06-10', 'UTC');
+    $queries = function () use ($today): int {
+        Cache::flush();
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        GetShopMonthSalesTarget::run($this->organisation->fresh(), null, $today);
+        GetShopYearSalesTarget::run($this->organisation->fresh(), null, $today);
+        GetShopMonthSalesTarget::run($this->group->fresh(), null, $today);
+        GetShopYearSalesTarget::run($this->group->fresh(), null, $today);
+        DB::disableQueryLog();
+
+        return count(DB::getQueryLog());
+    };
+
+    $partners = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Partners '.uniqid(),
+        'type'        => InvoiceCategoryTypeEnum::VIP->value,
+        'currency_id' => $this->organisation->currency_id,
+    ]);
+    $addShop = function () use ($partners) {
+        $shop = StoreShop::make()->action($this->organisation, Shop::factory()->definition());
+        UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 100, 'month' => '2034-06']);
+        UpdateShopSalesTarget::make()->action($shop, ['target_org_currency' => 40, 'month' => '2034-06', 'invoice_category_id' => $partners->id]);
+    };
+
+    $addShop();
+    $before = $queries();
+
+    foreach (range(1, 3) as $ignored) {
+        $addShop();
+    }
+
+    expect($queries())->toBe($before);
 });
 
 test('a shop selling under several invoice categories targets their sum, partners included, each category taking its share of the shop target until set', function () {

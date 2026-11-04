@@ -59,10 +59,11 @@ trait WithDashboardCurrencyTypeSettings
         } else {
             $currencyIds = $organisation->shops()->pluck('currency_id')->unique()->toArray();
         }
+        $currenciesById  = Currency::whereIn('id', $currencyIds)->get()->keyBy('id');
         $currencies      = [];
         $currencySymbols = [];
         foreach ($currencyIds as $currencyId) {
-            $currency          = Currency::find($currencyId);
+            $currency          = $currenciesById->get($currencyId);
             $currencies[]      = $currency;
             $currencySymbols[] = $currency->symbol;
         }
