@@ -17,6 +17,7 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Services\QueryBuilder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
@@ -66,12 +67,56 @@ class GetDropshippingApiProducts extends RetinaApiAction
                     ->where('customer_sales_channel_id', $customerSalesChannel->id)
                     ->where('status', true);
             });
-        $query->leftJoin('product_categories as department', 'products.department_id', 'department.id');
-        $query->leftJoin('product_categories as sub_department', 'products.sub_department_id', 'sub_department.id');
-        $query->leftJoin('product_categories as family', 'products.family_id', 'family.id');
-        $query->leftJoin('shops', 'products.shop_id', 'shops.id');
-        $query->leftJoin('currencies', 'currencies.id', 'products.currency_id');
+        $this->joinCatalogue($query);
 
+        $sorts         = (string) Arr::get($modelData, 'sort', '');
+        $sortedColumns = [
+            'code'            => 'products.code',
+            'name'            => 'products.name',
+            'shop_slug'       => 'shops.slug as shop_slug',
+            'department_slug' => 'department.slug as department_slug',
+            'family_slug'     => 'family.slug as family_slug',
+        ];
+
+        $pageSelects = ['products.id', 'products.code'];
+        foreach ($sortedColumns as $sort => $column) {
+            if (str_contains($sorts, $sort)) {
+                $pageSelects[] = $column;
+            }
+        }
+        $query->addSelect(array_unique($pageSelects));
+
+        $paginator = $query->defaultSort('products.code')
+            ->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
+            ->orderBy('products.id')
+            ->withPaginator(null, queryName: 'per_page')
+            ->withQueryString();
+
+        $productIds = $paginator->getCollection()->pluck('id');
+        $products   = $this->joinCatalogue(Product::query())
+            ->select($this->selects(Arr::get($modelData, 'include', '')))
+            ->whereIn('products.id', $productIds)
+            ->get()
+            ->keyBy('id');
+
+        return $paginator->setCollection($productIds->map(fn (int $productId) => $products->get($productId)));
+    }
+
+    /**
+     * The page is chosen on products alone, so the joins and the wide columns are read for
+     * the rows on the page, not for every product of the shop.
+     */
+    private function joinCatalogue(QueryBuilder|Builder $query): QueryBuilder|Builder
+    {
+        return $query->leftJoin('product_categories as department', 'products.department_id', 'department.id')
+            ->leftJoin('product_categories as sub_department', 'products.sub_department_id', 'sub_department.id')
+            ->leftJoin('product_categories as family', 'products.family_id', 'family.id')
+            ->leftJoin('shops', 'products.shop_id', 'shops.id')
+            ->leftJoin('currencies', 'currencies.id', 'products.currency_id');
+    }
+
+    private function selects(string $includes): array
+    {
         $selects = [
             'products.id',
             'products.code',
@@ -95,9 +140,7 @@ class GetDropshippingApiProducts extends RetinaApiAction
             'shops.slug as shop_slug',
         ];
 
-        $include = explode(',', Arr::get($modelData, 'include', ''));
-
-
+        $include         = explode(',', $includes);
         $isAll           = in_array('all', $include);
         $allowedIncludes = [
             'department'     => 'department.name as department_name',
@@ -111,12 +154,7 @@ class GetDropshippingApiProducts extends RetinaApiAction
             }
         }
 
-        $query->addSelect($selects);
-
-        return $query->defaultSort('products.code')
-            ->allowedSorts(['code', 'name', 'shop_slug', 'department_slug', 'family_slug'])
-            ->withPaginator(null, queryName: 'per_page')
-            ->withQueryString();
+        return $selects;
     }
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection

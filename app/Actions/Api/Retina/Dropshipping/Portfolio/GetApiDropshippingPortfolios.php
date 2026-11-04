@@ -51,7 +51,30 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
 
         $query->where('portfolios.status', true);
 
-        $query->leftJoin('products', 'products.id', 'portfolios.item_id')
+        $query->leftJoin('products', 'products.id', 'portfolios.item_id');
+
+        if (!is_null(Arr::get($modelData, 'is_for_sale'))) {
+            $sellable = Product::sellableThroughSalesChannelsSql();
+            $query->whereRaw(filter_var($modelData['is_for_sale'], FILTER_VALIDATE_BOOLEAN) ? $sellable : 'not '.$sellable);
+        }
+
+        if (Arr::get($modelData, 'state')) {
+            $query->where('products.state', $modelData['state']);
+        }
+
+        if (Arr::get($modelData, 'status')) {
+            $query->where('products.status', $modelData['status']);
+        }
+
+        $paginator = $query->select('portfolios.id')
+            ->orderBy('portfolios.id')
+            ->withPaginator(null, queryName: 'per_page')
+            ->withQueryString();
+
+        $portfolioIds = $paginator->getCollection()->pluck('id');
+        $portfolios   = Portfolio::query()
+            ->whereIn('portfolios.id', $portfolioIds)
+            ->leftJoin('products', 'products.id', 'portfolios.item_id')
             ->leftJoin('product_categories as department', 'products.department_id', 'department.id')
             ->leftJoin('product_categories as sub_department', 'products.sub_department_id', 'sub_department.id')
             ->leftJoin('product_categories as family', 'products.family_id', 'family.id')
@@ -82,26 +105,14 @@ class GetApiDropshippingPortfolios extends RetinaApiAction
                 'sub_department.name as sub_department_name',
                 'family.slug as family_slug',
                 'family.name as family_name',
-            );
-        $query->selectRaw(Product::sellableThroughSalesChannelsSql().' as is_for_sale');
-        $query->selectRaw('products.exclusive_for_customer_id is not null as is_exclusive');
-        $query->selectRaw("'{$customerSalesChannel->shop->currency->code}'  as currency_code");
+            )
+            ->selectRaw(Product::sellableThroughSalesChannelsSql().' as is_for_sale')
+            ->selectRaw('products.exclusive_for_customer_id is not null as is_exclusive')
+            ->selectRaw("'{$customerSalesChannel->shop->currency->code}'  as currency_code")
+            ->get()
+            ->keyBy('id');
 
-        if (!is_null(Arr::get($modelData, 'is_for_sale'))) {
-            $sellable = Product::sellableThroughSalesChannelsSql();
-            $query->whereRaw(filter_var($modelData['is_for_sale'], FILTER_VALIDATE_BOOLEAN) ? $sellable : 'not '.$sellable);
-        }
-
-        if (Arr::get($modelData, 'state')) {
-            $query->where('products.state', $modelData['state']);
-        }
-
-        if (Arr::get($modelData, 'status')) {
-            $query->where('products.status', $modelData['status']);
-        }
-
-        return $query->withPaginator(null, queryName: 'per_page')
-            ->withQueryString();
+        return $paginator->setCollection($portfolioIds->map(fn (int $portfolioId) => $portfolios->get($portfolioId)));
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
