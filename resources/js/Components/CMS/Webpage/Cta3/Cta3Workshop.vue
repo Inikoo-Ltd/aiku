@@ -79,7 +79,7 @@ const imageSettings = {
           sendMessageToParent('activeChildBlock', 'block_properties')
         }"
       >
-        <div class="text-center lg:text-left text-gray-700 pr-3 mb-4 w-full">
+        <div class="text-center lg:text-left pr-3 mb-4 w-full" :class="getStyles(modelValue.container?.properties, screenType)?.color ? '' : 'text-gray-700'">
           <Editor
             v-if="modelValue?.text"
             v-model="modelValue.text"

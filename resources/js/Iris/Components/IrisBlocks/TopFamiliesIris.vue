@@ -197,7 +197,7 @@ watch(
 				...getStyles(props.fieldValue.container?.properties, props.screenType),
 			}">
 			<div class="text-center mb-12">
-				<span class="font-medium text-[#1d2d44]" :style="{ fontSize: '2rem' }">
+				<span class="font-medium" :class="getStyles(props.fieldValue.container?.properties, props.screenType)?.color ? '' : 'text-[#1d2d44]'" :style="{ fontSize: '2rem' }">
 					<template v-if="fieldValue.title">{{ fieldValue.title }}</template>
 					<template v-else>{{ ctrans("Best - Selling") }} {{ fieldValue.product_category_title || 'families'}} {{ ctrans('Ranges') }}</template>
 				</span>

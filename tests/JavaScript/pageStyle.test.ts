@@ -122,3 +122,31 @@ test("the text block takes the page text colour and font", () => {
 	assert.deepEqual(webBlock.web_block.layout.data.fieldValue.container.properties.text, { color: "rgba(0, 255, 0, 1)", fontFamily: "Raleway" })
 	assert.equal(webBlock.web_block.layout.data.fieldValue.value, "<p>Returns policy</p>")
 })
+
+test("blocks whose text sits in the editor take the page text colour and font on their container", () => {
+	const ctaBlueprint = [
+		{ key: ["container", "properties", "visibility"], type: "visibility" },
+		{
+			name: "Button",
+			key: ["button"],
+			replaceForm: [{ key: ["container", "properties", "text"], type: "textProperty" }],
+		},
+		{ name: "Layout", key: ["container", "properties"], replaceForm: [{ key: ["background"], type: "background" }] },
+	]
+	const webBlock = block({ text: "<h2>Complete Your Bath & Beauty Collection</h2>" })
+	applyPageStyleToBlock(webBlock, { colors: { text: "indigo", button_text: "yellow" }, font_family: "Arial" }, ["colors.text", "colors.button_text", "font_family"], ctaBlueprint)
+
+	const fieldValue = webBlock.web_block.layout.data.fieldValue
+	assert.deepEqual(fieldValue.container.properties.text, { color: "indigo", fontFamily: "Arial" })
+	assert.deepEqual(fieldValue.button.container.properties.text, { color: "yellow", fontFamily: "Arial" })
+	assert.equal(fieldValue.text, "<h2>Complete Your Bath & Beauty Collection</h2>")
+})
+
+test("a block with no container of its own gets no container text", () => {
+	const webBlock = block()
+	const changes = applyPageStyleToBlock(webBlock, { colors: { text: "indigo" } }, ["colors.text"], [
+		{ key: ["container", "properties", "visibility"], type: "visibility" },
+	])
+
+	assert.deepEqual(changes, [])
+})
