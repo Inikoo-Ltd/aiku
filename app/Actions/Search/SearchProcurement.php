@@ -47,7 +47,9 @@ class SearchProcurement
         }
 
         $suppliersQuery = Supplier::search($query);
-        if ($organisationId) {
+        if ($agentId) {
+            $suppliersQuery->where('agent_id', $agentId);
+        } elseif ($organisationId) {
             $suppliersQuery->where('organisation_ids', $organisationId);
         }
 
@@ -76,7 +78,7 @@ class SearchProcurement
             'results' => [
                 'purchase_orders'                 => array_map($mapReferenceState, $this->rawDocuments($purchaseOrdersQuery)),
                 'stock_deliveries'                 => array_map($mapReferenceState, $this->rawDocuments($stockDeliveriesQuery)),
-                'agents'                           => array_map($mapCodeNameState, $this->rawDocuments($agentsQuery)),
+                'agents'                           => $agentId ? [] : array_map($mapCodeNameState, $this->rawDocuments($agentsQuery)),
                 'suppliers'                        => array_map($mapCodeNameState, $this->rawDocuments($suppliersQuery)),
                 'supplier_products'                => array_map($mapCodeNameState, $this->rawDocuments($supplierProductsQuery)),
             ],
