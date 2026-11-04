@@ -344,7 +344,7 @@ const submit = async () => {
 									:target="termsLink.target"
 									:type="termsLink.type"
 									class="underline">
-									{{ fieldValue?.register?.terms?.text || ctrans("I agree with the terms and conditions") }}
+									{{ ctrans(fieldValue?.register?.terms?.text || "I agree with the terms and conditions") }}
 								</LinkIris>
 							</label>
 						</div>
@@ -385,7 +385,7 @@ const submit = async () => {
 								:disabled="isLoading"
 								class="inline-flex w-full cursor-pointer items-center justify-center gap-x-2 transition duration-75 ease-in-out disabled:opacity-70"
 								:style="getStyles(fieldValue?.register?.button?.container?.properties, screenType)">
-								{{ fieldValue?.register?.button?.text || ctrans("Register") }}
+								{{ ctrans(fieldValue?.register?.button?.text || "Register") }}
 								<LoadingIcon v-if="isLoading" />
 							</button>
 							<div @click="() => (!isAgreeTnc ? (isErrorTnc = true) : submit())" class="absolute inset-0 cursor-pointer" />

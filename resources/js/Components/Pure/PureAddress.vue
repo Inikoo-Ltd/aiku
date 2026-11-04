@@ -58,7 +58,7 @@ const addressFields = (countryID: number) => {
             <label for="selectCountry" class="mb-1 block text-xs font-medium">
                 {{ ctrans('Country') }}
             </label>
-            <Multiselect v-model="modelValue.country_id" searchable :options="countries" placeholder="Select a country" :canDeselect="false" :canClear="false" />
+            <Multiselect v-model="modelValue.country_id" searchable :options="countries" :placeholder="ctrans('Select a country')" :canDeselect="false" :canClear="false" />
         </div>
 
         <!-- Fields: City, Address, Addres Line 2 -->

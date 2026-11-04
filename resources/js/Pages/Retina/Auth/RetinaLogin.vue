@@ -121,7 +121,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
 <template>
 
-    <Head title="Login" />
+    <Head :title="ctrans('Login')" />
 
 
 

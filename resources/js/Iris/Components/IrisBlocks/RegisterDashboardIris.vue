@@ -233,7 +233,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 							fixed-width aria-hidden="true" />
 						<span class="rd-inline-text">
 							<slot name="editable" :path="['signup', 'button', 'label']" :value="fieldValue?.signup?.button?.label" placeholder="Register with email">
-								<span v-html="fieldValue?.signup?.button?.label || ctrans('Register with email')" />
+								<span v-html="ctrans(fieldValue?.signup?.button?.label || 'Register with email')" />
 							</slot>
 						</span>
 					</LinkIris>
@@ -260,7 +260,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 						</svg>
 						<span class="rd-inline-text">
 							<slot name="editable" :path="['signup', 'google', 'label']" :value="fieldValue?.signup?.google?.label" placeholder="Register with Google">
-								<span v-html="fieldValue?.signup?.google?.label || ctrans('Register with Google')" />
+								<span v-html="ctrans(fieldValue?.signup?.google?.label || 'Register with Google')" />
 							</slot>
 						</span>
 					</button>
@@ -280,7 +280,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 									<path fill="#34A853"
 										d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
 								</svg>
-								<span v-html="fieldValue?.signup?.google?.label || ctrans('Register with Google')" />
+								<span v-html="ctrans(fieldValue?.signup?.google?.label || 'Register with Google')" />
 							</div>
 						</template>
 					</GoogleLogin>

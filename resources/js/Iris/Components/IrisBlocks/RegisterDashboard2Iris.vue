@@ -259,7 +259,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 							<LinkIris :href="registerLink.href" :type="registerLink.type" :target="registerLink.target"
 								:canonical_url="registerLink.canonical_url" class="rd2-primary">
 								<slot name="editable" :path="['card', 'button', 'label']" :value="fieldValue?.card?.button?.label" placeholder="Create my wholesale account">
-									<span v-html="fieldValue?.card?.button?.label || ctrans('Create my wholesale account')" />
+									<span v-html="ctrans(fieldValue?.card?.button?.label || 'Create my wholesale account')" />
 								</slot>
 							</LinkIris>
 
@@ -291,7 +291,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 								</svg>
 								<span>
 									<slot name="editable" :path="['card', 'google', 'label']" :value="fieldValue?.card?.google?.label" placeholder="Register with Google">
-										<span v-html="fieldValue?.card?.google?.label || ctrans('Register with Google')" />
+										<span v-html="ctrans(fieldValue?.card?.google?.label || 'Register with Google')" />
 									</slot>
 								</span>
 							</button>
@@ -311,7 +311,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 									<path fill="#34A853"
 										d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
 								</svg>
-										<span v-html="fieldValue?.card?.google?.label || ctrans('Register with Google')" />
+										<span v-html="ctrans(fieldValue?.card?.google?.label || 'Register with Google')" />
 									</div>
 								</template>
 							</GoogleLogin>

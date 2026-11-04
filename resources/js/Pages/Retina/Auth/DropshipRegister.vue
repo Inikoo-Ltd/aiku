@@ -239,7 +239,7 @@ const onCallbackGoogleLogin = (e) => {
 
                 <!-- Submit Button -->
                 <div class="space-y-2">
-                    <Button full @click.prevent="submitRegister" :loading="isLoading" label="Register" xtype="'tertiary'" xclass="'!bg-[#C1A027] !text-white'" />
+                    <Button full @click.prevent="submitRegister" :loading="isLoading" :label="ctrans('Register')" xtype="'tertiary'" xclass="'!bg-[#C1A027] !text-white'" />
                 </div>
 
                 <!-- Google Login -->

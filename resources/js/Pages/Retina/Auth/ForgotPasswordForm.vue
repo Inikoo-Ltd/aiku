@@ -10,6 +10,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { ref } from 'vue'
 import InputError from '@/Components/InputError.vue'
 import Modal from "@/Components/Utils/Modal.vue"
+import { ctrans } from "@/Composables/useTrans"
 library.add(faArrowLeft, faCheckCircle, faExclamationTriangle)
 
 
@@ -77,7 +78,7 @@ const isUserInputPassed = (dataToCheck: Record<string, any>) => {
 
 <template>
 
-    <Head title="Forgot Password" />
+    <Head :title="ctrans('Forgot Password')" />
     <!-- <Link :href="route('retina.login.show')" class="absolute left-4 top-4 text-xs text-gray-600 hover:underline">
         <FontAwesomeIcon icon='fal fa-arrow-left' class='' fixed-width aria-hidden='true' />
         {{back_label}}

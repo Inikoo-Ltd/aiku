@@ -211,7 +211,7 @@ const loginWithGoogle = async () => {
 						<div class="mt-2 flex items-center justify-between">
 							<label class="flex cursor-pointer select-none items-center gap-x-2 text-sm">
 								<input v-model="form.remember" type="checkbox" name="remember" class="cursor-pointer" />
-								{{ fieldValue?.login?.remember?.text || ctrans("Remember me") }}
+								{{ ctrans(fieldValue?.login?.remember?.text || "Remember me") }}
 							</label>
 
 							<LinkIris
@@ -240,7 +240,7 @@ const loginWithGoogle = async () => {
 
 					<div v-if="isGoogleLoginVisible" class="space-y-3">
 						<div class="text-center text-sm">
-							{{ fieldValue?.login?.google?.note || ctrans("or use your Google account to login") }}
+							{{ ctrans(fieldValue?.login?.google?.note || "or use your Google account to login") }}
 						</div>
 
 						<button
@@ -254,7 +254,7 @@ const loginWithGoogle = async () => {
 								<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
 								<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
 							</svg>
-							{{ fieldValue?.login?.google?.text || ctrans("Login with Google") }}
+							{{ ctrans(fieldValue?.login?.google?.text || "Login with Google") }}
 							<LoadingIcon v-if="isLoadingGoogle" />
 						</button>
 					</div>

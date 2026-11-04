@@ -11,6 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { picksAdministrativeAreaFromList } from '@/Composables/useAddressValidation'
 import { useCountriesAddressData } from '@/Composables/useCountriesAddressData'
 import { computed } from 'vue'
+import { ctrans } from '@/Composables/useTrans'
 
 const props = defineProps<{
     form: any
@@ -73,7 +74,7 @@ const handleChange = (fieldAddress?: string) => {
                         form.errors[fieldName] || form.recentlySuccessful ? 'pr-8' : '',
                         form.errors[fieldName] ? 'errorShake' : ''
                     ]"
-                    :placeholder="props.fieldData.placeholder ?? 'Select a country'"
+                    :placeholder="props.fieldData.placeholder ?? ctrans('Select a country')"
                     :canDeselect="false"
                     :canClear="false"
                     name="country_id"

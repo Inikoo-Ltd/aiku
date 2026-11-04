@@ -459,7 +459,7 @@ const contentClass = computed(() =>
 										screenType
 									),
 								}">
-								{{ fieldValue?.button?.text || ctrans("Learn more") }}
+								{{ ctrans(fieldValue?.button?.text || "Learn more") }}
 							</button>
 						</a>
 

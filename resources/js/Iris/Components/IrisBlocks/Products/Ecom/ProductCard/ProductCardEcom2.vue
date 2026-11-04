@@ -307,7 +307,7 @@ defineExpose({
         <!-- LOGIN  -->
         <div v-if="!layout?.iris?.is_logged_in" class="px-3">
             <a :href="urlLoginWithRedirect()" class="w-full">
-                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyleLogin" />
+                <Button :label="ctrans('Login or Register for Wholesale Prices')" class="rounded-none" full :injectStyle="buttonStyleLogin" />
             </a>
         </div>
 

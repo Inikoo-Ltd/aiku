@@ -78,7 +78,7 @@ const columnClass = computed(() => {
 				<a
 					:href="fieldValue?.blog_index_url || '/blog'"
 					class="inline-flex items-center rounded-full border border-gray-300 px-5 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50">
-					{{ fieldValue?.view_all_label || ctrans("View all posts") }}
+					{{ ctrans(fieldValue?.view_all_label || "View all posts") }}
 				</a>
 			</div>
 		</div>

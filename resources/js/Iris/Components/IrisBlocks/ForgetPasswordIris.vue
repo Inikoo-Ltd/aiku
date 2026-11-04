@@ -106,7 +106,7 @@ const submit = async () => {
 					<form class="mt-6 space-y-5" @submit.prevent="submit">
 						<div>
 							<label for="forgot-password-email" class="block text-sm font-semibold">
-								{{ fieldValue?.forgot_password?.email?.label || ctrans("Email") }}
+								{{ ctrans(fieldValue?.forgot_password?.email?.label || "Email") }}
 							</label>
 							<input
 								id="forgot-password-email"
@@ -131,7 +131,7 @@ const submit = async () => {
 							class="relative flex w-full cursor-pointer items-center justify-center gap-x-2 rounded-sm transition duration-75 ease-in-out disabled:opacity-70"
 							:style="getStyles(fieldValue?.forgot_password?.button?.container?.properties, screenType)"
 							:disabled="isLoading">
-							{{ fieldValue?.forgot_password?.button?.text || ctrans("Email Password Reset Link") }}
+							{{ ctrans(fieldValue?.forgot_password?.button?.text || "Email Password Reset Link") }}
 							<LoadingIcon v-if="isLoading" />
 						</button>
 					</form>

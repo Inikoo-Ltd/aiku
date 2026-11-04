@@ -286,18 +286,18 @@ const columnClass = computed(() => {
 					v-if="showExplore"
 					class="flex flex-col justify-center gap-3 rounded-2xl bg-[color-mix(in_srgb,var(--theme-color-0)_7%,white)] p-8 ring-1 ring-[color-mix(in_srgb,var(--theme-color-0)_18%,white)]">
 					<span class="text-[11px] font-semibold uppercase tracking-widest text-[var(--theme-color-0)]">
-						{{ fieldValue?.explore?.eyebrow ?? ctrans('New here?') }}
+						{{ ctrans(fieldValue?.explore?.eyebrow ?? 'New here?') }}
 					</span>
 					<h2 class="!text-2xl font-bold text-gray-900">
-						{{ fieldValue?.explore?.title ?? ctrans('Start exploring') }}
+						{{ ctrans(fieldValue?.explore?.title ?? 'Start exploring') }}
 					</h2>
 					<div
 						class="editor-class max-w-md text-sm leading-relaxed text-gray-500"
-						v-html="fieldValue?.explore?.description ?? ctrans('Dive into the latest stories, guides, and tips across all categories.')" />
+						v-html="ctrans(fieldValue?.explore?.description ?? 'Dive into the latest stories, guides, and tips across all categories.')" />
 					<a
 						:href="'#' + listId"
 						class="mt-2 inline-flex w-fit items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-[var(--theme-color-0)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--theme-color-0)_30%,white)] transition hover:bg-[var(--theme-color-0)] hover:text-[var(--theme-color-1)]">
-						{{ fieldValue?.explore?.label ?? ctrans('Browse All Blogs') }}
+						{{ ctrans(fieldValue?.explore?.label ?? 'Browse All Blogs') }}
 						<span aria-hidden="true">→</span>
 					</a>
 				</div>
@@ -306,10 +306,10 @@ const columnClass = computed(() => {
 					v-if="showNewsletter"
 					class="flex flex-col justify-center gap-3 rounded-2xl bg-gray-50 p-8 ring-1 ring-gray-200">
 					<span class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
-						{{ fieldValue?.newsletter?.eyebrow ?? ctrans('Stay in the loop') }}
+						{{ ctrans(fieldValue?.newsletter?.eyebrow ?? 'Stay in the loop') }}
 					</span>
 					<h2 class="!text-2xl font-bold text-gray-900">
-						{{ fieldValue?.newsletter?.title ?? ctrans('Get the newsletter') }}
+						{{ ctrans(fieldValue?.newsletter?.title ?? 'Get the newsletter') }}
 					</h2>
 					<div
 						class="editor-class max-w-md text-sm leading-relaxed text-gray-500"
@@ -354,7 +354,7 @@ const columnClass = computed(() => {
 										<LoadingIcon v-if="isSubscribing" />
 									</Transition>
 									<FontAwesomeIcon v-if="!isSubscribing" icon="fal fa-envelope" fixed-width aria-hidden="true" />
-									{{ fieldValue?.newsletter?.label ?? ctrans('Subscribe') }}
+									{{ ctrans(fieldValue?.newsletter?.label ?? 'Subscribe') }}
 								</button>
 							</form>
 
@@ -399,7 +399,7 @@ const columnClass = computed(() => {
 						<Transition name="spin-to-right">
 							<LoadingIcon v-if="isLoadingMore" />
 						</Transition>
-						{{ fieldValue?.list_load_more_label || ctrans("Load more blogs") }}
+						{{ ctrans(fieldValue?.list_load_more_label || "Load more blogs") }}
 					</button>
 				</div>
 			</div>

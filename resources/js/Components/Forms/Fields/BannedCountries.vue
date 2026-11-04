@@ -239,7 +239,7 @@ const closeRegexTest = () => {
                                 :options="getCountryOptions(data)"
                                 optionLabel="label"
                                 optionValue="value"
-                                placeholder="Select a country"
+                                :placeholder="ctrans('Select a country')"
                                 :disabled="data.read_only || isDisabled"
                                 filterPlaceholder="Type to search country"
                                 class="w-full md:w-56"
