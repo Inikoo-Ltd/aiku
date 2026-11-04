@@ -49,7 +49,12 @@ function save() {
 <template>
 	<div v-if="item.agentUnitExpenseRoute" class="text-xs">
 		<label class="flex items-center gap-1.5 text-gray-500">
-			{{ ctrans("Your unit expense") }}
+			<span
+				v-tooltip="ctrans('Additional expense per unit, on top of the unit price. This is not the unit price')"
+				class="cursor-help border-b border-dotted border-gray-400"
+			>
+				{{ ctrans("Your unit expense") }}
+			</span>
 			<InputNumber
 				v-model="value"
 				v-bind="locale.unitCostInputOptions(item.net_currency)"
