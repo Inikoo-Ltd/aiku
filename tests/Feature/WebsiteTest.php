@@ -66,6 +66,8 @@ use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Models\SysAdmin\Guest;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
+use App\Actions\Maintenance\Web\RepairWebsiteMenuV2Links;
+use Illuminate\Support\Facades\File;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Actions\Web\Website\BreakWebsiteVarnishCache;
@@ -2183,6 +2185,68 @@ test('publish website marginal header', function (Website $website) {
     $website->refresh();
 
     expect($website->liveHeaderSnapshot)->not->toBeNull();
+})->depends('launch website');
+
+test('repair website menu v2 links points own v2 links at www in every menu copy', function (Website $website) {
+    request()->setUserResolver(fn () => $this->user);
+    $domain     = $website->domain;
+    $menuLayout = [
+        'status' => 'active',
+        'data'   => ['fieldValue' => ['navigation' => [
+            ['label' => 'Own', 'link' => ['type' => 'internal', 'href' => "https://v2.$domain/aromatherapy", 'canonical_url' => "https://V2.$domain/aromatherapy"]],
+            ['label' => 'Other domain', 'link' => ['type' => 'external', 'href' => 'https://v2.example.org/page']],
+            ['label' => 'Not a link key', 'link' => ['type' => 'internal', 'href' => "https://www.$domain/beauty", 'workshop' => "https://v2.$domain/workshop"]],
+        ]]],
+    ];
+    AutosaveWebsiteMarginal::make()->action($website, 'menu', ['layout' => $menuLayout]);
+    PublishWebsiteMarginal::make()->action($website, 'menu', ['layout' => $menuLayout]);
+    $website->refresh();
+
+    $preview = RepairWebsiteMenuV2Links::run($website);
+
+    expect($preview['changes'])->toHaveCount(6)
+        ->and(collect($preview['changes'])->countBy('copy')->all())->toBe(['live' => 2, 'draft' => 2, 'published' => 2])
+        ->and($preview['skipped'])->toHaveCount(3)
+        ->and(json_encode($website->fresh()->published_layout, JSON_UNESCAPED_SLASHES))->toContain("https://v2.$domain/aromatherapy");
+
+    $backupDir = storage_path('framework/testing/repair-website-menu-v2-links-'.uniqid());
+    RepairWebsiteMenuV2Links::run($website, true, $backupDir);
+    $website->refresh();
+
+    $menuCopies = [
+        'live'      => $website->liveMenuSnapshot->layout,
+        'draft'     => $website->unpublishedMenuSnapshot->layout,
+        'published' => Arr::get($website->published_layout, 'menu'),
+    ];
+    foreach ($menuCopies as $menuCopy) {
+        $encoded = json_encode($menuCopy, JSON_UNESCAPED_SLASHES);
+        expect(substr_count($encoded, "https://www.$domain/aromatherapy"))->toBe(2)
+            ->and(stripos($encoded, "v2.$domain/aromatherapy"))->toBeFalse()
+            ->and($encoded)->toContain('https://v2.example.org/page')
+            ->and($encoded)->toContain("https://v2.$domain/workshop");
+    }
+    expect(File::exists("$backupDir/$website->slug.json"))->toBeTrue()
+        ->and(RepairWebsiteMenuV2Links::run($website)['changes'])->toBe([]);
+
+    File::deleteDirectory($backupDir);
+})->depends('launch website');
+
+test('repair website menu v2 links command skips websites still migrating', function (Website $website) {
+    request()->setUserResolver(fn () => $this->user);
+    $v2Link     = "https://v2.$website->domain/aromatherapy";
+    $menuLayout = ['status' => 'active', 'data' => ['fieldValue' => ['navigation' => [
+        ['label' => 'Own', 'link' => ['type' => 'internal', 'href' => $v2Link, 'canonical_url' => $v2Link]],
+    ]]]];
+    PublishWebsiteMarginal::make()->action($website, 'menu', ['layout' => $menuLayout]);
+
+    $website->update(['is_migrating' => true]);
+    $this->artisan('repair:website-menu-v2-links', ['website' => $website->slug, '--apply' => true])
+        ->expectsOutputToContain('still migrating')
+        ->assertExitCode(0);
+    $website->update(['is_migrating' => false]);
+
+    expect(json_encode($website->fresh()->published_layout, JSON_UNESCAPED_SLASHES))->toContain($v2Link)
+        ->and(json_encode($website->fresh()->liveMenuSnapshot->layout, JSON_UNESCAPED_SLASHES))->toContain($v2Link);
 })->depends('launch website');
 
 test('save website sitemap', function (Website $website) {
