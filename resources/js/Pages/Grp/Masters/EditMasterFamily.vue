@@ -6,6 +6,7 @@ import InputText from "primevue/inputtext"
 import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import Select from "primevue/select"
+import MultiSelect from "primevue/multiselect"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faPlus, faCheckCircle, faTrashAlt, faExclamationTriangle } from "@fal"
 import { notify } from "@kyvg/vue3-notification"
@@ -34,6 +35,7 @@ const props = defineProps<{
         description_extra: string | null
         master_department_id: number | null
         master_sub_department_id: number | null
+        master_collection_ids: number[]
         trade_unit_family: string | null
         faq: { question: string, answer: string }[] | null
         meta_description: string | null
@@ -44,6 +46,7 @@ const props = defineProps<{
     }
     departments: { id: number, name: string }[]
     subDepartments: { id: number, name: string, master_department_id: number | null }[]
+    masterCollections: { id: number, code: string, name: string }[]
     isGoldRewardEligible: boolean
     faqField: { master_product_category_id: number }
     extraSections: { label: string, fields: Record<string, FieldDefinition> }[]
@@ -76,6 +79,7 @@ const form = useForm<Record<string, any>>({
     description_extra: props.masterFamily.description_extra,
     master_department_id: props.masterFamily.master_department_id,
     master_sub_department_id: props.masterFamily.master_sub_department_id,
+    master_collection_ids: [...props.masterFamily.master_collection_ids],
     faq: cloneDeep(props.masterFamily.faq ?? []),
     meta_description: props.masterFamily.meta_description,
     seo_image: props.masterFamily.seo_image,
@@ -238,6 +242,14 @@ const save = () => {
                         </div>
                     </div>
                     <p v-if="parentError" class="mt-2 text-sm text-red-600">{{ parentError }}</p>
+
+                    <div class="mt-4">
+                        <label class="mb-1 block text-xs font-medium text-gray-700">{{ ctrans("Collections") }}</label>
+                        <MultiSelect v-model="form.master_collection_ids" :options="masterCollections" optionLabel="name" optionValue="id" display="chip" filter
+                            :filterFields="['name', 'code']" class="w-full" :placeholder="ctrans('Not in any collection')" />
+                        <p class="mt-1 text-xs text-gray-500">{{ ctrans("A family can be in several collections. The shop collections that follow the master get it too.") }}</p>
+                        <p v-if="form.errors.master_collection_ids" class="mt-1 text-sm text-red-600">{{ form.errors.master_collection_ids }}</p>
+                    </div>
 
                     <div class="mt-4">
                         <label class="mb-1 block text-xs font-medium text-gray-700">{{ ctrans("Trade unit family") }}</label>

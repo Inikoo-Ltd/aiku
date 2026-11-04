@@ -15,6 +15,8 @@
 
 @if (($scale['layout'] ?? null) === 'wide')
     @include('labels.templates.pdf.org_stock.unit_wide_body')
+@elseif (($scale['layout'] ?? null) === 'small')
+    @include('labels.templates.pdf.org_stock.unit_small_body')
 @else
 @php
     $hasImage   = $show['image'] && $label['image_path'];

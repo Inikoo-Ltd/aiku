@@ -429,6 +429,7 @@ class UpdateShop extends OrgAction
                     'appointment_notify_shop' => 'settings.appointments.notify_shop',
                     'appointment_notify_email' => 'settings.appointments.notify_email',
                     'appointment_notify_staff' => 'settings.appointments.notify_staff',
+                    'appointment_one_at_a_time' => 'settings.appointments.one_at_a_time',
                     'letter_of_authorisation_enabled' => 'settings.letter_of_authorisation.enabled',
                     'letter_of_authorisation_company_name' => 'settings.letter_of_authorisation.company_name',
                     'letter_of_authorisation_body' => 'settings.letter_of_authorisation.body',
@@ -495,6 +496,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'appointment_notify_shop');
         data_forget($modelData, 'appointment_notify_email');
         data_forget($modelData, 'appointment_notify_staff');
+        data_forget($modelData, 'appointment_one_at_a_time');
         data_forget($modelData, 'letter_of_authorisation_enabled');
         data_forget($modelData, 'letter_of_authorisation_company_name');
         data_forget($modelData, 'letter_of_authorisation_body');
@@ -1119,6 +1121,7 @@ class UpdateShop extends OrgAction
             'appointment_notify_shop'                                 => ['sometimes', 'boolean'],
             'appointment_notify_email'                                => ['sometimes', 'nullable', 'email', 'max:255'],
             'appointment_notify_staff'                                => ['sometimes', 'boolean'],
+            'appointment_one_at_a_time'                               => ['sometimes', 'boolean'],
             'zoom_account_id'                                         => ['sometimes', 'nullable', 'string', 'max:255'],
             'zoom_client_id'                                          => ['sometimes', 'nullable', 'string', 'max:255'],
             'zoom_client_secret'                                      => ['sometimes', 'nullable', 'string', 'max:255'],

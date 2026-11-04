@@ -7,7 +7,7 @@ import { faPaperPlane, faPlus, faSave, faTimes } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import HelpTip from "@/Components/Utils/HelpTip.vue"
-import { seoFieldHelp } from "@/Composables/seoFieldHelp"
+import { seoFieldHelp, seoFieldLength } from "@/Composables/seoFieldHelp"
 import { Textarea } from "primevue"
 import RichTextField from "@/Components/Catalogue/ProductSetting/RichTextField.vue"
 import KeywordsInput from "@/Components/Catalogue/ProductSetting/KeywordsInput.vue"
@@ -167,6 +167,7 @@ const send = () => {
                                 </template>
                                 <span v-else class="italic text-gray-400">{{ ctrans("Empty") }}</span>
                             </div>
+                            <p v-if="seoFieldLength(field.field, field.current)" class="mt-1 text-xs" :class="seoFieldLength(field.field, field.current)!.isOver ? 'text-red-600' : 'text-gray-400'">{{ seoFieldLength(field.field, field.current)!.text }}</p>
                         </div>
                         <div>
                             <label :for="`seo-suggestion-${field.field}`" class="mb-1 block text-xs font-medium text-gray-600">{{ ctrans("SEO Suggestion") }}</label>
@@ -193,6 +194,7 @@ const send = () => {
                                 :invalid="!!errors[`suggestions.${field.field}`]"
                             />
                             <p v-if="errors[`suggestions.${field.field}`]" class="mt-1 text-xs text-red-600">{{ errors[`suggestions.${field.field}`] }}</p>
+                            <p v-if="seoFieldLength(field.field, suggestions[field.field])" class="mt-1 text-xs" :class="seoFieldLength(field.field, suggestions[field.field])!.isOver ? 'text-red-600' : 'text-gray-400'">{{ seoFieldLength(field.field, suggestions[field.field])!.text }}</p>
                         </div>
                     </div>
                 </div>
@@ -235,9 +237,9 @@ const send = () => {
                     </p>
                 </div>
 
-                <Button v-if="!isReadOnly" type="tertiary" :label="ctrans('Add new structured data')" @click="structuredDataItems.push({ json_ld: '' })">
+                <Button v-if="!isReadOnly" type="primary" :label="ctrans('Add new structured data')" @click="structuredDataItems.push({ json_ld: '' })">
                     <template #icon>
-                        <FontAwesomeIcon :icon="faPlus" class="text-green-600" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon :icon="faPlus" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
             </div>
@@ -247,14 +249,14 @@ const send = () => {
             <span v-if="!keywords.length" class="text-sm text-amber-700">{{ ctrans("Add targeted keywords before sending") }}</span>
             <span class="text-sm text-gray-600">{{ ctrans(":count suggestions written", { count: String(writtenCount) }) }}</span>
             <Button
-                type="tertiary"
+                type="primary"
                 :label="ctrans('Send suggestions to webmaster')"
                 :disabled="!canSend || isSending"
                 :loading="isSending"
                 @click="send"
             >
                 <template #icon>
-                    <FontAwesomeIcon :icon="faPaperPlane" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faPaperPlane" fixed-width aria-hidden="true" />
                 </template>
             </Button>
         </div>

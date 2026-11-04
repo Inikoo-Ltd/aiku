@@ -68,7 +68,7 @@ const structuredDataTypes = computed(() => {
 </script>
 
 <template>
-    <section class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-md">
+    <section class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <h2 class="font-semibold text-gray-900">{{ ctrans("Preview") }}</h2>
             <span class="text-xs text-gray-500">{{ subtitle ?? ctrans("Current values on the live page") }}</span>

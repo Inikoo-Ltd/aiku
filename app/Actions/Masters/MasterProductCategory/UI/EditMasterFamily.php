@@ -17,6 +17,7 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\FamilyCustomizeEnum;
 use App\Enums\Catalogue\ProductCategory\FamilyStorageConditionEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
@@ -121,6 +122,7 @@ class EditMasterFamily extends OrgAction
                     'description_extra'        => $masterProductCategory->description_extra,
                     'master_department_id'     => $masterProductCategory->master_department_id,
                     'master_sub_department_id' => $masterProductCategory->master_sub_department_id,
+                    'master_collection_ids'    => MasterCollection::whereHas('masterFamilies', fn ($query) => $query->where('master_product_categories.id', $masterProductCategory->id))->pluck('id'),
                     'trade_unit_family'        => $masterProductCategory->tradeUnitFamily
                         ? $masterProductCategory->tradeUnitFamily->code.' ('.$masterProductCategory->tradeUnitFamily->name.')'
                         : null,
@@ -144,6 +146,9 @@ class EditMasterFamily extends OrgAction
                     ->where('type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->orderBy('name')
                     ->get(['id', 'name', 'master_department_id']),
+                'masterCollections'    => MasterCollection::where('master_shop_id', $masterShop->id)
+                    ->orderBy('name')
+                    ->get(['id', 'code', 'name']),
                 'isGoldRewardEligible' => (bool)$masterShop->gold_reward_eligible,
                 'faqField'             => [
                     'master_product_category_id' => $masterProductCategory->id,

@@ -4,6 +4,7 @@ namespace App\Actions\CRM\AppointmentType;
 
 use App\Actions\CRM\Appointment\GoogleCalendar\GetGoogleCalendarBusyPeriods;
 use App\Enums\CRM\Appointment\AppointmentStateEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Appointment;
 use App\Models\CRM\AppointmentBlock;
 use App\Models\CRM\AppointmentType;
@@ -38,6 +39,7 @@ class GetAppointmentTypeAvailableSlots
         $buffer   = $appointmentType->buffer_minutes;
         $duration = $appointmentType->duration_minutes;
         $booked   = $this->bookedPeriods($appointmentType, $now, $lastDay->copy()->endOfDay(), $buffer);
+        $taken    = $this->isOneAtATime($appointmentType->shop) ? $this->otherTypesBookedPeriods($appointmentType, $now, $lastDay->copy()->endOfDay(), $buffer) : collect();
         $staffIds = $appointmentType->attendees()->where('users.status', true)->pluck('users.id');
         $busy     = $this->staffBusyElsewhere($appointmentType, $staffIds, $now, $lastDay->copy()->endOfDay());
         $calendar = GetGoogleCalendarBusyPeriods::run($appointmentType->shop, $now->copy()->startOfHour(), $lastDay->copy()->endOfDay())
@@ -60,6 +62,9 @@ class GetAppointmentTypeAvailableSlots
                     if ($this->countOverlapping($booked, $slot, $slot->copy()->addMinutes($duration + $buffer)) >= $appointmentType->capacity_per_slot) {
                         continue;
                     }
+                    if ($this->countOverlapping($taken, $slot, $slot->copy()->addMinutes($duration + $buffer)) > 0) {
+                        continue;
+                    }
                     if ($this->countOverlapping($calendar, $slot, $slot->copy()->addMinutes($duration)) > 0) {
                         continue;
                     }
@@ -80,6 +85,22 @@ class GetAppointmentTypeAvailableSlots
     public function isAvailable(AppointmentType $appointmentType, string $date, string $time, ?CarbonInterface $now = null): bool
     {
         return in_array($time, $this->handle($appointmentType, $now)[$date] ?? [], true);
+    }
+
+    public function isOneAtATime(Shop $shop): bool
+    {
+        return (bool) Arr::get($shop->settings, 'appointments.one_at_a_time', false);
+    }
+
+    /**
+     * When the shop takes one appointment at a time, a booking of any type can take the time from
+     * another, so every type of the shop is locked, in id order so two bookings never deadlock.
+     */
+    public function lockShopAppointmentTypes(Shop $shop): void
+    {
+        if ($this->isOneAtATime($shop)) {
+            AppointmentType::withTrashed()->where('shop_id', $shop->id)->orderBy('id')->lockForUpdate()->pluck('id');
+        }
     }
 
     /**
@@ -117,6 +138,20 @@ class GetAppointmentTypeAvailableSlots
     private function bookedPeriods(AppointmentType $appointmentType, Carbon $from, Carbon $to, int $buffer): Collection
     {
         return Appointment::where('appointment_type_id', $appointmentType->id)
+            ->whereIn('state', AppointmentStateEnum::holdingSlot())
+            ->where('starts_at', '<', $to)
+            ->where('ends_at', '>', $from->copy()->subMinutes($buffer))
+            ->get(['starts_at', 'ends_at'])
+            ->map(fn (Appointment $appointment) => [$appointment->starts_at, $appointment->ends_at->copy()->addMinutes($buffer)]);
+    }
+
+    /**
+     * @return Collection<int, array{0: Carbon, 1: Carbon}>
+     */
+    private function otherTypesBookedPeriods(AppointmentType $appointmentType, Carbon $from, Carbon $to, int $buffer): Collection
+    {
+        return Appointment::where('shop_id', $appointmentType->shop_id)
+            ->where('appointment_type_id', '!=', $appointmentType->id)
             ->whereIn('state', AppointmentStateEnum::holdingSlot())
             ->where('starts_at', '<', $to)
             ->where('ends_at', '>', $from->copy()->subMinutes($buffer))

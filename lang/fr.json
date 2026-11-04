@@ -9917,6 +9917,7 @@
     "Warehouse instructions": "Instructions d'entrepôt",
     "When the stock in all locations falls below this level the SKO shows in Below minimum stock on the inventory dashboard, so it can be reordered in time. Leave empty to not watch it.": "Lorsque le stock de tous les emplacements passe sous ce niveau, le SKO apparaît dans Stock inférieur au minimum sur le tableau de bord de l'inventaire, afin de pouvoir être réapprovisionné à temps. Laissez vide pour ne pas le surveiller.",
     "Packed from trade units in :org": "Emballé à partir d'unités commerciales de :org",
+    "Imported from :country": "Importé depuis :country",
     "Imported from :country by :organisation": "Importé depuis :country par :organisation",
     "Manufactured by :manufacturer": "Fabriqué par :manufacturer",
     "tel.:": "tél.:",

@@ -23,6 +23,7 @@ trait HasWebBlockLayoutData
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webBlockData);
         data_set($webBlock, 'web_block.layout.data.fieldValue.id', data_get($webBlock, 'type'));
+        data_set($webBlock, 'uses_website_layout', true);
     }
 
     protected function getWebBlockLayoutData(array $webPublishedLayout, string $webBlockType, string $layoutKey): array

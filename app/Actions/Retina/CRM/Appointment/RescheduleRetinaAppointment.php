@@ -40,6 +40,7 @@ class RescheduleRetinaAppointment extends RetinaAction
         ]);
 
         return DB::transaction(function () use ($appointment, $date, $time, $timeTaken) {
+            GetAppointmentTypeAvailableSlots::make()->lockShopAppointmentTypes($appointment->shop);
             $appointmentType = AppointmentType::where('id', $appointment->appointment_type_id)
                 ->where('is_active', true)
                 ->lockForUpdate()

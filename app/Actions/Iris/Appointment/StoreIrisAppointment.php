@@ -28,6 +28,7 @@ class StoreIrisAppointment extends IrisAction
     public function handle(Shop $shop, array $modelData, ?int $customerId = null): Appointment
     {
         return DB::transaction(function () use ($shop, $modelData, $customerId) {
+            GetAppointmentTypeAvailableSlots::make()->lockShopAppointmentTypes($shop);
             /** @var AppointmentType $appointmentType */
             $appointmentType = AppointmentType::where('id', $modelData['appointment_type_id'])->lockForUpdate()->firstOrFail();
 
