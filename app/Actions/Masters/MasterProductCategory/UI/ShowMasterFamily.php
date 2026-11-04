@@ -38,6 +38,7 @@ use App\Http\Resources\Masters\MasterVariantsResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -122,8 +123,16 @@ class ShowMasterFamily extends OrgAction
         return $this->handle($masterFamily);
     }
 
-    public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
+    public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response|RedirectResponse
     {
+        if ($this->parent instanceof Group) {
+            return redirect()->route('grp.masters.master_shops.show.master_families.show', [
+                ...$request->query(),
+                'masterShop'   => $masterFamily->masterShop->slug,
+                'masterFamily' => $masterFamily->slug,
+            ]);
+        }
+
         $tabs = [
             MasterFamilyTabsEnum::SALES->value => $this->tab === MasterFamilyTabsEnum::SALES->value ?
                 fn () => MasterProductCategoryTimeSeriesResource::collection(IndexMasterProductCategoryTimeSeries::run($masterFamily, MasterFamilyTabsEnum::SALES->value))
