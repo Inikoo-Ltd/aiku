@@ -8,6 +8,13 @@
 
 namespace App\Actions\SysAdmin\McpChange;
 
+use App\Actions\Inventory\LocationOrgStock\DeleteLocationOrgStock;
+use App\Actions\Production\Artisan\AttachArtisan;
+use App\Actions\Production\WorkArea\DeleteWorkArea;
+use App\Actions\Production\WorkArea\UpdateWorkArea;
+use App\Models\Inventory\LocationOrgStock;
+use App\Models\Production\Production;
+use App\Models\Production\WorkArea;
 use App\Models\Goods\TradeUnit;
 use App\Actions\Chat\ChatSession\ReopenChatSession;
 use App\Actions\Chat\ChatSession\UnmarkChatSessionAsSpam;
@@ -108,6 +115,8 @@ class RevertMcpChange
                 McpChangeTypeEnum::STOCK_DELIVERY_COSTS => $this->revertStockDeliveryCosts($target, $mcpChange->before),
                 McpChangeTypeEnum::TRADE_UNIT_PROPERTIES => $this->revertTradeUnitProperties($target, $mcpChange->before, $mcpChange->after),
                 McpChangeTypeEnum::WEBSITE_REDIRECTS => $this->revertWebsiteRedirects($mcpChange->before),
+                McpChangeTypeEnum::STOCK_LOCATIONS => $this->revertStockLocations($target, $mcpChange->before, $mcpChange->after, $user),
+                McpChangeTypeEnum::PRODUCTION_SETUP => $this->revertProductionSetup($target, $mcpChange->before),
             };
 
             $mcpChange->update([
@@ -117,6 +126,55 @@ class RevertMcpChange
         });
 
         return $mcpChange;
+    }
+
+    /**
+     * Only takes the SKOs the change added off their locations, and only while they hold nothing: the snapshot check
+     * above already refused a location whose quantity moved since.
+     */
+    private function revertStockLocations(array $target, array $before, array $after, User $user): void
+    {
+        foreach ($target['pairs'] as $pair) {
+            $key = $pair['org_stock_id'].'-'.$pair['location_id'];
+            if (isset($before['pairs'][$key]) || !isset($after['pairs'][$key])) {
+                continue;
+            }
+
+            $locationOrgStock = LocationOrgStock::where('org_stock_id', $pair['org_stock_id'])->where('location_id', $pair['location_id'])->firstOrFail();
+            if ((float) $locationOrgStock->quantity != 0) {
+                throw ValidationException::withMessages(['message' => __(':sko already has stock in :location, so it cannot be taken off automatically.', ['sko' => $pair['sko'], 'location' => $pair['location']])]);
+            }
+
+            DeleteLocationOrgStock::make()->action($locationOrgStock, $user);
+        }
+    }
+
+    private function revertProductionSetup(array $target, array $before): void
+    {
+        $production = Production::findOrFail($target['production_id']);
+        $production->update(['factory_location_id' => $before['factory_location_id']]);
+
+        foreach (WorkArea::where('production_id', $production->id)->get() as $workArea) {
+            if (!isset($before['areas'][$workArea->id])) {
+                DeleteWorkArea::make()->action($workArea);
+            }
+        }
+
+        foreach ($before['areas'] as $workAreaId => $area) {
+            $workArea = WorkArea::where('production_id', $production->id)->find($workAreaId);
+            if (!$workArea) {
+                continue;
+            }
+
+            UpdateWorkArea::make()->action($workArea, ['name' => $area['name'], 'artefact_department_ids' => $area['department_ids']]);
+            $current = $workArea->artisans()->pluck('employees.id')->all();
+            if ($leaving = array_diff($current, $area['artisan_ids'])) {
+                $workArea->artisans()->detach($leaving);
+            }
+            foreach (array_diff($area['artisan_ids'], $current) as $employeeId) {
+                AttachArtisan::make()->handle($workArea, ['employee_id' => $employeeId]);
+            }
+        }
     }
 
     private function revertStockDeliveryCosts(array $target, array $before): void

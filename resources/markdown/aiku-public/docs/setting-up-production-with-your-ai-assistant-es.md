@@ -304,6 +304,29 @@ Luego indica adónde va cada una en la misma petición que los pasos nuevos:
 
 Si de verdad quieres descartar los ingredientes y añadirlos más tarde, dilo: *"descarta los ingredientes, añadiré la receta más tarde"*. Si cambias de opinión, el cambio se puede deshacer (ver más abajo).
 
+## Ubicación de la fábrica y áreas de trabajo
+
+Para el Production Manager (administrador de la organización de la fábrica). El asistente también puede fijar dónde trabaja la fábrica:
+
+- la **ubicación de la fábrica**: la ubicación del almacén donde se entregan las materias primas de la fábrica;
+- las **áreas de trabajo**: donde trabajan los artesanos, cada una con los departamentos de producto que se fabrican allí y los artesanos que trabajan en ella.
+
+> *"Muéstrame la ubicación de la fábrica y las áreas de trabajo de AWGp."*
+
+> *"En AWGp, crea el Área de aceites con los departamentos EO y EOUL, y pon en ella a los dos artesanos de llenado."*
+
+> *"Fija la ubicación de la fábrica de AWGp en PROD-01."*
+
+Primero muestra la ubicación de la fábrica, las áreas, todos los departamentos y los trabajadores de la organización, para que los nombres como aiku los conoce. Si nombras departamentos o artesanos para un área, se sustituye la lista de esa área. Un departamento se fabrica en una sola área, así que darlo a una área lo quita de la otra. Un trabajador puesto en un área aparece enseguida en la página **Artisans**, sin necesidad de darle antes un puesto. Si algún código o nombre es incorrecto, no se guarda nada.
+
+## Poner materias primas en una estantería
+
+Cuando se recibe una orden de trabajo, las materias primas que usó se descuentan del stock desde su ubicación. Una materia prima cuyo SKO no tiene ubicación en el almacén impide recibir la orden de trabajo. El asistente puede poner muchos SKO en ubicaciones de una vez:
+
+> *"En SK, pon EOKG-65, EOKG-33 y BOKG-01 en la ubicación A-01-02."*
+
+Muestra lo que se añadirá, lo que ya está y lo que no encuentra, y lo añade solo después de que confirmes, hasta 200 a la vez. Nunca mueve stock ni cambia una cantidad: lo que hay en la estantería lo siguen contando las personas. Esto necesita su propio interruptor, **Can put SKOs on locations**, y permiso de edición de stock en esa organización.
+
 ## Comprobaciones de seguridad
 
 Algunos cambios son fáciles de hacer mal sin querer, así que aiku los detiene hasta que hayas visto lo que hacen. El asistente te muestra entonces un aviso y no cambia nada. Si lo lees y aun así quieres el cambio, dilo (*"sí, lo sé, adelante"*) y solo entonces se guarda.
@@ -336,6 +359,8 @@ Deshacer se rechaza en dos casos:
 
 - **Se ha vuelto a cambiar desde entonces.** Si alguien editó el mismo artefacto después, a mano o con un asistente, deshacer se detiene en lugar de sobrescribir su trabajo. Revísalo y corrígelo a mano.
 - **El cambio creó algo.** Un artefacto, materia prima, tarea o SKO nuevos no se eliminan al deshacer, porque ya puede haber órdenes de trabajo, recetas y stock colgando de ellos. Ponlo como discontinuado o inactivo en su lugar.
+
+Dos excepciones: un área de trabajo que creó el asistente se vuelve a eliminar, y un SKO que puso en una ubicación se vuelve a quitar mientras esa ubicación siga vacía.
 
 Puedes deshacer los cambios hechos en fábricas que tienes permitido configurar. Los administradores pueden ver y deshacer todos los cambios desde el registro de <b>AI changes</b> (cambios de IA).
 
@@ -390,6 +415,8 @@ Buenos hábitos:
 <aside class="wayfinder"><strong>Permisos que necesitas</strong>
 <ul>
 <li>El interruptor <b>Can set up artefacts, raw materials and recipes through their AI assistant</b> en tu cuenta.</li>
+<li>Para la ubicación de la fábrica y las áreas de trabajo: administrador de la organización de la fábrica.</li>
+<li>Para poner SKO en ubicaciones: el interruptor <b>Can put SKOs on locations</b> y permiso de edición de stock en esa organización.</li>
 <li>Para cambiar cualquier cosa: administrador del grupo, administrador de la organización, un puesto de producción que pueda editar esa fábrica, o administrador de tienda o dependiente en una de las tiendas de la organización de la fábrica.</li>
 <li>Para solo ver recetas y costes: un puesto de producción que pueda ver esa fábrica.</li>
 </ul>

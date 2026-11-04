@@ -303,6 +303,29 @@ Then say where each one goes in the same request as the new steps:
 
 If you really want to drop the ingredients and add them later, say so: *"drop the ingredients, I will add the recipe later"*. If you change your mind, the change can be undone (see below).
 
+## Factory location and work areas
+
+For the Production Manager (an organisation admin of the factory's organisation). The assistant can also set where the factory works:
+
+- the **factory location**: the warehouse location where raw materials for the factory are delivered;
+- the **work areas**: where artisans work, each with the product departments made there and the artisans who work there.
+
+> *"Show me the factory location and work areas of AWGp."*
+
+> *"In AWGp, create the Oils Area with the EO and EOUL departments, and put the two filling artisans in it."*
+
+> *"Set the factory location of AWGp to PROD-01."*
+
+It first shows the factory location, the areas, every department and the workers of the organisation, so you can name them as aiku knows them. Naming departments or artisans for an area replaces that area's list. A department is made in one area, so giving it to one area takes it out of the other. A worker put in an area appears on the **Artisans** page straight away, without first being given a job. If any code or name is wrong, nothing is saved.
+
+## Putting raw materials on a shelf
+
+When a job order is received, the raw materials it used are taken out of stock from their location. A raw material whose SKO has no location in the warehouse stops the job order from being received. The assistant can put many SKOs on locations in one go:
+
+> *"In SK, put EOKG-65, EOKG-33 and BOKG-01 on location A-01-02."*
+
+It shows what will be added, what is already there and what it cannot find, and adds them only after you confirm, up to 200 at a time. It never moves stock or changes a quantity: what is on the shelf is still counted by people. This needs its own switch, **Can put SKOs on locations**, and stock edit permission in that organisation.
+
 ## Safety checks
 
 Some changes are easy to get wrong by accident, so aiku stops them until you have seen what they do. The assistant then shows you a warning and changes nothing. If you read it and still want the change, say so (*"yes, I know, go ahead"*) and only then does it save.
@@ -335,6 +358,8 @@ Undo is refused in two cases:
 
 - **Something was changed again since.** If someone edited the same artefact afterwards, by hand or through an assistant, undo stops rather than overwrite their work. Look at it and fix it by hand.
 - **The change created something.** A new artefact, raw material, task or SKO is not deleted by undo, because job orders, recipes and stock may already hang off it. Set it as discontinued or inactive instead.
+
+Two exceptions: a work area the assistant created is removed again, and a SKO it put on a location is taken off again while that location is still empty.
 
 You can undo changes made in factories you are allowed to set up. Administrators can see and undo every change from the AI changes log.
 
@@ -389,6 +414,8 @@ Good habits:
 <aside class="wayfinder"><strong>Permissions you need</strong>
 <ul>
 <li>The switch <b>Can set up artefacts, raw materials and recipes through their AI assistant</b> on your account.</li>
+<li>For the factory location and work areas: organisation admin of the factory's organisation.</li>
+<li>To put SKOs on locations: the switch <b>Can put SKOs on locations</b> and stock edit permission in that organisation.</li>
 <li>To change anything: group admin, organisation admin, a production position that can edit that factory, or shop admin or shopkeeper in one of the shops of the factory's organisation.</li>
 <li>To only look at recipes and costs: a production position that can view that factory.</li>
 </ul>

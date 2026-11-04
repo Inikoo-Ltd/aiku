@@ -1371,3 +1371,73 @@ test('a custom product is made for one customer from an artefact waiting for its
             ->where('exclusive_products.0.code', 'CUS-'.$suffix)
             ->where('exclusive_products.0.customer', $customer->name));
 });
+
+test('the ai assistant puts SKOs on locations and sets up the factory location and work areas, logged and revertible', function () {
+    $user = $this->guest->getUser();
+    $user->update(['can_use_mcp' => true, 'can_use_mcp_locations' => false, 'can_use_mcp_production' => true]);
+    $organisation = $this->production->organisation;
+    $suffix       = strtoupper(\Illuminate\Support\Str::random(5));
+    $warehouse    = \App\Models\Inventory\Warehouse::where('organisation_id', $organisation->id)->orderBy('id')->first() ?? createWarehouse();
+    expect($warehouse->organisation_id)->toBe($organisation->id);
+    $location     = \App\Actions\Inventory\Location\StoreLocation::make()->action($warehouse, ['code' => 'MCPL'.$suffix]);
+    $orgStock     = labelTestOrgStock($organisation, $this->group);
+    $locations    = fn (array $arguments) => \App\Mcp\Servers\AikuServer::actingAs($user)->tool(\App\Mcp\Tools\StockLocationsTool::class, ['organisation' => $organisation->slug, ...$arguments]);
+    $pairs        = [['sko' => strtolower($orgStock->code), 'location' => 'mcpl'.strtolower($suffix)], ['sko' => 'NOPE'.$suffix, 'location' => 'MCPL'.$suffix]];
+
+    $locations(['pairs' => $pairs])->assertHasErrors(['not enabled for this user']);
+    $user->update(['can_use_mcp_locations' => true]);
+
+    $locations(['pairs' => $pairs])->assertOk()->assertSee([$orgStock->code, 'NOPE'.$suffix.': not a SKO']);
+    expect(\App\Models\Inventory\LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->exists())->toBeFalse();
+
+    $locations(['pairs' => $pairs, 'confirm' => true, 'request_text' => 'yes put it there'])->assertOk()->assertSee($orgStock->code.' @ MCPL'.$suffix);
+    expect(\App\Models\Inventory\LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->value('quantity'))->toEqual(0);
+    $locations(['pairs' => $pairs])->assertOk()->assertSee('already_there');
+    $locations(['skos' => [$orgStock->code]])->assertOk()->assertSee('MCPL'.$suffix);
+
+    $change   = \App\Models\SysAdmin\McpChange::where('type', \App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::STOCK_LOCATIONS)->latest('id')->firstOrFail();
+    $outsider = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->production->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $outsider->update(['can_use_mcp' => true, 'can_use_mcp_locations' => true, 'can_use_mcp_production' => true]);
+    expect($change->request_text)->toBe('yes put it there')
+        ->and($change->canBeRevertedBy($user))->toBeTrue()
+        ->and($change->canBeRevertedBy($outsider->fresh()))->toBeFalse();
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run($change, $user);
+    expect(\App\Models\Inventory\LocationOrgStock::where('org_stock_id', $orgStock->id)->where('location_id', $location->id)->exists())->toBeFalse();
+
+    $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'MCPD'.$suffix, 'name' => 'Oils '.$suffix]);
+    $worker     = dayPlanOperator($organisation);
+    $colleague  = dayPlanOperator($organisation);
+    $setup      = fn (array $arguments) => \App\Mcp\Servers\AikuServer::actingAs($user)->tool(\App\Mcp\Tools\ProductionSetupTool::class, ['production' => $this->production->slug, ...$arguments]);
+    $factoryLocationId = $this->production->factory_location_id;
+
+    $setup([])->assertOk()->assertSee(['MCPD'.$suffix, $worker->contact_name]);
+    $setup(['work_areas' => [['name' => 'Oils '.$suffix, 'departments' => ['NOPE']]], 'request_text' => 'make it'])->assertHasErrors(['no department NOPE']);
+    expect(\App\Models\Production\WorkArea::where('production_id', $this->production->id)->where('name', 'Oils '.$suffix)->exists())->toBeFalse();
+
+    $setup([
+        'factory_location' => 'MCPL'.$suffix,
+        'work_areas'       => [['name' => 'Oils '.$suffix, 'departments' => ['mcpd'.strtolower($suffix)], 'artisans' => [$worker->worker_number, $colleague->alias]]],
+        'request_text'     => 'set it up',
+    ])->assertOk()->assertSee('Oils '.$suffix);
+
+    $workArea = \App\Models\Production\WorkArea::where('production_id', $this->production->id)->where('name', 'Oils '.$suffix)->firstOrFail();
+    $positionOfWorker = fn () => $workArea->artisans()->where('employees.id', $worker->id)->value('artisan_assignments.position');
+    $firstPosition    = $positionOfWorker();
+    expect($this->production->fresh()->factory_location_id)->toBe($location->id)
+        ->and($department->fresh()->work_area_id)->toBe($workArea->id)
+        ->and($workArea->artisans()->pluck('employees.id')->sort()->values()->all())->toBe(collect([$worker->id, $colleague->id])->sort()->values()->all());
+
+    $setup(['work_areas' => [['name' => 'Oils '.$suffix, 'artisans' => [$worker->worker_number]]], 'request_text' => 'only the first one'])->assertOk();
+    expect($workArea->artisans()->pluck('employees.id')->all())->toBe([$worker->id])
+        ->and($positionOfWorker())->toBe($firstPosition);
+
+    $change = \App\Models\SysAdmin\McpChange::where('type', \App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PRODUCTION_SETUP)->latest('id')->firstOrFail();
+    expect($change->canBeRevertedBy($outsider->fresh()))->toBeFalse();
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run($change, $user);
+    expect($workArea->artisans()->pluck('employees.id')->sort()->values()->all())->toBe(collect([$worker->id, $colleague->id])->sort()->values()->all());
+    $change = \App\Models\SysAdmin\McpChange::where('type', \App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::PRODUCTION_SETUP)->whereNull('reverted_at')->latest('id')->firstOrFail();
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run($change, $user);
+    expect($this->production->fresh()->factory_location_id)->toBe($factoryLocationId)
+        ->and(\App\Models\Production\WorkArea::find($workArea->id))->toBeNull()
+        ->and($department->fresh()->work_area_id)->toBeNull();
+});

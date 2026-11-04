@@ -8,6 +8,8 @@
 
 namespace App\Models\SysAdmin;
 
+use App\Actions\Production\WorkArea\WithWorkAreaAuthorisation;
+use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Production\Production;
@@ -105,6 +107,18 @@ class McpChange extends Model
             $production = $productionId ? Production::find($productionId) : null;
 
             return $production && $production->canBeSetUpBy($user);
+        }
+
+        if ($this->type === McpChangeTypeEnum::PRODUCTION_SETUP) {
+            $production = $productionId ? Production::find($productionId) : null;
+
+            return $production && WithWorkAreaAuthorisation::canManageWorkAreas($user, $production);
+        }
+
+        if ($this->type === McpChangeTypeEnum::STOCK_LOCATIONS) {
+            $organisation = Organisation::find(data_get($this->data, 'target.organisation_id'));
+
+            return $organisation && $user->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($organisation));
         }
 
         return true;

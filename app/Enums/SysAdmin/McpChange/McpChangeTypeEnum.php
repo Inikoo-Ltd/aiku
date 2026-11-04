@@ -28,6 +28,8 @@ enum McpChangeTypeEnum: string
     case CHAT_CLOSED = 'chat_closed';
     case TRADE_UNIT_PROPERTIES = 'trade_unit_properties';
     case WEBSITE_REDIRECTS = 'website_redirects';
+    case STOCK_LOCATIONS = 'stock_locations';
+    case PRODUCTION_SETUP = 'production_setup';
 
     public static function labels(): array
     {
@@ -46,6 +48,8 @@ enum McpChangeTypeEnum: string
             'chat_closed'           => __('Chat closed after thanks'),
             'trade_unit_properties' => __('Trade unit properties'),
             'website_redirects'     => __('Website redirects'),
+            'stock_locations'       => __('SKO locations'),
+            'production_setup'      => __('Factory location and work areas'),
         ];
     }
 
@@ -58,12 +62,13 @@ enum McpChangeTypeEnum: string
             McpChangeTypeEnum::RELATED_PRODUCTS, McpChangeTypeEnum::WEBSITE_REDIRECTS => 'can_use_mcp_web',
             McpChangeTypeEnum::ORG_STOCK_STATE, McpChangeTypeEnum::SUPPLIER_PRODUCT_AVAILABILITY => 'can_use_mcp_discontinue',
             McpChangeTypeEnum::PARTNER_SHOPPING_LIST => 'can_use_mcp_procurement',
-            McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE => 'can_use_mcp_production',
+            McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE, McpChangeTypeEnum::PRODUCTION_SETUP => 'can_use_mcp_production',
             McpChangeTypeEnum::PLACED_ORDER => 'can_use_mcp_place_orders',
             McpChangeTypeEnum::MASTER_PRICES => 'can_use_mcp_prices',
             McpChangeTypeEnum::STOCK_DELIVERY_COSTS => 'can_use_mcp_costing',
             McpChangeTypeEnum::CUSTOMER_SERVICE, McpChangeTypeEnum::CHAT_SPAM, McpChangeTypeEnum::CHAT_CLOSED => 'can_use_mcp_customer_service',
             McpChangeTypeEnum::TRADE_UNIT_PROPERTIES => 'can_use_mcp_goods',
+            McpChangeTypeEnum::STOCK_LOCATIONS => 'can_use_mcp_locations',
         };
     }
 

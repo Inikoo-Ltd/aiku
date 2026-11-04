@@ -71,11 +71,29 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::CHAT_CLOSED => ['status' => ChatSession::find($target['chat_session_id'])?->status?->value],
             McpChangeTypeEnum::TRADE_UNIT_PROPERTIES => $this->tradeUnitProperties($target),
             McpChangeTypeEnum::WEBSITE_REDIRECTS => $this->websiteRedirects($target),
+            McpChangeTypeEnum::STOCK_LOCATIONS => $this->stockLocations($target),
+            McpChangeTypeEnum::PRODUCTION_SETUP => $this->productionSetup($target),
         };
     }
 
     public function describe(McpChangeTypeEnum $type, array $target, array $snapshot): string
     {
+        if ($type === McpChangeTypeEnum::STOCK_LOCATIONS) {
+            return collect($target['pairs'])
+                ->map(fn (array $pair) => $pair['sko'].' @ '.$pair['location'].': '.(isset($snapshot['pairs'][$pair['org_stock_id'].'-'.$pair['location_id']]) ? 'on location' : 'not on location'))
+                ->implode(', ');
+        }
+
+        if ($type === McpChangeTypeEnum::PRODUCTION_SETUP) {
+            $departments = DB::table('artefact_departments')->where('production_id', $target['production_id'])->pluck('code', 'id');
+            $artisans    = DB::table('employees')->whereIn('id', collect($snapshot['areas'])->pluck('artisan_ids')->flatten())->pluck('contact_name', 'id');
+
+            return 'factory location: '.($snapshot['factory_location'] ?? '-').'; '.(collect($snapshot['areas'])
+                ->map(fn (array $area) => $area['name'].' (departments: '.(collect($area['department_ids'])->map(fn ($id) => $departments[$id] ?? '#'.$id)->implode(', ') ?: '-')
+                    .'; artisans: '.(collect($area['artisan_ids'])->map(fn ($id) => $artisans[$id] ?? '#'.$id)->implode(', ') ?: '-').')')
+                ->implode('; ') ?: 'no work areas');
+        }
+
         if ($type === McpChangeTypeEnum::ORG_STOCK_STATE) {
             return collect($snapshot['org_stocks'])
                 ->map(fn (array $orgStock) => $orgStock['code'].': '.$orgStock['state'].($orgStock['scheduled'] ? ' (scheduled '.$orgStock['scheduled']['to_state'].')' : ''))
@@ -212,6 +230,39 @@ class GetMcpChangeSnapshot
                 ->orderBy('id')
                 ->pluck('to_webpage_id', 'id')
                 ->map(fn ($toWebpageId) => (int) $toWebpageId)
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return array{pairs: array<string, float>}
+     */
+    private function stockLocations(array $target): array
+    {
+        $pairs = [];
+        foreach ($target['pairs'] as $pair) {
+            $quantity = DB::table('location_org_stocks')->where('org_stock_id', $pair['org_stock_id'])->where('location_id', $pair['location_id'])->value('quantity');
+            if ($quantity !== null) {
+                $pairs[$pair['org_stock_id'].'-'.$pair['location_id']] = (float) $quantity;
+            }
+        }
+
+        return ['pairs' => $pairs];
+    }
+
+    private function productionSetup(array $target): array
+    {
+        $production = DB::table('productions')->where('id', $target['production_id'])->first(['factory_location_id']);
+
+        return [
+            'factory_location_id' => $production?->factory_location_id,
+            'factory_location'    => $production?->factory_location_id ? DB::table('locations')->where('id', $production->factory_location_id)->value('code') : null,
+            'areas'               => DB::table('work_areas')->where('production_id', $target['production_id'])->orderBy('id')->get(['id', 'name'])
+                ->mapWithKeys(fn ($area) => [$area->id => [
+                    'name'           => $area->name,
+                    'department_ids' => DB::table('artefact_departments')->where('work_area_id', $area->id)->whereNull('deleted_at')->orderBy('id')->pluck('id')->all(),
+                    'artisan_ids'    => DB::table('artisan_assignments')->where('artisanable_type', 'WorkArea')->where('artisanable_id', $area->id)->orderBy('employee_id')->pluck('employee_id')->all(),
+                ]])
                 ->all(),
         ];
     }

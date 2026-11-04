@@ -29,6 +29,8 @@ use App\Mcp\Tools\FamilyPricingReviewTool;
 use App\Mcp\Tools\FamilyRelatedProductsTool;
 use App\Mcp\Tools\MasterPricesTool;
 use App\Mcp\Tools\TradeUnitPropertiesTool;
+use App\Mcp\Tools\StockLocationsTool;
+use App\Mcp\Tools\ProductionSetupTool;
 use App\Mcp\Tools\StockDeliveryCostsTool;
 use App\Mcp\Tools\HubOrderPlanningTool;
 use App\Mcp\Tools\HubShoppingListTool;
@@ -141,6 +143,8 @@ class AikuServer extends Server
         WebsiteRedirectsTool::class,
         MasterPricesTool::class,
         TradeUnitPropertiesTool::class,
+        StockLocationsTool::class,
+        ProductionSetupTool::class,
         StockDeliveryCostsTool::class,
         FamilyPricingReviewTool::class,
         HubOrderPlanningTool::class,

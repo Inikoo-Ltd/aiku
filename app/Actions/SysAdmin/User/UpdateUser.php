@@ -65,6 +65,7 @@ class UpdateUser extends OrgAction
             data_set($modelData, 'can_use_mcp_costing', false);
             data_set($modelData, 'can_use_mcp_customer_service', false);
             data_set($modelData, 'can_use_mcp_goods', false);
+            data_set($modelData, 'can_use_mcp_locations', false);
         }
 
         $user = $this->update($user, $modelData, ['profile', 'settings']);
@@ -112,6 +113,7 @@ class UpdateUser extends OrgAction
             'can_use_mcp_place_orders' => ['sometimes', 'boolean'],
             'can_use_mcp_prices'       => ['sometimes', 'boolean'],
             'can_use_mcp_goods'        => ['sometimes', 'boolean'],
+            'can_use_mcp_locations'    => ['sometimes', 'boolean'],
             'can_use_mcp_costing'      => ['sometimes', 'boolean'],
             'can_use_mcp_customer_service' => ['sometimes', 'boolean'],
             'username'       => [

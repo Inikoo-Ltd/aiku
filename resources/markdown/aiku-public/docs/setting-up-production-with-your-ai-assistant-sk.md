@@ -321,7 +321,32 @@ Vrátenie sa odmietne v dvoch prípadoch:
 - **Od vtedy sa to zmenilo znova.** Ak niekto ten istý artefakt potom upravil, ručne alebo cez asistenta, vrátenie sa zastaví, aby neprepísalo jeho prácu. Pozrite sa na to a opravte to ručne.
 - **Zmena niečo vytvorila.** Nový artefakt, surovina, úloha alebo SKO sa vrátením nevymaže, pretože na nich už môžu visieť pracovné príkazy, receptúry a zásoby. Nastavte ho namiesto toho ako vyradený alebo neaktívny.
 
+Dve výnimky: pracovná oblasť, ktorú asistent vytvoril, sa znova odstráni, a SKO, ktoré dal na lokáciu, sa znova odoberie, kým je tá lokácia ešte prázdna.
+
 Vrátiť môžete zmeny urobené v továrňach, ktoré smiete nastavovať. Administrátori vidia a môžu vrátiť každú zmenu zo záznamu zmien AI (<b>AI changes</b>).
+
+## Umiestnenie továrne a pracovné oblasti
+
+Pre Production Managera (administrátora organizácie továrne). Asistent vie nastaviť aj to, kde továreň pracuje:
+
+- **umiestnenie továrne**: lokácia v sklade, kam sa dodávajú suroviny pre továreň;
+- **pracovné oblasti**: kde pracujú remeselníci, každá s oddeleniami produktov, ktoré sa tam vyrábajú, a s remeselníkmi, ktorí tam pracujú.
+
+> *"Ukáž mi umiestnenie továrne a pracovné oblasti AWGp."*
+
+> *"V AWGp vytvor Oblasť olejov s oddeleniami EO a EOUL a daj do nej dvoch remeselníkov, ktorí plnia."*
+
+> *"Nastav umiestnenie továrne AWGp na PROD-01."*
+
+Najprv ukáže umiestnenie továrne, oblasti, všetky oddelenia a pracovníkov organizácie, aby ste ich mohli pomenovať tak, ako ich aiku pozná. Ak pre oblasť uvediete oddelenia alebo remeselníkov, nahradí sa zoznam tej oblasti. Oddelenie sa vyrába v jednej oblasti, takže jeho pridelenie jednej oblasti ho z druhej odoberie. Pracovník zaradený do oblasti sa hneď zobrazí na stránke **Artisans**, bez toho, aby mu bola najprv pridelená pozícia. Ak je akýkoľvek kód alebo názov nesprávny, nič sa neuloží.
+
+## Umiestnenie surovín do regála
+
+Keď sa pracovný príkaz (job order) prijme, suroviny, ktoré použil, sa odpíšu zo zásob z ich lokácie. Surovina, ktorej SKO nemá v sklade lokáciu, zabráni prijatiu pracovného príkazu. Asistent vie umiestniť veľa SKO na lokácie naraz:
+
+> *"V SK daj EOKG-65, EOKG-33 a BOKG-01 na lokáciu A-01-02."*
+
+Ukáže, čo sa pridá, čo tam už je a čo nenašiel, a pridá to až po vašom potvrdení, najviac 200 naraz. Nikdy nepresúva zásoby ani nemení množstvo: to, čo je v regáli, stále počítajú ľudia. Vyžaduje to vlastný prepínač, **Can put SKOs on locations**, a oprávnenie upravovať zásoby v tej organizácii.
 
 ## Bezpečnostné kontroly
 
@@ -390,6 +415,8 @@ Dobré návyky:
 <aside class="wayfinder"><strong>Aké oprávnenia potrebujete</strong>
 <ul>
 <li>Prepínač <b>Can set up artefacts, raw materials and recipes through their AI assistant</b> na vašom účte.</li>
+<li>Na umiestnenie továrne a pracovné oblasti: administrátor organizácie továrne.</li>
+<li>Na umiestnenie SKO na lokácie: prepínač <b>Can put SKOs on locations</b> a oprávnenie upravovať zásoby v tej organizácii.</li>
 <li>Na akúkoľvek zmenu: administrátor skupiny, administrátor organizácie, výrobná pozícia, ktorá môže danú továreň upravovať, alebo administrátor obchodu či predavač v jednom z obchodov organizácie továrne.</li>
 <li>Len na prezeranie receptúr a nákladov: výrobná pozícia, ktorá môže danú továreň prezerať.</li>
 </ul>
