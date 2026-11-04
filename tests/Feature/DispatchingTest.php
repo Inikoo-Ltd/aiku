@@ -3793,6 +3793,8 @@ test('UI goods out pallet return show pages', function () {
 
 test('a claim is refunded to the customer balance in one call, the claimed share of each invoiced line', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_dispatched' => $item->quantity_required]);
+    $item->transaction->update(['quantity_dispatched' => $item->transaction->quantity_ordered]);
     $order    = $deliveryNote->orders()->first();
     $customer = $order->customer;
 
@@ -3848,6 +3850,70 @@ test('a claim is refunded to the customer balance in one call, the claimed share
     expect($invoice->refunds()->count())->toBe($refundsBefore);
 });
 
+test('a short-shipped line is claimed on what was sent: a refund of all of it credits the whole invoiced line, nothing more is replaced, and an unsent line is refused', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_dispatched' => 6]);
+    $item->transaction->update(['quantity_dispatched' => (float) $item->transaction->quantity_ordered * 0.6]);
+    $order = $deliveryNote->orders()->first();
+
+    $invoice = \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($order, \App\Models\Accounting\Invoice::factory()->definition());
+    \App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction::make()->action($invoice, $item->transaction, [
+        'date'            => now(),
+        'tax_category_id' => $invoice->tax_category_id,
+        'quantity'        => 6,
+        'gross_amount'    => 60,
+        'net_amount'      => 60,
+    ]);
+    $invoice     = CalculateInvoiceTotals::run($invoice->refresh());
+    $cashAccount = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first(),
+        ['code' => 'CLM'.mt_rand(1000, 9999), 'name' => 'Claim cash account']
+    );
+    PayInvoice::make()->action($invoice, $cashAccount, [
+        'amount' => $invoice->total_amount,
+        'status' => PaymentStatusEnum::SUCCESS->value,
+        'state'  => PaymentStateEnum::COMPLETED->value,
+    ]);
+
+    $replace = fn (float $quantity) => post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [
+        'reference'           => 'R'.Str::random(6),
+        'warehouse_id'        => $this->warehouse->id,
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => $quantity, 'reason' => 'damaged_in_transit']],
+    ]);
+
+    $replace(7)->assertSessionHasErrors('delivery_note_items');
+
+    post(route('grp.models.order.claim_refund_to_balance', [$order->id]), [
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => 6]],
+    ], ['Accept' => 'application/json'])->assertOk();
+
+    expect(round((float) $invoice->refresh()->refunds()->sum('net_amount'), 2))->toBe(-60.0)
+        ->and(\App\Actions\Ordering\Order\CheckClaimCompensation::run($order)[$item->transaction_id])->toEqual(0.0);
+
+    $item->update(['quantity_dispatched' => 0]);
+    $replace(1)->assertSessionHasErrors('delivery_note_items');
+});
+
+test('a line billed in full but never marked as sent on the delivery note can still be claimed as missing', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_dispatched' => null]);
+    $item->transaction->update(['quantity_dispatched' => $item->transaction->quantity_ordered]);
+    $order = $deliveryNote->orders()->first();
+
+    expect(\App\Actions\Ordering\Order\CheckClaimCompensation::stockLineSent($item->refresh()))->toEqual((float) $item->quantity_required);
+
+    $item->transaction->update(['quantity_dispatched' => (float) $item->transaction->quantity_ordered * 0.95]);
+    expect(\App\Actions\Ordering\Order\CheckClaimCompensation::stockLineSent($item->refresh()->load('transaction')))->toEqual(floor((float) $item->quantity_required * 0.95));
+    $item->transaction->update(['quantity_dispatched' => $item->transaction->quantity_ordered]);
+
+    post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [
+        'reference'           => 'R'.Str::random(6),
+        'warehouse_id'        => $this->warehouse->id,
+        'delivery_note_items' => [['id' => $item->id, 'quantity' => 1, 'reason' => 'missing_from_parcel']],
+    ])->assertSessionHasNoErrors();
+});
+
 test('carrier api failure branches', function () {
     Config::set('app.sandbox.shipper_apc_token', 'x');
     Config::set('app.sandbox.shipper_itd_token', 'x');
@@ -3893,6 +3959,8 @@ test('repairs actual run', function () {
 
 test('store replacement delivery note action', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_dispatched' => $item->quantity_required]);
+    $item->transaction->update(['quantity_dispatched' => $item->transaction->quantity_ordered]);
     $order = $deliveryNote->orders()->first();
 
     post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [
@@ -3934,6 +4002,8 @@ test('store replacement delivery note ignores items of another order', function 
 
 test('a claimed line is made good once, and a replacement that left the warehouse can be claimed again', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_dispatched' => $item->quantity_required]);
+    $item->transaction->update(['quantity_dispatched' => $item->transaction->quantity_ordered]);
     $order    = $deliveryNote->orders()->first();
     $quantity = (float) $item->quantity_required;
     $replace  = fn () => post(route('grp.models.order.replacement_delivery_note.store', [$order->id]), [
