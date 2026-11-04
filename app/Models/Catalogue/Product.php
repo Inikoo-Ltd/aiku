@@ -537,7 +537,7 @@ class Product extends Model implements Auditable, HasMedia
     public function brand(): ?Brand
     {
         /** @var Brand $brand */
-        $brand = $this->brands()->first();
+        $brand = $this->relationLoaded('brands') ? $this->brands->first() : $this->brands()->first();
 
         return $brand;
     }
