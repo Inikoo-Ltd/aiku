@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Appointment\GoogleCalendar\DisconnectShopGoogleCalendar;
 use App\Actions\CRM\Appointment\GoogleCalendar\ReconcileShopGoogleCalendar;
 use App\Actions\CRM\Appointment\StoreAppointment;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia;
 use Lorisleiva\Actions\Decorators\JobDecorator;
 
@@ -56,6 +58,7 @@ beforeEach(function () {
 
 afterEach(function () {
     AppointmentBlock::where('shop_id', $this->shop->id)->delete();
+    UpdateShop::make()->action($this->shop->refresh(), ['appointment_one_at_a_time' => false]);
     DisconnectShopGoogleCalendar::make()->handle($this->shop->refresh());
 });
 
@@ -238,4 +241,44 @@ test('the appointment block in the workshop lists the shop active appointment ty
         ->and($listedVisit['location'])->toBe('Showroom, Sheffield')
         ->and($listedVisit)->not->toHaveKey('slots')
         ->and($webBlock['web_block']['layout'])->toBe($layout);
+});
+
+test('a shop that takes one appointment at a time closes the time of a booking for every other type', function () {
+    $visit = ($this->appointmentType)();
+    $call  = ($this->appointmentType)();
+    $day   = ($this->day)(9);
+
+    UpdateShop::make()->action($this->shop, ['appointment_one_at_a_time' => true]);
+    $before = GetAppointmentTypeAvailableSlots::run($visit->fresh())[$day];
+
+    StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $call->id,
+        'starts_at'           => $day.' 10:00',
+        'contact_name'        => 'Video caller '.Str::random(6),
+    ]);
+
+    expect(Arr::get($this->shop->refresh()->settings, 'appointments.one_at_a_time'))->toBeTrue()
+        ->and($before)->toContain('10:00')
+        ->and(GetAppointmentTypeAvailableSlots::run($visit->fresh())[$day])->toBe(array_values(array_diff($before, ['10:00'])));
+
+    UpdateShop::make()->action($this->shop->refresh(), ['appointment_one_at_a_time' => false]);
+
+    expect(GetAppointmentTypeAvailableSlots::run($visit->fresh())[$day])->toContain('10:00');
+});
+
+test('staff cannot book another type beside an appointment when the shop takes one at a time', function () {
+    $visit = ($this->appointmentType)();
+    $call  = ($this->appointmentType)();
+    $day   = ($this->day)(12);
+    $book  = fn (AppointmentType $appointmentType, string $time) => StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => $day.' '.$time,
+        'contact_name'        => 'One at a time '.Str::random(6),
+    ]);
+
+    UpdateShop::make()->action($this->shop, ['appointment_one_at_a_time' => true]);
+    $book($call, '12:00');
+
+    expect(fn () => $book($visit, '12:30'))->toThrow(ValidationException::class)
+        ->and($book($call, '12:00')->appointment_type_id)->toBe($call->id);
 });

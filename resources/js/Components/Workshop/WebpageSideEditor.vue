@@ -104,7 +104,8 @@ const emits = defineEmits<{
 	(e: 'update', value: Daum): void
 	(e: 'order', value: object): void
 	(e: 'setVisible', value: object): void
-	(e: 'onSaveSiteSettings', value: object): void
+	(e: 'pageStyleSaved', webpage: object): void
+	(e: 'pageStyleSaving', isSaving: boolean): void
 	(e: 'openBlockList', value: boolean): void
 	(e: 'onDuplicateBlock', value: Number): void
 	(e: 'update:selectedTab', value: Number): void
@@ -148,7 +149,7 @@ const isOpenedBlockEditable = computed(() => {
 })
 
 const tabs = computed(() => [
-	{ label: 'Settings', icon: faCogs, tooltip: 'Page Setting', hidden: !props.editable },
+	{ label: 'Page', icon: faCogs, tooltip: 'Page style: colours, font and spacing for every block', hidden: !props.editable },
 	{ label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks', hidden: false },
 	{
 		label: 'Style',
@@ -616,7 +617,8 @@ const showBlockVisibilityOptions = computed(
 							:webpage="webpage"
 							:webBlockTypes="webBlockTypes"
 							:editable="editable"
-							@onSaveSiteSettings="(v: any) => emits('onSaveSiteSettings', v)" />
+							@pageStyleSaved="(webpage: object) => emits('pageStyleSaved', webpage)"
+							@pageStyleSaving="(isSaving: boolean) => emits('pageStyleSaving', isSaving)" />
 					</div>
 				</TabPanel>
 

@@ -55,6 +55,12 @@ trait WithAppointmentSettingsBlueprint
                         'value'       => (bool) Arr::get($shop->settings, 'appointments.notify_staff', true),
                         'information' => __('Emails the member of staff an appointment is given to, or everyone who arranges its type while it waits for an answer, when a customer books it and when it is given to them, moved or cancelled. They get a task for it either way.'),
                     ],
+                    'appointment_one_at_a_time'  => [
+                        'type'        => 'toggle',
+                        'label'       => __('One appointment at a time'),
+                        'value'       => (bool) Arr::get($shop->settings, 'appointments.one_at_a_time', false),
+                        'information' => __('An appointment of any type takes its time from every other type too, so a video call and a showroom visit are never booked at the same time, even when someone else on the team is free. The gap between appointments of a type applies after appointments of the other types as well.'),
+                    ],
                 ],
             ],
             [
