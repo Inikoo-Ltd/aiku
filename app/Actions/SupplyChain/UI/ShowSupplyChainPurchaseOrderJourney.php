@@ -578,6 +578,10 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 $ribbon['reference'],
                 $ribbon['parent_code'],
                 $ribbon['parent_name'],
+                $ribbon['supplier_name'],
+                $ribbon['supplier_company'],
+                $ribbon['supplier_nickname'],
+                $ribbon['agent_name'],
                 $ribbon['buyer_name'],
                 ...collect($ribbon['suppliers'])->pluck('code')->all(),
             ]));
