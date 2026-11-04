@@ -38,6 +38,7 @@ use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Maintenance\Accounting\RepairInvoiceTaxHeader;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
 use App\Models\Helpers\Address;
@@ -60,6 +61,16 @@ use App\Models\Dispatching\Shipper;
 use App\Models\Helpers\Currency;
 use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
 use App\Models\Ordering\Transaction;
+use App\Actions\Accounting\InvoiceTransaction\ProcessStoredInvoiceTransactions;
+use App\Actions\Catalogue\AssetTimeSeries\ProcessAssetTimeSeriesRecords;
+use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Goods\Stock\UpdateStock;
+use App\Actions\Helpers\Brand\StoreBrand;
+use App\Actions\Inventory\OrgStock\StoreOrgStock;
+use App\Enums\Goods\Stock\StockStateEnum;
+use App\Models\Goods\Stock;
+use App\Models\Inventory\OrgStock;
+use App\Models\SysAdmin\Organisation;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -974,4 +985,148 @@ test('a damaged or missing claim on faire keeps the vat the invoice charged', fu
 
     $invoice->delete();
     UpdateProduct::run($product->refresh(), ['units' => $originalUnits, 'price' => $originalPrice]);
+});
+
+/**
+ * INI-203. A product built for the invoicing snapshot: its own price and the org stocks it is made of.
+ *
+ * @param  array<int, int>  $orgStockIds
+ */
+function createInvoicingProduct(Product $sibling, string $code, float $price, array $orgStockIds, bool $isIndivisible = false): Product
+{
+    $product = Product::where('shop_id', $sibling->shop_id)->where('code', $code)->first();
+    if (!$product) {
+        $product = StoreProduct::make()->action(
+            $sibling->family,
+            array_merge(Product::factory()->definition(), [
+                'code'        => $code,
+                'price'       => $price,
+                'trade_units' => [],
+            ])
+        );
+        $product = UpdateProduct::make()->action($product, ['state' => ProductStateEnum::ACTIVE]);
+        foreach ($orgStockIds as $orgStockId) {
+            $product->orgStocks()->attach($orgStockId, ['quantity' => 1]);
+        }
+    }
+    $product->updateQuietly(['is_indivisible' => $isIndivisible]);
+
+    return $product->refresh();
+}
+
+function createInvoicingOrgStock(Organisation $organisation, float $commercialValue): OrgStock
+{
+    $stock = StoreStock::make()->action($organisation->group, Stock::factory()->definition());
+    $stock = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
+
+    $orgStock = StoreOrgStock::make()->action($organisation, $stock);
+    $orgStock->updateQuietly(['sku_commercial_value' => $commercialValue, 'sku_value' => $commercialValue]);
+
+    return $orgStock;
+}
+
+test('invoicing a multi-line order stores every line and the header exactly as before the INI-203 batching', function () {
+    $tea = createZeroRatedProduct($this->standardProduct, $this->vat20, $this->vat0);
+    MasterAsset::whereKey($tea->master_product_id)->first()->updateQuietly(['tax_category' => [$this->vat20->id => $this->vat0->id]]);
+    $tea->historicAsset->updateQuietly(['tax_category' => [$this->vat20->id => $this->vat0->id]]);
+    $brand = StoreBrand::make()->handle($this->group, ['name' => 'INI-203 brand', 'reference' => 'ini203-'.uniqid()]);
+    $tea->brands()->syncWithoutDetaching([$brand->id]);
+
+    $setParts      = [createInvoicingOrgStock($this->organisation, 2), createInvoicingOrgStock($this->organisation, 5)];
+    $weightedParts = [createInvoicingOrgStock($this->organisation, 3), createInvoicingOrgStock($this->organisation, 1)];
+    $set      = createInvoicingProduct($this->standardProduct, 'INI203-SET', 30, array_map(fn ($part) => $part->id, $setParts), isIndivisible: true);
+    $weighted = createInvoicingProduct($this->standardProduct, 'INI203-WGT', 40, array_map(fn ($part) => $part->id, $weightedParts));
+
+    $order = StoreOrder::make()->action($this->customer, []);
+    $order->updateQuietly(['tax_category_id' => $this->vat20->id]);
+
+    $repriced = StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 3]);
+    $readBack = StoreTransaction::make()->action($order->refresh(), $tea->historicAsset, ['quantity_ordered' => 2]);
+    $setLine  = StoreTransaction::make()->action($order->refresh(), $set->historicAsset, ['quantity_ordered' => 2]);
+    $wgtLine  = StoreTransaction::make()->action($order->refresh(), $weighted->historicAsset, ['quantity_ordered' => 4]);
+
+    createWarehouse();
+    SubmitOrder::make()->action($order->refresh());
+    $deliveryNote = SendOrderToWarehouse::make()->action($order->refresh(), []);
+
+    $schema       = StoreShippingZoneSchema::make()->action($order->shop, ['name' => 'ini203 flat']);
+    $shippingZone = StoreShippingZone::make()->action($schema, [
+        'code'        => 'INI203',
+        'name'        => 'ini203 flat',
+        'status'      => true,
+        'price'       => ['type' => 'Step Order Items Net Amount', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 10]]],
+        'territories' => [['country_code' => 'GB']],
+        'position'    => 1,
+        'is_failover' => false,
+    ]);
+    StoreTransactionFromShipping::make()->action($order->refresh(), $shippingZone, [
+        'date'             => Carbon::now(),
+        'quantity_ordered' => 1,
+        'gross_amount'     => 10,
+        'net_amount'       => 10,
+    ], strict: false);
+
+    $readBack->updateQuietly(['submitted_net_amount' => 87.31]);
+    $repriced->updateQuietly(['current_discount_factor' => 0.85]);
+
+    $pick = function (Transaction $line, OrgStock $part, float $picked) use ($deliveryNote) {
+        $deliveryNote->deliveryNoteItems()->where('transaction_id', $line->id)->where('org_stock_id', $part->id)
+            ->update(['quantity_picked' => $picked]);
+    };
+    $deliveryNote->deliveryNoteItems()->update(['quantity_picked' => DB::raw('quantity_required')]);
+    $pick($setLine, $setParts[0], 2);
+    $pick($setLine, $setParts[1], 1);
+    $pick($wgtLine, $weightedParts[0], 4);
+    $pick($wgtLine, $weightedParts[1], 0);
+
+    Queue::fake();
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $invoice = GenerateInvoiceFromOrder::make()->handle($order->refresh());
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    $lines = $invoice->invoiceTransactions()->orderBy('id')->get()->map(fn ($line) => [
+        'model'           => $line->model_type.':'.($line->model_type === 'Product' ? Product::find($line->model_id)->code : 'line'),
+        'tax_category_id' => $line->tax_category_id === $this->vat0->id ? 'vat0' : 'vat20',
+        'quantity'        => round((float)$line->quantity, 3),
+        'gross'           => round((float)$line->gross_amount, 2),
+        'net'             => round((float)$line->net_amount, 2),
+        'org_net'         => round((float)$line->org_net_amount, 2),
+        'grp_net'         => round((float)$line->grp_net_amount, 2),
+        'is_gift'         => (bool)$line->is_gift,
+        'family'          => $line->family_id === $this->standardProduct->family_id,
+        'brand'           => $line->brand_id === $brand->id,
+        'master_asset'    => $line->master_asset_id === $tea->master_product_id && $line->master_asset_id !== null,
+        'master_family'   => $line->master_family_id !== null,
+    ])->sortBy('model')->values()->all();
+
+    expect($lines)->toBe([
+        ['model' => 'Product:INI203-SET', 'tax_category_id' => 'vat20', 'quantity' => 1.0, 'gross' => 30.0, 'net' => 30.0, 'org_net' => 30.0, 'grp_net' => 30.0, 'is_gift' => false, 'family' => true, 'brand' => false, 'master_asset' => false, 'master_family' => false],
+        ['model' => 'Product:INI203-WGT', 'tax_category_id' => 'vat20', 'quantity' => 3.0, 'gross' => 120.0, 'net' => 120.0, 'org_net' => 120.0, 'grp_net' => 120.0, 'is_gift' => false, 'family' => true, 'brand' => false, 'master_asset' => false, 'master_family' => false],
+        ['model' => 'Product:TEA', 'tax_category_id' => 'vat0', 'quantity' => 2.0, 'gross' => 100.0, 'net' => 87.31, 'org_net' => 87.31, 'grp_net' => 87.31, 'is_gift' => false, 'family' => true, 'brand' => true, 'master_asset' => true, 'master_family' => true],
+        ['model' => 'Product:'.$this->standardProduct->code, 'tax_category_id' => 'vat20', 'quantity' => 3.0, 'gross' => 300.0, 'net' => 255.0, 'org_net' => 255.0, 'grp_net' => 255.0, 'is_gift' => false, 'family' => true, 'brand' => false, 'master_asset' => false, 'master_family' => false],
+        ['model' => 'ShippingZone:line', 'tax_category_id' => 'vat20', 'quantity' => 1.0, 'gross' => 10.0, 'net' => 10.0, 'org_net' => 10.0, 'grp_net' => 10.0, 'is_gift' => false, 'family' => false, 'brand' => false, 'master_asset' => false, 'master_family' => false],
+    ])
+        ->and([(float)$invoice->net_amount, (float)$invoice->tax_amount, (float)$invoice->total_amount, (float)$invoice->gross_amount, (float)$invoice->goods_amount])->toBe([502.31, 83.0, 585.31, 560.0, 492.31])
+        ->and($order->transactions()->orderBy('id')->get()->map(fn ($line) => [$line->invoice_id === $invoice->id, round((float)$line->quantity_picked, 3)])->all())
+        ->toBe([[true, 3.0], [true, 2.0], [true, 1.0], [true, 3.0], [false, 0.0]])
+        ->and([(float)$order->refresh()->net_amount, (float)$order->tax_amount, (float)$order->total_amount])->toBe([502.31, 83.0, 585.31])
+        ->and($queries)->toBeLessThanOrEqual(138);
+
+    $pushedJobs = fn () => collect(Queue::pushedJobs())->flatten(1)
+        ->map(fn ($pushed) => method_exists($pushed['job'], 'getAction') ? $pushed['job']->getAction()::class : $pushed['job']::class);
+    $productLineIds = $invoice->invoiceTransactions()->where('model_type', 'Product')->orderBy('id')->pluck('id')->all();
+
+    expect($pushedJobs()->filter(fn ($class) => str_contains($class, 'InvoiceTransaction'))->values()->all())->toBe([ProcessStoredInvoiceTransactions::class]);
+    $weightedLineId = $invoice->invoiceTransactions()->where('model_type', 'Product')->where('model_id', $weighted->id)->value('id');
+    ProcessStoredInvoiceTransactions::assertPushed(fn ($action, $arguments) => collect($arguments[0])->sort()->values()->all() === $productLineIds);
+
+    expect(fn () => ProcessStoredInvoiceTransactions::run([...$productLineIds, max($productLineIds) + 1000000]))->toThrow(RuntimeException::class);
+
+    ProcessStoredInvoiceTransactions::run($productLineIds);
+
+    expect(DB::table('invoice_transaction_has_org_stocks')->where('invoice_transaction_id', $weightedLineId)->pluck('org_stock_id')->sort()->values()->all())
+        ->toBe(collect($weightedParts)->pluck('id')->sort()->values()->all())
+        ->and($pushedJobs()->contains(ProcessAssetTimeSeriesRecords::class))->toBeTrue();
 });

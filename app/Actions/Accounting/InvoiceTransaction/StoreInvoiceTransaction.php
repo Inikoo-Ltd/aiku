@@ -26,6 +26,9 @@ class StoreInvoiceTransaction extends OrgAction
     use WithOrderExchanges;
     use WithNoStrictRules;
 
+    private bool $taxCategoryChecked = false;
+    private bool $dispatchJobs = true;
+
     public function handle(Invoice $invoice, Transaction|HistoricAsset $model, array $modelData): InvoiceTransaction
     {
         // was: data_set($modelData, 'date', now(), overwrite: false);
@@ -100,17 +103,19 @@ class StoreInvoiceTransaction extends OrgAction
         /** @var InvoiceTransaction $invoiceTransaction */
         $invoiceTransaction = $invoice->invoiceTransactions()->create($modelData);
 
-        SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id)->delay(5);
-        SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id)->delay(5);
-        SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id)->delay(5);
-
         if ($invoiceTransaction->order_id && $invoiceTransaction->transaction_id) {
-            $invoiceTransaction->transaction->update([
+            $transaction = $model instanceof Transaction ? $model : $invoiceTransaction->transaction;
+            $transaction->update([
                 'invoice_id' => $invoice->id
             ]);
         }
 
-        ProcessInvoiceTransactionTimeSeries::dispatch(invoiceTransaction: $invoiceTransaction, delay: 300)->delay(30);
+        if ($this->dispatchJobs) {
+            SyncInvoiceTransactionTradeUnitBridges::dispatch($invoiceTransaction->id)->delay(5);
+            SyncInvoiceTransactionOrgStockBridges::dispatch($invoiceTransaction->id)->delay(5);
+            SyncInvoiceTransactionStockBridges::dispatch($invoiceTransaction->id)->delay(5);
+            ProcessInvoiceTransactionTimeSeries::dispatch(invoiceTransaction: $invoiceTransaction, delay: 300)->delay(30);
+        }
 
         return $invoiceTransaction;
     }
@@ -145,7 +150,7 @@ class StoreInvoiceTransaction extends OrgAction
     {
         $rules = [
             'date'                          => ['sometimes', 'required', 'date'],
-            'tax_category_id'               => ['required', 'exists:tax_categories,id'],
+            'tax_category_id'               => ['required', $this->taxCategoryChecked ? 'integer' : 'exists:tax_categories,id'],
             'quantity'                      => ['required', 'numeric'],
             'gross_amount'                  => ['required', 'numeric'],
             'net_amount'                    => ['required', 'numeric'],
@@ -167,11 +172,18 @@ class StoreInvoiceTransaction extends OrgAction
     }
 
 
-    public function action(Invoice $invoice, Transaction|HistoricAsset $model, array $modelData, int $hydratorsDelay = 0, bool $strict = true): InvoiceTransaction
+    /**
+     * $taxCategoryChecked: the caller checked the tax categories of the whole invoice at once
+     * (INI-203). $dispatchJobs false: the caller queues ProcessStoredInvoiceTransactions for
+     * all its lines instead of four jobs per line.
+     */
+    public function action(Invoice $invoice, Transaction|HistoricAsset $model, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $taxCategoryChecked = false, bool $dispatchJobs = true): InvoiceTransaction
     {
-        $this->asAction       = true;
-        $this->strict         = $strict;
-        $this->hydratorsDelay = $hydratorsDelay;
+        $this->asAction           = true;
+        $this->strict             = $strict;
+        $this->hydratorsDelay     = $hydratorsDelay;
+        $this->taxCategoryChecked = $taxCategoryChecked;
+        $this->dispatchJobs       = $dispatchJobs;
         $this->initialisationFromShop($invoice->shop, $modelData);
 
         return $this->handle($invoice, $model, $this->validatedData);

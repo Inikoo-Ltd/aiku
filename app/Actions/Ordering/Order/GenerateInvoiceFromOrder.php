@@ -13,6 +13,7 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Invoice\CalculateInvoiceTotals;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
+use App\Actions\Accounting\InvoiceTransaction\ProcessStoredInvoiceTransactions;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromAdjustment;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromCharge;
@@ -32,11 +33,15 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Catalogue\Product;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\TaxCategory;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +57,9 @@ class GenerateInvoiceFromOrder extends OrgAction
     use WithLineTaxCategories;
     use HasOrderHydrators;
     use WithOrderPaymentAuthorisation;
+
+    /** @var array<int, array{parts: Collection, sale: object|null, isIndivisible: bool}> */
+    private array $loadedLines = [];
 
     /**
      * HELP-4361. Once invoiced the "to be confirmed" shipping can no longer be entered, which
@@ -79,8 +87,11 @@ class GenerateInvoiceFromOrder extends OrgAction
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->first();
 
+            $transactions = $this->loadTransactions($order, $deliveryNote);
+            $this->checkTaxCategories($transactions);
+
             if ($deliveryNote) {
-                $updatedData = $this->recalculateTotals($order, $deliveryNote);
+                $updatedData = $this->recalculateTotals($order, $deliveryNote, $transactions);
             }
 
             $order->update([
@@ -124,7 +135,8 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData);
 
-            $transactions = $order->transactions;
+            $storeInvoiceTransaction = StoreInvoiceTransaction::make();
+            $storedLineIds           = [];
 
             foreach ($transactions as $transaction) {
                 $data = [
@@ -148,16 +160,20 @@ class GenerateInvoiceFromOrder extends OrgAction
                 } elseif ($transaction->model_type == 'ShippingZone') {
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
                 } elseif (in_array($transaction->model_type, ['Packaging', 'Leaflet'])) {
-                    StoreInvoiceTransaction::make()->action($invoice, $transaction, $data);
+                    $storedLineIds[] = $storeInvoiceTransaction->action($invoice, $transaction, $data, taxCategoryChecked: true, dispatchJobs: false)->id;
                 } else {
                     $invoiceTransactionData = $this->recalculateTransactionTotals($transaction, $deliveryNote);
-                    StoreInvoiceTransaction::make()->action($invoice, $transaction, $invoiceTransactionData);
+                    $storedLineIds[] = $storeInvoiceTransaction->action($invoice, $transaction, $invoiceTransactionData, taxCategoryChecked: true, dispatchJobs: false)->id;
                     $transaction->update(
                         [
                             'quantity_picked' => $invoiceTransactionData['quantity'],
                         ]
                     );
                 }
+            }
+
+            if ($storedLineIds) {
+                ProcessStoredInvoiceTransactions::dispatch($storedLineIds)->afterCommit()->delay(5);
             }
 
             /**
@@ -227,12 +243,87 @@ class GenerateInvoiceFromOrder extends OrgAction
         });
     }
 
-    public function recalculateTotals(Order $order, DeliveryNote $deliveryNote): array
+    /**
+     * INI-203. Every product line used to read its historic asset, delivery note parts, sale and
+     * whether it is indivisible one query at a time, twice: once for the header estimate and once
+     * for the line itself. They are read here once for the whole order; the arithmetic in
+     * recalculateTransactionTotals is unchanged, and a transaction not loaded here (a caller
+     * pricing a single line) still reads its own rows.
+     *
+     * @return EloquentCollection<int, Transaction>
+     */
+    public function loadTransactions(Order $order, ?DeliveryNote $deliveryNote): EloquentCollection
+    {
+        $transactions = $order->transactions()->get();
+        $products     = $transactions->where('model_type', 'Product');
+
+        $products->load([
+            'historicAsset.model' => fn (MorphTo $morphTo) => $morphTo->morphWith([Product::class => ['brands', 'masterProduct']]),
+        ]);
+
+        $transactionIds = $products->pluck('id')->all();
+
+        $parts = $deliveryNote
+            ? DB::table('delivery_note_items')
+                ->leftJoin('org_stocks', 'org_stocks.id', 'delivery_note_items.org_stock_id')
+                ->whereIn('delivery_note_items.transaction_id', $transactionIds)
+                ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
+                ->orderBy('delivery_note_items.id')
+                ->get(['delivery_note_items.transaction_id', 'delivery_note_items.quantity_required', 'delivery_note_items.quantity_picked', 'org_stocks.sku_commercial_value'])
+                ->groupBy('transaction_id')
+            : collect();
+
+        $sales = DB::table('transactions')->whereIn('id', $transactionIds)->get([
+            'id',
+            'current_discount_factor',
+            'submitted_discount_factor',
+            'submitted_net_amount',
+            'submitted_quantity_ordered',
+        ])->keyBy('id');
+
+        $indivisible = DB::table('products')->whereIn('id', $products->pluck('model_id')->unique()->all())->pluck('is_indivisible', 'id');
+
+        $this->loadedLines = [];
+        foreach ($products as $transaction) {
+            $this->loadedLines[$transaction->id] = [
+                'parts'         => $parts->get($transaction->id, collect()),
+                'sale'          => $sales->get($transaction->id),
+                'isIndivisible' => (bool)$indivisible->get($transaction->model_id),
+            ];
+        }
+
+        return $transactions;
+    }
+
+    /**
+     * The tax category of each line is checked once for the invoice instead of once per line.
+     *
+     * @param  EloquentCollection<int, Transaction>  $transactions
+     */
+    public function checkTaxCategories(EloquentCollection $transactions): void
+    {
+        $taxCategoryIds = $transactions->pluck('tax_category_id')->reject(fn ($taxCategoryId) => $taxCategoryId === null)->unique();
+
+        if (TaxCategory::whereIn('id', $taxCategoryIds->all())->count() !== $taxCategoryIds->count()) {
+            throw ValidationException::withMessages([
+                'tax_category_id' => __('validation.exists', ['attribute' => 'tax category id']),
+            ]);
+        }
+    }
+
+    /**
+     * @param  EloquentCollection<int, Transaction>|null  $transactions
+     */
+    public function recalculateTotals(Order $order, DeliveryNote $deliveryNote, ?EloquentCollection $transactions = null): array
     {
         $itemsGross = 0;
         $lines      = collect();
 
-        foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
+        $products = $transactions
+            ? $transactions->where('model_type', 'Product')
+            : $order->transactions()->where('model_type', 'Product')->get();
+
+        foreach ($products as $transaction) {
             $totals     = $this->recalculateTransactionTotals($transaction, $deliveryNote);
             $itemsGross += $totals['gross_amount'];
             $lines->push((object)[
@@ -285,18 +376,21 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $quantityOrdered = $transaction->quantity_ordered + $transaction->quantity_bonus;
 
-        $parts = $deliveryNote
+        $loadedLine = $this->loadedLines[$transaction->id] ?? null;
+
+        $parts = $loadedLine ? $loadedLine['parts'] : ($deliveryNote
             ? DB::table('delivery_note_items')
                 ->leftJoin('org_stocks', 'org_stocks.id', 'delivery_note_items.org_stock_id')
                 ->where('delivery_note_items.transaction_id', $transaction->id)
                 ->where('delivery_note_items.delivery_note_id', $deliveryNote->id)
                 ->get(['delivery_note_items.quantity_required', 'delivery_note_items.quantity_picked', 'org_stocks.sku_commercial_value'])
-            : collect();
+            : collect());
 
         if ($parts->isEmpty()) {
             $quantityPicked = $quantityOrdered;
         } else {
-            $quantityPicked = $quantityOrdered * $this->getPickedFraction($parts, $this->isIndivisible($transaction));
+            $isIndivisible  = $loadedLine ? $loadedLine['isIndivisible'] : $this->isIndivisible($transaction);
+            $quantityPicked = $quantityOrdered * $this->getPickedFraction($parts, $isIndivisible);
         }
 
         $gross = $historicAsset->price * $quantityPicked;
@@ -311,7 +405,7 @@ class GenerateInvoiceFromOrder extends OrgAction
          * A line re-priced on purpose after submission - a discretionary discount, a correction -
          * has a factor that no longer matches the submitted one, and is calculated instead.
          */
-        $sale = DB::table('transactions')->where('id', $transaction->id)->first([
+        $sale = $loadedLine ? $loadedLine['sale'] : DB::table('transactions')->where('id', $transaction->id)->first([
             'current_discount_factor',
             'submitted_discount_factor',
             'submitted_net_amount',
