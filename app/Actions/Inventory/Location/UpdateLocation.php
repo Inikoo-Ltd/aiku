@@ -88,6 +88,7 @@ class UpdateLocation extends OrgAction
                     table: 'locations',
                     extraConditions: [
                         ['column' => 'warehouse_id', 'value' => $this->location->warehouse_id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         [
                             'column'   => 'id',
                             'operator' => '!=',

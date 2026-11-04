@@ -78,6 +78,7 @@ class StoreLocation extends OrgAction
                     table: 'locations',
                     extraConditions: [
                         ['column' => 'warehouse_id', 'value' => $this->warehouse->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],

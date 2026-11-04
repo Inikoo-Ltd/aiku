@@ -264,6 +264,16 @@ test('delete location', function (Location $location) {
     return $location;
 })->depends('create location in warehouse');
 
+test('a deleted location code can be used again in its warehouse', function (Location $deletedLocation) {
+    $warehouse = Warehouse::find($deletedLocation->warehouse_id);
+
+    $location = StoreLocation::make()->action($warehouse, ['code' => $deletedLocation->code]);
+    expect($location->code)->toBe($deletedLocation->code)
+        ->and(fn () => StoreLocation::make()->action($warehouse, ['code' => $deletedLocation->code]))->toThrow(ValidationException::class);
+
+    DeleteLocation::make()->action($location);
+})->depends('delete location');
+
 test('create org stock', function () {
     $stock = StoreStock::make()->action(
         $this->group,
