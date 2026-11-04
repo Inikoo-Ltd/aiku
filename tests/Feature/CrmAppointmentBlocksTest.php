@@ -7,10 +7,12 @@ use App\Actions\CRM\AppointmentBlock\StoreAppointmentBlock;
 use App\Actions\CRM\AppointmentBlock\SyncAppointmentBlockGoogleCalendarEvent;
 use App\Actions\CRM\AppointmentType\GetAppointmentTypeAvailableSlots;
 use App\Actions\CRM\AppointmentType\StoreAppointmentType;
+use App\Actions\Web\WebBlock\Workshop\GetWebBlockAppointment;
 use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Enums\CRM\AppointmentType\AppointmentTypeMeetingModeEnum;
 use App\Models\CRM\AppointmentBlock;
 use App\Models\CRM\AppointmentType;
+use App\Models\Web\Webpage;
 use App\Services\GoogleCalendar\GoogleCalendarClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
@@ -214,4 +216,26 @@ test('a block is written into the connected Google calendar, removed with it, an
     SyncAppointmentBlockGoogleCalendarEvent::run($this->shop->id, $block->id);
 
     Http::assertSent(fn (Request $request) => $request->method() === 'DELETE' && str_ends_with($request->url(), 'events/'.GoogleCalendarClient::blockEventId($block->id)));
+});
+
+test('the appointment block in the workshop lists the shop active appointment types beside its layout', function () {
+    $visit    = ($this->appointmentType)();
+    $inactive = ($this->appointmentType)();
+    $inactive->update(['is_active' => false]);
+
+    $webpage = new Webpage();
+    $webpage->setRelation('shop', $this->shop);
+
+    $layout   = ['data' => ['fieldValue' => ['settings' => ['appointment_type_order' => [$visit->id]]]]];
+    $webBlock = GetWebBlockAppointment::run($webpage, ['type' => 'appointment-1', 'web_block' => ['layout' => $layout]]);
+
+    $listedVisit = collect($webBlock['appointment_types'])->firstWhere('id', $visit->id);
+
+    expect(collect($webBlock['appointment_types'])->pluck('id'))->not->toContain($inactive->id)
+        ->and($listedVisit['name'])->toBe($visit->name)
+        ->and($listedVisit['meeting_mode'])->toBe(AppointmentTypeMeetingModeEnum::STORE_VISIT->value)
+        ->and($listedVisit['duration_minutes'])->toBe(60)
+        ->and($listedVisit['location'])->toBe('Showroom, Sheffield')
+        ->and($listedVisit)->not->toHaveKey('slots')
+        ->and($webBlock['web_block']['layout'])->toBe($layout);
 });

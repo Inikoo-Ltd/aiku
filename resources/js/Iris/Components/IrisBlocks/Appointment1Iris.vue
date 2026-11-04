@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { inject, onMounted, ref } from "vue"
+import { computed, inject, onMounted, ref } from "vue"
 import axios from "axios"
 import { getStyles } from "@/Composables/styles"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import AppointmentBooking from "@/Components/CMS/Webpage/Appointment/AppointmentBooking.vue"
 import type { AppointmentBookingPayload, AppointmentTypeOption } from "@/Components/CMS/Webpage/Appointment/AppointmentBooking.vue"
 import { demoAppointmentTypes, demoBook } from "@/Components/CMS/Webpage/Appointment/demoAppointmentTypes"
+import { orderAppointmentTypes } from "@/Components/CMS/Webpage/Appointment/orderAppointmentTypes"
 
 const props = defineProps<{
     fieldValue: any
@@ -16,7 +17,8 @@ const props = defineProps<{
 const layout: any = inject("layout", retinaLayoutStructure)
 const isLive = !!layout?.iris?.website?.id
 
-const appointmentTypes = ref<AppointmentTypeOption[]>([])
+const shopAppointmentTypes = ref<AppointmentTypeOption[]>([])
+const appointmentTypes = computed(() => orderAppointmentTypes(shopAppointmentTypes.value, props.fieldValue?.settings?.appointment_type_order))
 const timezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone)
 const organizerName = ref<string>(layout?.iris?.website?.name ?? "")
 const defaultCountry = ref<string | null>(null)
@@ -24,18 +26,18 @@ const isLoading = ref(true)
 
 onMounted(async () => {
     if (!isLive) {
-        appointmentTypes.value = demoAppointmentTypes()
+        shopAppointmentTypes.value = demoAppointmentTypes()
         isLoading.value = false
         return
     }
     try {
         const { data } = await axios.get(route("iris.json.appointments.index"))
-        appointmentTypes.value = data.appointment_types
+        shopAppointmentTypes.value = data.appointment_types
         timezone.value = data.timezone
         organizerName.value = data.shop_name
         defaultCountry.value = data.country_code
     } catch {
-        appointmentTypes.value = []
+        shopAppointmentTypes.value = []
     }
     isLoading.value = false
 })

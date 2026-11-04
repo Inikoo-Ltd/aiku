@@ -12,6 +12,7 @@ import ButtonProperties from '@/Components/CMS/Fields/ButtonProperties.vue'
 import UploadImage from '@/Components/Pure/UploadImage.vue'
 import Payments from '@/Components/CMS/Fields/Payment.vue'
 import socialMedia from '@/Components/CMS/Fields/SocialMedia.vue'
+import AppointmentTypeOrder from '@/Components/CMS/Fields/AppointmentTypeOrder.vue'
 import Script from '@/Components/CMS/Fields/Script.vue'
 import SelectLayout from '@/Components/CMS/Fields/SelectLayout.vue'
 import OverviewForm from '@/Components/CMS/Fields/OverviewForm.vue'
@@ -60,6 +61,7 @@ export const getComponent = (componentName: string) => {
         'upload_image': UploadImage, //done
         'payment_templates': Payments, //done
         'socialMedia': socialMedia, //done
+        'appointmentTypeOrder': AppointmentTypeOrder,
         "VisibleLoggedIn": ButtonVisibleLoggedIn, //done
         "overview-property" : Overview,
         "textHeader": TextHeader, //done
