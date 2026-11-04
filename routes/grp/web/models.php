@@ -815,6 +815,7 @@ use App\Actions\Web\WebLayoutTemplate\StoreWebLayoutTemplate;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\UpdateWebpagePageStyle;
 use App\Actions\Web\Webpage\RepairWebpageBase64File;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\SetBlogWebpagesCategoryBulk;
@@ -1678,6 +1679,7 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->middleware(EnsureWebpageIsNotLocked::class)->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
+    Route::patch('page-style', UpdateWebpagePageStyle::class)->name('page_style.update')->withoutScopedBindings();
     Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
     Route::patch('delete', DeleteWebpage::class)->name('delete');
     Route::post('publish', PublishWebpage::class)->name('publish');
