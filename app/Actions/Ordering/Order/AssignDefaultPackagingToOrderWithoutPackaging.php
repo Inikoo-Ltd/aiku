@@ -8,6 +8,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
@@ -86,6 +87,6 @@ class AssignDefaultPackagingToOrderWithoutPackaging
 
     private function orderDeliveryNote(Order $order): ?DeliveryNote
     {
-        return $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+        return $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->first();
     }
 }

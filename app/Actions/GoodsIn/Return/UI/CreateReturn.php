@@ -12,6 +12,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
@@ -82,7 +83,7 @@ class CreateReturn extends OrgAction
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
         /** @var DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+        $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->first();
         $actions = $this->getActions($deliveryNote, $request);
 
         $props = [

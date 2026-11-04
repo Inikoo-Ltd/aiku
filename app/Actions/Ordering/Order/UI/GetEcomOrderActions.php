@@ -39,7 +39,7 @@ class GetEcomOrderActions
         $isReadyToInvoice = false;
         if ($order->state == OrderStateEnum::PACKED) {
             /** @var DeliveryNote $deliveryNote */
-            $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+            $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->first();
             if ($deliveryNote) {
                 $isReadyToInvoice = $order->is_shipping_by_external
                     ? $deliveryNote->shipments()->count() > 0

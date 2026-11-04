@@ -14,6 +14,7 @@ use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -67,7 +68,7 @@ class FinaliseOrder extends OrgAction
 
             if (!$fromDeliveryNote) {
                 /** @var DeliveryNote $deliveryNote */
-                $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+                $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->first();
                 if ($deliveryNote && ($deliveryNote->shipments()->exists() || $deliveryNote->collection_address_id)) {
                     FinaliseDeliveryNote::make()->action($deliveryNote, true);
                 }

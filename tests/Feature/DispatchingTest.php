@@ -7772,6 +7772,27 @@ test('an order cannot be invoiced while its shipping cost is to be confirmed', f
         ->and(\App\Actions\Ordering\Order\GenerateInvoiceFromOrder::make()->action($order->refresh()))->toBeInstanceOf(\App\Models\Accounting\Invoice::class);
 });
 
+test('a packed order whose first delivery note was cancelled can still be invoiced, HELP-4488', function () {
+    [$cancelledDeliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $order                   = $cancelledDeliveryNote->orders->first();
+
+    $liveDeliveryNote = $cancelledDeliveryNote->replicate();
+    $liveDeliveryNote->fill([
+        'reference' => $cancelledDeliveryNote->reference.'-B',
+        'slug'      => $cancelledDeliveryNote->slug.'-b',
+        'state'     => DeliveryNoteStateEnum::PACKED,
+        'parcels'   => [['weight' => 13.6, 'dimensions' => [40, 40, 40]]],
+    ])->save();
+    $order->deliveryNotes()->attach($liveDeliveryNote->id);
+
+    $cancelledDeliveryNote->update(['state' => DeliveryNoteStateEnum::CANCELLED, 'parcels' => []]);
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::PACKED, 'is_shipping_by_external' => false]);
+
+    $finaliseRoutes = collect(\App\Actions\Ordering\Order\UI\GetEcomOrderActions::make()->handle($order->refresh(), true))->pluck('route.name');
+
+    expect($finaliseRoutes)->toContain('grp.models.order.state.finalise');
+});
+
 test('delivery notes index flags export orders of uk organisations, HELP-4446', function () {
     $listed = fn () => collect(get(route('grp.org.warehouses.show.dispatching.delivery-notes', [
         $this->organisation->slug,
