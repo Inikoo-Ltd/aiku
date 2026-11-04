@@ -20,34 +20,35 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * The agent packs several lines of its warehouse at once for the next container, each as PackAgentWarehouseStock
- * does. Lines already packed are left as they are, so a second click changes nothing.
+ * The agent packs several lines of its warehouse at once for the next container, each whole or only some of its units,
+ * as PackAgentWarehouseStock does. All or none: a line that can not be packed stops the whole batch.
  */
 class PackAgentWarehouseStocks extends OrgAction
 {
     /**
-     * @param  array<int, int>  $stockIds
+     * @param  array<int, array{id: int, quantity?: float|null}>  $lines
      */
-    public function handle(Organisation $organisation, array $stockIds): int
+    public function handle(Organisation $organisation, array $lines): int
     {
-        return DB::transaction(function () use ($organisation, $stockIds) {
-            $stocks = AgentWarehouseStock::whereIn('id', $stockIds)
+        $quantities = collect($lines)->mapWithKeys(fn (array $line) => [(int) $line['id'] => isset($line['quantity']) ? (float) $line['quantity'] : null]);
+
+        return DB::transaction(function () use ($organisation, $quantities) {
+            $stocks = AgentWarehouseStock::whereIn('id', $quantities->keys())
                 ->where('agent_id', $organisation->agent?->id)
+                ->with('supplierProduct:id,code')
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
 
-            abort_unless($stocks->count() === count(array_unique($stockIds)), 404);
+            abort_unless($stocks->count() === $quantities->count(), 404);
 
-            $packable = $stocks->filter(fn (AgentWarehouseStock $stock) => $stock->state === AgentWarehouseStockStateEnum::RECEIVED && (float) $stock->quantity > 0);
-
-            if ($packable->isEmpty()) {
+            if ($stocks->doesntContain(fn (AgentWarehouseStock $stock) => $stock->state === AgentWarehouseStockStateEnum::RECEIVED)) {
                 throw ValidationException::withMessages(['stocks' => __('None of these lines is waiting to be packed')]);
             }
 
-            AgentWarehouseStock::whereIn('id', $packable->pluck('id'))->update(['state' => AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER]);
+            $stocks->each(fn (AgentWarehouseStock $stock) => PackAgentWarehouseStock::packLocked($stock, $quantities->get($stock->id)));
 
-            return $packable->count();
+            return $stocks->count();
         });
     }
 
@@ -63,8 +64,9 @@ class PackAgentWarehouseStocks extends OrgAction
     public function rules(): array
     {
         return [
-            'stocks'   => ['required', 'array', 'min:1', 'max:500'],
-            'stocks.*' => ['integer', 'distinct'],
+            'stocks'            => ['required', 'array', 'min:1', 'max:500'],
+            'stocks.*.id'       => ['required', 'integer', 'distinct'],
+            'stocks.*.quantity' => ['sometimes', 'nullable', 'numeric', 'gt:0'],
         ];
     }
 

@@ -104,6 +104,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'purchase_order_slug'      => $stock->purchase_order_slug,
                 'image_id'                 => $stock->image_id,
                 'is_unchecked'             => (bool) $stock->is_unchecked,
+                'is_from_goods_receipt'    => $stock->agent_goods_receipt_id !== null,
                 'purchase_order_transaction_id' => $stock->purchase_order_transaction_id,
                 'purchase_order_warning'   => $this->purchaseOrderWarning($stock),
             ])));
