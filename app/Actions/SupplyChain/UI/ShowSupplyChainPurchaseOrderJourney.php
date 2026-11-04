@@ -147,6 +147,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 po.approved_ready_at, po.handed_over_at, po.balance_paid_at, po.compliance_complete_at,
                 {$this->sharedColumns()},
                 suppliers.slug as supplier_slug, suppliers.code as supplier_code, suppliers.name as supplier_name,
+                suppliers.company_name as supplier_company_name,
                 suppliers.data as supplier_data,
                 partners.slug as partner_slug, partners.code as partner_code, partners.name as partner_name,
                 countries.code as country_code, countries.name as country_name,
@@ -236,7 +237,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     private function sharedColumns(): string
     {
         return 'po.buyer_id, users.contact_name as buyer_name, users.username as buyer_username,
-            organisations.slug as organisation_slug, organisations.code as organisation_code,
+            organisations.slug as organisation_slug, organisations.code as organisation_code, organisations.name as organisation_name,
             currencies.code as currency_code,
             agents.slug as agent_slug, agents.code as agent_code, agents.name as agent_name,
             agents.data as agent_data, agents.settings as agent_settings,
@@ -398,6 +399,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
         $amount = $row->cost_items ?? $row->cost_total;
 
+        $supplierCompany = $journey === 'partner' ? $row->partner_name : ($row->supplier_company_name ?: $row->supplier_name);
+
         return [
             'key'               => 'po-'.$row->id,
             'id'                => $row->id,
@@ -407,6 +410,10 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'supplier_name'     => $journey === 'agent' ? $row->supplier_name : null,
             'organisation_slug' => $row->organisation_slug,
             'organisation_code' => $row->organisation_code,
+            'organisation_name' => $row->organisation_name,
+            'supplier_company'  => $supplierCompany,
+            'supplier_nickname' => $journey !== 'partner' && $row->supplier_name && $row->supplier_name !== $supplierCompany ? $row->supplier_name : null,
+            'agent_name'        => $journey === 'agent' ? $row->agent_name : null,
             'journey'           => $journey,
             'agent_slug'        => $row->agent_slug,
             'parent_code'       => $row->agent_code ?? $row->supplier_code ?? $row->partner_code,
@@ -416,6 +423,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'country_name'      => $row->country_name,
             'buyer_id'          => $row->buyer_id,
             'buyer_name'        => $row->buyer_id ? strtok((string) ($row->buyer_name ?: $row->buyer_username), ' ') : null,
+            'placed_by'         => $row->buyer_id ? ($row->buyer_name ?: $row->buyer_username) : null,
             'type'              => $row->is_npo ? 'npo' : 'reorder',
             'amount'            => $amount !== null ? (float) $amount : null,
             'currency_code'     => $row->currency_code,

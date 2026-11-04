@@ -34,6 +34,11 @@ export interface JourneyRibbon {
     supplier_name: string | null
     mark_route: routeType
     organisation_code: string
+    organisation_name: string
+    supplier_company: string | null
+    supplier_nickname: string | null
+    agent_name: string | null
+    placed_by: string | null
     journey: "agent" | "supplier" | "partner"
     parent_code: string | null
     parent_name: string | null
@@ -198,29 +203,26 @@ function isMarkable(segment: JourneySegment): boolean {
                         @click="isOpen = !isOpen">
                         <FontAwesomeIcon icon="fal fa-chevron-right" class="transition-transform" :class="{ 'rotate-90': isOpen }" fixed-width aria-hidden="true" />
                     </button>
-                    <div class="min-w-0 flex-1">
+                    <div class="min-w-0 flex-1 text-xs text-gray-600">
                         <div class="flex items-center gap-1.5">
-                            <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="break-all text-sm font-semibold leading-snug text-gray-900 hover:underline">
+                            <FontAwesomeIcon :icon="journeyIcon[ribbon.journey]" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+                            <span class="text-sm font-semibold leading-snug text-gray-900" :title="ribbon.parent_code ?? ''">{{ ribbon.supplier_company ?? ribbon.parent_name ?? ribbon.parent_code }}</span>
+                        </div>
+                        <div>{{ ribbon.placed_by ? ctrans("Placed by :name", { name: ribbon.placed_by }) : ctrans("Placed by unknown") }}</div>
+                        <div :title="ribbon.organisation_code">{{ ctrans("For :organisation", { organisation: ribbon.organisation_name }) }}</div>
+                        <div v-if="ribbon.agent_name">{{ ctrans("Agent :agent", { agent: ribbon.agent_name }) }}</div>
+                        <div v-if="ribbon.supplier_nickname" class="text-gray-500">{{ ctrans("Nickname :nickname", { nickname: ribbon.supplier_nickname }) }}</div>
+                        <div class="flex items-center gap-1.5">
+                            <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="whitespace-nowrap font-semibold text-gray-900 hover:underline">
                                 {{ ribbon.reference }}
                             </Link>
                             <FontAwesomeIcon
                                 v-tooltip="ribbon.type === 'npo' ? ctrans('NPO: has products never received before') : ctrans('Reorder')"
                                 :icon="ribbon.type === 'npo' ? 'fal fa-sparkles' : 'fal fa-redo-alt'"
-                                class="shrink-0 text-xs"
+                                class="shrink-0"
                                 :class="ribbon.type === 'npo' ? 'text-gray-700' : 'text-gray-400'"
                                 fixed-width
                                 aria-hidden="true" />
-                        </div>
-                        <div class="flex flex-wrap items-center gap-x-1 text-xs text-gray-600">
-                            <FontAwesomeIcon :icon="journeyIcon[ribbon.journey]" class="text-gray-400" fixed-width aria-hidden="true" />
-                            <span :title="ribbon.parent_code ?? ''">{{ ribbon.parent_name ?? ribbon.parent_code }}</span>
-                            <template v-if="ribbon.supplier_code">
-                                <span>→</span>
-                                <span :title="ribbon.supplier_name ?? ''">{{ ribbon.supplier_code }}</span>
-                            </template>
-                        </div>
-                        <div class="text-xs text-gray-500">
-                            {{ ribbon.organisation_code }} · {{ ribbon.buyer_name ? `${ctrans("Buyer")} ${ribbon.buyer_name}` : ctrans("buyer unknown") }}
                         </div>
                     </div>
                     <div class="shrink-0 text-right text-xs">
