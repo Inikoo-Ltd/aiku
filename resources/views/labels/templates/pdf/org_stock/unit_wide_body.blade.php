@@ -15,12 +15,12 @@
 @endphp
 
 <table border="0" cellpadding="0" cellspacing="0"
-       style="width: 100%; margin: 0; padding: 0; font-family: {{ $scale['font'] ?? "Arial, 'Helvetica Neue', Helvetica, sans-serif" }}; color: #000;">
+       style="width: 100%; margin: 0; padding: 0; font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; color: #000;">
     <tr>
         <td width="{{ $scale['text_width'] }}%" valign="top" style="padding-right: {{ $scale['gap'] * 2 }}mm;">
             <table border="0" cellpadding="0" cellspacing="0" style="width: 100%; line-height: 1.2; font-size: {{ $scale['body'] }}pt;">
                 <tr>
-                    <td style="font-size: {{ $scale['code'] }}pt; font-weight: bold; line-height: 1; padding-top: {{ $scale['code_padding_top'] ?? $scale['gap'] * 2 }}mm; padding-bottom: {{ $scale['code_padding_bottom'] ?? $scale['gap'] }}mm;">{{ $label['code'] }}</td>
+                    <td style="font-size: {{ $scale['code'] }}pt; font-weight: bold; line-height: 1; padding-top: {{ $scale['gap'] * 2 }}mm; padding-bottom: {{ $scale['gap'] }}mm;">{{ $label['code'] }}</td>
                 </tr>
 
                 @if ($label['name'])
@@ -41,15 +41,13 @@
                     </tr>
                 @endif
 
-                @php($isFirstAddressBlock = true)
                 @foreach (['signature', 'eu_responsible_person', 'es_importer'] as $addressBlock)
                     @if ($show[$addressBlock] && $label[$addressBlock])
                         @foreach (explode("\n", $label[$addressBlock]) as $index => $addressLine)
                             <tr>
-                                <td style="font-size: {{ $scale['signature'] }}pt; padding-bottom: {{ $scale['line_gap'] }}mm;@if ($index === 0) padding-top: {{ $isFirstAddressBlock ? $scale['gap'] * 1.5 : ($scale['address_gap'] ?? $scale['gap'] * 1.5) }}mm;@endif">{{ $addressLine }}</td>
+                                <td style="font-size: {{ $scale['signature'] }}pt; padding-bottom: {{ $scale['line_gap'] }}mm;@if ($index === 0) padding-top: {{ $scale['gap'] * 1.5 }}mm;@endif">{{ $addressLine }}</td>
                             </tr>
                         @endforeach
-                        @php($isFirstAddressBlock = false)
                     @endif
                 @endforeach
 
@@ -62,7 +60,7 @@
         </td>
 
         @if ($hasBarcode)
-            <td width="{{ $scale['barcode_width'] }}%" valign="{{ isset($scale['barcode_padding_top']) ? 'top' : 'middle' }}" align="center"@isset($scale['barcode_padding_top']) style="padding-top: {{ $scale['barcode_padding_top'] }}mm;"@endisset>
+            <td width="{{ $scale['barcode_width'] }}%" valign="middle" align="center">
                 <barcode code="{{ $label['barcode']['number'] }}"
                          type="{{ $label['barcode']['type'] }}"
                          size="{{ $scale['barcode'] }}"

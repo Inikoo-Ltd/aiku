@@ -227,14 +227,16 @@ class PdfOrgStockLabel
 
     /**
      * The small unit stocks Aurora sold (63 x 29.6 up to 70 x 30) are laid out as Aurora printed
-     * them: the wording down the left half and the barcode standing over the right half, from top to
-     * bottom.
+     * them: the code and name across the full width, and under the rule the wording down the left
+     * half and the barcode over the right half.
      */
     private const SMALL_UNIT_MAX_HEIGHT = 30.0;
 
     private const SMALL_UNIT_MARGIN_LEFT = 1.2;
 
     private const SMALL_UNIT_MARGIN_RIGHT = 0.6;
+
+    private const SMALL_UNIT_BARCODE_CLEARANCE = 0.6;
 
     private const POINT_MM = 0.3528;
 
@@ -564,7 +566,7 @@ class PdfOrgStockLabel
         }
 
         if ($height <= self::SMALL_UNIT_MAX_HEIGHT) {
-            return $this->getSmallUnitScale($width, $height, $factor, $withImage, $withBarcode);
+            return $this->getSmallUnitScale($width, $height, $factor, $withImage, $withBarcode, $label);
         }
 
         [$textWidth, $barcodeWidth, $imageWidth] = match (true) {
@@ -639,43 +641,51 @@ class PdfOrgStockLabel
     /**
      * Measured off the label Aurora printed on 63.5 x 29.6: the code, name and origin at 4.7 pt, the
      * address at 4 pt with no gap between its blocks, the text 1.2 mm from the left edge and the
-     * barcode at its standard height, 3.4 mm from the top, over the right 48 % of the label, 0.6 mm from the edge. The
-     * table is a single row, which mPDF shrinks to keep on one page if a long address runs past
-     * the foot.
+     * barcode over the right 48 % of the label, 0.6 mm from the edge. The name runs the full width,
+     * however long it is, and the barcode starts under its rule and grows into what is left down to
+     * the foot, so a name wrapping onto a second line gives the barcode a little less height.
      *
+     * @param  array<string, mixed>  $label
      * @return array<string, float|int|string>
      */
-    private function getSmallUnitScale(float $width, float $height, float $factor, bool $withImage, bool $withBarcode): array
+    private function getSmallUnitScale(float $width, float $height, float $factor, bool $withImage, bool $withBarcode, array $label): array
     {
-        $innerHeight  = $height - self::TOP_PADDING - self::CELL_PADDING;
         $contentWidth = $width - self::SMALL_UNIT_MARGIN_LEFT - self::SMALL_UNIT_MARGIN_RIGHT;
 
+        $codeSize          = 4.7 * $factor;
+        $nameSize          = 4.7 * $factor;
+        $gap               = 0.4 * $factor;
+        $codePaddingTop    = 0.57 * $factor;
+        $codePaddingBottom = 0.97 * $factor;
+
+        $nameLines = max(1, (int) ceil(mb_strlen((string) ($label['name'] ?? '')) * $nameSize * 0.52 * self::POINT_MM / $contentWidth));
+        $headerMm  = $codePaddingTop + $codeSize * self::POINT_MM + $codePaddingBottom + $nameLines * $nameSize * self::POINT_MM * 1.15 + $gap + 0.2;
+        $freeMm    = $height - self::TOP_PADDING - self::CELL_PADDING - $headerMm - $gap - self::SMALL_UNIT_BARCODE_CLEARANCE;
+
         $barcodeMm    = $withBarcode ? $width * ($withImage ? 0.4 : 0.481) : 0.0;
+        $barcodeSize  = $barcodeMm / self::EAN13_WIDTH_MM;
         $barcodeWidth = $withBarcode ? round(min(($barcodeMm + 0.3) / $contentWidth * 100, 60.0), 2) : 0.0;
-        $imageMm      = $withImage ? min($innerHeight * 0.9, $contentWidth * 0.18) : 0.0;
+        $imageMm      = $withImage ? max(min($freeMm, $contentWidth * 0.18), 0.0) : 0.0;
         $imageWidth   = $withImage ? round(($imageMm + 1.0) / $contentWidth * 100, 2) : 0.0;
 
         return [
-            'layout'         => 'wide',
-            'font'           => 'dejavusanscondensed',
-            'margin_left'    => self::SMALL_UNIT_MARGIN_LEFT,
-            'margin_right'   => self::SMALL_UNIT_MARGIN_RIGHT,
-            'code'           => round(4.7 * $factor, 2),
-            'name'           => round(4.7 * $factor, 2),
-            'body'           => round(4.7 * $factor, 2),
-            'signature'      => round(4.0 * $factor, 2),
-            'text_width'     => round(100 - $barcodeWidth - $imageWidth, 2),
-            'barcode_width'  => $barcodeWidth,
-            'image_width'    => $imageWidth,
-            'barcode'        => $withBarcode ? round($barcodeMm / self::EAN13_WIDTH_MM, 3) : 0.0,
-            'barcode_height' => $withBarcode ? 1.0 : 0.0,
-            'image'          => round($imageMm * 3.78).'px',
-            'gap'            => round(0.4 * $factor, 2),
-            'code_padding_top'    => round(0.57 * $factor, 2),
-            'code_padding_bottom' => round(0.97 * $factor, 2),
-            'barcode_padding_top' => round(2.57 * $factor, 2),
-            'address_gap'    => 0.0,
-            'line_gap'       => 0.0,
+            'layout'              => 'small',
+            'font'                => 'dejavusanscondensed',
+            'margin_left'         => self::SMALL_UNIT_MARGIN_LEFT,
+            'margin_right'        => self::SMALL_UNIT_MARGIN_RIGHT,
+            'code'                => round($codeSize, 2),
+            'name'                => round($nameSize, 2),
+            'body'                => round(4.7 * $factor, 2),
+            'signature'           => round(4.0 * $factor, 2),
+            'text_width'          => round(100 - $barcodeWidth - $imageWidth, 2),
+            'barcode_width'       => $barcodeWidth,
+            'image_width'         => $imageWidth,
+            'barcode'             => $withBarcode ? round($barcodeSize, 3) : 0.0,
+            'barcode_height'      => $withBarcode ? round(max($freeMm, 5.0) / (self::EAN13_HEIGHT_MM * $barcodeSize), 2) : 0.0,
+            'image'               => round($imageMm * 3.78).'px',
+            'gap'                 => round($gap, 2),
+            'code_padding_top'    => round($codePaddingTop, 2),
+            'code_padding_bottom' => round($codePaddingBottom, 2),
         ];
     }
 
