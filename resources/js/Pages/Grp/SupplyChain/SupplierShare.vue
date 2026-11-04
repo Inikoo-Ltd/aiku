@@ -7,6 +7,7 @@ import SalesDashboard from "@/Components/Procurement/SalesDashboard.vue"
 import SupplierPortalDetails from "@/Components/Procurement/SupplierPortalDetails.vue"
 import TableSupplierPortalPurchaseOrders from "@/Components/Tables/Grp/SupplyChain/TableSupplierPortalPurchaseOrders.vue"
 import SupplierPortalPriceChanges from "@/Components/Procurement/SupplierPortalPriceChanges.vue"
+import SupplierPortalPurchaseOrderStages from "@/Components/Procurement/SupplierPortalPurchaseOrderStages.vue"
 import SupplierPortalLanguages from "@/Components/Procurement/SupplierPortalLanguages.vue"
 import SupplierPortalProfile, { type PortalProfile } from "@/Components/Procurement/SupplierPortalProfile.vue"
 import SupplierPortalSearch from "@/Components/Procurement/SupplierPortalSearch.vue"
@@ -19,9 +20,9 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart, faComputerClassic } from "@fas"
-import { faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faBox, faHandshake, faSeedling, faTags } from "@fal"
+import { faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags } from "@fal"
 
-library.add(faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic)
+library.add(faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic)
 
 defineOptions({ layout: (_h: unknown, page: unknown) => page })
 
@@ -65,6 +66,7 @@ const props = defineProps<{
 	code_sent?: boolean
 	valuation?: Valuation
 	purchase_orders?: InstanceType<typeof TableSupplierPortalPurchaseOrders>["$props"]["data"]
+	purchase_order_stages?: InstanceType<typeof SupplierPortalPurchaseOrderStages>["$props"]["data"]
 	price_changes?: InstanceType<typeof SupplierPortalPriceChanges>["$props"]["data"]
 	open_purchase_orders?: number
 	errors?: Record<string, string>
@@ -111,12 +113,13 @@ const navigationTheme = computed(() => {
 	}
 })
 
-type Tab = "home" | "sales" | "purchase_orders" | "products" | "price_changes" | "agreement" | "grow"
+type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "products" | "price_changes" | "agreement" | "grow"
 
-const menu = computed<{ key: Tab; label: string; icon: string }[]>(() => [
+const menu = computed<{ key: Tab; label: string; icon: string; shortcut?: boolean }[]>(() => [
 	{ key: "home", label: ctrans("Home"), icon: "fal fa-home" },
 	{ key: "sales", label: ctrans("Sales"), icon: "fal fa-chart-line" },
 	{ key: "purchase_orders", label: ctrans("Purchase orders"), icon: "fal fa-clipboard" },
+	{ key: "purchase_order_list", label: ctrans("Purchase order list"), icon: "fal fa-list", shortcut: true },
 	{ key: "products", label: ctrans("Products"), icon: "fal fa-box" },
 	{ key: "price_changes", label: ctrans("Price changes"), icon: "fal fa-tags" },
 	{ key: "agreement", label: ctrans("Agreement"), icon: "fal fa-handshake" },
@@ -144,10 +147,10 @@ const openProduct = (code: string) => {
 
 const openOrder = (reference: string) => {
 	const url = new URL(window.location.href)
-	url.searchParams.set("tab", "purchase_orders")
+	url.searchParams.set("tab", "purchase_order_list")
 	url.searchParams.set("purchase_orders_filter[global]", reference)
 	url.searchParams.delete("purchase_ordersPage")
-	tab.value = "purchase_orders"
+	tab.value = "purchase_order_list"
 	router.get(url.pathname + url.search, {}, { preserveState: true, preserveScroll: true, only: ["purchase_orders"] })
 }
 
@@ -205,8 +208,8 @@ onMounted(() => {
 					v-for="item in menu"
 					:key="item.key"
 					type="button"
-					class="flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded px-3 py-2 text-sm font-semibold transition"
-					:class="tab === item.key ? '' : 'hover:bg-gray-300/40'"
+					class="flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded px-3 text-sm font-semibold transition"
+					:class="[tab === item.key ? '' : 'hover:bg-gray-300/40', item.shortcut ? 'py-1.5 text-xs lg:ml-6' : 'py-2']"
 					:style="tab === item.key ? navigationTheme.active : { color: navigationTheme.text }"
 					:aria-current="tab === item.key ? 'page' : undefined"
 					@click="go(item.key)">
@@ -344,7 +347,12 @@ onMounted(() => {
 
 				<SalesDashboard v-else-if="tab === 'sales' && valuation" seller="supplier" :staff="false" :links="null" :valuation="valuation" :sales="sales" :feedback="feedback" :language="language" />
 
-	<div v-else-if="tab === 'purchase_orders'" class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+				<template v-else-if="tab === 'purchase_orders'">
+					<SupplierPortalPurchaseOrderStages v-if="purchase_order_stages" :data="purchase_order_stages" @list="go('purchase_order_list')" />
+					<div v-else class="skeleton h-40 rounded-lg" />
+				</template>
+
+				<div v-else-if="tab === 'purchase_order_list'" class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
 					<p class="px-4 pt-4 text-sm text-gray-500">{{ ctrans("Every order we sent you. Open orders show the labels to print.") }}</p>
 					<TableSupplierPortalPurchaseOrders v-if="purchase_orders" :data="purchase_orders" tab="purchase_orders" />
 				</div>

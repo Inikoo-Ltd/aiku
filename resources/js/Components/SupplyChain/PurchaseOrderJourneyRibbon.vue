@@ -28,11 +28,11 @@ export interface JourneySegment {
 export interface JourneyRibbon {
     key: string
     id: number
-    slug: string
+    slug: string | null
     reference: string
     supplier_code: string | null
     supplier_name: string | null
-    mark_route: routeType
+    mark_route: routeType | null
     organisation_code: string
     organisation_name: string
     supplier_company: string | null
@@ -54,7 +54,7 @@ export interface JourneyRibbon {
     status: "on_track" | "at_risk" | "overdue" | "completed"
     days_overdue: number
     eta: string | null
-    route: routeType
+    route: routeType | null
     segments: JourneySegment[]
 }
 
@@ -213,6 +213,7 @@ function isMarkable(segment: JourneySegment): boolean {
                         @click="isOpen = !isOpen">
                         <FontAwesomeIcon icon="fal fa-chevron-right" class="transition-transform" :class="{ 'rotate-90': isOpen }" fixed-width aria-hidden="true" />
                     </button>
+                    <slot name="details" :ribbon="ribbon">
                     <div class="min-w-0 flex-1 space-y-1 text-xs text-gray-600">
                         <div class="flex items-center gap-1.5 pb-1.5">
                             <FontAwesomeIcon v-tooltip="journeyLabel[ribbon.journey]" :icon="journeyIcon[ribbon.journey]" class="shrink-0 text-gray-600" fixed-width aria-hidden="true" />
@@ -241,9 +242,10 @@ function isMarkable(segment: JourneySegment): boolean {
                         <div v-if="ribbon.supplier_nickname" class="text-gray-500">{{ ctrans("Nickname :nickname", { nickname: ribbon.supplier_nickname }) }}</div>
                         <div class="flex items-center gap-1">
                             <FontAwesomeIcon v-tooltip="ctrans('Purchase order')" icon="fal fa-clipboard-list" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
-                            <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="min-w-0 truncate whitespace-nowrap text-gray-600 hover:underline" :title="ribbon.reference">
+                            <Link v-if="ribbon.route" :href="route(ribbon.route.name, ribbon.route.parameters)" class="min-w-0 truncate whitespace-nowrap text-gray-600 hover:underline" :title="ribbon.reference">
                                 {{ ribbon.reference }}
                             </Link>
+                            <span v-else class="min-w-0 truncate whitespace-nowrap" :title="ribbon.reference">{{ ribbon.reference }}</span>
                             <FontAwesomeIcon
                                 v-tooltip="ribbon.type === 'npo' ? ctrans('NPO: has products never received before') : ctrans('Reorder')"
                                 :icon="ribbon.type === 'npo' ? 'fal fa-sparkles' : 'fal fa-redo-alt'"
@@ -253,6 +255,7 @@ function isMarkable(segment: JourneySegment): boolean {
                                 aria-hidden="true" />
                         </div>
                     </div>
+                    </slot>
                 </div>
             </td>
             <td v-for="stage in stages" :key="stage.key" class="journey-stage-cell px-1 py-2 align-middle">
@@ -344,7 +347,7 @@ function isMarkable(segment: JourneySegment): boolean {
                     <span v-else class="text-gray-700">
                         {{ ribbon.status === "completed" ? ctrans("Every stage is done") : ctrans("Not started yet") }}
                     </span>
-                    <Link :href="route(ribbon.route.name, ribbon.route.parameters)" class="text-gray-700 underline hover:text-gray-900">
+                    <Link v-if="ribbon.route" :href="route(ribbon.route.name, ribbon.route.parameters)" class="text-gray-700 underline hover:text-gray-900">
                         {{ ctrans("Documents & activity") }}
                     </Link>
                 </div>

@@ -268,7 +268,7 @@ function saveMark(date: string | null): void {
         return
     }
     router.patch(
-        route(marking.value.ribbon.mark_route.name, marking.value.ribbon.mark_route.parameters),
+        route(marking.value.ribbon.mark_route!.name, marking.value.ribbon.mark_route!.parameters),
         { stage: marking.value.segment.key, date, reason: markReason.value.trim() || null },
         {
             preserveScroll: true,
