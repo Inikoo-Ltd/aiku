@@ -55,6 +55,29 @@ const notifyAnsweredElsewhere = (payload: WhatsappCall) =>
         type: "info",
     })
 
+const notifyCallEnded = () =>
+    notify({ title: ctrans("WhatsApp call"), text: ctrans("This call has already ended."), type: "warn" })
+
+// getUserMedia names why it could not open the microphone; the agent can fix these, so they
+// are told which one rather than a generic failure.
+const microphoneProblem = (error: unknown): string | null => {
+    const name = (error as DOMException | undefined)?.name
+
+    if (name === "NotAllowedError" || name === "SecurityError") {
+        return ctrans("The browser is blocking the microphone. Allow it for this site and try again.")
+    }
+
+    if (name === "NotFoundError" || name === "OverconstrainedError") {
+        return ctrans("No microphone was found. Connect one and try again.")
+    }
+
+    if (name === "NotReadableError") {
+        return ctrans("The microphone is being used by another application. Close it and try again.")
+    }
+
+    return null
+}
+
 const upsertRinging = (payload: WhatsappCall) => {
     if (state.ringing.some((ringing) => ringing.id === payload.id)) return
 
@@ -277,9 +300,12 @@ export const useWhatsappCall = () => {
         removeRinging(incoming.id)
 
         // Two agents can press Answer together; the loser has by then heard the winner's
-        // broadcast, so the call is reported as taken rather than put back to ring.
+        // broadcast, so the call is reported as taken rather than put back to ring. A caller who
+        // hangs up while the microphone is still being opened has cleared state.call through the
+        // broadcast, and that call must not come back as ringing.
         const giveBack = (message: string) => {
             const takenByColleague = state.call?.status === "in_progress" ? state.call : null
+            const endedMeanwhile = state.call === null
             teardownMedia()
             state.call = null
 
@@ -289,14 +315,28 @@ export const useWhatsappCall = () => {
                 return
             }
 
+            if (endedMeanwhile) {
+                notifyCallEnded()
+
+                return
+            }
+
             upsertRinging(incoming)
             notify({ title: ctrans("Something went wrong"), text: message, type: "error" })
         }
 
         try {
-            const offer = await fetchRemoteSdp(organisation, incoming.id)
+            const { data: offerResponse } = await axios.get(
+                route("grp.org.chat.agents.whatsapp.calls.offer", { organisation, metaChatCall: incoming.id })
+            )
+            const offer: string | undefined = offerResponse?.data?.remote_sdp
 
-            if (!offer) throw new Error("missing offer")
+            if (!offer) {
+                if (offerResponse?.code === 409) state.call = null
+                giveBack(offerResponse?.message || ctrans("The call could not be answered."))
+
+                return
+            }
 
             const sdp = await buildAnswer(offer)
 
@@ -316,7 +356,7 @@ export const useWhatsappCall = () => {
 
             startTicker()
         } catch (error) {
-            giveBack(ctrans("The call could not be answered."))
+            giveBack(microphoneProblem(error) ?? ctrans("The call could not be answered."))
         } finally {
             busy.value = false
         }
@@ -346,7 +386,7 @@ export const useWhatsappCall = () => {
             teardownMedia()
             notify({
                 title: ctrans("Something went wrong"),
-                text: ctrans("The call could not be started."),
+                text: microphoneProblem(error) ?? ctrans("The call could not be started."),
                 type: "error",
             })
         } finally {

@@ -205,7 +205,7 @@ class CreateReplacementDeliveryNote extends OrgAction
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
         /** @var DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
+        $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->first();
         $actions      = $this->getActions($deliveryNote, $request);
 
         $warning = null;
