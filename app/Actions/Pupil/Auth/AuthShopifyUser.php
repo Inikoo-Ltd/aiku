@@ -124,17 +124,22 @@ class AuthShopifyUser extends AuthController
     }
 
     /**
-     * The new token carries every scope in the config, so a store that was missing the shipping scope gets its
-     * delivery profile checked again by the next ten-minute shopify:sync-delivery-profile --changed run (INI-190).
+     * The new token carries every scope in the config, so a store that was missing the shipping scope loses the
+     * Retina notice as soon as it comes back from approving, and gets its delivery profile checked again by the
+     * next ten-minute shopify:sync-delivery-profile --changed run, which marks it again if Shopify still refuses (INI-190).
      */
     private function queueDeliveryProfileCheck(string $shopDomain): void
     {
         ShopifyUser::where('name', $shopDomain)
-            ->whereNotNull('data->delivery_profile->checked_at')
+            ->where(fn ($query) => $query->whereNotNull('data->delivery_profile->checked_at')
+                ->orWhere('data->delivery_profile->missing_shipping_scope', true))
             ->get()
             ->each(function (ShopifyUser $shopifyUser) {
                 $data = $shopifyUser->data;
                 unset($data['delivery_profile']['checked_at']);
+                if (isset($data['delivery_profile']['missing_shipping_scope'])) {
+                    $data['delivery_profile']['missing_shipping_scope'] = false;
+                }
                 $shopifyUser->update(['data' => $data]);
             });
     }
