@@ -377,7 +377,7 @@ class UpdateProduct extends OrgAction
         ) {
             $stockStatuses        = [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK, ProductStatusEnum::COMING_SOON];
             $isStockStatusChange  = in_array($oldStatus, $stockStatuses, true) && in_array($product->status, $stockStatuses, true);
-            $fieldsShownLoggedOut = array_diff($fieldsUsedInWebpages, $isStockStatusChange ? ['price', 'status'] : ['price']);
+            $fieldsShownLoggedOut = array_diff($fieldsUsedInWebpages, $isStockStatusChange ? ['price', 'rrp', 'status'] : ['price', 'rrp']);
 
             BreakProductInWebpagesCache::dispatch($product, Arr::hasAny($changed, $fieldsShownLoggedOut))->delay(15);
         }
