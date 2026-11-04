@@ -2,6 +2,7 @@
 
 namespace App\Actions\CRM\Appointment;
 
+use App\Actions\CRM\AppointmentType\GetAppointmentTypeAvailableSlots;
 use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Enums\CRM\AppointmentType\AppointmentTypeMeetingModeEnum;
 use App\Models\Catalogue\Shop;
@@ -111,7 +112,8 @@ trait WithAppointmentRules
     /**
      * An appointment that holds its time cannot start in the past, go over what its type takes at
      * once, or be given to someone who is at an appointment of another type at that time. Several
-     * bookings of one type can share a time and a member of staff, up to the type's capacity.
+     * bookings of one type can share a time and a member of staff, up to the type's capacity. A shop
+     * that takes one appointment at a time does not take one beside an appointment of another type.
      */
     protected function ensureAppointmentFits(array $modelData, ?Appointment $appointment = null): void
     {
@@ -143,6 +145,8 @@ trait WithAppointmentRules
                 throw ValidationException::withMessages(['starts_at' => __('Choose a time that has not passed yet.')]);
             }
 
+            $slots = GetAppointmentTypeAvailableSlots::make();
+            $slots->lockShopAppointmentTypes(AppointmentType::withTrashed()->find($appointmentTypeId)->shop);
             $appointmentType = AppointmentType::withTrashed()->lockForUpdate()->find($appointmentTypeId);
             $buffer          = $appointmentType->buffer_minutes;
             $booked          = $others()
@@ -153,6 +157,18 @@ trait WithAppointmentRules
 
             if ($booked >= $appointmentType->capacity_per_slot) {
                 throw ValidationException::withMessages(['starts_at' => __('This time is already fully booked for :type.', ['type' => $appointmentType->name])]);
+            }
+
+            $otherTypeBooking = $slots->isOneAtATime($appointmentType->shop) ? $others()
+                ->where('shop_id', $appointmentType->shop_id)
+                ->where('appointment_type_id', '!=', $appointmentTypeId)
+                ->where('starts_at', '<', $endsAt->copy()->addMinutes($buffer))
+                ->where('ends_at', '>', $startsAt->copy()->subMinutes($buffer))
+                ->with('appointmentType:id,name')
+                ->first() : null;
+
+            if ($otherTypeBooking) {
+                throw ValidationException::withMessages(['starts_at' => __('This shop takes one appointment at a time, and this time is taken by a :type appointment.', ['type' => $otherTypeBooking->appointmentType?->name])]);
             }
         }
 
