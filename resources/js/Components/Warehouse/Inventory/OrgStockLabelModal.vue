@@ -6,7 +6,8 @@
   -->
 
 <script setup lang="ts">
-import { computed, ref, watch, onUnmounted } from "vue"
+import { computed, inject, ref, watch, onUnmounted } from "vue"
+import { useLocalStorage } from "@vueuse/core"
 import { routeType } from "@/types/route"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -62,6 +63,17 @@ const props = defineProps<{
 }>()
 
 const emits = defineEmits<{ (e: "onClose"): void }>()
+
+const layoutContext: any = inject("layout", {})
+
+const lastUsed = useLocalStorage<{
+    standard: "unified" | "localised"
+    levels: Partial<Record<string, { size?: string; layout?: string; fields?: Record<string, boolean> }>>
+}>(
+    `org-stock-label:${layoutContext?.user?.id ?? "anonymous"}`,
+    { standard: "unified", levels: {} },
+    { mergeDefaults: true },
+)
 
 const standard = ref<"unified" | "localised">("unified")
 const batch = ref("")
@@ -189,14 +201,19 @@ const cartonOrganisationWarning = computed(() =>
         : null)
 
 const resetFromOptions = () => {
-    selected.value = Object.fromEntries(fields.value.map((field) => [field.key, field.available && field.checked]))
+    const lastUsedLevel = lastUsed.value.levels[activeLevel.value]
+
+    selected.value = Object.fromEntries(fields.value.map((field) => [
+        field.key,
+        field.available && (lastUsedLevel?.fields?.[field.key] ?? field.checked),
+    ]))
 
     const sizes = levelSizes.value
-    size.value = sizes.some((option) => option.key === props.options?.default_size)
-        ? props.options.default_size
-        : sizes[0]?.key
+    const preferredSize = [lastUsedLevel?.size, props.options?.default_size]
+        .find((key) => sizes.some((option) => option.key === key))
+    size.value = preferredSize ?? sizes[0]?.key
 
-    layout.value = "single"
+    layout.value = lastUsedLevel?.layout ?? "single"
     cartonOrganisationId.value = props.options?.carton_organisation_id ? String(props.options.carton_organisation_id) : undefined
 }
 
@@ -211,7 +228,7 @@ watch(() => [props.isOpen, props.level], ([isOpen]) => {
         return
     }
 
-    standard.value = props.options?.unified ? "unified" : "localised"
+    standard.value = props.options?.unified ? lastUsed.value.standard : "localised"
     batch.value = props.options?.unified?.batch ?? ""
     pickLevel()
 }, { immediate: true })
@@ -270,7 +287,25 @@ const pdfUrl = computed(() => {
     return route(props.labelRoute.name, query)
 })
 
+const rememberChoices = () => {
+    lastUsed.value.standard = standard.value
+
+    if (isUnified.value) {
+        return
+    }
+
+    lastUsed.value.levels = {
+        ...lastUsed.value.levels,
+        [activeLevel.value]: {
+            size: size.value,
+            layout: layout.value,
+            fields: Object.fromEntries(fields.value.filter((field) => field.available).map((field) => [field.key, !!selected.value[field.key]])),
+        },
+    }
+}
+
 const openPdf = () => {
+    rememberChoices()
     window.open(pdfUrl.value, "_blank")
 }
 
