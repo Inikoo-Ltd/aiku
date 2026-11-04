@@ -6093,6 +6093,7 @@ test('finishing a return with a replacement needs a reason per replaced item and
     [$deliveryNote, $deliveryNoteItem] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::DISPATCHED]);
     $deliveryNoteItem->update(['quantity_dispatched' => 2]);
+    $deliveryNoteItem->transaction->update(['quantity_dispatched' => $deliveryNoteItem->transaction->quantity_ordered]);
     $order = $deliveryNote->orders()->first();
     \App\Actions\Accounting\Invoice\StoreInvoice::make()->action($order, array_merge(\App\Models\Accounting\Invoice::factory()->definition(), [
         'billing_address' => new Address(Address::factory()->definition()),
