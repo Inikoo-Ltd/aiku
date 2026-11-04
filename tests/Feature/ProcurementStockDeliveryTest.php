@@ -55,6 +55,9 @@ use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
 use Illuminate\Support\Str;
+use Laravel\Scout\Builder as ScoutBuilder;
+use Laravel\Scout\EngineManager;
+use Laravel\Scout\Engines\Engine;
 use App\Actions\Procurement\ShoppingListItem\CherryPickShoppingListItems;
 use App\Actions\Procurement\ShoppingListItem\DeleteShoppingListItem;
 use App\Actions\Procurement\ShoppingListItem\ProposeDismissShoppingListItem;
@@ -3834,4 +3837,30 @@ test('a product shipped from two purchase orders is one row of its container, li
                 ['purchase_order_reference' => $orderOne->reference, 'purchase_order_slug' => $orderOne->slug, 'unit_quantity' => '300.0000'],
                 ['purchase_order_reference' => $orderTwo->reference, 'purchase_order_slug' => $orderTwo->slug, 'unit_quantity' => '100.0000'],
             ]));
+});
+
+test('the search bar on an agent organisation dashboard finds its suppliers by agent', function () {
+    $agent   = createFreshOrgAgent($this)->agent;
+    $filters = [];
+    $engine  = Mockery::mock(Engine::class);
+    $engine->shouldReceive('search')->andReturnUsing(function (ScoutBuilder $builder) use (&$filters) {
+        $filters[class_basename($builder->model)] = $builder->wheres;
+
+        return ['hits' => []];
+    });
+    app(EngineManager::class)->extend('spy', fn () => $engine);
+
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agent->organisation, 'agt-srch-'.Str::lower(Str::random(6))));
+    config(['scout.driver' => 'spy']);
+
+    $response = get(route('grp.search.index', ['q' => 'yovan', 'route_src' => 'grp.org.dashboard.show', 'organisation' => $agent->organisation->slug]))->assertOk();
+
+    expect($response->json('scope'))->toBe('procurement')
+        ->and($response->json('results.agents'))->toBe([])
+        ->and($filters['Supplier'])->toBe(['agent_id' => $agent->id])
+        ->and($filters['SupplierProduct'])->toBe(['agent_id' => $agent->id]);
+
+    actingAs($this->adminGuest->getUser());
+    expect(get(route('grp.search.index', ['q' => 'yovan', 'route_src' => 'grp.org.dashboard.show', 'organisation' => $this->organisation->slug]))->assertOk()->json())->toBe([]);
 });
