@@ -22,6 +22,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -35,9 +36,15 @@ class AuditWebsite implements ShouldBeUnique
 
     public const string USER_AGENT = 'Mozilla/5.0 (compatible; AikuSiteAuditBot/1.0)';
 
-    public const int DEFAULT_MAX_PAGES = 10000;
-
     public const int DEFAULT_CONCURRENCY = 2;
+
+    public const int PAGES_PER_JOB = 1000;
+
+    private const int SECONDS_PER_JOB = 900;
+
+    private const int SECONDS_BETWEEN_JOBS = 30;
+
+    private const int ABANDONED_AFTER_MINUTES = 60;
 
     public const int AUDITS_KEPT = 10;
 
@@ -49,7 +56,7 @@ class AuditWebsite implements ShouldBeUnique
 
     public string $jobQueue = 'long-low-priority';
 
-    public int $jobTimeout = 10800;
+    public int $jobTimeout = 1800;
 
     public int $jobTries = 1;
 
@@ -76,24 +83,96 @@ class AuditWebsite implements ShouldBeUnique
     /** @var array<string, array<int, string>> */
     private array $linkedFrom = [];
 
-    public function getJobUniqueId(Crawl $crawl): string
+    public function getJobUniqueId(Crawl $crawl, int $part = 0): string
     {
-        return (string) $crawl->id;
+        return $crawl->id.'-'.$part;
     }
 
-    public function handle(Crawl $crawl): Crawl
+    /**
+     * An audit has no page limit, so it runs in parts: each part checks up to `PAGES_PER_JOB` pages
+     * or `SECONDS_PER_JOB`, keeps where it got to in the cache and queues the next part
+     * `SECONDS_BETWEEN_JOBS` later, so no worker is held for hours and other jobs get a turn.
+     * `$untilFinished` runs every part in this process, for the command without --async.
+     */
+    public function handle(Crawl $crawl, int $part = 0, bool $untilFinished = false): Crawl
     {
-        if ($crawl->type !== CrawlTypeEnum::AUDIT || $crawl->state !== CrawlStateEnum::READY) {
+        if ($crawl->type !== CrawlTypeEnum::AUDIT) {
             return $crawl;
         }
 
         $this->crawl = $crawl;
-        $website     = $crawl->website;
+
+        if ($part === 0) {
+            if ($crawl->state !== CrawlStateEnum::READY) {
+                return $crawl;
+            }
+
+            $this->start();
+        } else {
+            if ($crawl->state !== CrawlStateEnum::RUNNING) {
+                Cache::forget(self::progressKey($crawl));
+
+                return $crawl;
+            }
+
+            if (!$this->restoreProgress()) {
+                return $this->finish('interrupted');
+            }
+        }
+
+        do {
+            $outcome = $this->crawlQueue();
+
+            if ($outcome !== 'paused') {
+                return $this->finish($outcome);
+            }
+
+            $part++;
+        } while ($untilFinished);
+
+        $this->saveProgress();
+
+        self::dispatch($crawl, $part)->delay(now()->addSeconds(self::SECONDS_BETWEEN_JOBS));
+
+        return $this->crawl;
+    }
+
+    public function jobFailed(Throwable $exception, Crawl $crawl, int $part = 0): void
+    {
+        self::close($crawl, 'failed');
+    }
+
+    /**
+     * Closes an audit whose part was lost (a deploy, a worker that died): a running part writes
+     * its progress every few pages, so an audit untouched for `ABANDONED_AFTER_MINUTES` has no
+     * job left to finish it.
+     */
+    public static function closeIfAbandoned(Crawl $crawl): bool
+    {
+        if ($crawl->state !== CrawlStateEnum::RUNNING || $crawl->updated_at?->gt(now()->subMinutes(self::ABANDONED_AFTER_MINUTES))) {
+            return false;
+        }
+
+        self::close($crawl, 'interrupted');
+
+        return true;
+    }
+
+    private static function close(Crawl $crawl, string $finishReason): void
+    {
+        $crawl->update(['state' => CrawlStateEnum::FINISH, 'running' => false, 'finish_reason' => $finishReason, 'end_at' => now()]);
+
+        Cache::forget(self::progressKey($crawl));
+    }
+
+    private function start(): void
+    {
+        $website = $this->crawl->website;
 
         $this->stopOtherAudits();
         $this->claimConcurrency();
 
-        $crawl->update(['state' => CrawlStateEnum::RUNNING, 'start_at' => now(), 'running' => true]);
+        $this->crawl->update(['state' => CrawlStateEnum::RUNNING, 'start_at' => now(), 'running' => true]);
 
         $baseUrl                = self::publicBaseUrl($website);
         $this->host             = $this->hostWithoutWww(parse_url($baseUrl, PHP_URL_HOST) ?? '');
@@ -110,9 +189,10 @@ class AuditWebsite implements ShouldBeUnique
                 $this->enqueue($normalisedUrl, 1);
             }
         }
+    }
 
-        $finishReason = $this->crawlQueue();
-
+    private function finish(string $finishReason): Crawl
+    {
         $this->storeInlinks();
 
         DetectCrawlIssues::run($this->crawl->refresh(), $this->linkedFrom);
@@ -122,29 +202,83 @@ class AuditWebsite implements ShouldBeUnique
             'end_at'        => now(),
             'running'       => false,
             'finish_reason' => $finishReason,
-            'urls_found'    => count($this->seen),
+            'urls_found'    => max(count($this->seen), $this->crawl->urls_found),
         ]);
 
-        $this->pruneOldAudits($website);
+        Cache::forget(self::progressKey($this->crawl));
+
+        $this->pruneOldAudits($this->crawl->website);
 
         return $this->crawl;
     }
 
+    private static function progressKey(Crawl $crawl): string
+    {
+        return "site-audit.$crawl->id.progress";
+    }
+
+    private function saveProgress(): void
+    {
+        Cache::put(self::progressKey($this->crawl), gzcompress(serialize([
+            'robots_txt'  => $this->robotsTxt,
+            'queue'       => $this->queue,
+            'seen'        => $this->seen,
+            'in_sitemap'  => $this->inSitemap,
+            'inlinks'     => $this->inlinks,
+            'linked_from' => $this->linkedFrom,
+        ])), now()->addDay());
+    }
+
+    private function restoreProgress(): bool
+    {
+        $compressed = Cache::get(self::progressKey($this->crawl));
+        $progress   = is_string($compressed) ? unserialize(gzuncompress($compressed), ['allowed_classes' => [RobotsTxt::class]]) : null;
+
+        if (!is_array($progress)) {
+            return false;
+        }
+
+        $website = $this->crawl->website;
+
+        $this->host             = $this->hostWithoutWww(parse_url(self::publicBaseUrl($website), PHP_URL_HOST) ?? '');
+        $this->webpageIdsByPath = $this->webpageIdsByPath($website);
+        $this->robotsTxt        = $progress['robots_txt'];
+        $this->queue            = $progress['queue'];
+        $this->seen             = $progress['seen'];
+        $this->inSitemap        = $progress['in_sitemap'];
+        $this->inlinks          = $progress['inlinks'];
+        $this->linkedFrom       = $progress['linked_from'];
+
+        return true;
+    }
+
     private function crawlQueue(): string
     {
-        $maxPages       = $this->crawl->max_pages ?? self::DEFAULT_MAX_PAGES;
-        $processedPages = 0;
+        $maxPages       = $this->crawl->max_pages;
+        $processedPages = $this->crawl->urls_processed;
+        $pagesInThisJob = 0;
+        $jobStartedAt   = time();
 
         while ($this->queue !== []) {
             if ($this->shouldStop()) {
                 return 'interrupted';
             }
 
-            if ($processedPages >= $maxPages) {
+            if ($maxPages !== null && $processedPages >= $maxPages) {
                 return 'max_pages_reached';
             }
 
-            $batch = array_splice($this->queue, 0, min(max(1, $this->crawl->concurrency), $maxPages - $processedPages));
+            if ($pagesInThisJob >= self::PAGES_PER_JOB || time() - $jobStartedAt >= self::SECONDS_PER_JOB) {
+                return 'paused';
+            }
+
+            $batchSize = max(1, $this->crawl->concurrency);
+
+            if ($maxPages !== null) {
+                $batchSize = min($batchSize, $maxPages - $processedPages);
+            }
+
+            $batch = array_splice($this->queue, 0, $batchSize);
 
             $responses = Http::pool(fn (Pool $pool) => array_map(
                 fn (array $item) => $pool->as($item['url'])
@@ -165,6 +299,7 @@ class AuditWebsite implements ShouldBeUnique
             CrawlPage::insert($rows);
 
             $processedPages += count($batch);
+            $pagesInThisJob += count($batch);
 
             $this->crawl->update(['urls_processed' => $processedPages, 'urls_found' => count($this->seen)]);
         }
@@ -448,7 +583,7 @@ class AuditWebsite implements ShouldBeUnique
             ->where('id', '!=', $this->crawl->id)
             ->where('state', '!=', CrawlStateEnum::FINISH)
             ->get()
-            ->each(fn (Crawl $crawl) => StopCrawl::run($crawl));
+            ->each(fn (Crawl $crawl) => self::closeIfAbandoned($crawl) || StopCrawl::run($crawl));
     }
 
     private function claimConcurrency(): void
@@ -521,7 +656,7 @@ class AuditWebsite implements ShouldBeUnique
             }
 
             try {
-                $crawl = $this->handle($crawl);
+                $crawl = $this->handle($crawl, untilFinished: true);
                 $command->line("$website->slug: $crawl->urls_processed pages, health score $crawl->health_score, $crawl->finish_reason");
             } catch (Throwable $e) {
                 $crawl->update(['state' => CrawlStateEnum::FINISH, 'running' => false, 'finish_reason' => 'failed', 'end_at' => now()]);
