@@ -45,6 +45,8 @@ class ImportAgentWarehouseStocksFromSheet
 
     private const string PRODUCTION_TAB = 'In Production';
 
+    public const array CLOSED_ORDER_STATES = ['settled', 'cancelled', 'not_received'];
+
     private const int NOTES = 0;
     private const int CODE = 2;
     private const int UNITS = 7;
@@ -188,8 +190,10 @@ class ImportAgentWarehouseStocksFromSheet
 
     /**
      * The UK runs each Indo cycle as a numbered order plus Production / Warehouse / Packing orders, and deletes the drafts
-     * when the next cycle starts, so the order the sheet names is often gone. Then the row links to the newest live Indo
-     * order of the organisation holding the product, open ones first, and the sheet's order stays in the notes.
+     * when the next cycle starts, so the order the sheet names is often gone. Then the row links to the newest open Indo
+     * order of the organisation holding the product, and the sheet's order stays in the notes. A settled, cancelled or
+     * not received order is never guessed: its goods already left or never came, so the stock on the sheet is for
+     * another order (RRBud-13 packed for a new order was linked to AWIndo-43, shipped months before).
      *
      * @param  Collection<int, SupplierProduct>  $candidates
      */
@@ -201,7 +205,8 @@ class ImportAgentWarehouseStocksFromSheet
             ->where('purchase_orders.reference', 'ilike', '%indo%')
             ->whereNull('purchase_orders.deleted_at')
             ->whereIn('purchase_order_transactions.supplier_product_id', $candidates->pluck('id'))
-            ->orderByRaw("purchase_orders.state in ('settled', 'cancelled', 'not_received'), purchase_orders.id desc")
+            ->whereNotIn('purchase_orders.state', self::CLOSED_ORDER_STATES)
+            ->orderByDesc('purchase_orders.id')
             ->value('purchase_orders.id');
     }
 

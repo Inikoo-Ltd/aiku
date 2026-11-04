@@ -34,6 +34,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilderBase;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Collection;
@@ -148,7 +149,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
         }
 
         if ($parent->isAgentOrder()) {
-            $this->selectAgentWarehouseQuantities($query);
+            self::selectAgentWarehouseQuantities($query);
         }
 
         if ($parent->state !== PurchaseOrderStateEnum::IN_PROCESS) {
@@ -198,7 +199,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
      * What the agent holds of each line: received waiting to be packed, the part of it not checked yet, packed,
      * and the units not in a container yet.
      */
-    private function selectAgentWarehouseQuantities(QueryBuilder $query): void
+    public static function selectAgentWarehouseQuantities(QueryBuilder|EloquentBuilder $query): void
     {
         $ofLine = fn ($stocks) => $stocks->whereColumn('agent_warehouse_stocks.purchase_order_transaction_id', 'purchase_order_transactions.id')
             ->selectRaw('coalesce(sum(agent_warehouse_stocks.quantity), 0)');
@@ -210,10 +211,10 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->selectSub($ofLine(DB::table('agent_warehouse_stocks')->where('agent_warehouse_stocks.state', '!=', AgentWarehouseStockStateEnum::RECEIVED->value)), 'quantity_packed')
             ->selectRaw('purchase_order_transactions.quantity_ordered - ('.$quantityOnDelivery->toSql().') as quantity_awaiting_delivery', $quantityOnDelivery->getBindings())
             ->selectSub(StoreStockDeliveryFromPurchaseOrder::quantityReceivedAtAgentWarehouse(), 'quantity_received_at_agent_warehouse')
-            ->selectSub($this->containersOfLine(), 'agent_containers');
+            ->selectSub(self::containersOfLine(), 'agent_containers');
     }
 
-    private function containersOfLine(): QueryBuilderBase
+    private static function containersOfLine(): QueryBuilderBase
     {
         return DB::table('stock_delivery_items')
             ->join('stock_deliveries', 'stock_deliveries.id', 'stock_delivery_items.stock_delivery_id')

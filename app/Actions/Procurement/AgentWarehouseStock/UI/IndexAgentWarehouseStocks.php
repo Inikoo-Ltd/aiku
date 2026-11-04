@@ -8,13 +8,20 @@
 
 namespace App\Actions\Procurement\AgentWarehouseStock\UI;
 
+use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
+use App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromSheet;
+use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\AgentWarehouseStock;
+use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -56,12 +63,13 @@ class IndexAgentWarehouseStocks extends OrgAction
         $stateFilter = AllowedFilter::callback('state', fn ($query, $value) => $query->where('agent_warehouse_stocks.state', $value));
         $organisationFilter = AllowedFilter::callback('organisation', fn ($query, $value) => $query->where('organisations.slug', $value));
 
-        return $this->withProductImages($query
+        return $this->withLinesReadyToShip($this->withProductImages($query
             ->select([
                 'agent_warehouse_stocks.id',
                 'agent_warehouse_stocks.state',
                 'agent_warehouse_stocks.quantity',
                 'agent_warehouse_stocks.notes',
+                'agent_warehouse_stocks.purchase_order_transaction_id',
                 'supplier_products.code',
                 'supplier_products.name',
                 'suppliers.code as supplier_code',
@@ -70,6 +78,8 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'organisations.code as organisation_code',
                 'purchase_orders.reference as purchase_order_reference',
                 'purchase_orders.slug as purchase_order_slug',
+                'purchase_orders.state as purchase_order_state',
+                'agent_warehouse_stocks.agent_goods_receipt_id',
                 DB::raw($this->productImageIdSql().' as image_id'),
                 DB::raw('exists(select 1 from agent_goods_receipt_items where agent_goods_receipt_items.agent_warehouse_stock_id = agent_warehouse_stocks.id and agent_goods_receipt_items.checked_at is null) as is_unchecked'),
             ])
@@ -94,7 +104,105 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'purchase_order_slug'      => $stock->purchase_order_slug,
                 'image_id'                 => $stock->image_id,
                 'is_unchecked'             => (bool) $stock->is_unchecked,
-            ]));
+                'purchase_order_transaction_id' => $stock->purchase_order_transaction_id,
+                'purchase_order_warning'   => $this->purchaseOrderWarning($stock),
+            ])));
+    }
+
+    /**
+     * A line from the stock sheet has no goods receipt. Its purchase order is a guess when the sheet named one aiku does
+     * not have, and likely the wrong order when it is closed, as the goods on the sheet are still here.
+     *
+     * @return array{kind: 'guessed'|'closed', sheet_order: ?string, label: string, tooltip: string}|null
+     */
+    private function purchaseOrderWarning(AgentWarehouseStock $stock): ?array
+    {
+        if (!$stock->purchase_order_reference || $stock->agent_goods_receipt_id || $stock->purchase_order_transaction_id) {
+            return null;
+        }
+
+        $isClosed = in_array($stock->purchase_order_state, ImportAgentWarehouseStocksFromSheet::CLOSED_ORDER_STATES, true);
+        $state    = PurchaseOrderStateEnum::labels()[$stock->purchase_order_state] ?? (string) $stock->purchase_order_state;
+        $closed   = $isClosed ? __('This order is already :state: these goods from the stock sheet are probably for a newer order', ['state' => mb_strtolower($state)]) : null;
+
+        if (preg_match('/(?:^| · )PO: (.+)$/u', (string) $stock->notes, $match)) {
+            return [
+                'kind'        => 'guessed',
+                'sheet_order' => $match[1],
+                'label'       => __('Guessed'),
+                'tooltip'     => collect([
+                    __('The stock sheet names ":order", which is not in aiku: this is the newest order with this product, not necessarily the right one', ['order' => $match[1]]),
+                    $closed,
+                ])->filter()->implode('. '),
+            ];
+        }
+
+        return $isClosed ? ['kind' => 'closed', 'sheet_order' => null, 'label' => $state, 'tooltip' => $closed] : null;
+    }
+
+    /**
+     * What each row's purchase order line still has to go in a container, as the purchase order page shows it, so
+     * packed goods can be added to a container from here.
+     */
+    private function withLinesReadyToShip(LengthAwarePaginator $rows): LengthAwarePaginator
+    {
+        $transactionIds = $rows->getCollection()->pluck('purchase_order_transaction_id')->filter()->unique()->values();
+
+        $transactions = collect();
+        if ($transactionIds->isNotEmpty()) {
+            $query = PurchaseOrderTransaction::query()
+                ->whereIn('purchase_order_transactions.id', $transactionIds)
+                ->select('purchase_order_transactions.*');
+            IndexPurchaseOrderTransactions::selectAgentWarehouseQuantities($query);
+            $transactions = $query->with(['purchaseOrder.agent', 'organisation'])->get()->keyBy('id');
+        }
+
+        $rows->getCollection()->transform(function (array $row) use ($transactions) {
+            $transaction    = $transactions->get($row['purchase_order_transaction_id']);
+            $agentWarehouse = $transaction ? PurchaseOrderTransactionResource::make($transaction)->agentWarehouse($transaction, request()) : null;
+
+            return array_merge($row, [
+                'agent_warehouse'          => $agentWarehouse,
+                'container_blocked_reason' => $row['state'] !== AgentWarehouseStockStateEnum::RECEIVED->value && !($agentWarehouse['containers_route'] ?? null)
+                    ? $this->containerBlockedReason($transaction, $agentWarehouse)
+                    : null,
+            ]);
+        });
+
+        return $rows;
+    }
+
+    /**
+     * Why a packed line can not be put in a container from here, following the rules of the purchase order page.
+     *
+     * @param  array<string, mixed>|null  $agentWarehouse
+     */
+    private function containerBlockedReason(?PurchaseOrderTransaction $transaction, ?array $agentWarehouse): string
+    {
+        if (!$transaction || !$agentWarehouse) {
+            return __('Imported from spreadsheet, no PO line');
+        }
+
+        $purchaseOrder = $transaction->purchaseOrder;
+        if ($purchaseOrder->state !== PurchaseOrderStateEnum::CONFIRMED) {
+            return __('PO is :state, not confirmed', [
+                'state' => mb_strtolower(PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value] ?? $purchaseOrder->state->value),
+            ]);
+        }
+
+        if ($transaction->state !== PurchaseOrderTransactionStateEnum::CONFIRMED) {
+            return __('PO line is :state', [
+                'state' => mb_strtolower(PurchaseOrderTransactionStateEnum::labels()[$transaction->state->value] ?? $transaction->state->value),
+            ]);
+        }
+
+        if ($agentWarehouse['quantity_ready_to_ship'] <= StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE) {
+            return !empty($agentWarehouse['containers'])
+                ? __('Already all in a container')
+                : __('No goods receipt yet');
+        }
+
+        return __('No permission');
     }
 
     public function tableStructure(Agent $agent): Closure
@@ -112,6 +220,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 ->column(key: 'supplier_code', label: __('Supplier'), canBeHidden: false, sortable: true)
                 ->column(key: 'purchase_order_reference', label: __('Purchase order'), canBeHidden: false)
                 ->column(key: 'quantity', label: __('Units'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'containers', label: __('Container'))
                 ->column(key: 'notes', label: __('Notes'))
                 ->column(key: 'actions', label: '', canBeHidden: false);
         };

@@ -235,7 +235,7 @@ class PurchaseOrderTransactionResource extends JsonResource
      * What the agent holds of an agent order's line, with packing it for the agent viewing its own order and adding it
      * to a container for whoever may fill the containers.
      */
-    private function agentWarehouse(PurchaseOrderTransaction $transaction, $request): ?array
+    public function agentWarehouse(PurchaseOrderTransaction $transaction, $request): ?array
     {
         if ($transaction->getAttribute('quantity_awaiting_delivery') === null) {
             return null;

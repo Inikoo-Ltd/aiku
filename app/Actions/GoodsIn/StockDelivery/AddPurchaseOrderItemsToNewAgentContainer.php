@@ -22,7 +22,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * Opens a new container for the organisation of an agent order, as the agent does from its containers page, and puts
- * units of some of the order's items in it, for when that organisation has no container in process yet.
+ * units of some of the order's items in it, for when that organisation has no container in process yet. Items of
+ * other orders of the same organisation may come along (picked from the agent's warehouse page), each still checked
+ * as addable to the new container.
  */
 class AddPurchaseOrderItemsToNewAgentContainer extends OrgAction
 {
@@ -58,7 +60,7 @@ class AddPurchaseOrderItemsToNewAgentContainer extends OrgAction
                 'required',
                 'integer',
                 'distinct',
-                Rule::exists('purchase_order_transactions', 'id')->where('purchase_order_id', $this->purchaseOrder->id),
+                Rule::exists('purchase_order_transactions', 'id')->where('organisation_id', $this->purchaseOrder->organisation_id),
             ],
             'items.*.unit_quantity'                 => ['required', 'numeric', 'gt:0'],
         ];
