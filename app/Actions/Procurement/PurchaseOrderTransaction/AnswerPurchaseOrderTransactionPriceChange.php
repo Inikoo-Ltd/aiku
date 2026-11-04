@@ -64,8 +64,8 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
         if ($this->purchaseOrderTransaction->price_query_state !== PurchaseOrderTransactionPriceQueryStateEnum::PENDING
-            || $this->purchaseOrderTransaction->state !== PurchaseOrderTransactionStateEnum::SUBMITTED
-            || $this->purchaseOrderTransaction->purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED) {
+            || !in_array($this->purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
+            || !in_array($this->purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
             $validator->errors()->add('answer', __('There is no new price waiting for an answer on this line'));
         }
 

@@ -43,6 +43,21 @@ class AskPurchaseOrderTransactionPriceChange extends OrgAction
         ]);
     }
 
+    /**
+     * The agent may ask for a new supplier price until the supplier starts making the goods: before it confirms the
+     * order, and after confirming while no production stage is recorded on the order.
+     */
+    public static function isAskable(PurchaseOrderTransaction $purchaseOrderTransaction): bool
+    {
+        $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
+
+        return $purchaseOrder !== null
+            && $purchaseOrder->isAgentOrder()
+            && in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+            && in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
+            && !$purchaseOrder->hasProductionStarted();
+    }
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
@@ -57,9 +72,8 @@ class AskPurchaseOrderTransactionPriceChange extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->purchaseOrderTransaction->purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED
-            || $this->purchaseOrderTransaction->state !== PurchaseOrderTransactionStateEnum::SUBMITTED) {
-            $validator->errors()->add('unit_cost', __('A new price can only be asked for while the order waits for the agent to confirm it'));
+        if (!self::isAskable($this->purchaseOrderTransaction)) {
+            $validator->errors()->add('unit_cost', __('A new price can only be asked for until the supplier starts production'));
         }
     }
 

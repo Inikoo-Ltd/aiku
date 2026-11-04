@@ -10,6 +10,7 @@ namespace App\Http\Resources\Procurement;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
+use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionPriceChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -185,15 +186,11 @@ class PurchaseOrderTransactionResource extends JsonResource
 
     private function canAgentAsk(PurchaseOrderTransaction $transaction, $request): bool
     {
-        $purchaseOrder = $transaction->purchaseOrder;
-
-        if (!$purchaseOrder?->isAgentOrder()
-            || $purchaseOrder->state !== PurchaseOrderStateEnum::SUBMITTED
-            || $transaction->state !== PurchaseOrderTransactionStateEnum::SUBMITTED) {
+        if (!AskPurchaseOrderTransactionPriceChange::isAskable($transaction)) {
             return false;
         }
 
-        $agentOrganisationId = $purchaseOrder->agent?->organisation_id;
+        $agentOrganisationId = $transaction->purchaseOrder->agent?->organisation_id;
 
         return $agentOrganisationId !== null
             && $this->viewingOrganisationId($request) === $agentOrganisationId
@@ -228,8 +225,8 @@ class PurchaseOrderTransactionResource extends JsonResource
     private function canOrganisationAnswer(PurchaseOrderTransaction $transaction, $request, bool $isQuestionPending): bool
     {
         return $isQuestionPending
-            && $transaction->state === PurchaseOrderTransactionStateEnum::SUBMITTED
-            && $transaction->purchaseOrder?->state === PurchaseOrderStateEnum::SUBMITTED
+            && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
+            && in_array($transaction->purchaseOrder?->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
             && $this->viewingOrganisationId($request) === $transaction->organisation_id
             && $request->user()?->authTo("procurement.$transaction->organisation_id.edit");
     }

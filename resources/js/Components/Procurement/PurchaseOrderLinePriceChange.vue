@@ -184,7 +184,7 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 				type="tertiary"
 				size="xs"
 				:label="isPending ? ctrans('Change the asked price') : ctrans('Supplier changed the price')"
-				:tooltip="ctrans('Ask the organisation to accept, reject or adjust a new price from the supplier before you confirm')"
+				:tooltip="ctrans('Ask the organisation to accept, reject or adjust a new price from the supplier, until production starts')"
 				@click="openDialog('ask')"
 			>
 				<template #icon>
