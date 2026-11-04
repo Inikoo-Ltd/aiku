@@ -44,6 +44,7 @@ class GetOrgStockLabelData
             'name'            => $tradeUnit?->name ?? $orgStock->name,
             'packed_in'       => (int) ($orgStock->packed_in ?? 1),
             'made_in'         => $this->getMadeIn($orgStock, $tradeUnits),
+            'made_in_without_organisation' => $this->getMadeIn($orgStock, $tradeUnits, false),
             'manufactured_by' => $this->getManufacturedBy($tradeUnits),
             'weight'          => $this->getWeight($barcode['weight'] ?? null),
             'signature'       => $this->getSignature($orgStock->organisation),
@@ -94,8 +95,11 @@ class GetOrgStockLabelData
      *
      * country_of_origin holds an ISO-3 code (GBR, CHN, IDN), so the printable name comes off the
      * joined country and the raw code is only a fallback for rows whose FK was never filled in.
+     *
+     * The organisation is left out when the label prints its signature, which already names it on
+     * the line underneath.
      */
-    private function getMadeIn(OrgStock $orgStock, $tradeUnits): ?string
+    private function getMadeIn(OrgStock $orgStock, $tradeUnits, bool $withOrganisation = true): ?string
     {
         $tradeUnit = $this->getSharedTradeUnit($tradeUnits, 'country_of_origin');
 
@@ -107,6 +111,10 @@ class GetOrgStockLabelData
 
         if (blank($country)) {
             return null;
+        }
+
+        if (!$withOrganisation) {
+            return __('Imported from :country', ['country' => $country]);
         }
 
         return __('Imported from :country by :organisation', [

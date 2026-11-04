@@ -306,6 +306,10 @@ class PdfOrgStockLabel
         }
 
         $show     = $this->getVisibleFields($options, $label, $level);
+
+        if ($show['signature']) {
+            $label['made_in'] = $label['made_in_without_organisation'];
+        }
         $sizeKey  = $this->getSizeKey($options, $level);
         $isSheet  = ($options['layout'] ?? 'single') === 'sheet' && isset(self::SHEETS[$sizeKey]);
         $size     = self::SIZES[$sizeKey];

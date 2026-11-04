@@ -13063,6 +13063,7 @@
     "Warehouse instructions": "Instrucțiuni pentru depozit",
     "When the stock in all locations falls below this level the SKO shows in Below minimum stock on the inventory dashboard, so it can be reordered in time. Leave empty to not watch it.": "Când stocul din toate locațiile scade sub acest nivel, SKO-ul apare în Sub stocul minim pe panoul de inventar, pentru a putea fi comandat din nou la timp. Lăsați gol pentru a nu-l monitoriza.",
     "Packed from trade units in :org": "Ambalat din unități comerciale în :org",
+    "Imported from :country": "Importat din :country",
     "Imported from :country by :organisation": "Importat din :country de :organisation",
     "Manufactured by :manufacturer": "Fabricat de :manufacturer",
     "tel.:": "tel.:",
