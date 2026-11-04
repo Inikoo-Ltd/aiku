@@ -68,7 +68,7 @@ class PlanChatClaim
                 return $refused("Only {$line['claimable']} of {$line['code']} is left to claim on {$order->reference}: the rest is already replaced, refunded or waiting in their next order. Nothing was changed.");
             }
 
-            $share = min(1, $item['quantity'] / $line['ordered']);
+            $share = min(1, $item['quantity'] / $line['dispatched']);
 
             $claimed[] = [
                 'code'     => $line['code'],

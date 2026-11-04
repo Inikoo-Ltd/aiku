@@ -76,9 +76,11 @@ class StoreClaimFollowOns extends OrgAction
         $publicNotes  = __('Replacement for :order', ['order' => $order->reference], $order->shop->language?->code);
         $privateNotes = collect([__('Claim of :order', ['order' => $order->reference]), $reasonLabel, $privateNotes])->filter()->implode(' · ');
 
+        $dispatched = CheckClaimCompensation::dispatched($order);
+
         return DB::transaction(fn () => $transactions->map(fn (Transaction $transaction) => StoreUpcomingTransaction::make()->action($order->customer, [
             'product_id'    => $transaction->model_id,
-            'quantity'      => max(1, ceil(((float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus) * $shares[$transaction->id])),
+            'quantity'      => max(1, ceil(($dispatched[$transaction->id] ?? 0) * $shares[$transaction->id])),
             'type'          => UpcomingTransactionTypeEnum::FOLLOW_ON,
             'source_transaction_id' => $transaction->id,
             'public_notes'  => $publicNotes,

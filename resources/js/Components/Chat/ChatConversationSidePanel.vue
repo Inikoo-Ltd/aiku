@@ -230,7 +230,7 @@ interface CustomerProfile {
         orders: string[]
         max_age_days: number
         photos: number
-        lines: { id: number, transaction_id: number | null, org_stock_id: number | null, code: string | null, name: string | null, ordered: number, dispatched: number, claimable: number, mentioned: boolean }[]
+        lines: { id: number, transaction_id: number | null, org_stock_id: number | null, code: string | null, name: string | null, ordered: number, dispatched: number, sent: number, claimable: number, mentioned: boolean }[]
         reason: string
         reasons: { value: string, label: string }[]
         replacement: { name: string, parameters: Record<string, any> }
@@ -415,8 +415,8 @@ watch(() => customerProfile.value.claim, (claim) => {
     claimReason.value = claim?.reason ?? "missing_from_parcel"
     claimRefundPercentage.value = 100
     claimPicked.value = claim?.order.too_old ? {} : Object.fromEntries((claim?.lines ?? [])
-        .filter((line) => line.claimable > 0 && (line.mentioned || line.dispatched < line.ordered))
-        .map((line) => [line.id, Math.min(line.claimable, line.dispatched < line.ordered ? line.ordered - line.dispatched : line.ordered)]))
+        .filter((line) => line.claimable > 0 && line.mentioned)
+        .map((line) => [line.id, line.claimable]))
 })
 
 const toggleClaimLine = (line: { id: number, ordered: number, claimable: number }) => {
@@ -424,7 +424,7 @@ const toggleClaimLine = (line: { id: number, ordered: number, claimable: number 
     if (line.id in picked) {
         delete picked[line.id]
     } else {
-        picked[line.id] = Math.min(line.ordered, line.claimable)
+        picked[line.id] = line.claimable
     }
     claimPicked.value = picked
 }
@@ -439,8 +439,8 @@ const claimRefundAmount = computed(() => {
     const shares: Record<number, number> = {}
     for (const line of claim.lines) {
         const quantity = Number(claimPicked.value[line.id] ?? 0)
-        if (!line.transaction_id || !quantity || !line.ordered) continue
-        shares[line.transaction_id] = Math.max(shares[line.transaction_id] ?? 0, Math.min(1, quantity / line.ordered))
+        if (!line.transaction_id || !quantity || !line.sent) continue
+        shares[line.transaction_id] = Math.max(shares[line.transaction_id] ?? 0, Math.min(1, quantity / line.sent))
     }
     const net = Object.entries(shares).reduce((sum, [transactionId, share]) => sum + (claim.invoiced[Number(transactionId)] ?? 0) * share, 0)
 
@@ -1139,7 +1139,7 @@ const copyChatId = async () => {
                                 <DiscontinueSuggestion v-if="line.org_stock_id" class="shrink-0" :orgStockId="line.org_stock_id" :code="line.code" source="customer_services" :label="ctrans('Bad product')" />
                                 <span class="ml-auto shrink-0 tabular-nums" :class="line.dispatched < line.ordered ? 'text-red-600' : 'text-gray-400'"
                                     v-tooltip="ctrans('Ordered, sent')">{{ line.ordered }}/{{ line.dispatched }}</span>
-                                <span v-if="line.claimable < line.ordered" class="shrink-0 text-amber-700" v-tooltip="ctrans('Left to claim, the rest is already replaced, refunded or waiting in their next order')">{{ ctrans(":count left", { count: String(line.claimable) }) }}</span>
+                                <span v-if="line.claimable < line.sent" class="shrink-0 text-amber-700" v-tooltip="ctrans('Left to claim, the rest is already replaced, refunded or waiting in their next order')">{{ ctrans(":count left", { count: String(line.claimable) }) }}</span>
                                 <input v-if="line.id in claimPicked" v-model.number="claimPicked[line.id]" type="number" min="0" step="1" :max="line.claimable"
                                     class="w-12 shrink-0 rounded border-gray-300 px-1 py-0 text-xs" />
                             </label>

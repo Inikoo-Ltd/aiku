@@ -69,7 +69,8 @@ class GetChatClaimCase
                     'name'       => $item->transaction?->asset?->name ?? $item->orgStock?->name,
                     'ordered'    => (float) $item->quantity_required,
                     'dispatched' => (float) ($item->quantity_dispatched ?? 0),
-                    'claimable'  => floor(($left[$item->transaction_id] ?? 1) * (float) $item->quantity_required * 1000 + 0.001) / 1000,
+                    'sent'       => $sent = CheckClaimCompensation::stockLineSent($item),
+                    'claimable'  => floor(($left[$item->transaction_id] ?? 0) * $sent * 1000 + 0.001) / 1000,
                     'mentioned'  => $code !== null && str_contains($text, mb_strtolower($code)),
                 ];
             })
@@ -98,7 +99,7 @@ class GetChatClaimCase
                 ->all(),
             'photos'          => $details['photos'],
             'lines'           => $lines,
-            'products'        => $this->products($items, $text, $left),
+            'products'        => $this->products($items, $text, $left, CheckClaimCompensation::dispatched($order)),
             'reason'          => $this->reason($text)->value,
             'reasons'         => collect(DeliveryNoteItemReplacementReasonEnum::cases())
                 ->map(fn (DeliveryNoteItemReplacementReasonEnum $reason) => ['value' => $reason->value, 'label' => $reason->label()])
@@ -148,33 +149,36 @@ class GetChatClaimCase
      * The lines above are what the warehouse picked, one per stock and counted in stocks: a
      * 3-pack ordered twice is 6, a set of four stocks is four lines. Customers and the assistant
      * talk in products as ordered, so these are the same lines per order line, in its units,
-     * with the stock lines a claim on it is spread over.
+     * with the stock lines a claim on it is spread over. Only what was dispatched can be claimed
+     * (PRE-63): a line sent short or not at all was not received or paid for in full.
      *
      * @param  \Illuminate\Support\Collection<int, DeliveryNoteItem>  $items
      * @param  array<int, float>  $left
+     * @param  array<int, float>  $dispatched
      *
-     * @return array<int, array{transaction_id: int, code: ?string, name: ?string, ordered: float, claimable: float, mentioned: bool, items: array<int, array{id: int, quantity: float}>}>
+     * @return array<int, array{transaction_id: int, code: ?string, name: ?string, ordered: float, dispatched: float, claimable: float, mentioned: bool, items: array<int, array{id: int, quantity: float}>}>
      */
-    private function products($items, string $text, array $left): array
+    private function products($items, string $text, array $left, array $dispatched): array
     {
         return $items->filter(fn (DeliveryNoteItem $item) => $item->transaction)
             ->groupBy('transaction_id')
-            ->map(function ($stockLines, $transactionId) use ($text, $left) {
+            ->map(function ($stockLines, $transactionId) use ($text, $left, $dispatched) {
                 $transaction = $stockLines->first()->transaction;
                 $code        = $transaction->asset?->code;
-                $ordered     = (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus;
+                $sent        = $dispatched[$transactionId] ?? 0.0;
 
                 return [
                     'transaction_id' => (int) $transactionId,
                     'code'           => $code,
                     'name'           => $transaction->asset?->name,
-                    'ordered'        => $ordered,
-                    'claimable'      => floor(($left[$transactionId] ?? 1) * $ordered * 1000 + 0.001) / 1000,
+                    'ordered'        => (float) $transaction->quantity_ordered + (float) $transaction->quantity_bonus,
+                    'dispatched'     => $sent,
+                    'claimable'      => floor(($left[$transactionId] ?? 0) * $sent * 1000 + 0.001) / 1000,
                     'mentioned'      => $code !== null && str_contains($text, mb_strtolower($code)),
-                    'items'          => $stockLines->map(fn (DeliveryNoteItem $item) => ['id' => $item->id, 'quantity' => (float) $item->quantity_required])->values()->all(),
+                    'items'          => $stockLines->map(fn (DeliveryNoteItem $item) => ['id' => $item->id, 'quantity' => CheckClaimCompensation::stockLineSent($item)])->filter(fn (array $stockLine) => $stockLine['quantity'] > 0)->values()->all(),
                 ];
             })
-            ->filter(fn (array $product) => $product['ordered'] > 0)
+            ->filter(fn (array $product) => $product['dispatched'] > 0)
             ->values()
             ->all();
     }

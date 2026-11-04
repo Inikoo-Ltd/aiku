@@ -223,16 +223,17 @@ test('a claim is prepared for the agent: the order the customer names, and a rep
     foreach (range(1, 81) as $line) {
         $transactionId = \Illuminate\Support\Facades\DB::table('transactions')->insertGetId($common + [
             'customer_id' => $customer->id, 'order_id' => $orderId, 'tax_category_id' => \App\Models\Helpers\TaxCategory::firstOrFail()->id,
-            'date' => now()->subDays(3), 'data' => '{}', 'quantity_ordered' => 1, 'grp_net_amount' => 1,
+            'date' => now()->subDays(3), 'data' => '{}', 'quantity_ordered' => 1, 'quantity_dispatched' => $line === 81 ? 0 : 1, 'grp_net_amount' => 1, 'model_type' => 'Product',
         ]);
-        \Illuminate\Support\Facades\DB::table('delivery_note_items')->insert($common + ['delivery_note_id' => $deliveryNoteId, 'transaction_id' => $transactionId, 'quantity_required' => 1, 'data' => '{}']);
+        \Illuminate\Support\Facades\DB::table('delivery_note_items')->insert($common + ['delivery_note_id' => $deliveryNoteId, 'transaction_id' => $transactionId, 'quantity_required' => 1, 'quantity_dispatched' => $line === 81 ? 0 : 1, 'data' => '{}']);
     }
 
     $claim = \App\Actions\Chat\ChatSession\GetChatClaimCase::run($session, $customer);
 
     expect($claim['is_claim'])->toBeTrue()
         ->and($claim['lines'])->toHaveCount(81)
-        ->and($claim['products'])->toHaveCount(81)
+        ->and($claim['lines'][80]['claimable'])->toEqual(0)
+        ->and($claim['products'])->toHaveCount(80)
         ->and($claim['order']['reference'])->toBe($reference)
         ->and($claim['order']['named'])->toBeTrue()
         ->and($claim['reason'])->toBe('damaged_in_transit')
