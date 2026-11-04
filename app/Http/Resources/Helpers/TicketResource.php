@@ -35,7 +35,7 @@ class TicketResource extends JsonResource
     public static function eagerLoads(): array
     {
         return [
-            'reporter' => fn (MorphTo $morphTo) => $morphTo->morphWith([User::class => ['image']]),
+            'reporter' => fn (MorphTo $morphTo) => $morphTo->morphWith([User::class => ['image', 'roles.permissions', 'permissions']]),
             'source'   => fn (MorphTo $morphTo) => $morphTo->morphWith([
                 ChatSession::class     => ['webUser.customer', 'shop.organisation'],
                 MetaChatSession::class => ['customer', 'shop.organisation'],

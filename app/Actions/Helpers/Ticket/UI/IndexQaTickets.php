@@ -13,6 +13,7 @@ use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -26,27 +27,36 @@ class IndexQaTickets extends IndexTickets
 
     protected function getElementGroups(Group $group): array
     {
+        $user   = request()->user();
+        $counts = $this->countEach($this->elementGroupsBase($group), [
+            'qa_checker.mine'     => fn (Builder $query) => $query->qaCheckerIs($user),
+            'qa_checker.anyone'   => fn (Builder $query) => $query->qaOpenToAnyone(),
+            'qa_checker.everyone' => fn (Builder $query) => $query->whereNotNull('qa_status'),
+            ...collect(TicketStatusEnum::cases())->mapWithKeys(fn (TicketStatusEnum $status) => [
+                "status.$status->value" => fn (Builder $query) => $query->where(fn ($query) => $this->whereInQaList($query))->where('status', $status),
+            ])->all(),
+        ]);
+
         $elementGroups           = Arr::except(parent::getElementGroups($group), ['mine']);
-        $elementGroups['status'] = $this->qaListStatusElementGroup($group, $elementGroups['status']);
+        $elementGroups['status'] = $this->qaListStatusElementGroup($elementGroups['status'], $counts);
 
         return [
-            'qa_checker' => $this->qaAssigneeElementGroup($group),
+            'qa_checker' => $this->qaAssigneeElementGroup($counts),
             ...$elementGroups,
         ];
     }
 
     /**
      * @param  array{label: string, elements: array<string, array{0: string, 1: int}>, engine: \Closure}  $statusElementGroup
+     * @param  array<string, int>  $counts
      *
      * @return array{label: string, elements: array<string, array{0: string, 1: int}>, engine: \Closure}
      */
-    protected function qaListStatusElementGroup(Group $group, array $statusElementGroup): array
+    protected function qaListStatusElementGroup(array $statusElementGroup, array $counts): array
     {
-        $base = $this->elementGroupsBase($group)->where(fn ($query) => $this->whereInQaList($query));
-
         $statusElementGroup['elements'] = collect(TicketStatusEnum::cases())
             ->mapWithKeys(fn (TicketStatusEnum $status) => [
-                $status->value => [TicketStatusEnum::labels()[$status->value], (clone $base)->where('status', $status)->count()],
+                $status->value => [TicketStatusEnum::labels()[$status->value], $counts["status.$status->value"]],
             ])
             ->filter(fn (array $element, string $status) => $element[1] > 0 || in_array($status, [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::PENDING_DEPLOY->value], true))
             ->all();
@@ -61,20 +71,21 @@ class IndexQaTickets extends IndexTickets
     }
 
     /**
+     * @param  array<string, int>  $counts
+     *
      * @return array{label: string, optional: bool, elements: array<string, array{0: string, 1: int}>, engine: \Closure}
      */
-    protected function qaAssigneeElementGroup(Group $group): array
+    protected function qaAssigneeElementGroup(array $counts): array
     {
         $user = request()->user();
-        $base = $this->elementGroupsBase($group);
 
         return [
             'label'    => __('QA assignee'),
             'optional' => true,
             'elements' => [
-                'mine'     => [__('Mine'), (clone $base)->qaCheckerIs($user)->count()],
-                'anyone'   => [__('Anyone'), (clone $base)->qaOpenToAnyone()->count()],
-                'everyone' => [__('Everyone'), (clone $base)->whereNotNull('qa_status')->count()],
+                'mine'     => [__('Mine'), $counts['qa_checker.mine']],
+                'anyone'   => [__('Anyone'), $counts['qa_checker.anyone']],
+                'everyone' => [__('Everyone'), $counts['qa_checker.everyone']],
             ],
             'engine'   => function ($query, $elements) use ($user) {
                 $query->where(function ($query) use ($elements, $user) {

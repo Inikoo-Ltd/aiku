@@ -21,8 +21,10 @@ use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketQaStatusEnum;
 use App\Enums\Helpers\Ticket\TicketStatusEnum;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Actions\SysAdmin\Guest\StoreGuest;
 use App\Models\SysAdmin\User;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Guest;
 use Illuminate\Support\Facades\Config;
@@ -33,6 +35,7 @@ use App\Actions\Helpers\Ticket\GetTicketBadgeData;
 use App\Events\BroadcastTicketBadgeUpdate;
 use Illuminate\Support\Facades\Event;
 use Inertia\Testing\AssertableInertia;
+use Spatie\Permission\PermissionRegistrar;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -773,6 +776,173 @@ test('the ticket list offers ownership by role and QA filters', function () {
     expect($references(['qa_status' => 'none'])->all())->toContain($forAnyone->reference, $forQa->reference)->not->toContain($failed->reference);
 
     actingAs($this->user);
+});
+
+test('the ticket list filters count every option with a fixed handful of queries', function () {
+    Notification::fake();
+    $qa = User::factory()->create(['group_id' => $this->group->id]);
+    setPermissionsTeamId($this->group->id);
+    $qa->assignRole('qa');
+
+    $assigned = StoreTicket::make()->action($this->group, ['subject' => 'Counter assigned', 'assignee_id' => $this->user->id, 'type' => TicketTypeEnum::ENGINEER->value]);
+    $helping  = StoreTicket::make()->action($this->group, ['subject' => 'Counter helping', 'reporter_type' => 'User', 'reporter_id' => $this->user->id]);
+    $forQa    = StoreTicket::make()->action($this->group, ['subject' => 'Counter for QA', 'type' => TicketTypeEnum::PREMONITION->value]);
+    $failed   = StoreTicket::make()->action($this->group, ['subject' => 'Counter failed']);
+    $toDeploy = StoreTicket::make()->action($this->group, ['subject' => 'Counter to deploy']);
+    SyncTicketCollaborators::make()->action($helping, [$this->user->id]);
+    UpdateTicket::make()->action($assigned, ['status' => TicketStatusEnum::IN_PROGRESS->value]);
+    UpdateTicket::make()->action($forQa, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'qa_status' => TicketQaStatusEnum::REQUESTED->value, 'qa_user_id' => $qa->id]);
+    $failed->forceFill(['qa_status' => TicketQaStatusEnum::FAILED, 'qa_user_id' => $qa->id])->saveQuietly();
+    Ticket::whereIn('id', [$forQa->id, $failed->id])->update(['status' => TicketStatusEnum::RESOLVED]);
+    Ticket::whereKey($toDeploy->id)->update(['status' => TicketStatusEnum::PENDING_DEPLOY]);
+
+    $visibleTo = fn (User $user) => Ticket::where('tickets.group_id', $this->group->id)->visibleTo($user);
+    $perCase   = fn (User $user, array $cases, string $column, Closure $label, ?Closure $scope = null) => collect($cases)->mapWithKeys(fn ($case) => [
+        $case->value => [$label($case), $visibleTo($user)->when($scope, $scope)->where($column, $case)->count()],
+    ])->all();
+
+    $counterQueries = function (string $url) use (&$groups) {
+        $queries = [];
+        DB::listen(function ($query) use (&$queries) {
+            if (str_contains($query->sql, 'count(') && str_contains($query->sql, '"tickets"."group_id"')) {
+                $queries[] = $query->sql;
+            }
+        });
+        $groups = get($url)->assertOk()->viewData('page')['props']['queryBuilderProps']['default']['elementGroups'];
+
+        return count($queries);
+    };
+
+    $listQueries = $counterQueries(route('grp.tickets.list'));
+    $verdicts    = array_filter(TicketQaStatusEnum::cases(), fn (TicketQaStatusEnum $qaStatus) => $qaStatus->isVerdict());
+
+    expect($groups['mine']['elements'])->toBe([
+        'reported'      => [__('Reported by me'), $visibleTo($this->user)->where('reporter_type', 'User')->where('reporter_id', $this->user->id)->count()],
+        'assigned'      => [__('Assigned to me'), $visibleTo($this->user)->where('assignee_id', $this->user->id)->count()],
+        'collaborating' => [__('Collaborating on'), $visibleTo($this->user)->whereHas('collaborators', fn ($query) => $query->whereKey($this->user->id))->count()],
+        'unassigned'    => [__('Unassigned'), $visibleTo($this->user)->whereNull('assignee_id')->count()],
+    ])
+        ->and($groups['status']['elements'])->toBe($perCase($this->user, TicketStatusEnum::cases(), 'status', fn ($status) => TicketStatusEnum::labels()[$status->value]))
+        ->and($groups['qa_status']['elements'])->toBe([
+            'none' => [__('No verdict'), $visibleTo($this->user)->whereNull('qa_status')->count()],
+            ...$perCase($this->user, $verdicts, 'qa_status', fn (TicketQaStatusEnum $qaStatus) => $qaStatus->shortLabel()),
+        ])
+        ->and($groups['type']['elements'])->toBe($perCase($this->user, TicketTypeEnum::cases(), 'type', fn ($type) => TicketTypeEnum::labels()[$type->value]))
+        ->and($groups['mine']['elements']['collaborating'][1])->toBeGreaterThan(0)
+        ->and($listQueries)->toBeLessThanOrEqual(7);
+
+    actingAs($qa);
+    $qaListQueries = $counterQueries(route('grp.tickets.qa_list'));
+    $inQaList      = fn ($query) => $query->where(fn ($query) => $query->whereIn('tickets.status', [TicketStatusEnum::RESOLVED, TicketStatusEnum::PENDING_DEPLOY])->orWhere('tickets.qa_status', TicketQaStatusEnum::CHECKING));
+
+    expect($groups)->not->toHaveKey('mine')
+        ->and($groups['qa_checker']['elements'])->toBe([
+            'mine'     => [__('Mine'), $visibleTo($qa)->qaCheckerIs($qa)->count()],
+            'anyone'   => [__('Anyone'), $visibleTo($qa)->qaOpenToAnyone()->count()],
+            'everyone' => [__('Everyone'), $visibleTo($qa)->whereNotNull('qa_status')->count()],
+        ])
+        ->and($groups['qa_checker']['elements']['mine'][1])->toBeGreaterThan(0)
+        ->and($groups['status']['elements'])->toBe(collect($perCase($qa, TicketStatusEnum::cases(), 'status', fn ($status) => TicketStatusEnum::labels()[$status->value], $inQaList))
+            ->filter(fn (array $element, string $status) => $element[1] > 0 || in_array($status, [TicketStatusEnum::RESOLVED->value, TicketStatusEnum::PENDING_DEPLOY->value], true))
+            ->all())
+        ->and($groups['qa_status']['elements']['none'])->toBe([__('No verdict'), $visibleTo($qa)->whereNull('qa_status')->count()])
+        ->and($qaListQueries)->toBeLessThanOrEqual(9);
+
+    actingAs($this->user);
+});
+
+test('the ticket list reads every reporter\'s role from permissions loaded with the list', function () {
+    Notification::fake();
+    setPermissionsTeamId($this->group->id);
+
+    $reportedBy = function (?string $role) {
+        $reporter = User::factory()->create(['group_id' => $this->group->id]);
+        if ($role) {
+            $reporter->assignRole($role);
+        }
+        StoreTicket::make()->action($this->group, ['subject' => 'Reporter role '.$reporter->username, 'reporter_type' => 'User', 'reporter_id' => $reporter->id]);
+
+        return $reporter->username;
+    };
+
+    $queries = 0;
+    DB::listen(function ($query) use (&$queries) {
+        if (str_contains($query->sql, '"model_has_roles"') || str_contains($query->sql, '"model_has_permissions"')) {
+            $queries++;
+        }
+    });
+
+    $permissionQueries = function () use (&$queries, &$rows) {
+        app(PermissionRegistrar::class)->forgetWildcardPermissionIndex();
+        $queries = 0;
+        $rows    = collect(get(route('grp.tickets.list', ['created' => '1h', 'perPage' => 500]))->assertOk()->viewData('page')['props']['data']['data'])
+            ->keyBy('reporter_username');
+
+        return $queries;
+    };
+
+    $staff    = $reportedBy(null);
+    $engineer = $reportedBy('help-desk-clerk');
+    $permissionQueries();
+    $fewer = $permissionQueries();
+
+    $qa   = $reportedBy('qa');
+    $lead = $reportedBy('help-desk-supervisor');
+    $more = $reportedBy(null);
+
+    expect($permissionQueries())->toBe($fewer)
+        ->and($rows[$staff]['reporter_roles'][0]['key'])->toBe('staff')
+        ->and($rows[$engineer]['reporter_roles'][0]['key'])->toBe('engineer')
+        ->and($rows[$qa]['reporter_roles'][0]['key'])->toBe('qa')
+        ->and($rows[$lead]['reporter_roles'][0]['key'])->toBe('lead_engineer')
+        ->and($rows[$more]['reporter_roles'][0]['key'])->toBe('staff');
+});
+
+test('the tickets reports load every avatar with its people instead of one person at a time', function () {
+    Notification::fake();
+    setPermissionsTeamId($this->group->id);
+
+    $people = collect(range(1, 3))->map(function (int $index) {
+        $avatar = Media::create([
+            'group_id'              => $this->group->id,
+            'ulid'                  => (string) Str::ulid(),
+            'uuid'                  => (string) Str::uuid(),
+            'name'                  => "avatar-$index",
+            'file_name'             => "avatar-$index.png",
+            'mime_type'             => 'image/png',
+            'disk'                  => 'local',
+            'collection_name'       => 'photo',
+            'size'                  => 4,
+            'manipulations'         => [],
+            'custom_properties'     => [],
+            'generated_conversions' => [],
+            'responsive_images'     => [],
+        ]);
+        $person = User::factory()->create(['group_id' => $this->group->id, 'image_id' => $avatar->id]);
+        $person->assignRole('help-desk-clerk');
+
+        StoreTicket::make()->action($this->group, ['subject' => "Reported and worked by $person->username", 'reporter_type' => 'User', 'reporter_id' => $person->id, 'assignee_id' => $person->id]);
+        $older = StoreTicket::make()->action($this->group, ['subject' => "Older one resolved by $person->username", 'assignee_id' => $person->id]);
+        $older->forceFill(['status' => TicketStatusEnum::RESOLVED, 'created_at' => now()->subWeeks(2), 'resolved_at' => now(), 'closed_at' => now()])->saveQuietly();
+
+        return $person;
+    });
+
+    $mediaQueries = 0;
+    DB::listen(function ($query) use (&$mediaQueries) {
+        if (str_contains($query->sql, 'from "media"')) {
+            $mediaQueries++;
+        }
+    });
+
+    $report = ShowTicketsReports::make()->handle($this->group, '1w');
+
+    $avatarOf = fn (array $rows, string $column, string $value) => collect($rows)->firstWhere($column, $value)['avatar'] ?? null;
+
+    expect($mediaQueries)->toBe(3);
+    $people->each(fn (User $person) => expect($avatarOf($report['assignees'], 'username', $person->username))->not->toBeNull()
+        ->and($avatarOf($report['resolvers'], 'username', $person->username))->not->toBeNull()
+        ->and($avatarOf($report['reporters'], 'key', "User-$person->id"))->not->toBeNull());
 });
 
 test('a ticket list refetches one changed row, and a confidential ticket is not handed to someone who cannot see it', function () {

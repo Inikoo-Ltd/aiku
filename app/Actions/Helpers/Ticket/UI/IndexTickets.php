@@ -25,8 +25,10 @@ use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
+use BackedEnum;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use App\Models\Catalogue\Shop;
@@ -41,6 +43,11 @@ class IndexTickets extends OrgAction
 {
     use WithTicketsScope;
 
+    /**
+     * @var array<string, array<string, mixed>>|null
+     */
+    private ?array $elementGroups = null;
+
     public function authorize(ActionRequest $request): bool
     {
         return $request->user() !== null;
@@ -51,21 +58,44 @@ class IndexTickets extends OrgAction
         return $this->whereCreatedIn(Ticket::where('tickets.group_id', $group->id)->visibleTo(request()->user()), $this->createdInterval(), 'tickets.created_at');
     }
 
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    protected function elementGroups(Group $group): array
+    {
+        return $this->elementGroups ??= $this->getElementGroups($group);
+    }
+
     protected function getElementGroups(Group $group): array
     {
-        $user = request()->user();
-        $base = $this->elementGroupsBase($group);
+        $user      = request()->user();
+        $base      = $this->elementGroupsBase($group);
+        $canManage = Ticket::canBeManagedBy($user);
+        $verdicts  = array_filter(TicketQaStatusEnum::cases(), fn (TicketQaStatusEnum $qaStatus) => $qaStatus->isVerdict());
+
+        $counts = $this->countEach($base, [
+            'mine.reported' => fn (Builder $query) => $query->where('reporter_type', 'User')->where('reporter_id', $user->id),
+            ...($canManage ? [
+                'mine.assigned'      => fn (Builder $query) => $query->where('assignee_id', $user->id),
+                'mine.collaborating' => fn (Builder $query) => $query->whereHas('collaborators', fn ($query) => $query->whereKey($user->id)),
+                'mine.unassigned'    => fn (Builder $query) => $query->whereNull('assignee_id'),
+            ] : []),
+            ...$this->conditionPerCase('status', TicketStatusEnum::cases()),
+            'qa_status.none' => fn (Builder $query) => $query->whereNull('qa_status'),
+            ...$this->conditionPerCase('qa_status', $verdicts),
+            ...$this->conditionPerCase('type', TicketTypeEnum::cases()),
+        ]);
 
         return [
             'mine'   => [
                 'label'    => __('Ownership'),
                 'optional' => true,
                 'elements' => [
-                    'reported' => [__('Reported by me'), (clone $base)->where('reporter_type', 'User')->where('reporter_id', $user->id)->count()],
-                    ...(Ticket::canBeManagedBy($user) ? [
-                        'assigned'      => [__('Assigned to me'), (clone $base)->where('assignee_id', $user->id)->count()],
-                        'collaborating' => [__('Collaborating on'), (clone $base)->whereHas('collaborators', fn ($query) => $query->whereKey($user->id))->count()],
-                        'unassigned'    => [__('Unassigned'), (clone $base)->whereNull('assignee_id')->count()],
+                    'reported' => [__('Reported by me'), $counts['mine.reported']],
+                    ...($canManage ? [
+                        'assigned'      => [__('Assigned to me'), $counts['mine.assigned']],
+                        'collaborating' => [__('Collaborating on'), $counts['mine.collaborating']],
+                        'unassigned'    => [__('Unassigned'), $counts['mine.unassigned']],
                     ] : []),
                 ],
                 'engine'   => function ($query, $elements) use ($user) {
@@ -88,7 +118,7 @@ class IndexTickets extends OrgAction
             'status' => [
                 'label'    => __('Status'),
                 'elements' => collect(TicketStatusEnum::cases())->mapWithKeys(fn (TicketStatusEnum $status) => [
-                    $status->value => [TicketStatusEnum::labels()[$status->value], (clone $base)->where('status', $status)->count()],
+                    $status->value => [TicketStatusEnum::labels()[$status->value], $counts["status.$status->value"]],
                 ])->all(),
                 'engine'   => function ($query, $elements) {
                     $query->whereIn('tickets.status', $elements);
@@ -98,9 +128,9 @@ class IndexTickets extends OrgAction
                 'label'    => __('QA status'),
                 'optional' => true,
                 'elements' => [
-                    'none' => [__('No verdict'), (clone $base)->whereNull('qa_status')->count()],
-                    ...collect(TicketQaStatusEnum::cases())->filter(fn (TicketQaStatusEnum $qaStatus) => $qaStatus->isVerdict())->mapWithKeys(fn (TicketQaStatusEnum $qaStatus) => [
-                        $qaStatus->value => [$qaStatus->shortLabel(), (clone $base)->where('qa_status', $qaStatus)->count()],
+                    'none' => [__('No verdict'), $counts['qa_status.none']],
+                    ...collect($verdicts)->mapWithKeys(fn (TicketQaStatusEnum $qaStatus) => [
+                        $qaStatus->value => [$qaStatus->shortLabel(), $counts["qa_status.$qaStatus->value"]],
                     ])->all(),
                 ],
                 'engine'   => function ($query, $elements) {
@@ -115,7 +145,7 @@ class IndexTickets extends OrgAction
             'type'   => [
                 'label'    => __('Type'),
                 'elements' => collect(TicketTypeEnum::cases())->mapWithKeys(fn (TicketTypeEnum $type) => [
-                    $type->value => [TicketTypeEnum::labels()[$type->value], (clone $base)->where('type', $type)->count()],
+                    $type->value => [TicketTypeEnum::labels()[$type->value], $counts["type.$type->value"]],
                 ])->all(),
                 'engine'   => function ($query, $elements) {
                     $query->whereIn('tickets.type', $elements);
@@ -151,6 +181,37 @@ class IndexTickets extends OrgAction
                 },
             ],
         ];
+    }
+
+    /**
+     * @param  array<string, Closure(Builder): Builder>  $conditions
+     *
+     * @return array<string, int>
+     */
+    protected function countEach(Builder $base, array $conditions): array
+    {
+        $query = (clone $base)->toBase();
+
+        foreach (array_values($conditions) as $index => $condition) {
+            $where = $condition(Ticket::query()->withoutGlobalScopes())->toBase();
+            $query->selectRaw('count(*) filter ('.$query->getGrammar()->compileWheres($where).") as count_$index", $where->getBindings());
+        }
+
+        $row = $query->first();
+
+        return collect(array_keys($conditions))->mapWithKeys(fn (string $key, int $index) => [$key => (int) $row->{"count_$index"}])->all();
+    }
+
+    /**
+     * @param  array<int, BackedEnum>  $cases
+     *
+     * @return array<string, Closure(Builder): Builder>
+     */
+    protected function conditionPerCase(string $column, array $cases): array
+    {
+        return collect($cases)->mapWithKeys(fn (BackedEnum $case) => [
+            "$column.$case->value" => fn (Builder $query) => $query->where($column, $case),
+        ])->all();
     }
 
     /**
@@ -261,7 +322,7 @@ class IndexTickets extends OrgAction
 
         $this->whereCreatedIn($queryBuilder, $this->createdInterval(), 'tickets.created_at');
 
-        foreach ($this->getElementGroups($group) as $key => $elementGroup) {
+        foreach ($this->elementGroups($group) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
@@ -333,7 +394,7 @@ class IndexTickets extends OrgAction
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($group) as $key => $elementGroup) {
+            foreach ($this->elementGroups($group) as $key => $elementGroup) {
                 $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements'], default: $this->elementGroupDefault($key), optional: $elementGroup['optional'] ?? false);
             }
 

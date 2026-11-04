@@ -113,7 +113,7 @@ class ShowTicketsReports extends OrgAction
             ->orderByDesc('created')
             ->get();
 
-        $reporterUsers = User::whereIn('id', $reporters->where('reporter_kind', 'User')->pluck('id'))->get()->keyBy('id');
+        $reporterUsers = User::whereIn('id', $reporters->where('reporter_kind', 'User')->pluck('id'))->with('image')->get()->keyBy('id');
 
         $reporters = $reporters->map(fn ($row) => [
             'key'      => $row->reporter_kind.'-'.$row->id,
@@ -251,7 +251,7 @@ class ShowTicketsReports extends OrgAction
             ->keyBy('id');
 
         $userIds = $assignedRows->keys()->merge($collaboratingRows->keys())->unique()->values();
-        $users   = User::whereIn('id', $userIds)->get()->keyBy('id');
+        $users   = User::whereIn('id', $userIds)->with('image')->get()->keyBy('id');
 
         return $userIds
             ->map(function ($userId) use ($assignedRows, $collaboratingRows, $users) {
