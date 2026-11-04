@@ -69,7 +69,8 @@ class PdfSupplierPortalLabels
             $level,
             $validated['for_organisation'] ?? null,
             $validated['size'] ?? null,
-            (int) ($validated['copies'] ?? 1)
+            (int) ($validated['copies'] ?? 1),
+            content: PdfSupplierProductLabels::unitContent($validated)
         );
 
         return response($pdf, 200)

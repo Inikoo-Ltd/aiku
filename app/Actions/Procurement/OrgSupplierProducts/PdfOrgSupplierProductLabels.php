@@ -80,7 +80,8 @@ class PdfOrgSupplierProductLabels extends OrgAction
             $this->validatedData['for_organisation'] ?? null,
             $this->validatedData['size'] ?? null,
             (int) ($this->validatedData['copies'] ?? 1),
-            $this->labelOrganisationIds($organisation)
+            $this->labelOrganisationIds($organisation),
+            PdfSupplierProductLabels::unitContent($this->validatedData)
         );
 
         return response($pdf, 200)

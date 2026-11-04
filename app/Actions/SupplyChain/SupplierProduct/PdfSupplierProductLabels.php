@@ -38,12 +38,28 @@ class PdfSupplierProductLabels extends OrgAction
     public const int MAX_LABELS = 2000;
 
     /**
+     * What a bulk unit label carries unless the dialog says otherwise. The account signature is on,
+     * because a unit label sent out without the name and address of who sells it is not one the
+     * goods can go on the shelf with.
+     */
+    public const array UNIT_CONTENT_DEFAULTS = [
+        'with_made_in'               => true,
+        'with_manufactured_by'       => true,
+        'with_weight'                => true,
+        'with_image'                 => true,
+        'with_account_signature'     => true,
+        'with_eu_responsible_person' => true,
+        'with_es_importer'           => false,
+    ];
+
+    /**
      * @param  list<int>  $supplierProductIds
      * @param  list<int>|null  $allowedOrganisationIds
      * @return array{
      *     organisations: list<array{id: int, code: string, name: string, products: int}>,
      *     organisation_id: int|null,
-     *     products: list<array{id: int, code: string, name: string|null, org_stock_id: int|null, sko: string|null, skipped: array<string, string|null>}>
+     *     products: list<array{id: int, code: string, name: string|null, org_stock_id: int|null, sko: string|null, skipped: array<string, string|null>}>,
+     *     unit_content: list<array{key: string, label: string, default: bool}>
      * }
      */
     public function plan(Group $group, array $supplierProductIds, ?int $organisationId = null, ?array $allowedOrganisationIds = null): array
@@ -75,7 +91,44 @@ class PdfSupplierProductLabels extends OrgAction
                     ),
                 ];
             })->values()->all(),
+            'unit_content'    => $this->unitContentOptions(),
         ];
+    }
+
+    /**
+     * @return list<array{key: string, label: string, default: bool}>
+     */
+    private function unitContentOptions(): array
+    {
+        $labels = [
+            'with_made_in'               => __('With made in'),
+            'with_manufactured_by'       => __('With manufactured by'),
+            'with_weight'                => __('With weight'),
+            'with_image'                 => __('With image'),
+            'with_account_signature'     => __('With account signature'),
+            'with_eu_responsible_person' => __('With EU responsible person'),
+            'with_es_importer'           => __('With ES importer'),
+        ];
+
+        return array_map(
+            fn (string $key) => ['key' => $key, 'label' => $labels[$key], 'default' => self::UNIT_CONTENT_DEFAULTS[$key]],
+            array_keys(self::UNIT_CONTENT_DEFAULTS)
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, bool>
+     */
+    public static function unitContent(array $validated): array
+    {
+        $content = [];
+
+        foreach (self::UNIT_CONTENT_DEFAULTS as $key => $default) {
+            $content[$key] = array_key_exists($key, $validated) ? (bool) $validated[$key] : $default;
+        }
+
+        return $content;
     }
 
     /**
@@ -146,10 +199,11 @@ class PdfSupplierProductLabels extends OrgAction
     /**
      * @param  list<int>  $supplierProductIds
      * @param  list<int>|null  $allowedOrganisationIds
+     * @param  array<string, bool>  $content
      *
      * @throws \Mpdf\MpdfException
      */
-    public function handle(Group $group, array $supplierProductIds, string $level, ?int $organisationId = null, ?string $size = null, int $copies = 1, ?array $allowedOrganisationIds = null): string
+    public function handle(Group $group, array $supplierProductIds, string $level, ?int $organisationId = null, ?string $size = null, int $copies = 1, ?array $allowedOrganisationIds = null, array $content = []): string
     {
         $printable = array_values(array_filter(
             $this->plan($group, $supplierProductIds, $organisationId, $allowedOrganisationIds)['products'],
@@ -164,10 +218,13 @@ class PdfSupplierProductLabels extends OrgAction
         $merged->SetTitle($this->filename($level));
 
         foreach ($printable as $product) {
-            $label = PdfOrgStockLabel::make()->handle($orgStocks[$product['org_stock_id']], $level, array_filter([
-                'supplier_product' => $product['id'],
-                'size'             => $size,
-            ]))->getContent();
+            $label = PdfOrgStockLabel::make()->handle($orgStocks[$product['org_stock_id']], $level, [
+                ...($content ?: self::unitContent([])),
+                ...array_filter([
+                    'supplier_product' => $product['id'],
+                    'size'             => $size,
+                ]),
+            ])->getContent();
 
             $merged->setSourceFile(StreamReader::createByString($label));
             $template  = $merged->importPage(1);
@@ -203,6 +260,7 @@ class PdfSupplierProductLabels extends OrgAction
             'for_organisation'  => ['sometimes', 'nullable', 'integer'],
             'size'              => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_keys(PdfOrgStockLabel::SIZES))],
             'copies'            => ['sometimes', 'integer', 'min:1', 'max:'.self::MAX_COPIES],
+            ...array_fill_keys(array_keys(self::UNIT_CONTENT_DEFAULTS), ['sometimes', 'boolean']),
         ];
     }
 
@@ -223,7 +281,8 @@ class PdfSupplierProductLabels extends OrgAction
             $level,
             $this->validatedData['for_organisation'] ?? null,
             $this->validatedData['size'] ?? null,
-            (int) ($this->validatedData['copies'] ?? 1)
+            (int) ($this->validatedData['copies'] ?? 1),
+            content: self::unitContent($this->validatedData)
         );
 
         return response($pdf, 200)

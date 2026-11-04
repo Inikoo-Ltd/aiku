@@ -11,16 +11,17 @@ import axios from "axios"
 import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import InputNumber from "primevue/inputnumber"
+import Checkbox from "primevue/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPrint, faTimes } from "@fal"
-import { faSpinnerThird } from "@fad"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
 
-library.add(faPrint, faTimes, faSpinnerThird)
+library.add(faPrint, faTimes)
 
 type Level = "unit" | "sko" | "carton"
 
@@ -28,6 +29,7 @@ interface LabelsPlan {
 	organisations: { id: number; code: string; name: string; products: number }[]
 	organisation_id: number | null
 	products: { id: number; code: string; name: string | null; org_stock_id: number | null; sko: string | null; skipped: Record<Level, string | null> }[]
+	unit_content: { key: string; label: string; default: boolean }[]
 	sizes: Record<Level, { key: string; label: string }[]>
 	default_size: string
 	max_copies: number
@@ -45,7 +47,7 @@ const props = withDefaults(defineProps<{
 
 const visible = defineModel<boolean>("visible", { default: false })
 
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 const fullWidthPt = { pcInputText: { root: { class: "!w-full" } } }
 
 const plan = ref<LabelsPlan | null>(null)
@@ -55,6 +57,8 @@ const level = ref<Level>("unit")
 const organisationId = ref<number | null>(null)
 const sizes = ref<Partial<Record<Level, string>>>({})
 const copies = ref(1)
+const unitContent = ref<Record<string, boolean>>({})
+const checkboxAccentClass = "[&.p-checkbox-checked_.p-checkbox-box]:!border-[var(--app-accent)] [&.p-checkbox-checked_.p-checkbox-box]:!bg-[var(--app-accent)] [&.p-checkbox-checked_.p-checkbox-icon]:!text-[var(--app-accent-text)]"
 
 const fetchPlan = async (organisation: number | null = null) => {
 	isLoading.value = true
@@ -67,6 +71,9 @@ const fetchPlan = async (organisation: number | null = null) => {
 		}))
 		plan.value = data
 		organisationId.value = data.organisation_id
+		data.unit_content.forEach((option) => {
+			unitContent.value[option.key] ??= option.default
+		})
 	} catch (error: any) {
 		errorMessage.value = error?.response?.data?.message || ctrans("The labels could not be prepared, try again")
 	} finally {
@@ -121,6 +128,9 @@ const printLabels = () => {
 		for_organisation: organisationId.value ?? undefined,
 		size: selectedSize.value,
 		copies: copies.value || 1,
+		...(level.value === "unit"
+			? Object.fromEntries(Object.entries(unitContent.value).map(([key, isOn]) => [key, isOn ? 1 : 0]))
+			: {}),
 	}), "_blank")
 }
 </script>
@@ -128,7 +138,7 @@ const printLabels = () => {
 <template>
 	<Dialog v-model:visible="visible" modal :header="ctrans('Print barcode labels')" class="w-full max-w-2xl">
 		<div v-if="isLoading && !plan" class="flex items-center gap-2 py-6 text-sm text-gray-500">
-			<FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+			<LoadingIcon />
 			{{ ctrans("Preparing labels…") }}
 		</div>
 
@@ -160,6 +170,16 @@ const printLabels = () => {
 					<span class="text-xs font-semibold text-gray-600">{{ ctrans("Copies per product") }}</span>
 					<InputNumber v-model="copies" :min="1" :max="plan.max_copies" showButtons class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthPt" />
 				</label>
+			</div>
+
+			<div v-if="level === 'unit' && plan.unit_content.length">
+				<div class="mb-1 text-xs font-semibold text-gray-600">{{ ctrans("Print on the label") }}</div>
+				<div class="grid grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
+					<label v-for="option in plan.unit_content" :key="option.key" class="flex cursor-pointer items-center gap-2 text-gray-700">
+						<Checkbox v-model="unitContent[option.key]" binary :class="checkboxAccentClass" />
+						{{ option.label }}
+					</label>
+				</div>
 			</div>
 
 			<div class="text-gray-700">
