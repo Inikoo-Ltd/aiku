@@ -59,10 +59,11 @@ use Illuminate\Support\Facades\DB;
  *     Neither the item's own older history nor a seasonality factor is blended in: both were
  *     backtested on prod dispatches (Sep 2026) and made per-SKU forecasts worse, not better.
  *     The exception is an item that was hardly on the shelf all window: there is no local
- *     signal to blend with, so its own in-stock selling rate over the last year comes before
- *     borrowing, or an item that sold steadily until it ran out reads as barely wanted (HELP-4067).
- *     Partner organisations do not count there, and an item that has not sold for six months does
- *     not use it. The same own-year rate is the floor of an item on the shelf less than 70% of the
+ *     signal to blend with, so its own in-stock selling rate over the year before it ran out comes
+ *     before borrowing, or an item that sold steadily until it ran out reads as barely wanted
+ *     (HELP-4067), however long ago it ran out within two years (HELP-4505). Partner organisations
+ *     do not count there, and an item that had not sold for six months when it ran out (left
+ *     unsold on the shelf, then counted to zero) does not use it. The same own-year rate is the floor of an item on the shelf less than 70% of the
  *     window: the weeks it was running down sell little, and the model read that tail as the
  *     demand, so an item that ran out after selling 3 a day forecast under 1 a day (HELP-4093).
  *  4. Convert to days of cover, plus a pessimistic bound: solve
@@ -89,6 +90,8 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     private const int MINIMUM_SELLING_DAYS = 3;
 
     private const int HISTORY_LAST_SALE_WITHIN_DAYS = 180;
+
+    private const int HISTORY_LOOKBACK_DAYS = 730;
 
     private const float ONE_OFF_MEDIAN_MULTIPLE = 3.0;
 
@@ -469,10 +472,10 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
      *
      * @return array{0: array<string, float>, 1: int}
      */
-    private function inStockSeries(OrgStock $orgStock, Carbon $from, array $usageByDay): array
+    private function inStockSeries(OrgStock $orgStock, Carbon $from, array $usageByDay, ?Carbon $until = null): array
     {
         $series = [];
-        $days   = $this->inStockDays($orgStock->id, $from, (float) $orgStock->quantity_available, $this->sellableQuantity($orgStock));
+        $days   = $this->inStockDays($orgStock->id, $from, (float) $orgStock->quantity_available, $this->sellableQuantity($orgStock), $until);
         foreach ($days as $day => $inStock) {
             if ($inStock) {
                 $series[$day] = $usageByDay[$day] ?? 0.0;
@@ -483,25 +486,36 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
     }
 
     /**
-     * What the item sold per day on the shelf over the last year, when it was on the shelf long
-     * enough for that to mean something.
+     * What the item sold per day on the shelf over its last year, when it was on the shelf long
+     * enough for that to mean something and was still selling at the end of it. The year of an
+     * item out of stock ends the day it ran out, so one out of stock all year still reads as the
+     * item it was, not as unwanted (HELP-4505); one that ran out over two years ago has none.
      *
      * @return array{0: float, 1: float|null}|null [demand per in-stock day, daily sigma]
      */
     private function usageFromOwnYear(OrgStock $orgStock): ?array
     {
-        $yearFrom = now()->subDays(self::CAP_YEAR_DAYS)->startOfDay();
-        $usage    = $this->withoutOneOffs($this->dispatchedByDay([$orgStock->id], $yearFrom, withoutPartners: true)[$orgStock->id] ?? []);
+        $until = (float) $orgStock->quantity_available > 0 ? now() : $this->ranOutAt($orgStock);
+        if (!$until || $until->lt(now()->subDays(self::HISTORY_LOOKBACK_DAYS))) {
+            return null;
+        }
+
+        $yearFrom = $until->copy()->subDays(self::CAP_YEAR_DAYS)->startOfDay();
+        $usage    = array_filter(
+            $this->withoutOneOffs($this->dispatchedByDay([$orgStock->id], $yearFrom, withoutPartners: true)[$orgStock->id] ?? []),
+            fn (string $day) => $day <= $until->toDateString(),
+            ARRAY_FILTER_USE_KEY
+        );
         if (!array_filter($usage)) {
             return null;
         }
 
-        [$series] = $this->inStockSeries($orgStock, $yearFrom, $usage);
+        [$series] = $this->inStockSeries($orgStock, $yearFrom, $usage, $until);
         $sellingDays = array_filter($series);
 
         if (count($series) < self::MINIMUM_IN_STOCK_DAYS
             || count($sellingDays) < self::MINIMUM_SELLING_DAYS
-            || max(array_keys($sellingDays)) < now()->subDays(self::HISTORY_LAST_SALE_WITHIN_DAYS)->toDateString()) {
+            || max(array_keys($sellingDays)) < $until->copy()->subDays(self::HISTORY_LAST_SALE_WITHIN_DAYS)->toDateString()) {
             return null;
         }
 
@@ -601,11 +615,14 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
      *
      * @return array<string, bool> day (Y-m-d) => was in stock
      */
-    private function inStockDays(int $orgStockId, Carbon $from, float $fallbackSeed, float $sellableQuantity): array
+    private function inStockDays(int $orgStockId, Carbon $from, float $fallbackSeed, float $sellableQuantity, ?Carbon $until = null): array
     {
+        $until ??= now();
+
         $lastRunningByDay = DB::table('org_stock_movements')
             ->where('org_stock_id', $orgStockId)
             ->where('date', '>=', $from)
+            ->where('date', '<=', $until->copy()->endOfDay())
             ->whereNotNull('running_quantity_org_stock')
             ->selectRaw('date(date) as day, (array_agg(running_quantity_org_stock order by date desc, id desc))[1] as balance')
             ->groupBy('day')
@@ -623,7 +640,7 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         $balance = $seed !== null ? (float) $seed : $fallbackSeed;
 
         $days = [];
-        for ($day = $from->copy(); $day->lte(now()); $day->addDay()) {
+        for ($day = $from->copy(); $day->lte($until); $day->addDay()) {
             $key = $day->toDateString();
             if (array_key_exists($key, $lastRunningByDay)) {
                 $balance = $lastRunningByDay[$key];
@@ -632,6 +649,33 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
         }
 
         return $days;
+    }
+
+    /**
+     * The day the running balance last fell below one sellable order: the first movement after the
+     * last one that left enough on the shelf.
+     */
+    private function ranOutAt(OrgStock $orgStock): ?Carbon
+    {
+        $lastInStock = DB::table('org_stock_movements')
+            ->where('org_stock_id', $orgStock->id)
+            ->whereNotNull('running_quantity_org_stock')
+            ->where('running_quantity_org_stock', '>=', max(PHP_FLOAT_EPSILON, $this->sellableQuantity($orgStock)))
+            ->orderByDesc('date')->orderByDesc('id')
+            ->first(['id', 'date']);
+        if (!$lastInStock) {
+            return null;
+        }
+
+        $ranOut = DB::table('org_stock_movements')
+            ->where('org_stock_id', $orgStock->id)
+            ->whereNotNull('running_quantity_org_stock')
+            ->where(fn ($query) => $query->where('date', '>', $lastInStock->date)
+                ->orWhere(fn ($query) => $query->where('date', $lastInStock->date)->where('id', '>', $lastInStock->id)))
+            ->orderBy('date')->orderBy('id')
+            ->value('date');
+
+        return $ranOut ? Carbon::parse($ranOut)->startOfDay() : now();
     }
 
     /**
