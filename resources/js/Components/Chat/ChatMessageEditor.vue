@@ -6,6 +6,7 @@ import StarterKit from "@tiptap/starter-kit"
 import Underline from "@tiptap/extension-underline"
 import Placeholder from "@tiptap/extension-placeholder"
 import Image from "@tiptap/extension-image"
+import { keepBlankLines, plainTextSlice } from "@/Components/Chat/chatPaste"
 import { markupToEditorHtml, editorDocToMarkup } from "@/Composables/useWhatsappMarkup"
 
 const props = withDefaults(defineProps<{
@@ -77,6 +78,8 @@ const editor = useEditor({
 
             return true
         },
+        clipboardTextParser: (text, context, _plain, view) => plainTextSlice(text, view.state.schema, context.marks()),
+        transformPastedHTML: keepBlankLines,
         handlePaste: (_view, event) => {
             emit("paste", event)
             return event.defaultPrevented

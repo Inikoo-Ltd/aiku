@@ -1314,14 +1314,16 @@ watch(selectedLanguage, async (val) => {
                 </div>
             </div>
 
-            <!-- A received email keeps its layout; everything else is text. -->
-            <template v-else-if="showEmailBody">
-                <EmailBody :html="message.html_body" />
-                <details v-if="writtenAs" class="mt-1 text-xs text-gray-500">
-                    <summary class="cursor-pointer select-none">{{ ctrans("What you wrote") }}</summary>
-                    <p class="mt-1 whitespace-pre-wrap break-words text-gray-700">{{ writtenAs }}</p>
+            <template v-else-if="showEmailBody && writtenAs">
+                <p class="whitespace-pre-wrap break-words" v-html="formatWhatsappMarkup(writtenAs)" />
+                <details class="mt-1 text-xs text-gray-500">
+                    <summary class="cursor-pointer select-none">{{ ctrans("What the customer received") }}</summary>
+                    <EmailBody class="mt-1" :html="message.html_body" />
                 </details>
             </template>
+
+            <!-- A received email keeps its layout; everything else is text. -->
+            <EmailBody v-else-if="showEmailBody" :html="message.html_body" />
 
             <p v-else-if="!location && !sharedContacts.length && formatMarkup && !(isRetracted && viewerType !== 'agent')" class="whitespace-pre-wrap break-words"
                 v-html="formattedText" />
@@ -1354,7 +1356,7 @@ watch(selectedLanguage, async (val) => {
                 {{ ctrans('Automatic reply') }}
             </div>
 
-            <div v-if="canShowTranslation && (latestTranslation || isTranslating)"
+            <div v-if="canShowTranslation && !writtenAs && (latestTranslation || isTranslating)"
                 class="mt-1 text-xs italic opacity-80 border-l-2 pl-2">
                 <div v-if="isTranslating" class="flex items-center gap-1 text-[10px]">
                     <LoadingIcon />
@@ -1362,9 +1364,7 @@ watch(selectedLanguage, async (val) => {
                 </div>
 
                 <template v-else-if="!shouldHideTranslationBlock">
-                    <div v-if="showTranslation">
-                        {{ latestTranslation!.translated_text }}
-                    </div>
+                    <div v-if="showTranslation" class="whitespace-pre-line">{{ latestTranslation!.translated_text }}</div>
 
                     <div class="flex items-center gap-1 mt-0.5 opacity-70 text-[10px] not-italic">
                         <img v-if="latestTranslation!.language_flag" :src="latestTranslation!.language_flag"
