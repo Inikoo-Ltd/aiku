@@ -23,7 +23,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * short-lists the closest names and Jev picks the one that is the same item, a similar one or
  * none, with a calibrated probability. A same-item pick Jev is sure of is confirmed straight
  * away; the rest wait for staff. Candidates not picked are kept as rejected so they are never
- * asked again. The pack size is read from the competitor's product name.
+ * asked again. The pack size is read from the competitor's product name. A candidate whose volume
+ * or weight in the name differs from ours (5ml against our 10ml) is rejected without asking Jev.
  */
 class MatchCompetitorProducts
 {
@@ -43,6 +44,10 @@ class MatchCompetitorProducts
 
     private const array KEYS = ['a', 'b', 'c', 'd'];
 
+    private const string SIZES = '/(?<![\d.,])(\d+(?:\.\d+)?)(\s*(?:ml|cl|ltrs?|litres?|liters?|kg|kilos?|grams?|gms?|gr|g)|l)(?![a-z])/i';
+
+    private const string DIMENSIONS = '/\d+(?:\.\d+)?(?:\s*(?:mm|cm|in))?(?:\s*[x×]\s*\d+(?:\.\d+)?(?:\s*(?:mm|cm|in))?)*\s*[x×]\s*\d+(?:\.\d+)?\s*(?:mm|cm|m|in|inch|inches|")(?![a-z])/iu';
+
     public const string INSTRUCTIONS = 'We sell our_product to retailers. A competitor sells the products listed. Pick the one that is the same item as ours (same kind, design, brand, size and material; the pack size may differ) or, failing that, one a retailer could stock instead of ours, or none. A different brand, size or scent is not the same item. weight_vs_ours close to 1 suggests the same size; far from 1 a different size, unless one of them is weighed as a whole set.';
 
     /**
@@ -53,20 +58,22 @@ class MatchCompetitorProducts
         $matches = 0;
 
         foreach (MasterAsset::whereIn('id', $masterAssetIds)->get() as $masterAsset) {
-            $candidates = $this->candidates($competitor, $masterAsset)->values();
-            if ($candidates->isEmpty()) {
-                continue;
+            $shortlist  = $this->candidates($competitor, $masterAsset);
+            $otherSizes = $shortlist->filter(fn (CompetitorProduct $candidate) => static::sizeDiffers($masterAsset->name, $candidate->name));
+            $candidates = $shortlist->diffKeys($otherSizes)->take(self::CANDIDATES)->values();
+
+            $decision = null;
+            if ($candidates->isNotEmpty()) {
+                $answer = AskJev::make()->choice(static::state($masterAsset, $candidates), self::INSTRUCTIONS, static::options($candidates));
+
+                if (!$answer) {
+                    continue;
+                }
+
+                $decision = static::decide($answer, $candidates->count());
             }
 
-            $answer = AskJev::make()->choice(static::state($masterAsset, $candidates), self::INSTRUCTIONS, static::options($candidates));
-
-            if (!$answer) {
-                continue;
-            }
-
-            $decision = static::decide($answer, $candidates->count());
-
-            foreach ($candidates as $index => $candidate) {
+            foreach ($candidates->concat($otherSizes)->values() as $index => $candidate) {
                 $picked = $decision && $decision['index'] === $index;
 
                 $candidate->update(['units' => static::packUnits($candidate->name, $masterAsset->name)]);
@@ -179,8 +186,54 @@ class MatchCompetitorProducts
         return (float) max(static::countInName($name), 1);
     }
 
+    /**
+     * Volumes in ml and weights in g written in a name: "Rose oil 1L" gives ['ml' => [1000]],
+     * "Incense 15gm x 12" ['g' => [15]].
+     *
+     * @return array<string, array<int, float>>
+     */
+    public static function sizesInName(string $name): array
+    {
+        preg_match_all(self::SIZES, $name, $matches, PREG_SET_ORDER);
+
+        $sizes = [];
+        foreach ($matches as [, $number, $unit]) {
+            [$dimension, $factor] = match (strtolower(trim($unit))) {
+                'ml'                                   => ['ml', 1],
+                'cl'                                   => ['ml', 10],
+                'g', 'gm', 'gms', 'gr', 'gram', 'grams' => ['g', 1],
+                'kg', 'kilo', 'kilos'                  => ['g', 1000],
+                default                                => ['ml', 1000],
+            };
+            $sizes[$dimension][] = (float) $number * $factor;
+        }
+
+        return $sizes;
+    }
+
+    /**
+     * True when both names give a volume, or both a weight, and none of theirs is within 5% of ours.
+     * 10ml against 10g, or a name without a size, is left to Jev.
+     */
+    public static function sizeDiffers(string $ourName, string $theirName): bool
+    {
+        $theirs = static::sizesInName($theirName);
+        foreach (static::sizesInName($ourName) as $dimension => $ourSizes) {
+            if (isset($theirs[$dimension]) && !collect($theirs[$dimension])->crossJoin($ourSizes)->contains(fn (array $pair) => abs($pair[0] - $pair[1]) <= 0.05 * max($pair))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * "20 x 30cm" is a size, so it is taken out before counting.
+     */
     private static function countInName(string $name): int
     {
+        $name = preg_replace(self::DIMENSIONS, '', $name);
+
         foreach ([
             '/\b(?:set|pack|box|bag|bundle|carton|case|tub|tray|lot)\s+of\s+(\d+)\b/i',
             '/\b(\d+)\s*(?:pcs|pieces|packets|packs|pack|x)\b/i',
@@ -207,7 +260,7 @@ class MatchCompetitorProducts
                 ->whereColumn('master_asset_competitor_products.competitor_product_id', 'competitor_products.id')
                 ->where('master_asset_competitor_products.master_asset_id', $masterAsset->id))
             ->orderByRaw('similarity(name, ?) desc', [$masterAsset->name])
-            ->limit(self::CANDIDATES)
+            ->limit(self::CANDIDATES * 3)
             ->get();
     }
 

@@ -4938,7 +4938,41 @@ describe('competitor prices, HELP-3605', function () {
         expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set of 12 Rosemary Incense Sticks', 'Satya Incense 15gm - Rosemary'))->toBe(12.0)
             ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('12 Packs of Palo Santo Smudge', 'Palo Santo Smudge'))->toBe(12.0)
             ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set Of 4 Skull Coasters', 'Set of 4 Square Coasters'))->toBe(1.0)
-            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('White Buddha Head Oil Burner', 'Buddha Head Oil Burner'))->toBe(1.0);
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('White Buddha Head Oil Burner', 'Buddha Head Oil Burner'))->toBe(1.0)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Jute Rug 20 x 30cm', 'Jute Rug'))->toBe(1.0)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set of 4 Coasters 10cm x 10cm', 'Coaster'))->toBe(4.0)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Rose Oil 6 x 10ml', '10ml Rose Oil'))->toBe(6.0);
+    });
+
+    test('a different volume or weight in the name is never the same item', function () {
+        $differs = fn (string $ours, string $theirs) => \App\Actions\Masters\Competitor\MatchCompetitorProducts::sizeDiffers($ours, $theirs);
+        expect($differs('10ml Rose Absolute Essential Oil White Label', 'Rose Absolute Essential Oil 5ml'))->toBeTrue()
+            ->and($differs('10ml Basil Essential Oil', 'Basil Essential Oil 1L'))->toBeTrue()
+            ->and($differs('Shea Butter 500g', 'Shea Butter 1kg'))->toBeTrue()
+            ->and($differs('Lemon Oil 1L', 'Lemon Oil 1000 ml'))->toBeFalse()
+            ->and($differs('Satya Incense 15gm - Rosemary', 'Rosemary Incense 15g x 12'))->toBeFalse()
+            ->and($differs('10ml Rose Oil', 'Rose Oil Gift Set 6 x 10ml'))->toBeFalse()
+            ->and($differs('10ml Citronella Essential Oil', 'Citronella Essential Oil 10g'))->toBeFalse()
+            ->and($differs('Rose Absolute Essential Oil', 'Rose Absolute Essential Oil 5ml'))->toBeFalse()
+            ->and($differs('10ml Rose Oil', 'Set of 2 L shaped Rose Oil Racks'))->toBeFalse();
+
+        $this->competitorMasterAsset->update(['name' => '10ml Rose Absolute Essential Oil White Label']);
+        foreach (['R-5' => 'Rose Absolute Essential Oil 5ml', 'R-100' => 'Rose Absolute Essential Oil 100ml', 'R-10' => 'Rose Absolute Essential Oil 10ml'] as $code => $name) {
+            $this->competitor->products()->create(['code' => $code, 'name' => $name, 'price' => 5, 'fetched_at' => now()]);
+        }
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['openrouter.ai/api/alpha/*' => \Illuminate\Support\Facades\Http::response(['answers' => ['answer' => ['choice' => 'a_same', 'probabilities' => ['a_same' => 0.9, 'none' => 0.1]]]])]);
+
+        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(1);
+
+        $matches = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->with('competitorProduct')->get()->keyBy('competitorProduct.code');
+        \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_contains($request->url(), 'decisions') && collect($request['state']['competitor'])->pluck('name')->all() === ['Rose Absolute Essential Oil 10ml']);
+        expect($matches['R-10']->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and($matches['R-5']->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->and($matches['R-5']->is_same_item)->toBeFalse()
+            ->and($matches['R-5']->confidence)->toBeNull()
+            ->and($matches['R-100']->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(0);
     });
 });
 
