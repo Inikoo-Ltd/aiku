@@ -1018,6 +1018,33 @@ test('reprice org stock counts prices counts from a date at the given cost and l
         ->and((float)$marker->refresh()->org_amount)->toBe(0.0);
 });
 
+test('reprice org stock counts with purchases reprices the purchases from the date too, so stock counted in single units is valued per unit (INI-211)', function () {
+    [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'RPRP-'.Str::random(4));
+
+    $movement = fn (string $type, float $quantity, float $amount, string $date, ?float $costPerSku = null) => tap(
+        StoreOrgStockMovement::make()->action($orgStock, $location, ['type' => $type, 'quantity' => $quantity, 'org_amount' => $amount], strict: false),
+        fn ($stored) => DB::table('org_stock_movements')->where('id', $stored->id)->update(['date' => $date, 'cost_per_sku' => $costPerSku])
+    );
+
+    $older    = $movement(OrgStockMovementTypeEnum::PURCHASE->value, 10, 12, '2026-08-01', 1.2);
+    $packs    = $movement(OrgStockMovementTypeEnum::PURCHASE->value, 768, 927.503, '2026-09-07', 1.207686);
+    $found    = $movement(OrgStockMovementTypeEnum::FOUND->value, 20, 828, '2026-09-17');
+
+    $reprice = RepriceOrgStockCounts::make();
+
+    expect($reprice->handle($orgStock, '2026-09-07', 0.201281, true)['movements'])->toBe(1)
+        ->and($reprice->handle($orgStock, '2026-09-07', 0.201281, true, true)['movements'])->toBe(2);
+
+    $reprice->handle($orgStock, '2026-09-07', 0.201281, false, true);
+
+    expect((float)$packs->refresh()->cost_per_sku)->toBe(0.201281)
+        ->and((float)$packs->org_amount)->toBe(154.584)
+        ->and((float)$packs->quantity)->toBe(768.0)
+        ->and((float)$found->refresh()->org_amount)->toBe(4.026)
+        ->and((float)$found->running_lpp_value)->toEqualWithDelta((10 + 768 + 20) * 0.201281, 0.01)
+        ->and((float)$older->refresh()->cost_per_sku)->toBe(1.2);
+});
+
 test('recost aurora counts with picks prices only aurora picks priced too high and leaves counts alone', function () {
     [$orgStock, $location] = costFixStockInLocation($this->group, $this->organisation, 'RCSP-'.Str::random(4));
 

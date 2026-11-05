@@ -29,7 +29,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * counts that carry a value (not purchases, picks or production, nor Aurora's valueless audit
  * markers) are priced at the given cost per counted unit instead, the old rows copied to help4274_repriced_org_stock_movements first. Quantities stay as
  * counted; the SKU's running values, daily histories and the organisation stock value days are
- * worked out again.
+ * worked out again. With --purchases the purchases are repriced too: INI-211, an Aurora purchase
+ * of HHEX-25 put away as 768 packs of 6 at the pack price, then counted as 4,608 single units
+ * after packed_in went from 6 to 1, so every unit was valued at the price of six.
  */
 class RepriceOrgStockCounts
 {
@@ -47,15 +49,15 @@ class RepriceOrgStockCounts
 
     public function getCommandSignature(): string
     {
-        return 'org_stock:reprice_counts {org_stock : org stock id} {--from= : first date to reprice} {--cost= : cost per counted unit} {--dry-run}';
+        return 'org_stock:reprice_counts {org_stock : org stock id} {--from= : first date to reprice} {--cost= : cost per counted unit} {--purchases : reprice purchases as well} {--dry-run}';
     }
 
     /**
      * @return array{movements: int, recorded: float, repriced: float, organisation_days_rolled_up: int}
      */
-    public function handle(OrgStock $orgStock, string $from, float $cost, bool $dryRun): array
+    public function handle(OrgStock $orgStock, string $from, float $cost, bool $dryRun, bool $withPurchases = false): array
     {
-        $counts = $this->counts($orgStock, $from)->get(['id', 'date', 'quantity', 'org_amount']);
+        $counts = $this->counts($orgStock, $from, $withPurchases)->get(['id', 'date', 'quantity', 'org_amount']);
 
         $report = [
             'movements'                   => $counts->count(),
@@ -109,11 +111,13 @@ class RepriceOrgStockCounts
         return $report;
     }
 
-    private function counts(OrgStock $orgStock, string $from): Builder
+    private function counts(OrgStock $orgStock, string $from, bool $withPurchases = false): Builder
     {
+        $types = $withPurchases ? [...self::COUNT_TYPES, OrgStockMovementTypeEnum::PURCHASE] : self::COUNT_TYPES;
+
         return DB::table('org_stock_movements')
             ->where('org_stock_id', $orgStock->id)
-            ->whereIn('type', array_map(fn (OrgStockMovementTypeEnum $type) => $type->value, self::COUNT_TYPES))
+            ->whereIn('type', array_map(fn (OrgStockMovementTypeEnum $type) => $type->value, $types))
             ->where('quantity', '!=', 0)
             ->where('org_amount', '!=', 0)
             ->where('date', '>=', Carbon::parse($from)->startOfDay())
@@ -134,6 +138,7 @@ class RepriceOrgStockCounts
         $from     = (string)$command->option('from');
         $cost     = (float)$command->option('cost');
         $dryRun   = (bool)$command->option('dry-run');
+        $withPurchases = (bool)$command->option('purchases');
 
         if (!$from || $cost <= 0) {
             $command->error('--from and a positive --cost are required');
@@ -146,7 +151,7 @@ class RepriceOrgStockCounts
         if ($dryRun) {
             $command->table(
                 ['Movement', 'Date', 'Quantity', 'Recorded', 'Repriced'],
-                $this->counts($orgStock, $from)->get(['id', 'date', 'type', 'quantity', 'org_amount'])->map(fn ($count) => [
+                $this->counts($orgStock, $from, $withPurchases)->get(['id', 'date', 'type', 'quantity', 'org_amount'])->map(fn ($count) => [
                     $count->id.' '.$count->type,
                     substr($count->date, 0, 10),
                     (float)$count->quantity,
@@ -156,7 +161,7 @@ class RepriceOrgStockCounts
             );
         }
 
-        $report = $this->handle($orgStock, $from, $cost, $dryRun);
+        $report = $this->handle($orgStock, $from, $cost, $dryRun, $withPurchases);
         $command->table(['What', 'Value'], collect($report)->map(fn (int|float $value, string $what) => [$what, $value])->values()->all());
 
         return 0;
