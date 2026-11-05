@@ -1,8 +1,8 @@
 ---
 title: Zadanie objednávky cez agenta
 summary: Pre nákupcov - ako zadať purchase order dodávateľovi, od ktorého nakupujete cez agenta, poslať ju agentovi a sledovať ju až po stock delivery.
-date: 2026-10-23
-source_date: 2026-10-23
+date: 2026-11-05
+source_date: 2026-11-05
 tags: procurement, purchase orders, agents
 category: procurement
 ---
@@ -51,6 +51,12 @@ Odpovedzte na riadku:
 - **Keep old quantity**: riadok si ponechá svoje množstvo.
 
 Objednávku nemožno potvrdiť, kým je nejaká otázka k množstvu nezodpovedaná, rovnako ako pri cenách. Agent dostane upozornenie o vašej odpovedi. V zozname nákupných objednávok oranžový odznak vedľa referencie počíta riadky čakajúce na vašu odpoveď k cenám alebo množstvám a filter **New price or quantity to answer** zobrazí tieto objednávky.
+
+## Keď agent presunie riadok k inému dodávateľovi
+
+Keď dodávateľ nevie vyrobiť produkt, agent môže presunúť celý jeho riadok alebo jeho časť k inému dodávateľovi toho istého agenta tlačidlom <b>Move</b> (presunúť) na riadku a vy dostanete upozornenie. <b>Move</b> môžete použiť aj vy. Kusy prejdú na objednávku tohto dodávateľa v rovnakom stave, alebo na novú objednávku s vami ako kupujúcim, za cenu, ktorú ste dohodli. Ak je cena nového dodávateľa iná, nový riadok ukáže obvyklú otázku na cenu, na ktorú odpoviete.
+
+Pôvodný riadok sa zruší, alebo si ponechá zvyšok, ak sa presunula len časť, a oba riadky ukazujú, odkiaľ kusy prišli alebo kam odišli. Ak na pôvodnej objednávke nič nezostane, zruší sa, pokiaľ na ňu nebola zaplatená záloha: vtedy zostane otvorená, aby sa záloha dala získať späť. Riadok sa dá presunúť len dovtedy, kým by sa ešte dal zrušiť: pred začiatkom výroby a skôr, než je na dodávke zásob.
 
 ## Kto to môže používať
 

@@ -1,8 +1,8 @@
 ---
 title: Hacer un pedido a través de un agente
 summary: Para compradores - cómo hacer una orden de compra a un proveedor al que compras a través de un agente, mandársela al agente y seguirla hasta la entrega de stock.
-date: 2026-10-23
-source_date: 2026-10-23
+date: 2026-11-05
+source_date: 2026-11-05
 tags: procurement, purchase orders, agents
 category: procurement
 ---
@@ -51,6 +51,12 @@ Responde en la línea:
 - **Keep old quantity**: la línea conserva su cantidad.
 
 El pedido no se puede confirmar mientras haya una pregunta de cantidad sin responder, igual que con los precios. El agente recibe una notificación con tu respuesta. En la lista de pedidos de compra, una insignia ámbar junto a la referencia cuenta las líneas que esperan tu respuesta sobre precios o cantidades, y el filtro **New price or quantity to answer** lista esos pedidos.
+
+## Cuando el agente mueve una línea a otro proveedor
+
+Cuando un proveedor no puede fabricar un producto, el agente puede mover toda su línea o una parte a otro proveedor del mismo agente, con <b>Move</b> (mover) en la línea, y recibes un aviso. Tú también puedes usar <b>Move</b>. Las unidades van al pedido de ese proveedor en el mismo estado, o a un pedido nuevo contigo como comprador, al precio que acordaste. Si el coste del nuevo proveedor es distinto, la nueva línea muestra la pregunta de precio habitual para que la respondas.
+
+La línea original se cancela, o se queda con el resto si solo se movió una parte, y las dos líneas muestran de dónde vinieron o adónde fueron las unidades. Si en el pedido original no queda nada, se cancela, salvo que se haya pagado un depósito: entonces queda abierto para poder recuperarlo. Una línea solo se puede mover mientras aún podría cancelarse: antes de que empiece la producción y antes de que esté en una entrega de stock.
 
 ## Quién puede usarlo
 

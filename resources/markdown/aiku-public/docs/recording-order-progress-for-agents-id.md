@@ -1,8 +1,8 @@
 ---
 title: Mencatat kemajuan pesanan sebagai agen
 summary: Untuk agen — tanggal yang Anda catat pada setiap pesanan ke pemasok (deposit paid, production started, production done, proposed ready date, handed over) dan nomor pesanan Anda sendiri, kapan dan di mana mencatatnya, apa yang dicatat oleh perusahaan pembeli sebagai gantinya, dan mengapa tanggal yang hilang tampak sebagai keterlambatan.
-date: 2026-11-03
-source_date: 2026-11-03
+date: 2026-11-05
+source_date: 2026-11-05
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -76,6 +76,16 @@ Perusahaan pembeli mendapat pemberitahuan dan menjawab di baris itu: menerima ha
 Jika pemasok tidak dapat memasok jumlah yang dipesan, atau hanya menjual dalam lot yang lebih besar, tanyakan dulu kepada perusahaan pembeli sebelum Anda mengonfirmasi. Buka pesanan, cari produknya di <b>Items</b> (daftar barang), lalu klik <b>Ask for another quantity</b> (minta jumlah lain) di bawah jumlahnya. Isi jumlahnya, pada tingkat yang ditampilkan tab Items (karton, SKO atau unit), dan catatan singkat jika perlu, lalu klik <b>Ask the organisation</b> (tanya perusahaan pembeli).
 
 Perusahaan pembeli mendapat pemberitahuan dan menjawab di baris itu: menerima jumlah baru atau mempertahankan jumlah lama. Anda juga mendapat pemberitahuan tentang jawabannya. Selama belum semua pertanyaan jumlah di pesanan dijawab, pesanan tidak dapat dikonfirmasi.
+
+## Saat pemasok tidak dapat membuat suatu produk
+
+Jika pemasok tidak dapat membuat suatu produk di pesanan, berikan produk itu ke pemasok Anda yang lain alih-alih membatalkannya. Buka pesanan, cari produknya di <b>Items</b> (daftar barang), lalu klik <b>Move</b> (pindahkan) di barisnya. Pilih pemasoknya dan berapa unit yang dipindahkan: semuanya, atau sebagian saja dan sisanya tetap di pemasok ini.
+
+Jika pemasok itu belum menjual SKO ini, dialog menampilkan kode, nama, biaya per unit dan unit per karton untuk produk barunya, diisi dari produk yang sekarang. Periksa, perbaiki biayanya, lalu klik <b>Move</b>: produk dibuat untuk SKO yang sama.
+
+Unit-unit itu masuk ke pesanan pemasok tersebut dengan status yang sama, atau ke pesanan baru jika belum ada, dengan harga yang disepakati perusahaan pembeli. Jika biaya pemasok baru berbeda, perusahaan pembeli mendapat pertanyaan harga seperti dijelaskan di atas dan menjawabnya di pesanan baru. Perusahaan pembeli mendapat pemberitahuan tentang pemindahan ini, dan kedua baris menunjukkan dari mana unit itu berasal atau ke mana dipindahkan.
+
+Anda hanya dapat memindahkan baris selama baris itu masih bisa dibatalkan: sebelum produksi dimulai dan sebelum masuk ke pengiriman stok. Jika di pesanan asal tidak tersisa apa pun, pesanan itu dibatalkan, kecuali sudah dibayar deposit: maka pesanan tetap terbuka agar deposit dapat ditarik kembali.
 
 ## Kebiasaan baik
 

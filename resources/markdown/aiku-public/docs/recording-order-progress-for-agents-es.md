@@ -1,8 +1,8 @@
 ---
 title: Registrar el progreso de un pedido como agente
 summary: Para agentes — las fechas que registras en cada pedido a un proveedor (depósito pagado, producción iniciada, producción terminada, fecha de listo propuesta, entregado) y tu propio número de pedido, cuándo y dónde registrarlas, qué registra en su lugar la empresa compradora, y por qué una fecha que falta aparece como un retraso.
-date: 2026-11-03
-source_date: 2026-11-03
+date: 2026-11-05
+source_date: 2026-11-05
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -76,6 +76,16 @@ La empresa compradora recibe una notificación y responde en la línea: acepta e
 Si el proveedor no puede suministrar la cantidad pedida, o solo vende en lotes mayores, pregunta a la empresa compradora antes de confirmar. Abre el pedido, busca el producto en **Items** y pulsa **Ask for another quantity** bajo su cantidad. Introduce la cantidad, en el nivel que muestra la pestaña Items (cajas, SKO o unidades), y una nota breve si ayuda, y después **Ask the organisation**.
 
 La empresa compradora recibe una notificación y responde en la línea: acepta la cantidad nueva o mantiene la antigua. Tú recibes una notificación con la respuesta. Mientras quede sin responder alguna pregunta de cantidad del pedido, no se puede confirmar.
+
+## Cuando el proveedor no puede fabricar un producto
+
+Si un proveedor no puede fabricar un producto del pedido, dáselo a otro de tus proveedores en lugar de cancelarlo. Abre el pedido, busca el producto en <b>Items</b> (artículos) y haz clic en <b>Move</b> (mover) en su línea. Elige el proveedor y cuántas unidades mover: todas, o solo una parte y el resto se queda con este proveedor.
+
+Si ese proveedor aún no vende este SKO, el diálogo muestra el código, el nombre, el coste unitario y las unidades por caja de su nuevo producto, rellenados a partir del actual. Revísalos, corrige el coste y pulsa <b>Move</b>: el producto se crea para el mismo SKO.
+
+Las unidades van al pedido de ese proveedor en el mismo estado, o a un pedido nuevo si no tiene ninguno, al precio que acordó la empresa compradora. Si el coste del nuevo proveedor es distinto, la empresa compradora recibe la pregunta de precio descrita arriba y la responde en el nuevo pedido. La empresa compradora recibe un aviso del cambio, y las dos líneas muestran de dónde vinieron o adónde fueron las unidades.
+
+Solo puedes mover una línea mientras aún podrías cancelarla: antes de que empiece la producción y antes de que esté en una entrega de stock. Si en el pedido original no queda nada, se cancela, salvo que se haya pagado un depósito: entonces queda abierto para poder recuperarlo.
 
 ## Buenos hábitos
 
