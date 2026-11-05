@@ -102,6 +102,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'organisation_code'        => $stock->organisation_code,
                 'purchase_order_reference' => $stock->purchase_order_reference,
                 'purchase_order_slug'      => $stock->purchase_order_slug,
+                'purchase_order_state'     => $stock->purchase_order_state,
                 'image_id'                 => $stock->image_id,
                 'is_unchecked'             => (bool) $stock->is_unchecked,
                 'is_from_goods_receipt'    => $stock->agent_goods_receipt_id !== null,
@@ -165,7 +166,7 @@ class IndexAgentWarehouseStocks extends OrgAction
             return array_merge($row, [
                 'agent_warehouse'          => $agentWarehouse,
                 'container_blocked_reason' => $row['state'] !== AgentWarehouseStockStateEnum::RECEIVED->value && !($agentWarehouse['containers_route'] ?? null)
-                    ? $this->containerBlockedReason($transaction, $agentWarehouse)
+                    ? $this->containerBlockedReason($row, $transaction, $agentWarehouse)
                     : null,
             ]);
         });
@@ -174,14 +175,26 @@ class IndexAgentWarehouseStocks extends OrgAction
     }
 
     /**
-     * Why a packed line can not be put in a container from here, following the rules of the purchase order page.
+     * Why a packed line can not be put in a container from here, following the rules of the purchase order page. A row
+     * from the stock sheet knows its purchase order but not the product's line in it, and containers are filled by line.
      *
+     * @param  array<string, mixed>  $row
      * @param  array<string, mixed>|null  $agentWarehouse
      */
-    private function containerBlockedReason(?PurchaseOrderTransaction $transaction, ?array $agentWarehouse): string
+    private function containerBlockedReason(array $row, ?PurchaseOrderTransaction $transaction, ?array $agentWarehouse): string
     {
         if (!$transaction || !$agentWarehouse) {
-            return __('Imported from spreadsheet, no PO line');
+            if (!$row['purchase_order_reference']) {
+                return __('Imported from the stock spreadsheet, no purchase order');
+            }
+
+            return $row['purchase_order_state'] === PurchaseOrderStateEnum::CONFIRMED->value
+                ? __('Imported from the stock spreadsheet: linked to :order, but not to its :code line', ['order' => $row['purchase_order_reference'], 'code' => $row['code']])
+                : __('Imported from the stock spreadsheet: linked to :order (:state), but not to its :code line', [
+                    'order' => $row['purchase_order_reference'],
+                    'state' => mb_strtolower(PurchaseOrderStateEnum::labels()[$row['purchase_order_state']] ?? (string) $row['purchase_order_state']),
+                    'code'  => $row['code'],
+                ]);
         }
 
         $purchaseOrder = $transaction->purchaseOrder;

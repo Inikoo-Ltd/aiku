@@ -203,7 +203,7 @@ function onPacked() {
 						<FontAwesomeIcon :icon="faTruckContainer" class="text-gray-500" fixed-width aria-hidden="true" />
 					</template>
 				</Button>
-				<p v-if="stock.container_blocked_reason" v-tooltip="ctrans('Why this line can not go in a container')" class="flex cursor-help gap-1 whitespace-nowrap text-xs text-gray-500">
+				<p v-if="stock.container_blocked_reason" v-tooltip="ctrans('Why this line can not go in a container')" class="flex max-w-xs cursor-help gap-1 text-xs text-gray-500">
 					<FontAwesomeIcon :icon="faInfoCircle" class="mt-0.5 shrink-0 text-gray-400" fixed-width aria-hidden="true" />
 					<span>{{ stock.container_blocked_reason }}</span>
 				</p>
