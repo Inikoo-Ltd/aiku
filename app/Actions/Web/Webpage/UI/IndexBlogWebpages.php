@@ -177,7 +177,7 @@ class IndexBlogWebpages extends OrgAction
                 AllowedSort::callback('last_edited_by', fn ($query, bool $descending) => $query->orderByRaw($lastEditedByExpression.' '.($descending ? 'desc' : 'asc').' nulls last')),
             ])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
 

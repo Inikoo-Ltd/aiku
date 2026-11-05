@@ -57,7 +57,7 @@ class UpdateWebpageContent extends OrgAction
         $fingerprintData = hash('sha256', $fingerprintData);
 
 
-        $editor = request()->user();
+        $editor = auth()->user();
 
         $snapshotData = [
             'layout'   => $layout,

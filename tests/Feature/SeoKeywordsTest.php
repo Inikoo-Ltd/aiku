@@ -8,6 +8,7 @@
 
 use App\Actions\Web\Seo\StoreSerpResult;
 use App\Enums\UI\Web\SeoKeywordsTabsEnum;
+use App\Enums\Web\Seo\SeoKeywordDeviceEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\SeoKeywordTag;
 use App\Models\Web\SeoTrackedKeyword;
@@ -101,14 +102,14 @@ test('bulk add previews the list, then tracks the new keywords with their tags a
 
     $preview = postJson(route('grp.models.shop.seo.tracked_keywords.bulk_store', $this->shop->id), [...$request, 'dry_run' => true])->assertOk()->json();
 
-    expect(collect($preview['rows'])->pluck('status', 'line')->all())->toBe([1 => 'new', 2 => 'duplicate', 3 => 'new', 4 => 'tracked', 5 => 'invalid', 6 => 'invalid', 8 => 'add_countries'])
-        ->and($preview['summary']['new'])->toBe(2)
+    expect(collect($preview['rows'])->pluck('status', 'line')->all())->toBe([1 => 'new', 2 => 'duplicate', 3 => 'new', 4 => 'tracked', 5 => 'invalid', 6 => 'invalid', 8 => 'new'])
+        ->and($preview['summary']['new'])->toBe(3)
         ->and($this->shop->seoTrackedKeywords()->where('keyword', "$t one")->exists())->toBeFalse();
 
     $result = postJson(route('grp.models.shop.seo.tracked_keywords.bulk_store', $this->shop->id), $request)->assertOk()->json();
 
-    expect($result['summary'])->toMatchArray(['new' => 2, 'add_countries' => 1, 'duplicate' => 1, 'tracked' => 1, 'invalid' => 2, 'failed' => 0])
-        ->and($this->shop->seoTrackedKeywords()->where('keyword', "$t two")->where('frequency', 'weekly')->count())->toBe(2)
+    expect($result['summary'])->toMatchArray(['new' => 3, 'add_countries' => 0, 'duplicate' => 1, 'tracked' => 1, 'invalid' => 2, 'failed' => 0])
+        ->and($this->shop->seoTrackedKeywords()->where('keyword', "$t two")->where('frequency', 'weekly')->pluck('device')->all())->toBe([SeoKeywordDeviceEnum::DESKTOP])
         ->and($this->shop->seoTrackedKeywords()->where('keyword', "$t mobile only")->count())->toBe(2)
         ->and(DB::table('seo_keyword_tag_keyword')->where('tag_id', $tag->id)->orderBy('keyword')->pluck('keyword')->all())->toBe(["$t mobile only", "$t one", "$t tracked", "$t two"]);
 });
@@ -178,7 +179,7 @@ test('rankings filter by position, change, SERP feature, tags, intent, volume, d
 
     $tracked = seoKeywordsMatching($this->shop, SeoKeywordsTabsEnum::TRACKED_KEYWORDS->value, $t, ['tags' => [(string) $tag->id]]);
 
-    expect($tracked)->toBe(["$t top"]);
+    expect($tracked)->toBe(["$t lost", "$t middle", "$t new", "$t top"]);
 });
 
 test('a SERP check records the result-page features that show our website, HELP-4115', function () {
