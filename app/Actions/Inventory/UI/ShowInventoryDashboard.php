@@ -177,6 +177,15 @@ class ShowInventoryDashboard extends OrgAction
                         'value' => LocationOrgStock::where('warehouse_id', $this->warehouse->id)->where('quantity', '<', 0)->count(),
                     ],
                     [
+                        'label' => __('Wrong Weights'),
+                        'route' => [
+                            'name'       => 'grp.org.warehouses.show.inventory.org_stocks.wrong_weights.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'icon'  => 'fal fa-weight-hanging',
+                        'value' => OrgStock::where('organisation_id', $this->organisation->id)->where('has_wrong_weight', true)->count(),
+                    ],
+                    [
                         'label' => __('SKOs Without Product'),
                         'route' => [
                             'name'       => 'grp.org.warehouses.show.inventory.org_stocks.orphan-product.current',

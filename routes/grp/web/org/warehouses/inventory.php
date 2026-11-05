@@ -33,6 +33,7 @@ use App\Actions\Inventory\OrganisationStockHistory\UI\IndexOrganisationStockHist
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithNoProducts;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockReplenishments;
 use App\Actions\Inventory\OrgStock\UI\IndexNegativeLocationOrgStocks;
+use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksWithWrongWeight;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStockLowStockAudits;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksBelowMinimumStock;
 use App\Actions\Inventory\OrgStock\UI\ShowOrgStock;
@@ -94,6 +95,10 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
 
     Route::prefix('negative-stocks')->as('negative_stocks.')->group(function () {
         Route::get('/', IndexNegativeLocationOrgStocks::class)->name('index');
+    });
+
+    Route::prefix('wrong-weights')->as('wrong_weights.')->group(function () {
+        Route::get('/', IndexOrgStocksWithWrongWeight::class)->name('index');
     });
 
     Route::prefix('orphans-from-product')->as('orphan-product.')->group(function () {

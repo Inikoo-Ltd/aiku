@@ -260,6 +260,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('org_stocks:flag_wrong_weight')->dailyAt('03:40')->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'FlagOrgStocksWithWrongWeight',
+                ),
+                name: 'FlagOrgStocksWithWrongWeight',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(MonitorWebsitesUptime::makeJob())->everyTwoMinutes()->withoutOverlapping()->onOneServer()->sentryMonitor(
                     monitorSlug: 'MonitorWebsitesUptime',
                 ),

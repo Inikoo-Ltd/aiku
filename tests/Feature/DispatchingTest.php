@@ -119,6 +119,7 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Actions\Inventory\OrgStock\FlagOrgStocksWithWrongWeight;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
@@ -7946,4 +7947,50 @@ test('a partner shipment makes one customs invoice per split from packed quantit
             'first_number'      => 77,
             'date'              => '2026-11-04',
         ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('flags a SKO whose weighed parcels disagree with its weight, and clears it once the weight is corrected', function () {
+    $orgStock = makeOrgStock($this);
+    DB::table('stocks')->where('id', $orgStock->stock_id)->update(['gross_weight' => 1000]);
+    $transaction = $this->order->transactions()->first();
+
+    $makeParcel = function (float $parcelKilograms) use ($orgStock, $transaction) {
+        $deliveryNote = makeDeliveryNote($this);
+        StoreDeliveryNoteItem::make()->action($deliveryNote, [
+            'delivery_note_id'  => $deliveryNote->id,
+            'org_stock_id'      => $orgStock->id,
+            'transaction_id'    => $transaction->id,
+            'quantity_required' => 1,
+        ]);
+        DB::table('delivery_note_items')->where('delivery_note_id', $deliveryNote->id)->update(['quantity_dispatched' => 1]);
+        DB::table('delivery_notes')->where('id', $deliveryNote->id)->update([
+            'state'            => DeliveryNoteStateEnum::DISPATCHED->value,
+            'dispatched_at'    => now()->subDay(),
+            'estimated_weight' => 1000,
+            'parcels'          => json_encode([['weight' => $parcelKilograms, 'dimensions' => [20, 20, 15]]]),
+        ]);
+    };
+
+    $makeParcel(3.15);
+    $makeParcel(3.25);
+    $makeParcel(1.0);
+
+    FlagOrgStocksWithWrongWeight::run($this->organisation);
+    $orgStock->refresh();
+
+    expect($orgStock->has_wrong_weight)->toBeTrue()
+        ->and($orgStock->measured_weight)->toBe(3050)
+        ->and($orgStock->measured_weight_parcels)->toBe(2);
+
+    actingAs($this->adminGuest->getUser());
+    $this->get(route('grp.org.warehouses.show.inventory.org_stocks.wrong_weights.index', [$this->organisation->slug, $this->warehouse->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Inventory/OrgStocksWithWrongWeight')
+            ->where('orgStocks.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['code'] == $orgStock->code && $row['difference'] == 2050)));
+
+    DB::table('stocks')->where('id', $orgStock->stock_id)->update(['gross_weight' => 3000]);
+    FlagOrgStocksWithWrongWeight::run($this->organisation);
+
+    expect($orgStock->refresh()->has_wrong_weight)->toBeFalse()
+        ->and($orgStock->measured_weight)->toBe(3050);
 });

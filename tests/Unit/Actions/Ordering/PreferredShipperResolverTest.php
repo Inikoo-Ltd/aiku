@@ -3,6 +3,7 @@
 use App\Actions\Catalogue\PreferredShipping\WithPreferredShipperResolver;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\PreferredShipping;
+use App\Models\Dispatching\DeliveryNote;
 
 function makePreferredShipperResolver()
 {
@@ -152,4 +153,28 @@ it('a weight band wins over a country rule but not over a postcode rule', functi
     expect($resolver->pickPreferredShipperId($rules, 10, 'EC1', 1000))->toBe(2)
         ->and($resolver->pickPreferredShipperId($rules, 10, 'EC1', 3000))->toBe(1)
         ->and($resolver->pickPreferredShipperId($rules, 10, 'SW1A', 1000))->toBe(3);
+});
+
+it('adds a box allowance to the estimated weight but takes a weight typed at the warehouse, or weighed boxes, as they are', function () {
+    $resolver = makePreferredShipperResolver();
+
+    $estimatedOnly = new DeliveryNote();
+    $estimatedOnly->estimated_weight = 1800;
+
+    $weighed = new DeliveryNote();
+    $weighed->estimated_weight = 1800;
+    $weighed->weight = 1900;
+
+    $boxesWeighed = new DeliveryNote();
+    $boxesWeighed->estimated_weight = 1800;
+    $boxesWeighed->parcels = [['weight' => 0.6, 'dimensions' => [20, 20, 15]], ['weight' => 1.45, 'dimensions' => [30, 20, 15]]];
+
+    $boxesFilledFromEstimate = new DeliveryNote();
+    $boxesFilledFromEstimate->estimated_weight = 1800;
+    $boxesFilledFromEstimate->parcels = [['weight' => 1.8, 'dimensions' => [5, 5, 5]]];
+
+    expect($resolver->weightForShipperChoice($estimatedOnly))->toBe(2300)
+        ->and($resolver->weightForShipperChoice($weighed))->toBe(1900)
+        ->and($resolver->weightForShipperChoice($boxesWeighed))->toBe(2050)
+        ->and($resolver->weightForShipperChoice($boxesFilledFromEstimate))->toBe(2300);
 });

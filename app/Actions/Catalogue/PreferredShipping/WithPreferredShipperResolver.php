@@ -19,6 +19,8 @@ use Illuminate\Support\Collection;
 
 trait WithPreferredShipperResolver
 {
+    private const int BOX_WEIGHT_ALLOWANCE = 500;
+
     /**
      * @return array{locked_shipper_id: int|null, preferred_shipper_id: int|null, locked_by: string|null, locked_scope: string|null, preferred_shipper: array|null, unconfirmed_shipping_order: string|null}
      */
@@ -105,7 +107,32 @@ trait WithPreferredShipperResolver
             ->whereHas('shipper', fn ($query) => $query->where('status', true))
             ->get();
 
-        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode, $deliveryNote->weight ?: $deliveryNote->estimated_weight);
+        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode, $this->weightForShipperChoice($deliveryNote));
+    }
+
+    /**
+     * HELP-4540. The estimated weight adds up the products only, so the box and packing are
+     * missing, and product weights are often wrong (FlagOrgStocksWithWrongWeight lists them).
+     * Weighed parcels came out a median 150 g heavier but 10% of them over 500 g, so the allowance
+     * is 500 g, set by dispatch to rather pick a courier too heavy than too light.
+     * A weight typed in at the warehouse is the real one and is taken as it is, so the courier
+     * follows the parcels once they are weighed. Parcels whose weight equals the estimate were
+     * filled in by UpdateDeliveryNoteStatePacked, not weighed, and still get the allowance.
+     */
+    public function weightForShipperChoice(DeliveryNote $deliveryNote): int
+    {
+        if ($deliveryNote->weight) {
+            return (int) $deliveryNote->weight;
+        }
+
+        $estimatedWeight = (int) $deliveryNote->estimated_weight;
+        $weighedWeight   = (int) round(collect($deliveryNote->parcels ?? [])->sum(fn ($parcel) => (float) ($parcel['weight'] ?? 0)) * 1000);
+
+        if ($weighedWeight > 0 && $weighedWeight != $estimatedWeight) {
+            return $weighedWeight;
+        }
+
+        return $estimatedWeight + self::BOX_WEIGHT_ALLOWANCE;
     }
 
     public function pickPreferredShipperId(Collection $rules, int $countryId, string $postalCode, ?int $weight = null): ?int

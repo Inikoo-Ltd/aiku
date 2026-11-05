@@ -11,7 +11,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Pie } from "vue-chartjs"
 import { ctrans } from "@/Composables/useTrans"
-import { faBox, faInventory, faSkullCow, faDollarSign, faBan, faClipboardListCheck, faChartNetwork, faBoxesAlt, faBars, faBarcodeRead, faArrowToBottom, faSlidersH } from "@fal"
+import { faBox, faInventory, faSkullCow, faDollarSign, faBan, faClipboardListCheck, faChartNetwork, faBoxesAlt, faBars, faBarcodeRead, faArrowToBottom, faSlidersH, faWeightHanging } from "@fal"
 import { faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle, faDollyFlatbedEmpty, faShoppingBasket } from "@fas"
 
 import { capitalize } from "@/Composables/capitalize"
@@ -25,6 +25,7 @@ import ActionGauges from "@/Components/Stats/ActionGauges.vue"
 import { ActionGaugeTS } from "@/types/Components/ActionGauge"
 
 library.add(
+    faWeightHanging,
     faBox,
     faInventory,
     faTimesCircle,

@@ -85,6 +85,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_fresh
  * @property bool $is_made_in_house
  * @property bool $is_excluded_from_auto_ordering
+ * @property bool $has_wrong_weight
+ * @property int|null $measured_weight
+ * @property int $measured_weight_parcels
  * @property bool $has_been_in_warehouse
  * @property HealthRankEnum|null $health_rank
  * @property bool $movements_fixed
@@ -156,6 +159,7 @@ class OrgStock extends Model implements Auditable, HasMedia
         'minimum_stock'                    => 'decimal:3',
         'minimum_stock_alerted_at'         => 'datetime',
         'is_shipment_packaging'            => 'boolean',
+        'has_wrong_weight'                 => 'boolean',
     ];
 
     protected $attributes = [
