@@ -1,7 +1,7 @@
 ---
 title: Placing an order through an agent
 summary: For buyers - how to place a purchase order with a supplier you buy from through an agent, send it to the agent, and follow it through to the stock delivery.
-date: 2026-10-23
+date: 2026-11-05
 tags: procurement, purchase orders, agents
 category: procurement
 help_routes: grp.org.procurement.org_agents
@@ -51,6 +51,12 @@ Answer on the line:
 - **Keep old quantity**: the line keeps its quantity.
 
 The order cannot be confirmed while a quantity question is unanswered, the same as for prices. The agent is notified of your answer. On the purchase orders list, an amber badge next to the reference counts the lines waiting for your answer on prices or quantities, and the **New price or quantity to answer** filter lists those orders.
+
+## When the agent moves a line to another supplier
+
+When a supplier cannot make a product, the agent can move all or part of its line to another supplier of the same agent, with **Move** on the line, and you are notified. You can use **Move** yourself too. The units go onto that supplier's order in the same state, or onto a new order with you as buyer, at the price you agreed. If the new supplier's cost is different, the new line shows the usual price question for you to answer.
+
+The original line is cancelled, or keeps the rest when only part was moved, and both lines show where the units came from or went. If nothing is left on the original order it is cancelled, unless a deposit was paid on it: then it stays open so the deposit can be recovered. A line can be moved only while it could still be cancelled: before production starts and before it is on a stock delivery.
 
 ## Who can use it
 

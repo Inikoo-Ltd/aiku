@@ -1,7 +1,7 @@
 ---
 title: Recording order progress as an agent
 summary: For agents — the dates you record on each order to a supplier (deposit paid, production started, production done, proposed ready date, handed over) and your own order number, when and where to record them, what the buying company records instead, and why a missing date shows as a delay.
-date: 2026-11-03
+date: 2026-11-05
 tags: procurement, agents, supply-chain
 category: procurement
 help_routes: grp.org.procurement.purchase_orders
@@ -76,6 +76,16 @@ The buying company is notified and answers on the line: it accepts the new price
 If the supplier cannot supply the quantity ordered, or sells only in larger lots, ask the buying company before you confirm. Open the order, find the product in **Items** and click **Ask for another quantity** under its quantity. Enter the quantity, in the level the Items tab shows (cartons, SKOs or units), and a short note if it helps, then **Ask the organisation**.
 
 The buying company is notified and answers on the line: it accepts the new quantity or keeps the old one. You are notified of the answer. Until every quantity question on the order is answered, the order cannot be confirmed.
+
+## When the supplier cannot make a product
+
+If a supplier cannot make a product on the order, give it to another of your suppliers instead of cancelling it. Open the order, find the product in **Items** and click **Move** on its line. Choose the supplier and how many units to move: move them all, or move part and the rest stays with this supplier.
+
+If that supplier does not sell this SKO yet, the dialog shows the code, name, unit cost and units per carton of its new product, filled in from the current one. Check them, correct the cost, then **Move**: the product is created for the same SKO.
+
+The units go onto that supplier's order in the same state, or onto a new order if it has none, at the price the buying company agreed. If the new supplier's cost is different, the buying company gets the price question described above and answers it on the new order. The buying company is told about the move, and both lines show where the units came from or went.
+
+You can move a line only while you could still cancel it: before production starts and before it is on a stock delivery. If nothing is left on the original order, it is cancelled, unless a deposit was paid on it: then it stays open so the deposit can be recovered.
 
 ## Good habits
 

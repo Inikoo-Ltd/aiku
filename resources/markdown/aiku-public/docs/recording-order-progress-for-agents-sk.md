@@ -1,8 +1,8 @@
 ---
 title: Zaznamenávanie postupu objednávky ako agent
 summary: Pre agentov — dátumy, ktoré zaznamenávate na každej objednávke dodávateľovi (zaplatená záloha, začatie výroby, dokončená výroba, navrhovaný dátum pripravenosti, odovzdanie tovaru) a vaše vlastné číslo objednávky, kedy a kde ich zaznamenať, čo namiesto toho zaznamenáva nakupujúca spoločnosť, a prečo sa chýbajúci dátum zobrazuje ako meškanie.
-date: 2026-11-03
-source_date: 2026-11-03
+date: 2026-11-05
+source_date: 2026-11-05
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -76,6 +76,16 @@ Nakupujúca spoločnosť dostane upozornenie a odpovie na riadku: prijme novú c
 Ak dodávateľ nedokáže dodať objednané množstvo alebo predáva iba vo väčších baleniach, opýtajte sa nakupujúcej spoločnosti skôr, než potvrdíte. Otvorte objednávku, nájdite produkt v **Items** a pod jeho množstvom kliknite na **Ask for another quantity**. Zadajte množstvo v úrovni, ktorú zobrazuje karta Items (kartóny, SKO alebo kusy), prípadne krátku poznámku, ak pomôže, a potom **Ask the organisation**.
 
 Nakupujúca spoločnosť dostane upozornenie a odpovie na riadku: prijme nové množstvo, alebo ponechá staré. O odpovedi dostanete upozornenie vy. Kým nie je zodpovedaná každá otázka k množstvu na objednávke, objednávku nemožno potvrdiť.
+
+## Keď dodávateľ nevie vyrobiť produkt
+
+Ak dodávateľ nevie vyrobiť produkt z objednávky, dajte ho inému zo svojich dodávateľov namiesto zrušenia. Otvorte objednávku, nájdite produkt v <b>Items</b> (položky) a kliknite na <b>Move</b> (presunúť) na jeho riadku. Vyberte dodávateľa a koľko kusov presunúť: všetky, alebo len časť a zvyšok zostane u tohto dodávateľa.
+
+Ak tento dodávateľ ešte nepredáva toto SKO, dialóg ukáže kód, názov, jednotkovú cenu a počet kusov v kartóne jeho nového produktu, vyplnené podľa súčasného. Skontrolujte ich, opravte cenu a kliknite na <b>Move</b>: produkt sa vytvorí pre to isté SKO.
+
+Kusy prejdú na objednávku tohto dodávateľa v rovnakom stave, alebo na novú objednávku, ak žiadnu nemá, za cenu, ktorú dohodla nakupujúca spoločnosť. Ak je cena nového dodávateľa iná, nakupujúca spoločnosť dostane otázku na cenu opísanú vyššie a odpovie na ňu na novej objednávke. Nakupujúca spoločnosť dostane o presune upozornenie a oba riadky ukazujú, odkiaľ kusy prišli alebo kam odišli.
+
+Riadok môžete presunúť len dovtedy, kým by ste ho ešte mohli zrušiť: pred začiatkom výroby a skôr, než je na dodávke zásob. Ak na pôvodnej objednávke nič nezostane, zruší sa, pokiaľ na ňu nebola zaplatená záloha: vtedy zostane otvorená, aby sa záloha dala získať späť.
 
 ## Dobré návyky
 
