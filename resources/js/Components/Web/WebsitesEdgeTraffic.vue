@@ -178,12 +178,13 @@ const originSplit = computed(() => {
     const varnish = sum(counted, (day) => Math.max(0, (reachedOf(day) ?? 0) - (num(day, "requests_octane") ?? 0))).total
     return { octane, varnish, notCounted: totals.value.reached - reachedCounted }
 })
-const towardsUs = ["dynamic", "miss", "bypass", "expired", "other"]
+const towardsUs = ["dynamic", "miss", "redirect", "bypass", "expired", "other"]
 const sankeyNodes = computed(() => [
     { id: "requests", label: ctrans("Page requests"), value: totals.value.requests, color: "#9ca3af", column: 0 },
     { id: "dynamic", label: ctrans("Dynamic"), value: cacheTotal("requests_dynamic"), color: "#eda100", column: 1, note: ctrans("not cacheable"), href: bySite("-requests_dynamic") },
     { id: "miss", label: ctrans("Miss"), value: cacheTotal("requests_miss"), color: "#eb6834", column: 1, note: ctrans("no copy yet"), href: bySite("-requests_miss") },
-    { id: "bypass", label: ctrans("Bypass"), value: cacheTotal("requests_bypass"), color: "#e87ba4", column: 1, note: ctrans("a rule said skip"), href: bySite("-requests_bypass") },
+    { id: "redirect", label: ctrans("Redirect"), value: cacheTotal("requests_bypass_redirect"), color: "#c084fc", column: 1, note: ctrans("redirect not kept"), href: bySite("-requests_bypass_redirect") },
+    { id: "bypass", label: ctrans("Bypass"), value: cacheTotal("requests_bypass") - cacheTotal("requests_bypass_redirect"), color: "#e87ba4", column: 1, note: ctrans("a rule said skip"), href: bySite("-requests_bypass") },
     { id: "expired", label: ctrans("Expired"), value: cacheTotal("requests_expired"), color: "#1baf7a", column: 1, note: ctrans("copy too old"), href: bySite("-requests_expired") },
     { id: "other", label: ctrans("Other"), value: cacheTotal("requests_other_cache_status"), color: "#9ca3af", column: 1 },
     { id: "reached", label: ctrans("Reached our servers"), value: totals.value.reached, color: "#6b7280", column: 2, href: bySite("-requests_reached") },
@@ -212,7 +213,8 @@ const cacheDatasets = computed(() => [
     { label: ctrans("Miss"), color: "#eb6834", data: series((day) => num(day, "requests_miss")), sort: "-requests_miss" },
     { label: ctrans("Expired"), color: "#1baf7a", data: series((day) => num(day, "requests_expired")), sort: "-requests_expired" },
     { label: ctrans("Dynamic"), color: "#eda100", data: series((day) => num(day, "requests_dynamic")), sort: "-requests_dynamic" },
-    { label: ctrans("Bypass"), color: "#e87ba4", data: series((day) => num(day, "requests_bypass")), sort: "-requests_bypass" },
+    { label: ctrans("Redirect"), color: "#c084fc", data: series((day) => num(day, "requests_bypass_redirect")), sort: "-requests_bypass_redirect" },
+    { label: ctrans("Bypass"), color: "#e87ba4", data: series((day) => { const bypass = num(day, "requests_bypass"); return bypass === null ? null : bypass - (num(day, "requests_bypass_redirect") ?? 0) }), sort: "-requests_bypass" },
     { label: ctrans("Other"), color: "#9ca3af", data: series((day) => num(day, "requests_other_cache_status")), sort: "-requests" },
 ])
 

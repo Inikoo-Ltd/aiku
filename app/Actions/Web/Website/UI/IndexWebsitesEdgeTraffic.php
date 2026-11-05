@@ -127,6 +127,7 @@ class IndexWebsitesEdgeTraffic extends OrgAction
             $count('requests_expired', __('Expired'), hidden: true);
             $count('requests_dynamic', __('Dynamic'), hidden: true);
             $count('requests_bypass', __('Bypass'), hidden: true);
+            $count('requests_bypass_redirect', __('Bypass redirects'), __('Of the bypassed requests, redirects Cloudflare did not keep: bot copies, 302s and redirects carrying cookies'), hidden: true);
             $count('requests_none', __('Rules'), __('Answered by Cloudflare rules: blocks, challenges'), hidden: true);
             $count('requests_2xx', __('2xx'), hidden: true);
             $count('requests_3xx', __('3xx'), hidden: true);

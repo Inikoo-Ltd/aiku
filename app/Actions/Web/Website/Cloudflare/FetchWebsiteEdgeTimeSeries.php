@@ -62,6 +62,7 @@ class FetchWebsiteEdgeTimeSeries
         'requests_expired',
         'requests_dynamic',
         'requests_bypass',
+        'requests_bypass_redirect',
         'requests_none',
         'requests_other_cache_status',
         'origin_response_ms_total',
@@ -260,7 +261,7 @@ class FetchWebsiteEdgeTimeSeries
           viewer {
             zones(filter: {zoneTag_in: $zones}) {
               zoneTag
-              cache: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count avg { originResponseDurationMs } dimensions { date cacheStatus } }
+              cache: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count avg { originResponseDurationMs } dimensions { date cacheStatus edgeResponseStatus } }
               status: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date edgeResponseStatus } }
               agent: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}}) { count dimensions { date userAgentBrowser } }
               far: httpRequestsAdaptiveGroups(limit: $rowsPerGroup, filter: {{$filter}, clientCountryName_in: $far}) { count dimensions { date cacheStatus } }
@@ -293,6 +294,9 @@ class FetchWebsiteEdgeTimeSeries
             $column = $this->cacheStatusColumn($group['dimensions']['cacheStatus']);
             $add($date, 'requests', $group['count']);
             $add($date, $column, $group['count']);
+            if ($column === 'requests_bypass' && intdiv((int) ($group['dimensions']['edgeResponseStatus'] ?? 0), 100) === 3) {
+                $add($date, 'requests_bypass_redirect', $group['count']);
+            }
 
             $originMs = $group['avg']['originResponseDurationMs'] ?? 0;
             if ($originMs > 0 && !in_array($column, ['requests_hit', 'requests_none'])) {

@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $requests_expired
  * @property int $requests_dynamic
  * @property int $requests_bypass
+ * @property int $requests_bypass_redirect
  * @property int $requests_none
  * @property int $requests_other_cache_status
  * @property int $origin_response_ms_total

@@ -8,6 +8,7 @@
 
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Actions\Web\Website\Cloudflare\FetchWebsiteEdgeTimeSeries;
+use App\Actions\Web\Website\Cloudflare\MonitorEdgeRedirects;
 use App\Actions\Web\Website\UI\GetWebsitesEdgeTraffic;
 use App\Actions\Web\Website\UI\IndexWebsitesEdgeDatacenters;
 use App\Actions\Web\Website\UI\IndexWebsitesEdgeTraffic;
@@ -72,7 +73,8 @@ it('stores what cloudflare did with storefront html per day and rolls the days u
             edgeGroup('2026-10-30', ['cacheStatus' => 'miss'], 20, 300),
             edgeGroup('2026-10-30', ['cacheStatus' => 'expired'], 10, 250),
             edgeGroup('2026-10-30', ['cacheStatus' => 'dynamic'], 15, 200),
-            edgeGroup('2026-10-30', ['cacheStatus' => 'bypass'], 8, 150),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'bypass', 'edgeResponseStatus' => 200], 5, 150),
+            edgeGroup('2026-10-30', ['cacheStatus' => 'bypass', 'edgeResponseStatus' => 301], 3, 150),
             edgeGroup('2026-10-30', ['cacheStatus' => 'none'], 6, -1),
             edgeGroup('2026-10-30', ['cacheStatus' => 'ignored'], 2, 100),
         ],
@@ -112,6 +114,7 @@ it('stores what cloudflare did with storefront html per day and rolls the days u
         'requests_expired'            => 10,
         'requests_dynamic'            => 15,
         'requests_bypass'             => 8,
+        'requests_bypass_redirect'    => 3,
         'requests_none'               => 6,
         'requests_other_cache_status' => 2,
         'origin_response_ms_total'    => 20 * 300 + 10 * 250 + 15 * 200 + 8 * 150 + 2 * 100,
@@ -482,4 +485,26 @@ it('stores each visitor country per day and shows its edge copy share beside the
     $countries = collect(GetWebsitesEdgeTraffic::run($this->organisation->group, $this->user, $this->website->slug, 7)['countries'])->keyBy('code');
     expect([$countries['SG']['edge_requests'], $countries['SG']['edge_requests_hit']])->toBe([80, 60])
         ->and($countries['FR']['edge_requests'])->toBeNull();
+});
+
+it('flags an edge redirect that differs from what our servers answer, or that loops', function () {
+    $answers = [
+        'https://shop.test/ok'        => ['edge' => 'https://shop.test/page', 'origin' => 'https://shop.test/page'],
+        'https://shop.test/page'      => ['edge' => null, 'origin' => null],
+        'https://shop.test/stale'     => ['edge' => 'https://shop.test/old', 'origin' => '/new'],
+        'https://shop.test/a'         => ['edge' => '/b', 'origin' => '/b'],
+        'https://shop.test/b'         => ['edge' => 'https://shop.test/a', 'origin' => 'https://shop.test/a'],
+    ];
+    Http::fake(function (Request $request) use ($answers) {
+        $side     = $request->header('User-Agent')[0] === MonitorEdgeRedirects::ORIGIN_AGENT ? 'origin' : 'edge';
+        $location = $answers[$request->url()][$side];
+
+        return $location === null ? Http::response('page') : Http::response('', 301, ['Location' => $location]);
+    });
+
+    $monitor = new MonitorEdgeRedirects();
+
+    expect($monitor->check('https://shop.test/ok'))->toBeNull()
+        ->and($monitor->check('https://shop.test/stale'))->toBe('Cloudflare sends to https://shop.test/old, our servers to https://shop.test/new')
+        ->and($monitor->check('https://shop.test/a'))->toBe('redirect loop: https://shop.test/a -> https://shop.test/b -> https://shop.test/a');
 });

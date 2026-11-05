@@ -67,6 +67,7 @@ use App\Actions\DevOps\MonitorRetinaApiInflow;
 use App\Actions\DevOps\WebsiteHealthLog\MonitorWebsitesUptime;
 use App\Actions\Web\Website\Cloudflare\FetchFirewallBlockedCountryEvents;
 use App\Actions\Web\Website\Cloudflare\MonitorCloudflarePurges;
+use App\Actions\Web\Website\Cloudflare\MonitorEdgeRedirects;
 use App\Actions\Reviews\AutoPublishReviews;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Wix\Order\FetchWixOrders;
@@ -378,6 +379,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'MonitorCloudflarePurges',
                 ),
                 name: 'MonitorCloudflarePurges',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(MonitorEdgeRedirects::makeJob())->hourlyAt(20)->withoutOverlapping()->onOneServer()->sentryMonitor(
+                    monitorSlug: 'MonitorEdgeRedirects',
+                ),
+                name: 'MonitorEdgeRedirects',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );
