@@ -124,6 +124,13 @@ trait WithCustomerSalesChannelSettingsBlueprint
                     "label" => __("Shipping"),
                     'icon' => 'fa-light fa-truck',
                     'fields' => [
+                        'fulfillment_policy_id' => [
+                            'type' => 'select',
+                            'label' => __('eBay postage policy'),
+                            'information' => __('Pick one of your own eBay postage policies to use it as it is: we never change it. Saving the service, price or dispatch time below writes them to our own policy for this channel and uses that one instead.'),
+                            'options' => $this->ebayPolicyOptions($user->getFulfilmentPolicies(), 'fulfillmentPolicies', 'fulfillmentPolicyId'),
+                            'value' => $user->fulfillment_policy_id,
+                        ],
                         'shipping_service' => [
                             'type' => 'select',
                             'label' => __('Shipping service'),
@@ -146,6 +153,13 @@ trait WithCustomerSalesChannelSettingsBlueprint
                     "label" => __("Returns"),
                     'icon' => 'fa-light fa-arrow-left',
                     'fields' => [
+                        'return_policy_id' => [
+                            'type' => 'select',
+                            'label' => __('eBay return policy'),
+                            'information' => __('Pick one of your own eBay return policies to use it as it is: we never change it. Saving the settings below writes them to our own policy for this channel and uses that one instead.'),
+                            'options' => $this->ebayPolicyOptions($user->getReturnPolicies(), 'returnPolicies', 'returnPolicyId'),
+                            'value' => $user->return_policy_id,
+                        ],
                         'return_accepted' => [
                             'type' => 'toggle',
                             'label' => __('Returns Accepted'),
@@ -227,6 +241,25 @@ trait WithCustomerSalesChannelSettingsBlueprint
             ],
             ...$properties
         ];
+    }
+
+    /**
+     * @return array<int, array{label: string, value: string}>
+     */
+    private function ebayPolicyOptions(mixed $response, string $listKey, string $idKey): array
+    {
+        if (EbayUser::ebayResponseError($response)) {
+            return [];
+        }
+
+        return collect(Arr::get($response, $listKey, []))
+            ->filter(fn ($policy) => filled(Arr::get($policy, $idKey)))
+            ->map(fn ($policy) => [
+                'label' => (string) Arr::get($policy, 'name', Arr::get($policy, $idKey)),
+                'value' => (string) Arr::get($policy, $idKey),
+            ])
+            ->values()
+            ->all();
     }
 
     /**

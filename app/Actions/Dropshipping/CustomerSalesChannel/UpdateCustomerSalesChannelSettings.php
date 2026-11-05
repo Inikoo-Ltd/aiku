@@ -69,6 +69,8 @@ class UpdateCustomerSalesChannelSettings extends OrgAction
             'return_payer'               => ['sometimes', 'required_if:return_accepted,true'],
             'return_within'              => ['sometimes', 'required_if:return_accepted,true'],
             'return_description'         => ['nullable', 'string'],
+            'fulfillment_policy_id'      => ['sometimes', 'required', 'string'],
+            'return_policy_id'           => ['sometimes', 'required', 'string'],
         ];
     }
 
