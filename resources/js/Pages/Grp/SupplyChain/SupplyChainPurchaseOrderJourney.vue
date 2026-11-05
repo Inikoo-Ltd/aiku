@@ -275,7 +275,7 @@ function openMark(ribbon: JourneyRibbon, segment: JourneySegment, event: MouseEv
     markPopover.value?.toggle(event)
 }
 
-const isSelecting = computed(() => !!props.canDelete && !!props.deleteRoute && ["open", "in_process", "submitted", "confirmed"].includes(active.value?.tab ?? ""))
+const isSelecting = computed(() => !!props.canDelete && !!props.deleteRoute && ["open", "in_process", "submitted", "confirmed", "import"].includes(active.value?.tab ?? ""))
 const selectedIds = ref<Set<number>>(new Set())
 const deletableOnPage = computed(() => (ribbons.value ?? []).filter((ribbon) => ribbon.is_deletable))
 const selectedRibbons = computed(() => deletableOnPage.value.filter((ribbon) => selectedIds.value.has(ribbon.id)))
