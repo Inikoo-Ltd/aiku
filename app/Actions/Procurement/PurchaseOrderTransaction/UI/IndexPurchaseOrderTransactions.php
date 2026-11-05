@@ -31,6 +31,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCbmInContainer;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -254,7 +255,18 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->whereRaw("(stock_delivery_items.data->>'purchase_order_transaction_id')::bigint = purchase_order_transactions.id")
             ->whereNotIn('stock_delivery_items.state', [StockDeliveryItemStateEnum::CANCELLED->value, StockDeliveryItemStateEnum::NOT_RECEIVED->value])
             ->whereNull('stock_deliveries.deleted_at')
-            ->selectRaw("coalesce(json_agg(json_build_object('id', stock_deliveries.id, 'reference', stock_deliveries.reference, 'slug', stock_deliveries.slug, 'state', stock_deliveries.state, 'unit_quantity', stock_delivery_items.unit_quantity) order by stock_deliveries.id), '[]')");
+            ->selectRaw("coalesce(json_agg(json_build_object('id', stock_deliveries.id, 'reference', stock_deliveries.reference, 'slug', stock_deliveries.slug, 'state', stock_deliveries.state, 'unit_quantity', stock_delivery_items.unit_quantity, 'cbm', (".self::containerVolumeSql().")) order by stock_deliveries.id), '[]')");
+    }
+
+    /**
+     * The space taken in the container, as the container page totals it.
+     */
+    private static function containerVolumeSql(): string
+    {
+        return 'select sum('.SetStockDeliveryItemCbmInContainer::ITEM_VOLUME_SQL.") from stock_delivery_items as sdi
+            left join supplier_products as sp on sp.id = sdi.supplier_product_id
+            where sdi.stock_delivery_id = stock_deliveries.id and sdi.deleted_at is null
+            and sdi.state != '".StockDeliveryItemStateEnum::CANCELLED->value."'";
     }
 
     /**

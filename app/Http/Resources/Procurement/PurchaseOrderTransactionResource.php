@@ -309,6 +309,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'id'            => $container['id'],
                 'reference'     => $container['reference'],
                 'unit_quantity' => (float) $container['unit_quantity'],
+                'cbm'           => $container['cbm'] === null ? null : round((float) $container['cbm'], 2),
                 'show_route'    => $viewingOrganisation instanceof Organisation ? [
                     'name'       => $isAgentViewing ? 'grp.org.agent.stock_deliveries.show' : 'grp.org.procurement.stock_deliveries.show',
                     'parameters' => [$viewingOrganisation->slug, $container['slug']],

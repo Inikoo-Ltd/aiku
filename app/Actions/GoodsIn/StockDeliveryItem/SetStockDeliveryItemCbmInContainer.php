@@ -30,6 +30,8 @@ class SetStockDeliveryItemCbmInContainer extends OrgAction
         StockDeliveryStateEnum::READY_TO_SHIP,
     ];
 
+    public const string ITEM_VOLUME_SQL = 'case when '.SetStockDeliveryItemPackedInside::IS_PACKED_INSIDE_SQL.' then 0 else coalesce(sdi.cbm_in_container, sp.cbm * sdi.unit_quantity / nullif(sp.units_per_carton, 0)) end';
+
     private StockDeliveryItem $stockDeliveryItem;
 
     public function authorize(ActionRequest $request): bool

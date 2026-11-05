@@ -176,12 +176,18 @@ function onPacked() {
 			<template #cell(quantity)="{ item: stock }"><span class="tabular-nums">{{ locale.number(stock.quantity) }}</span></template>
 			<template #cell(containers)="{ item: stock }">
 				<div v-if="stock.agent_warehouse?.containers?.length" class="flex flex-wrap gap-1">
-					<template v-for="container in stock.agent_warehouse.containers" :key="container.id">
-						<Link v-if="container.show_route" :href="route(container.show_route.name, container.show_route.parameters)" class="secondaryLink whitespace-nowrap text-xs">
+					<span v-for="container in stock.agent_warehouse.containers" :key="container.id" class="inline-flex items-center gap-1 whitespace-nowrap text-xs">
+						<Link v-if="container.show_route" :href="route(container.show_route.name, container.show_route.parameters)" class="secondaryLink">
 							{{ container.reference }} ({{ locale.number(container.unit_quantity) }})
 						</Link>
-						<span v-else class="whitespace-nowrap text-xs">{{ container.reference }} ({{ locale.number(container.unit_quantity) }})</span>
-					</template>
+						<span v-else>{{ container.reference }} ({{ locale.number(container.unit_quantity) }})</span>
+						<span
+							v-if="container.cbm !== null && container.cbm !== undefined"
+							v-tooltip="ctrans('Space already taken in container :container', { container: container.reference })"
+							class="rounded bg-gray-100 px-1.5 py-0.5 tabular-nums text-gray-600">
+							{{ ctrans(":cbm CBM", { cbm: locale.number(container.cbm) }) }}
+						</span>
+					</span>
 				</div>
 			</template>
 			<template #cell(actions)="{ item: stock }">
