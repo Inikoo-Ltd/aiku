@@ -31,7 +31,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
     private const array PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
-    private const array TABS = ['open', 'needs_action', 'import', 'completed'];
+    private const array TABS = ['open', 'in_process', 'needs_action', 'import', 'completed'];
 
     private const array SORTS = ['needs_action', 'newest', 'oldest', 'value', 'lowest_value'];
 
@@ -110,6 +110,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 'overdue'          => $open->where('status', 'overdue')->count(),
                 'overdue_percent'  => $openRate('overdue'),
                 'completed'        => $anyTab->where('status', 'completed')->count(),
+                'in_process'       => $open->where('is_in_process', true)->count(),
                 'needs_action'     => $open->whereIn('status', ['overdue', 'at_risk'])->count(),
                 'import'           => $open->where('is_import', true)->count(),
             ],
@@ -450,6 +451,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'suppliers'         => $suppliers,
             'country_code'      => $row->country_code,
             'country_name'      => $row->country_name,
+            'is_in_process'     => $row->state === 'in_process',
             'is_import'         => $row->state !== 'in_process' && $journey !== 'partner' && $this->crossesCustoms($row->organisation_country_code, $row->country_code),
             'buyer_id'          => $row->buyer_id,
             'buyer_name'        => $row->buyer_id ? strtok((string) ($row->buyer_name ?: $row->buyer_username), ' ') : null,
@@ -603,6 +605,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     private function inTab(array $ribbon, string $tab): bool
     {
         return match ($tab) {
+            'in_process'   => $ribbon['is_in_process'] && $ribbon['status'] !== 'completed',
             'needs_action' => in_array($ribbon['status'], ['overdue', 'at_risk']),
             'import'       => $ribbon['is_import'] && $ribbon['status'] !== 'completed',
             'completed'    => $ribbon['status'] === 'completed',

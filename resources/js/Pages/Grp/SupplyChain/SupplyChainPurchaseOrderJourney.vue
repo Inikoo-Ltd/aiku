@@ -22,7 +22,7 @@ interface FacetOption {
 }
 
 type FilterGroup = "organisation" | "journey" | "agent" | "supplier" | "buyer" | "type" | "country" | "stage" | "status"
-type Tab = "open" | "needs_action" | "import" | "completed"
+type Tab = "open" | "in_process" | "needs_action" | "import" | "completed"
 type Sort = "needs_action" | "newest" | "oldest" | "value" | "lowest_value"
 
 const props = defineProps<{
@@ -43,6 +43,7 @@ const props = defineProps<{
         overdue: number
         overdue_percent: number
         completed: number
+        in_process: number
         needs_action: number
         import: number
     }
@@ -100,6 +101,7 @@ const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => 
 
 const tabs = computed<{ key: Tab; label: string; count: number; tooltip?: string }[]>(() => !summary.value ? [] : [
     { key: "open", label: ctrans("Open"), count: summary.value.open, tooltip: ctrans("Every order not completed yet: In process (not sent to the supplier yet), Submitted and Confirmed, plus orders already received whose products are not online yet") },
+    { key: "in_process", label: ctrans("In process"), count: summary.value.in_process, tooltip: ctrans("Orders still being prepared, not sent to the supplier yet") },
     { key: "needs_action", label: ctrans("Needs action"), count: summary.value.needs_action },
     { key: "import", label: ctrans("Import"), count: summary.value.import, tooltip: ctrans("Orders submitted to suppliers outside our customs area (UK, or EU for EU organisations), not yet completed. Orders still in process are left out") },
     { key: "completed", label: ctrans("Completed"), count: summary.value.completed }
