@@ -498,6 +498,12 @@ test('un-favourite', function (Favourite $favourite) {
 
 
 test('add back in stock reminder to customer', function (Customer $customer) {
+    $quantity = $this->product->available_quantity;
+    $this->product->update(['available_quantity' => 5]);
+    expect(fn () => StoreBackInStockReminder::make()->action($customer, $this->product, []))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and($customer->backInStockReminder()->count())->toBe(0);
+    $this->product->update(['available_quantity' => $quantity]);
+
     $reminder = StoreBackInStockReminder::make()->action(
         $customer,
         $this->product,

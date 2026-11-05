@@ -1103,6 +1103,39 @@ test('daily sales tasks go to the shopkeeper in charge, or the webmasters, quiet
         ->and($fallback->department)->toBe('webmaster');
 });
 
+test('daily back in stock task lists only reminders set before the product came back, and none someone already did, so a reminder the email never sends does not return every day (HELP-4541)', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class, \App\Events\BroadcastStaffTaskChanged::class]);
+    \Illuminate\Support\Facades\Notification::fake();
+    $shopkeeper = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->organisation->group, \App\Models\SysAdmin\Guest::factory()->definition())->getUser();
+    $settings   = $this->shop->settings;
+    data_set($settings, 'catalog.shopkeeper_in_charge_id', $shopkeeper->id);
+    $this->shop->update(['settings' => $settings]);
+
+    [, $product] = createProduct($this->shop);
+    $customer    = createCustomer($this->shop);
+    \Illuminate\Support\Facades\DB::table('back_in_stock_reminders')->where('shop_id', $this->shop->id)->delete();
+    $reminder = \App\Models\Comms\BackInStockReminder::create([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $customer->id,
+        'product_id'      => $product->id,
+    ]);
+    \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)->update(['state' => 'active', 'available_quantity' => 50, 'deleted_at' => null, 'back_in_stock_since' => $reminder->created_at->copy()->addDay()]);
+
+    $restocked = \App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh(), withAi: false);
+    $task      = \App\Models\Tasks\StaffTask::where('reference', $restocked['sales_back_in_stock'])->firstOrFail();
+    expect($task->data['product_ids'])->toBe([$product->id]);
+
+    $task->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE, 'closed_at' => now()]);
+    expect(\App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh(), withAi: false)['sales_back_in_stock'] ?? null)->toBeNull();
+
+    $task->delete();
+    \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)->update(['back_in_stock_since' => $reminder->created_at->copy()->subDay()]);
+
+    expect(\App\Actions\Tasks\GenerateDailySalesTasks::make()->handle($this->shop->fresh(), withAi: false)['sales_back_in_stock'] ?? null)->toBeNull();
+});
+
 test('dropshipping sales tasks ask merchants how their store is going instead of treating them as wholesale buyers due to reorder', function () {
     \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastStaffTaskBadgeUpdate::class, \App\Events\BroadcastStaffTaskChanged::class]);
     $customer = createCustomer($this->shop);

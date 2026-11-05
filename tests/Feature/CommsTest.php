@@ -3881,6 +3881,34 @@ test('process back in stock per outbox returns early when shop is not aiku', fun
     expect($outbox->emailBulkRuns()->count())->toBe($before);
 });
 
+test('back in stock email picks products restocked in the last week even after a later run, and leaves older restocks', function () {
+    \Illuminate\Support\Facades\Queue::fake();
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::OOS_NOTIFICATION);
+    $outbox->update(['last_sent_at' => now()]);
+    $this->shop->update(['is_aiku' => true]);
+    \Illuminate\Support\Facades\DB::table('back_in_stock_reminders')->where('shop_id', $this->shop->id)->delete();
+
+    [, $product] = createProduct($this->shop);
+    BackInStockReminder::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'customer_id'     => $this->customer->id,
+        'product_id'      => $product->id,
+        'created_at'      => now()->subDays(20),
+    ]);
+    \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)->update(['available_quantity' => 10, 'deleted_at' => null, 'back_in_stock_since' => now()->subDays(10)]);
+
+    ProcessBackInStockPerOutbox::run($outbox->fresh());
+    ProcessBackInStockRecipient::assertNotPushed();
+
+    \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)->update(['back_in_stock_since' => now()->subDays(2)]);
+    ProcessBackInStockPerOutbox::run($outbox->fresh());
+    ProcessBackInStockRecipient::assertPushed(1);
+
+    $this->shop->update(['is_aiku' => false]);
+});
+
 test('testing update product stock with no reminders is a no-op', function () {
     TestingUpdateProductStock::run();
 

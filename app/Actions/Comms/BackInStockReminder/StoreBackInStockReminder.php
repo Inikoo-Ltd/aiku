@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\Comms\BackInStockReminder;
 use App\Models\CRM\Customer;
+use Illuminate\Validation\ValidationException;
 
 class StoreBackInStockReminder extends OrgAction
 {
@@ -78,6 +79,10 @@ class StoreBackInStockReminder extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
         $this->initialisationFromShop($customer->shop, $modelData);
+
+        if ($this->strict && $product->available_quantity > 0) {
+            throw ValidationException::withMessages(['product' => __('In stock')]);
+        }
 
         return $this->handle($customer, $product, $this->validatedData);
     }

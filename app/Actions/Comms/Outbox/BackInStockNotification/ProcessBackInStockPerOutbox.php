@@ -30,7 +30,6 @@ class ProcessBackInStockPerOutbox
         }
 
         $currentDateTime = Carbon::now()->utc();
-        $lastOutBoxSent = $outbox->last_sent_at;
 
         // make customers as the main table
         $baseQuery = DB::table('customers');
@@ -50,9 +49,7 @@ class ProcessBackInStockPerOutbox
         $baseQuery->where('products.available_quantity', '>', 0);
         $baseQuery->where('products.back_in_stock_since', '>', DB::raw('back_in_stock_reminders.created_at'));
 
-        if ($lastOutBoxSent) {
-            $baseQuery->where('products.back_in_stock_since', '>', $lastOutBoxSent);
-        }
+        $baseQuery->where('products.back_in_stock_since', '>=', $currentDateTime->copy()->subDays(7));
 
         // check another customers condition
         $baseQuery->whereNull('customers.deleted_at');

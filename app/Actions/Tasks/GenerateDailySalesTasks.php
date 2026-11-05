@@ -388,7 +388,10 @@ class GenerateDailySalesTasks
     }
 
     /**
-     * Products in stock again with customers still waiting for them, the most awaited first.
+     * Products in stock again with customers still waiting for them, the most awaited first. Only reminders set before the
+     * product came back count, as with the back in stock email: one set while it was already in stock is never sent or
+     * cleared, and listing it would bring the same task back every morning (HELP-4541). Products on a task someone worked
+     * on in the last month are left off too, as the email can leave reminders behind.
      */
     private function backInStock(Shop $shop): ?array
     {
@@ -396,6 +399,8 @@ class GenerateDailySalesTasks
             ->join('products', 'products.id', '=', 'back_in_stock_reminders.product_id')
             ->where('back_in_stock_reminders.shop_id', $shop->id)
             ->where('products.available_quantity', '>', 0)
+            ->whereColumn('products.back_in_stock_since', '>', 'back_in_stock_reminders.created_at')
+            ->whereNotIn('products.id', $this->recentlyListed($shop, 'sales_back_in_stock', 'product_ids', 30))
             ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
             ->whereNull('products.deleted_at')
             ->groupBy('products.id', 'products.slug', 'products.code', 'products.name')
@@ -411,7 +416,9 @@ class GenerateDailySalesTasks
         $waiting = DB::table('back_in_stock_reminders')
             ->join('customers', 'customers.id', '=', 'back_in_stock_reminders.customer_id')
             ->whereNotIn('customers.id', $this->excludedCustomerIds($shop))
+            ->join('products', 'products.id', '=', 'back_in_stock_reminders.product_id')
             ->whereIn('back_in_stock_reminders.product_id', $products->pluck('id'))
+            ->whereColumn('products.back_in_stock_since', '>', 'back_in_stock_reminders.created_at')
             ->where('back_in_stock_reminders.shop_id', $shop->id)
             ->whereNull('customers.deleted_at')
             ->get(['back_in_stock_reminders.product_id', 'customers.name', 'customers.contact_name', 'customers.reference', 'customers.slug'])
