@@ -73,6 +73,7 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::WEBSITE_REDIRECTS => $this->websiteRedirects($target),
             McpChangeTypeEnum::STOCK_LOCATIONS => $this->stockLocations($target),
             McpChangeTypeEnum::PRODUCTION_SETUP => $this->productionSetup($target),
+            McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->supplierProductLinks($target),
         };
     }
 
@@ -98,6 +99,13 @@ class GetMcpChangeSnapshot
             return collect($snapshot['org_stocks'])
                 ->map(fn (array $orgStock) => $orgStock['code'].': '.$orgStock['state'].($orgStock['scheduled'] ? ' (scheduled '.$orgStock['scheduled']['to_state'].')' : ''))
                 ->implode(', ');
+        }
+
+        if ($type === McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS) {
+            return collect($snapshot['links'])
+                ->groupBy('sko')
+                ->map(fn ($links, string $sko) => $sko.': '.$links->map(fn (array $link) => $link['supplier'].' '.$link['supplier_product'])->implode(', '))
+                ->implode('; ') ?: 'not linked to any supplier';
         }
 
         if ($type === McpChangeTypeEnum::SUPPLIER_PRODUCT_AVAILABILITY) {
@@ -443,6 +451,22 @@ class GetMcpChangeSnapshot
                         ])->values()->all(),
                     ])->values()->all(),
                 ])
+                ->all(),
+        ];
+    }
+
+    private function supplierProductLinks(array $target): array
+    {
+        return [
+            'links' => DB::table('org_stock_has_org_supplier_products')
+                ->join('org_stocks', 'org_stocks.id', '=', 'org_stock_has_org_supplier_products.org_stock_id')
+                ->join('org_supplier_products', 'org_supplier_products.id', '=', 'org_stock_has_org_supplier_products.org_supplier_product_id')
+                ->join('supplier_products', 'supplier_products.id', '=', 'org_supplier_products.supplier_product_id')
+                ->join('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id')
+                ->whereIn('org_stock_has_org_supplier_products.org_stock_id', $target['org_stock_ids'])
+                ->orderBy('org_stock_has_org_supplier_products.id')
+                ->get(['org_stock_has_org_supplier_products.id', 'org_stocks.code as sko', 'suppliers.code as supplier', 'supplier_products.code as supplier_product'])
+                ->mapWithKeys(fn ($row) => [$row->id => ['sko' => $row->sko, 'supplier' => $row->supplier, 'supplier_product' => $row->supplier_product]])
                 ->all(),
         ];
     }

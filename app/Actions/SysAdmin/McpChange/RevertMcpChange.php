@@ -45,7 +45,9 @@ use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryCost;
+use App\Models\Goods\StockHasSupplierProduct;
 use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockHasOrgSupplierProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -117,6 +119,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::WEBSITE_REDIRECTS => $this->revertWebsiteRedirects($mcpChange->before),
                 McpChangeTypeEnum::STOCK_LOCATIONS => $this->revertStockLocations($target, $mcpChange->before, $mcpChange->after, $user),
                 McpChangeTypeEnum::PRODUCTION_SETUP => $this->revertProductionSetup($target, $mcpChange->before),
+                McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->revertSupplierProductLinks($mcpChange),
             };
 
             $mcpChange->update([
@@ -336,6 +339,38 @@ class RevertMcpChange
                 'steps'     => $steps,
             ]);
         }
+    }
+
+    /**
+     * Takes off the supplier links the change added, and only the group stock links it created. A supplier product
+     * the change created is left in place, as purchase orders may have used it since, but made unavailable so it
+     * cannot be ordered while nothing links it. Linking re-syncs a reused supplier product's packing from the SKO,
+     * so that packing is put back.
+     */
+    private function revertSupplierProductLinks(McpChange $mcpChange): void
+    {
+        $addedLinkIds = array_diff(array_keys($mcpChange->after['links']), array_keys($mcpChange->before['links']));
+        $orgStockIds  = OrgStockHasOrgSupplierProduct::whereIn('id', $addedLinkIds)->pluck('org_stock_id')->unique();
+
+        OrgStockHasOrgSupplierProduct::whereIn('id', $addedLinkIds)->delete();
+
+        foreach (Arr::get($mcpChange->data, 'created_stock_supplier_links', []) as $stockHasSupplierProductId) {
+            if (!OrgStockHasOrgSupplierProduct::where('stock_has_supplier_product_id', $stockHasSupplierProductId)->exists()) {
+                StockHasSupplierProduct::whereKey($stockHasSupplierProductId)->delete();
+            }
+        }
+
+        foreach (Arr::get($mcpChange->data, 'previous_packing', []) as $supplierProductId => $packing) {
+            SupplierProduct::whereKey($supplierProductId)->first()?->update($packing);
+        }
+
+        foreach (SupplierProduct::whereIn('id', Arr::get($mcpChange->data, 'created_supplier_product_ids', []))->get() as $supplierProduct) {
+            if (!StockHasSupplierProduct::where('supplier_product_id', $supplierProduct->id)->exists()) {
+                UpdateSupplierProduct::make()->action($supplierProduct, ['is_available' => false]);
+            }
+        }
+
+        OrgStock::whereIn('id', $orgStockIds)->get()->each->searchable();
     }
 
     private function revertSupplierProductAvailability(array $before): void

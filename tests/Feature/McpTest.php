@@ -1761,6 +1761,119 @@ describe('org stock discontinue tools', function () {
     });
 });
 
+describe('supplier product link tool', function () {
+    beforeEach(function () {
+        createStocks($this->group);
+        $this->orgStocks = createOrgStocks($this->organisation, $this->group->stocks()->orderBy('id')->limit(3)->get()->all());
+        foreach ($this->orgStocks as $orgStock) {
+            $orgStock->update(['state' => OrgStockStateEnum::ACTIVE]);
+            DB::table('org_stock_has_org_supplier_products')->where('org_stock_id', $orgStock->id)->delete();
+        }
+        $this->supplier = App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, App\Models\SupplyChain\Supplier::factory()->definition());
+        $this->user->update(['can_use_mcp_procurement' => true]);
+    });
+
+    test('a user not enrolled for procurement is refused', function () {
+        $this->user->update(['can_use_mcp_procurement' => false]);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\SupplierProductLinkTool::class, [
+            'organisation' => $this->organisation->code,
+            'items'        => [['sko' => $this->orgStocks[0]->code, 'supplier' => $this->supplier->code]],
+            'request_text' => 'attach it',
+        ])->assertHasErrors(['not enabled for this user']);
+    });
+
+    test('creates or reuses the supplier product, skips what it cannot do, logs and reverts', function () {
+        [$toCreate, $toAttach, $noCost] = $this->orgStocks;
+
+        $existing = App\Actions\SupplyChain\SupplierProduct\StoreSupplierProduct::make()->action($this->supplier, array_merge(
+            App\Models\SupplyChain\SupplierProduct::factory()->definition(),
+            ['code' => strtoupper($toAttach->code), 'is_available' => true]
+        ));
+        $preExistingStockLinkId = DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $toAttach->stock_id, 'supplier_product_id' => $existing->id, 'created_at' => now(), 'updated_at' => now()]);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\SupplierProductLinkTool::class, [
+            'organisation' => $this->organisation->code,
+            'items'        => [
+                ['sko' => $toCreate->code, 'supplier' => $this->supplier->code, 'cost' => 12.5, 'units_per_carton' => 20],
+                ['sko' => $toAttach->code, 'supplier' => $this->supplier->code],
+                ['sko' => $noCost->code, 'supplier' => $this->supplier->code],
+                ['sko' => $toCreate->code, 'supplier' => 'NO-SUCH-SUPPLIER'],
+            ],
+            'request_text' => 'attach these to the supplier',
+        ])->assertOk()
+            ->assertSee('"result":"created"')
+            ->assertSee('"result":"attached"')
+            ->assertSee('cost and units_per_carton are needed')
+            ->assertSee('not set up in the organisation');
+
+        $created = App\Models\SupplyChain\SupplierProduct::where('supplier_id', $this->supplier->id)->where('code', $toCreate->code)->firstOrFail();
+        $linkedTo = fn (App\Models\Inventory\OrgStock $orgStock) => DB::table('org_stock_has_org_supplier_products')
+            ->join('org_supplier_products', 'org_supplier_products.id', '=', 'org_stock_has_org_supplier_products.org_supplier_product_id')
+            ->where('org_stock_id', $orgStock->id)
+            ->pluck('org_supplier_products.supplier_product_id')
+            ->all();
+
+        expect((float) $created->cost)->toBe(12.5)
+            ->and($created->units_per_carton)->toBe(20)
+            ->and($linkedTo($toCreate))->toBe([$created->id])
+            ->and($linkedTo($toAttach))->toBe([$existing->id])
+            ->and($linkedTo($noCost))->toBe([]);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\SupplierProductLinkTool::class, [
+            'organisation' => $this->organisation->code,
+            'items'        => [['sko' => $toCreate->code, 'supplier' => $this->supplier->code]],
+            'request_text' => 'attach it again',
+        ])->assertOk()->assertSee('Already linked to this supplier');
+
+        $noCost->update(['state' => OrgStockStateEnum::DISCONTINUED]);
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\SupplierProductLinkTool::class, [
+            'organisation' => $this->organisation->code,
+            'items'        => [['sko' => $noCost->code, 'supplier' => $this->supplier->code, 'cost' => 1, 'units_per_carton' => 1]],
+            'request_text' => 'attach the discontinued one',
+        ])->assertOk()->assertSee('discontinued in this organisation');
+
+        expect($linkedTo($noCost))->toBe([]);
+
+        $mcpChange = App\Models\SysAdmin\McpChange::where('type', App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS)->latest('id')->first();
+
+        expect($mcpChange->request_text)->toBe('attach these to the supplier')
+            ->and($mcpChange->data['created_supplier_product_ids'])->toBe([$created->id])
+            ->and($mcpChange->data['after_text'])->toContain($toCreate->code.': '.$this->supplier->code);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\AiChangesTool::class, [
+            'revert_id'    => $mcpChange->id,
+            'request_text' => 'undo that',
+        ])->assertOk()->assertSee('reverted_at');
+
+        expect($linkedTo($toCreate))->toBe([])
+            ->and($linkedTo($toAttach))->toBe([])
+            ->and(DB::table('stock_has_supplier_products')->where('id', $preExistingStockLinkId)->exists())->toBeTrue()
+            ->and(DB::table('stock_has_supplier_products')->where('supplier_product_id', $created->id)->exists())->toBeFalse()
+            ->and($created->refresh()->is_available)->toBeFalse()
+            ->and($existing->refresh()->is_available)->toBeTrue();
+    });
+    test('a supplier code shared by two suppliers is refused until the slug is given', function () {
+        $twin = App\Actions\SupplyChain\Supplier\StoreSupplier::make()->action($this->group, App\Models\SupplyChain\Supplier::factory()->definition());
+        DB::table('suppliers')->where('id', $twin->id)->update(['code' => $this->supplier->code]);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\SupplierProductLinkTool::class, [
+            'organisation' => $this->organisation->code,
+            'items'        => [['sko' => $this->orgStocks[0]->code, 'supplier' => $this->supplier->code, 'cost' => 3, 'units_per_carton' => 5]],
+            'request_text' => 'attach it',
+        ])->assertOk()->assertSee('Several suppliers match');
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\SupplierProductLinkTool::class, [
+            'organisation' => $this->organisation->code,
+            'items'        => [['sko' => $this->orgStocks[0]->code, 'supplier' => $this->supplier->code, 'supplier_slug' => $twin->slug, 'cost' => 3, 'units_per_carton' => 5]],
+            'request_text' => 'attach it to the twin',
+        ])->assertOk()->assertSee('"result":"created"');
+
+        expect(App\Models\SupplyChain\SupplierProduct::where('supplier_id', $twin->id)->where('code', $this->orgStocks[0]->code)->exists())->toBeTrue()
+            ->and(App\Models\SupplyChain\SupplierProduct::where('supplier_id', $this->supplier->id)->where('code', $this->orgStocks[0]->code)->exists())->toBeFalse();
+    });
+});
+
 describe('staff task tools', function () {
     beforeEach(function () {
         $this->location   = StoreLocation::make()->action(createWarehouse(), Location::factory()->definition());

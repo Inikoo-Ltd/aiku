@@ -30,6 +30,7 @@ enum McpChangeTypeEnum: string
     case WEBSITE_REDIRECTS = 'website_redirects';
     case STOCK_LOCATIONS = 'stock_locations';
     case PRODUCTION_SETUP = 'production_setup';
+    case SUPPLIER_PRODUCT_LINKS = 'supplier_product_links';
 
     public static function labels(): array
     {
@@ -50,6 +51,7 @@ enum McpChangeTypeEnum: string
             'website_redirects'     => __('Website redirects'),
             'stock_locations'       => __('SKO locations'),
             'production_setup'      => __('Factory location and work areas'),
+            'supplier_product_links' => __('SKOs attached to suppliers'),
         ];
     }
 
@@ -61,7 +63,7 @@ enum McpChangeTypeEnum: string
         return match ($this) {
             McpChangeTypeEnum::RELATED_PRODUCTS, McpChangeTypeEnum::WEBSITE_REDIRECTS => 'can_use_mcp_web',
             McpChangeTypeEnum::ORG_STOCK_STATE, McpChangeTypeEnum::SUPPLIER_PRODUCT_AVAILABILITY => 'can_use_mcp_discontinue',
-            McpChangeTypeEnum::PARTNER_SHOPPING_LIST => 'can_use_mcp_procurement',
+            McpChangeTypeEnum::PARTNER_SHOPPING_LIST, McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => 'can_use_mcp_procurement',
             McpChangeTypeEnum::PRODUCTION_RECORD, McpChangeTypeEnum::PRODUCTION_RECIPE, McpChangeTypeEnum::PRODUCTION_SETUP => 'can_use_mcp_production',
             McpChangeTypeEnum::PLACED_ORDER => 'can_use_mcp_place_orders',
             McpChangeTypeEnum::MASTER_PRICES => 'can_use_mcp_prices',
