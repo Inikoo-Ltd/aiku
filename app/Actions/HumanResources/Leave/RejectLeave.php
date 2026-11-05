@@ -8,6 +8,7 @@ use App\Http\Resources\HumanResources\LeaveResource;
 use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprovalRecord;
 use App\Models\SysAdmin\Organisation;
+use App\Notifications\LeaveDecisionNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
@@ -49,6 +50,8 @@ class RejectLeave extends OrgAction
             'approved_at' => now(),
             'rejection_reason' => $rejectionReason,
         ]);
+
+        LeaveDecisionNotification::sendToEmployee($leave);
 
         return $leave;
     }
