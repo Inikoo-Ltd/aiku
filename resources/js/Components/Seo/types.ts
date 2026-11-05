@@ -10,7 +10,6 @@ export type SelectOption = { value: string, label: string }
 export type SeoKeywordOptions = {
     countries: SelectOption[]
     languages: SelectOption[]
-    devices: SelectOption[]
     frequencies: SelectOption[]
     scopes: SelectOption[]
 }

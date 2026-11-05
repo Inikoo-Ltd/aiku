@@ -43,6 +43,7 @@ export interface JourneyRibbon {
     supplier_nickname: string | null
     agent_name: string | null
     agent_slug: string | null
+    supplier_route?: routeType | null
     placed_by: string | null
     journey: "agent" | "supplier" | "partner"
     parent_code: string | null
@@ -269,7 +270,11 @@ function isMarkable(segment: JourneySegment): boolean {
                     <div class="min-w-0 flex-1 space-y-1 text-xs text-gray-600">
                         <div class="flex items-center gap-1.5 pb-1.5">
                             <FontAwesomeIcon v-tooltip="journeyLabel[ribbon.journey]" :icon="journeyIcon[ribbon.journey]" class="shrink-0 text-gray-600" fixed-width aria-hidden="true" />
-                            <span class="min-w-0 text-sm font-semibold leading-snug text-gray-900" :title="ribbon.parent_code ?? ''">{{ ribbon.supplier_company ?? ribbon.parent_name ?? ribbon.parent_code }}</span>
+                            <div class="flex min-w-0 flex-col">
+                                <Link v-if="ribbon.supplier_route" :href="route(ribbon.supplier_route.name, ribbon.supplier_route.parameters)" class="text-sm font-semibold leading-snug text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" :title="ribbon.parent_code ?? ''">{{ ribbon.supplier_company ?? ribbon.parent_name ?? ribbon.parent_code }}</Link>
+                                <span v-else class="text-sm font-semibold leading-snug text-gray-900" :title="ribbon.parent_code ?? ''">{{ ribbon.supplier_company ?? ribbon.parent_name ?? ribbon.parent_code }}</span>
+                                <span v-if="ribbon.supplier_nickname" class="text-gray-500">{{ ribbon.supplier_nickname }}</span>
+                            </div>
                             <span class="ml-auto flex shrink-0 flex-col items-end gap-0.5">
                                 <span class="whitespace-nowrap text-sm font-semibold text-gray-700" :title="ribbon.amount !== null ? amount(ribbon.amount, ribbon.currency_code, 2) : ''">
                                     {{ ribbon.amount_grp !== null ? amount(ribbon.amount_grp, groupCurrency) : amount(ribbon.amount, ribbon.currency_code) }}
@@ -289,10 +294,9 @@ function isMarkable(segment: JourneySegment): boolean {
                         </div>
                         <div v-if="ribbon.agent_name" class="flex items-center gap-1">
                             <FontAwesomeIcon v-tooltip="ctrans('Agent')" icon="fal fa-people-arrows" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
-                            <Link v-if="ribbon.agent_slug" :href="route('grp.supply-chain.agents.show', { agent: ribbon.agent_slug })" class="hover:text-gray-900 hover:underline">{{ ribbon.agent_name }}</Link>
+                            <Link v-if="ribbon.agent_slug" :href="route('grp.supply-chain.agents.show', { agent: ribbon.agent_slug })" class="text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">{{ ribbon.agent_name }}</Link>
                             <span v-else>{{ ribbon.agent_name }}</span>
                         </div>
-                        <div v-if="ribbon.supplier_nickname" class="text-gray-500">{{ ctrans("Nickname :nickname", { nickname: ribbon.supplier_nickname }) }}</div>
                         <div class="flex items-center gap-1">
                             <FontAwesomeIcon v-tooltip="ctrans('Purchase order')" icon="fal fa-clipboard-list" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
                             <Link v-if="ribbon.route" :href="route(ribbon.route.name, ribbon.route.parameters)" class="min-w-0 truncate whitespace-nowrap text-gray-600 hover:underline" :title="ribbon.reference">

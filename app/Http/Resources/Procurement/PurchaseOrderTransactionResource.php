@@ -165,8 +165,8 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'method'     => 'patch',
             ] : null,
             'agent_warehouse'      => $this->agentWarehouse($transaction, $request),
-            'moved_from'           => Arr::get($transaction->data, 'moved_from'),
-            'moved_to'             => Arr::get($transaction->data, 'moved_to', []),
+            'moved_from'           => $transaction->move_trail ? $transaction->move_trail['from'] : Arr::get($transaction->data, 'moved_from'),
+            'moved_to'             => $transaction->move_trail ? $transaction->move_trail['to'] : Arr::get($transaction->data, 'moved_to', []),
             'moveRoute'            => $this->isCancellable($transaction) && $transaction->purchaseOrder?->isAgentOrder() && $transaction->org_stock_id ? [
                 'name'       => 'grp.models.purchase-order.transaction.move',
                 'parameters' => [

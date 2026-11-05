@@ -27,13 +27,13 @@ class IndexSeoRankings extends OrgAction
     public const int SEARCH_CONSOLE_DAYS = 28;
 
     /**
-     * One row per keyword for one device. The row shows the country where it ranks best,
+     * One row per keyword on desktop, the only device tracked. The row shows the country where it ranks best,
      * and `other_countries` holds the rest, so a keyword tracked in many countries is one line that
      * opens into the others.
      */
-    public function handle(Shop $shop, ?string $prefix = null, ?SeoKeywordDeviceEnum $device = null): LengthAwarePaginator
+    public function handle(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
-        $device ??= SeoKeywordDeviceEnum::MOBILE;
+        $device = SeoKeywordDeviceEnum::DESKTOP;
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -150,7 +150,7 @@ class IndexSeoRankings extends OrgAction
     }
 
     /**
-     * One row per keyword, country and device, for the Excel export.
+     * One row per keyword and country on desktop, for the Excel export.
      */
     public function variants(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
@@ -165,6 +165,7 @@ class IndexSeoRankings extends OrgAction
         $rankings = QueryBuilder::for(SeoTrackedKeyword::class)
             ->where('seo_tracked_keywords.shop_id', $shop->id)
             ->where('seo_tracked_keywords.is_active', true)
+            ->where('seo_tracked_keywords.device', SeoKeywordDeviceEnum::DESKTOP->value)
             ->leftJoin('seo_keywords', function ($join) {
                 $join->on('seo_keywords.shop_id', '=', 'seo_tracked_keywords.shop_id')
                     ->on('seo_keywords.keyword', '=', 'seo_tracked_keywords.keyword')

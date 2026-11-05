@@ -17,7 +17,6 @@ use App\Actions\Web\Seo\PostSerpTasks;
 use App\Actions\Web\Website\UI\ShowSeoDashboard;
 use App\Enums\UI\Web\SeoKeywordsTabsEnum;
 use App\Enums\Web\Seo\SeoContentBriefStateEnum;
-use App\Enums\Web\Seo\SeoKeywordDeviceEnum;
 use App\Enums\Web\Seo\SeoKeywordFrequencyEnum;
 use App\Enums\Web\Seo\SeoResearchScopeEnum;
 use App\Http\Resources\Web\SeoRankingResource;
@@ -135,24 +134,17 @@ class ShowSeoKeywords extends OrgAction
 
     private function rankings(Shop $shop): array
     {
-        $device = SeoKeywordDeviceEnum::tryFrom((string) request()->query('device')) ?? SeoKeywordDeviceEnum::MOBILE;
-
         return [
             ...GetSeoRankingsOverview::run($shop),
-            'domain'         => $shop->website?->domain,
-            'device'         => $device->value,
-            'isConfigured'   => DataForSeoClient::make() !== null,
-            'depths'         => [
+            'domain'       => $shop->website?->domain,
+            'isConfigured' => DataForSeoClient::make() !== null,
+            'depths'       => [
                 'weekly' => PostSerpTasks::WEEKLY_DEPTH,
                 'daily'  => PostSerpTasks::DAILY_DEPTH,
             ],
-            'costPerPage'    => PostSerpTasks::COST_PER_PAGE,
-            'checkNow'       => $this->checkNow($shop),
-            'runChecksRoute' => app()->environment('local') && $this->canEdit ? [
-                'name'       => 'grp.models.shop.seo.rank_checks.store',
-                'parameters' => [$shop->id],
-            ] : null,
-            'table'          => SeoRankingResource::collection(IndexSeoRankings::run($shop, SeoKeywordsTabsEnum::RANKINGS->value, $device)),
+            'costPerPage'  => PostSerpTasks::COST_PER_PAGE,
+            'checkNow'     => $this->checkNow($shop),
+            'table'        => SeoRankingResource::collection(IndexSeoRankings::run($shop, SeoKeywordsTabsEnum::RANKINGS->value)),
         ];
     }
 
@@ -306,7 +298,6 @@ class ShowSeoKeywords extends OrgAction
                 'options'     => [
                     'countries'   => Country::orderBy('name')->get(['code', 'name'])->map(fn (Country $country) => ['value' => $country->code, 'label' => $country->name])->all(),
                     'languages'   => Language::orderBy('name')->get(['code', 'name'])->map(fn (Language $language) => ['value' => $language->code, 'label' => $language->name])->all(),
-                    'devices'     => collect(SeoKeywordDeviceEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
                     'frequencies' => collect(SeoKeywordFrequencyEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
                     'scopes'      => collect(SeoResearchScopeEnum::labels())->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values()->all(),
                 ],
@@ -320,7 +311,6 @@ class ShowSeoKeywords extends OrgAction
                 SeoKeywordsTabsEnum::TRACKED_KEYWORDS->value => $this->tabProp(
                     SeoKeywordsTabsEnum::TRACKED_KEYWORDS,
                     fn () => SeoTrackedKeywordResource::collection(IndexSeoTrackedKeywords::run($shop, SeoKeywordsTabsEnum::TRACKED_KEYWORDS->value))
-                        ->additional(['checkNow' => $this->checkNow($shop)])
                 ),
 
                 SeoKeywordsTabsEnum::RANKINGS->value => $this->tabProp(

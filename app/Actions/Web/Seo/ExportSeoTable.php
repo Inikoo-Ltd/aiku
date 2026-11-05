@@ -158,11 +158,10 @@ class ExportSeoTable extends OrgAction
         $rows = $this->allRows('rankings', fn () => IndexSeoRankings::make()->variants($shop, 'rankings'));
 
         return [
-            ['Keyword', 'Country', 'Device', 'Check', 'Position', 'Previous position', 'Last checked', 'Ranking page', 'Monthly searches', 'KD', 'Intent', 'Tags', 'Search Console position (28 days)', 'On the results page', 'In AI Overview', 'Alert', 'Competitors'],
+            ['Keyword', 'Country', 'Check', 'Position', 'Previous position', 'Last checked', 'Ranking page', 'Monthly searches', 'KD', 'Intent', 'Tags', 'Search Console position (28 days)', 'On the results page', 'In AI Overview', 'Alert', 'Competitors'],
             $rows->map(fn ($row) => [
                 $row->keyword,
                 $row->country_code,
-                $row->device?->value,
                 $row->frequency?->value,
                 $row->position,
                 $row->previous_position,

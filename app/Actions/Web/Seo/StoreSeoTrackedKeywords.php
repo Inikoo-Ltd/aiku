@@ -85,13 +85,14 @@ class StoreSeoTrackedKeywords extends OrgAction
         $tracked = $shop->seoTrackedKeywords()
             ->whereIn('keyword', array_column($keywords, 'keyword'))
             ->whereIn('country_code', $countryCodes)
+            ->whereIn('device', SeoKeywordDeviceEnum::tracked())
             ->groupBy('keyword', 'country_code')
             ->select('keyword', 'country_code')
             ->selectRaw('COUNT(DISTINCT device) as devices')
             ->get()
             ->groupBy('keyword');
 
-        $trackedCountries = $tracked->map(fn ($countries) => $countries->where('devices', '>=', count(SeoKeywordDeviceEnum::cases()))->count());
+        $trackedCountries = $tracked->map(fn ($countries) => $countries->where('devices', '>=', count(SeoKeywordDeviceEnum::tracked()))->count());
 
         $seen = [];
 

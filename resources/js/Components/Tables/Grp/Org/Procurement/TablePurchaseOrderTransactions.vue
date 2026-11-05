@@ -73,6 +73,8 @@ const cancellationLabel = (cancellation: { by: string | null, in_aurora: boolean
     return cancellation.in_aurora ? ctrans('Cancelled in Aurora') : ctrans('Cancelled')
 }
 
+const movedPurchaseOrderUrl = (slug: string) => route('grp.org.procurement.purchase_orders.show', [route().params.organisation, slug])
+
 const hasSupplierUnits = computed(() => !props.isPartner && ((props.data as any)?.data ?? []).some((item: any) => item.supplier_unit))
 
 const supplierLevel = {
@@ -890,6 +892,34 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     </span>
                     {{ item.name }}
                 </div>
+                <div v-if="item.moved_from || item.moved_to?.length" class="space-y-0.5 text-xs">
+                    <component
+                        :is="item.moved_from.slug ? Link : 'span'"
+                        v-if="item.moved_from"
+                        :href="item.moved_from.slug ? movedPurchaseOrderUrl(item.moved_from.slug) : undefined"
+                        class="flex w-fit items-center gap-1"
+                        :class="item.moved_from.slug ? 'text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline' : 'text-gray-500'"
+                        v-tooltip="item.moved_from.at ? ctrans('Moved on :date', { date: useFormatTime(item.moved_from.at, { formatTime: 'hm' }) }) : null"
+                    >
+                        <FontAwesomeIcon :icon="faExchange" fixed-width aria-hidden="true" />
+                        <template v-if="item.moved_from.by_name">{{ ctrans('Moved from :reference (:supplier) by :name', { reference: item.moved_from.reference, supplier: item.moved_from.supplier_code, name: item.moved_from.by_name }) }}</template>
+                        <template v-else>{{ ctrans('Moved from :reference (:supplier)', { reference: item.moved_from.reference, supplier: item.moved_from.supplier_code }) }}</template>
+                    </component>
+
+                    <component
+                        :is="movedTo.slug ? Link : 'span'"
+                        v-for="movedTo in item.moved_to ?? []"
+                        :key="movedTo.purchase_order_transaction_id"
+                        :href="movedTo.slug ? movedPurchaseOrderUrl(movedTo.slug) : undefined"
+                        class="flex w-fit items-center gap-1"
+                        :class="movedTo.slug ? 'text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline' : 'text-gray-500'"
+                        v-tooltip="movedTo.at ? ctrans('Moved on :date', { date: useFormatTime(movedTo.at, { formatTime: 'hm' }) }) : null"
+                    >
+                        <FontAwesomeIcon :icon="faExchange" fixed-width aria-hidden="true" />
+                        <template v-if="movedTo.by_name">{{ ctrans(':quantity units moved to :reference (:supplier) by :name', { quantity: locale.number(Number(movedTo.quantity)), reference: movedTo.reference, supplier: movedTo.supplier_code, name: movedTo.by_name }) }}</template>
+                        <template v-else>{{ ctrans(':quantity units moved to :reference (:supplier)', { quantity: locale.number(Number(movedTo.quantity)), reference: movedTo.reference, supplier: movedTo.supplier_code }) }}</template>
+                    </component>
+                </div>
                 <div v-if="canEditPrice(item)" class="text-xs text-gray-500 space-y-1">
                     <div class="flex items-center gap-2">
                         <span>{{ ctrans('Unit cost') }}<template v-if="item.net_currency"> ({{ item.net_currency }})</template>:</span>
@@ -1020,7 +1050,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
             <div class="flex flex-col items-end gap-1.5">
             <div class="flex justify-end items-center gap-2">
                 <span
-                    v-if="item.cancellation"
+                    v-if="item.cancellation && !item.moved_to?.length"
                     class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200"
                     v-tooltip="item.cancellation.at ? ctrans('Cancelled on :date', { date: useFormatTime(item.cancellation.at, { formatTime: 'hm' }) }) : null"
                 >
@@ -1121,27 +1151,6 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     @click="confirmCancelItem($event, item)"
                 />
 
-            </div>
-
-            <div v-if="item.moved_from || item.moved_to?.length" class="flex flex-wrap justify-end gap-1">
-                <span
-                    v-if="item.moved_from"
-                    class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-gray-50 px-2 py-0.5 text-xs text-gray-700 ring-1 ring-inset ring-gray-200"
-                    v-tooltip="item.moved_from.at ? ctrans('Moved on :date', { date: useFormatTime(item.moved_from.at, { formatTime: 'hm' }) }) : null"
-                >
-                    <FontAwesomeIcon :icon="faExchange" class="text-gray-400" fixed-width aria-hidden="true" />
-                    {{ ctrans('Moved from :reference (:supplier)', { reference: item.moved_from.reference, supplier: item.moved_from.supplier_code }) }}
-                </span>
-
-                <span
-                    v-for="movedTo in item.moved_to ?? []"
-                    :key="movedTo.purchase_order_transaction_id"
-                    class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-gray-50 px-2 py-0.5 text-xs text-gray-700 ring-1 ring-inset ring-gray-200"
-                    v-tooltip="movedTo.at ? ctrans('Moved on :date', { date: useFormatTime(movedTo.at, { formatTime: 'hm' }) }) : null"
-                >
-                    <FontAwesomeIcon :icon="faExchange" class="text-gray-400" fixed-width aria-hidden="true" />
-                    {{ ctrans(':quantity units moved to :reference (:supplier)', { quantity: locale.number(Number(movedTo.quantity)), reference: movedTo.reference, supplier: movedTo.supplier_code }) }}
-                </span>
             </div>
 
             <div v-if="item.agent_warehouse?.containers?.length" class="flex flex-wrap justify-end gap-1">

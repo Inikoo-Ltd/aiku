@@ -40,7 +40,7 @@ class StoreSeoTrackedKeyword extends OrgAction
     private array $languages = [];
 
     /**
-     * One row per country and device, in the language each country has data for. A keyword already
+     * One row per country on every tracked device, in the language each country has data for. A keyword already
      * tracked in a country is left as it is, so adding it again with more countries only adds the
      * new ones.
      *
@@ -52,7 +52,7 @@ class StoreSeoTrackedKeyword extends OrgAction
         $trackedKeywords = new Collection();
 
         foreach ($modelData['country_codes'] as $countryCode) {
-            foreach (SeoKeywordDeviceEnum::cases() as $device) {
+            foreach (SeoKeywordDeviceEnum::tracked() as $device) {
                 $trackedKeywords->push($shop->seoTrackedKeywords()->firstOrCreate([
                     'keyword'       => $modelData['keyword'],
                     'country_code'  => $countryCode,
@@ -114,7 +114,8 @@ class StoreSeoTrackedKeyword extends OrgAction
             ->where('keyword', $keyword)
             ->where('country_code', $countryCode)
             ->where('language_code', $this->languageFor($countryCode, (string) $this->get('language_code')))
-            ->count() < count(SeoKeywordDeviceEnum::cases()));
+            ->whereIn('device', SeoKeywordDeviceEnum::tracked())
+            ->count() < count(SeoKeywordDeviceEnum::tracked()));
 
         return !$untracked;
     }

@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder as QueryBuilderBase;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -185,6 +186,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
         $partnerLeadTimeDays = $parent->parent instanceof OrgPartner ? GetPartnerLeadTime::run($parent->parent)['days'] : null;
         $partnerStocks       = $parent->parent instanceof OrgPartner ? $this->partnerStocks($parent->parent, $orgStockIds) : collect();
         $cancellations       = $this->cancellations($paginator->getCollection()->where('state', PurchaseOrderTransactionStateEnum::CANCELLED)->pluck('id'));
+        $moveTrail           = $this->moveTrail($paginator->getCollection());
         $paginator->getCollection()->each(
             fn (PurchaseOrderTransaction $transaction) => $transaction
                 ->setAttribute('quarterly_usage', $quarterlyUsage->get($transaction->org_stock_id) ?? collect())
@@ -197,6 +199,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     'at'        => $cancellations->get($transaction->id)?->created_at,
                     'in_aurora' => !$cancellations->has($transaction->id) && $transaction->source_id !== null,
                 ] : null)
+                ->setAttribute('move_trail', $moveTrail($transaction))
         );
         IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, $parent->organisation_id, $parent->id);
 
@@ -227,6 +230,39 @@ class IndexPurchaseOrderTransactions extends OrgAction
             ->orderByDesc('audits.id')
             ->get()
             ->keyBy('auditable_id');
+    }
+
+    /**
+     * The moves to or from another supplier stored on each line, with the name of who moved the units and the slug of
+     * the other purchase order so the label can link to it.
+     *
+     * @return Closure(PurchaseOrderTransaction): array{from: array<string, mixed>|null, to: list<array<string, mixed>>}
+     */
+    private function moveTrail(Collection $transactions): Closure
+    {
+        $moves = $transactions->flatMap(fn (PurchaseOrderTransaction $transaction) => array_filter([
+            Arr::get($transaction->data, 'moved_from'),
+            ...Arr::get($transaction->data, 'moved_to', []),
+        ]));
+
+        $userNames = $moves->isEmpty() ? collect() : DB::table('users')
+            ->whereIn('id', $moves->pluck('by')->filter()->unique())
+            ->selectRaw('id, coalesce(contact_name, username) as name')
+            ->pluck('name', 'id');
+
+        $purchaseOrderSlugs = $moves->isEmpty() ? collect() : DB::table('purchase_orders')
+            ->whereIn('id', $moves->pluck('purchase_order_id')->filter()->unique())
+            ->pluck('slug', 'id');
+
+        $withDetails = fn (array $move) => array_merge($move, [
+            'by_name' => $userNames->get(Arr::get($move, 'by')),
+            'slug'    => $purchaseOrderSlugs->get(Arr::get($move, 'purchase_order_id')),
+        ]);
+
+        return fn (PurchaseOrderTransaction $transaction) => [
+            'from' => ($movedFrom = Arr::get($transaction->data, 'moved_from')) ? $withDetails($movedFrom) : null,
+            'to'   => array_map($withDetails, Arr::get($transaction->data, 'moved_to', [])),
+        ];
     }
 
     /**
