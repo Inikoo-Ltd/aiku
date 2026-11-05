@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { offerEndAt } from "@/Composables/useOffers"
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -36,6 +37,7 @@ const discountPercentage = ref<number | null>(null)
 const offerProductId = ref<number | null>(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(null)
+const endTime = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 
 const isLoadingSubmit = ref(false)
@@ -75,7 +77,7 @@ const submitProductOffer = () => {
             percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
             duration: dateType.value,
             start_at: formatDate(startDate.value),
-            end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null
+            end_at: dateType.value === 'interval' ? offerEndAt(formatDate(endDate.value), endTime.value) : null
         }
     )
         .then((response) => {
@@ -118,6 +120,7 @@ const resetForm = () => {
     dateType.value = 'permanent'
     startDate.value = props.shop_data.default_dates?.start ? new Date(props.shop_data.default_dates.start) : today
     endDate.value = null
+    endTime.value = null
 }
 
 const isFormInvalid = computed(() => {
@@ -154,6 +157,7 @@ watch(typeOffer, (val) => {
 watch(dateType, (val) => {
     if (val === 'permanent') {
         endDate.value = null
+        endTime.value = null
     }
 })
 
@@ -317,6 +321,7 @@ resetForm();
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :minDate="startDate || undefined" :placeholder="ctrans('Select end date')" />
+                            <DatePicker v-model="endTime" timeOnly hourFormat="24" :stepMinute="15" showClear class="w-full mt-2" :placeholder="ctrans('End of day')" />
                         </div>
                     </div>
 

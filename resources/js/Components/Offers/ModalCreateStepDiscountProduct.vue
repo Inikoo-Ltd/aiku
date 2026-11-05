@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { offerEndAt } from "@/Composables/useOffers"
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -65,6 +66,7 @@ const selectedProduct = ref<any | null>(null)
 const steps = ref<DiscountStep[]>([])
 const dateType = ref<'permanent' | 'interval'>('permanent')
 const startDate = ref<Date | null>(today)
+const endTime = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 
 const quickIntervalDays = ref<number | null>(null)
@@ -227,6 +229,7 @@ const resetForm = () => {
     dateType.value = 'permanent'
     startDate.value = today
     endDate.value = null
+    endTime.value = null
     quickIntervalDays.value = null
     isLoadingSubmit.value = false
 }
@@ -234,6 +237,7 @@ const resetForm = () => {
 watch(dateType, (val) => {
     if (val === 'permanent') {
         endDate.value = null
+        endTime.value = null
         quickIntervalDays.value = null
     }
 })
@@ -273,7 +277,7 @@ const submitStepDiscount = () => {
         })),
         duration: dateType.value,
         start_at: formatDate(startDate.value),
-        end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
+        end_at: dateType.value === 'interval' ? offerEndAt(formatDate(endDate.value), endTime.value) : null,
     }
     axios.post(
         route(isMultipleProducts.value ? 'grp.models.products_step_discount.store' : 'grp.models.step_discount.store', {
@@ -510,6 +514,7 @@ resetForm()
 
                             <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
                                 :minDate="startDate || undefined" :placeholder="ctrans('Select end date')" />
+                            <DatePicker v-model="endTime" timeOnly hourFormat="24" :stepMinute="15" showClear class="w-full mt-2" :placeholder="ctrans('End of day')" />
                         </div>
                     </div>
                 </div>

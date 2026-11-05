@@ -122,6 +122,7 @@ use App\Jobs\BoundedUniqueJobDecorator;
 use App\Actions\Ordering\Order\CleanFinishedVouchers;
 use App\Actions\Accounting\InvoiceCategory\RedoInvoiceCategoryTimeSeries;
 use Carbon\Carbon;
+use App\Models\Helpers\Timezone;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -548,6 +549,35 @@ test('offer dates are the shop own midnight, not UTC midnight', function () {
         ->toBe(Carbon::parse('2026-09-08', $timezone)->endOfDay()->utc()->toDateTimeString())
         ->and($offer->start_at->setTimezone($timezone)->toDateString())->toBe('2026-09-06')
         ->and($offer->end_at->setTimezone($timezone)->toDateString())->toBe('2026-09-08');
+});
+
+test('an offer can end at an exact time of day in the shop timezone', function () {
+    $originalTimezoneId = $this->shop->timezone_id;
+    $this->shop->update(['timezone_id' => Timezone::where('name', 'Europe/Bratislava')->firstOrFail()->id]);
+
+    try {
+        $offerCampaign = $this->shop->offerCampaigns()->first();
+
+        $offerData = Offer::factory()->definition();
+        data_set($offerData, 'start_at', '2026-09-06');
+        data_set($offerData, 'end_at', '2026-09-08 14:00');
+
+        $offer = StoreOffer::make()->action($offerCampaign, $offerData);
+        $offer->refresh();
+
+        expect($offer->start_at->toDateTimeString())->toBe('2026-09-05 22:00:00')
+            ->and($offer->end_at->toDateTimeString())->toBe('2026-09-08 12:00:00');
+
+        $offer = UpdateOffer::make()->action($offer, ['end_at' => '2026-09-09 09:30']);
+
+        expect($offer->refresh()->end_at->toDateTimeString())->toBe('2026-09-09 07:30:00');
+
+        $offer = UpdateOffer::make()->action($offer, ['end_at' => '2026-09-10']);
+
+        expect($offer->refresh()->end_at->toDateTimeString())->toBe('2026-09-10 21:59:59');
+    } finally {
+        $this->shop->update(['timezone_id' => $originalTimezoneId]);
+    }
 });
 
 test('an offer created with a future start date is not live', function () {

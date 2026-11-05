@@ -57,3 +57,10 @@ export function getGoldenProductTriggerLabel(offer?: Offer | null): string {
     offerPercentage: `${Math.round(percentageOff * 10000) / 100}%`,
   })
 }
+
+// Offer end sent to the server: a bare date ends at the end of that day (shop timezone), a date with a time ends at that time
+export function offerEndAt(date: string | null, time: Date | null): string | null {
+    if (!date || !time) return date
+
+    return `${date} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`
+}

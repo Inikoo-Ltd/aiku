@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { offerEndAt } from "@/Composables/useOffers"
 
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
@@ -40,6 +41,7 @@ const startDate = ref<Date | null>(
         : null
 )
 
+const endTime = ref<Date | null>(null)
 const endDate = ref<Date | null>(
     props.shop_data.default_dates?.end
         ? new Date(props.shop_data.default_dates.end)
@@ -82,6 +84,7 @@ const resetForm = () => {
     selectedItemId.value = null
     startDate.value = null
     endDate.value = null
+    endTime.value = null
     quickApplyDays.value = null
     isLoadingSubmit.value = false
 }
@@ -193,7 +196,7 @@ const submitShippingOffer = () => {
         name: offerLabel.value,
         min_order_amount: offerAmount.value,
         start_at: formatDate(startDate.value),
-        end_at: formatDate(endDate.value),
+        end_at: offerEndAt(formatDate(endDate.value), endTime.value),
         target_type: targetPayload?.target_type ?? null,
 		target_id: targetPayload?.target_id ?? null,
     }
@@ -366,6 +369,7 @@ watch(target, () => {
                         </label>
 
                         <DatePicker v-model="endDate" showButtonBar showIcon :minDate="startDate ?? undefined"/>
+                        <DatePicker v-model="endTime" timeOnly hourFormat="24" :stepMinute="15" showClear class="w-full mt-2" :placeholder="ctrans('End of day')" />
 
                         <p v-if="startDate && endDate && endDate < startDate" class="text-red-500 text-sm">
                             End date must be after start date

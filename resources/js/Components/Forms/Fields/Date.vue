@@ -27,6 +27,8 @@ const props = defineProps<{
         readonly?: boolean
         extraInformation?: string
         minDate?: Date
+        enableTime?: boolean
+        modelType?: string
     }
 }>()
 
@@ -40,8 +42,14 @@ const _datePicker: any = ref(null)
 <template>
     <DatePicker v-model="form[fieldName]"
         ref="_datePicker"
-        :enable-time-picker="false"
-        :format="'dd MMMM yyyy'" auto-apply
+        :enable-time-picker="!!fieldData.enableTime"
+        :is-24="true"
+        :start-time="fieldData.enableTime ? { hours: 23, minutes: 59 } : undefined"
+        :minutes-increment="15"
+        :minutes-grid-increment="15"
+        :model-type="fieldData.modelType"
+        :close-on-auto-apply="!fieldData.enableTime"
+        :format="fieldData.enableTime ? 'dd MMMM yyyy HH:mm' : 'dd MMMM yyyy'" auto-apply
         :clearable="!fieldData.required || true"
         :readonly="fieldData.readonly"
         :ui="{

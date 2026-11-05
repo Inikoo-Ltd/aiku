@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { offerEndAt } from "@/Composables/useOffers"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { ref, computed, watch } from "vue"
@@ -86,6 +87,7 @@ const voucherCode = ref("")
 const codePrefix = ref("")
 const minimumAmount = ref<number | null>(0)
 const startDate = ref<Date | null>(null)
+const endTime = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 const rewardType = ref<RewardType>("percentage_off")
 const percentageOff = ref<number | null>(null)
@@ -250,6 +252,7 @@ function resetForm() {
 	minimumAmount.value = 0
 	startDate.value = new Date(props.shop_data.default_dates.start)
 	endDate.value = new Date(props.shop_data.default_dates.end)
+	endTime.value = null
 	rewardType.value = "percentage_off"
 	percentageOff.value = null
 	amountOff.value = null
@@ -278,7 +281,7 @@ const submit = () => {
 			code_prefix: codeType.value === "unique" ? codePrefix.value : null,
 			offer_amount: minimumAmount.value,
 			start_at: formatDate(startDate.value),
-			end_at: formatDate(endDate.value),
+			end_at: offerEndAt(formatDate(endDate.value), endTime.value),
 			show_on_customer_dashboard: showOnCustomerDashboard.value,
 			allowance_type: rewardType.value,
 			percentage_off: rewardType.value === "percentage_off" ? percentageOff.value : null,
@@ -472,6 +475,7 @@ const submit = () => {
 								<InformationIcon :information="ctrans('The voucher stays on the customer dashboard until this date.')" />
 							</label>
 							<DatePicker v-model="endDate" :minDate="startDate ?? today" showIcon />
+							<DatePicker v-model="endTime" timeOnly hourFormat="24" :stepMinute="15" showClear class="w-full mt-2" :placeholder="ctrans('End of day')" />
 						</div>
 					</div>
 

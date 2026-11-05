@@ -38,19 +38,26 @@ trait WithStoreOffer
     }
 
     /**
-     * A date typed in by a shop's staff means midnight in the shop's own timezone, not in UTC.
+     * Dates and times typed in by a shop's staff are in the shop's own timezone, not in UTC.
+     * A bare date covers the whole day: it starts at midnight and ends at 23:59:59.
+     * A date with a time (e.g. 2026-11-07 14:00) starts or ends at exactly that time.
      */
     protected function prepareOfferDate(OfferCampaign|Offer $parent, array $modelData): array
     {
         $timezone = $parent->shop->timezoneName();
 
-        if (Arr::has($modelData, 'start_at') && Arr::get($modelData, 'start_at') != '' && is_string(Arr::get($modelData, 'start_at'))) {
-            $startAt = Carbon::parse(Arr::get($modelData, 'start_at'), $timezone)->startOfDay()->utc();
-            data_set($modelData, 'start_at', $startAt);
-        }
-        if (Arr::has($modelData, 'end_at') && Arr::get($modelData, 'end_at') != '' && is_string(Arr::get($modelData, 'end_at'))) {
-            $endAt = Carbon::parse(Arr::get($modelData, 'end_at'), $timezone)->endOfDay()->utc();
-            data_set($modelData, 'end_at', $endAt);
+        foreach (['start_at', 'end_at'] as $field) {
+            $value = Arr::get($modelData, $field);
+            if (!is_string($value) || $value == '') {
+                continue;
+            }
+
+            $date = Carbon::parse($value, $timezone);
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+                $date = $field == 'start_at' ? $date->startOfDay() : $date->endOfDay();
+            }
+
+            data_set($modelData, $field, $date->utc());
         }
 
         return $modelData;

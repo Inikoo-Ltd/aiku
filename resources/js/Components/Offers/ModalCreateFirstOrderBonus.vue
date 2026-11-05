@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { offerEndAt } from "@/Composables/useOffers"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { ref, computed, watch } from 'vue'
@@ -25,6 +26,7 @@ const isLoadingSubmit = ref(false)
 const minAmount = ref<number | null>(null)
 const discountPercentage = ref<number | null>(null)
 const dateType = ref<'permanent' | 'interval'>('permanent')
+const endTime = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 
 const resetForm = () => {
@@ -32,11 +34,13 @@ const resetForm = () => {
     discountPercentage.value = null
     dateType.value = 'permanent'
     endDate.value = null
+    endTime.value = null
 }
 
 watch(dateType, (val) => {
     if (val === 'permanent') {
         endDate.value = null
+        endTime.value = null
     }
 })
 
@@ -77,7 +81,7 @@ const submitFirstOrderBonus = () => {
         {
             trigger_data_min_amount: minAmount.value,
             percentage_off: discountPercentage.value != null ? discountPercentage.value / 100 : null,
-            end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
+            end_at: dateType.value === 'interval' ? offerEndAt(formatDate(endDate.value), endTime.value) : null,
         },
     )
     .then((response) => {
@@ -176,6 +180,7 @@ const submitFirstOrderBonus = () => {
 
                         <DatePicker v-model="endDate" showIcon dateFormat="yy-mm-dd" class="w-full"
                             :minDate="new Date()" :placeholder="ctrans('Select end date')" />
+                        <DatePicker v-model="endTime" timeOnly hourFormat="24" :stepMinute="15" showClear class="w-full mt-2" :placeholder="ctrans('End of day')" />
                     </div>
                 </div>
 

@@ -71,6 +71,7 @@ class EditOffer extends OrgAction
 
         $triggerEdit = [];
 
+        $timezone     = $this->shop->timezoneName();
         $offerStarted = $offer->start_at !== null && now()->gt($offer->start_at);
         data_set($triggerEdit, 'start_at', [
             'type'              => 'date',
@@ -81,11 +82,12 @@ class EditOffer extends OrgAction
             'readonly'          => $offerStarted,
             'extraInformation'  => $offerStarted ? __('Offer is started already. Unable to modify start date') : null,
             'minDate'           => $offerStarted ? $offer->start_at : now(),
-            'value'             => $offer->start_at,
+            'modelType'         => 'yyyy-MM-dd',
+            'value'             => $offer->start_at?->copy()->setTimezone($timezone)->format('Y-m-d'),
         ]);
 
         if ($offer->duration === OfferDurationEnum::INTERVAL) {
-            $minEnd = $offer->start_at?->addDay() ?? now();
+            $minEnd = $offer->start_at ?? now();
             data_set($triggerEdit, 'end_at', [
                 'type'              => 'date',
                 'information'       => __('The date until which the offer is valid. After this date, the offer will no longer be applicable.'),
@@ -93,7 +95,9 @@ class EditOffer extends OrgAction
                 'placeholder'       => __('date'),
                 'minDate'           => now()->gt($minEnd) ? now() : $minEnd,
                 'required'          => true,
-                'value'             => $offer->end_at,
+                'enableTime'        => true,
+                'modelType'         => 'yyyy-MM-dd HH:mm',
+                'value'             => $offer->end_at?->copy()->setTimezone($timezone)->format('Y-m-d H:i'),
             ]);
         }
 

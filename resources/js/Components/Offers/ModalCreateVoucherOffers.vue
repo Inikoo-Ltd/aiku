@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { offerEndAt } from "@/Composables/useOffers"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { ref, computed, watch, inject } from "vue"
@@ -79,6 +80,7 @@ const startDate = ref<Date | null>(
 	props.shop_data.default_dates?.start ? new Date(props.shop_data.default_dates.start) : null
 )
 
+const endTime = ref<Date | null>(null)
 const endDate = ref<Date | null>(
 	props.shop_data.default_dates?.end ? new Date(props.shop_data.default_dates.end) : null
 )
@@ -234,7 +236,7 @@ const submitVoucherOffer = () => {
 		allowance_type: offerType.value,
 		offer_amount: offerAmount.value,
 		start_at: formatDate(startDate.value),
-		end_at: formatDate(endDate.value),
+		end_at: offerEndAt(formatDate(endDate.value), endTime.value),
 		can_customer_reuse: reuseCustomer.value,
 		show_on_customer_dashboard: showOnCustomerDashboard.value,
 		percentage_off: isPercentageOff.value ? discountPercentage.value : null,
@@ -301,6 +303,7 @@ function resetForm() {
 	isCheckingVoucher.value = false
 	startDate.value = null
 	endDate.value = null
+	endTime.value = null
 	discountPercentage.value = null
 	amountOff.value = null
 	reuseCustomer.value = false
@@ -471,6 +474,7 @@ const isFormInvalid = computed(() => {
 							showIcon
 							:minDate="startDate"
 							:placeholder="ctrans('Select end date')" />
+						<DatePicker v-model="endTime" timeOnly hourFormat="24" :stepMinute="15" showClear class="w-full mt-2" :placeholder="ctrans('End of day')" />
 					</div>
 				</div>
 

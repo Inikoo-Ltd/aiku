@@ -188,7 +188,7 @@ class Kernel extends ConsoleKernel
 
 
             $this->logSchedule(
-                $schedule->command('offer:update_status_from_dates')->hourly()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
+                $schedule->command('offer:update_status_from_dates')->everyFifteenMinutes()->withoutOverlapping()->timezone('UTC')->onOneServer()->sentryMonitor(
                     monitorSlug: 'OfferUpdateStatusFromDates',
                 ),
                 name: 'OfferUpdateStatusFromDates',
