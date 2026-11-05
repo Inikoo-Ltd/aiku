@@ -8,7 +8,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import Checkbox from "primevue/checkbox"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInboxIn, faClipboardCheck, faChevronDown, faChevronRight, faImage, faBoxCheck, faFilePdf, faPencil } from "@fal"
@@ -81,8 +80,7 @@ const totals = computed(() => props.receiving.lines.reduce(
 	{ received: 0, rejected: 0, outstanding: 0, unchecked: 0 },
 ))
 
-const expanded = ref<Record<number, boolean>>({})
-const isExpanded = (line: Line) => expanded.value[line.id] ?? line.unchecked > 0
+const isSectionOpen = ref(totals.value.unchecked > 0)
 
 const checkingItem = ref<CheckableItem | null>(null)
 
@@ -104,6 +102,7 @@ const isAllSelected = computed({
 })
 
 const isCheckingMany = ref(false)
+const checkManyError = ref<string | null>(null)
 
 function checkSelected() {
 	const checkManyRoute = props.receiving.check_many_route
@@ -113,9 +112,12 @@ function checkSelected() {
 
 	router.post(route(checkManyRoute.name, checkManyRoute.parameters), { items: selectedItemIds.value }, {
 		preserveScroll: true,
-		onStart: () => (isCheckingMany.value = true),
+		onStart: () => {
+			isCheckingMany.value = true
+			checkManyError.value = null
+		},
 		onSuccess: () => (selectedItemIds.value = []),
-		onError: (errors) => notify({ title: ctrans("Could not check the goods"), text: errors.items ?? Object.values(errors)[0] ?? "", type: "error" }),
+		onError: (errors) => (checkManyError.value = errors.items ?? Object.values(errors)[0] ?? ctrans("Could not check the goods")),
 		onFinish: () => (isCheckingMany.value = false),
 	})
 }
@@ -140,10 +142,24 @@ function itemStatus(item: ReceiptItem) {
 <template>
 	<section class="border-b border-gray-300 px-4 py-3">
 		<div class="flex flex-wrap items-center justify-between gap-2">
-			<h3 class="flex items-center gap-2 font-semibold text-gray-800">
-				<FontAwesomeIcon :icon="faInboxIn" class="text-[--app-accent]" fixed-width aria-hidden="true" />
-				{{ ctrans("Received at our warehouse") }}
-			</h3>
+			<div class="flex items-center gap-2">
+				<Button
+					type="tertiary"
+					size="xs"
+					:tooltip="isSectionOpen ? ctrans('Hide the received goods') : ctrans('Show the received goods')"
+					:aria-expanded="isSectionOpen"
+					@click="isSectionOpen = !isSectionOpen"
+				>
+					<template #icon>
+						<FontAwesomeIcon :icon="isSectionOpen ? faChevronDown : faChevronRight" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<h3 class="flex cursor-pointer select-none items-center gap-2 font-semibold text-gray-800" @click="isSectionOpen = !isSectionOpen">
+					<FontAwesomeIcon :icon="faInboxIn" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+					{{ ctrans("Received at our warehouse") }}
+					<span v-if="!isSectionOpen" class="text-xs font-normal text-gray-500">({{ ctrans(":count products", { count: receiving.lines.length }) }})</span>
+				</h3>
+			</div>
 			<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
 				<span>{{ ctrans("Received") }}: <span class="font-medium tabular-nums text-gray-800">{{ formatQuantity(totals.received) }}</span></span>
 				<span>{{ ctrans("Rejected") }}: <span class="font-medium tabular-nums" :class="totals.rejected > 0 ? 'text-red-600' : 'text-gray-800'">{{ formatQuantity(totals.rejected) }}</span></span>
@@ -154,96 +170,85 @@ function itemStatus(item: ReceiptItem) {
 				<AgentReceiveGoodsButton v-if="receiving.receive" :scopes="receiving.receive.scopes" :purchaseOrderId="receiving.receive.purchase_order_id" size="xs" />
 			</div>
 		</div>
-		<p class="mt-1 text-xs text-gray-500">
-			{{ ctrans("Each delivery from the supplier is a goods receipt. Check its lines for rejects: rejected units go back to In production, the supplier still owes them. Quantities are in units.") }}
-		</p>
+		<div v-show="isSectionOpen">
+			<p class="mt-1 text-xs text-gray-500">
+				{{ ctrans("Each delivery from the supplier is a goods receipt. Check its lines for rejects: rejected units go back to In production, the supplier still owes them. Quantities are in units.") }}
+			</p>
 
-		<div v-if="receiving.goods_receipts.length" class="mt-2 flex flex-wrap items-center gap-2 text-xs">
-			<span class="text-gray-500">{{ ctrans("Goods receipts") }}:</span>
-			<span v-for="receipt in receiving.goods_receipts" :key="receipt.reference" class="inline-flex items-center gap-1 rounded border border-gray-200 px-1.5 py-0.5">
-				<Link :href="route(receipt.show_route.name, receipt.show_route.parameters)" class="secondaryLink whitespace-nowrap">{{ receipt.reference }}</Link>
-				<span class="text-gray-400">{{ receipt.received_at }}</span>
-				<a :href="route(receipt.receipt_note_route.name, receipt.receipt_note_route.parameters)" target="_blank" rel="noopener" class="text-red-500 hover:text-red-700" v-tooltip="ctrans('Receipt note PDF for the supplier')">
-					<FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
-				</a>
-			</span>
-		</div>
+			<div v-if="receiving.goods_receipts.length" class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+				<span class="text-gray-500">{{ ctrans("Goods receipts") }}:</span>
+				<span v-for="receipt in receiving.goods_receipts" :key="receipt.reference" class="inline-flex items-center gap-1 rounded border border-gray-200 px-1.5 py-0.5">
+					<Link :href="route(receipt.show_route.name, receipt.show_route.parameters)" class="secondaryLink whitespace-nowrap">{{ receipt.reference }}</Link>
+					<span class="text-gray-400">{{ receipt.received_at }}</span>
+					<a :href="route(receipt.receipt_note_route.name, receipt.receipt_note_route.parameters)" target="_blank" rel="noopener" class="text-red-500 hover:text-red-700" v-tooltip="ctrans('Receipt note PDF for the supplier')">
+						<FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+					</a>
+				</span>
+			</div>
 
-		<div v-if="receiving.check_many_route && checkableItemIds.length" class="mt-3 flex flex-wrap items-center gap-3 text-sm">
-			<label class="flex cursor-pointer items-center gap-2 text-gray-700">
-				<Checkbox v-model="isAllSelected" binary size="small" />
-				{{ ctrans("Select all :count not checked yet", { count: checkableItemIds.length }) }}
-			</label>
-			<Button
-				type="tertiary"
-				size="xs"
-				:label="ctrans('Check selected: no rejects (:count)', { count: selectedItemIds.length })"
-				:tooltip="ctrans('Mark the selected goods as checked with no rejects. Check goods with rejects one by one.')"
-				:disabled="!selectedItemIds.length"
-				:loading="isCheckingMany"
-				@click="checkSelected"
-			>
-				<template #icon>
-					<FontAwesomeIcon :icon="faClipboardCheck" class="text-green-600" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
-		</div>
+			<div v-if="receiving.check_many_route && checkableItemIds.length" class="mt-3 flex flex-wrap items-center gap-3 text-sm">
+				<label class="flex cursor-pointer items-center gap-2 text-gray-700">
+					<Checkbox v-model="isAllSelected" binary size="small" />
+					{{ ctrans("Select all :count not checked yet", { count: checkableItemIds.length }) }}
+				</label>
+				<Button
+					type="tertiary"
+					size="xs"
+					:label="ctrans('Check selected: no rejects (:count)', { count: selectedItemIds.length })"
+					:tooltip="ctrans('Mark the selected goods as checked with no rejects. Check goods with rejects one by one.')"
+					:disabled="!selectedItemIds.length"
+					:loading="isCheckingMany"
+					@click="checkSelected"
+				>
+					<template #icon>
+						<FontAwesomeIcon :icon="faClipboardCheck" class="text-green-600" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<span v-if="checkManyError" class="text-xs text-red-600">{{ checkManyError }}</span>
+			</div>
 
-		<div class="mt-3 overflow-x-auto">
-			<table class="min-w-full text-sm">
-				<thead class="whitespace-nowrap">
-					<tr class="border-b border-gray-200 text-left text-xs text-gray-500">
-						<th class="w-6"></th>
-						<th class="py-1.5 pr-3 font-normal">{{ ctrans("Product") }}</th>
-						<th class="px-3 py-1.5 text-right font-normal">{{ ctrans("Ordered") }}</th>
-						<th class="px-3 py-1.5 text-right font-normal">{{ ctrans("Received") }}</th>
-						<th class="px-3 py-1.5 text-right font-normal">{{ ctrans("Rejected") }}</th>
-						<th class="px-3 py-1.5 text-right font-normal">{{ ctrans("Still to come") }}</th>
-						<th class="py-1.5 pl-3"></th>
-					</tr>
-				</thead>
-				<tbody>
-					<template v-for="line in receiving.lines" :key="line.id">
-						<tr class="border-b border-gray-100" :class="{ 'opacity-50': line.state === 'cancelled' }">
-							<td class="align-middle">
-								<Button
-									v-if="line.items.length"
-									type="tertiary"
-									size="xs"
-									:aria-label="ctrans('Show the goods receipts')"
-									@click="expanded[line.id] = !isExpanded(line)"
-								>
-									<template #icon>
-										<FontAwesomeIcon :icon="isExpanded(line) ? faChevronDown : faChevronRight" fixed-width aria-hidden="true" />
-									</template>
-								</Button>
-							</td>
-							<td class="py-2 pr-3">
-								<div class="flex items-center gap-2">
-									<ZoomableImage :src="line.image_thumbnail" :full="line.image_full" :alt="line.code" class="h-10 w-10" />
-									<div>
-										<div class="whitespace-nowrap font-medium text-gray-800">{{ line.code }}</div>
-										<div class="text-xs text-gray-500">{{ line.name }}</div>
-									</div>
-									<span v-if="line.unchecked" class="whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700 ring-1 ring-inset ring-amber-200">
-										{{ ctrans("Not checked yet") }}
-									</span>
-								</div>
-							</td>
-							<td class="px-3 py-2 text-right tabular-nums" v-tooltip="ctrans(':skos SKO', { skos: skos(line, line.ordered) })">{{ formatQuantity(line.ordered) }}</td>
-							<td class="px-3 py-2 text-right tabular-nums" v-tooltip="ctrans(':skos SKO', { skos: skos(line, line.received) })">{{ formatQuantity(line.received) }}</td>
-							<td class="px-3 py-2 text-right tabular-nums" :class="line.rejected > 0 ? 'text-red-600' : ''">{{ formatQuantity(line.rejected) }}</td>
-							<td class="px-3 py-2 text-right font-medium tabular-nums" v-tooltip="ctrans(':skos SKO', { skos: skos(line, line.outstanding) })">
-								<FontAwesomeIcon v-if="line.outstanding === 0 && line.received > 0" :icon="faBoxCheck" class="mr-1 text-green-600" fixed-width aria-hidden="true" />
-								{{ formatQuantity(line.outstanding) }}
-								<div v-if="toReplace(line) > 0" class="text-xs font-normal text-red-600">
-									{{ ctrans(":units to replace rejects", { units: formatQuantity(toReplace(line)) }) }}
-								</div>
-							</td>
-							<td class="py-2 pl-3"></td>
+			<div class="mt-3 overflow-x-auto">
+				<table class="min-w-full text-sm">
+					<thead class="whitespace-nowrap">
+						<tr class="border-b border-gray-200 text-left text-xs text-gray-500">
+							<th class="w-6"></th>
+							<th class="py-1.5 pr-3 font-normal">{{ ctrans("Product") }}</th>
+							<th class="px-3 py-1.5 text-right font-normal">{{ ctrans("Ordered") }}</th>
+							<th class="px-3 py-1.5 text-right font-normal">{{ ctrans("Received") }}</th>
+							<th class="px-3 py-1.5 text-right font-normal">{{ ctrans("Rejected") }}</th>
+							<th class="px-3 py-1.5 text-right font-normal">{{ ctrans("Still to come") }}</th>
+							<th class="py-1.5 pl-3"></th>
 						</tr>
+					</thead>
+					<tbody>
+						<template v-for="line in receiving.lines" :key="line.id">
+							<tr class="border-b border-gray-100" :class="{ 'opacity-50': line.state === 'cancelled' }">
+								<td></td>
+								<td class="py-2 pr-3">
+									<div class="flex items-center gap-2">
+										<ZoomableImage :src="line.image_thumbnail" :full="line.image_full" :alt="line.code" class="h-10 w-10" />
+										<div>
+											<div class="whitespace-nowrap font-medium text-gray-800">{{ line.code }}</div>
+											<div class="text-xs text-gray-500">{{ line.name }}</div>
+										</div>
+										<span v-if="line.unchecked" class="whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700 ring-1 ring-inset ring-amber-200">
+											{{ ctrans("Not checked yet") }}
+										</span>
+									</div>
+								</td>
+								<td class="px-3 py-2 text-right tabular-nums" v-tooltip="ctrans(':skos SKO', { skos: skos(line, line.ordered) })">{{ formatQuantity(line.ordered) }}</td>
+								<td class="px-3 py-2 text-right tabular-nums" v-tooltip="ctrans(':skos SKO', { skos: skos(line, line.received) })">{{ formatQuantity(line.received) }}</td>
+								<td class="px-3 py-2 text-right tabular-nums" :class="line.rejected > 0 ? 'text-red-600' : ''">{{ formatQuantity(line.rejected) }}</td>
+								<td class="px-3 py-2 text-right font-medium tabular-nums" v-tooltip="ctrans(':skos SKO', { skos: skos(line, line.outstanding) })">
+									<FontAwesomeIcon v-if="line.outstanding === 0 && line.received > 0" :icon="faBoxCheck" class="mr-1 text-green-600" fixed-width aria-hidden="true" />
+									{{ formatQuantity(line.outstanding) }}
+									<div v-if="toReplace(line) > 0" class="text-xs font-normal text-red-600">
+										{{ ctrans(":units to replace rejects", { units: formatQuantity(toReplace(line)) }) }}
+									</div>
+								</td>
+								<td class="py-2 pl-3"></td>
+							</tr>
 
-						<template v-if="isExpanded(line)">
 							<tr v-for="item in line.items" :key="`item-${item.id}`" class="border-b border-gray-100 bg-gray-50/60 text-xs">
 								<td class="text-center align-top pt-1.5">
 									<Checkbox v-if="receiving.check_many_route && item.check_route && !item.is_checked" v-model="selectedItemIds" :value="item.id" size="small" :aria-label="ctrans('Select :reference', { reference: item.reference })" />
@@ -298,9 +303,9 @@ function itemStatus(item: ReceiptItem) {
 								</td>
 							</tr>
 						</template>
-					</template>
-				</tbody>
-			</table>
+					</tbody>
+				</table>
+			</div>
 		</div>
 
 		<AgentGoodsReceiptItemCheckDialog :item="checkingItem" @close="checkingItem = null" />
