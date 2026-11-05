@@ -256,7 +256,9 @@ class UpdateProductCategoryOffersData
     {
         return match ($offerAllowance->type) {
             OfferAllowanceType::PERCENTAGE_OFF => $this->getPercentageOffLabel($offerAllowance),
-            OfferAllowanceType::GIFT => __('Free gift'),
+            OfferAllowanceType::GIFT => Arr::get($offerAllowance->data, 'same_product')
+                ? __('Buy :buy get :free free', ['buy' => Arr::get($offerAllowance->offer->trigger_data, 'item_quantity', 1), 'free' => Arr::get($offerAllowance->data, 'quantity', 1)])
+                : __('Free gift'),
             OfferAllowanceType::SHIPPING => __('Discounted shipping'),
             default => '',
         };

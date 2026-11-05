@@ -123,6 +123,7 @@ trait WithIrisProductsInWebpage
                     $join->on('transactions.model_id', '=', 'products.id')
                         ->where('transactions.model_type', '=', 'Product')
                         ->where('transactions.order_id', '=', $basket->id)
+                        ->where('transactions.is_gift', false)
                         ->whereNull('transactions.deleted_at');
                 });
             }

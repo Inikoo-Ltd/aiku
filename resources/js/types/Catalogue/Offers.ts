@@ -45,6 +45,7 @@ export interface OfferGiftData {
     min_order_amount: number | null
     item_quantity: number | null
     quantity: number
+    is_same_product?: boolean
     product: OfferProduct | null
 }
 

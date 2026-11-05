@@ -256,6 +256,11 @@ const adjustLabel = computed(() => isQuantityTrigger.value
                     </div>
                 </div>
 
+                <div v-else-if="giftData?.is_same_product" class="flex-1 rounded-md border px-2 py-3 text-center text-xs"
+                    :class="isReached ? 'border-green-300 bg-green-50 text-green-800' : 'border-gray-200 bg-white text-gray-600'">
+                    {{ ctrans(':quantity free of each product bought, added to the order', { quantity: String(giftQuantity) }) }}
+                </div>
+
                 <div v-else class="flex-1 rounded-md border border-dashed border-gray-300 px-2 py-3 text-center text-xs italic text-gray-400">
                     {{ ctrans('No gift product defined on this offer') }}
                 </div>

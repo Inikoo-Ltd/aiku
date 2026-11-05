@@ -105,7 +105,7 @@ class OfferResource extends JsonResource
     }
 
     /**
-     * @return array{min_order_amount: float|null, item_quantity: int|null, quantity: int, product: array|null}
+     * @return array{min_order_amount: float|null, item_quantity: int|null, quantity: int, is_same_product: bool, product: array|null}
      */
     protected function getGiftData(Offer $offer): array
     {
@@ -118,6 +118,7 @@ class OfferResource extends JsonResource
             'min_order_amount' => Arr::get($offer->trigger_data, 'min_order_amount'),
             'item_quantity'    => Arr::get($offer->trigger_data, 'item_quantity'),
             'quantity'         => (int)Arr::get($giftAllowance?->data, 'quantity', 1),
+            'is_same_product'  => (bool)Arr::get($giftAllowance?->data, 'same_product'),
             'product'          => $this->getOfferProductData($giftProduct),
         ];
     }

@@ -435,7 +435,7 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
 <template>
     <div class="flex h-full flex-col overflow-hidden bg-white" ref="basketRef">
         <div class="flex-1 min-h-0 flex flex-col px-4 pt-6 sm:px-6">
-            <BasketBonusStockMeter v-for="bonusStock in dataSideBasket?.bonus_stock" :key="bonusStock.offer_id" :bonusStock class="mb-4" />
+            <BasketBonusStockMeter v-for="bonusStock in (dataSideBasket?.bonus_stock || []).filter(bonusStock => !bonusStock.is_same_product)" :key="bonusStock.offer_id" :bonusStock class="mb-4" />
 
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">

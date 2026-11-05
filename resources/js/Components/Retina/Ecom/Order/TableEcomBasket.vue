@@ -45,6 +45,7 @@ const bonusStockRows = computed(() => (props.bonusStock || [])
         id: `bonus-stock-${bonusStock.offer_id}-${product.id}`,
         is_bonus_stock: true,
         bonus_stock_label: bonusStock.label,
+        is_same_product: bonusStock.is_same_product,
         asset_code: product.code,
         asset_name: product.name,
         units: product.units,
@@ -218,7 +219,7 @@ const isOffersData = (offersData: any): boolean => {
                 <div v-if="item.is_bonus_stock" v-tooltip="item.bonus_stock_label"
                     class="mt-1 inline-flex items-center gap-x-1 rounded px-2 py-0.5 text-xs font-medium bg-[color-mix(in_srgb,var(--theme-color-0)_12%,white)] text-[var(--theme-color-0)]">
                     <FontAwesomeIcon :icon="faGift" fixed-width aria-hidden="true" />
-                    {{ ctrans(':quantity x Bonus Stock', { quantity: locale.number(item.quantity_ordered) }) }}
+                    {{ item.is_same_product ? ctrans(':quantity x Free', { quantity: locale.number(item.quantity_ordered) }) : ctrans(':quantity x Bonus Stock', { quantity: locale.number(item.quantity_ordered) }) }}
                 </div>
                 <div v-else-if="preOrderLines?.[item.id]" class="text-xs text-amber-800">
                     {{ preOrderLines[item.id].basket_label }}
@@ -324,7 +325,7 @@ const isOffersData = (offersData: any): boolean => {
                                     <div v-if="item.is_bonus_stock" v-tooltip="item.bonus_stock_label"
                                         class="inline-flex items-center gap-x-1 rounded px-2 py-0.5 text-xs font-medium bg-[color-mix(in_srgb,var(--theme-color-0)_12%,white)] text-[var(--theme-color-0)]">
                                         <FontAwesomeIcon :icon="faGift" fixed-width aria-hidden="true" />
-                                        {{ ctrans(':quantity x Bonus Stock', { quantity: locale.number(item.quantity_ordered) }) }}
+                                        {{ item.is_same_product ? ctrans(':quantity x Free', { quantity: locale.number(item.quantity_ordered) }) : ctrans(':quantity x Bonus Stock', { quantity: locale.number(item.quantity_ordered) }) }}
                                     </div>
                                     <div v-else-if="preOrderLines?.[item.id]" class="text-xs text-amber-800">
                                         {{ preOrderLines[item.id].basket_label }}

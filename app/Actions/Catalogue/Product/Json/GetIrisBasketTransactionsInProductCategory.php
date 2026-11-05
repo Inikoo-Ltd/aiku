@@ -27,6 +27,7 @@ class GetIrisBasketTransactionsInProductCategory extends IrisAction
                 $join->on('transactions.model_id', '=', 'products.id')
                     ->where('transactions.model_type', '=', 'Product')
                     ->where('transactions.order_id', '=', $basket->id)
+                    ->where('transactions.is_gift', false)
                     ->whereNull('transactions.deleted_at');
             });
             $query->selectRaw('products.id,array_agg(transactions.id) as transaction_ids,array_agg(transactions.quantity_ordered) as quantity_ordered')->groupBy('products.id');

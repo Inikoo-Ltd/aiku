@@ -235,7 +235,7 @@ const updateCollection = (value: boolean) => {
 
             <!-- Section: Offer meters (free gift, etc)-->
             <div v-if="!isInCheckout && Object.keys(layout?.offer_meters || {})?.length" class="border-t border-gray-300 pt-6 col-span-full px-1 flex flex-col gap-y-3">
-                <BasketBonusStockCard v-for="bonusStock in bonus_stock" :key="bonusStock.offer_id" :bonusStock />
+                <BasketBonusStockCard v-for="bonusStock in (bonus_stock || []).filter(bonusStock => !bonusStock.is_same_product)" :key="bonusStock.offer_id" :bonusStock />
 
                 <template v-for="(offer, offerIndex) in layout?.offer_meters" :key="offerIndex">
                     <div v-if="!bonusStockOfferIds.includes(offer.offer_id) && (isShowAllOffersMeter || isOfferFulfilled(offer))" class="grid grid-cols-2 gap-x-4">

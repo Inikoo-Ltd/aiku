@@ -52,6 +52,8 @@ class SendOrderBackToBasket extends OrgAction
         }
 
 
+        SubmitOrder::make()->removeSameProductGiftLines($order);
+
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $oldState);
         $this->orderHandlingHydrators($order, OrderStateEnum::CREATING);

@@ -2230,6 +2230,72 @@ describe('calculate order discounts', function () {
         SuspendOffer::run($offer);
     });
 
+    test('SubmitOrder: a family BOGOF adds free units of each product bought, within stock, and works them out again at every submit', function () {
+        $order          = Order::latest('id')->first();
+        $productStock   = $this->product->only(['available_quantity', 'is_on_demand']);
+        $this->product->update(['available_quantity' => 1000, 'is_on_demand' => false]);
+
+        expect(fn () => StoreBuyXGetCheapestFree::make()->action(
+            $this->product->family,
+            ['trigger_data_item_quantity' => 1, 'free_quantity' => 1, 'duration' => 'permanent', 'start_at' => now()]
+        ))->toThrow(ValidationException::class);
+
+        $offer = StoreBuyXGetCheapestFree::make()->action(
+            $this->product->family,
+            [
+                'trigger_data_item_quantity' => 1,
+                'free_quantity'              => 1,
+                'auto_add'                   => true,
+                'duration'                   => 'permanent',
+                'start_at'                   => now(),
+            ]
+        );
+
+        $orderedQuantity = (int)Transaction::where('order_id', $order->id)->where('model_type', 'Product')->where('model_id', $this->product->id)->where('is_gift', false)->sum('quantity_ordered');
+        expect($orderedQuantity)->toBeGreaterThan(0)
+            ->and($offer->type)->toBe('Gift')
+            ->and($offer->trigger_type)->toBe('ProductCategory')
+            ->and($offer->trigger_id)->toBe($this->product->family_id)
+            ->and(Arr::get($offer->offerAllowances()->first()->data, 'same_product'))->toBeTrue()
+            ->and($offer->allowance_signature)->toEndWith('same@'.$this->product->family_id)
+            ->and(collect(Arr::get($this->product->family->refresh()->offers_data, 'offers.'.$offer->id.'.allowances'))->pluck('label')->all())->toBe(['Buy 1 get 1 free']);
+
+        $giftLines = collect(SubmitOrder::make()->getSameProductGiftLines($order, $this->product->family_id, 1, 1))
+            ->mapWithKeys(fn (array $giftLine) => [$giftLine[0]->id => $giftLine[1]]);
+        expect($giftLines->get($this->product->id))->toBe($orderedQuantity);
+
+        $order->update(['offer_meters' => [$offer->allowance_signature => ['offer_id' => $offer->id, 'label' => $offer->name, 'is_gift' => true, 'metadata' => ['current' => $orderedQuantity, 'target' => 1]]]]);
+        $preview = collect(GetBasketBonusStockPreview::run($order->refresh()))->firstWhere('offer_id', $offer->id);
+        expect($preview['is_same_product'])->toBeTrue()
+            ->and($preview['is_reached'])->toBeTrue()
+            ->and(collect($preview['products'])->firstWhere('id', $this->product->id)['quantity'])->toBe($orderedQuantity);
+
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+
+        $giftTransactions = Transaction::where('order_id', $order->id)->where('is_gift', true)->where('model_id', $this->product->id)->get();
+        expect($giftTransactions)->toHaveCount(1)
+            ->and((float)$giftTransactions->first()->quantity_bonus)->toBe((float)$orderedQuantity)
+            ->and((int)DB::table('transaction_has_offer_allowances')->where('transaction_id', $giftTransactions->first()->id)->value('number_of_free_items'))->toBe($orderedQuantity)
+            ->and((float)Transaction::where('order_id', $order->id)->where('is_gift', false)->where('model_id', $this->product->id)->sum('quantity_ordered'))->toBe((float)$orderedQuantity);
+
+        $this->product->update(['available_quantity' => $orderedQuantity + 1]);
+        SubmitOrder::make()->processGiftOffers($order->refresh());
+
+        $giftTransactions = Transaction::where('order_id', $order->id)->where('is_gift', true)->where('model_id', $this->product->id)->get();
+        expect($giftTransactions)->toHaveCount(1)
+            ->and((float)$giftTransactions->first()->quantity_bonus)->toBe(1.0);
+
+        SubmitOrder::make()->removeSameProductGiftLines($order->refresh());
+        expect(Transaction::where('order_id', $order->id)->where('is_gift', true)->where('model_id', $this->product->id)->count())->toBe(0);
+
+        $giftTransactions = Transaction::withTrashed()->where('order_id', $order->id)->where('is_gift', true)->where('model_id', $this->product->id)->get();
+        DB::table('transaction_has_offer_allowances')->whereIn('transaction_id', $giftTransactions->pluck('id'))->delete();
+        $giftTransactions->each->forceDelete();
+        $this->product->update($productStock);
+        SuspendOffer::run($offer);
+    });
+
     test('SubmitOrder: buy X from a family gets its discontinued stock free and the offer ends when it is gone', function () {
         $order       = Order::latest('id')->first();
         $giftProduct = Product::where('shop_id', $this->shop->id)->where('code', 'GIFT-PROD')->first();

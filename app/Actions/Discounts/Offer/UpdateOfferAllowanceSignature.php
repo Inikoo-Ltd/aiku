@@ -58,7 +58,7 @@ class UpdateOfferAllowanceSignature extends OrgAction
                     $allowanceSignature .= '@'.implode(',', $categoryIds);
                 }
             } elseif ($offerAllowance->type == OfferAllowanceType::GIFT) {
-                $allowanceSignature .= Arr::get($offerAllowance->data, 'product_id', 'error');
+                $allowanceSignature .= Arr::get($offerAllowance->data, 'product_id', Arr::get($offerAllowance->data, 'same_product') ? 'same@'.$offer->trigger_id : 'error');
                 if ($clearanceFamilyId = Arr::get($offerAllowance->data, 'discontinuing_in_family_id')) {
                     $allowanceSignature .= '@'.$clearanceFamilyId;
                 }

@@ -23,11 +23,11 @@ class GetBasketBonusStockPreview
     use AsObject;
 
     /**
-     * The free discontinued stock offers a basket is working towards, with the products they would hand out,
+     * The free discontinued stock (and BOGOF same-product) offers a basket is working towards, with the products they would hand out,
      * so the basket can show the bonus stock as its own line before the order is placed. The gift transactions
      * themselves are still only created by SubmitOrder (HELP-3834).
      *
-     * @return array<int, array{offer_id: int, label: string, family_code: ?string, family_name: ?string, current: float, target: float, is_reached: bool, is_in_basket: bool, quantity: int, products: array<int, array<string, mixed>>}>
+     * @return array<int, array{offer_id: int, label: string, family_code: ?string, family_name: ?string, current: float, target: float, is_same_product: bool, is_reached: bool, is_in_basket: bool, quantity: int, products: array<int, array<string, mixed>>}>
      */
     public function handle(Order $order): array
     {
@@ -41,7 +41,7 @@ class GetBasketBonusStockPreview
         $allowancesData = DB::table('offer_allowances')
             ->whereIn('offer_id', $offers->keys())
             ->where('status', true)
-            ->whereNotNull(DB::raw("data->>'discontinuing_in_family_id'"))
+            ->where(fn ($query) => $query->whereNotNull(DB::raw("data->>'discontinuing_in_family_id'"))->orWhere(DB::raw("data->>'same_product'"), 'true'))
             ->pluck('data', 'offer_id');
 
         $bonusStock = [];
@@ -53,24 +53,31 @@ class GetBasketBonusStockPreview
             $current       = (float)Arr::get($giftMeter, 'metadata.current', 0);
             $target        = (float)Arr::get($giftMeter, 'metadata.target', 0);
 
-            $family      = ProductCategory::find(Arr::get($allowanceData, 'discontinuing_in_family_id'));
-            [$giftLines] = GetDiscontinuingProductsInFamily::make()->getGiftLines(
-                $family,
-                Arr::get($allowanceData, 'product_id'),
-                $quantity
-            );
+            $isSameProduct = (bool)Arr::get($allowanceData, 'same_product');
+            if ($isSameProduct) {
+                $family    = ProductCategory::find($offer->trigger_id);
+                $giftLines = SubmitOrder::make()->getSameProductGiftLines($order, (int)$offer->trigger_id, (int)Arr::get($offer->trigger_data, 'item_quantity', 0), $quantity);
+            } else {
+                $family      = ProductCategory::find(Arr::get($allowanceData, 'discontinuing_in_family_id'));
+                [$giftLines] = GetDiscontinuingProductsInFamily::make()->getGiftLines(
+                    $family,
+                    Arr::get($allowanceData, 'product_id'),
+                    $quantity
+                );
+            }
 
             $bonusStock[] = [
-                'offer_id'     => $offer->id,
-                'label'        => $offer->name,
-                'family_code'  => $family?->code,
-                'family_name'  => $family?->name,
-                'current'      => $current,
-                'target'       => $target,
-                'is_reached'   => $target > 0 && $current >= $target,
-                'is_in_basket' => SubmitOrder::make()->orderHasGiftFromOffer($order, $offer->id),
-                'quantity'     => $quantity,
-                'products'     => array_map(fn (array $giftLine) => $this->getGiftProductData(...$giftLine), $giftLines),
+                'offer_id'        => $offer->id,
+                'label'           => $offer->name,
+                'family_code'     => $family?->code,
+                'family_name'     => $family?->name,
+                'current'         => $current,
+                'target'          => $target,
+                'is_same_product' => $isSameProduct,
+                'is_reached'      => $isSameProduct ? $giftLines !== [] : $target > 0 && $current >= $target,
+                'is_in_basket'    => SubmitOrder::make()->orderHasGiftFromOffer($order, $offer->id),
+                'quantity'        => $isSameProduct ? array_sum(array_column($giftLines, 1)) : $quantity,
+                'products'        => array_map(fn (array $giftLine) => $this->getGiftProductData(...$giftLine), $giftLines),
             ];
         }
 

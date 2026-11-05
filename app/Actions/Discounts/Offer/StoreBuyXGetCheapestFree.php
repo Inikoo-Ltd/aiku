@@ -48,8 +48,14 @@ class StoreBuyXGetCheapestFree extends OrgAction
         $itemQuantity = (int)Arr::pull($modelData, 'trigger_data_item_quantity');
         $freeQuantity = (int)Arr::pull($modelData, 'free_quantity');
 
+        $freeProductId = Arr::pull($modelData, 'free_product_id');
+
+        if ((bool)Arr::pull($modelData, 'auto_add') && $family) {
+            return $this->handleSameProductGiftOffer($modelData, $family, $itemQuantity, $freeQuantity);
+        }
+
         $freeProduct = null;
-        if ($freeProductId = Arr::pull($modelData, 'free_product_id')) {
+        if ($freeProductId) {
             if ($product && $freeProductId != $product->id) {
                 $freeProduct = Product::where('shop_id', $product->shop_id)->find($freeProductId);
             }
@@ -191,13 +197,68 @@ class StoreBuyXGetCheapestFree extends OrgAction
         return $offer;
     }
 
+    /**
+     * Buy X of a product in the family, get Y more of that same product free (BOGOF): the free units
+     * are added as gift lines when the order is submitted, and the basket previews them before that.
+     *
+     * @throws \Throwable
+     */
+    private function handleSameProductGiftOffer(array $modelData, ProductCategory $family, int $itemQuantity, int $freeQuantity): ?Offer
+    {
+        $offerCampaign = OfferCampaign::where('shop_id', $family->shop_id)->where('type', OfferCampaignTypeEnum::GIFT)->first();
+        if (!$offerCampaign) {
+            return null;
+        }
+
+        data_set($modelData, 'type', OfferTypeEnum::GIFT->value);
+
+        $code = Str::lower($offerCampaign->code.'-bogof-'.$family->code);
+        data_set($modelData, 'code', $code, false);
+
+        $english = Language::where('code', 'en')->first();
+        data_set(
+            $modelData,
+            'name',
+            Translate::run('Buy '.$itemQuantity.' get '.$freeQuantity.' free', $english, $family->shop->language, 'catalogue').' '.$family->code,
+            false
+        );
+
+        data_set($modelData, 'trigger_type', 'ProductCategory');
+        data_set($modelData, 'trigger_id', $family->id);
+        data_set($modelData, 'trigger_data', ['item_quantity' => $itemQuantity]);
+
+        data_set(
+            $modelData,
+            'allowances',
+            [
+                [
+                    'class'       => OfferAllowanceClass::GIFT->value,
+                    'target_type' => OfferAllowanceTargetTypeEnum::ORDER->value,
+                    'type'        => OfferAllowanceType::GIFT->value,
+                    'data'        => [
+                        'same_product' => true,
+                        'quantity'     => $freeQuantity,
+                    ]
+                ]
+            ]
+        );
+
+        $offer = StoreOffer::run($offerCampaign, $modelData);
+        ActivateOffer::run($offer, 30);
+
+        return $offer;
+    }
+
     public function rules(): array
     {
+        $isAutoAdd = filter_var($this->get('auto_add'), FILTER_VALIDATE_BOOLEAN) && !$this->get('product_id');
+
         return [
             'name'                       => ['sometimes', 'string', 'max:255'],
             'duration'                   => ['required', 'string', 'in:interval,permanent'],
-            'trigger_data_item_quantity' => ['required', 'integer', 'min:2'],
-            'free_quantity'              => ['required', 'integer', 'min:1', 'lt:trigger_data_item_quantity'],
+            'auto_add'                   => ['sometimes', 'boolean'],
+            'trigger_data_item_quantity' => ['required', 'integer', $isAutoAdd ? 'min:1' : 'min:2'],
+            'free_quantity'              => array_merge(['required', 'integer', 'min:1'], $isAutoAdd ? [] : ['lt:trigger_data_item_quantity']),
             'start_at'                   => [
                 'required',
                 'date',

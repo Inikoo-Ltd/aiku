@@ -8,6 +8,7 @@ import InformationIcon from '../Utils/InformationIcon.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
 import PureInput from '../Pure/PureInput.vue'
+import SegmentedToggle from '@/Components/Utils/SegmentedToggle.vue'
 import axios from 'axios'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -38,11 +39,19 @@ const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 const quickIntervalDays = ref<number | null>(null)
 const isLoadingSubmit = ref(false)
+const freeItemMode = ref<'cheapest' | 'same_product'>('cheapest')
+const isSameProduct = computed(() => freeItemMode.value === 'same_product')
+
+const freeItemModeOptions = [
+    { label: ctrans('Cheapest free'), value: 'cheapest', help: ctrans('Customer adds the items, the cheapest ones are free') },
+    { label: ctrans('Same product added free'), value: 'same_product', help: ctrans('For each product bought, free units of that same product are added to the basket') },
+]
 
 const quickIntervalPresets = [1, 2, 3, 7]
 const today = new Date(new Date().setHours(0, 0, 0, 0))
 
-const freeQuantityMax = computed(() => Math.max(1, (buyQuantity.value ?? 2) - 1))
+const minBuyQuantity = computed(() => isSameProduct.value ? 1 : 2)
+const freeQuantityMax = computed(() => isSameProduct.value ? undefined : Math.max(1, (buyQuantity.value ?? 2) - 1))
 
 const openModal = () => {
     resetForm()
@@ -59,6 +68,7 @@ const resetForm = () => {
     offerLabel.value = ''
     buyQuantity.value = 2
     freeQuantity.value = 1
+    freeItemMode.value = 'cheapest'
     dateType.value = 'permanent'
     startDate.value = null
     endDate.value = null
@@ -96,8 +106,8 @@ const applyQuickInterval = (days: number) => {
 
 const isFormInvalid = computed(() => {
     if (!offerLabel.value) return true
-    if (!buyQuantity.value || buyQuantity.value < 2) return true
-    if (!freeQuantity.value || freeQuantity.value >= buyQuantity.value) return true
+    if (!buyQuantity.value || buyQuantity.value < minBuyQuantity.value) return true
+    if (!freeQuantity.value || (!isSameProduct.value && freeQuantity.value >= buyQuantity.value)) return true
     if (!startDate.value) return true
     if (dateType.value === 'interval' && !endDate.value) return true
 
@@ -112,6 +122,7 @@ const submitOffer = () => {
         product_category_id: props.product_category_id,
         trigger_data_item_quantity: buyQuantity.value != null ? Math.floor(buyQuantity.value) : null,
         free_quantity: freeQuantity.value != null ? Math.floor(freeQuantity.value) : null,
+        auto_add: isSameProduct.value,
         duration: dateType.value,
         start_at: formatDate(startDate.value),
         end_at: dateType.value === 'interval' ? formatDate(endDate.value) : null,
@@ -168,8 +179,13 @@ watch([startDate, endDate], () => {
     }
 })
 
+watch(isSameProduct, (sameProduct) => {
+    buyQuantity.value = sameProduct ? 1 : 2
+    freeQuantity.value = 1
+})
+
 watch(freeQuantityMax, (max) => {
-    if (freeQuantity.value != null && freeQuantity.value > max) {
+    if (max != null && freeQuantity.value != null && freeQuantity.value > max) {
         freeQuantity.value = max
     }
 })
@@ -195,22 +211,28 @@ watch(freeQuantityMax, (max) => {
                     <div class="font-medium mb-2 flex items-center gap-x-1">
                         <FontAwesomeIcon icon="fas fa-asterisk" class="font-light text-xs text-red-400 align-middle" fixed-width />
                         {{ ctrans('Rule') }}:
-                        <InformationIcon :information="ctrans('Customer buys any mix of products in this family and gets the cheapest ones free')" />
+                        <InformationIcon :information="isSameProduct
+                            ? ctrans('For each product of this family the customer buys, free units of that same product are added to the order')
+                            : ctrans('Customer buys any mix of products in this family and gets the cheapest ones free')" />
                     </div>
+
+                    <SegmentedToggle v-model="freeItemMode" :options="freeItemModeOptions" :ariaLabel="ctrans('Free item')" />
 
                     <div class="flex flex-wrap items-center gap-3">
                         <span>{{ ctrans('Buy') }}</span>
-                        <InputNumber v-model="buyQuantity" inputId="buy_quantity" :min="2" class="w-40" inputClass="w-full"
+                        <InputNumber v-model="buyQuantity" inputId="buy_quantity" :min="minBuyQuantity" class="w-40" inputClass="w-full"
                             :suffix="' ' + ((buyQuantity ?? 0) > 1 ? ctrans('items') : ctrans('item'))" />
                         <span>{{ ctrans('get') }}</span>
                         <InputNumber v-model="freeQuantity" inputId="free_quantity" :min="1" :max="freeQuantityMax"
                             class="w-40" inputClass="w-full"
                             :suffix="' ' + ((freeQuantity ?? 0) > 1 ? ctrans('items') : ctrans('item'))" />
-                        <span>{{ ctrans('cheapest for free') }}</span>
+                        <span>{{ isSameProduct ? ctrans('of the same product free') : ctrans('cheapest for free') }}</span>
                     </div>
 
                     <p class="text-sm text-gray-500">
-                        {{ ctrans('e.g. buy :buy, get :free cheapest free', { buy: String(buyQuantity ?? 0), free: String(freeQuantity ?? 0) }) }}
+                        {{ isSameProduct
+                            ? ctrans('e.g. buy :buy, get :free of the same product free, added to the basket automatically', { buy: String(buyQuantity ?? 0), free: String(freeQuantity ?? 0) })
+                            : ctrans('e.g. buy :buy, get :free cheapest free', { buy: String(buyQuantity ?? 0), free: String(freeQuantity ?? 0) }) }}
                     </p>
                 </div>
 

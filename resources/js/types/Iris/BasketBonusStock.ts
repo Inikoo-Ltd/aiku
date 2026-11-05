@@ -19,6 +19,7 @@ export interface BasketBonusStock {
     family_name: string | null
     current: number
     target: number
+    is_same_product?: boolean
     is_reached: boolean
     is_in_basket: boolean
     quantity: number

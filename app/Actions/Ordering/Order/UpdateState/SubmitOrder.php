@@ -387,6 +387,8 @@ class SubmitOrder extends OrgAction
 
     public function processGiftOffers(Order $order): Order
     {
+        $this->removeSameProductGiftLines($order);
+
         if ($this->isGiftOptedOut($order)) {
             return $order;
         }
@@ -440,7 +442,9 @@ class SubmitOrder extends OrgAction
             }
 
             $isStockExhausted = false;
-            if ($clearanceFamilyId = Arr::get($allowanceGiftData, 'discontinuing_in_family_id')) {
+            if (Arr::get($allowanceGiftData, 'same_product') && $giftOfferData->trigger_type == 'ProductCategory') {
+                $giftLines = $this->getSameProductGiftLines($order, (int)$giftOfferData->trigger_id, (int)Arr::get($triggerData, 'item_quantity', 0), $quantity);
+            } elseif ($clearanceFamilyId = Arr::get($allowanceGiftData, 'discontinuing_in_family_id')) {
                 [$giftLines, $isStockExhausted] = GetDiscontinuingProductsInFamily::make()->getGiftLines(ProductCategory::find($clearanceFamilyId), Arr::get($allowanceGiftData, 'product_id'), $quantity);
             } else {
                 $gift      = Product::where('shop_id', $order->shop_id)->where('id', Arr::get($allowanceGiftData, 'product_id'))->first();
@@ -457,6 +461,72 @@ class SubmitOrder extends OrgAction
         }
 
         return $order;
+    }
+
+    /**
+     * BOGOF free lines follow the paid lines, so they are dropped when an order goes back to the basket
+     * and worked out again at every submit, never kept from an earlier one.
+     */
+    public function removeSameProductGiftLines(Order $order): void
+    {
+        $transactionIds = DB::table('transaction_has_offer_allowances as pivot')
+            ->join('offer_allowances', 'offer_allowances.id', '=', 'pivot.offer_allowance_id')
+            ->join('transactions', 'transactions.id', '=', 'pivot.transaction_id')
+            ->where('pivot.order_id', $order->id)
+            ->where('pivot.is_gift', true)
+            ->where('transactions.is_gift', true)
+            ->whereNull('transactions.deleted_at')
+            ->where(DB::raw("offer_allowances.data->>'same_product'"), 'true')
+            ->pluck('pivot.transaction_id');
+
+        foreach (Transaction::whereIn('id', $transactionIds)->get() as $transaction) {
+            DeleteTransaction::make()->action($transaction);
+        }
+    }
+
+    /**
+     * BOGOF: every product of the family in the order gets free units of itself, item_quantity bought for free_quantity free,
+     * never more than the stock left after the paid units.
+     *
+     * @return array<int, array{0: Product, 1: int}>
+     */
+    public function getSameProductGiftLines(Order $order, int $familyId, int $itemQuantity, int $freeQuantity): array
+    {
+        if ($itemQuantity <= 0 || $freeQuantity <= 0) {
+            return [];
+        }
+
+        $orderedQuantities = DB::table('transactions')
+            ->join('products', 'products.id', '=', 'transactions.model_id')
+            ->where('transactions.order_id', $order->id)
+            ->where('transactions.model_type', 'Product')
+            ->where('transactions.is_gift', false)
+            ->where('products.family_id', $familyId)
+            ->whereNull('transactions.deleted_at')
+            ->groupBy('transactions.model_id')
+            ->selectRaw('transactions.model_id, sum(transactions.quantity_ordered) as quantity')
+            ->pluck('quantity', 'model_id');
+
+        $products = Product::where('shop_id', $order->shop_id)->whereIn('id', $orderedQuantities->keys())->get()->keyBy('id');
+
+        $giftLines = [];
+        foreach ($orderedQuantities as $productId => $orderedQuantity) {
+            $product = $products->get($productId);
+            if (!$product) {
+                continue;
+            }
+
+            $giftQuantity = intdiv((int)floor((float)$orderedQuantity), $itemQuantity) * $freeQuantity;
+            if (!$product->is_on_demand) {
+                $giftQuantity = min($giftQuantity, max(0, (int)floor((float)$product->available_quantity - (float)$orderedQuantity)));
+            }
+
+            if ($giftQuantity > 0) {
+                $giftLines[] = [$product, $giftQuantity];
+            }
+        }
+
+        return $giftLines;
     }
 
     private function storeGiftTransaction(Order $order, object $giftOfferData, int $offerAllowanceId, Product $gift, int $quantity): void
@@ -497,7 +567,7 @@ class SubmitOrder extends OrgAction
             'discounted_percentage' => 0,
             'is_gift'               => true,
             'free_items_value'      => $gift->price * $quantity,
-            'number_of_free_items'  => 1,
+            'number_of_free_items'  => $quantity,
             'created_at'            => now(),
             'updated_at'            => now(),
             'data'                  => '{}'

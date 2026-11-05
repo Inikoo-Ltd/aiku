@@ -33,7 +33,7 @@ const layout = inject('layout', retinaLayoutStructure)
 
             <span v-tooltip="bonusStock.label" class="bonus-line__tag">
                 <FontAwesomeIcon :icon="faGift" fixed-width aria-hidden="true" />
-                {{ ctrans('Bonus Stock') }}
+                {{ bonusStock.is_same_product ? ctrans('Free') : ctrans('Bonus Stock') }}
             </span>
 
             <div class="bonus-line__price">{{ locale.currencyFormat(layout.iris?.currency?.code, 0) }}</div>
