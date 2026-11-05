@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\UI;
 
+use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
@@ -30,7 +31,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
     private const array PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
-    private const array TABS = ['open', 'needs_action', 'completed'];
+    private const array TABS = ['open', 'needs_action', 'import', 'completed'];
 
     private const array SORTS = ['needs_action', 'newest', 'oldest', 'value'];
 
@@ -109,6 +110,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 'overdue_percent'  => $openRate('overdue'),
                 'completed'        => $anyTab->where('status', 'completed')->count(),
                 'needs_action'     => $open->whereIn('status', ['overdue', 'at_risk'])->count(),
+                'import'           => $open->where('is_import', true)->count(),
             ],
             'blockages'  => $this->blockages($open),
             'quickStats' => $this->quickStats($anyTab, $open, $today),
@@ -262,6 +264,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     {
         return 'po.buyer_id, users.contact_name as buyer_name, users.username as buyer_username,
             organisations.slug as organisation_slug, organisations.code as organisation_code, organisations.name as organisation_name,
+            organisation_countries.code as organisation_country_code,
             currencies.code as currency_code,
             agents.slug as agent_slug, agents.code as agent_code, agents.name as agent_name,
             agents.data as agent_data, agents.settings as agent_settings,
@@ -271,6 +274,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     private function sharedJoins(): string
     {
         return 'join organisations on organisations.id = po.organisation_id
+            left join countries organisation_countries on organisation_countries.id = organisations.country_id
             left join users on users.id = po.buyer_id
             left join agents on agents.id = po.agent_id
             left join organisations agent_organisations on agent_organisations.id = agents.organisation_id';
@@ -445,6 +449,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'suppliers'         => $suppliers,
             'country_code'      => $row->country_code,
             'country_name'      => $row->country_name,
+            'is_import'         => $journey !== 'partner' && $this->crossesCustoms($row->organisation_country_code, $row->country_code),
             'buyer_id'          => $row->buyer_id,
             'buyer_name'        => $row->buyer_id ? strtok((string) ($row->buyer_name ?: $row->buyer_username), ' ') : null,
             'placed_by'         => $row->buyer_id ? ($row->buyer_name ?: $row->buyer_username) : null,
@@ -598,9 +603,23 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     {
         return match ($tab) {
             'needs_action' => in_array($ribbon['status'], ['overdue', 'at_risk']),
+            'import'       => $ribbon['is_import'] && $ribbon['status'] !== 'completed',
             'completed'    => $ribbon['status'] === 'completed',
             default        => $ribbon['status'] !== 'completed',
         };
+    }
+
+    /**
+     * Import is an order from a supplier outside the organisation's customs territory: any other country for a UK
+     * organisation, a country outside the EU for an EU one.
+     */
+    private function crossesCustoms(?string $organisationCountryCode, ?string $supplierCountryCode): bool
+    {
+        if (!$organisationCountryCode || !$supplierCountryCode || $organisationCountryCode === $supplierCountryCode) {
+            return false;
+        }
+
+        return !(IsEuropeanUnion::run($organisationCountryCode) && IsEuropeanUnion::run($supplierCountryCode));
     }
 
     /**

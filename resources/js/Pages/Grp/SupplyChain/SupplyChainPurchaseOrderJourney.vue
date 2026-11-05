@@ -22,7 +22,7 @@ interface FacetOption {
 }
 
 type FilterGroup = "organisation" | "journey" | "agent" | "supplier" | "buyer" | "type" | "country" | "stage" | "status"
-type Tab = "open" | "needs_action" | "completed"
+type Tab = "open" | "needs_action" | "import" | "completed"
 type Sort = "needs_action" | "newest" | "oldest" | "value"
 
 const props = defineProps<{
@@ -44,6 +44,7 @@ const props = defineProps<{
         overdue_percent: number
         completed: number
         needs_action: number
+        import: number
     }
     blockages?: { stage: string; label: string; count: number; max_days_overdue: number }[]
     quickStats?: {
@@ -100,6 +101,7 @@ const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => 
 const tabs = computed<{ key: Tab; label: string; count: number }[]>(() => !summary.value ? [] : [
     { key: "open", label: ctrans("Open"), count: summary.value.open },
     { key: "needs_action", label: ctrans("Needs action"), count: summary.value.needs_action },
+    { key: "import", label: ctrans("Import"), count: summary.value.import },
     { key: "completed", label: ctrans("Completed"), count: summary.value.completed }
 ])
 
