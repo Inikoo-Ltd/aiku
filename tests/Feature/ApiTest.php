@@ -27,6 +27,7 @@ use Laravel\Sanctum\Sanctum;
 use PragmaRX\Google2FAQRCode\Google2FA;
 
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\patchJson;
 use function Pest\Laravel\postJson;
 
 function createMobileAppUser(Group $group, array $attributes = []): User
@@ -447,4 +448,48 @@ test('api profile includes the user app theme', function () {
     Sanctum::actingAs($user);
 
     getJson(route('grp.api.profile'))->assertOk()->assertJsonPath('data.app_theme', $appTheme);
+});
+
+test('mobile theme update saves the mobile theme and leaves the web theme alone', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $webTheme    = ['#4f46e5', '#f3f4f6', '#362cdb', '#fde047', '#4f46e5', '#f3f4f6', '#fcd34d', '#374151'];
+    $mobileTheme = ['#000000', '#f2f2f2', '#424242', '#fde047', '#8e44ad', '#ffffff', '#fcd34d', '#374151'];
+    $user        = createMobileAppUser($this->group, ['settings' => ['app_theme' => $webTheme]]);
+    $token       = $user->createToken('mobile|Theme phone', ['mobile'])->plainTextToken;
+    $this->app['auth']->forgetGuards();
+
+    $response = patchJson(route('grp.api.mobile.profile.theme.update'), ['mobile_app_theme' => $mobileTheme], [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$token,
+    ]);
+
+    $response->assertOk()
+        ->assertJsonPath('data.mobile_app_theme', $mobileTheme)
+        ->assertJsonPath('data.app_theme', $webTheme);
+    $settings = $user->refresh()->settings;
+    expect($settings['mobile_app_theme'])->toBe($mobileTheme)
+        ->and($settings['app_theme'])->toBe($webTheme);
+});
+
+test('mobile theme update needs eight hex colours', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $user    = createMobileAppUser($this->group);
+    $token   = $user->createToken('mobile|Theme phone', ['mobile'])->plainTextToken;
+    $headers = ['X-Aiku-App-Key' => 'mobile-test-key', 'Authorization' => 'Bearer '.$token];
+    $this->app['auth']->forgetGuards();
+
+    patchJson(route('grp.api.mobile.profile.theme.update'), ['mobile_app_theme' => ['#000000', '#ffffff']], $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('mobile_app_theme');
+    patchJson(route('grp.api.mobile.profile.theme.update'), ['mobile_app_theme' => ['#000000', '#ffffff', '#000000', '#ffffff', 'red', '#ffffff', '#000000', '#ffffff']], $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('mobile_app_theme.4');
+});
+
+test('mobile theme update without a token is unauthorised', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $this->app['auth']->forgetGuards();
+
+    patchJson(route('grp.api.mobile.profile.theme.update'), ['mobile_app_theme' => array_fill(0, 8, '#000000')], ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertUnauthorized();
 });
