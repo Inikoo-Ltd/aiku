@@ -48,6 +48,7 @@ import PurchaseOrderPayments from "@/Components/Procurement/PurchaseOrderPayment
 import PurchaseOrderDepositPayments, { type PurchaseOrderPaymentsData } from "@/Components/Procurement/PurchaseOrderDepositPayments.vue"
 import AgentPurchaseOrderMoney, { type AgentPurchaseOrderMoneyData } from "@/Components/Procurement/AgentPurchaseOrderMoney.vue"
 import PurchaseOrderStages from "@/Components/Procurement/PurchaseOrderStages.vue"
+import PurchaseOrderStageContainers from "@/Components/Procurement/PurchaseOrderStageContainers.vue"
 import PurchaseOrderSampleRequired, { type PurchaseOrderSample } from "@/Components/Procurement/PurchaseOrderSampleRequired.vue"
 import AgentPurchaseOrderGoodsReceipts from "@/Components/Procurement/AgentPurchaseOrderGoodsReceipts.vue"
 import AgentReceiveGoodsButton from "@/Components/Procurement/AgentReceiveGoodsButton.vue"
@@ -140,6 +141,7 @@ const props = defineProps < {
         number_purchase_orders: number
     }[]
     stages?: { stages: InstanceType<typeof PurchaseOrderStages>["$props"]["stages"]; route: routeType; upload_route: routeType | null; deposit: InstanceType<typeof PurchaseOrderStages>["$props"]["deposit"]; sample: InstanceType<typeof PurchaseOrderStages>["$props"]["sample"] } | null
+    stage_containers?: { containers: InstanceType<typeof PurchaseOrderStageContainers>["$props"]["containers"]; items_to_add: InstanceType<typeof PurchaseOrderStageContainers>["$props"]["itemsToAdd"] } | null
     agent_receiving?: InstanceType<typeof AgentPurchaseOrderGoodsReceipts>["$props"]["receiving"] | null
     compliance?: object
     compliance_summary?: InstanceType<typeof TablePurchaseOrderComplianceDocuments>["$props"]["compliance"]
@@ -1189,6 +1191,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 		<template v-else-if="payments" #stage-deposit_paid>
 			<PurchaseOrderDepositPayments :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
+		</template>
+		<template v-if="stage_containers" #stage-arrived>
+			<PurchaseOrderStageContainers :containers="stage_containers.containers" :itemsToAdd="stage_containers.items_to_add" />
 		</template>
 		<template v-for="(actions, stageKey) in stageActions" :key="stageKey" #[`stage-${stageKey}`]>
 			<div class="mt-2 flex flex-col gap-1">

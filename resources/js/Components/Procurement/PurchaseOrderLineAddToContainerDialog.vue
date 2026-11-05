@@ -9,7 +9,6 @@
 import { computed, ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
-import { notify } from "@kyvg/vue3-notification"
 import Dialog from "primevue/dialog"
 import Select from "primevue/select"
 import InputNumber from "primevue/inputnumber"
@@ -17,7 +16,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faExclamationTriangle, faPlus } from "@fal"
-import { ctrans, ctransChoice } from "@/Composables/useTrans"
+import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 
@@ -56,7 +55,7 @@ const visible = defineModel<boolean>("visible", { default: false })
 
 const locale = useLocaleStore()
 
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 
 const containers = ref<Container[]>([])
 const isFetching = ref(false)
@@ -65,6 +64,7 @@ const selectedContainerId = ref<number | null>(null)
 const isNewContainer = ref(false)
 const quantities = ref<Record<number, number | null>>({})
 const isSaving = ref(false)
+const errorMessage = ref<string | null>(null)
 
 const warehouse = computed(() => props.items[0]?.agent_warehouse)
 const organisationCode = computed(() => warehouse.value?.organisation_code ?? "")
@@ -112,7 +112,7 @@ async function fetchContainers(search?: string) {
 			isNewContainer.value = true
 		}
 	} catch (error: any) {
-		notify({ title: ctrans("Something went wrong"), text: error?.response?.data?.message ?? "", type: "error" })
+		errorMessage.value = error?.response?.data?.message || ctrans("Something went wrong")
 	} finally {
 		isFetching.value = false
 	}
@@ -135,6 +135,7 @@ watch(
 		isNewContainer.value = false
 		containers.value = []
 		hasFetched.value = false
+		errorMessage.value = null
 		quantities.value = Object.fromEntries(props.items.map((item) => [item.id, defaultQuantity(item)]))
 		fetchContainers()
 	},
@@ -147,6 +148,8 @@ const itemsToAdd = computed(() =>
 		.map((item) => ({ purchase_order_transaction_id: item.id, unit_quantity: quantities.value[item.id] as number }))
 )
 
+const unitsToAdd = computed(() => itemsToAdd.value.reduce((total, item) => total + item.unit_quantity, 0))
+
 const hasQuantityOverAwaiting = computed(() => props.items.some((item) => (quantities.value[item.id] ?? 0) > awaiting(item)))
 
 const canSubmit = computed(() => (isNewContainer.value || !!selectedContainerId.value) && itemsToAdd.value.length > 0 && !hasQuantityOverAwaiting.value)
@@ -157,8 +160,6 @@ function submit() {
 		return
 	}
 
-	const addedCount = itemsToAdd.value.length
-
 	router.post(
 		isNewContainer.value && newContainerRoute
 			? route(newContainerRoute.name, newContainerRoute.parameters)
@@ -166,15 +167,16 @@ function submit() {
 		{ items: itemsToAdd.value },
 		{
 			preserveScroll: true,
-			onStart: () => (isSaving.value = true),
+			onStart: () => {
+				isSaving.value = true
+				errorMessage.value = null
+			},
 			onFinish: () => (isSaving.value = false),
 			onSuccess: () => {
 				visible.value = false
 				emit("added")
-				notify({ title: ctrans("Success"), text: ctransChoice(":count item added to the container|:count items added to the container", addedCount), type: "success" })
 			},
-			onError: (errors: Record<string, string>) =>
-				notify({ title: ctrans("Something went wrong"), text: Object.values(errors ?? {})[0], type: "error" }),
+			onError: (errors: Record<string, string>) => (errorMessage.value = Object.values(errors ?? {})[0] || ctrans("Something went wrong")),
 		}
 	)
 }
@@ -191,8 +193,8 @@ function submit() {
 		<div class="space-y-4 text-sm">
 			<div class="space-y-1">
 				<span class="block text-xs text-gray-500">{{ ctrans("Shipment") }}</span>
-				<div v-if="isNewContainer" class="flex items-center gap-2 rounded-md border border-[--app-accent-muted] bg-[--app-accent-soft] px-3 py-2">
-					<FontAwesomeIcon :icon="faPlus" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+				<div v-if="isNewContainer" class="flex items-center gap-2 rounded-md border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-3 py-2">
+					<FontAwesomeIcon :icon="faPlus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
 					<span class="text-gray-700">{{ ctrans("A new shipment for :organisation will be opened", { organisation: organisationCode }) }}</span>
 				</div>
 				<Select
@@ -217,7 +219,7 @@ function submit() {
 				<button
 					v-if="warehouse?.new_container_route && !isNewContainer"
 					type="button"
-					class="text-xs text-[--app-accent] underline-offset-2 hover:underline"
+					class="text-xs text-[var(--app-accent)] underline-offset-2 hover:underline"
 					@click="chooseNewContainer"
 				>
 					{{ ctrans("Or open a new shipment for :organisation", { organisation: organisationCode }) }}
@@ -225,7 +227,7 @@ function submit() {
 				<button
 					v-else-if="isNewContainer && containers.length"
 					type="button"
-					class="text-xs text-[--app-accent] underline-offset-2 hover:underline"
+					class="text-xs text-[var(--app-accent)] underline-offset-2 hover:underline"
 					@click="isNewContainer = false"
 				>
 					{{ ctrans("Or choose a shipment in process") }}
@@ -256,19 +258,27 @@ function submit() {
 					</div>
 				</div>
 			</div>
+
+			<p v-if="isBulk" class="border-t border-gray-200 pt-2 text-xs text-gray-600">
+				{{ ctrans(":count items, :units units will go in this shipment", { count: itemsToAdd.length, units: locale.number(unitsToAdd) }) }}
+			</p>
+
+			<p v-if="errorMessage" class="text-xs text-red-600">{{ errorMessage }}</p>
 		</div>
 
 		<template #footer>
-			<Button type="tertiary" :label="ctrans('Cancel')" @click="visible = false">
-				<template #icon>
-					<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
-			<Button type="secondary" full :label="ctrans('Add to shipment')" :loading="isSaving" :disabled="!canSubmit" @click="submit">
-				<template #icon>
-					<FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
+			<div class="flex w-full gap-2">
+				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="visible = false">
+					<template #icon>
+						<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<Button type="primary" full :label="ctrans('Add to shipment')" :loading="isSaving" :disabled="!canSubmit" @click="submit">
+					<template #icon>
+						<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</div>
 		</template>
 	</Dialog>
 </template>

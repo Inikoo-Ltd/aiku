@@ -300,6 +300,7 @@ class ShowPurchaseOrder extends OrgAction
                 'timelines'                => $this->getTimeline($purchaseOrder),
                 'stock_delivery_timelines' => $this->getStockDeliveryTimelines($purchaseOrder),
                 'stages'                   => $this->getStages($purchaseOrder),
+                'stage_containers'         => fn () => $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS ? null : GetPurchaseOrderContainers::run($purchaseOrder, $this->organisation, $request),
                 'agent_receiving'          => fn () => $this->isAgentViewingOwnOrder($purchaseOrder) ? GetPurchaseOrderGoodsReceipts::run($purchaseOrder, $this->agentCanEdit) : null,
                 'open_agent_deliveries'    => $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
                     ? StoreStockDeliveryFromPurchaseOrder::openAgentDeliveries($purchaseOrder)
