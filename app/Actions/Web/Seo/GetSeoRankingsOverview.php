@@ -7,12 +7,15 @@
 
 namespace App\Actions\Web\Seo;
 
+use App\Enums\Web\Seo\SeoKeywordDeviceEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * The figures above the Rankings table: visibility, search intent overview and competitors.
+ * The figures above the Rankings table: visibility, search intent overview and competitors, over the
+ * keywords on the tracked device. Mobile rows tracked before 5 Nov 2026 are left out, or every such
+ * keyword would count twice.
  */
 class GetSeoRankingsOverview
 {
@@ -23,20 +26,23 @@ class GetSeoRankingsOverview
      */
     public function handle(Shop $shop): array
     {
+        $device = SeoKeywordDeviceEnum::DESKTOP;
+
         return [
-            'summary'     => $this->summary($shop),
-            'intents'     => $this->intents($shop),
-            'competitors' => $this->competitors($shop),
+            'summary'     => $this->summary($shop, $device),
+            'intents'     => $this->intents($shop, $device),
+            'competitors' => $this->competitors($shop, $device),
         ];
     }
 
     /**
      * Counts over the active tracked keywords at their latest check.
      */
-    private function summary(Shop $shop): array
+    private function summary(Shop $shop, SeoKeywordDeviceEnum $device): array
     {
         $summary = DB::table('seo_tracked_keywords')
             ->where('shop_id', $shop->id)
+            ->where('device', $device->value)
             ->where('is_active', true)
             ->selectRaw('COUNT(*) AS tracked')
             ->selectRaw('COUNT(last_checked_at) AS checked')
@@ -67,7 +73,7 @@ class GetSeoRankingsOverview
     /**
      * Share of checked keywords per intent, and how many of them we have in the top 10.
      */
-    private function intents(Shop $shop): array
+    private function intents(Shop $shop, SeoKeywordDeviceEnum $device): array
     {
         return DB::table('seo_tracked_keywords')
             ->leftJoin('seo_keywords', function ($join) {
@@ -77,6 +83,7 @@ class GetSeoRankingsOverview
                     ->on('seo_keywords.language_code', '=', 'seo_tracked_keywords.language_code');
             })
             ->where('seo_tracked_keywords.shop_id', $shop->id)
+            ->where('seo_tracked_keywords.device', $device->value)
             ->where('seo_tracked_keywords.is_active', true)
             ->whereNotNull('seo_tracked_keywords.last_checked_at')
             ->groupBy('seo_keywords.intent')
@@ -96,12 +103,13 @@ class GetSeoRankingsOverview
     /**
      * Each competitor's positions on our tracked keywords, from the same checks.
      */
-    private function competitors(Shop $shop): array
+    private function competitors(Shop $shop, SeoKeywordDeviceEnum $device): array
     {
         return DB::table('seo_competitors')
             ->leftJoin('seo_competitor_rankings', 'seo_competitor_rankings.competitor_id', '=', 'seo_competitors.id')
-            ->leftJoin('seo_tracked_keywords', function ($join) {
+            ->leftJoin('seo_tracked_keywords', function ($join) use ($device) {
                 $join->on('seo_tracked_keywords.id', '=', 'seo_competitor_rankings.tracked_keyword_id')
+                    ->where('seo_tracked_keywords.device', $device->value)
                     ->where('seo_tracked_keywords.is_active', true)
                     ->whereRaw('seo_competitor_rankings.date = seo_tracked_keywords.last_checked_at::date');
             })

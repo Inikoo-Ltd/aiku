@@ -9,6 +9,7 @@ namespace App\Actions\Web\Seo;
 
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
+use App\Enums\Web\Seo\SeoKeywordDeviceEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Web\Website;
 use Illuminate\Support\Carbon;
@@ -157,6 +158,7 @@ class GetSeoPortfolio
         return DB::table('seo_tracked_keywords')
             ->whereIn('shop_id', $shopIds)
             ->where('is_active', true)
+            ->whereIn('device', array_column(SeoKeywordDeviceEnum::tracked(), 'value'))
             ->groupBy('shop_id')
             ->select('shop_id')
             ->selectRaw('COUNT(*) AS tracked')
