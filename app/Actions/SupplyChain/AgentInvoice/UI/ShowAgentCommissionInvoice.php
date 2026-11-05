@@ -8,21 +8,26 @@
 
 namespace App\Actions\SupplyChain\AgentInvoice\UI;
 
+use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Models\Helpers\Currency;
+use App\Models\Helpers\CurrencyExchange;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
+use Throwable;
 
 /**
  * The agent's commission on the products of every purchase order shipped in a month, grouped by supplier.
@@ -36,10 +41,10 @@ class ShowAgentCommissionInvoice extends OrgAction
     /**
      * Agent organisations that charge a commission, by slug.
      *
-     * @var array<string, array{rate: float, excluded_supplier_codes: list<string>}>
+     * @var array<string, array{rate: float, excluded_supplier_codes: list<string>, billed_organisation_slug: string}>
      */
     public const array COMMISSIONS = [
-        'salina' => ['rate' => 0.02, 'excluded_supplier_codes' => ['ESH']],
+        'salina' => ['rate' => 0.02, 'excluded_supplier_codes' => ['ESH'], 'billed_organisation_slug' => 'aw'],
     ];
 
     private CarbonImmutable $month;
@@ -111,15 +116,100 @@ class ShowAgentCommissionInvoice extends OrgAction
         $commission = $this->commissionFor($organisation, $request);
         $organisation->loadMissing('address');
 
+        $billedOrganisation = Organisation::where('slug', self::COMMISSIONS[$organisation->slug]['billed_organisation_slug'])->with('address')->first();
+
+        $currencySymbols = Currency::whereIn('code', collect($commission['totals'])->pluck('currency_code')->push('USD'))->pluck('symbol', 'code');
+
+        $exchangeDate = $this->month->endOfMonth()->startOfDay()->min(CarbonImmutable::today());
+
         $pdf = PDF::loadView('supplyChain.templates.pdf.agent-commission-invoice', [
-            'organisation' => $organisation,
-            'month'        => $this->month,
-            'commission'   => $commission,
+            'organisation'       => $organisation,
+            'billedOrganisation' => $billedOrganisation,
+            'month'              => $this->month,
+            'commission'         => $commission,
+            'currencySymbols'    => $currencySymbols,
+            'usd'                => $this->totalsInUsd($commission['totals'], $exchangeDate),
         ]);
 
         return response($pdf->output(), 200)
             ->header('Content-Type', 'application/pdf')
             ->header('Content-Disposition', 'inline; filename="commission-'.$organisation->slug.'-'.$this->month->format('Y-m').'.pdf"');
+    }
+
+    /**
+     * @param  list<array{currency_code: string, products: float, commission: float}>  $totals
+     * @return array{lines: list<array{currency_code: string, exchange: float, exchange_date: CarbonImmutable, products: float, commission: float}>, products: float, commission: float}|null
+     */
+    private function totalsInUsd(array $totals, CarbonImmutable $date): ?array
+    {
+        $usd = Currency::where('code', 'USD')->first();
+        if (!$usd) {
+            return null;
+        }
+
+        $lines = [];
+
+        foreach ($totals as $total) {
+            $currency = Currency::where('code', $total['currency_code'])->first();
+            $exchange = $currency ? $this->exchangeToUsd($currency, $usd, $date) : null;
+            if (!$exchange) {
+                return null;
+            }
+
+            $lines[] = [
+                'currency_code' => $total['currency_code'],
+                'exchange'      => $exchange['exchange'],
+                'exchange_date' => $exchange['date'],
+                'products'      => round($total['products'] * $exchange['exchange'], 2),
+                'commission'    => round($total['commission'] * $exchange['exchange'], 2),
+            ];
+        }
+
+        return [
+            'lines'      => $lines,
+            'products'   => round(collect($lines)->sum('products'), 2),
+            'commission' => round(collect($lines)->sum('commission'), 2),
+        ];
+    }
+
+    /**
+     * The rate of the given day, or else the latest stored rates before it.
+     *
+     * @return array{exchange: float, date: CarbonImmutable}|null
+     */
+    private function exchangeToUsd(Currency $currency, Currency $usd, CarbonImmutable $date): ?array
+    {
+        if ($currency->id === $usd->id) {
+            return ['exchange' => 1.0, 'date' => $date];
+        }
+
+        try {
+            $exchange = GetHistoricCurrencyExchange::run($currency, $usd, Carbon::parse($date->toDateString()));
+        } catch (Throwable) {
+            $exchange = null;
+        }
+
+        if ($exchange) {
+            return ['exchange' => (float) $exchange, 'date' => $date];
+        }
+
+        $pivotCode     = config('app.currency_exchange.pivot');
+        $againstPivot  = fn (Currency $pivoted): ?CurrencyExchange => CurrencyExchange::where('currency_id', $pivoted->id)
+            ->where('date', '<=', $date->toDateString())
+            ->orderByDesc('date')
+            ->first();
+        $baseExchange   = $currency->code === $pivotCode ? null : $againstPivot($currency);
+        $targetExchange = $usd->code === $pivotCode ? null : $againstPivot($usd);
+
+        if (($currency->code !== $pivotCode && !$baseExchange) || ($usd->code !== $pivotCode && !$targetExchange)) {
+            return null;
+        }
+
+        $baseRate   = $baseExchange ? (float) $baseExchange->exchange : 1.0;
+        $targetRate = $targetExchange ? (float) $targetExchange->exchange : 1.0;
+        $rateDate   = collect([$baseExchange?->date, $targetExchange?->date])->filter()->map(fn ($day) => CarbonImmutable::parse($day))->min();
+
+        return ['exchange' => $targetRate / $baseRate, 'date' => $rateDate ?? $date];
     }
 
     private function commissionFor(Organisation $organisation, ActionRequest $request): array
