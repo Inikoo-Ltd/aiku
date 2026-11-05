@@ -40,7 +40,7 @@ class StoreChatInboxTimings
             'is_full_load' => in_array($sample['measure'], ['inbox_open', 'inbox_page']) ? Arr::get($sample, 'is_full_load') : null,
             'duration_ms'  => (int) $sample['duration_ms'],
             'render_ms'    => $sample['measure'] === 'slow_frame' ? Arr::get($sample, 'render_ms') : null,
-            'source'       => $sample['measure'] === 'slow_frame' ? Arr::get($sample, 'source') : null,
+            'source'       => in_array($sample['measure'], ['slow_frame', 'inbox_open']) ? Arr::get($sample, 'source') : null,
             'page'         => Arr::get($sample, 'page'),
             'created_at'   => now(),
         ], $samples);

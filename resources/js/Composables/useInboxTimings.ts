@@ -266,13 +266,14 @@ export const useInboxTimings = () => {
 		return {
 			/** False when nothing new was asked for: Back restored the page, or it is the chat pane. */
 			isVisit: !!opened,
-			listPainted: async (isListLoaded: boolean) => {
+			/** source says where the list came from, e.g. asked for as the visit started (inboxListPrefetch). */
+			listPainted: async (isListLoaded: boolean, source: string | null = null) => {
 				if (!opened || !isListLoaded) {
 					return
 				}
 
 				await painted()
-				record({ measure: "inbox_open", duration_ms: performance.now() - opened.at, is_full_load: opened.isFullLoad }, opened.at)
+				record({ measure: "inbox_open", duration_ms: performance.now() - opened.at, is_full_load: opened.isFullLoad, source }, opened.at)
 			},
 		}
 	}

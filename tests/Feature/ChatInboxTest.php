@@ -2227,7 +2227,7 @@ test('the inbox speed measured in the browser is stored for the person who waite
 
     actingAs($this->user)->postJson(route('grp.chat.inbox_timings.store'), [
         'samples' => [
-            ['measure' => 'inbox_open', 'duration_ms' => 1834, 'is_full_load' => true],
+            ['measure' => 'inbox_open', 'duration_ms' => 1834, 'is_full_load' => true, 'source' => 'list:prefetched'],
             ['measure' => 'conversation_open', 'duration_ms' => 412, 'channel' => 'email'],
             ['measure' => 'reply_sent', 'duration_ms' => 7311, 'channel' => 'website', 'is_full_load' => true],
             ['measure' => 'freeze', 'duration_ms' => 260],
@@ -2245,7 +2245,7 @@ test('the inbox speed measured in the browser is stored for the person who waite
         ->and($stored->pluck('channel')->all())->toBe([null, 'email', 'website', null, null, 'whatsapp', null, null])
         ->and($stored->pluck('is_full_load')->all())->toBe([true, null, null, null, true, null, null, null])
         ->and($stored->pluck('render_ms')->all())->toBe([null, null, null, null, null, null, 120, null])
-        ->and($stored->pluck('source')->all())->toBe([null, null, null, null, null, null, 'Promise.then vendor-vue.js:5120 flushJobs 340', null])
+        ->and($stored->pluck('source')->all())->toBe(['list:prefetched', null, null, null, null, null, 'Promise.then vendor-vue.js:5120 flushJobs 340', null])
         ->and($stored->pluck('page')->all())->toBe([null, null, null, null, null, null, null, 'Org/Dispatching/DeliveryNote'])
         ->and($stored->pluck('user_id')->unique()->all())->toBe([$this->user->id]);
 

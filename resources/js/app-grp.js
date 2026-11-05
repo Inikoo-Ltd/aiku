@@ -27,6 +27,7 @@ import { ctrans } from "@/Composables/useTrans";
 import { skipUnchangedTooltips } from "@/Composables/skipUnchangedTooltips";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
 import { trackVisitStarts } from "@/Composables/visitTiming";
+import { prefetchInboxListOnVisit } from "@/Composables/inboxListPrefetch";
 import { startFreezeRecording } from "@/Composables/useInboxTimings";
 import { lazyPlainTextTooltips, startSharedTooltip } from "@/Composables/sharedTooltip";
 
@@ -86,6 +87,7 @@ router.on("before", (event) => {
   event.detail.visit.headers["X-Current-Url"] = window.location.href;
 });
 trackVisitStarts(router);
+prefetchInboxListOnVisit(router);
 
 createInertiaApp(
   {

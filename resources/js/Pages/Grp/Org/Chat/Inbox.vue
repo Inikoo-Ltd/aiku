@@ -2,7 +2,7 @@
 import { ref, reactive, computed, inject, provide, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from "vue"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
 import { useDebounceFn, useLocalStorage, useNow, watchDebounced } from "@vueuse/core"
-import axios from "axios"
+import axios, { type AxiosResponse } from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { myShopIds } from "@/Composables/chatMyShops"
 import { chatSendErrorText } from "@/Composables/chatSendError"
@@ -33,6 +33,7 @@ import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
 import { useInboxTimings } from "@/Composables/useInboxTimings"
+import { listKey, rememberFirstList, takePrefetchedList } from "@/Composables/inboxListPrefetch"
 
 import {
     Contact,
@@ -926,15 +927,19 @@ const reloadCountsIfDue = (key: string) => {
     reloadMailTabCounts()
     reloadInboxViewCounts()
 }
-const currentListKey = computed(() => sessionsUrl.value + JSON.stringify(buildParams(1)))
+const currentListKey = computed(() => listKey(sessionsUrl.value, buildParams(1)))
 let shownListKey = ""
 let reloadRequest = 0
+let prefetchedFirstList: Promise<AxiosResponse> | null = null
+let isFirstListPrefetched = false
 
 const reloadContacts = async (): Promise<boolean> => {
     const request = ++reloadRequest
     const url = sessionsUrl.value
     const params = buildParams(1)
-    const key = url + JSON.stringify(params)
+    const key = listKey(url, params)
+    const prefetched = prefetchedFirstList
+    prefetchedFirstList = null
 
     if (key !== shownListKey) {
         listIsLoading.value = true
@@ -943,7 +948,11 @@ const reloadContacts = async (): Promise<boolean> => {
     currentPage.value = 1
     hasMore.value = false
     try {
-        const res = await axios.get(url, { params })
+        const res = await (prefetched?.catch(() => {
+            isFirstListPrefetched = false
+
+            return axios.get(url, { params })
+        }) ?? axios.get(url, { params }))
 
         if (request !== reloadRequest) {
             return true
@@ -2967,45 +2976,54 @@ const onMetaChatListEvent = (e: any) => {
 
 const timings = useInboxTimings()
 
+// What the address asks for wins over what was last looked at.
+if (!props.preselectShopId && !props.selectedSessionUlid) {
+    restoreSelection()
+}
+
+applyChannelFromUrl()
+warm(loadMessageArea)
+warm(loadSidePanel)
+
+const urlChannel = selectedChannel.value
+
+// Preselect the shop when opened from the shop-level nav entry.
+if (props.preselectShopId && props.inboxes?.some((i) => i.id === props.preselectShopId)) {
+    revealInbox(props.preselectShopId, urlChannel)
+}
+
+// Registered after the restore so putting the stored choice back does not write it again.
+watch([selectedShopIds, selectedCells, selectedStatuses, mailTab], storeSelection, { deep: true })
+
+// Jump to the shop (inbox) the opened chat belongs to.
+if (props.initialSession?.shop?.id) {
+    revealInbox(props.initialSession.shop.id, (props.initialSession as any).channel ?? urlChannel)
+}
+
+const initContact = props.initialSession ? mapSession(props.initialSession) : null
+
+if (initContact) {
+    revealViewFor(initContact)
+}
+
+// Registered once the restored filters are in place, which the first list load below
+// already asks for: registered earlier, putting them back loaded the list a second time.
+dropWaitingInTeamView()
+watch([selectedStatuses, viewMode, promisedOnly, mailTab], onListFiltersChanged)
+
+if (!isEmbedded) {
+    prefetchedFirstList = takePrefetchedList(sessionsUrl.value, buildParams(1))
+    isFirstListPrefetched = prefetchedFirstList !== null
+
+    if (!props.preselectShopId && !props.selectedSessionUlid && !props.initialSession && !pendingSessionUlid.value && !pendingSessionChannel.value) {
+        rememberFirstList(sessionsUrl.value, buildParams(1))
+    }
+}
+
+const firstListLoad = reloadContacts()
+
 onMounted(async () => {
     const inboxOpening = timings.start()
-
-    // What the address asks for wins over what was last looked at.
-    if (!props.preselectShopId && !props.selectedSessionUlid) {
-        restoreSelection()
-    }
-
-    applyChannelFromUrl()
-    warm(loadMessageArea)
-    warm(loadSidePanel)
-
-    const urlChannel = selectedChannel.value
-
-    // Preselect the shop when opened from the shop-level nav entry.
-    if (props.preselectShopId && props.inboxes?.some((i) => i.id === props.preselectShopId)) {
-        revealInbox(props.preselectShopId, urlChannel)
-    }
-
-    // Registered after the restore so putting the stored choice back does not write it again.
-    watch([selectedShopIds, selectedCells, selectedStatuses, mailTab], storeSelection, { deep: true })
-
-    const init = props.initialSession
-
-    // Jump to the shop (inbox) the opened chat belongs to.
-    if (init?.shop?.id) {
-        revealInbox(init.shop.id, (init as any).channel ?? urlChannel)
-    }
-
-    const initContact = init ? mapSession(init) : null
-
-    if (initContact) {
-        revealViewFor(initContact)
-    }
-
-    // Registered once the restored filters are in place, which the first list load below
-    // already asks for: registered earlier, putting them back loaded the list a second time.
-    dropWaitingInTeamView()
-    watch([selectedStatuses, viewMode, promisedOnly, mailTab], onListFiltersChanged)
 
     // Asked once the shops are settled, so the first answer is not for the wrong ones. The rail's
     // counts came with the page, except when Back put the page back as it was left.
@@ -3018,22 +3036,19 @@ onMounted(async () => {
         reloadInboxCountsSoon()
     }
 
-    let isListLoaded: boolean
-
     // The thread opens once the list is on screen, so the list is not held back by it. A tab in
     // the background paints nothing, so there it does not wait for a paint.
     const listPainted = (isLoaded: boolean) => document.visibilityState === "hidden"
         ? nextTick()
-        : inboxOpening.listPainted(isLoaded)
+        : inboxOpening.listPainted(isLoaded, isFirstListPrefetched ? "list:prefetched" : "list:fetched")
+
+    const isListLoaded = await firstListLoad
 
     if (initContact) {
-        await nextTick()
-        isListLoaded = await reloadContacts()
         linkedContact.value = initContact
         await listPainted(isListLoaded)
         openChat(initContact)
     } else {
-        isListLoaded = await reloadContacts()
         await listPainted(isListLoaded)
         openSelectedFromProp()
     }
