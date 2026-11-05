@@ -935,14 +935,12 @@ test('stock put away in aurora, which has no sowings, also takes the landed cost
         'type'         => OrgStockMovementTypeEnum::PURCHASE->value,
         'quantity'     => 12,
         'org_amount'   => 12 * 50,
-        'cost_per_sku' => 50,
         'note'         => 'received from <span onClick="change_view(\'delivery/990211\')">AURORA-PUT-AWAY</span>',
     ]);
     $otherDelivery   = StoreOrgStockMovement::make()->action($stockDeliveryItem->orgStock, $location, [
         'type'         => OrgStockMovementTypeEnum::PURCHASE->value,
         'quantity'     => 12,
         'org_amount'   => 12 * 50,
-        'cost_per_sku' => 50,
         'note'         => 'received from <span onClick="change_view(\'delivery/9902110\')">OTHER</span>',
     ]);
 
@@ -961,7 +959,7 @@ test('stock put away in aurora, which has no sowings, also takes the landed cost
         ->and((float) $auroraMovement->cost_per_sku)->toEqualWithDelta($landedCost, 0.000001)
         ->and((float) $auroraMovement->org_amount)->toEqualWithDelta(12 * $landedCost, 0.001)
         ->and($auroraMovement->cost_status)->toBe(OrgStockMovementCostStatusEnum::COSTED)
-        ->and((float) $otherDelivery->fresh()->cost_per_sku)->toBe(50.0);
+        ->and((float) $otherDelivery->fresh()->org_amount)->toBe(600.0);
 
     $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
 });
