@@ -35,9 +35,7 @@ class UpdateJobOrderItem extends OrgAction
         $jobOrderItem = $this->update($jobOrderItem, $modelData, ['data']);
 
         if ($jobOrderItem->wasChanged('quantity')) {
-            foreach ($jobOrderItem->tasks as $task) {
-                $task->setRequiredQuantity($task->requiredFor($jobOrderItem->quantity));
-            }
+            CreditOrderWorkToJobOrderItem::run($jobOrderItem);
         }
 
         return $jobOrderItem;

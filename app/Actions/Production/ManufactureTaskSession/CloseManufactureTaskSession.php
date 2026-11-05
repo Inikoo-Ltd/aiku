@@ -23,7 +23,9 @@ use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTy
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Actions\Production\ManufactureBreak\EndManufactureBreak;
 use App\Models\HumanResources\Employee;
+use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\JobOrder;
+use App\Models\Production\JobOrderItem;
 use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufacturePreparationReason;
 use App\Models\Production\ManufactureTaskSession;
@@ -166,8 +168,8 @@ class CloseManufactureTaskSession extends OrgAction
                     $memberLeft = max(0, (float) $member->quantity_required - (float) $member->quantity_made);
                     $extra      = round($madeHere - $memberLeft, 3);
                     if ($extra > 0) {
-                        $this->growJobOrderItem($member, (float) $member->quantity_made + $madeHere);
-                        $this->recordOverproduction($session, $member, $extra, $authorisedBy, $modelData['manager_method'] ?? 'pin');
+                        $takenOff = $this->growJobOrderItem($member, (float) $member->quantity_made + $madeHere);
+                        $this->recordOverproduction($session, $member, $extra, $authorisedBy, $modelData['manager_method'] ?? 'pin', $takenOff);
                     }
                 }
 
@@ -378,25 +380,133 @@ class CloseManufactureTaskSession extends OrgAction
      * routing all read the new size: whatever the lines did not ask for goes to stock.
      * Only whole artefacts grow the job; later steps grow with it, earlier steps are not reopened.
      */
-    private function growJobOrderItem(JobOrderItemTask $task, float $taskUnitsMade): void
+    /**
+     * @return array<int, int> artefacts taken off the order's other lines, by line id
+     */
+    private function growJobOrderItem(JobOrderItemTask $task, float $taskUnitsMade): array
     {
         $task->setRequiredQuantity(max((float) $task->quantity_required, $taskUnitsMade));
 
         $item      = $task->jobOrderItem;
         $artefacts = (int) $task->artefactsIn($taskUnitsMade);
         if ($artefacts <= $item->quantity) {
-            return;
+            return [];
         }
 
+        $grownBy = $artefacts - $item->quantity;
         $item->update(['quantity' => $artefacts]);
 
         $laterSteps = $item->tasks->skipUntil(fn (JobOrderItemTask $step) => $step->id == $task->id)->skip(1);
         foreach ($laterSteps as $step) {
             $step->setRequiredQuantity(max($step->requiredFor($artefacts), (float) $step->quantity_required));
         }
+
+        return $this->takeOffRestOfOrder($item, $grownBy);
     }
 
-    private function recordOverproduction(ManufactureTaskSession $session, JobOrderItemTask $task, float $overproduced, Employee $manager, string $method): void
+    /**
+     * What a line made past its share was owed by the rest of its order, so it comes off the order's
+     * other open lines, newest first, with the To Produce lines it covers (HELP-4509): the order still
+     * asks for what it ordered, not that plus the extra. With no open line left it is simply extra.
+     * A line someone is working on, alone or in a combined batch, is left as it is.
+     * ponytail: a line is never taken below 1, a line the extra covers whole is left with 1 to close by hand.
+     *
+     * @return array<int, int> artefacts taken off, by line id
+     */
+    private function takeOffRestOfOrder(JobOrderItem $item, int $grownBy): array
+    {
+        $openLines = $item->orderItems()
+            ->reject(fn (JobOrderItem $line) => $line->id == $item->id
+                || Arr::has($line->data ?? [], 'carried_to')
+                || (float) $line->quantity_received > 0
+                || !in_array($line->jobOrder->state, JobOrderStateEnum::open())
+                || $line->tasks->contains(fn (JobOrderItemTask $step) => $step->combined_task_id !== null)
+                || ManufactureTaskSession::whereIn('job_order_item_task_id', $line->tasks->pluck('id'))->where('state', ManufactureTaskSessionStateEnum::OPEN)->exists())
+            ->sortByDesc('id');
+
+        $takenOffByLine = [];
+
+        foreach ($openLines as $line) {
+            $made     = (int) $line->tasks->reject(fn (JobOrderItemTask $step) => $step->isRecordedInKg())->map(fn (JobOrderItemTask $step) => $step->artefactsIn())->max();
+            $takenOff = min($grownBy, $line->quantity - max($made, 1));
+            if ($takenOff <= 0) {
+                continue;
+            }
+
+            $line->update(['quantity' => $line->quantity - $takenOff]);
+            foreach ($line->tasks as $step) {
+                $floor = $step->isRecordedInKg() ? 0 : (float) $step->quantity_made;
+                $step->setRequiredQuantity(max($floor, round((float) $step->quantity_required - $step->requiredFor($takenOff), 3)));
+            }
+            $this->moveToProduceLines($line, $line->job_order_id, $item->job_order_id, $takenOff);
+
+            $takenOffByLine[$line->id] = $takenOff;
+            $grownBy -= $takenOff;
+            if ($grownBy <= 0) {
+                break;
+            }
+        }
+
+        return $takenOffByLine;
+    }
+
+    /**
+     * A correction that takes back authorised extra gives the order's other lines back what it took off them,
+     * as far as they are still open, so the order keeps what it ordered.
+     *
+     * @param  array<int|string, int>  $takenOffByLine
+     * @return array<int|string, int> what is still taken off, by line id
+     */
+    public function giveBackToRestOfOrder(JobOrderItem $item, array $takenOffByLine, int $artefacts): array
+    {
+        $lines = JobOrderItem::whereIn('id', array_keys($takenOffByLine))->with(['tasks', 'jobOrder'])->orderBy('id')->get()
+            ->reject(fn (JobOrderItem $line) => Arr::has($line->data ?? [], 'carried_to') || !in_array($line->jobOrder->state, JobOrderStateEnum::open()));
+
+        foreach ($lines as $line) {
+            $givenBack = min($artefacts, (int) $takenOffByLine[$line->id]);
+            if ($givenBack <= 0) {
+                break;
+            }
+
+            $line->update(['quantity' => $line->quantity + $givenBack]);
+            foreach ($line->tasks as $step) {
+                $step->setRequiredQuantity(round((float) $step->quantity_required + $step->requiredFor($givenBack), 3));
+            }
+            $this->moveToProduceLines($line, $item->job_order_id, $line->job_order_id, $givenBack);
+            $takenOffByLine[$line->id] -= $givenBack;
+            $artefacts -= $givenBack;
+        }
+
+        return array_filter($takenOffByLine);
+    }
+
+    private function moveToProduceLines(JobOrderItem $line, int $fromJobOrderId, int $toJobOrderId, int $artefacts): void
+    {
+        if ($fromJobOrderId == $toJobOrderId) {
+            return;
+        }
+
+        $skos  = round($artefacts / $line->artefact->packedIn(), 3);
+        $lines = PartnerShoppingListItem::where('job_order_id', $fromJobOrderId)
+            ->where('stock_id', $line->artefact->orgStock?->stock_id)
+            ->orderByDesc('id')
+            ->get();
+
+        foreach ($lines as $line) {
+            $wanted = $line->claimedSkos();
+            $moved  = min($skos, $wanted);
+            $line->moveUncoveredTo(round($wanted - $moved, 3), $toJobOrderId);
+            $skos = round($skos - $moved, 3);
+            if ($skos <= 0) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, int>  $takenOffByLine
+     */
+    private function recordOverproduction(ManufactureTaskSession $session, JobOrderItemTask $task, float $overproduced, Employee $manager, string $method, array $takenOffByLine): void
     {
         $jobOrder = $task->jobOrder;
         $data     = $jobOrder->data ?? [];
@@ -412,7 +522,7 @@ class CloseManufactureTaskSession extends OrgAction
             'manager_id'    => $manager->id,
             'method'        => $method,
             'at'            => now()->toIso8601String(),
-        ];
+        ] + ($takenOffByLine ? ['taken_off_lines' => $takenOffByLine] : []);
 
         $jobOrder->update(['data' => $data]);
     }

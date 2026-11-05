@@ -11,6 +11,7 @@ namespace App\Actions\Production\JobOrderItemTask;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\GetJobOrderDestinationAllocation;
 use App\Actions\Production\JobOrder\StoreJobOrder;
+use App\Actions\Production\JobOrderItem\CreditOrderWorkToJobOrderItem;
 use App\Actions\Production\JobOrderItem\StoreJobOrderItem;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\JobOrder;
@@ -45,12 +46,9 @@ class SettleShortJobOrderItemTask
                 ]);
             }
 
-            $excessUnitsByTask = [];
             $item->update(['quantity' => $madeArtefacts]);
             foreach ($item->tasks as $task) {
-                $required = min((float) $task->quantity_required, $task->requiredFor($madeArtefacts));
-                $task->setRequiredQuantity($required);
-                $excessUnitsByTask[$task->manufacture_task_id] = max(0, (float) $task->quantity_made - $required);
+                $task->setRequiredQuantity(min((float) $task->quantity_required, $task->requiredFor($madeArtefacts)));
             }
 
             if (!$carryOver || $remainingArtefacts <= 0) {
@@ -74,7 +72,7 @@ class SettleShortJobOrderItemTask
             foreach ($carriedItem->tasks as $carriedTask) {
                 $carriedTask->update(['employee_id' => $item->tasks->firstWhere('manufacture_task_id', $carriedTask->manufacture_task_id)?->employee_id]);
             }
-            $this->creditWorkAlreadyDone($carriedItem, $excessUnitsByTask);
+            CreditOrderWorkToJobOrderItem::run($carriedItem);
             ConfirmJobOrder::make()->action($carried);
 
             $this->carryLines($original, $carried, $item, $madeArtefacts);
@@ -113,24 +111,6 @@ class SettleShortJobOrderItemTask
     public static function baseReference(JobOrder $jobOrder): string
     {
         return preg_replace('/[a-z]+$/', '', (string) $jobOrder->reference);
-    }
-
-    /**
-     * Earlier steps may have been worked (and paid) beyond what the closing step finished; that
-     * work exists and must not be asked for, or paid, again on the carried job.
-     *
-     * @param  array<int, float>  $excessUnitsByTask
-     */
-    private function creditWorkAlreadyDone(JobOrderItem $carriedItem, array $excessUnitsByTask): void
-    {
-        foreach ($carriedItem->tasks as $task) {
-            $excess = $excessUnitsByTask[$task->manufacture_task_id] ?? 0;
-            if ($excess <= 0) {
-                continue;
-            }
-            $task->update(['quantity_required' => max(0, (float) $task->quantity_required - $excess)]);
-            CalculateJobOrderItemTaskQuantities::run($task);
-        }
     }
 
     /**

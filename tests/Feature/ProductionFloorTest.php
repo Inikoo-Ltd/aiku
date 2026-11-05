@@ -1387,3 +1387,92 @@ test('a step of a carried job cannot go past what the step before it made there,
     expect((float) $labellingTask->refresh()->quantity_made)->toBe(6.0)
         ->and($jobOrder->refresh()->data['overproductions'] ?? [])->toBe([]);
 });
+
+test('a carried job takes the mix its order already made, and extra made on one part comes off the rest of the order', function () {
+    $mixing = stepTestManufactureTask($this->production, 'MIXORD', 'Mixing for the order');
+    $mixing->update(['is_recorded_in_kg' => true]);
+    $this->artefact->manufactureTasks()->detach();
+    $this->artefact->manufactureTasks()->sync([
+        $mixing->id                => ['position' => 1, 'units_per_artefact' => 0.5],
+        $this->manufactureTask->id => ['position' => 2, 'units_per_artefact' => 1],
+    ]);
+    SeedJobPositions::make()->handle($this->organisation);
+    $user = $this->guest->getUser();
+    \Illuminate\Support\Facades\RateLimiter::clear('overproduction-manager-code:'.$user->id);
+
+    $employee = function (string $positionCode) {
+        $modelData                    = Employee::factory()->make(['organisation_id' => $this->organisation->id])->toArray();
+        $modelData['worker_number']   = 'W'.rand(10000, 99999);
+        $modelData['alias']           = 'Alias '.rand(10000, 99999);
+        $modelData['type']            = \App\Enums\HumanResources\Employee\EmployeeTypeEnum::EMPLOYEE;
+        $modelData['employment_type'] = \App\Enums\HumanResources\Employee\EmploymentTypeEnum::FULL_TIME;
+        $modelData['state']           = \App\Enums\HumanResources\Employee\EmployeeStateEnum::WORKING;
+        $modelData['username']        = 'mixorder'.rand(10000, 99999);
+        $modelData['password']        = 'secret-password';
+        $employee                     = StoreEmployee::make()->action($this->organisation, $modelData);
+        SyncEmployeeJobPositions::make()->handle($employee, [
+            JobPosition::where('organisation_id', $this->organisation->id)->where('code', $positionCode)->first()->id => ['Production' => [$this->production->id]],
+        ]);
+
+        return $employee;
+    };
+    $manager    = $employee('prod-m');
+    $managerPin = 'MG'.rand(100000, 999999);
+    $manager->update(['pin' => $this->organisation->id.':'.$managerPin]);
+    $artisan = $employee('prod-c');
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 20]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    [$mix, $making] = $item->tasks()->orderBy('position')->get()->all();
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $mix), ['quantity_made' => 16]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making->refresh()), ['quantity_made' => 5, 'outcome' => 'carry_over']);
+    [$carriedMix, $carriedMaking] = JobOrder::where('data->carried_from', $jobOrder->id)->firstOrFail()->jobOrderItems()->first()->tasks()->orderBy('position')->get()->all();
+    expect((float) $carriedMix->quantity_required)->toBe(0.0);
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $carriedMaking), ['quantity_made' => 4, 'outcome' => 'carry_over']);
+    $lastItem = JobOrder::where('data->carried_from', $jobOrder->id)->orderByDesc('id')->firstOrFail()->jobOrderItems()->first();
+    $lastMix  = $lastItem->tasks()->orderBy('position')->first();
+    expect($lastItem->quantity)->toBe(11)
+        ->and((float) $lastMix->quantity_required)->toBe(0.0)
+        ->and($lastMix->state)->toBe(JobOrderItemTaskStateEnum::DONE);
+
+    \App\Actions\Production\JobOrderItem\SplitJobOrderItem::make()->action($lastItem, [
+        ['id' => $lastItem->id, 'employee_id' => $manager->id, 'quantity' => 5],
+        ['employee_id' => $artisan->id, 'quantity' => 6],
+    ]);
+    $sibling = JobOrderItem::where('split_from_id', $lastItem->id)->firstOrFail();
+    expect((float) $lastItem->tasks()->orderBy('position')->first()->quantity_required)->toBe(0.0)
+        ->and((float) $sibling->tasks()->orderBy('position')->first()->quantity_required)->toBe(0.0);
+
+    $lastMaking = $lastItem->tasks()->orderBy('position')->get()->last();
+    $overmade   = CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $lastMaking), ['quantity_made' => 8, 'manager_code' => $managerPin]);
+    expect($lastItem->refresh()->quantity)->toBe(8)
+        ->and($sibling->refresh()->quantity)->toBe(3)
+        ->and((float) $sibling->tasks()->orderBy('position')->get()->last()->quantity_required)->toBe(3.0)
+        ->and(JobOrderItem::whereIn('id', $item->orderItems()->pluck('id'))->sum('quantity'))->toEqual(20);
+
+    \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($overmade->refresh(), ['quantity_made' => 5], 'Supervisor');
+    expect($lastItem->refresh()->quantity)->toBe(5)
+        ->and($sibling->refresh()->quantity)->toBe(6)
+        ->and((float) $sibling->tasks()->orderBy('position')->get()->last()->quantity_required)->toBe(6.0)
+        ->and(JobOrderItem::whereIn('id', $item->orderItems()->pluck('id'))->sum('quantity'))->toEqual(20);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    [$mix, $making] = $item->tasks()->orderBy('position')->get()->all();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $mix), ['quantity_made' => 3]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making->refresh()), ['quantity_made' => 4, 'outcome' => 'carry_over']);
+    [$carriedMix, $carriedMaking] = JobOrder::where('data->carried_from', $jobOrder->id)->firstOrFail()->jobOrderItems()->first()->tasks()->orderBy('position')->get()->all();
+    expect((float) $carriedMix->quantity_required)->toBe(2.0);
+
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $carriedMix), ['quantity_made' => 1]);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $carriedMaking->refresh()), ['quantity_made' => 4, 'outcome' => 'carry_over']);
+    $lastMix = JobOrder::where('data->carried_from', $jobOrder->id)->orderByDesc('id')->firstOrFail()->jobOrderItems()->first()->tasks()->orderBy('position')->first();
+    expect((float) $lastMix->quantity_required)->toBe(1.0);
+
+    $this->artefact->manufactureTasks()->detach();
+    $this->artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+});

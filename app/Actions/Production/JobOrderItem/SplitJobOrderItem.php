@@ -72,6 +72,10 @@ class SplitJobOrderItem extends OrgAction
                 $droppedSubJob->tasks()->delete();
                 $droppedSubJob->delete();
             }
+
+            foreach (JobOrderItem::whereIn('id', $keptIds)->with('tasks')->orderBy('id')->get() as $subJob) {
+                CreditOrderWorkToJobOrderItem::run($subJob);
+            }
         });
 
         BroadcastManufactureFloorChanged::dispatch($line->jobOrder->production_id);

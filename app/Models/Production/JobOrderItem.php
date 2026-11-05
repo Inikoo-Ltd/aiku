@@ -224,6 +224,24 @@ class JobOrderItem extends Model
             ->first();
     }
 
+    /**
+     * This artefact on the whole order: the job order it started on and every job order its rest
+     * was carried to, splits included, so work made on one part counts for the others (HELP-4509).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, JobOrderItem>
+     */
+    public function orderItems(): \Illuminate\Database\Eloquent\Collection
+    {
+        $root = (int) Arr::get($this->jobOrder->data, 'carried_from', $this->job_order_id);
+
+        return JobOrderItem::where('artefact_id', $this->artefact_id)
+            ->whereHas('jobOrder', fn ($query) => $query->where('state', '!=', JobOrderStateEnum::NOT_RECEIVED)
+                ->where(fn ($query) => $query->where('id', $root)->orWhere('data->carried_from', $root)))
+            ->with(['tasks.manufactureTask', 'tasks.jobOrderItem', 'jobOrder'])
+            ->orderBy('id')
+            ->get();
+    }
+
     public function artefact(): BelongsTo
     {
         return $this->belongsTo(Artefact::class)->withTrashed();
