@@ -1075,6 +1075,32 @@ describe('partner shopping list', function () {
         }
     });
 
+    test('a partner sells a SKO with the product named after it before a cheaper one sharing it', function () {
+        $sellerOrgStock = $this->sellerProduct->orgStocks()->first();
+        $originalCode   = $this->sellerProduct->code;
+        $this->sellerProduct->update(['code' => strtolower($sellerOrgStock->code)]);
+
+        $sibling        = $this->sellerProduct->replicate();
+        $sibling->code  = 'OSC-'.$this->sellerProduct->id;
+        $sibling->slug  = 'osc-'.$this->sellerProduct->id;
+        $sibling->price = round((float) $this->sellerProduct->price / 2, 2);
+        $sibling->save();
+        DB::table('product_has_org_stocks')->insert([
+            'product_id' => $sibling->id, 'org_stock_id' => $sellerOrgStock->id, 'quantity' => $sellerOrgStock->pivot->quantity,
+        ]);
+
+        try {
+            $pricePerSko = DB::query()->selectRaw(PartnerSkoPrice::pricePerSkoSql((string) $sellerOrgStock->id, [$this->sellerShop->id], (string) $this->orgPartner->id).' as price')->value('price');
+
+            expect(GetPartnerSellingProduct::run($this->orgPartner->refresh(), $sellerOrgStock->stock_id)->id)->toBe($this->sellerProduct->id)
+                ->and(round((float) $pricePerSko, 4))->toBe(round((float) $this->sellerProduct->price / (float) $sellerOrgStock->pivot->quantity, 4));
+        } finally {
+            DB::table('product_has_org_stocks')->where('product_id', $sibling->id)->delete();
+            $sibling->forceDelete();
+            $this->sellerProduct->update(['code' => $originalCode]);
+        }
+    });
+
     test('a partner sells from its procurement shop when no list of shops is set', function () {
         $seller           = $this->orgPartner->partner;
         $originalSettings = $seller->settings;

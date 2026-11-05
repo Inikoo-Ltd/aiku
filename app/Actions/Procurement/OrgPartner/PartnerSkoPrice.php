@@ -34,6 +34,16 @@ final class PartnerSkoPrice
     }
 
     /**
+     * Among whole packs of the same size, the product named after the SKO sells it before any other
+     * product sharing it: AROMA sells SKO PrEO-29 as PrEO-29 and as the cheaper PREOSC-29, and the
+     * partner orders PrEO-29 (HELP-4524).
+     */
+    public static function ownCodeFirstSql(string $productCodeExpression, string $orgStockIdExpression): string
+    {
+        return "lower($productCodeExpression) is distinct from (select lower(own.code) from org_stocks own where own.id = $orgStockIdExpression)";
+    }
+
+    /**
      * A product made exclusively for customers is their private label: a partner may buy it only
      * when its own intercompany customer is one of them. Everything else is off limits to the partner.
      */
@@ -65,7 +75,7 @@ final class PartnerSkoPrice
             where phos.org_stock_id = ".$orgStockIdExpression."
                 and (select count(*) from product_has_org_stocks bundle where bundle.product_id = pr.id) = 1
                 and ".self::notOtherCustomersExclusiveSql('pr', $orgPartnerIdExpression)."
-            order by ".self::shopPositionSql($shopIds, 'pr.shop_id').", ".self::packPreferenceSql('phos.quantity').", pr.price
+            order by ".self::shopPositionSql($shopIds, 'pr.shop_id').", ".self::packPreferenceSql('phos.quantity').", ".self::ownCodeFirstSql('pr.code', 'phos.org_stock_id').", pr.price
             limit 1)";
     }
 
@@ -108,6 +118,7 @@ final class PartnerSkoPrice
             ->whereRaw('(select count(*) from product_has_org_stocks bundle where bundle.product_id = products.id) = 1')
             ->whereRaw(self::notOtherCustomersExclusiveSql('products', (string) $orgPartnerId))
             ->orderByRaw(self::packPreferenceSql('product_has_org_stocks.quantity'))
+            ->orderByRaw(self::ownCodeFirstSql('products.code', 'product_has_org_stocks.org_stock_id'))
             ->orderBy('products.price');
     }
 }
