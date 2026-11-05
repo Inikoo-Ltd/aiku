@@ -11444,6 +11444,7 @@
     "Need chasing": "Need chasing",
     "Need review": "Need review",
     "Need to pay": "Need to pay",
+    ":amount more than the order needs goes to the customer's balance": ":amount more than the order needs goes to the customer's balance",
     "Need to pay :amount of :total": "Need to pay :amount of :total",
     "Need to pay :payAmount of :totalAmount": "Need to pay :payAmount of :totalAmount",
     "Need to refund": "Need to refund",

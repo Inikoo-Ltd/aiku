@@ -10897,6 +10897,7 @@
     "Need chasing": "Por reclamar",
     "Need review": "Necesita revisión",
     "Need to pay": "A pagar",
+    ":amount more than the order needs goes to the customer's balance": ":amount más de lo que necesita el pedido irá al saldo del cliente",
     "Need to pay :amount of :total": "Falta por pagar :amount de :total",
     "Need to pay :payAmount of :totalAmount": "Necesita pagar :payAmount de :totalAmount",
     "Need to refund": "Necesita reembolso",

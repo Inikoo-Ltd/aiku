@@ -56,7 +56,7 @@ class IndexOrdersInOrganisation extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('orders.reference', $value);
+                $query->whereWith('orders.reference', $value);
             });
         });
 

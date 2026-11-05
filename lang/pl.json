@@ -5239,6 +5239,7 @@
     "Nearest batch that is whole SKOs": "Najbliższa partia złożona z pełnych SKO",
     "Need review": "Do sprawdzenia",
     "Need to pay": "Trzeba zapłacić",
+    ":amount more than the order needs goes to the customer's balance": ":amount ponad kwotę zamówienia trafi na saldo klienta",
     "Need to pay :payAmount of :totalAmount": "Należy zapłacić :payAmount z :totalAmount",
     "Need to refund": "Trzeba zwrócić pieniądze",
     "Need to refund :amount to customer": "Należy zwrócić klientowi kwotę :amount",

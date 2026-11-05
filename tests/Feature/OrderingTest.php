@@ -7184,3 +7184,14 @@ test('a basket line removed elsewhere can still be set from a stale product page
     DB::table('transactions')->where('id', $line->id)->update(['order_id' => $otherOrder->id]);
     $this->actingAs($webUser, 'retina')->postJson($url, ['quantity_ordered' => 1])->assertNotFound();
 });
+
+test('searching the organisation orders by the number from a bank transfer finds the order without its shop prefix', function () {
+    $order  = StoreOrder::make()->action(StoreCustomer::make()->action($this->shop, Customer::factory()->definition()), Order::factory()->definition());
+    $number = (string) random_int(10000000, 99999999);
+    DB::table('orders')->where('id', $order->id)->update(['reference' => 'QZ'.$number]);
+
+    get(route('grp.org.overview.orders.index', [$this->organisation->slug, 'filter' => ['global' => $number]]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('data.data', fn ($rows) => collect($rows)->contains('id', $order->id))
+            ->etc());
+});

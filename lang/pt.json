@@ -10863,6 +10863,7 @@
     "Need chasing": "Por acompanhar",
     "Need review": "Precisa de revisão",
     "Need to pay": "Precisa de pagar",
+    ":amount more than the order needs goes to the customer's balance": ":amount a mais do que o pedido precisa vai para o saldo do cliente",
     "Need to pay :amount of :total": "É necessário pagar :amount de :total",
     "Need to pay :payAmount of :totalAmount": "Precisa de pagar :payAmount de :totalAmount",
     "Need to refund": "Reembolso necessário",

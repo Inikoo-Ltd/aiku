@@ -10898,6 +10898,7 @@
     "Need chasing": "Treba urgovať",
     "Need review": "Vyžadujú kontrolu",
     "Need to pay": "Treba zaplatiť",
+    ":amount more than the order needs goes to the customer's balance": ":amount navyše oproti objednávke pôjde na zostatok zákazníka",
     "Need to pay :amount of :total": "Treba zaplatiť :amount z :total",
     "Need to pay :payAmount of :totalAmount": "Je potrebné zaplatiť :payAmount z :totalAmount",
     "Need to refund": "Potreba vrátenia peňazí",

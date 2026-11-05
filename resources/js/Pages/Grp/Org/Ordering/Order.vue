@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import TimelineResponsive from "@/Components/Utils/TimelineResponsive.vue"
 import Popover from "@/Components/Popover.vue"
-import { Checkbox, InputNumber, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
+import { Checkbox, InputNumber, InputGroup, InputGroupAddon, Popover as PopoverPrimevue, RadioButton, Select, InputText, Column, DataTable, Dialog } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
@@ -47,7 +47,7 @@ import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import PureInputNumber from "@/Components/Pure/PureInputNumber.vue"
+import { parseAmount } from "@/Composables/parseAmount"
 import AlertMessage from "@/Components/Utils/AlertMessage.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
@@ -413,6 +413,18 @@ const paymentData = ref({
     payment_reference: ""
 })
 
+const paymentAmountText = ref("")
+
+const onPaymentAmountTyped = (text: string | undefined) => {
+    paymentData.value.payment_amount = Math.abs(parseAmount(text ?? "") ?? 0)
+}
+
+watch(() => paymentData.value.payment_amount, (amount) => {
+    if ((parseAmount(paymentAmountText.value) ?? 0) !== Number(amount ?? 0)) {
+        paymentAmountText.value = amount ? String(amount) : ""
+    }
+})
+
 const layout = inject("layout", {});
 const currentAction = ref(null)
 const isOpenModalPayment = ref(false)
@@ -491,21 +503,19 @@ const onSubmitPayment = (isRefund?: boolean) => {
                 state: "completed"
             },
             {
-                onStart: () => isLoadingPayment.value = true,
-                onFinish: (response) => {
-                    isLoadingPayment.value = false,
-                        isOpenModalPayment.value = false,
-                        notify({
-                            title: ctrans("Success"),
-                            text: ctrans("Successfully add payment invoice"),
-                            type: "success"
-                        })
+                onStart: () => {
+                    isLoadingPayment.value = true
+                    errorPaymentMethod.value = null
                 },
-                onSuccess: (response) => {
-                    paymentData.value.payment_method = null,
-                        paymentData.value.payment_amount = 0,
-                        paymentData.value.payment_reference = ""
-                }
+                onFinish: () => isLoadingPayment.value = false,
+                onSuccess: () => {
+                    isOpenModalPayment.value = false
+                    isOpenModalRefund.value = false
+                    paymentData.value.payment_method = null
+                    paymentData.value.payment_amount = 0
+                    paymentData.value.payment_reference = ""
+                },
+                onError: (errors) => errorPaymentMethod.value = Object.values(errors).join(" ")
             }
         )
 
@@ -3148,8 +3158,14 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         {{ ctrans("Payment amount") }}
                     </label>
                     <div class="mt-1">
-                        <PureInputNumber v-model="paymentData.payment_amount" />
+                        <InputGroup>
+                            <InputGroupAddon>{{ locale.currencySymbol(currency.code) }}</InputGroupAddon>
+                            <InputText v-model="paymentAmountText" @update:modelValue="onPaymentAmountTyped" inputmode="decimal" placeholder="0" />
+                        </InputGroup>
                     </div>
+                    <p v-if="Number(paymentData.payment_amount) > Number(box_stats.products.payment.pay_amount)" class="mt-1 text-xs text-amber-600">
+                        {{ ctrans(":amount more than the order needs goes to the customer's balance", { amount: locale.currencyFormat(currency.code, Number(paymentData.payment_amount) - Number(box_stats.products.payment.pay_amount)) }) }}
+                    </p>
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
                             ctrans("Need to pay")
@@ -3209,7 +3225,10 @@ const getShipmentFromPlatform = (deliveryNote: {}) => {
                         {{ ctrans('Refund amount') }}
                     </label>
                     <div class="mt-1">
-                        <PureInputNumber v-model="paymentData.payment_amount" />
+                        <InputGroup>
+                            <InputGroupAddon>{{ locale.currencySymbol(currency.code) }}</InputGroupAddon>
+                            <InputText v-model="paymentAmountText" @update:modelValue="onPaymentAmountTyped" inputmode="decimal" placeholder="0" />
+                        </InputGroup>
                     </div>
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{

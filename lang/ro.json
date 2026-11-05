@@ -4123,6 +4123,7 @@
     "Nearest batch that is whole SKOs": "Cel mai apropiat lot format din SKO întregi",
     "Need review": "Necesită revizuire",
     "Need to pay": "De plătit",
+    ":amount more than the order needs goes to the customer's balance": ":amount peste suma comenzii va merge în soldul clientului",
     "Need to pay :payAmount of :totalAmount": "De plată: :payAmount din :totalAmount",
     "Need to refund": "De rambursat",
     "Need to refund :amount to customer": "Trebuie rambursată suma :amount către client",
