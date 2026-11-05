@@ -1502,6 +1502,53 @@ test('agent receives a purchase order line in batches and rejected units go back
     expect((new PurchaseOrder(['production_started_at' => now()]))->areLinesLockedByProduction())->toBeFalse();
 });
 
+test('the goods receipt is the record that holds: it replaces the stock sheet row of its product and order, and the sheet does not import it again', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $supplierProduct = $orgSupplierProduct->supplierProduct;
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
+    $purchaseOrder->updateQuietly([
+        'state'              => PurchaseOrderStateEnum::SUBMITTED,
+        'delivery_state'     => App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum::IN_PROCESS,
+        'submitted_at'       => now(),
+        'sample_approved_at' => now(),
+        'reference'          => 'AWIndo-901-UK',
+    ]);
+    $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::SUBMITTED]);
+
+    $stocks = fn () => App\Models\Procurement\AgentWarehouseStock::where('supplier_product_id', $supplierProduct->id);
+    $sheetRow = [
+        'group_id'            => $this->agent->group_id,
+        'agent_id'            => $this->agent->id,
+        'organisation_id'     => $purchaseOrder->organisation_id,
+        'supplier_product_id' => $supplierProduct->id,
+        'purchase_order_id'   => $purchaseOrder->id,
+        'state'               => App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::RECEIVED,
+        'quantity'            => 100,
+    ];
+    App\Models\Procurement\AgentWarehouseStock::create($sheetRow);
+    App\Models\Procurement\AgentWarehouseStock::create([...$sheetRow, 'purchase_order_id' => null]);
+
+    $receipt = App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($this->agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 100]],
+    ]);
+
+    expect($stocks()->whereNotNull('purchase_order_id')->pluck('agent_goods_receipt_id')->all())->toBe([$receipt->id])
+        ->and($stocks()->whereNull('purchase_order_id')->count())->toBe(1);
+
+    $sheetLine = fn (string $code) => '"'.implode('","', array_replace(array_fill(0, 30, ''), [2 => $code, 7 => '100', 26 => 'PO-901 UK'])).'"';
+    Illuminate\Support\Facades\Http::fake(fn (Illuminate\Http\Client\Request $request) => Illuminate\Support\Facades\Http::response(
+        str_contains($request->url(), 'htmlview') ? '{name: "Moving Stock"}' : implode("\n", ['"header"', $sheetLine($supplierProduct->code)])
+    ));
+
+    $imported = App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromSheet::run($this->agent, $purchaseOrder->organisation, 'sheet-id');
+
+    expect($imported['rows'])->toBe([])
+        ->and($imported['unmatched'])->toContain("Moving Stock: $supplierProduct->code already received through $receipt->reference")
+        ->and($stocks()->pluck('agent_goods_receipt_id')->all())->toBe([$receipt->id]);
+});
+
 test('agent order in warehouse stage follows its goods receipts, checks and packing', function () {
     [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
     $supplierProduct = $orgSupplierProduct->supplierProduct;

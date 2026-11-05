@@ -17,6 +17,7 @@ use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -60,6 +61,7 @@ class ImportAgentWarehouseStocksFromSheet
         $rows      = [];
         $unmatched = [];
         $sheetTabs = $this->tabNames($sheetId);
+        $receipts  = $this->goodsReceiptsByProductAndOrder($agent, $organisation);
 
         $inProduction  = [];
         $productionTab = collect($sheetTabs)->first(fn (string $name) => strcasecmp(trim($name), self::PRODUCTION_TAB) === 0);
@@ -103,6 +105,12 @@ class ImportAgentWarehouseStocksFromSheet
                     continue;
                 }
 
+                $orderId = ($purchaseOrderId = $this->orderWithLine($orderIds, $supplierProduct) ?? $this->orderOfSupplier($orderIds, $supplierProduct)) ?? $this->latestOrderWithProduct($organisation, $candidates);
+                if ($receipt = $receipts->get("$supplierProduct->id|$orderId")) {
+                    $unmatched[] = "$tab: $code already received through $receipt";
+                    continue;
+                }
+
                 $rows[] = [
                     'group_id'            => $agent->group_id,
                     'agent_id'            => $agent->id,
@@ -110,7 +118,7 @@ class ImportAgentWarehouseStocksFromSheet
                     'supplier_product_id' => $supplierProduct->id,
                     'state'               => $state->value,
                     'quantity'            => $units,
-                    'purchase_order_id'   => ($purchaseOrderId = $this->orderWithLine($orderIds, $supplierProduct) ?? $this->orderOfSupplier($orderIds, $supplierProduct)) ?? $this->latestOrderWithProduct($organisation, $candidates),
+                    'purchase_order_id'   => $orderId,
                     'notes'               => collect([trim($line[self::NOTES] ?? ''), $po && !$purchaseOrderId ? "PO: $po" : ''])->filter()->implode(' · ') ?: null,
                     'created_at'          => now(),
                     'updated_at'          => now(),
@@ -120,12 +128,35 @@ class ImportAgentWarehouseStocksFromSheet
 
         if (!$dryRun) {
             DB::transaction(function () use ($agent, $organisation, $rows) {
+                DB::table('agents')->where('id', $agent->id)->lockForUpdate()->value('id');
+                $receipts = $this->goodsReceiptsByProductAndOrder($agent, $organisation);
+                $rows     = array_values(array_filter($rows, fn (array $row) => !$receipts->has("{$row['supplier_product_id']}|{$row['purchase_order_id']}")));
+
                 AgentWarehouseStock::where('agent_id', $agent->id)->where('organisation_id', $organisation->id)->whereNull('purchase_order_transaction_id')->delete();
                 AgentWarehouseStock::insert($rows);
             });
         }
 
         return ['rows' => $rows, 'unmatched' => $unmatched, 'in_production' => $inProduction];
+    }
+
+    /**
+     * The goods receipt is the record that holds (INI-204): a sheet line for a product and purchase order the agent already
+     * received through a goods receipt is the same goods, so it is not imported again.
+     *
+     * @return SupportCollection<string, string> goods receipt references keyed by "supplier product id|purchase order id"
+     */
+    private function goodsReceiptsByProductAndOrder(Agent $agent, Organisation $organisation): SupportCollection
+    {
+        return DB::table('agent_warehouse_stocks')
+            ->join('agent_goods_receipts', 'agent_goods_receipts.id', 'agent_warehouse_stocks.agent_goods_receipt_id')
+            ->where('agent_warehouse_stocks.agent_id', $agent->id)
+            ->where('agent_warehouse_stocks.organisation_id', $organisation->id)
+            ->where('agent_warehouse_stocks.quantity', '>', 0)
+            ->whereNotNull('agent_warehouse_stocks.purchase_order_id')
+            ->get(['agent_warehouse_stocks.supplier_product_id', 'agent_warehouse_stocks.purchase_order_id', 'agent_goods_receipts.reference'])
+            ->groupBy(fn (object $row) => "$row->supplier_product_id|$row->purchase_order_id")
+            ->map(fn ($group) => $group->pluck('reference')->unique()->implode(', '));
     }
 
     /**
