@@ -12,14 +12,18 @@ use App\Enums\Masters\Competitor\CompetitorStatusEnum;
 use App\Models\Masters\Competitor;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
+use RuntimeException;
 use Throwable;
 
 /**
  * Reads a competitor's product feed (a CSV or tab separated file they publish for their trade
- * customers) into competitor_products, then queues the matching of our products against it.
- * Columns are found by their header, so a feed with the usual names needs no setup.
+ * customers, or the public catalogue of a Shopify shop) into competitor_products, then queues
+ * the matching of our products against it. Columns are found by their header, so a feed with
+ * the usual names needs no setup, and a competitor with no feed and no search link whose website
+ * runs on Shopify gets its catalogue as the feed.
  */
 class ImportCompetitorFeed
 {
@@ -53,12 +57,19 @@ class ImportCompetitorFeed
         'tariff_code' => '/^(commodity ?code|tariff ?code|hs ?code)$/i',
     ];
 
+    /**
+     * A Shopify shop lists 250 products a page: this many pages is far beyond any competitor's catalogue.
+     */
+    private const int SHOPIFY_PAGES = 40;
+
     public function handle(Competitor $competitor): int
     {
         $startedAt = now();
 
         try {
-            $rows = static::parse(Http::timeout(120)->get($competitor->feed_url)->throw()->body());
+            $rows = static::isShopifyFeed($competitor->feed_url)
+                ? static::shopifyRows($competitor->feed_url)
+                : static::parse(Http::timeout(120)->get($competitor->feed_url)->throw()->body());
         } catch (Throwable $exception) {
             $competitor->update(['status' => CompetitorStatusEnum::ERROR, 'last_error' => mb_substr($exception->getMessage(), 0, 500), 'fetched_at' => now()]);
 
@@ -155,9 +166,99 @@ class ImportCompetitorFeed
         return array_values($rows);
     }
 
+    public static function isShopifyFeed(string $feedUrl): bool
+    {
+        return str_ends_with(parse_url($feedUrl, PHP_URL_PATH) ?? '', '/products.json');
+    }
+
+    /**
+     * The catalogue link of a competitor's website when it is a Shopify shop that shows its products.
+     */
+    public static function findShopifyFeed(string $website): ?string
+    {
+        $feedUrl = parse_url($website, PHP_URL_SCHEME).'://'.parse_url($website, PHP_URL_HOST).'/products.json';
+
+        try {
+            return Http::timeout(20)->retry(2, 5000, throw: false)->get($feedUrl, ['limit' => 1])->json('products') ? $feedUrl : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @return array<int, array{code: string, name: string, price: float, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string, data: string}>
+     */
+    public static function shopifyRows(string $feedUrl): array
+    {
+        $rows = [];
+        for ($page = 1; $page <= self::SHOPIFY_PAGES; $page++) {
+            $products = Http::timeout(60)->retry(3, 5000)->get($feedUrl, ['limit' => 250, 'page' => $page])->json('products');
+            if (!is_array($products)) {
+                throw new RuntimeException(__('The shop did not send page :page of its products', ['page' => $page]));
+            }
+            if (!$products) {
+                break;
+            }
+
+            $rows += static::parseShopify($products, $feedUrl);
+        }
+
+        return array_values($rows);
+    }
+
+    /**
+     * One row per variant, which in these shops is a pack size: its name is the product's title with the
+     * variant's (e.g. "Mandarin Essential Oil 100ml") and its code the variant's id, as shops often give
+     * every size of a product the same SKU.
+     *
+     * @return array<string, array{code: string, name: string, price: float, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string, data: string}>
+     */
+    public static function parseShopify(array $products, string $feedUrl): array
+    {
+        $shopUrl = Str::beforeLast($feedUrl, '/products.json');
+
+        $rows = [];
+        foreach ($products as $product) {
+            foreach ($product['variants'] ?? [] as $variant) {
+                $price = (float) ($variant['price'] ?? 0);
+                $code  = (string) $variant['id'];
+                if ($price <= 0) {
+                    continue;
+                }
+
+                $rows[$code] = [
+                    'code'          => $code,
+                    'name'          => mb_substr(trim($product['title'].(($variant['title'] ?? 'Default Title') === 'Default Title' ? '' : ' '.$variant['title'])), 0, 500),
+                    'price'         => $price,
+                    'rrp'           => null,
+                    'barcode'       => null,
+                    'minimum_order' => null,
+                    'image_url'     => $variant['featured_image']['src'] ?? $product['images'][0]['src'] ?? null,
+                    'url'           => "$shopUrl/products/{$product['handle']}?variant={$variant['id']}",
+                    'data'          => json_encode(array_filter([
+                        'description' => mb_substr(Str::squish(html_entity_decode(strip_tags($product['body_html'] ?? ''))), 0, 400),
+                        'weight_g'    => (float) ($variant['grams'] ?? 0) ?: null,
+                    ])),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
     public function asCommand(Command $command): int
     {
         Nightwatch::dontSample();
+
+        Competitor::whereNull('feed_url')
+            ->whereNull('search_url')
+            ->when($command->option('competitor'), fn ($query, $id) => $query->where('id', $id))
+            ->each(function (Competitor $competitor) use ($command) {
+                if ($feedUrl = static::findShopifyFeed($competitor->website)) {
+                    $competitor->update(['feed_url' => $feedUrl]);
+                    $command->info("$competitor->name: its website is a Shopify shop, its catalogue is read as the feed");
+                }
+            });
 
         $competitors = Competitor::whereNotNull('feed_url')
             ->when($command->option('competitor'), fn ($query, $id) => $query->where('id', $id))

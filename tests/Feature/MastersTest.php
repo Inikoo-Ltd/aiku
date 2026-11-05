@@ -4777,6 +4777,60 @@ describe('competitor prices, HELP-3605', function () {
                 ->etc());
     });
 
+    test('a competitor with only a website that is a Shopify shop has its catalogue read as the feed, one row per pack size', function () {
+        \Illuminate\Support\Sleep::fake();
+        $mandarin = ['id' => 1, 'title' => 'Mandarin Essential Oil', 'handle' => 'mandarin', 'body_html' => "<p>Cold pressed &amp;\n pure</p>", 'images' => [['src' => 'https://cdn.example.com/m.jpg']], 'variants' => [
+            ['id' => 11, 'title' => '10ml', 'sku' => 'E-MAN', 'price' => '2.99', 'grams' => 30],
+            ['id' => 12, 'title' => '100ml', 'sku' => 'E-MAN', 'price' => '12.50', 'grams' => 0],
+            ['id' => 13, 'title' => 'Free sample', 'sku' => null, 'price' => '0.00', 'grams' => 0],
+        ]];
+        $bowl = ['id' => 2, 'title' => 'Brass Singing Bowl 10cm', 'handle' => 'bowl', 'body_html' => '', 'images' => [], 'variants' => [
+            ['id' => 21, 'title' => 'Default Title', 'sku' => 'SB-1', 'price' => '9.00', 'grams' => 450],
+        ]];
+        $shopPages = function (array $pages) {
+            \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+            \Illuminate\Support\Facades\Http::fake(['*.example.com/*' => function (\Illuminate\Http\Client\Request $request) use ($pages) {
+                parse_str(parse_url($request->url(), PHP_URL_QUERY), $query);
+
+                return \Illuminate\Support\Facades\Http::response($pages[$query['limit'] === '1' ? 1 : (int) $query['page']] ?? ['products' => []]);
+            }]);
+        };
+        $shopPages([1 => ['products' => [$mandarin]], 2 => ['products' => [$bowl]]]);
+
+        $shopCompetitor = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
+            'name'        => 'Shop rival',
+            'website'     => 'https://shop.example.com/collections/oils',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+        ]);
+        foreach ([$this->competitor, $shopCompetitor] as $competitor) {
+            $this->artisan('masters:competitor-feeds', ['--competitor' => $competitor->id, '--no-match' => true])->assertSuccessful();
+        }
+
+        $shopCompetitor->refresh();
+        $rows = $shopCompetitor->products()->get()->keyBy('code');
+        expect($this->competitor->refresh()->feed_url)->toBeNull()
+            ->and($shopCompetitor->feed_url)->toBe('https://shop.example.com/products.json')
+            ->and($shopCompetitor->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::OK)
+            ->and($shopCompetitor->number_products)->toBe(3)
+            ->and($rows->pluck('code')->sort()->values()->all())->toBe(['11', '12', '21'])
+            ->and($rows['12']->name)->toBe('Mandarin Essential Oil 100ml')
+            ->and((float) $rows['12']->price)->toBe(12.5)
+            ->and($rows['12']->url)->toBe('https://shop.example.com/products/mandarin?variant=12')
+            ->and($rows['12']->image_url)->toBe('https://cdn.example.com/m.jpg')
+            ->and($rows['11']->data)->toEqual(['description' => 'Cold pressed & pure', 'weight_g' => 30])
+            ->and($rows['21']->name)->toBe('Brass Singing Bowl 10cm');
+
+        $shopPages([1 => ['products' => [$mandarin]], 2 => '<html>Checking your browser</html>']);
+        expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::make()->handle($shopCompetitor))->toBe(0)
+            ->and($shopCompetitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::ERROR)
+            ->and($shopCompetitor->products()->count())->toBe(3);
+
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['shop.example.com/*' => \Illuminate\Support\Facades\Http::response('<html>Not found</html>', 404)]);
+        expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::findShopifyFeed('https://shop.example.com'))->toBeNull();
+    });
+
     test('pack sizes are read from the name unless ours is a set too', function () {
         expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set of 12 Rosemary Incense Sticks', 'Satya Incense 15gm - Rosemary'))->toBe(12.0)
             ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('12 Packs of Palo Santo Smudge', 'Palo Santo Smudge'))->toBe(12.0)
