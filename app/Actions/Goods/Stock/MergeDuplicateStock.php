@@ -8,7 +8,6 @@
 namespace App\Actions\Goods\Stock;
 
 use App\Actions\Goods\Stock\Hydrators\StockHydrateStateFromOrgStocks;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -120,7 +119,7 @@ class MergeDuplicateStock
         StockHydrateStateFromOrgStocks::run($from->id);
 
         foreach ($plan['products'] as $product) {
-            ProductHydrateAvailableQuantity::run(SyncProductOrgStocksFromTradeUnits::run($product->refresh()));
+            SyncProductOrgStocksFromTradeUnits::run($product->refresh());
         }
 
         return $plan;

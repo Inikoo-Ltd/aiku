@@ -18,6 +18,7 @@ use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
@@ -96,6 +97,7 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         $authorised = collect($data['overproductions'] ?? [])->where('session_id', $session->id);
         $extra      = (float) $authorised->sum('quantity');
         $extraLeft  = round(max(0, $extra - max(0, $previous - $quantity)), 3);
+        $takenOff   = $authorised->pluck('taken_off_lines')->filter()->first() ?? [];
 
         $data['overproductions'] = collect($data['overproductions'] ?? [])
             ->map(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id ? array_merge($entry, ['quantity' => $extraLeft]) : $entry)
@@ -123,7 +125,17 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
             $required         = round((float) $task->quantity_required - ($extra - $extraLeft), 3);
 
             $task->setRequiredQuantity($required);
-            UpdateJobOrderItem::make()->action($item, ['quantity' => max(1, min((int) $item->quantity, (int) $task->artefactsIn($required)))]);
+            $quantityBefore = (int) $item->quantity;
+            UpdateJobOrderItem::make()->action($item, ['quantity' => max(1, min($quantityBefore, (int) $task->artefactsIn($required)))]);
+
+            if ($takenOff) {
+                $stillTakenOff = CloseManufactureTaskSession::make()->giveBackToRestOfOrder($item, $takenOff, $quantityBefore - (int) $item->refresh()->quantity);
+                $data          = $jobOrder->refresh()->data;
+                $data['overproductions'] = collect($data['overproductions'] ?? [])
+                    ->map(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id ? array_merge(Arr::except($entry, 'taken_off_lines'), $stillTakenOff ? ['taken_off_lines' => $stillTakenOff] : []) : $entry)
+                    ->all();
+                $jobOrder->update(['data' => $data]);
+            }
         }
 
         CalculateJobOrderItemTaskQuantities::run($task->refresh());
