@@ -23,7 +23,7 @@ interface FacetOption {
 
 type FilterGroup = "organisation" | "journey" | "agent" | "supplier" | "buyer" | "type" | "country" | "stage" | "status"
 type Tab = "open" | "needs_action" | "import" | "completed"
-type Sort = "needs_action" | "newest" | "oldest" | "value"
+type Sort = "needs_action" | "newest" | "oldest" | "value" | "lowest_value"
 
 const props = defineProps<{
     title: string
@@ -109,7 +109,8 @@ const sortOptions = computed(() => [
     { value: "needs_action", label: ctrans("Needs action first") },
     { value: "newest", label: ctrans("Newest first") },
     { value: "oldest", label: ctrans("Oldest first") },
-    { value: "value", label: ctrans("Highest value first") }
+    { value: "value", label: ctrans("Highest value first") },
+    { value: "lowest_value", label: ctrans("Lowest value first") }
 ])
 
 const perPageOptions = [10, 25, 50, 100]
