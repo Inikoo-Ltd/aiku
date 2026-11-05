@@ -101,7 +101,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask', 'jobOrder'])
+            ->with(['jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask', 'jobOrder'])
             ->first();
         $shiftEndPause    = $openSession?->shiftEndPause();
         $shiftEndPausedAt = $shiftEndPause?->started_at ?? $openSession?->left_open_after_shift_at;
@@ -122,7 +122,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openTasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->with(['jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
+            ->with(['jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.tradeUnit.image', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
             ->join('job_order_items', 'job_order_items.id', '=', 'job_order_item_tasks.job_order_item_id')
             ->live()
@@ -504,6 +504,8 @@ class ShowManufactureFloor extends OrgAction
             'is_quantity_only'    => (bool) $task->manufactureTask->is_quantity_only,
             'artefact_code'       => $members->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact->code)->unique()->implode(' + '),
             'artefact_name'       => $isCombined ? __('Combined batch') : $task->jobOrderItem->artefact->name,
+            'artefact_family_id'  => $isCombined ? null : $task->jobOrderItem->artefact->artefact_family_id,
+            'artefact_image'      => $isCombined || !$task->jobOrderItem->artefact->tradeUnit?->image_id ? null : $task->jobOrderItem->artefact->tradeUnit->imageSources(320, 320),
             'job_order_reference' => $members->map(fn (JobOrderItemTask $member) => $member->jobOrder->reference)->unique()->implode(', '),
             'continued_from'      => Arr::has($task->jobOrder->data, 'carried_from') ? SettleShortJobOrderItemTask::baseReference($task->jobOrder) : null,
             'continued_in'        => $this->continuedIn($task),

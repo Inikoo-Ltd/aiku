@@ -12,6 +12,7 @@ import { packsLabel } from '@/Composables/packs'
 import Dialog from 'primevue/dialog'
 import Password from 'primevue/password'
 import InputText from 'primevue/inputtext'
+import Image from '@common/Components/Image.vue'
 import { QrcodeStream } from 'vue-qrcode-reader'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -30,6 +31,7 @@ const props = defineProps<{
             task_name: string
             artefact_code: string | null
             artefact_name: string | null
+            artefact_image?: object | null
             job_order_reference: string | null
             quantity_made: number
             quantity_required: number
@@ -295,10 +297,10 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 <div class="mt-2 grid gap-3 sm:grid-cols-2">
                     <button v-for="reason in session.preparation_reasons" :key="reason.id" type="button"
                         class="min-h-20 rounded-lg border-2 px-4 py-3 text-left text-xl font-medium"
-                        :class="preparationReasonId === reason.id ? 'border-[--app-accent] bg-[--app-accent-soft] text-gray-900' : 'border-gray-300 bg-white text-gray-700'"
+                        :class="preparationReasonId === reason.id ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] text-gray-900' : 'border-gray-300 bg-white text-gray-700'"
                         :aria-pressed="preparationReasonId === reason.id"
                         @click="preparationReasonId = reason.id">
-                        <FontAwesomeIcon v-if="preparationReasonId === reason.id" :icon="['fal', 'check']" fixed-width class="mr-1 text-[--app-accent]" aria-hidden="true" />
+                        <FontAwesomeIcon v-if="preparationReasonId === reason.id" :icon="['fal', 'check']" fixed-width class="mr-1 text-[var(--app-accent)]" aria-hidden="true" />
                         {{ reason.label }}
                     </button>
                 </div>
@@ -323,13 +325,17 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
         </button>
     </div>
 
-    <div v-else class="rounded-2xl border-2 border-[--app-accent] bg-[--app-accent-soft] p-10">
+    <div v-else class="rounded-2xl border-2 border-[var(--app-accent)] bg-[var(--app-accent-soft)] p-10">
         <div class="flex items-baseline justify-between">
             <div>
-                <div class="text-xs uppercase tracking-wide text-[--app-accent]">{{ isQuantityOnly ? ctrans('Record quantity made') : ctrans('Working on') }}</div>
+                <div class="text-xs uppercase tracking-wide text-[var(--app-accent)]">{{ isQuantityOnly ? ctrans('Record quantity made') : ctrans('Working on') }}</div>
                 <div class="text-4xl font-semibold mt-1">{{ session.task.task_name }}</div>
-                <div class="text-2xl text-gray-600 mt-1">
-                    {{ session.task.artefact_code }} — {{ session.task.artefact_name }}
+                <div class="flex items-center gap-4 mt-2">
+                    <Image v-if="session.task.artefact_image" :src="session.task.artefact_image" class="aspect-square w-24 shrink-0 overflow-hidden rounded-xl shadow" />
+                    <div>
+                        <div class="text-4xl font-bold">{{ session.task.artefact_code }}</div>
+                        <div class="text-2xl font-semibold text-gray-800">{{ session.task.artefact_name }}</div>
+                    </div>
                 </div>
                 <div class="text-lg text-gray-500 mt-1">
                     {{ ctrans('Job order') }} {{ session.task.job_order_reference }}
@@ -337,12 +343,12 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 </div>
                 <button
                     type="button"
-                    class="mt-3 rounded-lg border-2 border-dashed border-[--app-accent-muted] px-4 py-2 text-left hover:bg-[--app-accent-soft]"
+                    class="mt-3 rounded-lg border-2 border-dashed border-[var(--app-accent-muted)] px-4 py-2 text-left hover:bg-[var(--app-accent-soft)]"
                     :title="ctrans('Tap to fill quantity made')"
                     @click="quantityMade = remainingBatches !== null && mixBatch ? Math.round(remainingBatches * mixBatch * 1000) / 1000 : remaining"
                 >
-                    <span v-if="remainingBatches !== null" class="text-7xl font-semibold tabular-nums text-[--app-accent-strong]">{{ ctrans(':batches × :size kg', { batches: remainingBatches, size: mixBatch ?? 0 }) }}</span>
-                    <span v-else class="text-7xl font-semibold tabular-nums text-[--app-accent-strong]">{{ packsLabel(remaining, packSize) }}</span>
+                    <span v-if="remainingBatches !== null" class="text-7xl font-semibold tabular-nums text-[var(--app-accent-strong)]">{{ ctrans(':batches × :size kg', { batches: remainingBatches, size: mixBatch ?? 0 }) }}</span>
+                    <span v-else class="text-7xl font-semibold tabular-nums text-[var(--app-accent-strong)]">{{ packsLabel(remaining, packSize) }}</span>
                     <span class="ml-3 text-xl text-gray-500"><template v-if="unit">{{ unit }} </template>{{ ctrans('to do') }} · {{ packsLabel(session.task.quantity_made, packSize) }} / {{ packsLabel(session.task.quantity_required, packSize) }}</span>
                 </button>
                 <div v-if="packSize" class="mt-2 text-2xl font-semibold text-amber-700">
@@ -350,7 +356,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 </div>
             </div>
             <div v-if="!isQuantityOnly" class="text-right">
-                <div class="text-7xl font-mono tabular-nums text-[--app-accent-strong]">{{ elapsed }}</div>
+                <div class="text-7xl font-mono tabular-nums text-[var(--app-accent-strong)]">{{ elapsed }}</div>
                 <div v-if="session.break_minutes" class="text-sm text-gray-500">{{ session.break_minutes }} {{ ctrans('min on break') }}</div>
             </div>
         </div>
@@ -366,7 +372,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 </button>
                 <button type="button" class="flex items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white py-4 text-xl font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-40"
                     :disabled="processing" @click="continueAfterShift">
-                    <FontAwesomeIcon :icon="faPlay" class="text-[--app-accent]" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon :icon="faPlay" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
                     {{ ctrans('No, continue working') }}
                 </button>
             </div>
@@ -473,7 +479,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                     <button type="button" class="rounded-lg border border-gray-300 bg-white py-3 text-lg text-gray-700" @click="facingMode = facingMode === 'environment' ? 'user' : 'environment'">
                         {{ ctrans('Switch camera') }}
                     </button>
-                    <button type="button" class="rounded-lg border border-[--app-accent-muted] bg-white py-3 text-lg text-[--app-accent]" @click="usePin = true">
+                    <button type="button" class="rounded-lg border border-[var(--app-accent-muted)] bg-white py-3 text-lg text-[var(--app-accent)]" @click="usePin = true">
                         {{ ctrans('Use manager PIN') }}
                     </button>
                 </div>
@@ -484,7 +490,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 <Password v-model="managerPin" :feedback="false" toggleMask fluid
                     :inputProps="{ autocapitalize: 'characters', autocomplete: 'off' }"
                     inputClass="text-center text-3xl tracking-widest" />
-                <button type="submit" class="mt-3 w-full rounded-lg bg-[--app-accent] py-4 text-xl font-semibold text-[--app-accent-text] disabled:opacity-40"
+                <button type="submit" class="mt-3 w-full rounded-lg bg-[var(--app-accent)] py-4 text-xl font-semibold text-[var(--app-accent-text)] disabled:opacity-40"
                     :disabled="processing || !managerPin">
                     {{ ctrans('Verify PIN') }}
                 </button>
@@ -528,7 +534,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                 </button>
                 <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold py-4 px-3 disabled:opacity-40"
                     :disabled="processing || !canMove" @click="confirmingMove = true">
-                    <FontAwesomeIcon :icon="['fal', 'share']" fixed-width class="text-[--app-accent]" aria-hidden="true" />
+                    <FontAwesomeIcon :icon="['fal', 'share']" fixed-width class="text-[var(--app-accent)]" aria-hidden="true" />
                     {{ session.carry
                         ? ctrans('Close at :made and move remaining :left to new job :new', { made: closedAt, left: movedOn, new: session.carry.reference })
                         : ctrans('Close and move what is left to new jobs') }}
@@ -548,7 +554,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
             </div>
         </div>
 
-        <div v-if="session.band_feedback && !isQuantityOnly" class="mt-6 border-t border-[--app-accent-muted] pt-4">
+        <div v-if="session.band_feedback && !isQuantityOnly" class="mt-6 border-t border-[var(--app-accent-muted)] pt-4">
             <div class="text-center text-3xl font-semibold tabular-nums">
                 {{ currentRate.toFixed(1) }} <span class="text-base font-normal text-gray-600">{{ ctrans('units/hour') }}</span>
             </div>

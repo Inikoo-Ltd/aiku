@@ -13,6 +13,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import ManufactureWorkingCard from '@/Components/ManufactureWorkingCard.vue'
 import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
+import Image from '@common/Components/Image.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { mixBatchesLabel } from '@/Composables/mixBatches'
 import { packsLabel } from '@/Composables/packs'
@@ -61,6 +62,8 @@ interface FloorTask {
     is_piece_rate: boolean
     artefact_code: string
     artefact_name: string
+    artefact_family_id: number | null
+    artefact_image: object | null
     job_order_reference: string
     continued_from: string | null
     continued_in: string | null
@@ -346,14 +349,24 @@ function mixBatches(task: FloorTask): string | null {
     return mixBatchesLabel(task.quantity_required - task.quantity_made, task.mix_batch_kg)
 }
 
-const pieceRateWarningFor = ref<number | null>(null)
+const confirmStartFor = ref<number | null>(null)
+
+function hasLookAlike(task: FloorTask): boolean {
+    return props.tasks.some(other => other.artefact_code != task.artefact_code
+        && other.job_order_reference == task.job_order_reference
+        && ((task.artefact_family_id && other.artefact_family_id == task.artefact_family_id) || other.task_name == task.task_name))
+}
+
+function isPieceRateWarning(task: FloorTask): boolean {
+    return props.is_hourly && task.is_piece_rate
+}
 
 function startTask(task: FloorTask) {
-    if (props.is_hourly && task.is_piece_rate && pieceRateWarningFor.value !== task.id) {
-        pieceRateWarningFor.value = task.id
+    if ((isPieceRateWarning(task) || hasLookAlike(task)) && confirmStartFor.value !== task.id) {
+        confirmStartFor.value = task.id
         return
     }
-    pieceRateWarningFor.value = null
+    confirmStartFor.value = null
     processing.value = true
     router.post(
         route(task.start_route.name, task.start_route.parameters),
@@ -391,7 +404,7 @@ function startTask(task: FloorTask) {
                 <button v-for="task in section.tasks" :key="task.id" type="button"
                     class="w-full text-left px-3 py-2.5 border-b border-gray-200 hover:bg-white"
                     :class="[
-                        selectedTaskId == task.id ? 'bg-[--app-accent-soft] ring-1 ring-inset ring-[--app-accent-muted]' : '',
+                        selectedTaskId == task.id ? 'bg-[var(--app-accent-soft)] ring-1 ring-inset ring-[var(--app-accent-muted)]' : '',
                         open_session?.task.id == task.id ? 'bg-amber-50 ring-1 ring-inset ring-amber-200' : ''
                     ]"
                     @click="selectedTaskId = task.id">
@@ -403,14 +416,13 @@ function startTask(task: FloorTask) {
                             <span class="text-xs font-normal text-gray-400 tabular-nums">{{ formatTime(open_session.started_at) }}</span>
                         </template>
                     </div>
-                    <div class="text-sm text-gray-600 truncate">{{ task.artefact_name }}</div>
+                    <div class="flex items-center gap-2">
+                        <Image v-if="task.artefact_image" :src="task.artefact_image" class="aspect-square w-10 shrink-0 overflow-hidden rounded" />
+                        <div class="text-sm text-gray-700 line-clamp-2">{{ task.artefact_name }}</div>
+                    </div>
                     <div class="text-xs text-gray-500 mt-0.5 flex justify-between">
                         <span>{{ task.task_name }} · {{ task.job_order_reference }}</span>
                         <span class="tabular-nums">{{ packsLabel(task.quantity_made, task.pack_size) }}/{{ packsLabel(task.quantity_required, task.pack_size) }}<template v-if="task.unit"> {{ task.unit }}</template><template v-if="mixBatches(task)"> · {{ mixBatches(task) }}</template><template v-if="task.pack_size"> · {{ ctrans('packs of :size', { size: task.pack_size }) }}</template></span>
-                    </div>
-                    <div v-if="task.continued_from || task.continued_in" class="text-xs text-gray-500 truncate">
-                        <span v-if="task.continued_from">{{ ctrans('Continued from :reference', { reference: task.continued_from }) }}</span>
-                        <span v-if="task.continued_in">{{ ctrans('Continued in :reference', { reference: task.continued_in }) }}</span>
                     </div>
                     <div v-if="task.continued_from || task.continued_in" class="text-xs text-gray-500 truncate">
                         <span v-if="task.continued_from">{{ ctrans('Continued from :reference', { reference: task.continued_from }) }}</span>
@@ -507,7 +519,7 @@ function startTask(task: FloorTask) {
                         <Select v-model="activityJobOrderId" :options="pendingActivity.job_orders ?? non_productive.job_orders" optionLabel="label" optionValue="id"
                             filter :showClear="!pendingActivity.job_orders" :placeholder="pendingActivity.job_orders ? ctrans('Pick the job order') : ctrans('General, no job order')"
                             class="min-w-[20rem] flex-1 text-xl" />
-                        <button type="button" class="rounded-lg bg-[--app-accent] text-[--app-accent-text] text-xl font-semibold px-8 py-4 disabled:opacity-40"
+                        <button type="button" class="rounded-lg bg-[var(--app-accent)] text-[var(--app-accent-text)] text-xl font-semibold px-8 py-4 disabled:opacity-40"
                             :disabled="processing || (!!pendingActivity.job_orders && !activityJobOrderId)" @click="startActivity">
                             {{ ctrans('START') }}
                         </button>
@@ -538,11 +550,12 @@ function startTask(task: FloorTask) {
                 <div class="text-sm text-gray-500">{{ selectedTask.task_name }} · {{ ctrans('Job order') }} {{ selectedTask.job_order_reference }}</div>
                 <div v-if="selectedTask.continued_from" class="text-sm font-medium text-gray-700">{{ ctrans('Continued from :reference', { reference: selectedTask.continued_from }) }}</div>
                 <div v-if="selectedTask.continued_in" class="text-sm font-medium text-amber-700">{{ ctrans('Closed at :quantity, the rest continued in :reference', { quantity: selectedTask.quantity_required, reference: selectedTask.continued_in }) }}</div>
-                <div class="text-3xl font-semibold mt-2">{{ selectedTask.artefact_code }}</div>
-                <div class="text-xl text-gray-600">{{ selectedTask.artefact_name }}</div>
+                <Image v-if="selectedTask.artefact_image" :src="selectedTask.artefact_image" class="mx-auto mt-3 aspect-square w-40 overflow-hidden rounded-xl shadow" />
+                <div class="text-5xl font-bold mt-3">{{ selectedTask.artefact_code }}</div>
+                <div class="text-3xl font-semibold text-gray-800 mt-1">{{ selectedTask.artefact_name }}</div>
                 <div class="text-5xl font-semibold tabular-nums my-6">
                     {{ packsLabel(selectedTask.quantity_made, selectedTask.pack_size) }} <span class="text-gray-400 text-3xl">/ {{ packsLabel(selectedTask.quantity_required, selectedTask.pack_size) }}<template v-if="selectedTask.unit"> {{ selectedTask.unit }}</template></span>
-                    <div v-if="mixBatches(selectedTask)" class="mt-1 text-3xl text-[--app-accent-strong]">{{ mixBatches(selectedTask) }}</div>
+                    <div v-if="mixBatches(selectedTask)" class="mt-1 text-3xl text-[var(--app-accent-strong)]">{{ mixBatches(selectedTask) }}</div>
                     <div v-if="selectedTask.pack_size" class="mt-1 text-2xl text-amber-700">{{ ctrans('Counted in PACKS of :size (1 pack = :size × :code)', { size: selectedTask.pack_size, code: selectedTask.artefact_code }) }}</div>
                 </div>
                 <div v-if="selectedTask.artisan && !selectedTask.is_mine" class="text-gray-500 mb-2">{{ ctrans('For') }} {{ selectedTask.artisan }}</div>
@@ -552,22 +565,28 @@ function startTask(task: FloorTask) {
                     <FontAwesomeIcon icon="fas fa-lock" fixed-width aria-hidden="true" /> {{ ctrans('Waiting for') }} {{ selectedTask.blocked_by_step }}
                 </div>
                 <div v-else-if="selectedTask.working_on_by.length" class="text-amber-600 font-medium mb-2">{{ ctrans('Working') }}: {{ selectedTask.working_on_by.join(', ') }}</div>
-                <div v-if="selectedTask.can_start && pieceRateWarningFor === selectedTask.id" class="rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
-                    <div class="text-2xl font-semibold text-amber-800">{{ ctrans('Are you really doing :step now?', { step: selectedTask.task_name }) }}</div>
-                    <div class="mt-1 text-lg text-amber-800">{{ ctrans('You are paid by the hour. Start :step only if you are doing it now. If the work you did is not on this job, ask your manager to add the step.', { step: selectedTask.task_name }) }}</div>
+                <div v-if="selectedTask.can_start && confirmStartFor === selectedTask.id" class="rounded-xl border-2 border-amber-300 bg-amber-50 p-5">
+                    <template v-if="hasLookAlike(selectedTask)">
+                        <div class="text-2xl font-semibold text-amber-800">{{ ctrans('You are starting :step of :code – :name. Correct?', { step: selectedTask.task_name, code: selectedTask.artefact_code, name: selectedTask.artefact_name }) }}</div>
+                        <div class="mt-1 text-lg text-amber-800">{{ ctrans('Other products on the list look like this one. Check the label on what you are making.') }}</div>
+                    </template>
+                    <template v-if="isPieceRateWarning(selectedTask)">
+                        <div class="text-2xl font-semibold text-amber-800" :class="{ 'mt-4': hasLookAlike(selectedTask) }">{{ ctrans('Are you really doing :step now?', { step: selectedTask.task_name }) }}</div>
+                        <div class="mt-1 text-lg text-amber-800">{{ ctrans('You are paid by the hour. Start :step only if you are doing it now. If the work you did is not on this job, ask your manager to add the step.', { step: selectedTask.task_name }) }}</div>
+                    </template>
                     <div class="mt-4 flex justify-center gap-3">
-                        <button type="button" class="rounded-xl bg-[--app-accent] text-[--app-accent-text] text-xl font-semibold px-8 py-4 disabled:opacity-40"
+                        <button type="button" class="rounded-xl bg-[var(--app-accent)] text-[var(--app-accent-text)] text-xl font-semibold px-8 py-4 disabled:opacity-40"
                             :disabled="processing" @click="startTask(selectedTask)">
-                            {{ ctrans('Yes, start :step', { step: selectedTask.task_name }) }}
+                            {{ hasLookAlike(selectedTask) ? ctrans('Yes, start :code', { code: selectedTask.artefact_code }) : ctrans('Yes, start :step', { step: selectedTask.task_name }) }}
                         </button>
                         <button type="button" class="rounded-xl border border-gray-300 bg-white text-gray-700 text-xl font-semibold px-8 py-4"
-                            @click="pieceRateWarningFor = null">
+                            @click="confirmStartFor = null">
                             {{ ctrans('Cancel') }}
                         </button>
                     </div>
                 </div>
                 <button v-else-if="selectedTask.can_start" type="button"
-                    class="rounded-xl bg-[--app-accent] text-[--app-accent-text] text-2xl font-semibold px-16 py-5 disabled:opacity-40"
+                    class="rounded-xl bg-[var(--app-accent)] text-[var(--app-accent-text)] text-2xl font-semibold px-16 py-5 disabled:opacity-40"
                     :disabled="processing"
                     @click="startTask(selectedTask)">
                     {{ selectedTask.is_quantity_only ? ctrans('ENTER QUANTITY') : ctrans('START') }}
@@ -612,7 +631,7 @@ function startTask(task: FloorTask) {
                         </label>
                         <div v-if="combineError" class="px-4 py-2 text-sm text-red-600">{{ combineError }}</div>
                         <div class="px-4 py-3 flex gap-3">
-                            <button type="button" class="rounded-lg bg-[--app-accent] text-[--app-accent-text] font-semibold px-6 py-2 disabled:opacity-40"
+                            <button type="button" class="rounded-lg bg-[var(--app-accent)] text-[var(--app-accent-text)] font-semibold px-6 py-2 disabled:opacity-40"
                                 :disabled="processing || !combineWith.length" @click="combine">
                                 {{ ctrans('Combine') }}
                             </button>
@@ -631,7 +650,7 @@ function startTask(task: FloorTask) {
                     </div>
                     <button v-for="step in selectedTask.steps" :key="step.id" type="button"
                         class="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 text-left disabled:cursor-default"
-                        :class="step.id == selectedTask.id ? 'bg-[--app-accent-soft]' : 'hover:bg-gray-50'"
+                        :class="step.id == selectedTask.id ? 'bg-[var(--app-accent-soft)]' : 'hover:bg-gray-50'"
                         :disabled="!tasks.some(task => task.id == step.id)"
                         @click="selectedTaskId = step.id">
                         <FontAwesomeIcon v-if="step.state == 'done'" icon="fas fa-check-circle" fixed-width class="text-green-600" aria-hidden="true" />

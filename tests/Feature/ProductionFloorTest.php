@@ -526,7 +526,7 @@ test('pausing keeps the job and its count, and the floor links a carried job to 
         ->where('open_session.carry', ['reference' => $jobOrder->reference.'a', 'units_per_artefact' => 1, 'quantity' => 25])
         ->etc());
     get(route('grp.org.productions.show.operations.dashboard', [$this->organisation->slug, $this->production->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('command_control.open_session.carry.reference', $jobOrder->reference.'a')->where('command_control.open_session.task.continued_from', null)->etc());
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('command_control.open_session.carry.reference', $jobOrder->reference.'a')->where('command_control.open_session.task.continued_from', null)->has('command_control.open_session.task.artefact_image')->etc());
 
     $session = \App\Models\Production\ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)->first();
     CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 5, 'outcome' => 'carry_over']);
@@ -540,7 +540,9 @@ test('pausing keeps the job and its count, and the floor links a carried job to 
     expect($cards[$carriedTask->id]['continued_from'])->toBe($jobOrder->reference)
         ->and($cards[$carriedTask->id]['continued_in'])->toBeNull()
         ->and($cards[$task->id]['continued_in'])->toBe($carried->reference)
-        ->and($cards[$task->id]['continued_from'])->toBeNull();
+        ->and($cards[$task->id]['continued_from'])->toBeNull()
+        ->and($cards[$task->id]['artefact_family_id'])->toBe($task->jobOrderItem->artefact->artefact_family_id)
+        ->and($cards[$task->id])->toHaveKey('artefact_image');
     $task->update(['state' => JobOrderItemTaskStateEnum::DONE]);
 });
 

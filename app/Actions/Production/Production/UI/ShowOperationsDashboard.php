@@ -171,7 +171,7 @@ class ShowOperationsDashboard extends OrgAction
                     ],
                     'open_session' => ($openSession = ManufactureTaskSession::where('user_id', $request->user()->id)
                         ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-                        ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder'])
+                        ->with(['jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder'])
                         ->first()) ? ($openSession->isNonProductive() ? ShowManufactureFloor::serializeNonProductiveSession($openSession) : [
                             'id'         => $openSession->id,
                             'started_at' => $openSession->started_at,
@@ -179,6 +179,7 @@ class ShowOperationsDashboard extends OrgAction
                                 'task_name'           => $openSession->manufactureTask->name,
                                 'artefact_code'       => $openSession->artefactCode(),
                                 'artefact_name'       => $openSession->jobOrderItemTask->jobOrderItem->artefact->name,
+                                'artefact_image'      => $openSession->is_combined || !$openSession->jobOrderItemTask->jobOrderItem->artefact->tradeUnit?->image_id ? null : $openSession->jobOrderItemTask->jobOrderItem->artefact->tradeUnit->imageSources(320, 320),
                                 'job_order_reference' => $openSession->jobOrderItemTask->jobOrder->reference,
                                 'job_order_slug'      => $openSession->jobOrderItemTask->jobOrder->slug,
                                 'continued_from'      => Arr::has($openSession->jobOrderItemTask->jobOrder->data, 'carried_from') ? SettleShortJobOrderItemTask::baseReference($openSession->jobOrderItemTask->jobOrder) : null,
