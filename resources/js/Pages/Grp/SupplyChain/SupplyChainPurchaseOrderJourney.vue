@@ -99,7 +99,7 @@ const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => 
 ])
 
 const tabs = computed<{ key: Tab; label: string; count: number; tooltip?: string }[]>(() => !summary.value ? [] : [
-    { key: "open", label: ctrans("Open"), count: summary.value.open },
+    { key: "open", label: ctrans("Open"), count: summary.value.open, tooltip: ctrans("Every order not completed yet: In process (not sent to the supplier yet), Submitted and Confirmed, plus orders already received whose products are not online yet") },
     { key: "needs_action", label: ctrans("Needs action"), count: summary.value.needs_action },
     { key: "import", label: ctrans("Import"), count: summary.value.import, tooltip: ctrans("Orders submitted to suppliers outside our customs area (UK, or EU for EU organisations), not yet completed. Orders still in process are left out") },
     { key: "completed", label: ctrans("Completed"), count: summary.value.completed }
