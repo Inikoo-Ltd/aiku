@@ -840,9 +840,10 @@ test('a change of a step units per artefact reaches open job steps with nothing 
         ->and((float) $startedItem->tasks()->first()->quantity_required)->toBe(3.0)
         ->and((float) $workedItem->tasks()->first()->quantity_required)->toBe(6.0);
 
-    expect(\App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::make()->jobsKeepingTheirCount($this->artefact, [$this->manufactureTask->id => 1])->all())
+    $recipeStepId = $this->artefact->recipeStepOf($this->manufactureTask->id)->id;
+    expect(\App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::make()->jobsKeepingTheirCount($this->artefact, [$recipeStepId => 1])->all())
         ->toContain($jobOrder->reference.' '.$this->artefact->code)
-        ->and(\App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::make()->jobsKeepingTheirCount($this->artefact, [$this->manufactureTask->id => 0.5])->all())
+        ->and(\App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::make()->jobsKeepingTheirCount($this->artefact, [$recipeStepId => 0.5])->all())
         ->toBe([]);
 
     \App\Actions\Production\Artefact\AttachManufactureTaskToArtefact::make()->action($this->artefact, [
@@ -867,9 +868,11 @@ test('a recipe change that reaches open job orders names them, and those with wo
     $generate = \App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::make();
     $label    = $jobOrder->reference.' '.$this->artefact->code;
 
-    expect($generate->openJobsAffectedBy($this->artefact, [$this->manufactureTask->id => 1]))->toBeNull();
+    $stepKey  = ArtefactManufactureTask::key($this->manufactureTask->id, null);
 
-    $affected = $generate->openJobsAffectedBy($this->artefact, [$this->manufactureTask->id => 12]);
+    expect($generate->openJobsAffectedBy($this->artefact, [$stepKey => 1]))->toBeNull();
+
+    $affected = $generate->openJobsAffectedBy($this->artefact, [$stepKey => 12]);
     expect($affected['open']->all())->toContain($label)
         ->and($affected['keeping']->all())->toContain($label)
         ->and(\App\Actions\Production\JobOrderItemTask\GenerateJobOrderItemTasks::openJobsConfirmationMessage([$affected, null]))

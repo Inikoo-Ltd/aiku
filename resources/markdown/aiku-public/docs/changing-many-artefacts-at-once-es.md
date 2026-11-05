@@ -1,8 +1,8 @@
 ---
 title: Cambiar muchos artefactos a la vez
 summary: Marca los artefactos y usa el selector a la derecha de la barra que aparece para fijar un tamaño de lote o una vida útil, darles a todos los mismos pasos de fabricación, moverlos a otra familia o departamento, discontinuarlos, o recuperarlos.
-date: 2026-11-03
-source_date: 2026-11-03
+date: 2026-11-05
+source_date: 2026-11-05
 tags: production, crafts
 category: production
 ---
@@ -50,11 +50,14 @@ La ventana muestra los pasos a la izquierda y los artefactos que marcaste a la d
 **Preparar los pasos.** Cada tarjeta de paso tiene:
 
 - **Task** (tarea): el trabajo en sí, elegido entre las tareas de fabricación de la fábrica. Escribe para buscar por nombre o código.
+- **Label** (etiqueta): opcional. Distingue una misma tarea usada más de una vez, como **Red** y **Blue** en dos pasos de mezcla. Los artesanos la ven después del nombre de la tarea, por ejemplo **Mixing – Red**.
 - **Units per artefact** (unidades por artefacto): cuántas unidades de esa tarea necesita un artefacto. Una orden de trabajo de 10 artefactos a 2 unidades por artefacto pide al artesano 20 unidades de trabajo.
 - **Target units per hour** (objetivo de unidades por hora): cuántas unidades se espera que un artesano haga en una hora en este paso, a la tarifa base. Si se deja vacío se usa la cifra de la propia tarea. Más abajo hay más detalle.
+- **Later steps wait for it** (los pasos posteriores lo esperan): activado, ningún paso posterior puede empezar hasta que este esté hecho (en un paso en kg, hasta que se introducen sus kg). Desactivado, los pasos posteriores pueden empezar mientras este sigue pendiente.
+- **Waits for** (espera a) (a partir del paso 2): lo que tiene que estar hecho antes de que este paso pueda empezar en la planta. **Earlier steps that hold up later ones** (los pasos anteriores que retienen a los posteriores) es el orden habitual, fijado con el interruptor de arriba. **Only the steps chosen** (solo los pasos elegidos) permite elegir los pasos anteriores que espera. **Nothing, it can start straight away** (nada, puede empezar de inmediato) lo libera por completo.
 - **Raw materials** (materias primas): lo que consume el paso por cada unidad de trabajo, con una cantidad para cada una.
 
-Pulsa **Add step** (añadir paso) para otra tarjeta. Las flechas de una tarjeta la suben o bajan, y la papelera la quita. Los pasos se numeran en el orden en que se hacen, el paso 1 primero, y los artesanos los ven en ese orden en la planta. Una tarea solo puede usarse una vez en la lista. Si la tarea que necesitas todavía no existe, el enlace **Task missing? Create a manufacture task** (¿falta una tarea? crear una tarea de fabricación) te lleva a la página donde se crean.
+Pulsa **Add step** (añadir paso) para otra tarjeta. Las flechas de una tarjeta la suben o bajan, y la papelera la quita. Los pasos se numeran en el orden en que se hacen, el paso 1 primero, y los artesanos los ven en ese orden en la planta. Una tarea puede usarse más de una vez en la lista siempre que cada uso lleve una etiqueta distinta. Si la tarea que necesitas todavía no existe, el enlace **Task missing? Create a manufacture task** (¿falta una tarea? crear una tarea de fabricación) te lleva a la página donde se crean.
 
 **Dar otras materias primas a un solo artefacto.** Casi siempre todos los artefactos usan los mismos materiales, y así empieza la lista de la derecha: **All artefacts** (todos los artefactos), con los materiales compartidos. Cuando un artefacto necesita otra cosa, por ejemplo otro aceite de fragancia:
 
@@ -71,6 +74,15 @@ Un artefacto con materiales propios lleva la etiqueta **Own materials** (materia
 - No hay deshacer. Para volver atrás tendrías que fijar otra vez los pasos antiguos.
 
 La ventana te lo recuerda en un recuadro amarillo encima de los botones. El botón de guardar sigue en gris hasta que marcas **I understand the existing steps will be replaced** (entiendo que los pasos existentes se sustituirán). El botón dice cuántos artefactos va a cambiar, por ejemplo **Replace steps on 5 artefacts** (sustituir los pasos de 5 artefactos).
+
+**Un producto hecho de varias partes.** Una caja de regalo con siete bombas de baño de colores se hace color por color: cada color se mezcla, se hace y se retractila, y luego los siete van a una misma caja. Prepáralo como una sola receta:
+
+1. Añade **Mixing**, **Making** y **Shrinking** una vez por color, cada uno con el color como etiqueta: **Mixing – Red**, **Making – Red**, **Shrinking – Red**, y lo mismo para el siguiente color.
+2. En el paso de mezcla de cada color, pon **Waits for** en **Nothing, it can start straight away**, para que cualquier color se pueda mezclar en cualquier momento.
+3. En **Making – Red**, elige **Only the steps chosen** y marca **Mixing – Red**. En **Shrinking – Red**, marca **Making – Red**. Haz lo mismo con cada color.
+4. En el paso final **Packing**, elige **Only the steps chosen** y marca el paso de retractilado de cada color.
+
+En la planta, **Making – Red** se abre en cuanto **Mixing – Red** está hecho, sin esperar a los demás colores, y **Packing** se abre cuando todos los colores están retractilados. Cada paso conserva sus propias unidades, objetivo y materias primas, así que la mezcla de cada color usa sus propios ingredientes y cada paso se paga contra su propio objetivo.
 
 **Órdenes de trabajo en marcha.** Las órdenes de trabajo todavía abiertas reciben los pasos nuevos. Un paso quitado desaparece de esas órdenes solo si nadie lo ha empezado. El trabajo ya registrado en la planta se conserva.
 

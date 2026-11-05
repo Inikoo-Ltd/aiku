@@ -174,11 +174,12 @@ class MergeArtefactBranch extends OrgAction
         }
 
         $steps        = collect(BranchArtefact::recipeOf($branch));
-        $currentUnits = $original->manufactureTasks()->get()->mapWithKeys(fn (ManufactureTask $manufactureTask) => [$manufactureTask->id => $manufactureTask->pivot->units_per_artefact]);
+        $currentUnits = $original->recipeSteps()->get()->mapWithKeys(fn (ArtefactManufactureTask $step) => [$step->stepKey() => $step->units_per_artefact]);
+        $stepKey      = fn (array $step) => ArtefactManufactureTask::key($step['manufacture_task_id'], $step['label']);
         $kgTaskIds    = ManufactureTask::whereIn('id', $steps->pluck('manufacture_task_id'))->where('is_recorded_in_kg', true)->pluck('id');
 
         $countsPackAgain = $steps->contains(
-            fn (array $step) => (float) ($currentUnits[$step['manufacture_task_id']] ?? 0) !== (float) $step['units_per_artefact']
+            fn (array $step) => (float) ($currentUnits[$stepKey($step)] ?? 0) !== (float) $step['units_per_artefact']
                 && ArtefactManufactureTask::countsSkoPackAgain($original, $kgTaskIds->contains($step['manufacture_task_id']), $step['units_per_artefact'])
         );
         if ($countsPackAgain) {
@@ -194,8 +195,8 @@ class MergeArtefactBranch extends OrgAction
         $message = GenerateJobOrderItemTasks::openJobsConfirmationMessage([
             GenerateJobOrderItemTasks::make()->openJobsAffectedBy(
                 $original,
-                $steps->mapWithKeys(fn (array $step) => [$step['manufacture_task_id'] => $step['units_per_artefact']])->all(),
-                $currentUnits->keys()->diff($steps->pluck('manufacture_task_id'))->values()->all()
+                $steps->mapWithKeys(fn (array $step) => [$stepKey($step) => $step['units_per_artefact']])->all(),
+                $currentUnits->keys()->diff($steps->map($stepKey))->values()->all()
             ),
         ]);
 

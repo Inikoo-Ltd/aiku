@@ -1478,3 +1478,117 @@ test('a carried job takes the mix its order already made, and extra made on one 
     $this->artefact->manufactureTasks()->detach();
     $this->artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
 });
+
+test('HELP-4544 one recipe holds parallel strands: the same task under a label per colour, each waiting only for its own steps, with its own target and raw materials', function () {
+    $suffix  = rand(10000, 99999);
+    $mixing  = StoreManufactureTask::make()->action($this->production, ['code' => 'SMX'.$suffix, 'name' => 'Mixing', 'is_piece_rate' => true]);
+    $making  = StoreManufactureTask::make()->action($this->production, ['code' => 'SMK'.$suffix, 'name' => 'Making', 'is_piece_rate' => true]);
+    $packing = StoreManufactureTask::make()->action($this->production, ['code' => 'SPK'.$suffix, 'name' => 'Packing', 'is_piece_rate' => true]);
+    $blueDye = StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'BLU'.$suffix,
+        'description' => 'Blue dye',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => 4,
+    ]);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'CBF'.$suffix, 'name' => 'Chakra box '.$suffix]);
+
+    $recipe = fn (array $steps) => \App\Actions\Production\Artefact\SetArtefactsRecipe::make()->action($this->production, ['artefacts' => [$artefact->id], 'steps' => $steps]);
+    $recipe([
+        ['manufacture_task_id' => $mixing->id, 'label' => 'Red', 'position' => 1, 'units_per_artefact' => 1, 'standard_rate' => 40, 'waits_for' => [], 'raw_materials' => [['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 0.1]]],
+        ['manufacture_task_id' => $making->id, 'label' => 'Red', 'position' => 2, 'units_per_artefact' => 1, 'standard_rate' => 100, 'waits_for' => [0]],
+        ['manufacture_task_id' => $mixing->id, 'label' => 'Blue', 'position' => 3, 'units_per_artefact' => 1, 'standard_rate' => 40, 'waits_for' => [], 'raw_materials' => [['raw_material_id' => $blueDye->id, 'quantity_per_unit' => 0.2]]],
+        ['manufacture_task_id' => $making->id, 'label' => 'Blue', 'position' => 4, 'units_per_artefact' => 1, 'standard_rate' => 50, 'waits_for' => [2]],
+        ['manufacture_task_id' => $packing->id, 'position' => 5, 'units_per_artefact' => 1, 'waits_for' => [1, 3]],
+    ]);
+
+    $recipeSteps = $artefact->recipeSteps()->with('rawMaterials')->get();
+    expect($recipeSteps->map(fn (ArtefactManufactureTask $step) => $step->name())->all())->toBe(['Mixing – Red', 'Making – Red', 'Mixing – Blue', 'Making – Blue', 'Packing'])
+        ->and($recipeSteps[1]->waits_for)->toBe([$recipeSteps[0]->id])
+        ->and($recipeSteps[4]->waits_for)->toBe([$recipeSteps[1]->id, $recipeSteps[3]->id])
+        ->and($recipeSteps[0]->rawMaterials->pluck('raw_material_id')->all())->toBe([$this->rawMaterial->id])
+        ->and($recipeSteps[2]->rawMaterials->pluck('raw_material_id')->all())->toBe([$blueDye->id]);
+
+    expect(fn () => $recipe([
+        ['manufacture_task_id' => $mixing->id, 'position' => 1, 'units_per_artefact' => 1],
+        ['manufacture_task_id' => $mixing->id, 'position' => 2, 'units_per_artefact' => 1],
+    ]))->toThrow(ValidationException::class, 'different label')
+        ->and(fn () => $recipe([
+            ['manufacture_task_id' => $mixing->id, 'position' => 1, 'units_per_artefact' => 1, 'waits_for' => [1]],
+            ['manufacture_task_id' => $making->id, 'position' => 2, 'units_per_artefact' => 1],
+        ]))->toThrow(ValidationException::class, 'steps before it');
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 10]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $jobSteps = fn () => $item->tasks()->orderBy('position')->get();
+    $blocker  = function (int $index) use ($jobSteps) {
+        $steps = $jobSteps();
+
+        return $steps[$index]->blockingStep($steps)?->stepName();
+    };
+
+    expect($jobSteps()->map(fn (JobOrderItemTask $step) => $step->stepName())->all())->toBe(['Mixing – Red', 'Making – Red', 'Mixing – Blue', 'Making – Blue', 'Packing'])
+        ->and($blocker(0))->toBeNull()
+        ->and($blocker(1))->toBe('Mixing – Red')
+        ->and($blocker(2))->toBeNull()
+        ->and($blocker(3))->toBe('Mixing – Blue')
+        ->and($blocker(4))->toBe('Making – Red');
+
+    $jobSteps()[0]->update(['state' => JobOrderItemTaskStateEnum::DONE, 'quantity_made' => 10]);
+    expect($blocker(1))->toBeNull()
+        ->and($blocker(3))->toBe('Mixing – Blue')
+        ->and($blocker(4))->toBe('Making – Red');
+
+    $user = $this->guest->getUser();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
+    $makingRed = StartManufactureTaskSession::make()->action($user, $jobSteps()[1]);
+    expect($makingRed->recipeStandardRate())->toBe(100.0)
+        ->and($makingRed->stepName())->toBe('Making – Red');
+    $makingRed->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
+
+    $jobSteps()[2]->update(['state' => JobOrderItemTaskStateEnum::DONE, 'quantity_made' => 10]);
+    $makingBlue = StartManufactureTaskSession::make()->action($user, $jobSteps()[3]);
+    expect($makingBlue->recipeStandardRate())->toBe(50.0);
+    $makingBlue->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
+
+    $recipe([
+        ['manufacture_task_id' => $mixing->id, 'label' => 'Red', 'position' => 1, 'units_per_artefact' => 1, 'waits_for' => []],
+        ['manufacture_task_id' => $making->id, 'label' => 'Red', 'position' => 2, 'units_per_artefact' => 1, 'standard_rate' => 100, 'waits_for' => [0]],
+        ['manufacture_task_id' => $packing->id, 'position' => 5, 'units_per_artefact' => 1, 'waits_for' => [1]],
+    ]);
+    $packingStep = $artefact->recipeSteps()->where('manufacture_task_id', $packing->id)->first();
+    expect($artefact->recipeSteps()->count())->toBe(3)
+        ->and($packingStep->waits_for)->toBe([$artefact->recipeStepOf($making->id, 'Red')->id])
+        ->and($jobSteps()->whereNotNull('artefact_manufacture_task_id')->map(fn (JobOrderItemTask $step) => $step->stepName())->values()->all())->toBe(['Mixing – Red', 'Making – Red', 'Packing'])
+        ->and($jobSteps()->whereNull('artefact_manufacture_task_id')->map(fn (JobOrderItemTask $step) => $step->stepName())->values()->all())->toBe(['Mixing – Blue', 'Making – Blue'])
+        ->and($jobSteps()->firstWhere('manufacture_task_id', $packing->id)->artefact_manufacture_task_id)->toBe($packingStep->id);
+
+    $makingRedAgain = StartManufactureTaskSession::make()->action($user, $jobSteps()[1]);
+    expect($makingRedAgain->recipeStandardRate())->toBe(100.0);
+    $makingRedAgain->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
+});
+
+test('HELP-4544 the recipe screen adds the same task again under a label, sets what a step waits for and removes one step of the task', function () {
+    $suffix   = rand(10000, 99999);
+    $mixing   = StoreManufactureTask::make()->action($this->production, ['code' => 'HMX'.$suffix, 'name' => 'Mixing']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'HCB'.$suffix, 'name' => 'Box '.$suffix]);
+    actingAs($this->guest->getUser());
+    $attach = fn (array $data) => \Pest\Laravel\post(route('grp.models.artefact.manufacture-task.attach', [$artefact->id]), $data + ['manufacture_task_id' => $mixing->id, 'confirm_open_jobs' => true]);
+
+    $attach(['position' => 1, 'units_per_artefact' => 1, 'label' => 'Red'])->assertSessionHasNoErrors();
+    $attach(['position' => 2, 'units_per_artefact' => 1, 'label' => 'Green'])->assertSessionHasNoErrors();
+    $attach(['position' => 3, 'units_per_artefact' => 1, 'label' => 'red', 'is_new_step' => true])->assertSessionHasErrors('label');
+    $red   = $artefact->recipeStepOf($mixing->id, 'Red');
+    $green = $artefact->recipeStepOf($mixing->id, 'Green');
+
+    $attach(['step_id' => $green->id, 'position' => 2, 'units_per_artefact' => 1, 'waits_for' => []])->assertSessionHasNoErrors();
+    $attach(['step_id' => $red->id, 'position' => 1, 'units_per_artefact' => 1, 'waits_for' => [$green->id]])->assertSessionHasErrors('waits_for');
+    expect($green->refresh()->waits_for)->toBe([])
+        ->and(collect(\App\Actions\Production\Artefact\UI\GetArtefactManufactureTasks::run($artefact->refresh())['recipe'])->pluck('step_name')->all())->toContain('Mixing – Red', 'Mixing – Green');
+
+    \Pest\Laravel\delete(route('grp.models.artefact.recipe-step.detach', [$artefact->id, $red->id]))->assertSessionHasNoErrors();
+    expect($artefact->recipeSteps()->where('manufacture_task_id', $mixing->id)->pluck('id')->all())->toBe([$green->id]);
+});

@@ -55,7 +55,7 @@ class AssignJobOrderItemTask extends OrgAction
         $employeeId = $this->get('employee_id');
         $allowed    = $this->jobOrderItemTask->manufactureTask->artisans;
         if ($employeeId && $allowed->isNotEmpty() && !$allowed->contains('id', $employeeId)) {
-            $validator->errors()->add('employee_id', __('Only :names can do :step', ['names' => $allowed->pluck('contact_name')->implode(', '), 'step' => $this->jobOrderItemTask->manufactureTask->name]));
+            $validator->errors()->add('employee_id', __('Only :names can do :step', ['names' => $allowed->pluck('contact_name')->implode(', '), 'step' => $this->jobOrderItemTask->stepName()]));
         }
     }
 

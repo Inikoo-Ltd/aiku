@@ -1,8 +1,8 @@
 ---
 title: Hromadná zmena viacerých artefaktov naraz
 summary: Zaškrtnite artefakty a potom v paneli, ktorý sa objaví, použite výber vpravo na nastavenie veľkosti dávky alebo trvanlivosti, nastavenie rovnakých výrobných krokov pre všetky, presun do inej rodiny alebo oddelenia, vyradenie z prevádzky alebo ich vrátenie späť.
-date: 2026-11-03
-source_date: 2026-11-03
+date: 2026-11-05
+source_date: 2026-11-05
 tags: production, crafts
 category: production
 ---
@@ -50,11 +50,14 @@ Okno má kroky vľavo a zaškrtnuté artefakty vpravo.
 **Nastavenie krokov.** Každá karta kroku má:
 
 - **Task** (úloha): samotná práca, vybraná z výrobných úloh továrne. Písaním hľadáte podľa názvu alebo kódu.
+- **Label** (označenie): voliteľné. Rozlišuje tú istú úlohu použitú viackrát, napríklad **Red** a **Blue** na dvoch krokoch miešania. Remeselníci ho vidia za názvom úlohy, napríklad **Mixing – Red**.
 - **Units per artefact** (jednotky na artefakt): koľko jednotiek tejto úlohy potrebuje jeden artefakt. Pracovný príkaz na 10 artefaktov pri 2 jednotkách na artefakt žiada od remeselníka 20 jednotiek práce.
 - **Target units per hour** (cieľ jednotiek za hodinu): koľko jednotiek má remeselník na tomto kroku urobiť za hodinu pri základnej sadzbe. Ak ostane prázdne, použije sa údaj samotnej úlohy. Viac nižšie.
+- **Later steps wait for it** (neskoršie kroky naň čakajú): zapnuté, žiadny neskorší krok sa nemôže začať, kým tento nie je hotový (pri kroku v kg, kým nie sú zadané kg). Vypnuté, neskoršie kroky sa môžu začať, aj keď tento ešte treba urobiť.
+- **Waits for** (čaká na; od kroku 2): čo musí byť hotové, než sa tento krok môže na výrobnej ploche začať. **Earlier steps that hold up later ones** je obvyklé poradie, nastavené prepínačom vyššie. **Only the steps chosen** vám umožní vybrať skoršie kroky, na ktoré čaká. **Nothing, it can start straight away** ho úplne uvoľní.
 - **Raw materials** (suroviny): čo krok spotrebuje na každú jednotku práce, s množstvom pre každú.
 
-Stlačte <b>Add step</b> (pridať krok) pre ďalšiu kartu. Šípky na karte ju posunú hore alebo dole a kôš ju odstráni. Kroky sú očíslované v poradí, v akom sa robia, krok 1 prvý, a remeselníci ich v tomto poradí vidia na výrobnej ploche. Úlohu možno v zozname použiť len raz. Ak úloha, ktorú potrebujete, ešte neexistuje, odkaz <b>Task missing? Create a manufacture task</b> (chýba úloha? vytvoriť výrobnú úlohu) vás zavedie na stránku, kde sa úlohy vytvárajú.
+Stlačte <b>Add step</b> (pridať krok) pre ďalšiu kartu. Šípky na karte ju posunú hore alebo dole a kôš ju odstráni. Kroky sú očíslované v poradí, v akom sa robia, krok 1 prvý, a remeselníci ich v tomto poradí vidia na výrobnej ploche. Tú istú úlohu možno v zozname použiť viackrát, ak má každé použitie iné označenie (**Label**). Ak úloha, ktorú potrebujete, ešte neexistuje, odkaz <b>Task missing? Create a manufacture task</b> (chýba úloha? vytvoriť výrobnú úlohu) vás zavedie na stránku, kde sa úlohy vytvárajú.
 
 **Iné suroviny pre jeden artefakt.** Väčšinou všetky artefakty používajú rovnaké suroviny, a tak zoznam vpravo aj začína: **All artefacts** (všetky artefakty), so spoločnými surovinami. Keď jeden artefakt potrebuje niečo iné, napríklad iný vonný olej:
 
@@ -71,6 +74,15 @@ Artefakt s vlastnými surovinami dostane v zozname štítok <b>Own materials</b>
 - Nedá sa to vrátiť späť. Ak sa chcete vrátiť, musíte staré kroky nastaviť znova.
 
 Okno vám to pripomenie v žltom rámčeku nad tlačidlami. Tlačidlo na uloženie zostane sivé, kým nezaškrtnete <b>I understand the existing steps will be replaced</b> (rozumiem, že existujúce kroky budú nahradené). Tlačidlo hovorí, koľko artefaktov zmení, napríklad <b>Replace steps on 5 artefacts</b> (nahradiť kroky na 5 artefaktoch).
+
+**Produkt zložený z viacerých častí.** Darčeková krabica so siedmimi farebnými šumivými bombami do kúpeľa sa vyrába farbu po farbe: každá farba sa zmieša, vyrobí a zatavia sa do fólie, potom sa všetkých sedem vloží do jednej krabice. Nastavte to ako jednu receptúru:
+
+1. Pridajte **Mixing**, **Making** a **Shrinking** raz pre každú farbu, každý s farbou ako označením: **Mixing – Red**, **Making – Red**, **Shrinking – Red**, potom to isté pre ďalšiu farbu.
+2. Na kroku miešania každej farby nastavte **Waits for** na **Nothing, it can start straight away**, aby sa každá farba mohla miešať kedykoľvek.
+3. Pri **Making – Red** zvoľte **Only the steps chosen** a vyberte **Mixing – Red**. Pri **Shrinking – Red** vyberte **Making – Red**. To isté urobte pre každú farbu.
+4. Pri záverečnom kroku **Packing** zvoľte **Only the steps chosen** a vyberte krok zmršťovania každej farby.
+
+Na výrobnej ploche sa **Making – Red** otvorí hneď, ako je hotové **Mixing – Red**, bez čakania na ostatné farby, a **Packing** sa otvorí, keď je každá farba zatavená do fólie. Každý krok si zachováva vlastné jednotky, cieľ a suroviny, takže zmes každej farby používa vlastné ingrediencie a každý krok sa platí podľa vlastného cieľa.
 
 **Pracovné príkazy, ktoré už bežia.** Pracovné príkazy, ktoré sú ešte otvorené, dostanú nové kroky. Odstránený krok z nich zmizne len vtedy, ak ho ešte nikto nezačal. Práca už zaznamenaná na výrobnej ploche zostáva.
 

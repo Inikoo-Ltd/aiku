@@ -81,7 +81,7 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
             }
             $left = max(0, round((float) $task->quantity_required - (float) $task->quantity_made, 3));
             if (!$task->isRecordedInKg() && $quantity - $previous > $left) {
-                $this->refuse(__('Only :left left on :step', ['left' => $left, 'step' => $task->manufactureTask->name]));
+                $this->refuse(__('Only :left left on :step', ['left' => $left, 'step' => $task->stepName()]));
             }
         }
 
@@ -107,7 +107,7 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
             ->all();
         $data['corrections'][] = [
             'session_id'    => $session->id,
-            'step'          => $task->manufactureTask->name,
+            'step'          => $task->stepName(),
             'artefact_code' => $item->artefact->code,
             'pack_size'     => $packSize,
             'from'          => $previous,
@@ -187,7 +187,7 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         $left       = max(0, round((float) $to->quantity_required - (float) $to->quantity_made, 3));
         if (!$to->isRecordedInKg() && $quantity > $left) {
             if (Arr::has($toItem->data ?? [], 'carried_to')) {
-                $this->refuse(__('Only :left left on :step, the rest of this line was carried to another job, move the entry there', ['left' => $left, 'step' => $to->manufactureTask->name]));
+                $this->refuse(__('Only :left left on :step, the rest of this line was carried to another job, move the entry there', ['left' => $left, 'step' => $to->stepName()]));
             }
             $taskUnitsMade = (float) $to->quantity_made + $quantity;
             CloseManufactureTaskSession::make()->growLine($to, $taskUnitsMade, (int) ceil(round($taskUnitsMade / $to->unitsPerArtefact(), 3)));
@@ -197,8 +197,8 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
 
         $correction = [
             'session_id'    => $session->id,
-            'step'          => $to->manufactureTask->name,
-            'from_step'     => $from->manufactureTask->name,
+            'step'          => $to->stepName(),
+            'from_step'     => $from->stepName(),
             'artefact_code' => $toItem->artefact->code,
             'pack_size'     => $packSize,
             'from'          => (float) $session->quantity_made,

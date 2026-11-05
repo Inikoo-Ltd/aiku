@@ -12,6 +12,8 @@ import { faPlus, faTrashAlt, faTimes, faCheck } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
+import MultiSelect from 'primevue/multiselect'
+import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
@@ -51,6 +53,9 @@ interface RecipeRow {
     slug: string
     code: string
     name: string
+    label: string | null
+    step_name: string
+    waits_for: number[] | null
     task_standard_rate: number | string | null
     position: number
     units_per_artefact: number | string
@@ -90,8 +95,9 @@ const props = defineProps<{
 const newTaskId = ref<number | null>(null)
 const newPosition = ref(props.data.recipe.length + 1)
 const newUnits = ref(1)
+const newLabel = ref('')
 const processing = ref(false)
-const attachErrors = ref<Record<number, string>>({})
+const attachErrors = ref<Record<string, string>>({})
 const failedSaves = ref(0)
 
 const newRawMaterialId = ref<Record<number, number | null>>({})
@@ -102,6 +108,8 @@ const positionDraft = ref<Record<number, number>>({})
 const unitsDraft = ref<Record<number, number>>({})
 const rateDraft = ref<Record<number, number | null>>({})
 const fromDraft = ref<Record<number, Date | null>>({})
+const labelDraft = ref<Record<number, string>>({})
+const chosenWaitsFor = ref<Record<number, number[]>>({})
 const quantityDraft = ref<Record<string, number>>({})
 
 const locale = useLocaleStore()
@@ -114,16 +122,18 @@ const isSameNumber = (left: unknown, right: unknown) => Number(left) === Number(
 
 function syncDraftsWithRecipe() {
     props.data.recipe.forEach(row => {
-        positionDraft.value[row.id] = Number(row.position)
-        unitsDraft.value[row.id] = Number(row.units_per_artefact)
-        rateDraft.value[row.id] = row.standard_rate === null ? null : Number(row.standard_rate)
-        fromDraft.value[row.id] = null
+        positionDraft.value[row.step_id] = Number(row.position)
+        unitsDraft.value[row.step_id] = Number(row.units_per_artefact)
+        rateDraft.value[row.step_id] = row.standard_rate === null ? null : Number(row.standard_rate)
+        fromDraft.value[row.step_id] = null
+        labelDraft.value[row.step_id] = row.label ?? ''
         newRawMaterialQuantity.value[row.step_id] ??= 1
         row.raw_materials.forEach(material => {
             quantityDraft.value[materialKey(row.step_id, material.raw_material_id)] = Number(material.quantity_per_unit)
         })
     })
     newPosition.value = props.data.recipe.length + 1
+    chosenWaitsFor.value = {}
 }
 
 syncDraftsWithRecipe()
@@ -134,10 +144,11 @@ const recalculation = ref<string | null>(null)
 
 const hasUnsavedChanges = () => processing.value || rawMaterialProcessing.value || openJobs.value !== null || recalculation.value !== null
     || newTaskId.value !== null
-    || props.data.recipe.some(row => !isSameNumber(positionDraft.value[row.id], row.position)
-        || !isSameNumber(unitsDraft.value[row.id], row.units_per_artefact)
-        || !isSameNumber(rateDraft.value[row.id] || null, row.standard_rate)
-        || fromDraft.value[row.id] !== null
+    || props.data.recipe.some(row => !isSameNumber(positionDraft.value[row.step_id], row.position)
+        || !isSameNumber(unitsDraft.value[row.step_id], row.units_per_artefact)
+        || !isSameNumber(rateDraft.value[row.step_id] || null, row.standard_rate)
+        || fromDraft.value[row.step_id] !== null
+        || (labelDraft.value[row.step_id] ?? '').trim() !== (row.label ?? '')
         || row.raw_materials.some(material => !isSameNumber(quantityDraft.value[materialKey(row.step_id, material.raw_material_id)], material.quantity_per_unit)))
 
 const warnBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -191,8 +202,8 @@ let pendingAttach: Record<string, unknown> = {}
 
 function sendAttach(payload: Record<string, unknown>) {
     processing.value = true
-    const taskId = Number(payload.manufacture_task_id)
-    delete attachErrors.value[taskId]
+    const errorKey = errorKeyOf(payload)
+    delete attachErrors.value[errorKey]
     router.post(
         route(props.data.routes.attach.name, props.data.routes.attach.parameters),
         payload,
@@ -202,6 +213,7 @@ function sendAttach(payload: Record<string, unknown>) {
                 openJobs.value = null
                 recalculation.value = null
                 newTaskId.value = null
+                newLabel.value = ''
             },
             onError: (errors) => {
                 if (errors.confirm_recalculation) {
@@ -217,7 +229,7 @@ function sendAttach(payload: Record<string, unknown>) {
                 }
                 syncDraftsWithRecipe()
                 failedSaves.value++
-                attachErrors.value[taskId] = Object.values(errors)[0] as string
+                attachErrors.value[errorKey] = Object.values(errors)[0] as string
             },
             onFinish: () => processing.value = false,
         }
@@ -234,16 +246,22 @@ function attach(taskId: number, position: number, units: number, standardRate?: 
     })
 }
 
+const errorKeyOf = (payload: Record<string, unknown>) => payload.step_id ? `step-${payload.step_id}` : `new-${payload.manufacture_task_id}`
+
+function attachStep(row: RecipeRow, extra: Record<string, unknown> = {}, standardRate?: number | null) {
+    attach(row.id, Number(row.position), Number(row.units_per_artefact), standardRate, { step_id: row.step_id, ...extra })
+}
+
 function cancelAttach() {
     openJobs.value = null
     recalculation.value = null
     syncDraftsWithRecipe()
 }
 
-function detach(taskId: number) {
+function detach(stepId: number) {
     processing.value = true
     router.delete(
-        route(props.data.routes.detach.name, { ...props.data.routes.detach.parameters, manufactureTask: taskId }),
+        route(props.data.routes.detach.name, { ...props.data.routes.detach.parameters, recipeStep: stepId }),
         {
             preserveScroll: true,
             onFinish: () => processing.value = false,
@@ -254,16 +272,53 @@ function detach(taskId: number) {
 async function commitStep(row: RecipeRow) {
     await nextTick()
 
-    const position = positionDraft.value[row.id]
-    const units = unitsDraft.value[row.id]
-    const standardRate = rateDraft.value[row.id] || null
-    const effectiveFrom = fromDraft.value[row.id]
+    const position = positionDraft.value[row.step_id]
+    const units = unitsDraft.value[row.step_id]
+    const standardRate = rateDraft.value[row.step_id] || null
+    const effectiveFrom = fromDraft.value[row.step_id]
 
     if (!position || !units) return
     if (effectiveFrom && !standardRate && row.standard_rate === null) return
     if (!effectiveFrom && isSameNumber(position, row.position) && isSameNumber(units, row.units_per_artefact) && isSameNumber(standardRate, row.standard_rate)) return
 
-    attach(row.id, position, units, standardRate, effectiveFrom ? { effective_from: toLocalIsoDate(effectiveFrom) } : {})
+    attach(row.id, position, units, standardRate, { step_id: row.step_id, ...(effectiveFrom ? { effective_from: toLocalIsoDate(effectiveFrom) } : {}) })
+}
+
+async function commitLabel(row: RecipeRow) {
+    await nextTick()
+    const label = (labelDraft.value[row.step_id] ?? '').trim()
+    if (label === (row.label ?? '')) return
+
+    attachStep(row, { label: label || null })
+}
+
+type WaitsForMode = 'default' | 'chosen' | 'none'
+
+const waitsForModes = [
+    { label: ctrans('Earlier steps that hold up later ones'), value: 'default' },
+    { label: ctrans('Only the steps chosen'), value: 'chosen' },
+    { label: ctrans('Nothing, it can start straight away'), value: 'none' },
+]
+
+const waitsForMode = (row: RecipeRow): WaitsForMode => row.waits_for === null ? 'default' : (row.waits_for.length ? 'chosen' : 'none')
+
+const earlierSteps = (row: RecipeRow) => props.data.recipe
+    .filter(step => step.step_id !== row.step_id && Number(step.position) < Number(row.position))
+    .map(step => ({ label: `${step.position}. ${step.step_name}`, value: step.step_id }))
+
+
+function setWaitsForMode(row: RecipeRow, mode: WaitsForMode) {
+    if (mode === 'chosen') {
+        chosenWaitsFor.value[row.step_id] = row.waits_for ?? []
+        return
+    }
+    delete chosenWaitsFor.value[row.step_id]
+    attachStep(row, { waits_for: mode === 'none' ? [] : null })
+}
+
+function setWaitsFor(row: RecipeRow, stepIds: number[]) {
+    chosenWaitsFor.value[row.step_id] = stepIds
+    if (stepIds.length) attachStep(row, { waits_for: stepIds })
 }
 
 const toLocalIsoDate = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -294,11 +349,11 @@ function mixBatchOptions(row: RecipeRow) {
 }
 
 function setMixBatch(row: RecipeRow, mixBatchKg: number | null) {
-    attach(row.id, Number(row.position), Number(row.units_per_artefact), undefined, { mix_batch_kg: mixBatchKg })
+    attachStep(row, { mix_batch_kg: mixBatchKg })
 }
 
 function setBlocksLaterSteps(row: RecipeRow, blocksLaterSteps: boolean) {
-    attach(row.id, Number(row.position), Number(row.units_per_artefact), undefined, { blocks_later_steps: blocksLaterSteps })
+    attachStep(row, { blocks_later_steps: blocksLaterSteps })
 }
 
 function stepMaterialsCost(row: RecipeRow): number {
@@ -355,7 +410,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
             {{ ctrans('No steps yet. Add the manufacture tasks needed to make this artefact.') }}
         </div>
 
-        <article v-for="row in data.recipe" :key="row.id" class="xoverflow-hidden rounded-lg border border-gray-200 bg-white">
+        <article v-for="row in data.recipe" :key="row.step_id" class="xoverflow-hidden rounded-lg border border-gray-200 bg-white">
             <header class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-gray-100 px-4 py-3">
                 <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-[--app-accent-soft] text-xs font-semibold text-[--app-accent-strong]">
                     {{ row.position }}
@@ -363,12 +418,12 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                 <div class="mr-auto min-w-0">
                     <div class="truncate">
                         <span class="font-medium">{{ row.code }}</span>
-                        <span class="ml-2 text-gray-500">{{ row.name }}</span>
+                        <span class="ml-2 text-gray-500">{{ row.step_name }}</span>
                     </div>
                 </div>
 
                 <ModalConfirmationDelete
-                    @onYes="detach(row.id)"
+                    @onYes="detach(row.step_id)"
                     :title="ctrans('Are you sure you want to remove task from recipe of :artifact?', { artifact: data.artefact_name })"
                     :description="ctrans('This will remove the task from the recipe of the artefact. This action cannot be undone.')"
                     isFullLoading
@@ -392,7 +447,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         <InformationIcon :information="ctrans('The order the steps are done in: step 1 first. Artisans see the steps of a job order in this order on the manufacture floor.')" />
                     </span>
                     <InputNumber
-                        v-model="positionDraft[row.id]"
+                        v-model="positionDraft[row.step_id]"
                         :min="1"
                         :useGrouping="false"
                         size="small"
@@ -403,13 +458,28 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
 
                 <label class="block">
                     <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans('Label') }}
+                        <InformationIcon :information="ctrans('Tells apart the same task used more than once in this recipe, e.g. Red for Mixing – Red. Artisans see it on the tablet after the task name.')" />
+                    </span>
+                    <InputText
+                        v-model="labelDraft[row.step_id]"
+                        size="small"
+                        class="w-28"
+                        :placeholder="ctrans('e.g. Red')"
+                        :disabled="processing"
+                        @blur="commitLabel(row)"
+                        @keyup.enter="commitLabel(row)" />
+                </label>
+
+                <label class="block">
+                    <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
                         {{ row.is_recorded_in_kg ? ctrans('Kg per artefact') : ctrans('Units per artefact') }}
                         <InformationIcon :information="row.is_recorded_in_kg
                             ? ctrans('How many kg of this step one artefact takes. A job order for 500 artefacts at 0.1 kg per artefact asks for 50 kg.')
                             : ctrans('How many units of this task one artefact needs. A job order for 10 artefacts at 2 units per artefact asks the artisan for 20 units of work.')" />
                     </span>
                     <InputNumber
-                        v-model="unitsDraft[row.id]"
+                        v-model="unitsDraft[row.step_id]"
                         :min="0.001"
                         :minFractionDigits="0"
                         :maxFractionDigits="3"
@@ -426,7 +496,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         <InformationIcon :information="ctrans('Mixes are made in whole batches of this size. The kg a job asks for is rounded up to whole batches, 94.1 kg in 50 kg batches is 2 batches = 100 kg, and the mixer records batches.')" />
                     </span>
                     <Select
-                        :key="`${row.id}-${failedSaves}`"
+                        :key="`${row.step_id}-${failedSaves}`"
                         :modelValue="row.mix_batch_kg"
                         :options="mixBatchOptions(row)"
                         optionLabel="label"
@@ -442,11 +512,41 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         <InformationIcon :information="ctrans('On: no step after this one can start until it is done (for a kg step, until its kg is entered). Off: every later step, other mixes included, can start while this one is still to do, e.g. a second mix made while the maker already works with the first one.')" />
                     </span>
                     <ToggleSwitch
-                        :key="`${row.id}-${failedSaves}`"
+                        :key="`${row.step_id}-${failedSaves}`"
                         :modelValue="row.blocks_later_steps"
                         :disabled="processing"
                         @update:modelValue="setBlocksLaterSteps(row, $event)" />
                 </label>
+
+                <div v-if="Number(row.position) > 1" class="block">
+                    <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans('Waits for') }}
+                        <InformationIcon :information="ctrans('What must be done before this step can start on the tablet. Earlier steps that hold up later ones: the usual order, set with the switch above. Only the steps chosen: e.g. Making – Red waits only for Mixing – Red, and Packing waits for every Shrinking. Nothing: it can start straight away, e.g. the mix of each colour.')" />
+                    </span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <Select
+                            :key="`${row.step_id}-waits-${failedSaves}`"
+                            :modelValue="chosenWaitsFor[row.step_id] ? 'chosen' : waitsForMode(row)"
+                            :options="waitsForModes"
+                            optionLabel="label"
+                            optionValue="value"
+                            size="small"
+                            :disabled="processing"
+                            @update:modelValue="setWaitsForMode(row, $event)" />
+                        <MultiSelect
+                            v-if="chosenWaitsFor[row.step_id] || waitsForMode(row) === 'chosen'"
+                            :modelValue="chosenWaitsFor[row.step_id] ?? row.waits_for ?? []"
+                            :options="earlierSteps(row)"
+                            optionLabel="label"
+                            optionValue="value"
+                            display="chip"
+                            size="small"
+                            class="w-72"
+                            :placeholder="ctrans('Pick the steps')"
+                            :disabled="processing"
+                            @update:modelValue="setWaitsFor(row, $event)" />
+                    </div>
+                </div>
 
                 <label class="block">
                     <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
@@ -454,7 +554,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         <InformationIcon :information="ctrans('The lower target: units per hour an artisan makes on this step at the base pay rate. The higher pay tiers are worked out from it. Runs below it are flagged for a manager on the Performance tab.')" />
                     </span>
                     <InputNumber
-                        v-model="rateDraft[row.id]"
+                        v-model="rateDraft[row.step_id]"
                         :min="0.01"
                         :minFractionDigits="0"
                         :maxFractionDigits="2"
@@ -472,7 +572,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         <InformationIcon :information="ctrans('Leave empty for the target to apply from today (a step that had no target gets it from the start of this pay week). Pick an earlier day of a pay week not yet closed for payroll for it to apply from the start of that day: sessions already worked on this step since then are paid again against it, and you are shown which before it is saved. Closed weeks stay as they were paid; if someone was underpaid then, tell the accountant. To change a target from an earlier day, type the new target first, then pick the day.')" />
                     </span>
                     <DatePicker
-                        v-model="fromDraft[row.id]"
+                        v-model="fromDraft[row.step_id]"
                         :minDate="firstOpenDay"
                         :maxDate="today"
                         dateFormat="d M yy"
@@ -488,7 +588,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                 </label>
             </div>
 
-            <p v-if="attachErrors[row.id]" class="px-4 pb-3 text-xs text-red-600">{{ attachErrors[row.id] }}</p>
+            <p v-if="attachErrors[`step-${row.step_id}`]" class="px-4 pb-3 text-xs text-red-600">{{ attachErrors[`step-${row.step_id}`] }}</p>
 
             <div v-if="row.targets.length" class="flex flex-wrap gap-2 px-4 pb-3 text-xs">
                 <span
@@ -501,7 +601,7 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
 
             <RecipeStepTiers
                 :stepId="row.id"
-                :stepName="row.name"
+                :stepName="row.step_name"
                 :targets="row.targets"
                 :tiers="row.tiers"
                 :familyCode="data.family_code"
@@ -645,6 +745,11 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                 </label>
 
                 <label class="block">
+                    <span class="mb-1 block text-xs text-gray-500">{{ ctrans('Label') }}</span>
+                    <InputText v-model="newLabel" size="small" class="w-28" :placeholder="ctrans('e.g. Red')" />
+                </label>
+
+                <label class="block">
                     <span class="mb-1 block text-xs text-gray-500">{{ ctrans('Step') }}</span>
                     <InputNumber
                         v-model="newPosition"
@@ -672,9 +777,9 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                     :label="ctrans('Add step')"
                     :loading="processing"
                     :disabled="!newTaskId"
-                    @click="attach(newTaskId!, newPosition, newUnits)" />
+                    @click="attach(newTaskId!, newPosition, newUnits, undefined, { is_new_step: true, label: newLabel.trim() || null })" />
             </div>
-            <p v-if="newTaskId && attachErrors[newTaskId]" class="mt-2 text-xs text-red-600">{{ attachErrors[newTaskId] }}</p>
+            <p v-if="newTaskId && attachErrors[`new-${newTaskId}`]" class="mt-2 text-xs text-red-600">{{ attachErrors[`new-${newTaskId}`] }}</p>
         </section>
 
         <ConfirmRecipeOpenJobs

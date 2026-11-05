@@ -30,6 +30,8 @@ use Illuminate\Support\Collection;
  * @property int $job_order_id
  * @property int $job_order_item_id
  * @property int $manufacture_task_id
+ * @property int|null $artefact_manufacture_task_id
+ * @property string|null $label
  * @property int $position
  * @property JobOrderItemTaskStateEnum $state
  * @property numeric $quantity_required
@@ -43,6 +45,7 @@ use Illuminate\Support\Collection;
  * @property-read \App\Models\Production\JobOrder|null $jobOrder
  * @property-read \App\Models\Production\JobOrderItem|null $jobOrderItem
  * @property-read \App\Models\Production\ManufactureTask|null $manufactureTask
+ * @property-read \App\Models\Production\ArtefactManufactureTask|null $recipeStep
  * @property-read Organisation $organisation
  * @property-read \App\Models\Production\Production|null $production
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\ManufactureTaskSession> $sessions
@@ -114,7 +117,7 @@ class JobOrderItemTask extends Model
 
     public function unitsPerArtefact(): float
     {
-        $units = (float) ($this->recipeStep()?->units_per_artefact ?: 1);
+        $units = (float) ($this->recipeStep?->units_per_artefact ?: 1);
 
         return $this->isRecordedInKg() ? $units : ArtefactManufactureTask::exactUnits($units);
     }
@@ -131,7 +134,7 @@ class JobOrderItemTask extends Model
 
     public function isInRecipe(): bool
     {
-        return $this->recipeStep() !== null;
+        return $this->recipeStep !== null;
     }
 
     public function setRequiredQuantity(float $quantity): self
@@ -163,7 +166,7 @@ class JobOrderItemTask extends Model
 
     public function mixBatchKg(): ?float
     {
-        return $this->isRecordedInKg() ? ($this->recipeStep()?->mix_batch_kg ?: null) : null;
+        return $this->isRecordedInKg() ? ($this->recipeStep?->mix_batch_kg ?: null) : null;
     }
 
     public static function isWholeMixBatches(float $quantity, float $mixBatchKg): bool
@@ -190,20 +193,35 @@ class JobOrderItemTask extends Model
         return $sizes->count() == 1 ? $sizes->first() : null;
     }
 
-    private ?ArtefactManufactureTask $recipeStep = null;
-
+    /**
+     * Model::refresh() leaves relations to pivot models as they were, and a recipe step is one.
+     */
     public function refresh()
     {
-        $this->recipeStep = null;
+        $this->unsetRelation('recipeStep');
 
         return parent::refresh();
     }
 
-    private function recipeStep(): ?ArtefactManufactureTask
+    public function recipeStep(): BelongsTo
     {
-        return $this->recipeStep ??= ArtefactManufactureTask::where('artefact_id', $this->jobOrderItem->artefact_id)
-            ->where('manufacture_task_id', $this->manufacture_task_id)
-            ->first(['units_per_artefact', 'mix_batch_kg']);
+        return $this->belongsTo(ArtefactManufactureTask::class, 'artefact_manufacture_task_id');
+    }
+
+    /**
+     * The task's name, with the step's label when the task is in the recipe more than once (Mixing – Red).
+     */
+    public function stepName(): string
+    {
+        return ArtefactManufactureTask::stepName($this->manufactureTask->name, $this->label);
+    }
+
+    /**
+     * The same step on another line of the same artefact, such as a carried or split part of the order.
+     */
+    public function stepKey(): string
+    {
+        return ArtefactManufactureTask::key($this->manufacture_task_id, $this->label);
     }
 
     public function isRecordedInKg(): bool
@@ -278,18 +296,31 @@ class JobOrderItemTask extends Model
     /**
      * @param Collection<int, JobOrderItemTask> $siblings tasks of the same job order item, including this one
      */
+    /**
+     * A step waits for the earlier steps its recipe step names in waits_for, or, when it names none, for every
+     * earlier step that holds up later ones. A mix in kg stops holding others up once some of it is made.
+     *
+     * @param Collection<int, JobOrderItemTask> $siblings tasks of the same job order item, including this one
+     */
     public function blockingStep(Collection $siblings): ?JobOrderItemTask
     {
         if ($this->state != JobOrderItemTaskStateEnum::TODO) {
             return null;
         }
 
-        $blockingTaskIds = $this->jobOrderItem->artefact->manufactureTasks
-            ->filter(fn (ManufactureTask $manufactureTask) => $manufactureTask->pivot->blocks_later_steps ?? true)
-            ->pluck('id');
+        $waitsFor = $this->recipeStep?->waits_for;
+        if ($waitsFor !== null) {
+            $isAwaited = fn (JobOrderItemTask $sibling) => $sibling->id != $this->id && in_array($sibling->artefact_manufacture_task_id, $waitsFor);
+        } else {
+            $blockingStepIds = $this->jobOrderItem->artefact->manufactureTasks
+                ->filter(fn (ManufactureTask $manufactureTask) => $manufactureTask->pivot->blocks_later_steps ?? true)
+                ->map(fn (ManufactureTask $manufactureTask) => $manufactureTask->pivot->id);
+            $isAwaited = fn (JobOrderItemTask $sibling) => $sibling->id == $this->id || $blockingStepIds->contains($sibling->artefact_manufacture_task_id);
+        }
 
         $firstUnfinished = $siblings
-            ->filter(fn (JobOrderItemTask $sibling) => $sibling->id == $this->id || $blockingTaskIds->contains($sibling->manufacture_task_id))
+            ->filter($isAwaited)
+            ->when($waitsFor !== null, fn (Collection $awaited) => $awaited->push($this))
             ->sortBy([['position', 'asc'], ['id', 'asc']])
             ->first(fn (JobOrderItemTask $sibling) => $sibling->state != JobOrderItemTaskStateEnum::DONE
                 && ($sibling->id == $this->id || !$sibling->isRecordedInKg() || (float) $sibling->quantity_made <= 0));

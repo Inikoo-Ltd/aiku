@@ -18,6 +18,7 @@ use App\Models\Production\ArtefactStepTarget;
 use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\ManufactureTaskSession;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -34,11 +35,12 @@ class SetArtefactStepTarget
 {
     use AsAction;
 
-    public function handle(Artefact $artefact, int $manufactureTaskId, float|int|string|null $standardRate, ?string $effectiveFromDate = null): ?ArtefactStepTarget
+    /**
+     * @param  ArtefactManufactureTask|int  $step  the recipe step, or a manufacture task id for its (first) step in the recipe
+     */
+    public function handle(Artefact $artefact, ArtefactManufactureTask|int $step, float|int|string|null $standardRate, ?string $effectiveFromDate = null): ?ArtefactStepTarget
     {
-        $step = ArtefactManufactureTask::where('artefact_id', $artefact->id)
-            ->where('manufacture_task_id', $manufactureTaskId)
-            ->firstOrFail();
+        $step = self::step($artefact, $step);
 
         $standardRate = $standardRate === null || $standardRate === '' ? null : (float) $standardRate;
         $current      = $step->standard_rate === null ? null : (float) $step->standard_rate;
@@ -50,70 +52,83 @@ class SetArtefactStepTarget
         $effectiveFrom = match (true) {
             $effectiveFromDate !== null => self::startOfDay($artefact, $effectiveFromDate),
             $current !== null           => self::startOfDay($artefact, now(self::timezone($artefact))->toDateString()),
-            default                     => $this->untargetedSince($artefact, $manufactureTaskId),
+            default                     => $this->untargetedSince($artefact, $step),
         };
 
-        return DB::transaction(function () use ($artefact, $step, $manufactureTaskId, $standardRate, $effectiveFrom, $current) {
-            $isUnrecorded = !ArtefactStepTarget::where('artefact_id', $artefact->id)->where('manufacture_task_id', $manufactureTaskId)->exists();
+        return DB::transaction(function () use ($artefact, $step, $standardRate, $effectiveFrom, $current) {
+            $isUnrecorded = !ArtefactStepTarget::ofStep($step->artefact_id, $step->manufacture_task_id, $step->label)->exists();
             if ($current !== null && $isUnrecorded) {
-                ArtefactStepTarget::create([
-                    'artefact_id'         => $artefact->id,
-                    'manufacture_task_id' => $manufactureTaskId,
-                    'standard_rate'       => $current,
-                ]);
+                ArtefactStepTarget::create(self::targetOf($step) + ['standard_rate' => $current]);
             }
 
-            $target = ArtefactStepTarget::create([
-                'artefact_id'         => $artefact->id,
-                'manufacture_task_id' => $manufactureTaskId,
-                'standard_rate'       => $standardRate,
-                'effective_from'      => $effectiveFrom,
-                'user_id'             => auth()->id(),
+            $target = ArtefactStepTarget::create(self::targetOf($step) + [
+                'standard_rate'  => $standardRate,
+                'effective_from' => $effectiveFrom,
+                'user_id'        => auth()->id(),
             ]);
 
-            $step->update(['standard_rate' => ArtefactStepTarget::rateAt($artefact->id, $manufactureTaskId, now())['standard_rate']]);
+            $step->update(['standard_rate' => ArtefactStepTarget::rateAt($artefact->id, $step->manufacture_task_id, now(), $step->label)['standard_rate']]);
 
-            $target->update(['data' => $this->recalculate($artefact, $manufactureTaskId, $effectiveFrom)]);
+            $target->update(['data' => $this->recalculate($artefact, $step, $effectiveFrom)]);
 
             return $target;
         });
+    }
+
+    public static function step(Artefact $artefact, ArtefactManufactureTask|int $step): ArtefactManufactureTask
+    {
+        if ($step instanceof ArtefactManufactureTask) {
+            return $step;
+        }
+
+        return $artefact->recipeStepOf($step) ?? throw (new ModelNotFoundException())->setModel(ArtefactManufactureTask::class, [$step]);
+    }
+
+    /**
+     * @return array{artefact_id: int, manufacture_task_id: int, label: string|null}
+     */
+    private static function targetOf(ArtefactManufactureTask $step): array
+    {
+        return [
+            'artefact_id'         => $step->artefact_id,
+            'manufacture_task_id' => $step->manufacture_task_id,
+            'label'               => $step->label,
+        ];
     }
 
     /**
      * A step taken off the recipe stops carrying its target from now on, so the step added back later starts without
      * one instead of paying against the target it had before.
      */
-    public static function recordRemoval(Artefact $artefact, int $manufactureTaskId): void
+    public static function recordRemoval(ArtefactManufactureTask $step): void
     {
-        $hasHistory = ArtefactStepTarget::where('artefact_id', $artefact->id)->where('manufacture_task_id', $manufactureTaskId)->exists();
+        $hasHistory = ArtefactStepTarget::ofStep($step->artefact_id, $step->manufacture_task_id, $step->label)->exists();
         $current    = $hasHistory
-            ? ArtefactStepTarget::rateAt($artefact->id, $manufactureTaskId, now())['standard_rate']
-            : ArtefactManufactureTask::where('artefact_id', $artefact->id)->where('manufacture_task_id', $manufactureTaskId)->value('standard_rate');
+            ? ArtefactStepTarget::rateAt($step->artefact_id, $step->manufacture_task_id, now(), $step->label)['standard_rate']
+            : $step->standard_rate;
 
         if ($current === null) {
             return;
         }
 
         if (!$hasHistory) {
-            ArtefactStepTarget::create(['artefact_id' => $artefact->id, 'manufacture_task_id' => $manufactureTaskId, 'standard_rate' => $current]);
+            ArtefactStepTarget::create(self::targetOf($step) + ['standard_rate' => $current]);
         }
 
-        ArtefactStepTarget::create([
-            'artefact_id'         => $artefact->id,
-            'manufacture_task_id' => $manufactureTaskId,
-            'standard_rate'       => null,
-            'effective_from'      => now(),
-            'user_id'             => auth()->id(),
+        ArtefactStepTarget::create(self::targetOf($step) + [
+            'standard_rate'  => null,
+            'effective_from' => now(),
+            'user_id'        => auth()->id(),
         ]);
     }
 
     /**
      * Back to the start of this pay week, but not over a change made since, such as the target being taken off.
      */
-    private function untargetedSince(Artefact $artefact, int $manufactureTaskId): Carbon
+    private function untargetedSince(Artefact $artefact, ArtefactManufactureTask $step): Carbon
     {
         $weekStart  = now(self::timezone($artefact))->startOfWeek(Carbon::MONDAY)->utc();
-        $lastChange = ArtefactStepTarget::where('artefact_id', $artefact->id)->where('manufacture_task_id', $manufactureTaskId)->max('effective_from');
+        $lastChange = ArtefactStepTarget::ofStep($step->artefact_id, $step->manufacture_task_id, $step->label)->max('effective_from');
 
         return $lastChange ? $weekStart->max(Carbon::parse($lastChange)) : $weekStart;
     }
@@ -131,11 +146,11 @@ class SetArtefactStepTarget
      *
      * @return array{sessions: int, artisans: array<int, string>}
      */
-    public function preview(Artefact $artefact, int $manufactureTaskId, float|int|string|null $standardRate, ?string $effectiveFromDate): array
+    public function preview(Artefact $artefact, ArtefactManufactureTask|int $step, float|int|string|null $standardRate, ?string $effectiveFromDate): array
     {
         DB::beginTransaction();
         try {
-            return $this->handle($artefact, $manufactureTaskId, $standardRate, $effectiveFromDate)?->data ?? ['sessions' => 0, 'artisans' => []];
+            return $this->handle($artefact, $step, $standardRate, $effectiveFromDate)?->data ?? ['sessions' => 0, 'artisans' => []];
         } finally {
             DB::rollBack();
         }
@@ -144,9 +159,9 @@ class SetArtefactStepTarget
     /**
      * The warning shown before a back-dated target is saved, or null when no session worked is touched.
      */
-    public function confirmationMessage(Artefact $artefact, int $manufactureTaskId, float|int|string|null $standardRate, string $effectiveFromDate): ?string
+    public function confirmationMessage(Artefact $artefact, ArtefactManufactureTask|int $step, float|int|string|null $standardRate, string $effectiveFromDate): ?string
     {
-        $preview = $this->preview($artefact, $manufactureTaskId, $standardRate, $effectiveFromDate);
+        $preview = $this->preview($artefact, $step, $standardRate, $effectiveFromDate);
         if (!$preview['sessions']) {
             return null;
         }
@@ -189,19 +204,20 @@ class SetArtefactStepTarget
     /**
      * @return array{sessions: int, artisans: array<int, string>}
      */
-    private function recalculate(Artefact $artefact, int $manufactureTaskId, Carbon $from): array
+    private function recalculate(Artefact $artefact, ArtefactManufactureTask $step, Carbon $from): array
     {
-        $onArtefact = fn ($query) => $query->where('artefact_id', $artefact->id);
+        $onStep = fn ($query) => ArtefactStepTarget::withLabel($query, $step->label, 'job_order_item_tasks.label')
+            ->whereHas('jobOrderItem', fn ($query) => $query->where('artefact_id', $artefact->id));
 
         $sessions = ManufactureTaskSession::query()
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
             ->where('activity_type', ManufactureTaskSessionActivityTypeEnum::PRODUCTION)
-            ->where('manufacture_task_id', $manufactureTaskId)
+            ->where('manufacture_task_id', $step->manufacture_task_id)
             ->where('started_at', '>=', $from)
             ->where('ended_at', '>=', ManufacturePayrollAdjustment::lockedBefore($artefact->production))
             ->where(fn ($query) => $query
-                ->whereHas('jobOrderItemTask.jobOrderItem', $onArtefact)
-                ->orWhereHas('shares.jobOrderItemTask.jobOrderItem', $onArtefact))
+                ->whereHas('jobOrderItemTask', $onStep)
+                ->orWhereHas('shares.jobOrderItemTask', $onStep))
             ->with('employee')
             ->orderBy('started_at')
             ->get();

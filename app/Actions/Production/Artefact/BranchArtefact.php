@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactManufactureTask;
-use App\Models\Production\ManufactureTask;
 use App\Models\Production\Production;
 use App\Models\Production\RecipeStepRawMaterial;
 use App\Models\SysAdmin\User;
@@ -64,19 +63,27 @@ class BranchArtefact extends OrgAction
     /**
      * The recipe as SetArtefactsRecipe takes it, plus each step's mix batch, which it does not set.
      *
-     * @return array<int, array{manufacture_task_id: int, position: int, units_per_artefact: string, standard_rate: string|null, blocks_later_steps: bool, mix_batch_kg: string|null, raw_materials: array<int, array{raw_material_id: int, quantity_per_unit: string}>}>
+     * @return array<int, array{manufacture_task_id: int, label: string|null, waits_for: array<int, int>|null, position: int, units_per_artefact: string, standard_rate: string|null, blocks_later_steps: bool, mix_batch_kg: string|null, raw_materials: array<int, array{raw_material_id: int, quantity_per_unit: string}>}>
      */
     public static function recipeOf(Artefact $artefact): array
     {
-        return $artefact->manufactureTasks()->get()
-            ->map(fn (ManufactureTask $manufactureTask) => [
-                'manufacture_task_id' => $manufactureTask->id,
-                'position'            => $manufactureTask->pivot->position,
-                'units_per_artefact'  => $manufactureTask->pivot->units_per_artefact,
-                'standard_rate'       => $manufactureTask->pivot->standard_rate,
-                'blocks_later_steps'  => (bool) $manufactureTask->pivot->blocks_later_steps,
-                'mix_batch_kg'        => $manufactureTask->pivot->mix_batch_kg,
-                'raw_materials'       => RecipeStepRawMaterial::where('artefact_manufacture_task_id', $manufactureTask->pivot->id)
+        $recipeSteps = $artefact->recipeSteps()->get()->values();
+
+        return $recipeSteps
+            ->map(fn (ArtefactManufactureTask $step) => [
+                'manufacture_task_id' => $step->manufacture_task_id,
+                'label'               => $step->label,
+                'waits_for'           => $step->waits_for === null ? null : collect($step->waits_for)
+                    ->map(fn (int $stepId) => $recipeSteps->search(fn (ArtefactManufactureTask $awaited) => $awaited->id == $stepId))
+                    ->filter(fn ($index) => $index !== false)
+                    ->values()
+                    ->all(),
+                'position'            => $step->position,
+                'units_per_artefact'  => $step->units_per_artefact,
+                'standard_rate'       => $step->standard_rate,
+                'blocks_later_steps'  => (bool) $step->blocks_later_steps,
+                'mix_batch_kg'        => $step->mix_batch_kg,
+                'raw_materials'       => RecipeStepRawMaterial::where('artefact_manufacture_task_id', $step->id)
                     ->orderBy('id')
                     ->get(['raw_material_id', 'quantity_per_unit'])
                     ->map(fn (RecipeStepRawMaterial $rawMaterial) => [
@@ -85,7 +92,6 @@ class BranchArtefact extends OrgAction
                     ])
                     ->all(),
             ])
-            ->values()
             ->all();
     }
 
@@ -102,10 +108,9 @@ class BranchArtefact extends OrgAction
 
         SetArtefactsRecipe::make()->action($to->production, ['artefacts' => [$to->id], 'steps' => $steps]);
 
+        $copied = $to->recipeSteps()->get()->keyBy(fn (ArtefactManufactureTask $step) => $step->stepKey());
         foreach ($steps as $step) {
-            ArtefactManufactureTask::where('artefact_id', $to->id)
-                ->where('manufacture_task_id', $step['manufacture_task_id'])
-                ->update(['mix_batch_kg' => $step['mix_batch_kg']]);
+            $copied->get(ArtefactManufactureTask::key($step['manufacture_task_id'], $step['label']))?->update(['mix_batch_kg' => $step['mix_batch_kg']]);
         }
     }
 

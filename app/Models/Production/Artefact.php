@@ -208,9 +208,28 @@ class Artefact extends Model implements Auditable, HasMedia
     {
         return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks')
             ->using(ArtefactManufactureTask::class)
-            ->withPivot('id', 'position', 'units_per_artefact', 'standard_rate', 'mix_batch_kg', 'blocks_later_steps')
+            ->withPivot('id', 'position', 'units_per_artefact', 'standard_rate', 'mix_batch_kg', 'blocks_later_steps', 'label', 'waits_for')
             ->orderByPivot('position')
             ->orderByPivot('id');
+    }
+
+    /**
+     * The steps of the recipe; a task can be in it more than once with a different label.
+     */
+    public function recipeSteps(): HasMany
+    {
+        return $this->hasMany(ArtefactManufactureTask::class)->orderBy('position')->orderBy('id');
+    }
+
+    /**
+     * The step of a task, the unlabelled one first when the task is in the recipe more than once.
+     */
+    public function recipeStepOf(int $manufactureTaskId, ?string $label = null): ?ArtefactManufactureTask
+    {
+        $steps = $this->recipeSteps()->where('manufacture_task_id', $manufactureTaskId)->get();
+
+        return $steps->first(fn (ArtefactManufactureTask $step) => $step->stepKey() === ArtefactManufactureTask::key($manufactureTaskId, $label))
+            ?? ($label === null ? $steps->first() : null);
     }
 
     public function complianceItems(): HasMany

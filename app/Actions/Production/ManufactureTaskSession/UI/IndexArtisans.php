@@ -170,14 +170,14 @@ class IndexArtisans extends OrgAction
         $serializeSession = fn (ManufactureTaskSession $session) => $timeEdit($session) + [
             'id'                  => $session->id,
             'state'               => $session->state,
-            'task_name'           => $session->manufactureTask->name,
+            'task_name'           => $session->stepName(),
             'artefact_code'       => $session->artefactCode(),
             'job_order_reference' => $session->jobOrderItemTask->jobOrder->reference,
             'started_at'          => $session->started_at,
             'ended_at'            => $session->ended_at,
             'break_minutes'       => (int)$session->break_minutes,
             'quantity_made'       => (float)$session->quantity_made,
-            'pack_size'           => $packSizes[$session->jobOrderItemTask->jobOrderItem->artefact_id.':'.$session->manufacture_task_id] ?? null,
+            'pack_size'           => $packSizes[$session->jobOrderItemTask->artefact_manufacture_task_id] ?? null,
             'correct_route'       => $canCorrect($session) ? [
                 'name'       => 'grp.models.manufacture-task-session.correct',
                 'parameters' => ['manufactureTaskSession' => $session->id],
@@ -263,10 +263,10 @@ class IndexArtisans extends OrgAction
                                 'job_order_reference' => $firstJobSession->jobOrderItemTask->jobOrder->reference,
                                 'artefact_code'       => $firstJobSession->jobOrderItemTask->jobOrderItem->artefact->code,
                                 'steps'               => $jobSessions
-                                    ->groupBy('manufacture_task_id')
-                                    ->map(fn (Collection $stepSessions, int $manufactureTaskId) => [
-                                        'manufacture_task_id' => $manufactureTaskId,
-                                        'task_name'           => $stepSessions->first()->manufactureTask->name,
+                                    ->groupBy('job_order_item_task_id')
+                                    ->map(fn (Collection $stepSessions) => [
+                                        'manufacture_task_id' => $stepSessions->first()->manufacture_task_id,
+                                        'task_name'           => $stepSessions->first()->stepName(),
                                         'sessions'            => $stepSessions->map($serializeSession)->values(),
                                     ] + $totals($stepSessions))
                                     ->values(),
@@ -399,7 +399,7 @@ class IndexArtisans extends OrgAction
                 'ended_at'            => $session->ended_at,
                 'break_minutes'       => (int) $session->break_minutes,
                 'pay'                 => !$this->canSeePay || $session->pay === null ? null : (float) $session->pay,
-                'moved_into'          => $session->movedInto?->manufactureTask?->name,
+                'moved_into'          => $session->movedInto?->stepName(),
                 'undo_move_route'     => $session->movedInto && $this->canChangeAt($session->started_at) ? [
                     'name'       => 'grp.models.manufacture-task-session.undo_preparation_move',
                     'parameters' => ['manufactureTaskSession' => $session->id],
@@ -608,7 +608,7 @@ class IndexArtisans extends OrgAction
                 return [
                     'id'                       => $session->id,
                     'worker'                   => $session->user->contact_name ?: $session->user->username,
-                    'task_name'                => $session->manufactureTask?->name ?? $session->activityLabel(),
+                    'task_name'                => $session->stepName() ?? $session->activityLabel(),
                     'job_order_reference'      => $session->jobOrder?->reference ?? $session->jobOrderItemTask?->jobOrder?->reference,
                     'started_at'               => $session->started_at,
                     'left_open_after_shift_at' => $session->left_open_after_shift_at,

@@ -248,7 +248,7 @@ class ShowJobOrder extends OrgAction
         $subJobReferences = $subJobs->values()->mapWithKeys(fn (JobOrderItem $subJob, int $index) => [$subJob->id => $jobOrder->reference.'-'.chr(65 + $index)]);
 
         return $subJobs->flatMap(fn (JobOrderItem $subJob) => $subJob->tasks)
-            ->groupBy('manufacture_task_id')
+            ->groupBy(fn (JobOrderItemTask $task) => $task->stepKey())
             ->map(function (Collection $tasks) use ($subJobReferences, $subJobs, $canAssign) {
                 /** @var JobOrderItemTask $task */
                 $task  = $tasks->first();
@@ -262,7 +262,7 @@ class ShowJobOrder extends OrgAction
                 return [
                     'id'                => $task->id,
                     'position'          => $task->position,
-                    'task_name'         => $task->manufactureTask->name,
+                    'task_name'         => $task->stepName(),
                     'state'             => $state,
                     'quantity_required' => (float)$tasks->sum('quantity_required'),
                     'quantity_made'     => (float)$tasks->sum('quantity_made'),

@@ -428,8 +428,8 @@ class GetMcpChangeSnapshot
         $steps = DB::table('artefacts_manufacture_tasks')
             ->whereIn('artefact_id', $target['artefact_ids'])
             ->orderBy('position')
-            ->orderBy('manufacture_task_id')
-            ->get(['id', 'artefact_id', 'manufacture_task_id', 'position', 'units_per_artefact', 'standard_rate']);
+            ->orderBy('id')
+            ->get(['id', 'artefact_id', 'manufacture_task_id', 'position', 'units_per_artefact', 'standard_rate', 'label', 'waits_for']);
 
         $rawMaterials = DB::table('recipe_step_raw_materials')
             ->whereIn('artefact_manufacture_task_id', $steps->pluck('id'))
@@ -440,8 +440,14 @@ class GetMcpChangeSnapshot
         return [
             'artefacts' => collect($target['artefact_ids'])
                 ->mapWithKeys(fn ($artefactId) => [
-                    $artefactId => $steps->where('artefact_id', $artefactId)->map(fn ($step) => [
+                    $artefactId => ($artefactSteps = $steps->where('artefact_id', $artefactId)->values())->map(fn ($step) => [
                         'manufacture_task_id' => $step->manufacture_task_id,
+                        'label'               => $step->label,
+                        'waits_for'           => $step->waits_for === null ? null : collect(json_decode($step->waits_for, true))
+                            ->map(fn (int $stepId) => $artefactSteps->search(fn ($awaited) => $awaited->id == $stepId))
+                            ->filter(fn ($index) => $index !== false)
+                            ->values()
+                            ->all(),
                         'position'            => $step->position,
                         'units_per_artefact'  => $step->units_per_artefact,
                         'standard_rate'       => $step->standard_rate,

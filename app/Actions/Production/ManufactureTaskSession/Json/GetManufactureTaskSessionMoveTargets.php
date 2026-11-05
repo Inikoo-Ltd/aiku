@@ -45,7 +45,7 @@ class GetManufactureTaskSessionMoveTargets extends OrgAction
                     ->map(fn (JobOrderItemTask $step) => [
                         'id'                 => $step->id,
                         'label'              => $line->jobOrder->reference.' · '.$line->artefact->code.' · '.$step->manufactureTask->name,
-                        'task_name'          => $step->manufactureTask->name,
+                        'task_name'          => $step->stepName(),
                         'unit'               => $step->unit(),
                         'pack_size'          => $step->packSize(),
                         'quantity_made'      => (float) $step->quantity_made,

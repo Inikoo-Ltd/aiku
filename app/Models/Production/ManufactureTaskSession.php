@@ -241,22 +241,25 @@ class ManufactureTaskSession extends Model implements Auditable
             return $this->combinedStandardRate();
         }
 
-        return $this->stepStandardRate($this->jobOrderItemTask?->jobOrderItem?->artefact_id);
+        return $this->stepStandardRate($this->jobOrderItemTask);
     }
 
     /**
      * The step's target on the day the session was worked, so it is the one it started under (HELP-4461).
      * The pay band rates are the ones in force when it ended, as in CalculateManufactureTaskSessionPay.
-     * Steps whose target was never changed since targets got dates read the recipe directly.
+     * Steps whose target was never changed since targets got dates read the recipe directly. Each step of the
+     * recipe has its own target, also when its task is in the recipe more than once (HELP-4544).
      */
-    private function stepStandardRate(?int $artefactId): ?float
+    private function stepStandardRate(?JobOrderItemTask $task): ?float
     {
-        $stepRate = null;
+        $stepRate   = null;
+        $artefactId = $task?->jobOrderItem?->artefact_id;
         if ($artefactId) {
-            $target   = ArtefactStepTarget::rateAt($artefactId, $this->manufacture_task_id, $this->started_at ?? now());
+            $target   = ArtefactStepTarget::rateAt($artefactId, $this->manufacture_task_id, $this->started_at ?? now(), $task->label);
             $stepRate = $target['found']
                 ? $target['standard_rate']
-                : ArtefactManufactureTask::where('artefact_id', $artefactId)
+                : ArtefactStepTarget::withLabel(ArtefactManufactureTask::query(), $task->label)
+                    ->where('artefact_id', $artefactId)
                     ->where('manufacture_task_id', $this->manufacture_task_id)
                     ->whereNotNull('standard_rate')
                     ->value('standard_rate');
@@ -279,7 +282,7 @@ class ManufactureTaskSession extends Model implements Auditable
 
         $hoursPerUnit = 0.0;
         foreach (JobOrderItemTask::whereIn('id', $weights->keys())->with('jobOrderItem')->get() as $task) {
-            $rate = $this->stepStandardRate($task->jobOrderItem?->artefact_id);
+            $rate = $this->stepStandardRate($task);
             if (!$rate) {
                 return null;
             }
@@ -339,6 +342,18 @@ class ManufactureTaskSession extends Model implements Auditable
     {
         return $this->activity_type == ManufactureTaskSessionActivityTypeEnum::PREPARATION
             && $this->started_at->diffInSeconds($until) < self::shortPreparationMinutes($this->production) * 60;
+    }
+
+    /**
+     * The step's name as on the floor (Mixing – Red), or the task's for a session on no job step.
+     */
+    public function stepName(): ?string
+    {
+        if ($this->jobOrderItemTask?->manufactureTask) {
+            return $this->jobOrderItemTask->stepName();
+        }
+
+        return $this->manufactureTask?->name;
     }
 
     public function movedInto(): BelongsTo

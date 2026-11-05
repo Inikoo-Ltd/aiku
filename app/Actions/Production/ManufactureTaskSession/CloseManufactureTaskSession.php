@@ -152,7 +152,7 @@ class CloseManufactureTaskSession extends OrgAction
                     throw ValidationException::withMessages([
                         'rate' => __(':made on :step, a step with no target, by someone paid by the hour: a manager must confirm it', [
                             'made' => (float) $session->quantity_made,
-                            'step' => $manufactureTask->name,
+                            'step' => $session->stepName(),
                         ]),
                     ]);
                 }
@@ -210,8 +210,10 @@ class CloseManufactureTaskSession extends OrgAction
             return;
         }
 
+        $waitsFor = $task->recipeStep?->waits_for;
         $previous = $item->tasks
             ->where('position', '<', $task->position)
+            ->when($waitsFor !== null, fn (Collection $steps) => $steps->whereIn('artefact_manufacture_task_id', $waitsFor))
             ->reject(fn (JobOrderItemTask $step) => $step->isRecordedInKg())
             ->sortByDesc('position')
             ->first();
@@ -229,7 +231,7 @@ class CloseManufactureTaskSession extends OrgAction
 
         throw ValidationException::withMessages([
             'quantity_made' => __(':step made :made on :reference, this step cannot go past that. Enter the rest on :others, where it was made', [
-                'step'      => $previous->manufactureTask->name,
+                'step'      => $previous->stepName(),
                 'made'      => $previous->artefactsIn(),
                 'reference' => $jobOrder->reference,
                 'others'    => $otherParts->isNotEmpty() ? $otherParts->join(', ') : __('the other part of this job'),
@@ -265,7 +267,7 @@ class CloseManufactureTaskSession extends OrgAction
             && (float) $session->quantity_made == 0
             && (float) $task->quantity_made == 0
             && $task->combined_task_id === null
-            && $task->jobOrderItem->artefact->manufactureTasks()->whereKey($task->manufacture_task_id)->doesntExist()
+            && !$task->isInRecipe()
             && $task->sessions()->whereKeyNot($session->id)->doesntExist()
             && $task->sessionShares()->doesntExist();
     }
@@ -523,7 +525,7 @@ class CloseManufactureTaskSession extends OrgAction
 
         $data['overproductions'][] = [
             'session_id'    => $session->id,
-            'step'          => $task->manufactureTask->name,
+            'step'          => $task->stepName(),
             'artefact_code' => $task->jobOrderItem->artefact->code,
             'quantity'      => $overproduced,
             'pack_size'     => $task->packSize(),

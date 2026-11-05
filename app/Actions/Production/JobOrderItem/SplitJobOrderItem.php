@@ -194,7 +194,7 @@ class SplitJobOrderItem extends OrgAction
                     $validator->errors()->add('assignments', __(':artisan already made :made of :step, more than their new share of :quantity.', [
                         'artisan'  => $subJob->employee?->contact_name ?? __('Someone'),
                         'made'     => (float) $task->quantity_made,
-                        'step'     => $task->manufactureTask->name,
+                        'step'     => $task->stepName(),
                         'quantity' => $newRequired,
                     ]));
 

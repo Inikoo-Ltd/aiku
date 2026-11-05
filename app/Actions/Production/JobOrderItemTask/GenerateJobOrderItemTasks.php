@@ -15,7 +15,6 @@ use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\JobOrderItem;
 use App\Models\Production\JobOrderItemTask;
-use App\Models\Production\ManufactureTask;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -32,8 +31,10 @@ class GenerateJobOrderItemTasks
      * A step with nothing recorded yet, even one already started, follows a change of the recipe's units per
      * artefact; once work is recorded the step keeps what it asked for, so nothing already counted or paid is restated.
      *
-     * @param  array<int, int>  $replacedSteps  removed manufacture task id by the id of the step replacing it
-     * @param  array<int, float|string>  $previousUnitsPerArtefact  units per artefact before the recipe changed, by manufacture task id
+     * A step taken off the recipe and added back takes up the job step it left behind.
+     *
+     * @param  array<int, int>  $replacedSteps  removed recipe step id by the id of the recipe step replacing it
+     * @param  array<int, float|string>  $previousUnitsPerArtefact  units per artefact before the recipe changed, by recipe step id
      * @return array<int, JobOrderItemTask>
      */
     public function handle(JobOrderItem $jobOrderItem, array $replacedSteps = [], array $previousUnitsPerArtefact = []): array
@@ -42,49 +43,55 @@ class GenerateJobOrderItemTasks
         $tasks    = [];
         $artefact = $jobOrderItem->artefact;
 
-        if ($artefact->manufactureTasks()->doesntExist()) {
+        if ($artefact->recipeSteps()->doesntExist()) {
             $artefact->manufactureTasks()->attach(GetDefaultManufactureTask::run($jobOrder->production)->id, ['position' => 1, 'units_per_artefact' => 1]);
         }
 
-        $finishedTaskIds = $jobOrderItem->tasks()->where('state', JobOrderItemTaskStateEnum::DONE)->pluck('manufacture_task_id');
-        $existingTaskIds = $jobOrderItem->tasks()->pluck('manufacture_task_id');
-        $workedTaskIds   = $jobOrderItem->tasks()->whereNot(fn ($query) => $query->unworked())->pluck('manufacture_task_id');
-        $recipeSteps     = $artefact->manufactureTasks()->get();
+        $jobSteps        = $jobOrderItem->tasks()->get();
+        $finishedStepIds = $jobSteps->where('state', JobOrderItemTaskStateEnum::DONE)->pluck('artefact_manufacture_task_id')->filter();
+        $workedStepIds   = $jobOrderItem->tasks()->whereNot(fn ($query) => $query->unworked())->pluck('artefact_manufacture_task_id')->filter();
+        $recipeSteps     = $artefact->recipeSteps()->get();
 
-        foreach ($recipeSteps as $manufactureTask) {
-            $isNewStep         = !$existingTaskIds->contains($manufactureTask->id);
-            $laterStepIsWorked = $recipeSteps
-                ->filter(fn (ManufactureTask $step) => $step->pivot->position > $manufactureTask->pivot->position)
-                ->pluck('id')
-                ->intersect($workedTaskIds)
-                ->isNotEmpty();
+        foreach ($recipeSteps as $recipeStep) {
+            $task = $jobSteps->firstWhere('artefact_manufacture_task_id', $recipeStep->id)
+                ?? $jobSteps->first(fn (JobOrderItemTask $jobStep) => $jobStep->artefact_manufacture_task_id === null
+                    && ArtefactManufactureTask::key($jobStep->manufacture_task_id, $jobStep->label) === $recipeStep->stepKey());
 
-            if ($isNewStep && ($laterStepIsWorked || $finishedTaskIds->contains($replacedSteps[$manufactureTask->id] ?? null))) {
-                continue;
+            if (!$task) {
+                $laterStepIsWorked = $recipeSteps
+                    ->filter(fn (ArtefactManufactureTask $step) => $step->position > $recipeStep->position)
+                    ->pluck('id')
+                    ->intersect($workedStepIds)
+                    ->isNotEmpty();
+
+                if ($laterStepIsWorked || $finishedStepIds->contains($replacedSteps[$recipeStep->id] ?? null)) {
+                    continue;
+                }
+
+                $task = JobOrderItemTask::create([
+                    'job_order_item_id'            => $jobOrderItem->id,
+                    'artefact_manufacture_task_id' => $recipeStep->id,
+                    'manufacture_task_id'          => $recipeStep->manufacture_task_id,
+                    'label'                        => $recipeStep->label,
+                    'group_id'                     => $jobOrderItem->group_id,
+                    'organisation_id'              => $jobOrderItem->organisation_id,
+                    'production_id'                => $jobOrder->production_id,
+                    'job_order_id'                 => $jobOrder->id,
+                    'state'                        => JobOrderItemTaskStateEnum::TODO,
+                    'position'                     => $recipeStep->position,
+                    'quantity_required'            => ArtefactManufactureTask::stepQuantity($jobOrderItem->quantity, $recipeStep->units_per_artefact),
+                ]);
+            } elseif ($task->artefact_manufacture_task_id === null) {
+                $task->update(['artefact_manufacture_task_id' => $recipeStep->id, 'label' => $recipeStep->label]);
+                $jobSteps = $jobSteps->reject(fn (JobOrderItemTask $jobStep) => $jobStep->id == $task->id);
             }
 
-            $task = JobOrderItemTask::firstOrCreate(
-                [
-                    'job_order_item_id'   => $jobOrderItem->id,
-                    'manufacture_task_id' => $manufactureTask->id,
-                ],
-                [
-                    'group_id'          => $jobOrderItem->group_id,
-                    'organisation_id'   => $jobOrderItem->organisation_id,
-                    'production_id'     => $jobOrder->production_id,
-                    'job_order_id'      => $jobOrder->id,
-                    'state'             => JobOrderItemTaskStateEnum::TODO,
-                    'position'          => $manufactureTask->pivot->position,
-                    'quantity_required' => ArtefactManufactureTask::stepQuantity($jobOrderItem->quantity, $manufactureTask->pivot->units_per_artefact),
-                ]
-            );
-
-            if ($task->state == JobOrderItemTaskStateEnum::TODO && $task->position != $manufactureTask->pivot->position) {
-                $task->update(['position' => $manufactureTask->pivot->position]);
+            if ($task->state == JobOrderItemTaskStateEnum::TODO && $task->position != $recipeStep->position) {
+                $task->update(['position' => $recipeStep->position]);
             }
 
-            $previousUnits = ArtefactManufactureTask::exactUnits($previousUnitsPerArtefact[$manufactureTask->id] ?? 0);
-            $units         = ArtefactManufactureTask::exactUnits($manufactureTask->pivot->units_per_artefact);
+            $previousUnits = ArtefactManufactureTask::exactUnits($previousUnitsPerArtefact[$recipeStep->id] ?? 0);
+            $units         = ArtefactManufactureTask::exactUnits($recipeStep->units_per_artefact);
             if (!$task->wasRecentlyCreated && $previousUnits > 0 && abs($previousUnits - $units) > 1e-9
                 && $task->state != JobOrderItemTaskStateEnum::DONE && (float) $task->quantity_made == 0) {
                 $task->setRequiredQuantity(round((float) $task->quantity_required * $units / $previousUnits, 3));
@@ -95,7 +102,7 @@ class GenerateJobOrderItemTasks
 
         if (in_array($jobOrder->state, JobOrderStateEnum::open())) {
             $jobOrderItem->tasks()
-                ->whereNotIn('manufacture_task_id', $artefact->manufactureTasks()->pluck('manufacture_tasks.id'))
+                ->where(fn ($query) => $query->whereNull('artefact_manufacture_task_id')->orWhereNotIn('artefact_manufacture_task_id', $artefact->recipeSteps()->select('id')))
                 ->unworked()
                 ->delete();
             $jobOrderItem->unsetRelation('tasks');
@@ -107,20 +114,20 @@ class GenerateJobOrderItemTasks
     /**
      * What a recipe change is about to do to the open job orders of an artefact, so whoever saves it is told and confirms first.
      *
-     * @param  array<int, float|string>  $newUnitsPerArtefact  units per artefact the recipe is changing to, by manufacture task id; steps left out are unchanged
-     * @param  array<int, int>  $removedTaskIds  steps the change takes out of the recipe
+     * @param  array<string, float|string>  $newUnitsPerArtefact  units per artefact the recipe is changing to, by step key (ArtefactManufactureTask::key); steps left out are unchanged
+     * @param  array<int, string>  $removedStepKeys  steps the change takes out of the recipe
      * @return array{open: Collection<int, string>, keeping: Collection<int, string>}|null null when no open job order is affected
      */
-    public function openJobsAffectedBy(Artefact $artefact, array $newUnitsPerArtefact, array $removedTaskIds = []): ?array
+    public function openJobsAffectedBy(Artefact $artefact, array $newUnitsPerArtefact, array $removedStepKeys = []): ?array
     {
-        $currentUnits   = $artefact->manufactureTasks()->get()->mapWithKeys(fn (ManufactureTask $manufactureTask) => [$manufactureTask->id => $manufactureTask->pivot->units_per_artefact]);
-        $changedTaskIds = collect($newUnitsPerArtefact)
-            ->filter(fn ($units, int $taskId) => !$currentUnits->has($taskId)
-                || abs(ArtefactManufactureTask::exactUnits($currentUnits[$taskId]) - ArtefactManufactureTask::exactUnits($units)) > 1e-9)
+        $currentSteps   = $artefact->recipeSteps()->get()->keyBy(fn (ArtefactManufactureTask $step) => $step->stepKey());
+        $changedKeys    = collect($newUnitsPerArtefact)
+            ->filter(fn ($units, string $key) => !$currentSteps->has($key)
+                || abs(ArtefactManufactureTask::exactUnits($currentSteps[$key]->units_per_artefact) - ArtefactManufactureTask::exactUnits($units)) > 1e-9)
             ->keys()
-            ->merge($removedTaskIds);
+            ->merge($removedStepKeys);
 
-        if ($changedTaskIds->isEmpty()) {
+        if ($changedKeys->isEmpty()) {
             return null;
         }
 
@@ -138,7 +145,7 @@ class GenerateJobOrderItemTasks
         return [
             'open'    => $openItems->map($label)->unique()->values(),
             'keeping' => JobOrderItemTask::whereIn('job_order_item_id', $openItems->pluck('id'))
-                ->whereIn('manufacture_task_id', $changedTaskIds)
+                ->whereIn('artefact_manufacture_task_id', $currentSteps->toBase()->only($changedKeys->all())->pluck('id'))
                 ->where('quantity_made', '>', 0)
                 ->get()
                 ->map(fn (JobOrderItemTask $task) => $label($openItems->firstWhere('id', $task->job_order_item_id)))
@@ -169,17 +176,17 @@ class GenerateJobOrderItemTasks
     }
 
     /**
-     * @param  array<int, float|string>  $previousUnitsPerArtefact  units per artefact before the recipe changed, by manufacture task id
+     * @param  array<int, float|string>  $previousUnitsPerArtefact  units per artefact before the recipe changed, by recipe step id
      * @return Collection<int, string> open job orders with work recorded on a step whose units changed, which keep the count they had
      */
     public function jobsKeepingTheirCount(Artefact $artefact, array $previousUnitsPerArtefact): Collection
     {
-        $changedTaskIds = $artefact->manufactureTasks()->get()
-            ->filter(fn (ManufactureTask $manufactureTask) => isset($previousUnitsPerArtefact[$manufactureTask->id])
-                && abs(ArtefactManufactureTask::exactUnits($previousUnitsPerArtefact[$manufactureTask->id]) - ArtefactManufactureTask::exactUnits($manufactureTask->pivot->units_per_artefact)) > 1e-9)
+        $changedStepIds = $artefact->recipeSteps()->get()
+            ->filter(fn (ArtefactManufactureTask $step) => isset($previousUnitsPerArtefact[$step->id])
+                && abs(ArtefactManufactureTask::exactUnits($previousUnitsPerArtefact[$step->id]) - ArtefactManufactureTask::exactUnits($step->units_per_artefact)) > 1e-9)
             ->pluck('id');
 
-        return JobOrderItemTask::whereIn('manufacture_task_id', $changedTaskIds)
+        return JobOrderItemTask::whereIn('artefact_manufacture_task_id', $changedStepIds)
             ->whereHas('jobOrderItem', fn ($query) => $query->where('artefact_id', $artefact->id))
             ->whereHas('jobOrder', fn ($query) => $query->whereNotIn('state', [JobOrderStateEnum::RECEIVED, JobOrderStateEnum::NOT_RECEIVED]))
             ->where('quantity_made', '>', 0)

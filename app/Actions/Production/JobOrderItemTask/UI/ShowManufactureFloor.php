@@ -101,7 +101,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-            ->with(['jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask', 'jobOrder'])
+            ->with(['jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask', 'jobOrder'])
             ->first();
         $shiftEndPause    = $openSession?->shiftEndPause();
         $shiftEndPausedAt = $shiftEndPause?->started_at ?? $openSession?->left_open_after_shift_at;
@@ -122,7 +122,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openTasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->with(['jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.tradeUnit.image', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
+            ->with(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.tradeUnit.image', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
             ->join('job_order_items', 'job_order_items.id', '=', 'job_order_item_tasks.job_order_item_id')
             ->live()
@@ -179,7 +179,7 @@ class ShowManufactureFloor extends OrgAction
 
                 return $this->serializeTask($task) + [
                     'working_on_by'   => $workingOn,
-                    'blocked_by_step' => $blockingStep?->manufactureTask->name,
+                    'blocked_by_step' => $blockingStep?->stepName(),
                     'can_start'       => !$blockingStep && !$workingOn && $task->isAllowedFor($this->employee),
                     'steps'           => $serializedSteps[$task->job_order_item_id] ??= $this->serializeSteps($stepsByJobOrderItem->get($task->job_order_item_id), $task),
                 ];
@@ -190,7 +190,7 @@ class ShowManufactureFloor extends OrgAction
         $finishedToday = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
             ->whereDate('ended_at', now()->toDateString())
-            ->with(['jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder', 'shares.jobOrderItemTask.jobOrderItem.artefact'])
+            ->with(['jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder', 'shares.jobOrderItemTask.jobOrderItem.artefact'])
             ->orderByDesc('ended_at')
             ->get()
             ->map(fn (ManufactureTaskSession $session) => [
@@ -198,7 +198,7 @@ class ShowManufactureFloor extends OrgAction
                 'ended_at'            => $session->ended_at,
                 'seconds'             => (int) $session->started_at->diffInSeconds($session->ended_at),
                 'is_non_productive'   => $session->isNonProductive(),
-                'task_name'           => $session->isNonProductive() ? $session->activityLabel() : $session->manufactureTask->name,
+                'task_name'           => $session->isNonProductive() ? $session->activityLabel() : $session->stepName(),
                 'artefact_code'       => $session->isNonProductive()
                     ? ($session->jobOrder?->reference ?? __('General'))
                     : $session->artefactCode(),
@@ -469,14 +469,14 @@ class ShowManufactureFloor extends OrgAction
 
             return [
                 'id'                => $step->id,
-                'task_name'         => $step->manufactureTask->name,
+                'task_name'         => $step->stepName(),
                 'state'             => $step->state,
                 'quantity_made'     => (float)$step->quantity_made,
                 'quantity_required' => (float)$step->quantity_required,
                 'unit'              => $step->unit(),
                 'mix_batch_kg'      => $step->mixBatchKg(),
                 'pack_size'         => $this->packSize(collect([$step])),
-                'blocked_by_step'   => $step->blockingStep($steps)?->manufactureTask->name,
+                'blocked_by_step'   => $step->blockingStep($steps)?->stepName(),
                 'worked_by'         => $closedWork->map(fn (array $work) => $work['user']->contact_name ?: $work['user']->username)->unique()->values()->all(),
                 'working_on_by'     => $step->sessions->where('state', ManufactureTaskSessionStateEnum::OPEN)->map($userName)->values()->all(),
                 'seconds'           => (int)round($closedWork->sum('hours') * 3600),
@@ -499,7 +499,7 @@ class ShowManufactureFloor extends OrgAction
             'position'            => $task->position,
             'manufacture_task_id' => $task->manufacture_task_id,
             'task_code'           => $task->manufactureTask->code,
-            'task_name'           => $task->manufactureTask->name,
+            'task_name'           => $task->stepName(),
             'is_piece_rate'       => (bool) $task->manufactureTask->is_piece_rate,
             'is_quantity_only'    => (bool) $task->manufactureTask->is_quantity_only,
             'artefact_code'       => $members->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact->code)->unique()->implode(' + '),
@@ -547,7 +547,7 @@ class ShowManufactureFloor extends OrgAction
     {
         $this->packSizes ??= ArtefactManufactureTask::packSizes();
 
-        $sizes = $members->map(fn (JobOrderItemTask $member) => $this->packSizes[$member->jobOrderItem->artefact_id.':'.$member->manufacture_task_id] ?? null)->unique();
+        $sizes = $members->map(fn (JobOrderItemTask $member) => $this->packSizes[$member->artefact_manufacture_task_id] ?? null)->unique();
 
         return $sizes->count() == 1 ? $sizes->first() : null;
     }
@@ -584,7 +584,7 @@ class ShowManufactureFloor extends OrgAction
             if ($group->count() < 2) {
                 continue;
             }
-            $group->load(['jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans']);
+            $group->load(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans']);
 
             $standsFor = $group->first(fn (JobOrderItemTask $member) => $member->state != JobOrderItemTaskStateEnum::DONE);
             $openTask  = $openTasks->firstWhere('id', $standsFor?->id);

@@ -97,7 +97,7 @@ class ShowMyManufacturePerformance extends OrgAction
         $hours                       = fn (Collection $sessions) => round($sessions->sum(fn (ManufactureTaskSession $session) => $session->paidHours()), 2);
         $rows                        = $sessions->map(fn (ManufactureTaskSession $session) => [
             'id'                  => $session->id,
-            'task_name'           => $session->isNonProductive() ? $session->activityLabel() : $session->manufactureTask->name,
+            'task_name'           => $session->isNonProductive() ? $session->activityLabel() : $session->stepName(),
             'is_non_productive'   => $session->isNonProductive(),
             'reason'              => $session->preparationReason?->name,
             'artefact_code'       => $session->isNonProductive() ? null : $session->artefactCode(),

@@ -100,7 +100,7 @@ class CombineJobOrderItemTasks extends OrgAction
             return;
         }
 
-        if ($tasks->pluck('manufacture_task_id')->unique()->count() > 1) {
+        if ($tasks->map(fn (JobOrderItemTask $task) => $task->manufacture_task_id.'|'.mb_strtolower((string) $task->label))->unique()->count() > 1) {
             $validator->errors()->add('job_order_item_task_ids', __('Only the same step can be combined.'));
 
             return;

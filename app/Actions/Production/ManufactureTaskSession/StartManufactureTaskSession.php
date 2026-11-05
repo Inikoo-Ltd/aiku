@@ -62,7 +62,7 @@ class StartManufactureTaskSession extends OrgAction
 
         if (!$lead->isAllowedFor($employee)) {
             throw ValidationException::withMessages([
-                'job_order_item_task_id' => __('Only :names can do :step', ['names' => $lead->manufactureTask->artisans->pluck('contact_name')->implode(', '), 'step' => $lead->manufactureTask->name]),
+                'job_order_item_task_id' => __('Only :names can do :step', ['names' => $lead->manufactureTask->artisans->pluck('contact_name')->implode(', '), 'step' => $lead->stepName()]),
             ]);
         }
 
@@ -98,8 +98,8 @@ class StartManufactureTaskSession extends OrgAction
             if ($blockingStep) {
                 throw ValidationException::withMessages([
                     'job_order_item_task_id' => $members->count() > 1
-                        ? __('Finish :step of :code first', ['step' => $blockingStep->manufactureTask->name, 'code' => $member->jobOrderItem->artefact->code])
-                        : __('Finish :step first', ['step' => $blockingStep->manufactureTask->name]),
+                        ? __('Finish :step of :code first', ['step' => $blockingStep->stepName(), 'code' => $member->jobOrderItem->artefact->code])
+                        : __('Finish :step first', ['step' => $blockingStep->stepName()]),
                 ]);
             }
         }

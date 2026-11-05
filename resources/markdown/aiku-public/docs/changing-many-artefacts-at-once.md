@@ -1,7 +1,7 @@
 ---
 title: Changing many artefacts at once
 summary: Tick the artefacts, then use the picker at the right of the bar that appears to set a batch size or shelf life, give them all the same manufacture steps, move them to another family or department, discontinue them, or bring them back.
-date: 2026-11-03
+date: 2026-11-05
 tags: production, crafts
 category: production
 help_routes: grp.org.productions.show.crafts.artefacts.index, grp.org.productions.show.crafts.artefact_families.show, grp.org.productions.show.crafts.artefact_departments.show
@@ -50,11 +50,14 @@ The window has the steps on the left and the artefacts you ticked on the right.
 **Setting up the steps.** Each step card has:
 
 - **Task**: the piece of work, picked from the factory's manufacture tasks. Type to search by name or code.
+- **Label**: optional. It tells apart the same task used more than once, such as **Red** and **Blue** on two mixing steps. Artisans see it after the task name, for example **Mixing – Red**.
 - **Units per artefact**: how many units of that task one artefact needs. A job order for 10 artefacts at 2 units per artefact asks the artisan for 20 units of work.
 - **Target units per hour**: how many units an artisan is expected to make in an hour on this step, at the base pay rate. Leave it empty to use the task's own figure. More on this below.
+- **Later steps wait for it**: on, no later step can start until this one is done (for a kg step, until its kg is entered). Off, the later steps can start while this one is still to do.
+- **Waits for** (from step 2 on): what has to be done before this step can start on the floor. **Earlier steps that hold up later ones** is the usual order, set with the switch above. **Only the steps chosen** lets you pick the earlier steps it waits for. **Nothing, it can start straight away** frees it completely.
 - **Raw materials**: what the step uses up for each unit of work, with a quantity for each.
 
-Press **Add step** for another card. The arrows on a card move it up or down, and the bin removes it. The steps are numbered in the order they are done, step 1 first, and artisans on the floor see them in that order. A task can only be used once in the list. If the task you need is not there yet, the **Task missing? Create a manufacture task** link takes you to the page where tasks are made.
+Press **Add step** for another card. The arrows on a card move it up or down, and the bin removes it. The steps are numbered in the order they are done, step 1 first, and artisans on the floor see them in that order. A task can be used more than once in the list as long as each use has a different label. If the task you need is not there yet, the **Task missing? Create a manufacture task** link takes you to the page where tasks are made.
 
 **Giving one artefact different raw materials.** Most of the time every artefact uses the same materials, and that is what the list on the right starts on: **All artefacts**, with the shared materials. When one artefact needs something else, for example a different fragrance oil:
 
@@ -71,6 +74,15 @@ An artefact with its own materials gets an **Own materials** tag in the list, an
 - There is no undo. To go back, you would set the old steps again.
 
 The window reminds you of this in a yellow box above the buttons. The save button stays greyed out until you tick **I understand the existing steps will be replaced**. The button says how many artefacts it will change, for example **Replace steps on 5 artefacts**.
+
+**A product made of several parts.** A gift box with seven coloured bath fizzers is made colour by colour: each colour is mixed, made and shrink-wrapped, then the seven go into one box. Set that up as one recipe:
+
+1. Add **Mixing**, **Making** and **Shrinking** once per colour, each with the colour as its label: **Mixing – Red**, **Making – Red**, **Shrinking – Red**, then the same for the next colour.
+2. On each colour's mixing step, set **Waits for** to **Nothing, it can start straight away**, so every colour can be mixed at any time.
+3. On **Making – Red**, choose **Only the steps chosen** and pick **Mixing – Red**. On **Shrinking – Red**, pick **Making – Red**. Do the same for each colour.
+4. On the final **Packing** step, choose **Only the steps chosen** and pick every colour's shrinking step.
+
+On the floor, **Making – Red** opens as soon as **Mixing – Red** is done, without waiting for the other colours, and **Packing** opens once every colour is shrink-wrapped. Each step keeps its own units, target and raw materials, so each colour's mix uses its own ingredients and each step is paid against its own target.
 
 **Job orders already running.** Job orders that are still open pick up the new steps. A step that has been removed disappears from those job orders only if nobody has started it yet. Work already recorded against it on the floor is kept.
 

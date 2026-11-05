@@ -171,12 +171,12 @@ class ShowOperationsDashboard extends OrgAction
                     ],
                     'open_session' => ($openSession = ManufactureTaskSession::where('user_id', $request->user()->id)
                         ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-                        ->with(['jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder'])
+                        ->with(['jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrder', 'manufactureTask', 'jobOrder'])
                         ->first()) ? ($openSession->isNonProductive() ? ShowManufactureFloor::serializeNonProductiveSession($openSession) : [
                             'id'         => $openSession->id,
                             'started_at' => $openSession->started_at,
                             'task'       => [
-                                'task_name'           => $openSession->manufactureTask->name,
+                                'task_name'           => $openSession->stepName(),
                                 'artefact_code'       => $openSession->artefactCode(),
                                 'artefact_name'       => $openSession->jobOrderItemTask->jobOrderItem->artefact->name,
                                 'artefact_image'      => $openSession->is_combined || !$openSession->jobOrderItemTask->jobOrderItem->artefact->tradeUnit?->image_id ? null : $openSession->jobOrderItemTask->jobOrderItem->artefact->tradeUnit->imageSources(320, 320),
@@ -194,13 +194,13 @@ class ShowOperationsDashboard extends OrgAction
                         ]) : null,
                     'working_now' => ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
                         ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::OPEN)
-                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'jobOrder'])
+                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'jobOrder'])
                         ->orderBy('started_at')
                         ->get()
                         ->map(fn (ManufactureTaskSession $session) => [
                             'id'                  => $session->id,
                             'worker'              => $session->user->contact_name ?: $session->user->username,
-                            'task_name'           => $session->isNonProductive() ? $session->activityLabel() : $session->manufactureTask->name,
+                            'task_name'           => $session->isNonProductive() ? $session->activityLabel() : $session->stepName(),
                             'artefact_code'       => $session->artefactCode(),
                             'job_order_reference' => ($session->jobOrderItemTask?->jobOrder ?? $session->jobOrder)?->reference,
                             'job_order_slug'      => ($session->jobOrderItemTask?->jobOrder ?? $session->jobOrder)?->slug,
@@ -211,14 +211,14 @@ class ShowOperationsDashboard extends OrgAction
                     'today_sessions' => ManufactureTaskSession::where('manufacture_task_sessions.production_id', $production->id)
                         ->where('manufacture_task_sessions.state', ManufactureTaskSessionStateEnum::CLOSED)
                         ->whereDate('ended_at', now()->toDateString())
-                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'jobOrder'])
+                        ->with(['user', 'manufactureTask', 'jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrder', 'jobOrder'])
                         ->orderByDesc('ended_at')
                         ->limit(30)
                         ->get()
                         ->map(fn (ManufactureTaskSession $session) => [
                             'id'            => $session->id,
                             'worker'        => $session->user->contact_name ?: $session->user->username,
-                            'task_name'     => $session->isNonProductive() ? $session->activityLabel() : $session->manufactureTask->name,
+                            'task_name'     => $session->isNonProductive() ? $session->activityLabel() : $session->stepName(),
                             'artefact_code' => $session->artefactCode(),
                             'job_order_reference' => ($session->jobOrderItemTask?->jobOrder ?? $session->jobOrder)?->reference,
                             'job_order_slug'      => ($session->jobOrderItemTask?->jobOrder ?? $session->jobOrder)?->slug,
@@ -231,7 +231,7 @@ class ShowOperationsDashboard extends OrgAction
                         ]),
                     'queue'       => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
                         ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-                        ->with(['jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks.manufactureTask', 'jobOrder', 'manufactureTask'])
+                        ->with(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks.manufactureTask', 'jobOrder', 'manufactureTask'])
                         ->live()
                         ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
                         ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
@@ -244,7 +244,7 @@ class ShowOperationsDashboard extends OrgAction
                         ->map(fn (JobOrderItemTask $task) => [
                             'id'                  => $task->id,
                             'state'               => $task->state,
-                            'task_name'           => $task->manufactureTask->name,
+                            'task_name'           => $task->stepName(),
                             'artefact_code'       => $task->jobOrderItem->artefact->code,
                             'artefact_name'       => $task->jobOrderItem->artefact->name,
                             'job_order_reference' => $task->jobOrder->reference,
@@ -253,7 +253,7 @@ class ShowOperationsDashboard extends OrgAction
                             'quantity_required'   => (float)$task->quantity_required,
                             'unit'                => $task->unit(),
                             'mix_batch_kg'        => $task->mixBatchKg(),
-                            'blocked_by_step'     => $task->blockingStep($task->jobOrderItem->tasks)?->manufactureTask->name,
+                            'blocked_by_step'     => $task->blockingStep($task->jobOrderItem->tasks)?->stepName(),
                             'start_route'         => [
                                 'name'       => 'grp.models.job-order-item-task.session.store',
                                 'parameters' => ['jobOrderItemTask' => $task->id],

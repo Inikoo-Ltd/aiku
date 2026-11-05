@@ -37,10 +37,7 @@ class GetDayMaterialsChecklist
         $needs = DB::table('job_order_item_tasks')
             ->join('job_order_items', 'job_order_items.id', 'job_order_item_tasks.job_order_item_id')
             ->join('job_orders', 'job_orders.id', 'job_order_item_tasks.job_order_id')
-            ->join('artefacts_manufacture_tasks as recipe_steps', function ($join) {
-                $join->on('recipe_steps.artefact_id', 'job_order_items.artefact_id')
-                    ->on('recipe_steps.manufacture_task_id', 'job_order_item_tasks.manufacture_task_id');
-            })
+            ->join('artefacts_manufacture_tasks as recipe_steps', 'recipe_steps.id', 'job_order_item_tasks.artefact_manufacture_task_id')
             ->join('recipe_step_raw_materials', 'recipe_step_raw_materials.artefact_manufacture_task_id', 'recipe_steps.id')
             ->join('raw_materials', 'raw_materials.id', 'recipe_step_raw_materials.raw_material_id')
             ->where('job_orders.production_id', $production->id)

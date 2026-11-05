@@ -54,6 +54,9 @@ class ProductionRecipeTool extends Tool
             'steps'                                 => ['sometimes', 'array', 'min:1', 'max:30'],
             'steps.*.task'                          => ['required', 'string'],
             'steps.*.position'                      => ['sometimes', 'integer', 'min:1'],
+            'steps.*.label'                         => ['sometimes', 'nullable', 'string', 'max:64'],
+            'steps.*.waits_for'                     => ['sometimes', 'nullable', 'array'],
+            'steps.*.waits_for.*'                   => ['integer', 'min:1'],
             'steps.*.units_per_artefact'            => ['required', 'numeric', 'gt:0'],
             'steps.*.target_per_hour'               => ['present', 'nullable', 'numeric', 'gt:0'],
             'steps.*.target_from'                   => ['sometimes', 'nullable', 'date_format:Y-m-d'],
@@ -182,12 +185,12 @@ class ProductionRecipeTool extends Tool
                 $override = collect($step['artefact_raw_materials'])->firstWhere('artefact_id', $artefact->id);
 
                 return collect($override ? $override['raw_materials'] : $step['raw_materials'])
-                    ->map(fn (array $rawMaterial) => $step['manufacture_task_id'].'-'.$rawMaterial['raw_material_id']);
+                    ->map(fn (array $rawMaterial) => ArtefactManufactureTask::key($step['manufacture_task_id'], $step['label']).'-'.$rawMaterial['raw_material_id']);
             });
 
             $lost = collect($current[$artefact->id] ?? [])
                 ->flatMap(fn (array $step) => collect($step['raw_materials'])->map(fn (array $rawMaterial) => [
-                    'key'             => $step['manufacture_task_id'].'-'.$rawMaterial['raw_material_id'],
+                    'key'             => ArtefactManufactureTask::key($step['manufacture_task_id'], $step['label'] ?? null).'-'.$rawMaterial['raw_material_id'],
                     'raw_material_id' => $rawMaterial['raw_material_id'],
                 ]))
                 ->reject(fn (array $line) => $kept->contains($line['key']))
@@ -205,8 +208,8 @@ class ProductionRecipeTool extends Tool
 
         $recalculations = collect($steps)->filter(fn (array $step) => $step['effective_from'])
             ->flatMap(fn (array $step) => $artefacts
-                ->filter(fn (Artefact $artefact) => $artefact->manufactureTasks()->where('manufacture_tasks.id', $step['manufacture_task_id'])->exists())
-                ->map(fn (Artefact $artefact) => ($message = SetArtefactStepTarget::make()->confirmationMessage($artefact, $step['manufacture_task_id'], $step['standard_rate'], $step['effective_from']))
+                ->filter(fn (Artefact $artefact) => $artefact->recipeStepOf($step['manufacture_task_id'], $step['label']) !== null)
+                ->map(fn (Artefact $artefact) => ($message = SetArtefactStepTarget::make()->confirmationMessage($artefact, $artefact->recipeStepOf($step['manufacture_task_id'], $step['label']), $step['standard_rate'], $step['effective_from']))
                     ? "{$artefact->code}: {$message}"
                     : null))
             ->filter();
@@ -288,6 +291,8 @@ class ProductionRecipeTool extends Tool
 
         return $steps->values()->map(fn (array $step, int $index) => [
             'manufacture_task_id'    => $tasks[strtolower($step['task'])]->id,
+            'label'                  => $step['label'] ?? null,
+            'waits_for'              => isset($step['waits_for']) ? collect($step['waits_for'])->map(fn (int $number) => $number - 1)->all() : null,
             'position'               => $step['position'] ?? $index + 1,
             'units_per_artefact'     => $step['units_per_artefact'],
             'standard_rate'          => $step['target_per_hour'],
@@ -312,7 +317,7 @@ class ProductionRecipeTool extends Tool
             'production' => $production->code,
             'currency'   => $production->organisation->currency->code,
             'artefacts'  => $artefacts->map(function (Artefact $artefact) use ($rawMaterialsByStep) {
-                $steps = $artefact->manufactureTasks->map(function (ManufactureTask $task) use ($rawMaterialsByStep) {
+                $steps = $artefact->manufactureTasks->map(function (ManufactureTask $task) use ($artefact, $rawMaterialsByStep) {
                     $rawMaterials = $rawMaterialsByStep->get($task->pivot->id, collect())->map(fn (RecipeStepRawMaterial $line) => [
                         'code'        => $line->rawMaterial->code,
                         'description' => $line->rawMaterial->description,
@@ -326,6 +331,8 @@ class ProductionRecipeTool extends Tool
                         'position'           => $task->pivot->position,
                         'task'               => $task->code,
                         'task_name'          => $task->name,
+                        'label'              => $task->pivot->label,
+                        'waits_for'          => $task->pivot->waits_for === null ? null : $artefact->manufactureTasks->filter(fn (ManufactureTask $awaited) => in_array($awaited->pivot->id, $task->pivot->waits_for))->map(fn (ManufactureTask $awaited) => $awaited->pivot->position)->values()->all(),
                         'units_per_artefact' => (float) $task->pivot->units_per_artefact,
                         'target_per_hour'    => $task->pivot->standard_rate === null ? null : (float) $task->pivot->standard_rate,
                         'raw_materials'      => $rawMaterials->all(),
@@ -357,6 +364,8 @@ class ProductionRecipeTool extends Tool
             'steps'        => $schema->array()->items($schema->object([
                 'task'               => $schema->string()->description('Manufacture task code, e.g. POUR')->required(),
                 'position'           => $schema->integer()->description('Order of the step, defaults to its place in the list'),
+                'label'              => $schema->string()->description('Tells apart the same task used more than once in the recipe, e.g. Red (shown as Mixing – Red); each use of a task needs a different label'),
+                'waits_for'          => $schema->array()->items($schema->integer())->description('Places in this steps list (1 = first) of the earlier steps this one waits for, e.g. Making Red waits for Mixing Red; [] = waits for nothing; omit = the earlier steps that hold up later ones'),
                 'units_per_artefact' => $schema->number()->description('How much of this step one artefact counts as (1 for one tin, 0.1667 when counted in boxes of six). Always send it, copy the current value when not changing it')->required(),
                 'target_per_hour'    => $schema->number()->description('Units of this step one person should do per hour; null when there is no target. Always send it, copy the current value when not changing it')->required(),
                 'target_from'        => $schema->string()->description('Day (Y-m-d, today or earlier, not in a pay week locked for payroll) the target applies from, from the start of that day: sessions already worked on the step since then are paid again against it. Omit for from today (a step that had no target: from the start of this pay week). Sending it with an unchanged target dates that target back'),

@@ -51,7 +51,7 @@ class JobOrderPlanItemsResource extends JsonResource
             'carry_over'      => JobOrderItem::carryOverLabel(JobOrderItem::carryOver(collect([$this->resource]))),
             'steps'           => $this->tasks->map(fn (JobOrderItemTask $task) => [
                 'id'                => $task->id,
-                'name'              => $task->manufactureTask->name,
+                'name'              => $task->stepName(),
                 'state'             => $task->state,
                 'quantity_made'     => (float) $task->quantity_made,
                 'quantity_required' => (float) $task->quantity_required,

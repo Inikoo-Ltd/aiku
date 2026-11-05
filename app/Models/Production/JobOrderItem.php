@@ -274,8 +274,8 @@ class JobOrderItem extends Model
 
     public function finalTask(): ?JobOrderItemTask
     {
-        $recipeTaskIds = $this->artefact->manufactureTasks->pluck('id');
-        $inRecipe      = $this->tasks->filter(fn (JobOrderItemTask $task) => $recipeTaskIds->contains($task->manufacture_task_id));
+        $recipeStepIds = $this->artefact->manufactureTasks->map(fn (ManufactureTask $manufactureTask) => $manufactureTask->pivot->id);
+        $inRecipe      = $this->tasks->filter(fn (JobOrderItemTask $task) => $recipeStepIds->contains($task->artefact_manufacture_task_id));
 
         return ($inRecipe->isNotEmpty() ? $inRecipe : $this->tasks)->last();
     }

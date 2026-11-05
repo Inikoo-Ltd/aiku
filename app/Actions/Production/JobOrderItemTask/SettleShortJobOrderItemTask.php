@@ -70,7 +70,7 @@ class SettleShortJobOrderItemTask
             ]);
             $item->update(['data' => array_merge($item->data ?? [], ['carried_to' => $carried->id])]);
             foreach ($carriedItem->tasks as $carriedTask) {
-                $carriedTask->update(['employee_id' => $item->tasks->firstWhere('manufacture_task_id', $carriedTask->manufacture_task_id)?->employee_id]);
+                $carriedTask->update(['employee_id' => $item->tasks->first(fn ($task) => $task->stepKey() === $carriedTask->stepKey())?->employee_id]);
             }
             CreditOrderWorkToJobOrderItem::run($carriedItem);
             ConfirmJobOrder::make()->action($carried);

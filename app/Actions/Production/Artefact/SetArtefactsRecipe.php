@@ -32,13 +32,17 @@ class SetArtefactsRecipe extends OrgAction
 
     /**
      * Gives every selected artefact exactly the steps sent: steps they already have are updated, new ones are added,
-     * and steps missing from the list are removed together with their raw materials. A step's raw materials go to every
+     * and steps missing from the list are removed together with their raw materials. A step is its task and label, so
+     * the same task can be sent more than once with different labels; waits_for lists the indexes, in steps, of the
+     * earlier steps it waits for (null or left out: the earlier steps that hold up later ones). A step's raw materials go to every
      * artefact unless that artefact has its own list in artefact_raw_materials.
      *
      * @param array{
      *     artefacts: array<int, int>,
      *     steps: array<int, array{
      *         manufacture_task_id: int,
+     *         label?: string|null,
+     *         waits_for?: array<int, int>|null,
      *         position: int,
      *         units_per_artefact: float|int|string,
  *         standard_rate?: float|int|string|null,
@@ -68,37 +72,46 @@ class SetArtefactsRecipe extends OrgAction
 
     private function setRecipe(Artefact $artefact, Collection $steps): void
     {
-        $recipe = $steps->mapWithKeys(fn (array $step) => [
-            $step['manufacture_task_id'] => [
+        $previousSteps = $artefact->recipeSteps()->get();
+        $previousUnits = $previousSteps->pluck('units_per_artefact', 'id')->all();
+        $previousByKey = $previousSteps->keyBy(fn (ArtefactManufactureTask $step) => $step->stepKey());
+        $stepKeys      = $steps->map(fn (array $step) => ArtefactManufactureTask::key($step['manufacture_task_id'], AttachManufactureTaskToArtefact::cleanLabel($step['label'] ?? null)));
+        $removedSteps  = $previousSteps->reject(fn (ArtefactManufactureTask $step) => $stepKeys->contains($step->stepKey()));
+        $lastPosition  = $steps->max('position');
+
+        $recipeSteps   = [];
+        $replacedSteps = [];
+        foreach ($steps as $index => $step) {
+            $values = [
                 'position'           => $step['position'],
                 'units_per_artefact' => $step['units_per_artefact'],
-            ] + (array_key_exists('blocks_later_steps', $step) ? ['blocks_later_steps' => $step['blocks_later_steps']] : []),
-        ])->all();
+                'label'              => AttachManufactureTaskToArtefact::cleanLabel($step['label'] ?? null),
+            ] + (array_key_exists('blocks_later_steps', $step) ? ['blocks_later_steps' => $step['blocks_later_steps']] : []);
 
-        $previousSteps     = $artefact->manufactureTasks()->get();
-        $previousPositions = $previousSteps->mapWithKeys(fn (ManufactureTask $manufactureTask) => [$manufactureTask->id => $manufactureTask->pivot->position]);
-        $previousUnits     = $previousSteps->mapWithKeys(fn (ManufactureTask $manufactureTask) => [$manufactureTask->id => $manufactureTask->pivot->units_per_artefact])->all();
-        $removedTaskIds    = $previousPositions->keys()->diff(array_keys($recipe));
-        $lastPosition      = $steps->max('position');
-        $replacedSteps     = $steps
-            ->filter(fn (array $step) => !$previousPositions->has($step['manufacture_task_id']) && $step['position'] < $lastPosition)
-            ->mapWithKeys(fn (array $step) => [$step['manufacture_task_id'] => $removedTaskIds->first(fn (int $id) => $previousPositions[$id] == $step['position'])])
-            ->filter()
-            ->all();
+            $recipeStep = $previousByKey->get($stepKeys[$index]);
+            if ($recipeStep) {
+                $recipeStep->update($values);
+            } else {
+                $recipeStep = ArtefactManufactureTask::create($values + ['artefact_id' => $artefact->id, 'manufacture_task_id' => $step['manufacture_task_id']]);
+                $replaced   = $step['position'] < $lastPosition ? $removedSteps->first(fn (ArtefactManufactureTask $removed) => $removed->position == $step['position']) : null;
+                if ($replaced) {
+                    $replacedSteps[$recipeStep->id] = $replaced->id;
+                }
+            }
+            $recipeSteps[$index] = $recipeStep;
+        }
 
-        $artefact->manufactureTasks()->syncWithoutDetaching($recipe);
+        foreach ($steps as $index => $step) {
+            if (array_key_exists('waits_for', $step)) {
+                $recipeSteps[$index]->update(['waits_for' => $step['waits_for'] === null ? null : collect($step['waits_for'])->map(fn (int $awaited) => $recipeSteps[$awaited]->id)->values()->all()]);
+            }
 
-        foreach ($steps as $step) {
-            SetArtefactStepTarget::run($artefact, (int) $step['manufacture_task_id'], $step['standard_rate'] ?? null, $step['effective_from'] ?? null);
-
-            $recipeStep = ArtefactManufactureTask::where('artefact_id', $artefact->id)
-                ->where('manufacture_task_id', $step['manufacture_task_id'])
-                ->first();
+            SetArtefactStepTarget::run($artefact, $recipeSteps[$index], $step['standard_rate'] ?? null, $step['effective_from'] ?? null);
 
             $rawMaterials = collect($this->rawMaterialsFor($artefact, $step));
 
-            $recipeStep->rawMaterials()->whereNotIn('raw_material_id', $rawMaterials->pluck('raw_material_id'))->delete();
-            $rawMaterials->each(fn (array $rawMaterial) => AttachRawMaterialToRecipeStep::make()->handle($recipeStep, $rawMaterial));
+            $recipeSteps[$index]->rawMaterials()->whereNotIn('raw_material_id', $rawMaterials->pluck('raw_material_id'))->delete();
+            $rawMaterials->each(fn (array $rawMaterial) => AttachRawMaterialToRecipeStep::make()->handle($recipeSteps[$index], $rawMaterial));
         }
 
         RawMaterialHydrateFromOrgStock::dispatchIntermediatesOf($artefact->id);
@@ -109,8 +122,7 @@ class SetArtefactsRecipe extends OrgAction
 
         $this->jobsKeepingTheirCount = [...$this->jobsKeepingTheirCount, ...GenerateJobOrderItemTasks::make()->jobsKeepingTheirCount($artefact, $previousUnits)];
 
-        ManufactureTask::whereIn('id', $removedTaskIds)
-            ->each(fn (ManufactureTask $manufactureTask) => DetachManufactureTaskFromArtefact::make()->handle($artefact, $manufactureTask));
+        $removedSteps->each(fn (ArtefactManufactureTask $removed) => DetachManufactureTaskFromArtefact::make()->handle($artefact, $removed));
     }
 
     private function rawMaterialsFor(Artefact $artefact, array $step): array
@@ -138,7 +150,6 @@ class SetArtefactsRecipe extends OrgAction
             'steps.*.manufacture_task_id'                                        => [
                 'required',
                 'integer',
-                'distinct',
                 Rule::exists('manufacture_tasks', 'id')->where('production_id', $this->production->id),
             ],
             'steps.*.position'                                                   => ['required', 'integer', 'min:1'],
@@ -146,6 +157,9 @@ class SetArtefactsRecipe extends OrgAction
             'steps.*.standard_rate'                                              => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'steps.*.effective_from'                                             => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'steps.*.blocks_later_steps'                                         => ['sometimes', 'boolean'],
+            'steps.*.label'                                                      => ['sometimes', 'nullable', 'string', 'max:64'],
+            'steps.*.waits_for'                                                  => ['sometimes', 'nullable', 'array'],
+            'steps.*.waits_for.*'                                                => ['integer', 'min:0'],
             'steps.*.raw_materials'                                              => ['sometimes', 'array'],
             'steps.*.raw_materials.*.raw_material_id'                            => [
                 'required',
@@ -169,19 +183,40 @@ class SetArtefactsRecipe extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->asAction || $validator->errors()->isNotEmpty()) {
+        if ($validator->errors()->isNotEmpty()) {
             return;
         }
 
-        $steps     = collect($this->get('steps'));
+        $steps    = collect($this->get('steps'));
+        $stepKeys = $steps->map(fn (array $step) => ArtefactManufactureTask::key($step['manufacture_task_id'], AttachManufactureTaskToArtefact::cleanLabel($step['label'] ?? null)));
+        if ($stepKeys->duplicates()->isNotEmpty()) {
+            $validator->errors()->add('steps', __('A task used more than once in a recipe needs a different label on each, e.g. a colour'));
+
+            return;
+        }
+
+        foreach ($steps as $index => $step) {
+            foreach ($step['waits_for'] ?? [] as $awaited) {
+                if (!isset($steps[$awaited]) || $awaited == $index || $steps[$awaited]['position'] >= $step['position']) {
+                    $validator->errors()->add('steps', __('A step can only wait for steps before it'));
+
+                    return;
+                }
+            }
+        }
+
+        if ($this->asAction) {
+            return;
+        }
+
         $kgTaskIds = ManufactureTask::whereIn('id', $steps->pluck('manufacture_task_id'))->where('is_recorded_in_kg', true)->pluck('id');
         $artefacts = Artefact::where('production_id', $this->production->id)
             ->whereIn('id', $this->get('artefacts'))
-            ->with(['orgStock', 'manufactureTasks'])
+            ->with(['orgStock', 'manufactureTasks', 'recipeSteps'])
             ->get();
 
         $packCountedAgain = $artefacts->filter(fn (Artefact $artefact) => $steps->contains(
-            fn (array $step) => (float) $artefact->manufactureTasks->find($step['manufacture_task_id'])?->pivot->units_per_artefact !== (float) $step['units_per_artefact']
+            fn (array $step, int $index) => (float) $artefact->recipeSteps->first(fn (ArtefactManufactureTask $recipeStep) => $recipeStep->stepKey() === $stepKeys[$index])?->units_per_artefact !== (float) $step['units_per_artefact']
                 && ArtefactManufactureTask::countsSkoPackAgain($artefact, $kgTaskIds->contains($step['manufacture_task_id']), $step['units_per_artefact'])
         ));
         if ($packCountedAgain->isNotEmpty()) {
@@ -192,10 +227,11 @@ class SetArtefactsRecipe extends OrgAction
 
         if (!filter_var($this->get('confirm_recalculation'), FILTER_VALIDATE_BOOLEAN)) {
             $recalculations = $steps->filter(fn (array $step) => !empty($step['effective_from']))
-                ->flatMap(fn (array $step) => $artefacts
-                    ->filter(fn (Artefact $artefact) => $artefact->manufactureTasks->contains('id', $step['manufacture_task_id']))
-                    ->map(fn (Artefact $artefact) => ($message = SetArtefactStepTarget::make()->confirmationMessage($artefact, (int) $step['manufacture_task_id'], $step['standard_rate'] ?? null, $step['effective_from']))
-                        ? "{$artefact->code}: {$message}"
+                ->flatMap(fn (array $step, int $index) => $artefacts
+                    ->map(fn (Artefact $artefact) => [$artefact, $artefact->recipeSteps->first(fn (ArtefactManufactureTask $recipeStep) => $recipeStep->stepKey() === $stepKeys[$index])])
+                    ->filter(fn (array $artefactStep) => $artefactStep[1] !== null)
+                    ->map(fn (array $artefactStep) => ($message = SetArtefactStepTarget::make()->confirmationMessage($artefactStep[0], $artefactStep[1], $step['standard_rate'] ?? null, $step['effective_from']))
+                        ? "{$artefactStep[0]->code}: {$message}"
                         : null))
                 ->filter();
             if ($recalculations->isNotEmpty()) {
@@ -209,14 +245,14 @@ class SetArtefactsRecipe extends OrgAction
             return;
         }
 
-        $newUnits = $steps->mapWithKeys(fn (array $step) => [(int) $step['manufacture_task_id'] => $step['units_per_artefact']])->all();
+        $newUnits = $steps->mapWithKeys(fn (array $step, int $index) => [$stepKeys[$index] => $step['units_per_artefact']])->all();
 
         $message = GenerateJobOrderItemTasks::openJobsConfirmationMessage(
             $artefacts
                 ->map(fn (Artefact $artefact) => GenerateJobOrderItemTasks::make()->openJobsAffectedBy(
                     $artefact,
                     $newUnits,
-                    $artefact->manufactureTasks()->pluck('manufacture_tasks.id')->diff(array_keys($newUnits))->values()->all()
+                    $artefact->recipeSteps->map(fn (ArtefactManufactureTask $recipeStep) => $recipeStep->stepKey())->diff(array_keys($newUnits))->values()->all()
                 ))
                 ->all()
         );
@@ -231,7 +267,6 @@ class SetArtefactsRecipe extends OrgAction
         return [
             'steps.required'                         => __('Add at least one step'),
             'steps.*.manufacture_task_id.required'   => __('Pick a task for every step'),
-            'steps.*.manufacture_task_id.distinct'   => __('A task can only be used once in a recipe'),
         ];
     }
 

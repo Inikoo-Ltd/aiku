@@ -343,7 +343,7 @@ class GetManufacturePayroll
             'date'                => $session->ended_at->toDateString(),
             'job_order_reference' => $session->jobOrder?->reference ?? $session->jobOrderItemTask?->jobOrder?->reference,
             'artefact_code'       => $session->artefactCode(),
-            'step'                => $session->manufactureTask?->name ?? $session->activityLabel(),
+            'step'                => $session->stepName() ?? $session->activityLabel(),
             'band'                => $band,
             'sessions'            => $sessions->count(),
             'hours'               => $excluded || $isHourly ? $tablet : $paid,

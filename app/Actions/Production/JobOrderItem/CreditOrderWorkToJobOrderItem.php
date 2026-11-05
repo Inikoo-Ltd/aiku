@@ -32,13 +32,13 @@ class CreditOrderWorkToJobOrderItem
             $isStillMaking = !Arr::has($item->data ?? [], 'carried_to') && in_array($item->jobOrder->state, JobOrderStateEnum::open());
             foreach ($item->tasks as $step) {
                 $stillToMake = $isStillMaking ? max(0, (float) $step->quantity_required - (float) $step->quantity_made) : 0;
-                $surplusByStep[$step->manufacture_task_id] = ($surplusByStep[$step->manufacture_task_id] ?? 0)
+                $surplusByStep[$step->stepKey()] = ($surplusByStep[$step->stepKey()] ?? 0)
                     + (float) $step->quantity_made - max(0, $step->requiredFor($item->quantity) - $stillToMake);
             }
         }
 
         foreach ($jobOrderItem->tasks as $task) {
-            $surplus = max(0, $surplusByStep[$task->manufacture_task_id] ?? 0);
+            $surplus = max(0, $surplusByStep[$task->stepKey()] ?? 0);
             $floor   = $task->isRecordedInKg() ? 0 : (float) $task->quantity_made;
             $task->setRequiredQuantity(max($floor, round($task->requiredFor($jobOrderItem->quantity) - $surplus, 3)));
         }

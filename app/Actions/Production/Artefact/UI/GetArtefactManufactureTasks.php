@@ -10,6 +10,7 @@ namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\Production\Artefact\SetArtefactStepTarget;
 use App\Models\Production\Artefact;
+use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\ArtefactStepTarget;
 use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufactureStepTier;
@@ -35,7 +36,7 @@ class GetArtefactManufactureTasks
             ->with('user:id,contact_name')
             ->orderByDesc('id')
             ->get()
-            ->groupBy('manufacture_task_id');
+            ->groupBy(fn (ArtefactStepTarget $target) => ArtefactManufactureTask::key($target->manufacture_task_id, $target->label));
 
         $tierHistory = ManufactureStepTier::query()
             ->where(fn ($query) => $query->where('artefact_id', $artefact->id)->when($artefact->artefact_family_id, fn ($query) => $query->orWhere('artefact_family_id', $artefact->artefact_family_id)))
@@ -69,6 +70,9 @@ class GetArtefactManufactureTasks
                 'slug'               => $task->slug,
                 'code'               => $task->code,
                 'name'               => $task->name,
+                'label'              => $task->pivot->label,
+                'step_name'          => ArtefactManufactureTask::stepName($task->name, $task->pivot->label),
+                'waits_for'          => $task->pivot->waits_for,
                 'task_standard_rate' => $task->standard_rate,
                 'position'           => $task->pivot->position,
                 'units_per_artefact' => $task->pivot->units_per_artefact,
@@ -90,7 +94,7 @@ class GetArtefactManufactureTasks
                         'set_at'              => $tier->created_at?->toIso8601String(),
                     ])->values()->all(),
                 ],
-                'target_history'     => ($history[$task->id] ?? collect())->map(fn (ArtefactStepTarget $target) => [
+                'target_history'     => ($history[ArtefactManufactureTask::key($task->id, $task->pivot->label)] ?? collect())->map(fn (ArtefactStepTarget $target) => [
                     'standard_rate'  => $target->standard_rate === null ? null : (float) $target->standard_rate,
                     'effective_from' => $target->effective_from?->copy()->setTimezone($timezone)->toDateString(),
                     'set_by'         => $target->user?->contact_name,
@@ -125,7 +129,7 @@ class GetArtefactManufactureTasks
                     'method'     => 'post',
                 ],
                 'detach' => [
-                    'name'       => 'grp.models.artefact.manufacture-task.detach',
+                    'name'       => 'grp.models.artefact.recipe-step.detach',
                     'parameters' => ['artefact' => $artefact->id],
                     'method'     => 'delete',
                 ],

@@ -20,6 +20,8 @@ use Illuminate\Support\Collection;
  * @property numeric|null $standard_rate
  * @property float|null $mix_batch_kg
  * @property bool $blocks_later_steps
+ * @property string|null $label
+ * @property array<int, int>|null $waits_for
  * @property-read \App\Models\Production\Artefact|null $artefact
  * @property-read \App\Models\Production\ManufactureTask|null $manufactureTask
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Production\RecipeStepRawMaterial> $rawMaterials
@@ -40,7 +42,34 @@ class ArtefactManufactureTask extends Pivot
     protected $casts = [
         'mix_batch_kg'       => 'float',
         'blocks_later_steps' => 'boolean',
+        'waits_for'          => 'array',
     ];
+
+    /**
+     * The same task can be in a recipe more than once, told apart by its label (Mixing – Red, Mixing – Blue).
+     */
+    public static function stepName(string $taskName, ?string $label): string
+    {
+        return $label ? $taskName.' – '.$label : $taskName;
+    }
+
+    /**
+     * What tells a step apart from the others of its recipe when recipes are sent or copied by task.
+     */
+    public static function key(int|string $manufactureTaskId, ?string $label): string
+    {
+        return $manufactureTaskId.'|'.mb_strtolower(trim((string) $label));
+    }
+
+    public function stepKey(): string
+    {
+        return self::key($this->manufacture_task_id, $this->label);
+    }
+
+    public function name(): string
+    {
+        return self::stepName($this->manufactureTask->name, $this->label);
+    }
 
     /**
      * An artefact is one unit of its SKO, so a step counted in units that asks for the SKO's whole pack
@@ -96,14 +125,14 @@ class ArtefactManufactureTask extends Pivot
     }
 
     /**
-     * @return Collection<string, int> pack size by "artefact id:manufacture task id", only for steps counted in packs
+     * @return Collection<int, int> pack size by recipe step id, only for steps counted in packs
      */
     public static function packSizes(): Collection
     {
         return self::where('units_per_artefact', '<', 1)
             ->whereNotIn('manufacture_task_id', ManufactureTask::where('is_recorded_in_kg', true)->select('id'))
-            ->get(['artefact_id', 'manufacture_task_id', 'units_per_artefact'])
-            ->mapWithKeys(fn (self $step) => [$step->artefact_id.':'.$step->manufacture_task_id => self::packSize($step->units_per_artefact)]);
+            ->get(['id', 'units_per_artefact'])
+            ->mapWithKeys(fn (self $step) => [$step->id => self::packSize($step->units_per_artefact)]);
     }
 
     public function artefact(): BelongsTo

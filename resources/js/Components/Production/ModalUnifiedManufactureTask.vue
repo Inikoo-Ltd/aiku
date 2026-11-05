@@ -3,6 +3,9 @@ import { Link, router } from '@inertiajs/vue3'
 import { computed, nextTick, ref, watch } from 'vue'
 import InputNumber from 'primevue/inputnumber'
 import ToggleSwitch from 'primevue/toggleswitch'
+import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
+import MultiSelect from 'primevue/multiselect'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faExclamationTriangle, faPlus, faTrashAlt, faArrowUp, faArrowDown, faLayerGroup, faUndo } from '@fal'
@@ -47,6 +50,8 @@ interface DraftRawMaterial {
 interface DraftStep {
     key: number
     manufacture_task_id: number | null
+    label: string
+    waits_for: number[] | null
     units_per_artefact: number
     standard_rate: number | null
     blocks_later_steps: boolean
@@ -71,6 +76,8 @@ let nextKey = 1
 const newStep = (): DraftStep => ({
     key: nextKey++,
     manufacture_task_id: null,
+    label: '',
+    waits_for: null,
     units_per_artefact: 1,
     standard_rate: null,
     blocks_later_steps: true,
@@ -136,11 +143,34 @@ const useSharedMaterials = (step: DraftStep) => {
     delete step.artefact_raw_materials[focusedArtefactId.value]
 }
 
-const duplicatedTaskIds = computed(() => {
-    const taskIds = steps.value.map(step => step.manufacture_task_id).filter((id): id is number => id !== null)
+const stepIdentity = (step: DraftStep) => `${step.manufacture_task_id}|${step.label.trim().toLowerCase()}`
 
-    return new Set(taskIds.filter((id, index) => taskIds.indexOf(id) !== index))
+const duplicatedSteps = computed(() => {
+    const identities = steps.value.filter(step => step.manufacture_task_id !== null).map(stepIdentity)
+
+    return new Set(identities.filter((identity, index) => identities.indexOf(identity) !== index))
 })
+
+const waitsForModes = [
+    { label: ctrans('Earlier steps that hold up later ones'), value: 'default' },
+    { label: ctrans('Only the steps chosen'), value: 'chosen' },
+    { label: ctrans('Nothing, it can start straight away'), value: 'none' },
+]
+
+const waitsForMode = (step: DraftStep) => step.waits_for === null ? 'default' : (step.waits_for.length || chosenModes.value.has(step.key) ? 'chosen' : 'none')
+
+const chosenModes = ref(new Set<number>())
+
+const setWaitsForMode = (step: DraftStep, mode: string) => {
+    chosenModes.value.delete(step.key)
+    if (mode === 'chosen') chosenModes.value.add(step.key)
+    step.waits_for = mode === 'default' ? null : []
+}
+
+const earlierSteps = (index: number) => steps.value.slice(0, index).map((step, earlierIndex) => ({
+    label: ctrans('Step :number', { number: earlierIndex + 1 }) + (step.label.trim() ? ` – ${step.label.trim()}` : ''),
+    value: step.key,
+}))
 
 const hasMissingTask = computed(() => steps.value.some(step => step.manufacture_task_id === null))
 
@@ -148,7 +178,7 @@ const canSave = computed(() =>
     props.artefacts.length > 0
     && steps.value.length > 0
     && !hasMissingTask.value
-    && duplicatedTaskIds.value.size === 0
+    && duplicatedSteps.value.size === 0
     && steps.value.every(step => step.units_per_artefact > 0)
     && acknowledged.value
 )
@@ -156,7 +186,7 @@ const canSave = computed(() =>
 const blockingReason = computed(() => {
     if (!steps.value.length) return ctrans('Add at least one step')
     if (hasMissingTask.value) return ctrans('Pick a task for every step')
-    if (duplicatedTaskIds.value.size) return ctrans('A task can only be used once in a recipe')
+    if (duplicatedSteps.value.size) return ctrans('A task used more than once in a recipe needs a different label on each, e.g. a colour')
     if (!acknowledged.value) return ctrans('Tick the box to confirm the existing steps will be replaced')
 
     return null
@@ -235,6 +265,10 @@ const save = (confirmOpenJobs = false) => {
             artefacts: props.artefacts.map(artefact => artefact.id),
             steps: steps.value.map((step, index) => ({
                 manufacture_task_id: step.manufacture_task_id,
+                label: step.label.trim() || null,
+                waits_for: step.waits_for === null ? null : step.waits_for
+                    .map(key => steps.value.findIndex(earlier => earlier.key === key))
+                    .filter(earlierIndex => earlierIndex >= 0 && earlierIndex < index),
                 position: index + 1,
                 units_per_artefact: step.units_per_artefact,
                 standard_rate: step.standard_rate || null,
@@ -314,6 +348,14 @@ const save = (confirmOpenJobs = false) => {
     
                             <label class="block">
                                 <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                                    {{ ctrans('Label') }}
+                                    <InformationIcon :information="ctrans('Tells apart the same task used more than once in this recipe, e.g. Red for Mixing – Red. Artisans see it on the tablet after the task name.')" />
+                                </span>
+                                <InputText v-model="step.label" size="small" class="w-28" :placeholder="ctrans('e.g. Red')" />
+                            </label>
+
+                            <label class="block">
+                                <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
                                     {{ ctrans('Units per artefact') }}
                                     <InformationIcon :information="ctrans('How many units of this task one artefact needs. A job order for 10 artefacts at 2 units per artefact asks the artisan for 20 units of work.')" />
                                 </span>
@@ -349,6 +391,32 @@ const save = (confirmOpenJobs = false) => {
                                 </span>
                                 <ToggleSwitch v-model="step.blocks_later_steps" />
                             </label>
+
+                            <div v-if="index > 0" class="block">
+                                <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                                    {{ ctrans('Waits for') }}
+                                    <InformationIcon :information="ctrans('What must be done before this step can start on the tablet. Earlier steps that hold up later ones: the usual order, set with the switch. Only the steps chosen: e.g. Making – Red waits only for Mixing – Red, and Packing waits for every Shrinking. Nothing: it can start straight away, e.g. the mix of each colour.')" />
+                                </span>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <Select
+                                        :modelValue="waitsForMode(step)"
+                                        :options="waitsForModes"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        size="small"
+                                        @update:modelValue="setWaitsForMode(step, $event)" />
+                                    <MultiSelect
+                                        v-if="waitsForMode(step) === 'chosen'"
+                                        v-model="step.waits_for"
+                                        :options="earlierSteps(index)"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        display="chip"
+                                        size="small"
+                                        class="w-64"
+                                        :placeholder="ctrans('Pick the steps')" />
+                                </div>
+                            </div>
     
                             <div class="ml-auto flex items-center gap-1">
                                 <Button type="transparent" size="xs" icon="fal fa-arrow-up" :disabled="index === 0" :tooltip="ctrans('Move step up')" @click="moveStep(index, -1)" />
@@ -356,8 +424,8 @@ const save = (confirmOpenJobs = false) => {
                                 <Button type="transparent" size="xs" icon="fal fa-trash-alt" :disabled="steps.length === 1" :tooltip="ctrans('Remove step')" @click="removeStep(index)" />
                             </div>
     
-                            <p v-if="step.manufacture_task_id !== null && duplicatedTaskIds.has(step.manufacture_task_id)" class="w-full text-xs text-red-600">
-                                {{ ctrans('This task is already used in another step') }}
+                            <p v-if="step.manufacture_task_id !== null && duplicatedSteps.has(stepIdentity(step))" class="w-full text-xs text-red-600">
+                                {{ ctrans('This task is already used in another step: give each a different label') }}
                             </p>
                             <p v-else-if="stepError(index)" class="w-full text-xs text-red-600">{{ stepError(index) }}</p>
                         </header>

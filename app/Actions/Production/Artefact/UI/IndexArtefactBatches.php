@@ -116,7 +116,7 @@ class IndexArtefactBatches
             ->selectRaw('coalesce(job_orders.received_at, job_orders.date, job_orders.created_at) as date')
             ->selectRaw('(select t.quantity_made from job_order_item_tasks t where t.job_order_item_id = job_order_items.id order by t.position desc, t.id desc limit 1) as quantity_made')
             ->selectRaw('(select t.state from job_order_item_tasks t where t.job_order_item_id = job_order_items.id order by t.position desc, t.id desc limit 1) as last_task_state')
-            ->selectRaw('(select amt.units_per_artefact from job_order_item_tasks t join artefacts_manufacture_tasks amt on amt.artefact_id = job_order_items.artefact_id and amt.manufacture_task_id = t.manufacture_task_id where t.job_order_item_id = job_order_items.id order by t.position desc, t.id desc limit 1) as last_task_units_per_artefact')
+            ->selectRaw('(select amt.units_per_artefact from job_order_item_tasks t join artefacts_manufacture_tasks amt on amt.id = t.artefact_manufacture_task_id where t.job_order_item_id = job_order_items.id order by t.position desc, t.id desc limit 1) as last_task_units_per_artefact')
             ->selectRaw('(select coalesce(sum(t.quantity_rejected), 0) from job_order_item_tasks t where t.job_order_item_id = job_order_items.id) as quantity_rejected')
             ->selectRaw("(select count(*) from job_order_item_tasks t where t.job_order_item_id = job_order_items.id and t.state = 'done') as number_tasks_done")
             ->selectRaw('(select count(*) from job_order_item_tasks t where t.job_order_item_id = job_order_items.id) as number_tasks');
@@ -190,9 +190,9 @@ class IndexArtefactBatches
             ->whereNull('jo.deleted_at')
             ->whereNull('i.deleted_at')
             ->whereRaw('t.id = (select l.id from job_order_item_tasks l where l.job_order_item_id = i.id order by l.position desc, l.id desc limit 1)')
-            ->pluck('t.manufacture_task_id', 't.id');
+            ->pluck('t.artefact_manufacture_task_id', 't.id');
 
-        $unitsPerArtefact = ArtefactManufactureTask::where('artefact_id', $artefact->id)->pluck('units_per_artefact', 'manufacture_task_id');
+        $unitsPerArtefact = ArtefactManufactureTask::where('artefact_id', $artefact->id)->pluck('units_per_artefact', 'id');
 
         $made = $this->closedWork($lastSteps->keys())->map(fn (object $work) => [
             'ended_at' => $work->ended_at,
@@ -264,9 +264,9 @@ class IndexArtefactBatches
      */
     private function attachSteps(Artefact $artefact, Collection $batches): void
     {
-        $batches->load(['tasks.manufactureTask', 'tasks.sessions.employee', 'tasks.sessionShares.session.employee']);
+        $batches->load(['tasks.manufactureTask', 'tasks.recipeStep', 'tasks.sessions.employee', 'tasks.sessionShares.session.employee']);
 
-        $unitsPerArtefact = ArtefactManufactureTask::where('artefact_id', $artefact->id)->pluck('units_per_artefact', 'manufacture_task_id');
+        $unitsPerArtefact = ArtefactManufactureTask::where('artefact_id', $artefact->id)->pluck('units_per_artefact', 'id');
 
         foreach ($batches as $batch) {
             $batch->setAttribute('steps', $batch->tasks->map(function (JobOrderItemTask $task) use ($unitsPerArtefact) {
@@ -276,10 +276,10 @@ class IndexArtefactBatches
 
                 return [
                     'id'                => $task->id,
-                    'name'              => $task->manufactureTask?->name,
+                    'name'              => $task->manufactureTask ? $task->stepName() : null,
                     'state'             => $task->state->value,
                     'unit'              => $task->manufactureTask?->is_recorded_in_kg ? 'kg' : null,
-                    'pack_size'         => $task->manufactureTask?->is_recorded_in_kg ? null : ArtefactManufactureTask::packSize($unitsPerArtefact[$task->manufacture_task_id] ?? null),
+                    'pack_size'         => $task->manufactureTask?->is_recorded_in_kg ? null : ArtefactManufactureTask::packSize($unitsPerArtefact[$task->artefact_manufacture_task_id] ?? null),
                     'quantity_required' => (float) $task->quantity_required,
                     'quantity_made'     => (float) $task->quantity_made,
                     'quantity_rejected' => (float) $task->quantity_rejected,
