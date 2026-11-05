@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 
 /**
  * The agent packs several lines of its warehouse at once for the next container, each whole or only some of its units,
@@ -32,7 +33,7 @@ class PackAgentWarehouseStocks extends OrgAction
     {
         $quantities = collect($lines)->mapWithKeys(fn (array $line) => [(int) $line['id'] => isset($line['quantity']) ? (float) $line['quantity'] : null]);
 
-        return DB::transaction(function () use ($organisation, $quantities) {
+        $packed = DB::transaction(function () use ($organisation, $quantities) {
             $stocks = AgentWarehouseStock::whereIn('id', $quantities->keys())
                 ->where('agent_id', $organisation->agent?->id)
                 ->with('supplierProduct:id,code')
@@ -48,8 +49,12 @@ class PackAgentWarehouseStocks extends OrgAction
 
             $stocks->each(fn (AgentWarehouseStock $stock) => PackAgentWarehouseStock::packLocked($stock, $quantities->get($stock->id)));
 
-            return $stocks->count();
+            return $stocks;
         });
+
+        RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds($packed->pluck('purchase_order_id'));
+
+        return $packed->count();
     }
 
     public function authorize(ActionRequest $request): bool

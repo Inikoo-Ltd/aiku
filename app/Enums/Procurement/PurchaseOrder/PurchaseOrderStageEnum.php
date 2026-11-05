@@ -15,7 +15,8 @@ use App\Enums\EnumHelperTrait;
  * from the agent's goods receipts and warehouse stock, so only agent orders have it, and Arrived and Received come
  * from each of its stock deliveries, because one order can ship in several deliveries. Handed over (Clean Hand Over)
  * is the agent's: for an agent sending on the next container it is done once every item is in a container, for one
- * sending to a forwarder once the agent marks it, and a dispatched delivery completes it either way.
+ * sending to a forwarder once the agent marks it or every Ready to Roll check is done, and a dispatched delivery
+ * completes it either way.
  */
 enum PurchaseOrderStageEnum: string
 {

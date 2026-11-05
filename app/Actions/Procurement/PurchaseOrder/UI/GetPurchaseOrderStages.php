@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PurchaseOrder\UI;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt;
 use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
+use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
@@ -36,10 +37,11 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * In warehouse is reached when the first goods reach the agent warehouse; it is checked and packed once every
  * line is received in full and all of it is checked, or packed. It shows only on orders through an agent that
  * receives goods in its own warehouse, and, as nobody records it by hand, marking a later stage never asks for it.
- * Handed over (Clean Hand Over) is done when the agent marked it, when a delivery is dispatched and, for an agent that
- * sends goods on the next container (cho_mode), when every item is in a container, so that mode does not offer the
- * mark: agents read it as the supplier handing the goods to them (HELP-4292). A date already marked can still be
- * cleared.
+ * Handed over (Clean Hand Over) means the order is ready to be put on a shipment. It is done when the agent marked it,
+ * when every Ready to Roll check is done (RecordPurchaseOrderHandedOverWhenReady records it), when a delivery is
+ * dispatched (noting the checks it went without) and, for an agent that sends goods on the next container (cho_mode),
+ * when every item is in a container, so that mode does not offer the mark: agents read it as the supplier handing the
+ * goods to them (HELP-4292). A date already marked can still be cleared.
  * On an order through an agent, Ready is also reached once every line is in a container, packed first or not: the QC
  * mark is then optional. With the agent warehouse, production done is filled by the goods receipts, so it shows under
  * In warehouse and is never marked by hand.
@@ -256,9 +258,10 @@ class GetPurchaseOrderStages
             'note'        => match (true) {
                 $stage === Stage::SUBMITTED && (bool) $purchaseOrder->agent_reference => __('Agent\'s number: :number', ['number' => $purchaseOrder->agent_reference]),
                 $stage === Stage::READY && $purchaseOrder->qc_passed_at === null && $this->allOnContainersAt($purchaseOrder) !== null => __('Every item is in a container, QC not recorded'),
+                $stage === Stage::HANDED_OVER && RecordPurchaseOrderHandedOverWhenReady::wasRecordedAutomatically($purchaseOrder) => __('Recorded when every Ready to Roll check was done'),
                 $stage === Stage::HANDED_OVER && $purchaseOrder->handed_over_at === null && $stages[$stage->value]['recorded'] => $purchaseOrder->choMode() === 'next_container'
                     ? __('Every item is in a container')
-                    : __('A delivery was dispatched'),
+                    : $this->dispatchedWithoutHandOverNote($purchaseOrder, $deliveries),
                 default => null,
             },
             'checks'      => $stage === Stage::READY ? $this->readyChecks($purchaseOrder) : null,
@@ -401,6 +404,29 @@ class GetPurchaseOrderStages
             );
     }
 
+    /**
+     * Clean Hand Over not recorded but passed because goods were dispatched: which deliveries took them, and which
+     * Ready to Roll checks were still missing.
+     */
+    private function dispatchedWithoutHandOverNote(PurchaseOrder $purchaseOrder, Collection $deliveries): string
+    {
+        $references = $deliveries
+            ->filter(fn (StockDelivery $delivery) => in_array($delivery->state, self::SHIPPED_STATES))
+            ->pluck('reference')
+            ->implode(', ');
+        $missing = collect($this->readyChecks($purchaseOrder) ?? [])
+            ->reject(fn (array $check) => $check['done'])
+            ->pluck('label')
+            ->implode(', ');
+
+        return match (true) {
+            $references !== '' && $missing !== '' => __('Not marked: dispatched in :deliveries without :checks', ['deliveries' => $references, 'checks' => $missing]),
+            $references !== ''                    => __('Not marked: dispatched in :deliveries', ['deliveries' => $references]),
+            $missing !== ''                       => __('Not marked: dispatched without :checks', ['checks' => $missing]),
+            default                               => __('Not marked: the goods were dispatched'),
+        };
+    }
+
     private function hidesHandedOver(PurchaseOrder $purchaseOrder): bool
     {
         return $purchaseOrder->handed_over_at === null && $purchaseOrder->choMode() === 'next_container';
@@ -413,7 +439,7 @@ class GetPurchaseOrderStages
      *
      * @return array<int, array{key: string, label: string, done: bool, date: ?Carbon}>|null
      */
-    private function readyChecks(PurchaseOrder $purchaseOrder): ?array
+    public function readyChecks(PurchaseOrder $purchaseOrder): ?array
     {
         if (!$purchaseOrder->isAgentOrder() || !$purchaseOrder->agent) {
             return null;

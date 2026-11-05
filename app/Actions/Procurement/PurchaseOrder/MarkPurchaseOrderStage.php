@@ -74,6 +74,9 @@ class MarkPurchaseOrderStage extends OrgAction
         }
 
         $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, [$field => $date]);
+        if ($date !== null && in_array($field, PurchaseOrderStageEnum::READY_CHECK_FIELDS)) {
+            $purchaseOrder = RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder);
+        }
         BroadcastAgentIncomingPurchaseOrdersChanged::dispatchFor($purchaseOrder);
 
         if ($reason = Arr::get($modelData, 'reason')) {

@@ -37,7 +37,7 @@ class SyncPurchaseOrderDepositPaid
             'balance_paid_at'    => $isPaid ? $lastPayment->date->toDateString() : null,
         ]);
 
-        return $purchaseOrder;
+        return $isPaid ? RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder) : $purchaseOrder;
     }
 
     public static function totalToPay(PurchaseOrder $purchaseOrder): float

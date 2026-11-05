@@ -20,6 +20,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 
 /**
  * The agent packs what it received of a purchase order line: that warehouse stock is packed for the next container,
@@ -55,6 +56,8 @@ class PackPurchaseOrderTransaction extends OrgAction
                 ->get()
                 ->each(fn (AgentWarehouseStock $stock) => $stock->update(['state' => AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER]));
         });
+
+        RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds([$purchaseOrderTransaction->purchase_order_id]);
 
         return $purchaseOrderTransaction;
     }

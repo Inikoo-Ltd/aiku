@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 
 /**
  * The agent packs one line of its warehouse for the next container, whole or only some of its units. Once packed, the
@@ -30,11 +31,15 @@ class PackAgentWarehouseStock extends OrgAction
 
     public function handle(AgentWarehouseStock $agentWarehouseStock, ?float $quantity = null): AgentWarehouseStock
     {
-        return DB::transaction(function () use ($agentWarehouseStock, $quantity) {
+        $packed = DB::transaction(function () use ($agentWarehouseStock, $quantity) {
             $stock = AgentWarehouseStock::whereKey($agentWarehouseStock->id)->lockForUpdate()->firstOrFail();
 
             return self::packLocked($stock, $quantity);
         });
+
+        RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds([$packed->purchase_order_id]);
+
+        return $packed;
     }
 
     /**

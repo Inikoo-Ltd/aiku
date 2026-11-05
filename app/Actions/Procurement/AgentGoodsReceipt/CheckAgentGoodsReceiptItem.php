@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 
 /**
  * The agent checks a line of a goods receipt for rejects. What passed stays as warehouse stock; rejected units are owed
@@ -86,6 +87,7 @@ class CheckAgentGoodsReceiptItem extends OrgAction
 
         $this->savePhotos($item, $photos);
         $this->syncProductionDone($item->refresh());
+        RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds([$item->purchase_order_id]);
 
         return $item;
     }
