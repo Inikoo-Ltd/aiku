@@ -10,6 +10,8 @@ namespace App\Http\Resources\Web;
 
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 
 /**
  * @property mixed $id
@@ -65,6 +67,18 @@ class WebpagesResource extends JsonResource
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
             'shop_slug'         => $this->shop_slug,
+            'published_at'      => $this->isoDateFromQuery('published_at'),
+            'last_edited_by'    => Arr::get($this->resource->getAttributes(), 'last_edited_by'),
         ];
+    }
+
+    /**
+     * Read from the attributes the list query selected, as only the blog list selects these.
+     */
+    private function isoDateFromQuery(string $key): ?string
+    {
+        $value = Arr::get($this->resource->getAttributes(), $key);
+
+        return $value ? Carbon::parse($value)->toIso8601String() : null;
     }
 }
