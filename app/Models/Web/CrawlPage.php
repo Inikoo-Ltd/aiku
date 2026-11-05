@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $url
  * @property string $url_hash
  * @property int $depth
+ * @property int|null $link_depth
  * @property int|null $status_code
  * @property string|null $redirect_to
  * @property int $redirect_hops
@@ -29,10 +30,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $canonical
  * @property string|null $robots_meta
  * @property int $h1_count
+ * @property string|null $h1
  * @property int $images_without_alt
  * @property int $inlinks
  * @property bool $is_in_sitemap
+ * @property int $sitemap_count
  * @property bool $is_indexable
+ * @property int|null $word_count
+ * @property string|null $content_hash
+ * @property int|null $content_simhash
+ * @property array<string, mixed>|null $facts
  * @property string|null $fetch_error
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -54,6 +61,7 @@ class CrawlPage extends Model
             'is_in_sitemap' => 'boolean',
             'is_indexable'  => 'boolean',
             'hreflang'      => 'array',
+            'facts'         => 'array',
         ];
     }
 

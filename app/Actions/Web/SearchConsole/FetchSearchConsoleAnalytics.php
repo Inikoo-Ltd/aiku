@@ -32,18 +32,33 @@ class FetchSearchConsoleAnalytics implements ShouldBeUnique
 
     private const int UPSERT_CHUNK = 1000;
 
+    /**
+     * Google measures the load of search analytics queries in 10-minute chunks and asks to wait 15 minutes after
+     * going over; a run that is still refused after `QUOTA_RETRIES` waits has hit the daily load limit and is left
+     * to the next night, which fetches the last `REFETCH_DAYS` again.
+     */
+    private const int QUOTA_WAIT_MINUTES = 15;
+
+    private const int QUOTA_RETRIES = 3;
+
+    /**
+     * The nightly run starts one website this many seconds after the other, so the heavy page and query requests
+     * of every website do not land in the same 10-minute load window.
+     */
+    private const int SECONDS_BETWEEN_WEBSITES = 20;
+
     public string $jobQueue = 'long-low-priority';
 
     public int $jobTimeout = 10800;
 
     public int $jobTries = 1;
 
-    public function getJobUniqueId(Website $website, ?string $from = null, ?string $to = null): string
+    public function getJobUniqueId(Website $website, ?string $from = null, ?string $to = null, int $quotaRetry = 0): string
     {
-        return "$website->id:$from:$to";
+        return "$website->id:$from:$to:$quotaRetry";
     }
 
-    public function handle(Website $website, ?string $from = null, ?string $to = null): int
+    public function handle(Website $website, ?string $from = null, ?string $to = null, int $quotaRetry = 0): int
     {
         $client = SearchConsoleClient::forWebsite($website);
 
@@ -74,6 +89,10 @@ class FetchSearchConsoleAnalytics implements ShouldBeUnique
             } catch (Throwable $exception) {
                 if (!SearchConsoleClient::isQuotaError($exception)) {
                     throw $exception;
+                }
+
+                if ($quotaRetry < self::QUOTA_RETRIES) {
+                    self::dispatch($website, $date, $toDate, $quotaRetry + 1)->delay(now()->addMinutes(self::QUOTA_WAIT_MINUTES));
                 }
 
                 break;
@@ -179,9 +198,9 @@ class FetchSearchConsoleAnalytics implements ShouldBeUnique
         $from = $command->option('from');
         $to   = $command->option('to');
 
-        foreach ($websites as $website) {
+        foreach ($websites->values() as $index => $website) {
             if ($command->option('async')) {
-                self::dispatch($website, $from, $to);
+                self::dispatch($website, $from, $to)->delay(now()->addSeconds($index * self::SECONDS_BETWEEN_WEBSITES));
 
                 continue;
             }

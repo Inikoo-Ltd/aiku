@@ -28,15 +28,18 @@ class SearchConsoleClient
     public const int ROW_LIMIT = 25000;
 
     /**
-     * Google allows 1,200 search analytics queries a minute for the account every website of a group shares, and
-     * the nightly run starts all of them at once.
+     * Google allows 1,200 search analytics queries a minute per site and per user, the service account here,
+     * which every website using these credentials shares (https://developers.google.com/webmaster-tools/limits).
+     * Counting a whole minute let a run send its 1,200 in the first 30 seconds and get 403 "QPS quota exceeded",
+     * so queries are spread per second at half the allowance.
      */
-    public const int CALLS_PER_MINUTE = 900;
+    public const int CALLS_PER_SECOND = 10;
 
     private function __construct(
         private readonly Website $website,
         private readonly Webmasters $service,
-        private readonly string $siteUrl
+        private readonly string $siteUrl,
+        private readonly string $account
     ) {
     }
 
@@ -49,13 +52,14 @@ class SearchConsoleClient
         }
 
         $service = self::service($credentials);
-        $siteUrl = Arr::get($website->data, 'gcp.siteUrl') ?: self::findSiteUrl($website, $service);
+        $account = (string) ($credentials['client_email'] ?? $website->group_id);
+        $siteUrl = Arr::get($website->data, 'gcp.siteUrl') ?: self::findSiteUrl($website, $service, $account);
 
         if (!$siteUrl) {
             return null;
         }
 
-        return new self($website, $service, $siteUrl);
+        return new self($website, $service, $siteUrl, $account);
     }
 
     public static function serviceAccountEmail(Website $website): ?string
@@ -103,6 +107,7 @@ class SearchConsoleClient
 
         $rows = self::logged(
             $this->website,
+            $this->account,
             'searchanalytics.query:'.implode(',', $dimensions),
             fn () => $this->service->searchanalytics->query($this->siteUrl, $request)->getRows() ?? []
         );
@@ -135,7 +140,7 @@ class SearchConsoleClient
         return new Webmasters($client);
     }
 
-    private static function findSiteUrl(Website $website, Webmasters $service): ?string
+    private static function findSiteUrl(Website $website, Webmasters $service, string $account): ?string
     {
         $domain     = Str::of($website->domain)->lower()->after('www.')->toString();
         $candidates = [
@@ -146,7 +151,7 @@ class SearchConsoleClient
             "http://$domain/",
         ];
 
-        $siteEntries = self::logged($website, 'sites.list', fn () => $service->sites->listSites()->getSiteEntry() ?? []);
+        $siteEntries = self::logged($website, $account, 'sites.list', fn () => $service->sites->listSites()->getSiteEntry() ?? []);
         $siteUrls    = Arr::pluck($siteEntries, 'siteUrl');
         $siteUrl     = Arr::first($candidates, fn (string $candidate) => in_array($candidate, $siteUrls, true));
 
@@ -179,15 +184,15 @@ class SearchConsoleClient
         return $e->getCode() === 429 || array_intersect($reasons, ['quotaExceeded', 'rateLimitExceeded', 'userRateLimitExceeded']) !== [];
     }
 
-    private static function logged(Website $website, string $endpoint, callable $call): array
+    private static function logged(Website $website, string $account, string $endpoint, callable $call): array
     {
         $startedAt = hrtime(true);
 
         try {
             $result = retry(
                 [2000, 10000, 30000],
-                fn () => Redis::throttle('search-console:'.$website->group_id)
-                    ->allow(self::CALLS_PER_MINUTE)->every(60)->block(600)
+                fn () => Redis::throttle('search-console:'.$account)
+                    ->allow(self::CALLS_PER_SECOND)->every(1)->block(600)
                     ->then($call),
                 null,
                 fn (Throwable $e) => self::isWorthRetrying($e)
