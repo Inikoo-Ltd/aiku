@@ -15,6 +15,7 @@ use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\CurrencyExchange;
 use App\Models\SupplyChain\Agent;
@@ -68,7 +69,7 @@ class ShowAgentCommissionInvoice extends OrgAction
             ->whereRaw("$shippedAt >= ? and $shippedAt < ?", [$month->startOfMonth(), $month->startOfMonth()->addMonth()])
             ->select('purchase_orders.reference', 'suppliers.code as supplier_code', 'suppliers.name as supplier_name', 'currencies.code as currency_code', 'organisations.name as organisation')
             ->selectRaw("$shippedAt as shipped_at")
-            ->selectRaw('(select coalesce(sum(quantity_ordered * unit_cost), 0) from purchase_order_transactions where purchase_order_transactions.purchase_order_id = purchase_orders.id and purchase_order_transactions.deleted_at is null) as products')
+            ->selectRaw('(select coalesce(sum(quantity_ordered * unit_cost), 0) from purchase_order_transactions where purchase_order_transactions.purchase_order_id = purchase_orders.id and purchase_order_transactions.deleted_at is null and purchase_order_transactions.state != ?) as products', [PurchaseOrderTransactionStateEnum::CANCELLED->value])
             ->orderBy('suppliers.code')
             ->orderByRaw($shippedAt)
             ->orderBy('purchase_orders.reference')
