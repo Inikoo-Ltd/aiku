@@ -20,13 +20,14 @@ use Lorisleiva\Actions\ActionRequest;
 class DeleteEmptyPurchaseOrders extends OrgAction
 {
     /**
-     * An order can go only while it is still in process, worth nothing (no lines, or every line cancelled or priced
-     * at zero, and no extra costs) and nothing was paid or asked as a deposit on it. Written against the alias po.
+     * An order not yet received can go when it is worth nothing (no lines, or every line cancelled or priced at zero,
+     * and no extra costs), nothing was paid or asked as a deposit on it, and no goods, delivery or agent payment hangs
+     * off it. Written against the alias po.
      */
     public static function deletableCondition(): string
     {
-        return "po.state = 'in_process'
-            and po.deposit_paid_at is null
+        return "po.state in ('in_process', 'submitted', 'confirmed')
+            and ".self::withoutDepositCondition()."
             and coalesce(po.cost_extra, 0) + coalesce(po.cost_shipping, 0) + coalesce(po.cost_duties, 0) + coalesce(po.cost_tax, 0) = 0
             and not exists (
                 select 1 from purchase_order_transactions
@@ -35,6 +36,26 @@ class DeleteEmptyPurchaseOrders extends OrgAction
                     and purchase_order_transactions.state <> 'cancelled'
                     and purchase_order_transactions.net_amount <> 0
             )
+            and not exists (select 1 from agent_goods_receipt_items where agent_goods_receipt_items.purchase_order_id = po.id)
+            and not exists (select 1 from agent_warehouse_stocks where agent_warehouse_stocks.purchase_order_id = po.id)
+            and not exists (
+                select 1 from purchase_order_stock_delivery
+                join stock_deliveries on stock_deliveries.id = purchase_order_stock_delivery.stock_delivery_id
+                where purchase_order_stock_delivery.purchase_order_id = po.id
+                    and stock_deliveries.deleted_at is null
+                    and stock_deliveries.state not in ('cancelled', 'not_received')
+            )";
+    }
+
+    /**
+     * No deposit was paid, planned, requested or held for the order, wherever it is recorded: on the order itself,
+     * its deposit payments (undone ones excepted), the agent's deposits on it, directly or through the legacy agent
+     * supplier order, deposit requests and agent payments. Written against the alias po.
+     */
+    public static function withoutDepositCondition(): string
+    {
+        return "po.deposit_paid_at is null
+            and coalesce(po.deposit_amount, 0) = 0
             and not exists (
                 select 1 from purchase_order_deposit_payments
                 where purchase_order_deposit_payments.purchase_order_id = po.id
@@ -42,9 +63,25 @@ class DeleteEmptyPurchaseOrders extends OrgAction
             )
             and not exists (
                 select 1 from aspo_deposits
-                where aspo_deposits.purchase_order_id = po.id
+                left join agent_supplier_purchase_orders on agent_supplier_purchase_orders.id = aspo_deposits.agent_supplier_purchase_order_id
+                where (aspo_deposits.purchase_order_id = po.id or agent_supplier_purchase_orders.purchase_order_id = po.id)
                     and aspo_deposits.state <> 'cancelled'
-            )";
+            )
+            and not exists (
+                select 1 from agent_supplier_purchase_orders
+                where agent_supplier_purchase_orders.purchase_order_id = po.id
+                    and (agent_supplier_purchase_orders.deposit_paid_at is not null or coalesce(agent_supplier_purchase_orders.deposit_amount, 0) <> 0)
+            )
+            and not exists (select 1 from deposit_request_items where deposit_request_items.purchase_order_id = po.id)
+            and not exists (select 1 from agent_payments where agent_payments.purchase_order_id = po.id)";
+    }
+
+    public static function hasDeposit(PurchaseOrder $purchaseOrder): bool
+    {
+        return !DB::table('purchase_orders as po')
+            ->where('po.id', $purchaseOrder->id)
+            ->whereRaw(self::withoutDepositCondition())
+            ->exists();
     }
 
     /**
@@ -104,7 +141,7 @@ class DeleteEmptyPurchaseOrders extends OrgAction
             'purchase_orders',
             $references->isEmpty()
                 ? __('Some of these purchase orders no longer exist')
-                : __('These purchase orders are no longer empty or in process, or have a deposit, and were not deleted: :references', ['references' => $references->implode(', ')])
+                : __('These purchase orders are no longer empty, or have a deposit, payment or delivery, and were not deleted: :references', ['references' => $references->implode(', ')])
         );
     }
 
@@ -113,15 +150,21 @@ class DeleteEmptyPurchaseOrders extends OrgAction
      */
     public function handle(Group $group, array $purchaseOrderIds): int
     {
-        $purchaseOrders = PurchaseOrder::where('group_id', $group->id)
-            ->whereIn('id', self::deletableIds($group, $purchaseOrderIds))
-            ->get();
+        $deleted = 0;
 
-        foreach ($purchaseOrders as $purchaseOrder) {
-            DB::transaction(fn () => DeletePurchaseOrder::make()->action($purchaseOrder));
+        foreach ($purchaseOrderIds as $purchaseOrderId) {
+            $deleted += DB::transaction(function () use ($group, $purchaseOrderId) {
+                $purchaseOrder = PurchaseOrder::where('group_id', $group->id)->whereKey($purchaseOrderId)->lockForUpdate()->first();
+
+                if (!$purchaseOrder || !self::deletableIds($group, [$purchaseOrder->id])) {
+                    return 0;
+                }
+
+                return DeletePurchaseOrder::make()->handle($purchaseOrder) ? 1 : 0;
+            });
         }
 
-        return $purchaseOrders->count();
+        return $deleted;
     }
 
     public function asController(ActionRequest $request): int

@@ -261,7 +261,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     }
 
     /**
-     * Lines of an order still in process, counted for the preview shown before an empty order is deleted.
+     * Lines of an order not received yet, counted for the preview shown before an empty order is deleted.
      */
     private function draftLinesLateral(): string
     {
@@ -269,7 +269,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 select count(*) as lines,
                     count(*) filter (where purchase_order_transactions.state = 'cancelled') as cancelled_lines
                 from purchase_order_transactions
-                where po.state = 'in_process'
+                where po.state in ('in_process', 'submitted', 'confirmed')
                     and purchase_order_transactions.purchase_order_id = po.id
                     and purchase_order_transactions.deleted_at is null
             ) draft_lines on true";
@@ -472,8 +472,9 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'country_name'      => $row->country_name,
             'is_in_process'     => $row->state === 'in_process',
             'is_deletable'      => (bool) $row->is_deletable,
-            'lines'             => $row->state === 'in_process' ? (int) $row->draft_lines : null,
-            'cancelled_lines'   => $row->state === 'in_process' ? (int) $row->draft_cancelled_lines : null,
+            'state'             => $row->state,
+            'lines'             => (bool) $row->is_deletable ? (int) $row->draft_lines : null,
+            'cancelled_lines'   => (bool) $row->is_deletable ? (int) $row->draft_cancelled_lines : null,
             'is_import'         => $row->state !== 'in_process' && $journey !== 'partner' && $this->crossesCustoms($row->organisation_country_code, $row->country_code),
             'buyer_id'          => $row->buyer_id,
             'buyer_name'        => $row->buyer_id ? strtok((string) ($row->buyer_name ?: $row->buyer_username), ' ') : null,

@@ -57,6 +57,7 @@ export interface JourneyRibbon {
     eta: string | null
     route: routeType | null
     segments: JourneySegment[]
+    state?: string
     is_deletable?: boolean
     lines?: number | null
     cancelled_lines?: number | null
@@ -223,7 +224,7 @@ function isMarkable(segment: JourneySegment): boolean {
                 <div class="flex items-start gap-1.5">
                     <span
                         v-if="selectable"
-                        v-tooltip="ribbon.is_deletable ? null : ctrans('Only orders in process, worth nothing and without a deposit can be deleted')"
+                        v-tooltip="ribbon.is_deletable ? null : ctrans('Only orders not received yet, worth nothing, and without a deposit, payment or delivery can be deleted')"
                         class="shrink-0 self-center">
                         <Checkbox
                             :modelValue="!!selected"

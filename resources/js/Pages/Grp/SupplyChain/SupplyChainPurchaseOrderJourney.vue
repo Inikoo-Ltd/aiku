@@ -271,7 +271,7 @@ function openMark(ribbon: JourneyRibbon, segment: JourneySegment, event: MouseEv
     markPopover.value?.toggle(event)
 }
 
-const isSelecting = computed(() => !!props.canDelete && !!props.deleteRoute && active.value?.tab === "in_process")
+const isSelecting = computed(() => !!props.canDelete && !!props.deleteRoute && ["open", "in_process"].includes(active.value?.tab ?? ""))
 const selectedIds = ref<Set<number>>(new Set())
 const deletableOnPage = computed(() => (ribbons.value ?? []).filter((ribbon) => ribbon.is_deletable))
 const selectedRibbons = computed(() => deletableOnPage.value.filter((ribbon) => selectedIds.value.has(ribbon.id)))
@@ -305,6 +305,12 @@ function previewDelete(candidates: JourneyRibbon[]): void {
     deleteCandidates.value = candidates
     deleteError.value = null
     isDeleteDialogVisible.value = true
+}
+
+const stateLabels: Record<string, string> = {
+    in_process: ctrans("In process"),
+    submitted: ctrans("Submitted"),
+    confirmed: ctrans("Confirmed")
 }
 
 function linesSummary(ribbon: JourneyRibbon): string {
@@ -484,7 +490,7 @@ function saveMark(date: string | null): void {
                             inputId="select-all-deletable"
                             :disabled="!deletableOnPage.length"
                             @update:modelValue="(value) => toggleSelectAllOnPage(!!value)" />
-                        <label for="select-all-deletable" class="cursor-pointer" v-tooltip="ctrans('Selects the orders on this page that are worth nothing and have no deposit')">
+                        <label for="select-all-deletable" class="cursor-pointer" v-tooltip="ctrans('Selects the orders on this page that are worth nothing and have no deposit, payment or delivery')">
                             {{ ctrans("Select empty orders (:count)", { count: deletableOnPage.length }) }}
                         </label>
                         <Button
@@ -631,13 +637,14 @@ function saveMark(date: string | null): void {
         :draggable="false">
         <div class="space-y-3 text-sm">
             <p class="text-gray-700">
-                {{ ctrans("These orders are still in process, worth nothing and have no deposit. They will be deleted and any shopping list items on them reopened. This can not be undone.") }}
+                {{ ctrans("These orders are worth nothing and have no deposit, payment or delivery. They will be deleted and any shopping list items on them reopened. This can not be undone.") }}
             </p>
             <div class="max-h-[50vh] overflow-y-auto rounded border border-gray-200">
                 <table class="w-full text-left text-xs">
                     <thead class="sticky top-0 whitespace-nowrap bg-gray-50 text-gray-500">
                         <tr>
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("PO") }}</th>
+                            <th class="px-2 py-1.5 font-semibold">{{ ctrans("State") }}</th>
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("Supplier") }}</th>
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("Organisation") }}</th>
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("Placed by") }}</th>
@@ -648,6 +655,7 @@ function saveMark(date: string | null): void {
                     <tbody>
                         <tr v-for="candidate in deleteCandidates" :key="candidate.key" class="border-t border-gray-100 align-top">
                             <td class="whitespace-nowrap px-2 py-1.5 font-medium text-gray-800">{{ candidate.reference }}</td>
+                            <td class="whitespace-nowrap px-2 py-1.5" :class="candidate.state === 'in_process' ? 'text-gray-700' : 'font-medium text-amber-700'">{{ stateLabels[candidate.state ?? ""] ?? candidate.state }}</td>
                             <td class="px-2 py-1.5 text-gray-700">{{ candidate.supplier_company ?? candidate.parent_name ?? candidate.parent_code }}</td>
                             <td class="whitespace-nowrap px-2 py-1.5 text-gray-700" :title="candidate.organisation_name">{{ candidate.organisation_code }}</td>
                             <td class="px-2 py-1.5 text-gray-700">{{ candidate.placed_by ?? ctrans("Unknown") }}</td>
@@ -657,6 +665,9 @@ function saveMark(date: string | null): void {
                     </tbody>
                 </table>
             </div>
+            <p v-if="deleteCandidates.some((candidate) => candidate.state !== 'in_process')" class="text-xs text-amber-700">
+                {{ ctrans("Orders already submitted to the supplier are deleted too. Tell the supplier or agent if they are still working on them.") }}
+            </p>
             <div v-if="deleteError" class="text-xs text-red-600">{{ deleteError }}</div>
         </div>
         <template #footer>

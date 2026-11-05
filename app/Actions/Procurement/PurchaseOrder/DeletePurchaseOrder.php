@@ -35,6 +35,10 @@ class DeletePurchaseOrder extends OrgAction
         if ($this->purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS) {
             $validator->errors()->add('state', __('You can not delete this purchase order with state :state', ['state' => $this->purchaseOrder->state->value]));
         }
+
+        if (DeleteEmptyPurchaseOrders::hasDeposit($this->purchaseOrder)) {
+            $validator->errors()->add('deposit', __('You can not delete this purchase order, it has a deposit'));
+        }
     }
 
     public function handle(PurchaseOrder $purchaseOrder): bool
