@@ -70,6 +70,13 @@ class GetPurchaseOrderContainers
             ->select('stock_deliveries.id', 'stock_deliveries.reference', 'stock_deliveries.slug', 'stock_deliveries.state')
             ->selectRaw('count(distinct purchase_order_transactions.id) as number_lines')
             ->selectRaw('coalesce(sum(stock_delivery_items.unit_quantity), 0) as unit_quantity')
+            ->selectSub(
+                DB::table('model_has_attachments')
+                    ->where('model_has_attachments.model_type', 'StockDelivery')
+                    ->whereColumn('model_has_attachments.model_id', 'stock_deliveries.id')
+                    ->selectRaw('count(*)'),
+                'number_attachments'
+            )
             ->get();
 
         $itemsToRemove = $this->itemsToRemoveByContainer($purchaseOrder, $containers->where('state', StockDeliveryStateEnum::IN_PROCESS->value)->pluck('id')->all(), $request);
@@ -83,6 +90,11 @@ class GetPurchaseOrderContainers
                 'state_icon'    => isset($stateIcons[$container->state]) ? Arr::only($stateIcons[$container->state], ['icon', 'class']) : null,
                 'number_lines'  => (int) $container->number_lines,
                 'unit_quantity' => (float) $container->unit_quantity,
+                'number_attachments' => (int) $container->number_attachments,
+                'attachments_route'  => [
+                    'name'       => 'grp.json.stock_delivery.attachments',
+                    'parameters' => ['stockDelivery' => $container->id],
+                ],
                 'show_route'    => [
                     'name'       => $isAgentViewing ? 'grp.org.agent.stock_deliveries.show' : 'grp.org.procurement.stock_deliveries.show',
                     'parameters' => [$viewingOrganisation->slug, $container->slug],
