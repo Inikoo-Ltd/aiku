@@ -259,7 +259,7 @@ class UpdateOrganisation extends OrgAction
 
             $keptIds = [];
             foreach ($preferredShippingRows as $row) {
-                $rowData = Arr::only($row, ['shipper_id', 'shop_id', 'country_id', 'postcode', 'important', 'priority_only', 'trade_scope']);
+                $rowData = Arr::only($row, ['shipper_id', 'shop_id', 'country_id', 'postcode', 'important', 'priority_only', 'trade_scope', 'min_weight', 'max_weight']);
 
                 $preferredShipping = Arr::get($row, 'id') ? $organisation->preferredShippings()->find($row['id']) : null;
                 if ($preferredShipping) {
@@ -427,6 +427,8 @@ class UpdateOrganisation extends OrgAction
             'preferred_shipping.*.important'          => ['sometimes', 'boolean'],
             'preferred_shipping.*.priority_only'      => ['sometimes', 'boolean'],
             'preferred_shipping.*.trade_scope'        => ['sometimes', Rule::in(['b2b', 'b2c'])],
+            'preferred_shipping.*.min_weight'         => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'preferred_shipping.*.max_weight'         => ['sometimes', 'nullable', 'integer', 'min:1'],
             'box_packing_list'                           => ['sometimes', 'boolean'],
             'box_packing_list_destinations'              => ['sometimes', 'nullable', 'array'],
             'box_packing_list_destinations.*.country_id' => ['nullable', 'required_without:box_packing_list_destinations.*.postcode', 'integer', Rule::exists('countries', 'id')],

@@ -4,6 +4,7 @@ import { ctrans } from "@/Composables/useTrans"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import InputText from "primevue/inputtext"
+import InputNumber from "primevue/inputnumber"
 import { Select, ToggleSwitch } from "primevue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -20,6 +21,8 @@ interface PreferredShippingRow {
     important: boolean
     priority_only: boolean
     trade_scope: "b2b" | "b2c"
+    min_weight: number | null
+    max_weight: number | null
 }
 
 const props = defineProps<{
@@ -47,7 +50,7 @@ const countryOptions = computed(() =>
 )
 
 const rows = reactive<PreferredShippingRow[]>(
-    (props.form[props.fieldName] ?? []).map((row: PreferredShippingRow) => ({ trade_scope: "b2b", shop_id: null, priority_only: false, ...row }))
+    (props.form[props.fieldName] ?? []).map((row: PreferredShippingRow) => ({ trade_scope: "b2b", shop_id: null, priority_only: false, min_weight: null, max_weight: null, ...row }))
 )
 
 // Two independent rule sets: some carriers price and label wholesale (b2b) and
@@ -60,7 +63,12 @@ const scopes = [
 // A rule with no country and no postcode is the scope's catch-all: it loses to any
 // specific rule and to the customer's choice, which is exactly what a default is.
 // The UI surfaces it as the "Default shipper" select.
-const isDefaultRow = (row: PreferredShippingRow) => !row.country_id && !row.postcode && !row.shop_id && !row.priority_only
+const isDefaultRow = (row: PreferredShippingRow) =>
+    !row.country_id && !row.postcode && !row.shop_id && !row.priority_only && !row.min_weight && !row.max_weight
+
+// Weights are stored in grams and edited in kg
+const toKg = (grams: number | null) => (grams ? grams / 1000 : null)
+const toGrams = (kg: number | null) => (kg ? Math.round(kg * 1000) : null)
 
 const shopOptions = (scope: "b2b" | "b2c") =>
     (props.options?.scope_shops?.[scope] ?? []).map((shop) => ({ label: `${shop.code} · ${shop.name}`, value: shop.id }))
@@ -99,6 +107,8 @@ const setDefaultShipper = (scope: "b2b" | "b2c", shipperId: number | null) => {
             important: false,
             priority_only: false,
             trade_scope: scope,
+            min_weight: null,
+            max_weight: null,
         }
         rows.push(row)
         defaultRowByScope[scope] = row
@@ -117,6 +127,8 @@ watch(
             important: row.important,
             priority_only: row.priority_only,
             trade_scope: row.trade_scope,
+            min_weight: row.min_weight,
+            max_weight: row.max_weight,
         }))
     },
     { deep: true }
@@ -134,6 +146,8 @@ const addRow = (scope: "b2b" | "b2c") => {
         important: false,
         priority_only: false,
         trade_scope: scope,
+        min_weight: null,
+        max_weight: null,
     })
 }
 
@@ -277,6 +291,44 @@ const openPostcodeTest = (row: PreferredShippingRow) => {
                         >
                             <FontAwesomeIcon :icon="faVial" fixed-width aria-hidden="true" />
                         </button>
+                    </div>
+                </template>
+            </Column>
+
+            <Column field="min_weight" style="min-width: 11rem">
+                <template #header>
+                    <span class="inline-flex items-center gap-1 whitespace-nowrap font-semibold">
+                        {{ ctrans('Weight (kg)') }}
+                        <FontAwesomeIcon
+                            :icon="faInfoCircle"
+                            class="text-gray-400"
+                            fixed-width
+                            aria-hidden="true"
+                            v-tooltip="ctrans('Parcels from the first number up to, not including, the second. 1 to 2 matches 1 kg and 1.5 kg, not 2 kg. Leave empty for any weight.')"
+                        />
+                    </span>
+                </template>
+                <template #body="{ data }">
+                    <div class="flex items-center gap-1">
+                        <InputNumber
+                            :modelValue="toKg(data.min_weight)"
+                            @update:modelValue="(value) => (data.min_weight = toGrams(value))"
+                            :minFractionDigits="0"
+                            :maxFractionDigits="3"
+                            :min="0"
+                            placeholder="0"
+                            inputClass="w-16"
+                        />
+                        <span class="text-gray-400">–</span>
+                        <InputNumber
+                            :modelValue="toKg(data.max_weight)"
+                            @update:modelValue="(value) => (data.max_weight = toGrams(value))"
+                            :minFractionDigits="0"
+                            :maxFractionDigits="3"
+                            :min="0"
+                            placeholder="∞"
+                            inputClass="w-16"
+                        />
                     </div>
                 </template>
             </Column>

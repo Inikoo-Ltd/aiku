@@ -27,6 +27,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $shipper_id
  * @property bool $important
  * @property bool $priority_only
+ * @property int|null $min_weight grams, the rule applies from this weight
+ * @property int|null $max_weight grams, the rule applies below this weight
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
@@ -90,6 +92,8 @@ class PreferredShipping extends Model implements Auditable
         'shipper_id',
         'important',
         'priority_only',
+        'min_weight',
+        'max_weight',
     ];
 
 }

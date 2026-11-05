@@ -11,13 +11,15 @@ function makePreferredShipperResolver()
     };
 }
 
-function makeRule(int $shipperId, ?int $countryId = null, ?string $postcode = null, bool $important = false): PreferredShipping
+function makeRule(int $shipperId, ?int $countryId = null, ?string $postcode = null, bool $important = false, ?int $minWeight = null, ?int $maxWeight = null): PreferredShipping
 {
     $rule             = new PreferredShipping();
     $rule->shipper_id = $shipperId;
     $rule->country_id = $countryId;
     $rule->postcode   = $postcode;
     $rule->important  = $important;
+    $rule->min_weight = $minWeight;
+    $rule->max_weight = $maxWeight;
 
     return $rule;
 }
@@ -116,4 +118,38 @@ it('a shop or priority-only rule beats a country rule, and a lock still beats bo
     expect($resolver->pickPreferredShipperId(collect([$countryRule, $shopRule]), 10, ''))->toBe(2)
         ->and($resolver->pickPreferredShipperId(collect([$countryRule, $shopRule, $priorityRule]), 10, ''))->toBe(3)
         ->and($resolver->pickPreferredShipperId(collect([makeRule(shipperId: 4, countryId: 10, important: true), $priorityRule]), 10, ''))->toBe(4);
+});
+
+it('picks the carrier by weight band, lower bound included and upper bound excluded like the Packeta tiers, falling back to the catch-all between bands', function () {
+    $rules = collect([
+        makeRule(shipperId: 1),
+        makeRule(shipperId: 2, countryId: 10, minWeight: 250, maxWeight: 2000),
+        makeRule(shipperId: 3, countryId: 10, minWeight: 5000),
+    ]);
+
+    $resolver = makePreferredShipperResolver();
+
+    expect($resolver->pickPreferredShipperId($rules, 10, '', 100))->toBe(1)
+        ->and($resolver->pickPreferredShipperId($rules, 10, '', 249))->toBe(1)
+        ->and($resolver->pickPreferredShipperId($rules, 10, '', 250))->toBe(2)
+        ->and($resolver->pickPreferredShipperId($rules, 10, '', 1500))->toBe(2)
+        ->and($resolver->pickPreferredShipperId($rules, 10, '', 2000))->toBe(1)
+        ->and($resolver->pickPreferredShipperId($rules, 10, '', 5000))->toBe(3)
+        ->and($resolver->pickPreferredShipperId($rules, 10, '', 3000))->toBe(1)
+        ->and($resolver->pickPreferredShipperId($rules, 10, '', 31000))->toBe(3)
+        ->and($resolver->pickPreferredShipperId($rules, 20, '', 31000))->toBe(1);
+});
+
+it('a weight band wins over a country rule but not over a postcode rule', function () {
+    $rules = collect([
+        makeRule(shipperId: 1, countryId: 10),
+        makeRule(shipperId: 2, countryId: 10, maxWeight: 2000),
+        makeRule(shipperId: 3, countryId: 10, postcode: 'SW1'),
+    ]);
+
+    $resolver = makePreferredShipperResolver();
+
+    expect($resolver->pickPreferredShipperId($rules, 10, 'EC1', 1000))->toBe(2)
+        ->and($resolver->pickPreferredShipperId($rules, 10, 'EC1', 3000))->toBe(1)
+        ->and($resolver->pickPreferredShipperId($rules, 10, 'SW1A', 1000))->toBe(3);
 });

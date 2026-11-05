@@ -386,6 +386,8 @@ class EditOrganisationSettings extends OrgAction
                                         'important'    => $preferredShipping->important,
                                         'priority_only' => $preferredShipping->priority_only,
                                         'trade_scope'  => $preferredShipping->trade_scope,
+                                        'min_weight'   => $preferredShipping->min_weight,
+                                        'max_weight'   => $preferredShipping->max_weight,
                                     ])->all(),
                                     'options' => [
                                         'scope_shops' => $organisation->shops()

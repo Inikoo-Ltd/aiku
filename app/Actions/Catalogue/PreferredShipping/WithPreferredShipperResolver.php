@@ -105,28 +105,37 @@ trait WithPreferredShipperResolver
             ->whereHas('shipper', fn ($query) => $query->where('status', true))
             ->get();
 
-        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode);
+        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode, $deliveryNote->weight ?: $deliveryNote->estimated_weight);
     }
 
-    public function pickPreferredShipperId(Collection $rules, int $countryId, string $postalCode): ?int
+    public function pickPreferredShipperId(Collection $rules, int $countryId, string $postalCode, ?int $weight = null): ?int
     {
-        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode)?->shipper_id;
+        return $this->pickPreferredShippingRule($rules, $countryId, $postalCode, $weight)?->shipper_id;
     }
 
-    public function pickPreferredShippingRule(Collection $rules, int $countryId, string $postalCode): ?PreferredShipping
+    /**
+     * HELP-4514. A weight band (grams) runs from min_weight up to, not including, max_weight, the
+     * convention of the Packeta tiers in CallApiPacketaShipping, so a band never hands Packeta a
+     * weight it has no address for. It ranks under a postcode, which is about coverage, not price.
+     */
+    public function pickPreferredShippingRule(Collection $rules, int $countryId, string $postalCode, ?int $weight = null): ?PreferredShipping
     {
         $postalCode = $this->normalisePostcode($postalCode);
+        $weight     = (int) $weight;
 
         return $rules
             ->filter(
                 fn (PreferredShipping $rule) => (!$rule->country_id || $rule->country_id == $countryId)
                     && $this->postcodeMatchesRule($postalCode, $rule->postcode)
+                    && (!$rule->min_weight || $weight >= $rule->min_weight)
+                    && (!$rule->max_weight || $weight < $rule->max_weight)
             )
             ->sortByDesc(
-                fn (PreferredShipping $rule) => ($rule->important ? 16 : 0)
-                    + ($rule->priority_only ? 8 : 0)
-                    + ($rule->shop_id ? 4 : 0)
-                    + ($rule->postcode ? 2 : 0)
+                fn (PreferredShipping $rule) => ($rule->important ? 32 : 0)
+                    + ($rule->priority_only ? 16 : 0)
+                    + ($rule->shop_id ? 8 : 0)
+                    + ($rule->postcode ? 4 : 0)
+                    + ($rule->min_weight || $rule->max_weight ? 2 : 0)
                     + ($rule->country_id ? 1 : 0)
             )
             ->first();
@@ -154,9 +163,18 @@ trait WithPreferredShipperResolver
 
     private function describeRuleScope(PreferredShipping $rule): string
     {
-        return collect([$rule->shop?->code, $rule->priority_only ? __('Priority') : null, $rule->country?->iso3, $rule->postcode])
+        return collect([$rule->shop?->code, $rule->priority_only ? __('Priority') : null, $rule->country?->iso3, $rule->postcode, $this->describeWeightBand($rule)])
             ->filter()
             ->implode(' ') ?: __('all destinations');
+    }
+
+    private function describeWeightBand(PreferredShipping $rule): ?string
+    {
+        if (!$rule->min_weight && !$rule->max_weight) {
+            return null;
+        }
+
+        return ($rule->min_weight / 1000).'-'.($rule->max_weight ? ($rule->max_weight / 1000).' kg' : '∞ kg');
     }
 
     /**
