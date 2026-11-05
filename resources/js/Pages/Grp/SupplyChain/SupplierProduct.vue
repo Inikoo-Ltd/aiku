@@ -78,6 +78,7 @@ const component = computed(() => {
         showcase: SupplierProductShowcase,
         agreed_terms: TableSupplierAgreedTerms,
         notes: TableProcurementNotes,
+        purchase_orders: TablePurchaseOrders,
         history: TableHistories
     };
     return components[currentTab.value];

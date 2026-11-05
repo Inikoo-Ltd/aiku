@@ -10,9 +10,11 @@ namespace App\Actions\SupplyChain\SupplierProduct\UI;
 
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
+use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Actions\Procurement\SupplierAgreedTerm\UI\GetAgreement;
 use App\Actions\Procurement\SupplierAgreedTerm\UI\IndexSupplierAgreedTerms;
 use App\Http\Resources\Procurement\ProcurementNoteResource;
+use App\Http\Resources\Procurement\PurchaseOrdersResource;
 use App\Http\Resources\Procurement\SupplierAgreedTermResource;
 use App\Actions\InertiaAction;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
@@ -46,6 +48,7 @@ class ShowSupplierProduct extends InertiaAction
             SupplierProductTabsEnum::SHOWCASE->value,
             SupplierProductTabsEnum::AGREED_TERMS->value,
             SupplierProductTabsEnum::NOTES->value,
+            SupplierProductTabsEnum::PURCHASE_ORDERS->value,
             SupplierProductTabsEnum::HISTORY->value,
         ];
     }
@@ -134,12 +137,17 @@ class ShowSupplierProduct extends InertiaAction
                     fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($supplierProduct, SupplierProductTabsEnum::NOTES->value, null, false))
                     : Inertia::optional(fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($supplierProduct, SupplierProductTabsEnum::NOTES->value, null, false))),
 
+                SupplierProductTabsEnum::PURCHASE_ORDERS->value => $this->tab == SupplierProductTabsEnum::PURCHASE_ORDERS->value ?
+                    fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::make()->handle($supplierProduct, SupplierProductTabsEnum::PURCHASE_ORDERS->value))
+                    : Inertia::optional(fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::make()->handle($supplierProduct, SupplierProductTabsEnum::PURCHASE_ORDERS->value))),
+
                 SupplierProductTabsEnum::HISTORY->value => $this->tab == SupplierProductTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($supplierProduct, SupplierProductTabsEnum::HISTORY->value))
                     : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($supplierProduct, SupplierProductTabsEnum::HISTORY->value))),
             ]
         )->table(IndexSupplierAgreedTerms::make()->tableStructure(prefix: SupplierProductTabsEnum::AGREED_TERMS->value))
             ->table(IndexProcurementNotes::make()->tableStructure(prefix: SupplierProductTabsEnum::NOTES->value))
+            ->table(IndexPurchaseOrders::make()->tableStructure(parent: $supplierProduct, prefix: SupplierProductTabsEnum::PURCHASE_ORDERS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: SupplierProductTabsEnum::HISTORY->value));
     }
 

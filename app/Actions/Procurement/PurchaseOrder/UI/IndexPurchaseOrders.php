@@ -41,6 +41,7 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -65,7 +66,7 @@ class IndexPurchaseOrders extends OrgAction
     use WithSupplierSubNavigation;
     use WithAgentOrganisation;
 
-    private Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent;
+    private Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|SupplierProduct|StockDelivery $parent;
 
     private bool $onlyIncoming = false;
 
@@ -94,7 +95,7 @@ class IndexPurchaseOrders extends OrgAction
         return $request->user()->authTo("procurement.{$this->organisation->id}.view");
     }
 
-    protected function getElementGroups(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent): array
+    protected function getElementGroups(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|SupplierProduct|StockDelivery $parent): array
     {
         $supplierStats = $this->viewingAgent ? null : match (true) {
             $parent instanceof Supplier => $parent->stats,
@@ -195,13 +196,13 @@ class IndexPurchaseOrders extends OrgAction
         return $elementGroups;
     }
 
-    public function handle(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|SupplierProduct|StockDelivery $parent, $prefix = null): LengthAwarePaginator
     {
         if ($parent instanceof Group) {
             $organisation = $parent->organisations()->first();
         } elseif ($parent instanceof Organisation) {
             $organisation = $parent;
-        } elseif ($parent instanceof Supplier) {
+        } elseif ($parent instanceof Supplier || $parent instanceof SupplierProduct) {
             $organisation = null;
         } else {
             $organisation = $parent->organisation;
@@ -240,12 +241,12 @@ class IndexPurchaseOrders extends OrgAction
                     ->from('purchase_order_transactions')
                     ->where('org_stock_id', $parent->id);
             })->with('purchaseOrderTransactions');
-        } elseif ($parent instanceof OrgSupplierProduct) {
+        } elseif ($parent instanceof OrgSupplierProduct || $parent instanceof SupplierProduct) {
             $productTransactions = PurchaseOrderTransaction::query()
                 ->select('purchase_order_id')
                 ->selectRaw('SUM(quantity_ordered) as quantity_ordered')
                 ->selectRaw('SUM(org_net_amount) as org_net_amount')
-                ->where('org_supplier_product_id', $parent->id)
+                ->where($parent instanceof SupplierProduct ? 'supplier_product_id' : 'org_supplier_product_id', $parent->id)
                 ->groupBy('purchase_order_id');
 
             $query->joinSub($productTransactions, 'product_transactions', function ($join) {
@@ -278,14 +279,14 @@ class IndexPurchaseOrders extends OrgAction
             ->select(['purchase_orders.*'])
             ->selectRaw('purchase_orders.org_exchange * purchase_orders.'.($organisationAgent ? 'cost_items' : 'cost_total').' as org_total_cost');
 
-        if ($parent instanceof OrgSupplierProduct) {
+        if ($parent instanceof OrgSupplierProduct || $parent instanceof SupplierProduct) {
             $query->addSelect([
                 'product_transactions.quantity_ordered',
                 'product_transactions.org_net_amount',
             ]);
         }
 
-        if ($parent instanceof Group || $organisationAgent || $this->viewingAgent || $parent instanceof Supplier || $parent instanceof StockDelivery) {
+        if ($parent instanceof Group || $organisationAgent || $this->viewingAgent || $parent instanceof Supplier || $parent instanceof SupplierProduct || $parent instanceof StockDelivery) {
             $query
                 ->leftJoin('organisations', 'purchase_orders.organisation_id', 'organisations.id')
                 ->leftJoin('currencies', 'organisations.currency_id', 'currencies.id')
@@ -315,7 +316,7 @@ class IndexPurchaseOrders extends OrgAction
                     ]);
                 },
             ])
-            ->allowedSorts($parent instanceof OrgSupplierProduct
+            ->allowedSorts($parent instanceof OrgSupplierProduct || $parent instanceof SupplierProduct
                 ? ['reference', 'parent_name', 'date', 'quantity_ordered', 'org_net_amount']
                 : ['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([
@@ -344,7 +345,7 @@ class IndexPurchaseOrders extends OrgAction
                 ->orWhere('purchase_order_transactions.quantity_query_state', PurchaseOrderTransactionQuantityQueryStateEnum::PENDING->value));
     }
 
-    public function tableStructure(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent, ?array $modelOperations = null, $prefix = null, bool $withRemoveFromContainer = false): Closure
+    public function tableStructure(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|SupplierProduct|StockDelivery $parent, ?array $modelOperations = null, $prefix = null, bool $withRemoveFromContainer = false): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $withRemoveFromContainer) {
             if ($prefix) {
@@ -378,11 +379,11 @@ class IndexPurchaseOrders extends OrgAction
                 $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            if ($parent instanceof Group || $parent instanceof Supplier || $organisationAgent || $this->viewingAgent) {
+            if ($parent instanceof Group || $parent instanceof Supplier || $parent instanceof SupplierProduct || $organisationAgent || $this->viewingAgent) {
                 $table->column(key: 'organisation_name', label: $organisationAgent || $this->viewingAgent ? __('Client') : __('Organisation'), canBeHidden: false, searchable: true);
             }
 
-            if ($parent instanceof OrgSupplierProduct) {
+            if ($parent instanceof OrgSupplierProduct || $parent instanceof SupplierProduct) {
                 $table
                     ->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, align: 'right', type: 'number')
                     ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
@@ -589,7 +590,7 @@ class IndexPurchaseOrders extends OrgAction
     /**
      * @return array{organisation?: array<int, array{label: string, value: string, count: int, tooltip: string}>, supplier?: array<int, array{label: string, value: string, count: int}>}
      */
-    private function getFilterOptions(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|StockDelivery $parent): array
+    private function getFilterOptions(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|SupplierProduct|StockDelivery $parent): array
     {
         $agentSupplier     = $parent instanceof OrgSupplier && $this->viewingAgent ? $parent->supplier : null;
         $organisationAgent = $this->getParentOrganisationAgent($parent) ?? ($agentSupplier ? $this->viewingAgent : null);
