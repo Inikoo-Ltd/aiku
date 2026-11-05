@@ -131,4 +131,54 @@ void main() {
     expect(controller.state, isA<SignedOut>());
     expect(store.session, isNull);
   });
+
+  test('a theme aiku cannot save stays on the phone and says why', () async {
+    const theme = [
+      '#000000',
+      '#f2f2f2',
+      '#424242',
+      '#fde047',
+      '#8e44ad',
+      '#ffffff',
+      '#fcd34d',
+      '#374151',
+    ];
+    final store = InMemoryTokenStore(
+      const StoredSession(token: '1|kept', expiresAt: null, profile: _profile),
+    );
+    final controller = _controller(
+      store,
+      (request) async => throw http.ClientException('offline', request.url),
+    );
+    addTearDown(controller.dispose);
+    await controller.restore();
+
+    await controller.chooseMobileTheme(theme);
+
+    expect(store.session?.profile.mobileAppTheme, theme);
+    expect(controller.state, isA<SignedIn>());
+    expect(controller.themeErrors.messages, isNotEmpty);
+    expect(controller.themeBeingSaved, isNull);
+  });
+
+  test('a 401 while saving a theme signs out', () async {
+    final store = InMemoryTokenStore(
+      const StoredSession(
+        token: '1|revoked',
+        expiresAt: null,
+        profile: _profile,
+      ),
+    );
+    final controller = _controller(
+      store,
+      (_) async => http.Response('{"message":"Unauthenticated."}', 401),
+    );
+    addTearDown(controller.dispose);
+    await controller.restore();
+
+    await controller.chooseMobileTheme(List.filled(8, '#000000'));
+
+    expect(controller.state, isA<SignedOut>());
+    expect(store.session, isNull);
+  });
 }

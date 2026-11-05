@@ -12,12 +12,15 @@ import 'auth/auth_controller.dart';
 import 'auth/forgot_password_screen.dart';
 import 'auth/login_screen.dart';
 import 'auth/two_factor_screen.dart';
-import 'home/signed_in_screen.dart';
+import 'home/dashboard_screen.dart';
+import 'ui/accent_shades.dart';
 import 'ui/aiku_palette.dart';
+import 'ui/aiku_theme.dart';
 import 'ui/loading_indicator.dart';
 
-/// The aiku staff app: shows the screen that matches [controller]'s state.
-class AikuApp extends StatelessWidget {
+/// The aiku staff app: shows the screen that matches [controller]'s state,
+/// in the signed-in user's theme once there is one.
+class AikuApp extends StatefulWidget {
   const AikuApp({super.key, required this.controller, required this.client});
 
   /// The sign-in session.
@@ -27,36 +30,88 @@ class AikuApp extends StatelessWidget {
   final AikuApiClient client;
 
   @override
+  State<AikuApp> createState() => _AikuAppState();
+}
+
+class _AikuAppState extends State<AikuApp> {
+  static final _signedOutTheme = ThemeData(
+    scaffoldBackgroundColor: AikuPalette.paper,
+    textSelectionTheme: const TextSelectionThemeData(
+      cursorColor: AikuPalette.focus,
+      selectionHandleColor: AikuPalette.focus,
+    ),
+  );
+
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  bool _wasSignedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_closePagesOnSignOut);
+  }
+
+  @override
+  void didUpdateWidget(AikuApp oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_closePagesOnSignOut);
+      widget.controller.addListener(_closePagesOnSignOut);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_closePagesOnSignOut);
+    super.dispose();
+  }
+
+  /// Pages opened while signed in (such as Theme) must not outlive the
+  /// session, e.g. after a 401.
+  void _closePagesOnSignOut() {
+    final isSignedIn = widget.controller.state is SignedIn;
+    if (_wasSignedIn && !isSignedIn) {
+      _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+    }
+    _wasSignedIn = isSignedIn;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'aiku',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: AikuPalette.paper,
-        textSelectionTheme: const TextSelectionThemeData(
-          cursorColor: AikuPalette.focus,
-          selectionHandleColor: AikuPalette.focus,
-        ),
-      ),
-      home: ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) => switch (controller.state) {
-          Restoring() => const _RestoringScreen(),
-          SignedOut() => LoginScreen(
-            controller: controller,
-            onForgotPassword: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => ForgotPasswordScreen(client: client),
+    return ListenableBuilder(
+      listenable: widget.controller,
+      builder: (context, _) {
+        final state = widget.controller.state;
+        return MaterialApp(
+          title: 'aiku',
+          debugShowCheckedModeBanner: false,
+          navigatorKey: _navigatorKey,
+          theme: switch (state) {
+            SignedIn(:final session) => signedInThemeData(
+              AccentShades.fromAppTheme(effectiveTheme(session.profile)),
+            ),
+            _ => _signedOutTheme,
+          },
+          home: switch (state) {
+            Restoring() => const _RestoringScreen(),
+            SignedOut() => LoginScreen(
+              controller: widget.controller,
+              onForgotPassword: () => _navigatorKey.currentState?.push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ForgotPasswordScreen(client: widget.client),
+                ),
               ),
             ),
-          ),
-          AwaitingOneTimePassword() => TwoFactorScreen(controller: controller),
-          SignedIn(:final session) => SignedInScreen(
-            controller: controller,
-            session: session,
-          ),
-        },
-      ),
+            AwaitingOneTimePassword() => TwoFactorScreen(
+              controller: widget.controller,
+            ),
+            SignedIn(:final session) => DashboardScreen(
+              controller: widget.controller,
+              session: session,
+            ),
+          },
+        );
+      },
     );
   }
 }

@@ -75,6 +75,28 @@ class AikuApiClient {
     await _post(_mobileUrl('password/reset-link'), {'email': email});
   }
 
+  /// Saves [theme] (8 colours) as the user's mobile theme on aiku and
+  /// returns the updated profile. The web theme is not touched.
+  Future<StaffProfile> updateMobileAppTheme({
+    required String token,
+    required List<String> theme,
+  }) async {
+    final url = _mobileUrl('profile/theme');
+    final response = await _post(
+      url,
+      {'mobile_app_theme': theme},
+      token: token,
+      method: 'PATCH',
+    );
+
+    if (_decodeObject(response.body) case {
+      'data': final Map<String, Object?> profile,
+    }) {
+      return StaffProfile.fromJson(profile);
+    }
+    throw InvalidResponse(url);
+  }
+
   Uri _mobileUrl(String path) =>
       Uri.parse('${_config.apiBaseUrl}/app/api/mobile/$path');
 
@@ -82,21 +104,22 @@ class AikuApiClient {
     Uri url,
     Map<String, Object?> body, {
     String? token,
+    String method = 'POST',
   }) async {
+    final request = http.Request(method, url)
+      ..headers.addAll({
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Aiku-App-Key': _config.appKey,
+        if (token != null) 'Authorization': 'Bearer $token',
+      })
+      ..body = jsonEncode(body);
+
     final http.Response response;
     try {
-      response = await _httpClient
-          .post(
-            url,
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'X-Aiku-App-Key': _config.appKey,
-              if (token != null) 'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(_timeout);
+      response = await http.Response.fromStream(
+        await _httpClient.send(request).timeout(_timeout),
+      ).timeout(_timeout);
     } on http.ClientException {
       throw const NetworkFailure();
     } on TimeoutException {

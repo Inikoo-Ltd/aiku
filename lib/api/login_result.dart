@@ -10,8 +10,9 @@ class const StaffProfile({
   required final String username,
   required final String? contactName,
   required final List<String>? appTheme,
+  final List<String>? mobileAppTheme,
 }) {
-  /// Reads the `user` object of a login response.
+  /// Reads aiku's profile object, from a login response or a profile update.
   factory StaffProfile.fromJson(Map<String, Object?> json) => StaffProfile(
     username: switch (json['username']) {
       final String value => value,
@@ -21,10 +22,16 @@ class const StaffProfile({
       final String value => value,
       _ => null,
     },
-    appTheme: switch (json['app_theme']) {
-      final List<Object?> colours => colours.whereType<String>().toList(),
-      _ => null,
-    },
+    appTheme: _colours(json['app_theme']),
+    mobileAppTheme: _colours(json['mobile_app_theme']),
+  );
+
+  /// This profile with [theme] as its mobile theme.
+  StaffProfile withMobileAppTheme(List<String> theme) => StaffProfile(
+    username: username,
+    contactName: contactName,
+    appTheme: appTheme,
+    mobileAppTheme: theme,
   );
 
   /// The shape [StaffProfile.fromJson] reads, for keeping it on the device.
@@ -32,6 +39,12 @@ class const StaffProfile({
     'username': username,
     'contact_name': contactName,
     'app_theme': appTheme,
+    'mobile_app_theme': mobileAppTheme,
+  };
+
+  static List<String>? _colours(Object? value) => switch (value) {
+    final List<Object?> colours => colours.whereType<String>().toList(),
+    _ => null,
   };
 }
 

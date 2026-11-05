@@ -97,3 +97,13 @@ State lives in plain `ChangeNotifier` classes with no state-management package, 
 Never log or print a password, a one-time password, a token or the app key.
 
 Local development: aiku runs `php artisan serve --host=0.0.0.0 --port=8000` in WSL, and the emulator calls `http://10.0.2.2:8000`. aiku skips 2FA when `APP_ENV=local`, so the two-factor screen can only be checked against local through the widget tests.
+
+## Mobile theme: its own aiku setting, exact accent, mobile tones
+
+- The app's theme is the user's **mobile** theme, `users.settings.mobile_app_theme` (8 hex colours), saved with `PATCH /app/api/mobile/profile/theme`. It is never written to the web's `app_theme`.
+- Which theme shows (`effectiveTheme`): the mobile theme once one has been picked, otherwise the web `app_theme`, otherwise aiku's default preset.
+- Picking a theme saves it on the phone first (with the session in secure storage), then on aiku. If aiku can't be reached, the phone keeps it and the Theme screen says why. A 401 signs the user out.
+- The picker offers aiku's presets only (`aikuThemePresets`, copied from `useColorTheme`), compared case-insensitively.
+- Colours: `primary` is exactly `theme[4]`, and `onPrimary` follows the luminance rule (not `theme[5]`). The other roles come from `ColorScheme.fromSeed(seedColor: accent, dynamicSchemeVariant: DynamicSchemeVariant.fidelity)`, which keeps the accent's hue so the app sits in mobile-friendly tones around it (`signedInThemeData`).
+- Only the signed-in screens follow the theme. The login, two-factor and forgot-password screens keep the default accent.
+- Colours that carry meaning (status, stat tiles, charts) stay fixed and never follow the theme.
