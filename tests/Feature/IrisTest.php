@@ -524,7 +524,7 @@ test('iris streams a product ingredients label pdf only for its own shop product
     $this->get($url)->assertNotFound();
 });
 
-test('iris attachment routes serve public product documents and labeling guides to logged-in customers only (HELP-4214)', function () {
+test('iris attachment routes serve public product documents to anyone holding the link (PRE-67) and labeling guides to logged-in customers only (HELP-4214)', function () {
     Storage::fake('local');
     [, $product] = createProduct($this->shop);
     $customer    = createCustomer($this->shop);
@@ -538,12 +538,16 @@ test('iris attachment routes serve public product documents and labeling guides 
     $employeeContract  = createAttachedMedia('Employee', 1, 'Contract');
     $customerNote      = createAttachedMedia('Customer', $customer->id, 'CustomerNote');
 
-    foreach ([$productSds, $tradeUnitIfra, $labelingGuide] as $media) {
-        $this->get($baseUrl.$media->ulid)->assertNotFound();
-        $this->get($baseUrl.$media->ulid.'/download')->assertNotFound();
+    $this->get($baseUrl.$labelingGuide->ulid)->assertNotFound();
+    $this->get($baseUrl.$labelingGuide->ulid.'/download')->assertNotFound();
+
+    foreach ([$productSds, $tradeUnitIfra, $webpageAttachment] as $media) {
+        $this->get($baseUrl.$media->ulid.'/download')->assertOk();
     }
 
-    $this->get($baseUrl.$webpageAttachment->ulid.'/download')->assertOk();
+    foreach ([$privateSds, $employeeContract, $customerNote] as $media) {
+        $this->get($baseUrl.$media->ulid.'/download')->assertNotFound();
+    }
 
     actingAs(createWebUser($customer), 'retina');
 
