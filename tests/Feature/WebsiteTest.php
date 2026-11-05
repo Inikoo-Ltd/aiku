@@ -67,6 +67,7 @@ use App\Models\SysAdmin\Guest;
 use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Maintenance\Web\RepairWebsiteV2Links;
+use App\Actions\Maintenance\Web\RepairRedirectMissingWorldWideWeb;
 use Illuminate\Support\Facades\File;
 use App\Actions\Web\Website\Cloudflare\BlockCountriesInCloudflare;
 use App\Actions\Web\Website\Cloudflare\MonitorCloudflarePurges;
@@ -2155,6 +2156,35 @@ test('store redirect from webpage', function (Webpage $webpage) {
     expect($redirect)->toBeInstanceOf(Redirect::class)
         ->and($redirect->to_webpage_id)->toBe($webpage->id)
         ->and($redirect->type)->toBe(RedirectTypeEnum::PERMANENT);
+})->depends('create webpage');
+
+test('repair redirect www leaves the v2 redirects of a website still migrating', function (Webpage $webpage) {
+    $website = $webpage->website;
+    $shop    = $website->shop;
+    $wasAiku = $shop->is_aiku;
+    $shop->update(['is_aiku' => true]);
+
+    $path     = 'v2-legacy-'.uniqid();
+    $redirect = StoreRedirectFromWebpage::make()->action($webpage, [
+        'type'      => RedirectTypeEnum::PERMANENT->value,
+        'from_path' => $path,
+        'from_url'  => 'https://www.'.$website->domain.'/'.$path,
+    ]);
+    $v2Url = 'https://v2.'.$website->domain.'/'.$path;
+    DB::table('redirects')->where('id', $redirect->id)->update(['from_url' => $v2Url]);
+
+    $website->update(['is_migrating' => true]);
+    RepairRedirectMissingWorldWideWeb::run(null, false);
+    $fromUrlWhileMigrating = $redirect->fresh()->from_url;
+
+    $website->update(['is_migrating' => false]);
+    RepairRedirectMissingWorldWideWeb::run(null, false);
+    $fromUrlAfterMigration = $redirect->fresh()->from_url;
+
+    $shop->update(['is_aiku' => $wasAiku]);
+
+    expect($fromUrlWhileMigrating)->toBe($v2Url)
+        ->and($fromUrlAfterMigration)->toBe('https://www.'.$website->domain.'/'.$path);
 })->depends('create webpage');
 
 test('autosave website marginals', function (Website $website) {

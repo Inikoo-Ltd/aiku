@@ -24,6 +24,8 @@ class RepairRedirectMissingWorldWideWeb
         // Filtering shops that use www. subdomain
         $query = Redirect::where('from_url', 'NOT LIKE', 'https://www.%')->whereHas('shop', function ($query) {
             $query->where('is_aiku', true);
+        })->whereHas('website', function ($query) {
+            $query->where('is_migrating', false);
         });
 
         $totalRecords = $query->count();
@@ -69,7 +71,7 @@ class RepairRedirectMissingWorldWideWeb
 
             if ($isDryRun) {
                 $command?->line("\n<info>Preview completed.</info> To apply these changes to the database, run:");
-                $command?->line("<comment>php artisan repair:redirect-www --force</comment>");
+                $command?->line("<comment>php artisan repair:redirect-www --apply</comment>");
             } else {
                 DB::commit();
                 $command?->info("Success! Updated $updatedCount redirect URLs to use 'https://www.'.");

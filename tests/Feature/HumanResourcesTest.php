@@ -116,6 +116,7 @@ use App\Models\HumanResources\EmployeeLeaveBalance;
 use App\Models\SysAdmin\User;
 use App\Enums\HumanResources\Leave\LeaveStatusEnum;
 use App\Enums\HumanResources\Overtime\OvertimeRequestStatusEnum;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -2365,7 +2366,10 @@ test('can delete leave', function () {
 });
 
 test('can approve leave and increments employee leave balance', function () {
+    Notification::fake();
+
     $leave = createPendingLeaveFixture($this->organisation, $this->group);
+    $leave->employee->update(['email' => null, 'work_email' => 'approved-'.uniqid().'@example.com']);
     $approver = createLeaveApproverFixture($this->organisation, 1);
 
     actingAs($approver->user);
@@ -2374,10 +2378,20 @@ test('can approve leave and increments employee leave balance', function () {
 
     expect($approved->status)->toBe(LeaveStatusEnum::APPROVED)
         ->and($approved->approved_at)->not->toBeNull();
+
+    Notification::assertSentOnDemand(
+        \App\Notifications\LeaveDecisionNotification::class,
+        fn ($notification, $channels, $notifiable) => $notification->leave->is($leave)
+            && $notifiable->routes['mail'] === $leave->employee->work_email
+            && str_contains($notification->toMail($notifiable)->subject, 'approved')
+    );
 });
 
 test('can reject leave', function () {
+    Notification::fake();
+
     $leave = createPendingLeaveFixture($this->organisation, $this->group);
+    $leave->employee->update(['work_email' => 'rejected-work-'.uniqid().'@example.com', 'email' => 'rejected-'.uniqid().'@example.com']);
     $approver = createLeaveApproverFixture($this->organisation, 1);
 
     actingAs($approver->user);
@@ -2386,6 +2400,17 @@ test('can reject leave', function () {
 
     expect($rejected->status)->toBe(LeaveStatusEnum::REJECTED)
         ->and($rejected->rejection_reason)->toBe('Insufficient cover');
+
+    Notification::assertSentOnDemand(
+        \App\Notifications\LeaveDecisionNotification::class,
+        function ($notification, $channels, $notifiable) use ($leave) {
+            $mail = $notification->toMail($notifiable);
+
+            return $notifiable->routes['mail'] === $leave->employee->email
+                && str_contains($mail->subject, 'rejected')
+                && str_contains((string) $mail->render(), 'Insufficient cover');
+        }
+    );
 });
 
 test('StoreLeave handle creates a leave with pending approval records', function () {
