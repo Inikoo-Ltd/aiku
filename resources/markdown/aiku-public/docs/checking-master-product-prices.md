@@ -53,6 +53,8 @@ The mark clears as soon as someone **saves the prices** of that product, either 
 
 Remember the RRP as well: it was worked out from the same wrong price, so check it in the RRP column.
 
+To see how a price stands against the market, not only against its family, set up the competitor websites under **Masters › Competitors**: see [Competitor prices](/docs/competitor-prices).
+
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>
 <li><b>Pricing of a family:</b> <b>Masters</b> → open the master shop → <b>Families</b> → open the family → <b>Pricing</b> tab.</li>

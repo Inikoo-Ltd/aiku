@@ -4645,11 +4645,14 @@ describe('competitor prices, HELP-3605', function () {
     };
 
     test('staff add a competitor whose trade login is kept encrypted and never shown back', function () {
-        get(route('grp.masters.master_shops.show.competitors.create', $this->competitorMasterShop->slug))
+        get(route('grp.masters.competitors.create'))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page->component('CreateModel')->etc());
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('CreateModel')
+                ->where('formData.blueprint.0.fields.master_shop_id.required', true)
+                ->etc());
 
-        post(route('grp.models.master_shops.competitor.store', $this->competitorMasterShop->id), [
+        post(route('grp.models.competitor.store'), [
+            'master_shop_id' => $this->competitorMasterShop->id,
             'name'        => 'Trade rival',
             'website'     => 'https://trade.example.com',
             'sells_to'    => 'wholesale',
@@ -4658,7 +4661,7 @@ describe('competitor prices, HELP-3605', function () {
             'login_url'   => 'https://trade.example.com/login',
             'username'    => 'buyer@example.com',
             'password'    => 'trade-secret',
-        ])->assertRedirect();
+        ])->assertRedirect(route('grp.masters.competitors.show', $this->competitorMasterShop->competitors()->where('name', 'Trade rival')->value('id')));
 
         $competitor = $this->competitorMasterShop->competitors()->where('name', 'Trade rival')->firstOrFail();
         expect($competitor->password)->toBe('trade-secret')
@@ -4670,17 +4673,34 @@ describe('competitor prices, HELP-3605', function () {
         expect($competitor->password)->toBe('trade-secret')
             ->and($competitor->cookies)->toBeNull();
 
-        get(route('grp.masters.master_shops.show.competitors.edit', [$this->competitorMasterShop->slug, $competitor->id]))
+        get(route('grp.masters.competitors.edit', $competitor->id))
             ->assertOk()
             ->assertDontSee('trade-secret');
+        get(route('grp.masters.competitors.show', $competitor->id))
+            ->assertOk()
+            ->assertDontSee('trade-secret')
+            ->assertDontSee('buyer@example.com')
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Masters/Competitor')
+                ->where('competitor.has_login', true)
+                ->where('competitor.read_method', 'search')
+                ->missing('competitor.password')
+                ->etc());
 
-        post(route('grp.models.master_shops.competitor.store', $this->competitorMasterShop->id), [
+        post(route('grp.models.competitor.store'), [
+            'master_shop_id' => $this->competitorMasterShop->id,
             'name'        => 'No query',
             'website'     => 'https://x.example.com',
             'sells_to'    => 'wholesale',
             'currency_id' => group()->currency_id,
             'search_url'  => 'https://x.example.com/search',
         ])->assertSessionHasErrors('search_url');
+
+        post(route('grp.models.competitor.store'), [
+            'name'        => 'No shop',
+            'website'     => 'https://y.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+        ])->assertSessionHasErrors('master_shop_id');
     });
 
     test('a search keeps only links that were on the page and staff confirm the match', function () use ($fakeBrowserAndAi) {
@@ -4708,22 +4728,103 @@ describe('competitor prices, HELP-3605', function () {
             ->and($match->competitorProduct->url)->toBe('https://rival.example.com/p/brass-bowl')
             ->and($match->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::SUGGESTED);
 
-        get(route('grp.masters.master_shops.show', [$this->competitorMasterShop->slug, 'tab' => 'competitor_prices']))
+        $row = fn (string $code) => fn (array $rows) => collect($rows)->firstWhere('code', $code);
+        get(route('grp.masters.competitors.prices.index'))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('competitor_prices.data', 1)
-                ->where('competitor_prices.data.0.competitor_unit_price', 8)
-                ->where('competitor_prices.data.0.difference', -20)
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Masters/CompetitorPrices')
+                ->where('data.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray())['competitor_unit_price'] == 8
+                    && $row($this->competitorMasterAsset->code)($rows->toArray())['difference'] === -20
+                    && $row($this->competitorMasterAsset->code)($rows->toArray())['master_shop_slug'] === $this->competitorMasterShop->slug)
+                ->where('pageHead.subNavigation2.0.label', 'To review')
+                ->etc());
+        get(route('grp.masters.competitors.prices.confirmed'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray()) === null)->etc());
+
+        get(route('grp.masters.competitors.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Masters/Competitors')
+                ->where('data.data', fn ($rows) => ($competitor = collect($rows->toArray())->firstWhere('id', $this->competitor->id))
+                    && $competitor['master_shop_slug'] === $this->competitorMasterShop->slug
+                    && $competitor['read_method'] === 'search'
+                    && !array_key_exists('password', $competitor) && !array_key_exists('feed_url', $competitor))
                 ->etc());
 
-        get(route('grp.masters.master_shops.show', [$this->competitorMasterShop->slug, 'tab' => 'competitors']))
+        get(route('grp.masters.competitors.show', [$this->competitor->id, 'tab' => 'matches']))
             ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('competitors.data.0.name', 'Rival')->missing('competitors.data.0.password')->etc());
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Masters/Competitor')->has('matches.data', 1)->where('matches.data.0.status', 'suggested')->etc());
+        get(route('grp.masters.competitors.show', [$this->competitor->id, 'tab' => 'products']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('products.data', 1)->where('products.data.0.price', 16)->where('products.data.0.units', 2)->etc());
 
         \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'confirmed'])->assertRedirect();
         expect($match->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
             ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id))
             ->toBe([['competitor' => 'Rival', 'sells_to' => 'wholesale', 'same_item' => true, 'difference_pct' => -20]]);
+
+        get(route('grp.masters.competitors.prices.confirmed'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray())['difference'] === -20)->etc());
+        get(route('grp.masters.competitors.prices.rejected'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray()) === null)->etc());
+
+        get(route('grp.masters.competitors.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Masters/CompetitorsDashboard')
+                ->where('dashboard.status.ok', fn ($ok) => $ok >= 1)
+                ->where('dashboard.throughput.reviewed.this_week', fn ($n) => $n >= 1)
+                ->where('dashboard.throughput.confirmed.this_week', fn ($n) => $n >= 1)
+                ->where('dashboard.by_master_shop', fn ($shops) => ($shop = collect($shops->toArray())->firstWhere('slug', $this->competitorMasterShop->slug))
+                    && $shop['dearer'] === 1 && $shop['cheaper'] === 0 && $shop['median_difference'] === -20 && $shop['products_with_price'] === 1)
+                ->where('dashboard.trend', fn ($weeks) => count($weeks) === 12 && collect($weeks->toArray())->last()['confirmed'] >= 1)
+                ->where('they_cheaper.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray())['difference'] === -20)
+                ->where('we_cheaper.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray()) === null)
+                ->where('competitors.data', fn ($rows) => ($competitor = collect($rows->toArray())->firstWhere('id', $this->competitor->id)) && $competitor['number_confirmed'] === 1 && $competitor['median_difference'] === -20)
+                ->etc());
+    });
+
+    test('the dashboard explains the first steps when there are no competitors', function () {
+        \App\Models\Masters\Competitor::where('group_id', group()->id)->delete();
+
+        get(route('grp.masters.competitors.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Masters/CompetitorsDashboard')
+                ->where('dashboard.number_competitors', 0)
+                ->where('can_edit', true)
+                ->missing('dashboard.status')
+                ->etc());
+    });
+
+    test('masters view without masters edit can look but not add or review', function () use ($fakeBrowserAndAi) {
+        $fakeBrowserAndAi([
+            'login_error' => null,
+            'cookies'     => [],
+            'pages'       => [['url' => 'https://rival.example.com/search?q=Brass', 'status' => 200, 'blocked' => false, 'text' => 'Brass bowl', 'links' => [['href' => 'https://rival.example.com/p/brass-bowl', 'text' => 'Brass bowl']]]],
+        ], [['url' => 'https://rival.example.com/p/brass-bowl', 'name' => 'Brass bowl', 'price' => 16, 'units' => 2, 'minimum_order' => null, 'same_item' => true]]);
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+        $match = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->sole();
+
+        $originalRoles       = $this->user->roles->pluck('name')->toArray();
+        $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+        try {
+            actingAsUserWithOnlyPermissions($this->user, ['masters.view']);
+            foreach (['grp.masters.competitors.dashboard', 'grp.masters.competitors.index', 'grp.masters.competitors.prices.index'] as $routeName) {
+                get(route($routeName))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit', false)->missing('pageHead.actions.0')->etc());
+            }
+            get(route('grp.masters.competitors.show', $this->competitor->id))->assertOk();
+            get(route('grp.masters.competitors.create'))->assertForbidden();
+            get(route('grp.masters.competitors.edit', $this->competitor->id))->assertForbidden();
+            post(route('grp.models.competitor.store'), ['master_shop_id' => $this->competitorMasterShop->id, 'name' => 'Nope', 'website' => 'https://nope.example.com', 'sells_to' => 'wholesale', 'currency_id' => group()->currency_id])->assertForbidden();
+            \Pest\Laravel\patch(route('grp.models.competitor.update', $this->competitor->id), ['name' => 'Nope'])->assertForbidden();
+            \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'confirmed'])->assertForbidden();
+            expect($match->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::SUGGESTED);
+        } finally {
+            setPermissionsTeamId($this->user->group_id);
+            $this->user->syncPermissions($originalPermissions);
+            actingAsUserWithRoles($this->user, $originalRoles);
+            \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
+        }
     });
 
     test('a failed login marks the competitor and reads nothing', function () use ($fakeBrowserAndAi) {
@@ -4768,13 +4869,15 @@ describe('competitor prices, HELP-3605', function () {
             ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(0)
             ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id)[0]['difference_pct'])->toBe(-20);
 
-        get(route('grp.masters.master_shops.show', [$this->competitorMasterShop->slug, 'tab' => 'competitor_prices']))
+        get(route('grp.masters.competitors.prices.confirmed'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('competitor_prices.data', 1)
-                ->where('competitor_prices.data.0.is_auto_confirmed', true)
-                ->where('competitor_prices.data.0.confidence', 90)
+                ->where('data.data', fn ($rows) => ($match = collect($rows->toArray())->firstWhere('code', $this->competitorMasterAsset->code))
+                    && $match['is_auto_confirmed'] === true && $match['confidence'] === 90)
                 ->etc());
+        get(route('grp.masters.competitors.show', $this->competitor->id))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('competitor.read_method', 'feed')->etc());
     });
 
     test('a competitor with only a website that is a Shopify shop has its catalogue read as the feed, one row per pack size', function () {

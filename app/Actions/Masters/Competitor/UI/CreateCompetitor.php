@@ -8,10 +8,9 @@
 
 namespace App\Actions\Masters\Competitor\UI;
 
-use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
-use App\Models\Masters\MasterShop;
+use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,21 +19,22 @@ class CreateCompetitor extends OrgAction
 {
     use WithMastersEditAuthorisation;
     use WithCompetitorForm;
+    use WithCompetitorsSubNavigation;
 
-    public function asController(MasterShop $masterShop, ActionRequest $request): Response
+    public function asController(ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($masterShop);
+        return $this->handle(group());
     }
 
-    public function handle(MasterShop $masterShop): Response
+    public function handle(Group $group): Response
     {
         return Inertia::render(
             'CreateModel',
             [
                 'breadcrumbs' => array_merge(
-                    ShowMasterShop::make()->getBreadcrumbs($masterShop),
+                    $this->getCompetitorsBreadcrumbs('grp.masters.competitors.index', __('Competitors')),
                     [['type' => 'creatingModel', 'creatingModel' => ['label' => __('New competitor')]]]
                 ),
                 'title'       => __('New competitor'),
@@ -47,17 +47,17 @@ class CreateCompetitor extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => 'grp.masters.master_shops.show',
-                                'parameters' => ['masterShop' => $masterShop->slug, 'tab' => 'competitors'],
+                                'name'       => 'grp.masters.competitors.index',
+                                'parameters' => [],
                             ],
                         ],
                     ],
                 ],
                 'formData'    => [
-                    'blueprint' => $this->competitorBlueprint($masterShop),
+                    'blueprint' => $this->competitorBlueprint($group),
                     'route'     => [
-                        'name'       => 'grp.models.master_shops.competitor.store',
-                        'parameters' => ['masterShop' => $masterShop->id],
+                        'name'       => 'grp.models.competitor.store',
+                        'parameters' => [],
                     ],
                 ],
             ]

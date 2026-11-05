@@ -22,8 +22,6 @@ import {
   faFolderDownload,
   faStoreAlt,
   faAlignLeft,
-  faBinoculars,
-  faBalanceScale,
   faTruckContainer,
 } from "@fal";
 import { faCheckCircle, faPlusCircle } from "@fas";
@@ -39,8 +37,6 @@ import ShopShowcase from "@/Components/Showcases/Grp/ShopShowcase.vue";
 import CatalogueDashboard from "@/Components/Dropshipping/CatalogueDashboard.vue";
 import { PageHeadingTypes } from "@/types/PageHeading";
 import TableShopInMaster from "@/Components/Tables/Grp/Masters/TableShopInMaster.vue";
-import TableCompetitors from "@/Components/Tables/Grp/Masters/TableCompetitors.vue";
-import TableMasterAssetCompetitorProducts from "@/Components/Tables/Grp/Masters/TableMasterAssetCompetitorProducts.vue";
 import TableCatalogueOnItsWay from "@/Components/Tables/Grp/Org/Catalogue/TableCatalogueOnItsWay.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
@@ -53,7 +49,7 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
-  faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload, faAlignLeft, faBinoculars, faBalanceScale, faTruckContainer
+  faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle, faFolderDownload, faAlignLeft, faTruckContainer
 );
 
 const props = defineProps<{
@@ -69,8 +65,6 @@ const props = defineProps<{
   sales_analysis_teaser?: object
   history?: {}
   shops?: {}
-  competitors?: {}
-  competitor_prices?: {}
   on_its_way?: {}
   can_edit?: boolean
   organisations_list: {
@@ -93,8 +87,6 @@ const component = computed(() => {
     dashboard: CatalogueDashboard,
     history: TableHistories,
     shops: TableShopInMaster,
-    competitors: TableCompetitors,
-    competitor_prices: TableMasterAssetCompetitorProducts,
     on_its_way: TableCatalogueOnItsWay,
   };
   return components[currentTab.value];
@@ -145,8 +137,6 @@ const isOpenModalAddShop = ref(false)
             </FontAwesomeLayers>
             {{ ctrans('Add Shop') }}
           </Button>
-          <Button v-if="currentTab == 'competitors' && can_edit" :type="'create'" :label="ctrans('Add competitor')"
-            @click="router.visit(route('grp.masters.master_shops.show.competitors.create', { masterShop: route().params['masterShop'] }))" />
         </template>
   </PageHeading>
 

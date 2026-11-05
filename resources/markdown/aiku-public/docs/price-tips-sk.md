@@ -45,7 +45,8 @@ Na karte **Pricing** posledný stĺpec ukazuje dôvod jantárovou farbou. Kliknu
 - bežiace akcie;
 - jeho miesto v rodine (poradie, podiel na predaji rodiny, vývoj rodiny oproti jeho vlastnému);
 - ako sa darí webu;
-- poslednú zmenu ceny a ako sa predaj pohol v troch mesiacoch po nej.
+- poslednú zmenu ceny a ako sa predaj pohol v troch mesiacoch po nej;
+- potvrdené ceny konkurentov pri produkte, ak sú konkurenti nastavení (pozrite [Ceny konkurentov](/docs/competitor-prices-sk)).
 
 Nie je tu žiadne percento ani tlačidlo Apply. Tip je upozornenie, nie cena.
 

@@ -44,7 +44,8 @@ On the **Pricing** tab, the last column shows the reason in amber, for example *
 - offers running on it;
 - where it stands in its family (rank, share of family sales, family trend against its own);
 - how the website is doing;
-- the last price change and how sales moved in the three months after it.
+- the last price change and how sales moved in the three months after it;
+- the confirmed competitor prices of the product, when competitors are set up (see [Competitor prices](/docs/competitor-prices)).
 
 There is no percentage and no Apply button. A tip is a pointer, not a price.
 

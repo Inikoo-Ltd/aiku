@@ -45,7 +45,8 @@ En la pestaña **Pricing**, la última columna muestra el motivo en ámbar. Puls
 - ofertas activas;
 - su posición en la familia (puesto, parte de las ventas de la familia, tendencia de la familia frente a la suya);
 - cómo va la web;
-- el último cambio de precio y cómo se movieron las ventas en los tres meses siguientes.
+- el último cambio de precio y cómo se movieron las ventas en los tres meses siguientes;
+- los precios confirmados de la competencia para el producto, cuando hay competidores configurados (consulta [Precios de la competencia](/docs/competitor-prices-es)).
 
 No hay porcentaje ni botón Apply. Una sugerencia es un aviso, no un precio.
 

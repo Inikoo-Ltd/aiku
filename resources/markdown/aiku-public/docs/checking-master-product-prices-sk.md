@@ -53,6 +53,8 @@ Označenie zmizne, akonáhle niekto **uloží ceny** daného produktu, či už j
 
 Nezabudnite ani na RRP: bola vypočítaná z tej istej nesprávnej ceny, takže ju skontrolujte v stĺpci RRP.
 
+Ak chcete vidieť, ako cena stojí voči trhu, a nielen voči rodine, nastavte webové stránky konkurentov v **Masters › Competitors** (Konkurenti): pozrite [Ceny konkurentov](/docs/competitor-prices-sk).
+
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>
 <li><b>Ceny rodiny:</b> <b>Masters</b> → otvorte hlavný obchod → <b>Families</b> → otvorte rodinu → karta <b>Pricing</b>.</li>

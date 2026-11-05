@@ -1033,7 +1033,6 @@ Route::post('master-shop', StoreMasterShop::class)->name('master_shop.store');
 Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
     Route::patch('/', UpdateMasterShop::class)->name('update');
     Route::patch('price-exchange', UpdateMasterShopPriceExchange::class)->name('price_exchange.update');
-    Route::post('competitor', StoreCompetitor::class)->name('competitor.store');
     Route::post('master-department', StoreMasterDepartment::class)->name('master_department.store');
     Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
     Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
@@ -1090,6 +1089,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
 Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
 Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::class)->name('master_asset.prices.bulk_update');
 Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/dismiss', DismissMasterAssetPriceTip::class)->name('master_asset_price_tip.dismiss');
+Route::post('competitor', StoreCompetitor::class)->name('competitor.store');
 Route::patch('competitor/{competitor:id}', UpdateCompetitor::class)->name('competitor.update');
 Route::patch('master-asset-competitor-product/{masterAssetCompetitorProduct:id}/review', ReviewMasterAssetCompetitorProduct::class)->name('master_asset_competitor_product.review');
 

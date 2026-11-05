@@ -422,6 +422,16 @@ class GetGroupNavigation
                             'parameters' => []
                         ]
                     ],
+                    [
+                        'label'   => __('Competitors'),
+                        'tooltip' => __('Competitor prices'),
+                        'icon'    => ['fal', 'fa-binoculars'],
+                        'root'    => 'grp.masters.competitors.',
+                        'route'   => [
+                            'name'       => 'grp.masters.competitors.dashboard',
+                            'parameters' => []
+                        ]
+                    ],
                 ]
             ]
 

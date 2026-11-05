@@ -12,18 +12,31 @@ use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Enums\Masters\Competitor\CompetitorSellsToEnum;
 use App\Models\Masters\Competitor;
 use App\Models\Masters\MasterShop;
+use App\Models\SysAdmin\Group;
 use Spatie\LaravelOptions\Options;
 
 trait WithCompetitorForm
 {
-    public function competitorBlueprint(MasterShop $masterShop, ?Competitor $competitor = null): array
+    public function competitorBlueprint(Group $group, ?Competitor $competitor = null): array
     {
+        $masterShopField = $competitor ? [] : [
+            'master_shop_id' => [
+                'type'        => 'select',
+                'label'       => __('Master shop'),
+                'placeholder' => __('Select one option'),
+                'required'    => true,
+                'mode'        => 'single',
+                'options'  => Options::forModels(MasterShop::where('group_id', $group->id)->orderBy('code')),
+                'value'    => MasterShop::where('group_id', $group->id)->count() === 1 ? MasterShop::where('group_id', $group->id)->value('id') : null,
+            ],
+        ];
+
         return [
             [
                 'title'  => __('Competitor'),
                 'label'  => __('Competitor'),
                 'icon'   => 'fa-light fa-store-alt',
-                'fields' => [
+                'fields' => $masterShopField + [
                     'name'        => [
                         'type'     => 'input',
                         'label'    => __('Name'),
@@ -51,7 +64,7 @@ trait WithCompetitorForm
                         'required'   => true,
                         'searchable' => true,
                         'options'    => GetCurrenciesOptions::run(),
-                        'value'      => $competitor?->currency_id ?? $masterShop->group->currency_id,
+                        'value'      => $competitor?->currency_id ?? $group->currency_id,
                     ],
                 ],
             ],
@@ -63,7 +76,7 @@ trait WithCompetitorForm
                     'feed_url'   => [
                         'type'        => 'input',
                         'label'       => __('Product feed link'),
-                        'information' => $competitor?->feed_url ? __('Saved. Leave it empty to keep it') : __('Best option: the link to the CSV or text file with all their products and prices that they give their trade customers. Read every day'),
+                        'information' => $competitor?->feed_url ? __('Saved. Leave it empty to keep it') : __('Best option: the link to the CSV or text file with all their products and prices that they give their trade customers. Read every day. Not needed for a Shopify shop: its catalogue is found by itself'),
                         'value'       => '',
                     ],
                     'search_url' => [

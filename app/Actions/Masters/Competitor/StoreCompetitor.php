@@ -13,7 +13,9 @@ use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\Competitor;
 use App\Models\Masters\MasterShop;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreCompetitor extends OrgAction
@@ -24,36 +26,35 @@ class StoreCompetitor extends OrgAction
     public function handle(MasterShop $masterShop, array $modelData): Competitor
     {
         /** @var Competitor $competitor */
-        $competitor = $masterShop->competitors()->create($modelData + ['group_id' => $masterShop->group_id]);
+        $competitor = $masterShop->competitors()->create(Arr::except($modelData, 'master_shop_id') + ['group_id' => $masterShop->group_id]);
 
         return $competitor;
     }
 
     public function rules(): array
     {
-        return $this->competitorRules(required: true);
+        return $this->competitorRules(required: true) + [
+            'master_shop_id' => ['required', Rule::exists('master_shops', 'id')->where('group_id', $this->group->id)],
+        ];
     }
 
-    public function asController(MasterShop $masterShop, ActionRequest $request): Competitor
+    public function asController(ActionRequest $request): Competitor
     {
         $this->initialisationFromGroup(group(), $request);
 
-        return $this->handle($masterShop, $this->validatedData);
+        return $this->handle(MasterShop::find($this->validatedData['master_shop_id']), $this->validatedData);
     }
 
     public function action(MasterShop $masterShop, array $modelData): Competitor
     {
         $this->asAction = true;
-        $this->initialisationFromGroup($masterShop->group, $modelData);
+        $this->initialisationFromGroup($masterShop->group, $modelData + ['master_shop_id' => $masterShop->id]);
 
         return $this->handle($masterShop, $this->validatedData);
     }
 
     public function htmlResponse(Competitor $competitor): RedirectResponse
     {
-        return Redirect::route('grp.masters.master_shops.show', [
-            'masterShop' => $competitor->masterShop->slug,
-            'tab'        => 'competitors',
-        ]);
+        return Redirect::route('grp.masters.competitors.show', ['competitor' => $competitor->id]);
     }
 }

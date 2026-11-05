@@ -53,6 +53,8 @@ La marca se borra en cuanto alguien **guarda los precios** de ese producto, ya s
 
 No olvides tampoco el RRP: se calculó a partir del mismo precio equivocado, así que compruébalo en la columna RRP.
 
+Para ver cómo está un precio frente al mercado, y no solo frente a su familia, configura los sitios web de la competencia en **Masters › Competitors**: consulta [Precios de la competencia](/docs/competitor-prices-es).
+
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>
 <li><b>Precios de una familia:</b> <b>Masters</b> → abre la tienda maestra → <b>Families</b> → abre la familia → pestaña <b>Pricing</b>.</li>

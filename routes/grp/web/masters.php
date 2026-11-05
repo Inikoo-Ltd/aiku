@@ -57,6 +57,10 @@ use App\Actions\Masters\MasterVariant\ShowMasterVariant;
 use App\Actions\Masters\MasterVariant\EditMasterVariant;
 use App\Actions\Masters\Competitor\UI\CreateCompetitor;
 use App\Actions\Masters\Competitor\UI\EditCompetitor;
+use App\Actions\Masters\Competitor\UI\IndexCompetitors;
+use App\Actions\Masters\Competitor\UI\IndexMasterAssetCompetitorProducts;
+use App\Actions\Masters\Competitor\UI\ShowCompetitor;
+use App\Actions\Masters\Competitor\UI\ShowCompetitorsDashboard;
 use App\Actions\Masters\MasterShop\UI\CreateMasterShop;
 use App\Actions\Masters\MasterShop\UI\EditMasterShop;
 use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
@@ -70,6 +74,18 @@ require_once __DIR__ . '/common/trade_unit_families.php';
 
 Route::get('/', ShowMastersDashboard::class)->name('dashboard');
 Route::get('/tab-data', GetMastersDashboardTabData::class)->name('dashboard.tab-data');
+
+Route::prefix('competitors')->as('competitors.')->group(function () {
+    Route::get('', ShowCompetitorsDashboard::class)->name('dashboard');
+    Route::get('list', IndexCompetitors::class)->name('index');
+    Route::get('create', CreateCompetitor::class)->name('create');
+    Route::get('prices', IndexMasterAssetCompetitorProducts::class)->name('prices.index');
+    Route::get('prices/confirmed', [IndexMasterAssetCompetitorProducts::class, 'confirmed'])->name('prices.confirmed');
+    Route::get('prices/rejected', [IndexMasterAssetCompetitorProducts::class, 'rejected'])->name('prices.rejected');
+    Route::get('prices/all', [IndexMasterAssetCompetitorProducts::class, 'allMatches'])->name('prices.all');
+    Route::get('{competitor}', ShowCompetitor::class)->name('show');
+    Route::get('{competitor}/edit', EditCompetitor::class)->name('edit');
+});
 
 
 
@@ -124,8 +140,6 @@ Route::name("master_shops")->prefix('master-shops')
 
         Route::prefix('/{masterShop}')->as('.show')->group(function () {
             Route::get('', ShowMasterShop::class)->name('');
-            Route::get('competitors/create', CreateCompetitor::class)->name('.competitors.create');
-            Route::get('competitors/{competitor}/edit', EditCompetitor::class)->name('.competitors.edit');
 
             Route::prefix('/shop')->as('.shop')->group(function () {
                 Route::get('/create/{organisation}', CreateShopFromMaster::class)->name('.create');
