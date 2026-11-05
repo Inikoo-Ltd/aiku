@@ -250,6 +250,7 @@ class GetPurchaseOrderStages
             },
             'label'       => $agentTexts[$stage->value]['label'] ?? Stage::labels()[$stage->value],
             'description' => $agentTexts[$stage->value]['description'] ?? Stage::descriptions()[$stage->value],
+            'caption'     => Stage::captions()[$stage->value] ?? null,
             'reached'     => $stages[$stage->value]['reached'],
             'current'     => $stage->value === $current,
             'date'        => $stages[$stage->value]['date'],

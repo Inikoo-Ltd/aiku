@@ -52,6 +52,7 @@ interface Stage {
     phase?: "agent" | "supplier" | "delivery"
     label: string
     description: string
+    caption?: string | null
     reached: boolean
     current: boolean
     date: string | null
@@ -335,6 +336,7 @@ function save() {
                 <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
                 {{ stage.label }}
             </div>
+            <div v-if="stage.caption" class="text-xs text-gray-400 italic">{{ stage.caption }}</div>
 
             <div class="mt-1 tabular-nums" :class="stage.date ? 'text-gray-700' : 'text-gray-400'">
                 <template v-if="stage.not_required">{{ ctrans("Not required") }}</template>

@@ -223,6 +223,17 @@ enum PurchaseOrderStageEnum: string
         ];
     }
 
+    /**
+     * A short line shown under the stage's name on the purchase order.
+     */
+    public static function captions(): array
+    {
+        return [
+            'in_production' => __('In production at the supplier'),
+            'handed_over'   => __('Available to ship'),
+        ];
+    }
+
     public static function fieldLabels(): array
     {
         return [
