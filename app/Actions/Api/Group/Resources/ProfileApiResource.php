@@ -13,6 +13,7 @@ use App\Http\Resources\SysAdmin\Guest\GuestResource;
 use App\Models\SysAdmin\User;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use JsonSerializable;
 
 class ProfileApiResource extends JsonResource
@@ -29,6 +30,7 @@ class ProfileApiResource extends JsonResource
             'contact_name' => $user->contact_name,
             'email'        => $user->email,
             'status'       => $user->status,
+            'app_theme'    => Arr::get($user->settings, 'app_theme'),
             'employee'     => EmployeeResource::collection($user->employees),
             'guest'        => GuestResource::collection($user->guests),
             'created_at'   => $user->created_at,
