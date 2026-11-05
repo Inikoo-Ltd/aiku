@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Dispatching\DeliveryNoteItem\SyncDeliveryNoteItemsRequiredPickQuantity;
 use App\Actions\Dropshipping\Bundle\SyncBundlesOfComponent;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
@@ -76,8 +75,6 @@ class SyncProductTradeUnits
         foreach ($product->refresh()->orgStocks as $orgStock) {
             SyncDeliveryNoteItemsRequiredPickQuantity::dispatch($orgStock);
         }
-
-        ProductHydrateAvailableQuantity::run($product);
 
         $this->dispatchCustomAuditTradeUnit($product, $oldTradeUnitData);
 

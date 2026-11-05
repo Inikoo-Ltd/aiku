@@ -8,7 +8,6 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -30,7 +29,6 @@ class RepairProductOrgStocks
 
         if ($subject instanceof Product) {
             SyncProductOrgStocksFromTradeUnits::run($subject);
-            ProductHydrateAvailableQuantity::run($subject);
             return;
         }
 
@@ -84,7 +82,6 @@ class RepairProductOrgStocks
                     }
 
                     SyncProductOrgStocksFromTradeUnits::run($product);
-                    ProductHydrateAvailableQuantity::run($product);
 
 
                     $processed++;

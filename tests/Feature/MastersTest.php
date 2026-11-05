@@ -3741,6 +3741,7 @@ test('warehouse packing change recomputes product pick quantity', function () {
     }
     $orgStock = $stock->orgStocks()->where('organisation_id', $product->organisation_id)->first();
     $orgStock->tradeUnits()->sync([$tradeUnit->id => ['quantity' => 4]]);
+    $orgStock->updateQuietly(['quantity_available' => 10, 'is_on_demand' => false]);
 
     \App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits::run($product->refresh());
 
@@ -3748,7 +3749,8 @@ test('warehouse packing change recomputes product pick quantity', function () {
         ->where('product_id', $product->id)->where('org_stock_id', $orgStock->id)->first();
     expect((float) $row->quantity)->toBe(0.5)
         ->and((int) $row->dividend)->toBe(4)
-        ->and((int) $row->divisor)->toBe(1);
+        ->and((int) $row->divisor)->toBe(1)
+        ->and((int) $product->refresh()->available_quantity)->toBe(20);
 });
 
 test('a product whose trade unit has no group stock keeps the organisation SKO holding that trade unit', function () {

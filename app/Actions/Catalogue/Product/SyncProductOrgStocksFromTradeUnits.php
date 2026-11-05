@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateOrgStocksWithoutProducts;
@@ -71,6 +72,8 @@ class SyncProductOrgStocksFromTradeUnits
         }
 
         $product->orgStocks()->sync($orgStocks);
+        $product->unsetRelation('orgStocks');
+        ProductHydrateAvailableQuantity::run($product);
 
         foreach ($product->organisation->warehouses as $warehouse) {
             WarehouseHydrateOrgStocksWithoutProducts::dispatch($warehouse)->delay(2);
