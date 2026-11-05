@@ -29,6 +29,7 @@ const statusLabels: Record<string, string> = {
 
 const readMethodLabels: Record<string, string> = {
     shopify: ctrans("Shopify catalogue"),
+    woocommerce: ctrans("WooCommerce catalogue"),
     feed: ctrans("Product feed"),
     search: ctrans("Website search"),
     none: ctrans("Nothing yet"),
@@ -59,7 +60,7 @@ const readMethodLabels: Record<string, string> = {
         <template #cell(read_method)="{ item }">
             <span class="whitespace-nowrap">{{ readMethodLabels[item.read_method] }}</span>
             <FontAwesomeIcon v-if="item.has_login" icon="fal fa-lock" class="ml-1 text-gray-500" v-tooltip="ctrans('Logs in with our trade account')" fixed-width />
-            <span v-if="item.read_method === 'none'" class="ml-2 text-xs text-amber-600">{{ ctrans("Add a search link, or it is read by itself if it is a Shopify shop") }}</span>
+            <span v-if="item.read_method === 'none'" class="ml-2 text-xs text-amber-600">{{ ctrans("Add a search link, or it is read by itself if it is a Shopify or WooCommerce shop") }}</span>
         </template>
         <template #cell(fetched_at)="{ item }">
             <span class="whitespace-nowrap">{{ item.fetched_at ? useFormatTime(item.fetched_at) : "" }}</span>

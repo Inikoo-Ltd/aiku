@@ -73,7 +73,7 @@ const positionSegments = (row: MasterShopRow) => {
         </div>
         <p class="mt-3">{{ ctrans("Add the websites of the competitors whose prices you want to know. For each one you only need a name and its website, and the master shop whose products it competes with.") }}</p>
         <ul class="mt-3 list-disc space-y-1 pl-5 text-gray-600">
-            <li>{{ ctrans("A Shopify shop is read by itself the next morning: every product and pack size, with its price.") }}</li>
+            <li>{{ ctrans("A Shopify or WooCommerce shop that shows its prices is read by itself the next morning: every product and pack size, with its price.") }}</li>
             <li>{{ ctrans("Any other website needs a search link, or the product feed it gives its trade customers.") }}</li>
             <li>{{ ctrans("After each read the AI matches their products to ours. It confirms the matches it is sure of and asks you to review the rest; confirmed prices feed the price tips.") }}</li>
         </ul>

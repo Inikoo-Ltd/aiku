@@ -4934,6 +4934,63 @@ describe('competitor prices, HELP-3605', function () {
         expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::findShopifyFeed('https://shop.example.com'))->toBeNull();
     });
 
+    test('a competitor whose website is a WooCommerce shop has its public catalogue read, one row per option', function () {
+        \Illuminate\Support\Sleep::fake();
+        $product = fn (int $id, string $type, string $name, string $price, string $variation = '') => [
+            'id' => $id, 'type' => $type, 'name' => $name, 'variation' => $variation, 'permalink' => "https://woo.example.com/product/$id/",
+            'short_description' => '<p>Hand rolled</p>', 'description' => '', 'images' => [['src' => "https://woo.example.com/i/$id.jpg"]],
+            'prices' => ['price' => $price, 'currency_minor_unit' => 2],
+        ];
+        $shopPages = function (bool $variationsWork) use ($product) {
+            \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+            \Illuminate\Support\Facades\Http::fake(['woo.example.com/*' => function (\Illuminate\Http\Client\Request $request) use ($product, $variationsWork) {
+                parse_str(parse_url($request->url(), PHP_URL_QUERY), $query);
+
+                return match (true) {
+                    str_contains($request->url(), 'products.json')  => \Illuminate\Support\Facades\Http::response('Not found', 404),
+                    ($query['type'] ?? null) === 'variation'         => $variationsWork
+                        ? \Illuminate\Support\Facades\Http::response([$product(104, 'variation', 'Rose Oil', '300', 'Size: 10ml'), $product(105, 'variation', 'Rose Oil', '1200', 'Size: 50ml')], 200, ['X-WP-TotalPages' => 1])
+                        : \Illuminate\Support\Facades\Http::response('error', 500),
+                    ($query['page'] ?? '1') === '1'                  => \Illuminate\Support\Facades\Http::response([$product(101, 'simple', 'Nag Champa &#8211; 15g', '450'), $product(102, 'simple', 'Trade only', '')], 200, ['X-WP-TotalPages' => 2]),
+                    $query['page'] === '2'                           => \Illuminate\Support\Facades\Http::response([$product(103, 'variable', 'Rose Oil', '300')], 200, ['X-WP-TotalPages' => 2]),
+                    default                                          => \Illuminate\Support\Facades\Http::response(['code' => 'rest_post_invalid_page_number'], 400),
+                };
+            }]);
+        };
+        $shopPages(true);
+
+        $wooCompetitor = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
+            'name'        => 'Woo rival',
+            'website'     => 'https://woo.example.com/shop/',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+        ]);
+        $this->artisan('masters:competitor-feeds', ['--competitor' => $wooCompetitor->id, '--no-match' => true])->assertSuccessful();
+
+        $wooCompetitor->refresh();
+        $rows = $wooCompetitor->products()->get()->keyBy('code');
+        expect($wooCompetitor->feed_url)->toBe('https://woo.example.com/wp-json/wc/store/v1/products')
+            ->and($wooCompetitor->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::OK)
+            ->and($rows->pluck('code')->sort()->values()->all())->toBe(['101', '104', '105'])
+            ->and($rows['101']->name)->toBe('Nag Champa – 15g')
+            ->and((float) $rows['101']->price)->toBe(4.5)
+            ->and($rows['101']->url)->toBe('https://woo.example.com/product/101/')
+            ->and($rows['101']->image_url)->toBe('https://woo.example.com/i/101.jpg')
+            ->and($rows['101']->data)->toEqual(['description' => 'Hand rolled'])
+            ->and($rows['104']->name)->toBe('Rose Oil Size: 10ml')
+            ->and((float) $rows['105']->price)->toBe(12.0)
+            ->and(\App\Http\Resources\Masters\CompetitorsResource::readMethod($wooCompetitor->feed_url, false))->toBe('woocommerce');
+
+        $shopPages(false);
+        expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::make()->handle($wooCompetitor))->toBe(1)
+            ->and($wooCompetitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::OK)
+            ->and($wooCompetitor->products()->pluck('code')->sort()->values()->all())->toBe(['101', '104', '105']);
+
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['woo.example.com/*' => \Illuminate\Support\Facades\Http::response('<html>Not found</html>', 404)]);
+        expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::findWooCommerceFeed('https://woo.example.com'))->toBeNull();
+    });
+
     test('pack sizes are read from the name unless ours is a set too', function () {
         expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set of 12 Rosemary Incense Sticks', 'Satya Incense 15gm - Rosemary'))->toBe(12.0)
             ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('12 Packs of Palo Santo Smudge', 'Palo Santo Smudge'))->toBe(12.0)

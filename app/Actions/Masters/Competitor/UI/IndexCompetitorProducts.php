@@ -67,7 +67,7 @@ class IndexCompetitorProducts extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState([
                     'title'       => __('Nothing read from this competitor yet'),
-                    'description' => __('Product feeds and Shopify catalogues are read every morning, website searches every week'),
+                    'description' => __('Product feeds and Shopify or WooCommerce catalogues are read every morning, website searches every week'),
                 ])
                 ->column(key: 'name', label: __('Product'), sortable: true, searchable: true)
                 ->column(key: 'price', label: __('Price'), sortable: true, align: 'right')

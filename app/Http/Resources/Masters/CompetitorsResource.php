@@ -44,10 +44,11 @@ class CompetitorsResource extends JsonResource
     public static function readMethod(?string $feedUrl, bool $hasSearch): string
     {
         return match (true) {
-            $feedUrl && ImportCompetitorFeed::isShopifyFeed($feedUrl) => 'shopify',
-            (bool) $feedUrl                                           => 'feed',
-            $hasSearch                                                => 'search',
-            default                                                   => 'none',
+            $feedUrl && ImportCompetitorFeed::isShopifyFeed($feedUrl)     => 'shopify',
+            $feedUrl && ImportCompetitorFeed::isWooCommerceFeed($feedUrl) => 'woocommerce',
+            (bool) $feedUrl                                               => 'feed',
+            $hasSearch                                                    => 'search',
+            default                                                       => 'none',
         };
     }
 }

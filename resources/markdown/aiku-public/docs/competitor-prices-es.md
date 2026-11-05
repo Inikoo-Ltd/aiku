@@ -1,8 +1,8 @@
 ---
 title: Precios de la competencia
 summary: Cómo lee aiku los precios de las webs de tus competidores, empareja sus productos con tus productos maestros y muestra dónde eres más barato o más caro, con lo que conviene revisar en el panel de Competitors.
-date: 2026-11-05
-source_date: 2026-11-05
+date: 2026-11-06
+source_date: 2026-11-06
 tags: masters, pricing, products, catalogue
 category: shop
 ---
@@ -20,7 +20,7 @@ Ve a **Masters › Competitors** y pulsa **Add competitor** (añadir competidor)
 - a quién **vende**: a compradores finales (sus precios se comparan con tu RRP) o a minoristas (se comparan con tu precio);
 - la **moneda** de sus precios.
 
-Con eso basta para una tienda Shopify: aiku encuentra por sí mismo su catálogo público y lo lee a la mañana siguiente a las 04:00 UTC, con cada producto y cada tamaño de pack con su precio. La página del competidor muestra entonces **Shopify catalogue** en *Prices read from* (precios leídos de).
+Con eso basta para una tienda Shopify o WooCommerce que muestra sus precios: aiku encuentra por sí mismo su catálogo público y lo lee a la mañana siguiente a las 04:00 UTC, con cada producto y cada tamaño de pack con su precio. La página del competidor muestra entonces **Shopify catalogue** o **WooCommerce catalogue** en *Prices read from* (precios leídos de).
 
 Para cualquier otra web, rellena uno de los campos de **Where to read prices** (dónde leer los precios):
 

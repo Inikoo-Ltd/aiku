@@ -1,7 +1,7 @@
 ---
 title: Competitor prices
 summary: How aiku reads the prices of your competitors' websites, matches their products to your master products, and shows where you are cheaper or dearer, with what to check on the Competitors dashboard.
-date: 2026-11-05
+date: 2026-11-06
 tags: masters, pricing, products, catalogue
 category: shop
 help_routes: grp.masters.competitors.dashboard, grp.masters.competitors.index, grp.masters.competitors.show, grp.masters.competitors.prices.index, grp.masters.competitors.prices.confirmed, grp.masters.competitors.prices.rejected, grp.masters.competitors.prices.all
@@ -20,7 +20,7 @@ Go to **Masters › Competitors** and click **Add competitor**. You need:
 - who it **sells to**: shoppers (their prices are compared with your RRP) or retailers (compared with your price);
 - the **currency** of their prices.
 
-That is enough for a Shopify shop: aiku finds its public catalogue by itself and reads it the next morning at 04:00 UTC, every product and every pack size with its price. The competitor page then says **Shopify catalogue** under *Prices read from*.
+That is enough for a Shopify or WooCommerce shop that shows its prices: aiku finds its public catalogue by itself and reads it the next morning at 04:00 UTC, every product and every pack size with its price. The competitor page then says **Shopify catalogue** or **WooCommerce catalogue** under *Prices read from*.
 
 For any other website, fill in one of the fields under **Where to read prices**:
 

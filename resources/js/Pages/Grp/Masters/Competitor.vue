@@ -58,9 +58,10 @@ const statusLabels: Record<string, string> = {
 
 const readMethodLabels: Record<string, string> = {
     shopify: ctrans("Shopify catalogue, read every morning"),
+    woocommerce: ctrans("WooCommerce catalogue, read every morning"),
     feed: ctrans("Product feed, read every morning"),
     search: ctrans("Website search, every week for the products with a price tip"),
-    none: ctrans("Nothing yet: add a search link, or it is read by itself if it is a Shopify shop"),
+    none: ctrans("Nothing yet: add a search link, or it is read by itself if it is a Shopify or WooCommerce shop"),
 }
 
 const facts = computed(() => [

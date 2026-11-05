@@ -20,10 +20,10 @@ use Throwable;
 
 /**
  * Reads a competitor's product feed (a CSV or tab separated file they publish for their trade
- * customers, or the public catalogue of a Shopify shop) into competitor_products, then queues
- * the matching of our products against it. Columns are found by their header, so a feed with
- * the usual names needs no setup, and a competitor with no feed and no search link whose website
- * runs on Shopify gets its catalogue as the feed.
+ * customers, or the public catalogue of a Shopify or WooCommerce shop) into competitor_products,
+ * then queues the matching of our products against it. Columns are found by their header, so a
+ * feed with the usual names needs no setup, and a competitor with no feed and no search link whose
+ * website runs on Shopify or WooCommerce gets its catalogue as the feed.
  */
 class ImportCompetitorFeed
 {
@@ -62,14 +62,21 @@ class ImportCompetitorFeed
      */
     private const int SHOPIFY_PAGES = 40;
 
+    /**
+     * 100 products a page in WooCommerce.
+     */
+    private const int WOOCOMMERCE_PAGES = 100;
+
     public function handle(Competitor $competitor): int
     {
         $startedAt = now();
 
         try {
-            $rows = static::isShopifyFeed($competitor->feed_url)
-                ? static::shopifyRows($competitor->feed_url)
-                : static::parse(Http::timeout(120)->get($competitor->feed_url)->throw()->body());
+            [$rows, $isComplete] = match (true) {
+                static::isShopifyFeed($competitor->feed_url)     => [static::shopifyRows($competitor->feed_url), true],
+                static::isWooCommerceFeed($competitor->feed_url) => static::wooCommerceRows($competitor->feed_url),
+                default                                          => [static::parse(Http::timeout(120)->get($competitor->feed_url)->throw()->body()), true],
+            };
         } catch (Throwable $exception) {
             $competitor->update(['status' => CompetitorStatusEnum::ERROR, 'last_error' => mb_substr($exception->getMessage(), 0, 500), 'fetched_at' => now()]);
 
@@ -95,7 +102,9 @@ class ImportCompetitorFeed
             );
         }
 
-        $competitor->products()->where('fetched_at', '<', $startedAt)->delete();
+        if ($isComplete) {
+            $competitor->products()->where('fetched_at', '<', $startedAt)->delete();
+        }
 
         $competitor->update([
             'status'          => CompetitorStatusEnum::OK,
@@ -246,6 +255,91 @@ class ImportCompetitorFeed
         return $rows;
     }
 
+    public static function isWooCommerceFeed(string $feedUrl): bool
+    {
+        return str_ends_with(parse_url($feedUrl, PHP_URL_PATH) ?? '', '/wc/store/v1/products');
+    }
+
+    /**
+     * The public catalogue link of a competitor's website when it is a WooCommerce shop that shows its prices.
+     */
+    public static function findWooCommerceFeed(string $website): ?string
+    {
+        $feedUrl = parse_url($website, PHP_URL_SCHEME).'://'.parse_url($website, PHP_URL_HOST).'/wp-json/wc/store/v1/products';
+
+        try {
+            return Http::timeout(20)->retry(2, 5000, throw: false)->get($feedUrl, ['per_page' => 1])->json('0.prices') ? $feedUrl : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Products with options (sizes, colours) are read from their variations, one row each. When the shop
+     * does not list its variations they are left out rather than read at their lowest "from" price, and the
+     * read counts as incomplete, so the options read before and their reviewed matches are kept.
+     *
+     * @return array{0: array<int, array{code: string, name: string, price: float, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string|null, data: string}>, 1: bool}
+     */
+    public static function wooCommerceRows(string $feedUrl): array
+    {
+        $products   = static::wooCommercePages($feedUrl, []);
+        $variations = rescue(fn () => static::wooCommercePages($feedUrl, ['type' => 'variation']), null, report: false);
+        $isComplete = $variations !== null || !collect($products)->contains('type', 'variable');
+
+        return [array_values(static::parseWooCommerce([...$products, ...($variations ?? [])])), $isComplete];
+    }
+
+    /**
+     * WooCommerce answers an error after its last page, so the number of pages comes from its X-WP-TotalPages header.
+     */
+    private static function wooCommercePages(string $feedUrl, array $query): array
+    {
+        $products = [];
+        $pages    = 1;
+        for ($page = 1; $page <= min($pages, self::WOOCOMMERCE_PAGES); $page++) {
+            $response = Http::timeout(60)->retry(3, 5000)->get($feedUrl, $query + ['per_page' => 100, 'page' => $page]);
+            if (!is_array($response->json())) {
+                throw new RuntimeException(__('The shop did not send page :page of its products', ['page' => $page]));
+            }
+
+            $pages    = (int) $response->header('X-WP-TotalPages') ?: 1;
+            $products = [...$products, ...$response->json()];
+        }
+
+        return $products;
+    }
+
+    /**
+     * @return array<string, array{code: string, name: string, price: float, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string|null, data: string}>
+     */
+    public static function parseWooCommerce(array $products): array
+    {
+        $rows = [];
+        foreach ($products as $product) {
+            $price = (float) ($product['prices']['price'] ?? 0) / 10 ** (int) ($product['prices']['currency_minor_unit'] ?? 2);
+            if (($product['type'] ?? '') === 'variable' || $price <= 0) {
+                continue;
+            }
+
+            $rows[(string) $product['id']] = [
+                'code'          => (string) $product['id'],
+                'name'          => mb_substr(Str::squish(html_entity_decode(strip_tags($product['name'].' '.($product['variation'] ?? '')))), 0, 500),
+                'price'         => $price,
+                'rrp'           => null,
+                'barcode'       => null,
+                'minimum_order' => null,
+                'image_url'     => $product['images'][0]['src'] ?? null,
+                'url'           => $product['permalink'] ?? null,
+                'data'          => json_encode(array_filter([
+                    'description' => mb_substr(Str::squish(html_entity_decode(strip_tags(($product['short_description'] ?? '') ?: ($product['description'] ?? '')))), 0, 400),
+                ])),
+            ];
+        }
+
+        return $rows;
+    }
+
     public function asCommand(Command $command): int
     {
         Nightwatch::dontSample();
@@ -254,9 +348,9 @@ class ImportCompetitorFeed
             ->whereNull('search_url')
             ->when($command->option('competitor'), fn ($query, $id) => $query->where('id', $id))
             ->each(function (Competitor $competitor) use ($command) {
-                if ($feedUrl = static::findShopifyFeed($competitor->website)) {
+                if ($feedUrl = static::findShopifyFeed($competitor->website) ?? static::findWooCommerceFeed($competitor->website)) {
                     $competitor->update(['feed_url' => $feedUrl]);
-                    $command->info("$competitor->name: its website is a Shopify shop, its catalogue is read as the feed");
+                    $command->info("$competitor->name: its shop's public catalogue is read as the feed");
                 }
             });
 
