@@ -9,11 +9,15 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\RemovePurchaseOrderFromStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
+use App\Models\GoodsIn\StockDelivery;
+use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\Organisation;
@@ -24,7 +28,8 @@ use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
  * The containers holding goods of an agent order, and the lines that can still go in one, so the whole order can be
- * put in a container from its stages.
+ * put in a container from its stages. A container still in process can take the order out again, previewing the
+ * items that come out: the same ones RemovePurchaseOrderFromStockDelivery deletes.
  */
 class GetPurchaseOrderContainers
 {
@@ -40,7 +45,7 @@ class GetPurchaseOrderContainers
         }
 
         return [
-            'containers'   => $this->containers($purchaseOrder, $viewingOrganisation),
+            'containers'   => $this->containers($purchaseOrder, $viewingOrganisation, $request),
             'items_to_add' => $this->itemsToAdd($purchaseOrder, $request),
         ];
     }
@@ -48,13 +53,13 @@ class GetPurchaseOrderContainers
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function containers(PurchaseOrder $purchaseOrder, Organisation $viewingOrganisation): array
+    private function containers(PurchaseOrder $purchaseOrder, Organisation $viewingOrganisation, Request $request): array
     {
         $isAgentViewing = $viewingOrganisation->id !== $purchaseOrder->organisation_id;
         $stateLabels    = StockDeliveryStateEnum::labels();
         $stateIcons     = StockDeliveryStateEnum::stateIcon();
 
-        return StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction(DB::query())
+        $containers = StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction(DB::query())
             ->join('purchase_order_transactions', 'purchase_order_transactions.purchase_order_id', 'purchase_order_stock_delivery.purchase_order_id')
             ->join('stock_deliveries', 'stock_deliveries.id', 'stock_delivery_items.stock_delivery_id')
             ->where('purchase_order_stock_delivery.purchase_order_id', $purchaseOrder->id)
@@ -65,7 +70,11 @@ class GetPurchaseOrderContainers
             ->select('stock_deliveries.id', 'stock_deliveries.reference', 'stock_deliveries.slug', 'stock_deliveries.state')
             ->selectRaw('count(distinct purchase_order_transactions.id) as number_lines')
             ->selectRaw('coalesce(sum(stock_delivery_items.unit_quantity), 0) as unit_quantity')
-            ->get()
+            ->get();
+
+        $itemsToRemove = $this->itemsToRemoveByContainer($purchaseOrder, $containers->where('state', StockDeliveryStateEnum::IN_PROCESS->value)->pluck('id')->all(), $request);
+
+        return $containers
             ->map(fn (object $container) => [
                 'id'            => $container->id,
                 'reference'     => $container->reference,
@@ -78,6 +87,50 @@ class GetPurchaseOrderContainers
                     'name'       => $isAgentViewing ? 'grp.org.agent.stock_deliveries.show' : 'grp.org.procurement.stock_deliveries.show',
                     'parameters' => [$viewingOrganisation->slug, $container->slug],
                 ],
+                'items_to_remove' => $itemsToRemove[$container->id] ?? [],
+                'remove_route'  => isset($itemsToRemove[$container->id]) ? [
+                    'name'       => 'grp.models.stock-delivery.purchase_orders.remove',
+                    'parameters' => ['stockDelivery' => $container->id, 'purchaseOrder' => $purchaseOrder->id],
+                    'method'     => 'delete',
+                ] : null,
+            ])
+            ->all();
+    }
+
+    /**
+     * The items of the order each removable container would lose, keyed by container id.
+     *
+     * @param int[] $inProcessIds
+     *
+     * @return array<int, array<int, array{id: int, code: ?string, name: ?string, image_thumbnail: ?array, unit_quantity: float}>>
+     */
+    private function itemsToRemoveByContainer(PurchaseOrder $purchaseOrder, array $inProcessIds, Request $request): array
+    {
+        $user = $request->user();
+        if (!$user || !$inProcessIds) {
+            return [];
+        }
+
+        return StockDelivery::whereIn('id', $inProcessIds)->get()
+            ->filter(fn (StockDelivery $stockDelivery) => RemovePurchaseOrderFromStockDelivery::acceptsRemovals($stockDelivery)
+                && AddPurchaseOrdersToStockDelivery::userCanAdd($stockDelivery, $user))
+            ->mapWithKeys(fn (StockDelivery $stockDelivery) => [
+                $stockDelivery->id => RemovePurchaseOrderFromStockDelivery::itemsOfPurchaseOrder($stockDelivery, $purchaseOrder)
+                    ->with(['supplierProduct:id,code,name', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
+                    ->orderBy('stock_delivery_items.id')
+                    ->get()
+                    ->map(function (StockDeliveryItem $item) {
+                        $tradeUnit = $item->orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+
+                        return [
+                            'id'              => $item->id,
+                            'code'            => $item->supplierProduct?->code ?? $item->orgStock?->code,
+                            'name'            => $item->supplierProduct?->name ?? $item->orgStock?->name,
+                            'image_thumbnail' => $tradeUnit?->imageSources(80, 80),
+                            'unit_quantity'   => (float) $item->unit_quantity,
+                        ];
+                    })
+                    ->all(),
             ])
             ->all();
     }
