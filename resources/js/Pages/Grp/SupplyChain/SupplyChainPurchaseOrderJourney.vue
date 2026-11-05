@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from "@inertiajs/vue3"
 import { computed, ref, shallowRef, watch } from "vue"
-import { Popover, Select, IconField, InputIcon, InputText, DatePicker, Textarea } from "primevue"
+import { Popover, Select, IconField, InputIcon, InputText, DatePicker, Textarea, Checkbox, Dialog } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -11,9 +11,10 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle } from "@fal"
+import { routeType } from "@/types/route"
+import { faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle, faTrashAlt, faTimes } from "@fal"
 
-library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle)
+library.add(faRoute, faExclamationTriangle, faStopwatch, faHourglassHalf, faCoins, faCalendarCheck, faSearch, faCheck, faCircle, faEraser, faGlobe, faRocket, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle, faTrashAlt, faTimes)
 
 interface FacetOption {
     value: string
@@ -30,6 +31,8 @@ const props = defineProps<{
     pageHead: object
     groupCurrency: string
     canMark: boolean
+    canDelete?: boolean
+    deleteRoute?: routeType
     stages: { key: string; label: string; description: string; markable: boolean }[]
     filters?: Record<FilterGroup, FacetOption[]>
     active?: Record<FilterGroup, string | null> & { tab: Tab; sort: Sort; per_page: number; search: string | null }
@@ -268,6 +271,70 @@ function openMark(ribbon: JourneyRibbon, segment: JourneySegment, event: MouseEv
     markPopover.value?.toggle(event)
 }
 
+const isSelecting = computed(() => !!props.canDelete && !!props.deleteRoute && active.value?.tab === "in_process")
+const selectedIds = ref<Set<number>>(new Set())
+const deletableOnPage = computed(() => (ribbons.value ?? []).filter((ribbon) => ribbon.is_deletable))
+const selectedRibbons = computed(() => deletableOnPage.value.filter((ribbon) => selectedIds.value.has(ribbon.id)))
+const isAllOnPageSelected = computed(() => deletableOnPage.value.length > 0 && selectedRibbons.value.length === deletableOnPage.value.length)
+
+watch(ribbons, () => {
+    const onPage = new Set(deletableOnPage.value.map((ribbon) => ribbon.id))
+    selectedIds.value = new Set([...selectedIds.value].filter((id) => onPage.has(id)))
+})
+
+function toggleSelect(ribbon: JourneyRibbon, isSelected: boolean): void {
+    const ids = new Set(selectedIds.value)
+    if (isSelected) {
+        ids.add(ribbon.id)
+    } else {
+        ids.delete(ribbon.id)
+    }
+    selectedIds.value = ids
+}
+
+function toggleSelectAllOnPage(isSelected: boolean): void {
+    selectedIds.value = isSelected ? new Set(deletableOnPage.value.map((ribbon) => ribbon.id)) : new Set()
+}
+
+const isDeleteDialogVisible = ref(false)
+const deleteCandidates = ref<JourneyRibbon[]>([])
+const deleteError = ref<string | null>(null)
+const isDeleting = ref(false)
+
+function previewDelete(candidates: JourneyRibbon[]): void {
+    deleteCandidates.value = candidates
+    deleteError.value = null
+    isDeleteDialogVisible.value = true
+}
+
+function linesSummary(ribbon: JourneyRibbon): string {
+    if (!ribbon.lines) {
+        return ctrans("No items")
+    }
+    if (ribbon.cancelled_lines === ribbon.lines) {
+        return ctrans(":count items, all cancelled", { count: ribbon.lines })
+    }
+    return ctrans(":count items, :cancelled cancelled", { count: ribbon.lines, cancelled: ribbon.cancelled_lines ?? 0 })
+}
+
+function confirmDelete(): void {
+    if (!props.deleteRoute) {
+        return
+    }
+    router.delete(route(props.deleteRoute.name, props.deleteRoute.parameters), {
+        data: { purchase_orders: deleteCandidates.value.map((ribbon) => ribbon.id) },
+        preserveScroll: true,
+        preserveState: true,
+        onStart: () => (isDeleting.value = true),
+        onError: (errors) => (deleteError.value = Object.values(errors).join(" ")),
+        onSuccess: () => {
+            isDeleteDialogVisible.value = false
+            selectedIds.value = new Set()
+        },
+        onFinish: () => (isDeleting.value = false)
+    })
+}
+
 function saveMark(date: string | null): void {
     if (!marking.value) {
         return
@@ -410,6 +477,27 @@ function saveMark(date: string | null): void {
         <div class="sticky top-10 z-[5] bg-white pt-2">
             <div class="rounded-t-lg border border-gray-200 bg-white">
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 text-sm text-gray-600">
+                    <span v-if="isSelecting" class="flex items-center gap-2 border-r border-gray-200 pr-3">
+                        <Checkbox
+                            :modelValue="isAllOnPageSelected"
+                            binary
+                            inputId="select-all-deletable"
+                            :disabled="!deletableOnPage.length"
+                            @update:modelValue="(value) => toggleSelectAllOnPage(!!value)" />
+                        <label for="select-all-deletable" class="cursor-pointer" v-tooltip="ctrans('Selects the orders on this page that are worth nothing and have no deposit')">
+                            {{ ctrans("Select empty orders (:count)", { count: deletableOnPage.length }) }}
+                        </label>
+                        <Button
+                            type="tertiary"
+                            size="xs"
+                            :label="ctrans('Delete selected (:count)', { count: selectedRibbons.length })"
+                            :disabled="!selectedRibbons.length"
+                            @click="previewDelete(selectedRibbons)">
+                            <template #icon>
+                                <FontAwesomeIcon icon="fal fa-trash-alt" class="text-amber-600" fixed-width aria-hidden="true" />
+                            </template>
+                        </Button>
+                    </span>
                     <span class="flex items-center gap-2">
                         <LoadingIcon v-if="isChangingPage" />
                         {{ ctrans("Showing :from–:to of :total orders", { from: shownRange.from, to: shownRange.to, total: pagination.total }) }}
@@ -484,7 +572,11 @@ function saveMark(date: string | null): void {
                     :group-currency="groupCurrency"
                     :can-mark="canMark"
                     :expand-all="expandAll"
-                    @mark="openMark" />
+                    :selectable="isSelecting"
+                    :selected="selectedIds.has(ribbon.id)"
+                    @mark="openMark"
+                    @toggle-select="toggleSelect"
+                    @delete="(ribbon) => previewDelete([ribbon])" />
             </table>
             <div v-if="!ribbons.length" class="py-10 text-center text-sm text-gray-500">
                 {{ ctrans("No purchase orders match these filters.") }}
@@ -530,6 +622,63 @@ function saveMark(date: string | null): void {
             </div>
         </div>
     </div>
+
+    <Dialog
+        v-model:visible="isDeleteDialogVisible"
+        modal
+        :header="deleteCandidates.length === 1 ? ctrans('Delete purchase order') : ctrans('Delete :count purchase orders', { count: deleteCandidates.length })"
+        :style="{ width: '44rem', maxWidth: 'calc(100vw - 2rem)' }"
+        :draggable="false">
+        <div class="space-y-3 text-sm">
+            <p class="text-gray-700">
+                {{ ctrans("These orders are still in process, worth nothing and have no deposit. They will be deleted and any shopping list items on them reopened. This can not be undone.") }}
+            </p>
+            <div class="max-h-[50vh] overflow-y-auto rounded border border-gray-200">
+                <table class="w-full text-left text-xs">
+                    <thead class="sticky top-0 whitespace-nowrap bg-gray-50 text-gray-500">
+                        <tr>
+                            <th class="px-2 py-1.5 font-semibold">{{ ctrans("PO") }}</th>
+                            <th class="px-2 py-1.5 font-semibold">{{ ctrans("Supplier") }}</th>
+                            <th class="px-2 py-1.5 font-semibold">{{ ctrans("Organisation") }}</th>
+                            <th class="px-2 py-1.5 font-semibold">{{ ctrans("Placed by") }}</th>
+                            <th class="px-2 py-1.5 font-semibold">{{ ctrans("Created") }}</th>
+                            <th class="px-2 py-1.5 font-semibold">{{ ctrans("Items") }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="candidate in deleteCandidates" :key="candidate.key" class="border-t border-gray-100 align-top">
+                            <td class="whitespace-nowrap px-2 py-1.5 font-medium text-gray-800">{{ candidate.reference }}</td>
+                            <td class="px-2 py-1.5 text-gray-700">{{ candidate.supplier_company ?? candidate.parent_name ?? candidate.parent_code }}</td>
+                            <td class="whitespace-nowrap px-2 py-1.5 text-gray-700" :title="candidate.organisation_name">{{ candidate.organisation_code }}</td>
+                            <td class="px-2 py-1.5 text-gray-700">{{ candidate.placed_by ?? ctrans("Unknown") }}</td>
+                            <td class="whitespace-nowrap px-2 py-1.5 text-gray-700">{{ useFormatTime(candidate.created_at) }}</td>
+                            <td class="whitespace-nowrap px-2 py-1.5 text-gray-700">{{ linesSummary(candidate) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div v-if="deleteError" class="text-xs text-red-600">{{ deleteError }}</div>
+        </div>
+        <template #footer>
+            <div class="flex w-full gap-2">
+                <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" :disabled="isDeleting" @click="isDeleteDialogVisible = false">
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+                <Button
+                    type="tertiary"
+                    full
+                    :label="deleteCandidates.length === 1 ? ctrans('Delete purchase order') : ctrans('Delete :count purchase orders', { count: deleteCandidates.length })"
+                    :loading="isDeleting"
+                    @click="confirmDelete">
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-trash-alt" class="text-amber-600" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </div>
+        </template>
+    </Dialog>
 
     <Popover ref="markPopover">
         <div v-if="marking" class="w-64 text-sm">

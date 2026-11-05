@@ -7,9 +7,10 @@ import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser } from "@fal"
+import Checkbox from "primevue/checkbox"
+import { faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser, faTrashAlt } from "@fal"
 
-library.add(faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser)
+library.add(faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser, faTrashAlt)
 
 export interface JourneySegment {
     key: string
@@ -56,6 +57,9 @@ export interface JourneyRibbon {
     eta: string | null
     route: routeType | null
     segments: JourneySegment[]
+    is_deletable?: boolean
+    lines?: number | null
+    cancelled_lines?: number | null
 }
 
 const props = defineProps<{
@@ -64,15 +68,21 @@ const props = defineProps<{
     groupCurrency: string
     canMark: boolean
     expandAll: boolean
+    selectable?: boolean
+    selected?: boolean
 }>()
 
-const emit = defineEmits<{ mark: [ribbon: JourneyRibbon, segment: JourneySegment, event: MouseEvent] }>()
+const emit = defineEmits<{
+    mark: [ribbon: JourneyRibbon, segment: JourneySegment, event: MouseEvent]
+    toggleSelect: [ribbon: JourneyRibbon, selected: boolean]
+    delete: [ribbon: JourneyRibbon]
+}>()
 
 const isOpen = ref(props.expandAll)
 watch(() => props.expandAll, (value) => (isOpen.value = value))
 
 function toggleFromDetails(event: MouseEvent): void {
-    if ((event.target as HTMLElement).closest("a, button") || window.getSelection()?.toString()) {
+    if ((event.target as HTMLElement).closest("a, button, .p-checkbox") || window.getSelection()?.toString()) {
         return
     }
     isOpen.value = !isOpen.value
@@ -211,6 +221,18 @@ function isMarkable(segment: JourneySegment): boolean {
         <tr>
             <td class="min-w-[17rem] max-w-[22rem] cursor-pointer py-2 pl-2 pr-3 align-middle" @click="toggleFromDetails">
                 <div class="flex items-start gap-1.5">
+                    <span
+                        v-if="selectable"
+                        v-tooltip="ribbon.is_deletable ? null : ctrans('Only orders in process, worth nothing and without a deposit can be deleted')"
+                        class="shrink-0 self-center">
+                        <Checkbox
+                            :modelValue="!!selected"
+                            binary
+                            :disabled="!ribbon.is_deletable"
+                            :inputId="`delete-${ribbon.key}`"
+                            :aria-label="ctrans('Select :reference', { reference: ribbon.reference })"
+                            @update:modelValue="(value) => emit('toggleSelect', ribbon, !!value)" />
+                    </span>
                     <button
                         type="button"
                         class="shrink-0 self-center rounded p-0.5 text-gray-400 hover:text-gray-700"
@@ -321,6 +343,17 @@ function isMarkable(segment: JourneySegment): boolean {
                 <div class="text-xs text-gray-500">
                     {{ ribbon.status === "completed" ? (ribbon.eta ? `${ctrans("Finished")} ${shortDate(ribbon.eta)}` : "") : `${ctrans("ETA")} ${shortDate(ribbon.eta)}` }}
                 </div>
+                <Button
+                    v-if="selectable && ribbon.is_deletable"
+                    type="tertiary"
+                    size="xs"
+                    class="mt-1"
+                    :label="ctrans('Delete')"
+                    @click="emit('delete', ribbon)">
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-trash-alt" class="text-amber-600" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
             </td>
         </tr>
         <tr v-if="isOpen" class="bg-gray-50">

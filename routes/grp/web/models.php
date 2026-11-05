@@ -569,6 +569,7 @@ use App\Actions\Procurement\OrgSupplierProducts\UpdateAgentSupplierContacts;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateAgentSupplierStockFamily;
 use App\Actions\Procurement\PurchaseOrder\ConfirmPurchaseOrderPayment;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\ImportPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrder\UndoPurchaseOrderPayment;
@@ -1911,6 +1912,8 @@ Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inSupplier'])->name('attachment.attach');
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inSupplier'])->name('attachment.detach')->withoutScopedBindings();
 });
+
+Route::delete('purchase-orders/empty', DeleteEmptyPurchaseOrders::class)->name('purchase-orders.empty.delete');
 
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inPurchaseOrder'])->name('attachment.attach');

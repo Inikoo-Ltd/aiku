@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\UI;
 
 use App\Actions\Helpers\Country\UI\IsEuropeanUnion;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders;
 use App\Actions\UI\WithInertia;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
 use App\Models\SupplyChain\Agent;
@@ -178,7 +179,9 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 partners.slug as partner_slug, partners.code as partner_code, partners.name as partner_name,
                 countries.code as country_code, countries.name as country_name,
                 {$this->deliveryColumns()}, containers.container_lines, containers.lines_on_containers, containers.last_on_container_at,
-                coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at
+                coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at,
+                draft_lines.lines as draft_lines, draft_lines.cancelled_lines as draft_cancelled_lines,
+                (".DeleteEmptyPurchaseOrders::deletableCondition().") as is_deletable
             from purchase_orders po
             {$this->sharedJoins()}
             left join currencies on currencies.id = po.currency_id
@@ -189,6 +192,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             {$this->deliveryLateral()}
             {$this->containersLateral()}
             {$this->linesLateral('purchase_order_transactions.purchase_order_id = po.id')}
+            {$this->draftLinesLateral()}
             where {$this->openPurchaseOrderCondition()}{$supplierCondition}{$agentCondition}".($purchaseOrderId ? ' and po.id = :purchase_order_id' : ''),
             [
                 'group_id'                => $this->group->id,
@@ -254,6 +258,21 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                     and pot.supplier_product_id is not null
                     and pot.state in ('submitted', 'confirmed', 'settled')
             ) containers on true";
+    }
+
+    /**
+     * Lines of an order still in process, counted for the preview shown before an empty order is deleted.
+     */
+    private function draftLinesLateral(): string
+    {
+        return "left join lateral (
+                select count(*) as lines,
+                    count(*) filter (where purchase_order_transactions.state = 'cancelled') as cancelled_lines
+                from purchase_order_transactions
+                where po.state = 'in_process'
+                    and purchase_order_transactions.purchase_order_id = po.id
+                    and purchase_order_transactions.deleted_at is null
+            ) draft_lines on true";
     }
 
     private function deliveryColumns(): string
@@ -452,6 +471,9 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'country_code'      => $row->country_code,
             'country_name'      => $row->country_name,
             'is_in_process'     => $row->state === 'in_process',
+            'is_deletable'      => (bool) $row->is_deletable,
+            'lines'             => $row->state === 'in_process' ? (int) $row->draft_lines : null,
+            'cancelled_lines'   => $row->state === 'in_process' ? (int) $row->draft_cancelled_lines : null,
             'is_import'         => $row->state !== 'in_process' && $journey !== 'partner' && $this->crossesCustoms($row->organisation_country_code, $row->country_code),
             'buyer_id'          => $row->buyer_id,
             'buyer_name'        => $row->buyer_id ? strtok((string) ($row->buyer_name ?: $row->buyer_username), ' ') : null,
@@ -767,6 +789,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 ],
                 'groupCurrency' => $this->group->currency->code,
                 'canMark'       => $this->canEdit,
+                'canDelete'     => $this->canEdit,
+                'deleteRoute'   => ['name' => 'grp.models.purchase-orders.empty.delete', 'parameters' => []],
                 'stages'        => $this->stages(),
                 'filters'    => Inertia::defer(fn () => $journey('filters'), 'journey'),
                 'active'     => Inertia::defer(fn () => $journey('active'), 'journey'),
