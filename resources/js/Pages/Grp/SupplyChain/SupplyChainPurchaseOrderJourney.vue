@@ -23,7 +23,7 @@ interface FacetOption {
 
 type FilterGroup = "organisation" | "journey" | "agent" | "supplier" | "buyer" | "type" | "country" | "stage" | "status"
 type Tab = "open" | "needs_action" | "import" | "completed"
-type Sort = "needs_action" | "newest" | "oldest" | "value"
+type Sort = "needs_action" | "newest" | "oldest" | "value" | "lowest_value"
 
 const props = defineProps<{
     title: string
@@ -98,10 +98,10 @@ const dropdownFilters = computed<{ group: FilterGroup; label: string }[]>(() => 
     { group: "type", label: ctrans("PO type") }
 ])
 
-const tabs = computed<{ key: Tab; label: string; count: number }[]>(() => !summary.value ? [] : [
+const tabs = computed<{ key: Tab; label: string; count: number; tooltip?: string }[]>(() => !summary.value ? [] : [
     { key: "open", label: ctrans("Open"), count: summary.value.open },
     { key: "needs_action", label: ctrans("Needs action"), count: summary.value.needs_action },
-    { key: "import", label: ctrans("Import"), count: summary.value.import },
+    { key: "import", label: ctrans("Import"), count: summary.value.import, tooltip: ctrans("Open orders from suppliers outside our customs area (UK, or EU for EU organisations)") },
     { key: "completed", label: ctrans("Completed"), count: summary.value.completed }
 ])
 
@@ -109,7 +109,8 @@ const sortOptions = computed(() => [
     { value: "needs_action", label: ctrans("Needs action first") },
     { value: "newest", label: ctrans("Newest first") },
     { value: "oldest", label: ctrans("Oldest first") },
-    { value: "value", label: ctrans("Highest value first") }
+    { value: "value", label: ctrans("Highest value first") },
+    { value: "lowest_value", label: ctrans("Lowest value first") }
 ])
 
 const perPageOptions = [10, 25, 50, 100]
@@ -296,6 +297,7 @@ function saveMark(date: string | null): void {
             type="button"
             role="tab"
             :aria-selected="active.tab === tab.key"
+            v-tooltip="tab.tooltip"
             class="-mb-px flex items-center gap-2 border-b-2 px-1 py-2 text-sm font-semibold"
             :class="active.tab === tab.key ? 'border-gray-800 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
             @click="visit({ tab: tab.key === 'open' ? null : tab.key })">

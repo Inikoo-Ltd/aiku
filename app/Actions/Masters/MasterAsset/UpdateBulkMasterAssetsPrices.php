@@ -17,8 +17,11 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * Applies the same per-currency prices/rrps to a selection of master assets.
  * RRP values arrive per unit and are multiplied by each asset's own units.
- * Null values and currencies whose existing entry is independent are left untouched,
- * so a bulk edit can never silently overwrite a hand-maintained price.
+ * Major currencies are typed by the user, so they overwrite hand-set values and an RRP
+ * typed here is stored as hand-set. A minor currency only overwrites a hand-set value
+ * when the user unlinked it in the bulk form; a minor still following the exchange rate
+ * leaves the hand-set value untouched, so a bulk edit never silently replaces it.
+ * Null values are left untouched.
  */
 class UpdateBulkMasterAssetsPrices extends OrgAction
 {
@@ -34,8 +37,9 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
         $updated = 0;
         $skipped = [];
 
-        foreach (MasterAsset::whereIn('id', $masterAssetIDs)->where('group_id', $this->group->id)->get() as $masterAsset) {
-            $dataToUpdate = [];
+        foreach (MasterAsset::whereIn('id', $masterAssetIDs)->where('group_id', $this->group->id)->with('masterShop')->get() as $masterAsset) {
+            $dataToUpdate   = [];
+            $priceExchanges = $masterAsset->masterShop?->price_exchanges ?? [];
 
             foreach (['master_prices', 'master_rrps'] as $field) {
                 if (!Arr::has($modelData, $field)) {
@@ -50,7 +54,11 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
                     if ($value === null) {
                         continue;
                     }
-                    if (data_get($record, "$currencyCode.independent") === true) {
+                    $isMajorCurrency   = (bool) data_get($priceExchanges, "$currencyCode.is_major", false);
+                    $isTypedByUser     = $isMajorCurrency || ($entry['independent'] ?? false) === true;
+                    $isStoredAsHandSet = data_get($record, "$currencyCode.independent") === true;
+
+                    if ($isStoredAsHandSet && !$isTypedByUser) {
                         $skipped[$masterAsset->code][] = $currencyCode;
                         continue;
                     }
@@ -60,7 +68,7 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
                     }
 
                     data_set($record, "$currencyCode.value", $value);
-                    data_set($record, "$currencyCode.independent", data_get($record, "$currencyCode.independent", false));
+                    data_set($record, "$currencyCode.independent", $this->storedHandSetFlag($field, $isMajorCurrency, $isTypedByUser, $isStoredAsHandSet));
                     $changed = true;
                 }
 
@@ -81,6 +89,20 @@ class UpdateBulkMasterAssetsPrices extends OrgAction
             'updated' => $updated,
             'skipped' => array_map(fn (array $currencies) => array_values(array_unique($currencies)), $skipped),
         ];
+    }
+
+    /**
+     * Major prices keep their stored flag: they are always entered by hand and the flag
+     * only matters if the currency is later demoted to a minor. A major RRP typed here
+     * becomes hand-set, so it is no longer recalculated from the price.
+     */
+    private function storedHandSetFlag(string $field, bool $isMajorCurrency, bool $isTypedByUser, bool $isStoredAsHandSet): bool
+    {
+        if ($isMajorCurrency && $field === 'master_prices') {
+            return $isStoredAsHandSet;
+        }
+
+        return $isTypedByUser;
     }
 
     public function rules(): array

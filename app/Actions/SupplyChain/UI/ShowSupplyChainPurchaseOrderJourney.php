@@ -33,7 +33,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
     private const array TABS = ['open', 'needs_action', 'import', 'completed'];
 
-    private const array SORTS = ['needs_action', 'newest', 'oldest', 'value'];
+    private const array SORTS = ['needs_action', 'newest', 'oldest', 'value', 'lowest_value'];
 
     private const int FINISHED_WINDOW_DAYS = 60;
 
@@ -79,10 +79,11 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
         $statusOrder = array_flip(self::STATUSES);
         $sorted      = match ($active['sort']) {
-            'newest' => $filtered->sortByDesc('created_at'),
-            'oldest' => $filtered->sortBy('created_at'),
-            'value'  => $filtered->sortByDesc(fn (array $ribbon) => $ribbon['amount_grp'] ?? 0),
-            default  => $filtered->sort(function (array $a, array $b) use ($statusOrder) {
+            'newest'       => $filtered->sortByDesc('created_at'),
+            'oldest'       => $filtered->sortBy('created_at'),
+            'value'        => $filtered->sortByDesc(fn (array $ribbon) => $ribbon['amount_grp'] ?? 0),
+            'lowest_value' => $filtered->sortBy(fn (array $ribbon) => $ribbon['amount_grp'] ?? 0),
+            default        => $filtered->sort(function (array $a, array $b) use ($statusOrder) {
                 return [$statusOrder[$a['status']], -$a['days_overdue'], $a['eta'] ?? '', $a['created_at']]
                     <=> [$statusOrder[$b['status']], -$b['days_overdue'], $b['eta'] ?? '', $b['created_at']];
             }),

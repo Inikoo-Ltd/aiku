@@ -49,6 +49,7 @@ interface Evidence {
 interface Stage {
     key: string
     number: number
+    phase?: "agent" | "supplier" | "delivery"
     label: string
     description: string
     reached: boolean
@@ -77,6 +78,39 @@ const props = defineProps<{
 }>()
 
 const slots = useSlots()
+
+const phaseLabels: Record<string, string> = {
+    agent: "Agent",
+    supplier: "Supplier",
+    delivery: "Delivery",
+}
+
+const stageGroups = computed(() => props.stages.reduce<{ phase: string, stages: Stage[] }[]>((groups, stage) => {
+    const phase = stage.phase ?? "supplier"
+    const lastGroup = groups[groups.length - 1]
+    if (lastGroup && lastGroup.phase === phase) {
+        lastGroup.stages.push(stage)
+    } else {
+        groups.push({ phase, stages: [stage] })
+    }
+    return groups
+}, []))
+
+const groupGridClass = (count: number): string => {
+    const wideColumns: Record<number, string> = {
+        1: "xl:grid-cols-1",
+        2: "xl:grid-cols-2",
+        3: "xl:grid-cols-3",
+        4: "xl:grid-cols-4",
+        5: "xl:grid-cols-5",
+        6: "xl:grid-cols-6",
+        7: "xl:grid-cols-7",
+    }
+    if (count <= 2) {
+        return `grid-cols-2 ${wideColumns[count]}`
+    }
+    return `grid-cols-2 md:grid-cols-4 ${wideColumns[count] ?? "xl:grid-cols-7"}`
+}
 
 const hasCheckDetail = (check: Check) => !!slots[`check-${check.key}`]
 
@@ -273,9 +307,20 @@ function save() {
 
 <template>
     <div>
-    <div class="grid grid-cols-2 gap-px bg-gray-200 border-b border-gray-300 md:grid-cols-4" :class="stages.length > 8 ? 'xl:grid-cols-9' : stages.length > 7 ? 'xl:grid-cols-8' : 'xl:grid-cols-7'">
+    <div class="flex flex-col border-b border-gray-300 xl:flex-row">
+    <section
+        v-for="(group, groupIndex) in stageGroups"
+        :key="group.phase"
+        class="flex min-w-0 flex-col"
+        :class="groupIndex > 0 ? 'border-t-4 border-gray-300 xl:border-t-0 xl:border-l-4' : ''"
+        :style="{ flex: group.stages.length }"
+    >
+    <div class="border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        {{ ctrans(phaseLabels[group.phase] ?? group.phase) }}
+    </div>
+    <div class="grid flex-1 gap-px bg-gray-200" :class="groupGridClass(group.stages.length)">
         <div
-            v-for="stage in stages"
+            v-for="stage in group.stages"
             :key="stage.key"
             class="p-3 text-sm"
             :class="[
@@ -438,6 +483,8 @@ function save() {
 
             <slot :name="`stage-${stage.key}`" :stage="stage" />
         </div>
+    </div>
+    </section>
     </div>
 
     <Dialog
