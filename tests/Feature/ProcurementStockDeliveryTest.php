@@ -16,6 +16,8 @@ use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Procurement\OrgSupplierProducts\UI\GetOrgSupplierProductShowcase;
 use App\Actions\SupplyChain\AspoDeposit\StoreAspoDeposit;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
+use App\Actions\SupplyChain\AgentInvoice\UI\ShowAgentCommissionInvoice;
+use Carbon\CarbonImmutable;
 use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
 use App\Models\SysAdmin\User;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
@@ -1618,6 +1620,61 @@ test('an agent invoices a container from its lines, its charges are the ledger l
     $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id), ['reason' => 'Packing list comes with the goods'])->assertSessionHasNoErrors();
 
     expect(fn () => StoreAgentInvoice::make()->handle($agent, $stockDelivery->refresh()))->toThrow(ValidationException::class);
+});
+
+test('agent commission invoice charges a rate on the products of the purchase orders shipped in the month, by supplier (INI-208)', function () {
+    $this->withoutVite();
+    $orgAgent = createFreshOrgAgent($this);
+    $agent    = $orgAgent->agent;
+    [$orgSupplier, $orgSupplierProduct]       = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$ownOrgSupplier, $ownOrgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+
+    $handedOver = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
+    $handedOver->updateQuietly(['handed_over_at' => '2026-10-03 09:00:00']);
+    $handedOver->purchaseOrderTransactions()->update(['unit_cost' => 50, 'agent_unit_expense' => 7]);
+
+    $inContainer = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 1, 4);
+    $inContainer->purchaseOrderTransactions()->update(['unit_cost' => 25]);
+    $stockDelivery = createStockDeliveryWithItems($this, 'COMM-'.Str::random(6), [1]);
+    placeDeliveryUnderAgentOrder($stockDelivery, $inContainer);
+    $stockDelivery->updateQuietly(['dispatched_at' => '2026-10-20 00:00:00']);
+
+    $handedOverNextMonth = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 1);
+    $handedOverNextMonth->updateQuietly(['handed_over_at' => '2026-11-01 00:00:00']);
+    $nextMonthContainer = createStockDeliveryWithItems($this, 'COMM-'.Str::random(6), [1]);
+    placeDeliveryUnderAgentOrder($nextMonthContainer, $handedOverNextMonth);
+    $nextMonthContainer->updateQuietly(['dispatched_at' => '2026-10-05 00:00:00']);
+
+    createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 3);
+    createConfirmedAgentOrder($this, $ownOrgSupplier, $ownOrgSupplierProduct, 0, 3)->updateQuietly(['handed_over_at' => '2026-10-10 00:00:00']);
+
+    $commission = ShowAgentCommissionInvoice::make()->handle($agent, CarbonImmutable::parse('2026-10-01'), 0.02, [$ownOrgSupplier->supplier->code]);
+    $group      = $commission['suppliers'][0];
+
+    expect($commission['suppliers'])->toHaveCount(1)
+        ->and(collect($group['purchase_orders'])->pluck('reference')->all())->toBe([$handedOver->reference, $inContainer->reference])
+        ->and(collect($group['purchase_orders'])->pluck('shipped_at')->all())->toBe(['2026-10-03', '2026-10-20'])
+        ->and($group['products'])->toBe(600.0)
+        ->and($group['commission'])->toBe(12.0)
+        ->and($commission['totals'])->toBe([['currency_code' => $group['currency_code'], 'products' => 600.0, 'commission' => 12.0]]);
+
+    $agentOrganisation = $agent->organisation;
+    setPermissionsTeamId($this->group->id);
+    actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-comm-'.Str::lower(Str::random(6))));
+    $this->get(route('grp.org.agent.accounting.commission.index', $agentOrganisation->slug))->assertNotFound();
+
+    Organisation::where('slug', 'salina')->update(['slug' => 'salina-'.Str::lower(Str::random(6))]);
+    $agentOrganisation->update(['slug' => 'salina']);
+
+    $this->get(route('grp.org.agent.accounting.commission.index', ['salina', 'month' => '2026-10']))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Procurement/AgentCommission')
+            ->where('month', '2026-10')
+            ->has('commission.suppliers', 2)
+            ->where('commission.suppliers.0.commission', 12));
+    $this->get(route('grp.org.agent.accounting.commission.pdf', ['salina', 'month' => '2026-10']))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
 });
 
 test('only the agent marks its container as dispatched, unless the agent lets buyers do it, and then only once the buyer has entered the invoice (HELP-3947, HELP-4284)', function () {
