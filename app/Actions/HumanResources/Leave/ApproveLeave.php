@@ -10,6 +10,7 @@ use App\Models\HumanResources\Leave;
 use App\Models\HumanResources\LeaveApprovalRecord;
 use App\Models\SysAdmin\Organisation;
 use App\Notifications\LeaveApprovedNotification;
+use App\Notifications\LeaveDecisionNotification;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -78,6 +79,8 @@ class ApproveLeave extends OrgAction
                 Notification::route('mail', $leave->organisation->email)
                     ->notify(new LeaveApprovedNotification($leave, $balance));
             }
+
+            LeaveDecisionNotification::sendToEmployee($leave);
         }
 
         return $leave;
