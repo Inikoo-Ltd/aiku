@@ -450,7 +450,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'suppliers'         => $suppliers,
             'country_code'      => $row->country_code,
             'country_name'      => $row->country_name,
-            'is_import'         => $journey !== 'partner' && $this->crossesCustoms($row->organisation_country_code, $row->country_code),
+            'is_import'         => $row->state !== 'in_process' && $journey !== 'partner' && $this->crossesCustoms($row->organisation_country_code, $row->country_code),
             'buyer_id'          => $row->buyer_id,
             'buyer_name'        => $row->buyer_id ? strtok((string) ($row->buyer_name ?: $row->buyer_username), ' ') : null,
             'placed_by'         => $row->buyer_id ? ($row->buyer_name ?: $row->buyer_username) : null,
