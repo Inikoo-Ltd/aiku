@@ -57,12 +57,19 @@ class UpdateWebpageContent extends OrgAction
         $fingerprintData = hash('sha256', $fingerprintData);
 
 
-        $snapshot->update(
-            [
-                'layout'   => $layout,
-                'checksum' => $fingerprintData,
-            ]
-        );
+        $editor = request()->user();
+
+        $snapshotData = [
+            'layout'   => $layout,
+            'checksum' => $fingerprintData,
+        ];
+
+        if ($snapshot->checksum !== $fingerprintData) {
+            $snapshotData['publisher_type'] = $editor instanceof User ? class_basename($editor) : null;
+            $snapshotData['publisher_id']   = $editor instanceof User ? $editor->id : null;
+        }
+
+        $snapshot->update($snapshotData);
 
 
         $isDirty = true;
@@ -77,7 +84,6 @@ class UpdateWebpageContent extends OrgAction
             ]
         );
 
-        $editor = request()->user();
         if ($isDirty && $editor instanceof User) {
             AskWebEditorsToReviewWebpage::run($webpage, $editor);
         }

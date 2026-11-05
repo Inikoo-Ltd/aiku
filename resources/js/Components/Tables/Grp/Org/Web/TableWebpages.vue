@@ -18,6 +18,7 @@ import TableRowSelectCheckbox from '@/Components/Table/TableRowSelectCheckbox.vu
 import TableSelectAllCheckbox from '@/Components/Table/TableSelectAllCheckbox.vue';
 import { computed, reactive } from 'vue';
 import { toLower, upperFirst } from 'lodash-es';
+import { useFormatTime } from '@/Composables/useFormatTime';
 
 library.add(
     faSignIn, faHome, faNewspaper, faBrowser, faUfoBeam
@@ -312,6 +313,18 @@ const onCheckedAll = (selectAll: boolean) => {
             <div v-else>
                 {{ webpage['code'] }}
             </div>
+        </template>
+
+        <template #cell(published_at)="{ item: webpage }">
+            <span v-if="webpage.published_at" class="whitespace-nowrap tabular-nums" v-tooltip="useFormatTime(webpage.published_at, { formatTime: 'hm' })">
+                {{ useFormatTime(webpage.published_at, { formatTime: 'aiku' }) }}
+            </span>
+            <span v-else class="text-gray-400">-</span>
+        </template>
+
+        <template #cell(last_edited_by)="{ item: webpage }">
+            <span v-if="webpage.last_edited_by" class="whitespace-nowrap">{{ webpage.last_edited_by }}</span>
+            <span v-else class="text-gray-400">-</span>
         </template>
 
         <!-- Column: State -->

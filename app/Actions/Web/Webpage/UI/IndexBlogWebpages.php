@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\UI;
 
+use App\Actions\Iris\Blog\IndexIrisBlogs;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\UI\ShowWebsite;
@@ -26,10 +27,12 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexBlogWebpages extends OrgAction
 {
@@ -130,6 +133,19 @@ class IndexBlogWebpages extends OrgAction
         $queryBuilder->leftJoin('organisations', 'webpages.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('shops', 'webpages.shop_id', '=', 'shops.id');
         $queryBuilder->leftJoin('websites', 'webpages.website_id', '=', 'websites.id');
+        $queryBuilder->leftJoin('snapshots as draft_snapshots', 'webpages.unpublished_snapshot_id', '=', 'draft_snapshots.id');
+        $queryBuilder->leftJoin('users as draft_editors', function ($join) {
+            $join->on('draft_snapshots.publisher_id', '=', 'draft_editors.id')
+                ->where('draft_snapshots.publisher_type', 'User');
+        });
+        $queryBuilder->leftJoin('snapshots as live_snapshots', 'webpages.live_snapshot_id', '=', 'live_snapshots.id');
+        $queryBuilder->leftJoin('users as live_publishers', function ($join) {
+            $join->on('live_snapshots.publisher_id', '=', 'live_publishers.id')
+                ->where('live_snapshots.publisher_type', 'User');
+        });
+
+        $publishedAtExpression  = IndexIrisBlogs::make()->getPublishedAtSortExpression();
+        $lastEditedByExpression = $this->lastEditedBySqlExpression();
 
         return $queryBuilder
             ->defaultSort('webpages.level')
@@ -147,12 +163,38 @@ class IndexBlogWebpages extends OrgAction
                 'shops.name as shop_name',
                 'organisations.name as organisation_name',
                 'websites.domain as website_url',
-                'websites.slug as website_slug'
+                'websites.slug as website_slug',
+                DB::raw("$publishedAtExpression as published_at"),
+                DB::raw("$lastEditedByExpression as last_edited_by"),
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url', 'state'])
+            ->allowedSorts([
+                'code',
+                'type',
+                'level',
+                'url',
+                'state',
+                AllowedSort::callback('published_at', fn ($query, bool $descending) => $query->orderByRaw($publishedAtExpression.' '.($descending ? 'desc' : 'asc').' nulls last')),
+                AllowedSort::callback('last_edited_by', fn ($query, bool $descending) => $query->orderByRaw($lastEditedByExpression.' '.($descending ? 'desc' : 'asc').' nulls last')),
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    /**
+     * Who last changed the blog: the editor of its draft, recorded since content edits keep it, else
+     * whoever published the live version, else the last person in its audit trail (title, url, state).
+     */
+    private function lastEditedBySqlExpression(): string
+    {
+        return "COALESCE(
+            draft_editors.contact_name,
+            live_publishers.contact_name,
+            (SELECT audit_users.contact_name FROM audits
+                JOIN users AS audit_users ON audit_users.id = audits.user_id
+                WHERE audits.auditable_type = 'Webpage' AND audits.auditable_id = webpages.id AND audits.user_type = 'User'
+                ORDER BY audits.id DESC LIMIT 1)
+        )";
     }
 
     public function tableStructure(Group|Organisation|Website|Webpage $parent, ?array $modelOperations = null, $prefix = null, string $bucket = ''): Closure
@@ -200,7 +242,9 @@ class IndexBlogWebpages extends OrgAction
             }
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sub_type', label: __('Category'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'sub_type', label: __('Category'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'published_at', label: __('Published'), tooltip: __('The date the blog shows as published on the website'), sortable: true)
+                ->column(key: 'last_edited_by', label: __('Last edited by'), tooltip: __('Who last changed the content, published or not'), sortable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'shop_name', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);

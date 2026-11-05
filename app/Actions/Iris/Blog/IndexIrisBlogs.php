@@ -70,7 +70,10 @@ class IndexIrisBlogs extends IrisAction
         ];
     }
 
-    protected function getPublishedAtSortExpression(): string
+    /**
+     * The date a blog shows as published on the website, so the back office lists the same one.
+     */
+    public function getPublishedAtSortExpression(): string
     {
         $layoutPublishedDate = "NULLIF(webpages.published_layout #>> '{web_blocks,0,web_block,layout,data,fieldValue,published_date}', '')";
 

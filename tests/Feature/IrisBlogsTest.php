@@ -1,6 +1,8 @@
 <?php
 
 use App\Actions\Iris\Blog\IndexIrisBlogs;
+use App\Actions\Web\Webpage\UI\IndexBlogWebpages;
+use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Actions\Web\Webpage\ProcessUpdateWebpageUrl;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -9,11 +11,14 @@ use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use App\Http\Resources\Web\WebpagesResource;
+
+use function Pest\Laravel\actingAs;
 
 beforeEach(function () {
     loadDB();
     $this->organisation = createOrganisation();
-    $this->shop         = createShop()[2];
+    [, $this->user, $this->shop] = createShop();
     $this->website      = createWebsite($this->shop);
 });
 
@@ -110,4 +115,44 @@ test('renaming a blog url refreshes its canonical url and only redirects the old
 
     expect($live->refresh()->canonical_url)->toEndWith('/live-blog-renamed')
         ->and(Redirect::where('website_id', $this->website->id)->where('from_path', 'live-blog-old')->value('to_webpage_id'))->toBe($live->id);
+});
+
+test('back office blog list shows the published date the website shows', function () {
+    $published = createBlogWebpage($this->website, 'Published blog', [
+        'live_at'          => '2026-01-01 10:00:00',
+        'published_layout' => publishedLayoutWithDate('2012-08-31T14:01:00.000Z'),
+    ]);
+
+    $draft = createBlogWebpage($this->website, 'Draft blog', ['state' => WebpageStateEnum::IN_PROCESS]);
+
+    $rows = collect(WebpagesResource::collection(IndexBlogWebpages::make()->handle($this->website, bucket: 'blog'))->resolve())->keyBy('id');
+
+    expect($rows[$published->id]['published_at'])->toBe('2012-08-31T14:01:00+00:00')
+        ->and($rows[$draft->id]['published_at'])->toBeNull()
+        ->and($rows[$draft->id]['last_edited_by'])->toBeNull();
+});
+
+test('a content change by a user records them as the last editor, a change made without a user clears it', function () {
+    $draft = createBlogWebpage($this->website, 'Draft edited blog', ['state' => WebpageStateEnum::IN_PROCESS]);
+    $draft->unpublishedSnapshot->updateQuietly(['checksum' => 'content before the edit']);
+
+    actingAs($this->user);
+    UpdateWebpageContent::run($draft->refresh());
+
+    expect($draft->unpublishedSnapshot->refresh()->publisher_id)->toBe($this->user->id)
+        ->and($draft->unpublishedSnapshot->publisher_type)->toBe('User');
+
+    $row = collect(WebpagesResource::collection(IndexBlogWebpages::make()->handle($this->website, bucket: 'blog'))->resolve())->firstWhere('id', $draft->id);
+
+    expect($row['last_edited_by'])->toBe($this->user->contact_name);
+
+    UpdateWebpageContent::run($draft->refresh());
+
+    expect($draft->unpublishedSnapshot->refresh()->publisher_id)->toBe($this->user->id);
+
+    auth()->logout();
+    $draft->unpublishedSnapshot->updateQuietly(['checksum' => 'content before a repair']);
+    UpdateWebpageContent::run($draft->refresh());
+
+    expect($draft->unpublishedSnapshot->refresh()->publisher_id)->toBeNull();
 });
