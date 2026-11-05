@@ -182,6 +182,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
         $discontinueSuggestions = OrgStockDiscontinueSuggestion::tallyForOrgStocks($orgStockIds);
         $partnerLeadTimeDays = $parent->parent instanceof OrgPartner ? GetPartnerLeadTime::run($parent->parent)['days'] : null;
         $partnerStocks       = $parent->parent instanceof OrgPartner ? $this->partnerStocks($parent->parent, $orgStockIds) : collect();
+        $cancellations       = $this->cancellations($paginator->getCollection()->where('state', PurchaseOrderTransactionStateEnum::CANCELLED)->pluck('id'));
         $paginator->getCollection()->each(
             fn (PurchaseOrderTransaction $transaction) => $transaction
                 ->setAttribute('quarterly_usage', $quarterlyUsage->get($transaction->org_stock_id) ?? collect())
@@ -189,10 +190,41 @@ class IndexPurchaseOrderTransactions extends OrgAction
                 ->setAttribute('discontinue_suggestions', $discontinueSuggestions->get($transaction->org_stock_id) ?? ['times' => 0, 'people' => 0])
                 ->setAttribute('buying_signals', GetOrgStockBuyingSignals::run($transaction->orgStock, $transaction->supplierProduct, $partnerLeadTimeDays))
                 ->setAttribute('partner_stock', $partnerStocks->get($transaction->org_stock_id))
+                ->setAttribute('cancellation', $transaction->state === PurchaseOrderTransactionStateEnum::CANCELLED ? [
+                    'by'        => $cancellations->get($transaction->id)?->user_name,
+                    'at'        => $cancellations->get($transaction->id)?->created_at,
+                    'in_aurora' => !$cancellations->has($transaction->id) && $transaction->source_id !== null,
+                ] : null)
         );
         IndexPurchaseOrderOrgSupplierProducts::make()->attachOtherOpenPurchaseOrders($paginator, $parent->organisation_id, $parent->id);
 
         return $paginator;
+    }
+
+    /**
+     * Who cancelled each line and when, from the audit that moved it to cancelled. Lines cancelled in Aurora have no
+     * such audit.
+     *
+     * @return Collection<int, object{auditable_id: int, user_name: ?string, created_at: string}>
+     */
+    private function cancellations(Collection $transactionIds): Collection
+    {
+        if ($transactionIds->isEmpty()) {
+            return collect();
+        }
+
+        return DB::table('audits')
+            ->leftJoin('users', function ($join) {
+                $join->on('users.id', 'audits.user_id')->where('audits.user_type', 'User');
+            })
+            ->where('audits.auditable_type', 'PurchaseOrderTransaction')
+            ->whereIn('audits.auditable_id', $transactionIds)
+            ->whereRaw("audits.new_values->>'state' = ?", [PurchaseOrderTransactionStateEnum::CANCELLED->value])
+            ->selectRaw('distinct on (audits.auditable_id) audits.auditable_id, coalesce(users.contact_name, users.username) as user_name, audits.created_at')
+            ->orderBy('audits.auditable_id')
+            ->orderByDesc('audits.id')
+            ->get()
+            ->keyBy('auditable_id');
     }
 
     /**

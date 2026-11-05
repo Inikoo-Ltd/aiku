@@ -17,6 +17,7 @@ import Image from '@common/Components/Image.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
+import { useFormatTime } from '@/Composables/useFormatTime'
 import PurchaseOrderItemStockInfo from '@/Components/Procurement/PurchaseOrderItemStockInfo.vue'
 import PurchaseOrderSuggestButton from '@/Components/Procurement/PurchaseOrderSuggestButton.vue'
 import PurchaseOrderLinePriceChange from '@/Components/Procurement/PurchaseOrderLinePriceChange.vue'
@@ -62,6 +63,14 @@ const isTransactionClosed = (item: { state?: string; delivery_state?: string }) 
     closedStates.includes(props.state ?? '') || closedStates.includes(item.state ?? '') || arrivedDeliveryStates.includes(item.delivery_state ?? '')
 
 const cancelledRowClass = (item: { state?: string }) => item.state === 'cancelled' ? 'bg-red-100' : ''
+
+const cancellationLabel = (cancellation: { by: string | null, in_aurora: boolean }) => {
+    if (cancellation.by) {
+        return ctrans('Cancelled by :name', { name: cancellation.by })
+    }
+
+    return cancellation.in_aurora ? ctrans('Cancelled in Aurora') : ctrans('Cancelled')
+}
 
 const hasSupplierUnits = computed(() => !props.isPartner && ((props.data as any)?.data ?? []).some((item: any) => item.supplier_unit))
 
@@ -1002,6 +1011,15 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         <template #cell(actions)="{ item }">
             <div class="flex flex-col items-end gap-1.5">
             <div class="flex justify-end items-center gap-2">
+                <span
+                    v-if="item.cancellation"
+                    class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-200"
+                    v-tooltip="item.cancellation.at ? ctrans('Cancelled on :date', { date: useFormatTime(item.cancellation.at, { formatTime: 'hm' }) }) : null"
+                >
+                    <FontAwesomeIcon :icon="faMinusCircle" fixed-width aria-hidden="true" />
+                    {{ cancellationLabel(item.cancellation) }}
+                </span>
+
                 <span
                     v-if="isLoadedBeforePacking(item)"
                     class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200"

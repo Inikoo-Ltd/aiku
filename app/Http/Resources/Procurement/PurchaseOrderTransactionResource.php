@@ -80,6 +80,7 @@ class PurchaseOrderTransactionResource extends JsonResource
             'state'                => $transaction->state->value,
             'state_label'          => $transaction->state->labels()[$transaction->state->value],
             'state_icon'           => $transaction->state->stateIcon()[$transaction->state->value],
+            'cancellation'         => $transaction->cancellation,
 
             'delivery_state'       => $transaction->delivery_state->value,
             'delivery_state_label' => PurchaseOrderTransactionDeliveryStateEnum::labels()[$transaction->delivery_state->value],
