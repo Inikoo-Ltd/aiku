@@ -176,7 +176,7 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 		</div>
 
 
-        <Modal :isOpen="isOpenModalCreditCard" @onClose="isOpenModalCreditCard = false" width="w-[600px]">
+        <Modal :isOpen="isOpenModalCreditCard" @onClose="isOpenModalCreditCard = false" width="w-full max-w-[600px]" closeButton>
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl mb-2">{{ ctrans("Add Credit Card") }}</h2>
