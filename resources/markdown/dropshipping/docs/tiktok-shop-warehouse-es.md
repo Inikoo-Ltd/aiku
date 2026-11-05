@@ -48,9 +48,9 @@ Vincula una plantilla de envío "Shipped by Seller" a este almacén. Nosotros en
 
 <b>Your TikTok shop has no warehouse yet.</b> Añade un almacén en Seller Center, fíjalo como predeterminado, y luego abre tu canal, elige tu tienda y pulsa <b>Guardar</b>.
 
-<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> o <b>WarehouseId of Inventory[0] is invalid</b> al subir productos: no tenemos ningún almacén de TikTok para tu canal. Haz lo mismo que arriba.
+<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> o <b>WarehouseId of Inventory[0] is invalid</b> al subir productos: no tenemos ningún almacén de TikTok para tu canal, o el que recordábamos ya no está en tu tienda. Comprueba que tu tienda tiene un almacén predeterminado en Seller Center, luego ve a <b>Canales</b>, pulsa <b>Agregar canal de ventas</b>, <b>Conectar</b> en la tarjeta de TikTok y <b>Tienda de autorización</b>, con la misma cuenta de TikTok. Volvemos a leer los almacenes de tu tienda y usamos el predeterminado. Conservas el mismo canal y sus productos. Cuando hayas aprobado nuestra aplicación en TikTok puedes cerrar la ventana: no hace falta pulsar <b>Próximo</b>.
 
-<b>the warehouse does not belong to this shop</b> al subir productos: el almacén que recordábamos se eliminó o pertenece a otra tienda. Pídenoslo en el chat de nuestra web.
+<b>the warehouse does not belong to this shop</b> al subir productos: el almacén que recordábamos se eliminó o pertenece a otra tienda. Vuelve a conectar con <b>Tienda de autorización</b>, como arriba.
 
 <b>requires a return warehouse</b> al subir productos: añade un almacén de devoluciones en Seller Center, y vuelve a subir.
 

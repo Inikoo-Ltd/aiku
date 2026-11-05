@@ -896,6 +896,25 @@ test('picking the shop makes the channel ready and the check reads the shop name
         && str_contains($request->url(), 'shop_cipher=GCP_XF90igAAAABh00qsWgtvOiGFNqyubMt3'));
 });
 
+test('a multi region account talks to the chosen shop and a warehouse that shop no longer lists is replaced by its default', function () {
+    $tiktokUser = tiktokChannel($this->customer, ['tiktok_warehouse_id' => 'WH-STALE']);
+    $chosenShop = ['id' => $tiktokUser->tiktok_shop_id, 'name' => 'Awaura.es', 'region' => 'ES', 'cipher' => $tiktokUser->tiktok_shop_chiper];
+    $tiktokUser->update(['data' => ['authorized_shop' => [['id' => 'SHOP-DE', 'name' => 'Awaura.es_Germany', 'region' => 'DE', 'cipher' => 'CIPHER-DE'], $chosenShop]]]);
+
+    fakeTiktok(array_merge(tiktokShopFixtures($tiktokUser), [
+        '/authorization/' => tiktokOk(['shops' => [['id' => 'SHOP-DE', 'name' => 'Awaura.es_Germany', 'region' => 'DE', 'cipher' => 'CIPHER-DE'], $chosenShop]]),
+    ]));
+    CheckTiktokChannel::run($tiktokUser);
+
+    expect($tiktokUser->refresh()->tiktok_warehouse_id)->toBe('WH-DEFAULT');
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), '/logistics/202309/warehouses')
+        && str_contains($request->url(), 'shop_cipher='.$tiktokUser->tiktok_shop_chiper));
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'shop_cipher=CIPHER-DE'));
+
+    CheckTiktokChannel::run($tiktokUser->refresh());
+    expect($tiktokUser->refresh()->tiktok_warehouse_id)->toBe('WH-DEFAULT');
+});
+
 test('picking a shop tiktok holds no warehouse for keeps the channel incomplete and tells the customer why', function () {
     $tiktokUser = tiktokChannel($this->customer, ['tiktok_shop_id' => null, 'tiktok_shop_chiper' => null, 'tiktok_warehouse_id' => null]);
     UpdateCustomerSalesChannel::run($tiktokUser->customerSalesChannel, ['state' => CustomerSalesChannelStateEnum::AUTHENTICATED, 'platform_status' => false]);

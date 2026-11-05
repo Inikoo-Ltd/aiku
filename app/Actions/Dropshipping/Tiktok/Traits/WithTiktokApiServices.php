@@ -48,7 +48,7 @@ trait WithTiktokApiServices
         $shopCipher = [];
         if ($requireShopCipher) {
             $shopCipher = [
-                'shop_cipher' => Arr::get($this->data, 'authorized_shop.0.cipher')
+                'shop_cipher' => $this->tiktok_shop_chiper ?: Arr::get($this->data, 'authorized_shop.0.cipher')
             ];
         }
 

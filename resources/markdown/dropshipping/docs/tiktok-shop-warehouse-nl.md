@@ -48,9 +48,9 @@ Koppel een verzendsjabloon "Shipped by Seller" aan dit magazijn. Wij versturen h
 
 <b>Your TikTok shop has no warehouse yet.</b> Voeg een magazijn toe in Seller Center, stel het als standaard in, open dan uw kanaal, kies uw shop en druk op <b>Save</b>.
 
-<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> of <b>WarehouseId of Inventory[0] is invalid</b> bij het uploaden van producten: wij hebben geen TikTok-magazijn voor uw kanaal. Doe hetzelfde als hierboven.
+<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> of <b>WarehouseId of Inventory[0] is invalid</b> bij het uploaden van producten: wij hebben geen TikTok-magazijn voor uw kanaal, of het magazijn dat wij onthouden hadden staat niet meer in uw shop. Controleer dat uw shop een standaardmagazijn heeft in Seller Center, ga dan naar <b>Channels</b>, druk op <b>Add Sales Channel</b>, <b>Connect</b> bij de TikTok-kaart en <b>Auth Store</b>, met hetzelfde TikTok-account. Wij lezen de magazijnen van uw shop opnieuw en nemen het standaardmagazijn. U houdt hetzelfde kanaal en zijn producten. Zodra u onze app in TikTok hebt goedgekeurd, kunt u het venster sluiten: u hoeft niet op <b>Next</b> te drukken.
 
-<b>the warehouse does not belong to this shop</b> bij het uploaden van producten: het magazijn dat wij onthouden hadden is verwijderd of behoort tot een andere shop. Vraag het ons in de chat op onze website.
+<b>the warehouse does not belong to this shop</b> bij het uploaden van producten: het magazijn dat wij onthouden hadden is verwijderd of behoort tot een andere shop. Maak opnieuw verbinding met <b>Auth Store</b>, zoals hierboven.
 
 <b>requires a return warehouse</b> bij het uploaden van producten: voeg een retourmagazijn toe in Seller Center en upload dan opnieuw.
 
