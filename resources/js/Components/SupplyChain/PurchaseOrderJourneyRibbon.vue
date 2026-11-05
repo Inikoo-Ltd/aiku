@@ -113,11 +113,17 @@ const statusLabel = computed(() => ({
 const currentSegment = computed(() => props.ribbon.segments.find((segment) => segment.key === props.ribbon.current_stage) ?? null)
 const currentNumber = computed(() => props.stages.findIndex((stage) => stage.key === props.ribbon.current_stage) + 1)
 
+const dayZero = computed(() => {
+    const submitted = segmentsByKey.value.submitted
+    const isSubmitted = submitted?.state === "done" || submitted?.state === "skipped"
+    return (isSubmitted ? submitted.done_at ?? props.ribbon.created_at : new Date().toISOString()).slice(0, 10)
+})
+
 function dayNumber(date: string | null): number | null {
     if (!date) {
         return null
     }
-    return Math.round((Date.parse(date.slice(0, 10)) - Date.parse(props.ribbon.created_at.slice(0, 10))) / 86400000)
+    return Math.round((Date.parse(date.slice(0, 10)) - Date.parse(dayZero.value)) / 86400000)
 }
 
 function zDay(date: string | null): string {
@@ -222,7 +228,7 @@ function isMarkable(segment: JourneySegment): boolean {
                                 <span class="whitespace-nowrap text-sm font-semibold text-gray-700" :title="ribbon.amount !== null ? amount(ribbon.amount, ribbon.currency_code, 2) : ''">
                                     {{ ribbon.amount_grp !== null ? amount(ribbon.amount_grp, groupCurrency) : amount(ribbon.amount, ribbon.currency_code) }}
                                 </span>
-                                <span class="whitespace-nowrap rounded border border-gray-200 px-1.5 text-gray-600" :title="ctrans('Calendar days since the order was created (Day Zero)')">
+                                <span class="whitespace-nowrap rounded border border-gray-200 px-1.5 text-gray-600" :title="ctrans('Calendar days since the order was submitted (Day Zero). Stays at Z+0 until it is submitted')">
                                     {{ ctrans("Age") }} {{ zDay(new Date().toISOString()) }}
                                 </span>
                             </span>
