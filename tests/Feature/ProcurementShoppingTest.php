@@ -1668,6 +1668,53 @@ test('agent receiving goods in its own warehouse ships only what its goods recei
         ->and($handover->handle($agent)['quarters'][0]['chs'])->toEqual(100);
 });
 
+test('goods put in a container leave the agent warehouse, staged or dispatched, and a later receipt for the rest stays held', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
+
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
+    $purchaseOrder->updateQuietly([
+        'state'          => PurchaseOrderStateEnum::CONFIRMED,
+        'delivery_state' => App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum::IN_PROCESS,
+        'submitted_at'   => now(),
+        'confirmed_at'   => now(),
+    ]);
+    $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+
+    $receive = fn (float $quantity) => App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => $quantity]],
+    ]);
+    $held = fn () => App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentReceivedProducts::make()->handle($agent)->getCollection()
+        ->map(fn (array $row) => [$row['location'], $row['quantity']])->all();
+    $packable = fn () => (float) PurchaseOrderTransaction::query()->whereKey($line->id)
+        ->tap(fn ($query) => App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions::selectAgentWarehouseQuantities($query))
+        ->value('quantity_packable');
+
+    $receive(60);
+    expect($held())->toBe([['warehouse', 60.0]])
+        ->and($packable())->toBe(60.0);
+
+    $stockDelivery = App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), []);
+    expect($held())->toBe([['container', 60.0]])
+        ->and($packable())->toBe(0.0);
+
+    App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery::make()->action($stockDelivery->refresh());
+    expect($held())->toBe([]);
+
+    $receive(40);
+    expect($held())->toBe([['warehouse', 40.0]])
+        ->and($packable())->toBe(40.0);
+
+    $line->updateQuietly(['quantity_ordered' => 130]);
+    $receive(30)->items()->sole()->agentWarehouseStock->update(['state' => App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER]);
+    App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), ['unit_quantities' => [$line->id => 30]]);
+    expect(collect($held())->sortBy(0)->values()->all())->toBe([['container', 30.0], ['warehouse', 40.0]])
+        ->and($packable())->toBe(40.0);
+});
+
 test('agent switched to goods receipts still ships every line of orders created before goods_receipts_required_from', function () {
     $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
     $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);

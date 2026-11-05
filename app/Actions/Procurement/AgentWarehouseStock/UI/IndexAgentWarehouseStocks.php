@@ -54,7 +54,7 @@ class IndexAgentWarehouseStocks extends OrgAction
 
         $query = QueryBuilder::for(AgentWarehouseStock::class)
             ->where('agent_warehouse_stocks.agent_id', $agent->id)
-            ->where('agent_warehouse_stocks.quantity', '>', 0)
+            ->whereHeld()
             ->join('organisations', 'organisations.id', 'agent_warehouse_stocks.organisation_id')
             ->join('supplier_products', 'supplier_products.id', 'agent_warehouse_stocks.supplier_product_id')
             ->leftJoin('suppliers', 'suppliers.id', 'supplier_products.supplier_id')
@@ -67,7 +67,7 @@ class IndexAgentWarehouseStocks extends OrgAction
             ->select([
                 'agent_warehouse_stocks.id',
                 'agent_warehouse_stocks.state',
-                'agent_warehouse_stocks.quantity',
+                AgentWarehouseStock::heldQuantityColumn(),
                 'agent_warehouse_stocks.notes',
                 'agent_warehouse_stocks.purchase_order_transaction_id',
                 'supplier_products.code',
@@ -232,10 +232,10 @@ class IndexAgentWarehouseStocks extends OrgAction
      */
     public function filterOptions(Agent $agent): array
     {
-        $stateCounts = AgentWarehouseStock::where('agent_id', $agent->id)->where('quantity', '>', 0)->selectRaw('state, count(*) as total')->groupBy('state')->pluck('total', 'state');
+        $stateCounts = AgentWarehouseStock::where('agent_id', $agent->id)->whereHeld()->selectRaw('state, count(*) as total')->groupBy('state')->pluck('total', 'state');
 
         $organisations = AgentWarehouseStock::where('agent_warehouse_stocks.agent_id', $agent->id)
-            ->where('agent_warehouse_stocks.quantity', '>', 0)
+            ->whereHeld()
             ->join('organisations', 'organisations.id', 'agent_warehouse_stocks.organisation_id')
             ->leftJoin('countries', 'countries.id', 'organisations.country_id')
             ->selectRaw('organisations.slug, organisations.code, organisations.name, countries.name as country_name, count(*) as total')
@@ -258,7 +258,7 @@ class IndexAgentWarehouseStocks extends OrgAction
         $organisation = $request->input('filter.organisation');
 
         $rows = AgentWarehouseStock::where('agent_warehouse_stocks.agent_id', $agent->id)
-            ->where('agent_warehouse_stocks.quantity', '>', 0)
+            ->whereHeld()
             ->join('organisations', 'organisations.id', 'agent_warehouse_stocks.organisation_id')
             ->leftJoin('countries', 'countries.id', 'organisations.country_id')
             ->join('supplier_products', 'supplier_products.id', 'agent_warehouse_stocks.supplier_product_id')
@@ -272,7 +272,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'organisations.name as organisation_name',
                 'countries.code as country_code',
                 'agent_warehouse_stocks.state',
-                'agent_warehouse_stocks.quantity',
+                AgentWarehouseStock::heldQuantityColumn(),
                 'supplier_products.code',
                 'supplier_products.name',
             ]);

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrderTransaction\UI;
 
+use App\Models\Procurement\AgentWarehouseStock;
 use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
@@ -234,7 +235,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
     public static function selectAgentWarehouseQuantities(QueryBuilder|EloquentBuilder $query): void
     {
         $ofLine = fn ($stocks) => $stocks->whereColumn('agent_warehouse_stocks.purchase_order_transaction_id', 'purchase_order_transactions.id')
-            ->selectRaw('coalesce(sum(agent_warehouse_stocks.quantity), 0)');
+            ->selectRaw('coalesce(sum('.AgentWarehouseStock::heldQuantitySql().'), 0)');
 
         $quantityOnDelivery = StoreStockDeliveryFromPurchaseOrder::quantityOnDelivery();
 
