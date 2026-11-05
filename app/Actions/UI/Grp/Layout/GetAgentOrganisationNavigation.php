@@ -9,6 +9,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Actions\SupplyChain\AgentInvoice\UI\ShowAgentCommissionInvoice;
 use App\Enums\UI\Procurement\OrgSupplierProductsTabsEnum;
 use App\Enums\UI\Procurement\OrgSuppliersTabsEnum;
 use App\Models\SysAdmin\Organisation;
@@ -62,6 +63,9 @@ class GetAgentOrganisationNavigation
                     $this->procurementSubSection(__('Deposits'), 'fa-hand-holding-usd', 'grp.org.agent.accounting.deposits.', 'grp.org.agent.accounting.deposits.index', $organisation),
                     $this->procurementSubSection(__('Money requests'), 'fa-money-check-alt', 'grp.org.agent.accounting.deposit_requests.', 'grp.org.agent.accounting.deposit_requests.index', $organisation),
                     $this->procurementSubSection(__('Invoices'), 'fa-file-invoice', 'grp.org.agent.accounting.invoices.', 'grp.org.agent.accounting.invoices.index', $organisation),
+                    ...(isset(ShowAgentCommissionInvoice::COMMISSIONS[$organisation->slug])
+                        ? [$this->procurementSubSection(__('Commission'), 'fa-percent', 'grp.org.agent.accounting.commission.', 'grp.org.agent.accounting.commission.index', $organisation)]
+                        : []),
                 ],
             ];
 

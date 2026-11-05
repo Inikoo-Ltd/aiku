@@ -24,11 +24,12 @@ import PurchaseOrderLinePriceChange from '@/Components/Procurement/PurchaseOrder
 import PurchaseOrderLineQuantityChange from '@/Components/Procurement/PurchaseOrderLineQuantityChange.vue'
 import PurchaseOrderLineAgentUnitExpense from '@/Components/Procurement/PurchaseOrderLineAgentUnitExpense.vue'
 import PurchaseOrderLineAddToContainerDialog from '@/Components/Procurement/PurchaseOrderLineAddToContainerDialog.vue'
+import PurchaseOrderLineMoveDialog from '@/Components/Procurement/PurchaseOrderLineMoveDialog.vue'
 import PingIcon from '@/Components/Utils/PingIcon.vue'
 import { getOrderingLevels, unitsPerOrderingLevel, suggestionAtOrderingLevel, type OrderingLevel } from '@/Composables/useOrderingLevel'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faPallet, faStopCircle, faTrashAlt, faPeopleArrows, faBalanceScale, faExclamationTriangle, faBoxOpen, faBoxCheck, faTruckContainer, faTimes, faCheck } from '@fal'
+import { faBox, faPallet, faStopCircle, faTrashAlt, faPeopleArrows, faBalanceScale, faExclamationTriangle, faBoxOpen, faBoxCheck, faTruckContainer, faTimes, faCheck, faExchange } from '@fal'
 import { faExclamationCircle, faSpinner, faMinusCircle } from '@fas'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Popover from 'primevue/popover'
@@ -431,6 +432,13 @@ function packTooltip(item: any) {
 
 const _table = ref<InstanceType<typeof Table> | null>(null)
 const containerDialogItems = ref<any[]>([])
+const moveDialogItem = ref<any>(null)
+const isMoveDialogVisible = ref(false)
+
+function openMoveDialog(item: any) {
+    moveDialogItem.value = item
+    isMoveDialogVisible.value = true
+}
 const isContainerDialogVisible = ref(false)
 const selectedRows = ref<Record<string, boolean>>({})
 
@@ -1092,6 +1100,16 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                 />
 
                 <Button
+                    v-if="canCancelItems && item.moveRoute"
+                    :label="ctrans('Move')"
+                    :tooltip="ctrans('The supplier can not make it: give it to another supplier of the agent')"
+                    :icon="faExchange"
+                    type="tertiary"
+                    size="xs"
+                    @click="openMoveDialog(item)"
+                />
+
+                <Button
                     v-if="canCancelItems && item.cancelRoute"
                     :label="ctrans('Cancel')"
                     :tooltip="ctrans('Cancel this item')"
@@ -1103,6 +1121,27 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     @click="confirmCancelItem($event, item)"
                 />
 
+            </div>
+
+            <div v-if="item.moved_from || item.moved_to?.length" class="flex flex-wrap justify-end gap-1">
+                <span
+                    v-if="item.moved_from"
+                    class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-gray-50 px-2 py-0.5 text-xs text-gray-700 ring-1 ring-inset ring-gray-200"
+                    v-tooltip="item.moved_from.at ? ctrans('Moved on :date', { date: useFormatTime(item.moved_from.at, { formatTime: 'hm' }) }) : null"
+                >
+                    <FontAwesomeIcon :icon="faExchange" class="text-gray-400" fixed-width aria-hidden="true" />
+                    {{ ctrans('Moved from :reference (:supplier)', { reference: item.moved_from.reference, supplier: item.moved_from.supplier_code }) }}
+                </span>
+
+                <span
+                    v-for="movedTo in item.moved_to ?? []"
+                    :key="movedTo.purchase_order_transaction_id"
+                    class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-gray-50 px-2 py-0.5 text-xs text-gray-700 ring-1 ring-inset ring-gray-200"
+                    v-tooltip="movedTo.at ? ctrans('Moved on :date', { date: useFormatTime(movedTo.at, { formatTime: 'hm' }) }) : null"
+                >
+                    <FontAwesomeIcon :icon="faExchange" class="text-gray-400" fixed-width aria-hidden="true" />
+                    {{ ctrans(':quantity units moved to :reference (:supplier)', { quantity: locale.number(Number(movedTo.quantity)), reference: movedTo.reference, supplier: movedTo.supplier_code }) }}
+                </span>
             </div>
 
             <div v-if="item.agent_warehouse?.containers?.length" class="flex flex-wrap justify-end gap-1">
@@ -1229,6 +1268,13 @@ function orgStockRoute(item: { org_stock_id?: number }) {
         v-model:visible="isContainerDialogVisible"
         :items="containerDialogItems"
         @added="onAddedToContainer"
+    />
+
+    <PurchaseOrderLineMoveDialog
+        v-if="moveDialogItem"
+        v-model:visible="isMoveDialogVisible"
+        :item="moveDialogItem"
+        @moved="router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })"
     />
 
     <ProductImageViewerDialog v-if="viewedImages.length" v-model:visible="isImageViewerVisible" :images="viewedImages" />

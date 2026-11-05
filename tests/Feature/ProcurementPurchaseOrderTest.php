@@ -78,6 +78,7 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersDeliveryStateFromStockDelivery;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
@@ -4296,4 +4297,101 @@ test('the agent sets its own unit expense on a line, replacing the Group estimat
     CancelPurchaseOrderTransaction::make()->action($line->refresh());
     expect($expenses())->toEqual(0.0);
     actingAs($this->adminGuest->getUser());
+});
+
+test('the agent moves a line the supplier can not make to another supplier of the agent, creating its product, and the buyer answers the new price', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $orgAgent                    = createFreshOrgAgent($this);
+    [$fromSupplier, $fromProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$toSupplier]                = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$otherAgentSupplier]        = createAgentOrgSupplierWithProduct($this, createFreshOrgAgent($this));
+    $order                       = createConfirmedAgentOrder($this, $fromSupplier, $fromProduct, 0, 30)->refresh();
+    $line                        = $order->purchaseOrderTransactions()->firstOrFail();
+    $buyer                       = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    $order->updateQuietly(['buyer_id' => $buyer->id]);
+    $agreedUnitCost = (float) $line->unit_cost;
+
+    actingAs(agentOrganisationAdmin($orgAgent->agent->organisation, 'agent-move-'.Str::lower(Str::random(6))));
+    $options = $this->getJson(route('grp.models.purchase-order.transaction.move.suppliers', [$order->id, $line->id]))->assertOk()->json();
+    expect(collect($options)->pluck('org_supplier_id')->all())->toContain($toSupplier->id)->not->toContain($fromSupplier->id)->not->toContain($otherAgentSupplier->id)
+        ->and(collect($options)->firstWhere('org_supplier_id', $toSupplier->id)['product'])->toBeNull();
+
+    $moveRoute = route('grp.models.purchase-order.transaction.move', [$order->id, $line->id]);
+    $this->post($moveRoute, ['org_supplier_id' => $otherAgentSupplier->id, 'quantity' => 30, 'code' => 'X', 'cost' => 1, 'units_per_carton' => 10])->assertSessionHasErrors('org_supplier_id');
+    $this->post($moveRoute, ['org_supplier_id' => $toSupplier->id, 'quantity' => 31])->assertSessionHasErrors('quantity');
+
+    $newCode = 'MOV-'.Str::upper(Str::random(6));
+    $this->post($moveRoute, ['org_supplier_id' => $toSupplier->id, 'quantity' => 30, 'code' => $newCode, 'cost' => $agreedUnitCost + 20, 'units_per_carton' => 60])->assertSessionHasNoErrors();
+
+    $moved = PurchaseOrderTransaction::whereHas('purchaseOrder', fn ($query) => $query->where('parent_type', 'OrgSupplier')->where('parent_id', $toSupplier->id))->firstOrFail();
+    expect($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+        ->and((float) $line->net_amount)->toBe(0.0)
+        ->and($line->data['moved_to'][0]['purchase_order_transaction_id'])->toBe($moved->id)
+        ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
+        ->and($moved->purchaseOrder->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and($moved->purchaseOrder->buyer_id)->toBe($buyer->id)
+        ->and($moved->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and((float) $moved->quantity_ordered)->toBe(30.0)
+        ->and($moved->org_stock_id)->toBe($line->org_stock_id)
+        ->and($moved->supplierProduct->code)->toBe($newCode)
+        ->and((float) $moved->supplierProduct->cbm)->toBe((float) $line->supplierProduct->cbm)
+        ->and((float) $moved->unit_cost)->toBe($agreedUnitCost)
+        ->and($moved->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::PENDING)
+        ->and((float) $moved->price_query_unit_cost)->toBe($agreedUnitCost + 20)
+        ->and($moved->data['moved_from']['reference'])->toBe($order->reference);
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $buyer,
+        \App\Notifications\PurchaseOrderStageChangedByAgentNotification::class,
+        fn ($notification) => $notification->purchaseOrder->is($order) && str_contains($notification->change, $moved->purchaseOrder->reference) && str_contains($notification->change, 'nothing left and was cancelled')
+    );
+
+    actingAs($buyer);
+    \App\Actions\Procurement\PurchaseOrderTransaction\AnswerPurchaseOrderTransactionPriceChange::make()->action($moved, ['answer' => PurchaseOrderTransactionPriceQueryStateEnum::ACCEPTED->value]);
+    expect((float) $moved->refresh()->net_amount)->toBe(round(($agreedUnitCost + 20) * 30, 2));
+    actingAs($this->adminGuest->getUser());
+});
+
+test('moving part of a line puts it on the other supplier open order at the same price and keeps the rest, an order with a deposit paid stays open', function () {
+    $orgAgent                    = createFreshOrgAgent($this);
+    [$fromSupplier, $fromProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    [$toSupplier, $toProduct]    = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    \App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock::make()->action($this->orgStocks[0], $toProduct);
+    $order     = createConfirmedAgentOrder($this, $fromSupplier, $fromProduct, 0, 30)->refresh();
+    $openOrder = createConfirmedAgentOrder($this, $toSupplier, $toProduct, 1, 5)->refresh();
+    $line      = $order->purchaseOrderTransactions()->firstOrFail();
+    $unitCost  = (float) $line->unit_cost;
+
+    $result = MovePurchaseOrderTransactionToSupplier::make()->action($line, ['org_supplier_id' => $toSupplier->id, 'quantity' => 10]);
+
+    expect($result['moved']->purchase_order_id)->toBe($openOrder->id)
+        ->and($result['moved']->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($result['moved']->org_supplier_product_id)->toBe($toProduct->id)
+        ->and($result['moved']->price_query_state)->toBeNull()
+        ->and((float) $result['moved']->net_amount)->toBe(round($unitCost * 10, 2))
+        ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and((float) $line->quantity_ordered)->toBe(20.0)
+        ->and((float) $line->net_amount)->toBe(round($unitCost * 20, 2))
+        ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+
+    $order->depositPayments()->create([
+        'group_id'        => $order->group_id,
+        'organisation_id' => $order->organisation_id,
+        'currency_id'     => $order->currency_id,
+        'amount'          => 10,
+        'date'            => now()->toDateString(),
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::CASH,
+    ]);
+    $result = MovePurchaseOrderTransactionToSupplier::make()->action($line->refresh(), ['org_supplier_id' => $toSupplier->id, 'quantity' => 20]);
+
+    expect($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+        ->and($result['source_cancelled'])->toBeFalse()
+        ->and($result['deposit_paid'])->toBeTrue()
+        ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and(count($line->data['moved_to']))->toBe(2);
+
+    [$lockedSupplier, $lockedProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $locked = createConfirmedAgentOrder($this, $lockedSupplier, $lockedProduct, 0, 3)->refresh();
+    $locked->update(['production_started_at' => now()]);
+    expect(fn () => MovePurchaseOrderTransactionToSupplier::make()->action($locked->purchaseOrderTransactions()->firstOrFail(), ['org_supplier_id' => $toSupplier->id, 'quantity' => 3]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
 });
