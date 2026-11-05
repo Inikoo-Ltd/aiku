@@ -5,7 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, inject, nextTick, onMounted, onUnmounted, ref } from "vue"
+import { computed, defineAsyncComponent, inject, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import { useMediaQuery } from "@vueuse/core"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
 import { compactCount } from "@/Composables/useCompactCount"
@@ -214,12 +215,32 @@ const closeSearch = () => {
 }
 
 const liveUsersStore = useLiveUsers()
-const recordRailClick = (event: MouseEvent) => {
-    const button = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-rail]")?.dataset.rail
-    if (button) axios.post(route("grp.models.profile.rail-click"), { button }).catch(() => {})
+// ponytail: temporary rail analytics (Nov 2026), remove with the rail_usage table once the rail redesign is decided
+const isShortScreen = useMediaQuery("(max-height: 800px)")
+const railView = computed(() => layout.messagingSidebar.show ? "extended" : isMicro.value ? "micro" : isShortScreen.value ? "compact" : "normal")
+const postRailClick = (button: string | undefined) => {
+    if (button) axios.post(route("grp.models.profile.rail-click"), { button, view: railView.value }).catch(() => {})
 }
-onMounted(() => document.addEventListener("click", recordRailClick, true))
-onUnmounted(() => document.removeEventListener("click", recordRailClick, true))
+const recordRailClick = (event: MouseEvent) => postRailClick((event.target as HTMLElement | null)?.closest<HTMLElement>("[data-rail]")?.dataset.rail)
+// dock bubbles open on pointerup under pointer capture, so their click lands on the cluster; the dock reports them itself
+const recordRailClickEvent = (event: Event) => postRailClick((event as CustomEvent<string>).detail)
+const recordRailView = (view: string) => {
+    const seen = `${new Date().toISOString().slice(0, 10)}:${view}`
+    try {
+        if (localStorage.getItem("railViewSeen") === seen) return
+        localStorage.setItem("railViewSeen", seen)
+    } catch { /* storage blocked: send anyway */ }
+    axios.post(route("grp.models.profile.rail-click"), { view }).catch(() => {})
+}
+watch(railView, recordRailView)
+onMounted(() => {
+    document.addEventListener("click", recordRailClick, true)
+    document.addEventListener("rail-click", recordRailClickEvent)
+})
+onUnmounted(() => {
+    document.removeEventListener("click", recordRailClick, true)
+    document.removeEventListener("rail-click", recordRailClickEvent)
+})
 const isOnline = (id: number) => useLiveUsers().liveUsers[id]?.action === 'navigate'
 
 const getCurrentPage = (coworkerId: number) => useLiveUsers().liveUsers[coworkerId]?.current_page
@@ -400,6 +421,7 @@ onMounted(() => {
     }
     layout.messagingSidebar.micro = !layout.messagingSidebar.show && localStorage.getItem("messagingSideBarMicro") === "true"
     if (isMobile.value) layout.messagingSidebar.show = false
+    recordRailView(railView.value)
     mobileQuery?.addEventListener("change", onMobileQueryChange)
     fetchCoworkers("")
     store.loadConversations()
@@ -439,7 +461,7 @@ onUnmounted(() => {
         </div>
 
         <!-- MICRO: super-thin strip with the counts; click to grow back to the rail -->
-        <div v-if="isMicro" class="flex-1 flex flex-col items-center gap-y-2 pt-3 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="ctrans('Show messaging bar')" @click="handleToggle">
+        <div v-if="isMicro" data-rail="micro_strip" class="flex-1 flex flex-col items-center gap-y-2 pt-3 cursor-pointer text-xxs tabular-nums leading-none" v-tooltip="ctrans('Show messaging bar')" @click="handleToggle">
             <WhatsappCallAlert micro />
             <CustomersWaiting v-if="layout?.user?.is_agent" micro />
             <template v-for="group in stripBadgeGroups" :key="'micro-badges-' + group.key">
@@ -560,6 +582,7 @@ onUnmounted(() => {
                 v-for="conversation in newestConversations"
                 :key="'rail-chat-' + conversation.ulid"
                 type="button"
+                :data-rail="conversation.unread_count > 0 ? 'chat_bubble_unread' : 'chat_bubble_read'"
                 v-tooltip="{ content: conversationTitle(conversation), placement: 'left' }"
                 :aria-label="conversationTitle(conversation)"
                 class="relative shrink-0 rounded-full transition duration-200 hover:-translate-y-0.5"
@@ -584,12 +607,14 @@ onUnmounted(() => {
                 v-if="newerConversationsHidden > 0"
                 type="button"
                 class="relative h-7 w-7 rounded-full bg-[var(--chat-line)] shrink-0 flex items-center justify-center text-xxs text-[var(--chat-text)]"
+                data-rail="chat_bubbles_show_all"
                 v-tooltip="ctrans('Show all')"
                 @click="expandSidebar">
                 +{{ newerConversationsHidden }}
             </button>
             <button
                 class="h-9 w-9 rounded-full bg-transparent border border-dashed border-[var(--chat-muted)] shrink-0 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)] hover:border-[var(--chat-text)]"
+                data-rail="chat_new_message"
                 v-tooltip="ctrans('New message')"
                 @click="openNewMessageFromCollapsed">
                 <FontAwesomeIcon icon="fal fa-plus" fixed-width aria-hidden="true" />
@@ -781,6 +806,7 @@ onUnmounted(() => {
                 <button
                     v-if="!layout.messagingSidebar.show"
                     class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
+                    data-rail="mode_expand"
                     v-tooltip="ctrans('Expand messaging bar')"
                     @click="expandSidebar">
                     <FontAwesomeIcon icon="fal fa-chevron-double-left" fixed-width aria-hidden="true" />
@@ -788,12 +814,14 @@ onUnmounted(() => {
                 <button
                     v-else
                     class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
+                    data-rail="mode_collapse"
                     v-tooltip="ctrans('Collapse messaging bar')"
                     @click="handleToggle">
                     <FontAwesomeIcon icon="far fa-chevron-left" class="rotate-180" fixed-width aria-hidden="true" />
                 </button>
                 <button
                     class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
+                    data-rail="mode_micro"
                     v-tooltip="ctrans('Hide messaging bar')"
                     @click="enterMicro">
                     <FontAwesomeIcon icon="fal fa-chevron-double-right" fixed-width aria-hidden="true" />

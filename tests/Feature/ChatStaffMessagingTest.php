@@ -739,17 +739,25 @@ test('a staff member cannot start a conversation with only themselves', function
     expect(\App\Models\Chat\StaffConversation::count())->toBe($before);
 });
 
-test('rail clicks are counted per day and button', function () {
-    $key    = 'rail_clicks:'.now()->toDateString();
-    $before = (int) \Illuminate\Support\Facades\Redis::hget($key, 'online');
+test('rail clicks are counted per day, user, view and button', function () {
+    $row = fn (string $view, string $button) => \Illuminate\Support\Facades\DB::table('rail_usage')
+        ->whereRaw('date = CURRENT_DATE')->where(['user_id' => $this->user->id, 'view' => $view, 'button' => $button])->value('clicks');
+    $before = (int) $row('micro', 'online');
 
     actingAs($this->user)
-        ->postJson(route('grp.models.profile.rail-click'), ['button' => 'online'])
+        ->postJson(route('grp.models.profile.rail-click'), ['button' => 'online', 'view' => 'micro'])
+        ->assertNoContent();
+    actingAs($this->user)
+        ->postJson(route('grp.models.profile.rail-click'), ['view' => 'compact'])
         ->assertNoContent();
 
-    expect((int) \Illuminate\Support\Facades\Redis::hget($key, 'online'))->toBe($before + 1);
+    expect((int) $row('micro', 'online'))->toBe($before + 1)
+        ->and($row('compact', ''))->toBe(0);
 
     actingAs($this->user)
-        ->postJson(route('grp.models.profile.rail-click'), ['button' => 'bad key!'])
+        ->postJson(route('grp.models.profile.rail-click'), ['button' => 'bad key!', 'view' => 'micro'])
+        ->assertUnprocessable();
+    actingAs($this->user)
+        ->postJson(route('grp.models.profile.rail-click'), ['button' => 'online', 'view' => 'huge'])
         ->assertUnprocessable();
 });
