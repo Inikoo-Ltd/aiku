@@ -52,6 +52,22 @@ class AuditWebsite implements ShouldBeUnique
 
     private const int LINKED_FROM_KEPT = 10;
 
+    private const int EXAMPLES_KEPT = 5;
+
+    private const int EXAMPLE_MAX_LENGTH = 300;
+
+    private const int RESOURCES_PER_FETCH = 4;
+
+    private const int RESOURCES_KEPT_PER_PAGE = 200;
+
+    public const int SITEMAP_MAX_URLS = 50000;
+
+    public const int SITEMAP_MAX_BYTES = 52428800;
+
+    private const array SECURITY_HEADERS = ['strict-transport-security', 'content-security-policy', 'x-content-type-options', 'x-frame-options', 'referrer-policy'];
+
+    public const array UNCHECKABLE_STATUSES = [401, 403, 405, 429];
+
     public const array SKIPPED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'ico', 'pdf', 'zip', 'css', 'js', 'xml', 'txt', 'mp4', 'mp3', 'woff', 'woff2', 'ttf'];
 
     public string $jobQueue = 'long-low-priority';
@@ -68,13 +84,35 @@ class AuditWebsite implements ShouldBeUnique
 
     private array $webpageIdsByPath = [];
 
-    /** @var array<string, array{url: string, depth: int}> */
+    /** @var array<int, array{url: string, depth: int, link_depth: int|null}> */
     private array $queue = [];
+
+    /**
+     * Sitemap URLs wait until every page reachable by links from the home page has been found, so
+     * `link_depth` is the real number of clicks from the home page and a page the links never
+     * reach (an orphan) keeps a null one.
+     *
+     * @var array<int, string>
+     */
+    private array $sitemapQueue = [];
+
+    /**
+     * External links and images, checked once each after the pages.
+     *
+     * @var array<int, array{url: string, kind: string}>
+     */
+    private array $resourceQueue = [];
+
+    /** @var array<string, true> */
+    private array $resourcesSeen = [];
+
+    /** @var array<string, array{urls: int, bytes: int}> */
+    private array $sitemapFiles = [];
 
     /** @var array<string, true> */
     private array $seen = [];
 
-    /** @var array<string, true> */
+    /** @var array<string, int> the number of sitemap files that list each URL */
     private array $inSitemap = [];
 
     /** @var array<string, int> */
@@ -179,14 +217,15 @@ class AuditWebsite implements ShouldBeUnique
         $this->robotsTxt        = $this->fetchRobotsTxt($baseUrl);
         $this->webpageIdsByPath = $this->webpageIdsByPath($website);
 
-        $this->enqueue($baseUrl.'/', 0);
+        $this->enqueue($baseUrl.'/', 0, 0);
 
-        foreach ($this->fetchSitemapUrls($baseUrl) as $sitemapUrl) {
-            $normalisedUrl = $this->normaliseInternalUrl($sitemapUrl);
+        foreach ($this->fetchSitemapUrls($baseUrl) as $sitemapUrl => $sitemapCount) {
+            $normalisedUrl = $this->normaliseInternalUrl((string) $sitemapUrl);
 
             if ($normalisedUrl) {
-                $this->inSitemap[md5($normalisedUrl)] = true;
-                $this->enqueue($normalisedUrl, 1);
+                $hash                   = md5($normalisedUrl);
+                $this->inSitemap[$hash] = ($this->inSitemap[$hash] ?? 0) + $sitemapCount;
+                $this->sitemapQueue[]   = $normalisedUrl;
             }
         }
     }
@@ -195,7 +234,7 @@ class AuditWebsite implements ShouldBeUnique
     {
         $this->storeInlinks();
 
-        DetectCrawlIssues::run($this->crawl->refresh(), $this->linkedFrom);
+        DetectCrawlIssues::run($this->crawl->refresh(), $this->linkedFrom, $this->sitemapFiles);
 
         $this->crawl->update([
             'state'         => CrawlStateEnum::FINISH,
@@ -220,12 +259,16 @@ class AuditWebsite implements ShouldBeUnique
     private function saveProgress(): void
     {
         Cache::put(self::progressKey($this->crawl), gzcompress(serialize([
-            'robots_txt'  => $this->robotsTxt,
-            'queue'       => $this->queue,
-            'seen'        => $this->seen,
-            'in_sitemap'  => $this->inSitemap,
-            'inlinks'     => $this->inlinks,
-            'linked_from' => $this->linkedFrom,
+            'robots_txt'     => $this->robotsTxt,
+            'queue'          => $this->queue,
+            'sitemap_queue'  => $this->sitemapQueue,
+            'resource_queue' => $this->resourceQueue,
+            'resources_seen' => $this->resourcesSeen,
+            'sitemap_files'  => $this->sitemapFiles,
+            'seen'           => $this->seen,
+            'in_sitemap'     => $this->inSitemap,
+            'inlinks'        => $this->inlinks,
+            'linked_from'    => $this->linkedFrom,
         ])), now()->addDay());
     }
 
@@ -244,8 +287,12 @@ class AuditWebsite implements ShouldBeUnique
         $this->webpageIdsByPath = $this->webpageIdsByPath($website);
         $this->robotsTxt        = $progress['robots_txt'];
         $this->queue            = $progress['queue'];
+        $this->sitemapQueue     = $progress['sitemap_queue'] ?? [];
+        $this->resourceQueue    = $progress['resource_queue'] ?? [];
+        $this->resourcesSeen    = $progress['resources_seen'] ?? [];
+        $this->sitemapFiles     = $progress['sitemap_files'] ?? [];
         $this->seen             = $progress['seen'];
-        $this->inSitemap        = $progress['in_sitemap'];
+        $this->inSitemap        = array_map(intval(...), $progress['in_sitemap']);
         $this->inlinks          = $progress['inlinks'];
         $this->linkedFrom       = $progress['linked_from'];
 
@@ -259,17 +306,23 @@ class AuditWebsite implements ShouldBeUnique
         $pagesInThisJob = 0;
         $jobStartedAt   = time();
 
-        while ($this->queue !== []) {
+        while ($this->hasWorkLeft()) {
             if ($this->shouldStop()) {
                 return 'interrupted';
             }
 
-            if ($maxPages !== null && $processedPages >= $maxPages) {
-                return 'max_pages_reached';
-            }
-
             if ($pagesInThisJob >= self::PAGES_PER_JOB || time() - $jobStartedAt >= self::SECONDS_PER_JOB) {
                 return 'paused';
+            }
+
+            if ($this->queue === [] || ($maxPages !== null && $processedPages >= $maxPages)) {
+                if ($this->resourceQueue === []) {
+                    return 'max_pages_reached';
+                }
+
+                $pagesInThisJob += intdiv($this->checkResources(array_splice($this->resourceQueue, 0, max(1, $this->crawl->concurrency) * self::RESOURCES_PER_FETCH)), self::RESOURCES_PER_FETCH);
+
+                continue;
             }
 
             $batchSize = max(1, $this->crawl->concurrency);
@@ -293,7 +346,7 @@ class AuditWebsite implements ShouldBeUnique
             $rows = [];
 
             foreach ($batch as $item) {
-                $rows[] = $this->pageRow($item['url'], $item['depth'], $responses[$item['url']] ?? null);
+                $rows[] = $this->pageRow($item['url'], $item['depth'], $item['link_depth'] ?? null, $responses[$item['url']] ?? null);
             }
 
             CrawlPage::insert($rows);
@@ -307,7 +360,75 @@ class AuditWebsite implements ShouldBeUnique
         return 'completed';
     }
 
-    private function pageRow(string $url, int $depth, mixed $response): array
+    /**
+     * Pages first, then the sitemap URLs the links never reached, then the external links and
+     * images those pages use.
+     */
+    private function hasWorkLeft(): bool
+    {
+        if ($this->queue === [] && $this->sitemapQueue !== []) {
+            foreach ($this->sitemapQueue as $sitemapUrl) {
+                $this->enqueue($sitemapUrl, 1, null);
+            }
+
+            $this->sitemapQueue = [];
+        }
+
+        return $this->queue !== [] || $this->resourceQueue !== [];
+    }
+
+    /**
+     * Asks each external link and image for its headers only, following redirects. A status that
+     * means the site refuses bots (401, 403, 405, 429) is asked again with a normal request.
+     *
+     * @param  array<int, array{url: string, kind: string}>  $resources
+     */
+    private function checkResources(array $resources): int
+    {
+        $request = fn (Pool $pool, array $resource, string $method) => $pool->as($resource['url'])
+            ->withHeaders(['User-Agent' => self::USER_AGENT])
+            ->withOptions(['allow_redirects' => ['max' => 5]])
+            ->connectTimeout(10)
+            ->timeout(20)
+            ->send($method, $resource['url']);
+
+        $responses = Http::pool(fn (Pool $pool) => array_map(fn (array $resource) => $request($pool, $resource, 'HEAD'), $resources));
+
+        $retry = array_values(array_filter(
+            $resources,
+            fn (array $resource) => !($responses[$resource['url']] ?? null) instanceof Response || in_array($responses[$resource['url']]->status(), self::UNCHECKABLE_STATUSES, true)
+        ));
+
+        if ($retry !== []) {
+            $responses = [...$responses, ...Http::pool(fn (Pool $pool) => array_map(fn (array $resource) => $request($pool, $resource, 'GET'), $retry))];
+        }
+
+        $now  = now();
+        $rows = [];
+
+        foreach ($resources as $resource) {
+            $response = $responses[$resource['url']] ?? null;
+            $isFetched = $response instanceof Response;
+
+            $rows[] = [
+                'crawl_id'     => $this->crawl->id,
+                'kind'         => $resource['kind'],
+                'url'          => $resource['url'],
+                'url_hash'     => md5($resource['url']),
+                'status_code'  => $isFetched ? $response->status() : null,
+                'bytes'        => $isFetched && is_numeric($response->header('Content-Length')) ? (int) $response->header('Content-Length') : ($isFetched && $response->body() !== '' ? strlen($response->body()) : null),
+                'content_type' => $isFetched ? Str::limit((string) $response->header('Content-Type'), 100, '') : null,
+                'fetch_error'  => $isFetched ? null : ($response instanceof Throwable ? Str::limit($response->getMessage(), 500) : __('No response')),
+                'created_at'   => $now,
+            ];
+        }
+
+        DB::table('crawl_resources')->insertOrIgnore($rows);
+
+        return count($resources);
+    }
+
+    private function pageRow(string $url, int $depth, ?int $linkDepth, mixed $response): array
     {
         $now = now();
         $row = [
@@ -316,6 +437,7 @@ class AuditWebsite implements ShouldBeUnique
             'url'                => $url,
             'url_hash'           => md5($url),
             'depth'              => $depth,
+            'link_depth'         => $linkDepth,
             'status_code'        => null,
             'redirect_to'        => null,
             'response_ms'        => null,
@@ -326,10 +448,16 @@ class AuditWebsite implements ShouldBeUnique
             'canonical'          => null,
             'robots_meta'        => null,
             'h1_count'           => 0,
+            'h1'                 => null,
             'images_without_alt' => 0,
             'hreflang'           => null,
             'is_in_sitemap'      => isset($this->inSitemap[md5($url)]),
+            'sitemap_count'      => $this->inSitemap[md5($url)] ?? 0,
             'is_indexable'       => false,
+            'word_count'         => null,
+            'content_hash'       => null,
+            'content_simhash'    => null,
+            'facts'              => null,
             'fetch_error'        => null,
             'created_at'         => $now,
             'updated_at'         => $now,
@@ -354,7 +482,7 @@ class AuditWebsite implements ShouldBeUnique
             $row['redirect_to'] = $internalRedirect ?? $redirectTo;
 
             if ($internalRedirect) {
-                $this->enqueue($internalRedirect, $depth);
+                $this->enqueue($internalRedirect, $depth, $linkDepth);
             }
 
             return $row;
@@ -375,8 +503,12 @@ class AuditWebsite implements ShouldBeUnique
         $row['canonical']          = $canonical;
         $row['robots_meta']        = $html->robotsMeta ? Str::limit($html->robotsMeta, 250, '') : null;
         $row['h1_count']           = $html->h1Count;
+        $row['h1']                 = $html->h1;
         $row['images_without_alt'] = $html->imagesWithoutAlt;
         $row['is_indexable']       = !$isNoindex && ($canonical === null || $canonical === $url);
+        $row['word_count']         = $html->wordCount;
+        $row['content_hash']       = $html->contentHash;
+        $row['content_simhash']    = $html->contentSimhash;
 
         if ($html->hreflangs) {
             $row['hreflang'] = json_encode(array_map(fn (array $alternate) => [
@@ -399,13 +531,188 @@ class AuditWebsite implements ShouldBeUnique
                 $this->linkedFrom[$hash][] = $url;
             }
 
-            $this->enqueue($linkedUrl, $depth + 1);
+            $this->enqueue($linkedUrl, $depth + 1, $linkDepth === null ? null : $linkDepth + 1);
         }
+
+        $row['facts'] = json_encode($this->pageFacts($url, $html, $response));
 
         return $row;
     }
 
-    private function enqueue(string $url, int $depth): void
+    /**
+     * What the issue checks need from a page besides its columns. Lists keep a few examples, and
+     * the external links and images are queued to be checked after the pages.
+     */
+    private function pageFacts(string $url, AuditedHtml $html, Response $response): array
+    {
+        $isHttps            = str_starts_with($url, 'https://');
+        $internalOutlinks   = [];
+        $nofollowInternal   = [];
+        $emptyAnchors       = 0;
+        $nonDescriptive     = [];
+        $localhostLinks     = [];
+        $unsafeBlankLinks   = [];
+        $httpLinks          = [];
+        $parameterLinks     = [];
+        $externalLinks      = [];
+
+        foreach ($html->anchors as $anchor) {
+            $linkedUrl = $this->resolveUrl($url, $anchor['href']);
+
+            if ($linkedUrl === null) {
+                continue;
+            }
+
+            $host = strtolower((string) parse_url($linkedUrl, PHP_URL_HOST));
+
+            if ($host === '') {
+                continue;
+            }
+
+            if ($anchor['text'] === '') {
+                $emptyAnchors++;
+            } elseif (AuditedHtml::isNonDescriptiveAnchorText($anchor['text'])) {
+                $nonDescriptive[$anchor['text']] = true;
+            }
+
+            if ($this->isLocalHost($host)) {
+                $localhostLinks[$linkedUrl] = true;
+
+                continue;
+            }
+
+            if ($this->hostWithoutWww($host) === $this->host) {
+                $internalOutlinks[$linkedUrl] = true;
+
+                if ($anchor['nofollow']) {
+                    $nofollowInternal[$linkedUrl] = true;
+                }
+
+                if ($isHttps && str_starts_with(strtolower($linkedUrl), 'http://')) {
+                    $httpLinks[$linkedUrl] = true;
+                }
+
+                if (parse_url($linkedUrl, PHP_URL_QUERY)) {
+                    $parameterLinks[$linkedUrl] = true;
+                }
+
+                continue;
+            }
+
+            if ($anchor['unsafe_blank']) {
+                $unsafeBlankLinks[$linkedUrl] = true;
+            }
+
+            if (in_array(parse_url($linkedUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
+                $externalLinks[$linkedUrl] = true;
+            }
+        }
+
+        $images = [];
+
+        foreach ($html->images as $image) {
+            $imageUrl = $this->resolveUrl($url, $image['src']);
+
+            if ($imageUrl !== null) {
+                $images[$imageUrl] = $images[$imageUrl] ?? $image['has_size'];
+            }
+        }
+
+        $ogImage = isset($html->openGraph['og:image']) ? $this->resolveUrl($url, $html->openGraph['og:image']) : null;
+
+        $externalLinks = array_slice(array_keys($externalLinks), 0, self::RESOURCES_KEPT_PER_PAGE);
+        $imageUrls     = array_slice(array_keys($images), 0, self::RESOURCES_KEPT_PER_PAGE);
+
+        foreach ($externalLinks as $externalLink) {
+            $this->enqueueResource($externalLink, 'link');
+        }
+
+        foreach ([...$imageUrls, ...array_filter([$ogImage])] as $imageUrl) {
+            $this->enqueueResource($imageUrl, 'image');
+        }
+
+        $insecureResources = $isHttps ? array_values(array_filter(
+            array_map(fn (string $resource) => $this->resolveUrl($url, $resource), [...$html->resourceUrls, ...$imageUrls]),
+            fn (?string $resource) => $resource !== null && str_starts_with(strtolower($resource), 'http://')
+        )) : [];
+
+        $insecureForms = array_values(array_filter(
+            array_map(fn (string $action) => $this->resolveUrl($url, $action), $html->formActions),
+            fn (?string $action) => $action !== null && str_starts_with(strtolower($action), 'http://')
+        ));
+
+        $canonicals = array_values(array_unique(array_filter(array_map(
+            fn (string $canonical) => $this->normaliseInternalUrl($this->resolveUrl($url, $canonical)) ?? $this->resolveUrl($url, $canonical),
+            $html->canonicals
+        ))));
+
+        $pagination = array_filter([
+            'next' => $html->paginationNext ? $this->resolveUrl($url, $html->paginationNext) : null,
+            'prev' => $html->paginationPrev ? $this->resolveUrl($url, $html->paginationPrev) : null,
+        ]);
+
+        return array_filter([
+            'h2_count'             => $html->h2Count,
+            'title_count'          => $html->titleCount,
+            'meta_description_count' => $html->metaDescriptionCount,
+            'canonicals'           => count($canonicals) > 1 ? $canonicals : null,
+            'head_tags_in_body'    => $html->headTagsInBody,
+            'is_nofollow'          => $html->isNofollowPage() || preg_match('/\b(nofollow|none)\b/i', (string) $response->header('X-Robots-Tag')) === 1,
+            'lorem_ipsum'          => $html->hasLoremIpsum,
+            'soft_404'             => $html->soft404Phrase,
+            'internal_outlinks'    => count($internalOutlinks),
+            'nofollow_internal'    => $this->examples(array_keys($nofollowInternal)),
+            'empty_anchors'        => $emptyAnchors,
+            'non_descriptive'      => $this->examples(array_keys($nonDescriptive)),
+            'localhost_links'      => $this->examples(array_keys($localhostLinks)),
+            'unsafe_blank_links'   => $this->examples(array_keys($unsafeBlankLinks)),
+            'http_links'           => $this->examples(array_keys($httpLinks)),
+            'parameter_links'      => $this->examples(array_keys($parameterLinks)),
+            'external_links'       => $externalLinks,
+            'images'               => $imageUrls,
+            'images_without_size'  => count(array_filter($images, fn (bool $hasSize) => !$hasSize)),
+            'og_image'             => $ogImage,
+            'og_missing'           => array_values(array_diff(['og:title', 'og:description', 'og:image', 'og:url'], array_keys($html->openGraph))),
+            'has_open_graph'       => $html->openGraph !== [],
+            'has_twitter_card'     => $html->hasTwitterCard,
+            'insecure_resources'   => $this->examples($insecureResources),
+            'insecure_forms'       => $this->examples($insecureForms),
+            'missing_headers'      => array_values(array_filter(self::SECURITY_HEADERS, fn (string $header) => !$this->hasSecurityHeader($response, $header))),
+            'pagination'           => $pagination,
+            'pagination_unlinked'  => array_values(array_filter($pagination, fn (string $paginationUrl) => !isset($internalOutlinks[$paginationUrl]))),
+        ], fn ($value) => $value !== null && $value !== [] && $value !== false && $value !== 0);
+    }
+
+    private function hasSecurityHeader(Response $response, string $header): bool
+    {
+        if ($header === 'x-frame-options' && str_contains(strtolower((string) $response->header('Content-Security-Policy')), 'frame-ancestors')) {
+            return true;
+        }
+
+        return $response->header($header) !== '';
+    }
+
+    /**
+     * @param  array<int, string>  $values
+     *
+     * @return array{count: int, examples: array<int, string>}|null
+     */
+    private function examples(array $values): ?array
+    {
+        $values = array_values(array_unique($values));
+
+        return $values === [] ? null : [
+            'count'    => count($values),
+            'examples' => array_map(fn (string $value) => Str::limit($value, self::EXAMPLE_MAX_LENGTH), array_slice($values, 0, self::EXAMPLES_KEPT)),
+        ];
+    }
+
+    private function isLocalHost(string $host): bool
+    {
+        return in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '[::1]'], true) || preg_match('/\.(test|local|localhost)$/', $host) === 1;
+    }
+
+    private function enqueue(string $url, int $depth, ?int $linkDepth): void
     {
         $hash = md5($url);
 
@@ -419,7 +726,19 @@ class AuditWebsite implements ShouldBeUnique
             return;
         }
 
-        $this->queue[] = ['url' => $url, 'depth' => $depth];
+        $this->queue[] = ['url' => $url, 'depth' => $depth, 'link_depth' => $linkDepth];
+    }
+
+    private function enqueueResource(string $url, string $kind): void
+    {
+        $hash = md5($url);
+
+        if (isset($this->resourcesSeen[$hash]) || !in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            return;
+        }
+
+        $this->resourcesSeen[$hash] = true;
+        $this->resourceQueue[]      = ['url' => $url, 'kind' => $kind];
     }
 
     private function normaliseInternalUrl(?string $url): ?string
@@ -515,7 +834,10 @@ class AuditWebsite implements ShouldBeUnique
     }
 
     /**
-     * @return array<int, string>
+     * Every page URL the sitemaps list, with the number of sitemap files listing it. The size of
+     * each sitemap file is kept for the check against Google's limits.
+     *
+     * @return array<string, int>
      */
     private function fetchSitemapUrls(string $baseUrl): array
     {
@@ -548,12 +870,18 @@ class AuditWebsite implements ShouldBeUnique
 
             if (str_contains($body, '<sitemapindex')) {
                 array_push($sitemapsToRead, ...$locations);
-            } else {
-                array_push($pageUrls, ...$locations);
+
+                continue;
+            }
+
+            $this->sitemapFiles[$sitemapUrl] = ['urls' => count($locations), 'bytes' => strlen($body)];
+
+            foreach (array_unique($locations) as $location) {
+                $pageUrls[$location] = ($pageUrls[$location] ?? 0) + 1;
             }
         }
 
-        return array_values(array_unique($pageUrls));
+        return $pageUrls;
     }
 
     private function storeInlinks(): void
