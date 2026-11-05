@@ -27,7 +27,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  * ("AW CHINA PRODUCT LIST": code, units per carton, cartons ordered), HELP-3961/3962/3963.
  * China fills several containers at once, so they are told apart by their number in the notes, not by next or later.
  * Only lines whose code is filled green are in China's warehouse; the rest are still being made by the supplier,
- * so their purchase order is marked as in production instead.
+ * so their purchase order is marked as in production instead. A line of a product and order the agent already received
+ * through a goods receipt is the same goods, so it is not imported again (INI-204).
  */
 class ImportAgentWarehouseStocksFromContainerList
 {
@@ -41,15 +42,18 @@ class ImportAgentWarehouseStocksFromContainerList
     private const string IN_WAREHOUSE_FILL = '92D050';
 
     /**
-     * @return array{rows: list<array<string, mixed>>, unmatched: list<string>, in_production: list<array{code: string, units: float, purchase_order: ?string}>}
+     * @return array{rows: list<array<string, mixed>>, unmatched: list<string>, in_production: list<array{code: string, units: float, purchase_order: ?string}>, warnings: list<string>}
      */
     public function handle(Agent $agent, Organisation $organisation, string $file, bool $dryRun = false): array
     {
         $rows         = [];
         $unmatched    = [];
+        $warnings     = [];
         $inProduction = [];
         $container    = preg_match('/AWChina-\d+/i', basename($file), $match) ? $match[0] : pathinfo($file, PATHINFO_FILENAME);
         $sheet        = IOFactory::load($file)->getSheet(0);
+        $sheetImport  = ImportAgentWarehouseStocksFromSheet::make();
+        $receipts     = $sheetImport->goodsReceiptsByProductAndOrder($agent, $organisation);
 
         foreach ($sheet->toArray(null, true, false, true) as $rowNumber => $line) {
             $rawCode = trim((string) ($line[self::CODE] ?? ''));
@@ -76,6 +80,14 @@ class ImportAgentWarehouseStocksFromContainerList
                 continue;
             }
 
+            if ($receipt = $receipts->get("$supplierProduct->id|$purchaseOrderId")) {
+                $warnings[] = "Skipped $rawCode: already received through $receipt";
+                continue;
+            }
+            if ($otherReceipts = $sheetImport->goodsReceiptsOfProduct($receipts, $supplierProduct->id)) {
+                $warnings[] = "$rawCode imported, but already received through $otherReceipts on another purchase order: check it is not the same goods";
+            }
+
             $rows[] = [
                 'group_id'            => $agent->group_id,
                 'agent_id'            => $agent->id,
@@ -92,12 +104,16 @@ class ImportAgentWarehouseStocksFromContainerList
 
         if (!$dryRun) {
             DB::transaction(function () use ($agent, $organisation, $container, $rows) {
+                DB::table('agents')->where('id', $agent->id)->lockForUpdate()->value('id');
+                $receipts = ImportAgentWarehouseStocksFromSheet::make()->goodsReceiptsByProductAndOrder($agent, $organisation);
+                $rows     = array_values(array_filter($rows, fn (array $row) => !$receipts->has("{$row['supplier_product_id']}|{$row['purchase_order_id']}")));
+
                 AgentWarehouseStock::where('agent_id', $agent->id)->where('organisation_id', $organisation->id)->where('notes', $container)->whereNull('purchase_order_transaction_id')->delete();
                 AgentWarehouseStock::insert($rows);
             });
         }
 
-        return ['rows' => $rows, 'unmatched' => $unmatched, 'in_production' => $inProduction];
+        return ['rows' => $rows, 'unmatched' => $unmatched, 'in_production' => $inProduction, 'warnings' => $warnings];
     }
 
     public function markInProduction(PurchaseOrder $purchaseOrder, string $reason, ?string $date = null): void
@@ -163,6 +179,9 @@ class ImportAgentWarehouseStocksFromContainerList
         }
         foreach ($result['unmatched'] as $code) {
             $command->warn("Skipped $code: no product of the agent with that code");
+        }
+        foreach ($result['warnings'] as $line) {
+            $command->warn($line);
         }
 
         return 0;

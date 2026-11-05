@@ -1547,6 +1547,21 @@ test('the goods receipt is the record that holds: it replaces the stock sheet ro
     expect($imported['rows'])->toBe([])
         ->and($imported['unmatched'])->toContain("Moving Stock: $supplierProduct->code already received through $receipt->reference")
         ->and($stocks()->pluck('agent_goods_receipt_id')->all())->toBe([$receipt->id]);
+
+    $containerList = writeChinaContainerList('SK AWChina-901.xlsx', [[$supplierProduct->code, 50, 2, true]]);
+    $imported      = App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromContainerList::run($this->agent, $purchaseOrder->organisation, $containerList);
+    unlink($containerList);
+
+    expect($imported['rows'])->toBe([])
+        ->and($imported['warnings'])->toBe(["Skipped $supplierProduct->code: already received through $receipt->reference"])
+        ->and($stocks()->pluck('agent_goods_receipt_id')->all())->toBe([$receipt->id]);
+
+    $stocks()->update(['purchase_order_id' => StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition())->id]);
+
+    $imported = App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromSheet::run($this->agent, $purchaseOrder->organisation, 'sheet-id');
+
+    expect($imported['rows'])->toHaveCount(1)
+        ->and($imported['warnings'])->toBe(["Moving Stock: $supplierProduct->code imported, but already received through $receipt->reference on another purchase order: check it is not the same goods"]);
 });
 
 test('agent order in warehouse stage follows its goods receipts, checks and packing', function () {

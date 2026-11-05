@@ -54,12 +54,13 @@ class ImportAgentWarehouseStocksFromSheet
     private const int PO_NUMBER = 26;
 
     /**
-     * @return array{rows: list<array<string, mixed>>, unmatched: list<string>, in_production: list<array{code: string, units: float, purchase_order: ?string}>}
+     * @return array{rows: list<array<string, mixed>>, unmatched: list<string>, in_production: list<array{code: string, units: float, purchase_order: ?string}>, warnings: list<string>}
      */
     public function handle(Agent $agent, Organisation $organisation, string $sheetId, bool $dryRun = false): array
     {
         $rows      = [];
         $unmatched = [];
+        $warnings  = [];
         $sheetTabs = $this->tabNames($sheetId);
         $receipts  = $this->goodsReceiptsByProductAndOrder($agent, $organisation);
 
@@ -110,6 +111,9 @@ class ImportAgentWarehouseStocksFromSheet
                     $unmatched[] = "$tab: $code already received through $receipt";
                     continue;
                 }
+                if ($otherReceipts = $this->goodsReceiptsOfProduct($receipts, $supplierProduct->id)) {
+                    $warnings[] = "$tab: $code imported, but already received through $otherReceipts on another purchase order: check it is not the same goods";
+                }
 
                 $rows[] = [
                     'group_id'            => $agent->group_id,
@@ -137,7 +141,7 @@ class ImportAgentWarehouseStocksFromSheet
             });
         }
 
-        return ['rows' => $rows, 'unmatched' => $unmatched, 'in_production' => $inProduction];
+        return ['rows' => $rows, 'unmatched' => $unmatched, 'in_production' => $inProduction, 'warnings' => $warnings];
     }
 
     /**
@@ -146,7 +150,7 @@ class ImportAgentWarehouseStocksFromSheet
      *
      * @return SupportCollection<string, string> goods receipt references keyed by "supplier product id|purchase order id"
      */
-    private function goodsReceiptsByProductAndOrder(Agent $agent, Organisation $organisation): SupportCollection
+    public function goodsReceiptsByProductAndOrder(Agent $agent, Organisation $organisation): SupportCollection
     {
         return DB::table('agent_warehouse_stocks')
             ->join('agent_goods_receipts', 'agent_goods_receipts.id', 'agent_warehouse_stocks.agent_goods_receipt_id')
@@ -157,6 +161,18 @@ class ImportAgentWarehouseStocksFromSheet
             ->get(['agent_warehouse_stocks.supplier_product_id', 'agent_warehouse_stocks.purchase_order_id', 'agent_goods_receipts.reference'])
             ->groupBy(fn (object $row) => "$row->supplier_product_id|$row->purchase_order_id")
             ->map(fn ($group) => $group->pluck('reference')->unique()->implode(', '));
+    }
+
+    /**
+     * A sheet line whose order aiku can not match (an order not in aiku, or a guessed one) may still be goods the agent
+     * received through a goods receipt on another order. Skipping it could drop real stock of a second order, so it is
+     * imported and the receipts are named for whoever runs the import to check.
+     *
+     * @param  SupportCollection<string, string>  $receipts
+     */
+    public function goodsReceiptsOfProduct(SupportCollection $receipts, int $supplierProductId): ?string
+    {
+        return $receipts->filter(fn (string $references, string $key) => str_starts_with($key, "$supplierProductId|"))->implode(', ') ?: null;
     }
 
     /**
@@ -334,6 +350,9 @@ class ImportAgentWarehouseStocksFromSheet
         }
         foreach ($result['unmatched'] as $line) {
             $command->warn("Skipped $line");
+        }
+        foreach ($result['warnings'] as $line) {
+            $command->warn($line);
         }
 
         return 0;
