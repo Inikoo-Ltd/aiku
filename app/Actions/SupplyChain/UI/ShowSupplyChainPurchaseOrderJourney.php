@@ -183,7 +183,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 {$this->deliveryColumns()}, containers.container_lines, containers.lines_on_containers, containers.last_on_container_at,
                 coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at,
                 draft_lines.lines as draft_lines, draft_lines.cancelled_lines as draft_cancelled_lines,
-                (".DeleteEmptyPurchaseOrders::deletableCondition().") as is_deletable
+                po.cost_extra, po.cost_shipping, po.cost_duties, po.cost_tax,
+                ".DeleteEmptyPurchaseOrders::blockerColumns()."
             from purchase_orders po
             {$this->sharedJoins()}
             left join currencies on currencies.id = po.currency_id
@@ -450,6 +451,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
         $amount = $row->cost_items ?? $row->cost_total;
 
+        $deleteBlockers = DeleteEmptyPurchaseOrders::blockersOfRow($row);
+
         $supplierCompany = $journey === 'partner' ? $row->partner_name : ($row->supplier_company_name ?: $row->supplier_name);
 
         return [
@@ -473,10 +476,14 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'country_code'      => $row->country_code,
             'country_name'      => $row->country_name,
             'is_in_process'     => $row->state === 'in_process',
-            'is_deletable'      => (bool) $row->is_deletable,
+            'is_deletable'      => !$deleteBlockers,
+            'delete_blockers'   => $deleteBlockers,
+            'extra_costs'       => in_array('extra_costs', $deleteBlockers)
+                ? round((float) $row->cost_extra + (float) $row->cost_shipping + (float) $row->cost_duties + (float) $row->cost_tax, 2)
+                : null,
             'state'             => $row->state,
-            'lines'             => (bool) $row->is_deletable ? (int) $row->draft_lines : null,
-            'cancelled_lines'   => (bool) $row->is_deletable ? (int) $row->draft_cancelled_lines : null,
+            'lines'             => !$deleteBlockers ? (int) $row->draft_lines : null,
+            'cancelled_lines'   => !$deleteBlockers ? (int) $row->draft_cancelled_lines : null,
             'is_import'         => $row->state !== 'in_process' && $journey !== 'partner' && $this->crossesCustoms($row->organisation_country_code, $row->country_code),
             'buyer_id'          => $row->buyer_id,
             'buyer_name'        => $row->buyer_id ? strtok((string) ($row->buyer_name ?: $row->buyer_username), ' ') : null,

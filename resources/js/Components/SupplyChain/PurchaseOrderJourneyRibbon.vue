@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
+import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -25,6 +26,8 @@ export interface JourneySegment {
     mark_column: string | null
     checks?: { key: string; label: string; done: boolean; date: string | null }[]
 }
+
+export type DeleteBlocker = "state" | "items" | "extra_costs" | "deposit" | "goods" | "delivery"
 
 export interface JourneyRibbon {
     key: string
@@ -59,6 +62,8 @@ export interface JourneyRibbon {
     segments: JourneySegment[]
     state?: string
     is_deletable?: boolean
+    delete_blockers?: DeleteBlocker[]
+    extra_costs?: number | null
     lines?: number | null
     cancelled_lines?: number | null
 }
@@ -78,6 +83,24 @@ const emit = defineEmits<{
     toggleSelect: [ribbon: JourneyRibbon, selected: boolean]
     delete: [ribbon: JourneyRibbon]
 }>()
+
+const locale = useLocaleStore()
+
+const deleteBlockedTooltip = computed(() => {
+    if (props.ribbon.is_deletable) {
+        return null
+    }
+    const reasons: Record<DeleteBlocker, string> = {
+        state: ctrans("Already received"),
+        items: ctrans("Some items still have a value"),
+        extra_costs: ctrans("Has extra costs of :amount", { amount: String(locale.currencyFormat(props.ribbon.currency_code, props.ribbon.extra_costs ?? 0)) }),
+        deposit: ctrans("Has a deposit, deposit request or agent payment"),
+        goods: ctrans("Goods already received by the agent"),
+        delivery: ctrans("Has a stock delivery")
+    }
+    const lines = (props.ribbon.delete_blockers ?? []).map((reason) => `• ${reasons[reason]}`)
+    return [ctrans("Can not be deleted:"), ...lines].join("\n")
+})
 
 const isOpen = ref(props.expandAll)
 watch(() => props.expandAll, (value) => (isOpen.value = value))
@@ -224,7 +247,7 @@ function isMarkable(segment: JourneySegment): boolean {
                 <div class="flex items-start gap-1.5">
                     <span
                         v-if="selectable"
-                        v-tooltip="ribbon.is_deletable ? null : ctrans('Only orders not received yet, worth nothing, and without a deposit, payment or delivery can be deleted')"
+                        v-tooltip="deleteBlockedTooltip"
                         class="shrink-0 self-center">
                         <Checkbox
                             :modelValue="!!selected"

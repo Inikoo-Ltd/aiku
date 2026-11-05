@@ -26,25 +26,54 @@ class DeleteEmptyPurchaseOrders extends OrgAction
      */
     public static function deletableCondition(): string
     {
-        return "po.state in ('in_process', 'submitted', 'confirmed')
-            and ".self::withoutDepositCondition()."
-            and coalesce(po.cost_extra, 0) + coalesce(po.cost_shipping, 0) + coalesce(po.cost_duties, 0) + coalesce(po.cost_tax, 0) = 0
-            and not exists (
+        return collect(self::blockers())->map(fn (string $blocks) => "not ({$blocks})")->implode("\n            and ");
+    }
+
+    /**
+     * One boolean column per reason the order can not be deleted, named delete_blocked_by_<reason>, for the board to
+     * tell the user why. Written against the alias po.
+     */
+    public static function blockerColumns(): string
+    {
+        return collect(self::blockers())->map(fn (string $blocks, string $reason) => "({$blocks}) as delete_blocked_by_{$reason}")->implode(",\n            ");
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function blockersOfRow(object $row): array
+    {
+        return array_values(array_filter(array_keys(self::blockers()), fn (string $reason) => (bool) $row->{"delete_blocked_by_{$reason}"}));
+    }
+
+    /**
+     * Each reason that stops an order from being deleted, as SQL that is true when it applies.
+     *
+     * @return array<string, string>
+     */
+    private static function blockers(): array
+    {
+        return [
+            'state'       => "po.state not in ('in_process', 'submitted', 'confirmed')",
+            'items'       => "exists (
                 select 1 from purchase_order_transactions
                 where purchase_order_transactions.purchase_order_id = po.id
                     and purchase_order_transactions.deleted_at is null
                     and purchase_order_transactions.state <> 'cancelled'
                     and purchase_order_transactions.net_amount <> 0
-            )
-            and not exists (select 1 from agent_goods_receipt_items where agent_goods_receipt_items.purchase_order_id = po.id)
-            and not exists (select 1 from agent_warehouse_stocks where agent_warehouse_stocks.purchase_order_id = po.id)
-            and not exists (
+            )",
+            'extra_costs' => 'coalesce(po.cost_extra, 0) + coalesce(po.cost_shipping, 0) + coalesce(po.cost_duties, 0) + coalesce(po.cost_tax, 0) <> 0',
+            'deposit'     => 'not ('.self::withoutDepositCondition().')',
+            'goods'       => 'exists (select 1 from agent_goods_receipt_items where agent_goods_receipt_items.purchase_order_id = po.id)
+                or exists (select 1 from agent_warehouse_stocks where agent_warehouse_stocks.purchase_order_id = po.id)',
+            'delivery'    => "exists (
                 select 1 from purchase_order_stock_delivery
                 join stock_deliveries on stock_deliveries.id = purchase_order_stock_delivery.stock_delivery_id
                 where purchase_order_stock_delivery.purchase_order_id = po.id
                     and stock_deliveries.deleted_at is null
                     and stock_deliveries.state not in ('cancelled', 'not_received')
-            )";
+            )",
+        ];
     }
 
     /**
