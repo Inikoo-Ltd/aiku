@@ -243,6 +243,11 @@ class GetPurchaseOrderStages
         return collect($this->stagesOf($purchaseOrder))->values()->map(fn (Stage $stage, int $index) => [
             'key'         => $stage->value,
             'number'      => $index + 1,
+            'phase'       => match (true) {
+                in_array($stage, [Stage::ARRIVED, Stage::RECEIVED]) => 'delivery',
+                $purchaseOrder->isAgentOrder() => 'agent',
+                default => 'supplier',
+            },
             'label'       => $agentTexts[$stage->value]['label'] ?? Stage::labels()[$stage->value],
             'description' => $agentTexts[$stage->value]['description'] ?? Stage::descriptions()[$stage->value],
             'reached'     => $stages[$stage->value]['reached'],
