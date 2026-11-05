@@ -32,7 +32,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
 
     private const array PER_PAGE_OPTIONS = [10, 25, 50, 100];
 
-    private const array TABS = ['open', 'in_process', 'needs_action', 'import', 'completed'];
+    private const array TABS = ['open', 'in_process', 'submitted', 'confirmed', 'needs_action', 'import', 'completed'];
 
     private const array SORTS = ['needs_action', 'newest', 'oldest', 'value', 'lowest_value'];
 
@@ -112,6 +112,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 'overdue_percent'  => $openRate('overdue'),
                 'completed'        => $anyTab->where('status', 'completed')->count(),
                 'in_process'       => $open->where('is_in_process', true)->count(),
+                'submitted'        => $open->where('state', 'submitted')->count(),
+                'confirmed'        => $open->where('state', 'confirmed')->count(),
                 'needs_action'     => $open->whereIn('status', ['overdue', 'at_risk'])->count(),
                 'import'           => $open->where('is_import', true)->count(),
             ],
@@ -629,6 +631,8 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     {
         return match ($tab) {
             'in_process'   => $ribbon['is_in_process'] && $ribbon['status'] !== 'completed',
+            'submitted'    => $ribbon['state'] === 'submitted' && $ribbon['status'] !== 'completed',
+            'confirmed'    => $ribbon['state'] === 'confirmed' && $ribbon['status'] !== 'completed',
             'needs_action' => in_array($ribbon['status'], ['overdue', 'at_risk']),
             'import'       => $ribbon['is_import'] && $ribbon['status'] !== 'completed',
             'completed'    => $ribbon['status'] === 'completed',
