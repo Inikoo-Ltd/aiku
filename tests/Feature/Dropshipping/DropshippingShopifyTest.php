@@ -1622,6 +1622,8 @@ test('the stock push stores each product log with its outcome in one insert, sta
             ->and($portfolio->stock_last_updated_at)->toBeNull()
             ->and($portfolio->stock_last_fail_updated_at->equalTo($firstRun))->toBeTrue();
     }
+    expect($gone->only(['exist_in_platform', 'platform_status']))->toBe(['exist_in_platform' => false, 'platform_status' => false])
+        ->and($refused->platform_status)->toBeTrue();
 
     $platformType = $channel->platform->type;
     $outcomes     = [
@@ -2468,7 +2470,7 @@ test('repair re-links a portfolio from an archived duplicate to the one active p
         ->and($portfolio->isShopifyVariantAdopted())->toBeTrue();
 });
 
-test('the stock push still sends stock to an archived listing and logs that it is not for sale, and says when the listing is gone, without changing the connected flag', function () {
+test('the stock push still sends stock to an archived listing and logs that it is not for sale, without changing its connected flag, and shows a listing deleted from the store as not connected so it can be uploaded or matched again', function () {
     Queue::fake();
     $channel = shopifyProductChannel($this, 'product-stock-archived')->customerSalesChannel;
     $channel->update(['max_quantity_advertise' => 10, 'stock_threshold' => 0]);
@@ -2500,7 +2502,7 @@ test('the stock push still sends stock to an archived listing and logs that it i
     expect(array_column(ShopifyFake::calls('inventorySetQuantities')[0]['variables']['input']['quantities'], 'inventoryItemId'))->toBe(['gid://shopify/InventoryItem/7500', 'gid://shopify/InventoryItem/7501'])
         ->and($active->refresh()->platform_status)->toBeTrue()
         ->and($archived->refresh()->platform_status)->toBeTrue()
-        ->and($deleted->refresh()->platform_status)->toBeTrue()
+        ->and($deleted->refresh()->only(['exist_in_platform', 'platform_status']))->toBe(['exist_in_platform' => false, 'platform_status' => false])
         ->and($archived->last_stock_value)->toBe(10)
         ->and($responses[$active->id])->toBe([PlatformPortfolioLogsStatusEnum::OK, null])
         ->and($responses[$archived->id])->toBe([PlatformPortfolioLogsStatusEnum::OK, 'Stock sent, but this product is archived in your Shopify store, so it is not for sale there'])

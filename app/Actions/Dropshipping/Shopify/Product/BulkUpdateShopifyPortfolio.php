@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
 use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
@@ -126,12 +127,16 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
     {
         $logData            = [];
         $failedPortfolioIds = [];
+        $goneFromStoreIds   = [];
 
         try {
-            $this->sendChunk($shopifyUser, $customerSalesChannel, $portfolios, $productMap, $holdersByVariant, $variantsSent, $logData, $failedPortfolioIds, $command);
+            $this->sendChunk($shopifyUser, $customerSalesChannel, $portfolios, $productMap, $holdersByVariant, $variantsSent, $logData, $failedPortfolioIds, $goneFromStoreIds, $command);
         } finally {
             if ($failedPortfolioIds) {
                 Portfolio::on('aiku_no_sticky')->whereIn('id', $failedPortfolioIds)->update(['stock_last_fail_updated_at' => now()]);
+            }
+            if ($goneFromStoreIds && Portfolio::on('aiku_no_sticky')->whereIn('id', $goneFromStoreIds)->where('platform_status', true)->update(['exist_in_platform' => false, 'platform_status' => false])) {
+                CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel)->delay(5);
             }
             StorePlatformPortfolioLog::make()->handleMany(array_map(fn (int $portfolioId) => [$portfolios->get($portfolioId), $logData[$portfolioId]], array_keys($logData)));
         }
@@ -144,8 +149,9 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
      * @param  array<string, int>  $variantsSent  variants already sent stock in this run, variant id => portfolio id
      * @param  array<int, array{status?: PlatformPortfolioLogsStatusEnum, response?: string}>  $logData  portfolio id => what its log stores
      * @param  list<int>  $failedPortfolioIds
+     * @param  list<int>  $goneFromStoreIds  portfolios whose Shopify product the merchant deleted: shown as not connected again, so the customer can upload or match it (CUS-1824)
      */
-    private function sendChunk(ShopifyUser $shopifyUser, CustomerSalesChannel $customerSalesChannel, Collection $portfolios, Collection $productMap, array $holdersByVariant, array &$variantsSent, array &$logData, array &$failedPortfolioIds, ?Command $command = null): void
+    private function sendChunk(ShopifyUser $shopifyUser, CustomerSalesChannel $customerSalesChannel, Collection $portfolios, Collection $productMap, array $holdersByVariant, array &$variantsSent, array &$logData, array &$failedPortfolioIds, array &$goneFromStoreIds, ?Command $command = null): void
     {
         $inventoryItems         = [];
         $portfoliosToUpdateData = [];
@@ -166,13 +172,17 @@ class BulkUpdateShopifyPortfolio implements ShouldBeUnique
             $shopifyData = self::resolveVariant($portfolio, $productData, $variantsByProduct[$portfolio->platform_product_id] ?? [], $channelSkus);
 
             if (!$shopifyData) {
+                $goneFromStore           = $catalogueRead && !array_key_exists($portfolio->platform_product_id, $statusByProduct);
                 $failedPortfolioIds[]    = $portfolio->id;
                 $logData[$portfolio->id] = [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $catalogueRead && !isset($statusByProduct[$portfolio->platform_product_id])
+                    'response' => $goneFromStore
                         ? 'This product is no longer in your Shopify store'
                         : 'No variant on Shopify matches this sku'
                 ];
+                if ($goneFromStore) {
+                    $goneFromStoreIds[] = $portfolio->id;
+                }
                 continue;
             }
 
