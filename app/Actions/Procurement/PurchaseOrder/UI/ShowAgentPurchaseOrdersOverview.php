@@ -39,13 +39,14 @@ class ShowAgentPurchaseOrdersOverview extends OrgAction
 
         $data['ribbons'] = array_map(fn (array $ribbon) => [
             ...$ribbon,
-            'agent_name' => null,
-            'agent_slug' => null,
-            'route'      => [
+            'agent_name'     => null,
+            'agent_slug'     => null,
+            'supplier_route' => null,
+            'route'          => [
                 'name'       => 'grp.org.agent.purchase_orders.show',
                 'parameters' => ['organisation' => $this->organisation->slug, 'purchaseOrder' => $ribbon['slug']],
             ],
-            'segments'   => array_map(fn (array $segment) => [
+            'segments'       => array_map(fn (array $segment) => [
                 ...$segment,
                 'mark_column' => $segment['mark_column'] && PurchaseOrderStageEnum::agentMayMark($segment['mark_column']) ? $segment['mark_column'] : null,
             ], $ribbon['segments']),

@@ -47,6 +47,7 @@ class IndexSupplierPortalPurchaseOrderStages
                 'supplier_company'  => null,
                 'supplier_nickname' => null,
                 'agent_slug'        => null,
+                'supplier_route'    => null,
                 'placed_by'         => null,
                 'parent_code'       => null,
                 'parent_name'       => null,

@@ -470,6 +470,10 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'agent_name'        => $journey === 'agent' ? $row->agent_name : null,
             'journey'           => $journey,
             'agent_slug'        => $row->agent_slug,
+            'supplier_route'    => $journey !== 'partner' && $row->supplier_slug ? [
+                'name'       => 'grp.supply-chain.suppliers.show',
+                'parameters' => ['supplier' => $row->supplier_slug],
+            ] : null,
             'parent_code'       => $row->agent_code ?? $row->supplier_code ?? $row->partner_code,
             'parent_name'       => $row->agent_name ?? $row->supplier_name ?? $row->partner_name,
             'suppliers'         => $suppliers,
