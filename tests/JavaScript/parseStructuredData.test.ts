@@ -191,3 +191,13 @@ test("department and sub-department pages write every picture they show as a lic
 		assert.equal(image.copyrightNotice, "© Ancient Wisdom")
 	}
 })
+
+const { mergeStructuredDataNode } = await import("../../resources/js/Iris/Composables/useStructuredData.ts")
+
+test("merging structured data from JSON with a __proto__ key never pollutes Object.prototype", () => {
+	const merged = mergeStructuredDataNode({ name: "Family" }, JSON.parse('{"__proto__": {"polluted": "yes"}, "url": "https://example.com"}'))
+
+	assert.equal(({} as Record<string, unknown>).polluted, undefined)
+	assert.equal(Object.getPrototypeOf(merged), Object.prototype)
+	assert.equal(merged.url, "https://example.com")
+})

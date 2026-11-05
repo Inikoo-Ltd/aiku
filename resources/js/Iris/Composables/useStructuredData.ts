@@ -460,6 +460,10 @@ export const mergeStructuredDataNode = (
     sourceNode: StructuredDataNode
 ): StructuredDataNode => {
     for (const [key, sourceValue] of Object.entries(sourceNode)) {
+        if (key === "__proto__" || key === "constructor" || key === "prototype") {
+            continue
+        }
+
         const targetValue = targetNode[key]
 
         if (!isFilledValue(targetValue)) {
