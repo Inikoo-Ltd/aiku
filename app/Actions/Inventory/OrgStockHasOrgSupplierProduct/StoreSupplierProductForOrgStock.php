@@ -65,6 +65,7 @@ class StoreSupplierProductForOrgStock extends OrgAction
             'cost'             => ['required', 'numeric', 'min:0'],
             'units_per_pack'   => ['required', 'numeric', 'gt:0'],
             'units_per_carton' => ['required', 'numeric', 'gt:0'],
+            'cbm'              => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];
     }
 

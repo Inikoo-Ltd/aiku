@@ -22,6 +22,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionState
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 class PurchaseOrderTransactionResource extends JsonResource
 {
@@ -164,6 +165,16 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'method'     => 'patch',
             ] : null,
             'agent_warehouse'      => $this->agentWarehouse($transaction, $request),
+            'moved_from'           => Arr::get($transaction->data, 'moved_from'),
+            'moved_to'             => Arr::get($transaction->data, 'moved_to', []),
+            'moveRoute'            => $this->isCancellable($transaction) && $transaction->purchaseOrder?->isAgentOrder() && $transaction->org_stock_id ? [
+                'name'       => 'grp.models.purchase-order.transaction.move',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'post',
+            ] : null,
             'cancelRoute'          => $this->isCancellable($transaction) ? [
                 'name'            => 'grp.models.purchase-order.transaction.cancel',
                 'parameters'      => [
