@@ -1791,6 +1791,9 @@ describe('supplier product link tool', function () {
             ['code' => strtoupper($toAttach->code), 'is_available' => true]
         ));
         $preExistingStockLinkId = DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $toAttach->stock_id, 'supplier_product_id' => $existing->id, 'created_at' => now(), 'updated_at' => now()]);
+        $unmirrored = App\Models\Procurement\OrgSupplierProduct::where('supplier_product_id', $existing->id)->pluck('id');
+        DB::table('org_supplier_product_stats')->whereIn('org_supplier_product_id', $unmirrored)->delete();
+        DB::table('org_supplier_products')->whereIn('id', $unmirrored)->delete();
 
         AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\SupplierProductLinkTool::class, [
             'organisation' => $this->organisation->code,

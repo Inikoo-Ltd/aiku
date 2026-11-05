@@ -10,6 +10,7 @@ namespace App\Mcp\Tools;
 
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreSupplierProductForOrgStock;
+use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\SysAdmin\Authorisation\OrganisationPermissionsEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
@@ -164,10 +165,8 @@ class SupplierProductLinkTool extends AikuOrgStockDiscontinueTool
         }
 
         if ($supplierProduct) {
-            $orgSupplierProduct = OrgSupplierProduct::where('organisation_id', $orgStock->organisation_id)->where('supplier_product_id', $supplierProduct->id)->first();
-            if (!$orgSupplierProduct) {
-                return $result + ['result' => 'skipped', 'reason' => 'Supplier product '.$supplierProduct->code.' is not set up in this organisation'];
-            }
+            $orgSupplierProduct = OrgSupplierProduct::where('org_supplier_id', $orgSupplier->id)->where('supplier_product_id', $supplierProduct->id)->first()
+                ?? StoreOrgSupplierProduct::make()->action($orgSupplier, $supplierProduct);
 
             $packing = $supplierProduct->only(['units_per_pack', 'units_per_carton']);
             $this->attach($orgStock, $orgSupplierProduct, $changes, $packing);
