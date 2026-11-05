@@ -26,6 +26,7 @@ enum StockDeliveryTabsEnum: string
     case CUSTOMS              = 'customs';
     case PURCHASE_ORDERS      = 'purchase_orders';
     case ATTACHMENTS          = 'attachments';
+    case IMPORT_FILE          = 'import_file';
     case NOTES = 'notes';
     case HISTORY              = 'history';
 
@@ -73,6 +74,10 @@ enum StockDeliveryTabsEnum: string
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon',
                 'align' => 'right',
+            ],
+            StockDeliveryTabsEnum::IMPORT_FILE          => [
+                'title' => __('Import file details'),
+                'icon'  => 'fal fa-folder-open',
             ],
             StockDeliveryTabsEnum::NOTES => [
                 'title' => __('Notes'),

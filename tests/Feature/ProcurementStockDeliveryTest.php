@@ -84,6 +84,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\UI\Procurement\StockDeliveryTabsEnum;
+use App\Actions\GoodsIn\StockDelivery\UI\GetStockDeliveryImportFile;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Goods\Stock;
 use App\Models\GoodsIn\StockDelivery;
@@ -1952,7 +1953,7 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
     $this->get($url)->assertInertia(function (AssertableInertia $page) {
         $page
             ->where('queryBuilderProps.items.elementGroups.state.elements.placed.1', 0)
-            ->has('tabs.navigation', 8)
+            ->has('tabs.navigation', 9)
             ->has('tabs.navigation.'.StockDeliveryTabsEnum::CHECKLIST->value)
             ->missing('tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value);
     });
@@ -1971,7 +1972,7 @@ test('UI stock delivery partial reload refreshes item state filters and tabs', f
 
     $response->assertOk()
         ->assertJsonPath('props.queryBuilderProps.items.elementGroups.state.elements.placed.1', 1)
-        ->assertJsonCount(9, 'props.tabs.navigation')
+        ->assertJsonCount(10, 'props.tabs.navigation')
         ->assertJsonPath(
             'props.tabs.navigation.'.StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->value.'.title',
             StockDeliveryTabsEnum::UNDER_OVER_DELIVERED->blueprint()['title']
@@ -3923,4 +3924,49 @@ test('the search bar on an agent organisation dashboard finds its suppliers by a
 
     actingAs($this->adminGuest->getUser());
     expect(get(route('grp.search.index', ['q' => 'yovan', 'route_src' => 'grp.org.dashboard.show', 'organisation' => $this->organisation->slug]))->assertOk()->json())->toBe([]);
+});
+
+test('import file details tick steps from aiku data, take marks that win over it and show what is outstanding before closing (HELP-4543)', function () {
+    $this->withoutExceptionHandling();
+    $this->withoutVite();
+    $stockDelivery = createStockDeliveryWithItems($this, 'IMPORT-FILE-4543', [10]);
+    $stockDelivery->update(['data' => array_merge($stockDelivery->data ?? [], ['delivery_type' => 'parcel', 'incoterm' => 'EXW'])]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::SHIPPING->value, 'amount' => 120, 'received_at' => now()]);
+
+    $steps = fn (): \Illuminate\Support\Collection => collect(GetStockDeliveryImportFile::run($stockDelivery->refresh())['steps'])->keyBy('key');
+
+    expect($steps()->keys()->all())->toBe(GetStockDeliveryImportFile::STEPS)
+        ->and($steps()['shipping_invoice'])->toMatchArray(['status' => 'done', 'is_auto' => true])
+        ->and($steps()['bill_of_lading']['status'])->toBe('na')
+        ->and($steps()['original_documents']['status'])->toBe('na')
+        ->and($steps()['shipping_quotes']['status'])->toBe('pending');
+
+    $url = route('grp.models.stock-delivery.import_file.update', ['stockDelivery' => $stockDelivery->id]);
+    $this->patch($url, ['step' => 'shipping_invoice', 'status' => 'pending', 'date' => null])->assertRedirect();
+    $this->patch($url, ['step' => 'duty_rates', 'status' => 'done', 'date' => '2026-11-04'])->assertRedirect();
+
+    expect($steps()['shipping_invoice'])->toMatchArray(['status' => 'pending', 'is_auto' => false])
+        ->and($steps()['duty_rates'])->toMatchArray(['status' => 'done', 'date' => '2026-11-04'])
+        ->and($stockDelivery->audits()->where('event', 'import_file_mark')->count())->toBe(2);
+
+    $this->patch($url, ['step' => 'shipping_invoice', 'status' => null])->assertRedirect();
+    expect($steps()['shipping_invoice'])->toMatchArray(['status' => 'done', 'is_auto' => true]);
+
+    $importFile = GetStockDeliveryImportFile::run($stockDelivery->refresh());
+    expect($importFile['is_complete'])->toBeFalse()
+        ->and($importFile['checks']['goods_received'])->toBeFalse()
+        ->and($importFile['outstanding'])->toContain(__('Shipping quotes'))
+        ->and($importFile['summary']['incoterm'])->toBe('EXW')
+        ->and($importFile['summary']['mode'])->toBe('road');
+
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]).'?tab='.StockDeliveryTabsEnum::IMPORT_FILE->value)
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Procurement/StockDelivery')
+            ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.steps.11.key', 'duty_rates')
+            ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.can_edit', true)
+            ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.can_upload', true)
+            ->where(StockDeliveryTabsEnum::IMPORT_FILE->value.'.steps.0.files', []));
+
+    $this->withExceptionHandling();
+    $this->patch($url, ['step' => 'not_a_step', 'status' => 'done'])->assertSessionHasErrors('step');
 });

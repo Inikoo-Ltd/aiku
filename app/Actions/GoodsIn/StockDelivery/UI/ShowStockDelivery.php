@@ -126,6 +126,7 @@ class ShowStockDelivery extends OrgAction
         StockDeliveryTabsEnum::TARIFF_CODES,
         StockDeliveryTabsEnum::CUSTOMS,
         StockDeliveryTabsEnum::PURCHASE_ORDERS,
+        StockDeliveryTabsEnum::IMPORT_FILE,
     ];
 
     public function authorize(ActionRequest $request): bool
@@ -333,6 +334,10 @@ class ShowStockDelivery extends OrgAction
                 StockDeliveryTabsEnum::CUSTOMS->value => $this->tab == StockDeliveryTabsEnum::CUSTOMS->value ?
                     fn () => GetStockDeliveryCustoms::run($stockDelivery)
                     : Inertia::optional(fn () => GetStockDeliveryCustoms::run($stockDelivery)),
+
+                StockDeliveryTabsEnum::IMPORT_FILE->value => $this->viewedByAgent ? null : ($this->tab == StockDeliveryTabsEnum::IMPORT_FILE->value ?
+                    fn () => $this->getImportFile($stockDelivery, $request)
+                    : Inertia::optional(fn () => $this->getImportFile($stockDelivery, $request))),
 
                 StockDeliveryTabsEnum::PURCHASE_ORDERS->value => $this->tab == StockDeliveryTabsEnum::PURCHASE_ORDERS->value ?
                     fn () => PurchaseOrdersResource::collection(IndexPurchaseOrders::run($stockDelivery, StockDeliveryTabsEnum::PURCHASE_ORDERS->value))
@@ -1657,6 +1662,16 @@ class ShowStockDelivery extends OrgAction
             ->additional(['read_only' => $this->goodsIn]);
     }
 
+    private function getImportFile(StockDelivery $stockDelivery, ActionRequest $request): array
+    {
+        $canMark = $request->user()->authTo([
+            "procurement.{$stockDelivery->organisation_id}.edit",
+            "accounting.{$stockDelivery->organisation_id}.edit",
+        ]);
+
+        return GetStockDeliveryImportFile::run($stockDelivery, $canMark, $request->user()->authTo("procurement.{$stockDelivery->organisation_id}.edit"));
+    }
+
     private function hasCustomsTab(StockDelivery $stockDelivery): bool
     {
         return !$this->viewedByAgent
@@ -1671,6 +1686,10 @@ class ShowStockDelivery extends OrgAction
         ));
         if (!$this->hasCustomsTab($stockDelivery)) {
             $tabs = array_values(array_diff($tabs, [StockDeliveryTabsEnum::TARIFF_CODES->value, StockDeliveryTabsEnum::CUSTOMS->value]));
+        }
+
+        if ($this->viewedByAgent) {
+            $tabs = array_values(array_diff($tabs, [StockDeliveryTabsEnum::IMPORT_FILE->value]));
         }
 
         if ($this->viewedByAgent || !in_array($stockDelivery->state, GetStockDeliveryGoodsInChecklist::STATES, true)) {

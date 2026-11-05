@@ -36,6 +36,7 @@ import ModalAcceptResponsibility from "@/Components/Procurement/ModalAcceptRespo
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
 import TableStockDeliveryDiscrepancies from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryDiscrepancies.vue"
 import StockDeliveryCustoms from "@/Components/Procurement/StockDeliveryCustoms.vue"
+import StockDeliveryImportFile from "@/Components/Procurement/StockDeliveryImportFile.vue"
 import StockDeliveryTariffCodes from "@/Components/Procurement/StockDeliveryTariffCodes.vue"
 import StockDeliveryGoodsInChecklist from "@/Components/Procurement/StockDeliveryGoodsInChecklist.vue"
 import StockDeliveryPackingChecks from "@/Components/Procurement/StockDeliveryPackingChecks.vue"
@@ -59,11 +60,12 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast, faFileExcel } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast, faFileExcel, faFolderOpen } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull, faCheckSquare } from "@fas"
 
 library.add(
 	faWeight,
+	faFolderOpen,
 	faFileCsv,
 	faTasks,
 	faShip,
@@ -248,6 +250,7 @@ const props = defineProps<{
 	under_over_delivered?: {}
 	tariff_codes?: {}
 	customs?: {}
+	import_file?: InstanceType<typeof StockDeliveryImportFile>["$props"]["data"]
 	attachments?: {}
 	attachmentScopes: { name: string; code: string }[]
 	invoice_costing: InstanceType<typeof StockDeliveryInvoiceCosting>["$props"]["invoices"]
@@ -280,6 +283,7 @@ const component = computed(() => {
 		under_over_delivered: TableStockDeliveryDiscrepancies,
 		tariff_codes: StockDeliveryTariffCodes,
 		customs: StockDeliveryCustoms,
+		import_file: StockDeliveryImportFile,
 		purchase_orders: TablePurchaseOrders,
 		attachments: TableAttachments,
 		notes: TableProcurementNotes,
