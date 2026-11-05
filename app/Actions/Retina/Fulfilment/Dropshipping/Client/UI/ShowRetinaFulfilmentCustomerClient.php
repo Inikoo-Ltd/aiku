@@ -35,7 +35,7 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $request->user()->is_root && $this->retinaCustomerOwnsRouteModels($request);
+        return $this->retinaCustomerOwnsRouteModels($request);
     }
 
 

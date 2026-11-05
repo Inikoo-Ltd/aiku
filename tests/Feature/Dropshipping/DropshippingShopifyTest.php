@@ -1840,6 +1840,14 @@ test('retina refuses the portfolio, api dashboard and basket line of another cus
     $this->get(route('retina.dropshipping.customer_sales_channels.api.dashboard', $ownChannel->slug))->assertOk()
         ->assertInertia(fn ($page) => $page->where('showcase.staging_url', 'https://canary.'.$website->domain.'/app'));
     $this->get(route('retina.dropshipping.customer_sales_channels.client.index', $manualChannel($ownChannel->customer)->slug))->assertOk();
+    $ownManualChannel = $manualChannel($ownChannel->customer);
+    $ownClient        = StoreCustomerClient::make()->action($ownManualChannel, CustomerClient::factory()->definition());
+    $staffUsername = 'staff-'.Str::lower(Str::random(8));
+    $staffWebUser  = StoreWebUser::make()->action($ownChannel->customer, ['username' => $staffUsername, 'email' => $staffUsername.'@testmail.com', 'password' => 'test']);
+    $staffWebUser->update(['is_root' => false]);
+    actingAs($staffWebUser, 'retina');
+    expect(auth('retina')->user()->is_root)->toBeFalse();
+    $this->get(route('retina.dropshipping.customer_sales_channels.client.show', [$ownManualChannel->slug, $ownClient->ulid]))->assertOk();
     $this->getJson(route('retina.json.basket_transaction_product_data', $ownLine->id))->assertOk()->assertJsonPath('transaction_id', $ownLine->id);
 });
 
