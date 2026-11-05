@@ -96,6 +96,7 @@ use App\Actions\Catalogue\Product\Json\GetDiscontinuingProductsInFamily;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\Offer\OfferTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
@@ -3861,6 +3862,18 @@ test('finish and update volume gr offer from master', function () {
 
     $category->refresh();
     expect($category->has_gr_vol_discount)->toBeFalse();
+
+    $offer = Offer::where('trigger_type', 'ProductCategory')->where('trigger_id', $category->id)
+        ->where('type', OfferTypeEnum::CATEGORY_QUANTITY_ORDERED_ORDER_INTERVAL)->firstOrFail();
+    expect($offer->end_at)->not->toBeNull();
+
+    UpdateVolumeGrOfferFromMaster::run($masterProductCategory);
+    UpdateOfferStatusFromDates::make()->handle($offer->refresh());
+
+    $offer->refresh();
+    expect($offer->end_at)->toBeNull()
+        ->and($offer->state)->toBe(OfferStateEnum::ACTIVE)
+        ->and($offer->status)->toBeTrue();
 });
 
 test('repair aurora submitted transaction snapshots', function () {

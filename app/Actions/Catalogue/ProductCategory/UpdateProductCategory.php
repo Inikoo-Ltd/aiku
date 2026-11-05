@@ -475,6 +475,7 @@ class UpdateProductCategory extends OrgAction
             $offer->update([
                 'state'        => OfferStateEnum::ACTIVE,
                 'status'       => true,
+                'end_at'       => null,
                 'trigger_data' => $triggerData,
             ]);
 
