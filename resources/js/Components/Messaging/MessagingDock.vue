@@ -272,7 +272,10 @@ const onClusterPointerUp = () => {
         } catch { }
         return
     }
-    if (ulid) openBubble(ulid)
+    if (ulid) {
+        document.dispatchEvent(new CustomEvent("rail-click", { detail: "chat_bubble" }))
+        openBubble(ulid)
+    }
 }
 
 const bubbleUlidsKey = computed(() => store.openWindows.map((w) => `${w.ulid}:${w.minimised ? 1 : 0}`).join(","))
@@ -446,7 +449,7 @@ onUnmounted(() => {
                 :key="w.ulid"
                 :data-bubble-ulid="w.ulid"
                 v-tooltip="{ content: otherName(store.conversationByUlid(w.ulid)), placement: 'top' }"
-                data-rail="chat_bubble" class="group/bubble relative shrink-0 cursor-pointer rounded-full transition-transform duration-200 hover:z-10 hover:-translate-y-1"
+                class="group/bubble relative shrink-0 cursor-pointer rounded-full transition-transform duration-200 hover:z-10 hover:-translate-y-1"
                 :class="bubbleIndex > 0 && '-ml-2'"
             >
                 <div class="flex rounded-full ring-2" :class="unreadOf(w.ulid) ? (isQuietUnread(w.ulid) ? 'ring-gray-400' : 'ring-red-500') : 'ring-white'">
@@ -486,6 +489,7 @@ onUnmounted(() => {
                     :class="[overflowUnread ? 'ring-red-500' : 'ring-white', isOverflowListOpen && '!bg-gray-200']"
                     @pointerdown.stop
                     @pointerup.stop
+                    data-rail="chat_overflow_open"
                     @click.stop="isOverflowPinned ? closeOverflowList() : (isOverflowPinned = true)"
                 >
                     +{{ overflowBubbles.length }}
