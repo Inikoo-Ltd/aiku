@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Crawl;
 
 use App\Enums\Web\Crawl\CrawlStateEnum;
+use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
@@ -43,9 +44,14 @@ class StopCrawl
 
     public function getCommandSignature(): string
     {
-        return 'crawl:stop {website?}';
+        return 'crawl:stop {website?} {--with-audits : Also stop site audits}';
     }
 
+    /**
+     * Every production deploy runs this to stop the cache warming crawls, so it leaves site audits alone
+     * unless asked: an audit runs in parts queued one after the other (AuditWebsite), which outlive a
+     * deploy, and stopping them made every audit longer than the time between two deploys end unfinished.
+     */
     public function asCommand(Command $command): int
     {
         $websiteIds = [];
@@ -57,7 +63,12 @@ class StopCrawl
         }
 
         /** @var Crawl $crawl */
-        foreach (Crawl::where('state', '!=', CrawlStateEnum::FINISH)->whereIn('website_id', $websiteIds)->get() as $crawl) {
+        $crawls = Crawl::where('state', '!=', CrawlStateEnum::FINISH)
+            ->whereIn('website_id', $websiteIds)
+            ->when(!$command->option('with-audits'), fn ($query) => $query->where('type', '!=', CrawlTypeEnum::AUDIT))
+            ->get();
+
+        foreach ($crawls as $crawl) {
             $command->info("Stopping crawl: ID {$crawl->id} Website ({$crawl->website->domain}) ");
             $this->handle($crawl);
         }
