@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "agents": [
+    "claude_code"
+  ],
+  "features": {
+    "guidelines": true,
+    "mcp": false
+  },
+  "thirdPartyPackages": [],
+  "delegateSkills": false,
+  "rules": {
+    "enabled": true
+  }
+}
