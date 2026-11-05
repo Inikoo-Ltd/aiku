@@ -23,6 +23,7 @@ use App\Actions\Chat\ChatSession\RedactChatMessage;
 use App\Actions\Chat\ChatSession\ReleaseChatSession;
 use App\Actions\Chat\ChatSession\ReopenChatSession;
 use App\Actions\Chat\ChatSession\RetractChatMessage;
+use App\Actions\Chat\ChatSession\SaveChatReplyDraft;
 use App\Actions\Chat\ChatSession\RestoreChatSession;
 use App\Actions\Chat\ChatSession\SetChatSessionPriority;
 use App\Actions\Chat\ChatSession\ToggleChatSessionHighlight;
@@ -128,6 +129,9 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('/sessions/{chatSession:ulid}/couriers', MoveChatSessionToCouriers::class)->name('sessions.couriers');
     Route::patch('/sessions/{chatSession:ulid}/priority', SetChatSessionPriority::class)->name('sessions.priority');
     Route::patch('/sessions/{chatSession:ulid}/highlight', ToggleChatSessionHighlight::class)->name('sessions.highlight');
+    Route::get('/sessions/{chatSession:ulid}/reply-draft', [SaveChatReplyDraft::class, 'show'])->name('sessions.reply_draft.show');
+    Route::put('/sessions/{chatSession:ulid}/reply-draft', SaveChatReplyDraft::class)->name('sessions.reply_draft.update');
+    Route::patch('/sessions/{chatSession:ulid}/reply-draft/take-over', [SaveChatReplyDraft::class, 'takeOver'])->name('sessions.reply_draft.take_over');
     Route::get('/search-suggestions', GetChatSearchSuggestions::class)->name('search_suggestions');
     Route::get('/labels', GetChatLabels::class)->name('labels.index');
     Route::post('/labels', StoreChatLabel::class)->name('labels.store');

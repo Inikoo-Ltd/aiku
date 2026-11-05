@@ -5,7 +5,8 @@ import axios from "axios"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { chatDrafters, noteChatDrafting, stopChatDrafting } from "@/Composables/useChatDrafting"
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome"
-import { readComposerFiles, useComposerAttachmentDraft, useComposerDraft, writeComposerFiles } from "@/Composables/useComposerDraft"
+import { readComposerFiles, useComposerAttachmentDraft, writeComposerFiles } from "@/Composables/useComposerDraft"
+import { useChatReplyDraft } from "@/Composables/useChatReplyDraft"
 import {
     faPaperPlane,
     faArrowLeft,
@@ -81,7 +82,7 @@ import { useChatWaitingForCustomer, waitingOptions } from "@/Composables/useChat
 import { useChatCustomerPresence } from "@/Composables/useChatCustomerPresence"
 import { useReadWhenWatched } from "@/Composables/useReadWhenWatched"
 import { followPointer } from "@/Composables/followPointer"
-import { faGlobe } from "@fal"
+import { faGlobe, faCheck as faCheckLight, faTimes as faTimesLight } from "@fal"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 
 const props = defineProps<{
@@ -459,7 +460,6 @@ const reopenChat = async () => {
 
 const eventsLocal = ref<any[]>([])
 const newMessage = ref("")
-useComposerDraft(() => props.session?.ulid, newMessage)
 
 const handleRetractMessage = async ({ id, reason }: { id: number; reason: string }) => {
     if (!props.session?.ulid) return
@@ -807,8 +807,18 @@ const toggleComposerExpanded = () => {
 const aiDraftBox = ref<InstanceType<typeof ChatAiDraftBox> | null>(null)
 const aiDraftText = ref<string | null>(null)
 let aiDraftId: number | null = null
+const heldAiDraft = ref<{ text: string, draftId?: number } | null>(null)
 
-watch(() => props.session?.ulid, () => aiDraftText.value = null)
+const { colleagueDraft, isLoaded: isReplyDraftLoaded, saveFailed: replyDraftSaveFailed, carriedOnBy, takeOverColleagueDraft, refreshColleagueDraft } = useChatReplyDraft(
+    () => props.session?.ulid,
+    newMessage,
+    () => aiDraftText.value !== null && newMessage.value === aiDraftText.value,
+)
+
+watch(() => props.session?.ulid, () => {
+    aiDraftText.value = null
+    heldAiDraft.value = null
+})
 
 // ponytail: one storage key per draft offered, never pruned; a few bytes each, sweep them if it ever matters
 const offeredKey = (draftId: number) => `chat-ai-draft-offered:${draftId}`
@@ -830,6 +840,12 @@ const markOffered = (draftId: number) => {
 // An email reply starts from Aiku's draft, unless the agent has begun one of their own or
 // already cleared this draft out of the box. A newer draft replaces an older one left untouched.
 const offerAiDraft = (text: string, draftId?: number) => {
+    // The agent's own saved reply, or a colleague's, comes before Aiku's draft (HELP-4523).
+    if (!isReplyDraftLoaded.value || colleagueDraft.value) {
+        heldAiDraft.value = { text, draftId }
+        return
+    }
+
     const isUntouchedDraft = aiDraftText.value !== null && newMessage.value === aiDraftText.value
     const isFree = !newMessage.value.trim() && !(draftId && wasOffered(draftId))
 
@@ -842,6 +858,35 @@ const offerAiDraft = (text: string, draftId?: number) => {
     aiDraftId = draftId ?? null
     newMessage.value = text
     aiDraftText.value = text
+}
+
+watch(isReplyDraftLoaded, (loaded) => {
+    if (!loaded || colleagueDraft.value || !heldAiDraft.value) return
+    const { text, draftId } = heldAiDraft.value
+    heldAiDraft.value = null
+    offerAiDraft(text, draftId)
+})
+
+const startFromAiDraftInstead = () => {
+    const held = heldAiDraft.value
+    colleagueDraft.value = null
+    heldAiDraft.value = null
+    if (held) offerAiDraft(held.text, held.draftId)
+}
+
+const replyDraftError = ref<string | null>(null)
+const continueColleagueDraft = async () => {
+    replyDraftError.value = null
+    aiDraftText.value = null
+    heldAiDraft.value = null
+    try {
+        await takeOverColleagueDraft()
+        messageEditor.value?.focus()
+    } catch (error: any) {
+        replyDraftError.value = error?.response?.status === 404
+            ? ctrans("This draft was sent or carried on by someone else.")
+            : ctrans("The draft could not be opened. Reload the conversation and try again.")
+    }
 }
 
 const clearAiDraft = () => {
@@ -1405,6 +1450,7 @@ const initSocket = () => {
 
     // Message
     onMessage = ({ message }: any) => {
+        if (message.sender_type === "agent" && colleagueDraft.value) refreshColleagueDraft()
         onCustomerWaitMessage(message)
         onCustomerPresenceMessage(message)
         // Only this reply's own bubble gives way to the server's copy. Clearing every bubble still
@@ -1959,6 +2005,21 @@ const handleClickOutside = (e: MouseEvent) => {
             class="mx-3 mb-1 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
             ✎ {{ ctrans(":name is writing a reply to this conversation", { name: chatDrafters[chatSession.ulid].name }) }}
         </div>
+        <div v-if="colleagueDraft && !readOnly" class="mx-3 mb-1 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-xs">
+            <div class="font-medium text-gray-700">
+                ✎ {{ ctrans(":name started a reply and has not sent it yet", { name: colleagueDraft.name }) }}
+            </div>
+            <p class="mt-1 line-clamp-3 whitespace-pre-line text-gray-600">{{ stripPictureTokens(colleagueDraft.text) }}</p>
+            <div class="mt-2 flex flex-wrap gap-2">
+                <Button v-if="!newMessage.trim()" type="tertiary" size="xs" :label="ctrans('Continue this reply')" @click="continueColleagueDraft">
+                    <template #icon><FontAwesomeIcon :icon="faCheckLight" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button v-if="heldAiDraft" type="tertiary" size="xs" :label="ctrans('Start from Aiku\'s draft instead')" @click="startFromAiDraftInstead">
+                    <template #icon><FontAwesomeIcon :icon="faTimesLight" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+            </div>
+            <p v-if="replyDraftError" class="mt-1 text-red-600">{{ replyDraftError }}</p>
+        </div>
         <div v-if="remoteTypingUser" class="text-xs text-gray-400 italic px-2 py-1">
             {{ remoteTypingUser }} {{ ctrans("is typing...") }}
         </div>
@@ -2159,6 +2220,14 @@ const handleClickOutside = (e: MouseEvent) => {
             </div>
             </div>
             <p v-if="composerError" role="alert" class="mt-1 px-1 text-xs text-red-600">{{ composerError }}</p>
+            <p v-if="carriedOnBy !== null" role="alert" class="mt-1 px-1 text-xs text-amber-700">
+                {{ carriedOnBy
+                    ? ctrans(":name has carried on this reply. Check the conversation before you send it, so the customer does not get it twice.", { name: carriedOnBy })
+                    : ctrans("This reply was sent or carried on elsewhere. Check the conversation before you send it, so the customer does not get it twice.") }}
+            </p>
+            <p v-else-if="replyDraftSaveFailed" role="alert" class="mt-1 px-1 text-xs text-red-600">
+                {{ ctrans("This draft is not saved yet, so colleagues cannot see it. It will be saved when you type again.") }}
+            </p>
         </footer>
 
         <ChatFilesDialog v-if="session?.ulid" v-model:visible="isFilesDialogOpen" :session-ulid="session.ulid" :is-whatsapp="false" />

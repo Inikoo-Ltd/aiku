@@ -140,6 +140,7 @@ export interface Contact {
 	is_highlighted?: boolean
 	has_attachments?: boolean
 	labels?: Array<{ id: number; name: string; colour: string }>
+	reply_draft?: { name: string; user_id: number | null } | null
 	messages?: ChatMessage[]
 	webUser?: {
 		id: string

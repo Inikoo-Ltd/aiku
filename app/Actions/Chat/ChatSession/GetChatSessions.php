@@ -206,6 +206,7 @@ class GetChatSessions
             'assignments.chatAgent.user',
             'staffTasks' => fn ($q) => $q->open()->with('assignee'),
             'labels:id,name,colour',
+            'replyDrafts.chatAgent.user',
         ])
             ->whereHas('messages')
             ->withCount([

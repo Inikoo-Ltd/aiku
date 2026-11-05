@@ -96,6 +96,10 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                     class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
                     ✎ {{ chatDrafters[c.ulid].name }}
                 </span>
+                <span v-else-if="c.reply_draft" :data-tooltip="ctrans(':name started a reply and has not sent it yet', { name: c.reply_draft.name })"
+                    class="shrink-0 rounded bg-gray-100 px-1.5 text-[11px] font-medium text-gray-600">
+                    ✎ {{ ctrans("Draft: :name", { name: c.reply_draft.name }) }}
+                </span>
                 <span v-for="label in c.labels ?? []" :key="label.id"
                     class="shrink-0 rounded px-1.5 text-[11px] font-medium" :style="ctx.labelChipStyle(label)">
                     {{ label.name }}
@@ -199,6 +203,10 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                     <span v-if="chatDrafters[c.ulid]" :data-tooltip="ctrans(':name is writing a reply to this conversation', { name: chatDrafters[c.ulid].name })"
                         class="shrink-0 rounded bg-amber-50 px-1.5 text-[11px] font-medium text-amber-700">
                         ✎ {{ chatDrafters[c.ulid].name }}
+                    </span>
+                    <span v-else-if="c.reply_draft" :data-tooltip="ctrans(':name started a reply and has not sent it yet', { name: c.reply_draft.name })"
+                        class="shrink-0 rounded bg-gray-100 px-1.5 text-[11px] font-medium text-gray-600">
+                        ✎ {{ ctrans("Draft: :name", { name: c.reply_draft.name }) }}
                     </span>
                     <span v-for="label in c.labels ?? []" :key="label.id"
                         class="shrink-0 max-w-full truncate rounded px-1 font-medium" :style="ctx.labelChipStyle(label)">

@@ -475,6 +475,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     is_highlighted: (s as any).is_highlighted ?? false,
     has_attachments: s.has_attachments ?? false,
     labels: (s as any).labels ?? [],
+    reply_draft: (s as any).reply_draft ?? null,
     webUser: s.web_user ?? (s as any).customer,
     country_code: (s as any).country_code ?? null,
     priority: s.priority,

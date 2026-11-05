@@ -92,6 +92,9 @@ class ChatSessionListResource extends JsonResource
             'is_unanswered' => $this->last_visitor_message_at && (!$this->last_agent_message_at || $this->last_visitor_message_at > $this->last_agent_message_at),
             'customer_presence' => \App\Actions\Chat\ChatSession\TrackChatCustomerPresence::current($this->resource),
             'is_highlighted' => (bool) $this->is_highlighted,
+            'reply_draft' => $this->relationLoaded('replyDrafts') && ($draft = $this->replyDrafts->sortByDesc('updated_at')->first())
+                ? ['name' => $draft->writerName(), 'user_id' => $draft->chatAgent?->user_id]
+                : null,
             'has_attachments' => (bool) ($this->has_attachments ?? false),
             'guest_identifier' => $this->guest_identifier,
             'created_at' => $this->created_at,

@@ -140,3 +140,94 @@ test('only the owner changes or deletes a personal reply, and only a supervisor 
     $this->deleteJson(($this->destroyUrl)($personal))->assertOk();
     expect(ChatSavedReply::find($personal->id))->toBeNull();
 });
+
+test('a reply an agent starts is kept on the server: a colleague sees it in the list and the conversation, can carry it on, and sending removes it, HELP-4523', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatListEvent::class]);
+    \Illuminate\Support\Facades\Queue::fake();
+
+    $lenka     = ($this->newUser)();
+    $colleague = ($this->newUser)();
+    makeChatWorker($lenka, $this->shop);
+    makeChatWorker($colleague, $this->shop);
+
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::WAITING,
+        'guest_identifier' => 'guest_'.\Illuminate\Support\Str::random(5),
+        'language_id'      => 68,
+        'priority'         => \App\Enums\CRM\Livechat\ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    \App\Models\Chat\ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => \App\Enums\CRM\Livechat\ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => \App\Enums\CRM\Livechat\ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Can I have the barcodes?',
+        'is_read'         => false,
+    ]);
+
+    $draftUrl    = route('grp.org.chat.agents.sessions.reply_draft.update', [$this->organisation->slug, $session->ulid]);
+    $showUrl     = route('grp.org.chat.agents.sessions.reply_draft.show', [$this->organisation->slug, $session->ulid]);
+    $takeOverUrl = route('grp.org.chat.agents.sessions.reply_draft.take_over', [$this->organisation->slug, $session->ulid]);
+
+    $this->actingAs($lenka)->putJson($draftUrl, ['text' => 'Hi Stuart, I have requested the'])->assertOk()->assertJsonPath('saved', true);
+    $this->actingAs($lenka)->putJson($draftUrl, ['text' => 'Hi Stuart, I have requested the barcodes and will get back to you as'])->assertOk();
+    \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastChatListEvent::class, 1);
+
+    $this->actingAs($lenka)->getJson($showUrl)->assertOk()
+        ->assertJsonPath('mine.text', 'Hi Stuart, I have requested the barcodes and will get back to you as')
+        ->assertJsonPath('colleague', null);
+
+    $colleagueView = $this->actingAs($colleague)->getJson($showUrl)->assertOk()
+        ->assertJsonPath('mine', null)
+        ->assertJsonPath('colleague.text', 'Hi Stuart, I have requested the barcodes and will get back to you as');
+    expect($colleagueView->json('colleague.name'))->toBe($lenka->contact_name ?: $lenka->username);
+
+    $listed = collect(\App\Actions\Chat\ChatSession\GetChatSessions::make()->handle(['shop_id' => $this->shop->id, 'limit' => 100])->items())
+        ->firstWhere('id', $session->id);
+    expect((new \App\Http\Resources\CRM\Livechat\ChatSessionListResource($listed))->resolve()['reply_draft']['user_id'])->toBe($lenka->id);
+
+    $takeOver = ['draft_id' => $colleagueView->json('colleague.id'), 'agent_id' => $colleagueView->json('colleague.agent_id')];
+    $this->actingAs($colleague)->patchJson($takeOverUrl, $takeOver)->assertOk()
+        ->assertJsonPath('text', 'Hi Stuart, I have requested the barcodes and will get back to you as');
+    $this->actingAs($colleague)->patchJson($takeOverUrl, $takeOver)->assertNotFound();
+
+    $this->actingAs($lenka)->putJson($draftUrl, ['text' => 'Hi Stuart, I have requested the barcodes and will get back to you as soon', 'existed' => true])
+        ->assertStatus(409)
+        ->assertJsonPath('name', $colleague->contact_name ?: $colleague->username);
+
+    $colleagueAgent = \App\Models\Chat\ChatAgent::where('user_id', $colleague->id)->firstOrFail();
+    expect($session->replyDrafts()->pluck('chat_agent_id')->all())->toBe([$colleagueAgent->id]);
+    $this->actingAs($lenka)->getJson($showUrl)->assertJsonPath('mine', null);
+
+    \App\Actions\Chat\ChatSession\SendChatMessage::make()->handle($session, [
+        'message_text' => 'Hi Stuart, the barcodes are attached.',
+        'sender_type'  => \App\Enums\CRM\Livechat\ChatSenderTypeEnum::AGENT->value,
+        'sender_id'    => $colleagueAgent->id,
+    ]);
+    expect($session->replyDrafts()->count())->toBe(0);
+
+    $this->actingAs($lenka)->putJson($draftUrl, ['text' => 'Something else'])->assertOk();
+    $this->actingAs($lenka)->putJson($draftUrl, ['text' => '  '])->assertOk()->assertJsonPath('saved', false);
+    expect($session->replyDrafts()->count())->toBe(0);
+});
+
+test('staff who do not work chat on the shop cannot read, write or take over its reply drafts, HELP-4523', function () {
+    $outsider = ($this->newUser)();
+    $session  = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::WAITING,
+        'guest_identifier' => 'guest_'.\Illuminate\Support\Str::random(5),
+        'language_id'      => 68,
+        'priority'         => \App\Enums\CRM\Livechat\ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    $params = [$this->organisation->slug, $session->ulid];
+
+    $this->actingAs($outsider)->getJson(route('grp.org.chat.agents.sessions.reply_draft.show', $params))->assertForbidden();
+    $this->actingAs($outsider)->putJson(route('grp.org.chat.agents.sessions.reply_draft.update', $params), ['text' => 'Hello'])->assertForbidden();
+    $this->actingAs($outsider)->patchJson(route('grp.org.chat.agents.sessions.reply_draft.take_over', $params), ['draft_id' => 1, 'agent_id' => 1])->assertForbidden();
+    expect($session->replyDrafts()->count())->toBe(0);
+});

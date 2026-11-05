@@ -252,6 +252,11 @@ class ChatSession extends Model implements Auditable
         return $this->hasMany(ChatAssignment::class, 'chat_session_id');
     }
 
+    public function replyDrafts(): HasMany
+    {
+        return $this->hasMany(ChatReplyDraft::class);
+    }
+
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class, 'shop_id');

@@ -117,6 +117,10 @@ class SendChatMessage
 
         $chatMessage = ChatMessage::create($chatMessageData);
 
+        if ($modelData['sender_type'] === ChatSenderTypeEnum::AGENT->value && !empty($modelData['sender_id'])) {
+            SaveChatReplyDraft::make()->forget($chatSession, (int) $modelData['sender_id']);
+        }
+
         if (isset($modelData['image']) && $modelData['image'] instanceof UploadedFile) {
             $this->processMessageImage($chatMessage, $modelData['image']);
         }
