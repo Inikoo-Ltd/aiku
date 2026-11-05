@@ -7,6 +7,7 @@
 
 namespace App\Actions\Web\Seo;
 
+use App\Enums\Web\Seo\SeoKeywordDeviceEnum;
 use App\Enums\Web\Seo\SeoKeywordFrequencyEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Catalogue\Shop;
@@ -90,6 +91,10 @@ class PostSerpTasks
      * @param  array<int, int>|null  $trackedKeywordIds
      * @throws DataForSeoException
      */
+    /**
+     * Queues a check for the shop's requestable keywords and returns how many keywords it covers: a
+     * keyword tracked in several countries counts once.
+     */
     public function requested(Shop $shop, ?array $trackedKeywordIds = null): int
     {
         $client = DataForSeoClient::make();
@@ -98,30 +103,33 @@ class PostSerpTasks
             return 0;
         }
 
-        $posted = 0;
+        $keywords = [];
 
         $this->requestableKeywords($shop)
             ->when($trackedKeywordIds !== null, fn (Builder $query) => $query->whereIn('id', $trackedKeywordIds))
-            ->chunkById(self::TASKS_PER_REQUEST, function (Collection $trackedKeywords) use ($client, &$posted) {
-                $posted += $this->post($client, $trackedKeywords);
+            ->chunkById(self::TASKS_PER_REQUEST, function (Collection $trackedKeywords) use ($client, &$keywords) {
+                if ($this->post($client, $trackedKeywords) > 0) {
+                    $keywords += array_fill_keys($trackedKeywords->pluck('keyword')->all(), true);
+                }
             });
 
-        return $posted;
+        return count($keywords);
     }
 
     /**
-     * How many of the shop's keywords a check now would queue, and what DataForSEO bills for them:
-     * one page of 10 results at a time, to each keyword's depth.
+     * How many keywords a check now would cover, counted once whatever their countries and
+     * languages, and what DataForSEO bills for every check it queues: one page of 10 results at a
+     * time, to each keyword's depth.
      *
      * @return array{keywords: int, cost: float}
      */
     public function requestable(Shop $shop): array
     {
-        $keywords = $this->requestableKeywords($shop)->pluck('frequency');
+        $checks = $this->requestableKeywords($shop)->get(['keyword', 'frequency']);
 
         return [
-            'keywords' => $keywords->count(),
-            'cost'     => self::cost($keywords),
+            'keywords' => $checks->pluck('keyword')->unique()->count(),
+            'cost'     => self::cost($checks->pluck('frequency')),
         ];
     }
 
@@ -152,7 +160,7 @@ class PostSerpTasks
     }
 
     /**
-     * Active keywords of live websites with no check waiting for its result.
+     * Active keywords on a tracked device of live websites with no check waiting for its result.
      *
      * @return Builder<SeoTrackedKeyword>
      */
@@ -160,6 +168,7 @@ class PostSerpTasks
     {
         return SeoTrackedKeyword::query()
             ->where('is_active', true)
+            ->whereIn('device', SeoKeywordDeviceEnum::tracked())
             ->whereHas('shop.website', fn (Builder $query) => $query->where('state', WebsiteStateEnum::LIVE))
             ->where(fn (Builder $query) => $query
                 ->whereNull('pending_task_id')

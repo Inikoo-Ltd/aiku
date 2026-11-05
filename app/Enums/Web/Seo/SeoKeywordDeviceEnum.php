@@ -17,6 +17,17 @@ enum SeoKeywordDeviceEnum: string
     case MOBILE  = 'mobile';
     case DESKTOP = 'desktop';
 
+    /**
+     * The devices keywords are tracked, checked and shown on: desktop only since 5 Nov 2026. Mobile
+     * rows added before stay in the database with their history, but are no longer checked or shown.
+     *
+     * @return array<int, self>
+     */
+    public static function tracked(): array
+    {
+        return [self::DESKTOP];
+    }
+
     public static function labels(): array
     {
         return [

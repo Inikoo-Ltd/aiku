@@ -10,6 +10,7 @@ namespace App\Actions\Web\Seo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
+use App\Enums\Web\Seo\SeoKeywordDeviceEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Web\SeoAiAnswer;
 use App\Models\Web\SeoBacklinkSummary;
@@ -125,7 +126,10 @@ class GetSeoWeeklyReport
 
     private function rankings(Shop $shop): ?array
     {
-        $checked = SeoTrackedKeyword::where('shop_id', $shop->id)->where('is_active', true)->whereNotNull('last_checked_at');
+        $checked = SeoTrackedKeyword::where('shop_id', $shop->id)
+            ->where('is_active', true)
+            ->whereIn('device', SeoKeywordDeviceEnum::tracked())
+            ->whereNotNull('last_checked_at');
 
         if (!(clone $checked)->exists()) {
             return null;

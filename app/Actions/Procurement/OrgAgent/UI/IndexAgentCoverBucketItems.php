@@ -65,11 +65,13 @@ class IndexAgentCoverBucketItems extends OrgAction
 
     private int $agentLeadDays = 0;
 
+    private ?int $draftPurchaseOrderId = null;
+
     /**
      * The Ordering rows of one supplier, kept to the products any organisation of the group has on a
      * draft: a supplier goes to the agent as one job, so a draft is read next to what the others stack on it.
      */
-    public function onSupplierDrafts(OrgAgent $orgAgent, int $supplierId, string $prefix): LengthAwarePaginator
+    public function onSupplierDrafts(OrgAgent $orgAgent, int $supplierId, string $prefix, ?int $draftPurchaseOrderId = null): LengthAwarePaginator
     {
         $this->orgAgent       = $orgAgent;
         $this->bucket         = null;
@@ -77,6 +79,7 @@ class IndexAgentCoverBucketItems extends OrgAction
         $this->supplierId     = $supplierId;
         $this->onAnyDraftOnly = true;
         $this->prefix         = $prefix;
+        $this->draftPurchaseOrderId    = $draftPurchaseOrderId;
 
         InertiaTable::updateQueryBuilderParameters($prefix);
 
@@ -86,7 +89,7 @@ class IndexAgentCoverBucketItems extends OrgAction
     /**
      * Every product of one supplier the organisation can order through the agent, as the Ordering rows.
      */
-    public function onSupplier(OrgAgent $orgAgent, int $supplierId, string $prefix): LengthAwarePaginator
+    public function onSupplier(OrgAgent $orgAgent, int $supplierId, string $prefix, ?int $draftPurchaseOrderId = null): LengthAwarePaginator
     {
         $this->orgAgent   = $orgAgent;
         $this->bucket     = null;
@@ -94,6 +97,7 @@ class IndexAgentCoverBucketItems extends OrgAction
         $this->supplierId       = $supplierId;
         $this->prefix           = $prefix;
         $this->hideDiscontinued = true;
+        $this->draftPurchaseOrderId      = $draftPurchaseOrderId;
 
         InertiaTable::updateQueryBuilderParameters($prefix);
         $this->readOrderingFilters($prefix);
@@ -116,11 +120,12 @@ class IndexAgentCoverBucketItems extends OrgAction
      *
      * @return array{currency: string, cover: array<int, array{value: string, label: string, title: string, tone: string, count: int}>, rank: array<int, array{value: string, label: string, count: int}>, active: array{cover: string|null, rank: string|null, hide_ordered: bool}}
      */
-    public function orderingFilters(OrgAgent $orgAgent, int $supplierId, string $currency, string $prefix): array
+    public function orderingFilters(OrgAgent $orgAgent, int $supplierId, string $currency, string $prefix, ?int $draftPurchaseOrderId = null): array
     {
         $this->orgAgent         = $orgAgent;
         $this->supplierId       = $supplierId;
         $this->hideDiscontinued = true;
+        $this->draftPurchaseOrderId      = $draftPurchaseOrderId;
         $this->readOrderingFilters($prefix);
 
         $options = $this->filterOptions(request()->input($prefix.'_filter.global', ''));
@@ -140,7 +145,7 @@ class IndexAgentCoverBucketItems extends OrgAction
     public function handle(OrgAgent $orgAgent, ?string $bucket, ?string $rank, ?int $supplierId): LengthAwarePaginator
     {
         $buckets             = GetAgentStockCoverBuckets::make();
-        $bucketSql           = $buckets->bucketSql($orgAgent);
+        $bucketSql           = $buckets->bucketSql($orgAgent, $this->draftPurchaseOrderId);
         $this->agentLeadDays = GetAgentLeadTimes::run($orgAgent)['agent']['days'];
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -437,8 +442,8 @@ class IndexAgentCoverBucketItems extends OrgAction
             ->when($this->hideOnOrder, fn ($query) => $query->whereRaw('not '.$this->onOrderSql()))
             ->when($this->hideDiscontinued, fn ($query) => $query->whereRaw($this->stillOrderableSql()))
             ->when($search !== '', fn ($query) => $query->whereRaw('(sp.code collate "C" ilike ? or sp.name ilike ?)', [$like, $like]))
-            ->groupByRaw($buckets->bucketSql($this->orgAgent).', os.health_rank')
-            ->selectRaw($buckets->bucketSql($this->orgAgent).' as bucket, os.health_rank, count(*) as products')
+            ->groupByRaw($buckets->bucketSql($this->orgAgent, $this->draftPurchaseOrderId).', os.health_rank')
+            ->selectRaw($buckets->bucketSql($this->orgAgent, $this->draftPurchaseOrderId).' as bucket, os.health_rank, count(*) as products')
             ->get();
 
         $inGroup = $this->bucket === null ? $counts : $counts->where('bucket', $this->bucket);

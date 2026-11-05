@@ -225,6 +225,25 @@ class GetOrganisationStockCoverBuckets
     }
 
     /**
+     * SKOs of an org stock on one purchase order still being drafted. Its page judges the stock
+     * groups with them, as the line verdict does, so a line already ordered is not called critical
+     * next to its own overstock verdict (HELP-4508). A submitted order is already coming.
+     */
+    public static function draftOrderSkosExpression(string $orgStocks, int $purchaseOrderId): string
+    {
+        $deadLines = "'".PurchaseOrderTransactionStateEnum::CANCELLED->value."', '".PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value."'";
+
+        return "(coalesce((select sum(purchase_order_transactions.quantity_ordered)
+                from purchase_order_transactions
+                join purchase_orders on purchase_orders.id = purchase_order_transactions.purchase_order_id and purchase_orders.deleted_at is null
+                where purchase_order_transactions.org_stock_id = $orgStocks.id and purchase_order_transactions.deleted_at is null
+                    and purchase_order_transactions.purchase_order_id = $purchaseOrderId
+                    and purchase_order_transactions.state not in ($deadLines)
+                    and purchase_orders.state = '".PurchaseOrderStateEnum::IN_PROCESS->value."'), 0)
+            / greatest(coalesce($orgStocks.packed_in, 1), 1))";
+    }
+
+    /**
      * The stock group of a SKO from the days it lasts counting what is already coming, so a SKO with
      * enough on the way is not called doomed. The cases read cover.days; it is worked out once a row
      * (the offset keeps the planner from repeating it in every case) and what is coming is only

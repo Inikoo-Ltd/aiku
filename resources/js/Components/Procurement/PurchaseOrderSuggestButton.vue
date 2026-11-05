@@ -11,6 +11,7 @@ const props = defineProps<{
 	isPartner?: boolean
 	typedSkosById?: Record<number, number>
 	quantityLabel?: (skos: number) => string
+	appliedSkos?: (skos: number) => number
 }>()
 
 const emit = defineEmits<{
@@ -19,7 +20,7 @@ const emit = defineEmits<{
 
 const locale = useLocaleStore()
 
-const { suggestion, targetDays, leadDays, weeksLabel } = usePurchaseOrderStockCover(
+const { suggestion, targetDays, leadDays, overstockDays, stock, incoming, coverDays, weeksLabel } = usePurchaseOrderStockCover(
 	() => props.item,
 	() => props.isPartner
 )
@@ -32,7 +33,9 @@ const orderedSkos = computed(() => {
 		: (Number(props.item.quantity_ordered) || 0) / (Number(props.item.units_per_pack) || 1)
 })
 
-const isApplied = computed(() => suggestion.value !== null && Math.round(orderedSkos.value) === suggestion.value)
+const suggestedSkos = computed(() => (suggestion.value !== null && props.appliedSkos ? props.appliedSkos(suggestion.value) : suggestion.value ?? 0))
+
+const isApplied = computed(() => suggestion.value !== null && Math.round(orderedSkos.value) === Math.round(suggestedSkos.value))
 
 const formattedSuggestion = computed(() => (props.quantityLabel ? props.quantityLabel(suggestion.value ?? 0) : locale.number(Math.round(suggestion.value ?? 0))))
 
@@ -66,6 +69,35 @@ const tooltip = computed(() =>
 					quantity: formattedSuggestion.value,
 				})
 )
+
+const raisedToMinimum = computed(() => Math.round(suggestedSkos.value) > Math.round(suggestion.value ?? 0))
+
+const suggestedCoverDays = computed(() => coverDays(stock.value + incoming.value + suggestedSkos.value))
+
+const isOverstock = computed(() => suggestion.value !== null && suggestion.value > 0 && suggestedCoverDays.value > overstockDays.value)
+
+const overstockNote = computed(() =>
+	raisedToMinimum.value
+		? ctrans("Lasts :time: the supplier's minimum order", { time: weeksLabel(suggestedCoverDays.value) })
+		: ctrans("Lasts :time: the fewest whole cartons", { time: weeksLabel(suggestedCoverDays.value) })
+)
+
+const overstockTooltip = computed(() =>
+	[
+		raisedToMinimum.value
+			? ctrans("The supplier's minimum order is :quantity, and that lasts :time, past the :overstock overstock limit.", {
+					quantity: formattedSuggestion.value,
+					time: weeksLabel(suggestedCoverDays.value),
+					overstock: weeksLabel(overstockDays.value),
+				})
+			: ctrans("Fewer whole cartons would not cover the need, and :quantity lasts :time, past the :overstock overstock limit.", {
+					quantity: formattedSuggestion.value,
+					time: weeksLabel(suggestedCoverDays.value),
+					overstock: weeksLabel(overstockDays.value),
+				}),
+		ctrans("Order it if the product is worth holding that long, or leave it at 0 and let it run out."),
+	].join(" ")
+)
 </script>
 
 <template>
@@ -88,5 +120,9 @@ const tooltip = computed(() =>
 			<FontAwesomeIcon :icon="faSparkles" class="text-[10px]" :class="isApplied ? 'text-green-500' : 'text-violet-500'" fixed-width aria-hidden="true" />
 			<span>{{ isApplied ? ctrans("Suggested") : ctrans("Suggestion: :quantity", { quantity: formattedSuggestion }) }}</span>
 		</button>
+		<span v-if="isOverstock" v-tooltip="overstockTooltip" class="cursor-help text-right text-[11px] leading-tight text-amber-600">
+			<FontAwesomeIcon :icon="faExclamationTriangle" class="text-[10px]" fixed-width aria-hidden="true" />
+			{{ overstockNote }}
+		</span>
 	</div>
 </template>

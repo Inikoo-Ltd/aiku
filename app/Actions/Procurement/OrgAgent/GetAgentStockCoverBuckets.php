@@ -60,7 +60,7 @@ class GetAgentStockCoverBuckets
      * sell, and with a lead time of a few days the watch window still reaches as far as the
      * projection looks ahead.
      */
-    private function bucketExpression(int $leadDays): string
+    private function bucketExpression(int $leadDays, string $alsoComingSkos = '0'): string
     {
         $lead       = self::leadTimeExpression($leadDays);
         $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $lead)";
@@ -68,11 +68,11 @@ class GetAgentStockCoverBuckets
         return "case
             when os.id is null then 'never'
             when os.state <> '".OrgStockStateEnum::ACTIVE->value."' then 'gone'
-            ".GetOrganisationStockCoverBuckets::outOfStockCase('os', 's', GetOrganisationStockCoverBuckets::make()->overstockDaysExpression())."
+            ".GetOrganisationStockCoverBuckets::outOfStockCase('os', 's', GetOrganisationStockCoverBuckets::make()->overstockDaysExpression(), $alsoComingSkos)."
             else ".GetOrganisationStockCoverBuckets::bucketOnCoverDaysExpression('os', 's', "greatest(4 * $lead, $understock, least(".ProjectOrganisationStockOuts::DAYS.", $lead + ".ProjectOrganisationStockOuts::REORDER_DAYS."))", "
                 ".GetOrganisationStockCoverBuckets::atRiskCases($lead, $understock, GetOrganisationStockCoverBuckets::make()->overstockDaysExpression(), "greatest(4 * $lead, least(".ProjectOrganisationStockOuts::DAYS.", $lead + ".ProjectOrganisationStockOuts::REORDER_DAYS."))")."
                 when coalesce(s.predicted_daily_usage, 0) = 0 and s.stock_value > 0 then 'dead'
-                else 'ok'").' end';
+                else 'ok'", $alsoComingSkos).' end';
     }
 
     /**
@@ -179,11 +179,17 @@ class GetAgentStockCoverBuckets
                 and os.id = (select rival_stock.id from (".self::bestOrgStock('rival')->toRawSql().') rival_stock))';
     }
 
-    public function bucketSql(OrgAgent|OrgSupplier $relationship): string
+    /**
+     * On a draft purchase order's page, what that order holds is judged as coming.
+     */
+    public function bucketSql(OrgAgent|OrgSupplier $relationship, ?int $draftPurchaseOrderId = null): string
     {
-        return $this->bucketExpression($relationship instanceof OrgSupplier
-            ? GetSupplierLeadTime::run($relationship)['days']
-            : GetAgentLeadTimes::run($relationship)['agent']['days']);
+        return $this->bucketExpression(
+            $relationship instanceof OrgSupplier
+                ? GetSupplierLeadTime::run($relationship)['days']
+                : GetAgentLeadTimes::run($relationship)['agent']['days'],
+            $draftPurchaseOrderId ? GetOrganisationStockCoverBuckets::draftOrderSkosExpression('os', $draftPurchaseOrderId) : '0'
+        );
     }
 
     /**

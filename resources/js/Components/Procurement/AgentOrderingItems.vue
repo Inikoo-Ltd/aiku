@@ -181,6 +181,9 @@ const suggestionLabel = (item: BucketItem, skos: number) => {
     return `${locale.number(quantity)} ${quantity === 1 ? orderingLevel.value.singular : orderingLevel.value.quantity}`
 }
 
+const suggestedSkos = (item: BucketItem, skos: number) =>
+    isCartonLevel.value ? (suggestedCartons(item, skos) * unitsPerCarton(item)) / packOf(item) : skos
+
 const applySuggestion = (item: BucketItem, skos: number) => setQuantity(item, suggestedQuantity(item, skos))
 
 const editMinimumOf = ref<BucketItem | null>(null)
@@ -391,7 +394,7 @@ const quantityBreakdown = (item: BucketItem) => {
                                     noSaveButton
                                     @update:modelValue="(value: number) => setQuantity(item, value)"
                                 />
-                                <PurchaseOrderSuggestButton :item="item" :typedSkosById="typedSkos" :quantityLabel="(skos: number) => suggestionLabel(item, skos)" @suggest="(skos: number) => applySuggestion(item, skos)" />
+                                <PurchaseOrderSuggestButton :item="item" :typedSkosById="typedSkos" :quantityLabel="(skos: number) => suggestionLabel(item, skos)" :appliedSkos="(skos: number) => suggestedSkos(item, skos)" @suggest="(skos: number) => applySuggestion(item, skos)" />
                             </div>
                         </div>
 <table v-if="onTheWayRows(item).length" class="mt-2 w-full border-collapse border border-gray-200 text-left text-xs text-gray-600">
@@ -505,7 +508,7 @@ const quantityBreakdown = (item: BucketItem) => {
                                 @update:modelValue="(value: number) => setQuantity(item, value)"
                             />
                         </div>
-                        <PurchaseOrderSuggestButton :item="item" :typedSkosById="typedSkos" :quantityLabel="(skos: number) => suggestionLabel(item, skos)" @suggest="(skos: number) => applySuggestion(item, skos)" />
+                        <PurchaseOrderSuggestButton :item="item" :typedSkosById="typedSkos" :quantityLabel="(skos: number) => suggestionLabel(item, skos)" :appliedSkos="(skos: number) => suggestedSkos(item, skos)" @suggest="(skos: number) => applySuggestion(item, skos)" />
 <table v-if="onTheWayRows(item).length" class="mt-1.5 border-collapse border border-gray-200 text-left text-xs text-gray-600">
     <tr v-for="row in onTheWayRows(item)" :key="row.key" class="border-b border-gray-200 last:border-b-0">
         <td class="px-1.5 py-0.5 text-[10px] uppercase tracking-wide" :class="row.tone">{{ row.label }}</td>

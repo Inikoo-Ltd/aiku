@@ -8,7 +8,6 @@ import { computed, ref } from "vue"
 import { Link, router, usePage } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import Dialog from "primevue/dialog"
-import Tag from "primevue/tag"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBell, faChevronDown, faChevronRight, faSyncAlt } from "@fal"
@@ -20,7 +19,6 @@ import qs from "qs"
 import { featureLabel } from "@/Components/Seo/serpFeatures"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
-import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
@@ -79,7 +77,6 @@ type RankingRow = {
 
 type RankingsData = {
     domain: string | null
-    device: string
     summary: Summary
     intents: IntentRow[]
     competitors: CompetitorRow[]
@@ -87,7 +84,6 @@ type RankingsData = {
     depths: { weekly: number, daily: number }
     costPerPage: number
     checkNow: { keywords: number, cost: number, route: routeType } | null
-    runChecksRoute: routeType | null
     table: object
 }
 
@@ -105,25 +101,7 @@ const props = defineProps<{
 const summary = computed(() => props.data!.summary)
 const depths = computed(() => props.data!.depths)
 
-const isRunning = ref(false)
 const runError = ref<string | null>(null)
-
-const runChecks = () => {
-    if (!props.data?.runChecksRoute) {
-        return
-    }
-
-    router.post(route(props.data.runChecksRoute.name, props.data.runChecksRoute.parameters), {}, {
-        preserveScroll: true,
-        only: [props.tab],
-        onStart: () => {
-            isRunning.value = true
-            runError.value = null
-        },
-        onError: (errors) => runError.value = Object.values(errors)[0] ?? null,
-        onFinish: () => isRunning.value = false,
-    })
-}
 
 const locale = useLocaleStore()
 const page = usePage()
@@ -141,20 +119,6 @@ const expandedKeywords = ref<Record<number, boolean>>({})
 const toggleCountries = (ranking: RankingRow) => {
     expandedKeywords.value[ranking.id] = !expandedKeywords.value[ranking.id]
 }
-
-const deviceOptions = computed(() => props.options.devices)
-
-const device = computed({
-    get: () => props.data?.device ?? "mobile",
-    set: (value: string) => {
-        const url = new URL(page.url, window.location.origin)
-
-        url.searchParams.delete(`${props.tab}Page`)
-        url.searchParams.set("device", value)
-
-        router.get(url.pathname + url.search, {}, { preserveScroll: true, preserveState: true, only: [props.tab] })
-    },
-})
 
 const costOf = (ranking: RankingRow) => (ranking.check_ids.length * (ranking.frequency === "daily" ? depths.value.daily : depths.value.weekly)) / 10 * (props.data?.costPerPage ?? 0)
 
@@ -271,6 +235,8 @@ const change = (ranking: RankingRow) => {
         : { text: `${difference}`, class: "text-red-700" }
 }
 
+const isFeatureOurs = (ranking: RankingRow, feature: string) => ranking.serp_features_owned.includes(feature) || (feature === "ai_overview" && ranking.in_ai_overview)
+
 const historyFor = ref<RankingRow | null>(null)
 
 const watching = ref<number | null>(null)
@@ -304,9 +270,8 @@ const urlPath = (url: string) => {
 
 <template>
     <div v-if="data" class="pb-4">
-        <div v-if="(data.checkNow || data.runChecksRoute) && summary.tracked" class="mx-4 mt-4 flex flex-wrap items-center justify-end gap-2">
+        <div v-if="data.checkNow && summary.tracked" class="mx-4 mt-4 flex flex-wrap items-center justify-end gap-2">
             <Button
-                v-if="data.checkNow"
                 type="tertiary"
                 :label="data.checkNow.keywords ? ctrans('Check :count keywords now', { count: locale.number(data.checkNow.keywords) }) : ctrans('Check now')"
                 icon="fal fa-sync-alt"
@@ -316,14 +281,6 @@ const urlPath = (url: string) => {
                     ? ctrans('Reads the Google position of every active keyword not checked today, about :cost of DataForSEO credit. Results arrive within minutes to an hour.', { cost: usd(data.checkNow.cost) })
                     : ctrans('Every active keyword was checked today or is waiting for its result.')"
                 @click="checkNow()" />
-            <Button
-                v-if="data.runChecksRoute"
-                type="tertiary"
-                :label="summary.pending ? ctrans('Collect results now') : ctrans('Run scheduled jobs now')"
-                icon="fal fa-terminal"
-                :loading="isRunning"
-                v-tooltip="ctrans('Local only. Runs the scheduled jobs for this shop now: volumes, queuing the monthly, weekly and daily checks that are due and collecting the finished ones. Google results take a few minutes, so press again to collect them.')"
-                @click="runChecks" />
         </div>
 
         <p v-if="runError" role="alert" class="mx-4 mt-4 rounded-xl bg-white px-5 py-4 text-sm text-red-700 ring-1 ring-gray-200">
@@ -387,7 +344,7 @@ const urlPath = (url: string) => {
                 <section :aria-labelledby="'rankings-intents'" class="rounded-xl bg-white ring-1 ring-gray-200">
                     <div class="flex items-baseline justify-between gap-2 border-b border-gray-100 px-5 py-3">
                         <h2 id="rankings-intents" class="text-sm font-medium text-gray-900">{{ ctrans("By search intent") }}</h2>
-                        <Link v-if="currentIntent" :href="intentHref(null)" preserve-scroll class="text-xs text-[--app-accent] underline-offset-2 hover:underline focus-visible:underline">{{ ctrans("Show all keywords") }}</Link>
+                        <Link v-if="currentIntent" :href="intentHref(null)" preserve-scroll class="text-xs text-[var(--app-accent)] underline-offset-2 hover:underline focus-visible:underline">{{ ctrans("Show all keywords") }}</Link>
                     </div>
                     <ul class="divide-y divide-gray-100">
                         <li v-for="row in data.intents" :key="row.intent ?? 'unknown'" class="flex items-center gap-x-4 px-5 py-2.5 text-sm">
@@ -396,12 +353,12 @@ const urlPath = (url: string) => {
                                 :href="intentHref(row.intent)"
                                 preserve-scroll
                                 class="w-32 shrink-0 underline-offset-2 hover:underline focus-visible:underline"
-                                :class="currentIntent === row.intent ? 'font-medium text-[--app-accent]' : 'text-gray-900'">
+                                :class="currentIntent === row.intent ? 'font-medium text-[var(--app-accent)]' : 'text-gray-900'">
                                 {{ intentLabels[row.intent] ?? row.intent }}
                             </Link>
                             <span v-else class="w-32 shrink-0 text-gray-500">{{ ctrans("Unknown") }}</span>
                             <div class="h-2 flex-1 overflow-hidden rounded-full bg-gray-100" aria-hidden="true">
-                                <div class="h-full rounded-full bg-[--app-accent-muted]" :style="{ width: `${share(row.keywords, summary.checked)}%` }" />
+                                <div class="h-full rounded-full bg-[var(--app-accent-muted)]" :style="{ width: `${share(row.keywords, summary.checked)}%` }" />
                             </div>
                             <span class="w-24 shrink-0 text-right text-xs tabular-nums text-gray-500">{{ ctrans(":share% of keywords", { share: share(row.keywords, summary.checked) }) }}</span>
                             <span class="w-28 shrink-0 text-right text-xs tabular-nums text-gray-700">{{ ctrans(":share% in our top 10", { share: share(row.top_10, row.keywords) }) }}</span>
@@ -444,14 +401,13 @@ const urlPath = (url: string) => {
             </div>
 
             <div class="mt-4">
-                <div class="mx-4 mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <SegmentedToggle v-model="device" :options="deviceOptions" :ariaLabel="ctrans('Device')" />
+                <div class="mx-4 mb-2 flex flex-wrap items-center justify-end gap-2">
                     <SeoExportButton table="rankings" />
                 </div>
                 <SeoKeywordFilters :tab="tab" :filterOptions="filterOptions" :total="total" />
                 <Table :resource="data.table" :name="tab" :useExpandTable="true">
                     <template #cell(keyword)="{ item: ranking }: { item: RankingRow }">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 whitespace-nowrap">
                             <button
                                 type="button"
                                 class="text-left text-gray-900 underline-offset-2 hover:underline focus-visible:underline"
@@ -465,8 +421,8 @@ const urlPath = (url: string) => {
                                 :disabled="watching === ranking.id"
                                 :aria-label="ranking.is_watched ? ctrans('Stop watching :keyword', { keyword: ranking.keyword }) : ctrans('Watch :keyword', { keyword: ranking.keyword })"
                                 v-tooltip="ranking.is_watched ? ctrans('You are told when it falls. Click to stop.') : ctrans('Watch: be told by notification and email when it leaves the top 10 or drops :places places', { places: 5 })"
-                                class="shrink-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]"
-                                :class="ranking.is_watched ? 'text-[--app-accent]' : 'text-gray-300 hover:text-gray-500'"
+                                class="shrink-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
+                                :class="ranking.is_watched ? 'text-[var(--app-accent)]' : 'text-gray-300 hover:text-gray-500'"
                                 @click="toggleWatch(ranking)">
                                 <FontAwesomeIcon :icon="ranking.is_watched ? fasBell : faBell" fixed-width aria-hidden="true" />
                             </button>
@@ -478,16 +434,16 @@ const urlPath = (url: string) => {
                                 v-tooltip="ranking.can_check_any
                                     ? ctrans('Check now, about :cost of DataForSEO credit', { cost: usd(costOf(ranking)) })
                                     : (ranking.is_pending ? ctrans('Waiting for the Google result') : ctrans('Already checked today'))"
-                                class="shrink-0 rounded text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent] enabled:hover:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                class="shrink-0 rounded text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)] enabled:hover:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
                                 @click="checkNow(ranking)">
                                 <FontAwesomeIcon icon="fal fa-sync-alt" fixed-width aria-hidden="true" :spin="checking === ranking.id" />
                             </button>
                         </div>
-                        <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                        <div class="flex items-center gap-1.5 whitespace-nowrap text-xs text-gray-500">
                             <button
                                 v-if="ranking.other_countries.length"
                                 type="button"
-                                class="flex items-center gap-1 rounded text-gray-600 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]"
+                                class="flex items-center gap-1 rounded text-gray-600 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
                                 :aria-expanded="!!expandedKeywords[ranking.id]"
                                 v-tooltip="expandedKeywords[ranking.id] ? ctrans('Hide the other countries') : ctrans('Best result shown. :count more countries', { count: ranking.other_countries.length })"
                                 @click="toggleCountries(ranking)">
@@ -501,13 +457,15 @@ const urlPath = (url: string) => {
                     </template>
 
                     <template #cell(position)="{ item: ranking }: { item: RankingRow }">
-                        <span :class="ranking.position !== null ? 'font-medium tabular-nums text-gray-900' : 'text-xs text-gray-500'">{{ positionText(ranking) }}</span>
+                        <span class="whitespace-nowrap" :class="ranking.position !== null ? 'font-medium tabular-nums text-gray-900' : 'text-xs text-gray-500'">{{ positionText(ranking) }}</span>
                     </template>
 
                     <template #cell(change)="{ item: ranking }: { item: RankingRow }">
-                        <span v-if="change(ranking)" class="tabular-nums" :class="change(ranking)!.class">{{ change(ranking)!.text }}</span>
-                        <span v-else class="text-gray-400">-</span>
-                        <Tag v-if="ranking.alert" severity="danger" :value="alertLabels[ranking.alert] ?? ranking.alert" class="ml-1" />
+                        <span class="whitespace-nowrap">
+                            <span v-if="change(ranking)" class="tabular-nums" :class="change(ranking)!.class">{{ change(ranking)!.text }}</span>
+                            <span v-else class="text-gray-400">-</span>
+                            <span v-if="ranking.alert" class="ml-1 rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-700">{{ alertLabels[ranking.alert] ?? ranking.alert }}</span>
+                        </span>
                     </template>
 
                     <template #cell(search_console_position)="{ item: ranking }: { item: RankingRow }">
@@ -520,7 +478,7 @@ const urlPath = (url: string) => {
                             :href="ranking.ranking_url"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="block max-w-xs truncate text-[--app-accent] underline-offset-2 hover:underline focus-visible:underline"
+                            class="block max-w-xs truncate text-[var(--app-accent)] underline-offset-2 hover:underline focus-visible:underline"
                             :title="ranking.ranking_url">
                             {{ urlPath(ranking.ranking_url) }}
                         </a>
@@ -537,31 +495,33 @@ const urlPath = (url: string) => {
                     </template>
 
                     <template #cell(tags)="{ item: ranking }: { item: RankingRow }">
-                        <div v-if="ranking.tags.length" class="flex max-w-xs flex-wrap gap-1">
+                        <div v-if="ranking.tags.length" class="flex gap-1">
                             <span v-for="keywordTag in ranking.tags" :key="keywordTag.id" class="whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-700">{{ keywordTag.name }}</span>
                         </div>
                         <span v-else class="text-gray-400">-</span>
                     </template>
 
                     <template #cell(intent)="{ item: ranking }: { item: RankingRow }">
-                        {{ ranking.intent ? intentLabels[ranking.intent] ?? ranking.intent : "-" }}
+                        <span class="whitespace-nowrap">{{ ranking.intent ? intentLabels[ranking.intent] ?? ranking.intent : "-" }}</span>
                     </template>
 
                     <template #cell(serp_features)="{ item: ranking }: { item: RankingRow }">
-                        <div class="flex max-w-xs flex-wrap gap-1">
-                            <Tag
+                        <div class="flex gap-1">
+                            <span
                                 v-for="feature in ranking.serp_features"
                                 :key="feature"
-                                :value="featureLabel(feature)"
-                                :severity="ranking.serp_features_owned.includes(feature) || (feature === 'ai_overview' && ranking.in_ai_overview) ? 'success' : 'secondary'"
-                                v-tooltip="ranking.serp_features_owned.includes(feature) || (feature === 'ai_overview' && ranking.in_ai_overview) ? ctrans('Shows our website') : ctrans('Does not show our website')" />
+                                class="whitespace-nowrap rounded px-1.5 py-0.5 text-xs"
+                                :class="isFeatureOurs(ranking, feature) ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'"
+                                v-tooltip="isFeatureOurs(ranking, feature) ? ctrans('Shows our website') : ctrans('Does not show our website')">
+                                {{ featureLabel(feature) }}
+                            </span>
                         </div>
                     </template>
 
                     <template #cell(competitor_positions)="{ item: ranking }: { item: RankingRow }">
                         <ul v-if="ranking.competitor_positions.some((competitor) => competitor.position !== null)" class="space-y-0.5 text-xs">
-                            <li v-for="competitor in ranking.competitor_positions.filter((competitor) => competitor.position !== null)" :key="competitor.domain" class="flex justify-between gap-3">
-                                <span class="truncate text-gray-600">{{ competitor.label || competitor.domain }}</span>
+                            <li v-for="competitor in ranking.competitor_positions.filter((competitor) => competitor.position !== null)" :key="competitor.domain" class="flex justify-between gap-3 whitespace-nowrap">
+                                <span class="text-gray-600">{{ competitor.label || competitor.domain }}</span>
                                 <span class="tabular-nums text-gray-900">{{ competitor.position }}</span>
                             </li>
                         </ul>
@@ -572,7 +532,7 @@ const urlPath = (url: string) => {
                         <div
                             v-if="records[item.rowIndex]?.other_countries.length && expandedKeywords[records[item.rowIndex].id]"
                             class="border-y border-gray-200 bg-gray-50 px-4 py-2">
-                            <table class="w-full text-xs">
+                            <table class="w-full whitespace-nowrap text-xs">
                                 <thead>
                                     <tr class="text-gray-500">
                                         <th scope="col" class="py-1 pl-6 text-left font-medium">{{ ctrans("Country") }}</th>
@@ -602,7 +562,7 @@ const urlPath = (url: string) => {
                                         <td class="py-1.5 pr-3 text-right">
                                             <span v-if="change(other)" class="tabular-nums" :class="change(other)!.class">{{ change(other)!.text }}</span>
                                             <span v-else class="text-gray-400">-</span>
-                                            <Tag v-if="other.alert" severity="danger" :value="alertLabels[other.alert] ?? other.alert" class="ml-1" />
+                                            <span v-if="other.alert" class="ml-1 rounded bg-red-50 px-1.5 py-0.5 text-red-700">{{ alertLabels[other.alert] ?? other.alert }}</span>
                                         </td>
                                         <td class="py-1.5 pr-3">
                                             <a
@@ -610,7 +570,7 @@ const urlPath = (url: string) => {
                                                 :href="other.ranking_url"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                class="block max-w-xs truncate text-[--app-accent] underline-offset-2 hover:underline focus-visible:underline"
+                                                class="block max-w-xs truncate text-[var(--app-accent)] underline-offset-2 hover:underline focus-visible:underline"
                                                 :title="other.ranking_url">
                                                 {{ urlPath(other.ranking_url) }}
                                             </a>
@@ -618,12 +578,14 @@ const urlPath = (url: string) => {
                                         </td>
                                         <td class="py-1.5 pr-3 text-right tabular-nums text-gray-700">{{ other.avg_monthly_searches === null ? "-" : locale.number(other.avg_monthly_searches) }}</td>
                                         <td class="py-1.5 pr-3">
-                                            <div class="flex max-w-xs flex-wrap gap-1">
-                                                <Tag
+                                            <div class="flex gap-1">
+                                                <span
                                                     v-for="feature in other.serp_features"
                                                     :key="feature"
-                                                    :value="featureLabel(feature)"
-                                                    :severity="other.serp_features_owned.includes(feature) || (feature === 'ai_overview' && other.in_ai_overview) ? 'success' : 'secondary'" />
+                                                    class="whitespace-nowrap rounded px-1.5 py-0.5"
+                                                    :class="isFeatureOurs(other, feature) ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700'">
+                                                    {{ featureLabel(feature) }}
+                                                </span>
                                             </div>
                                         </td>
                                         <td class="py-1.5 pr-2 text-right">
@@ -634,8 +596,8 @@ const urlPath = (url: string) => {
                                                     :disabled="watching === other.id"
                                                     :aria-label="other.is_watched ? ctrans('Stop watching :keyword', { keyword: countryName(other.country_code) }) : ctrans('Watch :keyword', { keyword: countryName(other.country_code) })"
                                                     v-tooltip="other.is_watched ? ctrans('You are told when it falls. Click to stop.') : ctrans('Watch: be told by notification and email when it leaves the top 10 or drops :places places', { places: 5 })"
-                                                    class="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent]"
-                                                    :class="other.is_watched ? 'text-[--app-accent]' : 'text-gray-300 hover:text-gray-500'"
+                                                    class="rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
+                                                    :class="other.is_watched ? 'text-[var(--app-accent)]' : 'text-gray-300 hover:text-gray-500'"
                                                     @click="toggleWatch(other)">
                                                     <FontAwesomeIcon :icon="other.is_watched ? fasBell : faBell" fixed-width aria-hidden="true" />
                                                 </button>
@@ -647,7 +609,7 @@ const urlPath = (url: string) => {
                                                     v-tooltip="other.can_check_now
                                                         ? ctrans('Check now, about :cost of DataForSEO credit', { cost: usd(costOf(other)) })
                                                         : (other.is_pending ? ctrans('Waiting for the Google result') : ctrans('Already checked today'))"
-                                                    class="rounded text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[--app-accent] enabled:hover:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    class="rounded text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)] enabled:hover:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
                                                     @click="checkNow(other)">
                                                     <FontAwesomeIcon icon="fal fa-sync-alt" fixed-width aria-hidden="true" :spin="checking === other.id" />
                                                 </button>

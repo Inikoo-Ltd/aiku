@@ -153,13 +153,13 @@ class ShowPurchaseOrder extends OrgAction
         $draftOrgAgent = $this->draftOrgAgent($purchaseOrder);
         $products = fn () => match (true) {
             !$showProductsTab        => null,
-            $draftOrgAgent !== null => JsonResource::collection(IndexAgentCoverBucketItems::make()->onSupplier($draftOrgAgent, $purchaseOrder->supplier_id, PurchaseOrderTabsEnum::PRODUCTS->value))
-                ->additional(['ordering' => IndexAgentCoverBucketItems::make()->orderingFilters($draftOrgAgent, $purchaseOrder->supplier_id, $purchaseOrder->organisation->currency->code, PurchaseOrderTabsEnum::PRODUCTS->value)]),
+            $draftOrgAgent !== null => JsonResource::collection(IndexAgentCoverBucketItems::make()->onSupplier($draftOrgAgent, $purchaseOrder->supplier_id, PurchaseOrderTabsEnum::PRODUCTS->value, $purchaseOrder->id))
+                ->additional(['ordering' => IndexAgentCoverBucketItems::make()->orderingFilters($draftOrgAgent, $purchaseOrder->supplier_id, $purchaseOrder->organisation->currency->code, PurchaseOrderTabsEnum::PRODUCTS->value, $purchaseOrder->id)]),
             default                  => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value))
                 ->additional(['ordering' => IndexPurchaseOrderOrgSupplierProducts::make()->orderingFilters($purchaseOrder->parent, $purchaseOrder, PurchaseOrderTabsEnum::PRODUCTS->value)]),
         };
         $items = fn () => $draftOrgAgent
-            ? JsonResource::collection(IndexAgentCoverBucketItems::make()->onSupplierDrafts($draftOrgAgent, $purchaseOrder->supplier_id, PurchaseOrderTabsEnum::ITEMS->value))
+            ? JsonResource::collection(IndexAgentCoverBucketItems::make()->onSupplierDrafts($draftOrgAgent, $purchaseOrder->supplier_id, PurchaseOrderTabsEnum::ITEMS->value, $purchaseOrder->id))
             : PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder, PurchaseOrderTabsEnum::ITEMS->value));
 
         $orderer = [];
