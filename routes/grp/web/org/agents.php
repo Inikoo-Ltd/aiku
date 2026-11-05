@@ -61,6 +61,7 @@ use App\Actions\Chat\Label\DeleteChatLabel;
 use App\Actions\Chat\Label\GetChatLabels;
 use App\Actions\Chat\Label\StoreChatLabel;
 use App\Actions\Chat\Label\ToggleChatSessionLabel;
+use App\Actions\Chat\Label\UpdateChatLabel;
 use App\Actions\Comms\Mailbox\ResendChatMessageByGmail;
 use Illuminate\Support\Facades\Route;
 
@@ -130,6 +131,7 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::get('/search-suggestions', GetChatSearchSuggestions::class)->name('search_suggestions');
     Route::get('/labels', GetChatLabels::class)->name('labels.index');
     Route::post('/labels', StoreChatLabel::class)->name('labels.store');
+    Route::patch('/labels/{chatLabel}', UpdateChatLabel::class)->name('labels.update')->withoutScopedBindings();
     Route::delete('/labels/{chatLabel}', DeleteChatLabel::class)->name('labels.delete')->withoutScopedBindings();
     Route::patch('/sessions/{chatSession:ulid}/labels/{chatLabel}', ToggleChatSessionLabel::class)->name('sessions.label')->withoutScopedBindings();
     Route::patch('/sessions/{chatSession:ulid}/unread', MarkChatSessionAsUnread::class)->name('sessions.unread');

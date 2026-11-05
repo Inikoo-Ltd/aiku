@@ -1521,7 +1521,23 @@ test('labels are shared across the organisation, put on and taken off a conversa
 
     $this->getJson(route('grp.org.chat.agents.labels.index', [$organisationSlug]))
         ->assertOk()
+        ->assertJsonPath('can_manage', true)
         ->assertJsonFragment(['id' => $created['id'], 'name' => $name]);
+
+    $other = $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => "$name b", 'colour' => '#3b82f6'])
+        ->assertCreated()
+        ->json('data');
+
+    $this->patchJson(route('grp.org.chat.agents.labels.update', [$organisationSlug, $created['id']]), ['name' => " $name renamed ", 'colour' => '#8B5CF6'])
+        ->assertOk()
+        ->assertJsonPath('data.name', "$name renamed")
+        ->assertJsonPath('data.colour', '#8b5cf6');
+    $this->patchJson(route('grp.org.chat.agents.labels.update', [$organisationSlug, $created['id']]), ['name' => "$name renamed", 'colour' => '#8b5cf6'])->assertOk();
+    $this->patchJson(route('grp.org.chat.agents.labels.update', [$organisationSlug, $created['id']]), ['name' => "$name b", 'colour' => '#8b5cf6'])->assertUnprocessable();
+    $name = "$name renamed";
+
+    $this->deleteJson(route('grp.org.chat.agents.labels.delete', [$organisationSlug, $other['id']]))->assertOk();
+    expect(\App\Models\Chat\ChatLabel::whereKey($other['id'])->exists())->toBeFalse();
 
     $labelled = ChatSession::create([
         'shop_id' => $this->shop->id,
@@ -1566,6 +1582,7 @@ test('labels are shared across the organisation, put on and taken off a conversa
     $this->getJson(route('grp.org.chat.agents.labels.index', [$organisationSlug]))->assertForbidden();
     $this->postJson(route('grp.org.chat.agents.labels.store', [$organisationSlug]), ['name' => 'Nope', 'colour' => '#000000'])->assertForbidden();
     $this->patchJson(route('grp.org.chat.agents.sessions.label', [$organisationSlug, $labelled->ulid, $created['id']]))->assertForbidden();
+    $this->patchJson(route('grp.org.chat.agents.labels.update', [$organisationSlug, $created['id']]), ['name' => 'Nope', 'colour' => '#000000'])->assertForbidden();
     $this->deleteJson(route('grp.org.chat.agents.labels.delete', [$organisationSlug, $created['id']]))->assertForbidden();
 
     \App\Models\Chat\ChatLabel::whereKey($created['id'])->delete();

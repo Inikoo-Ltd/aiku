@@ -8,6 +8,7 @@ import { myShopIds } from "@/Composables/chatMyShops"
 import { chatSendErrorText } from "@/Composables/chatSendError"
 import { capitalize } from "@/Composables/capitalize"
 import InputText from "primevue/inputtext"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import AutoComplete from "primevue/autocomplete"
 import { followPointer } from "@/Composables/followPointer"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
@@ -27,7 +28,7 @@ import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
 import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faBullhorn, faInbox, faReply, faList, faComments, faMoon, faChartLine, faSortAmountDown, faSortAmountDownAlt } from "@fal"
-import { faBan, faRotateLeft, faTrash, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
+import { faBan, faRotateLeft, faTrash, faCheck, faPen, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
 import { useChatPhoneCall } from "@/Composables/useChatPhoneCall"
@@ -1879,10 +1880,13 @@ const LABEL_COLOURS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#
 const newLabelName = ref("")
 const isSavingLabel = ref(false)
 
+const canManageLabels = ref(false)
+
 const loadChatLabels = async () => {
     try {
         const { data } = await axios.get(route("grp.org.chat.agents.labels.index", [props.organisation.slug]))
         chatLabels.value = data?.data ?? []
+        canManageLabels.value = !!data?.can_manage
     } catch {
         chatLabels.value = []
     }
@@ -1923,6 +1927,7 @@ const deleteChatLabel = async (label: ChatLabel) => {
     }
 
     confirmingDeleteLabelId.value = null
+    editingLabelId.value = null
 
     try {
         await axios.delete(route("grp.org.chat.agents.labels.delete", [props.organisation.slug, label.id]))
@@ -1936,6 +1941,47 @@ const deleteChatLabel = async (label: ChatLabel) => {
         }
     } catch (e: any) {
         labelError.value = e?.response?.data?.message || ctrans("Label not removed")
+    }
+}
+
+const editingLabelId = ref<number | null>(null)
+const editLabelName = ref("")
+const editLabelColour = ref("")
+
+const startEditingLabel = (label: ChatLabel) => {
+    editingLabelId.value = label.id
+    editLabelName.value = label.name
+    editLabelColour.value = label.colour
+    confirmingDeleteLabelId.value = null
+    labelError.value = null
+    nextTick(() => document.getElementById("edit-chat-label")?.focus())
+}
+
+const saveChatLabel = async (label: ChatLabel) => {
+    const name = editLabelName.value.trim()
+
+    if (!name || isSavingLabel.value) {
+        return
+    }
+
+    isSavingLabel.value = true
+    labelError.value = null
+
+    try {
+        const { data } = await axios.patch(route("grp.org.chat.agents.labels.update", [props.organisation.slug, label.id]), {
+            name,
+            colour: editLabelColour.value,
+        })
+        const saved: ChatLabel = data.data
+        chatLabels.value = chatLabels.value.map((other) => (other.id === saved.id ? saved : other)).sort((a, b) => a.name.localeCompare(b.name))
+        contacts.value.forEach((c) => {
+            c.labels = (c.labels ?? []).map((other) => (other.id === saved.id ? saved : other))
+        })
+        editingLabelId.value = null
+    } catch (e: any) {
+        labelError.value = e?.response?.data?.message || ctrans("Label not saved")
+    } finally {
+        isSavingLabel.value = false
     }
 }
 
@@ -3500,15 +3546,47 @@ onUnmounted(() => {
                                 <span class="mx-[3px] h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: label.colour }" aria-hidden="true" />
                                 <span class="flex-1 truncate text-left">{{ label.name }}</span>
                             </button>
-                            <button v-if="supervisor" type="button"
-                                v-tooltip="confirmingDeleteLabelId === label.id ? ctrans('Takes it off every conversation') : ctrans('Remove this label')"
-                                :aria-label="ctrans('Remove this label')"
-                                class="absolute right-3 top-1/2 h-6 -translate-y-1/2 items-center justify-center gap-1 rounded px-1.5 text-xs"
-                                :class="confirmingDeleteLabelId === label.id ? 'flex bg-white text-red-600 hover:bg-red-50' : 'hidden w-6 text-gray-400 hover:bg-gray-200 hover:text-red-600 group-hover/label:flex'"
-                                @click="deleteChatLabel(label)" @blur="confirmingDeleteLabelId = null">
-                                <FontAwesomeIcon :icon="faTimes" class="text-xs" fixed-width aria-hidden="true" />
-                                <span v-if="confirmingDeleteLabelId === label.id">{{ ctrans("Remove?") }}</span>
+                            <button v-if="canManageLabels && editingLabelId !== label.id" type="button"
+                                v-tooltip="ctrans('Rename, recolour or remove')"
+                                :aria-label="ctrans('Edit this label')"
+                                class="absolute right-3 top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-xs text-gray-400 hover:bg-gray-200 hover:text-gray-700 focus:flex group-hover/label:flex"
+                                @click="startEditingLabel(label)">
+                                <FontAwesomeIcon :icon="faPen" class="text-[10px]" fixed-width aria-hidden="true" />
                             </button>
+                            <form v-if="editingLabelId === label.id" class="mx-3 mb-1 space-y-2 rounded border border-gray-200 bg-white p-2"
+                                @submit.prevent="saveChatLabel(label)" @keydown.esc="editingLabelId = null">
+                                <InputText id="edit-chat-label" v-model="editLabelName" size="small" maxlength="40" class="w-full" :aria-label="ctrans('Label name')"
+                                    :disabled="isSavingLabel" @input="labelError = null" />
+                                <div class="flex flex-wrap gap-1.5" role="radiogroup" :aria-label="ctrans('Colour')">
+                                    <button v-for="colour in LABEL_COLOURS" :key="colour" type="button" role="radio"
+                                        :aria-checked="editLabelColour === colour" :aria-label="colour"
+                                        class="h-5 w-5 rounded-full ring-offset-1"
+                                        :class="editLabelColour === colour ? 'ring-2 ring-gray-600' : 'hover:ring-2 hover:ring-gray-300'"
+                                        :style="{ backgroundColor: colour }" @click="editLabelColour = colour" />
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <Button type="tertiary" size="xs" native-type="submit" :label="ctrans('Save')" :loading="isSavingLabel">
+                                        <template #icon>
+                                            <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </Button>
+                                    <Button type="tertiary" size="xs" :label="ctrans('Cancel')" @click="editingLabelId = null">
+                                        <template #icon>
+                                            <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </Button>
+                                </div>
+                                <div>
+                                    <Button type="tertiary" size="xs"
+                                        :label="confirmingDeleteLabelId === label.id ? ctrans('Remove?') : ctrans('Remove this label')"
+                                        :tooltip="confirmingDeleteLabelId === label.id ? ctrans('Takes it off every conversation') : undefined"
+                                        @click="deleteChatLabel(label)" @blur="confirmingDeleteLabelId = null">
+                                        <template #icon>
+                                            <FontAwesomeIcon :icon="faTrash" class="text-amber-600" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </Button>
+                                </div>
+                            </form>
                         </div>
                         <form v-if="!isReadOnly" class="px-3 py-1" @submit.prevent="createChatLabel">
                             <label for="new-chat-label" class="sr-only">{{ ctrans("New label") }}</label>

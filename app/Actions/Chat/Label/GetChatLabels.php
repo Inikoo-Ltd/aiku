@@ -38,8 +38,15 @@ class GetChatLabels
         return $this->handle($organisation);
     }
 
-    public function jsonResponse(Collection $labels): JsonResponse
+    /**
+     * can_manage says whether this person may rename, recolour or remove labels, which
+     * UpdateChatLabel and DeleteChatLabel allow to chat supervisors only.
+     */
+    public function jsonResponse(Collection $labels, ActionRequest $request): JsonResponse
     {
-        return response()->json(['data' => $labels]);
+        return response()->json([
+            'data'       => $labels,
+            'can_manage' => $this->userSupervisesChatOnOrganisation($request->user(), $request->route('organisation')),
+        ]);
     }
 }

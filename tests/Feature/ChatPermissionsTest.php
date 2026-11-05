@@ -22,6 +22,7 @@ use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\Chat\Reports\IsWithinWorkingHours;
 use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatLabel;
 use App\Models\Chat\ChatSession;
 use App\Models\Chat\MetaChannel;
 use App\Models\Chat\MetaChatSession;
@@ -36,6 +37,8 @@ use Illuminate\Support\Str;
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\get;
+use function Pest\Laravel\deleteJson;
+use function Pest\Laravel\patchJson;
 
 require_once __DIR__.'/../Support/ChatHelpers.php';
 
@@ -792,7 +795,18 @@ test('chat read endpoints, agent profiles, export, visitors, agent creation and 
         getJson($url)->assertOk();
     }
 
+    $label = ChatLabel::create([
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $organisationId,
+        'name'            => 'Agent label '.Str::random(6),
+        'colour'          => '#ef4444',
+    ]);
+    $labelRoute = [$this->organisation->slug, $label->id];
+
     $as(["chat.$shopId"]);
+    getJson(route('grp.org.chat.agents.labels.index', $this->organisation->slug))->assertOk()->assertJsonPath('can_manage', false);
+    patchJson(route('grp.org.chat.agents.labels.update', $labelRoute), ['name' => 'Renamed', 'colour' => '#000000'])->assertForbidden();
+    deleteJson(route('grp.org.chat.agents.labels.delete', $labelRoute))->assertForbidden();
     getJson(route('grp.api.chats.agent.show', $colleague->id))->assertForbidden();
     getJson(route('grp.api.chats.agent.show', $user->id))->assertOk();
     get(route('grp.org.shops.show.chat.conversations.export', $shopParameters))->assertForbidden();
@@ -801,6 +815,7 @@ test('chat read endpoints, agent profiles, export, visitors, agent creation and 
     get(route('grp.org.shops.show.chat.whatsapp_templates.create', $shopParameters))->assertForbidden();
 
     $as(["chat-m.$shopId"]);
+    getJson(route('grp.org.chat.agents.labels.index', $this->organisation->slug))->assertOk()->assertJsonPath('can_manage', true);
     getJson(route('grp.api.chats.agent.show', $colleague->id))->assertOk();
     get(route('grp.org.shops.show.chat.conversations.export', $shopParameters))->assertOk();
     get(route('grp.org.chat.agents.create', $this->organisation->slug))->assertOk();
