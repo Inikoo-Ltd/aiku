@@ -12,6 +12,7 @@ use App\Actions\Inventory\Location\StoreLocation;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementCostStatusEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
+use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Inventory\OrgStock;
 use App\Models\Production\Production;
 use Illuminate\Support\Facades\DB;
@@ -221,11 +222,11 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         ];
 
         if ($type == OrgStockMovementTypeEnum::PURCHASE && $quantity > 0) {
-            $deliveryCostPerSku = $this->getDeliveryItemCostPerSku($orgStock, $note);
-            if ($deliveryCostPerSku !== null) {
-                $this->parsedData['orgStockMovement']['org_amount']   = round($deliveryCostPerSku * $quantity, 3);
-                $this->parsedData['orgStockMovement']['cost_per_sku'] = $deliveryCostPerSku;
-                $this->parsedData['orgStockMovement']['cost_status']  = OrgStockMovementCostStatusEnum::DELIVERY;
+            $deliveryCost = $this->getDeliveryItemCost($orgStock, $note);
+            if ($deliveryCost) {
+                $this->parsedData['orgStockMovement'] = array_merge($this->parsedData['orgStockMovement'], $deliveryCost, [
+                    'org_amount' => round($deliveryCost['cost_per_sku'] * $quantity, 3),
+                ]);
             } else {
                 $this->parsedData['orgStockMovement']['cost_status'] = OrgStockMovementCostStatusEnum::PROVISIONAL;
             }
@@ -270,34 +271,26 @@ class FetchAuroraOrgStockMovement extends FetchAurora
      * A movement's quantity and amount are per SKO in the organisation's currency, so the
      * delivery item is read the same way: org_net_amount because net_amount is the supplier's
      * currency, over unit_quantity converted to SKOs because it counts individual trade units.
+     * Priced as aiku prices its own put away (StockDeliveryItem::orgStockMovementCost), so a
+     * delivery already costed in aiku gives the landed cost; RepriceStockDeliveryOrgStockMovements
+     * reprices these movements again when the delivery is costed or corrected.
+     *
+     * @return array{cost_per_sku: float, cost_status: OrgStockMovementCostStatusEnum}|null
      */
-    protected function getDeliveryItemCostPerSku(OrgStock $orgStock, ?string $note): ?float
+    protected function getDeliveryItemCost(OrgStock $orgStock, ?string $note): ?array
     {
         if (!$note || !preg_match('/delivery\/(\d+)/', $note, $matches)) {
             return null;
         }
 
-        $stockDeliveryId = DB::table('stock_deliveries')
-            ->where('source_id', $this->organisation->id.':'.$matches[1])
-            ->value('id');
-        if (!$stockDeliveryId) {
-            return null;
-        }
-
-        $deliveryItem = DB::table('stock_delivery_items')
-            ->where('stock_delivery_id', $stockDeliveryId)
+        return StockDeliveryItem::whereHas('stockDelivery', fn ($query) => $query->where('source_id', $this->organisation->id.':'.$matches[1]))
             ->where('org_stock_id', $orgStock->id)
             ->where('org_net_amount', '>', 0)
             ->where('unit_quantity', '>', 0)
             ->orderBy('id')
-            ->first(['org_net_amount', 'unit_quantity']);
-        if (!$deliveryItem) {
-            return null;
-        }
-
-        $skoQuantity = $deliveryItem->unit_quantity / ($orgStock->packed_in > 0 ? $orgStock->packed_in : 1);
-
-        return round($deliveryItem->org_net_amount / $skoQuantity, 6);
+            ->first()
+            ?->setRelation('orgStock', $orgStock)
+            ->orgStockMovementCost();
     }
 
     //    public function parseNote($note):?array

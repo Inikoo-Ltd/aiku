@@ -29,6 +29,7 @@ use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\StartStockDeliveryCosting;
 use App\Actions\GoodsIn\Sowing\DeleteSowing;
+use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\GoodsIn\StockDelivery\CancelStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\PrefillDomesticStockDeliveryCosts;
 use App\Actions\GoodsIn\StockDelivery\ReceiveStockDelivery;
@@ -914,6 +915,53 @@ test('stock put away from a delivery is valued at the line price, then at the la
         ->and((float) $movements[1]->org_amount)->toEqualWithDelta(8 * $landedCost, 0.001)
         ->and($movements[1]->cost_status)->toBe(OrgStockMovementCostStatusEnum::COSTED)
         ->and((float) $movements[1]->running_lpp_value)->toEqualWithDelta($runningValueAtDeliveryCost / $deliveryCost * $landedCost, 0.02);
+
+    $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
+});
+
+test('stock put away in aurora, which has no sowings, also takes the landed cost once the delivery is costed in aiku (INI-211)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'AURORA-PUT-AWAY', [72]);
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+    $stockDelivery->update(['source_id' => $stockDelivery->organisation_id.':990211']);
+
+    $stockDeliveryItem = UpdateStockDeliveryItem::make()->action($stockDelivery->items()->first(), ['net_amount' => 360], strict: false);
+    $packedIn          = $stockDeliveryItem->orgStock->packed_in;
+    $stockDeliveryItem->orgStock->update(['packed_in' => 6]);
+    $stockDeliveryItem = SetStockDeliveryItemCheckedQuantity::make()->action($stockDeliveryItem->fresh(), ['sko_quantity_checked' => 12]);
+
+    $location        = createLocationOrgStockFor($this, $stockDeliveryItem)->location;
+    $auroraMovement  = StoreOrgStockMovement::make()->action($stockDeliveryItem->orgStock, $location, [
+        'type'         => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity'     => 12,
+        'org_amount'   => 12 * 50,
+        'cost_per_sku' => 50,
+        'note'         => 'received from <span onClick="change_view(\'delivery/990211\')">AURORA-PUT-AWAY</span>',
+    ]);
+    $otherDelivery   = StoreOrgStockMovement::make()->action($stockDeliveryItem->orgStock, $location, [
+        'type'         => OrgStockMovementTypeEnum::PURCHASE->value,
+        'quantity'     => 12,
+        'org_amount'   => 12 * 50,
+        'cost_per_sku' => 50,
+        'note'         => 'received from <span onClick="change_view(\'delivery/9902110\')">OTHER</span>',
+    ]);
+
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::BOOKED_IN]);
+    $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::AGENT_INVOICE->value, 'amount' => $stockDeliveryItem->net_amount, 'received_at' => now()]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::SHIPPING->value, 'amount' => 120, 'received_at' => now()]);
+    StoreStockDeliveryCost::make()->action($stockDelivery, ['type' => StockDeliveryCostTypeEnum::DUTY->value, 'is_na' => true]);
+
+    $stockDeliveryItem = $stockDeliveryItem->fresh();
+    $landedCost        = $stockDeliveryItem->cost_total * ($stockDeliveryItem->org_exchange ?? 1) / 12;
+    $auroraMovement    = $auroraMovement->fresh();
+
+    expect($stockDelivery->fresh()->is_costed)->toBeTrue()
+        ->and($stockDeliveryItem->sowings()->count())->toBe(0)
+        ->and((float) $auroraMovement->cost_per_sku)->toEqualWithDelta($landedCost, 0.000001)
+        ->and((float) $auroraMovement->org_amount)->toEqualWithDelta(12 * $landedCost, 0.001)
+        ->and($auroraMovement->cost_status)->toBe(OrgStockMovementCostStatusEnum::COSTED)
+        ->and((float) $otherDelivery->fresh()->cost_per_sku)->toBe(50.0);
 
     $stockDeliveryItem->orgStock->update(['packed_in' => $packedIn]);
 });
