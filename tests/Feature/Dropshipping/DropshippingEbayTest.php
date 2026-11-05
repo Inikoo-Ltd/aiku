@@ -1638,6 +1638,14 @@ test('stock push bans the channel for a moment when eBay answers with nothing us
         ->and($portfolio->refresh()->stock_last_fail_updated_at)->not->toBeNull();
 });
 
+function ownEbayPolicies(EbayUser $ebayUser, string $fulfilmentPolicyId = 'fp-1', string $returnPolicyId = 'rp-1'): array
+{
+    return [
+        '/sell/account/v1/fulfillment_policy?' => ['fulfillmentPolicies' => [['fulfillmentPolicyId' => $fulfilmentPolicyId, 'name' => $ebayUser->ownFulfilmentPolicyName()]], 'total' => 1],
+        '/sell/account/v1/return_policy?'      => ['returnPolicies' => [['returnPolicyId' => $returnPolicyId, 'name' => $ebayUser->ownReturnPolicyName()]], 'total' => 1],
+    ];
+}
+
 function ebayAccountRoutes(array $overrides = []): array
 {
     $usableFulfilmentPolicy = fn (string $id) => [
@@ -1966,6 +1974,7 @@ test('updating the return policy pushes the channel settings to eBay and keeps t
     $ebayUser->customerSalesChannel->update(['settings' => ['return' => ['accepted' => true, 'payer' => 'BUYER', 'within' => 14, 'description' => 'Unused items only']]]);
 
     fakeEbay($this, [
+        ...ownEbayPolicies($ebayUser),
         '/sell/account/v1/return_policy/rp-1' => ['returnPolicyId' => 'rp-1', 'name' => 'minimal return policy', 'returnsAccepted' => true, 'returnShippingCostPayer' => 'BUYER', 'returnPeriod' => ['value' => 14, 'unit' => 'DAY']],
     ]);
 
@@ -1989,6 +1998,7 @@ test('updating the postage policy pushes the chosen service and marks free posta
     $ebayUser->customerSalesChannel->update(['settings' => ['shipping' => ['price' => '0', 'max_dispatch_time' => '3', 'carrier_code' => 'RoyalMail', 'carrier_name' => 'Royal Mail', 'service_code' => 'UK_RoyalMailNextDay', 'service_name' => 'Royal Mail']]]);
 
     fakeEbay($this, [
+        ...ownEbayPolicies($ebayUser),
         '/sell/account/v1/fulfillment_policy/fp-1' => ['fulfillmentPolicyId' => 'fp-1', 'name' => 'Shipping'],
     ]);
 
@@ -2011,6 +2021,7 @@ test('saving postage and return settings from the channel page updates both eBay
     $ebayUser->customerSalesChannel->update(['platform_status' => false]);
 
     fakeEbay($this, ebayAccountRoutes([
+        ...ownEbayPolicies($ebayUser),
         '/sell/account/v1/fulfillment_policy/fp-1' => ['fulfillmentPolicyId' => 'fp-1'],
         '/sell/account/v1/return_policy/rp-1'      => ['returnPolicyId' => 'rp-1'],
     ]));
@@ -2058,11 +2069,95 @@ test('choosing the customer\'s own eBay postage and return policies links them w
         ->and(Arr::get($channel->settings, 'return.accepted'))->toBeFalse();
 });
 
+test('saving postage while the customer\'s own eBay policy is linked never changes it: our own policy takes the settings, keeps its name and is linked instead', function () {
+    $ebayUser = ebayChannel($this, ['fulfillment_policy_id' => 'fp-merchant']);
+    $ebayUser->customerSalesChannel->update(['settings' => ['shipping' => ['price' => '3', 'max_dispatch_time' => '2', 'carrier_code' => 'RoyalMail', 'service_code' => 'UK_RoyalMailNextDay']]]);
+
+    fakeEbay($this, ebayAccountRoutes([
+        '/sell/account/v1/fulfillment_policy?' => ['fulfillmentPolicies' => [
+            ['fulfillmentPolicyId' => 'fp-merchant', 'name' => 'CJ UK Standard'],
+            ['fulfillmentPolicyId' => 'fp-own', 'name' => $ebayUser->ownFulfilmentPolicyName()],
+        ], 'total' => 2],
+        '/sell/account/v1/fulfillment_policy/fp-own' => ['fulfillmentPolicyId' => 'fp-own', 'name' => $ebayUser->ownFulfilmentPolicyName()],
+    ]));
+
+    UpdateEbayCustomerSalesChannel::run($ebayUser->customerSalesChannel, ['shipping_price' => '0', 'shipping_max_dispatch_time' => '4']);
+
+    Http::assertNotSent(fn (Request $request) => $request->method() !== 'GET' && str_contains($request->url(), 'fp-merchant'));
+
+    $body = sentEbayRequest('PUT', '/sell/account/v1/fulfillment_policy/fp-own')->data();
+    expect($body['name'])->toBe('Shipping-'.$ebayUser->customerSalesChannel->slug)
+        ->and($body['handlingTime']['value'])->toBe(4)
+        ->and($body['shippingOptions'][0]['shippingServices'][0]['freeShipping'])->toBe('true')
+        ->and($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-own');
+});
+
+test('saving postage with only the customer\'s own eBay policies on the account creates our own policy with the settings and links it', function () {
+    $ebayUser = ebayChannel($this, ['fulfillment_policy_id' => 'fp-1']);
+    $ebayUser->customerSalesChannel->update(['settings' => ['shipping' => ['price' => '3', 'max_dispatch_time' => '2', 'carrier_code' => 'RoyalMail', 'service_code' => 'UK_RoyalMailNextDay']]]);
+
+    $created = false;
+    $policy  = fn (string $id, string $name) => ['fulfillmentPolicyId' => $id, 'name' => $name, 'categoryTypes' => [['name' => 'ALL_EXCLUDING_MOTORS_VEHICLES']], 'shippingOptions' => [['shippingServices' => [['shippingServiceCode' => 'UK_RoyalMailNextDay']]]]];
+    fakeEbay($this, ebayAccountRoutes([
+        '/sell/account/v1/fulfillment_policy' => function (Request $request) use (&$created, $policy, $ebayUser) {
+            if ($request->method() === 'POST') {
+                $created = true;
+
+                return Http::response(['fulfillmentPolicyId' => 'fp-9', 'name' => $ebayUser->ownFulfilmentPolicyName()], 201);
+            }
+
+            return Http::response(['fulfillmentPolicies' => array_values(array_filter([$policy('fp-1', 'CJ UK Standard'), $created ? $policy('fp-9', $ebayUser->ownFulfilmentPolicyName()) : null]))]);
+        },
+    ]));
+
+    UpdateEbayCustomerSalesChannel::run($ebayUser->customerSalesChannel, ['shipping_price' => '0']);
+
+    Http::assertNotSent(fn (Request $request) => $request->method() === 'PUT' && str_contains($request->url(), '_policy/'));
+
+    $body = sentEbayRequest('POST', '/sell/account/v1/fulfillment_policy')->data();
+    expect($body['name'])->toBe($ebayUser->ownFulfilmentPolicyName())
+        ->and($body['shippingOptions'][0]['shippingServices'][0]['shippingCost']['value'])->toBe('0')
+        ->and($body['shippingOptions'][0]['shippingServices'][0]['shippingServiceCode'])->toBe('UK_RoyalMailNextDay')
+        ->and($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-9');
+});
+
+test('saving returns while the customer\'s own eBay return policy is linked creates our own, writes the settings to it and links it', function () {
+    $ebayUser = ebayChannel($this, ['return_policy_id' => 'rp-list']);
+    $ebayUser->customerSalesChannel->update(['settings' => ['return' => ['accepted' => false]]]);
+
+    $created = false;
+    fakeEbay($this, ebayAccountRoutes([
+        '/sell/account/v1/return_policy/rp-9' => ['returnPolicyId' => 'rp-9', 'returnsAccepted' => true],
+        '/sell/account/v1/return_policy'      => function (Request $request) use (&$created, $ebayUser) {
+            if ($request->method() === 'POST') {
+                $created = true;
+
+                return Http::response(['returnPolicyId' => 'rp-9'], 201);
+            }
+
+            return Http::response(['returnPolicies' => array_values(array_filter([
+                ['returnPolicyId' => 'rp-list', 'name' => 'Return'],
+                $created ? ['returnPolicyId' => 'rp-9', 'name' => $ebayUser->ownReturnPolicyName()] : null,
+            ]))]);
+        },
+    ]));
+
+    UpdateEbayCustomerSalesChannel::run($ebayUser->customerSalesChannel, ['return_accepted' => true, 'return_payer' => 'SELLER', 'return_within' => 60]);
+
+    Http::assertNotSent(fn (Request $request) => $request->method() !== 'GET' && str_contains($request->url(), 'rp-list'));
+
+    $body = sentEbayRequest('PUT', '/sell/account/v1/return_policy/rp-9')->data();
+    expect($body['name'])->toBe($ebayUser->ownReturnPolicyName())
+        ->and($body['returnShippingCostPayer'])->toBe('SELLER')
+        ->and($ebayUser->refresh()->return_policy_id)->toBe('rp-9');
+});
+
 test('turning returns on by itself sends eBay a complete return policy', function () {
     $ebayUser = ebayChannel($this);
     $ebayUser->customerSalesChannel->update(['settings' => ['return' => ['accepted' => false]]]);
 
     fakeEbay($this, ebayAccountRoutes([
+        ...ownEbayPolicies($ebayUser),
         '/sell/account/v1/return_policy/rp-1' => ['returnPolicyId' => 'rp-1', 'returnsAccepted' => true],
     ]));
 
@@ -2080,6 +2175,7 @@ test('a return policy eBay refuses is reported and the channel keeps its previou
     $ebayUser->customerSalesChannel->update(['settings' => ['return' => ['accepted' => false]]]);
 
     fakeEbay($this, ebayAccountRoutes([
+        ...ownEbayPolicies($ebayUser),
         '/sell/account/v1/return_policy/rp-1' => fn () => Http::response(['errors' => [['errorId' => 20403, 'message' => 'Invalid return period.']]], 400),
     ]));
 
@@ -2093,6 +2189,7 @@ test('an eBay refusal shows the customer eBay\'s full reason, not just its one-w
     $ebayUser = ebayChannel($this);
 
     fakeEbay($this, ebayAccountRoutes([
+        ...ownEbayPolicies($ebayUser),
         '/sell/account/v1/fulfillment_policy/fp-1' => fn () => Http::response(['errors' => [[
             'errorId'     => 20403,
             'message'     => 'Invalid.',
@@ -2110,6 +2207,7 @@ test('a postage policy eBay refuses is reported and the channel keeps its previo
     $ebayUser->customerSalesChannel->update(['settings' => ['shipping' => ['price' => '3', 'carrier_code' => 'RoyalMail', 'service_code' => 'UK_RoyalMailNextDay']]]);
 
     fakeEbay($this, ebayAccountRoutes([
+        ...ownEbayPolicies($ebayUser),
         '/sell/account/v1/fulfillment_policy/fp-1' => fn () => Http::response(['errors' => [['errorId' => 20403, 'message' => 'Invalid shipping service.']]], 400),
     ]));
 
@@ -2156,6 +2254,44 @@ test('the upload as draft setting tells the customer drafts stay out of eBay Sel
         ->flatMap(fn ($section) => $section['fields']);
 
     expect($fields['upload_as_draft']['information'])->toEndWith('Publish them from your product list when you are ready. Drafts do not show in eBay Seller Hub until they are published.');
+});
+
+test('the Shipping and Returns tabs let the customer link one of their own eBay policies, and a dead eBay connection leaves the pickers empty', function () {
+    $ebayUser = ebayChannel($this, ['fulfillment_policy_id' => '326041702021', 'return_policy_id' => 'rp-list']);
+
+    fakeEbay($this, ebayAccountRoutes([
+        '/sell/account/v1/fulfillment_policy' => ['fulfillmentPolicies' => [['fulfillmentPolicyId' => '326041702021', 'name' => 'AW Tracked 48'], ['fulfillmentPolicyId' => '326010501021', 'name' => 'CJ UK Standard']], 'total' => 2],
+    ]));
+
+    $fields = collect(\App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel::make()->getCustomerSalesChannelSettingsBlueprint($ebayUser->customerSalesChannel))
+        ->flatMap(fn ($section) => $section['fields']);
+
+    expect($fields['fulfillment_policy_id']['options'])->toBe([['label' => 'AW Tracked 48', 'value' => '326041702021'], ['label' => 'CJ UK Standard', 'value' => '326010501021']])
+        ->and($fields['fulfillment_policy_id']['value'])->toBe('326041702021')
+        ->and($fields['return_policy_id']['options'])->toBe([['label' => 'Return', 'value' => 'rp-list']])
+        ->and($fields['return_policy_id']['value'])->toBe('rp-list');
+
+    fakeEbay($this, ['/sell/account/v1/' => fn () => Http::response(['errors' => [['message' => 'System error']]], 500)]);
+
+    $fields = collect(\App\Actions\Dropshipping\CustomerSalesChannel\UI\ShowCustomerSalesChannel::make()->getCustomerSalesChannelSettingsBlueprint($ebayUser->customerSalesChannel))
+        ->flatMap(fn ($section) => $section['fields']);
+
+    expect($fields['fulfillment_policy_id']['options'])->toBe([])
+        ->and($fields['return_policy_id']['options'])->toBe([]);
+});
+
+test('staff picking a customer\'s own eBay postage and return policy on the channel settings tab links them without writing to eBay', function () {
+    $ebayUser = ebayChannel($this, ['fulfillment_policy_id' => 'fp-merchant', 'return_policy_id' => 'rp-1']);
+
+    fakeEbay($this, ebayAccountRoutes());
+
+    $this->patch(route('grp.models.customer_sales_channel.settings.update', ['customerSalesChannel' => $ebayUser->customerSalesChannel->id]), ['fulfillment_policy_id' => 'fp-1'])->assertSessionHasNoErrors();
+    $this->patch(route('grp.models.customer_sales_channel.settings.update', ['customerSalesChannel' => $ebayUser->customerSalesChannel->id]), ['return_policy_id' => 'rp-list'])->assertSessionHasNoErrors();
+
+    Http::assertNotSent(fn (Request $request) => in_array($request->method(), ['PUT', 'POST']) && str_contains($request->url(), '_policy'));
+
+    expect($ebayUser->refresh()->fulfillment_policy_id)->toBe('fp-1')
+        ->and($ebayUser->return_policy_id)->toBe('rp-list');
 });
 
 test('an eBay postage policy without a service code does not put the list of services into the channel settings', function () {

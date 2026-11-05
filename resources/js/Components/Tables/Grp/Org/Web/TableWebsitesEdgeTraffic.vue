@@ -18,7 +18,7 @@ defineProps<{
 const locale = useLocaleStore()
 
 const countKeys = [
-    "requests", "requests_reached", "requests_varnish", "requests_octane", "avg_origin_ms", "requests_hit", "requests_miss", "requests_expired", "requests_dynamic", "requests_bypass", "requests_none",
+    "requests", "requests_reached", "requests_varnish", "requests_octane", "avg_origin_ms", "requests_hit", "requests_miss", "requests_expired", "requests_dynamic", "requests_bypass", "requests_bypass_redirect", "requests_none",
     "requests_2xx", "requests_3xx", "requests_4xx", "requests_5xx", "requests_google_bot", "requests_bing_bot", "requests_apple_bot", "requests_other_bots",
     "requests_unknown_agent", "requests_browsers", "requests_far_countries_hit",
 ]

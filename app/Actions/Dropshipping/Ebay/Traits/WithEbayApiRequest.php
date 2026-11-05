@@ -2006,6 +2006,16 @@ trait WithEbayApiRequest
         }
     }
 
+    public function ownFulfilmentPolicyName(): string
+    {
+        return 'Shipping-'.$this->customerSalesChannel?->slug;
+    }
+
+    public function ownReturnPolicyName(): string
+    {
+        return 'Return Policy-'.$this->customerSalesChannel?->slug;
+    }
+
     /**
      * Create a user's eBay fulfilment policy
      *
@@ -2028,7 +2038,7 @@ trait WithEbayApiRequest
                 ]
             ],
             "marketplaceId"   => $marketplaceId,
-            "name"            => "Shipping-".$this->customerSalesChannel?->slug,
+            "name"            => $this->ownFulfilmentPolicyName(),
             "handlingTime"    => [
                 "unit"  => "DAY",
                 "value" => (int) $maxDispatchTime
@@ -2089,7 +2099,7 @@ trait WithEbayApiRequest
                 ]
             ],
             "marketplaceId"   => $marketplaceId,
-            "name"            => "Shipping",
+            "name"            => $this->ownFulfilmentPolicyName(),
             "globalShipping"  => false,
             "handlingTime"    => [
                 "unit"  => "DAY",
@@ -2227,7 +2237,12 @@ trait WithEbayApiRequest
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
 
         $data = [
-            "name"                    => "Return Policy-".$this->customerSalesChannel?->slug,
+            "name"                    => $this->ownReturnPolicyName(),
+            "categoryTypes"           => [
+                [
+                    "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
+                ]
+            ],
             "marketplaceId"           => $marketplaceId,
             "refundMethod"            => "MONEY_BACK",
             "returnsAccepted"         => true,
@@ -2260,7 +2275,7 @@ trait WithEbayApiRequest
         $attributes = Arr::get($returnData, 'settings.return');
 
         $data = [
-            "name"                    => "minimal return policy",
+            "name"                    => $this->ownReturnPolicyName(),
             "categoryTypes"           => [
                 [
                     "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"

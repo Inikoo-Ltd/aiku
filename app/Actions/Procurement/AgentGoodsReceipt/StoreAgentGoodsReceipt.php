@@ -37,7 +37,8 @@ use Lorisleiva\Actions\ActionRequest;
  * still in production: each line becomes warehouse stock, received and not checked yet, and leaves the In production
  * page once received in full. The signed delivery note can be photographed with it. Goods arriving show the supplier
  * started making the order, so its production start is set when it was not yet, and once every line of the order is
- * received in full the supplier has finished making it, so its production done is set too.
+ * received in full the supplier has finished making it, so its production done is set too. The goods receipt is the
+ * record that holds (INI-204): stock sheet rows of the same product and purchase order are the same goods, so they go.
  */
 class StoreAgentGoodsReceipt extends OrgAction
 {
@@ -135,6 +136,13 @@ class StoreAgentGoodsReceipt extends OrgAction
                     'quantity'                      => $quantity,
                     'notes'                         => $receipt->reference,
                 ]);
+
+                AgentWarehouseStock::where('agent_id', $agent->id)
+                    ->where('organisation_id', $line->organisation_id)
+                    ->where('supplier_product_id', $line->supplier_product_id)
+                    ->where('purchase_order_id', $line->purchase_order_id)
+                    ->whereNull('agent_goods_receipt_id')
+                    ->delete();
 
                 $receipt->items()->create([
                     'group_id'                      => $agent->group_id,

@@ -48,9 +48,9 @@ Link a "Shipped by Seller" shipping template to this warehouse. We send the parc
 
 <b>Your TikTok shop has no warehouse yet.</b> Add a warehouse in Seller Center, set it as default, then open your channel, choose your shop and press <b>Save</b>.
 
-<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> or <b>WarehouseId of Inventory[0] is invalid</b> when you upload products: we have no TikTok warehouse for your channel. Do the same as above.
+<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> or <b>WarehouseId of Inventory[0] is invalid</b> when you upload products: we have no TikTok warehouse for your channel, or the one we remembered is not in your shop any more. Check that your shop has a default warehouse in Seller Center, then go to <b>Channels</b>, press <b>Add Sales Channel</b>, <b>Connect</b> on the TikTok card and <b>Auth Store</b>, with the same TikTok account. We read your shop's warehouses again and use its default one. You keep the same channel and its products. Once you have approved our app in TikTok you can close the window: you do not need to press <b>Next</b>.
 
-<b>the warehouse does not belong to this shop</b> when you upload products: the warehouse we remembered was deleted or belongs to another shop. Ask us in the chat on our website.
+<b>the warehouse does not belong to this shop</b> when you upload products: the warehouse we remembered was deleted or belongs to another shop. Connect again with <b>Auth Store</b>, as above.
 
 <b>requires a return warehouse</b> when you upload products: add a return warehouse in Seller Center, then upload again.
 

@@ -48,9 +48,9 @@ Liez un modèle d'expédition « Shipped by Seller » à cet entrepôt. Nous env
 
 <b>Your TikTok shop has no warehouse yet.</b> Ajoutez un entrepôt dans Seller Center, définissez-le par défaut, puis ouvrez votre canal, choisissez votre boutique et appuyez sur <b>Save</b>.
 
-<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> ou <b>WarehouseId of Inventory[0] is invalid</b> lors de l'import de produits : nous n'avons pas d'entrepôt TikTok pour votre canal. Faites la même chose que ci-dessus.
+<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> ou <b>WarehouseId of Inventory[0] is invalid</b> lors de l'import de produits : nous n'avons pas d'entrepôt TikTok pour votre canal, ou celui que nous avions mémorisé n'est plus dans votre boutique. Vérifiez que votre boutique a un entrepôt par défaut dans Seller Center, puis allez dans <b>Chaînes</b>, appuyez sur <b>Ajouter un canal de vente</b>, <b>Connecter</b> sur la carte TikTok et <b>Auth Store</b>, avec le même compte TikTok. Nous relisons les entrepôts de votre boutique et prenons celui par défaut. Vous gardez le même canal et ses produits. Une fois notre application approuvée dans TikTok, vous pouvez fermer la fenêtre : inutile d'appuyer sur <b>Suivant</b>.
 
-<b>the warehouse does not belong to this shop</b> lors de l'import de produits : l'entrepôt que nous avions mémorisé a été supprimé ou appartient à une autre boutique. Demandez-nous dans le chat de notre site.
+<b>the warehouse does not belong to this shop</b> lors de l'import de produits : l'entrepôt que nous avions mémorisé a été supprimé ou appartient à une autre boutique. Reconnectez-vous avec <b>Auth Store</b>, comme ci-dessus.
 
 <b>requires a return warehouse</b> lors de l'import de produits : ajoutez un entrepôt de retour dans Seller Center, puis importez à nouveau.
 

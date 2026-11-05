@@ -31,8 +31,22 @@ class UpdateReturnPolicyEbayUser extends OrgAction
             data_set($modelData, "settings.return.$field", Arr::get($modelData, "settings.return.$field", Arr::get($customerSalesChannel->settings, "return.$field")));
         }
 
-        $returnPolicyId = Arr::get($modelData, 'return_policy_id', $ebayUser->return_policy_id);
-        $returnPolicy = $ebayUser->updateReturnPolicy($returnPolicyId, $modelData);
+        $policies = $ebayUser->getReturnPolicies();
+
+        if ($error = $ebayUser::ebayResponseError($policies)) {
+            throw ValidationException::withMessages([
+                'return_accepted' => __('eBay did not accept the return policy: :error', ['error' => $error]),
+            ]);
+        }
+
+        $returnPolicyId = collect(Arr::get($policies, 'returnPolicies', []))
+            ->firstWhere('name', $ebayUser->ownReturnPolicyName())['returnPolicyId'] ?? null;
+
+        $returnPolicy = $returnPolicyId ? null : $ebayUser->createReturnPolicy();
+
+        if (! $ebayUser::ebayResponseError($returnPolicy)) {
+            $returnPolicy = $ebayUser->updateReturnPolicy($returnPolicyId ?? Arr::get($returnPolicy, 'returnPolicyId'), $modelData);
+        }
 
         if ($error = $ebayUser::ebayResponseError($returnPolicy)) {
             throw ValidationException::withMessages([

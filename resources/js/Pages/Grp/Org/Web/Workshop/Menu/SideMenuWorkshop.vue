@@ -118,7 +118,7 @@ const updateFieldValue = (value: any) => {
 		<div class="flex shrink-0 border-b border-gray-200 bg-white px-1">
 			<button v-for="tab in tabs" :key="tab.key" type="button"
 				class="flex flex-1 items-center justify-center gap-1.5 border-b-2 px-1.5 py-2 text-xs font-medium whitespace-nowrap transition-colors"
-				:class="activeTabKey === tab.key ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-800'"
+				:class="activeTabKey === tab.key ? 'border-[var(--app-accent)] text-[var(--app-accent)]' : 'border-transparent text-gray-500 hover:text-gray-800'"
 				v-tooltip="tab.tooltip"
 				@click="selectedTabKey = tab.key">
 				<FontAwesomeIcon :icon="tab.icon" class="text-[11px]" fixed-width aria-hidden="true" />

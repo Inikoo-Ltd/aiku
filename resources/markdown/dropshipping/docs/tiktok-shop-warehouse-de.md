@@ -48,9 +48,9 @@ Verknüpfen Sie eine „Shipped by Seller"-Versandvorlage mit diesem Lager. Wir 
 
 <b>Your TikTok shop has no warehouse yet.</b> Fügen Sie im Seller Center ein Lager hinzu, stellen Sie es als Standard ein, öffnen Sie dann Ihren Kanal, wählen Sie Ihren Shop und drücken Sie <b>Save</b>.
 
-<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> oder <b>WarehouseId of Inventory[0] is invalid</b> beim Hochladen von Produkten: Wir haben kein TikTok-Lager für Ihren Kanal. Tun Sie dasselbe wie oben.
+<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> oder <b>WarehouseId of Inventory[0] is invalid</b> beim Hochladen von Produkten: Wir haben kein TikTok-Lager für Ihren Kanal, oder das gemerkte Lager ist nicht mehr in Ihrem Shop. Prüfen Sie, dass Ihr Shop in Seller Center ein Standardlager hat, gehen Sie dann zu <b>Channels</b>, drücken Sie <b>Add Sales Channel</b>, <b>Connect</b> auf der TikTok-Karte und <b>Auth Store</b>, mit demselben TikTok-Konto. Wir lesen die Lager Ihres Shops neu und nehmen das Standardlager. Kanal und Produkte bleiben erhalten. Sobald Sie unsere App in TikTok genehmigt haben, können Sie das Fenster schließen: Sie müssen nicht auf <b>Next</b> drücken.
 
-<b>the warehouse does not belong to this shop</b> beim Hochladen von Produkten: Das von uns gemerkte Lager wurde gelöscht oder gehört zu einem anderen Shop. Kontaktieren Sie uns im Chat auf unserer Website.
+<b>the warehouse does not belong to this shop</b> beim Hochladen von Produkten: Das von uns gemerkte Lager wurde gelöscht oder gehört zu einem anderen Shop. Verbinden Sie sich erneut mit <b>Auth Store</b>, wie oben.
 
 <b>requires a return warehouse</b> beim Hochladen von Produkten: Fügen Sie im Seller Center ein Retourenlager hinzu und laden Sie erneut hoch.
 

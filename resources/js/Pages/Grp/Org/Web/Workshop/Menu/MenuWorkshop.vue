@@ -3,7 +3,6 @@ import { ref, IframeHTMLAttributes, watch, provide, inject, computed, toRaw } fr
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Publish from "@/Components/Publish.vue"
-import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { Head, Link } from "@inertiajs/vue3"
 import ScreenView from "@/Components/ScreenView.vue"
@@ -12,6 +11,7 @@ import { routeType } from "@/types/route"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import SideMenuWorkshop from "./SideMenuWorkshop.vue"
+import MenuTemplatePicker from "./MenuTemplatePicker.vue"
 import {
 	faChevronRight,
 	faSignOutAlt,
@@ -28,7 +28,6 @@ import {
 } from "@fas"
 import { faChevronDoubleLeft, faChevronDoubleRight, faExternalLinkAlt } from "@fal"
 import { faHeart, faLowVision } from "@far"
-import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { get, set } from "lodash"
@@ -59,7 +58,7 @@ const props = defineProps<{
 	data: {}
 	status: boolean
 	autosaveRoute: routeType
-	webBlockTypes: Object
+	webBlockTypes: { data: Array<{ id: number, code: string }> }
 	domain: string
 	shop_type: string  // 'fulfilment' | 'dropshipping' | 'b2b'
 }>()
@@ -73,34 +72,30 @@ const iframeClass = ref(setIframeView("desktop"))
 const _iframe = ref<IframeHTMLAttributes | null>(null)
 const iframeSrc = ref(route("grp.websites.header.preview", [route().params["website"]]))
 const layout = inject('layout', layoutStructure)
+const errorMessage = ref<string | null>(null)
+const pickingTemplateCode = ref<string | null>(null)
+const hasTemplate = computed(() => !!Navigation.value?.code)
+
+const readErrorMessage = (error: any): string =>
+	error?.response?.data?.message || error?.message || ctrans("Unknown error occurred")
 
 const onPublish = async (action: routeType, popover: Function) => {
 	try {
-		// Ensure action is defined and has necessary properties
 		if (!action || !action.method || !action.name || !action.parameters) {
 			throw new Error("Invalid action parameters")
 		}
 
 		isLoading.value = true
+		errorMessage.value = null
 
-		// Make sure route and axios are defined and used correctly
-		const response = await axios[action.method](route(action.name, action.parameters), {
+		await axios[action.method](route(action.name, action.parameters), {
 			comment: comment.value,
 			layout: { ...Navigation.value, status: status.value },
 		})
 		popover.close()
 	} catch (error) {
-		// Ensure the error is logged properly
 		console.error("Error:", error)
-
-		// Ensure the error notification is user-friendly
-		const errorMessage =
-			error.response?.data?.message || error.message || "Unknown error occurred"
-		notify({
-			title: "Something went wrong.",
-			text: errorMessage,
-			type: "error",
-		})
+		errorMessage.value = ctrans("Publish failed: :message", { message: readErrorMessage(error) })
 	} finally {
 		// Ensure loading state is updated
 		isLoading.value = false
@@ -184,7 +179,7 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
     }
 }
 let controller: AbortController | null = null
-const autoSave = async (value: any) => {
+const autoSave = async (value: any): Promise<boolean> => {
 	if (controller) {
 		controller.abort()
 	}
@@ -192,8 +187,9 @@ const autoSave = async (value: any) => {
 	controller = new AbortController()
 
 	setStatus('loading')
+	errorMessage.value = null
 	try {
-		const response = await axios.patch(
+		await axios.patch(
 			route(props.autosaveRoute.name, props.autosaveRoute.parameters),
 			{ layout: value },
 			{ signal: controller.signal }
@@ -201,25 +197,37 @@ const autoSave = async (value: any) => {
 		setStatus('success')
 		Navigation.value = {...value}
 		sendToIframe({ key: "reload", value: {} })
+		return true
 	} catch (error: any) {
 		if (
 			axios.isCancel(error) ||
 			error.name === "CanceledError" ||
 			error.message === "canceled"
 		) {
-			return
+			return false
 		}
 
-		notify({
-			title: "Something went wrong.",
-			text: error.message,
-			type: "error",
-		})
+		errorMessage.value = ctrans("Save failed: :message", { message: readErrorMessage(error) })
 		setStatus('error')
+		return false
 	} finally {
 		if (controller && !controller.signal.aborted) {
 			controller = null
 		}
+	}
+}
+
+const pickTemplate = async (template: { code: string }) => {
+	pickingTemplateCode.value = template.code
+	isIframeLoading.value = true
+
+	const isSaved = await autoSave(template)
+
+	pickingTemplateCode.value = null
+
+	if (isSaved) {
+		selectedSideTab.value = "menu"
+		isSideEditorOpen.value = true
 	}
 }
 
@@ -238,7 +246,7 @@ const autoSave = async (value: any) => {
 	</PageHeading>
 
 	<div class="h-[84vh] flex border-t border-gray-200">
-		<aside v-if="isSideEditorOpen" class="w-80 shrink-0 flex flex-col bg-[#F9F9F9] border-r border-gray-300">
+		<aside v-if="hasTemplate && isSideEditorOpen" class="w-80 shrink-0 flex flex-col bg-[#F9F9F9] border-r border-gray-300">
 			<div class="h-9 shrink-0 pl-3 pr-1.5 flex items-center justify-between border-b border-gray-300 bg-gray-50 text-sm">
 				<div class="flex items-center gap-2 font-semibold">
 					<FontAwesomeIcon :icon="faBars" fixed-width aria-hidden="true" />
@@ -257,7 +265,7 @@ const autoSave = async (value: any) => {
 						{{ ctrans("Follow sidebar navigation") }}
 						<InformationIcon :information="ctrans('The data will be same like Sidebar')" />
 					</div>
-					<Link :href="urlToSidebar" class="text-gray-500 hover:text-indigo-600 hover:underline">
+					<Link :href="urlToSidebar" class="text-gray-500 hover:text-[var(--app-accent)] hover:underline">
 						{{ ctrans("Open Sidebar workshop") }}
 						<FontAwesomeIcon :icon="faExternalLinkAlt" class="text-[10px]" fixed-width aria-hidden="true" />
 					</Link>
@@ -277,7 +285,7 @@ const autoSave = async (value: any) => {
 			</div>
 		</aside>
 
-		<aside v-else class="w-10 shrink-0 flex flex-col items-center bg-[#F9F9F9] border-r border-gray-300">
+		<aside v-else-if="hasTemplate" class="w-10 shrink-0 flex flex-col items-center bg-[#F9F9F9] border-r border-gray-300">
 			<button type="button" class="h-9 w-full border-b border-gray-300 bg-gray-50 text-gray-500 hover:text-gray-700"
 				v-tooltip="ctrans('Expand editor')" @click="isSideEditorOpen = true">
 				<FontAwesomeIcon :icon="faChevronDoubleRight" fixed-width aria-hidden="true" />
@@ -292,13 +300,13 @@ const autoSave = async (value: any) => {
 		</aside>
 
 		<section class="flex-1 min-w-0 flex flex-col bg-gray-100">
-			<div class="h-9 shrink-0 flex items-center justify-between gap-3 pr-3 bg-slate-200 border-b border-gray-300">
+			<div v-if="hasTemplate" class="h-9 shrink-0 flex items-center justify-between gap-3 pr-3 bg-slate-200 border-b border-gray-300">
 				<ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
 
 				<div class="flex items-center gap-2 text-xs">
-					<span class="tabular-nums" :class="statusSave === 'error' ? 'text-red-600' : 'text-gray-500'">
+					<span class="tabular-nums" :class="errorMessage ? 'text-red-600' : 'text-gray-500'">
 						<template v-if="statusSave === 'loading'">{{ ctrans("Saving…") }}</template>
-						<template v-else-if="statusSave === 'error'">{{ ctrans("Save failed") }}</template>
+						<template v-else-if="errorMessage">{{ errorMessage }}</template>
 						<template v-else-if="statusSave === 'success'">{{ ctrans("All changes saved") }}</template>
 					</span>
 					<Button type="tertiary" size="xxs" icon="fas fa-save" :label="ctrans('Save')"
@@ -306,7 +314,7 @@ const autoSave = async (value: any) => {
 				</div>
 			</div>
 
-			<div v-if="data.menu?.code" class="relative flex-1 min-h-0 overflow-hidden"
+			<div v-if="hasTemplate" class="relative flex-1 min-h-0 overflow-hidden"
 				:class="currentView === 'desktop' ? '' : 'py-4'">
 				<div v-if="isIframeLoading"
 					class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white/80">
@@ -317,9 +325,11 @@ const autoSave = async (value: any) => {
 					class="bg-white transition-all" :class="[iframeClass, currentView === 'desktop' ? '' : 'shadow-lg']"
 					@error="handleIframeError" @load="isIframeLoading = false" />
 			</div>
-			<div v-else class="flex-1 flex items-center justify-center bg-white">
-				<EmptyState :data="{ title: ctrans('Pick menu template'), description: ctrans('Choose a template from the Template tab to start') }" />
-			</div>
+			<MenuTemplatePicker v-else class="flex-1 min-h-0"
+				:templates="webBlockTypes.data ?? []"
+				:pickingCode="pickingTemplateCode"
+				:errorMessage="errorMessage"
+				@pick="pickTemplate" />
 		</section>
 	</div>
 </template>

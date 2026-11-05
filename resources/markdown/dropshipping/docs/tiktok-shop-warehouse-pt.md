@@ -48,9 +48,9 @@ Liga um modelo de envio "Shipped by Seller" a este armazém. Enviamos a encomend
 
 <b>Your TikTok shop has no warehouse yet.</b> ("A tua loja TikTok ainda não tem armazém.") Adiciona um armazém no Seller Center, define-o como predefinido, depois abre o teu canal, escolhe a tua loja e clica em <b>Save</b>.
 
-<b>No warehouse matches 0</b> ("Nenhum armazém corresponde a 0"), <b>Nonexistent warehouse ID(s): 0</b> ("ID(s) de armazém inexistente(s): 0") ou <b>WarehouseId of Inventory[0] is invalid</b> ("O WarehouseId do Inventory[0] é inválido") ao carregares produtos: não temos nenhum armazém TikTok para o teu canal. Faz o mesmo que acima.
+<b>No warehouse matches 0</b> ("Nenhum armazém corresponde a 0"), <b>Nonexistent warehouse ID(s): 0</b> ("ID(s) de armazém inexistente(s): 0") ou <b>WarehouseId of Inventory[0] is invalid</b> ("O WarehouseId do Inventory[0] é inválido") ao carregares produtos: não temos nenhum armazém TikTok para o teu canal, ou o que guardámos já não está na tua loja. Confirma que a tua loja tem um armazém predefinido no Seller Center, depois vai a <b>Channels</b>, clica em <b>Add Sales Channel</b>, <b>Connect</b> no cartão do TikTok e <b>Auth Store</b>, com a mesma conta TikTok. Voltamos a ler os armazéns da tua loja e usamos o predefinido. Manténs o mesmo canal e os seus produtos. Depois de aprovares a nossa aplicação no TikTok podes fechar a janela: não precisas de clicar em <b>Next</b>.
 
-<b>the warehouse does not belong to this shop</b> ("o armazém não pertence a esta loja") ao carregares produtos: o armazém que guardámos foi apagado ou pertence a outra loja. Pergunta-nos no chat do nosso site.
+<b>the warehouse does not belong to this shop</b> ("o armazém não pertence a esta loja") ao carregares produtos: o armazém que guardámos foi apagado ou pertence a outra loja. Volta a ligar com <b>Auth Store</b>, como acima.
 
 <b>requires a return warehouse</b> ("precisa de um armazém de devoluções") ao carregares produtos: adiciona um armazém de devoluções no Seller Center, depois carrega de novo.
 

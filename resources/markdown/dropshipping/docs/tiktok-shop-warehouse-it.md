@@ -48,9 +48,9 @@ Collega un template di spedizione "Shipped by Seller" a questo magazzino. Inviam
 
 <b>Your TikTok shop has no warehouse yet.</b> Aggiungi un magazzino nel Seller Center, impostalo come predefinito, poi apri il tuo canale, scegli il tuo negozio e premi <b>Save</b>.
 
-<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> o <b>WarehouseId of Inventory[0] is invalid</b> quando carichi prodotti: non abbiamo un magazzino TikTok per il tuo canale. Fai lo stesso di sopra.
+<b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> o <b>WarehouseId of Inventory[0] is invalid</b> quando carichi prodotti: non abbiamo un magazzino TikTok per il tuo canale, oppure quello memorizzato non è più nel tuo negozio. Controlla che il tuo negozio abbia un magazzino predefinito in Seller Center, poi vai su <b>Channels</b>, premi <b>Add Sales Channel</b>, <b>Connect</b> sulla card TikTok e <b>Auth Store</b>, con lo stesso account TikTok. Rileggiamo i magazzini del tuo negozio e usiamo quello predefinito. Mantieni lo stesso canale e i suoi prodotti. Dopo aver approvato la nostra app in TikTok puoi chiudere la finestra: non serve premere <b>Next</b>.
 
-<b>the warehouse does not belong to this shop</b> quando carichi prodotti: il magazzino che avevamo memorizzato è stato eliminato o appartiene a un altro negozio. Chiedici nella chat del nostro sito.
+<b>the warehouse does not belong to this shop</b> quando carichi prodotti: il magazzino che avevamo memorizzato è stato eliminato o appartiene a un altro negozio. Riconnettiti con <b>Auth Store</b>, come sopra.
 
 <b>requires a return warehouse</b> quando carichi prodotti: aggiungi un magazzino per i resi nel Seller Center, poi carica di nuovo.
 

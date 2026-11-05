@@ -38,9 +38,11 @@ class SaveShopDataTiktokChannel
             }
         }
 
-        data_set($shopData, 'data.warehouse', Arr::get($tiktokWarehouses, 'data.warehouses'));
+        $warehouses = Arr::get($tiktokWarehouses, 'data.warehouses');
+        data_set($shopData, 'data.warehouse', $warehouses);
 
-        if (!$tiktokUser->tiktok_warehouse_id) {
+        $storedWarehouseIsInShop = $tiktokUser->tiktok_warehouse_id && in_array($tiktokUser->tiktok_warehouse_id, Arr::pluck($warehouses ?? [], 'id'), true);
+        if ($defaultWarehouse && !$storedWarehouseIsInShop) {
             data_set($shopData, 'tiktok_warehouse_id', Arr::get($defaultWarehouse, 'id'));
         }
 

@@ -3,7 +3,7 @@
     "rules": [
       {
         "description": "aiku iris: drop the tracking parameters Varnish strips (utm, gclid, fbclid...) before the edge cache, so an ad or newsletter landing shares the page's edge copy; the browser keeps them in the address bar, where traffic sources and the Google/Meta tags read them",
-        "expression": "(http.host eq \"__HOST__\") and any(http.request.uri.args.names[*] in {\"_branch_match_id\" \"_bta_c\" \"_bta_tid\" \"_ga\" \"_gl\" \"_ke\" \"_kx\" \"campid\" \"cof\" \"customid\" \"cx\" \"dclid\" \"dm_i\" \"ef_id\" \"epik\" \"fbclid\" \"gad_campaignid\" \"gad_source\" \"gbraid\" \"gclid\" \"gclsrc\" \"gdffi\" \"gdfms\" \"gdftrk\" \"hsa_acc\" \"hsa_ad\" \"hsa_cam\" \"hsa_grp\" \"hsa_kw\" \"hsa_mt\" \"hsa_net\" \"hsa_src\" \"hsa_tgt\" \"hsa_ver\" \"ie\" \"igshid\" \"irclickid\" \"matomo_campaign\" \"matomo_cid\" \"matomo_content\" \"matomo_group\" \"matomo_keyword\" \"matomo_medium\" \"matomo_placement\" \"matomo_source\" \"mc_cid\" \"mc_eid\" \"mkcid\" \"mkevt\" \"mkrid\" \"mkwid\" \"msclkid\" \"mtm_campaign\" \"mtm_cid\" \"mtm_content\" \"mtm_group\" \"mtm_keyword\" \"mtm_medium\" \"mtm_placement\" \"mtm_source\" \"nb_klid\" \"ndclid\" \"origin\" \"pcrid\" \"piwik_campaign\" \"piwik_keyword\" \"piwik_kwd\" \"pk_campaign\" \"pk_keyword\" \"pk_kwd\" \"redirect_log_mongo_id\" \"redirect_mongo_id\" \"rtid\" \"s_kwcid\" \"sb_referer_host\" \"sccid\" \"si\" \"siteurl\" \"sms_click\" \"sms_source\" \"sms_uph\" \"srsltid\" \"toolid\" \"trk_contact\" \"trk_module\" \"trk_msg\" \"trk_sid\" \"ttclid\" \"twclid\" \"utm_campaign\" \"utm_content\" \"utm_creative_format\" \"utm_id\" \"utm_marketing_tactic\" \"utm_medium\" \"utm_source\" \"utm_source_platform\" \"utm_term\" \"vmcid\" \"wbraid\" \"yclid\" \"zanpid\"})",
+        "expression": "(http.host eq \"__HOST__\") and (not (http.request.uri.path eq \"/app\" or starts_with(http.request.uri.path, \"/app/\") or http.request.uri.path eq \"/json\" or starts_with(http.request.uri.path, \"/json/\") or http.request.uri.path eq \"/disclosure\" or starts_with(http.request.uri.path, \"/disclosure/\") or http.request.uri.path eq \"/unsubscribe\" or starts_with(http.request.uri.path, \"/unsubscribe/\") or http.request.uri.path eq \"/locale\" or starts_with(http.request.uri.path, \"/locale/\") or http.request.uri.path eq \"/models\" or starts_with(http.request.uri.path, \"/models/\") or http.request.uri.path eq \"/catalogue\" or starts_with(http.request.uri.path, \"/catalogue/\") or http.request.uri.path eq \"/invoice\" or starts_with(http.request.uri.path, \"/invoice/\") or http.request.uri.path eq \"/attachment\" or starts_with(http.request.uri.path, \"/attachment/\") or http.request.uri.path eq \"/admin\" or starts_with(http.request.uri.path, \"/admin/\") or http.request.uri.path eq \"/nova\" or starts_with(http.request.uri.path, \"/nova/\") or http.request.uri.path eq \"/api\" or starts_with(http.request.uri.path, \"/api/\") or http.request.uri.path eq \"/horizon\" or starts_with(http.request.uri.path, \"/horizon/\") or http.request.uri.path eq \"/telescope\" or starts_with(http.request.uri.path, \"/telescope/\") or http.request.uri.path eq \"/i\" or starts_with(http.request.uri.path, \"/i/\") or http.request.uri.path eq \"/analytics\" or starts_with(http.request.uri.path, \"/analytics/\") or http.request.uri.path eq \"/webhooks\" or starts_with(http.request.uri.path, \"/webhooks/\"))) and any(http.request.uri.args.names[*] in {\"_branch_match_id\" \"_bta_c\" \"_bta_tid\" \"_ga\" \"_gl\" \"_ke\" \"_kx\" \"campid\" \"cof\" \"customid\" \"cx\" \"dclid\" \"dm_i\" \"ef_id\" \"epik\" \"fbclid\" \"gad_campaignid\" \"gad_source\" \"gbraid\" \"gclid\" \"gclsrc\" \"gdffi\" \"gdfms\" \"gdftrk\" \"hsa_acc\" \"hsa_ad\" \"hsa_cam\" \"hsa_grp\" \"hsa_kw\" \"hsa_mt\" \"hsa_net\" \"hsa_src\" \"hsa_tgt\" \"hsa_ver\" \"ie\" \"igshid\" \"irclickid\" \"matomo_campaign\" \"matomo_cid\" \"matomo_content\" \"matomo_group\" \"matomo_keyword\" \"matomo_medium\" \"matomo_placement\" \"matomo_source\" \"mc_cid\" \"mc_eid\" \"mkcid\" \"mkevt\" \"mkrid\" \"mkwid\" \"msclkid\" \"mtm_campaign\" \"mtm_cid\" \"mtm_content\" \"mtm_group\" \"mtm_keyword\" \"mtm_medium\" \"mtm_placement\" \"mtm_source\" \"nb_klid\" \"ndclid\" \"origin\" \"pcrid\" \"piwik_campaign\" \"piwik_keyword\" \"piwik_kwd\" \"pk_campaign\" \"pk_keyword\" \"pk_kwd\" \"redirect_log_mongo_id\" \"redirect_mongo_id\" \"rtid\" \"s_kwcid\" \"sb_referer_host\" \"sccid\" \"si\" \"siteurl\" \"sms_click\" \"sms_source\" \"sms_uph\" \"srsltid\" \"toolid\" \"trk_contact\" \"trk_module\" \"trk_msg\" \"trk_sid\" \"ttclid\" \"twclid\" \"utm_campaign\" \"utm_content\" \"utm_creative_format\" \"utm_id\" \"utm_marketing_tactic\" \"utm_medium\" \"utm_source\" \"utm_source_platform\" \"utm_term\" \"vmcid\" \"wbraid\" \"yclid\" \"zanpid\"})",
         "action": "rewrite",
         "action_parameters": {
           "uri": {
@@ -19,7 +19,7 @@
   "http_request_cache_settings": {
     "rules": [
       {
-        "description": "aiku iris: cache anonymous storefront pages at the edge for 72h (a 404 for 1h); Varnish bans purge them by the aiku-website-<id> Cache-Tag within 10 min (mirrors Varnish pass rules; logged in, Inertia and API traffic bypass)",
+        "description": "aiku iris: cache anonymous storefront pages at the edge for 72h (a 301 or 404 for 1h); Varnish bans purge them by the aiku-website-<id> Cache-Tag within 10 min (mirrors Varnish pass rules; logged in, Inertia and API traffic bypass)",
         "expression": "(http.host eq \"__HOST__\") and (http.request.method in {\"GET\" \"HEAD\"}) and (not http.cookie contains \"iris_vua\") and (not any(lower(http.request.headers.names[*])[*] eq \"x-inertia\")) and (not any(lower(http.request.headers.names[*])[*] eq \"authorization\")) and (not http.request.uri.path.extension in {\"pdf\" \"csv\" \"css\" \"js\" \"mjs\" \"map\" \"jpg\" \"jpeg\" \"png\" \"gif\" \"svg\" \"webp\" \"avif\" \"ico\" \"woff\" \"woff2\" \"ttf\" \"eot\" \"otf\" \"php\" \"txt\" \"xml\" \"json\"}) and (not (http.request.uri.path eq \"/app\" or starts_with(http.request.uri.path, \"/app/\") or http.request.uri.path eq \"/json\" or starts_with(http.request.uri.path, \"/json/\") or http.request.uri.path eq \"/disclosure\" or starts_with(http.request.uri.path, \"/disclosure/\") or http.request.uri.path eq \"/unsubscribe\" or starts_with(http.request.uri.path, \"/unsubscribe/\") or http.request.uri.path eq \"/locale\" or starts_with(http.request.uri.path, \"/locale/\") or http.request.uri.path eq \"/models\" or starts_with(http.request.uri.path, \"/models/\") or http.request.uri.path eq \"/catalogue\" or starts_with(http.request.uri.path, \"/catalogue/\") or http.request.uri.path eq \"/invoice\" or starts_with(http.request.uri.path, \"/invoice/\") or http.request.uri.path eq \"/attachment\" or starts_with(http.request.uri.path, \"/attachment/\") or http.request.uri.path eq \"/admin\" or starts_with(http.request.uri.path, \"/admin/\") or http.request.uri.path eq \"/nova\" or starts_with(http.request.uri.path, \"/nova/\") or http.request.uri.path eq \"/api\" or starts_with(http.request.uri.path, \"/api/\") or http.request.uri.path eq \"/horizon\" or starts_with(http.request.uri.path, \"/horizon/\") or http.request.uri.path eq \"/telescope\" or starts_with(http.request.uri.path, \"/telescope/\") or http.request.uri.path eq \"/i\" or starts_with(http.request.uri.path, \"/i/\") or http.request.uri.path eq \"/analytics\" or starts_with(http.request.uri.path, \"/analytics/\") or http.request.uri.path eq \"/webhooks\" or starts_with(http.request.uri.path, \"/webhooks/\"))) and (not http.request.uri.path eq \"/health-ping\") and (not http.user_agent eq \"aiku-cache-warmer\")",
         "action": "set_cache_settings",
         "action_parameters": {
@@ -38,6 +38,17 @@
               {
                 "status_code_range": {
                   "from": 201,
+                  "to": 300
+                },
+                "value": -1
+              },
+              {
+                "status_code": 301,
+                "value": 3600
+              },
+              {
+                "status_code_range": {
+                  "from": 302,
                   "to": 403
                 },
                 "value": -1
@@ -118,6 +129,18 @@
       {
         "description": "aiku iris: never store a bot's own copy (Varnish marks it X-Aiku-Bot-Copy): deploy flushes spare bot copies, so one stored here could hand a person a pre-deploy page",
         "expression": "(http.host eq \"__HOST__\" and any(lower(http.response.headers.names[*])[*] eq \"x-aiku-bot-copy\"))",
+        "action": "set_cache_control",
+        "action_parameters": {
+          "no-store": {
+            "cloudflare_only": false,
+            "operation": "set"
+          }
+        },
+        "enabled": true
+      },
+      {
+        "description": "aiku iris: store a redirect only once Varnish serves it from its own cache: redirects Varnish passes (self-redirects, one-off answers) are never kept at the edge",
+        "expression": "(http.host eq \"__HOST__\" and http.response.code in {301 302 303 307 308} and not any(lower(http.response.headers[\"x-cache\"][*])[*] eq \"hit\"))",
         "action": "set_cache_control",
         "action_parameters": {
           "no-store": {

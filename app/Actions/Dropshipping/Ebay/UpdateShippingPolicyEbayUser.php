@@ -39,8 +39,20 @@ class UpdateShippingPolicyEbayUser extends OrgAction
             }
         }
 
-        $fulfillmentPolicyId = Arr::get($modelData, 'fulfillment_policy_id', $ebayUser->fulfillment_policy_id);
-        $fulfillmentPolicy = $ebayUser->updateFulfilmentPolicy($fulfillmentPolicyId, $modelData);
+        $policies = $ebayUser->getFulfilmentPolicies();
+
+        if ($error = $ebayUser::ebayResponseError($policies)) {
+            throw ValidationException::withMessages([
+                'shipping_service' => __('eBay did not accept the postage policy: :error', ['error' => $error]),
+            ]);
+        }
+
+        $ownPolicyId = collect(Arr::get($policies, 'fulfillmentPolicies', []))
+            ->firstWhere('name', $ebayUser->ownFulfilmentPolicyName())['fulfillmentPolicyId'] ?? null;
+
+        $fulfillmentPolicy = $ownPolicyId
+            ? $ebayUser->updateFulfilmentPolicy($ownPolicyId, $modelData)
+            : $ebayUser->createFulfilmentPolicy(Arr::get($modelData, 'settings.shipping', []));
 
         if ($error = $ebayUser::ebayResponseError($fulfillmentPolicy)) {
             throw ValidationException::withMessages([
