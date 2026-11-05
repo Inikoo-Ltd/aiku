@@ -578,7 +578,7 @@ test('agent manager only sees their own agent organisation', function () {
         'state'               => \App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER,
         'quantity'            => 12,
     ]);
-    $this->get(route('grp.org.agent.warehouse.index', [$organisation->slug, 'filter' => ['state' => 'packed_for_next_container', 'organisation' => $this->organisation->slug]]))
+    $this->get(route('grp.org.agent.warehouse.index', [$organisation->slug, 'filter' => ['state' => 'packed_for_next_container', 'organisation' => $this->organisation->slug], 'sort' => '-quantity']))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->component('Org/Procurement/AgentWarehouseStocks')
             ->where('data.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['code'] === $warehouseSupplierProduct->code && $row['state'] === 'packed_for_next_container'))

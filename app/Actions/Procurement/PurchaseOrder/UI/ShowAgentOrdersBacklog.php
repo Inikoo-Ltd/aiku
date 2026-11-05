@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Models\Procurement\AgentWarehouseStock;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
@@ -58,7 +59,7 @@ class ShowAgentOrdersBacklog extends OrgAction
     {
         $progress     = PurchaseOrderStageEnum::progressSql();
         $factoryStage = PurchaseOrderStageEnum::factoryStageSql();
-        $inStock      = 'exists (select 1 from agent_warehouse_stocks where agent_warehouse_stocks.purchase_order_id = purchase_orders.id and agent_warehouse_stocks.quantity > 0)';
+        $inStock      = 'exists (select 1 from agent_warehouse_stocks where agent_warehouse_stocks.purchase_order_id = purchase_orders.id and agent_warehouse_stocks.quantity > 0 and '.AgentWarehouseStock::heldQuantitySql().' > 0)';
 
         $purchaseOrders = DB::table('purchase_orders')
             ->where('agent_id', $agent->id)
@@ -91,6 +92,7 @@ class ShowAgentOrdersBacklog extends OrgAction
             ->leftJoin('purchase_orders', 'purchase_orders.id', 'agent_warehouse_stocks.purchase_order_id')
             ->where('agent_warehouse_stocks.agent_id', $agent->id)
             ->where('agent_warehouse_stocks.quantity', '>', 0)
+            ->whereRaw(AgentWarehouseStock::heldQuantitySql().' > 0')
             ->selectRaw("agent_warehouse_stocks.organisation_id, count(distinct agent_warehouse_stocks.purchase_order_id) as number, count(distinct agent_warehouse_stocks.purchase_order_id) filter (where $openPurchaseOrder) as shared, count(*) as lines")
             ->groupBy('agent_warehouse_stocks.organisation_id')
             ->get()

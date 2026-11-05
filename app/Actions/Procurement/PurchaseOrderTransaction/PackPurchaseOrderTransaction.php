@@ -40,7 +40,8 @@ class PackPurchaseOrderTransaction extends OrgAction
             ->join('agent_goods_receipts', 'agent_goods_receipts.id', 'agent_goods_receipt_items.agent_goods_receipt_id')
             ->where('agent_goods_receipts.state', AgentGoodsReceiptStateEnum::RECEIVED->value)
             ->where('agent_warehouse_stocks.state', AgentWarehouseStockStateEnum::RECEIVED->value)
-            ->where('agent_warehouse_stocks.quantity', '>', 0);
+            ->where('agent_warehouse_stocks.quantity', '>', 0)
+            ->whereRaw(AgentWarehouseStock::heldQuantitySql().' > 0');
     }
 
     public function handle(PurchaseOrderTransaction $purchaseOrderTransaction): PurchaseOrderTransaction

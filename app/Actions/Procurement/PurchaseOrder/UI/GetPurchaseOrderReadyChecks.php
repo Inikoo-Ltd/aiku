@@ -9,6 +9,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
+use App\Models\Procurement\AgentWarehouseStock;
 use App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
@@ -37,7 +38,7 @@ class GetPurchaseOrderReadyChecks
 
         $receiptItems = AgentGoodsReceiptItem::where('purchase_order_id', $purchaseOrder->id)
             ->whereHas('agentGoodsReceipt', fn ($query) => $query->where('state', AgentGoodsReceiptStateEnum::RECEIVED))
-            ->with(['agentGoodsReceipt:id,reference,state', 'agentWarehouseStock:id,state,quantity'])
+            ->with(['agentGoodsReceipt:id,reference,state', 'agentWarehouseStock' => fn ($query) => $query->select('id', 'state', AgentWarehouseStock::heldQuantityColumn())])
             ->orderBy('id')
             ->get();
 
