@@ -59,6 +59,15 @@ const thisOrder = computed(() => {
 		: (Number(props.item.quantity_ordered) || 0) / pack.value
 })
 
+const minimumOrderSkos = computed(() => {
+	if (props.isPartner) {
+		return 0
+	}
+	const otherOrganisationsSkos = (props.item.other_organisations_drafts ?? []).reduce((skos: number, draft: any) => skos + (Number(draft.units) || 0), 0) / pack.value
+
+	return Math.max(0, (Number(props.item.minimum_carton_order) || 0) * cartonSkos.value - otherOrganisationsSkos)
+})
+
 const daysNow = computed(() => coverDays(stock.value + incoming.value))
 const daysAfter = computed(() => coverDays(stock.value + incoming.value + thisOrder.value))
 
@@ -101,6 +110,13 @@ const verdict = computed(() => {
 					class: "text-red-600",
 					tooltip: ctrans("Stock lasts :time, less than the :lead lead time. Order now or it will run out before a new order arrives", times),
 				}
+	}
+	if (days > overstockDays.value && daysNow.value <= overstockDays.value && thisOrder.value > 0 && minimumOrderSkos.value > 0 && thisOrder.value <= minimumOrderSkos.value + 1e-6) {
+		return {
+			label: ctrans("OK"),
+			class: "text-green-600",
+			tooltip: ctrans("With this order the stock lasts :time, past the :overstock overstock limit, but this is the supplier's minimum order. Order it if the product is worth holding that long", times),
+		}
 	}
 	if (days > overstockDays.value && thisOrder.value > 0 && suggestion.value !== null && suggestion.value > 0 && thisOrder.value <= suggestion.value) {
 		return {

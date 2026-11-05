@@ -182,7 +182,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
         });
 
         if ($parent instanceof OrgSupplier) {
-            $queryBuilder->leftJoinSub(GetSupplierStockCoverBuckets::make()->bucketsQuery($parent), 'cover', 'cover.id', 'org_supplier_products.id');
+            $queryBuilder->leftJoinSub(GetSupplierStockCoverBuckets::make()->bucketsQuery($parent, $purchaseOrder?->id), 'cover', 'cover.id', 'org_supplier_products.id');
         }
 
         return $queryBuilder;

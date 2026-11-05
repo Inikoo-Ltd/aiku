@@ -1184,6 +1184,16 @@ test('agent stock groups read the lead time the ordering card reads and are neve
         'updated_at'          => now(),
     ]);
     expect($isOut())->toBeFalse();
+
+    DB::table('purchase_orders')->where('id', $purchaseOrder->id)->update(['state' => PurchaseOrderStateEnum::IN_PROCESS->value]);
+    $bucketOnPurchaseOrderPage = fn (?int $draftPurchaseOrderId) => $buckets->scopedQuery($this->orgAgent)
+        ->where('osp.id', $orgSupplierProduct->id)
+        ->selectRaw($buckets->bucketSql($this->orgAgent, $draftPurchaseOrderId).' as bucket')
+        ->value('bucket');
+    expect($isOut())->toBeTrue()
+        ->and($bucketOnPurchaseOrderPage(null))->toBe('out')
+        ->and($bucketOnPurchaseOrderPage($purchaseOrder->id + 1000000))->toBe('out')
+        ->and($bucketOnPurchaseOrderPage($purchaseOrder->id))->toBe('ok');
     DB::table('purchase_orders')->where('id', $purchaseOrder->id)->update(['deleted_at' => now()]);
 
     $signals = App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals::run($orgStock->fresh(), $orgSupplierProduct->supplierProduct, fallbackLeadTimeDays: 45);

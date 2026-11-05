@@ -43,7 +43,7 @@ class GetSupplierStockCoverBuckets
     /**
      * Per-row lead time, the same order the ordering card reads it: the SKO's own, the supplier product's, then the supplier median.
      */
-    private function bucketExpression(int $leadDays): string
+    private function bucketExpression(int $leadDays, string $alsoComingSkos = '0'): string
     {
         $lead       = "coalesce(os.measured_lead_time_days, os.estimated_lead_time_days, sp.measured_lead_time_days, sp.estimated_lead_time_days, $leadDays)";
         $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $lead)";
@@ -51,11 +51,11 @@ class GetSupplierStockCoverBuckets
         return "case
             when os.id is null then 'never'
             when os.state <> '".OrgStockStateEnum::ACTIVE->value."' then 'dead'
-            ".GetOrganisationStockCoverBuckets::outOfStockCase('os', 's', GetOrganisationStockCoverBuckets::make()->overstockDaysExpression())."
+            ".GetOrganisationStockCoverBuckets::outOfStockCase('os', 's', GetOrganisationStockCoverBuckets::make()->overstockDaysExpression(), $alsoComingSkos)."
             else ".GetOrganisationStockCoverBuckets::bucketOnCoverDaysExpression('os', 's', "greatest(4 * $lead, $understock)", "
                 ".GetOrganisationStockCoverBuckets::atRiskCases($lead, $understock, GetOrganisationStockCoverBuckets::make()->overstockDaysExpression(), "4 * $lead")."
                 when coalesce(s.predicted_daily_usage, 0) = 0 and s.stock_value > 0 then 'dead'
-                else 'ok'").' end';
+                else 'ok'", $alsoComingSkos).' end';
     }
 
     /**
@@ -85,12 +85,15 @@ class GetSupplierStockCoverBuckets
     }
 
     /**
-     * One row per product this supplier can sell us, with the stock group and rank it sits in.
+     * One row per product this supplier can sell us, with the stock group and rank it sits in. On a
+     * draft purchase order's page, what that order holds counts as coming.
      */
-    public function bucketsQuery(OrgSupplier $orgSupplier): Builder
+    public function bucketsQuery(OrgSupplier $orgSupplier, ?int $draftPurchaseOrderId = null): Builder
     {
+        $alsoComingSkos = $draftPurchaseOrderId ? GetOrganisationStockCoverBuckets::draftOrderSkosExpression('os', $draftPurchaseOrderId) : '0';
+
         return $this->scopedQuery($orgSupplier)
-            ->selectRaw('p.id, os.health_rank, '.$this->bucketExpression(GetSupplierLeadTime::run($orgSupplier)['days']).' as bucket');
+            ->selectRaw('p.id, os.health_rank, '.$this->bucketExpression(GetSupplierLeadTime::run($orgSupplier)['days'], $alsoComingSkos).' as bucket');
     }
 
     private function onShoppingListExpression(): string
