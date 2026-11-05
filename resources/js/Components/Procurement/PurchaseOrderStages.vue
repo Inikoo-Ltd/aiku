@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, useSlots } from "vue"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import { ctrans } from "@/Composables/useTrans"
@@ -75,6 +75,12 @@ const props = defineProps<{
     deposit?: { not_needed: boolean, route: routeType } | null
     sample?: { required: boolean, approved: boolean, override_reason: string | null, route: routeType | null } | null
 }>()
+
+const slots = useSlots()
+
+const hasCheckDetail = (check: Check) => !!slots[`check-${check.key}`]
+
+const openedCheck = ref<Check | null>(null)
 
 const savingDeposit = ref(false)
 const depositError = ref<string | null>(null)
@@ -317,16 +323,22 @@ function save() {
             </dl>
 
             <div v-if="stage.checks?.length" class="mt-2 flex flex-wrap gap-1">
-                <span
+                <component
+                    :is="hasCheckDetail(check) ? 'button' : 'span'"
                     v-for="check in stage.checks"
                     :key="check.key"
+                    :type="hasCheckDetail(check) ? 'button' : undefined"
                     class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
-                    :class="check.done ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-500'"
+                    :class="[
+                        check.done ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-500',
+                        hasCheckDetail(check) ? 'cursor-pointer hover:border-[var(--app-accent-muted)] hover:bg-[var(--app-accent-soft)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]' : '',
+                    ]"
                     v-tooltip="check.date ? formatDate(check.date) : ctrans('Not done yet')"
+                    @click="hasCheckDetail(check) && (openedCheck = check)"
                 >
                     <FontAwesomeIcon :icon="check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
                     {{ check.label }}
-                </span>
+                </component>
             </div>
 
             <div v-if="stage.evidence.length" class="mt-2 space-y-0.5 text-xs">
@@ -427,6 +439,25 @@ function save() {
             <slot :name="`stage-${stage.key}`" :stage="stage" />
         </div>
     </div>
+
+    <Dialog
+        :visible="!!openedCheck"
+        modal
+        :header="openedCheck?.label"
+        :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }"
+        :draggable="false"
+        @update:visible="(visible: boolean) => !visible && (openedCheck = null)"
+    >
+        <div v-if="openedCheck" class="space-y-3 text-sm">
+            <p class="flex items-center gap-1" :class="openedCheck.done ? 'text-green-700' : 'text-gray-500'">
+                <FontAwesomeIcon :icon="openedCheck.done ? 'fal fa-check-circle' : 'fal fa-circle'" fixed-width aria-hidden="true" />
+                <template v-if="openedCheck.done && openedCheck.date">{{ ctrans("Done :date", { date: formatDate(openedCheck.date) as string }) }}</template>
+                <template v-else-if="openedCheck.done">{{ ctrans("Done") }}</template>
+                <template v-else>{{ ctrans("Not done yet") }}</template>
+            </p>
+            <slot :name="`check-${openedCheck.key}`" :check="openedCheck" :close="() => (openedCheck = null)" />
+        </div>
+    </Dialog>
 
     <Dialog
         :visible="overrideDialog"

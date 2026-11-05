@@ -49,6 +49,7 @@ import PurchaseOrderDepositPayments, { type PurchaseOrderPaymentsData } from "@/
 import AgentPurchaseOrderMoney, { type AgentPurchaseOrderMoneyData } from "@/Components/Procurement/AgentPurchaseOrderMoney.vue"
 import PurchaseOrderStages from "@/Components/Procurement/PurchaseOrderStages.vue"
 import PurchaseOrderStageContainers from "@/Components/Procurement/PurchaseOrderStageContainers.vue"
+import PurchaseOrderReadyCheckItems, { type ReadyCheckItems } from "@/Components/Procurement/PurchaseOrderReadyCheckItems.vue"
 import PurchaseOrderSampleRequired, { type PurchaseOrderSample } from "@/Components/Procurement/PurchaseOrderSampleRequired.vue"
 import AgentPurchaseOrderGoodsReceipts from "@/Components/Procurement/AgentPurchaseOrderGoodsReceipts.vue"
 import AgentReceiveGoodsButton from "@/Components/Procurement/AgentReceiveGoodsButton.vue"
@@ -141,6 +142,7 @@ const props = defineProps < {
         number_purchase_orders: number
     }[]
     stages?: { stages: InstanceType<typeof PurchaseOrderStages>["$props"]["stages"]; route: routeType; upload_route: routeType | null; deposit: InstanceType<typeof PurchaseOrderStages>["$props"]["deposit"]; sample: InstanceType<typeof PurchaseOrderStages>["$props"]["sample"] } | null
+    ready_checks?: { packing: ReadyCheckItems; qc: ReadyCheckItems } | null
     stage_containers?: { containers: InstanceType<typeof PurchaseOrderStageContainers>["$props"]["containers"]; items_to_add: InstanceType<typeof PurchaseOrderStageContainers>["$props"]["itemsToAdd"] } | null
     agent_receiving?: InstanceType<typeof AgentPurchaseOrderGoodsReceipts>["$props"]["receiving"] | null
     compliance?: object
@@ -1191,6 +1193,18 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 		</template>
 		<template v-else-if="payments" #stage-deposit_paid>
 			<PurchaseOrderDepositPayments :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
+		</template>
+		<template v-if="agent_money" #check-balance>
+			<AgentPurchaseOrderMoney :money="agent_money" />
+		</template>
+		<template v-else-if="payments" #check-balance>
+			<PurchaseOrderDepositPayments :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
+		</template>
+		<template v-if="ready_checks" #check-packing="{ close }">
+			<PurchaseOrderReadyCheckItems check="packing" :data="ready_checks.packing" @done="close" />
+		</template>
+		<template v-if="ready_checks" #check-qc="{ close }">
+			<PurchaseOrderReadyCheckItems check="qc" :data="ready_checks.qc" @done="close" />
 		</template>
 		<template v-if="stage_containers" #stage-arrived>
 			<PurchaseOrderStageContainers :containers="stage_containers.containers" :itemsToAdd="stage_containers.items_to_add" />

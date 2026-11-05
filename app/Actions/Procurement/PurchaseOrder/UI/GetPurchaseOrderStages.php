@@ -392,7 +392,7 @@ class GetPurchaseOrderStages
     /**
      * Set on the agent, or seen from the goods receipts of an agent that records them without the setting.
      */
-    private function usesAgentWarehouse(PurchaseOrder $purchaseOrder): bool
+    public function usesAgentWarehouse(PurchaseOrder $purchaseOrder): bool
     {
         return $this->usesAgentWarehouse[$purchaseOrder->id]
             ??= $purchaseOrder->isAgentOrder() && (
@@ -408,7 +408,8 @@ class GetPurchaseOrderStages
 
     /**
      * The checks the agent shows for Ready to Roll: done or not, with the date when done. Packing is the warehouse
-     * packing for an agent warehouse, otherwise the production done date.
+     * packing for an agent warehouse, otherwise the production done date. With an agent warehouse QC is also done once
+     * every item received is checked, when nobody recorded the QC itself.
      *
      * @return array<int, array{key: string, label: string, done: bool, date: ?Carbon}>|null
      */
@@ -421,9 +422,11 @@ class GetPurchaseOrderStages
         $labels = Stage::readyCheckLabels();
 
         return collect($purchaseOrder->agent->poJourney()['ready_checks'])->map(function (string $key) use ($purchaseOrder, $labels) {
-            $date = $key === 'packing' && $this->usesAgentWarehouse($purchaseOrder)
-                ? $this->warehouseDates($purchaseOrder)['warehouse_packed_at']
-                : $purchaseOrder->{Stage::READY_CHECK_FIELDS[$key]};
+            $date = match (true) {
+                $key === 'packing' && $this->usesAgentWarehouse($purchaseOrder) => $this->warehouseDates($purchaseOrder)['warehouse_packed_at'],
+                $key === 'qc' && $this->usesAgentWarehouse($purchaseOrder)      => $purchaseOrder->qc_passed_at ?? $this->warehouseDates($purchaseOrder)['warehouse_checked_at'],
+                default                                                         => $purchaseOrder->{Stage::READY_CHECK_FIELDS[$key]},
+            };
 
             return ['key' => $key, 'label' => $labels[$key], 'done' => $date !== null, 'date' => $date];
         })->all();
