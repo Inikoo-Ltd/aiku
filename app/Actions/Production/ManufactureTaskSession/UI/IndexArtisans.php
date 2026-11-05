@@ -23,7 +23,6 @@ use App\Models\HumanResources\Employee;
 use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\ManufactureArtisanDay;
 use App\Models\Production\ManufactureBreak;
-use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTask;
 use App\Models\Production\ManufacturePreparationReason;
 use App\Models\Production\ManufacturePayrollAdjustment;
@@ -183,15 +182,10 @@ class IndexArtisans extends OrgAction
                 'name'       => 'grp.models.manufacture-task-session.correct',
                 'parameters' => ['manufactureTaskSession' => $session->id],
             ] : null,
-            'other_steps'         => $canCorrect($session) ? $session->jobOrderItemTask->jobOrderItem->tasks
-                ->reject(fn (JobOrderItemTask $step) => $step->id == $session->job_order_item_task_id || $step->combined_task_id)
-                ->map(fn (JobOrderItemTask $step) => [
-                    'id'                => $step->id,
-                    'task_name'         => $step->manufactureTask->name,
-                    'unit'              => $step->unit(),
-                    'pack_size'         => $step->packSize(),
-                    'quantity_left'     => max(0, (float)$step->quantity_required - (float)$step->quantity_made),
-                ])->values()->all() : [],
+            'move_targets_route'  => $canCorrect($session) ? [
+                'name'       => 'grp.json.manufacture_task_session.move_targets',
+                'parameters' => ['manufactureTaskSession' => $session->id],
+            ] : null,
             'quantity_rejected'   => (float)$session->quantity_rejected,
             'preparation_minutes' => $session->movedPreparation ? (int) round($session->movedPreparation->started_at->diffInSeconds($session->movedPreparation->ended_at) / 60) : null,
             'earned'              => $this->canSeePay ? round((float)$session->pay, 2) : null,

@@ -1286,18 +1286,18 @@ test('a mix entered on Making by mistake is moved to the mix step and Making goe
     $artisansSession = collect(get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug]))->viewData('page')['props']['artisans'])
         ->flatMap(fn (array $artisan) => collect($artisan['jobs'] ?? [])->flatMap(fn (array $job) => collect($job['steps'] ?? [])->flatMap(fn (array $step) => $step['sessions'])))
         ->firstWhere('id', $session->id);
-    expect($artisansSession['other_steps'])->toHaveCount(1)
-        ->and($artisansSession['other_steps'][0])->toMatchArray(['id' => $mix->id, 'unit' => 'kg', 'quantity_left' => 100.8]);
+    $targets = get(route($artisansSession['move_targets_route']['name'], $artisansSession['move_targets_route']['parameters']))->assertOk()->json();
+    expect($targets[0]['label'])->toBe($jobOrder->reference.' · SALT'.$suffix)
+        ->and($targets[0]['items'])->toHaveCount(1)
+        ->and($targets[0]['items'][0])->toMatchArray(['id' => $mix->id, 'unit' => 'kg', 'quantity_left' => 100.8]);
 
     \App\Actions\Production\Artefact\AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $makingTask->id, 'position' => 1, 'units_per_artefact' => 0.3333]);
     expect((float) $making->refresh()->quantity_required)->toBe(180.0);
 
     $correct = fn (array $data) => \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($session->refresh(), $data, 'Supervisor');
-    $otherJobOrder = StoreJobOrder::make()->action($this->production, []);
-    $otherStep     = StoreJobOrderItem::make()->action($otherJobOrder, ['artefact_id' => $artefact->id, 'quantity' => 10])->tasks()->first();
-    expect(fn () => $correct(['quantity_made' => 100.8, 'job_order_item_task_id' => $otherStep->id]))->toThrow(ValidationException::class, 'same job line');
+    expect(fn () => $correct(['quantity_made' => 100.8, 'job_order_item_task_id' => $mix->id]))->toThrow(ValidationException::class, 'Say why the entry moves');
 
-    $moved = $correct(['quantity_made' => 100.8, 'job_order_item_task_id' => $mix->id]);
+    $moved = $correct(['quantity_made' => 100.8, 'job_order_item_task_id' => $mix->id, 'reason' => 'Mix entered on Making']);
 
     expect($moved->job_order_item_task_id)->toBe($mix->id)
         ->and($moved->manufacture_task_id)->toBe($mixTask->id)
@@ -1308,10 +1308,136 @@ test('a mix entered on Making by mistake is moved to the mix step and Making goe
         ->and($making->state)->toBe(JobOrderItemTaskStateEnum::TODO)
         ->and((float) $mix->refresh()->quantity_made)->toBe(100.8)
         ->and($mix->state)->toBe(JobOrderItemTaskStateEnum::DONE)
-        ->and($jobOrder->refresh()->data['corrections'][0])->toMatchArray(['from_step' => 'Making '.$suffix, 'step' => 'Mixing '.$suffix, 'from' => 180.0, 'to' => 100.8, 'by' => 'Supervisor']);
+        ->and($jobOrder->refresh()->data['corrections'][0])->toMatchArray(['from_step' => 'Making '.$suffix, 'step' => 'Mixing '.$suffix, 'from' => 180.0, 'to' => 100.8, 'reason' => 'Mix entered on Making', 'by' => 'Supervisor'])
+        ->and($jobOrder->data['corrections'][0])->not->toHaveKeys(['from_job', 'line_to']);
 
     $making->update(['quantity_required' => 40]);
     expect((float) $making->followRecipeWhenNothingRecorded()->quantity_required)->toBe(40.0);
+});
+
+test('a supervisor moves an entry recorded on the wrong line to the line really made, growing it back when it was closed short (HELP-4526)', function () {
+    $user = auth()->user();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+    ensurePayBandZero($this->production);
+
+    $suffix     = rand(10000, 99999);
+    $makingTask = StoreManufactureTask::make()->action($this->production, ['code' => 'MV'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
+    $newArtefact = function (string $code, int $target) use ($makingTask) {
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code, 'name' => $code]);
+        $artefact->manufactureTasks()->sync([$makingTask->id => ['position' => 1, 'units_per_artefact' => 1, 'standard_rate' => $target]]);
+
+        return $artefact;
+    };
+    $fsbs01  = $newArtefact('FSBS01-'.$suffix, 100);
+    $fsbs05  = $newArtefact('FSBS05-'.$suffix, 30);
+    $mixTask = StoreManufactureTask::make()->action($this->production, ['code' => 'MVX'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
+    $fsbs05->manufactureTasks()->sync([
+        $mixTask->id    => ['position' => 1, 'units_per_artefact' => 0.5],
+        $makingTask->id => ['position' => 2, 'units_per_artefact' => 1, 'standard_rate' => 30],
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $line01   = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $fsbs01->id, 'quantity' => 180]);
+    $line05   = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $fsbs05->id, 'quantity' => 180]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $step01 = $line01->tasks()->first();
+    $mix05  = $line05->tasks()->where('manufacture_task_id', $mixTask->id)->first();
+    $step05 = $line05->tasks()->where('manufacture_task_id', $makingTask->id)->first();
+
+    $closeAfterAnHour = function ($step, float $made, array $extra = [], int $hours = 1) use ($user) {
+        $session = StartManufactureTaskSession::make()->action($user, $step->refresh());
+        $session->update(['started_at' => now()->subHours($hours)]);
+
+        return CloseManufactureTaskSession::make()->action($session, ['quantity_made' => $made] + $extra)->refresh();
+    };
+
+    $closeAfterAnHour($mix05, 90);
+    $closeAfterAnHour($step05, 120, [], 4);
+    $wrong = $closeAfterAnHour($step01, 42);
+    $closeAfterAnHour($step05, 21, ['outcome' => 'complete']);
+
+    expect((int) $line05->refresh()->quantity)->toBe(141)
+        ->and((float) $step05->refresh()->quantity_made)->toBe(141.0)
+        ->and($step05->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float) $mix05->refresh()->quantity_required)->toBe(70.5)
+        ->and((float) $wrong->standard_rate)->toBe(100.0)
+        ->and($wrong->is_under_target)->toBeTrue();
+
+    $otherJob  = StoreJobOrder::make()->action($this->production, []);
+    $otherStep = StoreJobOrderItem::make()->action($otherJob, ['artefact_id' => $fsbs05->id, 'quantity' => 5])->tasks()->where('manufacture_task_id', $makingTask->id)->first();
+    ConfirmJobOrder::make()->action($otherJob);
+
+    $targets = collect(\App\Actions\Production\ManufactureTaskSession\Json\GetManufactureTaskSessionMoveTargets::make()->handle($wrong));
+    expect($targets->first()['label'])->toBe($jobOrder->reference.' · FSBS05-'.$suffix)
+        ->and(collect($targets->first()['items'])->firstWhere('id', $step05->id))->toMatchArray(['quantity_left' => 0.0, 'line_quantity' => 141, 'can_grow' => true])
+        ->and($targets->flatMap(fn (array $group) => collect($group['items'])->pluck('id')))->toContain($otherStep->id)
+        ->not->toContain($step01->id);
+
+    $correct = fn (array $data) => \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($wrong->refresh(), $data, 'Martina');
+    expect(fn () => $correct(['quantity_made' => 39, 'job_order_item_task_id' => $step05->id]))->toThrow(ValidationException::class, 'Say why the entry moves');
+
+    $otherProduction = StoreProduction::make()->action($this->organisation, ['code' => 'MV'.$suffix, 'name' => 'Other '.$suffix]);
+    $foreignTask     = StoreManufactureTask::make()->action($otherProduction, ['code' => 'FX'.$suffix, 'name' => 'Foreign '.$suffix, 'is_piece_rate' => true]);
+    $foreignArtefact = StoreArtefact::make()->action($otherProduction, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FX'.$suffix, 'name' => 'FX'.$suffix]);
+    $foreignArtefact->manufactureTasks()->sync([$foreignTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    $foreignJob  = StoreJobOrder::make()->action($otherProduction, []);
+    $foreignStep = StoreJobOrderItem::make()->action($foreignJob, ['artefact_id' => $foreignArtefact->id, 'quantity' => 50])->tasks()->first();
+    expect(fn () => $correct(['quantity_made' => 39, 'job_order_item_task_id' => $foreignStep->id, 'reason' => 'x']))->toThrow(ValidationException::class, 'open job line of this production');
+
+    $draftJob = StoreJobOrder::make()->action($this->production, []);
+    $draftStep = StoreJobOrderItem::make()->action($draftJob, ['artefact_id' => $fsbs01->id, 'quantity' => 50])->tasks()->first();
+    expect(fn () => $correct(['quantity_made' => 39, 'job_order_item_task_id' => $draftStep->id, 'reason' => 'x']))->toThrow(ValidationException::class, 'not on the floor');
+
+    $receivedJob  = StoreJobOrder::make()->action($this->production, []);
+    $receivedLine = StoreJobOrderItem::make()->action($receivedJob, ['artefact_id' => $fsbs05->id, 'quantity' => 50]);
+    ConfirmJobOrder::make()->action($receivedJob);
+    $receivedLine->update(['quantity_received' => 10]);
+    expect(fn () => $correct(['quantity_made' => 39, 'job_order_item_task_id' => $receivedLine->tasks()->first()->id, 'reason' => 'x']))->toThrow(ValidationException::class, 'already being received');
+
+    $fastBand = \App\Models\Production\ManufacturePayBand::create(['group_id' => $this->production->group_id, 'organisation_id' => $this->production->organisation_id, 'production_id' => $this->production->id, 'code' => 'T6', 'name' => 'HELP-4526 band', 'hourly_rate' => 99.99, 'target_multiplier' => 1.3, 'effective_from' => $wrong->ended_at, 'effective_to' => $wrong->ended_at->copy()->addSecond()]);
+    $moved    = $correct(['quantity_made' => 39, 'job_order_item_task_id' => $step05->id, 'reason' => 'FSBS-05 work entered on FSBS-01']);
+
+
+    expect($moved->job_order_item_task_id)->toBe($step05->id)
+        ->and((float) $moved->quantity_made)->toBe(39.0)
+        ->and((float) $moved->standard_rate)->toBe(30.0)
+        ->and($moved->is_under_target)->toBeFalse()
+        ->and((float) $moved->hours)->toEqualWithDelta(1.0, 0.001)
+        ->and($wrong->band_code)->not->toBe('T6')
+        ->and($moved->band_code)->toBe('T6')
+        ->and((float) $moved->pay)->toEqualWithDelta(99.99, 0.1)
+        ->and((int) $line05->refresh()->quantity)->toBe(180)
+        ->and((float) $step05->refresh()->quantity_made)->toBe(180.0)
+        ->and((float) $step05->quantity_required)->toBe(180.0)
+        ->and($step05->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((float) $mix05->refresh()->quantity_required)->toBe(70.5)
+        ->and($mix05->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((int) $line01->refresh()->quantity)->toBe(180)
+        ->and((float) $step01->refresh()->quantity_made)->toBe(0.0)
+        ->and($step01->state)->toBe(JobOrderItemTaskStateEnum::TODO)
+        ->and(collect($jobOrder->refresh()->data['corrections'])->last())->toMatchArray([
+            'session_id'         => $moved->id,
+            'from_artefact_code' => 'FSBS01-'.$suffix,
+            'artefact_code'      => 'FSBS05-'.$suffix,
+            'from'               => 42.0,
+            'to'                 => 39.0,
+            'line_from'          => 141,
+            'line_to'            => 180,
+            'reason'             => 'FSBS-05 work entered on FSBS-01',
+            'by'                 => 'Martina',
+        ]);
+
+    $acrossJobs = $correct(['quantity_made' => 5, 'job_order_item_task_id' => $otherStep->id, 'reason' => 'Was the other job']);
+    expect($acrossJobs->job_order_item_task_id)->toBe($otherStep->id)
+        ->and((float) $otherStep->refresh()->quantity_made)->toBe(5.0)
+        ->and((float) $step05->refresh()->quantity_made)->toBe(141.0)
+        ->and((float) $step05->quantity_required)->toBe(141.0)
+        ->and($step05->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((int) $line05->refresh()->quantity)->toBe(141)
+        ->and($jobOrder->refresh()->data['line_growths'] ?? [])->toBe([])
+        ->and(collect($jobOrder->data['corrections'])->last())->toMatchArray(['from_job' => $jobOrder->reference, 'to_job' => $otherJob->reference, 'reason' => 'Was the other job'])
+        ->and(collect($otherJob->refresh()->data['corrections'])->last())->toMatchArray(['from_job' => $jobOrder->reference, 'to_job' => $otherJob->reference, 'to' => 5.0]);
 });
 
 test('the day plan lists the materials its open steps need, the check asks the warehouse in whole boxes, and the warehouse walks them to the factory location', function () {

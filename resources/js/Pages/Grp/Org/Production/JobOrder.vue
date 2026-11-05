@@ -118,7 +118,7 @@ const props = defineProps<{
         employee_id: number | null
         artisan: string | null
         overproductions: { step: string, artefact_code: string, quantity: number, pack_size?: number | null, made_by: string, manager: string, method: 'qr' | 'pin', at: string }[]
-        corrections: { step: string, artefact_code: string, pack_size: number | null, from: number, to: number, by: string | null, at: string }[]
+        corrections: { step: string, artefact_code: string, pack_size: number | null, from: number, to: number, by: string | null, at: string, from_step?: string, from_artefact_code?: string, from_job?: string, to_job?: string, line_from?: number, line_to?: number, reason?: string | null }[]
         non_productive: { activity: string, hours: number, pay: string | null }[]
         hold: Hold | null
         holds: Hold[]
@@ -522,7 +522,9 @@ function receiveIntoStock() {
         <div v-if="job_order.corrections?.length" class="mb-6 rounded border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
             <div class="font-semibold mb-1">{{ ctrans('Corrected entries') }}</div>
             <div v-for="(entry, index) in job_order.corrections" :key="index">
-                {{ ctrans(':code on :step corrected from :from to :to by :by', { code: entry.artefact_code, step: entry.step, from: entry.from, to: entry.pack_size ? ctrans(':packs packs of :size', { packs: entry.to, size: entry.pack_size }) : entry.to, by: entry.by ?? '—' }) }}
+                <template v-if="entry.from_step">{{ ctrans(':quantity moved from :from to :to by :by', { quantity: entry.pack_size ? ctrans(':packs packs of :size', { packs: entry.to, size: entry.pack_size }) : entry.to, from: [entry.from_job, entry.from_artefact_code ?? entry.artefact_code, entry.from_step].filter(Boolean).join(' · '), to: [entry.to_job, entry.artefact_code, entry.step].filter(Boolean).join(' · '), by: entry.by ?? '—' }) }}<template v-if="entry.from !== entry.to"> {{ ctrans('(entered as :quantity)', { quantity: entry.from }) }}</template><template v-if="entry.line_to"> · {{ ctrans('line up from :from to :to', { from: entry.line_from ?? 0, to: entry.line_to }) }}</template></template>
+                <template v-else>{{ ctrans(':code on :step corrected from :from to :to by :by', { code: entry.artefact_code, step: entry.step, from: entry.from, to: entry.pack_size ? ctrans(':packs packs of :size', { packs: entry.to, size: entry.pack_size }) : entry.to, by: entry.by ?? '—' }) }}</template>
+                <span v-if="entry.reason" class="text-gray-600">· {{ entry.reason }}</span>
                 <span class="text-gray-500">· {{ useFormatTime(entry.at, { formatTime: 'hm' }) }}</span>
             </div>
         </div>

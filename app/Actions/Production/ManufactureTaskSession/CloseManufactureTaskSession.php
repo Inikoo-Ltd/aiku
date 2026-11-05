@@ -385,12 +385,22 @@ class CloseManufactureTaskSession extends OrgAction
      */
     private function growJobOrderItem(JobOrderItemTask $task, float $taskUnitsMade): array
     {
+        $grownBy = $this->growLine($task, $taskUnitsMade, (int) $task->artefactsIn($taskUnitsMade));
+
+        return $grownBy > 0 ? $this->takeOffRestOfOrder($task->jobOrderItem, $grownBy) : [];
+    }
+
+    /**
+     * The step asks for what was made on it and the line grows to $artefacts; later steps grow with it,
+     * earlier steps are not reopened. Returns how many artefacts the line grew by.
+     */
+    public function growLine(JobOrderItemTask $task, float $taskUnitsMade, int $artefacts): int
+    {
         $task->setRequiredQuantity(max((float) $task->quantity_required, $taskUnitsMade));
 
-        $item      = $task->jobOrderItem;
-        $artefacts = (int) $task->artefactsIn($taskUnitsMade);
+        $item = $task->jobOrderItem;
         if ($artefacts <= $item->quantity) {
-            return [];
+            return 0;
         }
 
         $grownBy = $artefacts - $item->quantity;
@@ -401,7 +411,7 @@ class CloseManufactureTaskSession extends OrgAction
             $step->setRequiredQuantity(max($step->requiredFor($artefacts), (float) $step->quantity_required));
         }
 
-        return $this->takeOffRestOfOrder($item, $grownBy);
+        return $grownBy;
     }
 
     /**

@@ -131,6 +131,7 @@ use App\Actions\Production\ArtefactDepartment\UI\IndexArtefactDepartments;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
 use App\Actions\Production\ManufactureTask\Json\GetManufactureTasks;
+use App\Actions\Production\ManufactureTaskSession\Json\GetManufactureTaskSessionMoveTargets;
 use App\Actions\Production\RawMaterial\Json\GetRawMaterials;
 use App\Actions\Helpers\TimeZone\Json\IndexTimeZones;
 use App\Actions\Inventory\OrgStock\Json\FetchOrgStockLabelOptions;
@@ -308,6 +309,7 @@ Route::get('production/{production:id}/artefact-families', [IndexArtefactFamilie
 Route::get('production/{production:id}/artefacts', [IndexArtefacts::class, 'inJson'])->name('production.artefacts.index');
 Route::get('production/{production:id}/manufacture-tasks', GetManufactureTasks::class)->name('production.manufacture_tasks.index');
 Route::get('production/{production:id}/raw-materials', GetRawMaterials::class)->name('production.raw_materials.index');
+Route::get('manufacture-task-session/{manufactureTaskSession:id}/move-targets', GetManufactureTaskSessionMoveTargets::class)->name('manufacture_task_session.move_targets');
 Route::get('brands', GetBrands::class)->name('brands.index');
 
 Route::get('workshop/department/{department}/sub-departments', GetSubDepartmentsInWorkshop::class)->name('workshop.sub_departments.index');
