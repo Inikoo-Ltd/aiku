@@ -11,6 +11,7 @@ namespace App\Actions\Masters\Competitor;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Models\Masters\Competitor;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -56,5 +57,10 @@ class UpdateCompetitor extends OrgAction
         $this->initialisationFromGroup($competitor->group, $modelData);
 
         return $this->handle($competitor, $this->validatedData);
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return back();
     }
 }

@@ -4668,7 +4668,10 @@ describe('competitor prices, HELP-3605', function () {
             ->and(DB::table('competitors')->where('id', $competitor->id)->value('password'))->not->toContain('trade-secret');
 
         $competitor->update(['cookies' => [['name' => 'session', 'value' => 'x']]]);
-        \Pest\Laravel\patch(route('grp.models.competitor.update', $competitor->id), ['username' => 'buyer@example.com', 'password' => ''])->assertSessionHasNoErrors();
+        \Pest\Laravel\patch(route('grp.models.competitor.update', $competitor->id), ['username' => 'buyer@example.com', 'password' => ''])->assertSessionHasNoErrors()->assertRedirect();
+        \Pest\Laravel\patch(route('grp.models.competitor.update', $competitor->id), ['search_url' => '?'])
+            ->assertRedirect()
+            ->assertSessionHasErrors(['search_url' => __('Search their website for any word, copy the link of the results page and put {query} where the word was, e.g. https://www.example.com/search?q={query}')]);
         $competitor->refresh();
         expect($competitor->password)->toBe('trade-secret')
             ->and($competitor->cookies)->toBeNull();

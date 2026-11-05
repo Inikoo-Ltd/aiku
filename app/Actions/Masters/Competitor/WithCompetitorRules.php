@@ -29,4 +29,12 @@ trait WithCompetitorRules
             'password'    => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'search_url.starts_with' => __('Search their website for any word, copy the link of the results page and put {query} where the word was, e.g. https://www.example.com/search?q={query}'),
+            'search_url.regex'       => __('Search their website for any word, copy the link of the results page and put {query} where the word was, e.g. https://www.example.com/search?q={query}'),
+        ];
+    }
 }
