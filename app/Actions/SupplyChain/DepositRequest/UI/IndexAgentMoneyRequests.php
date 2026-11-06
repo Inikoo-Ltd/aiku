@@ -66,7 +66,7 @@ class IndexAgentMoneyRequests extends OrgAction
             ->select(['deposit_requests.*', 'organisations.code as client_code', 'organisations.slug as client_slug', 'currencies.code as currency_code'])
             ->selectSub(DB::table('deposit_request_items')->whereColumn('deposit_request_id', 'deposit_requests.id')->selectRaw('coalesce(sum(amount), 0)'), 'total')
             ->selectSub(DB::table('agent_payments')->whereColumn('deposit_request_id', 'deposit_requests.id')->whereNull('deleted_at')->selectRaw('coalesce(sum(amount), 0)'), 'paid')
-            ->with(['requester:id,username,contact_name,nickname', 'approver:id,username,contact_name,nickname', 'items.purchaseOrder' => fn ($query) => $query
+            ->with(['requester:id,username,contact_name,nickname', 'approver:id,username,contact_name,nickname', 'rejecter:id,username,contact_name,nickname', 'items.purchaseOrder' => fn ($query) => $query
                 ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
                 ->select(['purchase_orders.id', 'purchase_orders.slug', 'purchase_orders.reference', 'purchase_orders.agent_order_reference', 'suppliers.code as supplier_code', 'suppliers.name as supplier_name'])])
             ->defaultSort('-requested_at')
@@ -111,6 +111,8 @@ class IndexAgentMoneyRequests extends OrgAction
             'requested_by'  => $depositRequest->requester?->chatName(),
             'approved_at'   => $depositRequest->approved_at,
             'approved_by'   => $depositRequest->approver?->chatName(),
+            'rejected_by'      => $depositRequest->rejecter?->chatName(),
+            'rejection_reason' => $depositRequest->rejection_reason,
             'lines'         => $depositRequest->items->map(fn (DepositRequestItem $item) => [
                 'kind'          => $item->kind->value,
                 'kind_label'    => DepositRequestItemKindEnum::labels()[$item->kind->value],
@@ -129,6 +131,9 @@ class IndexAgentMoneyRequests extends OrgAction
                 : null,
             'unapprove_route' => $canPay && $depositRequest->isApproved() && $paid == 0
                 ? ['name' => 'grp.models.deposit_request.unapprove', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
+                : null,
+            'reject_route'  => $canPay && $paid == 0
+                ? ['name' => 'grp.models.deposit_request.reject', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
                 : null,
             'pay_route'     => $canPay && $depositRequest->isApproved()
                 ? ['name' => 'grp.models.deposit_request.pay', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'post']

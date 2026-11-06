@@ -17,6 +17,7 @@ enum DepositRequestStateEnum: string
     case REQUESTED = 'requested';
     case SETTLED = 'settled';
     case CANCELLED = 'cancelled';
+    case REJECTED = 'rejected';
 
     public static function labels(): array
     {
@@ -24,6 +25,7 @@ enum DepositRequestStateEnum: string
             'requested' => __('Requested'),
             'settled'   => __('Settled'),
             'cancelled' => __('Cancelled'),
+            'rejected'  => __('Rejected'),
         ];
     }
 }

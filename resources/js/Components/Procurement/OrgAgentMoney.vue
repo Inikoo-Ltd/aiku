@@ -12,15 +12,16 @@ import Dialog from "primevue/dialog"
 import FileUpload from "primevue/fileupload"
 import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
+import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faPaperclip, faTimes } from "@fal"
+import { faBan, faCheck, faPaperclip, faTimes } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TableAgentMoneyRequests, { MoneyRequestRow } from "@/Components/Tables/Grp/Org/Procurement/TableAgentMoneyRequests.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-library.add(faCheck, faPaperclip, faTimes)
+library.add(faBan, faCheck, faPaperclip, faTimes)
 
 const props = defineProps<{
 	data: {
@@ -61,6 +62,30 @@ const changeApproval = (row: MoneyRequestRow, approvalRoute: MoneyRequestRow["ap
 	})
 }
 const form = ref({ date: new Date() as Date | null, amount: null as number | null, original_amount: null as number | null, reference: "", receipt: null as File | null })
+
+const rejecting = ref<MoneyRequestRow | null>(null)
+const isRejectOpen = computed({ get: () => rejecting.value !== null, set: (open: boolean) => !open && (rejecting.value = null) })
+const rejectReason = ref("")
+const rejectError = ref<string | null>(null)
+
+const openReject = (row: MoneyRequestRow) => {
+	rejectReason.value = ""
+	rejectError.value = null
+	rejecting.value = row
+}
+
+const reject = () => {
+	const row = rejecting.value
+	if (!row?.reject_route || !rejectReason.value.trim()) return
+	rejectError.value = null
+	router.patch(route(row.reject_route.name, row.reject_route.parameters), { reason: rejectReason.value.trim() }, {
+		preserveScroll: true,
+		onStart: () => (saving.value = true),
+		onFinish: () => (saving.value = false),
+		onSuccess: () => (rejecting.value = null),
+		onError: (errors) => (rejectError.value = firstError(errors)),
+	})
+}
 
 const openPay = (row: MoneyRequestRow) => {
 	form.value = { date: new Date(), amount: row.outstanding, original_amount: null, reference: "", receipt: null }
@@ -115,7 +140,32 @@ const pay = () => {
 
 	<p v-if="approveError" class="mx-4 mt-4 text-xs text-red-600">{{ approveError }}</p>
 
-	<TableAgentMoneyRequests :data="data.requests" :tab="tab" :approvingId="approvingId" @approve="approve" @unapprove="unapprove" @pay="openPay" />
+	<TableAgentMoneyRequests :data="data.requests" :tab="tab" :approvingId="approvingId" @approve="approve" @unapprove="unapprove" @reject="openReject" @pay="openPay" />
+
+	<Dialog v-model:visible="isRejectOpen" modal :header="ctrans('Reject :reference', { reference: rejecting?.reference ?? '' })" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
+		<div v-if="rejecting" class="space-y-3">
+			<p class="text-sm text-gray-600">
+				{{ ctrans("Nothing will be paid against this request. The agent gets an email with your reason and can ask again with a new request.") }}
+			</p>
+			<label class="block text-sm">
+				<span class="text-gray-600">{{ ctrans("Reason") }}</span>
+				<Textarea v-model="rejectReason" rows="3" autoResize maxlength="2000" class="mt-1 w-full" :class="fieldFocusClass" />
+			</label>
+		</div>
+		<p v-if="rejectError" class="mt-3 text-xs text-red-600">{{ rejectError }}</p>
+		<div class="mt-5 flex w-full gap-2">
+			<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="rejecting = null">
+				<template #icon>
+					<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+				</template>
+			</Button>
+			<Button type="tertiary" full :label="ctrans('Reject request')" :disabled="!rejectReason.trim()" :loading="saving" @click="reject">
+				<template #icon>
+					<FontAwesomeIcon icon="fal fa-ban" class="text-amber-500" fixed-width aria-hidden="true" />
+				</template>
+			</Button>
+		</div>
+	</Dialog>
 
 	<Dialog v-model:visible="isOpen" modal :header="ctrans('Pay :reference', { reference: paying?.reference ?? '' })" :style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<div v-if="paying" class="space-y-3">

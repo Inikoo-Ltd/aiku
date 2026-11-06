@@ -718,6 +718,7 @@ use App\Actions\Procurement\OrgAgent\UpdateOrgAgentFeePercentage;
 use App\Actions\SupplyChain\DepositRequest\CancelAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\UnapproveAgentMoneyRequest;
+use App\Actions\SupplyChain\DepositRequest\RejectAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequest;
 use App\Actions\SupplyChain\Supplier\UpdateSupplierAdvancePercentage;
 use App\Actions\GoodsIn\StockDelivery\AcknowledgeStockDeliveriesCostingReminder;
@@ -1942,6 +1943,7 @@ Route::patch('org-agent/{orgAgent:id}/agent-fee', UpdateOrgAgentFeePercentage::c
 Route::patch('deposit-request/{depositRequest:id}/cancel', CancelAgentMoneyRequest::class)->name('deposit_request.cancel');
 Route::patch('deposit-request/{depositRequest:id}/approve', ApproveAgentMoneyRequest::class)->name('deposit_request.approve');
 Route::patch('deposit-request/{depositRequest:id}/unapprove', UnapproveAgentMoneyRequest::class)->name('deposit_request.unapprove');
+Route::patch('deposit-request/{depositRequest:id}/reject', RejectAgentMoneyRequest::class)->name('deposit_request.reject');
 Route::post('deposit-request/{depositRequest:id}/pay', PayAgentMoneyRequest::class)->name('deposit_request.pay');
 Route::patch('supplier/{supplier:id}/advance-percentage', UpdateSupplierAdvancePercentage::class)->name('supplier.advance_percentage.update');
 Route::patch('procurement-note/{procurementNote:id}', [UpdateProcurementNote::class, 'update'])->name('procurement_note.update');

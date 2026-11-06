@@ -34,6 +34,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $approved_by
  * @property-read User|null $requester
  * @property-read User|null $approver
+ * @property \Illuminate\Support\Carbon|null $rejected_at
+ * @property int|null $rejected_by
+ * @property string|null $rejection_reason
+ * @property-read User|null $rejecter
  * @property-read Agent $agent
  * @property-read Currency $currency
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DepositRequestItem> $items
@@ -50,6 +54,7 @@ class DepositRequest extends Model
         'settled_at'   => 'datetime',
         'cancelled_at' => 'datetime',
         'approved_at'  => 'datetime',
+        'rejected_at'  => 'datetime',
     ];
 
     public function agent(): BelongsTo
@@ -75,6 +80,11 @@ class DepositRequest extends Model
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function rejecter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
     }
 
     public function isApproved(): bool

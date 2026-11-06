@@ -8,7 +8,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link } from "@inertiajs/vue3"
-import { faCheck, faHandHoldingUsd, faTimes } from "@fal"
+import { faBan, faCheck, faHandHoldingUsd, faTimes } from "@fal"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -16,7 +16,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 
-library.add(faCheck, faHandHoldingUsd, faTimes)
+library.add(faBan, faCheck, faHandHoldingUsd, faTimes)
 
 export interface MoneyRequestRow {
 	id: number
@@ -33,6 +33,8 @@ export interface MoneyRequestRow {
 	requested_by: string | null
 	approved_at: string | null
 	approved_by: string | null
+	rejected_by: string | null
+	rejection_reason: string | null
 	lines: {
 		kind: string
 		kind_label: string
@@ -46,6 +48,7 @@ export interface MoneyRequestRow {
 	cancel_route: routeType | null
 	approve_route: routeType | null
 	unapprove_route: routeType | null
+	reject_route: routeType | null
 	pay_route: routeType | null
 }
 
@@ -58,6 +61,7 @@ defineProps<{
 const emit = defineEmits<{
 	(e: "approve", row: MoneyRequestRow): void
 	(e: "unapprove", row: MoneyRequestRow): void
+	(e: "reject", row: MoneyRequestRow): void
 	(e: "pay", row: MoneyRequestRow): void
 	(e: "cancel", row: MoneyRequestRow): void
 }>()
@@ -69,6 +73,7 @@ const stateClass: Record<string, string> = {
 	requested: "bg-amber-50 text-amber-700",
 	settled: "bg-green-50 text-green-700",
 	cancelled: "bg-gray-100 text-gray-500",
+	rejected: "bg-red-50 text-red-700",
 }
 </script>
 
@@ -108,6 +113,9 @@ const stateClass: Record<string, string> = {
 			<div v-if="item.state === 'requested'" class="mt-1 whitespace-nowrap text-xs" :class="item.approved_at ? 'text-green-700' : 'text-gray-400'">
 				{{ item.approved_at ? ctrans("Approved by :user", { user: item.approved_by ?? "-" }) : ctrans("Waiting for approval") }}
 			</div>
+			<div v-if="item.state === 'rejected'" class="mt-1 max-w-xs text-xs text-red-700">
+				{{ ctrans("Rejected by :user: :reason", { user: item.rejected_by ?? "-", reason: item.rejection_reason ?? "" }) }}
+			</div>
 			<div v-if="item.requested_by" class="whitespace-nowrap text-xs text-gray-400">{{ ctrans("Asked by :user", { user: item.requested_by }) }}</div>
 		</template>
 
@@ -135,6 +143,11 @@ const stateClass: Record<string, string> = {
 				<Button v-if="item.unapprove_route" type="tertiary" size="xs" :label="ctrans('Cancel approval')" :loading="approvingId === item.id" @click="emit('unapprove', item)">
 					<template #icon>
 						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<Button v-if="item.reject_route" type="tertiary" size="xs" :label="ctrans('Reject')" @click="emit('reject', item)">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-ban" class="text-amber-500" fixed-width aria-hidden="true" />
 					</template>
 				</Button>
 				<Button v-if="item.pay_route" type="tertiary" size="xs" :label="ctrans('Pay')" @click="emit('pay', item)">

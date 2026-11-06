@@ -44,7 +44,7 @@ class GetAgentMoneyRequestLines
 
         $requested = DB::table('deposit_request_items')
             ->join('deposit_requests', 'deposit_requests.id', 'deposit_request_items.deposit_request_id')
-            ->where('deposit_requests.state', '!=', DepositRequestStateEnum::CANCELLED->value)
+            ->whereNotIn('deposit_requests.state', [DepositRequestStateEnum::CANCELLED->value, DepositRequestStateEnum::REJECTED->value])
             ->whereNotNull('deposit_request_items.purchase_order_id')
             ->groupBy('deposit_request_items.purchase_order_id')
             ->selectRaw('deposit_request_items.purchase_order_id, sum(deposit_request_items.amount) as amount');
