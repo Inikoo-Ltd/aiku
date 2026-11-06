@@ -20,9 +20,9 @@ use Lorisleiva\Actions\ActionRequest;
 class DeleteEmptyPurchaseOrders extends OrgAction
 {
     /**
-     * An order not yet received can go when it is worth nothing (no lines, or every line cancelled or priced at zero,
-     * and no extra costs), nothing was paid or asked as a deposit on it, and no goods, delivery or agent payment hangs
-     * off it. Written against the alias po.
+     * An order not yet received can go when its items are worth nothing (no lines, or every line cancelled or priced at
+     * zero), nothing was paid or asked as a deposit on it, and no goods, delivery or agent payment hangs off it. Extra
+     * costs (shipping, duties, tax, other) do not stop it: they go with the order. Written against the alias po.
      */
     public static function deletableCondition(): string
     {
@@ -54,19 +54,18 @@ class DeleteEmptyPurchaseOrders extends OrgAction
     private static function blockers(): array
     {
         return [
-            'state'       => "po.state not in ('in_process', 'submitted', 'confirmed')",
-            'items'       => "exists (
+            'state'    => "po.state not in ('in_process', 'submitted', 'confirmed')",
+            'items'    => "exists (
                 select 1 from purchase_order_transactions
                 where purchase_order_transactions.purchase_order_id = po.id
                     and purchase_order_transactions.deleted_at is null
                     and purchase_order_transactions.state <> 'cancelled'
                     and purchase_order_transactions.net_amount <> 0
             )",
-            'extra_costs' => 'coalesce(po.cost_extra, 0) + coalesce(po.cost_shipping, 0) + coalesce(po.cost_duties, 0) + coalesce(po.cost_tax, 0) <> 0',
-            'deposit'     => 'not ('.self::withoutDepositCondition().')',
-            'goods'       => 'exists (select 1 from agent_goods_receipt_items where agent_goods_receipt_items.purchase_order_id = po.id)
+            'deposit'  => 'not ('.self::withoutDepositCondition().')',
+            'goods'    => 'exists (select 1 from agent_goods_receipt_items where agent_goods_receipt_items.purchase_order_id = po.id)
                 or exists (select 1 from agent_warehouse_stocks where agent_warehouse_stocks.purchase_order_id = po.id)',
-            'delivery'    => "exists (
+            'delivery' => "exists (
                 select 1 from purchase_order_stock_delivery
                 join stock_deliveries on stock_deliveries.id = purchase_order_stock_delivery.stock_delivery_id
                 where purchase_order_stock_delivery.purchase_order_id = po.id

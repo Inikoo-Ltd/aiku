@@ -482,9 +482,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'is_in_process'     => $row->state === 'in_process',
             'is_deletable'      => !$deleteBlockers,
             'delete_blockers'   => $deleteBlockers,
-            'extra_costs'       => in_array('extra_costs', $deleteBlockers)
-                ? round((float) $row->cost_extra + (float) $row->cost_shipping + (float) $row->cost_duties + (float) $row->cost_tax, 2)
-                : null,
+            'extra_costs'       => round((float) $row->cost_extra + (float) $row->cost_shipping + (float) $row->cost_duties + (float) $row->cost_tax, 2) ?: null,
             'state'             => $row->state,
             'lines'             => !$deleteBlockers ? (int) $row->draft_lines : null,
             'cancelled_lines'   => !$deleteBlockers ? (int) $row->draft_cancelled_lines : null,

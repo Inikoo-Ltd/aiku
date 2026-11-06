@@ -3,7 +3,6 @@ import { computed, ref, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
-import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -27,7 +26,7 @@ export interface JourneySegment {
     checks?: { key: string; label: string; done: boolean; date: string | null }[]
 }
 
-export type DeleteBlocker = "state" | "items" | "extra_costs" | "deposit" | "goods" | "delivery"
+export type DeleteBlocker = "state" | "items" | "deposit" | "goods" | "delivery"
 
 export interface JourneyRibbon {
     key: string
@@ -85,8 +84,6 @@ const emit = defineEmits<{
     delete: [ribbon: JourneyRibbon]
 }>()
 
-const locale = useLocaleStore()
-
 const deleteBlockedTooltip = computed(() => {
     if (props.ribbon.is_deletable) {
         return null
@@ -94,7 +91,6 @@ const deleteBlockedTooltip = computed(() => {
     const reasons: Record<DeleteBlocker, string> = {
         state: ctrans("Already received"),
         items: ctrans("Some items still have a value"),
-        extra_costs: ctrans("Has extra costs of :amount", { amount: String(locale.currencyFormat(props.ribbon.currency_code, props.ribbon.extra_costs ?? 0)) }),
         deposit: ctrans("Has a deposit, deposit request or agent payment"),
         goods: ctrans("Goods already received by the agent"),
         delivery: ctrans("Has a stock delivery")
