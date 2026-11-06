@@ -19,9 +19,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTrashAlt, faComments, faChevronRight, faLayerGroup } from "@fal"
+import { faTrashAlt, faComments, faChevronRight, faLayerGroup, faHandHoldingUsd } from "@fal"
 
-library.add(faTrashAlt, faComments, faChevronRight, faLayerGroup)
+library.add(faTrashAlt, faComments, faChevronRight, faLayerGroup, faHandHoldingUsd)
 
 const props = defineProps<{
 	data: { data?: PurchaseOrder[] }
@@ -92,6 +92,7 @@ function agentOrderGroupRow(agentOrderReference: string, purchaseOrders: Purchas
 		agent_order_purchase_orders: purchaseOrders.length,
 		agent_order_states: agentOrderStates(purchaseOrders),
 		number_pending_line_answers: sumOf(purchaseOrders, "number_pending_line_answers") ?? 0,
+		number_without_deposit: purchaseOrders.filter((purchaseOrder) => purchaseOrder.is_without_deposit).length,
 		number_current_purchase_order_transactions: sumOf(purchaseOrders, "number_current_purchase_order_transactions"),
 		quantity_ordered: sumOf(purchaseOrders, "quantity_ordered"),
 		org_currency_code: sameCurrency ? purchaseOrders[0].org_currency_code : null,
@@ -313,6 +314,13 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 					{{ ctrans(":count POs", { count: purchaseOrder.agent_order_purchase_orders }) }}
 				</span>
 				<span
+					v-if="purchaseOrder.number_without_deposit"
+					v-tooltip="ctransChoice(':count purchase order has no deposit paid yet|:count purchase orders have no deposit paid yet', purchaseOrder.number_without_deposit)"
+					class="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 text-xs font-medium tabular-nums text-amber-700">
+					<FontAwesomeIcon :icon="faHandHoldingUsd" fixed-width aria-hidden="true" />
+					{{ ctrans(":count no deposit", { count: purchaseOrder.number_without_deposit }) }}
+				</span>
+				<span
 					v-if="purchaseOrder.number_pending_line_answers"
 					v-tooltip="ctransChoice(':count line with a new price or quantity waiting for an answer|:count lines with a new price or quantity waiting for an answer', purchaseOrder.number_pending_line_answers)"
 					class="relative inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 text-xs font-medium tabular-nums text-amber-700">
@@ -335,6 +343,13 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 					<PingIcon v-if="!isInAgentOrganisation" class="!absolute -right-1 -top-1 text-[7px] text-amber-500" aria-hidden="true" />
 					<FontAwesomeIcon :icon="faComments" fixed-width aria-hidden="true" />
 					{{ purchaseOrder.number_pending_line_answers }}
+				</span>
+				<span
+					v-if="purchaseOrder.is_without_deposit"
+					v-tooltip="ctrans('No deposit paid yet')"
+					class="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 text-xs font-medium text-amber-700">
+					<FontAwesomeIcon :icon="faHandHoldingUsd" fixed-width aria-hidden="true" />
+					{{ ctrans("No deposit") }}
 				</span>
 			</div>
 		</template>

@@ -8,7 +8,9 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
@@ -64,7 +66,18 @@ class PurchaseOrdersResource extends JsonResource
             'organisation_slug' => $this->organisation_slug,
             'number_pending_line_answers' => (int) $this->number_pending_line_answers,
             'shipments'         => $this->shipmentLinks($request),
+            'is_without_deposit' => $this->isWithoutDeposit(),
         ];
+    }
+
+    /**
+     * A sent order that owes a deposit and has no payment recorded yet.
+     */
+    private function isWithoutDeposit(): bool
+    {
+        return in_array($this->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+            && $this->deposit_paid_at === null
+            && !GetPurchaseOrderStages::make()->depositNotRequired($this->resource);
     }
 
     /**

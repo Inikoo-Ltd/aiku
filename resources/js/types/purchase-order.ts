@@ -36,6 +36,7 @@ export interface PurchaseOrder {
     organisation_code?: string | null
     organisation_slug?: string | null
     number_pending_line_answers?: number
+    is_without_deposit?: boolean
     shipments?: {
         reference: string
         state_icon: { tooltip?: string, icon: string, class?: string } | null
