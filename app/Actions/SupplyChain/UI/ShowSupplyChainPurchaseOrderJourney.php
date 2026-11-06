@@ -208,6 +208,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 {$this->deliveryColumns()}, containers.container_lines, containers.lines_on_containers, containers.last_on_container_at,
                 coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at,
                 draft_lines.lines as draft_lines, draft_lines.cancelled_lines as draft_cancelled_lines,
+                draft_lines.pending_price_changes,
                 po.cost_extra, po.cost_shipping, po.cost_duties, po.cost_tax
             from purchase_orders po
             {$this->sharedJoins()}
@@ -288,13 +289,19 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
     }
 
     /**
-     * Lines of an order not received yet, counted for the preview shown before an empty order is deleted.
+     * Lines of an order not received yet, counted for the preview shown before an empty order is deleted, and the
+     * lines whose new supplier price the agent asked about and the organisation has not answered yet
+     * (PurchaseOrder::numberPendingPriceChanges).
      */
     private function draftLinesLateral(): string
     {
         return "left join lateral (
                 select count(*) as lines,
-                    count(*) filter (where purchase_order_transactions.state = 'cancelled') as cancelled_lines
+                    count(*) filter (where purchase_order_transactions.state = 'cancelled') as cancelled_lines,
+                    count(*) filter (
+                        where purchase_order_transactions.state in ('submitted', 'confirmed')
+                            and purchase_order_transactions.price_query_state = 'pending'
+                    ) as pending_price_changes
                 from purchase_order_transactions
                 where po.state in ('in_process', 'submitted', 'confirmed')
                     and purchase_order_transactions.purchase_order_id = po.id
@@ -508,6 +515,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'state'             => $row->state,
             'lines'             => (int) $row->draft_lines,
             'cancelled_lines'   => (int) $row->draft_cancelled_lines,
+            'pending_price_changes' => (int) $row->pending_price_changes,
             'is_import'         => $row->state !== 'in_process' && $journey !== 'partner' && $this->crossesCustoms($row->organisation_country_code, $row->country_code),
             'buyer_id'          => $row->buyer_id,
             'buyer_name'        => $row->buyer_id ? strtok((string) ($row->buyer_name ?: $row->buyer_username), ' ') : null,

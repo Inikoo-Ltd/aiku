@@ -77,9 +77,9 @@ const cancelRequest = (row: MoneyRequestRow) =>
 							<FontAwesomeIcon icon="fal fa-arrow-left" class="text-gray-500" fixed-width aria-hidden="true" />
 						</template>
 					</Button>
-					<Button type="tertiary" :label="message.acceptLabel" @click="acceptCallback">
+					<Button type="negative" :label="message.acceptLabel" @click="acceptCallback">
 						<template #icon>
-							<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+							<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
 						</template>
 					</Button>
 				</div>

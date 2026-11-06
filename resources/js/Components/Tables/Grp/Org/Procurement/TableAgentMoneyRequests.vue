@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { Link } from "@inertiajs/vue3"
 import { faHandHoldingUsd, faTimes } from "@fal"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -29,7 +30,16 @@ export interface MoneyRequestRow {
 	paid: number
 	outstanding: number
 	notes: string | null
-	lines: { kind: string; kind_label: string; reference: string | null; amount: number }[]
+	lines: {
+		kind: string
+		kind_label: string
+		reference: string | null
+		route: routeType | null
+		description: string
+		supplier_code: string | null
+		supplier_name: string | null
+		amount: number
+	}[]
 	cancel_route: routeType | null
 	pay_route: routeType | null
 }
@@ -69,13 +79,19 @@ const stateClass: Record<string, string> = {
 		</template>
 
 		<template #cell(lines)="{ item }">
-			<div class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm">
-				<span v-for="(line, index) in item.lines" :key="index" class="whitespace-nowrap">
-					<span class="text-gray-500">{{ line.kind_label }}</span>
-					<span v-if="line.reference" class="ml-1 text-gray-700">{{ line.reference }}</span>
-					<span class="ml-1 text-gray-400">{{ money(item.currency_code, line.amount) }}</span>
-				</span>
-			</div>
+			<ul class="space-y-0.5 text-sm">
+				<li v-for="(line, index) in item.lines" :key="index" class="flex items-baseline justify-between gap-4">
+					<span class="min-w-0">
+						<span class="whitespace-nowrap text-gray-700">
+							{{ line.description }}
+							<Link v-if="line.route" :href="route(line.route.name, line.route.parameters)" class="primaryLink">{{ line.reference }}</Link>
+							<template v-else-if="line.reference">{{ line.reference }}</template>
+						</span>
+						<span v-if="line.supplier_code" class="ml-1.5 text-xs text-gray-400" :title="line.supplier_name ?? undefined">{{ line.supplier_name ?? line.supplier_code }}</span>
+					</span>
+					<span class="whitespace-nowrap tabular-nums text-gray-500">{{ money(item.currency_code, line.amount) }}</span>
+				</li>
+			</ul>
 			<div v-if="item.notes" class="text-xs text-gray-400">{{ item.notes }}</div>
 		</template>
 
@@ -104,9 +120,9 @@ const stateClass: Record<string, string> = {
 						<FontAwesomeIcon icon="fal fa-hand-holding-usd" class="text-green-600" fixed-width aria-hidden="true" />
 					</template>
 				</Button>
-				<Button v-if="item.cancel_route" type="tertiary" size="xs" :label="ctrans('Cancel')" @click="emit('cancel', item)">
+				<Button v-if="item.cancel_route" type="negative" size="xs" :label="ctrans('Cancel')" @click="emit('cancel', item)">
 					<template #icon>
-						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+						<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
 					</template>
 				</Button>
 			</div>
