@@ -99,16 +99,18 @@ class ShowCompetitorsDashboard extends OrgAction
             CompetitorStatusEnum::ERROR->value        => __('Could not open the website'),
             CompetitorStatusEnum::BLOCKED->value      => __('The website blocked us'),
             CompetitorStatusEnum::LOGIN_FAILED->value => __('Could not log in'),
+            CompetitorStatusEnum::SEARCH_BROKEN->value => __('The search link does not search'),
         ];
+        $failing = [CompetitorStatusEnum::ERROR, CompetitorStatusEnum::BLOCKED, CompetitorStatusEnum::LOGIN_FAILED, CompetitorStatusEnum::SEARCH_BROKEN];
 
         return [
             'number_competitors' => $competitors->count(),
             'status'             => [
                 'ok'       => $competitors->where('status', CompetitorStatusEnum::OK)->count(),
-                'failing'  => $competitors->whereIn('status', [CompetitorStatusEnum::ERROR, CompetitorStatusEnum::BLOCKED, CompetitorStatusEnum::LOGIN_FAILED])->count(),
+                'failing'  => $competitors->whereIn('status', $failing)->count(),
                 'not_read' => $competitors->whereNull('status')->count(),
                 'last_read' => $competitors->max('fetched_at'),
-                'failures' => $competitors->whereIn('status', [CompetitorStatusEnum::ERROR, CompetitorStatusEnum::BLOCKED, CompetitorStatusEnum::LOGIN_FAILED])
+                'failures' => $competitors->whereIn('status', $failing)
                     ->map(fn (Competitor $competitor) => [
                         'id'         => $competitor->id,
                         'name'       => $competitor->name,
