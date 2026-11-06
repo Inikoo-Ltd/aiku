@@ -379,7 +379,7 @@ class IndexPurchaseOrders extends OrgAction
         return 'select sum('.SetStockDeliveryItemCbmInContainer::ITEM_VOLUME_SQL.") from stock_delivery_items as sdi
             left join supplier_products as sp on sp.id = sdi.supplier_product_id
             where sdi.stock_delivery_id = stock_deliveries.id and sdi.deleted_at is null
-            and sdi.state not in ('".StockDeliveryItemStateEnum::CANCELLED->value."', '".StockDeliveryItemStateEnum::NOT_RECEIVED->value."')
+            and sdi.state != '".StockDeliveryItemStateEnum::CANCELLED->value."'
             and exists (select 1 from purchase_order_transactions as pot where pot.purchase_order_id = purchase_orders.id
                 and ((sdi.data->>'purchase_order_transaction_id')::bigint = pot.id
                     or (sdi.data->>'purchase_order_transaction_id' is null and sdi.org_stock_id = pot.org_stock_id)))";

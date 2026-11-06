@@ -3982,3 +3982,20 @@ test('a container sheet PO matches a purchase order by its whole reference or it
         ->and($isSame('Indo', 'AWIndo-059-UK'))->toBeFalse()
         ->and($isSame('PO-060', 'AWIndo-059-UK'))->toBeFalse();
 });
+
+test('the shipment CBM of a purchase order counts its items as the container page does, an item not received included', function () {
+    $orgAgent                       = createFreshOrgAgent($this);
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $purchaseOrder                  = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5);
+    $stockDelivery                  = createStockDeliveryWithItems($this, 'CBM-'.Str::random(6), [5]);
+    placeDeliveryUnderAgentOrder($stockDelivery, $purchaseOrder);
+    $stockDelivery->items()->update(['state' => \App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum::NOT_RECEIVED->value, 'cbm_in_container' => 2]);
+
+    $shipmentsQuery = (new ReflectionMethod(\App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders::class, 'shipmentsQuery'))
+        ->invoke(\App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders::make());
+    $shipments = json_decode(DB::table('purchase_orders')->where('id', $purchaseOrder->id)->selectSub($shipmentsQuery, 'shipments')->value('shipments'), true);
+    $containerPage = \App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery::make()->getStockDeliveryWeightAndVolume($stockDelivery->refresh());
+
+    expect((float) collect($shipments)->firstWhere('reference', $stockDelivery->reference)['cbm'])->toEqual(2.0)
+        ->and((float) $containerPage['volume'])->toEqual(2.0);
+});
