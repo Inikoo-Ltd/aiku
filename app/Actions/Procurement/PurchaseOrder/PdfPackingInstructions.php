@@ -194,7 +194,7 @@ class PdfPackingInstructions extends OrgAction
             '%s × %s %s',
             rtrim(rtrim(number_format((float)$line->quantity, 3, '.', ''), '0'), '.'),
             $line->description ?: $line->packagingComponent->dropdownLabel(),
-            mb_strtolower(PackingSpecLevelEnum::labels()[$line->level->value])
+            mb_lcfirst(PackingSpecLevelEnum::labels()[$line->level->value])
         ))->values()->all();
     }
 
