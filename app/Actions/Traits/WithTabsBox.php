@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Ordering\UI\IndexWaitingCrmItemsGrouped;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -31,19 +32,26 @@ trait WithTabsBox
             $query->where('group_id', $parent->id);
         }
 
-        $count          = (clone $query)->where('state', DeliveryNoteStateEnum::HANDLING_BLOCKED)->count();
+        $ready = clone $query;
+        IndexWaitingCrmItemsGrouped::whereReadyToContactCustomer($ready);
+        $count          = $ready->count();
         $handling_count = (clone $query)->where('state', DeliveryNoteStateEnum::HANDLING)->count();
 
-        $route = null;
+        $route          = null;
+        $handling_route = null;
 
         if ($parent instanceof Shop) {
             $route = [
                 'name'       => 'grp.org.shops.show.ordering.backlog.waiting_items',
                 'parameters' => $request->route()->originalParameters(),
             ];
+            $handling_route = [
+                'name'       => 'grp.org.shops.show.ordering.backlog.waiting_items',
+                'parameters' => array_merge($request->route()->originalParameters(), ['radioFilter' => IndexWaitingCrmItemsGrouped::WITH_WAREHOUSE]),
+            ];
         }
 
-        return compact('count', 'handling_count', 'route');
+        return compact('count', 'handling_count', 'route', 'handling_route');
     }
 
     private function getChildRoute(Group|Organisation $parent, mixed $child, string $tabSlug): array
@@ -237,7 +245,7 @@ trait WithTabsBox
                             'type'  => 'currency',
                         ],
                         'warning'     => ($waitingItemsData && ($waitingItemsData['handling_count'] ?? 0) > 0) ? [
-                            'route_target' => $waitingItemsData['route'] ?? null,
+                            'route_target' => $waitingItemsData['handling_route'] ?? null,
                             'tooltip'      => __('Orders waiting for items'),
                             'value'        => $waitingItemsData['handling_count'],
                             'indicator'    => true,

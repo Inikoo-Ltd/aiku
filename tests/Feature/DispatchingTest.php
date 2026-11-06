@@ -4830,7 +4830,7 @@ test('lines waiting for customer service show the order CRM note and the warehou
     $deliveryNote->update(['number_items_waiting_crm' => 1, 'private_warehouse_note' => 'shelf empty']);
     $deliveryNote->orders()->first()->update(['internal_notes' => '30/9 emailed re oos']);
 
-    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug, 'radioFilter' => 'with_warehouse']))
         ->assertOk()
         ->viewData('page')['props']['waiting_crm_items']['data'];
 
@@ -4846,7 +4846,7 @@ test('lines waiting for customer service flag other items still waiting in the w
     $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1, 'quantity_not_picked' => 1]);
     $deliveryNote->update(['number_items_waiting_crm' => 1, 'number_items_waiting_warehouse' => 2]);
 
-    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug, 'radioFilter' => 'with_warehouse']))
         ->assertOk()
         ->viewData('page')['props']['waiting_crm_items']['data'];
 
@@ -4857,6 +4857,36 @@ test('lines waiting for customer service flag other items still waiting in the w
         ->and($row['delivery_note_number_items_not_picked'])->toBeGreaterThanOrEqual(1);
 });
 
+test('pending orders waiting items list only orders the warehouse has finished by default, the rest under still with warehouse', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1]);
+
+    $waitingDeliveryNoteIds = function (?string $radio) use ($deliveryNote) {
+        $parameters = [$this->organisation->slug, $deliveryNote->shop->slug];
+        if ($radio) {
+            $parameters['radioFilter'] = $radio;
+        }
+
+        return collect(get(route('grp.org.shops.show.ordering.backlog.waiting_items', $parameters))
+            ->assertOk()
+            ->viewData('page')['props']['waiting_crm_items']['data'])->pluck('delivery_note_id');
+    };
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING, 'number_items_waiting_crm' => 1, 'number_items_waiting_warehouse' => 0]);
+    expect($waitingDeliveryNoteIds(null))->not->toContain($deliveryNote->id)
+        ->and($waitingDeliveryNoteIds('with_warehouse'))->toContain($deliveryNote->id);
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED, 'number_items_waiting_warehouse' => 1]);
+    expect($waitingDeliveryNoteIds(null))->not->toContain($deliveryNote->id)
+        ->and($waitingDeliveryNoteIds('with_warehouse'))->toContain($deliveryNote->id);
+
+    $deliveryNote->update(['number_items_waiting_warehouse' => 0]);
+    expect($waitingDeliveryNoteIds(null))->toContain($deliveryNote->id)
+        ->and($waitingDeliveryNoteIds('ready'))->toContain($deliveryNote->id)
+        ->and($waitingDeliveryNoteIds('with_warehouse'))->not->toContain($deliveryNote->id);
+});
+
 test('lines waiting for customer service carry the product order line net and tax inclusive amounts', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
@@ -4865,7 +4895,7 @@ test('lines waiting for customer service carry the product order line net and ta
     $transaction = $item->transaction;
     $transaction->update(['net_amount' => 10]);
 
-    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug, 'radioFilter' => 'with_warehouse']))
         ->assertOk()
         ->viewData('page')['props']['waiting_crm_items']['data'];
 
