@@ -37,6 +37,7 @@ class ShowSiteAudit extends OrgAction
     {
         $audits = Crawl::where('website_id', $website->id)
             ->where('type', CrawlTypeEnum::AUDIT)
+            ->where('is_full_audit', true)
             ->orderByDesc('id')
             ->limit(AuditWebsite::AUDITS_KEPT)
             ->get();

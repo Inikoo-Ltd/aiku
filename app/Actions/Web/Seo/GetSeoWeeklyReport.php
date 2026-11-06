@@ -190,6 +190,7 @@ class GetSeoWeeklyReport
         $audits = DB::table('crawls')
             ->where('website_id', $websiteId)
             ->where('type', CrawlTypeEnum::AUDIT->value)
+            ->where('is_full_audit', true)
             ->whereNotNull('health_score')
             ->orderByDesc('id')
             ->limit(2)

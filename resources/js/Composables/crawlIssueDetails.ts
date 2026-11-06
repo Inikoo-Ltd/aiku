@@ -118,8 +118,36 @@ export const crawlIssueDetailText = (issueType: string, details: Record<string, 
         case "pagination_to_broken":
             return resourcesText(issueType, details)
         default:
-            return ""
+            return genericDetailText(details)
     }
+}
+
+const genericDetailText = (details: Record<string, any>) => {
+    const locale = useLocaleStore()
+
+    if (Array.isArray(details.examples)) {
+        return examplesText(details, (example) => example)
+    }
+
+    if (Array.isArray(details.items)) {
+        return details.items.map((item: any) => typeof item === "string" ? item : item.url ?? "").join(", ")
+    }
+
+    if (Array.isArray(details.alternates)) {
+        return details.alternates.join(", ")
+    }
+
+    const parts = [
+        details.text,
+        details.canonical ? pathOfUrl(details.canonical) : null,
+        details.robots_meta,
+        details.pixels !== undefined ? ctrans(":pixels px", { pixels: locale.number(details.pixels) }) : null,
+        details.score !== undefined ? ctrans("Score :score", { score: locale.number(details.score) }) : null,
+        details.length !== undefined ? ctrans(":length characters", { length: details.length }) : null,
+        details.count !== undefined ? ctrans(":count found", { count: locale.number(details.count) }) : null,
+    ]
+
+    return parts.filter((part) => part !== null && part !== undefined && part !== "").join(", ")
 }
 
 const internalLinkIssues = ["internal_nofollow_links", "internal_http_links", "links_with_parameters", "pagination_loop", "pagination_not_linked"]

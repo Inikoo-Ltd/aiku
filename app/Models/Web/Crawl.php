@@ -11,6 +11,7 @@ namespace App\Models\Web;
 use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
+use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -55,7 +56,9 @@ class Crawl extends Model
         'state'    => CrawlStateEnum::class,
         'type'     => CrawlTypeEnum::class,
         'trigger'  => CrawlTriggerEnum::class,
-        'is_seeder' => 'boolean'
+        'is_seeder' => 'boolean',
+        'config'    => 'array',
+        'is_full_audit' => 'boolean',
     ];
 
     protected $guarded = [];
@@ -74,5 +77,20 @@ class Crawl extends Model
     public function issues(): HasMany
     {
         return $this->hasMany(CrawlIssue::class);
+    }
+
+    public function links(): HasMany
+    {
+        return $this->hasMany(CrawlLink::class);
+    }
+
+    public function resources(): HasMany
+    {
+        return $this->hasMany(CrawlResource::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

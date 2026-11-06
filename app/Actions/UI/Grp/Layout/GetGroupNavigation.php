@@ -636,6 +636,16 @@ class GetGroupNavigation
                         ]
                     ],
                     [
+                        'label'   => __('Site crawler'),
+                        'tooltip' => __('Crawl our websites and inspect every URL, link and issue'),
+                        'icon'    => ['fal', 'fa-spider'],
+                        'root'    => 'grp.websites.crawler.',
+                        'route'   => [
+                            'name'       => 'grp.websites.crawler.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    [
                         'label'   => __('API usage'),
                         'tooltip' => __('SEO API spend of all shops against the monthly budget'),
                         'icon'    => ['fal', 'fa-tachometer-alt'],

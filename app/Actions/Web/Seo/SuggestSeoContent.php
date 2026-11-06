@@ -159,6 +159,7 @@ class SuggestSeoContent
     {
         $audit = Crawl::where('website_id', $website->id)
             ->where('type', CrawlTypeEnum::AUDIT)
+            ->where('is_full_audit', true)
             ->whereNotNull('health_score')
             ->latest('id')
             ->first();
