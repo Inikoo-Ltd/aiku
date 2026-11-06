@@ -36,6 +36,10 @@ class AuditedHtml
         'klik her', 'læs mere',
     ];
 
+    private const array HEAD_ELEMENTS = ['title', 'meta', 'link', 'script', 'style', 'base', 'noscript', 'template'];
+
+    private const int READABILITY_MIN_WORDS = 100;
+
     private const string SOFT_404_PATTERN = '/\b404\b|not found|page (does not|doesn\'t) exist|nicht gefunden|introuvable|n\'existe pas|no encontrad|non trovat|niet gevonden|não encontrad|nie znaleziono|nenalezen|nenájden|nem található|nu a fost găsit|hittades inte|nije pronađen|ni bil[oa]? najden|ei löytynyt|ikke fundet|не е намерен/iu';
 
     /**
@@ -45,6 +49,11 @@ class AuditedHtml
      * @param  array<int, array{href: string, nofollow: bool, text: string, unsafe_blank: bool, position: string}>  $anchors  every link on the page, followed or not
      * @param  array<int, array{src: string, has_size: bool, alt: string|null, position: string}>  $images
      * @param  array<int, string>  $h2s  the text of the first two H2 headings
+     * @param  array<int, int>  $headingLevels  the level of every heading, h1 to h6, in page order
+     * @param  array<int, string>  $brokenBookmarks  the #fragment links to an id or name the page does not have
+     * @param  array<int, string>  $protocolRelativeUrls  the links and resources written as //host/path
+     * @param  array<int, string>  $invalidHeadElements  the elements written inside <head> that do not belong there, which end the head early
+     * @param  array<string, int>  $socialTagCounts  how many times each og:title, og:description, og:image, twitter:card tag is written
      * @param  array<int, string>  $headTagsInBody  the head tags (title, meta description, robots, canonical) found in the body, where search engines ignore them
      * @param  array<int, string>  $resourceUrls  the src of every image, script, frame and media, and the href of every stylesheet
      * @param  array<int, string>  $formActions
@@ -79,7 +88,22 @@ class AuditedHtml
         public readonly ?int $contentSimhash,
         public readonly bool $hasLoremIpsum,
         public readonly ?string $soft404Phrase,
-        public readonly array $h2s
+        public readonly array $h2s,
+        public readonly ?string $lang,
+        public readonly array $headingLevels,
+        public readonly bool $hasAltTextInH1,
+        public readonly ?string $metaRefresh,
+        public readonly array $brokenBookmarks,
+        public readonly int $javascriptLinks,
+        public readonly array $protocolRelativeUrls,
+        public readonly bool $hasDoctype,
+        public readonly int $headCount,
+        public readonly int $bodyCount,
+        public readonly array $invalidHeadElements,
+        public readonly bool $hasViewport,
+        public readonly bool $hasCharset,
+        public readonly array $socialTagCounts,
+        public readonly ?float $readingEase
     ) {
     }
 
@@ -93,6 +117,8 @@ class AuditedHtml
         $openGraph            = [];
         $hasTwitterCard       = false;
         $headTagsInBody       = [];
+        $socialTagCounts      = [];
+        $hasViewport          = false;
 
         foreach ($document->querySelectorAll('meta[name], meta[property]') as $meta) {
             $name     = strtolower(trim((string) ($meta->getAttribute('name') ?: $meta->getAttribute('property'))));
@@ -116,8 +142,29 @@ class AuditedHtml
                 $openGraph[$name] ??= $content;
             } elseif ($name === 'twitter:card') {
                 $hasTwitterCard = true;
+            } elseif ($name === 'viewport') {
+                $hasViewport = true;
+            }
+
+            if (in_array($name, ['og:title', 'og:description', 'og:image', 'twitter:card'], true)) {
+                $socialTagCounts[$name] = ($socialTagCounts[$name] ?? 0) + 1;
+
+                if (!$isInHead) {
+                    $headTagsInBody[] = 'social tags';
+                }
             }
         }
+
+        $metaRefresh = null;
+
+        foreach ($document->querySelectorAll('meta[http-equiv]') as $meta) {
+            if (strtolower(trim((string) $meta->getAttribute('http-equiv'))) === 'refresh') {
+                $metaRefresh ??= self::clean($meta->getAttribute('content')) ?? '';
+            }
+        }
+
+        $hasCharset = $document->querySelector('meta[charset]') !== null
+            || preg_match('/<meta[^>]+http-equiv\s*=\s*["\']?content-type[^>]+charset=/i', $html) === 1;
 
         $canonicals     = [];
         $hreflangs      = [];
@@ -140,6 +187,10 @@ class AuditedHtml
                     'hreflang' => trim($link->getAttribute('hreflang')),
                     'href'     => $href,
                 ];
+
+                if (!self::isInHead($link)) {
+                    $headTagsInBody[] = 'hreflang';
+                }
             } elseif (in_array('next', $rel, true)) {
                 $paginationNext ??= $href;
             } elseif (in_array('prev', $rel, true) || in_array('previous', $rel, true)) {
@@ -184,15 +235,64 @@ class AuditedHtml
             $resourceUrls[] = trim($element->getAttribute('src'));
         }
 
+        foreach ($resourceUrls as $resourceUrl) {
+            if (str_starts_with($resourceUrl, '//')) {
+                $protocolRelativeUrls[] = $resourceUrl;
+            }
+        }
+
+        $headingLevels = [];
+
+        foreach ($document->querySelectorAll('h1, h2, h3, h4, h5, h6') as $heading) {
+            $headingLevels[] = (int) substr(strtolower($heading->tagName), 1);
+        }
+
+        $hasAltTextInH1 = false;
+
+        foreach ($document->querySelectorAll('h1 img[alt]') as $image) {
+            $hasAltTextInH1 = $hasAltTextInH1 || self::clean($image->getAttribute('alt')) !== null;
+        }
+
+        $rawHtml = self::withoutCommentsAndScripts($html);
+
+        $paragraphs = [];
+
+        foreach ($document->querySelectorAll('p') as $paragraph) {
+            if (($paragraphText = self::clean($paragraph->textContent)) !== null) {
+                $paragraphs[] = $paragraphText;
+            }
+        }
+
+        $paragraphText  = implode(' ', $paragraphs);
+        $paragraphWords = preg_match_all('/[\p{L}\p{N}]+/u', $paragraphText);
+
         $formActions = [];
 
         foreach ($document->querySelectorAll('form[action]') as $form) {
             $formActions[] = trim($form->getAttribute('action'));
         }
 
-        $anchors = [];
+        $anchors              = [];
+        $javascriptLinks      = 0;
+        $fragmentTargets      = [];
+        $brokenBookmarks      = [];
+        $protocolRelativeUrls = [];
+
+        foreach ($document->querySelectorAll('[id], a[name]') as $target) {
+            $fragmentTargets[(string) ($target->getAttribute('id') ?: $target->getAttribute('name'))] = true;
+        }
 
         foreach ($document->querySelectorAll('a[href]') as $anchor) {
+            $href = trim($anchor->getAttribute('href'));
+
+            if (preg_match('/^javascript:/i', $href)) {
+                $javascriptLinks++;
+            } elseif (preg_match('/^#([^!\/].*)$/', $href, $fragment) && !isset($fragmentTargets[rawurldecode($fragment[1])])) {
+                $brokenBookmarks[] = $href;
+            } elseif (str_starts_with($href, '//')) {
+                $protocolRelativeUrls[] = $href;
+            }
+
             $anchors[] = [
                 'href'         => trim($anchor->getAttribute('href')),
                 'nofollow'     => self::isNofollow($anchor),
@@ -246,8 +346,75 @@ class AuditedHtml
             contentSimhash: $words ? self::simhash($words) : null,
             hasLoremIpsum: str_contains(mb_strtolower($text), 'lorem ipsum'),
             soft404Phrase: self::soft404Phrase($title, $h1),
-            h2s: $h2s
+            h2s: $h2s,
+            lang: self::clean($document->documentElement?->getAttribute('lang')),
+            headingLevels: $headingLevels,
+            hasAltTextInH1: $hasAltTextInH1,
+            metaRefresh: $metaRefresh,
+            brokenBookmarks: array_values(array_unique($brokenBookmarks)),
+            javascriptLinks: $javascriptLinks,
+            protocolRelativeUrls: array_values(array_unique($protocolRelativeUrls)),
+            hasDoctype: preg_match('/^\s*(\x{FEFF})?\s*<!doctype\s+html/iu', $rawHtml) === 1,
+            headCount: preg_match_all('/<head(\s[^>]*)?>/i', $rawHtml),
+            bodyCount: preg_match_all('/<body(\s[^>]*)?>/i', $rawHtml),
+            invalidHeadElements: self::invalidHeadElements($rawHtml),
+            hasViewport: $hasViewport,
+            hasCharset: $hasCharset,
+            socialTagCounts: $socialTagCounts,
+            readingEase: $paragraphWords >= self::READABILITY_MIN_WORDS ? self::readingEase($paragraphText, $paragraphWords) : null
         );
+    }
+
+    /**
+     * The markup without comments and the content of scripts and styles, so tags written inside them
+     * are not counted as the page's own.
+     */
+    private static function withoutCommentsAndScripts(string $html): string
+    {
+        return (string) preg_replace(['/<!--.*?-->/s', '/<(script|style|template)\b[^>]*>.*?<\/\1>/is'], ['', '<$1></$1>'], $html);
+    }
+
+    /**
+     * The elements written between <head> and </head> that browsers only allow in the body. A browser
+     * meeting one closes the head there, so every tag after it, canonical and hreflang included, is
+     * read as part of the body and ignored by search engines.
+     *
+     * @return array<int, string>
+     */
+    private static function invalidHeadElements(string $rawHtml): array
+    {
+        if (!preg_match('/<head(\s[^>]*)?>(.*?)<\/head>/is', $rawHtml, $head)) {
+            return [];
+        }
+
+        preg_match_all('/<([a-z][a-z0-9-]*)\b/i', $head[2], $tags);
+
+        return array_values(array_unique(array_filter(
+            array_map('strtolower', $tags[1]),
+            fn (string $tag) => !in_array($tag, self::HEAD_ELEMENTS, true)
+        )));
+    }
+
+    /**
+     * Flesch reading ease of the page's paragraphs, the prose a visitor reads rather than product
+     * names and menus: 206.835 - 1.015 x words per sentence - 84.6 x syllables
+     * per word, with syllables counted as groups of vowels. It is defined for English only.
+     */
+    private static function readingEase(string $text, int $wordCount): float
+    {
+        $sentences = max(1, preg_match_all('/[^.!?]+[.!?]+/u', $text) ?: 1);
+        $syllables = 0;
+
+        preg_match_all('/[a-z]+/i', mb_strtolower($text), $latinWords);
+
+        foreach ($latinWords[0] as $word) {
+            $word       = preg_replace('/(?:[^laeiouy]es|ed|[^laeiouy]e)$/', '', $word) ?: $word;
+            $syllables += max(1, preg_match_all('/[aeiouy]+/', $word));
+        }
+
+        $words = max(1, count($latinWords[0]) ?: $wordCount);
+
+        return round(206.835 - 1.015 * ($wordCount / $sentences) - 84.6 * ($syllables / $words), 1);
     }
 
     public function isNoindex(): bool

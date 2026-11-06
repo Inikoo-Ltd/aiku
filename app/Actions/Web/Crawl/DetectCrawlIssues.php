@@ -15,6 +15,7 @@ use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
 use App\Models\Web\CrawlIssue;
 use App\Models\Web\Website;
+use App\Services\SiteAudit\SerpPixelWidth;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -33,12 +34,15 @@ class DetectCrawlIssues
     private const array PAGE_COLUMNS = [
         'id', 'url', 'url_hash', 'depth', 'link_depth', 'status_code', 'redirect_to', 'response_ms', 'content_type', 'title', 'meta_description',
         'canonical', 'robots_meta', 'h1_count', 'h1', 'images_without_alt', 'inlinks', 'is_in_sitemap', 'sitemap_count', 'is_indexable',
-        'fetch_error', 'hreflang', 'word_count', 'content_hash', 'content_simhash',
+        'fetch_error', 'hreflang', 'word_count', 'content_hash', 'content_simhash', 'bytes',
     ];
 
     private const string HREFLANG_CODE_PATTERN = '/^(x-default|[a-z]{2,3}(-[a-z]{4})?(-([a-z]{2}|\d{3}))?)$/i';
 
     private array $issues = [];
+
+    /** @var array<string, Collection<int, object>> the indexable pages by the text compared across pages, read with the facts */
+    private array $factDuplicates = [];
 
     /**
      * @param  array<string, array<int, string>>  $linkedFrom
@@ -46,7 +50,8 @@ class DetectCrawlIssues
      */
     public function handle(Crawl $crawl, array $linkedFrom = [], array $sitemapFiles = []): Crawl
     {
-        $this->issues = [];
+        $this->issues         = [];
+        $this->factDuplicates = [];
 
         $pages = DB::table('crawl_pages')
             ->where('crawl_id', $crawl->id)
@@ -82,6 +87,7 @@ class DetectCrawlIssues
         $this->detectDuplicateContent($indexablePages);
         $this->detectHreflangIssues($crawl, $pages, $indexablePages);
         $this->detectFactIssues($crawl, $pages);
+        $this->detectUnlinkedCanonicals($crawl, $pages);
 
         if ($homePage) {
             $this->detectOversizedSitemaps($homePage, $sitemapFiles);
@@ -205,6 +211,10 @@ class DetectCrawlIssues
             $this->addIssue($page, CrawlIssueTypeEnum::SITEMAP_CANONICALISED, ['canonical' => $page->canonical]);
         }
 
+        if ($page->bytes > CrawlIssueTypeEnum::HTML_MAX_MB * 1048576) {
+            $this->addIssue($page, CrawlIssueTypeEnum::HTML_TOO_LARGE, ['text' => round($page->bytes / 1048576, 1).' MB']);
+        }
+
         if ($page->images_without_alt > 0) {
             $this->addIssue($page, CrawlIssueTypeEnum::IMAGES_WITHOUT_ALT, ['images' => (int) $page->images_without_alt]);
         }
@@ -235,6 +245,10 @@ class DetectCrawlIssues
             $this->addIssue($page, CrawlIssueTypeEnum::META_DESCRIPTION_TOO_LONG, ['length' => $metaDescriptionLength]);
         } elseif ($metaDescriptionLength < CrawlIssueTypeEnum::META_DESCRIPTION_MIN_LENGTH) {
             $this->addIssue($page, CrawlIssueTypeEnum::META_DESCRIPTION_TOO_SHORT, ['length' => $metaDescriptionLength]);
+        }
+
+        if ($page->h1 !== null && mb_strlen($page->h1) > CrawlIssueTypeEnum::HEADING_MAX_LENGTH) {
+            $this->addIssue($page, CrawlIssueTypeEnum::H1_TOO_LONG, ['text' => $page->h1, 'length' => mb_strlen($page->h1)]);
         }
 
         if ($page->h1_count === 0) {
@@ -281,6 +295,16 @@ class DetectCrawlIssues
 
         if (preg_match('/[^\x00-\x7F]/', rawurldecode($path))) {
             $this->addIssue($page, CrawlIssueTypeEnum::URL_NON_ASCII);
+        }
+
+        if (str_contains($page->url, ' ') || str_contains(strtolower($page->url), '%20')) {
+            $this->addIssue($page, CrawlIssueTypeEnum::URL_CONTAINS_SPACE);
+        }
+
+        $segments = array_values(array_filter(explode('/', mb_strtolower($path)), fn (string $segment) => $segment !== ''));
+
+        if (count($segments) !== count(array_unique($segments))) {
+            $this->addIssue($page, CrawlIssueTypeEnum::URL_REPETITIVE_PATH, ['text' => $path]);
         }
 
         if (mb_strlen($page->url) > CrawlIssueTypeEnum::URL_MAX_LENGTH) {
@@ -407,6 +431,42 @@ class DetectCrawlIssues
                     }
                 }
             });
+
+        foreach ([
+            'h2'             => CrawlIssueTypeEnum::DUPLICATE_H2,
+            'og_title'       => CrawlIssueTypeEnum::DUPLICATE_OG_TITLE,
+            'og_description' => CrawlIssueTypeEnum::DUPLICATE_OG_DESCRIPTION,
+        ] as $field => $type) {
+            $this->detectDuplicates(collect($this->factDuplicates[$field] ?? []), $field, $type);
+        }
+    }
+
+    /**
+     * Canonicals that name another URL of the website which no crawled page links to, so search
+     * engines reach it only through the canonical. Audits that ran before links were recorded are
+     * skipped.
+     */
+    private function detectUnlinkedCanonicals(Crawl $crawl, Collection $pages): void
+    {
+        $canonicalised = $pages->filter(fn ($page) => $this->isHtmlPage($page) && $page->canonical !== null && $page->canonical !== $page->url && $pages->has(md5($page->canonical)));
+
+        if ($canonicalised->isEmpty() || !DB::table('crawl_links')->where('crawl_id', $crawl->id)->exists()) {
+            return;
+        }
+
+        $linked = DB::table('crawl_links')
+            ->where('crawl_id', $crawl->id)
+            ->where('kind', 'hyperlink')
+            ->whereIn('to_url_hash', $canonicalised->map(fn ($page) => md5($page->canonical))->unique()->values())
+            ->distinct()
+            ->pluck('to_url_hash')
+            ->flip();
+
+        foreach ($canonicalised as $page) {
+            if (!$linked->has(md5($page->canonical))) {
+                $this->addIssue($page, CrawlIssueTypeEnum::CANONICAL_UNLINKED, ['canonical' => $page->canonical]);
+            }
+        }
     }
 
     private function detectPageFactIssues(object $page, array $facts, Collection $pages, Collection $failedResources): void
@@ -472,10 +532,13 @@ class DetectCrawlIssues
 
         $this->detectResourceIssues($page, $facts, $failedResources);
         $this->detectPaginationIssues($page, $facts, $pages);
+        $this->detectValidationIssues($page, $facts);
 
         if (!$page->is_indexable) {
             return;
         }
+
+        $this->detectIndexablePageFactIssues($page, $facts);
 
         if (($facts['h2_count'] ?? 0) === 0) {
             $this->addIssue($page, CrawlIssueTypeEnum::MISSING_H2);
@@ -489,6 +552,128 @@ class DetectCrawlIssues
 
         if (empty($facts['has_twitter_card'])) {
             $this->addIssue($page, CrawlIssueTypeEnum::TWITTER_CARD_MISSING);
+        }
+    }
+
+    /**
+     * The checks on how the page is written that apply to every page: links, directives, refreshes,
+     * document structure and social tags.
+     */
+    private function detectValidationIssues(object $page, array $facts): void
+    {
+        foreach ([
+            'tracking_links'    => CrawlIssueTypeEnum::LINKS_WITH_TRACKING_PARAMETERS,
+            'broken_bookmarks'  => CrawlIssueTypeEnum::BROKEN_BOOKMARK,
+            'protocol_relative' => CrawlIssueTypeEnum::PROTOCOL_RELATIVE_LINKS,
+            'long_alt_texts'    => CrawlIssueTypeEnum::ALT_TEXT_TOO_LONG,
+        ] as $fact => $type) {
+            if (!empty($facts[$fact])) {
+                $this->addIssue($page, $type, $facts[$fact]);
+            }
+        }
+
+        foreach ([
+            'missing_doctype'  => CrawlIssueTypeEnum::MISSING_DOCTYPE,
+            'missing_head'     => CrawlIssueTypeEnum::MISSING_HEAD,
+            'missing_body'     => CrawlIssueTypeEnum::MISSING_BODY,
+            'missing_viewport' => CrawlIssueTypeEnum::MISSING_VIEWPORT,
+            'missing_charset'  => CrawlIssueTypeEnum::MISSING_CHARSET,
+            'og_image_relative' => CrawlIssueTypeEnum::OG_IMAGE_RELATIVE,
+            'alt_in_h1'        => CrawlIssueTypeEnum::ALT_TEXT_IN_H1,
+            'h1_not_first'     => CrawlIssueTypeEnum::H1_NOT_FIRST_HEADING,
+        ] as $fact => $type) {
+            if (!empty($facts[$fact])) {
+                $this->addIssue($page, $type);
+            }
+        }
+
+        if (!empty($facts['multiple_heads'])) {
+            $this->addIssue($page, CrawlIssueTypeEnum::MULTIPLE_HEADS, ['count' => $facts['multiple_heads']]);
+        }
+
+        if (!empty($facts['multiple_bodies'])) {
+            $this->addIssue($page, CrawlIssueTypeEnum::MULTIPLE_BODIES, ['count' => $facts['multiple_bodies']]);
+        }
+
+        if (!empty($facts['invalid_head_elements'])) {
+            $this->addIssue($page, CrawlIssueTypeEnum::INVALID_HEAD_ELEMENTS, ['items' => $facts['invalid_head_elements']]);
+        }
+
+        if (!empty($facts['heading_skips'])) {
+            $this->addIssue($page, CrawlIssueTypeEnum::HEADING_LEVEL_SKIPPED, ['items' => $facts['heading_skips']]);
+        }
+
+        if (!empty($facts['social_multiple'])) {
+            $this->addIssue($page, CrawlIssueTypeEnum::OPEN_GRAPH_MULTIPLE, ['items' => $facts['social_multiple']]);
+        }
+
+        if (!empty($facts['meta_refresh']) || !empty($facts['http_refresh'])) {
+            $this->addIssue($page, CrawlIssueTypeEnum::META_REFRESH, ['text' => $facts['meta_refresh'] ?? $facts['http_refresh']]);
+        }
+
+        if (($facts['javascript_links'] ?? 0) > 0) {
+            $this->addIssue($page, CrawlIssueTypeEnum::JAVASCRIPT_LINKS, ['count' => $facts['javascript_links']]);
+        }
+
+        if (($facts['internal_outlinks'] ?? 0) > CrawlIssueTypeEnum::MAX_INTERNAL_OUTLINKS) {
+            $this->addIssue($page, CrawlIssueTypeEnum::HIGH_INTERNAL_OUTLINKS, ['count' => $facts['internal_outlinks']]);
+        }
+
+        if (($facts['external_outlinks'] ?? 0) > CrawlIssueTypeEnum::MAX_EXTERNAL_OUTLINKS) {
+            $this->addIssue($page, CrawlIssueTypeEnum::HIGH_EXTERNAL_OUTLINKS, ['count' => $facts['external_outlinks']]);
+        }
+
+        if (!empty($facts['canonical_relative'])) {
+            $this->addIssue($page, CrawlIssueTypeEnum::CANONICAL_RELATIVE, ['canonical' => $page->canonical]);
+        }
+
+        if (!empty($facts['canonical_fragment'])) {
+            $this->addIssue($page, CrawlIssueTypeEnum::CANONICAL_WITH_FRAGMENT, ['canonical' => $page->canonical]);
+        }
+
+        foreach ([
+            'nosnippet'         => CrawlIssueTypeEnum::NOSNIPPET_PAGE,
+            'noimageindex'      => CrawlIssueTypeEnum::NOIMAGEINDEX_PAGE,
+            'unavailable_after' => CrawlIssueTypeEnum::UNAVAILABLE_AFTER_PAGE,
+        ] as $fact => $type) {
+            if (!empty($facts[$fact])) {
+                $this->addIssue($page, $type, ['robots_meta' => $page->robots_meta]);
+            }
+        }
+    }
+
+    /**
+     * The checks that only matter for pages meant to be found in search: widths in results, headings,
+     * readability, and the texts compared across pages.
+     */
+    private function detectIndexablePageFactIssues(object $page, array $facts): void
+    {
+        if (($facts['title_px'] ?? 0) > SerpPixelWidth::TITLE_MAX_PIXELS) {
+            $this->addIssue($page, CrawlIssueTypeEnum::TITLE_OVER_PIXELS, ['text' => $page->title, 'pixels' => $facts['title_px']]);
+        }
+
+        if (($facts['meta_description_px'] ?? 0) > SerpPixelWidth::DESCRIPTION_MAX_PIXELS) {
+            $this->addIssue($page, CrawlIssueTypeEnum::META_DESCRIPTION_OVER_PIXELS, ['pixels' => $facts['meta_description_px']]);
+        }
+
+        $longH2 = array_values(array_filter($facts['h2'] ?? [], fn (string $h2) => mb_strlen($h2) > CrawlIssueTypeEnum::HEADING_MAX_LENGTH));
+
+        if ($longH2) {
+            $this->addIssue($page, CrawlIssueTypeEnum::H2_TOO_LONG, ['items' => $longH2]);
+        }
+
+        $readingEase = $facts['reading_ease'] ?? null;
+
+        if ($readingEase !== null && $readingEase < CrawlIssueTypeEnum::READING_EASE_VERY_DIFFICULT) {
+            $this->addIssue($page, CrawlIssueTypeEnum::READABILITY_VERY_DIFFICULT, ['score' => $readingEase]);
+        } elseif ($readingEase !== null && $readingEase < CrawlIssueTypeEnum::READING_EASE_DIFFICULT) {
+            $this->addIssue($page, CrawlIssueTypeEnum::READABILITY_DIFFICULT, ['score' => $readingEase]);
+        }
+
+        foreach (['h2' => $facts['h2'][0] ?? null, 'og_title' => $facts['og_title'] ?? null, 'og_description' => $facts['og_description'] ?? null] as $field => $value) {
+            if ($value !== null && $value !== '') {
+                $this->factDuplicates[$field][] = (object) ['id' => $page->id, 'url' => $page->url, $field => $value];
+            }
         }
     }
 
@@ -524,10 +709,12 @@ class DetectCrawlIssues
             $this->addIssue($page, CrawlIssueTypeEnum::LARGE_IMAGES, $listed($largeImages));
         }
 
-        $ogImage = $found(array_filter([$facts['og_image'] ?? null]))->filter(fn (array $item) => $broken($item['resource']));
+        $ogImage = $found(array_filter([$facts['og_image'] ?? null]));
 
-        if ($ogImage->isNotEmpty()) {
+        if ($ogImage->filter(fn (array $item) => $broken($item['resource']))->isNotEmpty()) {
             $this->addIssue($page, CrawlIssueTypeEnum::OG_IMAGE_BROKEN, $listed($ogImage));
+        } elseif ($ogImage->filter(fn (array $item) => $item['resource'] && $item['resource']->bytes > CrawlIssueTypeEnum::OG_IMAGE_MAX_MB * 1048576)->isNotEmpty()) {
+            $this->addIssue($page, CrawlIssueTypeEnum::OG_IMAGE_TOO_LARGE, $listed($ogImage));
         }
     }
 
@@ -682,6 +869,13 @@ class DetectCrawlIssues
                 $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_MISSING_SELF, ['alternates' => $alternates->count()]);
             }
 
+            if (!$alternates->contains(fn (array $alternate) => strtolower($alternate['hreflang']) === 'x-default')) {
+                $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_MISSING_X_DEFAULT, ['alternates' => $alternates->count()]);
+            }
+
+            $nonCanonical = [];
+            $noindex      = [];
+
             $broken        = [];
             $missingReturn = [];
 
@@ -690,6 +884,14 @@ class DetectCrawlIssues
 
                 if ($url === $pageUrl || !$target) {
                     continue;
+                }
+
+                if ($target->status_code === 200 && isset($target->canonical) && $target->canonical !== null && $target->canonical !== $target->url) {
+                    $nonCanonical[] = $url;
+                }
+
+                if ($target->status_code === 200 && isset($target->robots_meta) && str_contains(strtolower((string) $target->robots_meta), 'noindex')) {
+                    $noindex[] = $url;
                 }
 
                 if ($target->status_code !== 200) {
@@ -705,6 +907,14 @@ class DetectCrawlIssues
 
             if ($missingReturn) {
                 $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_MISSING_RETURN, ['count' => count($missingReturn), 'alternates' => array_slice($missingReturn, 0, self::DUPLICATES_SHOWN)]);
+            }
+
+            if ($nonCanonical) {
+                $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_TO_NON_CANONICAL, ['count' => count($nonCanonical), 'alternates' => array_slice($nonCanonical, 0, self::DUPLICATES_SHOWN)]);
+            }
+
+            if ($noindex) {
+                $this->addIssue($page, CrawlIssueTypeEnum::HREFLANG_TO_NOINDEX, ['count' => count($noindex), 'alternates' => array_slice($noindex, 0, self::DUPLICATES_SHOWN)]);
             }
         }
     }
@@ -747,6 +957,7 @@ class DetectCrawlIssues
 
             $latestAuditId = Crawl::where('website_id', $websiteId)
                 ->where('type', CrawlTypeEnum::AUDIT)
+                ->where('is_full_audit', true)
                 ->where('state', CrawlStateEnum::FINISH)
                 ->whereNotNull('health_score')
                 ->latest('id')

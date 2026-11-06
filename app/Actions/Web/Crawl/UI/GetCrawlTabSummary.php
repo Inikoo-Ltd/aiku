@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Crawl\UI;
 
+use App\Actions\Web\Crawl\AuditWebsite;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlTabEnum;
 use App\Models\Web\Crawl;
@@ -43,6 +44,8 @@ class GetCrawlTabSummary
 
         return array_map(function (CrawlTabEnum $tab) use ($pageCounts, $resourceCounts, $issueCounts, $labels, $issueLabels, $descriptions, $howToFix) {
             $counts = $tab->source() === 'pages' ? $pageCounts : ($resourceCounts[$tab->source()] ?? []);
+
+            $counts['blocked_by_robots'] = $resourceCounts[AuditWebsite::BLOCKED_BY_ROBOTS]['all'] ?? 0;
 
             $stateFilters = [];
 
@@ -90,6 +93,7 @@ class GetCrawlTabSummary
             ->selectRaw('count(*) filter (where status_code between 300 and 399) as redirection')
             ->selectRaw('count(*) filter (where is_in_sitemap) as in_sitemap')
             ->selectRaw('count(*) filter (where not is_in_sitemap) as not_in_sitemap')
+            ->selectRaw("count(*) filter (where coalesce((facts->>'h2_count')::int, 0) > 1) as multiple_h2")
             ->first();
 
         return array_map(intval(...), (array) $counts);

@@ -15,6 +15,7 @@ use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTabEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -102,6 +103,8 @@ class ShowCrawl extends OrgAction
                     'self'    => ['name' => 'grp.websites.crawler.show', 'parameters' => [$crawl->id]],
                     'details' => ['name' => 'grp.json.crawl.url_details', 'parameters' => [$crawl->id]],
                     'export'  => ['name' => 'grp.websites.crawler.export', 'parameters' => [$crawl->id]],
+                    'report'  => ['name' => 'grp.websites.crawler.report', 'parameters' => [$crawl->id]],
+                    'compare' => ['name' => 'grp.websites.crawler.compare', 'parameters' => [$crawl->id]],
                     'stop'    => $canEdit ? ['name' => 'grp.models.crawl.stop', 'parameters' => [$crawl->id], 'method' => 'patch'] : null,
                     'index'   => ['name' => 'grp.websites.crawler.index', 'parameters' => ['website' => $website->slug]],
                 ],
@@ -129,7 +132,7 @@ class ShowCrawl extends OrgAction
             'errors'         => $crawl->number_errors,
             'warnings'       => $crawl->number_warnings,
             'notices'        => $crawl->number_notices,
-            'config'         => AuditWebsite::config($crawl),
+            'config'         => [...Arr::except(AuditWebsite::config($crawl), ['urls']), 'urls_count' => count(AuditWebsite::config($crawl)['urls'])],
             'is_full_audit'  => $crawl->is_full_audit,
             'user_name'      => $crawl->user?->contact_name,
             'can_stop'       => $canEdit,

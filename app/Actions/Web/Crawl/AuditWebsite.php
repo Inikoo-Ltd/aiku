@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Crawl;
 
 use App\Actions\Web\Webpage\WithWebpageIdsByPath;
+use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlLinkKindEnum;
 use App\Enums\Web\Crawl\CrawlLinkPositionEnum;
 use App\Enums\Web\Crawl\CrawlStateEnum;
@@ -21,6 +22,7 @@ use App\Models\Web\CrawlPage;
 use App\Models\Web\Website;
 use App\Services\SiteAudit\AuditedHtml;
 use App\Services\SiteAudit\RobotsTxt;
+use App\Services\SiteAudit\SerpPixelWidth;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Http\Client\Pool;
@@ -53,6 +55,8 @@ class AuditWebsite implements ShouldBeUnique
 
     public const int LINK_AUDITS_KEPT = 3;
 
+    public const string BLOCKED_BY_ROBOTS = 'blocked';
+
     public const array DEFAULT_CONFIG = [
         'max_depth'            => null,
         'include'              => [],
@@ -61,9 +65,19 @@ class AuditWebsite implements ShouldBeUnique
         'crawl_subdomains'     => false,
         'check_external_links' => true,
         'check_images'         => true,
+        'mode'                 => self::MODE_SPIDER,
+        'urls'                 => [],
     ];
 
+    public const string MODE_SPIDER = 'spider';
+
+    public const string MODE_LIST = 'list';
+
+    public const int LIST_MAX_URLS = 5000;
+
     private const int ANCHOR_MAX_LENGTH = 500;
+
+    private const string TRACKING_PARAMETER_PATTERN = '/(^|&)(utm_[a-z]+|gclid|fbclid|msclkid|mc_cid|mc_eid|_ga)=/i';
 
     public const int CONCURRENT_FETCH_BUDGET = 8;
 
@@ -137,6 +151,9 @@ class AuditWebsite implements ShouldBeUnique
 
     /** @var array<string, array<int, string>> */
     private array $linkedFrom = [];
+
+    /** @var array<string, string> the URLs of the website that links lead to but robots.txt does not let us crawl */
+    private array $blockedByRobots = [];
 
     /** @var array<int, array<string, mixed>> the links of the pages fetched in this batch, written with them */
     private array $pendingLinks = [];
@@ -241,7 +258,15 @@ class AuditWebsite implements ShouldBeUnique
         $this->robotsTxt        = $this->fetchRobotsTxt($baseUrl);
         $this->webpageIdsByPath = $this->webpageIdsByPath($website);
 
-        $this->enqueue($baseUrl.'/', 0, 0, isStartUrl: true);
+        if ($this->isListMode()) {
+            foreach ($this->config['urls'] as $listedUrl) {
+                if ($normalisedUrl = $this->normaliseInternalUrl($listedUrl)) {
+                    $this->enqueue($normalisedUrl, 0, null, isStartUrl: true);
+                }
+            }
+        } else {
+            $this->enqueue($baseUrl.'/', 0, 0, isStartUrl: true);
+        }
 
         foreach ($this->fetchSitemapUrls($baseUrl) as $sitemapUrl => $sitemapCount) {
             $normalisedUrl = $this->normaliseInternalUrl((string) $sitemapUrl);
@@ -249,7 +274,10 @@ class AuditWebsite implements ShouldBeUnique
             if ($normalisedUrl) {
                 $hash                   = md5($normalisedUrl);
                 $this->inSitemap[$hash] = ($this->inSitemap[$hash] ?? 0) + $sitemapCount;
-                $this->sitemapQueue[]   = $normalisedUrl;
+
+                if (!$this->isListMode()) {
+                    $this->sitemapQueue[] = $normalisedUrl;
+                }
             }
         }
     }
@@ -257,6 +285,7 @@ class AuditWebsite implements ShouldBeUnique
     private function finish(string $finishReason): Crawl
     {
         $this->storeInlinks();
+        $this->storeBlockedByRobots();
 
         DetectCrawlIssues::run($this->crawl->refresh(), $this->linkedFrom, $this->sitemapFiles);
 
@@ -293,6 +322,7 @@ class AuditWebsite implements ShouldBeUnique
             'in_sitemap'     => $this->inSitemap,
             'inlinks'        => $this->inlinks,
             'linked_from'    => $this->linkedFrom,
+            'blocked'        => $this->blockedByRobots,
         ])), now()->addDay());
     }
 
@@ -319,6 +349,7 @@ class AuditWebsite implements ShouldBeUnique
         $this->inSitemap        = array_map(intval(...), $progress['in_sitemap']);
         $this->inlinks          = $progress['inlinks'];
         $this->linkedFrom       = $progress['linked_from'];
+        $this->blockedByRobots  = $progress['blocked'] ?? [];
 
         return true;
     }
@@ -556,7 +587,9 @@ class AuditWebsite implements ShouldBeUnique
                 $this->linkedFrom[$hash][] = $url;
             }
 
-            $this->enqueue($linkedUrl, $depth + 1, $linkDepth === null ? null : $linkDepth + 1);
+            if (!$this->isListMode()) {
+                $this->enqueue($linkedUrl, $depth + 1, $linkDepth === null ? null : $linkDepth + 1);
+            }
         }
 
         $row['facts'] = json_encode($this->pageFacts($url, $html, $response));
@@ -646,6 +679,7 @@ class AuditWebsite implements ShouldBeUnique
         $httpLinks          = [];
         $parameterLinks     = [];
         $externalLinks      = [];
+        $trackingLinks      = [];
 
         foreach ($html->anchors as $anchor) {
             $linkedUrl = $this->resolveUrl($url, $anchor['href']);
@@ -685,6 +719,10 @@ class AuditWebsite implements ShouldBeUnique
 
                 if (parse_url($linkedUrl, PHP_URL_QUERY)) {
                     $parameterLinks[$linkedUrl] = true;
+
+                    if (preg_match(self::TRACKING_PARAMETER_PATTERN, (string) parse_url($linkedUrl, PHP_URL_QUERY))) {
+                        $trackingLinks[$linkedUrl] = true;
+                    }
                 }
 
                 continue;
@@ -711,7 +749,8 @@ class AuditWebsite implements ShouldBeUnique
 
         $ogImage = isset($html->openGraph['og:image']) ? $this->resolveUrl($url, $html->openGraph['og:image']) : null;
 
-        $externalLinks = array_slice(array_keys($externalLinks), 0, self::RESOURCES_KEPT_PER_PAGE);
+        $externalOutlinks = count($externalLinks);
+        $externalLinks    = array_slice(array_keys($externalLinks), 0, self::RESOURCES_KEPT_PER_PAGE);
         $imageUrls     = array_slice(array_keys($images), 0, self::RESOURCES_KEPT_PER_PAGE);
 
         foreach ($externalLinks as $externalLink) {
@@ -773,7 +812,64 @@ class AuditWebsite implements ShouldBeUnique
             'missing_headers'      => array_values(array_filter(self::SECURITY_HEADERS, fn (string $header) => !$this->hasSecurityHeader($response, $header))),
             'pagination'           => $pagination,
             'pagination_unlinked'  => array_values(array_filter($pagination, fn (string $paginationUrl) => !isset($internalOutlinks[$paginationUrl]))),
+            ...$this->validationFacts($url, $html, $response),
+            'external_outlinks'    => $externalOutlinks,
+            'tracking_links'       => $this->examples(array_keys($trackingLinks)),
+            'long_alt_texts'       => $this->examples(array_values(array_filter(array_map(fn (array $image) => $image['alt'], $html->images), fn (?string $alt) => $alt !== null && mb_strlen($alt) > CrawlIssueTypeEnum::ALT_TEXT_MAX_LENGTH))),
         ], fn ($value) => $value !== null && $value !== [] && $value !== false && $value !== 0);
+    }
+
+    /**
+     * The facts of the checks on how the page is written: headings, directives, refreshes, the
+     * document structure and the social tags, and the width of the title and description in results.
+     */
+    private function validationFacts(string $url, AuditedHtml $html, Response $response): array
+    {
+        $directives = strtolower(implode(',', array_filter([$html->robotsMeta, $response->header('X-Robots-Tag')])));
+        $levels     = $html->headingLevels;
+        $skips      = [];
+
+        foreach ($levels as $index => $level) {
+            if ($index > 0 && $level > $levels[$index - 1] + 1) {
+                $skips['h'.$levels[$index - 1].' > h'.$level] = true;
+            }
+        }
+
+        $ogImage     = $html->openGraph['og:image'] ?? null;
+        $contentType = strtolower((string) $response->header('Content-Type'));
+        $isEnglish   = $html->lang !== null && str_starts_with(strtolower($html->lang), 'en');
+
+        return [
+            'title_px'              => SerpPixelWidth::of($html->title, SerpPixelWidth::TITLE_FONT_SIZE),
+            'meta_description_px'   => SerpPixelWidth::of($html->metaDescription, SerpPixelWidth::DESCRIPTION_FONT_SIZE),
+            'lang'                  => $html->lang,
+            'h1_not_first'          => $html->h1Count > 0 && $levels !== [] && $levels[0] !== 1,
+            'heading_skips'         => array_keys($skips),
+            'alt_in_h1'             => $html->hasAltTextInH1,
+            'reading_ease'          => $isEnglish ? $html->readingEase : null,
+            'canonical_relative'    => $html->canonical !== null && !preg_match('/^https?:\/\//i', $html->canonical),
+            'canonical_fragment'    => $html->canonical !== null && str_contains($html->canonical, '#'),
+            'nosnippet'             => preg_match('/\b(nosnippet|max-snippet\s*:\s*0)\b/', $directives) === 1,
+            'noimageindex'          => str_contains($directives, 'noimageindex'),
+            'unavailable_after'     => str_contains($directives, 'unavailable_after'),
+            'meta_refresh'          => $html->metaRefresh,
+            'http_refresh'          => $response->header('Refresh') !== '' ? $response->header('Refresh') : null,
+            'broken_bookmarks'      => $this->examples($html->brokenBookmarks),
+            'javascript_links'      => $html->javascriptLinks,
+            'protocol_relative'     => $this->examples($html->protocolRelativeUrls),
+            'missing_doctype'       => !$html->hasDoctype,
+            'missing_head'          => $html->headCount === 0,
+            'multiple_heads'        => $html->headCount > 1 ? $html->headCount : null,
+            'missing_body'          => $html->bodyCount === 0,
+            'multiple_bodies'       => $html->bodyCount > 1 ? $html->bodyCount : null,
+            'invalid_head_elements' => $html->invalidHeadElements,
+            'missing_viewport'      => !$html->hasViewport,
+            'missing_charset'       => !$html->hasCharset && !str_contains($contentType, 'charset='),
+            'social_multiple'       => array_keys(array_filter($html->socialTagCounts, fn (int $count) => $count > 1)),
+            'og_image_relative'     => $ogImage !== null && !preg_match('/^https?:\/\//i', $ogImage),
+            'og_title'              => $html->openGraph['og:title'] ?? null,
+            'og_description'        => $html->openGraph['og:description'] ?? null,
+        ];
     }
 
     /**
@@ -832,6 +928,8 @@ class AuditWebsite implements ShouldBeUnique
         $this->seen[$hash] = true;
 
         if ($this->config['respect_robots_txt'] && !$this->robotsTxt->isAllowed(parse_url($url, PHP_URL_PATH) ?: '/')) {
+            $this->blockedByRobots[$hash] = $url;
+
             return;
         }
 
@@ -883,6 +981,26 @@ class AuditWebsite implements ShouldBeUnique
     public static function config(Crawl $crawl): array
     {
         return array_replace(self::DEFAULT_CONFIG, array_intersect_key($crawl->config ?? [], self::DEFAULT_CONFIG));
+    }
+
+    /**
+     * A list crawl checks only the URLs it was given, and the redirects they lead to, without
+     * following their links, to look again at a set of pages after fixing them.
+     */
+    private function isListMode(): bool
+    {
+        return $this->config['mode'] === self::MODE_LIST;
+    }
+
+    /**
+     * Whether a URL belongs to the website, the only URLs a list crawl can check.
+     */
+    public static function isWebsiteUrl(Website $website, string $url): bool
+    {
+        $host        = Str::after(strtolower((string) parse_url($url, PHP_URL_HOST)), 'www.');
+        $websiteHost = Str::after(strtolower((string) parse_url(self::publicBaseUrl($website), PHP_URL_HOST)), 'www.');
+
+        return $host !== '' && in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true) && $host === $websiteHost;
     }
 
     private function isInternalHost(string $host): bool
@@ -1049,6 +1167,26 @@ class AuditWebsite implements ShouldBeUnique
         }
 
         return $pageUrls;
+    }
+
+    /**
+     * The URLs robots.txt keeps us from crawling, as resources of their own kind, so the crawler can
+     * list them once with the pages that link to them, as search engines see them.
+     */
+    private function storeBlockedByRobots(): void
+    {
+        $now = now();
+
+        foreach (array_chunk($this->blockedByRobots, 1000, true) as $chunk) {
+            DB::table('crawl_resources')->insertOrIgnore(array_map(fn (string $url, string $hash) => [
+                'crawl_id'    => $this->crawl->id,
+                'kind'        => self::BLOCKED_BY_ROBOTS,
+                'url'         => $url,
+                'url_hash'    => $hash,
+                'fetch_error' => 'Blocked by robots.txt',
+                'created_at'  => $now,
+            ], $chunk, array_keys($chunk)));
+        }
     }
 
     private function storeInlinks(): void

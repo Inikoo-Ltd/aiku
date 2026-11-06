@@ -48,6 +48,18 @@ class StoreCrawl extends OrgAction
             ]);
         }
 
+        $isListMode = Arr::get($modelData, 'mode') === AuditWebsite::MODE_LIST;
+        $listedUrls = $isListMode ? array_values(array_unique(array_filter(
+            array_map('trim', Arr::get($modelData, 'urls', [])),
+            fn (string $url) => AuditWebsite::isWebsiteUrl($website, $url)
+        ))) : [];
+
+        if ($isListMode && $listedUrls === []) {
+            throw ValidationException::withMessages([
+                'urls' => __('None of the URLs belongs to :domain.', ['domain' => $website->domain]),
+            ]);
+        }
+
         $crawl = AuditWebsite::startFor(
             website: $website,
             trigger: CrawlTriggerEnum::USER,
@@ -61,6 +73,8 @@ class StoreCrawl extends OrgAction
                 'crawl_subdomains'     => (bool) Arr::get($modelData, 'crawl_subdomains', false),
                 'check_external_links' => (bool) Arr::get($modelData, 'check_external_links', true),
                 'check_images'         => (bool) Arr::get($modelData, 'check_images', true),
+                'mode'                 => $isListMode ? AuditWebsite::MODE_LIST : AuditWebsite::MODE_SPIDER,
+                'urls'                 => $listedUrls,
             ],
             name: Arr::get($modelData, 'name'),
             user: $user
@@ -92,6 +106,9 @@ class StoreCrawl extends OrgAction
             'crawl_subdomains'     => ['sometimes', 'boolean'],
             'check_external_links' => ['sometimes', 'boolean'],
             'check_images'         => ['sometimes', 'boolean'],
+            'mode'                 => ['sometimes', 'in:'.AuditWebsite::MODE_SPIDER.','.AuditWebsite::MODE_LIST],
+            'urls'                 => ['required_if:mode,'.AuditWebsite::MODE_LIST, 'array', 'max:'.AuditWebsite::LIST_MAX_URLS],
+            'urls.*'               => ['nullable', 'string', 'max:2048'],
         ];
     }
 

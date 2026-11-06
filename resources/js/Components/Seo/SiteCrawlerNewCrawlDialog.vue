@@ -15,6 +15,7 @@ import InputNumber from "primevue/inputnumber"
 import Textarea from "primevue/textarea"
 import ToggleSwitch from "primevue/toggleswitch"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
@@ -27,6 +28,8 @@ export type CrawlConfig = {
     crawl_subdomains: boolean
     check_external_links: boolean
     check_images: boolean
+    mode: "spider" | "list"
+    urls: string[]
     max_pages: number | null
     concurrency: number
 }
@@ -49,6 +52,8 @@ const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]
 const toggleClass = "[&.p-toggleswitch-checked_.p-toggleswitch-slider]:!bg-[var(--app-accent)]"
 
 const websiteId = ref<number | null>(null)
+const mode = ref<"spider" | "list">("spider")
+const urls = ref("")
 const name = ref("")
 const maxPages = ref<number | null>(null)
 const maxDepth = ref<number | null>(null)
@@ -67,6 +72,8 @@ const reset = () => {
 
     websiteId.value = props.websiteId ?? (props.settings.websites.length === 1 ? props.settings.websites[0].id : null)
     name.value = ""
+    mode.value = defaults.mode
+    urls.value = defaults.urls.join("\n")
     maxPages.value = defaults.max_pages
     maxDepth.value = defaults.max_depth
     concurrency.value = defaults.concurrency
@@ -88,10 +95,20 @@ const patternErrors = (field: "include" | "exclude") => Object.entries(errors.va
     .map(([, message]) => message)
 
 const otherErrors = computed(() => Object.entries(errors.value)
-    .filter(([key]) => !["website", "name", "max_pages", "max_depth", "concurrency"].includes(key) && !key.startsWith("include") && !key.startsWith("exclude"))
+    .filter(([key]) => !["website", "name", "max_pages", "max_depth", "concurrency", "mode"].includes(key) && !key.startsWith("include") && !key.startsWith("exclude") && !key.startsWith("urls"))
     .map(([, message]) => message))
 
-const isLimited = computed(() => maxPages.value !== null
+const modeOptions = [
+    { label: ctrans("Spider"), value: "spider" as const },
+    { label: ctrans("List"), value: "list" as const },
+]
+
+const isListMode = computed(() => mode.value === "list")
+
+const listedUrlCount = computed(() => lines(urls.value).length)
+
+const isLimited = computed(() => isListMode.value
+    || maxPages.value !== null
     || maxDepth.value !== null
     || lines(include.value).length > 0
     || lines(exclude.value).length > 0
@@ -109,6 +126,8 @@ const submit = () => {
 
     router.post(route(props.settings.route.name, [websiteId.value]), {
         name: name.value.trim() || null,
+        mode: mode.value,
+        urls: isListMode.value ? lines(urls.value) : [],
         max_pages: maxPages.value,
         max_depth: maxDepth.value,
         concurrency: concurrency.value,
@@ -150,6 +169,20 @@ const submit = () => {
             </div>
 
             <div class="space-y-1">
+                <SegmentedToggle v-model="mode" :options="modeOptions" :ariaLabel="ctrans('Crawl mode')" />
+                <p class="text-xs text-gray-500">
+                    {{ isListMode ? ctrans("Checks only the URLs you paste, without following their links.") : ctrans("Starts at the home page and follows every link, then the URLs in the sitemap.") }}
+                </p>
+            </div>
+
+            <div v-if="isListMode" class="space-y-1">
+                <label for="crawl-urls" class="block text-xs font-medium text-gray-600">{{ ctrans("URLs") }}</label>
+                <Textarea id="crawl-urls" v-model="urls" rows="6" :placeholder="ctrans('One URL per line')" class="font-mono text-xs" :class="fieldFocusClass" fluid />
+                <p class="text-xs text-gray-500">{{ ctrans(":count URLs", { count: listedUrlCount }) }}</p>
+                <p v-if="errors.urls" class="text-xs text-red-500">{{ errors.urls }}</p>
+            </div>
+
+            <div class="space-y-1">
                 <label for="crawl-name" class="block text-xs font-medium text-gray-600">{{ ctrans("Name") }}</label>
                 <InputText id="crawl-name" v-model="name" :placeholder="ctrans('Optional, e.g. After menu change')" :class="fieldFocusClass" fluid />
                 <p v-if="errors.name" class="text-xs text-red-500">{{ errors.name }}</p>
@@ -161,7 +194,7 @@ const submit = () => {
                     <InputNumber v-model="maxPages" inputId="crawl-max-pages" :min="1" :useGrouping="false" :placeholder="ctrans('No limit')" :class="fieldFocusClass" fluid />
                     <p v-if="errors.max_pages" class="text-xs text-red-500">{{ errors.max_pages }}</p>
                 </div>
-                <div class="space-y-1">
+                <div v-if="!isListMode" class="space-y-1">
                     <label for="crawl-max-depth" class="block text-xs font-medium text-gray-600">{{ ctrans("Max depth") }}</label>
                     <InputNumber v-model="maxDepth" inputId="crawl-max-depth" :min="0" :useGrouping="false" :placeholder="ctrans('No limit')" :class="fieldFocusClass" fluid />
                     <p v-if="errors.max_depth" class="text-xs text-red-500">{{ errors.max_depth }}</p>
@@ -174,7 +207,7 @@ const submit = () => {
             </div>
             <p class="-mt-2 text-xs text-gray-500">{{ ctrans("Each URL is rendered by the same servers as our customers, so the speed is shared with other running crawls.") }}</p>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div v-if="!isListMode" class="grid grid-cols-2 gap-3">
                 <div class="space-y-1">
                     <label for="crawl-include" class="block text-xs font-medium text-gray-600">{{ ctrans("Include") }}</label>
                     <Textarea id="crawl-include" v-model="include" rows="3" :placeholder="ctrans('One regex per line')" class="font-mono text-xs" :class="fieldFocusClass" fluid />

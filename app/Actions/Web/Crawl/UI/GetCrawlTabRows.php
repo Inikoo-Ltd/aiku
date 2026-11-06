@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Crawl\UI;
 
+use App\Actions\Web\Crawl\AuditWebsite;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlTabEnum;
 use App\Models\Web\Crawl;
@@ -30,8 +31,11 @@ class GetCrawlTabRows
         'content_type'            => 'crawl_pages.content_type',
         'title'                   => 'crawl_pages.title',
         'title_length'            => 'char_length(crawl_pages.title)',
+        'title_pixels'            => "(crawl_pages.facts->>'title_px')::int",
         'meta_description'        => 'crawl_pages.meta_description',
         'meta_description_length' => 'char_length(crawl_pages.meta_description)',
+        'meta_description_pixels' => "(crawl_pages.facts->>'meta_description_px')::int",
+        'reading_ease'            => "(crawl_pages.facts->>'reading_ease')::numeric",
         'h1'                      => 'crawl_pages.h1',
         'h1_length'               => 'char_length(crawl_pages.h1)',
         'h1_count'                => 'crawl_pages.h1_count',
@@ -59,7 +63,7 @@ class GetCrawlTabRows
     ];
 
     private const array NUMERIC_COLUMNS = [
-        'status_code', 'title_length', 'meta_description_length', 'h1_length', 'h1_count', 'h2_count', 'word_count', 'link_depth', 'inlinks',
+        'status_code', 'title_length', 'title_pixels', 'meta_description_length', 'meta_description_pixels', 'h1_length', 'h1_count', 'h2_count', 'word_count', 'link_depth', 'inlinks',
         'internal_outlinks', 'response_ms', 'bytes', 'redirect_hops', 'url_length', 'hreflang_count', 'images_without_alt', 'sitemap_count',
     ];
 
@@ -76,10 +80,12 @@ class GetCrawlTabRows
             return ['source' => 'pages', 'issue' => $issue, 'state_filter' => null];
         }
 
+        $stateFilter = $filter && array_key_exists($filter, $tab->stateFilters()) ? $filter : null;
+
         return [
-            'source'       => $tab->source(),
+            'source'       => $stateFilter === 'blocked_by_robots' ? AuditWebsite::BLOCKED_BY_ROBOTS : $tab->source(),
             'issue'        => null,
-            'state_filter' => $filter && array_key_exists($filter, $tab->stateFilters()) ? $filter : null,
+            'state_filter' => $stateFilter === 'blocked_by_robots' ? null : $stateFilter,
         ];
     }
 
@@ -93,6 +99,7 @@ class GetCrawlTabRows
         $keys = match ($resolved['source']) {
             'link'  => ['status_code', 'content_type', 'inlinks'],
             'image' => ['status_code', 'bytes', 'alt_text', 'inlinks'],
+            AuditWebsite::BLOCKED_BY_ROBOTS => ['inlinks'],
             default => $tab->pageColumns(),
         };
 
@@ -105,7 +112,7 @@ class GetCrawlTabRows
         return array_map(fn (string $key) => [
             'key'     => $key,
             'label'   => $labels[$key] ?? $key,
-            'numeric' => in_array($key, [...self::NUMERIC_COLUMNS, 'bytes'], true),
+            'numeric' => in_array($key, [...self::NUMERIC_COLUMNS, 'bytes', 'reading_ease'], true),
         ], array_values(array_unique(array_filter($keys, fn (string $key) => $resolved['source'] !== 'pages' || isset(self::PAGE_COLUMNS[$key]) || $key === 'details'))));
     }
 
@@ -178,6 +185,7 @@ class GetCrawlTabRows
                 $column === 'details'                                  => $value === null ? null : json_decode($value, true),
                 $column === 'indexability'                             => $value === null ? null : (bool) $value,
                 $column === 'is_in_sitemap'                            => (bool) $value,
+                $column === 'reading_ease'                             => $value === null ? null : (float) $value,
                 in_array($column, self::NUMERIC_COLUMNS, true)         => $value === null ? null : (int) $value,
                 default                                                => $value,
             };
@@ -210,6 +218,7 @@ class GetCrawlTabRows
             'success'        => $query->whereBetween('crawl_pages.status_code', [200, 299]),
             'redirection'    => $query->whereBetween('crawl_pages.status_code', [300, 399]),
             'in_sitemap'     => $query->where('crawl_pages.is_in_sitemap', true),
+            'multiple_h2'    => $query->whereRaw("coalesce((crawl_pages.facts->>'h2_count')::int, 0) > 1"),
             'not_in_sitemap' => $query->where('crawl_pages.is_in_sitemap', false),
             default          => $query,
         };
@@ -271,8 +280,11 @@ class GetCrawlTabRows
             'content_type'            => __('Content type'),
             'title'                   => __('Title'),
             'title_length'            => __('Title length'),
+            'title_pixels'            => __('Title pixel width'),
             'meta_description'        => __('Meta description'),
             'meta_description_length' => __('Meta description length'),
+            'meta_description_pixels' => __('Meta description pixel width'),
+            'reading_ease'            => __('Flesch reading ease'),
             'h1'                      => __('H1'),
             'h1_length'               => __('H1 length'),
             'h1_count'                => __('H1 count'),

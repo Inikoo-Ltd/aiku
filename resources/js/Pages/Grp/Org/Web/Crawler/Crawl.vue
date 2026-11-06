@@ -18,6 +18,7 @@ import InputIcon from "primevue/inputicon"
 import DataTable, { DataTablePageEvent, DataTableSortEvent } from "primevue/datatable"
 import Column from "primevue/column"
 import ProgressBar from "primevue/progressbar"
+import Menu from "primevue/menu"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SiteCrawlerUrlDetails from "@/Components/Seo/SiteCrawlerUrlDetails.vue"
@@ -29,7 +30,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faFileExcel, faSearch, faStopCircle } from "@fal"
+import { faFileExcel, faSearch, faStopCircle, faFileChartLine, faExchangeAlt } from "@fal"
 
 type Severity = "error" | "warning" | "notice"
 
@@ -72,6 +73,7 @@ type CrawlSummary = {
     user_name: string | null
     can_stop: boolean
     is_full_audit: boolean
+    config: { mode: "spider" | "list", urls_count: number }
 }
 
 type Query = {
@@ -102,6 +104,8 @@ const props = defineProps<{
         self: routeType
         details: routeType
         export: routeType
+        report: routeType
+        compare: routeType
         stop: (routeType & { method: string }) | null
         index: routeType
     }
@@ -194,6 +198,16 @@ const exportHref = computed(() => route(props.routes.export.name, {
 
 const downloadExport = () => window.location.assign(exportHref.value)
 
+const reportMenu = ref<InstanceType<typeof Menu> | null>(null)
+
+const downloadReport = (report: string) => window.location.assign(route(props.routes.report.name, { ...(props.routes.report.parameters as object), report }))
+
+const reportItems = [
+    { label: ctrans("Issues overview"), command: () => downloadReport("issues_overview") },
+    { label: ctrans("Redirect chains"), command: () => downloadReport("redirect_chains") },
+    { label: ctrans("Canonical chains"), command: () => downloadReport("canonical_chains") },
+]
+
 const { start: startPolling, stop: stopPolling } = usePoll(5000, { only: ["crawl", "tabs", "table"] }, { autoStart: false })
 
 watch(() => props.crawl.is_running, (isRunning) => isRunning ? startPolling() : stopPolling(), { immediate: true })
@@ -281,6 +295,19 @@ const overviewTabs = computed(() => props.tabs.filter((tab) => tab.filters.some(
                         <FontAwesomeIcon :icon="faStopCircle" class="text-amber-500" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
+                <Link v-if="!crawl.is_running" :href="route(routes.compare.name, routes.compare.parameters)">
+                    <Button type="tertiary" :label="ctrans('Compare')">
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faExchangeAlt" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </Link>
+                <Button type="tertiary" :label="ctrans('Reports')" aria-haspopup="true" aria-controls="crawl-reports" @click="(event) => reportMenu?.toggle(event)">
+                    <template #icon>
+                        <FontAwesomeIcon :icon="faFileChartLine" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+                <Menu id="crawl-reports" ref="reportMenu" :model="reportItems" popup class="text-sm" />
                 <Button type="tertiary" :label="ctrans('Export')" @click="downloadExport">
                     <template #icon>
                         <FontAwesomeIcon :icon="faFileExcel" class="text-green-600" fixed-width aria-hidden="true" />
@@ -301,6 +328,7 @@ const overviewTabs = computed(() => props.tabs.filter((tab) => tab.filters.some(
         </span>
         <span v-if="crawl.start_at">{{ ctrans("Started :date", { date: useFormatTime(crawl.start_at, { formatTime: "hm" }) }) }}</span>
         <span v-if="crawl.user_name">{{ ctrans("by :name", { name: crawl.user_name }) }}</span>
+        <span v-if="crawl.config.mode === 'list'">{{ ctrans("List of :count URLs", { count: locale.number(crawl.config.urls_count) }) }}</span>
         <span v-if="!crawl.is_full_audit" class="rounded bg-gray-100 px-1.5 py-0.5 text-gray-600">{{ ctrans("Limited crawl: not used for the health score and page scores") }}</span>
         <span v-if="!crawl.is_running && crawl.health_score !== null">{{ ctrans("Health score :score", { score: locale.number(crawl.health_score) }) }}</span>
         <span v-if="!crawl.is_running" class="tabular-nums">

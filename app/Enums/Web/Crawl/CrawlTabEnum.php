@@ -33,6 +33,7 @@ enum CrawlTabEnum: string
     case SOCIAL           = 'social';
     case SITEMAPS         = 'sitemaps';
     case SECURITY         = 'security';
+    case VALIDATION       = 'validation';
 
     public static function labels(): array
     {
@@ -56,6 +57,7 @@ enum CrawlTabEnum: string
             self::SOCIAL->value           => __('Social tags'),
             self::SITEMAPS->value         => __('Sitemaps'),
             self::SECURITY->value         => __('Security'),
+            self::VALIDATION->value       => __('Validation'),
         ];
     }
 
@@ -86,8 +88,9 @@ enum CrawlTabEnum: string
                 'non_indexable' => __('Non-indexable'),
             ],
             self::RESPONSE_CODES => [
-                'success'     => __('Success (2xx)'),
-                'redirection' => __('Redirection (3xx)'),
+                'success'           => __('Success (2xx)'),
+                'redirection'       => __('Redirection (3xx)'),
+                'blocked_by_robots' => __('Blocked by robots.txt'),
             ],
             self::EXTERNAL       => [
                 'success'      => __('Success (2xx)'),
@@ -101,6 +104,9 @@ enum CrawlTabEnum: string
                 'over_size'    => __('Over :size KB', ['size' => CrawlIssueTypeEnum::LARGE_IMAGE_KB]),
                 'client_error' => __('Client error (4xx)'),
                 'no_response'  => __('No response'),
+            ],
+            self::H2             => [
+                'multiple_h2' => __('Multiple'),
             ],
             self::SITEMAPS       => [
                 'in_sitemap'     => __('URLs in sitemap'),
@@ -129,11 +135,11 @@ enum CrawlTabEnum: string
             self::INTERNAL         => ['status_code', 'indexability', 'content_type', 'title', 'word_count', 'link_depth', 'inlinks', 'response_ms', 'bytes'],
             self::RESPONSE_CODES   => ['status_code', 'redirect_to', 'redirect_hops', 'response_ms', 'inlinks'],
             self::URL              => ['status_code', 'url_length', 'inlinks'],
-            self::PAGE_TITLES      => ['title', 'title_length', 'indexability'],
-            self::META_DESCRIPTION => ['meta_description', 'meta_description_length', 'indexability'],
+            self::PAGE_TITLES      => ['title', 'title_length', 'title_pixels', 'indexability'],
+            self::META_DESCRIPTION => ['meta_description', 'meta_description_length', 'meta_description_pixels', 'indexability'],
             self::H1               => ['h1', 'h1_length', 'h1_count'],
             self::H2               => ['h2_1', 'h2_2', 'h2_count'],
-            self::CONTENT          => ['word_count', 'indexability', 'inlinks'],
+            self::CONTENT          => ['word_count', 'reading_ease', 'indexability', 'inlinks'],
             self::IMAGES           => ['images_without_alt', 'inlinks'],
             self::CANONICALS       => ['canonical', 'indexability'],
             self::DIRECTIVES       => ['robots_meta', 'x_robots_tag', 'indexability'],
@@ -144,6 +150,7 @@ enum CrawlTabEnum: string
             self::SOCIAL           => ['title', 'indexability'],
             self::SITEMAPS         => ['is_in_sitemap', 'sitemap_count', 'indexability'],
             self::SECURITY         => ['status_code', 'indexability'],
+            self::VALIDATION       => ['status_code', 'bytes', 'indexability'],
             self::EXTERNAL         => ['status_code', 'inlinks'],
         };
     }
