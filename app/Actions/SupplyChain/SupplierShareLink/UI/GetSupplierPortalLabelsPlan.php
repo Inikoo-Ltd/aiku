@@ -38,7 +38,8 @@ class GetSupplierPortalLabelsPlan
             ...PdfSupplierProductLabels::make()->plan(
                 $supplier->group,
                 PdfSupplierPortalLabels::supplierProductIds($supplier, $validated['supplier_products']),
-                $validated['for_organisation'] ?? null
+                $validated['for_organisation'] ?? null,
+                PdfSupplierPortalLabels::allowedOrganisationIds($supplier)
             ),
             'sizes'        => GetOrgStockLabelOptions::make()->getSizes(),
             'default_size' => PdfOrgStockLabel::DEFAULT_SIZE,

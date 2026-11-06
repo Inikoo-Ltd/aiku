@@ -67,6 +67,9 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
             || !in_array($this->purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
             || !in_array($this->purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
             $validator->errors()->add('answer', __('There is no new price waiting for an answer on this line'));
+        } elseif ($this->get('answer') !== PurchaseOrderTransactionPriceQueryStateEnum::REJECTED->value
+            && (!AskPurchaseOrderTransactionPriceChange::isAskable($this->purchaseOrderTransaction) || AskPurchaseOrderTransactionQuantityChange::isShipped($this->purchaseOrderTransaction))) {
+            $validator->errors()->add('answer', __('The supplier has started production, the price can no longer be changed, only kept'));
         }
 
         if (!$this->asAction && $request->boolean('update_supplier_cost') && !$request->user()?->authTo('supply-chain.edit')) {

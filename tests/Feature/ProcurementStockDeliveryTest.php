@@ -3970,3 +3970,15 @@ test('import file details tick steps from aiku data, take marks that win over it
     $this->withExceptionHandling();
     $this->patch($url, ['step' => 'not_a_step', 'status' => 'done'])->assertSessionHasErrors('step');
 });
+
+test('a container sheet PO matches a purchase order by its whole reference or its whole number, not by a digit inside it', function () {
+    $isSame = fn (string $sheet, string $reference) => (new ReflectionMethod(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::class, 'isSamePurchaseOrder'))
+        ->invoke(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::make(), $sheet, $reference);
+
+    expect($isSame('AWIndo-059-UK', 'AWIndo-059-UK'))->toBeTrue()
+        ->and($isSame('PO-059 ES', 'AWIndo-059-ES'))->toBeTrue()
+        ->and($isSame('59', 'AWIndo-059-UK'))->toBeTrue()
+        ->and($isSame('5', 'AWIndo-059-UK'))->toBeFalse()
+        ->and($isSame('Indo', 'AWIndo-059-UK'))->toBeFalse()
+        ->and($isSame('PO-060', 'AWIndo-059-UK'))->toBeFalse();
+});

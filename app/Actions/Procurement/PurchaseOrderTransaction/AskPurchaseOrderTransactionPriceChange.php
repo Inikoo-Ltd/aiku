@@ -72,7 +72,7 @@ class AskPurchaseOrderTransactionPriceChange extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!self::isAskable($this->purchaseOrderTransaction)) {
+        if (!self::isAskable($this->purchaseOrderTransaction) || AskPurchaseOrderTransactionQuantityChange::isShipped($this->purchaseOrderTransaction)) {
             $validator->errors()->add('unit_cost', __('A new price can only be asked for until the supplier starts production'));
         }
     }

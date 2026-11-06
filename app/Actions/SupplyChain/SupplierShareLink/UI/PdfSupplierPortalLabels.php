@@ -14,6 +14,7 @@ use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SupplyChain\SupplierShareLink;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,6 +39,20 @@ class PdfSupplierPortalLabels
             ->where('state', '!=', SupplierProductStateEnum::IN_PROCESS)
             ->whereIn('id', $supplierProductIds)
             ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * Only the organisations buying from this supplier, never the rest of the group.
+     *
+     * @return list<int>
+     */
+    public static function allowedOrganisationIds(Supplier $supplier): array
+    {
+        return DB::table('org_suppliers')
+            ->where('supplier_id', $supplier->id)
+            ->distinct()
+            ->pluck('organisation_id')
             ->all();
     }
 
@@ -70,6 +85,7 @@ class PdfSupplierPortalLabels
             $validated['for_organisation'] ?? null,
             $validated['size'] ?? null,
             (int) ($validated['copies'] ?? 1),
+            self::allowedOrganisationIds($supplier),
             content: PdfSupplierProductLabels::unitContent($validated)
         );
 

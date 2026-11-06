@@ -266,12 +266,13 @@ class PreviewStockDeliveryItemsImport extends OrgAction
 
     /**
      * Sheets write the agent's own PO numbers ("PO-059 ES" for AWIndo-059-ES), so after the whole reference the
-     * first number of the sheet is looked for among the numbers of the reference.
+     * first number of the sheet is looked for among the numbers of the reference, as a whole number: "5" is not
+     * the PO of AWIndo-059-UK.
      */
     private function isSamePurchaseOrder(string $sheetPurchaseOrder, string $reference): bool
     {
         $squash = fn (string $text) => preg_replace('/[^a-z0-9]/', '', mb_strtolower($text));
-        if ($squash($sheetPurchaseOrder) !== '' && ($squash($sheetPurchaseOrder) === $squash($reference) || str_contains($squash($reference), $squash($sheetPurchaseOrder)))) {
+        if ($squash($sheetPurchaseOrder) !== '' && $squash($sheetPurchaseOrder) === $squash($reference)) {
             return true;
         }
 

@@ -433,3 +433,17 @@ test('a proposed price change puts the product on hold and tells its last buyer,
     expect($supplierProduct->fresh())->is_available->toBeTrue()->availability_new_cost->toBeNull()
         ->and((float) $supplierProduct->fresh()->cost)->toBe(6.0);
 });
+
+test('the supplier labels plan names only the organisations buying from the supplier, never the rest of the group', function () {
+    [$supplier, $supplierProduct, $token] = portalSupplier($this);
+    $supplierProduct->updateQuietly(['state' => \App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum::ACTIVE]);
+    DB::table('stock_has_supplier_products')->insert(['stock_id' => $this->stock->id, 'supplier_product_id' => $supplierProduct->id, 'created_at' => now(), 'updated_at' => now()]);
+    $otherOrganisation = \App\Actions\SupplyChain\Agent\StoreAgent::make()->action($this->group, \App\Models\SupplyChain\Agent::factory()->definition())->organisation;
+    createOrgStocks($otherOrganisation, [$this->stock]);
+
+    $plan = $this->get(route('grp.supplier_share.labels.plan', [$token, 'supplier_products' => $supplierProduct->id, 'for_organisation' => $otherOrganisation->id]))
+        ->assertOk()->json();
+
+    expect(collect($plan['organisations'])->pluck('id')->all())->toBe([$this->organisation->id])
+        ->and($plan['organisation_id'])->toBe($this->organisation->id);
+});

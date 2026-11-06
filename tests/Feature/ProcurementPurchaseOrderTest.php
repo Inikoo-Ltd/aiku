@@ -4001,6 +4001,11 @@ test('the agent asks the organisation about a new supplier price and confirms on
     expect($line->refresh()->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::PENDING);
     $order->updateQuietly(['production_started_at' => now()]);
     $this->post($askRoute, ['unit_cost' => $oldUnitCost + 6])->assertSessionHasErrors('unit_cost');
+    actingAs($admin);
+    $this->patch($answerRoute, ['answer' => 'accepted'])->assertSessionHasErrors('answer');
+    expect((float) $line->refresh()->unit_cost)->toEqual($oldUnitCost + 2);
+    $this->patch($answerRoute, ['answer' => 'rejected'])->assertSessionHasNoErrors();
+    expect($line->refresh()->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::REJECTED);
     actingAs($this->adminGuest->getUser());
 });
 
@@ -4394,4 +4399,28 @@ test('moving part of a line puts it on the other supplier open order at the same
     $locked->update(['production_started_at' => now()]);
     expect(fn () => MovePurchaseOrderTransactionToSupplier::make()->action($locked->purchaseOrderTransactions()->firstOrFail(), ['org_supplier_id' => $toSupplier->id, 'quantity' => 3]))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('a paid order owes the balance again once a quantity change raises its total, and is paid again when it goes back', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $order->depositPayments()->create([
+        'group_id'        => $order->group_id,
+        'organisation_id' => $order->organisation_id,
+        'currency_id'     => $order->currency_id,
+        'amount'          => (float) $order->cost_total,
+        'date'            => now()->toDateString(),
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::CASH,
+    ]);
+    \App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::run($order->refresh());
+    expect($order->refresh()->balance_paid_at)->not->toBeNull();
+
+    UpdatePurchaseOrderTransaction::make()->action($line, ['quantity_ordered' => 12]);
+    expect($order->refresh()->balance_paid_at)->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::leftToPay($order))->toBeGreaterThan(0.0);
+
+    UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
+    expect($order->refresh()->balance_paid_at)->not->toBeNull();
 });
