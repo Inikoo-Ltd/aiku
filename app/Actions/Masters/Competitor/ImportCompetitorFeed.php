@@ -384,6 +384,7 @@ class ImportCompetitorFeed
 
         Competitor::whereNull('feed_url')
             ->whereNull('search_url')
+            ->where('prices_by_hand', false)
             ->when($command->option('competitor'), fn ($query, $id) => $query->where('id', $id))
             ->each(function (Competitor $competitor) use ($command) {
                 if ($feedUrl = static::findShopifyFeed($competitor->website) ?? static::findWooCommerceFeed($competitor->website)) {
@@ -393,6 +394,7 @@ class ImportCompetitorFeed
             });
 
         $competitors = Competitor::whereNotNull('feed_url')
+            ->where('prices_by_hand', false)
             ->when($command->option('competitor'), fn ($query, $id) => $query->where('id', $id))
             ->get();
 

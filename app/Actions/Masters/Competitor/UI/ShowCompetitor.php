@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Masters\Competitor\CompetitorSellsToEnum;
 use App\Enums\UI\Masters\CompetitorTabsEnum;
+use App\Http\Resources\Masters\CompetitorPriceChecksResource;
 use App\Http\Resources\Masters\CompetitorProductsResource;
 use App\Http\Resources\Masters\CompetitorsResource;
 use App\Http\Resources\Masters\MasterAssetCompetitorProductsResource;
@@ -38,7 +39,7 @@ class ShowCompetitor extends OrgAction
 
     public function asController(Competitor $competitor, ActionRequest $request): Competitor
     {
-        $this->initialisationFromGroup(group(), $request)->withTab(CompetitorTabsEnum::values());
+        $this->initialisationFromGroup(group(), $request)->withTab(array_keys(static::tabs($competitor)));
 
         return $this->handle($competitor);
     }
@@ -71,7 +72,7 @@ class ShowCompetitor extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => CompetitorTabsEnum::navigation(),
+                    'navigation' => static::tabs($competitor),
                 ],
                 'competitor'  => [
                     'name'             => $competitor->name,
@@ -80,7 +81,8 @@ class ShowCompetitor extends OrgAction
                     'sells_to'         => CompetitorSellsToEnum::labels()[$competitor->sells_to->value],
                     'currency_code'    => $competitor->currency->code,
                     'language'         => $competitor->language?->name,
-                    'read_method'      => CompetitorsResource::readMethod($competitor->feed_url, (bool) $competitor->search_url),
+                    'read_method'      => CompetitorsResource::readMethod($competitor->feed_url, (bool) $competitor->search_url, $competitor->prices_by_hand),
+                    'prices_by_hand'   => $competitor->prices_by_hand,
                     'has_login'        => (bool) $competitor->username,
                     'status'           => $competitor->status?->value,
                     'last_error'       => $competitor->last_error,
@@ -94,6 +96,11 @@ class ShowCompetitor extends OrgAction
                 ],
                 'can_edit'    => $this->canEdit,
                 'refresh_route' => ['name' => 'grp.models.competitor.refresh_intel', 'parameters' => ['competitor' => $competitor->id]],
+                'price_check_route'   => ['name' => 'grp.models.competitor.price_check.store', 'parameters' => ['competitor' => $competitor->id]],
+
+                CompetitorTabsEnum::PRICE_CHECKS->value => $this->tab == CompetitorTabsEnum::PRICE_CHECKS->value
+                    ? fn () => CompetitorPriceChecksResource::collection(IndexCompetitorPriceChecks::run($competitor, CompetitorTabsEnum::PRICE_CHECKS->value))
+                    : Inertia::optional(fn () => CompetitorPriceChecksResource::collection(IndexCompetitorPriceChecks::run($competitor, CompetitorTabsEnum::PRICE_CHECKS->value))),
 
                 CompetitorTabsEnum::DOSSIER->value => $this->tab == CompetitorTabsEnum::DOSSIER->value
                     ? fn () => $this->dossier($competitor)
@@ -112,8 +119,20 @@ class ShowCompetitor extends OrgAction
                     : Inertia::optional(fn () => Arr::get($intel, 'pages', [])),
             ]
         )->table(IndexCompetitorProducts::make()->tableStructure($competitor, self::DISCOUNTED, onSaleOnly: true))
+            ->table(IndexCompetitorPriceChecks::make()->tableStructure(CompetitorTabsEnum::PRICE_CHECKS->value))
             ->table(IndexMasterAssetCompetitorProducts::make()->tableStructure(CompetitorTabsEnum::MATCHES->value, withMasterShop: false))
             ->table(IndexCompetitorProducts::make()->tableStructure($competitor, CompetitorTabsEnum::PRODUCTS->value));
+    }
+
+    /**
+     * A competitor checked by hand has nothing crawled, so no dossier, products read or policies; one
+     * read by itself has no price checks.
+     */
+    private static function tabs(Competitor $competitor): array
+    {
+        return $competitor->prices_by_hand
+            ? CompetitorTabsEnum::navigationOnly([CompetitorTabsEnum::PRICE_CHECKS->value, CompetitorTabsEnum::MATCHES->value])
+            : CompetitorTabsEnum::navigationExcept([CompetitorTabsEnum::PRICE_CHECKS]);
     }
 
     /**

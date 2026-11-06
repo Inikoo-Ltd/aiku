@@ -8,7 +8,7 @@ help_routes: grp.masters.competitors.dashboard, grp.masters.competitors.index, g
 ---
 
 <aside class="tldr">
-Under <b>Masters › Competitors</b> you tell aiku which competitor websites to watch. aiku reads their products and prices by itself, matches them to your master products, and shows <b>where you are cheaper, about the same or dearer</b>, per unit and in the group currency. The AI confirms the matches it is sure of and asks you to <b>review the rest</b> with a tick or a cross. Confirmed prices also show up in the <a href="/docs/price-tips">price tips</a>.
+Under <b>Masters › Competitors</b> you tell aiku which competitor websites to watch. aiku reads their products and prices by itself, matches them to your master products, and shows <b>where you are cheaper, about the same or dearer</b>, per unit, in their currency against your own price in it. Marketplaces that block automated visits are <b>checked by hand</b> once a month instead. The AI confirms the matches it is sure of and asks you to <b>review the rest</b> with a tick or a cross. Confirmed prices also show up in the <a href="/docs/price-tips">price tips</a>.
 </aside>
 
 ## Adding a competitor
@@ -30,6 +30,19 @@ For any other website, fill in one of the fields under **Where to read prices**:
 - **Search link**: search their website for any word, copy the link of the results page and put `{query}` where the word was. aiku then searches their site every week for the master products that have an open price tip. When the link is left empty for a site with a login, or the one entered lands on a page without the searched words, aiku uses the search link the website publishes about itself if it has one; otherwise the competitor shows **The search link does not search**.
 - **Login page**, **login email** and **password**: only when they show prices to logged-in trade customers. The password is stored encrypted and never shown again; leave it empty when editing to keep it. aiku logs in afresh every time it searches.
 
+## Marketplaces checked by hand
+
+Big marketplaces that sell straight to shoppers block automated visits with security checks and logins, so aiku cannot read them. Add them as a competitor that sells to **shoppers**, in the currency you see on their site, and switch on **Prices checked by hand**. aiku then never opens their website: no catalogue, no search and no dossier.
+
+Once a month, open their website as a buyer in the EU, look up our exposed products (start with the ones made in China, where these sellers are strongest) and, on the competitor page, click **Add price check** for each listing that is the same item as ours:
+
+- **Our product code**, for example the master product code on the label;
+- the **link to their listing**, so anyone can open it and see the price with their own eyes;
+- **their product name**, the **price for the pack** (VAT included, with delivery if they charge it), the **units in the pack** and the **delivery days** they promise;
+- a **screenshot** of their listing with the price showing: choose the file, or paste it straight from the clipboard with Ctrl+V / Cmd+V. It is the proof of the price, kept even after the listing changes or disappears.
+
+The listing becomes a confirmed match, so it counts on the dashboard, in the **Confirmed** price comparison and in the price tips like any other. Every check is also kept: the **Price checks** tab lists them newest first, with their price per unit, yours, the difference, the change since the check before for the same listing, the delivery days, who checked and the screenshot (click it to see it full size). Adding the same link again next month adds a new row, so the history shows whether they are getting cheaper.
+
 ## What the dashboard shows
 
 **Masters › Competitors** opens on the dashboard:
@@ -46,7 +59,7 @@ Until the first competitor is added, the dashboard explains what to do instead.
 
 ## Reviewing matches
 
-After every read the AI compares each of their products with yours. A match it is sure of is **confirmed by itself** (marked *auto*); the others wait under **Prices to review**. Each row shows your product, your price per unit, their product with a link, their price per unit in the group currency, and the difference: red when they are cheaper, green when they are dearer.
+After every read the AI compares each of their products with yours. A match it is sure of is **confirmed by itself** (marked *auto*); the others wait under **Prices to review**. Each row shows your product, your price per unit, their product with a link, their price per unit, and the difference: red when they are cheaper, green when they are dearer. Both prices are in their currency, yours taken from your price in that currency (an AW class price in euros for a competitor in euros); only when you have no price in their currency are both converted to the group currency.
 
 Click the **tick** when it is the right match and the **cross** when it is not. Rejected matches are not shown again. The buckets at the top switch between **To review**, **Confirmed**, **Rejected** and **All**; the **Confirmed** bucket doubles as the price comparison, sortable by difference.
 
@@ -88,6 +101,7 @@ A fact comes only from the pages read: the AI is told to say *not found* rather 
 <li><b>Review matches:</b> <b>Masters</b> → <b>Competitors</b> → <b>Prices to review</b> → tick or cross on each row.</li>
 <li><b>Price comparison:</b> <b>Masters</b> → <b>Competitors</b> → <b>Prices to review</b> → <b>Confirmed</b>.</li>
 <li><b>One competitor:</b> <b>Masters</b> → <b>Competitors</b> → <b>Competitors</b> → click its name.</li>
+<li><b>Add a price checked by hand:</b> open the competitor → <b>Add price check</b>; the history is on the <b>Price checks</b> tab.</li>
 </ul>
 </aside>
 

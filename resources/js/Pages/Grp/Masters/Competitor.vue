@@ -12,6 +12,8 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TableMasterAssetCompetitorProducts from "@/Components/Tables/Grp/Masters/TableMasterAssetCompetitorProducts.vue"
 import TableCompetitorProducts from "@/Components/Tables/Grp/Masters/TableCompetitorProducts.vue"
+import TableCompetitorPriceChecks from "@/Components/Tables/Grp/Masters/TableCompetitorPriceChecks.vue"
+import CompetitorPriceCheckDialog from "@/Components/Masters/CompetitorPriceCheckDialog.vue"
 import CompetitorDossier from "@/Components/Masters/CompetitorDossier.vue"
 import CompetitorPolicies from "@/Components/Masters/CompetitorPolicies.vue"
 import { useTabChange } from "@/Composables/tab-change"
@@ -20,11 +22,11 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheckCircle, faExclamationTriangle, faCircle, faSync, faFileAlt, faFileContract, faBalanceScale, faCube } from "@fal"
+import { faCheckCircle, faExclamationTriangle, faCircle, faSync, faFileAlt, faFileContract, faBalanceScale, faCube, faClipboardCheck, faPlus } from "@fal"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faCheckCircle, faExclamationTriangle, faCircle, faSync, faFileAlt, faFileContract, faBalanceScale, faCube)
+library.add(faCheckCircle, faExclamationTriangle, faCircle, faSync, faFileAlt, faFileContract, faBalanceScale, faCube, faClipboardCheck, faPlus)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -38,6 +40,7 @@ const props = defineProps<{
         currency_code: string
         language: string | null
         read_method: string
+        prices_by_hand: boolean
         has_login: boolean
         status: string | null
         last_error: string | null
@@ -51,6 +54,8 @@ const props = defineProps<{
     }
     can_edit: boolean
     refresh_route: routeType
+    price_check_route: routeType
+    price_checks?: object
     dossier?: object
     matches?: object
     products?: object
@@ -73,6 +78,7 @@ const readMethodLabels: Record<string, string> = {
     woocommerce: ctrans("WooCommerce catalogue, read every morning"),
     feed: ctrans("Product feed, read every morning"),
     search: ctrans("Website search, every week for the products with a price tip"),
+    hand: ctrans("Checked by hand each month: their website blocks automated visits"),
     none: ctrans("Nothing yet: add a search link, or it is read by itself if it is a Shopify or WooCommerce shop"),
 }
 
@@ -85,6 +91,8 @@ const facts = computed(() => [
     { label: ctrans("Language of their website"), value: props.competitor.language ?? ctrans("Not known yet") },
     { label: ctrans("Prices read from"), value: readMethodLabels[props.competitor.read_method] + (props.competitor.has_login ? " · " + ctrans("logs in with our trade account") : "") },
 ])
+
+const isAddingPriceCheck = ref(false)
 
 const isRefreshing = ref(false)
 const refreshQueued = ref(false)
@@ -120,8 +128,12 @@ const refreshDossier = () => {
                         <span v-else>{{ fact.value }}</span>
                     </div>
                     <div>
-                        <div class="text-xs text-gray-500">{{ ctrans("Last read") }}</div>
-                        <div class="flex items-center gap-1.5">
+                        <div class="text-xs text-gray-500">{{ competitor.prices_by_hand ? ctrans("Last price check") : ctrans("Last read") }}</div>
+                        <div v-if="competitor.prices_by_hand">
+                            <span v-if="competitor.fetched_at">{{ useFormatTime(competitor.fetched_at) }}</span>
+                            <span v-else class="text-gray-500">{{ ctrans("None yet") }}</span>
+                        </div>
+                        <div v-else class="flex items-center gap-1.5">
                             <FontAwesomeIcon v-if="competitor.status === 'ok'" icon="fal fa-check-circle" class="text-green-500" fixed-width />
                             <FontAwesomeIcon v-else-if="competitor.status" icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width />
                             <FontAwesomeIcon v-else icon="fal fa-circle" class="text-gray-300" fixed-width />
@@ -130,7 +142,7 @@ const refreshDossier = () => {
                         </div>
                         <div v-if="competitor.last_error" class="text-xs text-red-600">{{ competitor.last_error }}</div>
                     </div>
-                    <div>
+                    <div v-if="!competitor.prices_by_hand">
                         <div class="text-xs text-gray-500">{{ ctrans("Dossier refreshed") }}</div>
                         <span v-if="competitor.intel_fetched_at">{{ useFormatTime(competitor.intel_fetched_at) }}</span>
                         <span v-else class="text-gray-500">{{ ctrans("Not read yet") }}</span>
@@ -138,7 +150,12 @@ const refreshDossier = () => {
                     </div>
                 </div>
             </div>
-            <div v-if="can_edit" class="shrink-0">
+            <div v-if="can_edit && competitor.prices_by_hand" class="shrink-0">
+                <Button type="tertiary" :label="ctrans('Add price check')" @click="isAddingPriceCheck = true">
+                    <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width /></template>
+                </Button>
+            </div>
+            <div v-else-if="can_edit" class="shrink-0">
                 <Button type="tertiary" :label="ctrans('Refresh dossier')" :loading="isRefreshing" :disabled="refreshQueued" @click="refreshDossier">
                     <template #icon><FontAwesomeIcon icon="fal fa-sync" class="text-gray-500" fixed-width /></template>
                 </Button>
@@ -150,7 +167,9 @@ const refreshDossier = () => {
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <CompetitorDossier v-if="currentTab === 'dossier' && dossier" :dossier="dossier" :screenshot="competitor.screenshot" :currencyCode="competitor.currency_code" :intelFetchedAt="competitor.intel_fetched_at" />
+    <TableCompetitorPriceChecks v-else-if="currentTab === 'price_checks' && price_checks" tab="price_checks" :data="price_checks" :masterShopSlug="competitor.master_shop.slug" :currencyCode="competitor.currency_code" />
     <TableMasterAssetCompetitorProducts v-else-if="currentTab === 'matches'" tab="matches" :data="matches" :canEdit="can_edit" :currencyCode="competitor.currency_code" />
     <TableCompetitorProducts v-else-if="currentTab === 'products'" tab="products" :data="products" :currencyCode="competitor.currency_code" />
     <CompetitorPolicies v-else-if="currentTab === 'policies'" :pages="policies ?? []" />
+    <CompetitorPriceCheckDialog v-if="competitor.prices_by_hand" v-model:visible="isAddingPriceCheck" :route="price_check_route" :competitorName="competitor.name" :currencyCode="competitor.currency_code" />
 </template>

@@ -4626,6 +4626,7 @@ describe('competitor prices, HELP-3605', function () {
             'price'   => 10,
             'stocks'  => [],
         ]);
+        $this->competitorMasterAsset->updateQuietly(['master_prices' => [group()->currency->code => ['value' => 10, 'independent' => false]]]);
 
         \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode(['error' => 'faked browser', 'homepage' => null]))]);
 
@@ -5201,7 +5202,7 @@ describe('competitor prices, HELP-3605', function () {
     });
 
     test('a box of packets in their name or description is compared per packet, and staff can correct the units of a match', function () {
-        $this->competitorMasterAsset->update(['name' => 'Golden Buddha Incense 15gm', 'price' => 12, 'units' => 12]);
+        $this->competitorMasterAsset->update(['name' => 'Golden Buddha Incense 15gm', 'price' => 12, 'units' => 12, 'master_prices' => [group()->currency->code => ['value' => 12, 'independent' => false]]]);
         $this->competitor->products()->create(['code' => 'GB-12', 'name' => 'Golden Buddha Incense 15gm x 12pkts', 'price' => 6, 'fetched_at' => now()]);
         $this->competitor->products()->create(['code' => 'GB-D', 'name' => 'Golden Buddha Incense 15gm Gold', 'price' => 9, 'data' => ['description' => 'Golden Buddha Incense 15gm Gold – 12 x Packs 15g. Hand rolled in India.'], 'fetched_at' => now()]);
         \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
@@ -5250,7 +5251,7 @@ describe('competitor prices, HELP-3605', function () {
     });
 
     test('when our product is a set sold as one item the match compares their set as one', function () {
-        $this->competitorMasterAsset->update(['name' => 'Set of 4 Golden Buddha Coasters', 'price' => 20, 'units' => 1]);
+        $this->competitorMasterAsset->update(['name' => 'Set of 4 Golden Buddha Coasters', 'price' => 20, 'units' => 1, 'master_prices' => [group()->currency->code => ['value' => 20, 'independent' => false]]]);
         $this->competitor->products()->create(['code' => 'GBC-4', 'name' => 'Set of 4 Golden Buddha Coasters 10cm', 'price' => 20, 'fetched_at' => now()]);
         \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
         \Illuminate\Support\Facades\Http::fake(['openrouter.ai/api/alpha/*' => \Illuminate\Support\Facades\Http::response(['answers' => ['answer' => ['choice' => 'a_same', 'probabilities' => ['a_same' => 0.9, 'none' => 0.1]]]])]);
@@ -5548,6 +5549,66 @@ describe('competitor prices, HELP-3605', function () {
             actingAsUserWithRoles($this->user, $originalRoles);
             \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
         }
+    });
+
+    test('a marketplace checked by hand is never crawled, and each price check keeps its link and its history, INI-217', function () {
+        \Illuminate\Support\Facades\Bus::fake();
+        $this->competitorMasterAsset->update(['rrp' => 20, 'master_rrps' => [group()->currency->code => ['value' => 24, 'independent' => false]]]);
+
+        post(route('grp.models.competitor.store'), [
+            'master_shop_id' => $this->competitorMasterShop->id,
+            'name'           => 'Marketplace',
+            'website'        => 'https://marketplace.example.com',
+            'sells_to'       => 'consumer',
+            'currency_id'    => group()->currency_id,
+            'prices_by_hand' => true,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $marketplace = $this->competitorMasterShop->competitors()->where('name', 'Marketplace')->firstOrFail();
+        expect($marketplace->prices_by_hand)->toBeTrue();
+        \Illuminate\Support\Facades\Bus::assertNotDispatched(\App\Jobs\BoundedUniqueJobDecorator::class);
+
+        $url   = 'https://marketplace.example.com/item/1.html';
+        $check = fn (array $data) => post(route('grp.models.competitor.price_check.store', $marketplace->id), $data + [
+            'master_asset_code' => strtolower($this->competitorMasterAsset->code),
+            'url'               => $url,
+            'name'              => 'Brass bowl 10 cm, pack of 2',
+            'units'             => 2,
+            'delivery_days'     => 12,
+            'screenshot'        => \Illuminate\Http\UploadedFile::fake()->image('listing.png', 1200, 800),
+        ]);
+
+        $check(['master_asset_code' => 'NOT-OURS', 'price' => 30])->assertSessionHasErrors('master_asset_code');
+        post(route('grp.models.competitor.price_check.store', $this->competitor->id), ['price' => 30])->assertNotFound();
+        $check(['price' => 30, 'screenshot' => null])->assertSessionHasErrors('screenshot');
+        $check(['price' => 30])->assertSessionHasNoErrors()->assertRedirect();
+        $check(['price' => 24])->assertSessionHasNoErrors()->assertRedirect();
+
+        $match = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)
+            ->whereHas('competitorProduct', fn ($query) => $query->where('competitor_id', $marketplace->id))
+            ->sole();
+        expect($match->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and($match->is_same_item)->toBeTrue()
+            ->and($match->competitorProduct->url)->toBe($url)
+            ->and((float) $match->competitorProduct->price)->toBe(24.0)
+            ->and($marketplace->products()->count())->toBe(1)
+            ->and($marketplace->priceChecks()->orderBy('id')->pluck('difference_pct')->all())->toBe([-38, -50])
+            ->and($marketplace->priceChecks()->whereNull('image_id')->exists())->toBeFalse()
+            ->and($marketplace->priceChecks()->first()->image->collection_name)->toBe('competitor')
+            ->and(collect(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id))->firstWhere('competitor', 'Marketplace')['difference_pct'])->toBe(-50);
+
+        $props = get(route('grp.masters.competitors.show', ['competitor' => $marketplace->id]))->assertOk()->viewData('page')['props'];
+        expect(array_keys($props['tabs']['navigation']))->toBe(['price_checks', 'matches'])
+            ->and($props['tabs']['current'])->toBe('price_checks')
+            ->and($props['competitor']['read_method'])->toBe('hand')
+            ->and($props['price_checks']['data'][0]['difference_pct'])->toBe(-50)
+            ->and($props['price_checks']['data'][0]['our_unit_price'])->toEqual(24)
+            ->and($props['price_checks']['data'][0]['change'])->toEqual(-3)
+            ->and($props['price_checks']['data'][0]['url'])->toBe($url)
+            ->and($props['price_checks']['data'][0]['screenshot']['original'])->not->toBeEmpty()
+            ->and($props['price_checks']['data'][1]['change'])->toBeNull();
+
+        expect(array_keys(get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->id]))->viewData('page')['props']['tabs']['navigation']))->not->toContain('price_checks');
     });
 });
 

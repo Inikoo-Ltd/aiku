@@ -60,6 +60,7 @@ class IndexCompetitors extends OrgAction
                 'competitors.fetched_at',
                 'competitors.number_products',
                 'competitors.feed_url',
+                'competitors.prices_by_hand',
                 'currencies.code as currency_code',
                 'master_shops.slug as master_shop_slug',
                 'master_shops.name as master_shop_name',

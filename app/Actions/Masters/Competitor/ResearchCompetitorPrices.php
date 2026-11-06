@@ -379,6 +379,7 @@ PROMPT;
         Competitor::whereNull('search_url')
             ->whereNull('feed_url')
             ->whereNotNull('login_url')
+            ->where('prices_by_hand', false)
             ->each(function (Competitor $competitor) {
                 if ($searchUrl = $this->publishedSearchUrl($competitor)) {
                     $competitor->update(['search_url' => $searchUrl]);
@@ -387,6 +388,7 @@ PROMPT;
 
         $competitors = Competitor::whereNotNull('search_url')
             ->whereNull('feed_url')
+            ->where('prices_by_hand', false)
             ->when($command->option('competitor'), fn ($query, $id) => $query->where('id', $id))
             ->when($command->option('master-shop'), fn ($query, $slug) => $query->whereHas('masterShop', fn ($query) => $query->where('slug', $slug)))
             ->get();

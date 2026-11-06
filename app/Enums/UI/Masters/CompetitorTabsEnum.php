@@ -16,8 +16,9 @@ enum CompetitorTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case DOSSIER  = 'dossier';
-    case MATCHES  = 'matches';
+    case DOSSIER      = 'dossier';
+    case PRICE_CHECKS = 'price_checks';
+    case MATCHES      = 'matches';
     case PRODUCTS = 'products';
     case POLICIES = 'policies';
 
@@ -27,6 +28,10 @@ enum CompetitorTabsEnum: string
             CompetitorTabsEnum::DOSSIER => [
                 'title' => __('Dossier'),
                 'icon'  => 'fal fa-file-alt',
+            ],
+            CompetitorTabsEnum::PRICE_CHECKS => [
+                'title' => __('Price checks'),
+                'icon'  => 'fal fa-clipboard-check',
             ],
             CompetitorTabsEnum::MATCHES => [
                 'title' => __('Matches'),

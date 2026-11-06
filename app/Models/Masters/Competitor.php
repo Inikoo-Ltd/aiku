@@ -46,6 +46,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property \Illuminate\Support\Carbon|null $intel_fetched_at
  * @property string|null $intel_error
  * @property int|null $language_id the language of their website: products are matched and searched with our names in it
+ * @property bool $prices_by_hand a marketplace that blocks automated visits: a person checks its prices each month and nothing is crawled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Currency $currency
@@ -54,6 +55,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @property-read MasterShop $masterShop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, CompetitorProduct> $products
  * @property-read \Illuminate\Database\Eloquent\Collection<int, CompetitorIntelSnapshot> $intelSnapshots
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, CompetitorPriceCheck> $priceChecks
  */
 class Competitor extends Model implements HasMedia
 {
@@ -75,6 +77,7 @@ class Competitor extends Model implements HasMedia
             'fetched_at' => 'datetime',
             'intel'      => 'array',
             'intel_fetched_at' => 'datetime',
+            'prices_by_hand'   => 'boolean',
         ];
     }
 
@@ -106,6 +109,11 @@ class Competitor extends Model implements HasMedia
     public function intelSnapshots(): HasMany
     {
         return $this->hasMany(CompetitorIntelSnapshot::class);
+    }
+
+    public function priceChecks(): HasMany
+    {
+        return $this->hasMany(CompetitorPriceCheck::class);
     }
 
     public function dailyStats(): HasMany
