@@ -13,8 +13,10 @@ use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateShipments;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateShipments;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class DeleteShipment extends OrgAction
@@ -35,9 +37,18 @@ class DeleteShipment extends OrgAction
         $shipment->forceDelete();
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(Shipment $shipment, ActionRequest $request): void
     {
         $this->initialisation($shipment->organisation, $request);
+
+        if ($shipment->deliveryNotes->contains(fn (DeliveryNote $deliveryNote) => $deliveryNote->areShipmentsLocked())) {
+            throw ValidationException::withMessages([
+                'shipment' => __('This delivery note is already dispatched, so its shipment cannot change. Ask a dispatch supervisor to undispatch it first.')
+            ]);
+        }
 
         $this->handle($shipment);
     }

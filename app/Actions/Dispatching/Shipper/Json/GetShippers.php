@@ -57,11 +57,31 @@ class GetShippers extends OrgAction
         $queryBuilder->where('organisation_id', $organisation->id)
             ->where('status', true);
 
+        if (!$this->isDispatchSupervisor($organisation)) {
+            $queryBuilder->whereRaw("coalesce((settings->>'supervisor_only')::boolean, false) = false");
+        }
+
         return $queryBuilder
             ->defaultSort('code')
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
             ->withQueryString();
+    }
+
+    /**
+     * PRE-73. Supervisor-only shippers are left out of everybody else's list.
+     */
+    private function isDispatchSupervisor(Organisation $organisation): bool
+    {
+        $user = request()->user();
+        if (!$user) {
+            return true;
+        }
+
+        return $user->authTo([
+            "org-admin.$organisation->id",
+            ...$organisation->warehouses()->pluck('id')->map(fn (int $warehouseId) => "supervisor-dispatching.$warehouseId")->all(),
+        ]);
     }
 
     public function jsonResponse($shipper): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource

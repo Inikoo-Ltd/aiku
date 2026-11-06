@@ -80,6 +80,7 @@ class StoreShipment extends OrgAction
                 ]);
             }
 
+            $this->guardShipmentChangeByStaff($parent, $shipper, $modelData);
             if (!Arr::get($modelData, 'combined_label_url')) {
                 $this->guardShipperLock($parent, $shipper);
             }
@@ -230,6 +231,41 @@ class StoreShipment extends OrgAction
         ];
 
         Event::dispatch(new AuditCustom($deliveryNote));
+    }
+
+    /**
+     * PRE-73. Staff only; system flows (Aurora fetch, Faire, TikTok) record labels as they come.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function guardShipmentChangeByStaff(DeliveryNote $deliveryNote, Shipper $shipper, array $modelData): void
+    {
+        $user = request()->user();
+        if (!$user) {
+            return;
+        }
+
+        if ($deliveryNote->areShipmentsLocked()) {
+            throw ValidationException::withMessages([
+                'shipper' => __('This delivery note is already dispatched, so its shipment cannot change. Ask a dispatch supervisor to undispatch it first.')
+            ]);
+        }
+
+        if ($shipper->isSupervisorOnly() && !$user->authTo([
+            "supervisor-dispatching.$deliveryNote->warehouse_id",
+            "org-admin.$deliveryNote->organisation_id",
+        ])) {
+            throw ValidationException::withMessages([
+                'shipper' => __('Only a dispatch supervisor can use :shipper.', ['shipper' => $shipper->name])
+            ]);
+        }
+
+        $channel = $this->trackingChannel($deliveryNote);
+        if ($channel && !$shipper->api_shipper && blank(Arr::get($modelData, 'tracking'))) {
+            throw ValidationException::withMessages([
+                'tracking_number' => __('This order is from the customer\'s :channel store, which receives the tracking at dispatch. Enter the tracking number.', ['channel' => $channel])
+            ]);
+        }
     }
 
     /**
