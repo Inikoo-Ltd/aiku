@@ -3541,3 +3541,41 @@ test('the repair of sheet rows duplicated by a goods receipt keeps to the agent 
         ->and($sheetRow->fresh())->toBeNull()
         ->and($saved?->quantity)->toEqual(40);
 });
+
+test('packing part of a stock sheet line splits it, the rest staying received, and a goods receipt line is packed whole', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $supplierProduct = $orgSupplierProduct->supplierProduct;
+    $purchaseOrder   = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line            = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 30]);
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now(), 'sample_approved_at' => now()]);
+    $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::SUBMITTED]);
+    $received = App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::RECEIVED;
+    $packed   = App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::PACKED_FOR_NEXT_CONTAINER;
+    $pack     = App\Actions\Procurement\AgentWarehouseStock\PackAgentWarehouseStock::make();
+
+    $sheetRow = App\Models\Procurement\AgentWarehouseStock::create([
+        'group_id'            => $this->agent->group_id,
+        'agent_id'            => $this->agent->id,
+        'organisation_id'     => $purchaseOrder->organisation_id,
+        'supplier_product_id' => $supplierProduct->id,
+        'purchase_order_id'   => null,
+        'state'               => $received,
+        'quantity'            => 10,
+    ]);
+
+    $packedRow = $pack->handle($sheetRow, 4);
+    expect($packedRow->id)->not->toBe($sheetRow->id)
+        ->and((float) $packedRow->quantity)->toBe(4.0)
+        ->and($packedRow->state)->toBe($packed)
+        ->and((float) $sheetRow->refresh()->quantity)->toBe(6.0)
+        ->and($sheetRow->state)->toBe($received);
+    expect(fn () => $pack->handle($sheetRow, 7))->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($pack->handle($sheetRow)->state)->toBe($packed);
+
+    $receipt    = App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($this->agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 30]],
+    ]);
+    $receiptRow = App\Models\Procurement\AgentWarehouseStock::where('agent_goods_receipt_id', $receipt->id)->firstOrFail();
+    expect(fn () => $pack->handle($receiptRow, 10))->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($pack->handle($receiptRow)->state)->toBe($packed);
+});

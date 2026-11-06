@@ -4476,3 +4476,22 @@ test('deleting empty purchase orders deletes the drafts, cancels the ones alread
         ->and($withDeposit->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
         ->and($withItems->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
 });
+
+test('clean hand over is recorded on its own, dated by the last ready to roll check, only once every check is done', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 4)->refresh();
+    $checks               = $orgAgent->agent->poJourney()['ready_checks'];
+    $fields               = array_map(fn (string $key) => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::READY_CHECK_FIELDS[$key], $checks);
+    $lastField            = array_pop($fields);
+    $order->updateQuietly(['handed_over_at' => null, 'sample_approved_at' => now(), ...array_fill_keys($fields, now()->subDays(3))]);
+
+    $record = \App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::make();
+    expect($record->handle($order)->handed_over_at)->toBeNull();
+
+    $order->updateQuietly([$lastField => now()->subDay()->startOfSecond()]);
+    $order = $record->handle($order);
+
+    expect($order->handed_over_at?->toDateString())->toBe(now()->subDay()->toDateString())
+        ->and(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::wasRecordedAutomatically($order))->toBeTrue();
+});
