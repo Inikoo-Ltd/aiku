@@ -115,6 +115,8 @@ const navigationTheme = computed(() => {
 
 type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "products" | "price_changes" | "agreement" | "grow"
 
+const fullWidthTabs: Tab[] = ["purchase_orders", "purchase_order_list"]
+
 const menu = computed<{ key: Tab; label: string; icon: string; shortcut?: boolean }[]>(() => [
 	{ key: "home", label: ctrans("Home"), icon: "fal fa-home" },
 	{ key: "sales", label: ctrans("Sales"), icon: "fal fa-chart-line" },
@@ -228,7 +230,7 @@ onMounted(() => {
 				<SupplierPortalSearch :search-route="routes.search" @product="openProduct" @order="openOrder" />
 				<SupplierPortalProfile v-if="profile" :profile="profile" :update-route="routes.profile" v-model:theme="theme" @company-details="openCompanyDetails" />
 			</header>
-			<div class="mx-auto max-w-6xl space-y-4 p-4 lg:p-8">
+			<div class="mx-auto space-y-4 p-4 lg:p-8" :class="fullWidthTabs.includes(tab) ? 'max-w-none' : 'max-w-6xl'">
 
 				<template v-if="tab === 'home'">
 					<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
