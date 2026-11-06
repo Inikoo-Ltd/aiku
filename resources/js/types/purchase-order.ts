@@ -24,4 +24,10 @@ export interface PurchaseOrder {
     supplier_purchase_orders?: number | null
     organisation_slug?: string | null
     number_pending_line_answers?: number
+    shipments?: {
+        reference: string
+        state_icon: { tooltip?: string, icon: string, class?: string } | null
+        cbm: number | null
+        show_route: { name: string, parameters: (string | number)[] } | null
+    }[]
 }

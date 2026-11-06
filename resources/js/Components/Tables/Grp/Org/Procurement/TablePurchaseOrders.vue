@@ -261,6 +261,28 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 			</div>
 		</template>
 
+		<template #cell(shipments)="{ item: purchaseOrder }">
+			<div v-if="purchaseOrder.shipments?.length" class="flex flex-col gap-0.5">
+				<div v-for="shipment in purchaseOrder.shipments" :key="shipment.reference" class="flex items-center gap-1 whitespace-nowrap">
+					<Icon v-if="shipment.state_icon" :data="shipment.state_icon" />
+					<Link
+						v-if="shipment.show_route"
+						:href="route(shipment.show_route.name, shipment.show_route.parameters)"
+						class="secondaryLink">
+						{{ shipment.reference }}
+					</Link>
+					<span v-else>{{ shipment.reference }}</span>
+					<span
+						v-if="shipment.cbm !== null"
+						v-tooltip="ctrans('Space the items of this purchase order take in the container')"
+						class="text-xs tabular-nums text-gray-500">
+						{{ ctrans(":cbm m³", { cbm: useLocaleStore().number(shipment.cbm) }) }}
+					</span>
+				</div>
+			</div>
+			<span v-else class="text-gray-400">—</span>
+		</template>
+
 		<template #cell(actions)="{ item: purchaseOrder }">
 			<div class="flex justify-end">
 				<Button
