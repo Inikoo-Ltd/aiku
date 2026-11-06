@@ -46,7 +46,7 @@ class GetConfirmedCompetitorPrices
 
                 $ours   = ($competitor->sells_to === CompetitorSellsToEnum::CONSUMER ? $masterAsset->rrp : $masterAsset->price) / max((float) $masterAsset->units, 1);
                 $theirs = $competitorProduct->price !== null && $exchanges[$competitor->currency_id]
-                    ? $competitorProduct->price * $exchanges[$competitor->currency_id] / max((float) $competitorProduct->units, 1)
+                    ? $competitorProduct->price * $exchanges[$competitor->currency_id] / max((float) ($match->competitor_units ?? $competitorProduct->units), 1)
                     : null;
 
                 if (!$ours || !$theirs) {

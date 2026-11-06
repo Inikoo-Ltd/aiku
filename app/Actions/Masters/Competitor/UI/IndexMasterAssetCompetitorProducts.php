@@ -92,11 +92,10 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
                 'competitors.name as competitor_name',
                 'competitor_products.name as competitor_product_name',
                 'competitor_products.url as competitor_product_url',
-                'competitor_products.units as competitor_units',
                 'competitor_products.minimum_order',
                 'competitor_products.fetched_at',
             ])
-            ->selectRaw("{$sql['ours']} as our_unit_price, {$sql['theirs']} as competitor_unit_price, {$sql['difference']} as difference, ? as currency_code", [$group->currency->code])
+            ->selectRaw("COALESCE(master_asset_competitor_products.competitor_units, competitor_products.units) as competitor_units, {$sql['ours']} as our_unit_price, {$sql['theirs']} as competitor_unit_price, {$sql['difference']} as difference, ? as currency_code", [$group->currency->code])
             ->allowedFilters([$globalSearch])
             ->defaultSort($sort ?? '-is_same_item')
             ->allowedSorts(['code', 'competitor_name', 'status', 'is_same_item', 'difference', 'master_shop_name'])

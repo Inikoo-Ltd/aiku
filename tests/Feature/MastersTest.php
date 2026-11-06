@@ -5004,14 +5004,103 @@ describe('competitor prices, HELP-3605', function () {
         expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::findWooCommerceFeed('https://woo.example.com'))->toBeNull();
     });
 
-    test('pack sizes are read from the name unless ours is a set too', function () {
-        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set of 12 Rosemary Incense Sticks', 'Satya Incense 15gm - Rosemary'))->toBe(12.0)
-            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('12 Packs of Palo Santo Smudge', 'Palo Santo Smudge'))->toBe(12.0)
-            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set Of 4 Skull Coasters', 'Set of 4 Square Coasters'))->toBe(1.0)
-            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('White Buddha Head Oil Burner', 'Buddha Head Oil Burner'))->toBe(1.0)
-            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Jute Rug 20 x 30cm', 'Jute Rug'))->toBe(1.0)
-            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Set of 4 Coasters 10cm x 10cm', 'Coaster'))->toBe(4.0)
-            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits('Rose Oil 6 x 10ml', '10ml Rose Oil'))->toBe(6.0);
+    test('pack sizes are read from the name, or from the start of the description when the name gives none', function () {
+        $units = fn (string $name, string $description = '') => \App\Actions\Masters\Competitor\MatchCompetitorProducts::packUnits($name, $description);
+
+        expect($units('Set of 12 Rosemary Incense Sticks'))->toBe(12.0)
+            ->and($units('12 Packs of Palo Santo Smudge'))->toBe(12.0)
+            ->and($units('White Buddha Head Oil Burner'))->toBe(1.0)
+            ->and($units('Jute Rug 20 x 30cm'))->toBe(1.0)
+            ->and($units('Set of 4 Coasters 10cm x 10cm'))->toBe(4.0)
+            ->and($units('Rose Oil 6 x 10ml'))->toBe(6.0)
+            ->and($units('Vijayshree Golden Buddha Incense 15gm x 12pkts'))->toBe(12.0)
+            ->and($units('Golden Nag Himalaya Incense Cones – Vijayshree 12 Pks'))->toBe(12.0)
+            ->and($units('Golden Nag Champa Incense Cones 12pks'))->toBe(12.0)
+            ->and($units('Satya Assorted Incense (12 boxes) 15 grams'))->toBe(12.0)
+            ->and($units('Incense Holder Set of 6pc'))->toBe(6.0)
+            ->and($units('Gemstone Pendant Set (5pc)'))->toBe(5.0)
+            ->and($units('Incense Holder Set 6 Unit'))->toBe(6.0)
+            ->and($units('Satya Incense 15gm - Gold'))->toBe(1.0)
+            ->and($units('Handmade Tibetan Notebook 5″ x 7″'))->toBe(1.0)
+            ->and($units('Boho Rug 100% Cotton (170cm x 120cm)'))->toBe(1.0)
+            ->and($units('Shea Butter Pack of 500g'))->toBe(1.0)
+            ->and($units('Satya Good Vibes Incense', 'Satya Good Vibes Incense – 12 x Packs 15g Satya Incense Sticks are a fantastic way to enjoy this famous fragrance. 15g x 3 Boxes of original incense sticks.'))->toBe(12.0)
+            ->and($units('Golden Palo Santo Incense Vijayshree', 'Golden Palo Santo Incense Vijayshree 15gm x 12pkts These are the most popular incense of the world.'))->toBe(12.0)
+            ->and($units('Citronella Dhoop Cones', '<p>Citronella Dhoop Cones – Box of 12 packs of dhoop cones, 12 cones with a stand in each pack. Sandalwood acts as a sedative.</p>'))->toBe(12.0)
+            ->and($units('Green Tree Jasmine Incense 15 Sticks', 'Green Tree Jasmine Incense 15 Sticks. Pack of 15 hand-made incense sticks.'))->toBe(1.0)
+            ->and($units('Oil Burner', 'Very nice oil burner. Minimum purchase is 2 pieces'))->toBe(1.0)
+            ->and($units('Brass Bowl 10pkts', 'Brass bowl – 12 x Packs'))->toBe(10.0);
+    });
+
+    test('their set is compared as one only when ours is a set sold as one item', function () {
+        $isSet = fn (string $name, float $units) => \App\Actions\Masters\Competitor\MatchCompetitorProducts::isSetItem($name, $units);
+
+        expect($isSet('Set of 4 Square Coasters', 1.0))->toBeTrue()
+            ->and($isSet('Box of 12 Amber cones', 12.0))->toBeFalse()
+            ->and($isSet('Satya Incense 15gm - Gold', 1.0))->toBeFalse();
+    });
+
+    test('a box of packets in their name or description is compared per packet, and staff can correct the units of a match', function () {
+        $this->competitorMasterAsset->update(['name' => 'Golden Buddha Incense 15gm', 'price' => 12, 'units' => 12]);
+        $this->competitor->products()->create(['code' => 'GB-12', 'name' => 'Golden Buddha Incense 15gm x 12pkts', 'price' => 6, 'fetched_at' => now()]);
+        $this->competitor->products()->create(['code' => 'GB-D', 'name' => 'Golden Buddha Incense 15gm Gold', 'price' => 9, 'data' => ['description' => 'Golden Buddha Incense 15gm Gold – 12 x Packs 15g. Hand rolled in India.'], 'fetched_at' => now()]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['openrouter.ai/api/alpha/*' => function (\Illuminate\Http\Client\Request $request) {
+            $choice = array_search('Golden Buddha Incense 15gm x 12pkts: the same item', $request['questions']['answer']['criteria'], true);
+
+            return \Illuminate\Support\Facades\Http::response(['answers' => ['answer' => ['choice' => $choice, 'probabilities' => [$choice => 0.9, 'none' => 0.1]]]]);
+        }]);
+
+        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(1);
+
+        $matches = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->with('competitorProduct')->get()->keyBy('competitorProduct.code');
+        expect((float) $matches['GB-12']->competitorProduct->units)->toBe(12.0)
+            ->and((float) $matches['GB-D']->competitorProduct->units)->toBe(12.0)
+            ->and($matches['GB-12']->competitor_units)->toBeNull();
+
+        $match = $matches->first(fn ($match) => $match->status === \App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED);
+        $row   = function () {
+            $found = null;
+            get(route('grp.masters.competitors.prices.confirmed'))->assertOk()->assertInertia(function (AssertableInertia $page) use (&$found) {
+                $page->where('data.data', function ($rows) use (&$found) {
+                    $found = collect($rows->toArray())->firstWhere('code', $this->competitorMasterAsset->code);
+
+                    return true;
+                })->etc();
+            });
+
+            return $found;
+        };
+        expect($match->competitorProduct->code)->toBe('GB-12')
+            ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id)[0]['difference_pct'])->toBe(-50)
+            ->and($row()['competitor_units'])->toEqual(12)
+            ->and($row()['difference'])->toBe(-50);
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['competitor_units' => 0])->assertSessionHasErrors('competitor_units');
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), [])->assertSessionHasErrors(['status', 'competitor_units']);
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['competitor_units' => 6])->assertRedirect();
+
+        expect((float) $match->refresh()->competitor_units)->toBe(6.0)
+            ->and($match->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and($match->reviewed_by_user_id)->toBeNull()
+            ->and((float) $match->competitorProduct->units)->toBe(12.0)
+            ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id)[0]['difference_pct'])->toBe(0)
+            ->and($row()['competitor_units'])->toEqual(6)
+            ->and($row()['difference'])->toBe(0);
+    });
+
+    test('when our product is a set sold as one item the match compares their set as one', function () {
+        $this->competitorMasterAsset->update(['name' => 'Set of 4 Golden Buddha Coasters', 'price' => 20, 'units' => 1]);
+        $this->competitor->products()->create(['code' => 'GBC-4', 'name' => 'Set of 4 Golden Buddha Coasters 10cm', 'price' => 20, 'fetched_at' => now()]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['openrouter.ai/api/alpha/*' => \Illuminate\Support\Facades\Http::response(['answers' => ['answer' => ['choice' => 'a_same', 'probabilities' => ['a_same' => 0.9, 'none' => 0.1]]]])]);
+
+        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(1);
+
+        $match = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->with('competitorProduct')->sole();
+        expect((float) $match->competitorProduct->units)->toBe(4.0)
+            ->and((float) $match->competitor_units)->toBe(1.0)
+            ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id)[0]['difference_pct'])->toBe(0);
     });
 
     test('a different volume or weight in the name is never the same item', function () {
@@ -5044,95 +5133,6 @@ describe('competitor prices, HELP-3605', function () {
             ->and($matches['R-100']->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED)
             ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(0);
     });
-});
-
-test('the seo title, meta description and url typed on a family edit page reach its webpage', function () {
-    createProduct($this->shop);
-    createWebsite($this->shop);
-    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
-    $family     = StoreProductCategory::make()->action($department, array_merge(
-        ProductCategory::factory()->definition(),
-        ['type' => ProductCategoryTypeEnum::FAMILY->value]
-    ));
-    $webpage = StoreProductCategoryWebpage::make()->action($family);
-    $url     = 'seo-family-'.strtolower(substr(uniqid(), -6));
-
-    Pest\Laravel\patch(route('grp.models.product_category.update', $family->id), [
-        'webpage_title'       => 'Velas de cera de soja',
-        'webpage_description' => 'Velas aromáticas al por mayor',
-        'webpage_url'         => $url,
-    ])->assertRedirect();
-
-    $webpage->refresh();
-    expect($webpage->title)->toBe('Velas de cera de soja')
-        ->and($webpage->description)->toBe('Velas aromáticas al por mayor')
-        ->and($webpage->url)->toBe($url);
-
-    Pest\Laravel\patch(route('grp.models.product_category.update', $family->id), ['webpage_description' => ''])
-        ->assertRedirect();
-
-    expect($webpage->refresh()->description)->toBe('');
-});
-
-test('masters write routes need the masters edit permission, INI-073', function () {
-    $unguarded = collect(app('router')->getRoutes()->getRoutes())
-        ->filter(fn ($route) => str_starts_with((string) $route->getName(), 'grp.models.') && is_string($route->getAction('uses')))
-        ->map(fn ($route) => \Illuminate\Support\Str::before($route->getAction('uses'), '@'))
-        ->filter(fn (string $action) => str_starts_with($action, 'App\\Actions\\Masters\\') && !method_exists($action, 'authorize'))
-        ->unique()->values()->all();
-    expect($unguarded)->toBe([]);
-
-    $masterShop       = createFreshMasterShop();
-    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
-        'code' => 'INI73-'.uniqid(),
-        'name' => 'Guarded department',
-    ]);
-    $masterCollection = StoreMasterCollection::make()->action($masterShop, [
-        'code' => 'INI73C-'.uniqid(),
-        'name' => 'Guarded collection',
-    ]);
-    $departmentData = fn () => ['code' => 'INI73D-'.uniqid(), 'name' => 'Department by route'];
-
-    $originalRoles       = $this->user->roles->pluck('name')->toArray();
-    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
-
-    try {
-        actingAsUserWithOnlyPermissions($this->user, ['masters.view']);
-        Pest\Laravel\post(route('grp.models.master_shops.master_department.store', $masterShop->id), $departmentData())->assertForbidden();
-        Pest\Laravel\post(route('grp.models.master_sub_department.store', $masterDepartment->id), $departmentData())->assertForbidden();
-        Pest\Laravel\patch(route('grp.models.master_product_category.reorder_index', $masterDepartment->id), [])->assertForbidden();
-        Pest\Laravel\delete(route('grp.models.master_collection.delete', $masterCollection->id))->assertForbidden();
-        expect(MasterCollection::find($masterCollection->id))->not->toBeNull();
-
-        $uploads = fn () => [
-            Pest\Laravel\post(route('grp.models.master_product_category.upload_images', $masterDepartment->id), [])->status(),
-            Pest\Laravel\post(route('grp.models.master_collection.upload_images', $masterCollection->id), [])->status(),
-        ];
-        expect($uploads())->each->toBe(403);
-
-        actingAsUserWithOnlyPermissions($this->user, ['masters.view', 'group-webmaster.media-edit']);
-        expect($uploads())->each->not->toBe(403);
-        Pest\Laravel\post(route('grp.models.master_shops.master_department.store', $masterShop->id), $departmentData())->assertForbidden();
-
-        actingAsUserWithOnlyPermissions($this->user, ['masters.edit']);
-        expect($uploads())->each->not->toBe(403);
-        $data = $departmentData();
-        Pest\Laravel\post(route('grp.models.master_shops.master_department.store', $masterShop->id), $data)->assertSessionHasNoErrors();
-        expect($masterShop->masterProductCategories()->where('code', $data['code'])->exists())->toBeTrue();
-    } finally {
-        setPermissionsTeamId($this->user->group_id);
-        $this->user->syncPermissions($originalPermissions);
-        actingAsUserWithRoles($this->user, $originalRoles);
-        \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
-    }
-});
-
-function createMasterFamilyInFreshMasterShop(string $prefix): MasterProductCategory
-{
-    return StoreMasterFamily::make()->action(
-        StoreMasterDepartment::make()->action(createFreshMasterShop(), ['code' => $prefix.'-DEP-'.uniqid(), 'name' => $prefix.' department']),
-        ['code' => $prefix.'-FAM-'.uniqid(), 'name' => $prefix.' family']
-    );
 
     test('offers are read as a was price and counted into the daily stats, from a Shopify and a WooCommerce catalogue', function () {
         \Illuminate\Support\Sleep::fake();
@@ -5387,6 +5387,95 @@ function createMasterFamilyInFreshMasterShop(string $prefix): MasterProductCateg
             \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
         }
     });
+});
+
+test('the seo title, meta description and url typed on a family edit page reach its webpage', function () {
+    createProduct($this->shop);
+    createWebsite($this->shop);
+    $department = $this->shop->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $family     = StoreProductCategory::make()->action($department, array_merge(
+        ProductCategory::factory()->definition(),
+        ['type' => ProductCategoryTypeEnum::FAMILY->value]
+    ));
+    $webpage = StoreProductCategoryWebpage::make()->action($family);
+    $url     = 'seo-family-'.strtolower(substr(uniqid(), -6));
+
+    Pest\Laravel\patch(route('grp.models.product_category.update', $family->id), [
+        'webpage_title'       => 'Velas de cera de soja',
+        'webpage_description' => 'Velas aromáticas al por mayor',
+        'webpage_url'         => $url,
+    ])->assertRedirect();
+
+    $webpage->refresh();
+    expect($webpage->title)->toBe('Velas de cera de soja')
+        ->and($webpage->description)->toBe('Velas aromáticas al por mayor')
+        ->and($webpage->url)->toBe($url);
+
+    Pest\Laravel\patch(route('grp.models.product_category.update', $family->id), ['webpage_description' => ''])
+        ->assertRedirect();
+
+    expect($webpage->refresh()->description)->toBe('');
+});
+
+test('masters write routes need the masters edit permission, INI-073', function () {
+    $unguarded = collect(app('router')->getRoutes()->getRoutes())
+        ->filter(fn ($route) => str_starts_with((string) $route->getName(), 'grp.models.') && is_string($route->getAction('uses')))
+        ->map(fn ($route) => \Illuminate\Support\Str::before($route->getAction('uses'), '@'))
+        ->filter(fn (string $action) => str_starts_with($action, 'App\\Actions\\Masters\\') && !method_exists($action, 'authorize'))
+        ->unique()->values()->all();
+    expect($unguarded)->toBe([]);
+
+    $masterShop       = createFreshMasterShop();
+    $masterDepartment = StoreMasterDepartment::make()->action($masterShop, [
+        'code' => 'INI73-'.uniqid(),
+        'name' => 'Guarded department',
+    ]);
+    $masterCollection = StoreMasterCollection::make()->action($masterShop, [
+        'code' => 'INI73C-'.uniqid(),
+        'name' => 'Guarded collection',
+    ]);
+    $departmentData = fn () => ['code' => 'INI73D-'.uniqid(), 'name' => 'Department by route'];
+
+    $originalRoles       = $this->user->roles->pluck('name')->toArray();
+    $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+
+    try {
+        actingAsUserWithOnlyPermissions($this->user, ['masters.view']);
+        Pest\Laravel\post(route('grp.models.master_shops.master_department.store', $masterShop->id), $departmentData())->assertForbidden();
+        Pest\Laravel\post(route('grp.models.master_sub_department.store', $masterDepartment->id), $departmentData())->assertForbidden();
+        Pest\Laravel\patch(route('grp.models.master_product_category.reorder_index', $masterDepartment->id), [])->assertForbidden();
+        Pest\Laravel\delete(route('grp.models.master_collection.delete', $masterCollection->id))->assertForbidden();
+        expect(MasterCollection::find($masterCollection->id))->not->toBeNull();
+
+        $uploads = fn () => [
+            Pest\Laravel\post(route('grp.models.master_product_category.upload_images', $masterDepartment->id), [])->status(),
+            Pest\Laravel\post(route('grp.models.master_collection.upload_images', $masterCollection->id), [])->status(),
+        ];
+        expect($uploads())->each->toBe(403);
+
+        actingAsUserWithOnlyPermissions($this->user, ['masters.view', 'group-webmaster.media-edit']);
+        expect($uploads())->each->not->toBe(403);
+        Pest\Laravel\post(route('grp.models.master_shops.master_department.store', $masterShop->id), $departmentData())->assertForbidden();
+
+        actingAsUserWithOnlyPermissions($this->user, ['masters.edit']);
+        expect($uploads())->each->not->toBe(403);
+        $data = $departmentData();
+        Pest\Laravel\post(route('grp.models.master_shops.master_department.store', $masterShop->id), $data)->assertSessionHasNoErrors();
+        expect($masterShop->masterProductCategories()->where('code', $data['code'])->exists())->toBeTrue();
+    } finally {
+        setPermissionsTeamId($this->user->group_id);
+        $this->user->syncPermissions($originalPermissions);
+        actingAsUserWithRoles($this->user, $originalRoles);
+        \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
+    }
+});
+
+function createMasterFamilyInFreshMasterShop(string $prefix): MasterProductCategory
+{
+    return StoreMasterFamily::make()->action(
+        StoreMasterDepartment::make()->action(createFreshMasterShop(), ['code' => $prefix.'-DEP-'.uniqid(), 'name' => $prefix.' department']),
+        ['code' => $prefix.'-FAM-'.uniqid(), 'name' => $prefix.' family']
+    );
 }
 
 /**

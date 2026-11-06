@@ -9,6 +9,7 @@ import { inject, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck, faTimes, faExternalLink } from "@fal"
@@ -37,6 +38,30 @@ const review = (id: number, status: string) => {
         },
         onFinish: () => {
             reviewing.value = null
+        },
+    })
+}
+
+const unitsDraft = ref<Record<number, number | null>>({})
+const savingUnits = ref<number | null>(null)
+const unitsError = ref<{ id: number; message: string } | null>(null)
+
+const saveUnits = (item: { id: number; competitor_units: number }) => {
+    const value = unitsDraft.value[item.id]
+    delete unitsDraft.value[item.id]
+    if (!value || value === Number(item.competitor_units)) {
+        return
+    }
+
+    savingUnits.value = item.id
+    unitsError.value = null
+    router.patch(route("grp.models.master_asset_competitor_product.review", { masterAssetCompetitorProduct: item.id }), { competitor_units: value }, {
+        preserveScroll: true,
+        onError: (errors) => {
+            unitsError.value = { id: item.id, message: Object.values(errors)[0] as string ?? ctrans("Could not save") }
+        },
+        onFinish: () => {
+            savingUnits.value = null
         },
     })
 }
@@ -70,11 +95,16 @@ const money = (value: number | null, currencyCode: string) => value === null ? "
                 <FontAwesomeIcon icon="fal fa-external-link" class="text-xs" fixed-width />
             </a>
             <div class="text-xs text-gray-500">
-                <span v-if="item.competitor_units > 1">{{ ctrans("Pack of :units", { units: item.competitor_units }) }}</span>
-                <span v-if="item.minimum_order" class="ml-2">{{ ctrans("Minimum :n", { n: item.minimum_order }) }}</span>
+                <span v-if="item.minimum_order">{{ ctrans("Minimum :n", { n: item.minimum_order }) }}</span>
                 <span v-if="!item.is_same_item" class="ml-2 text-amber-600">{{ ctrans("Similar, not the same item") }}</span>
                 <span v-if="item.confidence !== null" class="ml-2" v-tooltip="ctrans('How sure the AI is of this match')">{{ item.confidence }}%</span>
             </div>
+            <div class="mt-1 flex items-center gap-x-1 text-xs text-gray-500">
+                <span class="whitespace-nowrap" v-tooltip="ctrans('How many units the price is for. The price per unit divides by this.')">{{ ctrans("Units in their pack") }}</span>
+                <InputNumber :modelValue="item.competitor_units" :min="1" :maxFractionDigits="3" size="small" inputClass="!w-16 !py-0.5 text-right"
+                    :disabled="!canEdit || savingUnits === item.id" @input="unitsDraft[item.id] = $event.value" @blur="saveUnits(item)" />
+            </div>
+            <div v-if="unitsError?.id === item.id" class="mt-1 text-xs text-red-600">{{ unitsError.message }}</div>
         </template>
         <template #cell(competitor_unit_price)="{ item }">
             <span v-if="item.competitor_unit_price !== null" class="tabular-nums">{{ money(item.competitor_unit_price, item.currency_code) }}</span>
