@@ -217,6 +217,7 @@ const closeSearch = () => {
 const liveUsersStore = useLiveUsers()
 // ponytail: temporary rail analytics (Nov 2026), remove with the rail_usage table once the rail redesign is decided
 const isShortScreen = useMediaQuery("(max-height: 800px)")
+const isRailPartHidden = (key: string) => (layout.user?.settings?.rail_hidden_badges ?? []).includes(key)
 const railView = computed(() => layout.messagingSidebar.show ? "extended" : isMicro.value ? "micro" : isShortScreen.value ? "compact" : "normal")
 const postRailClick = (button: string | undefined) => {
     if (button) axios.post(route("grp.models.profile.rail-click"), { button, view: railView.value }).catch(() => {})
@@ -485,6 +486,7 @@ onUnmounted(() => {
         <RailControls>
             <template #afterAvatar>
                 <div
+                    v-if="!isRailPartHidden('online')"
                     data-rail="online" class="order-first -mt-1 w-8 h-8 rounded-md flex items-center justify-center gap-x-1 cursor-pointer bg-[var(--chat-line)] hover:opacity-80 tabular-nums text-xs font-medium"
                     :class="liveUsersStore.isConnected && allOnlineCount > 0 ? 'text-[var(--chat-green)]' : 'text-[var(--chat-muted)]'"
                     v-tooltip="liveUsersStore.isConnected ? onlineTooltip : ctrans('Online status unavailable: live connection down')"
@@ -575,11 +577,12 @@ onUnmounted(() => {
 
         <!-- COLLAPSED: avatar rail -->
         <div v-if="!layout.messagingSidebar.show" class="flex-1 shrink-0 flex flex-col items-center gap-y-3 pt-4 pb-2">
-            <template v-if="!store.fetched">
+            <template v-if="isRailPartHidden('chat_bubbles')" />
+            <template v-else-if="!store.fetched">
                 <span v-for="placeholder in RAIL_NEWEST_CHATS" :key="'rail-chat-skeleton-' + placeholder" class="h-7 w-7 shrink-0 animate-pulse rounded-full bg-[var(--chat-line)]" aria-hidden="true" />
             </template>
             <button
-                v-for="conversation in newestConversations"
+                v-for="conversation in isRailPartHidden('chat_bubbles') ? [] : newestConversations"
                 :key="'rail-chat-' + conversation.ulid"
                 type="button"
                 :data-rail="conversation.unread_count > 0 ? 'chat_bubble_unread' : 'chat_bubble_read'"
@@ -604,7 +607,7 @@ onUnmounted(() => {
                 </span>
             </button>
             <button
-                v-if="newerConversationsHidden > 0"
+                v-if="newerConversationsHidden > 0 && !isRailPartHidden('chat_bubbles')"
                 type="button"
                 class="relative h-7 w-7 rounded-full bg-[var(--chat-line)] shrink-0 flex items-center justify-center text-xxs text-[var(--chat-text)]"
                 data-rail="chat_bubbles_show_all"

@@ -191,6 +191,11 @@ class EditProfileSettings
                         ],
                     ],
                     [
+                        "label"  => __("Right bar"),
+                        "icon"   => "fal fa-columns",
+                        "fields" => $this->railPartsField($user),
+                    ],
+                    [
                         "label"  => __("Printers"),
                         "icon"   => "fal fa-print",
                         "fields" => [
@@ -266,6 +271,41 @@ class EditProfileSettings
                 'emptyWarning' => __('With no shop picked, only chats assigned to you alert you'),
                 'value'        => Shop::whereIn('id', $workable)->orderBy('name')->get(['id', 'name'])
                     ->map(fn (Shop $shop) => ['key' => $shop->id, 'label' => $shop->name, 'value' => in_array($shop->id, $alerting, true)])
+                    ->all(),
+            ],
+        ];
+    }
+
+    public function railPartsField(User $user): array
+    {
+        $hidden = Arr::get($user->settings, 'rail_hidden_badges') ?? [];
+
+        $labels = [
+            'online'               => __('Colleagues online'),
+            'chat_bubbles'         => __('Chat bubbles'),
+            'tickets_queue'        => __('Tickets to fix'),
+            'tickets_mine'         => __('Tickets I reported'),
+            'tasks'                => __('My tasks'),
+            'tasks_created'        => __('Tasks I created'),
+            'tasks_review'         => __('To review & publish'),
+            'developments'         => __('Developments'),
+            'dispatching_waiting'  => __('Orders waiting in the warehouse'),
+            'crm_waiting'          => __('Orders waiting in CRM'),
+            'crm_return'           => __('Orders with returns'),
+            'faire_skipped'        => __('Faire orders not imported'),
+            'master_updated'       => __('Prices not matching master'),
+            'products_need_review' => __('Master text changed'),
+        ];
+
+        return [
+            'rail_parts' => [
+                'type'        => 'checkbox',
+                'mode'        => 'inline',
+                'label'       => __('Shown on the narrow bar'),
+                'information' => __('Untick what you never use to keep the narrow bar quiet. Everything still shows when you open the bar wide'),
+                'full'        => true,
+                'value'       => collect(UpdateProfile::RAIL_BADGES)
+                    ->map(fn (string $key) => ['key' => $key, 'label' => $labels[$key], 'value' => !in_array($key, $hidden, true)])
                     ->all(),
             ],
         ];

@@ -47,7 +47,7 @@ class UpdateProfile extends OrgAction
         'ticket'           => ['popup', 'desktop', 'sound'],
     ];
 
-    public const array RAIL_BADGES = ['tickets_queue', 'tickets_mine', 'tasks', 'tasks_created', 'developments', 'dispatching_waiting', 'crm_waiting', 'crm_return', 'faire_skipped', 'master_updated', 'products_need_review'];
+    public const array RAIL_BADGES = ['online', 'chat_bubbles', 'tickets_queue', 'tickets_mine', 'tasks', 'tasks_created', 'tasks_review', 'developments', 'dispatching_waiting', 'crm_waiting', 'crm_return', 'faire_skipped', 'master_updated', 'products_need_review'];
 
     public function handle(User $user, array $modelData): User
     {
@@ -98,6 +98,12 @@ class UpdateProfile extends OrgAction
 
         if (Arr::exists($modelData, 'rail_hidden_badges')) {
             $modelData['settings']['rail_hidden_badges'] = array_values(array_intersect(Arr::pull($modelData, 'rail_hidden_badges') ?? [], self::RAIL_BADGES));
+        }
+
+        if (Arr::exists($modelData, 'rail_parts')) {
+            $shown = collect(Arr::pull($modelData, 'rail_parts'))->where('value', true)->pluck('key')->all();
+
+            $modelData['settings']['rail_hidden_badges'] = array_values(array_diff(self::RAIL_BADGES, $shown));
         }
 
         if (Arr::exists($modelData, 'tickets_list_mine')) {
@@ -311,6 +317,9 @@ class UpdateProfile extends OrgAction
             'sales_quarters'                      => ['sometimes', 'integer', 'between:4,8'],
             'rail_hidden_badges'                  => ['sometimes', 'nullable', 'array'],
             'rail_hidden_badges.*'                => ['string', Rule::in(self::RAIL_BADGES)],
+            'rail_parts'                          => ['sometimes', 'array', 'max:50'],
+            'rail_parts.*.key'                    => ['required', 'string', Rule::in(self::RAIL_BADGES)],
+            'rail_parts.*.value'                  => ['required', 'boolean'],
         ];
     }
 

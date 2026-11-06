@@ -633,6 +633,18 @@ test('people can hide right panel badges from the narrow bar', function () {
 
     \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => []])->assertSessionHasNoErrors();
     expect($this->user->fresh()->settings['rail_hidden_badges'] ?? [])->toBe([]);
+
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_hidden_badges' => ['tasks_review']])->assertSessionHasNoErrors();
+
+    $parts = collect(\App\Actions\UI\Profile\EditProfileSettings::make()->railPartsField($this->user->fresh())['rail_parts']['value']);
+    expect($parts->firstWhere('key', 'tasks_review')['value'])->toBeFalse()
+        ->and($parts->firstWhere('key', 'chat_bubbles')['value'])->toBeTrue();
+
+    $submitted = $parts->map(fn (array $part) => ['key' => $part['key'], 'value' => !in_array($part['key'], ['chat_bubbles', 'online'], true)])->all();
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_parts' => $submitted])->assertSessionHasNoErrors();
+    expect($this->user->fresh()->settings['rail_hidden_badges'])->toBe(['online', 'chat_bubbles']);
+
+    \Pest\Laravel\patch(route('grp.models.profile.update'), ['rail_parts' => [['key' => 'not_a_part', 'value' => false]]])->assertSessionHasErrors('rail_parts.0.key');
 });
 
 test('people get told about tasks for them and the task badge counts their work', function () {
