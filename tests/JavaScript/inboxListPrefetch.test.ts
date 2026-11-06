@@ -3,7 +3,7 @@ import test from "node:test"
 import axios from "axios"
 
 const store = new Map<string, string>()
-const location = { pathname: "/org/aw/chat/inbox" }
+const location = { href: "https://app.aiku.test/org/aw/chat/inbox" }
 const listeners: Record<string, () => void> = {}
 Object.assign(globalThis, {
 	window: {
@@ -35,7 +35,7 @@ const params = { statuses: ["waiting", "active"], page: 1, shop_ids: [1] }
 
 test("going to the inbox asks for the list it opened with last time, and the inbox takes that answer", async () => {
 	requests.length = 0
-	location.pathname = "/org/aw/chat/inbox"
+	location.href = "https://app.aiku.test/org/aw/chat/inbox"
 	rememberFirstList(url, params)
 
 	visit("/org/aw/chat/inbox/01M52ZHJ1KPDCSXMVMF33CNSY2")
@@ -47,7 +47,7 @@ test("going to the inbox asks for the list it opened with last time, and the inb
 	assert.deepEqual(takePrefetchedList(url, params), { response: null, outcome: "fetched" }, "handed out once")
 })
 
-test("a different list, another organisation or page, a partial reload or a hover prefetch asks for nothing the inbox would take", () => {
+test("a different list, another organisation, page or shop, a partial reload or a hover prefetch asks for nothing the inbox would take", () => {
 	requests.length = 0
 	rememberFirstList(url, params)
 
@@ -94,7 +94,7 @@ test("a failed answer reaches whoever takes it, so the inbox can ask again", asy
 })
 
 test("Back or Forward drops an answer asked for before", () => {
-	location.pathname = "/org/aw/chat/inbox"
+	location.href = "https://app.aiku.test/org/aw/chat/inbox"
 	rememberFirstList(url, params)
 
 	visit("/org/aw/chat/inbox")
@@ -105,9 +105,44 @@ test("Back or Forward drops an answer asked for before", () => {
 
 test("nothing is remembered from a page that is not an inbox", () => {
 	store.clear()
-	location.pathname = "/org/aw/shops/uk/orders"
+	location.href = "https://app.aiku.test/org/aw/shops/uk/orders"
 
 	rememberFirstList(url, params)
 
 	assert.equal(store.size, 0)
+})
+
+test("a shop inbox and a notification link each open on their own list, apart from the inbox", () => {
+	store.clear()
+	requests.length = 0
+	const shopParams = { ...params, shop_ids: [7] }
+	const whatsappParams = { ...params, pairs: ["whatsapp"] }
+
+	location.href = "https://app.aiku.test/org/aw/chat/inbox"
+	rememberFirstList(url, params)
+	location.href = "https://app.aiku.test/org/aw/shops/uk/chat/inbox"
+	rememberFirstList(url, shopParams)
+	location.href = "https://app.aiku.test/org/aw/chat/inbox?channel=whatsapp&session=01M6R7A16XM0BDRTKYAD7XBCPH"
+	rememberFirstList(url, whatsappParams)
+
+	visit("/org/aw/shops/uk/chat/inbox")
+	assert.equal(takePrefetchedList(url, shopParams).outcome, "prefetched")
+
+	visit("/org/aw/chat/inbox?channel=whatsapp&session=01M6R7B2KQ5ZJ8WXN3T4V6Y9DE")
+	assert.equal(takePrefetchedList(url, whatsappParams).outcome, "prefetched")
+
+	visit("/org/aw/chat/inbox")
+	assert.equal(takePrefetchedList(url, params).outcome, "prefetched")
+
+	assert.deepEqual(requests.map((r) => r.params), [shopParams, whatsappParams, params])
+})
+
+test("a choice changed while a notification link is open is remembered for the inbox it names", () => {
+	store.clear()
+	requests.length = 0
+	location.href = "https://app.aiku.test/org/aw/chat/inbox?channel=whatsapp&session=01M6R7A16XM0BDRTKYAD7XBCPH"
+
+	rememberFirstList(url, params, "https://app.aiku.test/org/aw/chat/inbox")
+
+	assert.deepEqual([...store.keys()], ["inbox-first-list:aw:inbox"])
 })

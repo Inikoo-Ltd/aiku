@@ -603,7 +603,7 @@ const storeSelection = () => {
     }
 
     if (!isEmbedded && showsOnlySavedSelection()) {
-        rememberFirstList(sessionsUrl.value, buildParams(1))
+        rememberFirstList(sessionsUrl.value, buildParams(1), route(props.supervisor ? "grp.org.chat.supervision" : "grp.org.chat.inbox", [props.organisation.slug]))
     }
 }
 
@@ -3031,7 +3031,7 @@ if (!isEmbedded) {
     prefetchedFirstList = firstList.response
     firstListSource = `list:${firstList.outcome}${props.initialSession ? ":conversation" : ""}`
 
-    if (!props.preselectShopId && !props.selectedSessionUlid && !props.initialSession && !pendingSessionUlid.value && !pendingSessionChannel.value) {
+    if (!props.selectedSessionUlid && !props.initialSession) {
         rememberFirstList(sessionsUrl.value, buildParams(1))
     }
 }
