@@ -43,7 +43,8 @@ class IndexTrolleys extends OrgAction
         }
 
         $query = QueryBuilder::for(Trolley::class)
-            ->where('trolleys.warehouse_id', $warehouse->id);
+            ->where('trolleys.warehouse_id', $warehouse->id)
+            ->with(['deliveryNote', 'pickingSession']);
 
         return $query
             ->select([
@@ -51,6 +52,7 @@ class IndexTrolleys extends OrgAction
                 'trolleys.name',
                 'trolleys.slug',
                 'trolleys.current_delivery_note_id',
+                'trolleys.picking_session_id',
             ])
             ->defaultSort('trolleys.name')
             ->allowedSorts(['name'])

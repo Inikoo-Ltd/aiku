@@ -26458,5 +26458,17 @@
     "Clear the mark and show what aiku reads": "Zrušiť označenie a zobraziť údaje z aiku",
     "Clear the mark": "Zrušiť označenie",
     "Steps with a magic wand are ticked from what aiku already has: purchase orders, files by type, payments, the costing checklist and the customs bills. A mark you set wins over it; clear it to go back to aiku's reading. Invoices are read and booked in the costing panel.": "Kroky s čarovnou paličkou sú odškrtnuté z údajov, ktoré aiku už má: nákupné objednávky, súbory podľa typu, platby, kontrolný zoznam nákladov a colné faktúry. Vaše označenie má prednosť; zrušte ho, ak sa chcete vrátiť k údajom z aiku. Faktúry sa načítavajú a zaúčtovávajú v paneli kalkulácie.",
-    "Still missing": "Ešte chýba"
+    "Still missing": "Ešte chýba",
+    "Trolley :trolley is in another warehouse.": "Vozík :trolley je v inom sklade.",
+    "This picking session is already packed.": "Táto relácia vychystávania je už zabalená.",
+    "Trolley :trolley is already used by picking session :session.": "Vozík :trolley už používa relácia vychystávania :session.",
+    "Trolley :trolley is already used by delivery note :deliveryNote.": "Vozík :trolley už používa dodací list :deliveryNote.",
+    "This trolley is still used in a picking session": "Tento vozík sa ešte používa v relácii vychystávania",
+    "Trolley of the picking session": "Vozík relácie vychystávania",
+    "Take trolley :trolleyName off this picking session?": "Odobrať vozík :trolleyName z tejto relácie vychystávania?",
+    "Replenishment will no longer see this trolley for the delivery notes of this session.": "Doplňovači zásob už neuvidia tento vozík pri dodacích listoch tejto relácie.",
+    "Yes, take it off": "Áno, odobrať",
+    "Take off": "Odobrať",
+    "Tell replenishment which trolley holds the picks of this session": "Povedzte doplňovačom zásob, v ktorom vozíku je tovar vychystaný v tejto relácii",
+    "Trolleys are not given to fulfilment picking sessions.": "Vozíky sa nepriraďujú k reláciám vychystávania pre fulfilment."
 }

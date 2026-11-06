@@ -16,6 +16,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $id
  * @property mixed $name
  * @property mixed $slug
+ * @property mixed $picking_session_id
+ * @property \App\Models\Inventory\PickingSession|null $pickingSession
  */
 class TrolleysResource extends JsonResource
 {
@@ -31,6 +33,11 @@ class TrolleysResource extends JsonResource
                 'slug'          => $this->deliveryNote->slug,
                 'reference'     => $this->deliveryNote->reference,
                 'number_items'  => $this->deliveryNote->number_items,
+            ] : null,
+            'current_picking_session' => $this->picking_session_id && $this->pickingSession ? [
+                'id'        => $this->pickingSession->id,
+                'slug'      => $this->pickingSession->slug,
+                'reference' => $this->pickingSession->reference,
             ] : null,
         ];
     }

@@ -46,7 +46,7 @@ class ChangeTrolleyDeliveryNote extends OrgAction
                 'sometimes',
                 'nullable',
                 'integer',
-                Rule::exists('trolleys', 'id')->where('organisation_id', $this->organisation->id)
+                Rule::exists('trolleys', 'id')->where('organisation_id', $this->organisation->id)->whereNull('picking_session_id')
             ],
         ];
     }

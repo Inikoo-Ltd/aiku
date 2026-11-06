@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
+use App\Actions\Dispatching\Trolley\DetachTrolleyFromPickingSession;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydratePickingSessions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -23,6 +24,10 @@ class AutoFinishPackingPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
+        if ($pickingSession->state === PickingSessionStateEnum::PACKING_FINISHED) {
+            return $pickingSession;
+        }
+
         $numberPacked = $pickingSession->deliveryNotes->whereIn('state', [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED, DeliveryNoteStateEnum::DISPATCHED])->count();
 
         $totalNumberDeliveryNotes = $pickingSession->deliveryNotes->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->count();
@@ -33,6 +38,9 @@ class AutoFinishPackingPickingSession extends OrgAction
                 'state'  => PickingSessionStateEnum::PACKING_FINISHED,
                 'end_at' => now()
             ]);
+            foreach ($pickingSession->trolleys as $trolley) {
+                DetachTrolleyFromPickingSession::run($trolley, $pickingSession);
+            }
             WarehouseHydratePickingSessions::dispatch($pickingSession->warehouse);
         }
 

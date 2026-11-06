@@ -123,11 +123,8 @@ class WaitingDeliveryNoteItemsGroupedByItemDeliveryNoteResource extends JsonReso
             'quantity_waiting_warehouse_fractional_ds' => $waitingWarehouseFractionalDS,
             'quantity_waiting_crm'              => $this->quantity_waiting_crm,
             'quantity_waiting_crm_fractional_ds'       => $waitingCrmFractionalDS,
-            'trolley_names'                     => $deliveryNote->trolleys?->pluck('name')->join(', ') ?: null,
-            'trolleys'                          => $deliveryNote?->trolleys->map(fn ($trolley) => [
-                'id'   => $trolley->id,
-                'name' => $trolley->name,
-            ])->values()->toArray() ?? [],
+            'trolley_names'                     => $deliveryNote?->trolleysInUse()->pluck('name')->join(', ') ?: null,
+            'trolleys'                          => $deliveryNote?->trolleysInUseForDisplay() ?? [],
 
             'is_handled'                        => $this->is_handled,
             'notes'                             => $this->notes,

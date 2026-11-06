@@ -34,6 +34,8 @@ Dodací list sa stane vyskladniteľným buď samostatne, z karty **To do**, aleb
 
 Stlačenie **Start picking** na dodacom liste ho presunie do stavu **Handling** a zaznamená, kto ho vyskladňuje. Ak bol dodací list zaradený v rámci session, spustenie vyskladňovania pre celú session presunie do **Handling** rovnako všetky dodacie listy v nej, a ten, kto session spustil, sa stane vyskladňovačom na každom z nich. Dodací list už priradený niekomu inému zobrazuje uzamknutý zámok namiesto tlačidla na vyskladnenie - stlačte **Unlock to pick**, aby ste ho prevzali.
 
+Picking session môže mať jeden alebo viac vozíkov (trolleys). Stlačte **+ Trolley** pod časovou osou session a vyberte vozíky, do ktorých idú tovary zo session; každý sa potom zobrazí pri každom dodacom liste session v zoznamoch **Waiting** aj na samotnom dodacom liste, aby ten, kto dopĺňa chýbajúci tovar, vedel, ku ktorému vozíku ho priniesť. Vozík v session nemožno dať inej session ani inému dodaciemu listu, kým ho z nej neodoberiete krížikom **×**, a uvoľní sa sám, keď sú všetky dodacie listy session zabalené.
+
 Počas vyskladňovania sa môže ukázať, že riadok potrebuje rozhodnutie, ktoré vyskladňovač nemôže urobiť sám - napríklad náhradu alebo uvoľnenie zo skladu. Vtedy sa celý dodací list presunie do **Waiting** namiesto toho, aby vyskladňovanie pokračovalo okolo problému. Akonáhle už naozaj nič nečaká, objaví sa tlačidlo **Auto Finish Waiting**, ktoré po stlačení skontroluje dodací list a ak sú naozaj všetky riadky vyriešené, posunie ho do **Picked**.
 
 ## Dávky
@@ -74,6 +76,7 @@ Dodací list je možné zrušiť v ktoromkoľvek stave pred finalizáciou alebo 
 <ul>
 <li><b>Vidieť dodacie listy podľa stavu:</b> váš sklad → <b>Dispatching → Delivery notes</b>, potom vyberte kartu stavu - <b>To do</b>, <b>Queued</b>, <b>Handling</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packing</b>, <b>Packed</b>, <b>Finalised</b>, <b>Dispatched</b> alebo <b>All</b>.</li>
 <li><b>Pracovať s picking sessions:</b> váš sklad → <b>Dispatching → Picking sessions</b> → karty stavu <b>In Process</b>, <b>Picking</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packed</b>.</li>
+<li><b>Povedať doplňovaniu, ktorý vozík session používa:</b> otvorte picking session → <b>+ Trolley</b> pod časovou osou.</li>
 <li><b>Chýba diel kompletnej súpravy:</b> vráťte ostatné diely uvedené v tooltipe na ich miesto na regáli a potom stlačte <b>Parts put back</b> na dodacom liste.</li>
 <li><b>Posunúť dodací list ďalej:</b> otvorte dodací list a použite tlačidlo daného stavu - <b>Start picking</b>, <b>Auto Finish Waiting</b>, <b>Start packing</b> / <b>Set as packed</b>, <b>Finalise and Dispatch</b>, <b>Dispatch</b>. Tlačidlá na vrátenie (<b>Undo set as picked</b>, <b>Undo packing</b>, <b>Unpack</b>, <b>Undispatch</b>) ho posunú späť.</li>
 </ul>

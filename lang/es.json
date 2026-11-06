@@ -26422,5 +26422,17 @@
     "The supplier can not make it: give it to another supplier of the agent": "El proveedor no puede fabricarlo: dáselo a otro proveedor del agente",
     "This order had nothing left and was cancelled.": "A este pedido no le quedaba nada y se ha cancelado.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "A este pedido no le queda nada pero se pagó un depósito: recupéralo antes de cancelar el pedido.",
-    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "el agente movió :quantity unidades de :code a :supplier (:reference), el proveedor no puede fabricarlas."
+    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "el agente movió :quantity unidades de :code a :supplier (:reference), el proveedor no puede fabricarlas.",
+    "Trolley :trolley is in another warehouse.": "El carro :trolley está en otro almacén.",
+    "This picking session is already packed.": "Esta sesión de picking ya está embalada.",
+    "Trolley :trolley is already used by picking session :session.": "El carro :trolley ya lo usa la sesión de picking :session.",
+    "Trolley :trolley is already used by delivery note :deliveryNote.": "El carro :trolley ya lo usa el albarán :deliveryNote.",
+    "This trolley is still used in a picking session": "Este carro todavía se usa en una sesión de picking",
+    "Trolley of the picking session": "Carro de la sesión de picking",
+    "Take trolley :trolleyName off this picking session?": "¿Quitar el carro :trolleyName de esta sesión de picking?",
+    "Replenishment will no longer see this trolley for the delivery notes of this session.": "Los reponedores ya no verán este carro en los albaranes de esta sesión.",
+    "Yes, take it off": "Sí, quitarlo",
+    "Take off": "Quitar",
+    "Tell replenishment which trolley holds the picks of this session": "Indica a los reponedores en qué carro está lo preparado en esta sesión",
+    "Trolleys are not given to fulfilment picking sessions.": "Los carros no se asignan a sesiones de picking de fulfilment."
 }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\UpdateState;
 
+use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateTrolleys;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
@@ -187,6 +188,10 @@ class CancelDeliveryNote extends OrgAction
 
             return $deliveryNote;
         });
+
+        foreach ($deliveryNote->pickingSessions()->get() as $pickingSession) {
+            AutoFinishPackingPickingSession::run($pickingSession);
+        }
 
         $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
         $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::CANCELLED);

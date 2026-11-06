@@ -666,11 +666,11 @@ function returnNoteRoute(returnDeliveryNote) {
 
                     <!-- Section: Trolleys -->
                     <ManageTrolleysInDeliveryNote
-                        v-if="!(['unassigned', 'queued', 'dispatched', 'packed'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
+                        v-if="!(['unassigned', 'queued', 'dispatched', 'packed'].includes(deliveryNote.state)) && (boxStats?.shop_type !== 'dropshipping' || boxStats?.trolleys?.length)"
                         :deliveryNote
                         :trolleys="boxStats.trolleys"
                         :warehouse
-                        :isEditable
+                        :isEditable="isEditable && boxStats?.shop_type !== 'dropshipping'"
                     />
                     
                     <!-- Section: Picked Bays -->

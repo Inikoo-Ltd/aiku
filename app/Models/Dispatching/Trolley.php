@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Models\Inventory\PickingSession;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -39,6 +40,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dispatching\DeliveryNote> $deliveryNotes
  * @property-read Group|null $group
  * @property-read Organisation $organisation
+ * @property-read \App\Models\Inventory\PickingSession|null $pickingSession
  * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trolley newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trolley newQuery()
@@ -69,7 +71,7 @@ class Trolley extends Model implements Auditable
     }
 
     protected array $auditInclude = [
-        'name','status'
+        'name','status','picking_session_id'
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -95,6 +97,16 @@ class Trolley extends Model implements Auditable
     public function deliveryNote(): BelongsTo
     {
         return $this->belongsTo(DeliveryNote::class, 'current_delivery_note_id');
+    }
+
+    public function pickingSession(): BelongsTo
+    {
+        return $this->belongsTo(PickingSession::class);
+    }
+
+    public function isInUse(): bool
+    {
+        return $this->current_delivery_note_id !== null || $this->picking_session_id !== null;
     }
 
 }

@@ -38,6 +38,9 @@ class DeleteTrolley extends OrgAction
         if ($this->trolley->deliveryNotes()->exists()) {
             $validator->errors()->add('trolley', 'This trolley is still used on several delivery notes');
         }
+        if ($this->trolley->picking_session_id) {
+            $validator->errors()->add('trolley', __('This trolley is still used in a picking session'));
+        }
     }
 
     public function asController(Trolley $trolley, ActionRequest $request): Trolley

@@ -189,6 +189,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Employee|null $picker
  * @property-read User|null $pickerUser
  * @property-read Collection<int, PickingSession> $pickingSessions
+ * @property-read Collection<int, \App\Models\Dispatching\Trolley> $pickingSessionTrolleys
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
  * @property-read Platform|null $platform
  * @property-read Collection<int, ReturnDeliveryNote> $returnedDeliveryNote
@@ -558,6 +559,41 @@ class DeliveryNote extends Model implements Auditable
     public function trolleys(): BelongsToMany
     {
         return $this->belongsToMany(Trolley::class, 'delivery_note_has_trolleys');
+    }
+
+    public function pickingSessionTrolleys(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Trolley::class,
+            'picking_session_has_delivery_notes',
+            'delivery_note_id',
+            'picking_session_id',
+            'id',
+            'picking_session_id'
+        );
+    }
+
+    /**
+     * The trolleys holding this note's goods: its own, and those of the picking session it is picked in.
+     *
+     * @return Collection<int, Trolley>
+     */
+    public function trolleysInUse(): Collection
+    {
+        return $this->trolleys->concat($this->pickingSessionTrolleys)->unique('id')->sortBy('name')->values();
+    }
+
+    /**
+     * @return array<int, array{id: int, slug: string, name: string, is_picking_session_trolley: bool}>
+     */
+    public function trolleysInUseForDisplay(): array
+    {
+        return $this->trolleysInUse()->map(fn (Trolley $trolley) => [
+            'id'                         => $trolley->id,
+            'slug'                       => $trolley->slug,
+            'name'                       => $trolley->name,
+            'is_picking_session_trolley' => $trolley->picking_session_id !== null,
+        ])->all();
     }
 
     public function pickedBays(): BelongsToMany

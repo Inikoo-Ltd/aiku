@@ -63,7 +63,8 @@ class SyncDeliveryNoteTrolleys extends OrgAction
                 'required',
                 'integer',
                 Rule::exists('trolleys', 'id')->where(function ($query) {
-                    $query->where('organisation_id', $this->organisation->id);
+                    $query->where('organisation_id', $this->organisation->id)
+                        ->whereNull('picking_session_id');
                 })
             ]
         ];

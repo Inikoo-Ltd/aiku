@@ -87,7 +87,11 @@ use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
+use Illuminate\Validation\ValidationException;
+use App\Http\Resources\Dispatching\DeliveryNotesResource;
+use App\Actions\Dispatching\Trolley\AttachTrolleyToPickingSession;
 use App\Actions\Dispatching\Trolley\DeleteTrolley;
 use App\Actions\Dispatching\Trolley\DetachTrolleyFromDeliveryNote;
 use App\Actions\Dispatching\Trolley\StoreTrolley;
@@ -3496,6 +3500,79 @@ test('picking session delivery notes json and change trolley and item packing ro
     $packedBefore = intval($item->refresh()->quantity_packed);
     patch(route('grp.models.delivery_note_item.packing.store', [$item->id]), ['quantity' => 1]);
     expect(intval($item->refresh()->quantity_packed))->toBeGreaterThanOrEqual($packedBefore);
+});
+
+test('a trolley given to a picking session shows on its delivery notes and is freed when the session is packed, HELP-4559', function () {
+    $deliveryNote   = makeDeliveryNote($this);
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $trolley      = StoreTrolley::make()->handle($this->warehouse, ['name' => 'ps_'.Str::random(4)]);
+    $otherTrolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'ps_'.Str::random(4)]);
+
+    patch(route('grp.models.picking_session.trolleys.attach', [$pickingSession->id, $trolley->id]))->assertRedirect();
+
+    expect($trolley->refresh()->picking_session_id)->toBe($pickingSession->id)
+        ->and($pickingSession->refresh()->number_trolleys)->toBe(1);
+
+    $deliveryNote->refresh();
+    expect($deliveryNote->trolleysInUseForDisplay())->toBe([[
+        'id'                         => $trolley->id,
+        'slug'                       => $trolley->slug,
+        'name'                       => $trolley->name,
+        'is_picking_session_trolley' => true,
+    ]])
+        ->and(DeliveryNotesResource::make($deliveryNote)->resolve()['trolleys'][0]['name'])->toBe($trolley->name);
+
+    $availableIds = collect(get(route('grp.json.available_trolleys.list', [$this->warehouse->slug]))->json('data'))->pluck('id');
+    expect($availableIds)->not->toContain($trolley->id)->toContain($otherTrolley->id);
+
+    $secondDeliveryNote = makeDeliveryNote($this);
+    patch(route('grp.models.delivery_note.trolleys.attach', [$secondDeliveryNote->id, $trolley->id]))->assertSessionHasErrors('trolley');
+    expect($secondDeliveryNote->trolleys()->count())->toBe(0);
+
+    $otherSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$secondDeliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    expect(fn () => AttachTrolleyToPickingSession::make()->handle($trolley, $otherSession))->toThrow(ValidationException::class);
+
+    get(route('grp.org.warehouses.show.dispatching.picking_sessions.show', [$this->organisation->slug, $this->warehouse->slug, $pickingSession->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('trolleys.0.id', $trolley->id)
+            ->where('can_change_trolleys', true)
+            ->etc());
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::PACKED]);
+    AutoFinishPackingPickingSession::run($pickingSession->fresh());
+
+    expect($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED)
+        ->and($pickingSession->number_trolleys)->toBe(0)
+        ->and($trolley->refresh()->picking_session_id)->toBeNull();
+
+    AttachTrolleyToPickingSession::make()->handle($trolley, $otherSession);
+    patch(route('grp.models.picking_session.trolleys.detach', [$otherSession->id, $trolley->id]))->assertRedirect();
+    expect($trolley->refresh()->picking_session_id)->toBeNull();
+});
+
+test('cancelling the last unpacked note of a picking session finishes it and frees its trolley, HELP-4559', function () {
+    $packedDeliveryNote    = makeDeliveryNote($this);
+    $cancelledDeliveryNote = makeDeliveryNote($this);
+    $pickingSession        = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$packedDeliveryNote->id, $cancelledDeliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $trolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'pc_'.Str::random(4)]);
+    AttachTrolleyToPickingSession::make()->handle($trolley, $pickingSession);
+
+    $packedDeliveryNote->update(['state' => DeliveryNoteStateEnum::PACKED]);
+    expect($trolley->refresh()->picking_session_id)->toBe($pickingSession->id);
+
+    CancelDeliveryNote::run($cancelledDeliveryNote->refresh(), $this->user, false);
+
+    expect($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED)
+        ->and($trolley->refresh()->picking_session_id)->toBeNull();
 });
 
 function apiShipper($ctx, string $apiShipper)

@@ -34,6 +34,8 @@ A note becomes pickable either on its own, from the **To do** tab, or as part of
 
 Pressing **Start picking** on a note moves it to **Handling** and records who is picking it. If the note was queued inside a session, starting the session's own pick moves every note in it to **Handling** the same way, and whoever started the session becomes the picker on each note. A note already assigned to somebody else shows a locked padlock instead of the picking button — press **Unlock to pick** to take it over.
 
+A picking session can carry one or more trolleys. Press **+ Trolley** under the session's timeline to choose the trolleys the session's goods go into; each one then shows next to every note of the session in the **Waiting** lists and on the delivery note itself, so whoever replenishes a missing item knows which trolley to bring it to. A trolley in a session cannot be given to another session or note until it is taken off with its **×**, and it is freed by itself once every note of the session is packed.
+
 While a note is being picked, a line can turn out to need a decision the picker cannot make on the bench — for example a replacement or a release from the warehouse. When that happens the whole note moves to **Waiting** rather than letting picking continue around the problem. Once nothing is genuinely waiting any more, an **Auto Finish Waiting** button appears, and pressing it checks the note over and, if every line really is resolved, carries it on to **Picked**.
 
 ## Batches
@@ -74,6 +76,7 @@ A note can be cancelled from any stage before it is finalised or dispatched — 
 <ul>
 <li><b>See delivery notes by stage:</b> your warehouse → <b>Dispatching → Delivery notes</b>, then pick a stage tab — <b>To do</b>, <b>Queued</b>, <b>Handling</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packing</b>, <b>Packed</b>, <b>Finalised</b>, <b>Dispatched</b> or <b>All</b>.</li>
 <li><b>Work through picking sessions:</b> your warehouse → <b>Dispatching → Picking sessions</b> → stage tabs <b>In Process</b>, <b>Picking</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packed</b>.</li>
+<li><b>Tell replenishment which trolley a session uses:</b> open the picking session → <b>+ Trolley</b> under the timeline.</li>
 <li><b>A part of a complete set is missing:</b> put the other parts named in the tooltip back on their shelf, then press <b>Parts put back</b> on the note.</li>
 <li><b>Move a note along:</b> open the note and use its stage button — <b>Start picking</b>, <b>Auto Finish Waiting</b>, <b>Start packing</b> / <b>Set as packed</b>, <b>Finalise and Dispatch</b>, <b>Dispatch</b>. Undo buttons (<b>Undo set as picked</b>, <b>Undo packing</b>, <b>Unpack</b>, <b>Undispatch</b>) step it back.</li>
 </ul>

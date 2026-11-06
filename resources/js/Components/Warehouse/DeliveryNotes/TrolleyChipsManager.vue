@@ -19,6 +19,7 @@ const props = defineProps<{
     trolleys?: {
         id: number
         name: string
+        is_picking_session_trolley?: boolean
     }[]
     isEditable?: boolean
 }>()
@@ -33,13 +34,14 @@ const trolleyList = computed(() => props.trolleys ?? [])
         <span
             v-for="trolley in trolleyList"
             :key="trolley.id"
-            v-tooltip="ctrans('Trolley')"
+            v-tooltip="trolley.is_picking_session_trolley ? ctrans('Trolley of the picking session') : ctrans('Trolley')"
             class="inline-flex items-center gap-x-1 text-xs text-gray-500 bg-gray-100 border rounded px-1.5 py-0.5"
         >
             <FontAwesomeIcon icon="fal fa-dolly" fixed-width aria-hidden="true" />
             {{ trolley.name }}
 
             <ModalConfirmationDelete
+                v-if="!trolley.is_picking_session_trolley"
                 :title="ctrans('Are you sure you want to unselect Trolley :trolleyName ?', { trolleyName: trolley.name })"
                 :description="ctrans('The trolley will unselected from this Delivery. You can add it again if you want.')"
                 :noLabel="ctrans('Yes, unselect')"

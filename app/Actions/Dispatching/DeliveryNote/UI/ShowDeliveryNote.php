@@ -979,14 +979,7 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        $trolleys = [];
-        foreach ($deliveryNote->trolleys as $trolley) {
-            $trolleys[] = [
-                'id'   => $trolley->id,
-                'slug' => $trolley->slug,
-                'name' => $trolley->name,
-            ];
-        }
+        $trolleys = $deliveryNote->trolleysInUseForDisplay();
         $pickedBays = [];
         foreach ($deliveryNote->pickedBays as $pickedBay) {
             $pickedBays[] = [

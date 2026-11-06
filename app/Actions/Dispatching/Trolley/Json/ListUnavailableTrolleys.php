@@ -39,7 +39,11 @@ class ListUnavailableTrolleys extends OrgAction
 
         $query = QueryBuilder::for(Trolley::class)
             ->where('trolleys.warehouse_id', $warehouse->id)
-            ->whereNotNull('trolleys.current_delivery_note_id');
+            ->where(function ($query) {
+                $query->whereNotNull('trolleys.current_delivery_note_id')
+                    ->orWhereNotNull('trolleys.picking_session_id');
+            })
+            ->with(['deliveryNote', 'pickingSession']);
 
         return $query
             ->select([
@@ -47,6 +51,7 @@ class ListUnavailableTrolleys extends OrgAction
                 'trolleys.name',
                 'trolleys.slug',
                 'trolleys.current_delivery_note_id',
+                'trolleys.picking_session_id',
             ])
             ->defaultSort('trolleys.name')
             ->allowedSorts(['name'])

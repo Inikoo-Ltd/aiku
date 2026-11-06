@@ -44,10 +44,7 @@ class WaitingDNItemsGroupedByDeliveryNoteResource extends JsonResource
             'delivery_note_slug'                => $this->delivery_note_slug,
             'delivery_note_reference'           => $this->delivery_note_reference,
             'delivery_note_state_icon'          => $deliveryNote?->state->stateIcon()[$deliveryNote->state->value] ?? null,
-            'trolleys'                          => $deliveryNote?->trolleys->map(fn ($trolley) => [
-                'id'   => $trolley->id,
-                'name' => $trolley->name,
-            ])->values()->toArray() ?? [],
+            'trolleys'                          => $deliveryNote?->trolleysInUseForDisplay() ?? [],
             'picked_bays'                       => $deliveryNote?->pickedBays->sortBy('code')->map(fn ($pickedBay) => [
                 'id'   => $pickedBay->id,
                 'slug' => $pickedBay->slug,

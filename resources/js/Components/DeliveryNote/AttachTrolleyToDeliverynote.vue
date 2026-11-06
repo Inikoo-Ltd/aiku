@@ -2,7 +2,7 @@
 import { inject, ref, watch } from 'vue'
 import Modal from '../Utils/Modal.vue'
 import axios from 'axios'
-import { notify } from '@kyvg/vue3-notification'
+import { routeType } from '@/types/route'
 import { ctrans } from '@/Composables/useTrans'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import Button from '../Elements/Buttons/Button.vue'
@@ -16,22 +16,29 @@ interface Trolley {
     current_delivery_note: {
         slug: string
         reference: string
-    }
+    } | null
+    current_picking_session: {
+        slug: string
+        reference: string
+    } | null
 }
 
 const props = defineProps<{
     warehouse: {
         slug: string
     }
-    deliveryNote: {
+    deliveryNote?: {
         id: number
         slug: string
         reference: string
     }
+    attachRoute?: routeType
+    subtitle?: string
 }>()
 const layout = inject('layout', layoutStructure)
 
 const isOpenModal = ref(false)
+const errorMessage = ref<string | null>(null)
 
 const listTrolleys = ref<Trolley[]>([])
 const isLoadingFetch = ref(false)
@@ -49,11 +56,7 @@ const fetchTrolleysList = async () => {
         
         listTrolleys.value = response.data.data
     } catch (error: any) {
-        notify({
-            title: ctrans("Something went wrong"),
-            text: error.message || ctrans("Please try again or contact administrator"),
-            type: 'error'
-        })
+        errorMessage.value = error.message || ctrans("Please try again or contact administrator")
     } finally {
         isLoadingFetch.value = false
     }
@@ -75,11 +78,7 @@ const fetchUnavailableTrolleysList = async () => {
         
         listUnavailableTrolleys.value = response.data.data
     } catch (error: any) {
-        notify({
-            title: ctrans("Something went wrong"),
-            text: error.message || ctrans("Please try again or contact administrator"),
-            type: 'error'
-        })
+        errorMessage.value = error.message || ctrans("Please try again or contact administrator")
     } finally {
         isLoadingFetchUnavailableTrolleys.value = false
     }
@@ -87,6 +86,7 @@ const fetchUnavailableTrolleysList = async () => {
 
 watch(isOpenModal, (newVal) => {
     if (newVal) {
+        errorMessage.value = null
         fetchTrolleysList()
         fetchUnavailableTrolleysList()
     }
@@ -96,42 +96,44 @@ const selectedTrolley = ref<number | null>(null)
 const isLoadingSubmitTrolley = ref<number|null|undefined>(undefined)
 const submitSelectTrolley = (trolleyId?: number|null) => {
     // Section: Submit
+    const url = props.attachRoute
+        ? route(props.attachRoute.name, { ...props.attachRoute.parameters, trolley: trolleyId })
+        : route('grp.models.delivery_note.trolleys.attach', { deliveryNote: props.deliveryNote?.id, trolley: trolleyId })
+
     router.patch(
-        route(
-            'grp.models.delivery_note.trolleys.attach',
-            {
-                deliveryNote: props.deliveryNote.id,
-                trolley: trolleyId
-            }
-        ),
+        url,
         {
         },
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
+                errorMessage.value = null
                 isLoadingSubmitTrolley.value = trolleyId
             },
             onSuccess: () => {
                 isOpenModal.value = false
-                // notify({
-                //     title: ctrans("Success"),
-                //     text: ctrans("Successfully submit the data"),
-                //     type: "success"
-                // })
             },
             onError: errors => {
-                notify({
-                    title: ctrans("Something went wrong"),
-                    text: ctrans("Failed to attach trolley"),
-                    type: "error"
-                })
+                errorMessage.value = errors.trolley || ctrans("Failed to attach trolley")
             },
             onFinish: () => {
                 isLoadingSubmitTrolley.value = undefined
             },
         }
     )
+}
+
+const getUrlPickingSession = (pickingSessionSlug: string) => {
+    if (!pickingSessionSlug) {
+        return '#'
+    }
+
+    return route('grp.org.warehouses.show.dispatching.picking_sessions.show', {
+        organisation: layout.currentParams.organisation,
+        warehouse: props.warehouse.slug,
+        pickingSession: pickingSessionSlug
+    })
 }
 
 const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
@@ -164,8 +166,12 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                 {{ ctrans("Select trolley to attach") }}
             </div>
 
-            <div class="italic opacity-50 text-xs text-center mb-8">
-                {{ ctrans("Delivery Note") }} {{ deliveryNote.reference }}
+            <div class="italic opacity-50 text-xs text-center" :class="errorMessage ? 'mb-3' : 'mb-8'">
+                {{ subtitle ?? `${ctrans("Delivery Note")} ${deliveryNote?.reference}` }}
+            </div>
+
+            <div v-if="errorMessage" class="mb-5 text-center text-xs text-red-600">
+                {{ errorMessage }}
             </div>
 
             <div class="mb-1">
@@ -232,7 +238,8 @@ const getUrlDeliveryNote = (deliveryNoteSlug: string) => {
                             class="py-0.5 px-1 bg-gray-300 border border-gray-400 text-xs rounded-sm whitespace-nowrap truncate"
                         >
                             {{ trolley.name }}
-                            <span class="whitespace-nowrap">(<FontAwesomeIcon icon="fal fa-truck" class="opacity-70 mr-0.5" fixed-width aria-hidden="true" /><Link :href="getUrlDeliveryNote(trolley.current_delivery_note?.slug)" class="font-bold opacity-60 hover:opacity-100 cursor-pointer">{{ trolley.current_delivery_note?.reference }}</Link>)</span>
+                            <span v-if="trolley.current_delivery_note" class="whitespace-nowrap">(<FontAwesomeIcon icon="fal fa-truck" class="opacity-70 mr-0.5" fixed-width aria-hidden="true" /><Link :href="getUrlDeliveryNote(trolley.current_delivery_note.slug)" class="font-bold opacity-60 hover:opacity-100 cursor-pointer">{{ trolley.current_delivery_note.reference }}</Link>)</span>
+                            <span v-else-if="trolley.current_picking_session" class="whitespace-nowrap">(<Link :href="getUrlPickingSession(trolley.current_picking_session.slug)" class="font-bold opacity-60 hover:opacity-100 cursor-pointer">{{ trolley.current_picking_session.reference }}</Link>)</span>
                             <LoadingIcon v-if="isLoadingSubmitTrolley == trolley.id" />
                         </div>
                     </template>
