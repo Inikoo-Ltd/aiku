@@ -22,6 +22,7 @@ use App\Models\Web\CrawlPage;
 use App\Models\Web\Website;
 use App\Services\SiteAudit\AuditedHtml;
 use App\Services\SiteAudit\CustomExtraction;
+use App\Services\SiteAudit\RichResultsTest;
 use App\Services\SiteAudit\RobotsTxt;
 use App\Services\SiteAudit\SerpPixelWidth;
 use Illuminate\Console\Command;
@@ -294,6 +295,8 @@ class AuditWebsite implements ShouldBeUnique
     {
         $this->storeInlinks();
         $this->storeBlockedByRobots();
+
+        EnrichCrawlPages::run($this->crawl);
 
         DetectCrawlIssues::run($this->crawl->refresh(), $this->linkedFrom, $this->sitemapFiles);
 
@@ -602,6 +605,8 @@ class AuditWebsite implements ShouldBeUnique
 
         $facts = $this->pageFacts($url, $html, $response);
 
+        $facts['structured_data'] = $this->structuredDataFacts($response->body());
+
         if ($this->config['custom_search'] !== [] || $this->config['extractions'] !== []) {
             $facts['custom'] = CustomExtraction::run($response->body(), $this->config['custom_search'], $this->config['extractions']);
         }
@@ -666,6 +671,27 @@ class AuditWebsite implements ShouldBeUnique
         $add($html->paginationPrev ? $this->resolveUrl($url, $html->paginationPrev) : null, CrawlLinkKindEnum::PREV, null, CrawlLinkPositionEnum::HEAD->value, false);
 
         array_push($this->pendingLinks, ...array_values($links));
+    }
+
+    /**
+     * What the page's JSON-LD declares and what Google's rich results would reject in it, from the
+     * same checks the webpage check runs.
+     *
+     * @return array{types: array<int, string>, errors: array<int, string>, warnings: array<int, string>, unparsable: int}
+     */
+    private function structuredDataFacts(string $body): array
+    {
+        $result = RichResultsTest::run($body);
+
+        return [
+            'types'      => array_values(array_unique(array_column($result['items'], 'type'))),
+            'errors'     => array_slice(array_values(array_unique([
+                ...($result['unparsable'] > 0 ? ["Unparsable structured data in {$result['unparsable']} block(s)"] : []),
+                ...array_merge(...array_column($result['items'], 'errors') ?: [[]]),
+            ])), 0, self::EXAMPLES_KEPT * 2),
+            'warnings'   => array_slice(array_values(array_unique(array_merge(...array_column($result['items'], 'warnings') ?: [[]]))), 0, self::EXAMPLES_KEPT * 2),
+            'unparsable' => $result['unparsable'],
+        ];
     }
 
     private function storePendingLinks(): void

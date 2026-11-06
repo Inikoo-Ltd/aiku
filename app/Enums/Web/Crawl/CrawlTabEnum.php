@@ -34,6 +34,9 @@ enum CrawlTabEnum: string
     case SITEMAPS         = 'sitemaps';
     case SECURITY         = 'security';
     case VALIDATION       = 'validation';
+    case PAGE_SPEED       = 'page_speed';
+    case SEARCH_CONSOLE   = 'search_console';
+    case VISITS           = 'visits';
     case CUSTOM           = 'custom';
 
     public static function labels(): array
@@ -59,6 +62,9 @@ enum CrawlTabEnum: string
             self::SITEMAPS->value         => __('Sitemaps'),
             self::SECURITY->value         => __('Security'),
             self::VALIDATION->value       => __('Validation'),
+            self::PAGE_SPEED->value       => __('PageSpeed'),
+            self::SEARCH_CONSOLE->value   => __('Search Console'),
+            self::VISITS->value           => __('Visits'),
             self::CUSTOM->value           => __('Custom'),
         ];
     }
@@ -110,6 +116,20 @@ enum CrawlTabEnum: string
             self::H2             => [
                 'multiple_h2' => __('Multiple'),
             ],
+            self::STRUCTURED_DATA => [
+                'with_structured_data'    => __('With structured data'),
+                'without_structured_data' => __('Without structured data'),
+            ],
+            self::PAGE_SPEED     => [
+                'with_field_data' => __('With visitor data'),
+            ],
+            self::SEARCH_CONSOLE => [
+                'with_impressions' => __('With impressions'),
+                'with_clicks'      => __('With clicks'),
+            ],
+            self::VISITS         => [
+                'with_visits' => __('Visited'),
+            ],
             self::SITEMAPS       => [
                 'in_sitemap'     => __('URLs in sitemap'),
                 'not_in_sitemap' => __('URLs not in sitemap'),
@@ -148,11 +168,14 @@ enum CrawlTabEnum: string
             self::HREFLANG         => ['hreflang_count', 'indexability'],
             self::PAGINATION       => ['pagination_next', 'pagination_prev'],
             self::LINKS            => ['link_depth', 'inlinks', 'internal_outlinks'],
-            self::STRUCTURED_DATA  => ['status_code', 'indexability'],
+            self::STRUCTURED_DATA  => ['sd_types', 'sd_errors', 'sd_warnings', 'indexability'],
             self::SOCIAL           => ['title', 'indexability'],
             self::SITEMAPS         => ['is_in_sitemap', 'sitemap_count', 'indexability'],
             self::SECURITY         => ['status_code', 'indexability'],
             self::VALIDATION       => ['status_code', 'bytes', 'indexability'],
+            self::PAGE_SPEED       => ['vitals_lcp', 'vitals_inp', 'vitals_cls', 'vitals_samples', 'response_ms'],
+            self::SEARCH_CONSOLE   => ['search_clicks', 'search_impressions', 'search_ctr', 'search_position', 'indexability'],
+            self::VISITS           => ['visits_views', 'visits_visitors', 'search_clicks', 'indexability'],
             self::CUSTOM           => ['status_code', 'indexability'],
             self::EXTERNAL         => ['status_code', 'inlinks'],
         };

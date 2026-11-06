@@ -60,12 +60,28 @@ class GetCrawlTabRows
         'images_without_alt'      => 'crawl_pages.images_without_alt',
         'is_in_sitemap'           => 'crawl_pages.is_in_sitemap',
         'sitemap_count'           => 'crawl_pages.sitemap_count',
+        'sd_types'                => "crawl_pages.facts->'structured_data'->'types'",
+        'sd_errors'               => "jsonb_array_length(coalesce(crawl_pages.facts->'structured_data'->'errors', '[]'::jsonb))",
+        'sd_warnings'             => "jsonb_array_length(coalesce(crawl_pages.facts->'structured_data'->'warnings', '[]'::jsonb))",
+        'vitals_lcp'              => "(crawl_pages.facts->'vitals'->>'lcp')::int",
+        'vitals_inp'              => "(crawl_pages.facts->'vitals'->>'inp')::int",
+        'vitals_cls'              => "(crawl_pages.facts->'vitals'->>'cls')::numeric",
+        'vitals_samples'          => "(crawl_pages.facts->'vitals'->>'samples')::int",
+        'search_clicks'           => "(crawl_pages.facts->'search'->>'clicks')::int",
+        'search_impressions'      => "(crawl_pages.facts->'search'->>'impressions')::int",
+        'search_ctr'              => "round(100.0 * (crawl_pages.facts->'search'->>'clicks')::numeric / nullif((crawl_pages.facts->'search'->>'impressions')::numeric, 0), 1)",
+        'search_position'         => "(crawl_pages.facts->'search'->>'position')::numeric",
+        'visits_views'            => "(crawl_pages.facts->'visits'->>'views')::int",
+        'visits_visitors'         => "(crawl_pages.facts->'visits'->>'visitors')::int",
     ];
 
     private const array NUMERIC_COLUMNS = [
         'status_code', 'title_length', 'title_pixels', 'meta_description_length', 'meta_description_pixels', 'h1_length', 'h1_count', 'h2_count', 'word_count', 'link_depth', 'inlinks',
         'internal_outlinks', 'response_ms', 'bytes', 'redirect_hops', 'url_length', 'hreflang_count', 'images_without_alt', 'sitemap_count',
+        'sd_errors', 'sd_warnings', 'vitals_lcp', 'vitals_inp', 'vitals_samples', 'search_clicks', 'search_impressions', 'visits_views', 'visits_visitors',
     ];
+
+    private const array DECIMAL_COLUMNS = ['reading_ease', 'vitals_cls', 'search_ctr', 'search_position'];
 
     public const int MAX_PER_PAGE = 200;
 
@@ -195,7 +211,7 @@ class GetCrawlTabRows
 
             return [
                 ...array_map(fn (string $key) => ['key' => $key, 'label' => self::columnLabels()[$key], 'numeric' => $key === 'status_code'], $tab->pageColumns()),
-                ...array_map(fn (string $key) => ['key' => $key, 'label' => $labels[$key], 'numeric' => str_starts_with($key, 'search_')], array_keys($labels)),
+                ...array_map(fn (string $key) => ['key' => $key, 'label' => $labels[$key], 'numeric' => (bool) preg_match('/^search_\d+$/', $key)], array_keys($labels)),
             ];
         }
 
@@ -215,7 +231,7 @@ class GetCrawlTabRows
         return array_map(fn (string $key) => [
             'key'     => $key,
             'label'   => $labels[$key] ?? $key,
-            'numeric' => in_array($key, [...self::NUMERIC_COLUMNS, 'bytes', 'reading_ease'], true),
+            'numeric' => in_array($key, [...self::NUMERIC_COLUMNS, ...self::DECIMAL_COLUMNS, 'bytes'], true),
         ], array_values(array_unique(array_filter($keys, fn (string $key) => $resolved['source'] !== 'pages' || isset(self::PAGE_COLUMNS[$key]) || $key === 'details'))));
     }
 
@@ -289,13 +305,13 @@ class GetCrawlTabRows
         foreach ($columns as $column) {
             $value = $row->$column ?? null;
 
-            if (str_starts_with($column, 'extract_')) {
+            if (preg_match('/^extract_\d+$/', $column)) {
                 $values[$column] = $value === null ? null : implode(' | ', json_decode($value, true) ?: []);
 
                 continue;
             }
 
-            if (str_starts_with($column, 'search_')) {
+            if (preg_match('/^search_\d+$/', $column)) {
                 $values[$column] = $value === null ? null : (int) $value;
 
                 continue;
@@ -305,7 +321,8 @@ class GetCrawlTabRows
                 $column === 'details'                                  => $value === null ? null : json_decode($value, true),
                 $column === 'indexability'                             => $value === null ? null : (bool) $value,
                 $column === 'is_in_sitemap'                            => (bool) $value,
-                $column === 'reading_ease'                             => $value === null ? null : (float) $value,
+                in_array($column, self::DECIMAL_COLUMNS, true)         => $value === null ? null : (float) $value,
+                $column === 'sd_types'                                 => $value === null ? null : implode(', ', json_decode($value, true) ?: []),
                 in_array($column, self::NUMERIC_COLUMNS, true)         => $value === null ? null : (int) $value,
                 default                                                => $value,
             };
@@ -355,6 +372,12 @@ class GetCrawlTabRows
             'redirection'    => $query->whereBetween('crawl_pages.status_code', [300, 399]),
             'in_sitemap'     => $query->where('crawl_pages.is_in_sitemap', true),
             'multiple_h2'    => $query->whereRaw("coalesce((crawl_pages.facts->>'h2_count')::int, 0) > 1"),
+            'with_structured_data'    => $query->whereRaw("jsonb_array_length(coalesce(crawl_pages.facts->'structured_data'->'types', '[]'::jsonb)) > 0"),
+            'without_structured_data' => $query->whereNotNull(DB::raw("crawl_pages.facts->'structured_data'"))->whereRaw("jsonb_array_length(coalesce(crawl_pages.facts->'structured_data'->'types', '[]'::jsonb)) = 0"),
+            'with_field_data'         => $query->whereNotNull(DB::raw("crawl_pages.facts->'vitals'")),
+            'with_impressions'        => $query->whereRaw("coalesce((crawl_pages.facts->'search'->>'impressions')::int, 0) > 0"),
+            'with_clicks'             => $query->whereRaw("coalesce((crawl_pages.facts->'search'->>'clicks')::int, 0) > 0"),
+            'with_visits'             => $query->whereRaw("coalesce((crawl_pages.facts->'visits'->>'views')::int, 0) > 0"),
             'not_in_sitemap' => $query->where('crawl_pages.is_in_sitemap', false),
             default          => $query,
         };
@@ -446,6 +469,19 @@ class GetCrawlTabRows
             'is_in_sitemap'           => __('In sitemap'),
             'sitemap_count'           => __('Sitemaps'),
             'alt_text'                => __('Alt text'),
+            'sd_types'                => __('Structured data'),
+            'sd_errors'               => __('Errors'),
+            'sd_warnings'             => __('Warnings'),
+            'vitals_lcp'              => __('LCP (ms)'),
+            'vitals_inp'              => __('INP (ms)'),
+            'vitals_cls'              => __('CLS'),
+            'vitals_samples'          => __('Visits measured'),
+            'search_clicks'           => __('Clicks'),
+            'search_impressions'      => __('Impressions'),
+            'search_ctr'              => __('CTR %'),
+            'search_position'         => __('Position'),
+            'visits_views'            => __('Page views'),
+            'visits_visitors'         => __('Visitors'),
             'details'                 => __('Details'),
         ];
     }

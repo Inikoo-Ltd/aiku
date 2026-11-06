@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Crawl\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Crawl\EnrichCrawlPages;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlLinkKindEnum;
 use App\Enums\Web\Crawl\CrawlLinkPositionEnum;
@@ -112,6 +113,10 @@ class GetCrawlUrlDetails extends OrgAction
             ['label' => __('Response time (ms)'), 'value' => $page->response_ms],
             ['label' => __('Size (bytes)'), 'value' => $page->bytes],
             ['label' => __('In sitemap'), 'value' => $page->is_in_sitemap ? __('Yes') : __('No')],
+            ['label' => __('Structured data'), 'value' => isset($facts['structured_data']) ? (implode(', ', $facts['structured_data']['types'] ?? []) ?: __('None')) : null],
+            ['label' => __('Visitors LCP / INP / CLS'), 'value' => isset($facts['vitals']) ? __(':lcp ms / :inp ms / :cls (:samples visits, :days days)', ['lcp' => $facts['vitals']['lcp'], 'inp' => $facts['vitals']['inp'], 'cls' => $facts['vitals']['cls'], 'samples' => number_format($facts['vitals']['samples']), 'days' => EnrichCrawlPages::DAYS]) : null],
+            ['label' => __('Page views / visitors'), 'value' => isset($facts['visits']) ? __(':views / :visitors (:days days)', ['views' => number_format($facts['visits']['views']), 'visitors' => number_format($facts['visits']['visitors']), 'days' => EnrichCrawlPages::DAYS]) : null],
+            ['label' => __('Google clicks / impressions'), 'value' => isset($facts['search']) ? __(':clicks / :impressions, position :position (:days days)', ['clicks' => number_format($facts['search']['clicks']), 'impressions' => number_format($facts['search']['impressions']), 'position' => $facts['search']['position'] ?? '-', 'days' => EnrichCrawlPages::DAYS]) : null],
             ['label' => __('Error'), 'value' => $page->fetch_error],
             $webpage && $webpage->shop && $webpage->website ? [
                 'label' => __('Webpage'),

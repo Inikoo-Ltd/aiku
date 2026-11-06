@@ -99,6 +99,12 @@ class GetCrawlTabSummary
             ->selectRaw('count(*) filter (where is_in_sitemap) as in_sitemap')
             ->selectRaw('count(*) filter (where not is_in_sitemap) as not_in_sitemap')
             ->selectRaw("count(*) filter (where coalesce((facts->>'h2_count')::int, 0) > 1) as multiple_h2")
+            ->selectRaw("count(*) filter (where jsonb_array_length(coalesce(facts->'structured_data'->'types', '[]'::jsonb)) > 0) as with_structured_data")
+            ->selectRaw("count(*) filter (where facts->'structured_data' is not null and jsonb_array_length(coalesce(facts->'structured_data'->'types', '[]'::jsonb)) = 0) as without_structured_data")
+            ->selectRaw("count(*) filter (where facts->'vitals' is not null) as with_field_data")
+            ->selectRaw("count(*) filter (where coalesce((facts->'search'->>'impressions')::int, 0) > 0) as with_impressions")
+            ->selectRaw("count(*) filter (where coalesce((facts->'search'->>'clicks')::int, 0) > 0) as with_clicks")
+            ->selectRaw("count(*) filter (where coalesce((facts->'visits'->>'views')::int, 0) > 0) as with_visits")
             ->first();
 
         return array_map(intval(...), (array) $counts);

@@ -15,6 +15,7 @@ use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
 use App\Models\Web\CrawlIssue;
 use App\Models\Web\Website;
+use App\Actions\Web\WebVital\UI\IndexWebpagesPageSpeed;
 use App\Services\SiteAudit\SerpPixelWidth;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +42,9 @@ class DetectCrawlIssues
 
     private array $issues = [];
 
+    /** @var array<int, true> the crawled pages that are product webpages */
+    private array $productPageIds = [];
+
     /** @var array<string, Collection<int, object>> the indexable pages by the text compared across pages, read with the facts */
     private array $factDuplicates = [];
 
@@ -52,6 +56,14 @@ class DetectCrawlIssues
     {
         $this->issues         = [];
         $this->factDuplicates = [];
+        $this->productPageIds = DB::table('crawl_pages')
+            ->join('webpages', 'webpages.id', '=', 'crawl_pages.webpage_id')
+            ->where('crawl_pages.crawl_id', $crawl->id)
+            ->where('webpages.sub_type', 'product')
+            ->pluck('crawl_pages.id')
+            ->flip()
+            ->map(fn () => true)
+            ->all();
 
         $pages = DB::table('crawl_pages')
             ->where('crawl_id', $crawl->id)
@@ -533,6 +545,7 @@ class DetectCrawlIssues
         $this->detectResourceIssues($page, $facts, $failedResources);
         $this->detectPaginationIssues($page, $facts, $pages);
         $this->detectValidationIssues($page, $facts);
+        $this->detectFieldDataIssues($page, $facts);
 
         if (!$page->is_indexable) {
             return;
@@ -638,6 +651,63 @@ class DetectCrawlIssues
         ] as $fact => $type) {
             if (!empty($facts[$fact])) {
                 $this->addIssue($page, $type, ['robots_meta' => $page->robots_meta]);
+            }
+        }
+    }
+
+    /**
+     * The checks on what the page tells Google in its JSON-LD, and on what real visitors and Google
+     * search recorded for it in the last weeks.
+     */
+    private function detectFieldDataIssues(object $page, array $facts): void
+    {
+        $structuredData = $facts['structured_data'] ?? null;
+
+        if ($structuredData !== null) {
+            if (!empty($structuredData['errors'])) {
+                $this->addIssue($page, CrawlIssueTypeEnum::INVALID_STRUCTURED_DATA, ['errors' => $structuredData['errors']]);
+            } elseif (!empty($structuredData['warnings'])) {
+                $this->addIssue($page, CrawlIssueTypeEnum::STRUCTURED_DATA_WARNINGS, ['items' => $structuredData['warnings']]);
+            }
+
+            if (isset($this->productPageIds[$page->id]) && array_intersect($structuredData['types'] ?? [], ['Product', 'ProductGroup']) === []) {
+                $this->addIssue($page, CrawlIssueTypeEnum::MISSING_PRODUCT_STRUCTURED_DATA, ['items' => $structuredData['types'] ?? []]);
+            }
+        }
+
+        $vitals = $facts['vitals'] ?? null;
+
+        if ($vitals !== null) {
+            if (($vitals['lcp'] ?? 0) > IndexWebpagesPageSpeed::LCP_LIMITS[1]) {
+                $this->addIssue($page, CrawlIssueTypeEnum::POOR_LCP, ['text' => round($vitals['lcp'] / 1000, 1).' s', 'count' => $vitals['samples']]);
+            }
+
+            if (($vitals['inp'] ?? 0) > IndexWebpagesPageSpeed::INP_LIMITS[1]) {
+                $this->addIssue($page, CrawlIssueTypeEnum::POOR_INP, ['text' => $vitals['inp'].' ms', 'count' => $vitals['samples']]);
+            }
+
+            if (($vitals['cls'] ?? 0) > IndexWebpagesPageSpeed::CLS_LIMITS[1]) {
+                $this->addIssue($page, CrawlIssueTypeEnum::POOR_CLS, ['text' => (string) $vitals['cls'], 'count' => $vitals['samples']]);
+            }
+        }
+
+        $search = $facts['search'] ?? null;
+
+        if ($search !== null && $this->isHtmlPage($page)) {
+            if ($page->is_indexable && (int) $search['impressions'] === 0) {
+                $this->addIssue($page, CrawlIssueTypeEnum::INDEXABLE_WITHOUT_IMPRESSIONS);
+            } elseif (!$page->is_indexable && (int) $search['clicks'] > 0) {
+                $this->addIssue($page, CrawlIssueTypeEnum::NON_INDEXABLE_WITH_CLICKS, ['count' => (int) $search['clicks']]);
+            }
+        }
+
+        $visits = $facts['visits'] ?? null;
+
+        if ($visits !== null && $this->isHtmlPage($page)) {
+            if ($page->is_indexable && (int) $visits['views'] === 0) {
+                $this->addIssue($page, CrawlIssueTypeEnum::INDEXABLE_WITHOUT_VISITS);
+            } elseif (!$page->is_indexable && (int) $visits['views'] > 0) {
+                $this->addIssue($page, CrawlIssueTypeEnum::NON_INDEXABLE_WITH_VISITS, ['count' => (int) $visits['views']]);
             }
         }
     }

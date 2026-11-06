@@ -10,6 +10,8 @@ namespace App\Enums\Web\Crawl;
 
 use App\Actions\Web\Crawl\AuditWebsite;
 use App\Enums\EnumHelperTrait;
+use App\Actions\Web\Crawl\EnrichCrawlPages;
+use App\Actions\Web\WebVital\UI\IndexWebpagesPageSpeed;
 use App\Services\SiteAudit\SerpPixelWidth;
 
 enum CrawlIssueTypeEnum: string
@@ -136,6 +138,15 @@ enum CrawlIssueTypeEnum: string
     case OG_IMAGE_TOO_LARGE          = 'og_image_too_large';
     case DUPLICATE_OG_TITLE          = 'duplicate_og_title';
     case DUPLICATE_OG_DESCRIPTION    = 'duplicate_og_description';
+    case STRUCTURED_DATA_WARNINGS    = 'structured_data_warnings';
+    case MISSING_PRODUCT_STRUCTURED_DATA = 'missing_product_structured_data';
+    case POOR_LCP                    = 'poor_lcp';
+    case POOR_INP                    = 'poor_inp';
+    case POOR_CLS                    = 'poor_cls';
+    case INDEXABLE_WITHOUT_IMPRESSIONS = 'indexable_without_impressions';
+    case NON_INDEXABLE_WITH_CLICKS   = 'non_indexable_with_clicks';
+    case INDEXABLE_WITHOUT_VISITS    = 'indexable_without_visits';
+    case NON_INDEXABLE_WITH_VISITS   = 'non_indexable_with_visits';
 
     public const int TITLE_MAX_LENGTH            = 60;
     public const int TITLE_MIN_LENGTH            = 20;
@@ -252,6 +263,19 @@ enum CrawlIssueTypeEnum: string
             self::SITEMAP_CANONICALISED,
             self::IN_MULTIPLE_SITEMAPS,
             self::SITEMAP_TOO_LARGE => CrawlTabEnum::SITEMAPS,
+
+            self::INDEXABLE_WITHOUT_VISITS,
+            self::NON_INDEXABLE_WITH_VISITS => CrawlTabEnum::VISITS,
+
+            self::STRUCTURED_DATA_WARNINGS,
+            self::MISSING_PRODUCT_STRUCTURED_DATA => CrawlTabEnum::STRUCTURED_DATA,
+
+            self::POOR_LCP,
+            self::POOR_INP,
+            self::POOR_CLS => CrawlTabEnum::PAGE_SPEED,
+
+            self::INDEXABLE_WITHOUT_IMPRESSIONS,
+            self::NON_INDEXABLE_WITH_CLICKS => CrawlTabEnum::SEARCH_CONSOLE,
 
             self::TITLE_OVER_PIXELS => CrawlTabEnum::PAGE_TITLES,
 
@@ -379,7 +403,12 @@ enum CrawlIssueTypeEnum: string
             self::INVALID_HEAD_ELEMENTS,
             self::MISSING_VIEWPORT,
             self::HTML_TOO_LARGE,
-            self::OG_IMAGE_RELATIVE => CrawlIssueSeverityEnum::WARNING,
+            self::OG_IMAGE_RELATIVE,
+            self::MISSING_PRODUCT_STRUCTURED_DATA,
+            self::POOR_LCP,
+            self::POOR_INP,
+            self::POOR_CLS,
+            self::NON_INDEXABLE_WITH_CLICKS => CrawlIssueSeverityEnum::WARNING,
 
             self::TITLE_TOO_LONG,
             self::TITLE_TOO_SHORT,
@@ -438,7 +467,11 @@ enum CrawlIssueTypeEnum: string
             self::OPEN_GRAPH_MULTIPLE,
             self::OG_IMAGE_TOO_LARGE,
             self::DUPLICATE_OG_TITLE,
-            self::DUPLICATE_OG_DESCRIPTION => CrawlIssueSeverityEnum::NOTICE,
+            self::DUPLICATE_OG_DESCRIPTION,
+            self::STRUCTURED_DATA_WARNINGS,
+            self::INDEXABLE_WITHOUT_IMPRESSIONS,
+            self::INDEXABLE_WITHOUT_VISITS,
+            self::NON_INDEXABLE_WITH_VISITS => CrawlIssueSeverityEnum::NOTICE,
         };
     }
 
@@ -565,6 +598,15 @@ enum CrawlIssueTypeEnum: string
             self::OG_IMAGE_TOO_LARGE->value          => __('Open Graph image over :mb MB', ['mb' => self::OG_IMAGE_MAX_MB]),
             self::DUPLICATE_OG_TITLE->value          => __('Duplicate Open Graph title'),
             self::DUPLICATE_OG_DESCRIPTION->value    => __('Duplicate Open Graph description'),
+            self::STRUCTURED_DATA_WARNINGS->value    => __('Structured data missing recommended fields'),
+            self::MISSING_PRODUCT_STRUCTURED_DATA->value => __('Product page without Product structured data'),
+            self::POOR_LCP->value                    => __('Slow to show its main content (LCP)'),
+            self::POOR_INP->value                    => __('Slow to respond to clicks (INP)'),
+            self::POOR_CLS->value                    => __('Layout jumps while loading (CLS)'),
+            self::INDEXABLE_WITHOUT_IMPRESSIONS->value => __('Indexable page with no Google impressions'),
+            self::NON_INDEXABLE_WITH_CLICKS->value   => __('Non-indexable page still getting search clicks'),
+            self::INDEXABLE_WITHOUT_VISITS->value    => __('Indexable page nobody visited'),
+            self::NON_INDEXABLE_WITH_VISITS->value   => __('Non-indexable page that visitors use'),
         ];
     }
 
@@ -691,6 +733,15 @@ enum CrawlIssueTypeEnum: string
             self::OG_IMAGE_TOO_LARGE->value          => __('The og:image file is larger than :mb MB, which some networks refuse.', ['mb' => self::OG_IMAGE_MAX_MB]),
             self::DUPLICATE_OG_TITLE->value          => __('Another indexable page has the same og:title, so their shares look the same.'),
             self::DUPLICATE_OG_DESCRIPTION->value    => __('Another indexable page has the same og:description.'),
+            self::STRUCTURED_DATA_WARNINGS->value    => __('The structured data is valid but leaves out fields Google recommends, so the result may show fewer details.'),
+            self::MISSING_PRODUCT_STRUCTURED_DATA->value => __('The page is a product but has no Product or ProductGroup JSON-LD, so Google cannot show its price, stock or rating in results.'),
+            self::POOR_LCP->value                    => __('For a quarter of real visitors in the last :days days, the main content took longer than :seconds seconds to appear.', ['days' => EnrichCrawlPages::DAYS, 'seconds' => IndexWebpagesPageSpeed::LCP_LIMITS[1] / 1000]),
+            self::POOR_INP->value                    => __('For a quarter of real visitors in the last :days days, the page took longer than :ms ms to respond after a click or tap.', ['days' => EnrichCrawlPages::DAYS, 'ms' => IndexWebpagesPageSpeed::INP_LIMITS[1]]),
+            self::POOR_CLS->value                    => __('For a quarter of real visitors in the last :days days, the layout shifted more than :cls while loading, so they clicked the wrong thing.', ['days' => EnrichCrawlPages::DAYS, 'cls' => IndexWebpagesPageSpeed::CLS_LIMITS[1]]),
+            self::INDEXABLE_WITHOUT_IMPRESSIONS->value => __('Search Console recorded no impression for this indexable page in the last :days days: Google may not index it, or it ranks for nothing.', ['days' => EnrichCrawlPages::DAYS]),
+            self::NON_INDEXABLE_WITH_CLICKS->value   => __('The page tells search engines not to index it, but Search Console recorded clicks in the last :days days. Removing it from Google loses that traffic.', ['days' => EnrichCrawlPages::DAYS]),
+            self::INDEXABLE_WITHOUT_VISITS->value    => __('No visitor opened this indexable page in the last :days days.', ['days' => EnrichCrawlPages::DAYS]),
+            self::NON_INDEXABLE_WITH_VISITS->value   => __('Visitors opened this page in the last :days days, but it tells search engines not to index it.', ['days' => EnrichCrawlPages::DAYS]),
         ];
     }
 
@@ -817,6 +868,15 @@ enum CrawlIssueTypeEnum: string
             self::OG_IMAGE_TOO_LARGE->value          => __('Use a compressed image under :mb MB, ideally 1200 x 630 pixels.', ['mb' => self::OG_IMAGE_MAX_MB]),
             self::DUPLICATE_OG_TITLE->value          => __('Give each page an og:title that names its own content.'),
             self::DUPLICATE_OG_DESCRIPTION->value    => __('Give each page an og:description about its own content.'),
+            self::STRUCTURED_DATA_WARNINGS->value    => __('Add the fields listed in the details, such as brand, sku or availability.'),
+            self::MISSING_PRODUCT_STRUCTURED_DATA->value => __('Output Product structured data with name, offers (price, currency, availability) and image on the product page template.'),
+            self::POOR_LCP->value                    => __('Make the largest image or text block load sooner: smaller images, preload the hero image, fewer render-blocking scripts.', ['days' => EnrichCrawlPages::DAYS, 'seconds' => IndexWebpagesPageSpeed::LCP_LIMITS[1] / 1000]),
+            self::POOR_INP->value                    => __('Break up long JavaScript tasks and run less code when the page loads.'),
+            self::POOR_CLS->value                    => __('Give images and banners a fixed width and height, and reserve space for content that loads late.'),
+            self::INDEXABLE_WITHOUT_IMPRESSIONS->value => __('Check the page in Search Console URL Inspection, link to it from related pages and give it unique content.'),
+            self::NON_INDEXABLE_WITH_CLICKS->value   => __('If the page should be found, remove the noindex or fix the canonical. If not, redirect it to the page that should rank.'),
+            self::INDEXABLE_WITHOUT_VISITS->value    => __('Check whether the page is still needed: link to it from related pages, or redirect it to a page people use.', ['days' => EnrichCrawlPages::DAYS]),
+            self::NON_INDEXABLE_WITH_VISITS->value   => __('If people look for this page, make it indexable so search engines can send more of them.'),
         ];
     }
 }
