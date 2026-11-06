@@ -4823,6 +4823,19 @@ describe('competitor prices, HELP-3605', function () {
         expect($this->competitor->refresh()->search_url)->toBe('https://www.rival.example.com/busqueda?search={query}')
             ->and($this->competitor->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::OK);
 
+        $this->competitor->update(['search_url' => 'https://rival.example.com/search?q={query}']);
+        $homepageInBrowser = ['login_error' => null, 'cookies' => [], 'pages' => [['url' => 'https://rival.example.com', 'final_url' => 'https://rival.example.com/', 'status' => 200, 'blocked' => false, 'text' => 'Welcome', 'links' => [], 'search_actions' => [['@type' => 'SearchAction', 'target' => ['@type' => 'EntryPoint', 'urlTemplate' => 'https://rival.example.com/find?term={term}'], 'query-input' => ['@type' => 'PropertyValueSpecification', 'valueName' => 'term']]]]]];
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::sequence()->push(\Illuminate\Support\Facades\Process::result(json_encode($emptySearch)))->push(\Illuminate\Support\Facades\Process::result(json_encode($homepageInBrowser)))->push(\Illuminate\Support\Facades\Process::result(json_encode($realSearch)))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'rival.example.com*' => \Illuminate\Support\Facades\Http::response('Forbidden', 403),
+            'openrouter.ai/*'    => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['products' => []])]]]]),
+        ]);
+
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+        expect($this->competitor->refresh()->search_url)->toBe('https://rival.example.com/find?term={query}')
+            ->and($this->competitor->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::OK);
+
         \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode($emptySearch))]);
         \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
         \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response('<html></html>')]);

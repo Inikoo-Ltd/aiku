@@ -67,6 +67,16 @@ const read = async (page, url) => {
             .filter(([href, text]) => href.startsWith('http') && text.length > 3)).entries()]
             .slice(0, 200)
             .map(([href, text]) => ({href, text: text.slice(0, 200)})),
+        search_actions: [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => {
+            const walk = (node) => !node || typeof node !== 'object'
+                ? []
+                : [...(JSON.stringify(node['@type'] || '').includes('SearchAction') ? [node] : []), ...Object.values(node).flatMap(walk)]
+            try {
+                return walk(JSON.parse(script.textContent))
+            } catch {
+                return []
+            }
+        }).slice(0, 5),
     }))
 
     return {

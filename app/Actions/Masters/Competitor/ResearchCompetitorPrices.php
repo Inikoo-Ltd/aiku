@@ -60,7 +60,8 @@ class ResearchCompetitorPrices
 
         $result       = $search();
         $searchBroken = static::searchIsBroken($result['pages'] ?? [], $masterAssets->pluck('name')->all());
-        if ($searchBroken && ($publishedUrl = static::findSearchUrl($competitor->website)) && $publishedUrl !== $competitor->search_url) {
+        $publishedUrl = $searchBroken ? $this->publishedSearchUrl($competitor, $result['pages'] ?? []) : null;
+        if ($publishedUrl && $publishedUrl !== $competitor->search_url) {
             $competitor->update(['search_url' => $publishedUrl]);
             $result       = $search();
             $searchBroken = static::searchIsBroken($result['pages'] ?? [], $masterAssets->pluck('name')->all());
@@ -160,20 +161,47 @@ class ResearchCompetitorPrices
     }
 
     /**
-     * The search link a website publishes about itself (schema.org SearchAction), with {query} for the words,
-     * only when it is on the website's own domain.
+     * The search link the website publishes: on a page just read, else on its homepage fetched plainly, else on its
+     * homepage opened in the browser, as some sites turn away a plain request from a server (seen: a 403).
+     *
+     * @param  array<int, array>  $pages
+     */
+    private function publishedSearchUrl(Competitor $competitor, array $pages = []): ?string
+    {
+        $fromPages = fn (array $pages) => static::searchUrlFrom(collect($pages)->flatMap(fn ($page) => $page['search_actions'] ?? [])->all(), $competitor->website);
+
+        return $fromPages($pages)
+            ?? static::findSearchUrl($competitor->website)
+            ?? $fromPages($this->browse($competitor, [$competitor->website])['pages'] ?? []);
+    }
+
+    /**
+     * The search link a website publishes about itself (schema.org SearchAction), read from its homepage.
      */
     public static function findSearchUrl(string $website): ?string
     {
         $html = rescue(fn () => Http::timeout(20)->get($website)->body(), '', report: false);
         preg_match_all('#<script[^>]*application/ld\+json[^>]*>(.*?)</script>#si', $html, $scripts);
 
-        $actions = collect($scripts[1])->flatMap(fn ($script) => static::searchActions(json_decode(html_entity_decode($script), true)))->all();
+        return static::searchUrlFrom(collect($scripts[1])->flatMap(fn ($script) => static::searchActions(json_decode(html_entity_decode($script), true)))->all(), $website);
+    }
 
+    /**
+     * A SearchAction's link with {query} for the words, only when it is on the website's own domain.
+     *
+     * @param  array<int, mixed>  $actions
+     */
+    public static function searchUrlFrom(array $actions, string $website): ?string
+    {
         $host = fn (?string $url) => preg_replace('/^www\./', '', mb_strtolower((string) parse_url((string) $url, PHP_URL_HOST)));
-        foreach ($actions as $action) {
+        foreach (array_filter($actions, 'is_array') as $action) {
             $target = is_array($action['target'] ?? null) ? ($action['target']['urlTemplate'] ?? null) : ($action['target'] ?? null);
-            $name   = preg_match('/name=([\w-]+)/', (string) ($action['query-input'] ?? $action['query'] ?? ''), $match) ? $match[1] : 'search_term_string';
+            $input  = $action['query-input'] ?? $action['query'] ?? '';
+            $name   = match (true) {
+                is_array($input) && is_string($input['valueName'] ?? null)          => $input['valueName'],
+                is_string($input) && preg_match('/name=([\w-]+)/', $input, $match) === 1 => $match[1],
+                default                                                             => 'search_term_string',
+            };
             if (is_string($target) && str_contains($target, '{'.$name.'}') && preg_match('#^https?://#i', $target) && $host($target) === $host($website)) {
                 return str_replace('{'.$name.'}', '{query}', $target);
             }
@@ -317,7 +345,7 @@ PROMPT;
             ->whereNull('feed_url')
             ->whereNotNull('login_url')
             ->each(function (Competitor $competitor) {
-                if ($searchUrl = static::findSearchUrl($competitor->website)) {
+                if ($searchUrl = $this->publishedSearchUrl($competitor)) {
                     $competitor->update(['search_url' => $searchUrl]);
                 }
             });
