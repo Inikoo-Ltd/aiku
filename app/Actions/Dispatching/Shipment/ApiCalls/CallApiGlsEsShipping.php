@@ -523,6 +523,23 @@ class CallApiGlsEsShipping extends OrgAction
         return Str::limit($company ?: $contact ?: 'anonymous', 60, '');
     }
 
+    /**
+     * In the street and the city GLS Spain prints only ASCII, Á-Ú / á-ú (bar Ã) and º ª ¡ ¿: every
+     * other letter vanishes, so "Mühlenstraße" came out as "Mhlenstrae" and "Štúrova" as "túrova"
+     * (HELP-4555, checked letter by letter on the GLS sandbox). German letters are written the
+     * German way, the floor sign ° as º, the rest lose their accent.
+     */
+    public function spellForGlsEs(?string $value): string
+    {
+        $value = trim((string)$value);
+
+        return preg_replace_callback(
+            '/[^\x00-\x7FÁÂÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚáâäåæçèéêëìíîïðñòóôõöøùúºª¡¿]/u',
+            fn ($letter) => ['ü' => 'ue', 'Ü' => 'Ue', 'ß' => 'ss', 'ẞ' => 'SS', '°' => 'º'][$letter[0]] ?? Str::ascii($letter[0]),
+            \Normalizer::normalize($value) ?: $value
+        ) ?? $value;
+    }
+
     public function getCreateLabelXml(DeliveryNote|PalletReturn $parent, Shipper $shipper, ?float $splitWeight = null, ?int $suffix = null): string
     {
         $uidClient = $this->getAccessToken($shipper);
@@ -571,8 +588,8 @@ class CallApiGlsEsShipping extends OrgAction
         $shipmentData["from_postal_code"]  = Arr::get($parentResource, 'from_address.postal_code');
 
         $shipmentData["to_name"]         = $contactName;
-        $shipmentData["to_address"]      = trim(Arr::get($parentResource, 'to_address.address_line_1') . ' ' . Arr::get($parentResource, 'to_address.address_line_2'));
-        $shipmentData["to_city"]         = Arr::get($parentResource, 'to_address.locality');
+        $shipmentData["to_address"]      = $this->spellForGlsEs(Arr::get($parentResource, 'to_address.address_line_1') . ' ' . Arr::get($parentResource, 'to_address.address_line_2'));
+        $shipmentData["to_city"]         = $this->spellForGlsEs(Arr::get($parentResource, 'to_address.locality'));
         $shipmentData["to_country_code"] = Arr::get($parentResource, 'to_address.country_code');
         $shipmentData["to_postal_code"]  = Arr::get($parentResource, 'to_address.postal_code');
         $shipmentData["to_phone"]        = Arr::get($parentResource, 'to_phone');
