@@ -381,7 +381,9 @@ function isAllInContainers(item: any) {
     return !!warehouse?.containers?.length && warehouse.quantity_awaiting_delivery <= 0.01
 }
 
-const isLoadedBeforePacking = (item: any) => isAllInContainers(item) && !isFullyPacked(item)
+const isReceivedAtAgentWarehouse = (item: any) => Number(item.agent_warehouse?.quantity_received ?? 0) > 0
+
+const isLoadedBeforePacking =(item: any) => isAllInContainers(item) && !isFullyPacked(item)
 
 function packItem(item: any) {
     const packRoute = item.agent_warehouse?.pack_route
@@ -1079,7 +1081,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     <template v-else>{{ ctrans('Packed :packed/:ordered', { packed: locale.number(item.agent_warehouse.quantity_packed), ordered: locale.number(Number(item.quantity_ordered)) }) }}</template>
                 </span>
 
-                <a v-if="packingInstructionsUrl(item) && !isFullyPacked(item) && !isAllInContainers(item)" :href="packingInstructionsUrl(item)" target="_blank" rel="noopener">
+                <a v-if="packingInstructionsUrl(item) && isReceivedAtAgentWarehouse(item) && !isFullyPacked(item) && !isAllInContainers(item)" :href="packingInstructionsUrl(item)" target="_blank" rel="noopener">
                     <Button
                         :label="ctrans('Packing instructions')"
                         :tooltip="ctrans('Print the packing instructions of this product')"

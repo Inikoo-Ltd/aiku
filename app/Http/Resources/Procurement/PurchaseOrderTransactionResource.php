@@ -278,6 +278,7 @@ class PurchaseOrderTransactionResource extends JsonResource
             && ($isAgentEditing || $canEdit);
 
         return [
+            'quantity_received'                => (float) $transaction->getAttribute('quantity_received_at_agent_warehouse'),
             'quantity_packable'                => $packable,
             'quantity_to_check'                => (float) $transaction->getAttribute('quantity_to_check'),
             'quantity_packed'                  => $packed,
