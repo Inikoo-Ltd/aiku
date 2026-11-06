@@ -3,7 +3,7 @@
 
 - DO not write code comments you must write clear, self-explanatory code instead
 - Do not create test file unless we ask you
-- `apps/` holds the mobile apps; `apps/staff/` is the Flutter staff app (picking first, then other staff work). Each app follows its own `CLAUDE.md` and `.ai/rules` only; the Laravel, PHP, Vue and Pest rules here do not apply to it. Start an app session with its folder (e.g. `apps/staff/`) as the working directory so its Dart MCP and plugin load
+- `apps/` holds the mobile apps, each in its own folder; the staff app comes next as native apps in `apps/staff-android/` (Kotlin) and `apps/staff-ios/` (Swift). Each app follows its own `CLAUDE.md` and `.ai/rules` only; the Laravel, PHP, Vue and Pest rules here do not apply to it. Start an app session with its folder as the working directory so its own rules load
 
 ## Frontend translations use `ctrans`, never `trans`
 
