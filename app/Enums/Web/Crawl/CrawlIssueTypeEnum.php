@@ -103,6 +103,106 @@ enum CrawlIssueTypeEnum: string
     public const int LARGE_IMAGE_KB              = 200;
     public const int URL_MAX_LENGTH              = 115;
 
+    public function tab(): CrawlTabEnum
+    {
+        return match ($this) {
+            self::HTTP_4XX,
+            self::HTTP_5XX,
+            self::FETCH_FAILED,
+            self::REDIRECT_LOOP,
+            self::REDIRECT_CHAIN,
+            self::LINKED_REDIRECT,
+            self::SLOW_RESPONSE => CrawlTabEnum::RESPONSE_CODES,
+
+            self::MISSING_TITLE,
+            self::DUPLICATE_TITLE,
+            self::TITLE_TOO_LONG,
+            self::TITLE_TOO_SHORT,
+            self::TITLE_SAME_AS_H1,
+            self::MULTIPLE_TITLES => CrawlTabEnum::PAGE_TITLES,
+
+            self::MISSING_META_DESCRIPTION,
+            self::DUPLICATE_META_DESCRIPTION,
+            self::META_DESCRIPTION_TOO_LONG,
+            self::META_DESCRIPTION_TOO_SHORT,
+            self::MULTIPLE_META_DESCRIPTIONS => CrawlTabEnum::META_DESCRIPTION,
+
+            self::MISSING_H1,
+            self::MULTIPLE_H1,
+            self::DUPLICATE_H1 => CrawlTabEnum::H1,
+
+            self::MISSING_H2 => CrawlTabEnum::H2,
+
+            self::SOFT_404,
+            self::EXACT_DUPLICATE,
+            self::NEAR_DUPLICATE,
+            self::LOW_CONTENT,
+            self::LOREM_IPSUM => CrawlTabEnum::CONTENT,
+
+            self::IMAGES_WITHOUT_ALT,
+            self::BROKEN_IMAGES,
+            self::LARGE_IMAGES,
+            self::IMAGES_WITHOUT_SIZE => CrawlTabEnum::IMAGES,
+
+            self::MISSING_CANONICAL,
+            self::CANONICAL_TO_BROKEN,
+            self::CANONICAL_TO_OTHER_PAGE,
+            self::CANONICAL_TO_NON_INDEXABLE,
+            self::CONFLICTING_CANONICALS => CrawlTabEnum::CANONICALS,
+
+            self::NOINDEX_PAGE,
+            self::NOFOLLOW_PAGE,
+            self::HEAD_TAGS_IN_BODY => CrawlTabEnum::DIRECTIVES,
+
+            self::HREFLANG_TO_BROKEN,
+            self::HREFLANG_INVALID_CODE,
+            self::HREFLANG_CONFLICTING_CODE,
+            self::HREFLANG_MISSING_SELF,
+            self::HREFLANG_MISSING_RETURN => CrawlTabEnum::HREFLANG,
+
+            self::PAGINATION_TO_BROKEN,
+            self::PAGINATION_NOT_LINKED,
+            self::PAGINATION_LOOP => CrawlTabEnum::PAGINATION,
+
+            self::ORPHAN_PAGE,
+            self::HIGH_CRAWL_DEPTH,
+            self::NO_INTERNAL_OUTLINKS,
+            self::INTERNAL_NOFOLLOW_LINKS,
+            self::EMPTY_ANCHOR_TEXT,
+            self::NON_DESCRIPTIVE_ANCHOR_TEXT,
+            self::LOCALHOST_LINKS,
+            self::LINKS_WITH_PARAMETERS => CrawlTabEnum::LINKS,
+
+            self::BROKEN_EXTERNAL_LINKS,
+            self::UNSAFE_BLANK_LINKS => CrawlTabEnum::EXTERNAL,
+
+            self::URL_UPPERCASE,
+            self::URL_UNDERSCORES,
+            self::URL_MULTIPLE_SLASHES,
+            self::URL_NON_ASCII,
+            self::URL_TOO_LONG => CrawlTabEnum::URL,
+
+            self::INTERNAL_HTTP_LINKS,
+            self::MIXED_CONTENT,
+            self::INSECURE_FORMS,
+            self::MISSING_SECURITY_HEADERS => CrawlTabEnum::SECURITY,
+
+            self::INVALID_STRUCTURED_DATA => CrawlTabEnum::STRUCTURED_DATA,
+
+            self::OPEN_GRAPH_MISSING,
+            self::OPEN_GRAPH_INCOMPLETE,
+            self::TWITTER_CARD_MISSING,
+            self::OG_IMAGE_BROKEN => CrawlTabEnum::SOCIAL,
+
+            self::NOINDEX_IN_SITEMAP,
+            self::NOT_IN_SITEMAP,
+            self::SITEMAP_NON_200,
+            self::SITEMAP_CANONICALISED,
+            self::IN_MULTIPLE_SITEMAPS,
+            self::SITEMAP_TOO_LARGE => CrawlTabEnum::SITEMAPS,
+        };
+    }
+
     public function severity(): CrawlIssueSeverityEnum
     {
         return match ($this) {
@@ -351,6 +451,89 @@ enum CrawlIssueTypeEnum: string
             self::PAGINATION_TO_BROKEN->value        => __('The rel="next" or rel="prev" URL does not answer with 200.'),
             self::PAGINATION_NOT_LINKED->value       => __('The rel="next" or rel="prev" URL has no ordinary link on the page, so Google may not find it.'),
             self::PAGINATION_LOOP->value             => __('The rel="next" or rel="prev" URL is the page itself.'),
+        ];
+    }
+
+    public static function howToFix(): array
+    {
+        return [
+            self::HTTP_4XX->value                    => __('Fix or remove the links pointing to the URL, or redirect it to the closest live page.'),
+            self::HTTP_5XX->value                    => __('Open the URL to reproduce the error and check the application logs for it. Crawl again once it answers 200.'),
+            self::FETCH_FAILED->value                => __('Open the URL in a browser. If it loads, the server was busy during the crawl: crawl again with a lower speed.'),
+            self::REDIRECT_LOOP->value               => __('Change the redirects so the chain ends on a page that answers 200.'),
+            self::MISSING_TITLE->value               => __('Write a title that names what the page offers, between :min and :max characters.', ['min' => self::TITLE_MIN_LENGTH, 'max' => self::TITLE_MAX_LENGTH]),
+            self::CANONICAL_TO_BROKEN->value         => __('Point the canonical to the live URL of the page, usually the page itself.'),
+            self::REDIRECT_CHAIN->value              => __('Point the first redirect straight to the final URL, and update links to use the final URL.'),
+            self::DUPLICATE_TITLE->value             => __('Give each page a title that says what makes it different, such as the product or family name.'),
+            self::DUPLICATE_META_DESCRIPTION->value  => __('Write a meta description for each page that summarises its own content.'),
+            self::MISSING_META_DESCRIPTION->value    => __('Write a meta description of :min to :max characters that makes searchers want to click.', ['min' => self::META_DESCRIPTION_MIN_LENGTH, 'max' => self::META_DESCRIPTION_MAX_LENGTH]),
+            self::MISSING_H1->value                  => __('Add one h1 heading that says what the page is about, usually the product or family name.'),
+            self::MULTIPLE_H1->value                 => __('Keep one h1 for the main subject and turn the other h1 headings into h2.'),
+            self::MISSING_CANONICAL->value           => __('Add a canonical link in the head that points to the page\'s own URL.'),
+            self::NOINDEX_IN_SITEMAP->value          => __('Remove the page from the sitemap, or remove the noindex if the page should be found in search.'),
+            self::SLOW_RESPONSE->value               => __('Check what makes the page slow to render (large product lists, slow queries) and whether it is served from cache.'),
+            self::IMAGES_WITHOUT_ALT->value          => __('Add an alt text to every image that describes it. Decorative images take an empty alt="".'),
+            self::TITLE_TOO_LONG->value              => __('Shorten the title to :max characters or fewer, keeping the most important words first.', ['max' => self::TITLE_MAX_LENGTH]),
+            self::TITLE_TOO_SHORT->value             => __('Make the title more descriptive, between :min and :max characters.', ['min' => self::TITLE_MIN_LENGTH, 'max' => self::TITLE_MAX_LENGTH]),
+            self::META_DESCRIPTION_TOO_LONG->value   => __('Shorten the meta description to :max characters or fewer.', ['max' => self::META_DESCRIPTION_MAX_LENGTH]),
+            self::META_DESCRIPTION_TOO_SHORT->value  => __('Expand the meta description to at least :min characters.', ['min' => self::META_DESCRIPTION_MIN_LENGTH]),
+            self::CANONICAL_TO_OTHER_PAGE->value     => __('If the page is unique, point its canonical to itself. If it is a variant, no change is needed.'),
+            self::NOT_IN_SITEMAP->value              => __('Add the page to the sitemap, or make it non-indexable if it should not be found in search.'),
+            self::LINKED_REDIRECT->value             => __('Change the links to point to the final URL the redirect leads to.'),
+            self::HREFLANG_TO_BROKEN->value          => __('Point the hreflang link to the live URL of the language version, or remove it.'),
+            self::HREFLANG_INVALID_CODE->value       => __('Use an ISO 639-1 language code, optionally with an ISO 3166-1 region (for example en-gb), or x-default.'),
+            self::HREFLANG_CONFLICTING_CODE->value   => __('Use each language code for one URL only.'),
+            self::HREFLANG_MISSING_SELF->value       => __('Add an hreflang link from the page to itself with its own language code.'),
+            self::HREFLANG_MISSING_RETURN->value     => __('Add an hreflang link back to this page on the alternate page.'),
+            self::INVALID_STRUCTURED_DATA->value     => __('Test the page in Google\'s Rich Results Test and add the missing or invalid fields.'),
+            self::NOINDEX_PAGE->value                => __('Remove the noindex if the page should be found in search.'),
+            self::NOFOLLOW_PAGE->value               => __('Remove the nofollow from the robots meta tag unless the page\'s links must not be followed.'),
+            self::CANONICAL_TO_NON_INDEXABLE->value  => __('Point the canonical to an indexable page, usually the page itself.'),
+            self::SOFT_404->value                    => __('If the page no longer exists, make it answer 404 or 410, or redirect it. Otherwise change the title and h1 so they do not read as an error.'),
+            self::EXACT_DUPLICATE->value             => __('Make the content of each page unique, or point the canonical of the copies to the main page.'),
+            self::NEAR_DUPLICATE->value              => __('Add content that makes each page different, or point the canonical of the copies to the main page.'),
+            self::LOW_CONTENT->value                 => __('Add useful text about what the page offers, at least :words words.', ['words' => self::LOW_CONTENT_WORDS]),
+            self::LOREM_IPSUM->value                 => __('Replace the placeholder text with real content.'),
+            self::DUPLICATE_H1->value                => __('Give each page an h1 that says what makes it different.'),
+            self::MISSING_H2->value                  => __('Add h2 subheadings to structure the content.'),
+            self::TITLE_SAME_AS_H1->value            => __('Use the title and the h1 to say slightly different things, so the page matches more searches.'),
+            self::ORPHAN_PAGE->value                 => __('Link to the page from a related page, menu or family, or remove it from the sitemap if it is no longer needed.'),
+            self::HIGH_CRAWL_DEPTH->value            => __('Link to the page from a page closer to the home page, so it is reached in :clicks clicks or fewer.', ['clicks' => self::HIGH_CRAWL_DEPTH_CLICKS]),
+            self::NO_INTERNAL_OUTLINKS->value        => __('Add links from the page to related pages of the website.'),
+            self::INTERNAL_NOFOLLOW_LINKS->value     => __('Remove rel="nofollow" from links to pages of this website.'),
+            self::EMPTY_ANCHOR_TEXT->value           => __('Add text to the link, or an aria-label or an alt text on the image it wraps.'),
+            self::NON_DESCRIPTIVE_ANCHOR_TEXT->value => __('Replace generic link text such as "click here" with words that describe the target page.'),
+            self::LOCALHOST_LINKS->value             => __('Replace the links to development URLs with the live URLs.'),
+            self::UNSAFE_BLANK_LINKS->value          => __('Add rel="noopener" to links that open in a new tab.'),
+            self::BROKEN_EXTERNAL_LINKS->value       => __('Update the links to the external page\'s new address, or remove them.'),
+            self::BROKEN_IMAGES->value               => __('Upload the image again or change the page to use an image that exists.'),
+            self::LARGE_IMAGES->value                => __('Resize and compress the image to under :size KB, or serve it in a modern format such as WebP.', ['size' => self::LARGE_IMAGE_KB]),
+            self::IMAGES_WITHOUT_SIZE->value         => __('Add width and height attributes to the image so the page does not jump while it loads.'),
+            self::URL_UPPERCASE->value               => __('Use lowercase URLs and redirect the uppercase ones to them.'),
+            self::URL_UNDERSCORES->value             => __('Use hyphens instead of underscores to separate words, and redirect the old URLs.'),
+            self::URL_MULTIPLE_SLASHES->value        => __('Fix the links that produce the double slash, and redirect the URL to the single-slash one.'),
+            self::URL_NON_ASCII->value               => __('Use plain ASCII characters in the URL, and redirect the old URL.'),
+            self::URL_TOO_LONG->value                => __('Shorten the URL to :length characters or fewer, and redirect the old URL.', ['length' => self::URL_MAX_LENGTH]),
+            self::LINKS_WITH_PARAMETERS->value       => __('Link to the clean URL without parameters where one exists.'),
+            self::INTERNAL_HTTP_LINKS->value         => __('Change the links to use https.'),
+            self::MIXED_CONTENT->value               => __('Load the images, scripts and styles over https.'),
+            self::INSECURE_FORMS->value              => __('Make the form submit to an https URL.'),
+            self::MISSING_SECURITY_HEADERS->value    => __('Add the missing headers in the server or Cloudflare configuration.'),
+            self::OPEN_GRAPH_MISSING->value          => __('Add og:title, og:description, og:image and og:url tags to the page.'),
+            self::OPEN_GRAPH_INCOMPLETE->value       => __('Add the missing Open Graph tags listed in the details.'),
+            self::TWITTER_CARD_MISSING->value        => __('Add a twitter:card meta tag, usually summary_large_image.'),
+            self::OG_IMAGE_BROKEN->value             => __('Point og:image to an image that exists.'),
+            self::MULTIPLE_TITLES->value             => __('Keep one title tag in the head and remove the others.'),
+            self::MULTIPLE_META_DESCRIPTIONS->value  => __('Keep one meta description in the head and remove the others.'),
+            self::CONFLICTING_CANONICALS->value      => __('Keep one canonical link and remove the others.'),
+            self::HEAD_TAGS_IN_BODY->value           => __('Move the tag into the head, or remove it from the body.'),
+            self::SITEMAP_NON_200->value             => __('Remove the URL from the sitemap, or list its final URL instead.'),
+            self::SITEMAP_CANONICALISED->value       => __('List the canonical URL in the sitemap instead of this one.'),
+            self::IN_MULTIPLE_SITEMAPS->value        => __('List the URL in one sitemap only.'),
+            self::SITEMAP_TOO_LARGE->value           => __('Split the sitemap into files of at most :urls URLs and 50 MB each.', ['urls' => number_format(AuditWebsite::SITEMAP_MAX_URLS)]),
+            self::PAGINATION_TO_BROKEN->value        => __('Point rel="next" and rel="prev" to pages that answer 200.'),
+            self::PAGINATION_NOT_LINKED->value       => __('Add a normal link to the next and previous pages in the page body.'),
+            self::PAGINATION_LOOP->value             => __('Fix rel="next" and rel="prev" so the sequence does not lead back to an earlier page.'),
         ];
     }
 }

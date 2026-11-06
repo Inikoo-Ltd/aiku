@@ -9,11 +9,14 @@
 namespace App\Actions\Web\Crawl;
 
 use App\Actions\Web\Webpage\WithWebpageIdsByPath;
+use App\Enums\Web\Crawl\CrawlLinkKindEnum;
+use App\Enums\Web\Crawl\CrawlLinkPositionEnum;
 use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Web\Crawl;
+use App\Models\SysAdmin\User;
 use App\Models\Web\CrawlPage;
 use App\Models\Web\Website;
 use App\Services\SiteAudit\AuditedHtml;
@@ -48,7 +51,21 @@ class AuditWebsite implements ShouldBeUnique
 
     public const int AUDITS_KEPT = 10;
 
-    private const int CONCURRENT_FETCH_BUDGET = 8;
+    public const int LINK_AUDITS_KEPT = 3;
+
+    public const array DEFAULT_CONFIG = [
+        'max_depth'            => null,
+        'include'              => [],
+        'exclude'              => [],
+        'respect_robots_txt'   => true,
+        'crawl_subdomains'     => false,
+        'check_external_links' => true,
+        'check_images'         => true,
+    ];
+
+    private const int ANCHOR_MAX_LENGTH = 500;
+
+    public const int CONCURRENT_FETCH_BUDGET = 8;
 
     private const int LINKED_FROM_KEPT = 10;
 
@@ -121,6 +138,12 @@ class AuditWebsite implements ShouldBeUnique
     /** @var array<string, array<int, string>> */
     private array $linkedFrom = [];
 
+    /** @var array<int, array<string, mixed>> the links of the pages fetched in this batch, written with them */
+    private array $pendingLinks = [];
+
+    /** @var array{max_depth: int|null, include: array<int, string>, exclude: array<int, string>, respect_robots_txt: bool, crawl_subdomains: bool, check_external_links: bool, check_images: bool} */
+    private array $config = self::DEFAULT_CONFIG;
+
     public function getJobUniqueId(Crawl $crawl, int $part = 0): string
     {
         return $crawl->id.'-'.$part;
@@ -138,7 +161,8 @@ class AuditWebsite implements ShouldBeUnique
             return $crawl;
         }
 
-        $this->crawl = $crawl;
+        $this->crawl  = $crawl;
+        $this->config = self::config($crawl);
 
         if ($part === 0) {
             if ($crawl->state !== CrawlStateEnum::READY) {
@@ -217,7 +241,7 @@ class AuditWebsite implements ShouldBeUnique
         $this->robotsTxt        = $this->fetchRobotsTxt($baseUrl);
         $this->webpageIdsByPath = $this->webpageIdsByPath($website);
 
-        $this->enqueue($baseUrl.'/', 0, 0);
+        $this->enqueue($baseUrl.'/', 0, 0, isStartUrl: true);
 
         foreach ($this->fetchSitemapUrls($baseUrl) as $sitemapUrl => $sitemapCount) {
             $normalisedUrl = $this->normaliseInternalUrl((string) $sitemapUrl);
@@ -350,6 +374,7 @@ class AuditWebsite implements ShouldBeUnique
             }
 
             CrawlPage::insert($rows);
+            $this->storePendingLinks();
 
             $processedPages += count($batch);
             $pagesInThisJob += count($batch);
@@ -536,7 +561,73 @@ class AuditWebsite implements ShouldBeUnique
 
         $row['facts'] = json_encode($this->pageFacts($url, $html, $response));
 
+        $this->collectLinks($url, $html, $canonical);
+
         return $row;
+    }
+
+    /**
+     * Every link, image, canonical, hreflang and pagination URL on the page, once per target and
+     * kind, for the inlinks and outlinks of each URL.
+     */
+    private function collectLinks(string $url, AuditedHtml $html, ?string $canonical): void
+    {
+        $fromHash = md5($url);
+        $links    = [];
+
+        $add = function (?string $target, CrawlLinkKindEnum $kind, ?string $anchor, string $position, bool $isNofollow) use (&$links, $fromHash) {
+            if ($target === null) {
+                return;
+            }
+
+            $internalUrl = $this->normaliseInternalUrl($target);
+            $toUrl       = $internalUrl ?? $target;
+            $key         = $kind->value.'|'.$toUrl;
+
+            if (isset($links[$key])) {
+                return;
+            }
+
+            $links[$key] = [
+                'crawl_id'      => $this->crawl->id,
+                'from_url_hash' => $fromHash,
+                'to_url'        => $toUrl,
+                'to_url_hash'   => md5($toUrl),
+                'kind'          => $kind->value,
+                'anchor'        => $anchor === null || $anchor === '' ? null : Str::limit($anchor, self::ANCHOR_MAX_LENGTH),
+                'position'      => $position,
+                'is_nofollow'   => $isNofollow,
+                'is_internal'   => $this->isInternalHost(strtolower((string) parse_url($toUrl, PHP_URL_HOST))),
+            ];
+        };
+
+        foreach ($html->anchors as $anchor) {
+            $add($this->resolveUrl($url, $anchor['href']), CrawlLinkKindEnum::HYPERLINK, $anchor['text'], $anchor['position'], $anchor['nofollow']);
+        }
+
+        foreach ($html->images as $image) {
+            $add($this->resolveUrl($url, $image['src']), CrawlLinkKindEnum::IMAGE, $image['alt'], $image['position'], false);
+        }
+
+        $add($canonical, CrawlLinkKindEnum::CANONICAL, null, CrawlLinkPositionEnum::HEAD->value, false);
+
+        foreach ($html->hreflangs as $alternate) {
+            $add($this->resolveUrl($url, $alternate['href']), CrawlLinkKindEnum::HREFLANG, $alternate['hreflang'], CrawlLinkPositionEnum::HEAD->value, false);
+        }
+
+        $add($html->paginationNext ? $this->resolveUrl($url, $html->paginationNext) : null, CrawlLinkKindEnum::NEXT, null, CrawlLinkPositionEnum::HEAD->value, false);
+        $add($html->paginationPrev ? $this->resolveUrl($url, $html->paginationPrev) : null, CrawlLinkKindEnum::PREV, null, CrawlLinkPositionEnum::HEAD->value, false);
+
+        array_push($this->pendingLinks, ...array_values($links));
+    }
+
+    private function storePendingLinks(): void
+    {
+        foreach (array_chunk($this->pendingLinks, 1000) as $chunk) {
+            DB::table('crawl_links')->insert($chunk);
+        }
+
+        $this->pendingLinks = [];
     }
 
     /**
@@ -581,7 +672,7 @@ class AuditWebsite implements ShouldBeUnique
                 continue;
             }
 
-            if ($this->hostWithoutWww($host) === $this->host) {
+            if ($this->isInternalHost($host)) {
                 $internalOutlinks[$linkedUrl] = true;
 
                 if ($anchor['nofollow']) {
@@ -653,6 +744,8 @@ class AuditWebsite implements ShouldBeUnique
 
         return array_filter([
             'h2_count'             => $html->h2Count,
+            'h2'                   => $html->h2s,
+            'headers'              => $this->storedHeaders($response),
             'title_count'          => $html->titleCount,
             'meta_description_count' => $html->metaDescriptionCount,
             'canonicals'           => count($canonicals) > 1 ? $canonicals : null,
@@ -681,6 +774,22 @@ class AuditWebsite implements ShouldBeUnique
             'pagination'           => $pagination,
             'pagination_unlinked'  => array_values(array_filter($pagination, fn (string $paginationUrl) => !isset($internalOutlinks[$paginationUrl]))),
         ], fn ($value) => $value !== null && $value !== [] && $value !== false && $value !== 0);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function storedHeaders(Response $response): array
+    {
+        $headers = [];
+
+        foreach ($response->headers() as $name => $values) {
+            $headers[strtolower($name)] = Str::limit(implode(', ', (array) $values), self::EXAMPLE_MAX_LENGTH);
+        }
+
+        ksort($headers);
+
+        return $headers;
     }
 
     private function hasSecurityHeader(Response $response, string $header): bool
@@ -712,7 +821,7 @@ class AuditWebsite implements ShouldBeUnique
         return in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '[::1]'], true) || preg_match('/\.(test|local|localhost)$/', $host) === 1;
     }
 
-    private function enqueue(string $url, int $depth, ?int $linkDepth): void
+    private function enqueue(string $url, int $depth, ?int $linkDepth, bool $isStartUrl = false): void
     {
         $hash = md5($url);
 
@@ -722,11 +831,65 @@ class AuditWebsite implements ShouldBeUnique
 
         $this->seen[$hash] = true;
 
-        if (!$this->robotsTxt->isAllowed(parse_url($url, PHP_URL_PATH) ?: '/')) {
+        if ($this->config['respect_robots_txt'] && !$this->robotsTxt->isAllowed(parse_url($url, PHP_URL_PATH) ?: '/')) {
+            return;
+        }
+
+        if (!$isStartUrl && !$this->isWithinScope($url, $depth)) {
             return;
         }
 
         $this->queue[] = ['url' => $url, 'depth' => $depth, 'link_depth' => $linkDepth];
+    }
+
+    private function isWithinScope(string $url, int $depth): bool
+    {
+        if ($this->config['max_depth'] !== null && $depth > $this->config['max_depth']) {
+            return false;
+        }
+
+        foreach ($this->config['exclude'] as $pattern) {
+            if (self::matchesPattern($pattern, $url)) {
+                return false;
+            }
+        }
+
+        if ($this->config['include'] === []) {
+            return true;
+        }
+
+        foreach ($this->config['include'] as $pattern) {
+            if (self::matchesPattern($pattern, $url)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static function matchesPattern(string $pattern, string $url): bool
+    {
+        return @preg_match('~'.str_replace('~', '\\~', $pattern).'~i', $url) === 1;
+    }
+
+    public static function isValidPattern(string $pattern): bool
+    {
+        return @preg_match('~'.str_replace('~', '\\~', $pattern).'~i', '') !== false;
+    }
+
+    /**
+     * @return array{max_depth: int|null, include: array<int, string>, exclude: array<int, string>, respect_robots_txt: bool, crawl_subdomains: bool, check_external_links: bool, check_images: bool}
+     */
+    public static function config(Crawl $crawl): array
+    {
+        return array_replace(self::DEFAULT_CONFIG, array_intersect_key($crawl->config ?? [], self::DEFAULT_CONFIG));
+    }
+
+    private function isInternalHost(string $host): bool
+    {
+        $host = $this->hostWithoutWww($host);
+
+        return $host === $this->host || ($this->config['crawl_subdomains'] && str_ends_with($host, '.'.$this->host));
     }
 
     private function enqueueResource(string $url, string $kind): void
@@ -734,6 +897,10 @@ class AuditWebsite implements ShouldBeUnique
         $hash = md5($url);
 
         if (isset($this->resourcesSeen[$hash]) || !in_array(parse_url($url, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            return;
+        }
+
+        if (($kind === 'link' && !$this->config['check_external_links']) || ($kind === 'image' && !$this->config['check_images'])) {
             return;
         }
 
@@ -753,7 +920,7 @@ class AuditWebsite implements ShouldBeUnique
             return null;
         }
 
-        if ($this->hostWithoutWww(strtolower($parts['host'])) !== $this->host || isset($parts['query'])) {
+        if (!$this->isInternalHost(strtolower($parts['host'])) || isset($parts['query'])) {
             return null;
         }
 
@@ -927,22 +1094,58 @@ class AuditWebsite implements ShouldBeUnique
         return (bool) DB::table('crawls')->where('id', $this->crawl->id)->value('should_stop');
     }
 
+    /**
+     * Keeps the latest `AUDITS_KEPT` full audits and as many limited crawls, so crawls started to
+     * look at one part of the website never push the full audits behind the health history out.
+     */
     private function pruneOldAudits(Website $website): void
     {
         $keptIds = Crawl::where('website_id', $website->id)
             ->where('type', CrawlTypeEnum::AUDIT)
+            ->where('is_full_audit', true)
             ->orderByDesc('id')
             ->limit(self::AUDITS_KEPT)
-            ->pluck('id');
+            ->pluck('id')
+            ->merge(Crawl::where('website_id', $website->id)
+                ->where('type', CrawlTypeEnum::AUDIT)
+                ->where('is_full_audit', false)
+                ->orderByDesc('id')
+                ->limit(self::AUDITS_KEPT)
+                ->pluck('id'))
+            ->sortDesc()
+            ->values();
 
         Crawl::where('website_id', $website->id)
             ->where('type', CrawlTypeEnum::AUDIT)
             ->whereNotIn('id', $keptIds)
             ->where('running', false)
             ->delete();
+
+        $crawlIdsWithoutLinks = Crawl::where('website_id', $website->id)
+            ->where('type', CrawlTypeEnum::AUDIT)
+            ->where('running', false)
+            ->whereNotIn('id', $keptIds->take(self::LINK_AUDITS_KEPT))
+            ->pluck('id');
+
+        DB::table('crawl_links')->whereIn('crawl_id', $crawlIdsWithoutLinks)->delete();
     }
 
-    public static function startFor(Website $website, CrawlTriggerEnum $trigger, ?int $maxPages = null, int $concurrency = self::DEFAULT_CONCURRENCY): Crawl
+    /**
+     * Whether a crawl covers the whole website with every check, so what it finds can stand for the
+     * website: the health score, the page scores of products and families and the content
+     * suggestions read only these. A crawl limited by pages, depth or patterns, or that skips
+     * checks, would report every page it left out as fixed and orphan the pages it did not reach.
+     */
+    public static function isFullAudit(?int $maxPages, ?array $config): bool
+    {
+        if ($maxPages !== null) {
+            return false;
+        }
+
+        return $config === null || array_replace(self::DEFAULT_CONFIG, array_intersect_key($config, self::DEFAULT_CONFIG)) == self::DEFAULT_CONFIG;
+    }
+
+    public static function startFor(Website $website, CrawlTriggerEnum $trigger, ?int $maxPages = null, int $concurrency = self::DEFAULT_CONCURRENCY, ?array $config = null, ?string $name = null, ?User $user = null): Crawl
     {
         /** @var Crawl $crawl */
         $crawl = $website->crawls()->create([
@@ -952,6 +1155,10 @@ class AuditWebsite implements ShouldBeUnique
             'depth'       => 0,
             'concurrency' => $concurrency,
             'max_pages'   => $maxPages,
+            'config'        => $config === null ? null : array_replace(self::DEFAULT_CONFIG, array_intersect_key($config, self::DEFAULT_CONFIG)),
+            'name'          => $name,
+            'user_id'       => $user?->id,
+            'is_full_audit' => self::isFullAudit($maxPages, $config),
         ]);
 
         return $crawl;

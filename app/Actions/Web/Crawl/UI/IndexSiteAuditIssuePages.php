@@ -119,6 +119,7 @@ class IndexSiteAuditIssuePages extends OrgAction
     {
         return Crawl::where('website_id', $website->id)
             ->where('type', CrawlTypeEnum::AUDIT)
+            ->where('is_full_audit', true)
             ->where('state', CrawlStateEnum::FINISH)
             ->whereNotNull('health_score')
             ->latest('id')

@@ -737,6 +737,8 @@ use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\RecordRailClick;
 use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\Web\Crawl\StartSiteAudit;
+use App\Actions\Web\Crawl\StopCrawlFromCrawler;
+use App\Actions\Web\Crawl\StoreCrawl;
 use App\Actions\Web\Seo\AcceptSeoContentSuggestion;
 use App\Actions\Web\Seo\CheckSeoKeywordsNow;
 use App\Actions\Web\Seo\DeleteSeoAiPrompt;
@@ -1621,8 +1623,11 @@ Route::post('product/{product:id}/seo-review/validate', ValidateProductSeoReview
 Route::post('product/{product:id}/webpage-check', CheckProductWebpage::class)->name('product.webpage_check.store')->withoutScopedBindings();
 Route::post('family/{family:id}/webpage-check', CheckFamilyWebpage::class)->name('family.webpage_check.store')->withoutScopedBindings();
 
+Route::patch('crawl/{crawl:id}/stop', StopCrawlFromCrawler::class)->name('crawl.stop')->withoutScopedBindings();
+
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');
+    Route::post('crawl', StoreCrawl::class)->name('crawl.store');
     Route::post('publish/header', [PublishWebsiteMarginal::class, 'header'])->name('publish.header');
     Route::post('publish/footer', [PublishWebsiteMarginal::class, 'footer'])->name('publish.footer');
 

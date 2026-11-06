@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Crawl\AuditWebsite;
 use App\Actions\Web\Website\UI\ShowSeoDashboard;
-use App\Enums\Web\Crawl\CrawlIssueSeverityEnum;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
@@ -20,12 +19,9 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Crawl;
 use App\Models\Web\Website;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
-use App\Models\Web\SeoContentSuggestion;
-use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowSiteAudit extends OrgAction
@@ -36,6 +32,7 @@ class ShowSiteAudit extends OrgAction
     {
         $audits = Crawl::where('website_id', $website->id)
             ->where('type', CrawlTypeEnum::AUDIT)
+            ->where('is_full_audit', true)
             ->orderByDesc('id')
             ->limit(AuditWebsite::AUDITS_KEPT)
             ->get();
@@ -119,42 +116,9 @@ class ShowSiteAudit extends OrgAction
         return $shop->website;
     }
 
-    public function htmlResponse(Website $website, ActionRequest $request): Response
+    public function htmlResponse(Website $website): RedirectResponse
     {
-        $title = __('Site audit');
-
-        return Inertia::render(
-            'Org/Web/SiteAudit',
-            [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => $title,
-                'pageHead'    => [
-                    'icon'  => [
-                        'icon'  => ['fal', 'fa-clipboard-check'],
-                        'title' => $title,
-                    ],
-                    'title' => $title,
-                ],
-                'website'     => [
-                    'domain' => $website->domain,
-                ],
-                'canRunAudit' => $this->canEdit,
-                'runRoute'    => [
-                    'name'       => 'grp.models.website.site_audit.store',
-                    'parameters' => [$website->id],
-                    'method'     => 'post',
-                ],
-                'severities'  => CrawlIssueSeverityEnum::labels(),
-                'suggestions' => [
-                    'pending' => SeoContentSuggestion::where('website_id', $website->id)->whereNot('reason', SeoContentSuggestion::REASON_SEO_REVIEW)->where('state', SeoContentSuggestionStateEnum::PENDING)->count(),
-                    'route'   => [
-                        'name'       => 'grp.org.shops.show.seo.site_audit.suggestions',
-                        'parameters' => Arr::only($request->route()->originalParameters(), ['organisation', 'shop']),
-                    ],
-                ],
-                'audit'       => fn () => $this->handle($website),
-            ]
-        );
+        return redirect()->route('grp.websites.crawler.index', ['website' => $website->slug]);
     }
 
     public function getBreadcrumbs(array $routeParameters): array

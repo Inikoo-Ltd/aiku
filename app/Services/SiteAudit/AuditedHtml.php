@@ -42,8 +42,9 @@ class AuditedHtml
      * @param  array<int, string>  $hrefs
      * @param  array<int, array{hreflang: string, href: string}>  $hreflangs
      * @param  array<int, string>  $contentHrefs  the links inside <main>, the page's own content without the header, menu and footer every page shares; all links when the page has no <main>
-     * @param  array<int, array{href: string, nofollow: bool, text: string, unsafe_blank: bool}>  $anchors  every link on the page, followed or not
-     * @param  array<int, array{src: string, has_size: bool}>  $images
+     * @param  array<int, array{href: string, nofollow: bool, text: string, unsafe_blank: bool, position: string}>  $anchors  every link on the page, followed or not
+     * @param  array<int, array{src: string, has_size: bool, alt: string|null, position: string}>  $images
+     * @param  array<int, string>  $h2s  the text of the first two H2 headings
      * @param  array<int, string>  $headTagsInBody  the head tags (title, meta description, robots, canonical) found in the body, where search engines ignore them
      * @param  array<int, string>  $resourceUrls  the src of every image, script, frame and media, and the href of every stylesheet
      * @param  array<int, string>  $formActions
@@ -77,7 +78,8 @@ class AuditedHtml
         public readonly ?string $contentHash,
         public readonly ?int $contentSimhash,
         public readonly bool $hasLoremIpsum,
-        public readonly ?string $soft404Phrase
+        public readonly ?string $soft404Phrase,
+        public readonly array $h2s
     ) {
     }
 
@@ -172,6 +174,8 @@ class AuditedHtml
                 $images[] = [
                     'src'      => $src,
                     'has_size' => $image->hasAttribute('width') && $image->hasAttribute('height'),
+                    'alt'      => $image->hasAttribute('alt') ? trim((string) $image->getAttribute('alt')) : null,
+                    'position' => self::position($image),
                 ];
             }
         }
@@ -194,11 +198,19 @@ class AuditedHtml
                 'nofollow'     => self::isNofollow($anchor),
                 'text'         => self::anchorText($anchor),
                 'unsafe_blank' => self::opensUnsafeBlank($anchor),
+                'position'     => self::position($anchor),
             ];
         }
 
         $hrefs = self::followedHrefs($document->querySelectorAll('a[href]'));
         $h1    = self::clean($document->querySelector('h1')?->textContent);
+        $h2s   = [];
+
+        foreach ($document->querySelectorAll('h2') as $h2) {
+            if (count($h2s) < 2 && ($h2Text = self::clean($h2->textContent)) !== null) {
+                $h2s[] = $h2Text;
+            }
+        }
         $title = self::clean($document->querySelector('head title')?->textContent);
 
         $contentHrefs = $document->querySelector('main') ? self::followedHrefs($document->querySelectorAll('main a[href]')) : $hrefs;
@@ -233,7 +245,8 @@ class AuditedHtml
             contentHash: $words ? md5(implode(' ', $words)) : null,
             contentSimhash: $words ? self::simhash($words) : null,
             hasLoremIpsum: str_contains(mb_strtolower($text), 'lorem ipsum'),
-            soft404Phrase: self::soft404Phrase($title, $h1)
+            soft404Phrase: self::soft404Phrase($title, $h1),
+            h2s: $h2s
         );
     }
 
@@ -312,6 +325,21 @@ class AuditedHtml
         }
 
         return (string) self::clean($root->textContent);
+    }
+
+    /**
+     * Where on the page an element sits, read from the nearest landmark around it, so a link in the
+     * menu every page shares can be told apart from a link in the page's own content.
+     */
+    private static function position(Element $element): string
+    {
+        return match (true) {
+            $element->closest('nav') !== null    => 'nav',
+            $element->closest('header') !== null => 'header',
+            $element->closest('footer') !== null => 'footer',
+            $element->closest('aside') !== null  => 'aside',
+            default                              => 'content',
+        };
     }
 
     private static function isInHead(Element $element): bool
