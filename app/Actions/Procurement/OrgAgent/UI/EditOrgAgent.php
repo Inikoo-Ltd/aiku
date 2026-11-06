@@ -171,7 +171,7 @@ class EditOrgAgent extends OrgAction
                 'money_request_payer_user_ids' => [
                     'type'        => 'multiselect-tags',
                     'label'       => __('Emailed to approve and pay'),
-                    'information' => __('Emailed when this agent asks for money, and can approve, reject and pay it even without accounting or procurement permission.'),
+                    'information' => __('Emailed when this agent asks for money, and can approve and pay it. Accounting users can already approve and pay, but are not emailed.'),
                     'options'     => $users,
                     'labelProp'   => 'name',
                     'valueProp'   => 'id',
