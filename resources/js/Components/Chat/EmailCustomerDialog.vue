@@ -139,7 +139,7 @@ const send = () => {
             <div>
                 <div class="mb-1 flex items-center justify-between gap-2">
                     <div class="flex min-w-0 items-center gap-1">
-                        <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline />
+                        <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline allow-link />
                         <div class="mx-1 h-5 w-px bg-gray-200" />
                         <PolishMessageButton v-model="form.message" channel="email" />
                         <EditorWritingQualityCheck compact :editor="messageEditor?.editor" context="customer_email" />
@@ -148,7 +148,7 @@ const send = () => {
                         :label="ctrans('Insert out-of-stock lines (:count)', { count: String(outOfStockLines.length) })"
                         @click="insertOutOfStockLines" />
                 </div>
-                <ChatMessageEditor ref="messageEditor" v-model="form.message" :placeholder="ctrans('Message')" allow-underline
+                <ChatMessageEditor ref="messageEditor" v-model="form.message" :placeholder="ctrans('Message')" allow-underline allow-link
                     class="rounded-md border border-gray-300 px-3 py-2 focus-within:border-[--app-accent] [&_.ProseMirror]:min-h-64 [&_.ProseMirror]:max-h-[60vh]" />
             </div>
             <div v-if="templates?.length && templateValues" class="text-xs text-gray-500 leading-snug">

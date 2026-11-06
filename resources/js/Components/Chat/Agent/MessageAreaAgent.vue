@@ -2153,11 +2153,11 @@ const handleClickOutside = (e: MouseEvent) => {
                     <img src="/art/invader.svg" class="h-3 select-none" alt="" />
                     {{ ctrans("Draft by Aiku: read it, change what you need, then send") }}
                 </div>
-                <ChatMessageEditor ref="messageEditor" v-model="newMessage" @update:model-value="onEditorInput"
+                <ChatMessageEditor ref="messageEditor" :key="isEmailChat ? 'email' : 'chat'" v-model="newMessage" @update:model-value="onEditorInput"
                     @picture-refused="composerError = PICTURE_NOT_TAKEN()"
                     @blur="() => { isTyping = false; sendTypingStatus(false) }"
                     @paste="onPasteAttachment" @submit="sendMessage" :enter-sends="!isEmailChat"
-                    :allow-underline="(session as any)?.channel !== 'whatsapp'"
+                    :allow-underline="(session as any)?.channel !== 'whatsapp'" :allow-link="isEmailChat"
                     :placeholder="isEmailChat ? ctrans('Type your reply, Ctrl+Enter to send') : ctrans('Type message...')"
                     :picture-source="pictureSource"
                     class="px-4 pt-3 pb-1"
@@ -2200,7 +2200,7 @@ const handleClickOutside = (e: MouseEvent) => {
                         </button>
                         <div class="mx-1 h-5 w-px bg-gray-200" />
                         <ChatFormattingToolbar :editor="messageEditor?.editor"
-                            :allow-underline="(session as any)?.channel !== 'whatsapp'" />
+                            :allow-underline="(session as any)?.channel !== 'whatsapp'" :allow-link="isEmailChat" />
                         <div class="mx-1 h-5 w-px bg-gray-200" />
                         <PolishMessageButton v-model="newMessage"
                             :channel="isEmailChat ? 'email' : (session as any)?.channel === 'whatsapp' ? 'whatsapp' : 'chat'" />

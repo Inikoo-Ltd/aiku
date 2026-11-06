@@ -6,6 +6,7 @@ import StarterKit from "@tiptap/starter-kit"
 import Underline from "@tiptap/extension-underline"
 import Placeholder from "@tiptap/extension-placeholder"
 import Image from "@tiptap/extension-image"
+import Link from "@tiptap/extension-link"
 import { keepBlankLines, plainTextSlice } from "@/Components/Chat/chatPaste"
 import { markupToEditorHtml, editorDocToMarkup } from "@/Composables/useWhatsappMarkup"
 
@@ -15,6 +16,7 @@ const props = withDefaults(defineProps<{
     disabled?: boolean
     enterSends?: boolean
     allowUnderline?: boolean
+    allowLink?: boolean
     pictureSource?: (pictureId: string) => string | undefined
 }>(), {
     modelValue: "",
@@ -38,6 +40,9 @@ const editor = useEditor({
         StarterKit.configure({ heading: false, blockquote: false, codeBlock: false, horizontalRule: false }),
         Underline,
         Placeholder.configure({ placeholder: () => props.placeholder }),
+        ...(props.allowLink
+            ? [Link.configure({ autolink: false, openOnClick: false, HTMLAttributes: { class: "underline text-[var(--app-accent)]", target: null, rel: null } })]
+            : []),
         Image.extend({
             parseHTML: () => [{ tag: 'img[src^="blob:"][data-picture-id]' }],
             addAttributes() {

@@ -21,6 +21,14 @@ El buzón de la tienda tiene que conectarse una vez - consulta <a href="/docs/co
 
 Un correo se suma a <b>Waiting</b> (Esperando) como cualquier conversación, y <b>Assign to me</b> (Asignarme) la hace tuya - consulta <a href="/docs/customer-chat-es">Hablar con clientes en Chat</a> para el resto. Todo el hilo llega con él. Tu respuesta se envía desde el buzón de la tienda en el mismo hilo, y cuando el cliente responde, vuelve a la misma conversación, no a una nueva.
 
+## Escribir un correo nuevo
+
+<b>Nuevo correo</b> escribe a un cliente, o a cualquier dirección con <b>Enviar a una dirección de correo</b>. Mientras escribes a quién va, la ventana te ofrece tus contactos guardados y, en <b>Escritos recientemente</b>, las direcciones a las que esta tienda ha escrito o de las que ha recibido correo en los últimos 90 días, así que una dirección que usaste esta mañana está a un clic.
+
+Un correo que cierras sin enviar se guarda como borrador: a quién va, el asunto y el texto. Un pequeño punto en <b>Nuevo correo</b> te avisa de que hay uno esperando, y al abrirlo vuelve tal como lo dejaste. Pulsa <b>Descartar borrador</b> para empezar de nuevo. El borrador se guarda en el ordenador donde lo escribiste.
+
+Para poner un enlace en unas palabras, como un código de producto, selecciónalas, pulsa el botón de enlace en la barra de formato y pega la dirección web. El cliente ve las palabras como un enlace. Pulsa el botón de enlace sobre una palabra enlazada para cambiar la dirección o quitarla. Una dirección web escrita sola se convierte en enlace por sí misma, como antes.
+
 ## Adjuntar archivos
 
 Haz clic en el clip, o suelta los archivos sobre la conversación. Puedes adjuntar imágenes (JPG, PNG, WebP, AVIF), PDF, Word, Excel, CSV, texto, PowerPoint y archivos zip, hasta 30 a la vez y de 100 MB cada uno. Lo mismo vale para <b>New email</b>. Los archivos van adjuntos al correo mientras quepan en unos 18 MB entre todos; el resto va en el correo como enlaces de descarga, porque los servicios de correo rechazan un correo de más de unos 25 MB.

@@ -20,6 +20,14 @@ The shop's mailbox has to be connected once - see <a href="/docs/connecting-an-e
 
 An email joins <b>Waiting</b> like any conversation, and <b>Assign to me</b> makes it yours - see <a href="/docs/customer-chat">Talking to customers in Chat</a> for the rest. The whole thread comes with it. Your answer is sent from the shop's mailbox in the same thread, and when the customer replies it lands back in the same conversation, not a new one.
 
+## Writing a new email
+
+<b>New email</b> writes to a customer, or to any address with <b>Send to an email address instead</b>. While you type who it is to, the box offers your saved contacts and, under <b>Emailed recently</b>, the addresses this shop has written to or heard from in the last 90 days, so an address you used this morning is one click away.
+
+An email you close without sending is kept as a draft: who it is to, the subject and the text. A small dot on <b>New email</b> tells you one is waiting, and opening it brings it back where you left it. Click <b>Discard draft</b> to start again. The draft is kept on the computer you wrote it on.
+
+To put a link on words, such as a product code, select them, click the link button in the formatting bar and paste the web address. The customer sees the words as a link. Click the link button on a linked word to change the address or remove it. A web address typed on its own becomes a link by itself, as before.
+
 ## Attaching files
 
 Click the paperclip, or drop the files on the conversation. You can attach images (JPG, PNG, WebP, AVIF), PDF, Word, Excel, CSV, text, PowerPoint and zip files, up to 30 at a time and 100MB each. The same goes for <b>New email</b>. Files are attached to the email while they fit in about 18MB together; the rest go in the email as download links, because mail services refuse an email bigger than about 25MB.

@@ -593,7 +593,7 @@ const displayText = computed(() => {
     return cleanEmailText(activeMessage.value.original?.text || props.message.message_text)
 })
 
-const formattedText = computed(() => formatWhatsappMarkup(displayText.value))
+const formattedText = computed(() => formatWhatsappMarkup(displayText.value, props.message.sender_type === "agent"))
 
 const showEmailBody = computed(() => shouldShowEmailBody(props.message))
 
@@ -1315,7 +1315,7 @@ watch(selectedLanguage, async (val) => {
             </div>
 
             <template v-else-if="showEmailBody && writtenAs">
-                <p class="whitespace-pre-wrap break-words" v-html="formatWhatsappMarkup(writtenAs)" />
+                <p class="whitespace-pre-wrap break-words" v-html="formatWhatsappMarkup(writtenAs, true)" />
                 <details class="mt-1 text-xs text-gray-500">
                     <summary class="cursor-pointer select-none">{{ ctrans("What the customer received") }}</summary>
                     <EmailBody class="mt-1" :html="message.html_body" />
