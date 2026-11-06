@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import PingIcon from "@/Components/Utils/PingIcon.vue"
 import { routeType } from "@/types/route"
 
 interface ProcurementMetric {
@@ -20,6 +21,7 @@ interface ProcurementCard {
 	tone: "violet" | "emerald" | "amber" | "indigo" | "sky"
 	route: routeType | null
 	metrics: ProcurementMetric[]
+	ping?: boolean
 }
 
 const props = defineProps<{
@@ -67,11 +69,12 @@ const tone = toneClasses[props.card.tone]
 
 <template>
 	<article
-		class="group/card flex h-full flex-col rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-gray-300 hover:shadow">
+		class="group/card relative flex h-full flex-col rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:border-gray-300 hover:shadow">
+		<PingIcon v-if="card.ping" class="!absolute -right-1 -top-1 text-[8px] text-amber-500" aria-hidden="true" />
 		<component
 			:is="card.route ? Link : 'div'"
 			:href="card.route ? route(card.route.name, card.route.parameters) : undefined"
-			class="block flex-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+			class="block flex-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
 			@start="loadingTarget = 'card'"
 			@finish="loadingTarget = null">
 			<div class="flex items-center justify-between gap-3">

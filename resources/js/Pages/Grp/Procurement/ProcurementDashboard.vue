@@ -12,21 +12,22 @@ import { capitalize } from "@/Composables/capitalize"
 import ProcurementOverviewCard from "@/Components/DataDisplay/Dashboard/Widget/ProcurementOverviewCard.vue"
 import StockOutsWidget from "@/Components/Procurement/StockOutsWidget.vue"
 import ProcurementCounterpartyCards from "@/Components/Procurement/ProcurementCounterpartyCards.vue"
+import PingIcon from "@/Components/Utils/PingIcon.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf, faComments } from "@fal"
+import { faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf, faComments, faMoneyCheckAlt } from "@fal"
 import { faChartNetwork } from "@fal"
 
-library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf, faComments, faChartNetwork)
+library.add(faPeopleArrows, faBoxUsd, faPersonDolly, faTruckContainer, faClipboardList, faArrowRight, faExclamationTriangle, faHourglassHalf, faComments, faMoneyCheckAlt, faChartNetwork)
 
 const props = defineProps(["title", "pageHead", "dashboardCards", "stockLevels", "stockOuts", "counterparties"])
 
 const needsAttention = (card) => card.attention && Number(card.value) > 0
 
 const costingAlerts = computed(() => (props.dashboardCards ?? []).filter(needsAttention).flatMap(card => card.metrics?.length
-	? card.metrics.filter(metric => Number(metric.value) > 0).map(metric => ({ label: metric.label, value: metric.value, route: metric.route, isMain: false }))
-	: [{ label: card.label, value: card.value, route: card.route, isMain: true }]))
+	? card.metrics.filter(metric => Number(metric.value) > 0).map(metric => ({ label: metric.label, value: metric.value, route: metric.route, isMain: false, ping: card.ping }))
+	: [{ label: card.label, value: card.value, route: card.route, isMain: true, ping: card.ping }]))
 </script>
 
 <template>
@@ -42,6 +43,7 @@ const costingAlerts = computed(() => (props.dashboardCards ?? []).filter(needsAt
 			class="flex items-center gap-1.5"
 			:class="[alert.isMain ? 'font-semibold' : 'text-amber-800', alert.route ? 'hover:underline' : '']"
 		>
+			<PingIcon v-if="alert.ping" class="text-[7px] text-amber-500" aria-hidden="true" />
 			{{ alert.label }}
 			<span class="rounded bg-white/70 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-amber-900">{{ alert.value }}</span>
 		</component>

@@ -15,7 +15,9 @@ use App\Actions\Procurement\OrgAgent\GetAgentSupplierPerformance;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\Models\Procurement\OrgAgent;
+use App\Models\SupplyChain\DepositRequest;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -79,6 +81,10 @@ class IndexOrgAgents extends OrgAction
             'last_submitted_at'    => $this->lastSubmittedAt($orgAgent),
             'pipeline'             => $this->pipeline($orgAgent),
             'current'              => $this->purchaseOrderRows($orgAgent)->concat($this->stockDeliveryRows($orgAgent))->values()->all(),
+            'open_money_requests'  => DepositRequest::where('agent_id', $orgAgent->agent_id)
+                ->where('organisation_id', $orgAgent->organisation_id)
+                ->where('state', DepositRequestStateEnum::REQUESTED)
+                ->count(),
         ];
     }
 

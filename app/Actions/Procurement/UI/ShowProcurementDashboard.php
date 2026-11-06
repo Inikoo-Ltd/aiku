@@ -19,6 +19,7 @@ use App\Actions\Procurement\GetStockOutsPipeline;
 use App\Actions\Procurement\GetUncostedStockDeliveriesCard;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\UI\WithInertia;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
@@ -27,6 +28,7 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryServiceInvoice;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteCategoryEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteIncidentOutcomeEnum;
+use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\ProcurementNote;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Supplier;
@@ -273,6 +275,51 @@ class ShowProcurementDashboard extends OrgAction
         ) + ['attention' => true] : null;
     }
 
+    /**
+     * Money the agents asked this organisation for, still waiting to be approved or paid, with a link to each agent's
+     * Money tab where it is approved and paid.
+     */
+    private function getMoneyRequestsToPayCard(): ?array
+    {
+        if ($this->organisation->type === OrganisationTypeEnum::AGENT) {
+            return null;
+        }
+
+        $openByAgent = OrgAgent::where('org_agents.organisation_id', $this->organisation->id)
+            ->join('agents', 'agents.id', 'org_agents.agent_id')
+            ->join('deposit_requests', fn ($join) => $join->on('deposit_requests.agent_id', 'org_agents.agent_id')
+                ->on('deposit_requests.organisation_id', 'org_agents.organisation_id'))
+            ->where('deposit_requests.state', DepositRequestStateEnum::REQUESTED->value)
+            ->groupBy('org_agents.id', 'org_agents.slug', 'agents.code')
+            ->orderBy('agents.code')
+            ->get(['org_agents.slug', 'agents.code', DB::raw('count(*) as open_requests')]);
+
+        if ($openByAgent->isEmpty()) {
+            return null;
+        }
+
+        $moneyTab = fn (string $orgAgentSlug) => [
+            'name'       => 'grp.org.procurement.org_agents.show',
+            'parameters' => ['organisation' => $this->organisation->slug, 'orgAgent' => $orgAgentSlug, '_query' => ['tab' => 'money']],
+        ];
+
+        return [
+            'label'       => __('Money requests to pay'),
+            'description' => __('Money the agents asked for, waiting to be approved or paid'),
+            'icon'        => 'fal fa-money-check-alt',
+            'value'       => (int) $openByAgent->sum('open_requests'),
+            'tone'        => 'amber',
+            'route'       => $openByAgent->count() === 1 ? $moneyTab($openByAgent->first()->slug) : $this->dashboardRoute('grp.org.procurement.org_agents.index'),
+            'metrics'     => $openByAgent->map(fn (OrgAgent $orgAgent) => [
+                'label' => __(':agent money requests', ['agent' => $orgAgent->code]),
+                'value' => (int) $orgAgent->open_requests,
+                'route' => $moneyTab($orgAgent->slug),
+            ])->values()->all(),
+            'attention'   => true,
+            'ping'        => true,
+        ];
+    }
+
     private function dashboardRoute(string $routeName, array $query = []): array
     {
         $parameters = ['organisation' => $this->organisation->slug];
@@ -310,7 +357,7 @@ class ShowProcurementDashboard extends OrgAction
                 ],
 
                 'shippers' => Shipper::query()->get(),
-                'dashboardCards' => array_values(array_filter([$this->getAgentRequestsToAnswerCard(), $this->getDeliveriesToCostCard(),GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
+                'dashboardCards' => array_values(array_filter([$this->getMoneyRequestsToPayCard(), $this->getAgentRequestsToAnswerCard(), $this->getDeliveriesToCostCard(),GetUncostedStockDeliveriesCard::run($this->organisation), ...$this->getDashboardCards($numbers)])),
                 'stockLevels' => $this->organisation->type === OrganisationTypeEnum::SHOP
                     ? Cache::flexible("procurement-dashboard:stock-levels:{$this->organisation->id}:".($source ?? 'all'), self::STOCK_LEVELS_FRESH_AND_STALE_SECONDS, fn () => $this->getStockLevels($source))
                     : [],

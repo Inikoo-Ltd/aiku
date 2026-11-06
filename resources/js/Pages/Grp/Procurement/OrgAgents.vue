@@ -9,6 +9,7 @@ import { Deferred, Head, Link, router } from "@inertiajs/vue3"
 import { ref } from "vue"
 import axios from "axios"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import PingIcon from "@/Components/Utils/PingIcon.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -28,6 +29,7 @@ import {
 	faClipboardList,
 	faWarehouse,
 	faArrowRight,
+	faMoneyCheckAlt,
 } from "@fal"
 library.add(
 	faPeopleArrows,
@@ -39,7 +41,8 @@ library.add(
 	faBoxes,
 	faClipboardList,
 	faWarehouse,
-	faArrowRight
+	faArrowRight,
+	faMoneyCheckAlt
 )
 
 interface CurrentItem {
@@ -63,6 +66,7 @@ interface AgentCard {
 	currency_code: string | null
 	suppliers: number
 	last_submitted_at: string | null
+	open_money_requests: number
 	current: CurrentItem[]
 	pipeline: {
 		stages: { stage: string; label: string; orders: number; value: number }[]
@@ -105,6 +109,8 @@ const organisation = (route().params as RouteParams).organisation
 
 const agentUrl = (agent: AgentCard, routeName = "grp.org.procurement.org_agents.show") =>
 	route(routeName, [organisation, agent.slug])
+
+const moneyRequestsUrl = (agent: AgentCard) => `${agentUrl(agent)}?tab=money`
 
 const bucketUrl = (agent: AgentCard, bucket: string) =>
 	`${agentUrl(agent, "grp.org.procurement.org_agents.show.shopping.items.index")}?cover=${bucket}`
@@ -227,6 +233,14 @@ const toggle = (agent: AgentCard, section: string) => {
 						</Link>
 					</div>
 				</div>
+				<Link
+					v-if="agent.open_money_requests"
+					:href="moneyRequestsUrl(agent)"
+					class="relative inline-flex shrink-0 items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100">
+					<PingIcon class="!absolute -right-1 -top-1 text-[7px] text-amber-500" aria-hidden="true" />
+					<FontAwesomeIcon icon="fal fa-money-check-alt" class="text-amber-600" fixed-width aria-hidden="true" />
+					{{ ctrans(":count money requests to pay", { count: agent.open_money_requests }) }}
+				</Link>
 			</div>
 
 			<div class="flex-1 space-y-3 px-4 py-3">
