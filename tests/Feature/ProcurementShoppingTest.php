@@ -3505,3 +3505,39 @@ test('the agent Ordered page prints every ordered purchase order as one, grouped
 
     $purchaseOrders->each(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED]));
 });
+
+test('the repair of sheet rows duplicated by a goods receipt keeps to the agent and organisation asked and saves every row it deletes', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $supplierProduct = $orgSupplierProduct->supplierProduct;
+    $purchaseOrder   = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line            = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 40]);
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now(), 'sample_approved_at' => now()]);
+    $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::SUBMITTED]);
+    App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($this->agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 40]],
+    ]);
+    $sheetRow = App\Models\Procurement\AgentWarehouseStock::create([
+        'group_id'            => $this->agent->group_id,
+        'agent_id'            => $this->agent->id,
+        'organisation_id'     => $purchaseOrder->organisation_id,
+        'supplier_product_id' => $supplierProduct->id,
+        'purchase_order_id'   => $purchaseOrder->id,
+        'state'               => App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum::RECEIVED,
+        'quantity'            => 40,
+    ]);
+    $repair  = App\Actions\Procurement\AgentWarehouseStock\RepairAgentWarehouseStocksDuplicatedByGoodsReceipts::make();
+    $backupsBefore = glob(storage_path('app/repairs/agent-warehouse-stocks-duplicated-by-goods-receipts/*.jsonl')) ?: [];
+    $ofThis  = fn (array $results) => collect($results)->where('code', $supplierProduct->code)->where('purchase_order', $purchaseOrder->reference)->values();
+
+    expect($ofThis($repair->handle(true, organisationSlug: 'no-such-organisation')))->toBeEmpty()
+        ->and($sheetRow->fresh())->not->toBeNull();
+
+    $results = $ofThis($repair->handle(true, $this->agent->code, $purchaseOrder->organisation->slug));
+    $backups = array_diff(glob(storage_path('app/repairs/agent-warehouse-stocks-duplicated-by-goods-receipts/*.jsonl')) ?: [], $backupsBefore);
+    $saved   = collect($backups)->flatMap(fn (string $file) => array_map('json_decode', file($file, FILE_IGNORE_NEW_LINES)))->firstWhere('id', $sheetRow->id);
+    array_map('unlink', $backups);
+
+    expect($results->first()['deleted_sheet_rows'])->toBe([$sheetRow->id])
+        ->and($sheetRow->fresh())->toBeNull()
+        ->and($saved?->quantity)->toEqual(40);
+});

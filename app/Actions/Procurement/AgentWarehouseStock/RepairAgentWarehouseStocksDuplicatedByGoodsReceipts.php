@@ -15,6 +15,7 @@ use App\Models\Procurement\AgentWarehouseStock;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -22,7 +23,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * receipt against the same purchase order. The goods receipt is the record that holds: its rows are never touched, and
  * every sheet row of the same agent, organisation, product and purchase order is deleted, whatever its units or state.
  * What the sheet said that the receipt does not (packed units, units above the receipt, a container holding the line)
- * is reported so the agent can redo it in aiku.
+ * is reported so the agent can redo it in aiku. With --fix every deleted row is saved first, whole, under
+ * storage/app/repairs, and --agent and --organisation keep a run to one agent or one organisation.
  */
 class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
 {
@@ -30,19 +32,26 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
 
     private const float QUANTITY_TOLERANCE = 0.0001;
 
-    public string $commandSignature = 'repair:agent_warehouse_stocks_duplicated_by_goods_receipts {--fix : Apply the repair, otherwise dry run}';
+    public string $commandSignature = 'repair:agent_warehouse_stocks_duplicated_by_goods_receipts
+        {--fix : Apply the repair, otherwise dry run}
+        {--agent= : Only this agent, by code}
+        {--organisation= : Only this organisation, by slug}';
+
+    private ?string $backupFile = null;
 
     /**
      * @return list<array{agent: string, organisation: string, code: string, purchase_order: ?string, ordered: float, receipt_units: float, sheet_units: float, deleted_sheet_rows: list<int>, notes: ?string}>
      */
-    public function handle(bool $fix = false): array
+    public function handle(bool $fix = false, ?string $agentCode = null, ?string $organisationSlug = null): array
     {
-        return $this->duplicatedGroups()->map(fn (object $group) => $fix
+        $this->backupFile = $fix ? storage_path('app/repairs/agent-warehouse-stocks-duplicated-by-goods-receipts/'.now()->format('Ymd-His').'.jsonl') : null;
+
+        return $this->duplicatedGroups($agentCode, $organisationSlug)->map(fn (object $group) => $fix
             ? DB::transaction(fn () => $this->repairGroup($group, true))
             : $this->repairGroup($group, false))->all();
     }
 
-    private function duplicatedGroups(): Collection
+    private function duplicatedGroups(?string $agentCode, ?string $organisationSlug): Collection
     {
         return DB::table('agent_warehouse_stocks as sheet')
             ->join('agent_warehouse_stocks as receipt', fn ($join) => $join
@@ -58,6 +67,8 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
             ->join('purchase_orders', 'purchase_orders.id', 'sheet.purchase_order_id')
             ->whereNull('sheet.agent_goods_receipt_id')
             ->where('sheet.quantity', '>', 0)
+            ->when($agentCode, fn ($query) => $query->where('agents.code', $agentCode))
+            ->when($organisationSlug, fn ($query) => $query->where('organisations.slug', $organisationSlug))
             ->select([
                 'sheet.agent_id',
                 'sheet.organisation_id',
@@ -98,6 +109,7 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
         $packedUnits  = round((float) $sheetRows->filter(fn (AgentWarehouseStock $row) => $row->state !== AgentWarehouseStockStateEnum::RECEIVED)->sum('quantity'), 3);
 
         if ($fix && $receiptRows->isNotEmpty() && $sheetRows->isNotEmpty()) {
+            $this->backUp($sheetRows);
             AgentWarehouseStock::whereIn('id', $sheetRows->pluck('id'))->whereNull('agent_goods_receipt_id')->delete();
         }
 
@@ -118,6 +130,18 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
                 $containers->isNotEmpty() ? 'in container '.$containers->implode(', ') : null,
             ])->filter()->implode('; ') ?: null,
         ];
+    }
+
+    /**
+     * Every sheet row is written out whole before it is deleted, one JSON line each, so a repair can be checked and
+     * undone after the terminal output is gone.
+     *
+     * @param  Collection<int, AgentWarehouseStock>  $sheetRows
+     */
+    private function backUp(Collection $sheetRows): void
+    {
+        File::ensureDirectoryExists(dirname($this->backupFile));
+        File::append($this->backupFile, $sheetRows->map(fn (AgentWarehouseStock $row) => json_encode($row->getRawOriginal())."\n")->implode(''));
     }
 
     private function containersOfGroup(object $group): Collection
@@ -143,7 +167,7 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
     public function asCommand(Command $command): int
     {
         $fix     = (bool) $command->option('fix');
-        $results = $this->handle($fix);
+        $results = $this->handle($fix, $command->option('agent'), $command->option('organisation'));
 
         $command->table(
             ['Agent', 'Org', 'Code', 'PO', 'Ordered', 'Receipt', 'Sheet', 'Deleted sheet rows', 'Notes'],
@@ -168,6 +192,10 @@ class RepairAgentWarehouseStocksDuplicatedByGoodsReceipts
             $fix ? 'deleted' : 'to delete',
             collect($results)->whereNotNull('notes')->count(),
         ));
+
+        if ($this->backupFile && File::exists($this->backupFile)) {
+            $command->info("Deleted rows saved to {$this->backupFile}");
+        }
 
         return 0;
     }
