@@ -206,7 +206,8 @@ test('a carried job gets the kg already mixed for the whole job as a done mix st
     $carriedMix = \App\Models\Production\JobOrder::where('data->carried_from', $jobOrder->id)->firstOrFail()
         ->jobOrderItems()->first()->tasks()->where('manufacture_task_id', $mixTask->id)->first();
 
-    expect((float) $carriedMix->quantity_required)->toBe(0.0)
+    expect((float) $carriedMix->quantity_made)->toBe((float) $carriedMix->quantity_required)
+        ->and(round((float) $mix->refresh()->quantity_made + (float) $carriedMix->quantity_made, 3))->toBe(93.6)
         ->and($carriedMix->state)->toBe(JobOrderItemTaskStateEnum::DONE);
 });
 
@@ -1070,7 +1071,8 @@ test('an hourly mixing step is for its named artisans only, is recorded in kg, p
         ->and($floorOf($pieceUser)->pluck('id'))->toContain($formingA->id);
 
     $mixerFloor = $floorOf($mixerUser);
-    expect($mixerFloor->whereIn('id', $mixIds)->pluck('id')->sort()->values()->all())->toBe($mixIds)
+    expect($mixerFloor->whereIn('id', $mixIds)->pluck('id')->all())->toBe([$mixA->id])
+        ->and(array_column($mixerFloor->firstWhere('id', $mixA->id)['combined'], 'id'))->toBe($mixIds)
         ->and($mixerFloor->pluck('id'))->not->toContain($formingA->id)
         ->and($mixerFloor->firstWhere('id', $mixA->id))->toMatchArray(['unit' => 'kg', 'kg_per_unit' => 0.1, 'pack_size' => null, 'can_start' => true, 'only_for' => [$mixer->contact_name]]);
 
@@ -1090,8 +1092,9 @@ test('an hourly mixing step is for its named artisans only, is recorded in kg, p
         ->and((float) $closed->bonus)->toBe(0.0)
         ->and((float) $closed->task_work_cost)->toBe(0.0)
         ->and((float) $closed->pay)->toBe(round(2 * (float) $band0->hourly_rate, 2))
-        ->and((float) $mixA->refresh()->quantity_made)->toBe(30.3)
-        ->and((float) $mixB->refresh()->quantity_made)->toBe(20.2)
+        ->and((float) $mixA->refresh()->quantity_made)->toBe(30.0)
+        ->and((float) $mixB->refresh()->quantity_made)->toBe(20.0)
+        ->and((float) $mixC->refresh()->quantity_made)->toBe(0.5)
         ->and($mixA->state)->toBe(JobOrderItemTaskStateEnum::DONE)
         ->and((int) $mixA->jobOrderItem->quantity)->toBe(300);
 
@@ -1107,7 +1110,7 @@ test('an hourly mixing step is for its named artisans only, is recorded in kg, p
     $plannedItem = StoreJobOrderItem::make()->action($planned, ['artefact_id' => $artefact->id, 'quantity' => 10]);
     $plannedMix  = $plannedItem->tasks()->orderBy('position')->first();
     expect($planned->refresh()->state)->toBe(JobOrderStateEnum::IN_PROCESS)
-        ->and($floorOf($mixerUser)->firstWhere('id', $plannedMix->id)['is_mine'] ?? null)->toBeTrue()
+        ->and($floorOf($mixerUser)->first(fn (array $task) => $task['id'] == $plannedMix->id || in_array($plannedMix->id, array_column($task['combined'] ?? [], 'id')))['is_mine'] ?? null)->toBeTrue()
         ->and($floorOf($pieceUser)->pluck('id'))->not->toContain($plannedMix->id);
     $plannedSession = StartManufactureTaskSession::make()->action($mixerUser, $plannedMix);
     expect($planned->refresh()->state)->toBe(JobOrderStateEnum::CONFIRMED);
@@ -1163,7 +1166,8 @@ test('a mix with a batch size is asked and recorded in whole batches, rounded on
     expect(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 94.1]))->toThrow(ValidationException::class, 'whole batches of 50 kg');
     CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 100]);
 
-    expect((float) $mixA->refresh()->quantity_made + (float) $mixB->refresh()->quantity_made)->toBe(100.0)
+    expect((float) $mixA->refresh()->quantity_made + (float) $mixB->refresh()->quantity_made)->toBe(94.1)
+        ->and(\App\Actions\Production\JobOrderItemTask\ShareMixPool::make()->leftovers($this->production->id, $session->refresh()->mix_pool_key)->sum('leftover_kg'))->toBe(5.9)
         ->and($mixA->state)->toBe(JobOrderItemTaskStateEnum::DONE)
         ->and($mixB->state)->toBe(JobOrderItemTaskStateEnum::DONE)
         ->and((int) $mixA->jobOrderItem->quantity)->toBe(541)
@@ -1677,6 +1681,7 @@ test('every write of a required quantity recalculates the step, and a voided or 
     expect($mix->refresh()->state)->toBe($state::TODO);
 
     $session->update(['state' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::CLOSED, 'quantity_made' => 0]);
+    $session->shares()->update(['quantity_made' => 0]);
     \App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities::run($mix->refresh());
     expect($mix->refresh()->state)->toBe($state::TODO);
 

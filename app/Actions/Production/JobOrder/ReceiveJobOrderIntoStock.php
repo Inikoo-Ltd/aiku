@@ -14,7 +14,6 @@ use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Production\PartnerShippingList\FulfilToProduceItemsFromSurplus;
 use App\Actions\Production\PartnerShippingList\GetProductionSurplusInPipeline;
-use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
@@ -25,6 +24,9 @@ use App\Models\Inventory\Warehouse;
 use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
+use App\Models\Production\JobOrderItemTask;
+use App\Actions\Production\RawMaterial\DeductProductionRawMaterials;
+use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use App\Models\Dispatching\BatchCode;
@@ -275,9 +277,13 @@ class ReceiveJobOrderIntoStock extends OrgAction
         return min((float) $item->quantity, $lastTask->artefactsIn());
     }
 
+    /**
+     * A step whose mix came from a shared mix already took its raw materials when the mix was recorded (HELP-4562).
+     */
     private function deductRawMaterials(JobOrderItem $item, float $producedArtefactUnits, ?int $userId): void
     {
         $recipeSteps = ArtefactManufactureTask::where('artefact_id', $item->artefact_id)
+            ->whereNotIn('id', $this->stepsTakenWithTheirMix($item))
             ->with('rawMaterials.rawMaterial.orgStock')
             ->get();
 
@@ -291,43 +297,37 @@ class ReceiveJobOrderIntoStock extends OrgAction
                     continue;
                 }
 
-                $consumed = $producedArtefactUnits * (float) $recipeStepRawMaterial->quantity_per_unit;
-
                 $consumptionByOrgStock[$rawMaterial->org_stock_id] ??= [
                     'orgStock' => $rawMaterial->orgStock,
                     'quantity' => 0.0,
                 ];
 
-                $consumptionByOrgStock[$rawMaterial->org_stock_id]['quantity'] += $consumed;
+                $consumptionByOrgStock[$rawMaterial->org_stock_id]['quantity'] += $producedArtefactUnits * (float) $recipeStepRawMaterial->quantity_per_unit;
             }
         }
 
-        foreach ($consumptionByOrgStock as $consumption) {
-            $orgStock = $consumption['orgStock'];
+        DeductProductionRawMaterials::run($item->jobOrder->production, $consumptionByOrgStock, $userId);
+    }
 
-            $deductionLocationOrgStock = LocationOrgStock::where('org_stock_id', $orgStock->id)
-                ->when($item->jobOrder->production->factory_location_id, fn ($query, $factoryLocationId) => $query->orderByRaw('(location_id = ? and quantity > 0) desc', [$factoryLocationId]))
-                ->orderByRaw("type = '".LocationStockTypeEnum::PICKING->value."' desc")
-                ->orderByDesc('quantity')
-                ->first();
+    /**
+     * Recipe steps whose mix came from a shared mix, on this line or anywhere in its order: a carried part
+     * is credited the mix its order already made (HELP-4509), so its raw materials left with that mix too.
+     *
+     * @return array<int, int> recipe step ids
+     */
+    private function stepsTakenWithTheirMix(JobOrderItem $item): array
+    {
+        $pooledStepKeys = JobOrderItemTask::whereIn('job_order_item_id', $item->orderItems()->pluck('id'))
+            ->whereHas('sessionShares.session', fn ($query) => $query->whereNotNull('mix_pool_key')->where('state', ManufactureTaskSessionStateEnum::CLOSED))
+            ->get()
+            ->map(fn (JobOrderItemTask $task) => $task->stepKey())
+            ->unique();
 
-            $factoryLocation = $item->jobOrder->production->factoryLocation;
-            if (!$deductionLocationOrgStock && $factoryLocation) {
-                $deductionLocationOrgStock = StoreLocationOrgStock::make()->action($orgStock, $factoryLocation, []);
-            }
-
-            if (!$deductionLocationOrgStock) {
-                throw ValidationException::withMessages([
-                    'location_id' => __('Raw material :code has no stock location to deduct from', ['code' => $orgStock->code]),
-                ]);
-            }
-
-            StoreOrgStockMovement::make()->action($orgStock, $deductionLocationOrgStock->location, [
-                'quantity' => -$consumption['quantity'] / $orgStock->packedIn(),
-                'type'     => OrgStockMovementTypeEnum::PRODUCTION,
-                'user_id'  => $userId,
-            ]);
-        }
+        return ArtefactManufactureTask::where('artefact_id', $item->artefact_id)
+            ->get()
+            ->filter(fn (ArtefactManufactureTask $step) => $pooledStepKeys->contains($step->stepKey()))
+            ->pluck('id')
+            ->all();
     }
 
     public function rules(): array

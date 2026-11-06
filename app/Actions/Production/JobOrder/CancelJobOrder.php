@@ -14,9 +14,11 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\JobOrder;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Support\Arr;
 use App\Models\Production\JobOrderItemTask;
+use Illuminate\Support\Collection;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\ManufactureTaskSessionShare;
 use App\Models\SysAdmin\User;
@@ -133,9 +135,27 @@ class CancelJobOrder extends OrgAction
                 ['data' => $data],
                 $totalMade > 0 ? [] : ['state' => JobOrderStateEnum::NOT_RECEIVED, 'not_received_at' => now()]
             ));
+
+            if ($totalMade == 0) {
+                ShareMixPool::make()->giveBackAll(self::unusedMixSteps($items));
+            }
         });
 
         return $jobOrder->refresh();
+    }
+
+    /**
+     * The mix steps of lines that used none of their mix yet: nothing after the mix was worked.
+     *
+     * @param  iterable<JobOrderItem>  $items  with tasks
+     * @return Collection<int, JobOrderItemTask>
+     */
+    public static function unusedMixSteps(iterable $items): Collection
+    {
+        return collect($items)
+            ->reject(fn (JobOrderItem $item) => $item->tasks->contains(fn (JobOrderItemTask $task) => !$task->isRecordedInKg() && (float) $task->quantity_made > 0))
+            ->flatMap(fn (JobOrderItem $item) => $item->tasks->filter(fn (JobOrderItemTask $task) => $task->isRecordedInKg()))
+            ->values();
     }
 
     /**

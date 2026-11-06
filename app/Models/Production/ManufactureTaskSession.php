@@ -68,6 +68,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $under_target_reviewed_by
  * @property \Illuminate\Support\Carbon|null $under_target_reviewed_at
  * @property bool $is_combined
+ * @property string|null $mix_pool_key
+ * @property \Illuminate\Support\Carbon|null $mix_use_by
  * @property ArtisanPayTypeEnum $artisan_pay_type
  * @property \Illuminate\Support\Carbon|null $original_started_at
  * @property \Illuminate\Support\Carbon|null $original_ended_at
@@ -145,6 +147,7 @@ class ManufactureTaskSession extends Model implements Auditable
         'ended_at'      => 'datetime',
         'is_under_target'          => 'boolean',
         'is_combined'              => 'boolean',
+        'mix_use_by'               => 'datetime',
         'under_target_reason'      => ManufactureTaskSessionUnderTargetReasonEnum::class,
         'under_target_reviewed_at' => 'datetime',
         'artisan_pay_type'         => ArtisanPayTypeEnum::class,
@@ -289,7 +292,7 @@ class ManufactureTaskSession extends Model implements Auditable
             $hoursPerUnit += $weights[$task->id] / $rate;
         }
 
-        return $hoursPerUnit > 0 ? 1 / $hoursPerUnit : null;
+        return $hoursPerUnit > 0 ? $weights->sum() / $hoursPerUnit : null;
     }
 
     /**

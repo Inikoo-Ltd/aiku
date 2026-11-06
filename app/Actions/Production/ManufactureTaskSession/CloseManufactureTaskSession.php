@@ -10,6 +10,8 @@ namespace App\Actions\Production\ManufactureTaskSession;
 
 use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\HumanResources\ClockingMachine\ResolvesEmployeeByCode;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
+use App\Actions\Production\RawMaterial\TakeMixRawMaterialsFromStock;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
@@ -121,7 +123,20 @@ class CloseManufactureTaskSession extends OrgAction
                 $authorisedBy = $this->overproductionManager($session, $modelData['manager_code']);
             }
 
-            $shares = $session->is_combined ? $this->shareOut($session, $members, $modelData, !$isRecordedInKg) : collect();
+            $mixPoolKey = $isRecordedInKg ? ShareMixPool::poolKey($task) : null;
+            if ($mixPoolKey) {
+                $shelfLifeDays = $task->recipeStep->mix_shelf_life_days;
+                $session->fill([
+                    'quantity_made' => $modelData['quantity_made'],
+                    'is_combined'   => true,
+                    'mix_pool_key'  => $mixPoolKey,
+                    'mix_use_by'    => $shelfLifeDays ? $endedAt->copy()->addDays($shelfLifeDays) : null,
+                ]);
+                $shares  = ShareMixPool::make()->shareOut($session, $task, $mixPoolKey);
+                $members = $shares->map(fn ($share) => $share->jobOrderItemTask)->prepend($task)->unique('id')->values();
+            } else {
+                $shares = $session->is_combined ? $this->shareOut($session, $members, $modelData, !$isRecordedInKg) : collect();
+            }
 
             $session->fill([
                 'quantity_made'                   => $modelData['quantity_made'],
@@ -162,8 +177,12 @@ class CloseManufactureTaskSession extends OrgAction
             $this->applyPayTerms($session, $payType);
             $session->save();
 
+            if ($mixPoolKey) {
+                TakeMixRawMaterialsFromStock::run($session, $task->recipeStep);
+            }
+
             foreach ($members as $member) {
-                $madeHere = $session->is_combined ? (float) $shares[$member->id]->quantity_made : (float) $modelData['quantity_made'];
+                $madeHere = $session->is_combined ? (float) ($shares->get($member->id)?->quantity_made ?? 0) : (float) $modelData['quantity_made'];
 
                 if ($authorisedBy) {
                     $memberLeft = max(0, (float) $member->quantity_required - (float) $member->quantity_made);
@@ -177,7 +196,7 @@ class CloseManufactureTaskSession extends OrgAction
                 $member = CalculateJobOrderItemTaskQuantities::run($member);
 
                 $outcome = $modelData['outcome'] ?? null;
-                if ($outcome && $member->state != JobOrderItemTaskStateEnum::DONE) {
+                if ($outcome && $member->state != JobOrderItemTaskStateEnum::DONE && (!$mixPoolKey || $member->id == $task->id)) {
                     SettleShortJobOrderItemTask::run($member, $outcome === 'carry_over');
                 }
 

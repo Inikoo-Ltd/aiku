@@ -10,6 +10,7 @@ namespace App\Actions\Production\JobOrderItemTask\UI;
 
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\Production\JobOrderItemTask\SettleShortJobOrderItemTask;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
 use App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay;
 use App\Actions\OrgAction;
 use App\Actions\Production\MaterialRequest\MaterialsCheckAuthorisation;
@@ -52,6 +53,12 @@ class ShowManufactureFloor extends OrgAction
 
     /** @var array<int, Collection<int, JobOrderItemTask>> combined steps by the id of the step that stands for them */
     private array $combinedGroups = [];
+
+    /** @var array<int, true> lines standing for the other lines waiting for the same mix */
+    private array $sharedMixLeads = [];
+
+    /** @var array<string, array<string, mixed>|null> what each mix covers, by mix pool key */
+    private array $mixPools = [];
 
     private ?Collection $packSizes = null;
 
@@ -152,7 +159,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openTasksByJobOrderItem = $openTasks->groupBy('job_order_item_id');
 
-        $openTasks = $this->collapseCombined($openTasks);
+        $openTasks = $this->collapseSharedMixes($this->collapseCombined($openTasks), $openTasksByJobOrderItem);
 
         $stepsByJobOrderItem = JobOrderItemTask::whereIn('job_order_item_id', $openTasksByJobOrderItem->keys())
             ->with([
@@ -503,7 +510,7 @@ class ShowManufactureFloor extends OrgAction
             'is_piece_rate'       => (bool) $task->manufactureTask->is_piece_rate,
             'is_quantity_only'    => (bool) $task->manufactureTask->is_quantity_only,
             'artefact_code'       => $members->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact->code)->unique()->implode(' + '),
-            'artefact_name'       => $isCombined ? __('Combined batch') : $task->jobOrderItem->displayName(),
+            'artefact_name'       => $isCombined ? (isset($this->sharedMixLeads[$task->id]) ? __('Shared mix') : __('Combined batch')) : $task->jobOrderItem->displayName(),
             'artefact_family_id'  => $isCombined ? null : $task->jobOrderItem->artefact->artefact_family_id,
             'artefact_image'      => $isCombined || !$task->jobOrderItem->artefact->tradeUnit?->image_id ? null : $task->jobOrderItem->artefact->tradeUnit->imageSources(320, 320),
             'job_order_reference' => $members->map(fn (JobOrderItemTask $member) => $member->jobOrder->reference)->unique()->implode(', '),
@@ -518,6 +525,8 @@ class ShowManufactureFloor extends OrgAction
             'unit'                => $task->unit(),
             'kg_per_unit'         => $task->isRecordedInKg() ? $this->kgPerUnit($members) : null,
             'mix_batch_kg'        => JobOrderItemTask::sharedMixBatchKg($members),
+            'mix_pool'            => $this->mixPool($task),
+            'is_shared_mix'       => isset($this->sharedMixLeads[$task->id]),
             'only_for'            => $task->manufactureTask->artisans->pluck('contact_name')->all(),
             'combined'            => $isCombined ? $members->map(fn (JobOrderItemTask $member) => [
                 'id'                  => $member->id,
@@ -527,7 +536,7 @@ class ShowManufactureFloor extends OrgAction
                 'quantity_required'   => (float)$member->quantity_required,
                 'quantity_made'       => (float)$member->quantity_made,
             ])->values()->all() : null,
-            'separate_route'      => $isCombined && $this->canCombine ? [
+            'separate_route'      => $isCombined && $this->canCombine && !isset($this->sharedMixLeads[$task->id]) ? [
                 'name'       => 'grp.models.job-order-item-task.separate',
                 'parameters' => ['jobOrderItemTask' => $task->id],
                 'method'     => 'patch',
@@ -538,6 +547,46 @@ class ShowManufactureFloor extends OrgAction
                 'method'     => 'post',
             ],
         ];
+    }
+
+    /**
+     * What one mix covers (HELP-4562): every open line of any product waiting for this mix, the leftover
+     * of earlier mixes and how many whole batches are still to make.
+     *
+     * @return array{lines: array<int, array{artefact_code: string, job_order_reference: string, units: float, kg: float}>, needed_kg: float, leftover_kg: float, leftover_use_by: string|null, mixes: int|null, batch_kg: float|null, left_after_kg: float|null}|null
+     */
+    private function mixPool(JobOrderItemTask $task): ?array
+    {
+        $poolKey = ShareMixPool::poolKey($task);
+        if (!$poolKey) {
+            return null;
+        }
+
+        return $this->mixPools[$poolKey] ??= (function () use ($task, $poolKey) {
+            $pool      = ShareMixPool::make();
+            $lines     = $pool->tasksNeeding($task->production_id, $poolKey)->load(['jobOrder', 'jobOrderItem.artefact']);
+            $leftovers = $pool->leftovers($task->production_id, $poolKey);
+            $neededKg  = round($lines->sum(fn (JobOrderItemTask $line) => (float) $line->quantity_required - (float) $line->quantity_made), 3);
+            $leftover  = round($leftovers->sum('leftover_kg'), 3);
+            $batchKg   = $task->mixBatchKg();
+            $toMix     = max(0, $neededKg - $leftover);
+            $mixes     = $batchKg ? (int) ceil(round($toMix / $batchKg, 6)) : null;
+
+            return [
+                'lines'           => $lines->map(fn (JobOrderItemTask $line) => [
+                    'artefact_code'       => $line->jobOrderItem->artefact->code,
+                    'job_order_reference' => $line->jobOrder->reference,
+                    'kg'                  => round((float) $line->quantity_required - (float) $line->quantity_made, 3),
+                    'units'               => floor(round(((float) $line->quantity_required - (float) $line->quantity_made) / $line->unitsPerArtefact(), 3)),
+                ])->values()->all(),
+                'needed_kg'       => $neededKg,
+                'leftover_kg'     => $leftover,
+                'leftover_use_by' => $leftovers->min('mix_use_by')?->toDateString(),
+                'mixes'           => $mixes,
+                'batch_kg'        => $batchKg,
+                'left_after_kg'   => $mixes !== null ? round($mixes * $batchKg - $toMix, 3) : null,
+            ];
+        })();
     }
 
     /**
@@ -594,6 +643,34 @@ class ShowManufactureFloor extends OrgAction
 
             $this->combinedGroups[$openTask->id] = $group->map(fn (JobOrderItemTask $member) => $member->id == $openTask->id ? $openTask : $member);
             array_push($hidden, ...$group->pluck('id')->reject(fn (int $id) => $id == $openTask->id)->all());
+        }
+
+        return $openTasks->reject(fn (JobOrderItemTask $task) => in_array($task->id, $hidden))->values();
+    }
+
+    /**
+     * The same mix waiting on several lines is one job on the floor (HELP-4562): one mix covers them all,
+     * so the first line in plan order stands for the others, as a combined batch does. Lines held up by
+     * an earlier step, or for another artisan, keep their own card.
+     *
+     * @param Collection<int, JobOrderItemTask> $openTasks
+     * @param Collection<int, Collection<int, JobOrderItemTask>> $openTasksByJobOrderItem
+     * @return Collection<int, JobOrderItemTask>
+     */
+    protected function collapseSharedMixes(Collection $openTasks, Collection $openTasksByJobOrderItem): Collection
+    {
+        $groups = $openTasks
+            ->filter(fn (JobOrderItemTask $task) => !isset($this->combinedGroups[$task->id]) && $task->combined_task_id === null
+                && !$task->blockingStep($openTasksByJobOrderItem->get($task->job_order_item_id)))
+            ->groupBy(fn (JobOrderItemTask $task) => (ShareMixPool::poolKey($task) ?? '').'#'.$task->assigneeId())
+            ->reject(fn (Collection $tasks, string $key) => str_starts_with($key, '#') || $tasks->count() < 2);
+
+        $hidden = [];
+        foreach ($groups as $tasks) {
+            $lead = $tasks->first();
+            $this->combinedGroups[$lead->id] = $tasks->values();
+            $this->sharedMixLeads[$lead->id] = true;
+            array_push($hidden, ...$tasks->skip(1)->pluck('id')->all());
         }
 
         return $openTasks->reject(fn (JobOrderItemTask $task) => in_array($task->id, $hidden))->values();

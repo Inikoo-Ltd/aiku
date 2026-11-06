@@ -63,7 +63,7 @@ class BranchArtefact extends OrgAction
     /**
      * The recipe as SetArtefactsRecipe takes it, plus each step's mix batch, which it does not set.
      *
-     * @return array<int, array{manufacture_task_id: int, label: string|null, waits_for: array<int, int>|null, position: int, units_per_artefact: string, standard_rate: string|null, blocks_later_steps: bool, mix_batch_kg: string|null, raw_materials: array<int, array{raw_material_id: int, quantity_per_unit: string}>}>
+     * @return array<int, array{manufacture_task_id: int, label: string|null, waits_for: array<int, int>|null, position: int, units_per_artefact: string, standard_rate: string|null, blocks_later_steps: bool, mix_batch_kg: string|null, mix_shelf_life_days: int|null, raw_materials: array<int, array{raw_material_id: int, quantity_per_unit: string}>}>
      */
     public static function recipeOf(Artefact $artefact): array
     {
@@ -83,6 +83,7 @@ class BranchArtefact extends OrgAction
                 'standard_rate'       => $step->standard_rate,
                 'blocks_later_steps'  => (bool) $step->blocks_later_steps,
                 'mix_batch_kg'        => $step->mix_batch_kg,
+                'mix_shelf_life_days' => $step->mix_shelf_life_days,
                 'raw_materials'       => RecipeStepRawMaterial::where('artefact_manufacture_task_id', $step->id)
                     ->orderBy('id')
                     ->get(['raw_material_id', 'quantity_per_unit'])
@@ -110,7 +111,7 @@ class BranchArtefact extends OrgAction
 
         $copied = $to->recipeSteps()->get()->keyBy(fn (ArtefactManufactureTask $step) => $step->stepKey());
         foreach ($steps as $step) {
-            $copied->get(ArtefactManufactureTask::key($step['manufacture_task_id'], $step['label']))?->update(['mix_batch_kg' => $step['mix_batch_kg']]);
+            $copied->get(ArtefactManufactureTask::key($step['manufacture_task_id'], $step['label']))?->update(['mix_batch_kg' => $step['mix_batch_kg'], 'mix_shelf_life_days' => $step['mix_shelf_life_days'] ?? null]);
         }
     }
 

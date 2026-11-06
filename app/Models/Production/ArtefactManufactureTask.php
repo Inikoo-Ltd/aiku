@@ -19,6 +19,7 @@ use Illuminate\Support\Collection;
  * @property numeric $units_per_artefact
  * @property numeric|null $standard_rate
  * @property float|null $mix_batch_kg
+ * @property int|null $mix_shelf_life_days
  * @property bool $blocks_later_steps
  * @property string|null $label
  * @property array<int, int>|null $waits_for
@@ -64,6 +65,25 @@ class ArtefactManufactureTask extends Pivot
     public function stepKey(): string
     {
         return self::key($this->manufacture_task_id, $this->label);
+    }
+
+    /**
+     * Which mix a kg step makes (HELP-4562): one mix serves every line whose step has the same task and
+     * label, the same batch size and the same raw materials per kg. A labelled step (Mixing – Light Blue)
+     * is shared by every product using it; an unlabelled step is the product's own mix, shared only by
+     * that product's lines, since most recipes list no raw materials to tell their mixes apart.
+     */
+    public function mixPoolKey(): string
+    {
+        $kgPerArtefact = (float) $this->units_per_artefact ?: 1;
+        $composition   = $this->rawMaterials
+            ->sortBy('raw_material_id')
+            ->map(fn (RecipeStepRawMaterial $rawMaterial) => $rawMaterial->raw_material_id.':'.round((float) $rawMaterial->quantity_per_unit / $kgPerArtefact, 4))
+            ->implode(',');
+
+        $sharedBy = trim((string) $this->label) === '' ? 'artefact:'.$this->artefact_id : 'label';
+
+        return $this->stepKey().'|'.(float) $this->mix_batch_kg.'|'.md5($composition).'|'.$sharedBy;
     }
 
     public function name(): string

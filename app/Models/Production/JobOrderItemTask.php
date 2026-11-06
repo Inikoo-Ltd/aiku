@@ -11,6 +11,7 @@ namespace App\Models\Production;
 use App\Events\BroadcastManufactureFloorChanged;
 use App\Events\BroadcastPartnerProductionChanged;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\HumanResources\Employee;
@@ -140,8 +141,13 @@ class JobOrderItemTask extends Model
     public function setRequiredQuantity(float $quantity): self
     {
         $this->update(['quantity_required' => $quantity]);
+        $task = CalculateJobOrderItemTaskQuantities::run($this);
+        if (!$task->isRecordedInKg()) {
+            return $task;
+        }
+        ShareMixPool::make()->settle($task);
 
-        return CalculateJobOrderItemTaskQuantities::run($this);
+        return $task->refresh();
     }
 
     /**

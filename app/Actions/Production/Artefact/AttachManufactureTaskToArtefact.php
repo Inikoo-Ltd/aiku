@@ -37,7 +37,7 @@ class AttachManufactureTaskToArtefact extends OrgAction
             'position'           => $modelData['position'] ?? 1,
             'units_per_artefact' => $modelData['units_per_artefact'] ?? 1,
         ];
-        foreach (['mix_batch_kg', 'blocks_later_steps', 'label', 'waits_for'] as $field) {
+        foreach (['mix_batch_kg', 'mix_shelf_life_days', 'blocks_later_steps', 'label', 'waits_for'] as $field) {
             if (array_key_exists($field, $modelData)) {
                 $step[$field] = $field == 'label' ? self::cleanLabel($modelData[$field]) : $modelData[$field];
             }
@@ -120,6 +120,7 @@ class AttachManufactureTaskToArtefact extends OrgAction
             'units_per_artefact'  => ['sometimes', 'numeric', 'gt:0'],
             'standard_rate'       => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'mix_batch_kg'        => ['sometimes', 'nullable', Rule::in($this->artefact->production->mixBatchSizesKg())],
+            'mix_shelf_life_days' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:3650'],
             'blocks_later_steps'  => ['sometimes', 'boolean'],
             'is_new_step'         => ['sometimes', 'boolean'],
             'step_id'             => ['sometimes', 'nullable', 'integer', Rule::exists('artefacts_manufacture_tasks', 'id')->where('artefact_id', $this->artefact->id)],
@@ -215,7 +216,7 @@ class AttachManufactureTaskToArtefact extends OrgAction
             return true;
         }
 
-        if ($request->has('standard_rate') || $request->has('effective_from') || $request->has('mix_batch_kg') || $request->has('blocks_later_steps') || $request->filled('label') || $request->has('waits_for')) {
+        if ($request->has('standard_rate') || $request->has('effective_from') || $request->has('mix_batch_kg') || $request->has('mix_shelf_life_days') || $request->has('blocks_later_steps') || $request->filled('label') || $request->has('waits_for')) {
             return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
         }
 

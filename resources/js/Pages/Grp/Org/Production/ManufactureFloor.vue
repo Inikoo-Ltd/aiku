@@ -52,6 +52,16 @@ interface CombinedLine {
     quantity_made: number
 }
 
+interface MixPool {
+    lines: { artefact_code: string, job_order_reference: string, units: number, kg: number }[]
+    needed_kg: number
+    leftover_kg: number
+    leftover_use_by: string | null
+    mixes: number | null
+    batch_kg: number | null
+    left_after_kg: number | null
+}
+
 interface FloorTask {
     id: number
     state: string
@@ -78,6 +88,8 @@ interface FloorTask {
     unit: string | null
     kg_per_unit: number | null
     mix_batch_kg: number | null
+    mix_pool: MixPool | null
+    is_shared_mix: boolean
     only_for: string[]
     quantity_required: number
     quantity_made: number
@@ -558,6 +570,24 @@ function startTask(task: FloorTask) {
                     <div v-if="mixBatches(selectedTask)" class="mt-1 text-3xl text-[var(--app-accent-strong)]">{{ mixBatches(selectedTask) }}</div>
                     <div v-if="selectedTask.pack_size" class="mt-1 text-2xl text-amber-700">{{ ctrans('Counted in PACKS of :size (1 pack = :size × :code)', { size: selectedTask.pack_size, code: selectedTask.artefact_code }) }}</div>
                 </div>
+                <div v-if="selectedTask.mix_pool && selectedTask.mix_pool.lines.length" class="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-left">
+                    <div class="text-lg font-semibold text-gray-800">
+                        {{ selectedTask.task_name }}<template v-if="selectedTask.mix_pool.mixes !== null">: {{ ctransChoice(':count mix (:kg kg)|:count mixes (:kg kg)', selectedTask.mix_pool.mixes, { count: selectedTask.mix_pool.mixes, kg: Math.round(selectedTask.mix_pool.mixes * (selectedTask.mix_pool.batch_kg ?? 0) * 1000) / 1000 }) }}</template>
+                    </div>
+                    <div class="text-sm text-gray-500">{{ ctrans('One mix covers every line that uses it, in plan order') }}</div>
+                    <table class="mt-2 w-full text-sm">
+                        <tbody>
+                            <tr v-for="line in selectedTask.mix_pool.lines" :key="line.job_order_reference + line.artefact_code" class="border-t border-gray-200">
+                                <td class="py-1 pr-3 font-medium whitespace-nowrap">{{ line.artefact_code }}</td>
+                                <td class="py-1 pr-3 text-gray-500 whitespace-nowrap">{{ line.job_order_reference }}</td>
+                                <td class="py-1 pr-3 text-right tabular-nums whitespace-nowrap">× {{ line.units }}</td>
+                                <td class="py-1 text-right tabular-nums whitespace-nowrap">{{ line.kg }} kg</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div v-if="selectedTask.mix_pool.leftover_kg > 0" class="mt-2 text-sm text-gray-700">{{ ctrans('Leftover mix to use first: :kg kg', { kg: selectedTask.mix_pool.leftover_kg }) }}<template v-if="selectedTask.mix_pool.leftover_use_by"> · {{ ctrans('use by :date', { date: selectedTask.mix_pool.leftover_use_by }) }}</template></div>
+                    <div v-if="selectedTask.mix_pool.left_after_kg" class="mt-1 text-sm text-gray-700">{{ ctrans(':kg kg left over, kept for the next jobs', { kg: selectedTask.mix_pool.left_after_kg }) }}</div>
+                </div>
                 <div v-if="selectedTask.artisan && !selectedTask.is_mine" class="text-gray-500 mb-2">{{ ctrans('For') }} {{ selectedTask.artisan }}</div>
                 <div v-else-if="selectedTask.only_for.length && !selectedTask.artisan" class="text-gray-500 mb-2">{{ ctrans('Only for') }} {{ selectedTask.only_for.join(', ') }}</div>
                 <div v-if="selectedTask.waiting_for.length" class="text-amber-600 font-medium mb-2">{{ ctrans('Waiting for mix') }}: {{ selectedTask.waiting_for.join(', ') }}</div>
@@ -592,7 +622,7 @@ function startTask(task: FloorTask) {
                     {{ selectedTask.is_quantity_only ? ctrans('ENTER QUANTITY') : ctrans('START') }}
                 </button>
 
-                <div v-if="selectedTask.combined" class="mt-8 rounded-xl border border-gray-200 bg-white text-left">
+                <div v-if="selectedTask.combined && !selectedTask.is_shared_mix" class="mt-8 rounded-xl border border-gray-200 bg-white text-left">
                     <div class="px-4 py-2 border-b border-gray-200 text-sm text-gray-600 flex items-center justify-between gap-3">
                         <span>{{ ctrans('One batch for these lines, the total made is shared between them') }}</span>
                         <button v-if="selectedTask.separate_route" type="button"

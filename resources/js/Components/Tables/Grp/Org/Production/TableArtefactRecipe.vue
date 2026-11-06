@@ -61,6 +61,7 @@ interface RecipeRow {
     units_per_artefact: number | string
     is_recorded_in_kg: boolean
     mix_batch_kg: number | null
+    mix_shelf_life_days: number | null
     blocks_later_steps: boolean
     standard_rate: number | string | null
     targets: { code: string, name: string, hourly_rate: number, units_per_hour: number, calculated_units_per_hour: number, is_edited: boolean }[]
@@ -106,6 +107,7 @@ const rawMaterialProcessing = ref(false)
 
 const positionDraft = ref<Record<number, number>>({})
 const unitsDraft = ref<Record<number, number>>({})
+const shelfLifeDraft = ref<Record<number, number | null>>({})
 const rateDraft = ref<Record<number, number | null>>({})
 const fromDraft = ref<Record<number, Date | null>>({})
 const labelDraft = ref<Record<number, string>>({})
@@ -124,6 +126,7 @@ function syncDraftsWithRecipe() {
     props.data.recipe.forEach(row => {
         positionDraft.value[row.step_id] = Number(row.position)
         unitsDraft.value[row.step_id] = Number(row.units_per_artefact)
+        shelfLifeDraft.value[row.step_id] = row.mix_shelf_life_days
         rateDraft.value[row.step_id] = row.standard_rate === null ? null : Number(row.standard_rate)
         fromDraft.value[row.step_id] = null
         labelDraft.value[row.step_id] = row.label ?? ''
@@ -250,6 +253,13 @@ const errorKeyOf = (payload: Record<string, unknown>) => payload.step_id ? `step
 
 function attachStep(row: RecipeRow, extra: Record<string, unknown> = {}, standardRate?: number | null) {
     attach(row.id, Number(row.position), Number(row.units_per_artefact), standardRate, { step_id: row.step_id, ...extra })
+}
+
+function saveShelfLife(row: RecipeRow) {
+    const days = shelfLifeDraft.value[row.step_id] ?? null
+    if (days !== row.mix_shelf_life_days) {
+        attachStep(row, { mix_shelf_life_days: days })
+    }
 }
 
 function cancelAttach() {
@@ -504,6 +514,23 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         size="small"
                         :disabled="processing"
                         @update:modelValue="setMixBatch(row, $event)" />
+                </label>
+
+                <label v-if="row.is_recorded_in_kg" class="block">
+                    <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans('Mix keeps (days)') }}
+                        <InformationIcon :information="ctrans('A mix is shared by every open line that uses it. Mix left over is given to the next lines first, until this many days after it was made. Empty: the leftover keeps.')" />
+                    </span>
+                    <InputNumber
+                        v-model="shelfLifeDraft[row.step_id]"
+                        :min="1"
+                        :max="3650"
+                        :useGrouping="false"
+                        size="small"
+                        inputClass="w-20"
+                        :disabled="processing"
+                        @blur="saveShelfLife(row)"
+                        @keyup.enter="saveShelfLife(row)" />
                 </label>
 
                 <label class="block">

@@ -10,6 +10,7 @@ namespace App\Actions\Production\JobOrderItem;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrder\CancelJobOrder;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
 use App\Actions\Production\JobOrder\GetJobOrderDestinationAllocation;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
@@ -82,6 +83,13 @@ class DeleteJobOrderItem extends OrgAction
                     $coveredSkosByDemandLine[$allocation['line']->id] = ($coveredSkosByDemandLine[$allocation['line']->id] ?? 0)
                         + $allocation['quantity'] / $allocation['item']->artefact->packedIn();
                 }
+            }
+
+            $unusedMixSteps = CancelJobOrder::unusedMixSteps($subJobs)
+                ->reject(fn (JobOrderItemTask $task) => $task->sessions->whereNotNull('mix_pool_key')->isNotEmpty());
+            if ($unusedMixSteps->isNotEmpty()) {
+                ShareMixPool::make()->giveBackAll($unusedMixSteps);
+                $subJobs->each(fn (JobOrderItem $subJob) => $subJob->load(['tasks.sessions', 'tasks.sessionShares']));
             }
 
             if (self::isWorked($subJobs)) {
