@@ -47,6 +47,27 @@ class DeleteEmptyPurchaseOrders extends OrgAction
     }
 
     /**
+     * Why each of these orders can not be deleted, in one query, for the page of orders on screen only.
+     *
+     * @param  array<int, int>  $purchaseOrderIds
+     *
+     * @return array<int, array<int, string>>
+     */
+    public static function blockersOf(array $purchaseOrderIds): array
+    {
+        if (!$purchaseOrderIds) {
+            return [];
+        }
+
+        return DB::table('purchase_orders as po')
+            ->whereIn('po.id', $purchaseOrderIds)
+            ->selectRaw('po.id, '.self::blockerColumns())
+            ->get()
+            ->mapWithKeys(fn (object $row) => [(int) $row->id => self::blockersOfRow($row)])
+            ->all();
+    }
+
+    /**
      * Each reason that stops an order from being deleted, as SQL that is true when it applies.
      *
      * @return array<string, string>

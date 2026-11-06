@@ -1473,6 +1473,7 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
                 ->where('pagination.per_page', 25)
                 ->where('ribbons', fn ($ribbons) => collect($ribbons)->contains(
                     fn ($ribbon) => $ribbon['reference'] === $purchaseOrder->reference && $ribbon['current_stage'] === 'submitted'
+                        && $ribbon['is_deletable'] === true && $ribbon['delete_blockers'] === []
                 ))));
 
     $this->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference, 'tab' => 'completed', 'sort' => 'value', 'per_page' => 10]))
@@ -1497,6 +1498,15 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
             ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
                 ->where('ribbons.0.reference', $purchaseOrder->reference)
                 ->where('ribbons.0.segments', fn ($segments) => collect($segments)->firstWhere('key', 'in_production')['state'] === 'done')));
+
+    $purchaseOrder->updateQuietly(['deposit_amount' => 10]);
+    $this->get(route('grp.supply-chain.dashboard', ['search' => $purchaseOrder->reference]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->loadDeferredProps('journey', fn (AssertableInertia $reload) => $reload
+                ->where('ribbons.0.is_deletable', false)
+                ->where('ribbons.0.delete_blockers', ['deposit'])
+                ->where('ribbons.0.lines', null)));
+    $purchaseOrder->updateQuietly(['deposit_amount' => null]);
 
     $partial = $this->withHeaders([
         'X-Inertia'                   => 'true',
