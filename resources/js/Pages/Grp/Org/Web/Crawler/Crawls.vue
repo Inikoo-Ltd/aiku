@@ -18,7 +18,10 @@ import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPlus, faLightbulb, faCalendarAlt, faPencil } from "@fal"
+import { faPlus, faLightbulb, faCalendarAlt, faPencil, faSpider } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faSpider)
 import { routeType } from "@/types/route"
 import { useLocaleStore } from "@/Stores/locale"
 

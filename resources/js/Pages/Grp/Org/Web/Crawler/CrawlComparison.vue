@@ -18,6 +18,10 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
+import { faSpider } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faSpider)
 
 type Severity = "error" | "warning" | "notice"
 

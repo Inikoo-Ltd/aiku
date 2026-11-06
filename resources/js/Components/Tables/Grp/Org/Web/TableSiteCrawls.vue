@@ -46,6 +46,7 @@ const finishReasons: Record<string, { label: string, class: string }> = {
 
 const triggers: Record<string, string> = {
     command: ctrans("Automatic"),
+    user: "-",
     schedule: ctrans("Scheduled"),
     deployment: ctrans("After a deploy"),
     website_update: ctrans("After a website change"),

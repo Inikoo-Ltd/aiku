@@ -153,6 +153,27 @@ class StoreCrawl extends OrgAction
         ];
     }
 
+    public function getValidationAttributes(): array
+    {
+        return [
+            'max_pages'               => __('max URLs'),
+            'max_depth'               => __('max clicks deep'),
+            'concurrency'             => __('URLs at once'),
+            'include.*'               => __('pattern'),
+            'exclude.*'               => __('pattern'),
+            'urls'                    => __('URLs'),
+            'custom_search.*.name'    => __('name'),
+            'custom_search.*.mode'    => __('match'),
+            'custom_search.*.type'    => __('search type'),
+            'custom_search.*.value'   => __('text to search for'),
+            'extractions.*.name'      => __('name'),
+            'extractions.*.type'      => __('extraction type'),
+            'extractions.*.selector'  => __('selector'),
+            'extractions.*.output'    => __('value to keep'),
+            'extractions.*.attribute' => __('attribute name'),
+        ];
+    }
+
     public function asController(Website $website, ActionRequest $request): Crawl
     {
         $this->initialisationFromShop($website->shop, $request);

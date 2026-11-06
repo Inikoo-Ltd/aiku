@@ -213,10 +213,10 @@ const submit = () => {
 </script>
 
 <template>
-    <Dialog v-model:visible="visible" modal :header="ctrans('New crawl')" :style="{ width: '44rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
+    <Dialog v-model:visible="visible" modal :header="ctrans('New crawl')" :style="{ width: '48rem', maxWidth: 'calc(100vw - 2rem)' }" :draggable="false">
         <div class="space-y-5 text-sm">
-            <fieldset class="space-y-3">
-                <legend class="mb-2 text-xs font-semibold text-gray-900">{{ ctrans("What to crawl") }}</legend>
+            <div class="space-y-3" role="group" aria-labelledby="crawl-what-title">
+                <h3 id="crawl-what-title" class="text-xs font-semibold text-gray-900">{{ ctrans("What to crawl") }}</h3>
                 <div class="space-y-1">
                     <label for="crawl-website" class="block text-xs font-medium text-gray-700">{{ ctrans("Website") }}</label>
                     <Select
@@ -252,10 +252,10 @@ const submit = () => {
                     <InputText id="crawl-name" v-model="name" :placeholder="ctrans('After the menu change')" :class="fieldFocusClass" fluid />
                     <p v-if="errors.name" class="text-xs text-red-600">{{ errors.name }}</p>
                 </div>
-            </fieldset>
+            </div>
 
-            <fieldset class="space-y-2">
-                <legend class="mb-2 text-xs font-semibold text-gray-900">{{ ctrans("Limits") }}</legend>
+            <div class="space-y-2" role="group" aria-labelledby="crawl-limits-title">
+                <h3 id="crawl-limits-title" class="text-xs font-semibold text-gray-900">{{ ctrans("Limits") }}</h3>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <div class="space-y-1">
                         <label for="crawl-max-pages" class="block text-xs font-medium text-gray-700">{{ ctrans("Max URLs") }}</label>
@@ -274,7 +274,7 @@ const submit = () => {
                     </div>
                 </div>
                 <p class="text-xs text-gray-600">{{ ctrans("Each URL is rendered by the servers our customers use, and running crawls share at most :max at once.", { max: settings.maxConcurrency }) }}</p>
-            </fieldset>
+            </div>
 
             <div>
                 <button
@@ -342,7 +342,7 @@ const submit = () => {
                     <div class="space-y-2">
                         <p class="text-xs text-gray-600">{{ ctrans("Search counts how often a text or pattern appears in the HTML of each page.") }}</p>
                         <div v-for="(search, index) in customSearches" :key="`search-${index}`" class="space-y-1">
-                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-[8rem_9rem_6rem_minmax(0,1fr)_auto]">
+                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-[8rem_10.5rem_7rem_minmax(0,1fr)_auto]">
                                 <InputText v-model="search.name" :placeholder="ctrans('Name')" :aria-label="ctrans('Search name')" :class="fieldFocusClass" fluid />
                                 <Select v-model="search.mode" :options="searchModeOptions" optionLabel="label" optionValue="value" :aria-label="ctrans('Match')" :class="fieldFocusClass" fluid />
                                 <Select v-model="search.type" :options="searchTypeOptions" optionLabel="label" optionValue="value" :aria-label="ctrans('Search type')" :class="fieldFocusClass" fluid />
@@ -361,7 +361,7 @@ const submit = () => {
                     <div class="space-y-2">
                         <p class="text-xs text-gray-600">{{ ctrans("Extraction keeps the first values a CSS selector, XPath or regex finds on each page, shown as columns in the Custom tab.") }}</p>
                         <div v-for="(extraction, index) in extractions" :key="`extraction-${index}`" class="space-y-1">
-                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-[8rem_6rem_minmax(0,1fr)_7rem_auto]">
+                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-[8rem_7rem_minmax(0,1fr)_8rem_auto]">
                                 <InputText v-model="extraction.name" :placeholder="ctrans('Name')" :aria-label="ctrans('Extraction name')" :class="fieldFocusClass" fluid />
                                 <Select v-model="extraction.type" :options="extractionTypeOptions" optionLabel="label" optionValue="value" :aria-label="ctrans('Extraction type')" :class="fieldFocusClass" fluid />
                                 <InputText v-model="extraction.selector" :placeholder="extraction.type === 'xpath' ? '//div[@class=&quot;price&quot;]' : extraction.type === 'regex' ? 'SKU: (\\w+)' : '.product-code'" :aria-label="ctrans('Selector')" class="font-mono text-xs" :class="fieldFocusClass" fluid />
