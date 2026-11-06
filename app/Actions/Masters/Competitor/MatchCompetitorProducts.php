@@ -10,6 +10,7 @@ namespace App\Actions\Masters\Competitor;
 
 use App\Actions\Helpers\AI\AskJev;
 use App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\Competitor;
 use App\Models\Masters\CompetitorProduct;
 use App\Models\Masters\MasterAsset;
@@ -70,16 +71,18 @@ class MatchCompetitorProducts
      */
     public function handle(Competitor $competitor, array $masterAssetIds): int
     {
-        $matches = 0;
+        $matches    = 0;
+        $localNames = static::localNames($competitor, $masterAssetIds);
 
         foreach (MasterAsset::whereIn('id', $masterAssetIds)->get() as $masterAsset) {
-            $shortlist  = $this->candidates($competitor, $masterAsset);
+            $localName  = $localNames[$masterAsset->id] ?? $masterAsset->name;
+            $shortlist  = $this->candidates($competitor, $masterAsset, $localName);
             $otherSizes = $shortlist->filter(fn (CompetitorProduct $candidate) => static::sizeDiffers($masterAsset->name, $candidate->name));
             $candidates = $shortlist->diffKeys($otherSizes)->take(self::CANDIDATES)->values();
 
             $decision = null;
             if ($candidates->isNotEmpty()) {
-                $answer = AskJev::make()->choice(static::state($masterAsset, $candidates), self::INSTRUCTIONS, static::options($candidates));
+                $answer = AskJev::make()->choice(static::state($masterAsset, $candidates, nameInTheirLanguage: $localName), self::INSTRUCTIONS, static::options($candidates));
 
                 if (!$answer) {
                     continue;
@@ -120,11 +123,13 @@ class MatchCompetitorProducts
      *
      * @param  Collection<int, CompetitorProduct>  $candidates
      */
-    public static function state(MasterAsset $masterAsset, Collection $candidates, bool $detailed = true): array
+    public static function state(MasterAsset $masterAsset, Collection $candidates, bool $detailed = true, ?string $nameInTheirLanguage = null): array
     {
         $dimensions = $masterAsset->marketing_dimensions ?? [];
 
-        $ours = ['name' => $masterAsset->name, 'units_in_our_pack' => (float) $masterAsset->units];
+        $ours = ['name' => $masterAsset->name]
+            + ($nameInTheirLanguage && $nameInTheirLanguage !== $masterAsset->name ? ['name_in_their_language' => $nameInTheirLanguage] : [])
+            + ['units_in_our_pack' => (float) $masterAsset->units];
         if ($detailed) {
             $ours += array_filter([
                 'family'      => $masterAsset->masterFamily?->name,
@@ -291,18 +296,52 @@ class MatchCompetitorProducts
     /**
      * @return Collection<int, CompetitorProduct>
      */
-    private function candidates(Competitor $competitor, MasterAsset $masterAsset): Collection
+    private function candidates(Competitor $competitor, MasterAsset $masterAsset, string $localName): Collection
     {
         return CompetitorProduct::where('competitor_id', $competitor->id)
-            ->whereRaw('name % ?', [$masterAsset->name])
-            ->whereRaw('similarity(name, ?) >= ?', [$masterAsset->name, self::MIN_SIMILARITY])
+            ->whereRaw('name % ?', [$localName])
+            ->whereRaw('similarity(name, ?) >= ?', [$localName, self::MIN_SIMILARITY])
             ->whereNotExists(fn ($query) => $query->select(DB::raw(1))
                 ->from('master_asset_competitor_products')
                 ->whereColumn('master_asset_competitor_products.competitor_product_id', 'competitor_products.id')
                 ->where('master_asset_competitor_products.master_asset_id', $masterAsset->id))
-            ->orderByRaw('similarity(name, ?) desc', [$masterAsset->name])
+            ->orderByRaw('similarity(name, ?) desc', [$localName])
             ->limit(self::CANDIDATES * 3)
             ->get();
+    }
+
+    /**
+     * Our name for products in the competitor's language, so a Spanish shop is compared with our Spanish names: the
+     * name in our shop in that language under the same master shop, else the master's own translation, else our
+     * name. A competitor in English, or whose language is not known, gets our names as they are.
+     *
+     * @param  array<int, int>  $masterAssetIds
+     * @return array<int, string> master asset id => name
+     */
+    public static function localNames(Competitor $competitor, array $masterAssetIds): array
+    {
+        return DB::table('master_assets')
+            ->whereIn('id', $masterAssetIds)
+            ->selectRaw('id, '.static::localNameSql($competitor).' as local_name')
+            ->pluck('local_name', 'id')
+            ->all();
+    }
+
+    public static function localNameSql(Competitor $competitor): string
+    {
+        $language = $competitor->language;
+        if (!$language || str_starts_with(mb_strtolower($language->code), 'en')) {
+            return 'master_assets.name';
+        }
+
+        $code   = preg_replace('/[^a-z]/', '', strtok(mb_strtolower($language->code), '-'));
+        $shopId = (int) Shop::where('master_shop_id', $competitor->master_shop_id)
+            ->whereHas('language', fn ($query) => $query->whereRaw("split_part(lower(code), '-', 1) = ?", [$code]))
+            ->orderBy('id')
+            ->value('id');
+        $inShop = $shopId ? "(select nullif(products.name, '') from products where products.master_product_id = master_assets.id and products.shop_id = $shopId order by products.id limit 1), " : '';
+
+        return "coalesce($inShop nullif(master_assets.name_i8n->>'$code', ''), master_assets.name)";
     }
 
     /**
@@ -311,19 +350,23 @@ class MatchCompetitorProducts
      */
     public function queue(Competitor $competitor, bool $sync = false): int
     {
-        $ids = DB::table('master_assets')
+        $ours = DB::table('master_assets')
             ->where('master_shop_id', $competitor->master_shop_id)
             ->where('status', true)
             ->where('is_main', true)
+            ->selectRaw('master_assets.id, '.static::localNameSql($competitor).' as local_name')
+            ->offset(0); // ponytail: keeps Postgres from re-running the name lookup inside every trigram probe (41 s against 8 s locally)
+
+        $ids = DB::query()->fromSub($ours, 'ours')
             ->whereExists(fn ($query) => $query->select(DB::raw(1))
                 ->from('competitor_products')
                 ->where('competitor_products.competitor_id', $competitor->id)
-                ->whereRaw('competitor_products.name % master_assets.name')
-                ->whereRaw('similarity(competitor_products.name, master_assets.name) >= ?', [self::MIN_SIMILARITY])
+                ->whereRaw('competitor_products.name % ours.local_name')
+                ->whereRaw('similarity(competitor_products.name, ours.local_name) >= ?', [self::MIN_SIMILARITY])
                 ->whereNotExists(fn ($query) => $query->select(DB::raw(1))
                     ->from('master_asset_competitor_products')
                     ->whereColumn('master_asset_competitor_products.competitor_product_id', 'competitor_products.id')
-                    ->whereColumn('master_asset_competitor_products.master_asset_id', 'master_assets.id')))
+                    ->whereColumn('master_asset_competitor_products.master_asset_id', 'ours.id')))
             ->pluck('id');
 
         foreach ($ids->chunk(self::CHUNK) as $chunk) {

@@ -20,6 +20,8 @@ Go to **Masters › Competitors** and click **Add competitor**. You need:
 - who it **sells to**: shoppers (their prices are compared with your RRP) or retailers (compared with your price);
 - the **currency** of their prices.
 
+The **language of their website** is found by itself when their dossier is read, and can be changed on **Edit**. Their products are matched, and their website searched, with your product names in that language, taken from your shop in that language, so a Spanish competitor is compared with your Spanish names.
+
 That is enough for a Shopify or WooCommerce shop that shows its prices: aiku finds its public catalogue by itself and reads it the next morning at 04:00 UTC, every product and every pack size with its price. The competitor page then says **Shopify catalogue** or **WooCommerce catalogue** under *Prices read from*.
 
 For any other website, fill in one of the fields under **Where to read prices**:

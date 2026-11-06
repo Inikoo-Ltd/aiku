@@ -11,6 +11,7 @@ namespace App\Models\Masters;
 use App\Enums\Masters\Competitor\CompetitorSellsToEnum;
 use App\Enums\Masters\Competitor\CompetitorStatusEnum;
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\Language;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
@@ -44,10 +45,12 @@ use Spatie\MediaLibrary\HasMedia;
  * @property array|null $intel the dossier: identity, shipping, returns, payments, offers and briefing, each fact with its source page
  * @property \Illuminate\Support\Carbon|null $intel_fetched_at
  * @property string|null $intel_error
+ * @property int|null $language_id the language of their website: products are matched and searched with our names in it
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Currency $currency
  * @property-read Group $group
+ * @property-read Language|null $language
  * @property-read MasterShop $masterShop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, CompetitorProduct> $products
  * @property-read \Illuminate\Database\Eloquent\Collection<int, CompetitorIntelSnapshot> $intelSnapshots
@@ -93,6 +96,11 @@ class Competitor extends Model implements HasMedia
     public function products(): HasMany
     {
         return $this->hasMany(CompetitorProduct::class);
+    }
+
+    public function language(): BelongsTo
+    {
+        return $this->belongsTo(Language::class);
     }
 
     public function intelSnapshots(): HasMany

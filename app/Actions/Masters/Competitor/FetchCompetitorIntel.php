@@ -11,6 +11,7 @@ namespace App\Actions\Masters\Competitor;
 use App\Actions\Helpers\AI\AskToAi;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Masters\Competitor\UI\WithCompetitorPriceComparison;
+use App\Models\Helpers\Language;
 use App\Models\Masters\Competitor;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -94,6 +95,10 @@ class FetchCompetitorIntel implements ShouldBeUnique
             $this->saveScreenshot($competitor, $result['screenshot']);
         }
 
+        if (!$competitor->language_id && ($languageId = static::languageId($result['homepage']['lang'] ?? null))) {
+            $competitor->update(['language_id' => $languageId]);
+        }
+
         $pages = collect($result['pages'])->filter(fn ($page) => filled($page['text'] ?? null))->values()->all();
         $facts = $this->extractFacts($competitor, $result['homepage'], $pages);
         if ($facts === null) {
@@ -109,7 +114,7 @@ class FetchCompetitorIntel implements ShouldBeUnique
         $previous = $competitor->intelSnapshots()->latest('fetched_at')->latest('id')->first();
 
         $intel = [
-            'homepage'  => Arr::only($result['homepage'], ['final_url', 'title', 'description', 'platform', 'logo', 'banners', 'coupons']),
+            'homepage'  => Arr::only($result['homepage'], ['final_url', 'title', 'lang', 'description', 'platform', 'logo', 'banners', 'coupons']),
             'identity'  => static::identity($result['homepage'], $section('identity')),
             'shipping'  => static::facts($section('shipping'), ['costs', 'zones', 'free_shipping_threshold', 'delivery_times']),
             'minimum_order' => static::facts($section('minimum_order'), ['value']),
@@ -187,6 +192,21 @@ PROMPT;
         $answer = AskToAi::run($prompt, config('services.competitor_intel.extraction_model'), ['response_format' => ['type' => 'json_object']]);
 
         return $answer === null ? null : static::json($answer);
+    }
+
+    /**
+     * The language a website declares ("es", "es-ES", "pt_BR") as the plain language our shops use ("es"), else the
+     * exact code when there is no plain one.
+     */
+    public static function languageId(?string $declared): ?int
+    {
+        $code = mb_strtolower(str_replace('_', '-', trim((string) $declared)));
+        if ($code === '') {
+            return null;
+        }
+
+        return Language::whereRaw('lower(code) = ?', [strtok($code, '-')])->value('id')
+            ?? Language::whereRaw('lower(code) = ?', [$code])->value('id');
     }
 
     /**

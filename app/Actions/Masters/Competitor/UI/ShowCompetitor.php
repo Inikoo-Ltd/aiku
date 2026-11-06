@@ -79,6 +79,7 @@ class ShowCompetitor extends OrgAction
                     'master_shop'      => ['name' => $competitor->masterShop->name, 'slug' => $competitor->masterShop->slug],
                     'sells_to'         => CompetitorSellsToEnum::labels()[$competitor->sells_to->value],
                     'currency_code'    => $competitor->currency->code,
+                    'language'         => $competitor->language?->name,
                     'read_method'      => CompetitorsResource::readMethod($competitor->feed_url, (bool) $competitor->search_url),
                     'has_login'        => (bool) $competitor->username,
                     'status'           => $competitor->status?->value,
