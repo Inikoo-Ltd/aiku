@@ -26,7 +26,7 @@ export default defineConfig(({ isSsrBuild }) =>
       cors : true,
       watch: {
         usePolling: false,
-        ignored: ["**/storage/media/**", "**/vendor/**", "**/mobile/**"]
+        ignored: ["**/storage/media/**", "**/vendor/**", "**/apps/**"]
       }
     },
     plugins: [

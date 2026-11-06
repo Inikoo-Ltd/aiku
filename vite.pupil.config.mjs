@@ -26,7 +26,7 @@ export default defineConfig(
     server : {
       cors : true,
       watch: {
-        ignored: ["**/storage/media/**", "**/vendor/**", "**/mobile/**"]
+        ignored: ["**/storage/media/**", "**/vendor/**", "**/apps/**"]
       }
     },
     plugins: [
