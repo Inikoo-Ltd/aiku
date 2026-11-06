@@ -10,7 +10,6 @@ namespace App\Actions\Web\Seo;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
-use App\Actions\Web\Crawl\UI\IndexSiteAuditIssuePages;
 use App\Actions\Web\SearchConsole\UI\IndexSearchConsoleQueries;
 use App\Actions\Web\Seo\UI\IndexSeoBacklinks;
 use App\Actions\Web\Seo\UI\IndexSeoContentSuggestions;
@@ -23,10 +22,8 @@ use App\Actions\Web\WebsiteConversionEvent\UI\IndexWebsiteConversionCustomers;
 use App\Actions\Web\WebsiteNotFoundPath\UI\IndexWebsiteNotFoundPaths;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\UI\Web\SeoDashboardTabsEnum;
-use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\WebsiteConversionEvent\WebsiteConversionEventTypeEnum;
 use App\Enums\Web\WebsiteVisitor\WebsiteVisitorChannelEnum;
-use App\Exports\Web\Sheets\SiteAuditPagesSheet;
 use App\Exports\Web\SeoTableExport;
 use App\Exports\Web\SeoWorkbookExport;
 use App\Models\Catalogue\Shop;
@@ -55,7 +52,7 @@ class ExportSeoTable extends OrgAction
 
     public const int MAX_ROWS = 20000;
 
-    public const array TABLES = ['research', 'rankings', 'tracked_keywords', 'top_pages', 'conversions', 'missing_pages', 'referring_domains', 'backlinks', 'keyword_gap', 'search_queries', 'search_opportunities', 'site_audit_issue_pages', 'content_suggestions'];
+    public const array TABLES = ['research', 'rankings', 'tracked_keywords', 'top_pages', 'conversions', 'missing_pages', 'referring_domains', 'backlinks', 'keyword_gap', 'search_queries', 'search_opportunities', 'content_suggestions'];
 
     private const int PAGE_SIZE = 2000;
 
@@ -82,7 +79,6 @@ class ExportSeoTable extends OrgAction
             'keyword_gap'       => $this->keywordGap($shop, $request),
             'search_queries'    => $this->searchQueries($website, $request, false),
             'search_opportunities' => $this->searchQueries($website, $request, true),
-            'site_audit_issue_pages' => $this->siteAuditIssuePages($website, $request),
             'content_suggestions' => $this->contentSuggestions($website),
         };
 
@@ -510,28 +506,6 @@ class ExportSeoTable extends OrgAction
                 $row->position !== null ? (float) $row->position : null,
                 (int) $row->pages,
                 implode('; ', $row->page_urls ?? []),
-            ])->all(),
-        ];
-    }
-
-    private function siteAuditIssuePages(Website $website, ActionRequest $request): array
-    {
-        $issueType = CrawlIssueTypeEnum::tryFrom((string) $request->query('issue_type')) ?? abort(404);
-        $audit     = IndexSiteAuditIssuePages::make()->latestAudit($website) ?? abort(404);
-
-        $rows = $this->allRows('', fn () => IndexSiteAuditIssuePages::make()->handle($audit, $issueType));
-
-        return [
-            ['URL', 'Webpage', 'Status code', 'Internal links in', 'Response (ms)', 'Title', 'In sitemap', 'Details'],
-            $rows->map(fn ($row) => [
-                $row->url,
-                $row->webpage_code,
-                $row->status_code,
-                (int) $row->inlinks,
-                $row->response_ms,
-                $row->title,
-                $row->is_in_sitemap ? 'yes' : 'no',
-                SiteAuditPagesSheet::detailsText($row->details ?? []),
             ])->all(),
         ];
     }

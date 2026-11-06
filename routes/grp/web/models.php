@@ -736,7 +736,6 @@ use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\RecordRailClick;
 use App\Actions\UI\Profile\UpdateProfile;
-use App\Actions\Web\Crawl\StartSiteAudit;
 use App\Actions\Web\Crawl\StopCrawlFromCrawler;
 use App\Actions\Web\Crawl\StoreCrawl;
 use App\Actions\Web\Crawl\SaveCrawlSchedule;
@@ -1628,7 +1627,6 @@ Route::post('family/{family:id}/webpage-check', CheckFamilyWebpage::class)->name
 Route::patch('crawl/{crawl:id}/stop', StopCrawlFromCrawler::class)->name('crawl.stop')->withoutScopedBindings();
 
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
-    Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');
     Route::post('crawl', StoreCrawl::class)->name('crawl.store');
     Route::post('crawl-schedule', SaveCrawlSchedule::class)->name('crawl_schedule.save');
     Route::delete('crawl-schedule', DeleteCrawlSchedule::class)->name('crawl_schedule.delete');
