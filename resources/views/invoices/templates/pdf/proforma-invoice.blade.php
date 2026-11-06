@@ -183,10 +183,11 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                             class="address_value">{{ $order->customer['phone'] }}</span>
                 </div>
-                @if($order->tax_number && ($order->tax_number_valid || $order->billingAddress?->country?->code === 'ES'))
+                @php($taxNumber = $order->customer?->taxNumber)
+                @if($taxNumber?->number && ($taxNumber->valid || $order->billingAddress?->country?->code === 'ES'))
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
-                                class="address_value">{{ $order->tax_number }}</span>
+                                class="address_value">{{ $taxNumber->getFormattedTaxNumber() }}</span>
                     </div>
                 @endif
             </div>
@@ -198,29 +199,39 @@
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
+        @php($addressLines = fn ($address) => collect([
+            $address->address_line_1,
+            $address->address_line_2,
+            $address->administrative_area,
+            $address->locality,
+            $address->postal_code,
+            $address->country?->name,
+        ])->reject(fn ($line) => blank($line) || $line === '0'))
         @if($order->billingAddress)
             <td width="45%" style="border: 0.1mm solid #888888;"><span
                         style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
-                <div>
-                    {{ $order->billingAddress->address_line_1 }}
-                </div>
-                <div>
-                    {{ $order->billingAddress->address_line_2 }}
-                </div>
-                <div>
-                    {{ $order->billingAddress->administrative_area }}
-                </div>
-                <div>
-                    {{ $order->billingAddress->locality }}
-                </div>
-                <div>
-                    {{ $order->billingAddress->postal_code }}
-                </div>
-                <div>
-                    {{ $order->billingAddress->country->name }}
-                </div>
+                @foreach($addressLines($order->billingAddress) as $line)
+                <div>{{ $line }}</div>
+                @endforeach
             </td>
             <td width="10%">&nbsp;</td>
+        @endif
+        @php($isCollection = (bool) $order->collection_address_id)
+        @php($deliveryAddress = $isCollection ? $order->shop->collectionAddress : $order->deliveryAddress)
+        @php($deliveryAddress = $deliveryAddress?->hasAnyLine() ? $deliveryAddress : null)
+        @if($deliveryAddress || $isCollection)
+            <td width="45%" style="border: 0.1mm solid #888888;"><span
+                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ $isCollection ? __('Collection address') : __('Delivery address') }}:</span>
+                @if($deliveryAddress)
+                    @foreach($addressLines($deliveryAddress) as $line)
+                <div>{{ $line }}</div>
+                    @endforeach
+                @else
+                <div>{{ __('For collection') }}</div>
+                @endif
+            </td>
+        @else
+            <td width="45%"></td>
         @endif
 
     </tr>
