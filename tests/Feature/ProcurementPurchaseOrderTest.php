@@ -4450,3 +4450,29 @@ test('a request already answered by another buyer is not applied a second time',
         ->toThrow(\Illuminate\Validation\ValidationException::class);
     expect((float) $line->refresh()->unit_cost)->toEqual($unitCost);
 });
+
+test('deleting empty purchase orders deletes the drafts, cancels the ones already sent and leaves an order with items or a deposit', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $newDraft             = fn () => StorePurchaseOrder::make()->action(createAgentOrgSupplierWithProduct($this, $orgAgent)[0], PurchaseOrder::factory()->definition());
+    $draft                = $newDraft();
+    $sent                 = $newDraft();
+    $sent->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+    $withDeposit          = $newDraft();
+    $withDeposit->updateQuietly(['deposit_amount' => 5]);
+    $withItems            = createConfirmedAgentOrder($this, $supplier, $product, 0, 3)->refresh();
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::make()->action($this->group, [$draft->id, $withDeposit->id, $withItems->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($draft->refresh()->trashed())->toBeFalse();
+
+    $done = \App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::make()->action($this->group, [$draft->id, $sent->id]);
+
+    expect($done)->toBe(2)
+        ->and(PurchaseOrder::withTrashed()->find($draft->id)->trashed())->toBeTrue()
+        ->and($sent->refresh()->trashed())->toBeFalse()
+        ->and($sent->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
+        ->and($withDeposit->refresh()->trashed())->toBeFalse()
+        ->and($withDeposit->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
+        ->and($withItems->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+});

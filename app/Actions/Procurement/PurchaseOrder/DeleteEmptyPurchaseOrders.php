@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\OrgAction;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Group;
 use Illuminate\Http\RedirectResponse;
@@ -195,6 +196,9 @@ class DeleteEmptyPurchaseOrders extends OrgAction
     }
 
     /**
+     * Drafts are deleted. An order already sent to the supplier is cancelled instead, so the supplier's page and the
+     * agent still show it, as cancelled, and its record is kept.
+     *
      * @param  array<int, int>  $purchaseOrderIds
      */
     public function handle(Group $group, array $purchaseOrderIds): int
@@ -207,6 +211,12 @@ class DeleteEmptyPurchaseOrders extends OrgAction
 
                 if (!$purchaseOrder || !self::deletableIds($group, [$purchaseOrder->id])) {
                     return 0;
+                }
+
+                if (in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
+                    UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder);
+
+                    return 1;
                 }
 
                 return DeletePurchaseOrder::make()->handle($purchaseOrder) ? 1 : 0;

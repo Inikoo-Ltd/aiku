@@ -685,7 +685,7 @@ function saveMark(date: string | null): void {
                 </span>
             </div>
             <p v-if="deleteCandidates.some((candidate) => candidate.state !== 'in_process')" class="text-xs text-amber-700">
-                {{ ctrans("Orders already submitted to the supplier are deleted too. Tell the supplier or agent if they are still working on them.") }}
+                {{ ctrans("Orders already submitted to the supplier are cancelled instead of deleted, so the supplier and the agent see them as cancelled.") }}
             </p>
             <div v-if="deleteError" class="text-xs text-red-600">{{ deleteError }}</div>
         </div>
