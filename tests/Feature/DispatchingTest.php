@@ -3155,7 +3155,12 @@ test('picking waiting warehouse and crm flow', function () {
 
     $item->update(['quantity_waiting_crm' => 2]);
     $sentBack = \App\Actions\Dispatching\Picking\SendBackWaitingWarehouse::make()->action($item->refresh(), $this->user, []);
-    expect($sentBack->has_waiting_crm)->toBeFalse();
+    expect($sentBack->has_waiting_crm)->toBeFalse()
+        ->and($sentBack->waiting_warehouse_released_at)->not->toBeNull();
+
+    $sentBack->update(['quantity_picked' => 5, 'quantity_waiting_warehouse' => 0, 'locked_at' => null]);
+    $heldAgain = \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($sentBack->refresh(), $this->user, ['quantity' => 1]);
+    expect($heldAgain->waiting_warehouse_released_at)->toBeNull();
 });
 
 test('picking the last of a line in a picking session sets the line and its note as picked', function () {

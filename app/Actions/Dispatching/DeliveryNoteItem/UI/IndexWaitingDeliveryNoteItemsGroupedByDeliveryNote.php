@@ -57,6 +57,7 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
         $this->whereDeliveryNotesChannel($query, $shopType);
 
         $query->orderByRaw('delivery_note_is_premium_dispatch DESC NULLS LAST');
+        $query->orderByRaw('waiting_warehouse_released_at ASC NULLS LAST');
 
         return $query->defaultSort('delivery_notes.id')
             ->distinct()
@@ -79,6 +80,7 @@ class IndexWaitingDeliveryNoteItemsGroupedByDeliveryNote extends OrgAction
                 'shops.engine as shop_engine',
                 'organisations.slug as organisation_slug',
             ])
+            ->selectRaw('(SELECT min(dni_rel.waiting_warehouse_released_at) FROM delivery_note_items dni_rel WHERE dni_rel.delivery_note_id = delivery_notes.id AND dni_rel.has_waiting_warehouse = true) as waiting_warehouse_released_at')
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
             ->allowedSorts(['delivery_note_reference'])
             ->allowedFilters([$globalSearch])
