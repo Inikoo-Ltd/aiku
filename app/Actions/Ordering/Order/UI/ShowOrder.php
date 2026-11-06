@@ -26,6 +26,7 @@ use App\Actions\Ordering\Order\WithOrderForbiddenCountryCheck;
 use App\Actions\Ordering\Purge\UI\ShowPurge;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
+use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Actions\Ordering\Order\UpdateOrderProductionReview;
 use App\Actions\Traits\WithMarginData;
 use App\Actions\OrgAction;
@@ -311,6 +312,30 @@ class ShowOrder extends OrgAction
                 'route'   => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.order.state.in-warehouse-unpaid',
+                    'parameters' => [
+                        'order' => $order->id,
+                    ],
+                ],
+            ];
+        }
+
+        /** Accounts may invoice an order (GenerateInvoiceFromOrder), so they need the button to re-issue one they deleted (HELP-4557). Not while shipping is to be confirmed: only order editors can enter it */
+        if (!$canEdit
+            && !$lockedInAurora
+            && !$preOrderLocked
+            && in_array($order->state, [OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED])
+            && !$order->invoices()->exists()
+            && !UpdateOrderIsShippingTBC::make()->isAwaitingShippingAmount($order)
+            && $request->user()->authTo("accounting.{$order->organisation_id}.edit")) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => '',
+                'tooltip' => __('Generate Invoice'),
+                'label'   => __('Generate Invoice'),
+                'key'     => 'action',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.order.generate_invoice',
                     'parameters' => [
                         'order' => $order->id,
                     ],

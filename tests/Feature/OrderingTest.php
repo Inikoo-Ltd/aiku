@@ -6864,6 +6864,14 @@ test('an orders viewer reads an order but cannot change it, and accounts can sti
         \Illuminate\Support\Facades\Http::preventStrayRequests();
         expect($this->post(route('grp.models.order.update_faire', ['order' => $order->id]))->status())->not->toBe(403);
 
+        $originalState = $order->state;
+        Order::where('id', $order->id)->update(['state' => OrderStateEnum::DISPATCHED]);
+        $actionRoutes = fn () => collect(get(route('grp.org.shops.show.ordering.orders.show', $parameters))->assertOk()->viewData('page')['props']['pageHead']['actions'])->pluck('route.name');
+        expect($actionRoutes())->toContain('grp.models.order.generate_invoice');
+        $actingWithOnly(["orders.$shop->id.view"]);
+        expect($actionRoutes())->not->toContain('grp.models.order.generate_invoice');
+        Order::where('id', $order->id)->update(['state' => $originalState]);
+
         $actingWithOnly(["orders.$shop->id.view", "orders.$shop->id.edit"]);
         $props = get(route('grp.org.shops.show.ordering.orders.show', $parameters))->assertOk()->viewData('page')['props'];
         expect($props['can_edit'])->toBeTrue()
