@@ -455,8 +455,8 @@ class CustomerServiceChatWriteTool extends AikuCustomerServiceTool
         $refused = match ($outcome) {
             ChatAiOutcomeEnum::ANSWERED_BY_STAFF => $chatSession->messages()->where('sender_type', ChatSenderTypeEnum::AGENT)->where('id', '>', $triggerId)->exists()
                 ? null : 'No staff reply after the customer\'s latest message.',
-            ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING => DraftChatReply::pendingDraft($chatSession)
-                ? null : 'No suggestion is waiting on this chat.',
+            ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING => DraftChatReply::freshAssistantDraftWaiting($chatSession)
+                ? null : 'No suggestion written since the customer last wrote is waiting on this chat: work the chat again.',
             ChatAiOutcomeEnum::HELD => !$this->userCanDisposeOfChat($request->user(), $chatSession)
                 ? null : 'Nobody else holds this chat.',
             ChatAiOutcomeEnum::OPENED => $chatSession->newQuery()->whereKey($chatSession->id)->openedUnansweredForAiku()->exists()
