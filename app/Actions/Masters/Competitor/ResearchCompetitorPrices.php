@@ -40,7 +40,7 @@ class ResearchCompetitorPrices
 
     public int $jobTimeout = 1800;
 
-    public const string MODEL = 'openai/gpt-5.6-luna';
+    public const string MODEL = 'anthropic/claude-haiku-5.5';
 
     public const string USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36';
 
