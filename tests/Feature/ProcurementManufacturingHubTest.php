@@ -399,7 +399,7 @@ describe('partner shopping list', function () {
         $production     = Production::where('organisation_id', $seller->id)->first()
             ?? StoreProduction::make()->action($seller, ['code' => 'TPRD', 'name' => 'To produce factory']);
         StoreArtefact::make()->action($production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'TPA-'.$sellerOrgStock->id, 'name' => 'Artefact', 'org_stock_id' => $sellerOrgStock->id]);
-        $sellerOrgStock->update(['quantity_in_locations' => 2]);
+        $sellerOrgStock->update(['quantity_in_locations' => 2, 'quantity_available' => 2]);
 
         $customer = StoreCustomer::make()->action($this->sellerShop, Customer::factory()->definition());
         $order    = createOrder($customer, $this->sellerProduct);
