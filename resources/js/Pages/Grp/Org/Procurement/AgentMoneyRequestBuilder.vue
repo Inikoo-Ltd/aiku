@@ -238,10 +238,6 @@ const send = () => {
 	</div>
 
 	<div class="mx-4 my-5 flex justify-end">
-		<Button type="tertiary" :label="ctrans('Send request')" :disabled="!chosen.length" :loading="sending" @click="send">
-			<template #icon>
-				<FontAwesomeIcon icon="fal fa-paper-plane" class="text-green-600" fixed-width aria-hidden="true" />
-			</template>
-		</Button>
+		<Button type="primary" icon="fal fa-paper-plane" :label="ctrans('Send request')" :disabled="!chosen.length" :loading="sending" @click="send" /> 
 	</div>
 </template>
