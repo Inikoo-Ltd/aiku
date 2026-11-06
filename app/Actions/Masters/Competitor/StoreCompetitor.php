@@ -28,6 +28,8 @@ class StoreCompetitor extends OrgAction
         /** @var Competitor $competitor */
         $competitor = $masterShop->competitors()->create(Arr::except($modelData, 'master_shop_id') + ['group_id' => $masterShop->group_id]);
 
+        FetchCompetitorIntel::dispatch($competitor);
+
         return $competitor;
     }
 

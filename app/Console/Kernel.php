@@ -1701,6 +1701,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('masters:competitor-intel')->weeklyOn(1, '05:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'FetchCompetitorIntel',
+                ),
+                name: 'FetchCompetitorIntel',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('masters:competitor-prices')->weeklyOn(0, '02:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'ResearchCompetitorPrices',
                 ),

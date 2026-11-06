@@ -19,7 +19,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Records what the sweep did with the customer's latest message, one row per message. Asked again
  * for the same message, the stronger outcome stays (ChatAiOutcomeEnum order) and the latest of
- * equal strength replaces it, so the coverage report never counts a chat twice.
+ * equal strength replaces it, so the coverage report never counts a chat twice. A suggestion already
+ * waiting holds only while its draft is newer than the customer's message; once stale, the next outcome replaces it.
  */
 class StoreChatAiOutcome
 {
@@ -60,7 +61,9 @@ class StoreChatAiOutcome
                 return ChatAiOutcome::create([$sessionColumn => $session->id, 'trigger_message_id' => $triggerId, ...$values]);
             }
 
-            if ($existing->outcome->rank() < $outcome->rank()) {
+            $staleWaiting = $existing->outcome === ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING && !DraftChatReply::freshAssistantDraftWaiting($session);
+
+            if (!$staleWaiting && $existing->outcome->rank() < $outcome->rank()) {
                 return $existing;
             }
 

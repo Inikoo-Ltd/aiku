@@ -508,6 +508,7 @@ use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
+use App\Actions\Masters\Competitor\RefreshCompetitorIntel;
 use App\Actions\Masters\Competitor\ReviewMasterAssetCompetitorProduct;
 use App\Actions\Masters\Competitor\StoreCompetitor;
 use App\Actions\Masters\Competitor\UpdateCompetitor;
@@ -1091,6 +1092,7 @@ Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::cl
 Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/dismiss', DismissMasterAssetPriceTip::class)->name('master_asset_price_tip.dismiss');
 Route::post('competitor', StoreCompetitor::class)->name('competitor.store');
 Route::patch('competitor/{competitor:id}', UpdateCompetitor::class)->name('competitor.update');
+Route::post('competitor/{competitor:id}/refresh-intel', RefreshCompetitorIntel::class)->name('competitor.refresh_intel');
 Route::patch('master-asset-competitor-product/{masterAssetCompetitorProduct:id}/review', ReviewMasterAssetCompetitorProduct::class)->name('master_asset_competitor_product.review');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');

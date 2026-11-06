@@ -18,7 +18,8 @@ use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Staff say whether the AI matched our product to the right competitor product.
+ * Staff say whether the AI matched our product to the right competitor product, and how many units
+ * their pack holds when the name does not say.
  */
 class ReviewMasterAssetCompetitorProduct extends OrgAction
 {
@@ -26,11 +27,17 @@ class ReviewMasterAssetCompetitorProduct extends OrgAction
 
     public function handle(MasterAssetCompetitorProduct $masterAssetCompetitorProduct, array $modelData, ?User $user = null): MasterAssetCompetitorProduct
     {
-        $masterAssetCompetitorProduct->update([
-            'status'              => $modelData['status'],
-            'reviewed_by_user_id' => $user?->id,
-            'reviewed_at'         => now(),
-        ]);
+        if (isset($modelData['competitor_units'])) {
+            $masterAssetCompetitorProduct->update(['competitor_units' => $modelData['competitor_units']]);
+        }
+
+        if (isset($modelData['status'])) {
+            $masterAssetCompetitorProduct->update([
+                'status'              => $modelData['status'],
+                'reviewed_by_user_id' => $user?->id,
+                'reviewed_at'         => now(),
+            ]);
+        }
 
         return $masterAssetCompetitorProduct;
     }
@@ -38,7 +45,8 @@ class ReviewMasterAssetCompetitorProduct extends OrgAction
     public function rules(): array
     {
         return [
-            'status' => ['required', Rule::enum(MasterAssetCompetitorProductStatusEnum::class)],
+            'status'           => ['required_without:competitor_units', Rule::enum(MasterAssetCompetitorProductStatusEnum::class)],
+            'competitor_units' => ['required_without:status', 'numeric', 'min:1', 'max:100000'],
         ];
     }
 
