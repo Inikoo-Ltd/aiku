@@ -4920,8 +4920,21 @@ describe('competitor prices, HELP-3605', function () {
 
         expect(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]))->toBe(0)
             ->and($this->competitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::LOGIN_FAILED)
-            ->and($this->competitor->last_error)->toBe('wrong login');
+            ->and($this->competitor->last_error)->toBe('Their website did not accept the email and password. Check them on Edit');
+
+        foreach (['no login form' => 'The login page has no email box', 'no password field' => 'The login page did not ask for a password', 'blocked' => 'The website asked to prove we are not a robot', 'something new' => 'Could not log in to their website'] as $loginError => $plain) {
+            $fakeBrowserAndAi(['login_error' => $loginError, 'cookies' => [], 'pages' => []], []);
+            \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+            expect($this->competitor->refresh()->last_error)->toStartWith($plain);
+        }
+
+        $fakeBrowserAndAi(['error' => 'Runtime.callFunctionOn timed out'], []);
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+        expect($this->competitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::ERROR)
+            ->and($this->competitor->last_error)->toBe('The browser could not read their website this time. It is tried again at the next read');
     });
+
+
     test('a competitor in another language is matched and searched with our names in that language', function () use ($fakeBrowserAndAi) {
         $spanish    = \App\Models\Helpers\Language::where('code', 'es')->firstOrFail();
         $ourName    = fn () => \App\Actions\Masters\Competitor\MatchCompetitorProducts::localNames($this->competitor->refresh(), [$this->competitorMasterAsset->id])[$this->competitorMasterAsset->id];

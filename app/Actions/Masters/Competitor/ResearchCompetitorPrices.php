@@ -70,7 +70,7 @@ class ResearchCompetitorPrices
         }
 
         $pages     = $result['pages'] ?? [];
-        $lastError = $result['error'] ?? $result['login_error'] ?? match (true) {
+        $lastError = $this->plainError($competitor, $result) ?? match (true) {
             Arr::last($pages)['blocked'] ?? false => __('The website asked to prove we are not a robot'),
             $searchBroken                         => __('Their website showed a page without the searched words. Search their website for any word, copy the link of the results page and put {query} where the word was'),
             default                               => null,
@@ -110,6 +110,30 @@ class ResearchCompetitorPrices
         $competitor->update(['number_products' => $competitor->products()->count()]);
 
         return $matches;
+    }
+
+    /**
+     * What staff read under the competitor's status: the browser's own wording ("no login form",
+     * "Runtime.callFunctionOn timed out") means nothing to them, so it goes to the log instead.
+     *
+     * @param  array<string, mixed>  $result
+     */
+    private function plainError(Competitor $competitor, array $result): ?string
+    {
+        if (isset($result['error'])) {
+            logger()->warning("Competitor $competitor->id search read failed: {$result['error']}");
+
+            return __('The browser could not read their website this time. It is tried again at the next read');
+        }
+
+        return match ($result['login_error'] ?? null) {
+            null               => null,
+            'no login form'    => __('The login page has no email box. Check the login page link on Edit'),
+            'no password field' => __('The login page did not ask for a password. Check the login page link on Edit'),
+            'wrong login'      => __('Their website did not accept the email and password. Check them on Edit'),
+            'blocked'          => __('The website asked to prove we are not a robot'),
+            default            => __('Could not log in to their website'),
+        };
     }
 
     private function alert(Competitor $competitor): void
