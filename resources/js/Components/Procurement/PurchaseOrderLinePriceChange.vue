@@ -16,7 +16,6 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
-import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
 
 type PriceQuery = {
@@ -70,8 +69,7 @@ const form = useForm<{ price: number | null; note: string | null }>({
 	note: null,
 })
 
-const onError = (errors: Record<string, string>) =>
-	notify({ title: ctrans("Something went wrong"), text: Object.values(errors ?? {})[0], type: "error" })
+const formError = computed(() => Object.values(form.errors)[0] as string | undefined)
 
 function openDialog(kind: "ask" | "adjust") {
 	form.reset()
@@ -95,7 +93,6 @@ function ask() {
 		.post(route(askRoute.name, askRoute.parameters), {
 			preserveScroll: true,
 			onSuccess: () => (dialog.value = null),
-			onError,
 		})
 }
 
@@ -115,7 +112,6 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 		.patch(route(answerRoute.name, answerRoute.parameters), {
 			preserveScroll: true,
 			onSuccess: () => (dialog.value = null),
-			onError,
 			onFinish: () => (answeringWith.value = null),
 		})
 }
@@ -178,6 +174,7 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 					</template>
 				</Button>
 			</div>
+			<p v-if="formError && !dialog" class="text-xs text-red-600">{{ formError }}</p>
 
 			<Button
 				v-if="item.askPriceRoute"
@@ -213,6 +210,7 @@ function answer(answerValue: "accepted" | "rejected" | "adjusted") {
 					<span class="text-xs text-gray-500">{{ ctrans("Note for the organisation (optional)") }}</span>
 					<Textarea v-model="form.note" rows="2" autoResize fluid :class="fieldFocusClass" />
 				</label>
+				<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>
 			</div>
 			<template #footer>
 				<Button type="tertiary" :label="ctrans('Cancel')" @click="dialog = null">

@@ -18,7 +18,6 @@ import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { getOrderingLevels, unitsPerOrderingLevel, type OrderingLevel } from "@/Composables/useOrderingLevel"
 import { useLocaleStore } from "@/Stores/locale"
-import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
 
 type QuantityQuery = {
@@ -75,8 +74,7 @@ const form = useForm<{ quantity: number | null; note: string | null }>({
 	note: null,
 })
 
-const onError = (errors: Record<string, string>) =>
-	notify({ title: ctrans("Something went wrong"), text: Object.values(errors ?? {})[0], type: "error" })
+const formError = computed(() => Object.values(form.errors)[0] as string | undefined)
 
 const startUnits = () => Number(isPending.value ? query.value?.quantity : props.item.quantity_ordered)
 
@@ -138,7 +136,6 @@ function ask() {
 		.post(route(askRoute.name, askRoute.parameters), {
 			preserveScroll: true,
 			onSuccess: () => (isDialogOpen.value = false),
-			onError,
 		})
 }
 
@@ -153,7 +150,6 @@ function answer(answerValue: "accepted" | "rejected") {
 		.transform(() => ({ answer: answerValue, quantity_ordered: query.value?.quantity }))
 		.patch(route(answerRoute.name, answerRoute.parameters), {
 			preserveScroll: true,
-			onError,
 			onFinish: () => (answeringWith.value = null),
 		})
 }
@@ -206,6 +202,7 @@ function answer(answerValue: "accepted" | "rejected") {
 					</template>
 				</Button>
 			</div>
+			<p v-if="formError && !isDialogOpen" class="text-xs text-red-600">{{ formError }}</p>
 
 			<Button
 				v-if="item.askQuantityRoute"
@@ -273,6 +270,7 @@ function answer(answerValue: "accepted" | "rejected") {
 					<span class="text-xs text-gray-500">{{ ctrans("Note for the organisation (optional)") }}</span>
 					<Textarea v-model="form.note" rows="2" autoResize fluid :class="fieldFocusClass" />
 				</label>
+				<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>
 			</div>
 			<template #footer>
 				<Button type="tertiary" :label="ctrans('Cancel')" @click="isDialogOpen = false">
