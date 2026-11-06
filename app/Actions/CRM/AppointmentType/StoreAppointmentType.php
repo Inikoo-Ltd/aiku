@@ -20,7 +20,7 @@ class StoreAppointmentType extends OrgAction
     public function handle(Shop $shop, array $modelData): AppointmentType
     {
         $availability = $this->pullAvailability($modelData);
-        $modelData    = $this->applyMeetingPlace($modelData);
+        $modelData    = $this->applyStartTimes($this->applyMeetingPlace($modelData));
 
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);

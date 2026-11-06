@@ -106,6 +106,7 @@ import AppointmentAvailability from '@/Components/Forms/Fields/AppointmentAvaila
 import AppointmentSlot from '@/Components/Forms/Fields/AppointmentSlot.vue'
 import AppointmentLocation from '@/Components/Forms/Fields/AppointmentLocation.vue'
 import AppointmentStaffSelect from '@/Components/Forms/Fields/AppointmentStaffSelect.vue'
+import AppointmentStartTimes from '@/Components/Forms/Fields/AppointmentStartTimes.vue'
 import EmployeeWorkingHours from '@/Components/Forms/Fields/EmployeeWorkingHours.vue'
 import InputWithWarning from '@/Components/Forms/Fields/InputWithWarning.vue'
 import Ratio from '@/Components/Forms/Fields/Ratio.vue'
@@ -245,6 +246,7 @@ export const componentsList: { [key: string]: Component } = {
     'appointment_slot': AppointmentSlot,
     'appointment_location': AppointmentLocation,
     'appointment_staff': AppointmentStaffSelect,
+    'appointment_start_times': AppointmentStartTimes,
     'employee-working-hours' : EmployeeWorkingHours,
     'ratio' : Ratio,
     'free_gift': FreeGift,
