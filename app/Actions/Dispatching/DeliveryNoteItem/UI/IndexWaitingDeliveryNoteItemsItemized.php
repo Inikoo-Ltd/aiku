@@ -57,6 +57,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
         $query->where('delivery_note_items.quantity_required', '>', 0);
 
         $query->orderByRaw('delivery_notes.is_premium_dispatch DESC NULLS LAST');
+        $query->orderByRaw('delivery_note_items.waiting_warehouse_released_at ASC NULLS LAST');
 
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select(array_merge(
@@ -64,6 +65,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                 $this->getDeliveryNoteItemPickingSelect(),
                 [
                     'delivery_note_items.notes',
+                    'delivery_note_items.waiting_warehouse_released_at',
                     'delivery_notes.id as delivery_note_id',
                     'delivery_notes.slug as delivery_note_slug',
                     'delivery_notes.reference as delivery_note_reference',
