@@ -117,9 +117,21 @@ const handleToggle = () => {
     persistSidebarState()
 }
 
-const enterMicro = () => {
-    layout.messagingSidebar.show = false
-    layout.messagingSidebar.micro = true
+const growSidebar = () => {
+    if (layout.messagingSidebar.micro) {
+        layout.messagingSidebar.micro = false
+    } else {
+        layout.messagingSidebar.show = true
+    }
+    persistSidebarState()
+}
+
+const shrinkSidebar = () => {
+    if (layout.messagingSidebar.show) {
+        layout.messagingSidebar.show = false
+    } else {
+        layout.messagingSidebar.micro = true
+    }
     persistSidebarState()
 }
 
@@ -443,22 +455,42 @@ onUnmounted(() => {
 <template>
     <div v-if="isMobile && layout.messagingSidebar.show" class="fixed inset-0 z-[21] bg-gray-900/30 md:hidden" aria-hidden="true" @click="handleToggle" />
     <div
-        class="flex flex-col fixed inset-y-0 right-0 h-full bg-[var(--chat-bg)] border-l border-[var(--chat-line)] z-[22] transition-all duration-300 ease-in-out"
+        class="group/rail flex flex-col fixed inset-y-0 right-0 h-full bg-[var(--chat-bg)] border-l border-[var(--chat-line)] z-[22] transition-all duration-300 ease-in-out"
         :class="[
             layout.messagingSidebar.show ? 'w-56' : 'w-6',
             layout.messagingSidebar.show ? 'md:w-56' : (layout.messagingSidebar.micro ? 'md:w-6' : 'md:w-12'),
         ]"
         id="messagingSidebar">
-        <!-- Toggle: collapse-expand MessagingSideBar -->
         <div
+            v-if="isMobile"
             @click="handleToggle"
-            class="absolute z-10 left-0 top-2/4 -translate-y-full -translate-x-2/3 lg:-translate-x-1/2 w-7 lg:w-5 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center cursor-pointer"
+            class="absolute z-10 left-0 top-2/4 -translate-y-full -translate-x-2/3 w-7 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center cursor-pointer"
             :title="layout.messagingSidebar.show ? 'Collapse the bar' : 'Expand the bar'">
             <FontAwesomeIcon
                 icon="far fa-chevron-left"
-                class="h-3 lg:h-[10px] leading-none transition-all duration-300 ease-in-out text-[var(--chat-text)]"
+                class="h-3 leading-none transition-all duration-300 ease-in-out text-[var(--chat-text)]"
                 fixed-width aria-hidden="true"
                 :class="layout.messagingSidebar.show ? 'rotate-180' : ''" />
+        </div>
+        <div v-else class="absolute z-10 left-0 top-2/4 -translate-y-full -translate-x-1/2 flex flex-col gap-y-1.5 opacity-0 transition-opacity duration-200 group-hover/rail:opacity-100 has-[:focus-visible]:opacity-100 [@media(hover:none)]:opacity-100">
+            <button
+                v-if="layout.messagingSidebar.show === false"
+                type="button"
+                data-rail="mode_grow"
+                class="w-5 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center"
+                :aria-label="ctrans('Make the bar wider')"
+                @click="growSidebar">
+                <FontAwesomeIcon icon="far fa-chevron-left" class="h-[10px] leading-none text-[var(--chat-text)]" fixed-width aria-hidden="true" />
+            </button>
+            <button
+                v-if="!layout.messagingSidebar.micro"
+                type="button"
+                data-rail="mode_shrink"
+                class="w-5 aspect-square border border-[var(--chat-muted)] rounded-full bg-[var(--chat-line)] flex justify-center items-center"
+                :aria-label="ctrans('Make the bar smaller')"
+                @click="shrinkSidebar">
+                <FontAwesomeIcon icon="far fa-chevron-right" class="h-[10px] leading-none text-[var(--chat-text)]" fixed-width aria-hidden="true" />
+            </button>
         </div>
 
         <!-- MICRO: super-thin strip with the counts; click to grow back to the rail -->
@@ -804,34 +836,6 @@ onUnmounted(() => {
         </div>
         </div>
 
-        <!-- Bottom-pinned: micro-view buttons -->
-        <div class="mt-auto shrink-0 flex flex-col pb-2">
-            <div class="w-full border-t border-[var(--chat-line)] pt-1 flex items-center gap-x-1" :class="layout.messagingSidebar.show ? 'flex-row justify-end pr-2' : 'flex-col gap-y-1'">
-                <button
-                    v-if="!layout.messagingSidebar.show"
-                    class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
-                    data-rail="mode_expand"
-                    v-tooltip="ctrans('Expand messaging bar')"
-                    @click="expandSidebar">
-                    <FontAwesomeIcon icon="fal fa-chevron-double-left" fixed-width aria-hidden="true" />
-                </button>
-                <button
-                    v-else
-                    class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
-                    data-rail="mode_collapse"
-                    v-tooltip="ctrans('Collapse messaging bar')"
-                    @click="handleToggle">
-                    <FontAwesomeIcon icon="far fa-chevron-left" class="rotate-180" fixed-width aria-hidden="true" />
-                </button>
-                <button
-                    class="h-7 w-7 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]"
-                    data-rail="mode_micro"
-                    v-tooltip="ctrans('Hide messaging bar')"
-                    @click="enterMicro">
-                    <FontAwesomeIcon icon="fal fa-chevron-double-right" fixed-width aria-hidden="true" />
-                </button>
-            </div>
-        </div>
         </template>
     </div>
 
