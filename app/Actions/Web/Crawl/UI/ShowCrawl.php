@@ -11,10 +11,12 @@ namespace App\Actions\Web\Crawl\UI;
 use App\Actions\OrgAction;
 use App\Actions\Web\Crawl\AuditWebsite;
 use App\Enums\Web\Crawl\CrawlIssueSeverityEnum;
+use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTabEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,8 +31,6 @@ class ShowCrawl extends OrgAction
     use WithSiteCrawlerAuthorisation;
 
     private Crawl $crawl;
-
-    private const int DEFAULT_PER_PAGE = 100;
 
     private CrawlTabEnum $crawlTab;
 
@@ -53,14 +53,9 @@ class ShowCrawl extends OrgAction
 
     public function htmlResponse(Crawl $crawl, ActionRequest $request): Response
     {
-        $filter   = $request->query('filter');
+        $filter   = $request->query('check');
         $filter   = is_string($filter) && $filter !== '' ? $filter : null;
-        $search   = is_string($request->query('search')) ? $request->query('search') : null;
-        $sort     = is_string($request->query('sort')) ? $request->query('sort') : null;
-        $desc     = $request->boolean('desc');
         $segment  = is_string($request->query('segment')) && array_key_exists($request->query('segment'), GetCrawlTabRows::segments()) ? $request->query('segment') : null;
-        $page     = max(1, (int) $request->query('page', 1));
-        $perPage  = (int) $request->query('per_page', self::DEFAULT_PER_PAGE);
         $rows     = GetCrawlTabRows::make();
         $website  = $crawl->website;
         $title    = $crawl->name ?: $website->domain;
@@ -89,19 +84,12 @@ class ShowCrawl extends OrgAction
                 'severities'  => CrawlIssueSeverityEnum::labels(),
                 'segments'    => GetCrawlTabRows::segments(),
                 'query'       => [
-                    'tab'      => $this->crawlTab->value,
-                    'filter'   => $filter,
-                    'search'   => $search,
-                    'sort'     => $sort,
-                    'desc'     => $desc,
-                    'segment'  => $segment,
-                    'page'     => $page,
-                    'per_page' => $perPage,
+                    'tab'     => $this->crawlTab->value,
+                    'filter'  => $filter,
+                    'segment' => $segment,
                 ],
-                'table'       => fn () => [
-                    'columns' => $rows->columns($this->crawlTab, $filter, $crawl),
-                    ...$rows->handle($crawl, $this->crawlTab, $filter, $search, $sort, $desc, $page, $perPage, $segment),
-                ],
+                'columns'     => $rows->columns($this->crawlTab, $filter, $crawl),
+                'data'        => JsonResource::collection($rows->handle($crawl, $this->crawlTab, $filter, $segment)),
                 'routes'      => [
                     'self'    => ['name' => 'grp.websites.crawler.show', 'parameters' => ['crawl' => $crawl->id]],
                     'details' => ['name' => 'grp.json.crawl.url_details', 'parameters' => ['crawl' => $crawl->id]],
@@ -113,7 +101,16 @@ class ShowCrawl extends OrgAction
                     'index'   => ['name' => 'grp.websites.crawler.index', 'parameters' => ['website' => $website->slug]],
                 ],
             ]
-        );
+        )->table($rows->tableStructure($crawl, $this->crawlTab, $filter, $this->emptyText($crawl, $filter)));
+    }
+
+    private function emptyText(Crawl $crawl, ?string $filter): string
+    {
+        if ($crawl->state !== CrawlStateEnum::FINISH && $filter !== null && CrawlIssueTypeEnum::tryFrom($filter) !== null) {
+            return __('Issues are checked when the crawl finishes.');
+        }
+
+        return $filter ? __('No URL has this. Nothing to fix here.') : __('The crawl found no URL for this tab.');
     }
 
     private function crawlSummary(Crawl $crawl, bool $canEdit): array

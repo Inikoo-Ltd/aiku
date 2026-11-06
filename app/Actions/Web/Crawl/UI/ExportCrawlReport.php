@@ -14,6 +14,7 @@ use App\Enums\Web\Crawl\CrawlTabEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Exports\Web\Sheets\SiteAuditTableSheet;
 use App\Models\Web\Crawl;
+use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -53,15 +54,64 @@ class ExportCrawlReport extends OrgAction
         );
     }
 
+    private const int LOOKUP_BATCH = 1000;
+
+    private const array PAGE_COLUMNS = ['url', 'url_hash', 'status_code', 'redirect_to', 'canonical', 'inlinks'];
+
     /**
-     * @return Collection<string, object>
+     * Only the pages that start a chain, plus the targets their chains reach, fetched a level at a
+     * time, so a crawl of any size never loads every page.
+     *
+     * @return array{0: Collection<string, object>, 1: Collection<string, object>}
      */
-    private function pages(Crawl $crawl): Collection
+    private function chainPages(Crawl $crawl, Closure $startsFilter, callable $next): array
     {
-        return DB::table('crawl_pages')
+        $starts = DB::table('crawl_pages')
             ->where('crawl_id', $crawl->id)
-            ->get(['url', 'url_hash', 'status_code', 'redirect_to', 'canonical', 'inlinks'])
+            ->where($startsFilter)
+            ->get(self::PAGE_COLUMNS)
             ->keyBy('url_hash');
+
+        $known    = $starts->all();
+        $asked    = [];
+        $frontier = $starts;
+
+        for ($hop = 0; $hop < self::MAX_HOPS && $frontier->isNotEmpty(); $hop++) {
+            $wanted = [];
+
+            foreach ($frontier as $page) {
+                $nextUrl = $next($page);
+
+                if ($nextUrl !== null && !isset($known[md5($nextUrl)]) && !isset($asked[md5($nextUrl)])) {
+                    $wanted[md5($nextUrl)] = true;
+                }
+            }
+
+            $asked   += $wanted;
+            $fetched  = collect();
+
+            foreach (array_chunk(array_keys($wanted), self::LOOKUP_BATCH) as $hashes) {
+                $fetched = $fetched->concat(
+                    DB::table('crawl_pages')->where('crawl_id', $crawl->id)->whereIn('url_hash', $hashes)->get(self::PAGE_COLUMNS)
+                );
+            }
+
+            $fetched  = $fetched->keyBy('url_hash');
+            $known   += $fetched->all();
+            $frontier = $fetched;
+        }
+
+        return [$starts, collect($known)];
+    }
+
+    private function redirectTarget(object $page): ?string
+    {
+        return $page->status_code >= 300 && $page->status_code < 400 ? $page->redirect_to : null;
+    }
+
+    private function canonicalTarget(object $page): ?string
+    {
+        return $page->canonical !== null && $page->canonical !== $page->url ? $page->canonical : null;
     }
 
     /**
@@ -69,15 +119,11 @@ class ExportCrawlReport extends OrgAction
      */
     private function redirectChains(Crawl $crawl): array
     {
-        $pages = $this->pages($crawl);
-        $rows  = [];
+        [$starts, $pages] = $this->chainPages($crawl, fn ($query) => $query->where('status_code', '>=', 300)->where('status_code', '<', 400), $this->redirectTarget(...));
+        $rows             = [];
 
-        foreach ($pages as $page) {
-            if ($page->status_code < 300 || $page->status_code >= 400) {
-                continue;
-            }
-
-            [$chain, $final, $isLoop] = $this->follow($pages, $page, fn (object $current) => $current->status_code >= 300 && $current->status_code < 400 ? $current->redirect_to : null);
+        foreach ($starts as $page) {
+            [$chain, $final, $isLoop] = $this->follow($pages, $page, $this->redirectTarget(...));
 
             $rows[] = [$page->url, count($chain) - 1, implode(' > ', $chain), $final->url ?? end($chain), $final->status_code ?? null, $isLoop ? 'Yes' : 'No', (int) $page->inlinks];
         }
@@ -92,16 +138,11 @@ class ExportCrawlReport extends OrgAction
      */
     private function canonicalChains(Crawl $crawl): array
     {
-        $pages        = $this->pages($crawl);
-        $rows         = [];
-        $canonicalOf  = fn (object $current) => $current->canonical !== null && $current->canonical !== $current->url ? $current->canonical : null;
+        [$starts, $pages] = $this->chainPages($crawl, fn ($query) => $query->whereNotNull('canonical')->whereColumn('canonical', '!=', 'url'), $this->canonicalTarget(...));
+        $rows             = [];
 
-        foreach ($pages as $page) {
-            if ($canonicalOf($page) === null) {
-                continue;
-            }
-
-            [$chain, $final, $isLoop] = $this->follow($pages, $page, $canonicalOf);
+        foreach ($starts as $page) {
+            [$chain, $final, $isLoop] = $this->follow($pages, $page, $this->canonicalTarget(...));
 
             if (count($chain) > 2 || $isLoop) {
                 $rows[] = [$page->url, count($chain) - 1, implode(' > ', $chain), $final->url ?? end($chain), $final->status_code ?? null, $isLoop ? 'Yes' : 'No'];

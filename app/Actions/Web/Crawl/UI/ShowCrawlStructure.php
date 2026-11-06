@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Enums\Web\Crawl\CrawlIssueSeverityEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,6 +32,8 @@ class ShowCrawlStructure extends OrgAction
 
     private const int DEPTH_BUCKETS = 10;
 
+    private const string URL_PATH_PATTERN = '^[A-Za-z][A-Za-z0-9+.-]*://[^/?#]*([^?#]*)';
+
     private Crawl $crawl;
 
     public function authorize(ActionRequest $request): bool
@@ -43,48 +46,44 @@ class ShowCrawlStructure extends OrgAction
      */
     public function handle(Crawl $crawl): array
     {
-        $pages = DB::table('crawl_pages')
+        $depthRows = DB::table('crawl_pages')
             ->where('crawl_id', $crawl->id)
             ->where('status_code', 200)
             ->where('content_type', 'ilike', '%html%')
-            ->get(['id', 'url', 'link_depth', 'is_indexable', 'is_in_sitemap']);
-
-        $pagesWithErrors = DB::table('crawl_issues')
-            ->where('crawl_id', $crawl->id)
-            ->where('severity', CrawlIssueSeverityEnum::ERROR->value)
-            ->distinct()
-            ->pluck('crawl_page_id')
-            ->flip();
+            ->groupByRaw('1')
+            ->selectRaw('case when link_depth is null then -1 else least(link_depth, ?) end as bucket, count(*) as pages, coalesce(max(link_depth), 0) as deepest', [self::DEPTH_BUCKETS])
+            ->get();
 
         return [
-            'pages'  => $pages->count(),
-            'depths' => $this->depths($pages),
-            'tree'   => $this->tree($pages, $pagesWithErrors),
+            'pages'  => (int) $depthRows->sum('pages'),
+            'depths' => $this->depths($depthRows->pluck('pages', 'bucket'), (int) $depthRows->max('deepest')),
+            'tree'   => $this->tree($crawl),
         ];
     }
 
     /**
+     * @param  Collection<int, int|string>  $counts
+     *
      * @return array<int, array{label: string, depth: int|null, pages: int}>
      */
-    private function depths($pages): array
+    private function depths(Collection $counts, int $deepest): array
     {
-        $counts = $pages->groupBy(fn ($page) => $page->link_depth === null ? 'none' : min((int) $page->link_depth, self::DEPTH_BUCKETS))->map->count();
-        $rows   = [];
+        $rows = [];
 
-        for ($depth = 0; $depth <= min(self::DEPTH_BUCKETS, (int) $pages->max('link_depth')); $depth++) {
+        for ($depth = 0; $depth <= min(self::DEPTH_BUCKETS, $deepest); $depth++) {
             $rows[] = [
                 'label' => match (true) {
-                    $depth === 0                  => __('Home page'),
+                    $depth === 0                   => __('Home page'),
                     $depth === self::DEPTH_BUCKETS => __(':clicks or more clicks', ['clicks' => $depth]),
-                    default                       => trans_choice(':clicks click|:clicks clicks', $depth, ['clicks' => $depth]),
+                    default                        => trans_choice(':clicks click|:clicks clicks', $depth, ['clicks' => $depth]),
                 },
                 'depth' => $depth,
                 'pages' => (int) $counts->get($depth, 0),
             ];
         }
 
-        if ($counts->has('none')) {
-            $rows[] = ['label' => __('Not reached by links'), 'depth' => null, 'pages' => (int) $counts->get('none')];
+        if ($counts->has(-1)) {
+            $rows[] = ['label' => __('Not reached by links'), 'depth' => null, 'pages' => (int) $counts->get(-1)];
         }
 
         return $rows;
@@ -93,55 +92,59 @@ class ShowCrawlStructure extends OrgAction
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function tree($pages, $pagesWithErrors): array
+    private function tree(Crawl $crawl): array
     {
-        $root = ['children' => []];
+        $rows = DB::select(
+            <<<'SQL'
+            with p as (
+                select array_remove(string_to_array(coalesce(substring(cp.url from ?), ''), '/'), '') as segs,
+                    cp.is_indexable as indexable,
+                    exists (select 1 from crawl_issues ci where ci.crawl_page_id = cp.id and ci.severity = ?) as has_error
+                from crawl_pages cp
+                where cp.crawl_id = ? and cp.status_code = 200 and cp.content_type ilike '%html%'
+            ), prefixes as (
+                select l as lvl, segs[1:l] as prefix, indexable, has_error
+                from p cross join generate_series(1, ?) as l
+                where cardinality(segs) >= l
+            ), folders as (
+                select lvl, array_to_string(prefix[1:lvl - 1], '/') as parent, prefix[lvl] as name, array_to_string(prefix, '/') as path,
+                    count(*) as pages, count(*) filter (where indexable) as indexable, count(*) filter (where has_error) as errors
+                from prefixes
+                group by lvl, prefix
+            ), ranked as (
+                select *, row_number() over (partition by lvl, parent order by pages desc, name collate "C") as rn from folders
+            )
+            select lvl, parent, name, path, pages, indexable, errors, 0 as hidden, rn from ranked where rn <= ?
+            union all
+            select lvl, parent, null, null, sum(pages), sum(indexable), sum(errors), count(*), ? from ranked where rn > ? group by lvl, parent
+            order by lvl, parent, rn
+            SQL,
+            [self::URL_PATH_PATTERN, CrawlIssueSeverityEnum::ERROR->value, $crawl->id, self::MAX_TREE_LEVELS, self::CHILDREN_SHOWN, self::CHILDREN_SHOWN + 1, self::CHILDREN_SHOWN]
+        );
 
-        foreach ($pages as $page) {
-            $segments = array_values(array_filter(explode('/', (string) parse_url($page->url, PHP_URL_PATH)), fn (string $segment) => $segment !== ''));
-            $node     = &$root;
-            $path     = '';
-
-            foreach (array_slice($segments, 0, self::MAX_TREE_LEVELS) as $segment) {
-                $path .= '/'.$segment;
-
-                $node['children'][$segment] ??= ['path' => $path, 'name' => $segment, 'pages' => 0, 'indexable' => 0, 'errors' => 0, 'children' => []];
-                $node = &$node['children'][$segment];
-
-                $node['pages']++;
-                $node['indexable'] += $page->is_indexable ? 1 : 0;
-                $node['errors']    += $pagesWithErrors->has($page->id) ? 1 : 0;
-            }
-
-            unset($node);
+        $byParent = [];
+        foreach ($rows as $row) {
+            $byParent[$row->parent][] = $row;
         }
 
-        return $this->sorted($root['children']);
+        return $this->branch($byParent, '');
     }
 
     /**
-     * @param  array<string, array<string, mixed>>  $children
+     * @param  array<string, array<int, object>>  $byParent
      *
      * @return array<int, array<string, mixed>>
      */
-    private function sorted(array $children): array
+    private function branch(array $byParent, string $parent): array
     {
-        uasort($children, fn (array $a, array $b) => [$b['pages'], $a['name']] <=> [$a['pages'], $b['name']]);
-
-        $shown  = array_slice($children, 0, self::CHILDREN_SHOWN);
-        $hidden = array_slice($children, self::CHILDREN_SHOWN);
-
-        return [
-            ...array_values(array_map(fn (array $child) => [...$child, 'children' => $this->sorted($child['children'])], $shown)),
-            ...($hidden === [] ? [] : [[
-                'path'      => null,
-                'name'      => __(':count more folders', ['count' => count($hidden)]),
-                'pages'     => array_sum(array_column($hidden, 'pages')),
-                'indexable' => array_sum(array_column($hidden, 'indexable')),
-                'errors'    => array_sum(array_column($hidden, 'errors')),
-                'children'  => [],
-            ]]),
-        ];
+        return array_map(fn (object $row) => [
+            'path'      => $row->path === null ? null : '/'.$row->path,
+            'name'      => $row->path === null ? __(':count more folders', ['count' => $row->hidden]) : $row->name,
+            'pages'     => (int) $row->pages,
+            'indexable' => (int) $row->indexable,
+            'errors'    => (int) $row->errors,
+            'children'  => $row->path === null ? [] : $this->branch($byParent, $row->path),
+        ], $byParent[$parent] ?? []);
     }
 
     public function asController(Crawl $crawl, ActionRequest $request): Crawl

@@ -9,14 +9,11 @@ import { computed, onBeforeUnmount, ref, watch } from "vue"
 import { Head, Link, router, usePoll } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import Select from "primevue/select"
-import InputText from "primevue/inputtext"
-import IconField from "primevue/iconfield"
-import InputIcon from "primevue/inputicon"
 import ProgressBar from "primevue/progressbar"
 import Menu from "primevue/menu"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import SiteCrawlerTable, { CrawlTableColumn } from "@/Components/Seo/SiteCrawlerTable.vue"
+import TableCrawlPages, { CrawlTableColumn } from "@/Components/Tables/Grp/Org/Web/TableCrawlPages.vue"
 import SiteCrawlerUrlDetails from "@/Components/Seo/SiteCrawlerUrlDetails.vue"
 import SiteCrawlerIssuesPanel from "@/Components/Seo/SiteCrawlerIssuesPanel.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -26,7 +23,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faFileExcel, faSearch, faStopCircle, faFileChartLine, faExchangeAlt, faSitemap, faInfoCircle, faSpider, faListUl } from "@fal"
+import { faFileExcel, faStopCircle, faFileChartLine, faExchangeAlt, faSitemap, faInfoCircle, faSpider, faListUl } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 
 library.add(faSpider)
@@ -76,12 +73,7 @@ type CrawlSummary = {
 type Query = {
     tab: string
     filter: string | null
-    search: string | null
-    sort: string | null
-    desc: boolean
     segment: string | null
-    page: number
-    per_page: number
 }
 
 const props = defineProps<{
@@ -92,13 +84,8 @@ const props = defineProps<{
     severities: Record<Severity, string>
     segments: Record<string, string>
     query: Query
-    table: {
-        columns: CrawlTableColumn[]
-        rows: Array<Record<string, any>>
-        total: number
-        page: number
-        per_page: number
-    }
+    columns: CrawlTableColumn[]
+    data: object
     routes: {
         self: routeType
         details: routeType
@@ -134,9 +121,7 @@ const finishReasons: Record<string, string> = {
     failed: ctrans("Failed"),
 }
 
-const isLoading = ref(false)
 const selectedUrlHash = ref<string | null>(null)
-const search = ref(props.query.search ?? "")
 const isShowingHowToFix = ref(false)
 
 const ISSUES_PANEL_KEY = "site-crawler.issues-panel"
@@ -155,19 +140,11 @@ const visit = (changes: Partial<Query>) => {
 
     router.get(route(props.routes.self.name, props.routes.self.parameters), {
         tab: query.tab,
-        filter: query.filter || undefined,
-        search: query.search || undefined,
-        sort: query.sort || undefined,
-        desc: query.desc ? 1 : undefined,
+        check: query.filter || undefined,
         segment: query.segment || undefined,
-        page: query.page > 1 ? query.page : undefined,
-        per_page: query.per_page,
     }, {
         preserveState: true,
         preserveScroll: true,
-        only: ["table", "query"],
-        onStart: () => isLoading.value = true,
-        onFinish: () => isLoading.value = false,
     })
 }
 
@@ -188,10 +165,9 @@ const open = (tabKey: string, filterKey: string | null = null) => {
     }
 
     selectedUrlHash.value = null
-    search.value = ""
     isShowingEmptyFilters.value = false
     isShowingHowToFix.value = false
-    visit({ tab: tabKey, filter: filterKey, search: null, sort: null, desc: false, page: 1 })
+    visit({ tab: tabKey, filter: filterKey })
 }
 
 const tabOptions = computed(() => props.tabs.map((tab) => ({ key: tab.key, label: tab.issues ? `${tab.label} (${locale.number(tab.issues)})` : tab.label })))
@@ -207,19 +183,6 @@ const segmentOptions = computed(() => [
 ])
 
 const isPageSource = computed(() => !["external", "images"].includes(props.query.tab) && props.query.filter !== "blocked_by_robots")
-
-let searchTimer: ReturnType<typeof setTimeout> | undefined
-
-watch(search, (value) => {
-    clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => {
-        if ((props.query.search ?? "") !== value) {
-            visit({ search: value || null, page: 1 })
-        }
-    }, 400)
-})
-
-const sortBy = (key: string) => visit({ sort: key, desc: props.query.sort === key ? !props.query.desc : ["inlinks", "word_count", "response_ms", "bytes"].includes(key), page: 1 })
 
 const exportHref = computed(() => route(props.routes.export.name, {
     ...(props.routes.export.parameters as object),
@@ -240,7 +203,7 @@ const reportItems = [
     { label: ctrans("Canonical chains"), command: () => downloadReport("canonical_chains") },
 ]
 
-const { start: startPolling, stop: stopPolling } = usePoll(5000, { only: ["crawl", "tabs", "table"] }, { autoStart: false })
+const { start: startPolling, stop: stopPolling } = usePoll(5000, { only: ["crawl", "tabs", "data"] }, { autoStart: false })
 
 watch(() => props.crawl.is_running, (isRunning) => isRunning ? startPolling() : stopPolling(), { immediate: true })
 
@@ -298,18 +261,6 @@ const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] focus:!border-[
 
 const compactSelectPt = { root: { class: "!h-8" }, label: { class: "!py-1 !text-xs" } }
 
-const tableEmptyText = computed(() => {
-    if (props.query.search) {
-        return ctrans("No address here contains \":search\".", { search: props.query.search })
-    }
-
-    if (props.crawl.is_running && selectedFilter.value?.severity) {
-        return ctrans("Issues are checked when the crawl finishes.")
-    }
-
-    return selectedFilter.value ? ctrans("No URL has this. Nothing to fix here.") : ctrans("The crawl found no URL for this tab.")
-})
-
 const workbench = ref<HTMLElement | null>(null)
 const paneHeight = ref(280)
 const minPaneHeight = 140
@@ -351,7 +302,6 @@ const onResizerKey = (event: KeyboardEvent) => {
 
 onBeforeUnmount(() => {
     stopDrag()
-    clearTimeout(searchTimer)
 })
 </script>
 
@@ -503,12 +453,8 @@ onBeforeUnmount(() => {
                             :class="fieldFocusClass"
                             :pt="compactSelectPt"
                             class="w-40"
-                            @update:modelValue="(segment) => visit({ segment, page: 1 })"
+                            @update:modelValue="(segment) => visit({ segment })"
                         />
-                        <IconField class="w-56">
-                            <InputIcon><FontAwesomeIcon :icon="faSearch" class="text-gray-500" aria-hidden="true" /></InputIcon>
-                            <InputText v-model="search" :placeholder="ctrans('Search address')" :aria-label="ctrans('Search address')" class="!h-8 !py-1 !text-xs" :class="fieldFocusClass" fluid />
-                        </IconField>
                         <button
                             type="button"
                             class="hidden h-8 cursor-pointer items-center gap-1.5 rounded border px-2 text-xs transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--app-accent)] xl:flex"
@@ -528,23 +474,17 @@ onBeforeUnmount(() => {
                     <p><span class="font-semibold text-gray-900">{{ ctrans("How to fix") }}.</span> {{ selectedFilter.how_to_fix }}</p>
                 </div>
 
-                <SiteCrawlerTable
-                    :columns="table.columns"
-                    :rows="table.rows"
-                    :total="table.total"
-                    :page="table.page"
-                    :perPage="table.per_page"
-                    :sort="query.sort"
-                    :desc="query.desc"
-                    :isLoading="isLoading"
-                    :selectedHash="selectedUrlHash"
-                    :filter="query.filter"
-                    :websiteHost="websiteHost"
-                    :emptyText="tableEmptyText"
-                    @sort="sortBy"
-                    @page="(page, perPage) => visit({ page, per_page: perPage })"
-                    @select="(urlHash) => selectedUrlHash = urlHash"
-                />
+                <div class="min-h-0 flex-1 overflow-auto">
+                    <TableCrawlPages
+                        :key="`${query.tab}|${query.filter}|${query.segment}`"
+                        :data="data"
+                        :columns="columns"
+                        :selectedHash="selectedUrlHash"
+                        :filter="query.filter"
+                        :websiteHost="websiteHost"
+                        @select="(urlHash) => selectedUrlHash = urlHash"
+                    />
+                </div>
 
                 <template v-if="selectedUrlHash">
                     <div

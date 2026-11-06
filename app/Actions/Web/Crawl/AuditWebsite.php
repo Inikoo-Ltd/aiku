@@ -92,6 +92,8 @@ class AuditWebsite implements ShouldBeUnique
 
     private const int ANCHOR_MAX_LENGTH = 500;
 
+    private const int LINKS_STORED_PER_PAGE = 500;
+
     private const string TRACKING_PARAMETER_PATTERN = '/(^|&)(utm_[a-z]+|gclid|fbclid|msclkid|mc_cid|mc_eid|_ga)=/i';
 
     public const int CONCURRENT_FETCH_BUDGET = 8;
@@ -704,7 +706,8 @@ class AuditWebsite implements ShouldBeUnique
 
     /**
      * Every link, image, canonical, hreflang and pagination URL on the page, once per target and
-     * kind, for the inlinks and outlinks of each URL.
+     * kind, for the inlinks and outlinks of each URL. A page keeps at most LINKS_STORED_PER_PAGE of
+     * them, the head ones (canonical, hreflang, pagination) first.
      */
     private function collectLinks(string $url, AuditedHtml $html, ?string $canonical): void
     {
@@ -753,6 +756,11 @@ class AuditWebsite implements ShouldBeUnique
 
         $add($html->paginationNext ? $this->resolveUrl($url, $html->paginationNext) : null, CrawlLinkKindEnum::NEXT, null, CrawlLinkPositionEnum::HEAD->value, false);
         $add($html->paginationPrev ? $this->resolveUrl($url, $html->paginationPrev) : null, CrawlLinkKindEnum::PREV, null, CrawlLinkPositionEnum::HEAD->value, false);
+
+        if (count($links) > self::LINKS_STORED_PER_PAGE) {
+            $headLinks = array_filter($links, fn (array $link) => $link['position'] === CrawlLinkPositionEnum::HEAD->value);
+            $links     = $headLinks + array_slice(array_diff_key($links, $headLinks), 0, max(0, self::LINKS_STORED_PER_PAGE - count($headLinks)), true);
+        }
 
         array_push($this->pendingLinks, ...array_values($links));
     }
