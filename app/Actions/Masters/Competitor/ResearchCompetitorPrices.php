@@ -56,15 +56,17 @@ class ResearchCompetitorPrices
         }
 
         $masterAssets = MasterAsset::whereIn('id', $masterAssetIds)->get()->values();
-        $search       = fn () => $this->browse($competitor, $masterAssets->map(fn (MasterAsset $masterAsset) => static::searchUrl($competitor, $masterAsset))->all());
+        $localNames   = MatchCompetitorProducts::localNames($competitor, $masterAssetIds);
+        $searchWords  = $masterAssets->map(fn (MasterAsset $masterAsset) => $localNames[$masterAsset->id] ?? $masterAsset->name)->all();
+        $search       = fn () => $this->browse($competitor, array_map(fn (string $words) => static::searchUrl($competitor, $words), $searchWords));
 
         $result       = $search();
-        $searchBroken = static::searchIsBroken($result['pages'] ?? [], $masterAssets->pluck('name')->all());
+        $searchBroken = static::searchIsBroken($result['pages'] ?? [], $searchWords);
         $publishedUrl = $searchBroken ? $this->publishedSearchUrl($competitor, $result['pages'] ?? []) : null;
         if ($publishedUrl && $publishedUrl !== $competitor->search_url) {
             $competitor->update(['search_url' => $publishedUrl]);
             $result       = $search();
-            $searchBroken = static::searchIsBroken($result['pages'] ?? [], $masterAssets->pluck('name')->all());
+            $searchBroken = static::searchIsBroken($result['pages'] ?? [], $searchWords);
         }
 
         $pages     = $result['pages'] ?? [];
@@ -99,8 +101,8 @@ class ResearchCompetitorPrices
                 continue;
             }
 
-            foreach (static::candidates($this->ask($competitor, $masterAssets[$index], $page), $page) as $candidate) {
-                $this->save($competitor, $masterAssets[$index], $candidate);
+            foreach (static::candidates($this->ask($competitor, $masterAssets[$index], $searchWords[$index], $page), $page) as $candidate) {
+                $this->save($competitor, $masterAssets[$index], $searchWords[$index], $candidate);
                 $matches++;
             }
         }
@@ -144,7 +146,8 @@ class ResearchCompetitorPrices
     /**
      * A search link that does not search lands every product on the same page without the searched words,
      * like a results page that dropped the query. A page that keeps a searched word in its link or its text
-     * searched; one batch where none does means the link is wrong.
+     * searched; one batch where none does means the link is wrong. A page the website answers with "not found"
+     * did not search, whatever its own address holds: a link missing its "?" (/searchq=word) keeps the word in the address.
      *
      * @param  array<int, array>  $pages
      * @param  array<int, string>  $searchedNames
@@ -154,6 +157,10 @@ class ResearchCompetitorPrices
         $read = collect($pages)->filter(fn ($page) => filled($page['final_url'] ?? null) && filled($page['text'] ?? null) && !($page['blocked'] ?? false));
 
         return $read->isNotEmpty() && $read->every(function (array $page, int $index) use ($searchedNames) {
+            if (in_array($page['status'] ?? null, [404, 410], true)) {
+                return true;
+            }
+
             $word = collect(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($searchedNames[$index] ?? '')))->first(fn ($word) => mb_strlen($word) >= 4);
 
             return $word && !str_contains(mb_strtolower(urldecode($page['final_url'])), $word) && !str_contains(mb_strtolower($page['text']), $word);
@@ -227,9 +234,12 @@ class ResearchCompetitorPrices
         return $found;
     }
 
-    public static function searchUrl(Competitor $competitor, MasterAsset $masterAsset): string
+    /**
+     * Their search link for our product, searched with our name in their language (see MatchCompetitorProducts::localNames).
+     */
+    public static function searchUrl(Competitor $competitor, string $searchWords): string
     {
-        return str_replace('{query}', urlencode($masterAsset->name), $competitor->search_url);
+        return str_replace('{query}', urlencode($searchWords), $competitor->search_url);
     }
 
     /**
@@ -255,13 +265,14 @@ class ResearchCompetitorPrices
         return json_decode($process->output(), true) ?: ['error' => trim($process->errorOutput()) ?: __('The browser did not answer')];
     }
 
-    private function ask(Competitor $competitor, MasterAsset $masterAsset, array $page): ?string
+    private function ask(Competitor $competitor, MasterAsset $masterAsset, string $searchWords, array $page): ?string
     {
-        $links = collect($page['links'])->map(fn ($link) => $link['href'].' '.$link['text'])->implode("\n");
+        $links        = collect($page['links'])->map(fn ($link) => $link['href'].' '.$link['text'])->implode("\n");
+        $theirLanguage = $searchWords !== $masterAsset->name ? "\nname in their language: $searchWords" : '';
 
         $prompt = <<<PROMPT
 We sell this product to retailers:
-name: {$masterAsset->name}
+name: {$masterAsset->name}{$theirLanguage}
 units per pack: {$masterAsset->units}
 barcode: {$masterAsset->barcode}
 
@@ -311,10 +322,10 @@ PROMPT;
             ->all();
     }
 
-    private function save(Competitor $competitor, MasterAsset $masterAsset, array $candidate): void
+    private function save(Competitor $competitor, MasterAsset $masterAsset, string $searchWords, array $candidate): void
     {
         $competitorProduct = CompetitorProduct::updateOrCreate(
-            ['competitor_id' => $competitor->id, 'code' => $url = static::withoutSearchWords($candidate['url'], $masterAsset->name)],
+            ['competitor_id' => $competitor->id, 'code' => $url = static::withoutSearchWords($candidate['url'], $searchWords)],
             Arr::only($candidate, ['name', 'price', 'units', 'minimum_order']) + ['url' => $url, 'fetched_at' => now()]
         );
 

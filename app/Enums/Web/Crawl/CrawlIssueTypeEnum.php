@@ -10,6 +10,9 @@ namespace App\Enums\Web\Crawl;
 
 use App\Actions\Web\Crawl\AuditWebsite;
 use App\Enums\EnumHelperTrait;
+use App\Actions\Web\Crawl\EnrichCrawlPages;
+use App\Actions\Web\WebVital\UI\IndexWebpagesPageSpeed;
+use App\Services\SiteAudit\SerpPixelWidth;
 
 enum CrawlIssueTypeEnum: string
 {
@@ -93,6 +96,58 @@ enum CrawlIssueTypeEnum: string
     case PAGINATION_TO_BROKEN        = 'pagination_to_broken';
     case PAGINATION_NOT_LINKED       = 'pagination_not_linked';
     case PAGINATION_LOOP             = 'pagination_loop';
+    case TITLE_OVER_PIXELS           = 'title_over_pixels';
+    case META_DESCRIPTION_OVER_PIXELS = 'meta_description_over_pixels';
+    case H1_TOO_LONG                 = 'h1_too_long';
+    case H1_NOT_FIRST_HEADING        = 'h1_not_first_heading';
+    case ALT_TEXT_IN_H1              = 'alt_text_in_h1';
+    case H2_TOO_LONG                 = 'h2_too_long';
+    case DUPLICATE_H2                = 'duplicate_h2';
+    case HEADING_LEVEL_SKIPPED       = 'heading_level_skipped';
+    case ALT_TEXT_TOO_LONG           = 'alt_text_too_long';
+    case READABILITY_DIFFICULT       = 'readability_difficult';
+    case READABILITY_VERY_DIFFICULT  = 'readability_very_difficult';
+    case CANONICAL_RELATIVE          = 'canonical_relative';
+    case CANONICAL_WITH_FRAGMENT     = 'canonical_with_fragment';
+    case CANONICAL_UNLINKED          = 'canonical_unlinked';
+    case HREFLANG_MISSING_X_DEFAULT  = 'hreflang_missing_x_default';
+    case HREFLANG_TO_NON_CANONICAL   = 'hreflang_to_non_canonical';
+    case HREFLANG_TO_NOINDEX         = 'hreflang_to_noindex';
+    case NOSNIPPET_PAGE              = 'nosnippet_page';
+    case NOIMAGEINDEX_PAGE           = 'noimageindex_page';
+    case UNAVAILABLE_AFTER_PAGE      = 'unavailable_after_page';
+    case META_REFRESH                = 'meta_refresh';
+    case BROKEN_BOOKMARK             = 'broken_bookmark';
+    case JAVASCRIPT_LINKS            = 'javascript_links';
+    case HIGH_INTERNAL_OUTLINKS      = 'high_internal_outlinks';
+    case HIGH_EXTERNAL_OUTLINKS      = 'high_external_outlinks';
+    case PROTOCOL_RELATIVE_LINKS     = 'protocol_relative_links';
+    case LINKS_WITH_TRACKING_PARAMETERS = 'links_with_tracking_parameters';
+    case URL_REPETITIVE_PATH         = 'url_repetitive_path';
+    case URL_CONTAINS_SPACE          = 'url_contains_space';
+    case MISSING_DOCTYPE             = 'missing_doctype';
+    case MISSING_HEAD                = 'missing_head';
+    case MULTIPLE_HEADS              = 'multiple_heads';
+    case MISSING_BODY                = 'missing_body';
+    case MULTIPLE_BODIES             = 'multiple_bodies';
+    case INVALID_HEAD_ELEMENTS       = 'invalid_head_elements';
+    case MISSING_VIEWPORT            = 'missing_viewport';
+    case MISSING_CHARSET             = 'missing_charset';
+    case HTML_TOO_LARGE              = 'html_too_large';
+    case OPEN_GRAPH_MULTIPLE         = 'open_graph_multiple';
+    case OG_IMAGE_RELATIVE           = 'og_image_relative';
+    case OG_IMAGE_TOO_LARGE          = 'og_image_too_large';
+    case DUPLICATE_OG_TITLE          = 'duplicate_og_title';
+    case DUPLICATE_OG_DESCRIPTION    = 'duplicate_og_description';
+    case STRUCTURED_DATA_WARNINGS    = 'structured_data_warnings';
+    case MISSING_PRODUCT_STRUCTURED_DATA = 'missing_product_structured_data';
+    case POOR_LCP                    = 'poor_lcp';
+    case POOR_INP                    = 'poor_inp';
+    case POOR_CLS                    = 'poor_cls';
+    case INDEXABLE_WITHOUT_IMPRESSIONS = 'indexable_without_impressions';
+    case NON_INDEXABLE_WITH_CLICKS   = 'non_indexable_with_clicks';
+    case INDEXABLE_WITHOUT_VISITS    = 'indexable_without_visits';
+    case NON_INDEXABLE_WITH_VISITS   = 'non_indexable_with_visits';
 
     public const int TITLE_MAX_LENGTH            = 60;
     public const int TITLE_MIN_LENGTH            = 20;
@@ -103,6 +158,187 @@ enum CrawlIssueTypeEnum: string
     public const int HIGH_CRAWL_DEPTH_CLICKS     = 4;
     public const int LARGE_IMAGE_KB              = 200;
     public const int URL_MAX_LENGTH              = 115;
+    public const int HEADING_MAX_LENGTH          = 70;
+    public const int ALT_TEXT_MAX_LENGTH         = 100;
+    public const int READING_EASE_DIFFICULT      = 50;
+    public const int READING_EASE_VERY_DIFFICULT = 30;
+    public const int MAX_INTERNAL_OUTLINKS       = 1000;
+    public const int MAX_EXTERNAL_OUTLINKS       = 100;
+    public const int HTML_MAX_MB                 = 15;
+    public const int OG_IMAGE_MAX_MB             = 5;
+
+    public function tab(): CrawlTabEnum
+    {
+        return match ($this) {
+            self::HTTP_4XX,
+            self::HTTP_5XX,
+            self::FETCH_FAILED,
+            self::REDIRECT_LOOP,
+            self::REDIRECT_CHAIN,
+            self::LINKED_REDIRECT,
+            self::SLOW_RESPONSE,
+            self::SSR_FALLBACK => CrawlTabEnum::RESPONSE_CODES,
+
+            self::MISSING_TITLE,
+            self::DUPLICATE_TITLE,
+            self::TITLE_TOO_LONG,
+            self::TITLE_TOO_SHORT,
+            self::TITLE_SAME_AS_H1,
+            self::MULTIPLE_TITLES => CrawlTabEnum::PAGE_TITLES,
+
+            self::MISSING_META_DESCRIPTION,
+            self::DUPLICATE_META_DESCRIPTION,
+            self::META_DESCRIPTION_TOO_LONG,
+            self::META_DESCRIPTION_TOO_SHORT,
+            self::MULTIPLE_META_DESCRIPTIONS => CrawlTabEnum::META_DESCRIPTION,
+
+            self::MISSING_H1,
+            self::MULTIPLE_H1,
+            self::DUPLICATE_H1 => CrawlTabEnum::H1,
+
+            self::MISSING_H2 => CrawlTabEnum::H2,
+
+            self::SOFT_404,
+            self::EXACT_DUPLICATE,
+            self::NEAR_DUPLICATE,
+            self::LOW_CONTENT,
+            self::LOREM_IPSUM => CrawlTabEnum::CONTENT,
+
+            self::IMAGES_WITHOUT_ALT,
+            self::BROKEN_IMAGES,
+            self::LARGE_IMAGES,
+            self::IMAGES_WITHOUT_SIZE => CrawlTabEnum::IMAGES,
+
+            self::MISSING_CANONICAL,
+            self::CANONICAL_TO_BROKEN,
+            self::CANONICAL_TO_OTHER_PAGE,
+            self::CANONICAL_TO_NON_INDEXABLE,
+            self::CONFLICTING_CANONICALS => CrawlTabEnum::CANONICALS,
+
+            self::NOINDEX_PAGE,
+            self::NOFOLLOW_PAGE,
+            self::HEAD_TAGS_IN_BODY => CrawlTabEnum::DIRECTIVES,
+
+            self::HREFLANG_TO_BROKEN,
+            self::HREFLANG_INVALID_CODE,
+            self::HREFLANG_CONFLICTING_CODE,
+            self::HREFLANG_MISSING_SELF,
+            self::HREFLANG_MISSING_RETURN => CrawlTabEnum::HREFLANG,
+
+            self::PAGINATION_TO_BROKEN,
+            self::PAGINATION_NOT_LINKED,
+            self::PAGINATION_LOOP => CrawlTabEnum::PAGINATION,
+
+            self::ORPHAN_PAGE,
+            self::HIGH_CRAWL_DEPTH,
+            self::NO_INTERNAL_OUTLINKS,
+            self::INTERNAL_NOFOLLOW_LINKS,
+            self::EMPTY_ANCHOR_TEXT,
+            self::NON_DESCRIPTIVE_ANCHOR_TEXT,
+            self::LOCALHOST_LINKS,
+            self::LINKS_WITH_PARAMETERS => CrawlTabEnum::LINKS,
+
+            self::BROKEN_EXTERNAL_LINKS,
+            self::UNSAFE_BLANK_LINKS => CrawlTabEnum::EXTERNAL,
+
+            self::URL_UPPERCASE,
+            self::URL_UNDERSCORES,
+            self::URL_MULTIPLE_SLASHES,
+            self::URL_NON_ASCII,
+            self::URL_TOO_LONG => CrawlTabEnum::URL,
+
+            self::INTERNAL_HTTP_LINKS,
+            self::MIXED_CONTENT,
+            self::INSECURE_FORMS,
+            self::MISSING_SECURITY_HEADERS => CrawlTabEnum::SECURITY,
+
+            self::INVALID_STRUCTURED_DATA => CrawlTabEnum::STRUCTURED_DATA,
+
+            self::OPEN_GRAPH_MISSING,
+            self::OPEN_GRAPH_INCOMPLETE,
+            self::TWITTER_CARD_MISSING,
+            self::OG_IMAGE_BROKEN => CrawlTabEnum::SOCIAL,
+
+            self::NOINDEX_IN_SITEMAP,
+            self::NOT_IN_SITEMAP,
+            self::SITEMAP_NON_200,
+            self::SITEMAP_CANONICALISED,
+            self::IN_MULTIPLE_SITEMAPS,
+            self::SITEMAP_TOO_LARGE => CrawlTabEnum::SITEMAPS,
+
+            self::INDEXABLE_WITHOUT_VISITS,
+            self::NON_INDEXABLE_WITH_VISITS => CrawlTabEnum::VISITS,
+
+            self::STRUCTURED_DATA_WARNINGS,
+            self::MISSING_PRODUCT_STRUCTURED_DATA => CrawlTabEnum::STRUCTURED_DATA,
+
+            self::POOR_LCP,
+            self::POOR_INP,
+            self::POOR_CLS => CrawlTabEnum::PAGE_SPEED,
+
+            self::INDEXABLE_WITHOUT_IMPRESSIONS,
+            self::NON_INDEXABLE_WITH_CLICKS => CrawlTabEnum::SEARCH_CONSOLE,
+
+            self::TITLE_OVER_PIXELS => CrawlTabEnum::PAGE_TITLES,
+
+            self::META_DESCRIPTION_OVER_PIXELS => CrawlTabEnum::META_DESCRIPTION,
+
+            self::H1_TOO_LONG,
+            self::H1_NOT_FIRST_HEADING,
+            self::ALT_TEXT_IN_H1 => CrawlTabEnum::H1,
+
+            self::H2_TOO_LONG,
+            self::DUPLICATE_H2,
+            self::HEADING_LEVEL_SKIPPED => CrawlTabEnum::H2,
+
+            self::ALT_TEXT_TOO_LONG => CrawlTabEnum::IMAGES,
+
+            self::READABILITY_DIFFICULT,
+            self::READABILITY_VERY_DIFFICULT => CrawlTabEnum::CONTENT,
+
+            self::CANONICAL_RELATIVE,
+            self::CANONICAL_WITH_FRAGMENT,
+            self::CANONICAL_UNLINKED => CrawlTabEnum::CANONICALS,
+
+            self::HREFLANG_MISSING_X_DEFAULT,
+            self::HREFLANG_TO_NON_CANONICAL,
+            self::HREFLANG_TO_NOINDEX => CrawlTabEnum::HREFLANG,
+
+            self::NOSNIPPET_PAGE,
+            self::NOIMAGEINDEX_PAGE,
+            self::UNAVAILABLE_AFTER_PAGE => CrawlTabEnum::DIRECTIVES,
+
+            self::META_REFRESH => CrawlTabEnum::RESPONSE_CODES,
+
+            self::BROKEN_BOOKMARK,
+            self::JAVASCRIPT_LINKS,
+            self::HIGH_INTERNAL_OUTLINKS => CrawlTabEnum::LINKS,
+
+            self::HIGH_EXTERNAL_OUTLINKS => CrawlTabEnum::EXTERNAL,
+
+            self::PROTOCOL_RELATIVE_LINKS => CrawlTabEnum::SECURITY,
+
+            self::LINKS_WITH_TRACKING_PARAMETERS,
+            self::URL_REPETITIVE_PATH,
+            self::URL_CONTAINS_SPACE => CrawlTabEnum::URL,
+
+            self::MISSING_DOCTYPE,
+            self::MISSING_HEAD,
+            self::MULTIPLE_HEADS,
+            self::MISSING_BODY,
+            self::MULTIPLE_BODIES,
+            self::INVALID_HEAD_ELEMENTS,
+            self::MISSING_VIEWPORT,
+            self::MISSING_CHARSET,
+            self::HTML_TOO_LARGE => CrawlTabEnum::VALIDATION,
+
+            self::OPEN_GRAPH_MULTIPLE,
+            self::OG_IMAGE_RELATIVE,
+            self::OG_IMAGE_TOO_LARGE,
+            self::DUPLICATE_OG_TITLE,
+            self::DUPLICATE_OG_DESCRIPTION => CrawlTabEnum::SOCIAL,
+        };
+    }
 
     public function severity(): CrawlIssueSeverityEnum
     {
@@ -154,7 +390,28 @@ enum CrawlIssueTypeEnum: string
             self::SITEMAP_TOO_LARGE,
             self::PAGINATION_TO_BROKEN,
             self::PAGINATION_LOOP,
-            self::INVALID_STRUCTURED_DATA => CrawlIssueSeverityEnum::WARNING,
+            self::INVALID_STRUCTURED_DATA,
+            self::CANONICAL_WITH_FRAGMENT,
+            self::HREFLANG_TO_NON_CANONICAL,
+            self::HREFLANG_TO_NOINDEX,
+            self::NOSNIPPET_PAGE,
+            self::META_REFRESH,
+            self::LINKS_WITH_TRACKING_PARAMETERS,
+            self::URL_CONTAINS_SPACE,
+            self::MISSING_DOCTYPE,
+            self::MISSING_HEAD,
+            self::MULTIPLE_HEADS,
+            self::MISSING_BODY,
+            self::MULTIPLE_BODIES,
+            self::INVALID_HEAD_ELEMENTS,
+            self::MISSING_VIEWPORT,
+            self::HTML_TOO_LARGE,
+            self::OG_IMAGE_RELATIVE,
+            self::MISSING_PRODUCT_STRUCTURED_DATA,
+            self::POOR_LCP,
+            self::POOR_INP,
+            self::POOR_CLS,
+            self::NON_INDEXABLE_WITH_CLICKS => CrawlIssueSeverityEnum::WARNING,
 
             self::TITLE_TOO_LONG,
             self::TITLE_TOO_SHORT,
@@ -186,7 +443,38 @@ enum CrawlIssueTypeEnum: string
             self::SITEMAP_CANONICALISED,
             self::IN_MULTIPLE_SITEMAPS,
             self::PAGINATION_NOT_LINKED,
-            self::LINKED_REDIRECT => CrawlIssueSeverityEnum::NOTICE,
+            self::LINKED_REDIRECT,
+            self::TITLE_OVER_PIXELS,
+            self::META_DESCRIPTION_OVER_PIXELS,
+            self::H1_TOO_LONG,
+            self::H1_NOT_FIRST_HEADING,
+            self::ALT_TEXT_IN_H1,
+            self::H2_TOO_LONG,
+            self::DUPLICATE_H2,
+            self::HEADING_LEVEL_SKIPPED,
+            self::ALT_TEXT_TOO_LONG,
+            self::READABILITY_DIFFICULT,
+            self::READABILITY_VERY_DIFFICULT,
+            self::CANONICAL_RELATIVE,
+            self::CANONICAL_UNLINKED,
+            self::HREFLANG_MISSING_X_DEFAULT,
+            self::NOIMAGEINDEX_PAGE,
+            self::UNAVAILABLE_AFTER_PAGE,
+            self::BROKEN_BOOKMARK,
+            self::JAVASCRIPT_LINKS,
+            self::HIGH_INTERNAL_OUTLINKS,
+            self::HIGH_EXTERNAL_OUTLINKS,
+            self::PROTOCOL_RELATIVE_LINKS,
+            self::URL_REPETITIVE_PATH,
+            self::MISSING_CHARSET,
+            self::OPEN_GRAPH_MULTIPLE,
+            self::OG_IMAGE_TOO_LARGE,
+            self::DUPLICATE_OG_TITLE,
+            self::DUPLICATE_OG_DESCRIPTION,
+            self::STRUCTURED_DATA_WARNINGS,
+            self::INDEXABLE_WITHOUT_IMPRESSIONS,
+            self::INDEXABLE_WITHOUT_VISITS,
+            self::NON_INDEXABLE_WITH_VISITS => CrawlIssueSeverityEnum::NOTICE,
         };
     }
 
@@ -271,6 +559,58 @@ enum CrawlIssueTypeEnum: string
             self::PAGINATION_TO_BROKEN->value        => __('Pagination points to a broken page'),
             self::PAGINATION_NOT_LINKED->value       => __('Pagination URL not linked on the page'),
             self::PAGINATION_LOOP->value             => __('Pagination points to the page itself'),
+            self::TITLE_OVER_PIXELS->value           => __('Title wider than results show'),
+            self::META_DESCRIPTION_OVER_PIXELS->value => __('Meta description wider than results show'),
+            self::H1_TOO_LONG->value                 => __('H1 too long'),
+            self::H1_NOT_FIRST_HEADING->value        => __('H1 is not the first heading'),
+            self::ALT_TEXT_IN_H1->value              => __('H1 made of an image'),
+            self::H2_TOO_LONG->value                 => __('H2 too long'),
+            self::DUPLICATE_H2->value                => __('Duplicate h2'),
+            self::HEADING_LEVEL_SKIPPED->value       => __('Heading levels skipped'),
+            self::ALT_TEXT_TOO_LONG->value           => __('Alt text too long'),
+            self::READABILITY_DIFFICULT->value       => __('Text difficult to read'),
+            self::READABILITY_VERY_DIFFICULT->value  => __('Text very difficult to read'),
+            self::CANONICAL_RELATIVE->value          => __('Canonical is a relative URL'),
+            self::CANONICAL_WITH_FRAGMENT->value     => __('Canonical contains a fragment'),
+            self::CANONICAL_UNLINKED->value          => __('Canonical URL not linked'),
+            self::HREFLANG_MISSING_X_DEFAULT->value  => __('Hreflang without x-default'),
+            self::HREFLANG_TO_NON_CANONICAL->value   => __('Hreflang points to a non-canonical URL'),
+            self::HREFLANG_TO_NOINDEX->value         => __('Hreflang points to a noindex page'),
+            self::NOSNIPPET_PAGE->value              => __('Page hides its snippet in results'),
+            self::NOIMAGEINDEX_PAGE->value           => __('Images of the page kept out of image search'),
+            self::UNAVAILABLE_AFTER_PAGE->value      => __('Page set to leave results on a date'),
+            self::META_REFRESH->value                => __('Page redirects with a refresh'),
+            self::BROKEN_BOOKMARK->value             => __('Links to a missing part of the page'),
+            self::JAVASCRIPT_LINKS->value            => __('Links that only work with JavaScript'),
+            self::HIGH_INTERNAL_OUTLINKS->value      => __('Too many internal links'),
+            self::HIGH_EXTERNAL_OUTLINKS->value      => __('Too many external links'),
+            self::PROTOCOL_RELATIVE_LINKS->value     => __('Protocol-relative links'),
+            self::LINKS_WITH_TRACKING_PARAMETERS->value => __('Internal links with tracking parameters'),
+            self::URL_REPETITIVE_PATH->value         => __('Repeated folder in the URL'),
+            self::URL_CONTAINS_SPACE->value          => __('Space in the URL'),
+            self::MISSING_DOCTYPE->value             => __('Missing doctype'),
+            self::MISSING_HEAD->value                => __('Missing head tag'),
+            self::MULTIPLE_HEADS->value              => __('More than one head tag'),
+            self::MISSING_BODY->value                => __('Missing body tag'),
+            self::MULTIPLE_BODIES->value             => __('More than one body tag'),
+            self::INVALID_HEAD_ELEMENTS->value       => __('Invalid elements in the head'),
+            self::MISSING_VIEWPORT->value            => __('Missing viewport'),
+            self::MISSING_CHARSET->value             => __('Missing character set'),
+            self::HTML_TOO_LARGE->value              => __('HTML over :mb MB', ['mb' => self::HTML_MAX_MB]),
+            self::OPEN_GRAPH_MULTIPLE->value         => __('Social tags written more than once'),
+            self::OG_IMAGE_RELATIVE->value           => __('Open Graph image is a relative URL'),
+            self::OG_IMAGE_TOO_LARGE->value          => __('Open Graph image over :mb MB', ['mb' => self::OG_IMAGE_MAX_MB]),
+            self::DUPLICATE_OG_TITLE->value          => __('Duplicate Open Graph title'),
+            self::DUPLICATE_OG_DESCRIPTION->value    => __('Duplicate Open Graph description'),
+            self::STRUCTURED_DATA_WARNINGS->value    => __('Structured data missing recommended fields'),
+            self::MISSING_PRODUCT_STRUCTURED_DATA->value => __('Product page without Product structured data'),
+            self::POOR_LCP->value                    => __('Slow to show its main content (LCP)'),
+            self::POOR_INP->value                    => __('Slow to respond to clicks (INP)'),
+            self::POOR_CLS->value                    => __('Layout jumps while loading (CLS)'),
+            self::INDEXABLE_WITHOUT_IMPRESSIONS->value => __('Indexable page with no Google impressions'),
+            self::NON_INDEXABLE_WITH_CLICKS->value   => __('Non-indexable page still getting search clicks'),
+            self::INDEXABLE_WITHOUT_VISITS->value    => __('Indexable page nobody visited'),
+            self::NON_INDEXABLE_WITH_VISITS->value   => __('Non-indexable page that visitors use'),
         ];
     }
 
@@ -355,6 +695,194 @@ enum CrawlIssueTypeEnum: string
             self::PAGINATION_TO_BROKEN->value        => __('The rel="next" or rel="prev" URL does not answer with 200.'),
             self::PAGINATION_NOT_LINKED->value       => __('The rel="next" or rel="prev" URL has no ordinary link on the page, so Google may not find it.'),
             self::PAGINATION_LOOP->value             => __('The rel="next" or rel="prev" URL is the page itself.'),
+            self::TITLE_OVER_PIXELS->value           => __('The title is wider than :pixels pixels, so Google cuts it off in results even if its character count looks fine.', ['pixels' => SerpPixelWidth::TITLE_MAX_PIXELS]),
+            self::META_DESCRIPTION_OVER_PIXELS->value => __('The meta description is wider than :pixels pixels, so Google cuts it off in results.', ['pixels' => SerpPixelWidth::DESCRIPTION_MAX_PIXELS]),
+            self::H1_TOO_LONG->value                 => __('The h1 is longer than :length characters, which makes the main subject of the page hard to read at a glance.', ['length' => self::HEADING_MAX_LENGTH]),
+            self::H1_NOT_FIRST_HEADING->value        => __('Another heading comes before the h1, so the page outline does not start with its main subject.'),
+            self::ALT_TEXT_IN_H1->value              => __('The h1 holds an image, so its text for search engines is the image alt text.'),
+            self::H2_TOO_LONG->value                 => __('One of the first two h2 headings is longer than :length characters.', ['length' => self::HEADING_MAX_LENGTH]),
+            self::DUPLICATE_H2->value                => __('The first h2 of the page is the same as on other indexable pages, often a heading every page shares.'),
+            self::HEADING_LEVEL_SKIPPED->value       => __('A heading jumps more than one level down (for example h2 to h4), which breaks the outline screen readers and search engines read.'),
+            self::ALT_TEXT_TOO_LONG->value           => __('Some images have an alt text longer than :length characters, which screen readers read out in full.', ['length' => self::ALT_TEXT_MAX_LENGTH]),
+            self::READABILITY_DIFFICULT->value       => __('The English text scores between :very and :difficult on the Flesch reading ease scale: long sentences and long words.', ['very' => self::READING_EASE_VERY_DIFFICULT, 'difficult' => self::READING_EASE_DIFFICULT]),
+            self::READABILITY_VERY_DIFFICULT->value  => __('The English text scores under :very on the Flesch reading ease scale, a level of academic papers.', ['very' => self::READING_EASE_VERY_DIFFICULT]),
+            self::CANONICAL_RELATIVE->value          => __('The canonical is written as a relative URL. It works, but a mistake in the base URL sends search engines to the wrong page.'),
+            self::CANONICAL_WITH_FRAGMENT->value     => __('The canonical URL contains a #fragment, which search engines ignore or treat as a different URL.'),
+            self::CANONICAL_UNLINKED->value          => __('The URL named as canonical is not linked from any crawled page, so search engines find it only through the canonical.'),
+            self::HREFLANG_MISSING_X_DEFAULT->value  => __('The page lists language versions but no x-default for visitors whose language is not in the list.'),
+            self::HREFLANG_TO_NON_CANONICAL->value   => __('A language version listed in hreflang names another URL as canonical, so Google may ignore the alternate.'),
+            self::HREFLANG_TO_NOINDEX->value         => __('A language version listed in hreflang tells search engines not to index it.'),
+            self::NOSNIPPET_PAGE->value              => __('A nosnippet or max-snippet:0 directive stops Google showing any text under the title in results.'),
+            self::NOIMAGEINDEX_PAGE->value           => __('A noimageindex directive keeps the images of the page out of Google Images.'),
+            self::UNAVAILABLE_AFTER_PAGE->value      => __('An unavailable_after directive tells Google to drop the page from results after a date.'),
+            self::META_REFRESH->value                => __('The page sends visitors on with a meta refresh or a Refresh header instead of a server redirect.'),
+            self::BROKEN_BOOKMARK->value             => __('A #fragment link points to an id the page does not have, so it goes nowhere.'),
+            self::JAVASCRIPT_LINKS->value            => __('Some links have a javascript: address, which search engines cannot follow.'),
+            self::HIGH_INTERNAL_OUTLINKS->value      => __('The page links to more than :count pages of the website, which spreads its link value thin.', ['count' => number_format(self::MAX_INTERNAL_OUTLINKS)]),
+            self::HIGH_EXTERNAL_OUTLINKS->value      => __('The page links to more than :count pages of other websites.', ['count' => number_format(self::MAX_EXTERNAL_OUTLINKS)]),
+            self::PROTOCOL_RELATIVE_LINKS->value     => __('Some links or resources start with // instead of https://, which loads them over http on an http page.'),
+            self::LINKS_WITH_TRACKING_PARAMETERS->value => __('Links between pages of the website carry utm_ or click-id parameters, which create duplicate URLs and overwrite the visit\'s real source in analytics.'),
+            self::URL_REPETITIVE_PATH->value         => __('A folder name appears twice in the URL path, often a sign of a relative link resolved twice.'),
+            self::URL_CONTAINS_SPACE->value          => __('The URL contains a space, which links and shares break on.'),
+            self::MISSING_DOCTYPE->value             => __('The page does not start with <!DOCTYPE html>, so browsers render it in quirks mode.'),
+            self::MISSING_HEAD->value                => __('The page has no <head> tag.'),
+            self::MULTIPLE_HEADS->value              => __('The page has more than one <head> tag, and tags in the second are read as body.'),
+            self::MISSING_BODY->value                => __('The page has no <body> tag.'),
+            self::MULTIPLE_BODIES->value             => __('The page has more than one <body> tag.'),
+            self::INVALID_HEAD_ELEMENTS->value       => __('The head contains elements that belong in the body. Browsers end the head there, so the canonical, hreflang and meta tags after it are ignored.'),
+            self::MISSING_VIEWPORT->value            => __('The page has no meta viewport, so phones show it zoomed out at desktop width.'),
+            self::MISSING_CHARSET->value             => __('Neither a meta charset nor the Content-Type header says which character set the page uses, so accents may show garbled.'),
+            self::HTML_TOO_LARGE->value              => __('The HTML of the page is larger than :mb MB. Google reads only the first :mb MB.', ['mb' => self::HTML_MAX_MB]),
+            self::OPEN_GRAPH_MULTIPLE->value         => __('The same Open Graph or Twitter tag appears more than once, and each network picks one of them.'),
+            self::OG_IMAGE_RELATIVE->value           => __('og:image is a relative URL, which social networks do not resolve, so shares show no image.'),
+            self::OG_IMAGE_TOO_LARGE->value          => __('The og:image file is larger than :mb MB, which some networks refuse.', ['mb' => self::OG_IMAGE_MAX_MB]),
+            self::DUPLICATE_OG_TITLE->value          => __('Another indexable page has the same og:title, so their shares look the same.'),
+            self::DUPLICATE_OG_DESCRIPTION->value    => __('Another indexable page has the same og:description.'),
+            self::STRUCTURED_DATA_WARNINGS->value    => __('The structured data is valid but leaves out fields Google recommends, so the result may show fewer details.'),
+            self::MISSING_PRODUCT_STRUCTURED_DATA->value => __('The page is a product but has no Product or ProductGroup JSON-LD, so Google cannot show its price, stock or rating in results.'),
+            self::POOR_LCP->value                    => __('For a quarter of real visitors in the last :days days, the main content took longer than :seconds seconds to appear.', ['days' => EnrichCrawlPages::DAYS, 'seconds' => IndexWebpagesPageSpeed::LCP_LIMITS[1] / 1000]),
+            self::POOR_INP->value                    => __('For a quarter of real visitors in the last :days days, the page took longer than :ms ms to respond after a click or tap.', ['days' => EnrichCrawlPages::DAYS, 'ms' => IndexWebpagesPageSpeed::INP_LIMITS[1]]),
+            self::POOR_CLS->value                    => __('For a quarter of real visitors in the last :days days, the layout shifted more than :cls while loading, so they clicked the wrong thing.', ['days' => EnrichCrawlPages::DAYS, 'cls' => IndexWebpagesPageSpeed::CLS_LIMITS[1]]),
+            self::INDEXABLE_WITHOUT_IMPRESSIONS->value => __('Search Console recorded no impression for this indexable page in the last :days days: Google may not index it, or it ranks for nothing.', ['days' => EnrichCrawlPages::DAYS]),
+            self::NON_INDEXABLE_WITH_CLICKS->value   => __('The page tells search engines not to index it, but Search Console recorded clicks in the last :days days. Removing it from Google loses that traffic.', ['days' => EnrichCrawlPages::DAYS]),
+            self::INDEXABLE_WITHOUT_VISITS->value    => __('No visitor opened this indexable page in the last :days days.', ['days' => EnrichCrawlPages::DAYS]),
+            self::NON_INDEXABLE_WITH_VISITS->value   => __('Visitors opened this page in the last :days days, but it tells search engines not to index it.', ['days' => EnrichCrawlPages::DAYS]),
+        ];
+    }
+
+    public static function howToFix(): array
+    {
+        return [
+            self::HTTP_4XX->value                    => __('Fix or remove the links pointing to the URL, or redirect it to the closest live page.'),
+            self::HTTP_5XX->value                    => __('Open the URL to reproduce the error and check the application logs for it. Crawl again once it answers 200.'),
+            self::FETCH_FAILED->value                => __('Open the URL in a browser. If it loads, the server was busy during the crawl: crawl again with a lower speed.'),
+            self::REDIRECT_LOOP->value               => __('Change the redirects so the chain ends on a page that answers 200.'),
+            self::MISSING_TITLE->value               => __('Write a title that names what the page offers, between :min and :max characters.', ['min' => self::TITLE_MIN_LENGTH, 'max' => self::TITLE_MAX_LENGTH]),
+            self::CANONICAL_TO_BROKEN->value         => __('Point the canonical to the live URL of the page, usually the page itself.'),
+            self::REDIRECT_CHAIN->value              => __('Point the first redirect straight to the final URL, and update links to use the final URL.'),
+            self::DUPLICATE_TITLE->value             => __('Give each page a title that says what makes it different, such as the product or family name.'),
+            self::DUPLICATE_META_DESCRIPTION->value  => __('Write a meta description for each page that summarises its own content.'),
+            self::MISSING_META_DESCRIPTION->value    => __('Write a meta description of :min to :max characters that makes searchers want to click.', ['min' => self::META_DESCRIPTION_MIN_LENGTH, 'max' => self::META_DESCRIPTION_MAX_LENGTH]),
+            self::MISSING_H1->value                  => __('Add one h1 heading that says what the page is about, usually the product or family name.'),
+            self::MULTIPLE_H1->value                 => __('Keep one h1 for the main subject and turn the other h1 headings into h2.'),
+            self::MISSING_CANONICAL->value           => __('Add a canonical link in the head that points to the page\'s own URL.'),
+            self::NOINDEX_IN_SITEMAP->value          => __('Remove the page from the sitemap, or remove the noindex if the page should be found in search.'),
+            self::SLOW_RESPONSE->value               => __('Check what makes the page slow to render (large product lists, slow queries) and whether it is served from cache.'),
+            self::IMAGES_WITHOUT_ALT->value          => __('Add an alt text to every image that describes it. Decorative images take an empty alt="".'),
+            self::TITLE_TOO_LONG->value              => __('Shorten the title to :max characters or fewer, keeping the most important words first.', ['max' => self::TITLE_MAX_LENGTH]),
+            self::TITLE_TOO_SHORT->value             => __('Make the title more descriptive, between :min and :max characters.', ['min' => self::TITLE_MIN_LENGTH, 'max' => self::TITLE_MAX_LENGTH]),
+            self::META_DESCRIPTION_TOO_LONG->value   => __('Shorten the meta description to :max characters or fewer.', ['max' => self::META_DESCRIPTION_MAX_LENGTH]),
+            self::META_DESCRIPTION_TOO_SHORT->value  => __('Expand the meta description to at least :min characters.', ['min' => self::META_DESCRIPTION_MIN_LENGTH]),
+            self::CANONICAL_TO_OTHER_PAGE->value     => __('If the page is unique, point its canonical to itself. If it is a variant, no change is needed.'),
+            self::NOT_IN_SITEMAP->value              => __('Add the page to the sitemap, or make it non-indexable if it should not be found in search.'),
+            self::LINKED_REDIRECT->value             => __('Change the links to point to the final URL the redirect leads to.'),
+            self::HREFLANG_TO_BROKEN->value          => __('Point the hreflang link to the live URL of the language version, or remove it.'),
+            self::HREFLANG_INVALID_CODE->value       => __('Use an ISO 639-1 language code, optionally with an ISO 3166-1 region (for example en-gb), or x-default.'),
+            self::HREFLANG_CONFLICTING_CODE->value   => __('Use each language code for one URL only.'),
+            self::HREFLANG_MISSING_SELF->value       => __('Add an hreflang link from the page to itself with its own language code.'),
+            self::HREFLANG_MISSING_RETURN->value     => __('Add an hreflang link back to this page on the alternate page.'),
+            self::INVALID_STRUCTURED_DATA->value     => __('Test the page in Google\'s Rich Results Test and add the missing or invalid fields.'),
+            self::NOINDEX_PAGE->value                => __('Remove the noindex if the page should be found in search.'),
+            self::NOFOLLOW_PAGE->value               => __('Remove the nofollow from the robots meta tag unless the page\'s links must not be followed.'),
+            self::CANONICAL_TO_NON_INDEXABLE->value  => __('Point the canonical to an indexable page, usually the page itself.'),
+            self::SOFT_404->value                    => __('If the page no longer exists, make it answer 404 or 410, or redirect it. Otherwise change the title and h1 so they do not read as an error.'),
+            self::EXACT_DUPLICATE->value             => __('Make the content of each page unique, or point the canonical of the copies to the main page.'),
+            self::NEAR_DUPLICATE->value              => __('Add content that makes each page different, or point the canonical of the copies to the main page.'),
+            self::LOW_CONTENT->value                 => __('Add useful text about what the page offers, at least :words words.', ['words' => self::LOW_CONTENT_WORDS]),
+            self::LOREM_IPSUM->value                 => __('Replace the placeholder text with real content.'),
+            self::DUPLICATE_H1->value                => __('Give each page an h1 that says what makes it different.'),
+            self::MISSING_H2->value                  => __('Add h2 subheadings to structure the content.'),
+            self::TITLE_SAME_AS_H1->value            => __('Use the title and the h1 to say slightly different things, so the page matches more searches.'),
+            self::ORPHAN_PAGE->value                 => __('Link to the page from a related page, menu or family, or remove it from the sitemap if it is no longer needed.'),
+            self::HIGH_CRAWL_DEPTH->value            => __('Link to the page from a page closer to the home page, so it is reached in :clicks clicks or fewer.', ['clicks' => self::HIGH_CRAWL_DEPTH_CLICKS]),
+            self::NO_INTERNAL_OUTLINKS->value        => __('Add links from the page to related pages of the website.'),
+            self::INTERNAL_NOFOLLOW_LINKS->value     => __('Remove rel="nofollow" from links to pages of this website.'),
+            self::EMPTY_ANCHOR_TEXT->value           => __('Add text to the link, or an aria-label or an alt text on the image it wraps.'),
+            self::NON_DESCRIPTIVE_ANCHOR_TEXT->value => __('Replace generic link text such as "click here" with words that describe the target page.'),
+            self::LOCALHOST_LINKS->value             => __('Replace the links to development URLs with the live URLs.'),
+            self::UNSAFE_BLANK_LINKS->value          => __('Add rel="noopener" to links that open in a new tab.'),
+            self::BROKEN_EXTERNAL_LINKS->value       => __('Update the links to the external page\'s new address, or remove them.'),
+            self::BROKEN_IMAGES->value               => __('Upload the image again or change the page to use an image that exists.'),
+            self::LARGE_IMAGES->value                => __('Resize and compress the image to under :size KB, or serve it in a modern format such as WebP.', ['size' => self::LARGE_IMAGE_KB]),
+            self::IMAGES_WITHOUT_SIZE->value         => __('Add width and height attributes to the image so the page does not jump while it loads.'),
+            self::URL_UPPERCASE->value               => __('Use lowercase URLs and redirect the uppercase ones to them.'),
+            self::URL_UNDERSCORES->value             => __('Use hyphens instead of underscores to separate words, and redirect the old URLs.'),
+            self::URL_MULTIPLE_SLASHES->value        => __('Fix the links that produce the double slash, and redirect the URL to the single-slash one.'),
+            self::URL_NON_ASCII->value               => __('Use plain ASCII characters in the URL, and redirect the old URL.'),
+            self::URL_TOO_LONG->value                => __('Shorten the URL to :length characters or fewer, and redirect the old URL.', ['length' => self::URL_MAX_LENGTH]),
+            self::LINKS_WITH_PARAMETERS->value       => __('Link to the clean URL without parameters where one exists.'),
+            self::INTERNAL_HTTP_LINKS->value         => __('Change the links to use https.'),
+            self::MIXED_CONTENT->value               => __('Load the images, scripts and styles over https.'),
+            self::INSECURE_FORMS->value              => __('Make the form submit to an https URL.'),
+            self::MISSING_SECURITY_HEADERS->value    => __('Add the missing headers in the server or Cloudflare configuration.'),
+            self::OPEN_GRAPH_MISSING->value          => __('Add og:title, og:description, og:image and og:url tags to the page.'),
+            self::OPEN_GRAPH_INCOMPLETE->value       => __('Add the missing Open Graph tags listed in the details.'),
+            self::TWITTER_CARD_MISSING->value        => __('Add a twitter:card meta tag, usually summary_large_image.'),
+            self::OG_IMAGE_BROKEN->value             => __('Point og:image to an image that exists.'),
+            self::MULTIPLE_TITLES->value             => __('Keep one title tag in the head and remove the others.'),
+            self::MULTIPLE_META_DESCRIPTIONS->value  => __('Keep one meta description in the head and remove the others.'),
+            self::CONFLICTING_CANONICALS->value      => __('Keep one canonical link and remove the others.'),
+            self::HEAD_TAGS_IN_BODY->value           => __('Move the tag into the head, or remove it from the body.'),
+            self::SITEMAP_NON_200->value             => __('Remove the URL from the sitemap, or list its final URL instead.'),
+            self::SITEMAP_CANONICALISED->value       => __('List the canonical URL in the sitemap instead of this one.'),
+            self::IN_MULTIPLE_SITEMAPS->value        => __('List the URL in one sitemap only.'),
+            self::SITEMAP_TOO_LARGE->value           => __('Split the sitemap into files of at most :urls URLs and 50 MB each.', ['urls' => number_format(AuditWebsite::SITEMAP_MAX_URLS)]),
+            self::PAGINATION_TO_BROKEN->value        => __('Point rel="next" and rel="prev" to pages that answer 200.'),
+            self::PAGINATION_NOT_LINKED->value       => __('Add a normal link to the next and previous pages in the page body.'),
+            self::PAGINATION_LOOP->value             => __('Fix rel="next" and rel="prev" so the sequence does not lead back to an earlier page.'),
+            self::TITLE_OVER_PIXELS->value           => __('Shorten the title or use narrower words until it fits in :pixels pixels; capital letters take the most room.', ['pixels' => SerpPixelWidth::TITLE_MAX_PIXELS]),
+            self::META_DESCRIPTION_OVER_PIXELS->value => __('Shorten the meta description until it fits in :pixels pixels.', ['pixels' => SerpPixelWidth::DESCRIPTION_MAX_PIXELS]),
+            self::H1_TOO_LONG->value                 => __('Shorten the h1 to :length characters or fewer and move the rest into the text.', ['length' => self::HEADING_MAX_LENGTH]),
+            self::H1_NOT_FIRST_HEADING->value        => __('Make the h1 the first heading of the page, or turn the earlier heading into plain text.'),
+            self::ALT_TEXT_IN_H1->value              => __('Write the h1 as text, and keep the image beside it.'),
+            self::H2_TOO_LONG->value                 => __('Shorten the h2 to :length characters or fewer.', ['length' => self::HEADING_MAX_LENGTH]),
+            self::DUPLICATE_H2->value                => __('Use h2 headings that describe the content of this page, and style shared blocks without heading tags.'),
+            self::HEADING_LEVEL_SKIPPED->value       => __('Use the next heading level down, or change the heading\'s style instead of its level.'),
+            self::ALT_TEXT_TOO_LONG->value           => __('Keep alt texts to a short description of the image, :length characters or fewer.', ['length' => self::ALT_TEXT_MAX_LENGTH]),
+            self::READABILITY_DIFFICULT->value       => __('Use shorter sentences and simpler words.'),
+            self::READABILITY_VERY_DIFFICULT->value  => __('Split long sentences and replace long words with everyday ones.'),
+            self::CANONICAL_RELATIVE->value          => __('Write the canonical as a full URL with https and the domain.'),
+            self::CANONICAL_WITH_FRAGMENT->value     => __('Remove the #fragment from the canonical URL.'),
+            self::CANONICAL_UNLINKED->value          => __('Link to the canonical URL from the website, for example from its family or the menu.'),
+            self::HREFLANG_MISSING_X_DEFAULT->value  => __('Add an hreflang x-default link to the version for every other visitor.'),
+            self::HREFLANG_TO_NON_CANONICAL->value   => __('List the canonical URL of each language version in hreflang.'),
+            self::HREFLANG_TO_NOINDEX->value         => __('Remove the noindex from the language version, or remove it from hreflang.'),
+            self::NOSNIPPET_PAGE->value              => __('Remove nosnippet unless the text must not appear in results.'),
+            self::NOIMAGEINDEX_PAGE->value           => __('Remove noimageindex if the product images should be found in image search.'),
+            self::UNAVAILABLE_AFTER_PAGE->value      => __('Check the date is right, or remove the directive if the page stays.'),
+            self::META_REFRESH->value                => __('Replace the refresh with a 301 redirect and link to the final URL.'),
+            self::BROKEN_BOOKMARK->value             => __('Add the id to the element it should jump to, or fix the link.'),
+            self::JAVASCRIPT_LINKS->value            => __('Use a real URL in href, and keep the script for the click.'),
+            self::HIGH_INTERNAL_OUTLINKS->value      => __('Link to the most important pages and move the rest into their families or the menu.'),
+            self::HIGH_EXTERNAL_OUTLINKS->value      => __('Keep the external links that help the visitor and remove the rest.'),
+            self::PROTOCOL_RELATIVE_LINKS->value     => __('Write the links and resources with https://.'),
+            self::LINKS_WITH_TRACKING_PARAMETERS->value => __('Remove tracking parameters from internal links; keep them for links in emails and ads only.'),
+            self::URL_REPETITIVE_PATH->value         => __('Fix the link that produces it, and redirect the URL to the right one.'),
+            self::URL_CONTAINS_SPACE->value          => __('Use hyphens instead of spaces, and redirect the old URL.'),
+            self::MISSING_DOCTYPE->value             => __('Start the HTML with <!DOCTYPE html>.'),
+            self::MISSING_HEAD->value                => __('Wrap the title, meta tags and links in a <head> element.'),
+            self::MULTIPLE_HEADS->value              => __('Keep one <head> and move its tags there.'),
+            self::MISSING_BODY->value                => __('Wrap the page content in a <body> element.'),
+            self::MULTIPLE_BODIES->value             => __('Keep one <body> element.'),
+            self::INVALID_HEAD_ELEMENTS->value       => __('Move the listed elements into the body, after the head.'),
+            self::MISSING_VIEWPORT->value            => __('Add <meta name="viewport" content="width=device-width, initial-scale=1">.'),
+            self::MISSING_CHARSET->value             => __('Add <meta charset="utf-8"> at the top of the head.'),
+            self::HTML_TOO_LARGE->value              => __('Reduce the HTML: fewer products per page, less inline data.', ['mb' => self::HTML_MAX_MB]),
+            self::OPEN_GRAPH_MULTIPLE->value         => __('Keep one of each tag.'),
+            self::OG_IMAGE_RELATIVE->value           => __('Write og:image as a full URL with https and the domain.'),
+            self::OG_IMAGE_TOO_LARGE->value          => __('Use a compressed image under :mb MB, ideally 1200 x 630 pixels.', ['mb' => self::OG_IMAGE_MAX_MB]),
+            self::DUPLICATE_OG_TITLE->value          => __('Give each page an og:title that names its own content.'),
+            self::DUPLICATE_OG_DESCRIPTION->value    => __('Give each page an og:description about its own content.'),
+            self::STRUCTURED_DATA_WARNINGS->value    => __('Add the fields listed in the details, such as brand, sku or availability.'),
+            self::MISSING_PRODUCT_STRUCTURED_DATA->value => __('Output Product structured data with name, offers (price, currency, availability) and image on the product page template.'),
+            self::POOR_LCP->value                    => __('Make the largest image or text block load sooner: smaller images, preload the hero image, fewer render-blocking scripts.', ['days' => EnrichCrawlPages::DAYS, 'seconds' => IndexWebpagesPageSpeed::LCP_LIMITS[1] / 1000]),
+            self::POOR_INP->value                    => __('Break up long JavaScript tasks and run less code when the page loads.'),
+            self::POOR_CLS->value                    => __('Give images and banners a fixed width and height, and reserve space for content that loads late.'),
+            self::INDEXABLE_WITHOUT_IMPRESSIONS->value => __('Check the page in Search Console URL Inspection, link to it from related pages and give it unique content.'),
+            self::NON_INDEXABLE_WITH_CLICKS->value   => __('If the page should be found, remove the noindex or fix the canonical. If not, redirect it to the page that should rank.'),
+            self::INDEXABLE_WITHOUT_VISITS->value    => __('Check whether the page is still needed: link to it from related pages, or redirect it to a page people use.', ['days' => EnrichCrawlPages::DAYS]),
+            self::NON_INDEXABLE_WITH_VISITS->value   => __('If people look for this page, make it indexable so search engines can send more of them.'),
+            self::SSR_FALLBACK->value                => __('Open the Sentry errors of the page, fix what made the server rendering fail, then crawl the page again.'),
         ];
     }
 }

@@ -4853,6 +4853,25 @@ describe('competitor prices, HELP-3605', function () {
             ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.status.failures', fn ($failures) => collect($failures->toArray())->firstWhere('id', $this->competitor->id)['reason'] === 'The search link does not search')->etc());
     });
 
+    test('a search link missing its question mark lands on a not found page that is not taken for a search', function () {
+        $notFound = ['final_url' => 'https://rival.example.com/searchq=singing%20bowl', 'status' => 404, 'blocked' => false, 'text' => 'Page not found /searchq=singing bowl'];
+        $results  = ['final_url' => 'https://rival.example.com/search?q=singing%20bowl', 'status' => 200, 'blocked' => false, 'text' => 'Singing bowl results'];
+        $search   = fn (array $pages) => \App\Actions\Masters\Competitor\ResearchCompetitorPrices::searchIsBroken($pages, ['Singing bowl', 'Singing bowl']);
+
+        expect($search([$notFound, $notFound]))->toBeTrue()
+            ->and($search([$notFound, $results]))->toBeFalse()
+            ->and($search([array_merge($notFound, ['status' => 200]), array_merge($notFound, ['status' => 200])]))->toBeFalse();
+
+        $this->competitor->update(['search_url' => 'https://rival.example.com/searchq={query}']);
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode(['login_error' => null, 'cookies' => [], 'pages' => [array_merge($notFound, ['url' => 'https://rival.example.com/searchq=x', 'links' => []])]]))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response('<html></html>')]);
+
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+
+        expect($this->competitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::SEARCH_BROKEN);
+    });
+
     test('the dashboard explains the first steps when there are no competitors', function () {
         \App\Models\Masters\Competitor::where('group_id', group()->id)->delete();
 
@@ -4903,6 +4922,49 @@ describe('competitor prices, HELP-3605', function () {
             ->and($this->competitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::LOGIN_FAILED)
             ->and($this->competitor->last_error)->toBe('wrong login');
     });
+    test('a competitor in another language is matched and searched with our names in that language', function () use ($fakeBrowserAndAi) {
+        $spanish    = \App\Models\Helpers\Language::where('code', 'es')->firstOrFail();
+        $ourName    = fn () => \App\Actions\Masters\Competitor\MatchCompetitorProducts::localNames($this->competitor->refresh(), [$this->competitorMasterAsset->id])[$this->competitorMasterAsset->id];
+        $this->competitor->update(['language_id' => $spanish->id]);
+
+        \Illuminate\Support\Facades\DB::table('master_assets')->where('id', $this->competitorMasterAsset->id)->update(['name_i8n' => json_encode(['es' => 'Cuenco tibetano de latón 10cm'])]);
+        expect($ourName())->toBe('Cuenco tibetano de latón 10cm');
+
+        [, $product] = createProduct($this->shop);
+        \Illuminate\Support\Facades\DB::table('shops')->where('id', $this->shop->id)->update(['master_shop_id' => $this->competitorMasterShop->id, 'language_id' => $spanish->id]);
+        \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)->update(['master_product_id' => $this->competitorMasterAsset->id, 'name' => 'Cuenco cantor de latón 10cm']);
+        expect($ourName())->toBe('Cuenco cantor de latón 10cm');
+
+        $this->competitor->products()->create(['code' => 'ES-1', 'name' => 'Cuenco cantor de latón 10cm', 'price' => 8, 'fetched_at' => now()]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'openrouter.ai/api/alpha/*' => function (\Illuminate\Http\Client\Request $request) {
+                $choice = array_search('Cuenco cantor de latón 10cm: the same item', $request['questions']['answer']['criteria'], true);
+
+                return \Illuminate\Support\Facades\Http::response(['answers' => ['answer' => ['choice' => $choice, 'probabilities' => [$choice => 0.9, 'none' => 0.1]]]]);
+            },
+        ]);
+        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::make()->queue($this->competitor, sync: true))->toBe(1);
+        \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => str_contains($request->url(), 'decisions')
+            && $request['state']['our_product']['name'] === 'Brass singing bowl 10cm'
+            && $request['state']['our_product']['name_in_their_language'] === 'Cuenco cantor de latón 10cm');
+
+        $fakeBrowserAndAi(['login_error' => null, 'cookies' => [], 'pages' => []], []);
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+        \Illuminate\Support\Facades\Process::assertRan(fn (\Illuminate\Process\PendingProcess $process) => in_array('https://rival.example.com/search?q='.urlencode('Cuenco cantor de latón 10cm'), json_decode($process->input, true)['urls'] ?? [], true));
+
+        $this->competitor->update(['language_id' => \App\Models\Helpers\Language::where('code', 'en')->value('id')]);
+        expect($ourName())->toBe('Brass singing bowl 10cm')
+            ->and(\App\Actions\Masters\Competitor\FetchCompetitorIntel::languageId('es_ES'))->toBe($spanish->id)
+            ->and(\App\Actions\Masters\Competitor\FetchCompetitorIntel::languageId('es'))->toBe($spanish->id)
+            ->and(\App\Actions\Masters\Competitor\FetchCompetitorIntel::languageId(''))->toBeNull();
+
+        \Pest\Laravel\patch(route('grp.models.competitor.update', $this->competitor->id), ['language_id' => $spanish->id])->assertRedirect();
+        get(route('grp.masters.competitors.show', $this->competitor->id))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('competitor.language', $spanish->name)->etc());
+    });
+
     test('a product feed is read and Jev picks the same item from the closest names', function () {
         $feed = implode("\r\n", [
             "Item No\tStock Level\tItem Name\tPrice\tBarcode\tMin Order Qty\tRRP\tDiscontinued\tURL Links\tMaterial\tHeight\tWidth\tDepth\tCommodity Code\tDescription",
@@ -5293,6 +5355,7 @@ describe('competitor prices, HELP-3605', function () {
             'socials' => ['instagram' => 'https://www.instagram.com/rival', 'facebook' => 'javascript:alert(1)//facebook.com'],
             'banners' => ['Free shipping over £50'],
             'coupons' => ['WELCOME10'],
+            'lang'    => 'en-GB',
         ];
         $fakeIntel($homepage, $facts);
 
@@ -5303,6 +5366,7 @@ describe('competitor prices, HELP-3605', function () {
             ->and($this->competitor->intel_error)->toBeNull()
             ->and($this->competitor->image_id)->not->toBeNull()
             ->and($intel['homepage']['platform'])->toBe('shopify')
+            ->and($this->competitor->language->code)->toBe('en')
             ->and($intel['identity']['name'])->toBe('Rival')
             ->and($intel['identity']['legal_name'])->toBe('Rival Ltd')
             ->and($intel['identity']['phones'])->toBe(['+44 20 7946 0000'])

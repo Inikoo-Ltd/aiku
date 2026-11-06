@@ -20,6 +20,8 @@ Prejdite do **Masters › Competitors** a kliknite na **Add competitor** (Prida�
 - komu **predáva**: zákazníkom (ich ceny sa porovnávajú s vaším RRP) alebo predajcom (porovnávajú sa s vašou cenou);
 - **menu** ich cien.
 
+**Jazyk ich webu** (**Language of their website**) sa zistí sám pri čítaní ich dossieru a dá sa zmeniť cez **Edit**. Ich produkty sa párujú a ich web sa prehľadáva s názvami vašich produktov v tomto jazyku, prevzatými z vášho obchodu v tomto jazyku, takže španielsky konkurent sa porovnáva s vašimi španielskymi názvami.
+
 Pre obchod na Shopify alebo WooCommerce, ktorý ukazuje svoje ceny, to stačí: aiku si jeho verejný katalóg nájde samo a prečíta ho nasledujúce ráno o 04:00 UTC, každý produkt a každú veľkosť balenia s cenou. Na stránke konkurenta potom pri *Prices read from* stojí **Shopify catalogue** alebo **WooCommerce catalogue**.
 
 Pri akejkoľvek inej webovej stránke vyplňte jedno z polí v **Where to read prices** (Odkiaľ čítať ceny):

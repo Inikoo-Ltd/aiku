@@ -113,6 +113,8 @@ use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
+use App\Models\Helpers\TaxNumber;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use App\Models\Accounting\CreditTransaction;
@@ -3316,6 +3318,22 @@ describe('EU VAT re-validation (HELP-2374)', function () {
 
         expect($taxNumber->refresh()->valid)->toBeTrue()
             ->and($taxNumber->checked_at)->toBeNull();
+    });
+
+    test('the daily re-check also picks EU numbers VIES never answered for', function () use ($storeTaxNumber) {
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => false, 'status' => TaxNumberStatusEnum::UNKNOWN, 'checked_at' => null]);
+
+        $matching = TaxNumber::where('type', TaxNumberTypeEnum::EU_VAT)
+            ->whereIn('status', [TaxNumberStatusEnum::INVALID, TaxNumberStatusEnum::UNKNOWN])
+            ->where('country_code', 'ES')
+            ->count();
+
+        expect($matching)->toBeGreaterThan(0);
+
+        $this->artisan('repair:eu-tax-numbers --country=ES --dry-run')
+            ->expectsOutputToContain($matching.' invalid or unchecked EU VAT numbers match')
+            ->assertSuccessful();
     });
 
     test('a delayed re-check does not schedule further re-checks', function () use ($storeTaxNumber) {

@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\Competitor\UI;
 
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Masters\Competitor\CompetitorSellsToEnum;
 use App\Models\Masters\Competitor;
 use App\Models\Masters\MasterShop;
@@ -65,6 +66,14 @@ trait WithCompetitorForm
                         'searchable' => true,
                         'options'    => GetCurrenciesOptions::run(),
                         'value'      => $competitor?->currency_id ?? $group->currency_id,
+                    ],
+                    'language_id' => [
+                        'type'        => 'select',
+                        'label'       => __('Language of their website'),
+                        'information' => __('Found by itself from their website. Their products are matched and searched with our product names in this language'),
+                        'searchable'  => true,
+                        'options'     => GetLanguagesOptions::make()->all(),
+                        'value'       => $competitor?->language_id,
                     ],
                 ],
             ],

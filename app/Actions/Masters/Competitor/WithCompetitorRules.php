@@ -22,6 +22,7 @@ trait WithCompetitorRules
             'website'     => [$presence, 'url:http,https', 'max:255'],
             'sells_to'    => [$presence, Rule::enum(CompetitorSellsToEnum::class)],
             'currency_id' => [$presence, 'integer', 'exists:currencies,id'],
+            'language_id' => ['sometimes', 'nullable', 'integer', 'exists:languages,id'],
             'search_url'  => ['sometimes', 'nullable', 'starts_with:http', 'max:2000', 'regex:/\{query\}/'],
             'feed_url'    => ['sometimes', 'nullable', 'url:http,https', 'max:2000'],
             'login_url'   => ['sometimes', 'nullable', 'url:http,https', 'max:2000'],
