@@ -10,7 +10,9 @@
 use App\Actions\Api\Group\Auth\LoginMobileApp;
 use App\Actions\Api\Group\Auth\LogoutMobileApp;
 use App\Actions\Api\Group\GetApiProfile;
+use App\Actions\Api\Group\GetMobileGroupDashboard;
 use App\Actions\Api\Group\GetMobileNavigation;
+use App\Actions\Api\Group\GetMobileOperationsDashboard;
 use App\Actions\Api\Group\UpdateMobileAppTheme;
 use App\Actions\SysAdmin\User\PasswordResetLink;
 use App\Http\Middleware\VerifyMobileAppKey;
@@ -29,5 +31,8 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         Route::get('/profile', GetApiProfile::class)->name('profile');
         Route::patch('/profile/theme', UpdateMobileAppTheme::class)->name('profile.theme.update');
         Route::get('/navigation', GetMobileNavigation::class)->name('navigation');
+        Route::get('/dashboard/group', GetMobileGroupDashboard::class)->name('dashboard.group');
+        Route::get('/dashboard/operations', GetMobileOperationsDashboard::class)->name('dashboard.operations');
+        Route::get('/dashboard/operations/{warehouse:slug}', [GetMobileOperationsDashboard::class, 'inWarehouse'])->name('dashboard.operations.warehouse');
     });
 });

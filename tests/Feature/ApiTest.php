@@ -590,3 +590,80 @@ test('mobile navigation gives a warehouse-only user no group area and the wareho
         ->and($response->json('tabs.tickets'))->toBeTrue()
         ->and($response->json('tabs.chat'))->toBeFalse();
 });
+
+test('mobile group dashboard without a token is unauthorised', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $this->app['auth']->forgetGuards();
+
+    getJson(route('grp.api.mobile.dashboard.group'), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertUnauthorized();
+});
+
+test('mobile group dashboard gives a sales user the pipeline, year target and shops for every period', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    setPermissionsTeamId($this->group->id);
+    expect($this->user->canViewSales())->toBeTrue();
+    $token = $this->user->createToken('mobile|Dashboard phone', ['mobile'])->plainTextToken;
+    $this->app['auth']->forgetGuards();
+
+    $response = getJson(route('grp.api.mobile.dashboard.group'), [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$token,
+    ])->assertOk();
+
+    $shop = collect($response->json('sales.shops'))->firstWhere('slug', $this->shop->slug);
+
+    expect($response->json('currency_code'))->toBe($this->group->currency->code)
+        ->and(collect($response->json('intervals'))->pluck('value')->all())->toContain('all', 'tdy', 'ytd')
+        ->and(collect($response->json('intervals'))->pluck('value')->all())->not->toContain('ctm')
+        ->and(collect($response->json('sales.pipeline'))->pluck('key')->all())->toContain('in_basket', 'in_warehouse', 'dispatched_today', 'returned')
+        ->and(collect(collect($response->json('sales.pipeline'))->firstWhere('key', 'in_warehouse')['steps'])->pluck('key')->all())->toContain('in_warehouse', 'handling', 'packed')
+        ->and($response->json('sales.year_target'))->toHaveKeys(['label', 'sales_so_far', 'target', 'progress', 'remaining_days'])
+        ->and($shop['figures'])->toHaveKeys(['all', 'tdy', 'ytd'])
+        ->and($shop['figures']['all'])->toHaveKeys(['invoices', 'sales', 'sales_value'])
+        ->and($response->json('sales.totals.all'))->toHaveKeys(['invoices', 'sales', 'sales_value']);
+});
+
+test('mobile group dashboard gives a user without sales permission no sales figures', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $user  = createMobileAppUser($this->group);
+    $token = $user->createToken('mobile|Dashboard phone', ['mobile'])->plainTextToken;
+    $this->app['auth']->forgetGuards();
+
+    getJson(route('grp.api.mobile.dashboard.group'), [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$token,
+    ])->assertOk()->assertJsonPath('sales', null);
+});
+
+test('mobile operations dashboard counts every stage of a warehouse the user works in', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $this->app['auth']->shouldUse('web');
+    setPermissionsTeamId($this->group->id);
+    $warehouse = createWarehouse();
+    $picker    = createMobileAppUser($this->group);
+    UserAddRoles::run($picker, [RolesEnum::getRoleName(RolesEnum::DISPATCH_CLERK->value, $warehouse)]);
+    $token = $picker->createToken('mobile|Picker phone', ['mobile'])->plainTextToken;
+    $this->app['auth']->forgetGuards();
+
+    $response = getJson(route('grp.api.mobile.dashboard.operations.warehouse', $warehouse->slug), [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$token,
+    ])->assertOk();
+
+    expect(collect($response->json('stages'))->pluck('key')->all())
+        ->toBe(['unassigned', 'queued', 'picking', 'blocked', 'packing', 'packed', 'finalised', 'dispatched'])
+        ->and($response->json('warehouses.0.name'))->toBe($warehouse->name)
+        ->and($response->json('warehouses.0.slug'))->toBe($warehouse->slug);
+});
+
+test('mobile operations dashboard refuses a user who works in no warehouse', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $warehouse = createWarehouse();
+    $user      = createMobileAppUser($this->group);
+    $token     = $user->createToken('mobile|Dashboard phone', ['mobile'])->plainTextToken;
+    $headers   = ['X-Aiku-App-Key' => 'mobile-test-key', 'Authorization' => 'Bearer '.$token];
+    $this->app['auth']->forgetGuards();
+
+    getJson(route('grp.api.mobile.dashboard.operations'), $headers)->assertForbidden();
+    getJson(route('grp.api.mobile.dashboard.operations.warehouse', $warehouse->slug), $headers)->assertForbidden();
+});
