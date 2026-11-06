@@ -5,8 +5,8 @@
   -->
 
 <script setup lang="ts">
+import { ref } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import ConfirmDialog from "primevue/confirmdialog"
 import { useConfirm } from "primevue/useconfirm"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -30,6 +30,8 @@ defineProps<{
 }>()
 
 const confirm = useConfirm()
+const isOpeningCreate = ref(false)
+const cancelError = ref<string | null>(null)
 
 const cancelRequest = (row: MoneyRequestRow) =>
 	confirm.require({
@@ -38,12 +40,13 @@ const cancelRequest = (row: MoneyRequestRow) =>
 		message: ctrans("The client will no longer be asked for this money, and its lines can be asked for again."),
 		rejectLabel: ctrans("Keep it"),
 		acceptLabel: ctrans("Cancel request"),
-		accept: () =>
+		accept: () => {
+			cancelError.value = null
 			router.patch(route(row.cancel_route!.name, row.cancel_route!.parameters), {}, {
 				preserveScroll: true,
-				onSuccess: () => notify({ title: ctrans("Request cancelled"), type: "success" }),
-				onError: (errors) => notify({ title: ctrans("Something went wrong"), text: Object.values(errors ?? {})[0] as string, type: "error" }),
-			}),
+				onError: (errors) => (cancelError.value = `${row.reference}: ${Object.values(errors ?? {})[0] ?? ctrans("Something went wrong")}`),
+			})
+		},
 	})
 </script>
 
@@ -51,8 +54,8 @@ const cancelRequest = (row: MoneyRequestRow) =>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
 		<template #other>
-			<Link v-if="create_route" :href="route(create_route.name, create_route.parameters)">
-				<Button type="tertiary" :label="ctrans('New request')">
+			<Link v-if="create_route" :href="route(create_route.name, create_route.parameters)" @start="isOpeningCreate = true" @finish="isOpeningCreate = false">
+				<Button type="tertiary" :label="ctrans('New request')" :loading="isOpeningCreate">
 					<template #icon>
 						<FontAwesomeIcon icon="fal fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
 					</template>
@@ -60,6 +63,8 @@ const cancelRequest = (row: MoneyRequestRow) =>
 			</Link>
 		</template>
 	</PageHeading>
+
+	<p v-if="cancelError" class="mx-4 mt-4 text-xs text-red-600">{{ cancelError }}</p>
 
 	<TableAgentMoneyRequests :data="data" @cancel="cancelRequest" />
 
