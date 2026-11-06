@@ -19,12 +19,12 @@ trait WithCompetitorRules
 
         return [
             'name'        => [$presence, 'string', 'max:255'],
-            'website'     => [$presence, 'url', 'max:255'],
+            'website'     => [$presence, 'url:http,https', 'max:255'],
             'sells_to'    => [$presence, Rule::enum(CompetitorSellsToEnum::class)],
             'currency_id' => [$presence, 'integer', 'exists:currencies,id'],
             'search_url'  => ['sometimes', 'nullable', 'starts_with:http', 'max:2000', 'regex:/\{query\}/'],
-            'feed_url'    => ['sometimes', 'nullable', 'url', 'max:2000'],
-            'login_url'   => ['sometimes', 'nullable', 'url', 'max:2000'],
+            'feed_url'    => ['sometimes', 'nullable', 'url:http,https', 'max:2000'],
+            'login_url'   => ['sometimes', 'nullable', 'url:http,https', 'max:2000'],
             'username'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'password'    => ['sometimes', 'nullable', 'string', 'max:255'],
         ];

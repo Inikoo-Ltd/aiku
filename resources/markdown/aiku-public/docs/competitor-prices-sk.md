@@ -52,12 +52,32 @@ Pár označený *Similar, not the same item* (podobný, nie rovnaká položka) s
 
 ## Stránka konkurenta
 
-Kliknutím na názov konkurenta v zozname alebo na dashboarde uvidíte jeho hlavný obchod, web, komu predáva, menu, ako sa čítajú jeho ceny, či sa aiku prihlasuje, jeho stav a poslednú chybu, a dve karty:
+Kliknite na názov konkurenta v zozname alebo na dashboarde. Hlavička ukazuje jeho logo, web, platformu, na ktorej beží jeho obchod (Shopify, WooCommerce a podobne), hlavný obchod, komu predáva, menu, ako sa čítajú jeho ceny, kedy sa ceny naposledy čítali a kedy sa naposledy obnovil dossier. Nasledujú štyri karty:
 
-- **Matches**: jeho páry s rovnakou kontrolou fajkou a krížikom;
-- **Products read**: všetko, čo sa z neho prečítalo, s cenou, jednotkami a odkazom.
+- **Dossier**, predvolená karta: spravodajský report o konkurentovi, ktorý sa raz týždenne vytvára z jeho verejných stránok (pozri nižšie).
+- **Matches**: jeho páry s rovnakou kontrolou fajkou a krížikom.
+- **Products read**: všetko, čo sa z neho prečítalo, s cenou, cenou pred zľavou, keď ju obchod ukazuje, výškou zľavy, jednotkami a odkazom. Filter **On sale now** nechá iba produkty so zľavou.
+- **Policies**: text každej stránky o doprave, vrátení tovaru a obchodných podmienkach, ktorá sa čítala pre dossier, každá s odkazom, aby sa údaj z dossieru dal overiť na stránke, z ktorej pochádza.
 
 **Edit** otvorí rovnaký formulár ako pri pridávaní, bez hlavného obchodu.
+
+### Dossier
+
+Každý týždeň aiku v prehliadači otvorí domovskú stránku konkurenta a jeho stránky o doprave, vrátení tovaru a obchodných podmienkach, presne ako návštevník, bez prihlásenia. Urobí snímku domovskej stránky, prečíta, čo firma o sebe zverejňuje, a AI z toho vytiahne údaje, každý s odkazom na stránku, z ktorej pochádza, a napíše krátky prehľad. Dossier sa vytvorí aj pri pridaní konkurenta a vždy, keď kliknete na **Refresh dossier** (trvá niekoľko minút; vráťte sa na stránku neskôr).
+
+Karta ukazuje zhora nadol:
+
+- **Briefing**: štyri až šesť viet o tom, kto sú, ako ceňujú oproti nám, ako veľmi sa spoliehajú na akcie, a o ich doprave a podmienkach, s jednoriadkovým zaradením na trhu.
+- **What changed**: čo sa líši od predchádzajúceho obnovenia, s dátumami: hranica dopravy zadarmo, ceny alebo dodacie lehoty dopravy, minimálna objednávka, lehota na vrátenie, akcia alebo kupón, ktoré sa objavili alebo skončili, spôsoby platby, telefón, email alebo adresa, platforma, počet produktov, ktorý sa zmenil o viac ako 10 %, alebo podiel produktov v akcii, ktorý sa zmenil o viac ako 10 bodov. Skoršie zmeny nasledujú ako krátka časová os. Prvý dossier uvedie, že zatiaľ nie je s čím porovnávať.
+- **Screenshot** ich domovskej stránky; kliknutím ho zväčšíte.
+- **Identity**: názov firmy, telefóny, emaily, adresa, krajina a sociálne siete tak, ako ich zverejňuje ich web.
+- **Key numbers**: počet produktov, cenové rozpätie, podiel produktov teraz v akcii, priemerná zľava, potvrdené páry a medián rozdielu oproti nám.
+- **Site-wide offers**: bannery, kupónové kódy, zľavy za objem alebo po úrovniach a zľavy za odber newslettera, každá s odkazom na zdrojovú stránku, plus oznamy na ich domovskej stránke.
+- **Share of products on sale, last 90 days**: čiara z denných čítaní katalógu, takže obchod s vysokou cenníkovou cenou, ktorý je stále v akcii, je tak aj vidieť.
+- **Shipping and terms**: doprava zadarmo od, ceny dopravy, kam dodávajú, dodacie lehoty, minimálna objednávka, vrátenie tovaru a platby, každé s odkazom na stránku, ktorá to uvádza. *Not found on their pages* znamená, že prečítané stránky to neuvádzajú.
+- **Most discounted right now**: ich produkty s najväčšou zľavou pri poslednom čítaní katalógu.
+
+Údaj pochádza iba z prečítaných stránok: AI má pokyn povedať *not found*, nie hádať. Keď web prehliadač zablokuje alebo neodpovedá, dossier si ponechá posledný obsah a hlavička ukáže chybu.
 
 <aside class="wayfinder"><strong>Kde kliknúť v aiku</strong>
 <ul>

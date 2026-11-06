@@ -4627,6 +4627,8 @@ describe('competitor prices, HELP-3605', function () {
             'stocks'  => [],
         ]);
 
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode(['error' => 'faked browser', 'homepage' => null]))]);
+
         $this->competitor = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
             'name'        => 'Rival',
             'website'     => 'https://rival.example.com',
@@ -4697,6 +4699,14 @@ describe('competitor prices, HELP-3605', function () {
             'currency_id' => group()->currency_id,
             'search_url'  => 'https://x.example.com/search',
         ])->assertSessionHasErrors('search_url');
+
+        post(route('grp.models.competitor.store'), [
+            'master_shop_id' => $this->competitorMasterShop->id,
+            'name'        => 'Local file',
+            'website'     => 'file://localhost/etc/passwd',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+        ])->assertSessionHasErrors('website');
 
         post(route('grp.models.competitor.store'), [
             'name'        => 'No shop',
@@ -5123,6 +5133,260 @@ function createMasterFamilyInFreshMasterShop(string $prefix): MasterProductCateg
         StoreMasterDepartment::make()->action(createFreshMasterShop(), ['code' => $prefix.'-DEP-'.uniqid(), 'name' => $prefix.' department']),
         ['code' => $prefix.'-FAM-'.uniqid(), 'name' => $prefix.' family']
     );
+
+    test('offers are read as a was price and counted into the daily stats, from a Shopify and a WooCommerce catalogue', function () {
+        \Illuminate\Support\Sleep::fake();
+        $oil = ['id' => 1, 'title' => 'Mandarin Oil', 'handle' => 'mandarin', 'body_html' => '', 'images' => [], 'variants' => [
+            ['id' => 11, 'title' => '10ml', 'price' => '2.00', 'compare_at_price' => '4.00', 'grams' => 0],
+            ['id' => 12, 'title' => '100ml', 'price' => '12.50', 'compare_at_price' => '12.50', 'grams' => 0],
+            ['id' => 13, 'title' => '1L', 'price' => '80.00', 'compare_at_price' => null, 'grams' => 0],
+            ['id' => 14, 'title' => '5L', 'price' => '300.00', 'compare_at_price' => '400.00', 'grams' => 0],
+        ]];
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['sale.example.com/*' => function (\Illuminate\Http\Client\Request $request) use ($oil) {
+            parse_str(parse_url($request->url(), PHP_URL_QUERY), $query);
+
+            return \Illuminate\Support\Facades\Http::response(($query['limit'] ?? null) === '1' || ($query['page'] ?? '1') === '1' ? ['products' => [$oil]] : ['products' => []]);
+        }]);
+        $shop = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
+            'name' => 'Sale rival', 'website' => 'https://sale.example.com', 'sells_to' => 'consumer', 'currency_id' => group()->currency_id,
+        ]);
+        $this->artisan('masters:competitor-feeds', ['--competitor' => $shop->id, '--no-match' => true])->assertSuccessful();
+
+        $rows = $shop->products()->get()->keyBy('code');
+        $stat = $shop->dailyStats()->firstOrFail();
+        expect($rows->map(fn ($row) => $row->was_price === null ? null : (float) $row->was_price)->all())->toBe(['11' => 4.0, '12' => null, '13' => null, '14' => 400.0])
+            ->and($stat->date->toDateString())->toBe(now()->toDateString())
+            ->and($stat->number_products)->toBe(4)
+            ->and($stat->number_on_sale)->toBe(2)
+            ->and((float) $stat->average_discount)->toBe(37.5)
+            ->and(\App\Actions\Masters\Competitor\ImportCompetitorFeed::saleNumbers($shop)['number_on_sale'])->toBe(2);
+
+        $this->artisan('masters:competitor-feeds', ['--competitor' => $shop->id, '--no-match' => true])->assertSuccessful();
+        expect($shop->dailyStats()->count())->toBe(1);
+
+        $product = fn (int $id, string $price, ?string $regular, bool $onSale) => [
+            'id' => $id, 'type' => 'simple', 'name' => "Candle $id", 'permalink' => "https://woosale.example.com/product/$id/", 'images' => [], 'on_sale' => $onSale,
+            'prices' => ['price' => $price, 'regular_price' => $regular ?? $price, 'sale_price' => $price, 'currency_minor_unit' => 2],
+        ];
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['woosale.example.com/*' => function (\Illuminate\Http\Client\Request $request) use ($product) {
+            parse_str(parse_url($request->url(), PHP_URL_QUERY), $query);
+
+            return match (true) {
+                str_contains($request->url(), 'products.json') => \Illuminate\Support\Facades\Http::response('Not found', 404),
+                ($query['type'] ?? null) === 'variation'        => \Illuminate\Support\Facades\Http::response([], 200, ['X-WP-TotalPages' => 1]),
+                default                                         => \Illuminate\Support\Facades\Http::response([$product(201, '500', '1000', true), $product(202, '500', '1000', false)], 200, ['X-WP-TotalPages' => 1]),
+            };
+        }]);
+        $woo = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
+            'name' => 'Woo sale rival', 'website' => 'https://woosale.example.com', 'sells_to' => 'consumer', 'currency_id' => group()->currency_id,
+        ]);
+        $this->artisan('masters:competitor-feeds', ['--competitor' => $woo->id, '--no-match' => true])->assertSuccessful();
+
+        $rows = $woo->products()->get()->keyBy('code');
+        expect((float) $rows['201']->was_price)->toBe(10.0)
+            ->and($rows['202']->was_price)->toBeNull()
+            ->and($woo->dailyStats()->firstOrFail()->number_on_sale)->toBe(1);
+
+        $this->competitor->products()->create(['code' => 'CSV-1', 'name' => 'Csv row', 'price' => 5, 'fetched_at' => now()]);
+        expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::parse("code,name,price\nA-1,Bowl,9.5")[0]['was_price'])->toBeNull();
+
+        $page = get(route('grp.masters.competitors.show', ['competitor' => $shop->id, 'tab' => 'products', 'products_sort' => '-discount']))->assertOk();
+        $products = collect($page->viewData('page')['props']['products']['data']);
+        expect($products->pluck('discount')->all())->toBe([50, 25, null, null])
+            ->and($products->first()['was_price'])->toEqual(4);
+
+        $onSale = get(route('grp.masters.competitors.show', ['competitor' => $shop->id, 'tab' => 'products', 'products_elements' => ['on_sale' => 'yes']]))->assertOk();
+        expect(collect($onSale->viewData('page')['props']['products']['data'])->pluck('code')->sort()->values()->all())->toBe(['11', '14']);
+    });
+
+    $fakeIntel = function (array $homepage, array $facts, array $pages = [], ?string $briefing = 'They are dearer than us and lean on coupons.') {
+        $image = imagecreatetruecolor(4, 4);
+        ob_start();
+        imagejpeg($image);
+        $screenshot = base64_encode(ob_get_clean());
+
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode([
+            'homepage'   => $homepage + ['url' => 'https://rival.example.com', 'final_url' => 'https://rival.example.com/', 'status' => 200, 'blocked' => false, 'title' => 'Rival', 'description' => 'Oils', 'platform' => 'shopify', 'logo' => 'https://rival.example.com/logo.png', 'json_ld' => [], 'phones' => [], 'emails' => [], 'socials' => [], 'banners' => [], 'coupons' => [], 'text' => 'Welcome to Rival'],
+            'screenshot' => $screenshot,
+            'pages'      => $pages ?: [['url' => 'https://rival.example.com/policies/shipping-policy', 'final_url' => 'https://rival.example.com/policies/shipping-policy', 'status' => 200, 'blocked' => false, 'title' => 'Shipping', 'text' => 'Free shipping over £50. Delivery 2-3 days.']],
+            'error'      => null,
+        ]))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'openrouter.ai/*' => fn (\Illuminate\Http\Client\Request $request) => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(
+                $request['model'] === config('services.competitor_intel.briefing_model') ? ['briefing' => $briefing, 'positioning' => 'Premium oils'] : $facts
+            )]]], 'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 5, 'cost' => 0.001]]),
+        ]);
+    };
+
+    test('the dossier reads the homepage and policy pages, keeps every refresh and lists what changed', function () use ($fakeIntel) {
+        $facts = [
+            'shipping'      => ['costs' => '£3.99 under £50', 'zones' => 'UK and EU', 'free_shipping_threshold' => 'Orders over £50', 'delivery_times' => '2-3 working days', 'source' => 'https://rival.example.com/policies/shipping-policy'],
+            'minimum_order' => ['value' => 'not found', 'source' => 'not found'],
+            'returns'       => ['window' => '30 days', 'source' => 'https://rival.example.com/policies/shipping-policy'],
+            'payments'      => ['methods' => ['Visa', 'PayPal'], 'source' => 'https://rival.example.com/policies/shipping-policy'],
+            'offers'        => [['text' => '10% off your first order', 'kind' => 'newsletter', 'source' => 'https://rival.example.com/']],
+            'identity'      => ['legal_name' => 'Rival Ltd', 'address' => '1 Example Street, London', 'country' => 'United Kingdom', 'source' => 'https://rival.example.com/'],
+        ];
+        $facts['returns']['source'] = 'https://elsewhere.example.com/made-up';
+        $homepage = [
+            'json_ld' => [['@type' => 'Organization', 'name' => 'Rival', 'telephone' => '+44 20 7946 0000', 'address' => ['@type' => 'PostalAddress', 'streetAddress' => '1 Example Street', 'addressLocality' => 'London', 'postalCode' => 'N1 1AA', 'addressCountry' => 'GB']]],
+            'emails'  => ['hello@rival.example.com'],
+            'socials' => ['instagram' => 'https://www.instagram.com/rival', 'facebook' => 'javascript:alert(1)//facebook.com'],
+            'banners' => ['Free shipping over £50'],
+            'coupons' => ['WELCOME10'],
+        ];
+        $fakeIntel($homepage, $facts);
+
+        expect(\App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor))->not->toBeNull();
+        $this->competitor->refresh();
+        $intel = $this->competitor->intel;
+        expect($this->competitor->intel_fetched_at)->not->toBeNull()
+            ->and($this->competitor->intel_error)->toBeNull()
+            ->and($this->competitor->image_id)->not->toBeNull()
+            ->and($intel['homepage']['platform'])->toBe('shopify')
+            ->and($intel['identity']['name'])->toBe('Rival')
+            ->and($intel['identity']['legal_name'])->toBe('Rival Ltd')
+            ->and($intel['identity']['phones'])->toBe(['+44 20 7946 0000'])
+            ->and($intel['identity']['emails'])->toBe(['hello@rival.example.com'])
+            ->and($intel['identity']['address'])->toBe('1 Example Street, London, N1 1AA')
+            ->and($intel['identity']['country'])->toBe('GB')
+            ->and($intel['identity']['socials'])->toBe(['instagram' => 'https://www.instagram.com/rival'])
+            ->and($intel['shipping']['free_shipping_threshold'])->toBe('Orders over £50')
+            ->and($intel['shipping']['source'])->toBe('https://rival.example.com/policies/shipping-policy')
+            ->and($intel['minimum_order'])->toBe(['value' => null, 'source' => null])
+            ->and($intel['returns'])->toEqual(['window' => '30 days', 'source' => null])
+            ->and($intel['payments']['methods'])->toBe(['Visa', 'PayPal'])
+            ->and($intel['offers'][0]['kind'])->toBe('newsletter')
+            ->and($intel['offers'][0]['source'])->toBe('https://rival.example.com/')
+            ->and($intel['identity']['source'])->toBe('https://rival.example.com/')
+            ->and($intel['briefing'])->toBe('They are dearer than us and lean on coupons.')
+            ->and($intel['positioning'])->toBe('Premium oils')
+            ->and($intel['pages'][0]['url'])->toBe('https://rival.example.com/policies/shipping-policy')
+            ->and($intel['numbers']['number_products'])->toBe(0)
+            ->and($this->competitor->intelSnapshots()->count())->toBe(1)
+            ->and($this->competitor->intelSnapshots()->first()->changes)->toBe([]);
+
+        \Illuminate\Support\Facades\Http::assertSentCount(2);
+        \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => $request['model'] === config('services.competitor_intel.extraction_model') && str_contains($request['messages'][1]['content'], 'Free shipping over £50'));
+        \Illuminate\Support\Facades\Http::assertSent(fn (\Illuminate\Http\Client\Request $request) => $request['model'] === config('services.competitor_intel.briefing_model') && str_contains($request['messages'][1]['content'], 'Rival Ltd'));
+
+        $facts['shipping']['free_shipping_threshold'] = 'Orders over £75';
+        $facts['offers'][]                            = ['text' => 'Code SPRING20 for 20% off', 'kind' => 'coupon', 'source' => 'https://rival.example.com/'];
+        $fakeIntel($homepage, $facts);
+        \App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor);
+
+        $second = $this->competitor->intelSnapshots()->latest('fetched_at')->first();
+        expect($this->competitor->intelSnapshots()->count())->toBe(2)
+            ->and(collect($second->changes)->pluck('key')->all())->toBe(['free_shipping_threshold', 'offer_added'])
+            ->and($second->changes[0]['from'])->toBe('Orders over £50')
+            ->and($second->changes[0]['to'])->toBe('Orders over £75')
+            ->and($second->changes[1]['to'])->toBe('Code SPRING20 for 20% off');
+
+        $facts['shipping']['free_shipping_threshold'] = 'Free over £75 (UK only)';
+        $facts['payments']['methods']                 = ['Visa and Mastercard', 'PayPal'];
+        $facts['offers'][1]['kind']                   = 'banner';
+        $fakeIntel($homepage, $facts);
+        \App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor);
+        expect($this->competitor->intelSnapshots()->count())->toBe(3)
+            ->and($this->competitor->intelSnapshots()->latest('fetched_at')->first()->changes)->toBe([]);
+
+        $fakeIntel($homepage, $facts);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['openrouter.ai/*' => \Illuminate\Support\Facades\Http::response('upstream error', 500)]);
+        expect(\App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor))->toBeNull()
+            ->and($this->competitor->refresh()->intel_error)->toBe('The AI did not answer')
+            ->and($this->competitor->intel['shipping']['free_shipping_threshold'])->toBe('Free over £75 (UK only)')
+            ->and($this->competitor->intelSnapshots()->count())->toBe(3);
+
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode(['homepage' => ['status' => 200, 'blocked' => true, 'text' => 'Please verify you are human'], 'screenshot' => null, 'pages' => [], 'error' => null]))]);
+        expect(\App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor))->toBeNull()
+            ->and($this->competitor->refresh()->intel_error)->toBe('The website asked to prove we are not a robot')
+            ->and($this->competitor->intelSnapshots()->count())->toBe(3);
+
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode(['error' => 'Failed to launch the browser process']), exitCode: 1)]);
+        expect(\App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor))->toBeNull()
+            ->and($this->competitor->refresh()->intel_error)->toBe('Failed to launch the browser process');
+
+        $fakeIntel($homepage, ['shipping' => 'not found', 'minimum_order' => 'Not found.', 'identity' => 'not found', 'returns' => ['window' => 'Not found.'], 'payments' => 'not found', 'offers' => 'not found'], [], null);
+        $intel = \App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor);
+        expect($intel['shipping']['free_shipping_threshold'])->toBeNull()
+            ->and($intel['returns']['window'])->toBeNull()
+            ->and($intel['offers'])->toBe([])
+            ->and($intel['briefing'])->toBe('They are dearer than us and lean on coupons.')
+            ->and($this->competitor->intelSnapshots()->latest('id')->first()->changes)->toBe([]);
+    });
+
+    test('the dossier page shows the intel, the changes and the numbers, and never a secret', function () use ($fakeIntel) {
+        $this->competitor->update(['login_url' => 'https://rival.example.com/login', 'username' => 'buyer@example.com', 'password' => 'trade-secret', 'feed_url' => 'https://rival.example.com/products.json?key=secret-feed', 'cookies' => [['name' => 'session', 'value' => 'cookie-secret']]]);
+        $this->competitor->products()->create(['code' => 'ON-1', 'name' => 'Bowl on offer', 'price' => 6, 'was_price' => 12, 'fetched_at' => now()]);
+        $this->competitor->products()->create(['code' => 'OFF-1', 'name' => 'Bowl full price', 'price' => 6, 'fetched_at' => now()]);
+        $this->competitor->dailyStats()->create(['date' => now()->subDay()->toDateString(), 'number_products' => 2, 'number_on_sale' => 0]);
+        $this->competitor->dailyStats()->create(['date' => now()->toDateString(), 'number_products' => 2, 'number_on_sale' => 1, 'average_discount' => 50]);
+
+        $facts = ['shipping' => ['free_shipping_threshold' => '£50', 'source' => 'https://rival.example.com/policies/shipping-policy'], 'offers' => []];
+        $fakeIntel([], $facts);
+        \App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor);
+        $facts['shipping']['free_shipping_threshold'] = '£60';
+        $fakeIntel([], $facts);
+        \App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor);
+
+        $response = get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->id]))->assertOk();
+        $props    = $response->viewData('page')['props'];
+        $json     = json_encode($props);
+        expect($props['tabs']['current'])->toBe('dossier')
+            ->and($props['competitor']['platform'])->toBe('shopify')
+            ->and($props['competitor']['screenshot']['original'])->toBeString()
+            ->and($props['dossier']['intel']['briefing'])->toBe('They are dearer than us and lean on coupons.')
+            ->and($props['dossier']['intel'])->not->toHaveKey('pages')
+            ->and($props['dossier']['numbers']['number_products'])->toBe(2)
+            ->and($props['dossier']['numbers']['share_on_sale'])->toBe(50)
+            ->and($props['dossier']['numbers']['average_discount'])->toEqual(50)
+            ->and($props['dossier']['changes']['items'])->toBe([['label' => 'Free-shipping threshold', 'from' => '£50', 'to' => '£60']])
+            ->and($props['dossier']['on_sale'])->toHaveCount(2)
+            ->and($props['dossier']['on_sale'][1]['share_on_sale'])->toEqual(50)
+            ->and($props['dossier']['discounted']['data'][0]['code'])->toBe('ON-1')
+            ->and($props['dossier']['discounted']['data'][0]['discount'])->toBe(50)
+            ->and($props['dossier']['discounted']['data'])->toHaveCount(1)
+            ->and($props['refresh_route']['name'])->toBe('grp.models.competitor.refresh_intel')
+            ->and($json)->not->toContain('trade-secret', 'secret-feed', 'cookie-secret', 'buyer@example.com', 'feed_url', 'password');
+
+        $policies = get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->id, 'tab' => 'policies']))->assertOk()->viewData('page')['props'];
+        expect($policies['policies'][0]['url'])->toBe('https://rival.example.com/policies/shipping-policy')
+            ->and($policies['policies'][0]['text'])->toContain('Free shipping over £50');
+
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode(['error' => 'faked browser', 'homepage' => null]))]);
+        $fresh = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
+            'name' => 'Unread rival', 'website' => 'https://unread.example.com', 'sells_to' => 'consumer', 'currency_id' => group()->currency_id,
+        ]);
+        $unread = get(route('grp.masters.competitors.show', ['competitor' => $fresh->id]))->assertOk()->viewData('page')['props'];
+        expect($unread['competitor']['intel_fetched_at'])->toBeNull()
+            ->and($unread['dossier']['changes'])->toBeNull()
+            ->and($unread['dossier']['intel'])->toBe([]);
+    });
+
+    test('refreshing the dossier queues the read and needs masters edit', function () {
+        \Illuminate\Support\Facades\Bus::fake();
+        $originalRoles       = $this->user->roles->pluck('name')->toArray();
+        $originalPermissions = $this->user->getDirectPermissions()->pluck('name')->all();
+
+        try {
+            actingAsUserWithOnlyPermissions($this->user, ['masters.view']);
+            post(route('grp.models.competitor.refresh_intel', ['competitor' => $this->competitor->id]))->assertForbidden();
+            \Illuminate\Support\Facades\Bus::assertNotDispatched(\App\Jobs\BoundedUniqueJobDecorator::class);
+
+            actingAsUserWithOnlyPermissions($this->user, ['masters.view', 'masters.edit']);
+            post(route('grp.models.competitor.refresh_intel', ['competitor' => $this->competitor->id]))->assertRedirect();
+            \Illuminate\Support\Facades\Bus::assertDispatched(\App\Jobs\BoundedUniqueJobDecorator::class, fn (\App\Jobs\BoundedUniqueJobDecorator $job) => $job->decorates(\App\Actions\Masters\Competitor\FetchCompetitorIntel::class));
+        } finally {
+            setPermissionsTeamId($this->user->group_id);
+            $this->user->syncPermissions($originalPermissions);
+            actingAsUserWithRoles($this->user, $originalRoles);
+            \App\Actions\SysAdmin\User\SetUserAuthorisedModels::run($this->user);
+        }
+    });
 }
 
 /**
