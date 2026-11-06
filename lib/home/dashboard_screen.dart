@@ -7,23 +7,16 @@
 
 import 'package:flutter/material.dart';
 
-import '../auth/auth_controller.dart';
-import '../auth/token_store.dart';
 import '../ui/accent_shades.dart';
 import '../ui/aiku_palette.dart';
-import '../ui/aiku_theme.dart';
-import 'theme_screen.dart';
+import '../ui/preview_notice.dart';
 
-/// The screen after sign-in, laid out after aiku's web Group dashboard.
+/// The group's Home, laid out after aiku's web Group dashboard.
 ///
 /// Layout only for now: every figure shows a dash until the dashboard is
 /// connected to aiku. Nothing on it is made up.
-class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({
-    super.key,
-    required this.controller,
-    required this.session,
-  });
+class GroupDashboard extends StatefulWidget {
+  const GroupDashboard({super.key, required this.shades});
 
   /// Keys for tests.
   static const previewNoticeKey = ValueKey('dashboard.previewNotice');
@@ -32,18 +25,12 @@ class DashboardScreen extends StatefulWidget {
   static const pipelineKey = ValueKey('dashboard.pipeline');
   static const periodsKey = ValueKey('dashboard.periods');
   static const shopsKey = ValueKey('dashboard.shops');
-  static const themeButtonKey = ValueKey('dashboard.theme');
-  static const accountMenuKey = ValueKey('dashboard.account');
-  static const signOutKey = ValueKey('dashboard.signOut');
 
-  /// Runs sign-out and theme changes.
-  final AuthController controller;
-
-  /// The signed-in user.
-  final StoredSession session;
+  /// The current theme's accent shades.
+  final AccentShades shades;
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<GroupDashboard> createState() => _GroupDashboardState();
 }
 
 enum _DashboardTab {
@@ -66,149 +53,83 @@ const _periods = [
   'Year to date',
 ];
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _GroupDashboardState extends State<GroupDashboard> {
   _DashboardTab _tab = _DashboardTab.sales;
   String _period = _periods.first;
 
-  void _openTheme() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => ThemeScreen(controller: widget.controller),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final profile = widget.session.profile;
-    final shades = AccentShades.fromAppTheme(effectiveTheme(profile));
+    final shades = widget.shades;
 
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 16,
-        title: Row(
-          children: [
-            Image.asset('assets/images/invader.png', height: 28),
-            const SizedBox(width: 10),
-            const Text(
-              'Dashboard',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        PreviewNotice(
+          key: GroupDashboard.previewNoticeKey,
+          shades: shades,
+          text:
+              'Layout preview. Figures appear once the dashboard is '
+              'connected to aiku.',
+        ),
+        const SizedBox(height: 16),
+        SegmentedButton<_DashboardTab>(
+          key: GroupDashboard.tabsKey,
+          segments: [
+            for (final tab in _DashboardTab.values)
+              ButtonSegment(
+                value: tab,
+                label: Text(tab.label),
+                icon: Icon(tab.icon, size: 18),
+              ),
+          ],
+          selected: {_tab},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) =>
+              setState(() => _tab = selection.first),
+          style: SegmentedButton.styleFrom(
+            selectedBackgroundColor: shades.soft,
+            selectedForegroundColor: shades.deep,
+            textStyle: const TextStyle(fontSize: 13),
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...switch (_tab) {
+          _DashboardTab.sales => [
+            const _TargetCard(key: GroupDashboard.targetKey),
+            const SizedBox(height: 20),
+            const _SectionTitle('Orders'),
+            const SizedBox(height: 8),
+            const _OrderPipeline(key: GroupDashboard.pipelineKey),
+            const SizedBox(height: 20),
+            _PeriodChips(
+              key: GroupDashboard.periodsKey,
+              selected: _period,
+              shades: shades,
+              onSelected: (period) => setState(() => _period = period),
+            ),
+            const SizedBox(height: 12),
+            const _ShopsCard(key: GroupDashboard.shopsKey),
+          ],
+          _DashboardTab.stock => const [
+            NotConnectedCard(
+              icon: Icons.inventory_2_outlined,
+              text: 'Stock figures will appear here.',
             ),
           ],
-        ),
-        actions: [
-          IconButton(
-            key: DashboardScreen.themeButtonKey,
-            tooltip: 'Theme',
-            icon: Icon(Icons.palette_outlined, color: shades.accent),
-            onPressed: _openTheme,
-          ),
-          _AccountMenu(
-            name: profile.contactName ?? profile.username,
-            username: profile.username,
-            shades: shades,
-            onTheme: _openTheme,
-            onSignOut: widget.controller.signOut,
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        children: [
-          _PreviewNotice(key: DashboardScreen.previewNoticeKey, shades: shades),
-          const SizedBox(height: 16),
-          SegmentedButton<_DashboardTab>(
-            key: DashboardScreen.tabsKey,
-            segments: [
-              for (final tab in _DashboardTab.values)
-                ButtonSegment(
-                  value: tab,
-                  label: Text(tab.label),
-                  icon: Icon(tab.icon, size: 18),
-                ),
-            ],
-            selected: {_tab},
-            showSelectedIcon: false,
-            onSelectionChanged: (selection) =>
-                setState(() => _tab = selection.first),
-            style: SegmentedButton.styleFrom(
-              selectedBackgroundColor: shades.soft,
-              selectedForegroundColor: shades.deep,
-              textStyle: const TextStyle(fontSize: 13),
+          _DashboardTab.operations => const [
+            NotConnectedCard(
+              icon: Icons.local_shipping_outlined,
+              text: 'Goods in and out will appear here.',
             ),
-          ),
-          const SizedBox(height: 16),
-          ...switch (_tab) {
-            _DashboardTab.sales => [
-              const _TargetCard(key: DashboardScreen.targetKey),
-              const SizedBox(height: 20),
-              const _SectionTitle('Orders'),
-              const SizedBox(height: 8),
-              const _OrderPipeline(key: DashboardScreen.pipelineKey),
-              const SizedBox(height: 20),
-              _PeriodChips(
-                key: DashboardScreen.periodsKey,
-                selected: _period,
-                shades: shades,
-                onSelected: (period) => setState(() => _period = period),
-              ),
-              const SizedBox(height: 12),
-              const _ShopsCard(key: DashboardScreen.shopsKey),
-            ],
-            _DashboardTab.stock => const [
-              _NotConnectedCard(
-                icon: Icons.inventory_2_outlined,
-                text: 'Stock figures will appear here.',
-              ),
-            ],
-            _DashboardTab.operations => const [
-              _NotConnectedCard(
-                icon: Icons.local_shipping_outlined,
-                text: 'Goods in and out will appear here.',
-              ),
-            ],
-          },
-        ],
-      ),
+          ],
+        },
+      ],
     );
   }
 }
 
 const _figurePlaceholder = '—';
 const _mutedText = TextStyle(fontSize: 12, color: AikuPalette.placeholder);
-
-class _PreviewNotice extends StatelessWidget {
-  const _PreviewNotice({super.key, required this.shades});
-
-  final AccentShades shades;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: shades.soft,
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(Icons.info_outline, size: 18, color: shades.deep),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Layout preview. Figures appear once the dashboard is '
-                'connected to aiku.',
-                style: TextStyle(fontSize: 13, color: shades.deep),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.text);
@@ -297,17 +218,21 @@ class _OrderPipeline extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final (:label, :icon) = _stages[index];
-          return _StatTile(label: label, icon: icon);
+          return StatTile(label: label, icon: icon);
         },
       ),
     );
   }
 }
 
-class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.icon});
+/// A count with a label, in the fixed (never themed) stat colours.
+class StatTile extends StatelessWidget {
+  const StatTile({super.key, required this.label, required this.icon});
 
+  /// What is counted.
   final String label;
+
+  /// Shown next to the count.
   final IconData icon;
 
   @override
@@ -475,118 +400,6 @@ class _PlaceholderShopRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _NotConnectedCard extends StatelessWidget {
-  const _NotConnectedCard({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(icon, size: 28, color: AikuPalette.placeholder),
-            const SizedBox(height: 8),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: AikuPalette.label),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-enum _AccountAction { theme, signOut }
-
-class _AccountMenu extends StatelessWidget {
-  const _AccountMenu({
-    required this.name,
-    required this.username,
-    required this.shades,
-    required this.onTheme,
-    required this.onSignOut,
-  });
-
-  final String name;
-  final String username;
-  final AccentShades shades;
-  final VoidCallback onTheme;
-  final VoidCallback onSignOut;
-
-  @override
-  Widget build(BuildContext context) {
-    final initial = name.isEmpty ? '?' : name.characters.first.toUpperCase();
-
-    return PopupMenuButton<_AccountAction>(
-      key: DashboardScreen.accountMenuKey,
-      tooltip: 'Account',
-      position: PopupMenuPosition.under,
-      onSelected: (action) => switch (action) {
-        _AccountAction.theme => onTheme(),
-        _AccountAction.signOut => onSignOut(),
-      },
-      itemBuilder: (context) => [
-        PopupMenuItem<_AccountAction>(
-          enabled: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: AikuPalette.ink,
-                ),
-              ),
-              Text(username, style: const TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: _AccountAction.theme,
-          child: Row(
-            children: [
-              Icon(Icons.palette_outlined, size: 18, color: shades.accent),
-              const SizedBox(width: 10),
-              const Text('Theme'),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          key: DashboardScreen.signOutKey,
-          value: _AccountAction.signOut,
-          child: const Row(
-            children: [
-              Icon(Icons.logout, size: 18, color: AikuPalette.cancel),
-              SizedBox(width: 10),
-              Text('Sign out'),
-            ],
-          ),
-        ),
-      ],
-      child: CircleAvatar(
-        radius: 16,
-        backgroundColor: shades.accent,
-        child: Text(
-          initial,
-          style: TextStyle(
-            color: shades.onAccent,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
       ),
     );
   }

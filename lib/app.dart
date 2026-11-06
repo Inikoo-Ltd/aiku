@@ -12,7 +12,9 @@ import 'auth/auth_controller.dart';
 import 'auth/forgot_password_screen.dart';
 import 'auth/login_screen.dart';
 import 'auth/two_factor_screen.dart';
-import 'home/dashboard_screen.dart';
+import 'config/app_config.dart';
+import 'home/app_shell.dart';
+import 'home/area_memory.dart';
 import 'ui/accent_shades.dart';
 import 'ui/aiku_palette.dart';
 import 'ui/aiku_theme.dart';
@@ -21,13 +23,25 @@ import 'ui/loading_indicator.dart';
 /// The aiku staff app: shows the screen that matches [controller]'s state,
 /// in the signed-in user's theme once there is one.
 class AikuApp extends StatefulWidget {
-  const AikuApp({super.key, required this.controller, required this.client});
+  const AikuApp({
+    super.key,
+    required this.controller,
+    required this.client,
+    required this.config,
+    required this.areaMemory,
+  });
 
   /// The sign-in session.
   final AuthController controller;
 
   /// The aiku API, for screens that call it directly.
   final AikuApiClient client;
+
+  /// The build settings, shown on the Settings screen.
+  final AppConfig config;
+
+  /// Remembers each user's last area on the phone.
+  final AreaMemory areaMemory;
 
   @override
   State<AikuApp> createState() => _AikuAppState();
@@ -105,9 +119,12 @@ class _AikuAppState extends State<AikuApp> {
             AwaitingOneTimePassword() => TwoFactorScreen(
               controller: widget.controller,
             ),
-            SignedIn(:final session) => DashboardScreen(
-              controller: widget.controller,
+            SignedIn(:final session) => AppShell(
+              authController: widget.controller,
               session: session,
+              client: widget.client,
+              config: widget.config,
+              areaMemory: widget.areaMemory,
             ),
           },
         );

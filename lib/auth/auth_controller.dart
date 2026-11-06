@@ -5,6 +5,8 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
 */
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
 import '../api/aiku_api_client.dart';
@@ -229,6 +231,54 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  /// Asks aiku for the profile again, so a theme or name changed elsewhere
+  /// shows without signing in again.
+  ///
+  /// The saved profile stays if aiku can't be reached, and nothing changes
+  /// while a theme is being saved or the user is logging out. A 401 means
+  /// the token is gone, so the user is signed out.
+  Future<void> refreshProfile() async {
+    final current = _state;
+    if (current is! SignedIn || _themeBeingSaved != null || _isSubmitting) {
+      return;
+    }
+    final session = current.session;
+    try {
+      final profile = await _client.profile(session.token);
+      final isStillThisSession = switch (_state) {
+        SignedIn(session: final now) => identical(now, session),
+        _ => false,
+      };
+      if (!isStillThisSession ||
+          _themeBeingSaved != null ||
+          _isSubmitting ||
+          _isSameProfile(profile, session.profile)) {
+        return;
+      }
+      final refreshed = StoredSession(
+        token: session.token,
+        expiresAt: session.expiresAt,
+        profile: profile,
+      );
+      await _tokenStore.save(refreshed);
+      _state = SignedIn(refreshed);
+      notifyListeners();
+    } on Unauthorised {
+      await sessionExpired();
+    } on ApiFailure {
+      // The saved profile stays; the next refresh tries again.
+    }
+  }
+
+  /// aiku answered 401: the token is gone, so forget it and show login.
+  Future<void> sessionExpired() async {
+    if (_state is! SignedIn) {
+      return;
+    }
+    await _tokenStore.clear();
+    _show(const SignedOut());
+  }
+
   Future<void> _open(LoginResult result) async {
     final session = StoredSession(
       token: result.token,
@@ -251,6 +301,9 @@ class AuthController extends ChangeNotifier {
     _isSubmitting = false;
     notifyListeners();
   }
+
+  static bool _isSameProfile(StaffProfile a, StaffProfile b) =>
+      jsonEncode(a.toJson()) == jsonEncode(b.toJson());
 
   void _show(AuthState state) {
     _errors = FormErrors.none;

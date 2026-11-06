@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'api_failure.dart';
 import 'login_result.dart';
+import 'navigation.dart';
 
 /// Talks to aiku's mobile staff API under `/app/api/mobile`.
 ///
@@ -89,12 +90,34 @@ class AikuApiClient {
       method: 'PATCH',
     );
 
+    return _profileFrom(response, url);
+  }
+
+  /// The signed-in user's profile as aiku has it now, with both themes.
+  Future<StaffProfile> profile(String token) async {
+    final url = _mobileUrl('profile');
+    final response = await _send('GET', url, token: token);
+
+    return _profileFrom(response, url);
+  }
+
+  StaffProfile _profileFrom(http.Response response, Uri url) {
     if (_decodeObject(response.body) case {
       'data': final Map<String, Object?> profile,
     }) {
       return StaffProfile.fromJson(profile);
     }
     throw InvalidResponse(url);
+  }
+
+  /// The areas and menus aiku builds for the signed-in user, limited by
+  /// their permissions exactly as the web sidebar is.
+  Future<NavigationData> navigation(String token) async {
+    final url = _mobileUrl('navigation');
+    final response = await _send('GET', url, token: token);
+
+    return NavigationData.fromJson(_decodeObject(response.body)) ??
+        (throw InvalidResponse(url));
   }
 
   Uri _mobileUrl(String path) =>
@@ -105,15 +128,24 @@ class AikuApiClient {
     Map<String, Object?> body, {
     String? token,
     String method = 'POST',
+  }) => _send(method, url, body: body, token: token);
+
+  Future<http.Response> _send(
+    String method,
+    Uri url, {
+    Map<String, Object?>? body,
+    String? token,
   }) async {
     final request = http.Request(method, url)
       ..headers.addAll({
         'Accept': 'application/json',
-        'Content-Type': 'application/json',
         'X-Aiku-App-Key': _config.appKey,
+        if (body != null) 'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
-      })
-      ..body = jsonEncode(body);
+      });
+    if (body != null) {
+      request.body = jsonEncode(body);
+    }
 
     final http.Response response;
     try {

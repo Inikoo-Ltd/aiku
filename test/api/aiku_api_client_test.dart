@@ -166,4 +166,39 @@ void main() {
       throwsA(isA<NetworkFailure>()),
     );
   });
+
+  test('navigation is a GET with the app key, the token and no body', () async {
+    final requests = <http.Request>[];
+    final client = _clientAnswering((request) async {
+      requests.add(request);
+      return _json({
+        'tabs': {'tasks': false, 'tickets': true, 'chat': false},
+        'group': null,
+        'organisations': <Object?>[],
+      }, 200);
+    });
+
+    final navigation = await client.navigation('1|secret');
+
+    final request = requests.single;
+    expect(request.method, 'GET');
+    expect(request.url.path, '/app/api/mobile/navigation');
+    expect(request.headers['X-Aiku-App-Key'], 'test-app-key');
+    expect(request.headers['Authorization'], 'Bearer 1|secret');
+    expect(request.headers.containsKey('Content-Type'), isFalse);
+    expect(request.body, isEmpty);
+    expect(navigation.tabs.tickets, isTrue);
+  });
+
+  test(
+    'a navigation answer of the wrong shape is an invalid response',
+    () async {
+      final client = _clientAnswering((_) async => _json({'data': []}, 200));
+
+      await expectLater(
+        client.navigation('1|secret'),
+        throwsA(isA<InvalidResponse>()),
+      );
+    },
+  );
 }

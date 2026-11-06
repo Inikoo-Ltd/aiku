@@ -21,6 +21,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import '../support/in_memory_area_memory.dart';
 import '../support/in_memory_token_store.dart';
 
 /// Pumps the whole app, signed out, on a phone-sized screen.
@@ -32,10 +33,8 @@ Future<AuthController> _pumpSignedOutApp(
   tester.view.devicePixelRatio = 2.75;
   addTearDown(tester.view.reset);
 
-  final client = AikuApiClient(
-    config: const AppConfig(apiBaseUrl: 'http://aiku.example', appKey: 'key'),
-    httpClient: MockClient(handler),
-  );
+  const config = AppConfig(apiBaseUrl: 'http://aiku.example', appKey: 'key');
+  final client = AikuApiClient(config: config, httpClient: MockClient(handler));
   final controller = AuthController(
     client: client,
     tokenStore: InMemoryTokenStore(),
@@ -45,7 +44,14 @@ Future<AuthController> _pumpSignedOutApp(
   addTearDown(controller.dispose);
   await controller.restore();
 
-  await tester.pumpWidget(AikuApp(controller: controller, client: client));
+  await tester.pumpWidget(
+    AikuApp(
+      controller: controller,
+      client: client,
+      config: config,
+      areaMemory: InMemoryAreaMemory(),
+    ),
+  );
   await tester.pump();
   return controller;
 }

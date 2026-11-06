@@ -11,6 +11,7 @@ import 'auth/auth_controller.dart';
 import 'auth/device_name.dart';
 import 'auth/token_store.dart';
 import 'config/app_config.dart';
+import 'home/area_memory.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +35,14 @@ void main() {
   // has been read, so nothing waits on this here.
   unawaited(controller.restore());
 
-  runApp(AikuApp(controller: controller, client: client));
+  runApp(
+    AikuApp(
+      controller: controller,
+      client: client,
+      config: config,
+      areaMemory: SecureAreaMemory(),
+    ),
+  );
 }
 
 /// The SIL Open Font Licence travels with the bundled Gelasio font.

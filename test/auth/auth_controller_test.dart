@@ -181,4 +181,159 @@ void main() {
     expect(controller.state, isA<SignedOut>());
     expect(store.session, isNull);
   });
+
+  test('a refreshed profile replaces the saved one on the phone', () async {
+    final amoled = [
+      '#000000',
+      '#f2f2f2',
+      '#424242',
+      '#fde047',
+      '#8e44ad',
+      '#ffffff',
+      '#fcd34d',
+      '#374151',
+    ];
+    final requests = <http.Request>[];
+    final store = InMemoryTokenStore(
+      const StoredSession(
+        token: '1|secret',
+        expiresAt: null,
+        profile: _profile,
+      ),
+    );
+    final controller = _controller(store, (request) async {
+      requests.add(request);
+      return http.Response(
+        jsonEncode({
+          'data': {
+            'username': 'raul',
+            'contact_name': 'Raul P',
+            'app_theme': null,
+            'mobile_app_theme': amoled,
+          },
+        }),
+        200,
+      );
+    });
+    addTearDown(controller.dispose);
+    await controller.restore();
+
+    await controller.refreshProfile();
+
+    expect(requests.single.method, 'GET');
+    expect(requests.single.url.path, '/app/api/mobile/profile');
+    expect(requests.single.headers['Authorization'], 'Bearer 1|secret');
+    expect(store.session?.token, '1|secret');
+    expect(store.session?.profile.contactName, 'Raul P');
+    expect(store.session?.profile.mobileAppTheme, amoled);
+    expect(
+      controller.state,
+      isA<SignedIn>().having(
+        (state) => state.session.profile.mobileAppTheme,
+        'mobile theme',
+        amoled,
+      ),
+    );
+  });
+
+  test('an unchanged profile does not rebuild the app', () async {
+    final store = InMemoryTokenStore(
+      const StoredSession(
+        token: '1|secret',
+        expiresAt: null,
+        profile: _profile,
+      ),
+    );
+    final controller = _controller(
+      store,
+      (_) async => http.Response(
+        jsonEncode({
+          'data': {'username': 'raul', 'contact_name': 'Raul'},
+        }),
+        200,
+      ),
+    );
+    addTearDown(controller.dispose);
+    await controller.restore();
+    var notifications = 0;
+    controller.addListener(() => notifications++);
+
+    await controller.refreshProfile();
+
+    expect(notifications, 0);
+  });
+
+  test('the saved profile stays when aiku cannot be reached', () async {
+    final store = InMemoryTokenStore(
+      const StoredSession(
+        token: '1|secret',
+        expiresAt: null,
+        profile: _profile,
+      ),
+    );
+    final controller = _controller(
+      store,
+      (request) async => throw http.ClientException('offline', request.url),
+    );
+    addTearDown(controller.dispose);
+    await controller.restore();
+
+    await controller.refreshProfile();
+
+    expect(controller.state, isA<SignedIn>());
+    expect(store.session?.profile.contactName, 'Raul');
+  });
+
+  test('a 401 while refreshing the profile signs out', () async {
+    final store = InMemoryTokenStore(
+      const StoredSession(
+        token: '1|revoked',
+        expiresAt: null,
+        profile: _profile,
+      ),
+    );
+    final controller = _controller(
+      store,
+      (_) async => http.Response('{"message":"Unauthenticated."}', 401),
+    );
+    addTearDown(controller.dispose);
+    await controller.restore();
+
+    await controller.refreshProfile();
+
+    expect(controller.state, isA<SignedOut>());
+    expect(store.session, isNull);
+  });
+
+  test('a refresh never overwrites a theme being saved', () async {
+    final picked = List.filled(8, '#000000');
+    final store = InMemoryTokenStore(
+      const StoredSession(
+        token: '1|secret',
+        expiresAt: null,
+        profile: _profile,
+      ),
+    );
+    final controller = _controller(store, (request) async {
+      return http.Response(
+        jsonEncode({
+          'data': {
+            'username': 'raul',
+            'contact_name': 'Raul',
+            // The PATCH answers with the picked theme, the GET with none.
+            'mobile_app_theme': request.method == 'PATCH' ? picked : null,
+          },
+        }),
+        200,
+      );
+    });
+    addTearDown(controller.dispose);
+    await controller.restore();
+
+    final saving = controller.chooseMobileTheme(picked);
+    await controller.refreshProfile();
+    await saving;
+
+    expect(store.session?.profile.mobileAppTheme, picked);
+  });
 }
