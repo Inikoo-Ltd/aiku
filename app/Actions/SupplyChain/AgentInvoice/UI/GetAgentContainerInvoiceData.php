@@ -10,9 +10,11 @@ namespace App\Actions\SupplyChain\AgentInvoice\UI;
 
 use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
+use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Actions\SupplyChain\AgentPayment\DeleteAgentPayment;
 use App\Actions\SupplyChain\AgentPayment\StoreAgentPayment;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum;
+use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\SupplyChain\AgentInvoice;
 use App\Models\SupplyChain\AgentPayment;
@@ -56,10 +58,34 @@ class GetAgentContainerInvoiceData
                 'name'       => 'grp.org.agent.agent_invoices.store',
                 'parameters' => [$organisation->slug, $stockDelivery->slug],
             ],
+            'charge_form'          => $this->chargeForm($organisation, $stockDelivery, $invoice),
             'ledger_route'         => $organisation->agent ? [
                 'name'       => 'grp.org.agent.accounting.ledger.index',
                 'parameters' => ['organisation' => $organisation->slug, 'filter' => ['global' => $stockDelivery->reference]],
             ] : null,
+        ];
+    }
+
+    /**
+     * The agent adds a container's charges from its page as lines of its ledger, while the costing has not taken
+     * them. The agent fee is left out: it is worked out from the goods.
+     */
+    private function chargeForm(Organisation $organisation, StockDelivery $stockDelivery, ?AgentInvoice $invoice): ?array
+    {
+        $user = request()->user();
+        if (!$organisation->agent || !$invoice || !$user?->authTo("procurement.{$organisation->id}.edit")
+            || !SyncAgentInvoiceChargesFromLedger::followsLedger($invoice) || !SyncAgentInvoiceChargesFromLedger::chargesOpen($stockDelivery)) {
+            return null;
+        }
+
+        return [
+            'store_route'       => ['name' => 'grp.models.agent.ledger_entry.store', 'parameters' => ['agent' => $organisation->agent->id]],
+            'organisation_id'   => $stockDelivery->organisation_id,
+            'stock_delivery_id' => $stockDelivery->id,
+            'types'             => collect(AgentPaymentTypeEnum::cases())
+                ->filter(fn (AgentPaymentTypeEnum $type) => $type->isCharge() && $type !== AgentPaymentTypeEnum::AGENT_FEE)
+                ->map(fn (AgentPaymentTypeEnum $type) => ['value' => $type->value, 'label' => AgentPaymentTypeEnum::labels()[$type->value]])
+                ->values()->all(),
         ];
     }
 
