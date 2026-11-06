@@ -202,7 +202,7 @@ class ShowManufactureFloor extends OrgAction
                 'artefact_code'       => $session->isNonProductive()
                     ? ($session->jobOrder?->reference ?? __('General'))
                     : $session->artefactCode(),
-                'artefact_name'       => $session->jobOrderItemTask?->jobOrderItem->artefact->name,
+                'artefact_name'       => $session->jobOrderItemTask?->jobOrderItem->displayName(),
                 'job_order_reference' => $session->isNonProductive() ? $session->jobOrder?->reference : $session->jobOrderItemTask->jobOrder->reference,
                 'quantity_made'       => (float) $session->quantity_made,
                 'quantity_rejected'   => (float) $session->quantity_rejected,
@@ -503,7 +503,7 @@ class ShowManufactureFloor extends OrgAction
             'is_piece_rate'       => (bool) $task->manufactureTask->is_piece_rate,
             'is_quantity_only'    => (bool) $task->manufactureTask->is_quantity_only,
             'artefact_code'       => $members->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact->code)->unique()->implode(' + '),
-            'artefact_name'       => $isCombined ? __('Combined batch') : $task->jobOrderItem->artefact->name,
+            'artefact_name'       => $isCombined ? __('Combined batch') : $task->jobOrderItem->displayName(),
             'artefact_family_id'  => $isCombined ? null : $task->jobOrderItem->artefact->artefact_family_id,
             'artefact_image'      => $isCombined || !$task->jobOrderItem->artefact->tradeUnit?->image_id ? null : $task->jobOrderItem->artefact->tradeUnit->imageSources(320, 320),
             'job_order_reference' => $members->map(fn (JobOrderItemTask $member) => $member->jobOrder->reference)->unique()->implode(', '),
@@ -522,7 +522,7 @@ class ShowManufactureFloor extends OrgAction
             'combined'            => $isCombined ? $members->map(fn (JobOrderItemTask $member) => [
                 'id'                  => $member->id,
                 'artefact_code'       => $member->jobOrderItem->artefact->code,
-                'artefact_name'       => $member->jobOrderItem->artefact->name,
+                'artefact_name'       => $member->jobOrderItem->displayName(),
                 'job_order_reference' => $member->jobOrder->reference,
                 'quantity_required'   => (float)$member->quantity_required,
                 'quantity_made'       => (float)$member->quantity_made,

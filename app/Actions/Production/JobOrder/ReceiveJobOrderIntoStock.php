@@ -83,6 +83,10 @@ class ReceiveJobOrderIntoStock extends OrgAction
 
             $toReceive = [];
             foreach ($items as $item) {
+                if (Arr::has($item->data, 'fill')) {
+                    continue;
+                }
+
                 if (!$item->artefact->org_stock_id) {
                     throw ValidationException::withMessages([
                         'location_id' => __('Artefact :code is not linked to a stock', ['code' => $item->artefact->code]),

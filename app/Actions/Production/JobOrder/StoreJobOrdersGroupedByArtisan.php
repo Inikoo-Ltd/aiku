@@ -20,7 +20,7 @@ class StoreJobOrdersGroupedByArtisan
     use AsObject;
 
     /**
-     * @param  array<int, array{artefact: Artefact, quantity: float|int, batch_code?: string|null, expiry_date?: string|null, after?: callable(JobOrder): void}>  $lines  quantity in SKOs, as the boards ask for it
+     * @param  array<int, array{artefact: Artefact, quantity: float|int, batch_code?: string|null, expiry_date?: string|null, after?: callable(JobOrder): void, fill?: array<string, mixed>|null}>  $lines  quantity in SKOs, as the boards ask for it
      * @param  string|null  $plannedFor  Y-m-d: each line becomes its own job order on that day's plan, with no operator named
      * @return array<int, JobOrder>
      */
@@ -74,10 +74,11 @@ class StoreJobOrdersGroupedByArtisan
      */
     private function getRunData(JobOrder $jobOrder, array $line): array
     {
-        return [
+        return array_filter([
+            'fill'        => $line['fill'] ?? null,
             'demand_skos' => (float) $line['quantity'],
             'batch_code'  => ($line['batch_code'] ?? null) ?: $jobOrder->reference.'-'.$line['artefact']->code,
             'expiry_date' => ($line['expiry_date'] ?? null) ?: null,
-        ];
+        ], fn ($value, $key) => $key !== 'fill' || $value !== null, ARRAY_FILTER_USE_BOTH);
     }
 }

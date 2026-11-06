@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufactureTaskSession;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\HumanResources\ClockingMachine\ResolvesEmployeeByCode;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\OrgAction;
@@ -179,6 +180,8 @@ class CloseManufactureTaskSession extends OrgAction
                 if ($outcome && $member->state != JobOrderItemTaskStateEnum::DONE) {
                     SettleShortJobOrderItemTask::run($member, $outcome === 'carry_over');
                 }
+
+                FillToOrder::make()->release($member->jobOrderItem);
             }
 
             if ($this->isLeftOverFromOldRecipe($session, $task)) {

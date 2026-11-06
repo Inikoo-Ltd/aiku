@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufactureTaskSession;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItem\UpdateJobOrderItem;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
@@ -38,6 +39,8 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
      */
     public function handle(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
     {
+        FillToOrder::make()->refuseAfterRelease($session->jobOrderItemTask?->jobOrderItem);
+
         return DB::transaction(function () use ($session, $modelData) {
             $session = ManufactureTaskSession::lockForUpdate()->find($session->id);
 

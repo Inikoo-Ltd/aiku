@@ -15,6 +15,7 @@ use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
+use Illuminate\Support\Arr;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\ManufactureTaskSessionShare;
@@ -95,6 +96,10 @@ class CancelJobOrder extends OrgAction
             $lines = PartnerShoppingListItem::where('job_order_id', $lockedJobOrder->id)->where('state', ShoppingListItemStateEnum::OPEN)->get();
             foreach ($lines as $line) {
                 $coveredSkos = isset($packedInByLine[$line->id]) ? round($coveredUnitsByLine[$line->id] / $packedInByLine[$line->id], 3) : 0;
+                $fillItem    = $items->first(fn (JobOrderItem $item) => Arr::get($item->data, 'fill.to_produce_id') == $line->id);
+                if ($fillItem) {
+                    $coveredSkos = (float) ($madeByItem[$fillItem->id] ?? 0);
+                }
                 $line->moveUncoveredTo($coveredSkos, null);
             }
 
@@ -105,6 +110,7 @@ class CancelJobOrder extends OrgAction
                     foreach ($item->tasks as $task) {
                         $task->setRequiredQuantity(min((float) $task->quantity_required, $task->requiredFor($made)));
                     }
+                    FillToOrder::make()->release($item);
                 }
             } else {
                 self::leaveCombinedBatches($taskIds->all());

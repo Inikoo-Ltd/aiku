@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PartnerShoppingListItem;
@@ -38,7 +39,8 @@ class FulfilToProduceItemsFromSurplus
             ->where('state', ShoppingListItemStateEnum::OPEN)
             ->orderBy('created_at')
             ->orderBy('id')
-            ->get();
+            ->get()
+            ->reject(fn (PartnerShoppingListItem $line) => $line->transaction_id && FillToOrder::make()->artefactFor($line->transaction?->model));
 
         foreach ($lines as $line) {
             if ($surplusSkos <= 0) {

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufactureTaskSession;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
@@ -29,6 +30,8 @@ class VoidManufactureTaskSession extends OrgAction
                 'state' => __('Only a finished task session can be voided'),
             ]);
         }
+
+        FillToOrder::make()->refuseAfterRelease($session->jobOrderItemTask?->jobOrderItem);
 
         $this->changeInPayWeek($session->production, $session, $session->user_id, 'void', [$session->ended_at], ['state', 'quantity_made', 'pay'], $modelData['lock_reason'] ?? null, fn () => $session->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]));
 

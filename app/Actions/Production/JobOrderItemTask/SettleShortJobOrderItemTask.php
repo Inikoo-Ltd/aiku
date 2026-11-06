@@ -67,6 +67,7 @@ class SettleShortJobOrderItemTask
             $carriedItem = StoreJobOrderItem::make()->action($carried, [
                 'artefact_id' => $item->artefact_id,
                 'quantity'    => $remainingArtefacts,
+                'data'        => Arr::only($item->data ?? [], ['fill']),
             ]);
             $item->update(['data' => array_merge($item->data ?? [], ['carried_to' => $carried->id])]);
             foreach ($carriedItem->tasks as $carriedTask) {

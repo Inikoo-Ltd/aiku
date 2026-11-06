@@ -1786,3 +1786,114 @@ test('an order raises to produce lines for stock already promised to earlier ord
     $orgStock->update(['quantity_in_locations' => 1, 'quantity_available' => 1]);
     expect($submit())->toBe([]);
 });
+
+test('a bottle filled to order puts a fill line on To Produce, holds the whole order and releases it once filled', function () {
+    [, , $shop] = createShop();
+    createWarehouse();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $product->update(['code' => $orgStock->code.'-10ml']);
+    $product->refresh();
+
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-10ML-'.uniqid(), 'name' => 'Fill 10ml']);
+    $fill->update(['settings' => ['fills_size' => '10ml'], 'org_stock_id' => null]);
+    $fill->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'FILL-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 3]));
+    $orgStock->update(['quantity_in_locations' => 100, 'quantity_available' => 100]);
+
+    $lines = \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
+    expect($lines)->toHaveCount(1)
+        ->and((float) $lines[0]->quantity)->toBe(3.0)
+        ->and($lines[0]->org_stock_id)->toBe($orgStock->id);
+
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    expect(\App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order->refresh(), []))->toBeNull()
+        ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED)
+        ->and($order->private_warehouse_note)->toContain($product->code);
+
+    $result = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$lines[0]->id]);
+    $jobOrder = $result['job_orders'][0];
+    $item     = $jobOrder->jobOrderItems()->first();
+    expect($item->artefact_id)->toBe($fill->id)
+        ->and((int) $item->quantity)->toBe(3)
+        ->and($item->displayName())->toContain($orgStock->code)->toContain($order->reference);
+
+    \App\Actions\Production\PartnerShippingList\FulfilToProduceItemsFromSurplus::run($orgStock, 100);
+    expect($lines[0]->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN)
+        ->and((float) $lines[0]->quantity)->toBe(3.0);
+
+    ConfirmJobOrder::make()->action($jobOrder);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($this->guest->getUser(), $item->tasks()->first()), ['quantity_made' => 1, 'outcome' => 'carry_over']);
+
+    expect($lines[0]->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN)
+        ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED)
+        ->and($jobOrder->refresh()->state)->toBe(\App\Enums\Production\JobOrder\JobOrderStateEnum::RECEIVED);
+
+    $carried = JobOrderItem::where('job_order_id', $item->refresh()->data['carried_to'])->first();
+    expect($carried->data['fill']['to_produce_id'])->toBe($lines[0]->id);
+    $jobOrder = $carried->jobOrder;
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($this->guest->getUser(), $carried->tasks()->first()), ['quantity_made' => 2]);
+
+    expect($lines[0]->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
+        ->and($jobOrder->refresh()->state)->toBe(\App\Enums\Production\JobOrder\JobOrderStateEnum::RECEIVED)
+        ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE)
+        ->and((string) $order->private_warehouse_note)->not->toContain($product->code);
+
+    $filledSession = \App\Models\Production\ManufactureTaskSession::where('job_order_item_task_id', $carried->tasks()->first()->id)->latest('id')->first();
+    expect(fn () => \App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession::make()->action($filledSession, $this->guest->getUser()))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'filled for order');
+});
+
+test('a fill line follows its order line: quantity changes, removal and cancelling the order', function () {
+    createWarehouse();
+    [, , $shop] = createShop();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $product->update(['code' => $orgStock->code.'-50ml']);
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-50ML-'.uniqid(), 'name' => 'Fill 50ml']);
+    $fill->update(['settings' => ['fills_size' => '50ml'], 'org_stock_id' => null]);
+    $fill->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'FILLEDIT-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    $transaction = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->refresh()->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 2]));
+    [$line] = \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
+
+    \App\Actions\Ordering\Transaction\UpdateTransaction::make()->action($transaction->fresh(), ['quantity_ordered' => 5]);
+    expect((float) $line->refresh()->quantity)->toBe(5.0);
+
+    $jobOrder = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$line->id])['job_orders'][0];
+    $item     = $jobOrder->jobOrderItems()->first();
+    ConfirmJobOrder::make()->action($jobOrder);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($this->guest->getUser(), $item->tasks()->first()), ['quantity_made' => 2]);
+    \App\Actions\Production\JobOrder\CancelJobOrder::make()->action($jobOrder->refresh(), ['mode' => 'cancel', 'kind' => 'other', 'reason' => 'out of bottles'], $this->guest->getUser());
+
+    $rest = \App\Models\Procurement\PartnerShoppingListItem::where('parent_id', $line->id)->first();
+    expect($line->refresh()->dismiss_reason)->toBe('filled')
+        ->and((float) $line->quantity)->toBe(2.0)
+        ->and((float) $rest->quantity)->toBe(3.0)
+        ->and($rest->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::OPEN)
+        ->and(\App\Actions\Production\JobOrder\FillToOrder::make()->pendingLines($order->refresh()))->toHaveCount(1);
+
+    \App\Actions\Ordering\Transaction\UpdateTransaction::make()->action($transaction->fresh(), ['quantity_ordered' => 4]);
+    expect((float) $rest->refresh()->quantity)->toBe(2.0);
+
+    \App\Actions\Production\JobOrder\FillToOrder::make()->dismissForCancelledOrder($order->refresh());
+    expect($rest->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
+        ->and($rest->dismiss_reason)->toBe('order cancelled');
+});
