@@ -12,6 +12,7 @@ namespace App\Actions\Procurement\PurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
@@ -41,14 +42,16 @@ class RecordPurchaseOrderHandedOverWhenReady
             return $purchaseOrder;
         }
 
-        $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, ['handed_over_at' => $checks->max('date')]);
+        return DB::transaction(function () use ($purchaseOrder, $checks) {
+            $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, ['handed_over_at' => $checks->max('date')]);
 
-        $marks                   = $purchaseOrder->stage_marks ?? [];
-        $marks['handed_over_at'] = ['automatic' => true, 'at' => now()->toIso8601String()];
-        $purchaseOrder->stage_marks = $marks;
-        $purchaseOrder->saveQuietly();
+            $marks                      = $purchaseOrder->stage_marks ?? [];
+            $marks['handed_over_at']    = ['automatic' => true, 'at' => now()->toIso8601String()];
+            $purchaseOrder->stage_marks = $marks;
+            $purchaseOrder->saveQuietly();
 
-        return $purchaseOrder;
+            return $purchaseOrder;
+        });
     }
 
     /**
