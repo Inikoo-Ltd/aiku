@@ -14,6 +14,7 @@ use App\Actions\CRM\UI\ShowCrmDashboard;
 use App\Actions\Web\WebsitePageView\UI\IndexWebsitePageViews;
 use App\Actions\Web\Crawl\ExportSiteAudit;
 use App\Actions\Web\Crawl\UI\IndexSiteAuditIssuePages;
+use App\Actions\Web\Crawl\UI\IndexSiteAuditPages;
 use App\Actions\Web\Crawl\UI\ShowSiteAudit;
 use App\Actions\Web\Seo\ExportSeoTable;
 use App\Actions\Web\Seo\UI\IndexSeoContentSuggestions;
@@ -125,6 +126,7 @@ Route::prefix('{shop}')->name('show.')
                 Route::get('page-views/visitors/{websiteVisitor}', [IndexWebsitePageViews::class, 'inVisitor'])->name('page_views.visitor')->withoutScopedBindings();
                 Route::get('site-audit', ShowSiteAudit::class)->name('site_audit.show');
                 Route::get('site-audit/issues/{issueType}', IndexSiteAuditIssuePages::class)->name('site_audit.issue');
+                Route::get('site-audit/pages', IndexSiteAuditPages::class)->name('site_audit.pages');
                 Route::get('site-audit/export', ExportSiteAudit::class)->name('site_audit.export');
                 Route::get('site-audit/suggestions', IndexSeoContentSuggestions::class)->name('site_audit.suggestions');
                 Route::get('missing-pages', RedirectToSeoDashboardTab::class)->name('not_found.index');

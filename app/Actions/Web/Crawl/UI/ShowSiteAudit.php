@@ -19,6 +19,7 @@ use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Crawl;
+use App\Models\Web\CrawlPage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +45,7 @@ class ShowSiteAudit extends OrgAction
         $latestAudit    = $finishedAudits->first();
         $previousAudit  = $finishedAudits->get(1);
         $runningAudit   = $audits->first(fn (Crawl $crawl) => $crawl->state !== CrawlStateEnum::FINISH);
+        $stoppedAudit   = $audits->first(fn (Crawl $crawl) => $crawl->state === CrawlStateEnum::FINISH && ($latestAudit === null || $crawl->id > $latestAudit->id) && $crawl->finish_reason !== 'completed');
 
         return [
             'running'  => $runningAudit ? [
@@ -51,6 +53,12 @@ class ShowSiteAudit extends OrgAction
                 'start_at'       => $runningAudit->start_at,
                 'urls_processed' => $runningAudit->urls_processed,
                 'urls_found'     => $runningAudit->urls_found,
+            ] : null,
+            'stopped'  => $stoppedAudit ? [
+                'end_at'         => $stoppedAudit->end_at,
+                'finish_reason'  => $stoppedAudit->finish_reason,
+                'urls_processed' => $stoppedAudit->urls_processed,
+                'urls_found'     => $stoppedAudit->urls_found,
             ] : null,
             'latest'   => $latestAudit ? $this->auditSummary($latestAudit) : null,
             'previous' => $previousAudit ? $this->auditSummary($previousAudit) : null,
@@ -62,6 +70,7 @@ class ShowSiteAudit extends OrgAction
                 'notices'      => $crawl->number_notices,
             ])->all(),
             'issues'   => $latestAudit ? $this->issueSummary($latestAudit, $previousAudit) : [],
+            'reviews'  => $latestAudit ? $this->aiReviews($latestAudit) : [],
         ];
     }
 
@@ -79,6 +88,28 @@ class ShowSiteAudit extends OrgAction
             'warnings'          => $crawl->number_warnings,
             'notices'           => $crawl->number_notices,
         ];
+    }
+
+    /**
+     * The pages that matter most, as the AI read them after the audit (ReviewSiteAuditPagesWithAi),
+     * weakest first.
+     */
+    private function aiReviews(Crawl $crawl): array
+    {
+        return CrawlPage::where('crawl_id', $crawl->id)
+            ->whereNotNull('ai_review')
+            ->get(['id', 'url', 'title', 'ai_review'])
+            ->sortBy(fn (CrawlPage $page) => $page->ai_review['score'] ?? 0)
+            ->map(fn (CrawlPage $page) => [
+                'id'       => $page->id,
+                'url'      => $page->url,
+                'title'    => $page->title,
+                'score'    => $page->ai_review['score'] ?? null,
+                'summary'  => $page->ai_review['summary'] ?? '',
+                'findings' => $page->ai_review['findings'] ?? [],
+            ])
+            ->values()
+            ->all();
     }
 
     private function issueSummary(Crawl $latestAudit, ?Crawl $previousAudit): array

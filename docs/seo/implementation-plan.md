@@ -122,13 +122,28 @@ Done on 7 October 2026.
   sitemap listed there or `/sitemap.xml`, starts from the home page and the sitemap URLs, and follows
   internal links that are not `nofollow`. Links with a query string and links to files (images,
   PDFs, scripts) are not followed.
-- User agent `Mozilla/5.0 (compatible; AikuSiteAuditBot/1.0)`. It is detected as a bot, so audits do
-  not appear as visitors.
+- User agent `Mozilla/5.0 (compatible; AikuSiteAuditBot/1.0)`. Since 6 Nov 2026 Varnish does not treat
+  it as a bot (the exclusion list beside `aiku-cache-warmer` in `default.vcl`), so it gets the copy people
+  and Google get and the Cloudflare edge answers most of its pages without a render; what it does render
+  warms the cache for people. Response times are therefore what a visitor gets, edge included.
+- Every request carries `X-Aiku-Site-Audit: <crawl id>`. `TagSentryWithSiteAudit` (first in the `iris`
+  middleware group) tags the Sentry events of that request `site_audit`, and 5xx and "rendered without
+  its content" issues link to Sentry filtered by audit and URL (`services.sentry_issues_url`).
+- Pacing: at most one page every 250 ms per fetch slot (`MIN_MS_PER_PAGE`). Pages that failed or
+  answered 5xx are asked once more after every other page before they are reported.
 - Redirects are not followed by the HTTP client. Each hop is its own row, so chains and loops are
   visible.
 - HTML is parsed with PHP 8.4 `Dom\HTMLDocument`. No package was added.
-- Default limit 10,000 pages per audit. At about 1.6 s per page on the storefronts this is roughly
-  2.5 hours at concurrency 2, inside the 3 hour job timeout of `long-low-priority`.
+- No page limit: an audit runs in parts of 1,000 pages or 15 minutes queued 30 seconds apart, with its
+  progress in the cache. A part that throws is retried twice from the last saved part (`jobTries` 3, pages
+  are upserted). An audit that still stops early (failed, abandoned, stopped by a user) gets the report
+  of the pages it read (`ReportSiteAudit`), and the Site audit page says why it stopped. An audit whose
+  robots.txt keeps it out of every page finishes as `blocked_by_robots`.
+- After a completed audit, `ReviewSiteAuditPagesWithAi` has Claude Opus read the home page and the 20
+  pages with the most Google clicks in the last 28 days (their text, title, description, h1, the
+  searches they appear for and the audit's issues) and keeps a score, a summary and findings on the
+  page row (`crawl_pages.ai_review`). It is paid from the SEO API budget and logged in
+  `seo_api_requests` (`site_audit_ai_review`). Shown on the Site audit page, weakest first.
 - The last 10 audits per website are kept; older ones are deleted with their pages and issues.
 
 **Tables.** `crawl_pages` (one row per URL per audit, with status, redirect target and hops,
@@ -157,7 +172,11 @@ severity, the trend over the kept audits, and the issue list with pages per issu
 since the previous audit. Each issue opens a page list with the URL, the matched webpage in Aiku,
 status, internal links in and the issue details. While an audit runs, the page polls its progress
 every 5 seconds. An Excel button downloads the latest audit as a workbook: the audit in numbers, the
-issue types against the previous audit, and one row per page and issue.
+issue types against the previous audit, and one row per page and issue. "Pages read" (the coverage
+line) lists every page of the latest audit with status, title, description, h1, indexable, clicks from
+home, links in, response time, words and issues. An issue page's "Ask webmasters to fix" opens one staff
+task per website and issue type in the webmaster department; asking again posts in it, and the first
+completed audit that no longer finds the issue closes it.
 
 **First result.** A 150 page test audit of awgifts.bg found product pages rendering
 `<meta name="description" content>` with no text, because `webpages.description` is empty while

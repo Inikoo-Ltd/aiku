@@ -69,6 +69,9 @@ const linkedFrom = (page: IssuePageRow): string[] => page.details?.linked_from ?
         <template #cell(details)="{ item: page }: { item: IssuePageRow }">
             <div class="max-w-xl space-y-1 text-gray-700">
                 <p v-if="detailText(page)" class="break-words">{{ detailText(page) }}</p>
+                <a v-if="page.details?.sentry_url" :href="page.details.sentry_url" target="_blank" rel="noopener noreferrer" class="text-xs underline underline-offset-2">
+                    {{ ctrans("Errors in Sentry") }}
+                </a>
                 <details v-if="linkedFrom(page).length" class="text-xs text-gray-600">
                     <summary class="cursor-pointer">{{ ctrans("Linked from :count pages", { count: locale.number(page.inlinks) }) }}</summary>
                     <ul class="mt-1 space-y-0.5">

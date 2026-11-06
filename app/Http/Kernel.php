@@ -17,6 +17,7 @@ use App\Http\Middleware\DisableSSR;
 use App\Http\Middleware\PreventCachingSsrFallback;
 use App\Http\Middleware\CountOctaneStorefrontPage;
 use App\Http\Middleware\DetectIrisWebsite;
+use App\Http\Middleware\TagSentryWithSiteAudit;
 use App\Http\Middleware\HandlePupilInertiaRequests;
 use App\Http\Middleware\RestoreRefererFromCurrentUrl;
 use App\Http\Middleware\RestrictCountryRegions;
@@ -199,6 +200,7 @@ class Kernel extends HttpKernel
             VerifyCsrfToken::class,
         ],
         'iris'        => [
+            TagSentryWithSiteAudit::class,
             DetectIrisWebsite::class,
             CountOctaneStorefrontPage::class,
             RestoreRefererFromCurrentUrl::class,

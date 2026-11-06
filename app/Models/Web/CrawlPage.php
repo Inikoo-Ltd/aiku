@@ -40,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $content_hash
  * @property int|null $content_simhash
  * @property array<string, mixed>|null $facts
+ * @property array<string, mixed>|null $ai_review
  * @property string|null $fetch_error
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -62,6 +63,7 @@ class CrawlPage extends Model
             'is_indexable'  => 'boolean',
             'hreflang'      => 'array',
             'facts'         => 'array',
+            'ai_review'     => 'array',
         ];
     }
 

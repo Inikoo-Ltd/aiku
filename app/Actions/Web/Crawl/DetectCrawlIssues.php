@@ -40,13 +40,16 @@ class DetectCrawlIssues
 
     private array $issues = [];
 
+    private int $crawlId;
+
     /**
      * @param  array<string, array<int, string>>  $linkedFrom
      * @param  array<string, array{urls: int, bytes: int}>  $sitemapFiles
      */
     public function handle(Crawl $crawl, array $linkedFrom = [], array $sitemapFiles = []): Crawl
     {
-        $this->issues = [];
+        $this->issues  = [];
+        $this->crawlId = $crawl->id;
 
         $pages = DB::table('crawl_pages')
             ->where('crawl_id', $crawl->id)
@@ -137,7 +140,7 @@ class DetectCrawlIssues
         if ($page->status_code === null) {
             $this->addIssue($page, CrawlIssueTypeEnum::FETCH_FAILED, [...$linkDetails, 'error' => $page->fetch_error]);
         } elseif ($page->status_code >= 500) {
-            $this->addIssue($page, CrawlIssueTypeEnum::HTTP_5XX, [...$linkDetails, 'status_code' => $page->status_code]);
+            $this->addIssue($page, CrawlIssueTypeEnum::HTTP_5XX, [...$linkDetails, 'status_code' => $page->status_code, 'sentry_url' => $this->sentryUrl($page)]);
         } elseif ($page->status_code >= 400) {
             $this->addIssue($page, CrawlIssueTypeEnum::HTTP_4XX, [...$linkDetails, 'status_code' => $page->status_code]);
         }
@@ -145,6 +148,18 @@ class DetectCrawlIssues
         if ($page->response_ms !== null && $page->response_ms > CrawlIssueTypeEnum::SLOW_RESPONSE_MS) {
             $this->addIssue($page, CrawlIssueTypeEnum::SLOW_RESPONSE, ['response_ms' => (int) $page->response_ms]);
         }
+    }
+
+    /**
+     * The Sentry errors the audit raised on this page: every storefront request of an audit is
+     * tagged `site_audit` with its id (TagSentryWithSiteAudit).
+     */
+    private function sentryUrl(object $page): string
+    {
+        return config('services.sentry_issues_url').'?'.http_build_query([
+            'query'       => 'site_audit:'.$this->crawlId.' url:"'.$page->url.'"',
+            'statsPeriod' => '14d',
+        ]);
     }
 
     private function detectRedirectIssues(object $page, Collection $pages, array $linkedFrom): int
@@ -432,6 +447,10 @@ class DetectCrawlIssues
 
         if (!empty($facts['soft_404'])) {
             $this->addIssue($page, CrawlIssueTypeEnum::SOFT_404, ['text' => $facts['soft_404']]);
+        }
+
+        if (!empty($facts['ssr_fallback'])) {
+            $this->addIssue($page, CrawlIssueTypeEnum::SSR_FALLBACK, ['sentry_url' => $this->sentryUrl($page)]);
         }
 
         if (!empty($facts['lorem_ipsum'])) {

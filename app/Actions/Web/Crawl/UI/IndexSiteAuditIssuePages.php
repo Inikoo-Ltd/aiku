@@ -9,6 +9,8 @@
 namespace App\Actions\Web\Crawl\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Web\Crawl\AskWebmastersToFixSiteAuditIssue;
+use App\Models\Tasks\StaffTask;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlStateEnum;
@@ -148,6 +150,12 @@ class IndexSiteAuditIssuePages extends OrgAction
                     ],
                 ],
                 'issueType'   => $this->issueType->value,
+                'askToFixRoute' => $this->canEdit ? [
+                    'name'       => 'grp.models.website.site_audit.ask_to_fix',
+                    'parameters' => [$this->audit->website_id, $this->issueType->value],
+                    'method'     => 'post',
+                ] : null,
+                'openTask'    => StaffTask::open()->where('data->kind', AskWebmastersToFixSiteAuditIssue::TASK_KIND)->where('data->website_id', $this->audit->website_id)->where('data->issue_type', $this->issueType->value)->value('id'),
                 'websiteSlug' => $this->audit->website->slug,
                 'severity'    => $this->issueType->severity()->value,
                 'description' => CrawlIssueTypeEnum::descriptions()[$this->issueType->value],

@@ -46,6 +46,10 @@ client c1 {
     txreq -url /p -hdr "User-Agent: aiku-cache-warmer"
     rxresp
     expect resp.body == "h1"
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 (compatible; AikuSiteAuditBot/1.0)"
+    rxresp
+    expect resp.body == "h1"
+    expect resp.http.X-Aiku-Bot-Copy == <undef>
     txreq -url /p -hdr "User-Agent: Mozilla/5.0 (Linux; Android 10; CUBOT X30) AppleWebKit/537.36 Chrome/150 Mobile Safari/537.36"
     rxresp
     expect resp.body == "h1"

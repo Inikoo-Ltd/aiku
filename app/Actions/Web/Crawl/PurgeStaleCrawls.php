@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Crawl;
 
 use App\Enums\Web\Crawl\CrawlStateEnum;
+use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -20,6 +21,12 @@ class PurgeStaleCrawls
     public function handle(?Command $command = null): void
     {
         foreach (Crawl::where('running', true)->where('updated_at', '<', now()->subMinutes(10))->get() as $crawl) {
+            if ($crawl->type === CrawlTypeEnum::AUDIT) {
+                AuditWebsite::closeIfAbandoned($crawl);
+
+                continue;
+            }
+
             $command?->info("Stopping crawl: ID $crawl->id) ");
             $crawl->update(
                 [

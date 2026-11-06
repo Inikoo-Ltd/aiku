@@ -194,4 +194,6 @@ return [
         'token' => env('TIMESFM_TOKEN'),
     ],
 
+    'sentry_issues_url' => env('SENTRY_ISSUES_URL', 'https://inikoo-ltd.sentry.io/issues/'),
+
 ];

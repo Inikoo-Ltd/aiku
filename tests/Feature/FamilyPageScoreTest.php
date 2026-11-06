@@ -17,13 +17,16 @@ use App\Actions\Catalogue\ProductCategory\UI\GetFamilySeoIssues;
 use App\Actions\Web\Webpage\RenderWebpageHtml;
 use App\Actions\Web\Crawl\AuditWebsite;
 use App\Actions\Web\Crawl\CrawlWebsite;
+use App\Actions\Web\Crawl\PurgeStaleCrawls;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\CheckWebpageLinks;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlStateEnum;
 use App\Enums\Web\Crawl\CrawlTriggerEnum;
+use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Web\Crawl;
 use App\Models\Web\CrawlIssue;
 use App\Models\Web\CrawlPage;
 use App\Models\Web\SeoContentSuggestion;
@@ -34,6 +37,19 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
+use App\Actions\Web\Crawl\AskWebmastersToFixSiteAuditIssue;
+use App\Actions\Web\Crawl\ReviewSiteAuditPagesWithAi;
+use App\Actions\Web\Crawl\UI\IndexSiteAuditPages;
+use App\Actions\Web\Crawl\UI\ShowSiteAudit;
+use App\Enums\Tasks\StaffTaskStatusEnum;
+use App\Http\Middleware\TagSentryWithSiteAudit;
+use App\Models\Web\SeoApiRequest;
+use App\Models\Web\Website;
+use Illuminate\Http\Request;
+use Illuminate\Support\Sleep;
+use Sentry\Event as SentryEvent;
+use Sentry\SentrySdk;
+use Sentry\State\Scope;
 
 beforeEach(function () {
     loadDB();
@@ -535,4 +551,226 @@ test('crawl page on a product webpage feeds its structured data check and lists 
             'severity'    => 'warning',
             'found'       => 'Either "offers", "review", "aggregateRating" should be specified in Product',
         ]);
+});
+
+test('a site audit started while the fetch budget is taken stays ready and asks again later', function () {
+    Queue::fake();
+
+    $busyCrawl = $this->website->crawls()->create([
+        'type'        => CrawlTypeEnum::HTML,
+        'state'       => CrawlStateEnum::RUNNING,
+        'trigger'     => CrawlTriggerEnum::USER,
+        'depth'       => 0,
+        'concurrency' => 8,
+        'running'     => true,
+    ]);
+    $audit = AuditWebsite::startFor($this->website, CrawlTriggerEnum::USER);
+
+    AuditWebsite::run($audit);
+
+    expect($audit->refresh()->state)->toBe(CrawlStateEnum::READY)
+        ->and($audit->running)->toBeFalse();
+    AuditWebsite::assertPushedWith(fn (Crawl $crawl, int $part, bool $untilFinished, int $waits) => $crawl->id === $audit->id && $part === 0 && $waits === 1);
+
+    $busyCrawl->delete();
+    $audit->delete();
+});
+
+test('stale crawl purge leaves a site audit waiting between parts and closes it only once abandoned', function () {
+    $html    = $this->website->crawls()->create(['type' => CrawlTypeEnum::HTML, 'state' => CrawlStateEnum::RUNNING, 'trigger' => CrawlTriggerEnum::USER, 'depth' => 0, 'concurrency' => 1, 'running' => true]);
+    $waiting = $this->website->crawls()->create(['type' => CrawlTypeEnum::AUDIT, 'state' => CrawlStateEnum::RUNNING, 'trigger' => CrawlTriggerEnum::USER, 'depth' => 0, 'concurrency' => 1, 'running' => true]);
+    $lost    = $this->website->crawls()->create(['type' => CrawlTypeEnum::AUDIT, 'state' => CrawlStateEnum::RUNNING, 'trigger' => CrawlTriggerEnum::USER, 'depth' => 0, 'concurrency' => 1, 'running' => true]);
+    Crawl::whereKey([$html->id, $waiting->id])->toBase()->update(['updated_at' => now()->subMinutes(20)]);
+    Crawl::whereKey($lost->id)->toBase()->update(['updated_at' => now()->subMinutes(70)]);
+
+    PurgeStaleCrawls::run();
+
+    expect($html->refresh()->finish_reason)->toBe('stale')
+        ->and($waiting->refresh()->running)->toBeTrue()
+        ->and($lost->refresh()->running)->toBeFalse()
+        ->and($lost->finish_reason)->toBe('interrupted');
+
+    Crawl::whereKey([$html->id, $waiting->id, $lost->id])->delete();
+});
+
+test('a site audit waiting for a fetch slot keeps itself alive, and one whose wait was lost is closed so a new audit can start', function () {
+    Queue::fake();
+
+    $busyCrawl = $this->website->crawls()->create(['type' => CrawlTypeEnum::HTML, 'state' => CrawlStateEnum::RUNNING, 'trigger' => CrawlTriggerEnum::USER, 'depth' => 0, 'concurrency' => 8, 'running' => true]);
+    $waiting   = AuditWebsite::startFor($this->website, CrawlTriggerEnum::USER);
+    Crawl::whereKey($waiting->id)->toBase()->update(['updated_at' => now()->subMinutes(70)]);
+
+    AuditWebsite::run($waiting->refresh());
+
+    expect(AuditWebsite::closeIfAbandoned($waiting->refresh()))->toBeFalse()
+        ->and($waiting->state)->toBe(CrawlStateEnum::READY);
+
+    Crawl::whereKey($waiting->id)->toBase()->update(['updated_at' => now()->subMinutes(70)]);
+
+    expect(AuditWebsite::closeIfAbandoned($waiting->refresh()))->toBeTrue()
+        ->and($waiting->refresh()->state)->toBe(CrawlStateEnum::FINISH)
+        ->and($waiting->finish_reason)->toBe('interrupted');
+
+    Crawl::whereKey([$busyCrawl->id, $waiting->id])->delete();
+});
+
+function siteAuditHtml(string $title, array $links = []): string
+{
+    return '<!doctype html><html><head><title>'.$title.'</title><meta name="description" content="A description long enough for the audit to leave it alone, well over seventy characters."></head><body><main><h1>'.$title.'</h1>'
+        .implode('', array_map(fn (string $href) => '<a href="'.$href.'">'.$href.'</a>', $links)).'</main></body></html>';
+}
+
+function runSiteAudit(Website $website, array $pages): Crawl
+{
+    $baseUrl = AuditWebsite::publicBaseUrl($website);
+
+    Http::fake(array_merge(
+        [$baseUrl.'/robots.txt' => Http::response('', 404), $baseUrl.'/sitemap.xml' => Http::response('', 404)],
+        collect($pages)->mapWithKeys(fn ($response, string $path) => [$baseUrl.$path => $response])->all(),
+        ['*' => Http::response('', 404)]
+    ));
+
+    $audit = AuditWebsite::startFor($website, CrawlTriggerEnum::USER);
+
+    return AuditWebsite::make()->handle($audit, untilFinished: true)->refresh();
+}
+
+test('a site audit asks a page that failed once more before reporting it, and tags every request so Sentry links its errors', function () {
+    Sleep::fake();
+    $baseUrl = AuditWebsite::publicBaseUrl($this->website);
+
+    $audit = runSiteAudit($this->website, [
+        '/'      => Http::response(siteAuditHtml('Home of the audit test shop', ['/flaky', '/broken', '/empty']), 200, ['Content-Type' => 'text/html']),
+        '/flaky' => Http::sequence()->push('', 503)->push(siteAuditHtml('A page that failed once'), 200, ['Content-Type' => 'text/html']),
+        '/broken' => Http::response('', 500),
+        '/empty' => Http::response(siteAuditHtml('A page rendered without SSR'), 200, ['Content-Type' => 'text/html', 'X-Aiku-Ssr-Fallback' => '1']),
+    ]);
+
+    $statuses = CrawlPage::where('crawl_id', $audit->id)->pluck('status_code', 'url');
+    $issues   = CrawlIssue::where('crawl_id', $audit->id)->get();
+    $broken   = $issues->firstWhere('type', CrawlIssueTypeEnum::HTTP_5XX);
+
+    expect($audit->finish_reason)->toBe('completed')
+        ->and($audit->urls_processed)->toBe(4)
+        ->and($statuses->get($baseUrl.'/flaky'))->toBe(200)
+        ->and($statuses->get($baseUrl.'/broken'))->toBe(500)
+        ->and($issues->where('type', CrawlIssueTypeEnum::HTTP_5XX))->toHaveCount(1)
+        ->and($broken->details['sentry_url'])->toContain('site_audit%3A'.$audit->id)
+        ->and($issues->where('type', CrawlIssueTypeEnum::SSR_FALLBACK))->toHaveCount(1);
+    Http::assertSent(fn ($request) => $request->url() === $baseUrl.'/' && $request->header(AuditWebsite::AUDIT_HEADER) === [(string) $audit->id]);
+    Http::assertSentCount(8);
+    Sleep::assertSlept(fn ($duration) => $duration->totalMilliseconds > 0 && $duration->totalMilliseconds <= 250, $audit->concurrency === 1 ? 6 : 4);
+
+    $audit->delete();
+});
+
+test('a site audit robots.txt keeps out of every page finishes as blocked and the site audit page says so', function () {
+    $baseUrl = AuditWebsite::publicBaseUrl($this->website);
+    Http::fake([$baseUrl.'/robots.txt' => Http::response("User-agent: *\nDisallow: /"), '*' => Http::response('', 404)]);
+
+    $audit = AuditWebsite::make()->handle(AuditWebsite::startFor($this->website, CrawlTriggerEnum::USER), untilFinished: true)->refresh();
+
+    expect($audit->finish_reason)->toBe('blocked_by_robots')
+        ->and(ShowSiteAudit::make()->handle($this->website)['stopped'])->toMatchArray(['finish_reason' => 'blocked_by_robots', 'urls_processed' => 0]);
+
+    $audit->delete();
+});
+
+test('a site audit whose part failed still gets the report of the pages it read', function () {
+    $audit = AuditWebsite::startFor($this->website, CrawlTriggerEnum::USER);
+    $audit->update(['state' => CrawlStateEnum::RUNNING, 'running' => true, 'urls_processed' => 2]);
+    foreach (['https://ecom.test/' => 200, 'https://ecom.test/gone' => 404] as $url => $status) {
+        CrawlPage::create(['crawl_id' => $audit->id, 'url' => $url, 'url_hash' => md5($url), 'status_code' => $status, 'link_depth' => $status === 200 ? 0 : 1, 'content_type' => 'text/html', 'is_indexable' => $status === 200]);
+    }
+
+    AuditWebsite::make()->jobFailed(new RuntimeException('worker lost'), $audit);
+
+    $audit->refresh();
+    $report = ShowSiteAudit::make()->handle($this->website);
+
+    expect($audit->finish_reason)->toBe('failed')
+        ->and($audit->health_score)->not->toBeNull()
+        ->and($audit->number_errors)->toBeGreaterThan(0)
+        ->and($report['latest']['id'])->toBe($audit->id)
+        ->and($report['stopped'])->toBeNull();
+
+    $audit->delete();
+});
+
+test('the site audit pages list shows every page the latest audit read with its issues', function () {
+    $audit = AuditWebsite::startFor($this->website, CrawlTriggerEnum::USER);
+    $audit->update(['state' => CrawlStateEnum::FINISH, 'end_at' => now(), 'health_score' => 50]);
+    $page = CrawlPage::create(['crawl_id' => $audit->id, 'url' => 'https://ecom.test/listed', 'url_hash' => md5('https://ecom.test/listed'), 'status_code' => 200, 'title' => 'Listed page', 'link_depth' => 2]);
+    CrawlIssue::create(['crawl_id' => $audit->id, 'crawl_page_id' => $page->id, 'type' => CrawlIssueTypeEnum::MISSING_H1, 'severity' => CrawlIssueTypeEnum::MISSING_H1->severity()]);
+
+    $rows = IndexSiteAuditPages::make()->handle($audit);
+
+    expect($rows->total())->toBe(1)
+        ->and($rows->first()->title)->toBe('Listed page')
+        ->and((int) $rows->first()->issues)->toBe(1);
+
+    $audit->delete();
+});
+
+test('asking webmasters to fix a site audit issue opens one task, and the first audit without the issue closes it', function () {
+    $user  = createAdminGuest($this->organisation->group)->getUser();
+    $audit = AuditWebsite::startFor($this->website, CrawlTriggerEnum::USER);
+    $audit->update(['state' => CrawlStateEnum::FINISH, 'end_at' => now(), 'health_score' => 50, 'finish_reason' => 'completed']);
+    $page = CrawlPage::create(['crawl_id' => $audit->id, 'url' => 'https://ecom.test/no-h1', 'url_hash' => md5('https://ecom.test/no-h1'), 'status_code' => 200]);
+    CrawlIssue::create(['crawl_id' => $audit->id, 'crawl_page_id' => $page->id, 'type' => CrawlIssueTypeEnum::MISSING_H1, 'severity' => CrawlIssueTypeEnum::MISSING_H1->severity()]);
+
+    $task  = AskWebmastersToFixSiteAuditIssue::make()->handle($this->website, CrawlIssueTypeEnum::MISSING_H1, $user);
+    $again = AskWebmastersToFixSiteAuditIssue::make()->handle($this->website, CrawlIssueTypeEnum::MISSING_H1, $user);
+
+    expect($again->id)->toBe($task->id)
+        ->and($task->department)->toBe('webmaster')
+        ->and($task->data)->toMatchArray(['kind' => 'site_audit_issue', 'issue_type' => 'missing_h1'])
+        ->and(fn () => AskWebmastersToFixSiteAuditIssue::make()->handle($this->website, CrawlIssueTypeEnum::MULTIPLE_H1, $user))->toThrow(ValidationException::class);
+
+    AskWebmastersToFixSiteAuditIssue::closeFixed($audit);
+    expect($task->refresh()->status)->not->toBe(StaffTaskStatusEnum::DONE);
+
+    $fixedAudit = AuditWebsite::startFor($this->website, CrawlTriggerEnum::USER);
+    AskWebmastersToFixSiteAuditIssue::closeFixed($fixedAudit);
+    expect($task->refresh()->status)->toBe(StaffTaskStatusEnum::DONE);
+
+    Crawl::whereKey([$audit->id, $fixedAudit->id])->delete();
+});
+
+test('the most visited pages of a completed site audit are reviewed by AI and shown on the site audit page', function () {
+    config(['services.openrouter.api_key' => 'test-key']);
+    $audit = AuditWebsite::startFor($this->website, CrawlTriggerEnum::USER);
+    $audit->update(['state' => CrawlStateEnum::FINISH, 'end_at' => now(), 'health_score' => 90]);
+    $home = CrawlPage::create(['crawl_id' => $audit->id, 'url' => 'https://ecom.test/', 'url_hash' => md5('https://ecom.test/'), 'status_code' => 200, 'is_indexable' => true, 'link_depth' => 0, 'title' => 'Home']);
+    CrawlPage::create(['crawl_id' => $audit->id, 'url' => 'https://ecom.test/quiet', 'url_hash' => md5('https://ecom.test/quiet'), 'status_code' => 200, 'is_indexable' => true, 'link_depth' => 1]);
+    Http::fake([
+        'https://ecom.test/'  => Http::response(siteAuditHtml('Home')),
+        'openrouter.ai/*'     => Http::response(['choices' => [['message' => ['content' => json_encode(['score' => 40, 'summary' => 'Clear offer, thin text.', 'findings' => [['priority' => 'high', 'area' => 'content', 'finding' => 'Only 20 words', 'fix' => 'Write a paragraph']]])]]], 'usage' => ['cost' => 0.05]]),
+    ]);
+    $requestsBefore = SeoApiRequest::where('endpoint', 'site_audit_ai_review')->count();
+
+    expect(ReviewSiteAuditPagesWithAi::run($audit))->toBe(1)
+        ->and($home->refresh()->ai_review)->toMatchArray(['score' => 40, 'model' => ReviewSiteAuditPagesWithAi::MODEL])
+        ->and(SeoApiRequest::where('endpoint', 'site_audit_ai_review')->count())->toBe($requestsBefore + 1)
+        ->and(ShowSiteAudit::make()->handle($this->website)['reviews'][0])->toMatchArray(['url' => 'https://ecom.test/', 'score' => 40, 'summary' => 'Clear offer, thin text.']);
+    Http::assertSent(fn ($request) => str_contains($request->url(), 'openrouter.ai') && $request['model'] === ReviewSiteAuditPagesWithAi::MODEL);
+
+    $audit->delete();
+});
+
+test('a storefront request from a site audit tags its Sentry events with the audit', function () {
+    $hub = SentrySdk::getCurrentHub();
+    $hub->pushScope();
+
+    $request = Request::create('/');
+    $request->headers->set(AuditWebsite::AUDIT_HEADER, '41811');
+    (new TagSentryWithSiteAudit())->handle($request, fn () => response(''));
+
+    $event = SentryEvent::createEvent();
+    $hub->configureScope(function (Scope $scope) use (&$event) {
+        $event = $scope->applyToEvent($event);
+    });
+    $hub->popScope();
+
+    expect($event->getTags())->toMatchArray(['site_audit' => '41811']);
 });

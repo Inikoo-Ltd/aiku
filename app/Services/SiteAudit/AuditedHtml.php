@@ -295,6 +295,11 @@ class AuditedHtml
         return null;
     }
 
+    public static function visibleText(string $html): string
+    {
+        return self::contentText(HTMLDocument::createFromString($html, LIBXML_NOERROR));
+    }
+
     /**
      * The visible text of the page's own content: <main> when the page has one, otherwise the body,
      * without scripts, styles and inline SVG. Read last, because it takes those elements out.

@@ -737,6 +737,7 @@ use App\Actions\UI\Notification\MarkNotificationAsUnread;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\RecordRailClick;
 use App\Actions\UI\Profile\UpdateProfile;
+use App\Actions\Web\Crawl\AskWebmastersToFixSiteAuditIssue;
 use App\Actions\Web\Crawl\StartSiteAudit;
 use App\Actions\Web\Seo\AcceptSeoContentSuggestion;
 use App\Actions\Web\Seo\CheckSeoKeywordsNow;
@@ -1625,6 +1626,7 @@ Route::post('family/{family:id}/webpage-check', CheckFamilyWebpage::class)->name
 
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');
+    Route::post('site-audit/issues/{issueType}/ask-to-fix', AskWebmastersToFixSiteAuditIssue::class)->name('site_audit.ask_to_fix');
     Route::post('publish/header', [PublishWebsiteMarginal::class, 'header'])->name('publish.header');
     Route::post('publish/footer', [PublishWebsiteMarginal::class, 'footer'])->name('publish.footer');
 
