@@ -25,14 +25,14 @@ Pre obchod na Shopify alebo WooCommerce, ktorý ukazuje svoje ceny, to stačí: 
 Pri akejkoľvek inej webovej stránke vyplňte jedno z polí v **Where to read prices** (Odkiaľ čítať ceny):
 
 - **Product feed link** (odkaz na produktový feed): CSV alebo textový súbor so všetkými ich produktmi a cenami, ktorý dávajú svojim obchodným zákazníkom. Najlepšia možnosť; číta sa každé ráno.
-- **Search link** (odkaz na vyhľadávanie): vyhľadajte na ich webe ľubovoľné slovo, skopírujte odkaz na stránku s výsledkami a na miesto slova vložte `{query}`. aiku potom každý týždeň vyhľadáva na ich webe hlavné produkty, ktoré majú otvorený cenový tip.
-- **Login page** (prihlasovacia stránka), **login email** a **password**: iba keď ceny ukazujú prihláseným obchodným zákazníkom. Heslo sa ukladá zašifrované a už sa nezobrazí; pri úprave ho nechajte prázdne, ak ho chcete zachovať.
+- **Search link** (odkaz na vyhľadávanie): vyhľadajte na ich webe ľubovoľné slovo, skopírujte odkaz na stránku s výsledkami a na miesto slova vložte `{query}`. aiku potom každý týždeň vyhľadáva na ich webe hlavné produkty, ktoré majú otvorený cenový tip. Ak odkaz pri webe s prihlásením necháte prázdny alebo zadaný odkaz vedie na stránku bez hľadaných slov, aiku použije odkaz na vyhľadávanie, ktorý web o sebe zverejňuje, ak ho má; inak sa pri konkurentovi zobrazí **The search link does not search**.
+- **Login page** (prihlasovacia stránka), **login email** a **password**: iba keď ceny ukazujú prihláseným obchodným zákazníkom. Heslo sa ukladá zašifrované a už sa nezobrazí; pri úprave ho nechajte prázdne, ak ho chcete zachovať. aiku sa pri každom vyhľadávaní prihlási nanovo.
 
 ## Čo ukazuje dashboard
 
 **Masters › Competitors** sa otvorí na dashboarde:
 
-- **Competitors**: koľko sa prečítalo bez problémov, koľko zlyháva a prečo (web sa nedal otvoriť, zablokoval nás alebo zlyhalo prihlásenie), s poslednou chybou jasnými slovami a kedy bolo posledné čítanie.
+- **Competitors**: koľko sa prečítalo bez problémov, koľko zlyháva a prečo (web sa nedal otvoriť, zablokoval nás, zlyhalo prihlásenie alebo odkaz na vyhľadávanie nevyhľadáva), s poslednou chybou jasnými slovami a kedy bolo posledné čítanie.
 - **Matches to review**: koľko párov si AI nebola istá. Kliknutím ich prejdete.
 - **Reviewed by staff this week** a **Confirmed this week**, každé oproti minulému týždňu.
 - Jedna karta na hlavný obchod: pri koľkých potvrdených produktoch ste **lacnejší** (cheaper), **približne rovnakí** (v rozmedzí 5 %) alebo **drahší** (dearer), medián rozdielu a podiel aktívnych hlavných produktov, ktoré majú aspoň jednu potvrdenú cenu konkurenta.

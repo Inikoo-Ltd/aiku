@@ -24,6 +24,7 @@ const statusLabels: Record<string, string> = {
     ok: ctrans("Read fine last time"),
     login_failed: ctrans("Could not log in, check the email and password"),
     blocked: ctrans("The website blocked us"),
+    search_broken: ctrans("The search link does not search, check it on Edit"),
     error: ctrans("Could not open the website"),
 }
 

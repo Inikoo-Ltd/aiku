@@ -25,14 +25,14 @@ Con eso basta para una tienda Shopify o WooCommerce que muestra sus precios: aik
 Para cualquier otra web, rellena uno de los campos de **Where to read prices** (dónde leer los precios):
 
 - **Product feed link** (enlace al fichero de productos): el fichero CSV o de texto con todos sus productos y precios que dan a sus clientes profesionales. Es la mejor opción; se lee cada mañana.
-- **Search link** (enlace de búsqueda): busca cualquier palabra en su web, copia el enlace de la página de resultados y pon `{query}` donde estaba la palabra. aiku buscará entonces en su web cada semana los productos maestros que tengan una sugerencia de precio abierta.
-- **Login page** (página de acceso), **login email** y **password**: solo cuando muestran precios a clientes profesionales con sesión iniciada. La contraseña se guarda cifrada y no se vuelve a mostrar; déjala vacía al editar para conservarla.
+- **Search link** (enlace de búsqueda): busca cualquier palabra en su web, copia el enlace de la página de resultados y pon `{query}` donde estaba la palabra. aiku buscará entonces en su web cada semana los productos maestros que tengan una sugerencia de precio abierta. Si el enlace se deja vacío en una web con acceso de cliente, o el introducido lleva a una página sin las palabras buscadas, aiku usa el enlace de búsqueda que la propia web publica, si lo tiene; si no, el competidor muestra **The search link does not search**.
+- **Login page** (página de acceso), **login email** y **password**: solo cuando muestran precios a clientes profesionales con sesión iniciada. La contraseña se guarda cifrada y no se vuelve a mostrar; déjala vacía al editar para conservarla. aiku inicia sesión de nuevo cada vez que busca.
 
 ## Qué muestra el panel
 
 **Masters › Competitors** se abre en el panel:
 
-- **Competitors**: cuántos se leyeron bien, cuántos fallan y por qué (no se pudo abrir la web, nos bloqueó o falló el acceso), con el último error en palabras sencillas, y cuándo fue la última lectura.
+- **Competitors**: cuántos se leyeron bien, cuántos fallan y por qué (no se pudo abrir la web, nos bloqueó, falló el acceso o el enlace de búsqueda no busca), con el último error en palabras sencillas, y cuándo fue la última lectura.
 - **Matches to review** (emparejamientos por revisar): cuántos emparejamientos no tenía claros la IA. Púlsalo para revisarlos.
 - **Reviewed by staff this week** y **Confirmed this week**, cada uno frente a la semana pasada.
 - Una tarjeta por tienda maestra: en cuántos productos confirmados eres **más barato**, **parecido** (dentro del 5%) o **más caro**, la diferencia mediana, y el porcentaje de productos maestros activos que tienen al menos un precio confirmado de la competencia.

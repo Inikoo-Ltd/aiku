@@ -4797,6 +4797,49 @@ describe('competitor prices, HELP-3605', function () {
                 ->etc());
     });
 
+    test('a site with a trade login is logged into afresh for every batch, without the cookies of the last one', function () use ($fakeBrowserAndAi) {
+        $this->competitor->update(['login_url' => 'https://rival.example.com/login', 'username' => 'buyer@example.com', 'password' => 'trade-secret', 'cookies' => [['name' => 'session', 'value' => 'old']]]);
+        $fakeBrowserAndAi(['login_error' => null, 'cookies' => [['name' => 'session', 'value' => 'new']], 'pages' => []], []);
+
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+
+        \Illuminate\Support\Facades\Process::assertRan(fn (\Illuminate\Process\PendingProcess $process) => (json_decode($process->input, true)['login']['username'] ?? null) === 'buyer@example.com' && json_decode($process->input, true)['cookies'] === []);
+        expect($this->competitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::OK);
+    });
+
+    test('a search link that lands on a page without the searched words is replaced by the one the site publishes, or flagged', function () {
+        $emptySearch = ['login_error' => null, 'cookies' => [], 'pages' => [['url' => 'https://rival.example.com/search?q=x', 'final_url' => 'https://rival.example.com/busqueda', 'status' => 200, 'blocked' => false, 'text' => 'Welcome to Rival, search our catalogue', 'links' => []]]];
+        $realSearch  = ['login_error' => null, 'cookies' => [], 'pages' => [['url' => 'https://rival.example.com/busqueda?search=x', 'final_url' => 'https://rival.example.com/busqueda?search=x', 'status' => 200, 'blocked' => false, 'text' => $this->competitorMasterAsset->name.' £16.00', 'links' => []]]];
+        $homepage    = '<html><head><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","url":"https://rival.example.com/","potentialAction":{"@type":"SearchAction","target":"https://www.rival.example.com/busqueda?search={search_term_string}","query-input":"required name=search_term_string"}}</script></head></html>';
+
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::sequence()->push(\Illuminate\Support\Facades\Process::result(json_encode($emptySearch)))->push(\Illuminate\Support\Facades\Process::result(json_encode($realSearch)))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'rival.example.com*' => \Illuminate\Support\Facades\Http::response($homepage),
+            'openrouter.ai/*'    => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(['products' => []])]]]]),
+        ]);
+
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+        expect($this->competitor->refresh()->search_url)->toBe('https://www.rival.example.com/busqueda?search={query}')
+            ->and($this->competitor->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::OK);
+
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode($emptySearch))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response('<html></html>')]);
+
+        expect(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]))->toBe(0)
+            ->and($this->competitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::SEARCH_BROKEN)
+            ->and($this->competitor->last_error)->toContain('{query}');
+        \Illuminate\Support\Facades\Http::assertNotSent(fn (\Illuminate\Http\Client\Request $request) => str_contains($request->url(), 'openrouter.ai'));
+
+        expect(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::findSearchUrl('https://rival.example.com'))->toBeNull()
+            ->and(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::searchIsBroken([['final_url' => 'https://rival.example.com/p/brass-bowl', 'text' => 'Brass singing bowl 10cm', 'blocked' => false]], ['Brass singing bowl 10cm']))->toBeFalse();
+
+        get(route('grp.masters.competitors.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.status.failures', fn ($failures) => collect($failures->toArray())->firstWhere('id', $this->competitor->id)['reason'] === 'The search link does not search')->etc());
+    });
+
     test('the dashboard explains the first steps when there are no competitors', function () {
         \App\Models\Masters\Competitor::where('group_id', group()->id)->delete();
 

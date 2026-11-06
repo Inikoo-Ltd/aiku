@@ -18,4 +18,5 @@ enum CompetitorStatusEnum: string
     case LOGIN_FAILED = 'login_failed';
     case BLOCKED      = 'blocked';
     case ERROR        = 'error';
+    case SEARCH_BROKEN = 'search_broken';
 }
