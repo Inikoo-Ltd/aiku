@@ -69,6 +69,7 @@ const minimumOrderSkos = computed(() => {
 })
 
 const daysNow = computed(() => coverDays(stock.value + incoming.value))
+const hasPendingQuantityQuery = computed(() => props.item.quantity_query?.state === "pending")
 const daysAfter = computed(() => coverDays(stock.value + incoming.value + thisOrder.value))
 
 const suggestedQuantityHint = computed(() => {
@@ -379,8 +380,8 @@ function purchaseOrderRoute(slug: string) {
 			<span v-if="!isOrderClosed && !isOrderLocked && !(thisOrder > 0 && hasHistory)" v-tooltip="verdict.tooltip" class="cursor-help font-semibold uppercase tracking-wide" :class="verdict.class">{{ verdict.label }}</span>
 		</div>
 
-		<div v-if="hasHistory && !isOrderLocked" class="flex flex-wrap items-center gap-x-3 gap-y-1">
-			<div class="relative h-2 w-48 shrink-0 overflow-hidden rounded-full bg-gray-100 transition-[height] duration-150 hover:h-3 border border-gray-400">
+		<div v-if="hasHistory && (!isOrderLocked || hasPendingQuantityQuery)" class="flex flex-wrap items-center gap-x-3 gap-y-1">
+			<div v-if="!isOrderLocked" class="relative h-2 w-48 shrink-0 overflow-hidden rounded-full bg-gray-100 transition-[height] duration-150 hover:h-3 border border-gray-400">
 				<div
 					v-for="zone in currentCoverZones"
 					:key="zone.key"
