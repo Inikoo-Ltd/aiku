@@ -1695,23 +1695,94 @@ test('both job orders of a carried job keep a card on the to produce board, whic
     ]);
 });
 
-test('a job order line nobody has worked on can be removed, a worked or only line cannot', function () {
-    $jobOrder  = StoreJobOrder::make()->action($this->production, []);
-    $kept      = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 200]);
-    $duplicate = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 100]);
-    $taskIds   = $duplicate->tasks()->pluck('id');
+test('a single job order line goes back to the backlog with a reason, keeping what is made and the demand the job still covers', function () {
+    $this->artefact->manufactureTasks()->detach();
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $stocks    = createStocks($this->group);
+    $orgStocks = createOrgStocks($this->organisation, [$stocks[0]]);
+    \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->forceDelete();
+    Artefact::where('production_id', $this->production->id)
+        ->where('org_stock_id', $orgStocks[0]->id)
+        ->where('id', '!=', $this->artefact->id)
+        ->update(['org_stock_id' => null]);
+    $this->artefact->update(['org_stock_id' => $orgStocks[0]->id]);
+    $orgStocks[0]->update(['packed_in' => 1]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $kept     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 100]);
+    $returned = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 100]);
+    $partial  = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 50]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $demand = \App\Models\Procurement\PartnerShoppingListItem::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'stock_id'        => $stocks[0]->id,
+        'org_stock_id'    => $orgStocks[0]->id,
+        'quantity'        => 200,
+        'job_order_id'    => $jobOrder->id,
+    ]);
+    $backToProduce = fn () => (float) \App\Models\Procurement\PartnerShoppingListItem::where('org_stock_id', $orgStocks[0]->id)->whereNull('job_order_id')->sum('quantity');
+    $taskIds       = $returned->tasks()->pluck('id');
+    $backlogUrl    = fn (JobOrderItem $line) => route('grp.models.job-order-item.delete', [$line->id]);
 
     actingAs($this->guest->getUser());
 
-    $kept->tasks()->update(['quantity_made' => 10]);
-    $this->delete(route('grp.models.job-order-item.delete', [$kept->id]))->assertSessionHasErrors('line');
+    $this->delete($backlogUrl($returned), ['kind' => 'other'])->assertSessionHasErrors('reason');
+    $this->delete($backlogUrl($returned), ['kind' => 'missing_materials', 'reason' => 'Out of sandalwood oil'])->assertSessionHasNoErrors();
 
-    $this->delete(route('grp.models.job-order-item.delete', [$duplicate->id]))->assertSessionHasNoErrors();
-
-    expect(JobOrderItem::find($duplicate->id))->toBeNull()
+    expect(JobOrderItem::find($returned->id))->toBeNull()
         ->and(\App\Models\Production\JobOrderItemTask::whereIn('id', $taskIds)->count())->toBe(0)
-        ->and(JobOrderItem::find($kept->id))->not->toBeNull();
+        ->and((float) $demand->refresh()->quantity)->toBe(150.0)
+        ->and($demand->job_order_id)->toBe($jobOrder->id)
+        ->and($backToProduce())->toBe(50.0)
+        ->and($jobOrder->refresh()->data['line_returns'][0])->toMatchArray([
+            'kind' => 'missing_materials', 'reason' => 'Out of sandalwood oil', 'units_kept' => 0, 'units_returned' => 100, 'lines_returned' => 1,
+        ]);
 
-    $kept->tasks()->update(['quantity_made' => 0]);
-    $this->delete(route('grp.models.job-order-item.delete', [$kept->id]))->assertSessionHasErrors('line');
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($this->guest->getUser(), $partial->tasks()->first()), ['quantity_made' => 20]);
+    $this->delete($backlogUrl($partial), ['kind' => 'missing_materials'])->assertSessionHasNoErrors();
+
+    expect((int) $partial->refresh()->quantity)->toBe(20)
+        ->and($partial->tasks()->first()->state)->toBe(\App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum::DONE)
+        ->and((float) $demand->refresh()->quantity)->toBe(120.0)
+        ->and($backToProduce())->toBe(80.0)
+        ->and($jobOrder->refresh()->data['line_returns'][1])->toMatchArray(['units_kept' => 20, 'units_returned' => 30]);
+
+    $this->delete($backlogUrl($partial), ['kind' => 'missing_materials'])->assertSessionHasErrors('line');
+
+    $onlyLine = StoreJobOrderItem::make()->action(StoreJobOrder::make()->action($this->production, []), ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
+    $this->delete($backlogUrl($onlyLine), ['kind' => 'missing_materials'])->assertSessionHasErrors('line');
+});
+
+test('an order raises to produce lines for stock already promised to earlier orders, not only for what is missing from the shelf', function () {
+    [, , $shop] = createShop();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    if (!Artefact::where('organisation_id', $shop->organisation_id)->where('org_stock_id', $orgStock->id)->exists()) {
+        StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'PROMISED-01', 'name' => 'Promised'])
+            ->update(['org_stock_id' => $orgStock->id]);
+    }
+    $customer = createCustomer($shop);
+    $submit   = function () use ($customer, $product) {
+        $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+            'reference'        => 'PROMISED-'.uniqid(),
+            'date'             => date('Y-m-d'),
+            'customer_id'      => $customer->id,
+            'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+            'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        ]);
+        \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 1]));
+
+        return \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
+    };
+
+    $orgStock->update(['quantity_in_locations' => 1, 'quantity_available' => 0]);
+    $lines = $submit();
+    expect($lines)->toHaveCount(1)
+        ->and((float) $lines[0]->quantity)->toBe(1.0);
+
+    $orgStock->update(['quantity_in_locations' => 1, 'quantity_available' => 1]);
+    expect($submit())->toBe([]);
 });

@@ -51,7 +51,7 @@ class StoreToProduceItemsFromOrder
                 }
 
                 $skosNeeded = (float) $transaction->quantity_ordered * (float) ($orgStock->pivot->quantity ?: 1);
-                $shortfall  = round($skosNeeded - (float) $orgStock->quantity_in_locations, 3);
+                $shortfall  = round($skosNeeded - max((float) $orgStock->quantity_available, 0), 3);
                 if ($shortfall <= 0) {
                     continue;
                 }
