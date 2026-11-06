@@ -17,6 +17,7 @@ import type { PortalForms } from "@/Components/Procurement/SupplierPortalForms.v
 import type { Valuation } from "@/Components/Procurement/AgentSalesValuation.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import SupplierPortalPurchaseOrderDialog from "@/Components/Procurement/SupplierPortalPurchaseOrderDialog.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart, faComputerClassic } from "@fas"
@@ -74,6 +75,7 @@ const props = defineProps<{
 	feedback?: InstanceType<typeof SalesDashboard>["$props"]["feedback"]
 	labels_print?: InstanceType<typeof SupplierPortalDetails>["$props"]["labelsPrint"]
 	products_route?: string
+	purchase_order_route?: string
 }>()
 
 const code = ref("")
@@ -115,6 +117,8 @@ const navigationTheme = computed(() => {
 
 type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "products" | "price_changes" | "agreement" | "grow"
 
+const fullWidthTabs: Tab[] = ["purchase_orders", "purchase_order_list"]
+
 const menu = computed<{ key: Tab; label: string; icon: string; shortcut?: boolean }[]>(() => [
 	{ key: "home", label: ctrans("Home"), icon: "fal fa-home" },
 	{ key: "sales", label: ctrans("Sales"), icon: "fal fa-chart-line" },
@@ -144,6 +148,8 @@ const openProduct = (code: string) => {
 	productSearch.value = code
 	go("products")
 }
+
+const openPurchaseOrderId = ref<number | null>(null)
 
 const openOrder = (reference: string) => {
 	const url = new URL(window.location.href)
@@ -228,7 +234,7 @@ onMounted(() => {
 				<SupplierPortalSearch :search-route="routes.search" @product="openProduct" @order="openOrder" />
 				<SupplierPortalProfile v-if="profile" :profile="profile" :update-route="routes.profile" v-model:theme="theme" @company-details="openCompanyDetails" />
 			</header>
-			<div class="mx-auto max-w-6xl space-y-4 p-4 lg:p-8">
+			<div class="mx-auto space-y-4 p-4 lg:p-8" :class="fullWidthTabs.includes(tab) ? 'max-w-none' : 'max-w-6xl'">
 
 				<template v-if="tab === 'home'">
 					<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -348,13 +354,13 @@ onMounted(() => {
 				<SalesDashboard v-else-if="tab === 'sales' && valuation" seller="supplier" :staff="false" :links="null" :valuation="valuation" :sales="sales" :feedback="feedback" :language="language" />
 
 				<template v-else-if="tab === 'purchase_orders'">
-					<SupplierPortalPurchaseOrderStages v-if="purchase_order_stages" :data="purchase_order_stages" @list="go('purchase_order_list')" />
+					<SupplierPortalPurchaseOrderStages v-if="purchase_order_stages" :data="purchase_order_stages" @list="go('purchase_order_list')" @open="openPurchaseOrderId = $event" />
 					<div v-else class="skeleton h-40 rounded-lg" />
 				</template>
 
 				<div v-else-if="tab === 'purchase_order_list'" class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
 					<p class="px-4 pt-4 text-sm text-gray-500">{{ ctrans("Every order we sent you. Open orders show the labels to print.") }}</p>
-					<TableSupplierPortalPurchaseOrders v-if="purchase_orders" :data="purchase_orders" tab="purchase_orders" />
+					<TableSupplierPortalPurchaseOrders v-if="purchase_orders" :data="purchase_orders" tab="purchase_orders" @open="openPurchaseOrderId = $event" />
 				</div>
 
 				<SupplierPortalPriceChanges
@@ -371,6 +377,8 @@ onMounted(() => {
 
 			</div>
 		</main>
+
+		<SupplierPortalPurchaseOrderDialog v-if="purchase_order_route" v-model="openPurchaseOrderId" :purchase-order-route="purchase_order_route" />
 
 		<footer class="fixed bottom-0 left-0 z-20 flex h-6 w-screen items-center justify-between gap-x-4 bg-black px-4 text-xs text-slate-400">
 			<a href="https://aiku.io/" target="_blank" rel="noopener" class="flex shrink-0 items-center gap-x-1.5 whitespace-nowrap hover:text-white">

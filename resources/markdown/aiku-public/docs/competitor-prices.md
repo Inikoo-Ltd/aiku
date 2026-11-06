@@ -52,12 +52,32 @@ A match marked *Similar, not the same item* is kept as a hint but never counted 
 
 ## The competitor page
 
-Click a competitor's name on the list or the dashboard to see its master shop, website, who it sells to, the currency, how its prices are read, whether aiku logs in, its status and last error, and two tabs:
+Click a competitor's name on the list or the dashboard. The header shows its logo, website, the platform its shop runs on (Shopify, WooCommerce and so on), master shop, who it sells to, the currency, how its prices are read, when the prices were last read and when the dossier was last refreshed. Four tabs follow:
 
-- **Matches**: its matches with the same tick and cross review;
-- **Products read**: everything read from it, with price, units and link.
+- **Dossier**, the default: the intelligence report on the competitor, built from its public pages once a week (see below).
+- **Matches**: its matches with the same tick and cross review.
+- **Products read**: everything read from it, with the price, the price before the discount when the shop shows one, how much is off, units and link. The **On sale now** filter keeps only the discounted products.
+- **Policies**: the text of each shipping, returns and terms page read for the dossier, each with its link, so a fact in the dossier can be checked against the page it came from.
 
 **Edit** opens the same form as when adding, without the master shop.
+
+### The dossier
+
+Every week aiku opens the competitor's homepage and its shipping, returns and terms pages in a browser, exactly as a visitor would, without logging in. It takes a screenshot of the homepage, reads what the company publishes about itself, and the AI pulls out the facts, each with the page it came from, and writes a short briefing. The dossier is also built when a competitor is added, and whenever you press **Refresh dossier** (it takes a few minutes; come back to the page).
+
+The tab shows, from the top:
+
+- **Briefing**: four to six sentences on who they are, how they price against us, how much they lean on offers, and their shipping and terms, with a one-line positioning.
+- **What changed**: what differs from the refresh before, with dates: the free-shipping threshold, shipping costs or delivery times, minimum order, returns window, an offer or coupon that appeared or ended, payment methods, phone, email or address, platform, a product count that moved more than 10%, or a share on sale that moved more than 10 points. Earlier changes follow as a short timeline. A first dossier says there is nothing to compare yet.
+- **Screenshot** of their homepage; click to enlarge.
+- **Identity**: company name, phones, emails, address, country and social accounts, as published on their site.
+- **Key numbers**: products listed, price range, share on sale now, average discount, confirmed matches and the median difference against us.
+- **Site-wide offers**: banners, coupon codes, volume or tier discounts and newsletter discounts, each with its source page, plus the announcements on their homepage.
+- **Share of products on sale, last 90 days**: a line from the daily feed reads, so a shop with a high list price that is always on offer shows as such.
+- **Shipping and terms**: free shipping from, shipping costs, where they ship, delivery times, minimum order, returns and payments, each with a link to the page that says so. *Not found on their pages* means the pages read do not say.
+- **Most discounted right now**: their products with the biggest discount at the last feed read.
+
+A fact comes only from the pages read: the AI is told to say *not found* rather than guess. When a website blocks the browser or does not answer, the dossier keeps its last content and the header shows the error.
 
 <aside class="wayfinder"><strong>Where to click in aiku</strong>
 <ul>

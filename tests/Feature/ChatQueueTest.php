@@ -1744,3 +1744,54 @@ test('opening a whatsapp conversation marks it read without waiting for Meta', f
     \App\Actions\Chat\Whatsapp\SendWhatsappReadReceipt::assertPushed(1, fn ($action, $params) => $params[0]->is($newest));
     \Illuminate\Support\Facades\Http::assertNothingSent();
 });
+
+describe('chat spike alert', function () {
+    beforeEach(function () {
+        config()->set('services.discord.bot_token', 'bot-token');
+        $this->user->update(['settings' => array_merge($this->user->settings ?? [], ['discord_user_id' => '4242'])]);
+        \Illuminate\Support\Facades\Cache::forget('chat:spike-alerted:'.$this->shop->id);
+        \Illuminate\Support\Facades\Http::fake([
+            'discord.com/api/v10/users/@me/channels'    => \Illuminate\Support\Facades\Http::response(['id' => '777']),
+            'discord.com/api/v10/channels/777/messages' => \Illuminate\Support\Facades\Http::response(['id' => '1']),
+        ]);
+        $this->spikeFor = fn (array $spikes) => collect($spikes)->firstWhere('shop_id', $this->shop->id);
+    });
+
+    test('many customers writing in at once DMs the engineer once per cooldown', function () {
+        foreach (range(1, \App\Actions\Chat\AlertChatMessageSpikes::MIN_CHATS - 1) as $i) {
+            noiseTestEmailSession($this->shop, "spike$i@example.com", "Checkout broken $i", 'I cannot pay');
+        }
+        $this->travel(1)->seconds();
+        noiseTestWhatsappSession($this->shop, '+628111222'.rand(100, 999), 'Payment page is down');
+
+        $spike = ($this->spikeFor)(\App\Actions\Chat\AlertChatMessageSpikes::make()->handle($this->user->username));
+
+        expect($spike['chats'])->toBeGreaterThanOrEqual(\App\Actions\Chat\AlertChatMessageSpikes::MIN_CHATS)
+            ->and($spike['sent'])->toBeTrue();
+
+        \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), '/channels/777/messages')
+            && str_contains($request['content'], $this->shop->name)
+            && str_contains($request['content'], 'email: Checkout broken')
+            && str_contains($request['content'], 'whatsapp: Payment page is down'));
+
+        $again = ($this->spikeFor)(\App\Actions\Chat\AlertChatMessageSpikes::make()->handle($this->user->username));
+
+        expect($again['sent'])->toBeFalse();
+        \Illuminate\Support\Facades\Http::assertSentCount(2);
+    });
+
+    test('a busy half hour that is usual for the shop at that time does not alert', function () {
+        foreach (range(1, \App\Actions\Chat\AlertChatMessageSpikes::BASELINE_WEEKS) as $week) {
+            foreach (range(1, 20) as $i) {
+                $session = noiseTestEmailSession($this->shop, "usual$week-$i@example.com", 'Usual question', 'Where is my order');
+                ChatMessage::where('chat_session_id', $session->id)->update(['created_at' => now()->subWeeks($week)->subMinutes(10)]);
+            }
+        }
+        foreach (range(1, \App\Actions\Chat\AlertChatMessageSpikes::MIN_CHATS) as $i) {
+            noiseTestEmailSession($this->shop, "busy$i@example.com", 'Busy as usual', 'Where is my order');
+        }
+
+        expect(($this->spikeFor)(\App\Actions\Chat\AlertChatMessageSpikes::make()->handle($this->user->username)))->toBeNull();
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    });
+});

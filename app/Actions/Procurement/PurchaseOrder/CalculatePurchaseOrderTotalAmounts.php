@@ -34,6 +34,10 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
             'cost_items' => $itemsNet,
             'cost_total' => $itemsNet + $extras,
         ]);
+
+        if ($purchaseOrder->wasChanged('cost_total') && $purchaseOrder->depositPayments()->exists()) {
+            SyncPurchaseOrderDepositPaid::run($purchaseOrder);
+        }
     }
 
     private function netAmountInOrderCurrency(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $transaction): float

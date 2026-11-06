@@ -3,15 +3,14 @@ import { computed, ref, watch } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
-import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Checkbox from "primevue/checkbox"
-import { faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser, faTrashAlt } from "@fal"
+import { faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser, faTrashAlt, faTag } from "@fal"
 
-library.add(faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser, faTrashAlt)
+library.add(faUserTie, faIndustryAlt, faBuilding, faSparkles, faRedoAlt, faChevronRight, faCheck, faExclamationTriangle, faPeopleArrows, faClipboardList, faUser, faTrashAlt, faTag)
 
 export interface JourneySegment {
     key: string
@@ -27,7 +26,7 @@ export interface JourneySegment {
     checks?: { key: string; label: string; done: boolean; date: string | null }[]
 }
 
-export type DeleteBlocker = "state" | "items" | "extra_costs" | "deposit" | "goods" | "delivery"
+export type DeleteBlocker = "state" | "items" | "deposit" | "goods" | "delivery"
 
 export interface JourneyRibbon {
     key: string
@@ -67,6 +66,7 @@ export interface JourneyRibbon {
     extra_costs?: number | null
     lines?: number | null
     cancelled_lines?: number | null
+    pending_price_changes?: number
 }
 
 const props = defineProps<{
@@ -85,8 +85,6 @@ const emit = defineEmits<{
     delete: [ribbon: JourneyRibbon]
 }>()
 
-const locale = useLocaleStore()
-
 const deleteBlockedTooltip = computed(() => {
     if (props.ribbon.is_deletable) {
         return null
@@ -94,7 +92,6 @@ const deleteBlockedTooltip = computed(() => {
     const reasons: Record<DeleteBlocker, string> = {
         state: ctrans("Already received"),
         items: ctrans("Some items still have a value"),
-        extra_costs: ctrans("Has extra costs of :amount", { amount: String(locale.currencyFormat(props.ribbon.currency_code, props.ribbon.extra_costs ?? 0)) }),
         deposit: ctrans("Has a deposit, deposit request or agent payment"),
         goods: ctrans("Goods already received by the agent"),
         delivery: ctrans("Has a stock delivery")
@@ -311,6 +308,15 @@ function isMarkable(segment: JourneySegment): boolean {
                                 fixed-width
                                 aria-hidden="true" />
                         </div>
+                        <component
+                            :is="ribbon.route ? Link : 'span'"
+                            v-if="ribbon.pending_price_changes"
+                            :href="ribbon.route ? route(ribbon.route.name, ribbon.route.parameters) : undefined"
+                            v-tooltip="ctrans('The agent asked to change the price of :count items. Open the order to accept or reject', { count: ribbon.pending_price_changes })"
+                            class="inline-flex items-center gap-1 whitespace-nowrap rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 font-medium text-amber-800 hover:bg-amber-100">
+                            <FontAwesomeIcon icon="fal fa-tag" class="shrink-0" fixed-width aria-hidden="true" />
+                            {{ ctrans("Price change requested (:count)", { count: ribbon.pending_price_changes }) }}
+                        </component>
                     </div>
                     </slot>
                 </div>

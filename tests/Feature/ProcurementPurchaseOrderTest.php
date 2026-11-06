@@ -127,6 +127,10 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
+use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionPriceChange;
+use App\Actions\Procurement\PurchaseOrderTransaction\AnswerPurchaseOrderTransactionQuantityChange;
+use App\Actions\Procurement\PurchaseOrderTransaction\AnswerPurchaseOrderTransactionPriceChange;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Actions\SupplyChain\Supplier\MergeSuppliers;
@@ -4001,6 +4005,11 @@ test('the agent asks the organisation about a new supplier price and confirms on
     expect($line->refresh()->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::PENDING);
     $order->updateQuietly(['production_started_at' => now()]);
     $this->post($askRoute, ['unit_cost' => $oldUnitCost + 6])->assertSessionHasErrors('unit_cost');
+    actingAs($admin);
+    $this->patch($answerRoute, ['answer' => 'accepted'])->assertSessionHasErrors('answer');
+    expect((float) $line->refresh()->unit_cost)->toEqual($oldUnitCost + 2);
+    $this->patch($answerRoute, ['answer' => 'rejected'])->assertSessionHasNoErrors();
+    expect($line->refresh()->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::REJECTED);
     actingAs($this->adminGuest->getUser());
 });
 
@@ -4394,4 +4403,76 @@ test('moving part of a line puts it on the other supplier open order at the same
     $locked->update(['production_started_at' => now()]);
     expect(fn () => MovePurchaseOrderTransactionToSupplier::make()->action($locked->purchaseOrderTransactions()->firstOrFail(), ['org_supplier_id' => $toSupplier->id, 'quantity' => 3]))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
+test('a paid order owes the balance again once a quantity change raises its total, and is paid again when it goes back', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $order->depositPayments()->create([
+        'group_id'        => $order->group_id,
+        'organisation_id' => $order->organisation_id,
+        'currency_id'     => $order->currency_id,
+        'amount'          => (float) $order->cost_total,
+        'date'            => now()->toDateString(),
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::CASH,
+    ]);
+    \App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::run($order->refresh());
+    expect($order->refresh()->balance_paid_at)->not->toBeNull();
+
+    UpdatePurchaseOrderTransaction::make()->action($line, ['quantity_ordered' => 12]);
+    expect($order->refresh()->balance_paid_at)->toBeNull()
+        ->and(\App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::leftToPay($order))->toBeGreaterThan(0.0);
+
+    UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
+    expect($order->refresh()->balance_paid_at)->not->toBeNull();
+});
+
+test('a request already answered by another buyer is not applied a second time', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $unitCost             = (float) $line->unit_cost;
+
+    AskPurchaseOrderTransactionQuantityChange::make()->action($line, ['quantity_ordered' => 12]);
+    $staleLine = PurchaseOrderTransaction::findOrFail($line->id);
+    AnswerPurchaseOrderTransactionQuantityChange::make()->action($line->refresh(), ['answer' => 'rejected', 'quantity_ordered' => 12]);
+    expect(fn () => AnswerPurchaseOrderTransactionQuantityChange::make()->action($staleLine, ['answer' => 'accepted', 'quantity_ordered' => 12]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect((float) $line->refresh()->quantity_ordered)->toBe(10.0);
+
+    AskPurchaseOrderTransactionPriceChange::make()->action($line, ['unit_cost' => $unitCost + 1]);
+    $staleLine = PurchaseOrderTransaction::findOrFail($line->id);
+    AnswerPurchaseOrderTransactionPriceChange::make()->action($line->refresh(), ['answer' => 'rejected']);
+    expect(fn () => AnswerPurchaseOrderTransactionPriceChange::make()->action($staleLine, ['answer' => 'accepted']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect((float) $line->refresh()->unit_cost)->toEqual($unitCost);
+});
+
+test('deleting empty purchase orders deletes the drafts, cancels the ones already sent and leaves an order with items or a deposit', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $newDraft             = fn () => StorePurchaseOrder::make()->action(createAgentOrgSupplierWithProduct($this, $orgAgent)[0], PurchaseOrder::factory()->definition());
+    $draft                = $newDraft();
+    $sent                 = $newDraft();
+    $sent->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+    $withDeposit          = $newDraft();
+    $withDeposit->updateQuietly(['deposit_amount' => 5]);
+    $withItems            = createConfirmedAgentOrder($this, $supplier, $product, 0, 3)->refresh();
+
+    expect(fn () => \App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::make()->action($this->group, [$draft->id, $withDeposit->id, $withItems->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($draft->refresh()->trashed())->toBeFalse();
+
+    $done = \App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders::make()->action($this->group, [$draft->id, $sent->id]);
+
+    expect($done)->toBe(2)
+        ->and(PurchaseOrder::withTrashed()->find($draft->id)->trashed())->toBeTrue()
+        ->and($sent->refresh()->trashed())->toBeFalse()
+        ->and($sent->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
+        ->and($withDeposit->refresh()->trashed())->toBeFalse()
+        ->and($withDeposit->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
+        ->and($withItems->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
 });

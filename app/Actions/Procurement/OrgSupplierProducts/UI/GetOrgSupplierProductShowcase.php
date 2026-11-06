@@ -50,7 +50,7 @@ class GetOrgSupplierProductShowcase
      */
     private function withoutLandedCosts(array $showcase): array
     {
-        $showcase['costs'] = Arr::only($showcase['costs'], ['currency_code', 'unit_cost']);
+        $showcase['costs'] = Arr::only($showcase['costs'], ['currency_code', 'unit_cost', 'units_per_pack', 'units_per_carton', 'supplier_pack_cost', 'supplier_carton_cost']);
         Arr::forget($showcase, ['supplierProductInfo.unit_expense', 'supplierProductInfo.extra_costs']);
 
         return $showcase;

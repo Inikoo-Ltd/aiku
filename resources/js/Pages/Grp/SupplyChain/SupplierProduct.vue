@@ -93,7 +93,7 @@ const component = computed(() => {
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
     <div v-if="currentTab === 'showcase'" class="grid items-start gap-6 px-6 pt-6 md:grid-cols-3">
-        <AgreementSummary :agreement="agreement" showLevel :costs="showcase?.costs" class="min-w-0 md:col-span-2" />
+        <AgreementSummary :agreement="agreement" showLevel class="min-w-0 md:col-span-2" />
         <MicroStats v-if="showcase?.stats?.length" :stats="showcase.stats" />
     </div>
     <component :is="component" :data="props[currentTab]" :tab="currentTab" v-bind="['agreed_terms', 'notes'].includes(currentTab) ? { agreement } : {}"></component>

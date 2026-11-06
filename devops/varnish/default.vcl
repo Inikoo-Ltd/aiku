@@ -198,11 +198,13 @@ sub vcl_recv {
     # Bots run no JavaScript, so old JS in an old page can't break anything for them:
     # they get their own copy of logged-out pages, which the deploy flush in
     # restart_varnish.sh spares (x-aiku-bot-copy). Search engines and the cache warmer
-    # stay with people, so a template change reaches Google at once.
+    # stay with people, so a template change reaches Google at once. So does our own
+    # Site Audit (AikuSiteAuditBot): it reports what Google gets, and from the people
+    # copy the Cloudflare edge answers most of its pages without a render.
     unset req.http.X-Aiku-Bot;
     if (req.http.X-Logged-Status == "Out"
         && req.http.User-Agent ~ "(?i)(bot|crawl|spider|scrap|slurp|python|curl|wget|go-http|java/|node-fetch|axios|php-requests|libwww|okhttp|headless|ChatGPT-User|Perplexity-User|meta-externalagent|facebookexternalhit|importer)"
-        && req.http.User-Agent !~ "(?i)(googlebot|google-|googleother|adsbot|mediapartners|storebot|bingbot|bingpreview|msnbot|adidxbot|yandex|baiduspider|applebot|duckduck|seznam|petalbot|yeti|sogou|qwant|aiku-cache-warmer|cubot)") {
+        && req.http.User-Agent !~ "(?i)(googlebot|google-|googleother|adsbot|mediapartners|storebot|bingbot|bingpreview|msnbot|adidxbot|yandex|baiduspider|applebot|duckduck|seznam|petalbot|yeti|sogou|qwant|aiku-cache-warmer|aikusiteauditbot|cubot)") {
         set req.http.X-Aiku-Bot = "1";
     }
 

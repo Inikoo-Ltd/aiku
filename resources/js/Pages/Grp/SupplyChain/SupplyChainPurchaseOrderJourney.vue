@@ -9,6 +9,7 @@ import PurchaseOrderJourneyRibbon, { type JourneyRibbon, type JourneySegment } f
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
+import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
@@ -300,8 +301,10 @@ function toggleSelectAllOnPage(isSelected: boolean): void {
     selectedIds.value = isSelected ? new Set(deletableOnPage.value.map((ribbon) => ribbon.id)) : new Set()
 }
 
+const locale = useLocaleStore()
 const isDeleteDialogVisible = ref(false)
 const deleteCandidates = ref<JourneyRibbon[]>([])
+const candidatesWithExtraCosts = computed(() => deleteCandidates.value.filter((candidate) => candidate.extra_costs))
 const deleteError = ref<string | null>(null)
 const isDeleting = ref(false)
 
@@ -641,7 +644,7 @@ function saveMark(date: string | null): void {
         :draggable="false">
         <div class="space-y-3 text-sm">
             <p class="text-gray-700">
-                {{ ctrans("These orders are worth nothing and have no deposit, payment or delivery. They will be deleted and any shopping list items on them reopened. This can not be undone.") }}
+                {{ ctrans("The items on these orders are worth nothing and the orders have no deposit, payment or delivery. They will be deleted and any shopping list items on them reopened. This can not be undone.") }}
             </p>
             <div class="max-h-[50vh] overflow-y-auto rounded border border-gray-200">
                 <table class="w-full text-left text-xs">
@@ -654,6 +657,7 @@ function saveMark(date: string | null): void {
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("Placed by") }}</th>
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("Created") }}</th>
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("Items") }}</th>
+                            <th v-if="candidatesWithExtraCosts.length" class="px-2 py-1.5 text-right font-semibold">{{ ctrans("Extra costs") }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -665,12 +669,23 @@ function saveMark(date: string | null): void {
                             <td class="px-2 py-1.5 text-gray-700">{{ candidate.placed_by ?? ctrans("Unknown") }}</td>
                             <td class="whitespace-nowrap px-2 py-1.5 text-gray-700">{{ useFormatTime(candidate.created_at) }}</td>
                             <td class="whitespace-nowrap px-2 py-1.5 text-gray-700">{{ linesSummary(candidate) }}</td>
+                            <td v-if="candidatesWithExtraCosts.length" class="whitespace-nowrap px-2 py-1.5 text-right" :class="candidate.extra_costs ? 'font-medium text-red-600' : 'text-gray-400'">
+                                {{ candidate.extra_costs ? locale.currencyFormat(candidate.currency_code, candidate.extra_costs) : "—" }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div v-if="candidatesWithExtraCosts.length" class="flex gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
+                <span>
+                    {{ candidatesWithExtraCosts.length === 1
+                        ? ctrans(":reference has extra costs (shipping, duties, tax or other). Deleting it deletes these costs too: they will be lost and can not be tracked anymore.", { reference: candidatesWithExtraCosts[0].reference })
+                        : ctrans(":count of these orders have extra costs (shipping, duties, tax or other). Deleting them deletes these costs too: they will be lost and can not be tracked anymore.", { count: candidatesWithExtraCosts.length }) }}
+                </span>
+            </div>
             <p v-if="deleteCandidates.some((candidate) => candidate.state !== 'in_process')" class="text-xs text-amber-700">
-                {{ ctrans("Orders already submitted to the supplier are deleted too. Tell the supplier or agent if they are still working on them.") }}
+                {{ ctrans("Orders already submitted to the supplier are cancelled instead of deleted, so the supplier and the agent see them as cancelled.") }}
             </p>
             <div v-if="deleteError" class="text-xs text-red-600">{{ deleteError }}</div>
         </div>
@@ -682,14 +697,16 @@ function saveMark(date: string | null): void {
                     </template>
                 </Button>
                 <Button
-                    type="tertiary"
+                    type="red"
+                    key=2
                     full
+                    icon="fal fa-trash-alt"
                     :label="deleteCandidates.length === 1 ? ctrans('Delete purchase order') : ctrans('Delete :count purchase orders', { count: deleteCandidates.length })"
                     :loading="isDeleting"
                     @click="confirmDelete">
-                    <template #icon>
-                        <FontAwesomeIcon icon="fal fa-trash-alt" class="text-amber-600" fixed-width aria-hidden="true" />
-                    </template>
+                    <!-- <template #icon>
+                        <FontAwesomeIcon class="text-amber-600" fixed-width aria-hidden="true" />
+                    </template> -->
                 </Button>
             </div>
         </template>

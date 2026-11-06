@@ -99,6 +99,8 @@ const fetchCustomerOrderingProduct = async () => {
                 })
             )
 
+            const heldQuantity = hasStepDiscount.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
+
             Object.keys(response.data).forEach(key => {
                 if (props.customerData) {
                     props.customerData[key] = response.data[key]
@@ -106,6 +108,10 @@ const fetchCustomerOrderingProduct = async () => {
 
                 customer.value[key] = response.data[key]
             })
+
+            if (heldQuantity !== null) {
+                customer.value.quantity_ordered_new = heldQuantity
+            }
         } else throw new Error("Product ID is required")
 
 
@@ -144,6 +150,8 @@ const onAddToBasket = async (productData: ProductResource, quantity: number) => 
         if (products) {
             const manipProduct = {
                 ...product.value,
+                quantity_ordered: payload.quantity_ordered,
+                quantity_ordered_new: payload.quantity_ordered,
                 web_image_thumbnail: product.value?.web_images?.main?.thumbnail
             }
             const index = products.findIndex((p: any) => p.transaction_id === payload.transaction_id)
@@ -209,7 +217,12 @@ const onUpdateQuantity = async () => {
         if (products) {
             const index = products.findIndex((p: any) => p.transaction_id === transactionId)
             if (index !== -1) {
-                willRemove ? products.splice(index, 1) : (products[index].quantity_ordered = qty)
+                if (willRemove) {
+                    products.splice(index, 1)
+                } else {
+                    products[index].quantity_ordered = qty
+                    products[index].quantity_ordered_new = qty
+                }
             }
         }
 
@@ -256,6 +269,45 @@ const debouncedSync = debounce(() => {
     onUpdateQuantity()
 }, 700)
 
+const hasStepDiscount = computed(() => (product.value.step_discount?.steps?.length ?? 0) > 0)
+
+const hasUnsavedQuantity = computed(() =>
+    Number(customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0) !== Number(customer.value.quantity_ordered ?? 0)
+)
+
+const syncOrHoldQuantity = () => {
+    if (hasStepDiscount.value) {
+        return
+    }
+
+    debouncedSync()
+}
+
+const selectQuantity = (quantity: number) => {
+    debouncedSync.cancel()
+
+    if (quantity <= 0) {
+        set(customer.value, ['quantity_ordered_new'], customer.value.quantity_ordered ?? 0)
+        return
+    }
+
+    const next = Math.min(quantity, availableStock.value)
+    if (next !== quantity) showWarning()
+
+    set(customer.value, ['quantity_ordered_new'], next)
+}
+
+const onSubmitHeldQuantity = async () => {
+    const quantity = customer.value.quantity_ordered_new ?? 0
+
+    if (!customer.value.transaction_id) {
+        await onAddToBasket(product.value, quantity > 0 ? quantity : 1)
+        return
+    }
+
+    await onUpdateQuantity()
+}
+
 
 const incrementQty = () => {
     const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
@@ -266,13 +318,13 @@ const incrementQty = () => {
     }
 
     set(customer.value, ['quantity_ordered_new'], current + 1)
-    debouncedSync()
+    syncOrHoldQuantity()
 }
 
 const decrementQty = () => {
     const current = customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0
     set(customer.value, ['quantity_ordered_new'], Math.max(0, current - 1))
-    debouncedSync()
+    syncOrHoldQuantity()
 }
 
 
@@ -300,7 +352,7 @@ const onManualInput = (e: Event) => {
     if (next !== value) showWarning()
 
     set(customer.value, ['quantity_ordered_new'], next)
-    debouncedSync()
+    syncOrHoldQuantity()
 }
 
 const isDecimalQty = computed(() => {
@@ -326,7 +378,7 @@ const onNumeratorInput = (e: Event) => {
     } else {
         set(customer.value, ['quantity_ordered_new'], next)
     }
-    debouncedSync()
+    syncOrHoldQuantity()
 }
 
 
@@ -339,14 +391,21 @@ const disableDecrement = computed(() => {
 
 watch(
     () => props.customerData,
-    val => (customer.value = { ...val }),
+    val => {
+        const pendingQuantity = hasStepDiscount.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
+        customer.value = { ...val }
+
+        if (pendingQuantity !== null) {
+            customer.value.quantity_ordered_new = pendingQuantity
+        }
+    },
     { deep: true }
 )
-defineExpose({ setQuantity })
+defineExpose({ setQuantity, selectQuantity })
 </script>
 
 <template>
-    <div :class="props.classContainer">
+    <div :class="[props.classContainer, { 'is-step-discount': hasStepDiscount }]">
         <div class="qty-control">
             <button class="qty-btn" :disabled="disableDecrement" @click="decrementQty">
                 <FontAwesomeIcon icon="fas fa-minus" fixed-width />
@@ -371,8 +430,20 @@ defineExpose({ setQuantity })
         <ConditionIcon class="qty-status" :state="status" />
 
         <slot name="qty-add-button" :data="{product,customer,onAddToBasket,isLoadingSubmitQuantityProduct}">
-             <Button 
-                v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" 
+             <Button
+                v-if="hasStepDiscount"
+                class="qty-add-btn"
+                icon="fas fa-plus"
+                :label="customer.transaction_id ? ctrans('Update basket') : ctrans('Add to basket')"
+                type="primary"
+                :injectStyle="buttonStyle"
+                size="lg"
+                :disabled="!!customer.transaction_id && !hasUnsavedQuantity"
+                :loading="isLoadingSubmitQuantityProduct"
+                @click="onSubmitHeldQuantity"
+            />
+             <Button
+                v-else-if="!customer.quantity_ordered && !customer.quantity_ordered_new"
                 class="qty-add-btn"
                 icon="fas fa-plus" 
                 :label="ctrans('Add to basket')" 
@@ -460,6 +531,22 @@ input[type='number'] {
 
 .qty-info {
   @apply ml-2 text-gray-700 flex flex-col gap-0.5 text-xs sm:text-sm;
+}
+
+.is-step-discount {
+  @apply flex-wrap gap-x-4 gap-y-3;
+}
+
+.is-step-discount .qty-add-btn {
+  @apply ml-0 shrink-0 whitespace-nowrap;
+}
+
+.is-step-discount .qty-add-btn:disabled {
+  @apply opacity-40 cursor-not-allowed;
+}
+
+.is-step-discount .qty-info {
+  @apply ml-0 basis-full flex-row flex-wrap items-baseline gap-x-2 gap-y-0.5;
 }
 
 .qty-info-label {

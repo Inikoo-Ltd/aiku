@@ -100,9 +100,16 @@ trait WithAppointmentTypeForm
                     'buffer_minutes'      => [
                         'type'        => 'input_number',
                         'label'       => __('Break between appointments'),
-                        'information' => __('Time kept free after each appointment.'),
+                        'information' => __('Time kept free after each appointment. Not used when start times are set, as the start times already space the appointments.'),
                         'bind'        => ['suffix' => ' '.__('min'), 'min' => 0, 'max' => 240],
                         'value'       => $appointmentType?->buffer_minutes ?? 0,
+                    ],
+                    'start_times'         => [
+                        'type'        => 'appointment_start_times',
+                        'label'       => __('Start times'),
+                        'information' => __('Appointments start only at these times, on the days and within the hours the opening hours allow. Leave empty to start them one after another from the opening time, the duration and the break apart.'),
+                        'minuteStep'  => 15,
+                        'value'       => $appointmentType?->startTimes() ?? [],
                     ],
                     'capacity_per_slot'   => [
                         'type'        => 'input_number',

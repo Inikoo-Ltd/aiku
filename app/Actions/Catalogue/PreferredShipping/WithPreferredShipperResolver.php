@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\PreferredShipping;
 use App\Actions\Ordering\Order\UpdateOrderIsShippingTBC;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\PreferredShipping;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -22,14 +23,31 @@ trait WithPreferredShipperResolver
     private const int BOX_WEIGHT_ALLOWANCE = 500;
 
     /**
-     * @return array{locked_shipper_id: int|null, preferred_shipper_id: int|null, locked_by: string|null, locked_scope: string|null, preferred_shipper: array|null, unconfirmed_shipping_order: string|null}
+     * @return array{locked_shipper_id: int|null, preferred_shipper_id: int|null, locked_by: string|null, locked_scope: string|null, preferred_shipper: array|null, unconfirmed_shipping_order: string|null, shipments_locked: bool, tracking_channel: string|null}
      */
     public function getShipperDirective(DeliveryNote $deliveryNote): array
     {
         return [
             ...$this->getShipperChoiceDirective($deliveryNote),
             'unconfirmed_shipping_order' => $this->findOrderWithUnconfirmedShipping($deliveryNote)?->reference,
+            'shipments_locked'           => $deliveryNote->areShipmentsLocked(),
+            'tracking_channel'           => $this->trackingChannel($deliveryNote),
         ];
+    }
+
+    /**
+     * PRE-73. The customer's eBay or Shopify store receives the tracking of the delivery note's
+     * shipment at dispatch, so a manual shipper's typed tracking is what their buyer sees.
+     */
+    public function trackingChannel(DeliveryNote $deliveryNote): ?string
+    {
+        $platformType = $deliveryNote->orders->first()?->customerSalesChannel?->platform?->type;
+
+        return match ($platformType) {
+            PlatformTypeEnum::EBAY    => 'eBay',
+            PlatformTypeEnum::SHOPIFY => 'Shopify',
+            default                   => null,
+        };
     }
 
     /**

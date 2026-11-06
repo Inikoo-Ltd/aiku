@@ -161,6 +161,13 @@ class RouteServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('supplier-portal-labels', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by('supplier-portal-labels:'.$request->route('token')),
+                Limit::perMinute(10)->by('supplier-portal-labels-ip:'.$request->ip()),
+            ];
+        });
+
         RateLimiter::for('supplier-share-verify', function (Request $request) {
             return Limit::perMinutes(10, 10)->by('supplier-share-verify:'.$request->ip());
         });

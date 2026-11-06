@@ -27,7 +27,7 @@ enum PackingSpecLevelEnum: string
     {
         return [
             'per_unit'   => __('Per unit'),
-            'per_pack'   => __('Per pack'),
+            'per_pack'   => __('Per SKO'),
             'per_carton' => __('Per carton'),
         ];
     }

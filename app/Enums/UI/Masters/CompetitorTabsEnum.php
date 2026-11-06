@@ -16,12 +16,18 @@ enum CompetitorTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
+    case DOSSIER  = 'dossier';
     case MATCHES  = 'matches';
     case PRODUCTS = 'products';
+    case POLICIES = 'policies';
 
     public function blueprint(): array
     {
         return match ($this) {
+            CompetitorTabsEnum::DOSSIER => [
+                'title' => __('Dossier'),
+                'icon'  => 'fal fa-file-alt',
+            ],
             CompetitorTabsEnum::MATCHES => [
                 'title' => __('Matches'),
                 'icon'  => 'fal fa-balance-scale',
@@ -29,6 +35,10 @@ enum CompetitorTabsEnum: string
             CompetitorTabsEnum::PRODUCTS => [
                 'title' => __('Products read'),
                 'icon'  => 'fal fa-cube',
+            ],
+            CompetitorTabsEnum::POLICIES => [
+                'title' => __('Policies'),
+                'icon'  => 'fal fa-file-contract',
             ],
         };
     }

@@ -1632,10 +1632,10 @@ test('agent commission invoice charges a rate on the products of the purchase or
 
     $handedOver = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
     $handedOver->updateQuietly(['handed_over_at' => '2026-10-03 09:00:00']);
-    $handedOver->purchaseOrderTransactions()->update(['unit_cost' => 50, 'agent_unit_expense' => 7]);
+    $handedOver->purchaseOrderTransactions()->update(['unit_cost' => null, 'net_amount' => 500, 'agent_unit_expense' => 7]);
 
     $inContainer = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 1, 4);
-    $inContainer->purchaseOrderTransactions()->update(['unit_cost' => 25]);
+    $inContainer->purchaseOrderTransactions()->update(['unit_cost' => 25, 'net_amount' => 100]);
     $stockDelivery = createStockDeliveryWithItems($this, 'COMM-'.Str::random(6), [1]);
     placeDeliveryUnderAgentOrder($stockDelivery, $inContainer);
     $stockDelivery->updateQuietly(['dispatched_at' => '2026-10-20 00:00:00']);
@@ -3969,4 +3969,33 @@ test('import file details tick steps from aiku data, take marks that win over it
 
     $this->withExceptionHandling();
     $this->patch($url, ['step' => 'not_a_step', 'status' => 'done'])->assertSessionHasErrors('step');
+});
+
+test('a container sheet PO matches a purchase order by its whole reference or its whole number, not by a digit inside it', function () {
+    $isSame = fn (string $sheet, string $reference) => (new ReflectionMethod(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::class, 'isSamePurchaseOrder'))
+        ->invoke(\App\Actions\GoodsIn\StockDelivery\PreviewStockDeliveryItemsImport::make(), $sheet, $reference);
+
+    expect($isSame('AWIndo-059-UK', 'AWIndo-059-UK'))->toBeTrue()
+        ->and($isSame('PO-059 ES', 'AWIndo-059-ES'))->toBeTrue()
+        ->and($isSame('59', 'AWIndo-059-UK'))->toBeTrue()
+        ->and($isSame('5', 'AWIndo-059-UK'))->toBeFalse()
+        ->and($isSame('Indo', 'AWIndo-059-UK'))->toBeFalse()
+        ->and($isSame('PO-060', 'AWIndo-059-UK'))->toBeFalse();
+});
+
+test('the shipment CBM of a purchase order counts its items as the container page does, an item not received included', function () {
+    $orgAgent                       = createFreshOrgAgent($this);
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $purchaseOrder                  = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 5);
+    $stockDelivery                  = createStockDeliveryWithItems($this, 'CBM-'.Str::random(6), [5]);
+    placeDeliveryUnderAgentOrder($stockDelivery, $purchaseOrder);
+    $stockDelivery->items()->update(['state' => \App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum::NOT_RECEIVED->value, 'cbm_in_container' => 2]);
+
+    $shipmentsQuery = (new ReflectionMethod(\App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders::class, 'shipmentsQuery'))
+        ->invoke(\App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders::make());
+    $shipments = json_decode(DB::table('purchase_orders')->where('id', $purchaseOrder->id)->selectSub($shipmentsQuery, 'shipments')->value('shipments'), true);
+    $containerPage = \App\Actions\GoodsIn\StockDelivery\UI\ShowStockDelivery::make()->getStockDeliveryWeightAndVolume($stockDelivery->refresh());
+
+    expect((float) collect($shipments)->firstWhere('reference', $stockDelivery->reference)['cbm'])->toEqual(2.0)
+        ->and((float) $containerPage['volume'])->toEqual(2.0);
 });

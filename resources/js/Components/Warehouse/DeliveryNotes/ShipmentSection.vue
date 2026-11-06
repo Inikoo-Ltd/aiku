@@ -65,6 +65,8 @@ const props = withDefaults(defineProps<{
 		locked_scope?: string | null
 		can_override_lock?: boolean
 		unconfirmed_shipping_order?: string | null
+		shipments_locked?: boolean
+		tracking_channel?: string | null
 		preferred_shipper?: {
 			id: number
 			name: string
@@ -525,6 +527,9 @@ const onRetryPacketaWithSender = () => {
 
 const isAskingCrm = ref(false)
 const canWork = computed(() => props.isEditable && props.shipments_routes?.can_work !== false)
+// PRE-73: the channel got the tracking at dispatch, so a dispatched note keeps its shipment (labels still print)
+const canChangeShipments = computed(() => canWork.value && !props.shipper_directive?.shipments_locked)
+const trackingChannel = computed(() => props.shipper_directive?.tracking_channel ?? null)
 const unconfirmedShippingOrder = computed(() => props.shipper_directive?.unconfirmed_shipping_order ?? null)
 
 const deliveryNoteId = computed(() => props.shipments_routes?.submit_route?.parameters?.deliveryNote ?? null)
@@ -728,7 +733,7 @@ const onClickButtonShipmentPlatform = () => {
 
 
 						<div
-							v-else-if="canWork"
+							v-else-if="canChangeShipments"
 							class="cursor-pointer px-2 py-1 lg:py-0 lg:px-1 absolute top-0 right-0 text-red-400 hover:text-red-700"
 							v-tooltip="ctrans('Remove shipment')"
 							@click="(e) => confirmdelete(e, shipment)">
@@ -752,7 +757,7 @@ const onClickButtonShipmentPlatform = () => {
 				</li>
 			</ul>
 
-			<div v-if="canWork" class="gap-2 mb-2 flex">
+			<div v-if="canChangeShipments" class="gap-2 mb-2 flex">
 				<!-- Button: Shipment -->
 				<Button
 					v-if="!shipments.length && props.shipments_routes?.get_external_shipment_route?.name"
@@ -921,6 +926,10 @@ const onClickButtonShipmentPlatform = () => {
 								v-model="preferredTrackingNumber"
 								placeholder="ABC-DE-1234567"
 								@keydown.enter="() => onSavePreferredShipment()" />
+							<p v-if="trackingChannel" class="mt-2 text-sm text-amber-700">
+								<FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />
+								{{ ctrans("This order is from the customer's :channel store. The tracking number you type here is sent to :channel when you dispatch and cannot be changed afterwards. Make sure it is the real tracking number.", { channel: trackingChannel }) }}
+							</p>
 							<p
 								v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
 								class="mt-2 text-sm text-red-600">
@@ -1124,6 +1133,11 @@ const onClickButtonShipmentPlatform = () => {
 							class="mt-2 text-sm text-red-500">
 							{{ formTrackingNumber.errors.shipping_id }}
 						</p>
+						<p
+							v-if="get(formTrackingNumber, ['errors', 'shipper']) && !formTrackingNumber.shipping_id?.api_shipper"
+							class="mt-2 text-sm text-red-500">
+							{{ formTrackingNumber.errors.shipper }}
+						</p>
 					</div>
 
 					<!-- Tracking number -->
@@ -1141,6 +1155,10 @@ const onClickButtonShipmentPlatform = () => {
 							v-model="formTrackingNumber.tracking_number"
 							placeholder="ABC-DE-1234567"
 							xxkeydown.enter="() => onSubmitAddService(action, closed)" />
+						<p v-if="trackingChannel" class="mt-2 text-sm text-amber-700">
+							<FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />
+							{{ ctrans("This order is from the customer's :channel store. The tracking number you type here is sent to :channel when you dispatch and cannot be changed afterwards. Make sure it is the real tracking number.", { channel: trackingChannel }) }}
+						</p>
 						<p
 							v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
 							class="mt-2 text-sm text-red-600">

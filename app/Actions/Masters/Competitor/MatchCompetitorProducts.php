@@ -23,8 +23,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * short-lists the closest names and Jev picks the one that is the same item, a similar one or
  * none, with a calibrated probability. A same-item pick Jev is sure of is confirmed straight
  * away; the rest wait for staff. Candidates not picked are kept as rejected so they are never
- * asked again. The pack size is read from the competitor's product name. A candidate whose volume
- * or weight in the name differs from ours (5ml against our 10ml) is rejected without asking Jev.
+ * asked again. The pack size is read from the competitor's product name, or from the start of its
+ * description when the name gives none. A candidate whose volume or weight in the name differs from
+ * ours (5ml against our 10ml) is rejected without asking Jev.
  */
 class MatchCompetitorProducts
 {
@@ -46,7 +47,21 @@ class MatchCompetitorProducts
 
     private const string SIZES = '/(?<![\d.,])(\d+(?:\.\d+)?)(\s*(?:ml|cl|ltrs?|litres?|liters?|kg|kilos?|grams?|gms?|gr|g)|l)(?![a-z])/i';
 
-    private const string DIMENSIONS = '/\d+(?:\.\d+)?(?:\s*(?:mm|cm|in))?(?:\s*[x×]\s*\d+(?:\.\d+)?(?:\s*(?:mm|cm|in))?)*\s*[x×]\s*\d+(?:\.\d+)?\s*(?:mm|cm|m|in|inch|inches|")(?![a-z])/iu';
+    private const string DIMENSIONS = '/\d+(?:\.\d+)?(?:\s*(?:mm|cm|in|″|”|"))?(?:\s*[x×]\s*\d+(?:\.\d+)?(?:\s*(?:mm|cm|in|″|”|"))?)*\s*[x×]\s*\d+(?:\.\d+)?\s*(?:mm|cm|m|in|inch|inches|″|”|")(?![a-z])/iu';
+
+    private const string NOT_A_SIZE = '(?![\d.]|\s*(?:ml|cl|ltrs?|litres?|liters?|l|kg|kilos?|grams?|gms?|gr|g|mm|cm)\b)';
+
+    private const array NAME_COUNTS = [
+        '/\b(?:set|pack|box|bag|bundle|carton|case|tub|tray|lot|outer)\s+of\s+(\d+)'.self::NOT_A_SIZE.'/i',
+        '/\b(\d+)\s*(?:pcs?|pieces?|units?|packets?|packs?|pk(?:ts?|s)?|boxes|bxs?|x)\b/i',
+        '/\bx\s?(\d+)\b/i',
+    ];
+
+    private const array DESCRIPTION_COUNTS = [
+        '/\b(\d+)\s*x\s*packs?\b/i',
+        '/\b(\d+)\s*pk(?:ts?|s)\b/i',
+        '/\bbox\s+of\s+(\d+)\s+packs?\b/i',
+    ];
 
     public const string INSTRUCTIONS = 'We sell our_product to retailers. A competitor sells the products listed. Pick the one that is the same item as ours (same kind, design, brand, size and material; the pack size may differ) or, failing that, one a retailer could stock instead of ours, or none. A different brand, size or scent is not the same item. weight_vs_ours close to 1 suggests the same size; far from 1 a different size, unless one of them is weighed as a whole set.';
 
@@ -76,7 +91,7 @@ class MatchCompetitorProducts
             foreach ($candidates->concat($otherSizes)->values() as $index => $candidate) {
                 $picked = $decision && $decision['index'] === $index;
 
-                $candidate->update(['units' => static::packUnits($candidate->name, $masterAsset->name)]);
+                $candidate->update(['units' => static::packUnits($candidate->name, $candidate->data['description'] ?? '')]);
 
                 MasterAssetCompetitorProduct::create([
                     'master_shop_id'        => $masterAsset->master_shop_id,
@@ -84,6 +99,7 @@ class MatchCompetitorProducts
                     'competitor_product_id' => $candidate->id,
                     'is_same_item'          => $picked && $decision['same'],
                     'confidence'            => $picked ? $decision['confidence'] : null,
+                    'competitor_units'      => static::isSetItem($masterAsset->name, (float) $masterAsset->units) ? 1 : null,
                     'status'                => match (true) {
                         !$picked                                                        => MasterAssetCompetitorProductStatusEnum::REJECTED,
                         $decision['same'] && $decision['confidence'] >= self::AUTO_CONFIRM => MasterAssetCompetitorProductStatusEnum::CONFIRMED,
@@ -174,16 +190,24 @@ class MatchCompetitorProducts
     }
 
     /**
-     * "Set of 12 Satya incense sticks" holds 12, "Carton of 6 packets" 6, anything else 1. When our
-     * own name has a "set of" too, the set is the item ("Set of 4 coasters" against ours), so 1.
+     * What their pack holds, from what they wrote: "Set of 12 Satya incense sticks" 12, "Incense 15gm x 12pkts" 12,
+     * "Carton of 6 packets" 6, anything else 1. A name with no count falls back to the start of the description
+     * ("Satya Good Vibes Incense – 12 x Packs 15g ...").
      */
-    public static function packUnits(string $name, string $ourName = ''): float
+    public static function packUnits(string $name, string $description = ''): float
     {
-        if (static::countInName($ourName) > 1) {
-            return 1.0;
-        }
+        $count = static::countInName($name);
 
-        return (float) max(static::countInName($name), 1);
+        return (float) ($count > 1 ? $count : static::countInDescription($description));
+    }
+
+    /**
+     * Our product is a set sold as one item ("Set of 4 Square Coasters", units 1), so their "Set of 4" is compared as 1.
+     * When our own units already count the pack (Box of 12 cones, units 12), per unit holds on both sides.
+     */
+    public static function isSetItem(string $ourName, float $ourUnits): bool
+    {
+        return $ourUnits <= 1 && static::countInName($ourName) > 1;
     }
 
     /**
@@ -228,19 +252,36 @@ class MatchCompetitorProducts
     }
 
     /**
-     * "20 x 30cm" is a size, so it is taken out before counting.
+     * "20 x 30cm" and 5″ x 7″ are sizes, so they are taken out before counting; the first pattern that finds
+     * a number above 1 wins.
      */
     private static function countInName(string $name): int
     {
-        $name = preg_replace(self::DIMENSIONS, '', $name);
+        return static::firstCount(self::NAME_COUNTS, preg_replace(self::DIMENSIONS, '', $name));
+    }
 
-        foreach ([
-            '/\b(?:set|pack|box|bag|bundle|carton|case|tub|tray|lot)\s+of\s+(\d+)\b/i',
-            '/\b(\d+)\s*(?:pcs|pieces|packets|packs|pack|x)\b/i',
-            '/\bx\s?(\d+)\b/i',
-        ] as $pattern) {
-            if (preg_match($pattern, $name, $matches) && (int) $matches[1] > 1) {
-                return (int) $matches[1];
+    /**
+     * Only the first sentence is read, and only a count of packs: "Pack of 15 sticks" or "Minimum purchase is 2 pieces"
+     * say nothing about how many packs the price is for.
+     */
+    private static function countInDescription(string $description): int
+    {
+        $firstSentence = preg_split('/(?<=[.!?])\s/u', trim(strip_tags($description)))[0];
+
+        return static::firstCount(self::DESCRIPTION_COUNTS, mb_substr($firstSentence, 0, 200));
+    }
+
+    /**
+     * @param  array<int, string>  $patterns
+     */
+    private static function firstCount(array $patterns, string $text): int
+    {
+        foreach ($patterns as $pattern) {
+            preg_match_all($pattern, $text, $matches);
+            $count = collect($matches[1])->map(fn (string $number) => (int) $number)->first(fn (int $number) => $number > 1);
+
+            if ($count) {
+                return $count;
             }
         }
 

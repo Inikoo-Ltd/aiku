@@ -8,7 +8,12 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $number
@@ -28,6 +33,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_ordered
  * @property mixed $org_net_amount
  * @property int|null $number_pending_line_answers
+ * @property string|null $shipments
  */
 class PurchaseOrdersResource extends JsonResource
 {
@@ -36,6 +42,7 @@ class PurchaseOrdersResource extends JsonResource
         return [
             'id'                => $this->id,
             'reference'         => $this->reference,
+            'agent_order_reference' => $this->agent_order_reference,
             'state'             => $this->state,
             'state_label'       => $this->state->labels()[$this->state->value],
             'state_icon'        => $this->state->stateIcon()[$this->state->value],
@@ -58,7 +65,41 @@ class PurchaseOrdersResource extends JsonResource
             'organisation_code' => $this->organisation_code,
             'organisation_slug' => $this->organisation_slug,
             'number_pending_line_answers' => (int) $this->number_pending_line_answers,
+            'shipments'         => $this->shipmentLinks($request),
+            'is_without_deposit' => $this->isWithoutDeposit(),
         ];
+    }
+
+    /**
+     * A sent order that owes a deposit and has no payment recorded yet.
+     */
+    private function isWithoutDeposit(): bool
+    {
+        return in_array($this->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+            && $this->deposit_paid_at === null
+            && !GetPurchaseOrderStages::make()->depositNotRequired($this->resource);
+    }
+
+    /**
+     * @return array<int, array{reference: string, state_icon: ?array, cbm: ?float, show_route: ?array}>
+     */
+    private function shipmentLinks($request): array
+    {
+        $viewingOrganisation = $request->route('organisation');
+        $isAgentViewing      = $viewingOrganisation instanceof Organisation && $viewingOrganisation->id !== $this->organisation_id;
+        $stateIcons          = StockDeliveryStateEnum::stateIcon();
+
+        return collect(json_decode($this->getAttribute('shipments') ?? '[]', true))
+            ->map(fn (array $shipment) => [
+                'reference'  => $shipment['reference'],
+                'state_icon' => isset($stateIcons[$shipment['state']]) ? Arr::only($stateIcons[$shipment['state']], ['tooltip', 'icon', 'class']) : null,
+                'cbm'        => $shipment['cbm'] === null ? null : round((float) $shipment['cbm'], 3),
+                'show_route' => $viewingOrganisation instanceof Organisation ? [
+                    'name'       => $isAgentViewing ? 'grp.org.agent.stock_deliveries.show' : 'grp.org.procurement.stock_deliveries.show',
+                    'parameters' => [$viewingOrganisation->slug, $shipment['slug']],
+                ] : null,
+            ])
+            ->all();
     }
 
 }

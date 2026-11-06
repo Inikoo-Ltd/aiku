@@ -111,6 +111,7 @@ class PublishWebpage extends OrgAction
         }
         UpdateWebpageIsDifferentWhenLoggedIn::run($webpage);
         BreakWebpageCache::run($webpage);
+        BreakBlogListingsCache::run($webpage);
         $this->expireUntilPublishGrant($webpage, Arr::get($modelData, 'publisher_id'));
         AskWebEditorsToReviewWebpage::make()->tickPublished($webpage);
 

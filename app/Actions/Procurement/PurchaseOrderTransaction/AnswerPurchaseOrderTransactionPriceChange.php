@@ -21,6 +21,8 @@ use App\Models\SysAdmin\User;
 use App\Notifications\PurchaseOrderPriceChangeAnsweredNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator as ValidatorFacade;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,6 +41,14 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
         $answer = PurchaseOrderTransactionPriceQueryStateEnum::from($modelData['answer']);
 
         return DB::transaction(function () use ($purchaseOrderTransaction, $modelData, $answer) {
+            PurchaseOrder::whereKey($purchaseOrderTransaction->purchase_order_id)->lockForUpdate()->first();
+            $this->purchaseOrderTransaction = $purchaseOrderTransaction->refresh();
+            $validator                      = ValidatorFacade::make([], []);
+            $this->addAnswerErrors($validator);
+            if ($validator->errors()->isNotEmpty()) {
+                throw new ValidationException($validator);
+            }
+
             $unitCost = match ($answer) {
                 PurchaseOrderTransactionPriceQueryStateEnum::ACCEPTED => $purchaseOrderTransaction->price_query_unit_cost,
                 PurchaseOrderTransactionPriceQueryStateEnum::ADJUSTED => $modelData['unit_cost'],
@@ -63,14 +73,26 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
+        $this->addAnswerErrors($validator);
+
+        if (!$this->asAction && $request->boolean('update_supplier_cost') && !$request->user()?->authTo('supply-chain.edit')) {
+            $validator->errors()->add('update_supplier_cost', __('You do not have permission to change supplier prices'));
+        }
+    }
+
+    /**
+     * Checked when the answer is sent and again, with the order locked, as it is saved: two buyers answering at once
+     * can not both apply it.
+     */
+    private function addAnswerErrors(Validator $validator): void
+    {
         if ($this->purchaseOrderTransaction->price_query_state !== PurchaseOrderTransactionPriceQueryStateEnum::PENDING
             || !in_array($this->purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
             || !in_array($this->purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
             $validator->errors()->add('answer', __('There is no new price waiting for an answer on this line'));
-        }
-
-        if (!$this->asAction && $request->boolean('update_supplier_cost') && !$request->user()?->authTo('supply-chain.edit')) {
-            $validator->errors()->add('update_supplier_cost', __('You do not have permission to change supplier prices'));
+        } elseif ($this->get('answer') !== PurchaseOrderTransactionPriceQueryStateEnum::REJECTED->value
+            && (!AskPurchaseOrderTransactionPriceChange::isAskable($this->purchaseOrderTransaction) || AskPurchaseOrderTransactionQuantityChange::isShipped($this->purchaseOrderTransaction))) {
+            $validator->errors()->add('answer', __('The supplier has started production, the price can no longer be changed, only kept'));
         }
     }
 

@@ -300,6 +300,7 @@ class AppServiceProvider extends ServiceProvider
                 'MasterAsset'                      => 'App\Models\Masters\MasterAsset',
                 'MasterAssetPriceTip'              => 'App\Models\Masters\MasterAssetPriceTip',
                 'MasterAssetCompetitorProduct'     => 'App\Models\Masters\MasterAssetCompetitorProduct',
+                'Competitor'                       => 'App\Models\Masters\Competitor',
                 'MasterVariant'                    => 'App\Models\Masters\MasterVariant',
                 'MasterCollection'                 => 'App\Models\Masters\MasterCollection',
                 'MasterProductCategory'            => 'App\Models\Masters\MasterProductCategory',

@@ -20,6 +20,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBoxOpen, faCheck, faTimes, faPlus, faTrashAlt, faPrint, faUndo, faExclamationTriangle, faCopy, faCamera, faPencil, faListOl, faGripVertical } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import draggable from "vuedraggable"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
@@ -129,6 +130,11 @@ const props = defineProps<{
 const locale = useLocaleStore()
 
 const levels: Level[] = ["per_unit", "per_pack", "per_carton"]
+const levelInformation: Record<Level, string> = {
+	per_unit: ctrans("Packing put around each single unit, e.g. a bubble wrap or a polybag for every item. Not the product itself. The quantity is per unit and is multiplied by the units in the carton."),
+	per_pack: ctrans("Packing that groups units into one SKO (pack), following the units per pack of this supplier product, e.g. an inner box or a polybag holding the SKO. The quantity is per SKO and is multiplied by the SKOs in the carton."),
+	per_carton: ctrans("Packing used once for the whole master carton, e.g. the corrugated carton, tape, strapping, void fill or desiccant. The quantity is per carton."),
+}
 const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 const chooseFilePt = { pcChooseButton: { root: { class: "!border !border-gray-300 !bg-white !text-gray-700 hover:!bg-gray-50" } } }
 
@@ -488,7 +494,10 @@ const liveLinesOf = (level: Level) => props.data.live?.lines.filter((line) => li
 
 			<div class="grid gap-4 md:grid-cols-3">
 				<div v-for="level in levels" :key="level" class="rounded border border-gray-200">
-					<div class="border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700">{{ data.options.levels[level] }}</div>
+					<div class="border-b border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700">
+						{{ data.options.levels[level] }}
+						<InformationIcon :information="levelInformation[level]" class="ml-0.5 font-normal" />
+					</div>
 					<table class="w-full text-xs">
 						<thead class="whitespace-nowrap text-gray-500">
 							<tr>
@@ -566,7 +575,10 @@ const liveLinesOf = (level: Level) => props.data.live?.lines.filter((line) => li
 
 			<div class="grid gap-4 lg:grid-cols-3">
 				<div v-for="level in levels" :key="level" class="space-y-2 rounded border border-gray-200 p-3">
-					<div class="text-xs font-semibold text-gray-700">{{ data.options.levels[level] }}</div>
+					<div class="text-xs font-semibold text-gray-700">
+						{{ data.options.levels[level] }}
+						<InformationIcon :information="levelInformation[level]" class="ml-0.5 font-normal" />
+					</div>
 					<div v-for="{ line, index } in linesOf(level)" :key="index" class="space-y-1 rounded border border-gray-100 bg-gray-50 p-2">
 						<div class="flex items-start gap-1">
 							<Select

@@ -12,9 +12,11 @@ use App\Enums\Masters\Competitor\CompetitorSellsToEnum;
 use App\Enums\Masters\Competitor\CompetitorStatusEnum;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Group;
+use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\MediaLibrary\HasMedia;
 
 /**
  * A competitor's website whose prices are read every week for HELP-3605, from its product feed or
@@ -38,15 +40,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $last_error
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property int $number_products
+ * @property int|null $image_id a screenshot of their homepage
+ * @property array|null $intel the dossier: identity, shipping, returns, payments, offers and briefing, each fact with its source page
+ * @property \Illuminate\Support\Carbon|null $intel_fetched_at
+ * @property string|null $intel_error
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Currency $currency
  * @property-read Group $group
  * @property-read MasterShop $masterShop
  * @property-read \Illuminate\Database\Eloquent\Collection<int, CompetitorProduct> $products
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, CompetitorIntelSnapshot> $intelSnapshots
  */
-class Competitor extends Model
+class Competitor extends Model implements HasMedia
 {
+    use HasImage;
+
     protected $guarded = [];
 
     protected $hidden = ['feed_url', 'username', 'password', 'cookies'];
@@ -61,6 +70,8 @@ class Competitor extends Model
             'password'   => 'encrypted',
             'cookies'    => 'encrypted:array',
             'fetched_at' => 'datetime',
+            'intel'      => 'array',
+            'intel_fetched_at' => 'datetime',
         ];
     }
 
@@ -82,5 +93,15 @@ class Competitor extends Model
     public function products(): HasMany
     {
         return $this->hasMany(CompetitorProduct::class);
+    }
+
+    public function intelSnapshots(): HasMany
+    {
+        return $this->hasMany(CompetitorIntelSnapshot::class);
+    }
+
+    public function dailyStats(): HasMany
+    {
+        return $this->hasMany(CompetitorDailyStat::class);
     }
 }

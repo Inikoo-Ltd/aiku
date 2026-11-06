@@ -51,6 +51,7 @@ enum CrawlIssueTypeEnum: string
     case NOFOLLOW_PAGE               = 'nofollow_page';
     case CANONICAL_TO_NON_INDEXABLE  = 'canonical_to_non_indexable';
     case SOFT_404                    = 'soft_404';
+    case SSR_FALLBACK                = 'ssr_fallback';
     case EXACT_DUPLICATE             = 'exact_duplicate';
     case NEAR_DUPLICATE              = 'near_duplicate';
     case LOW_CONTENT                 = 'low_content';
@@ -175,7 +176,8 @@ enum CrawlIssueTypeEnum: string
             self::REDIRECT_LOOP,
             self::REDIRECT_CHAIN,
             self::LINKED_REDIRECT,
-            self::SLOW_RESPONSE => CrawlTabEnum::RESPONSE_CODES,
+            self::SLOW_RESPONSE,
+            self::SSR_FALLBACK => CrawlTabEnum::RESPONSE_CODES,
 
             self::MISSING_TITLE,
             self::DUPLICATE_TITLE,
@@ -344,6 +346,7 @@ enum CrawlIssueTypeEnum: string
             self::HTTP_4XX,
             self::HTTP_5XX,
             self::FETCH_FAILED,
+            self::SSR_FALLBACK,
             self::REDIRECT_LOOP,
             self::MISSING_TITLE,
             self::CANONICAL_TO_BROKEN,
@@ -511,6 +514,7 @@ enum CrawlIssueTypeEnum: string
             self::NOFOLLOW_PAGE->value               => __('Page tells search engines not to follow its links'),
             self::CANONICAL_TO_NON_INDEXABLE->value  => __('Canonical points to a page that cannot be indexed'),
             self::SOFT_404->value                    => __('Page looks like an error page but answers 200'),
+            self::SSR_FALLBACK->value                => __('Page rendered without its content'),
             self::EXACT_DUPLICATE->value             => __('Same content as another page'),
             self::NEAR_DUPLICATE->value              => __('Content nearly the same as another page'),
             self::LOW_CONTENT->value                 => __('Low content'),
@@ -646,6 +650,7 @@ enum CrawlIssueTypeEnum: string
             self::NOFOLLOW_PAGE->value               => __('The robots meta tag or X-Robots-Tag header says nofollow, so Google does not follow any link on the page to the pages behind it.'),
             self::CANONICAL_TO_NON_INDEXABLE->value  => __('The canonical URL is noindex or names yet another URL as its canonical, so Google gets mixed signals and may index neither.'),
             self::SOFT_404->value                    => __('The title or h1 says the page was not found, yet the server answers 200. Google treats it as a soft 404 and wastes crawl budget on it.'),
+            self::SSR_FALLBACK->value                => __('The server could not build the page, so it sent an empty page that only fills in with JavaScript. Search engines and link previews see no content. The error is in Sentry.'),
             self::EXACT_DUPLICATE->value             => __('The text of the page is identical to another indexable page, so Google picks one and ignores the rest.'),
             self::NEAR_DUPLICATE->value              => __('The text of the page is about 95% the same as another indexable page. Make each page say something of its own or point the copies to one canonical.'),
             self::LOW_CONTENT->value                 => __('The page has fewer than :words words of its own content, which may be too little for Google to understand what it is about.', ['words' => self::LOW_CONTENT_WORDS]),
@@ -877,6 +882,7 @@ enum CrawlIssueTypeEnum: string
             self::NON_INDEXABLE_WITH_CLICKS->value   => __('If the page should be found, remove the noindex or fix the canonical. If not, redirect it to the page that should rank.'),
             self::INDEXABLE_WITHOUT_VISITS->value    => __('Check whether the page is still needed: link to it from related pages, or redirect it to a page people use.', ['days' => EnrichCrawlPages::DAYS]),
             self::NON_INDEXABLE_WITH_VISITS->value   => __('If people look for this page, make it indexable so search engines can send more of them.'),
+            self::SSR_FALLBACK->value                => __('Open the Sentry errors of the page, fix what made the server rendering fail, then crawl the page again.'),
         ];
     }
 }

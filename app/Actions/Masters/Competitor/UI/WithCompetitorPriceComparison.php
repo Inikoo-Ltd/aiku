@@ -16,7 +16,8 @@ use App\Models\SysAdmin\Group;
 /**
  * The one place that says how a competitor price compares with ours: both per unit in the group currency,
  * shoppers' prices against our RRP and everyone else's against our price. Negative means they are cheaper.
- * Built as SQL over competitors, competitor_products and master_assets so lists can sort and rank by it.
+ * Built as SQL over competitors, competitor_products, master_assets and master_asset_competitor_products (whose
+ * competitor_units, when set, says how many units their pack holds for that match) so lists can sort and rank by it.
  */
 trait WithCompetitorPriceComparison
 {
@@ -37,7 +38,7 @@ trait WithCompetitorPriceComparison
             : 'CASE competitors.currency_id '.$rates->map(fn (float $rate, int $currencyId) => "WHEN $currencyId THEN $rate")->implode(' ').' ELSE NULL END';
 
         $ours   = "((CASE competitors.sells_to WHEN 'consumer' THEN master_assets.rrp ELSE master_assets.price END) / GREATEST(master_assets.units, 1))";
-        $theirs = "(competitor_products.price * ($rate) / GREATEST(competitor_products.units, 1))";
+        $theirs = "(competitor_products.price * ($rate) / GREATEST(COALESCE(master_asset_competitor_products.competitor_units, competitor_products.units), 1))";
 
         return [
             'ours'       => "round($ours, 2)",

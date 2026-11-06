@@ -21,6 +21,8 @@ use App\Models\SysAdmin\User;
 use App\Notifications\PurchaseOrderQuantityChangeAnsweredNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator as ValidatorFacade;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,6 +41,8 @@ class AnswerPurchaseOrderTransactionQuantityChange extends OrgAction
         $answer = PurchaseOrderTransactionQuantityQueryStateEnum::from($modelData['answer']);
 
         return DB::transaction(function () use ($purchaseOrderTransaction, $answer) {
+            $purchaseOrderTransaction = $this->lockAndRecheck($purchaseOrderTransaction);
+
             if ($answer === PurchaseOrderTransactionQuantityQueryStateEnum::ACCEPTED) {
                 $purchaseOrderTransaction = UpdatePurchaseOrderTransaction::make()->action($purchaseOrderTransaction, [
                     'quantity_ordered' => $purchaseOrderTransaction->quantity_query_quantity,
@@ -52,6 +56,24 @@ class AnswerPurchaseOrderTransactionQuantityChange extends OrgAction
 
             return $purchaseOrderTransaction;
         });
+    }
+
+    /**
+     * Two buyers answering at once, or items put in a container meanwhile, are caught here: the order is locked as
+     * containers lock it when they take its items, and the answer is checked again against the line as it is now.
+     */
+    private function lockAndRecheck(PurchaseOrderTransaction $purchaseOrderTransaction): PurchaseOrderTransaction
+    {
+        PurchaseOrder::whereKey($purchaseOrderTransaction->purchase_order_id)->lockForUpdate()->first();
+        $this->purchaseOrderTransaction = $purchaseOrderTransaction->refresh();
+
+        $validator = ValidatorFacade::make([], []);
+        $this->afterValidator($validator);
+        if ($validator->errors()->isNotEmpty()) {
+            throw new ValidationException($validator);
+        }
+
+        return $this->purchaseOrderTransaction;
     }
 
     public function afterValidator(Validator $validator): void

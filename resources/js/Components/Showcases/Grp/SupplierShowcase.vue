@@ -296,7 +296,7 @@ const supplierInfo = computed(() => {
                 class="flex items-center gap-4 rounded-xl bg-white px-5 py-4 shadow-sm ring-1 ring-gray-900/5"
                 :class="stat.route?.name ? 'hover:bg-gray-50' : ''">
                 <div
-                    class="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-indigo-50 text-indigo-500 ring-1 ring-indigo-500/20">
+                    class="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-gray-50 text-gray-500 ring-1 ring-gray-300">
                     <FontAwesomeIcon :icon="stat.icon || 'fal fa-hashtag'" fixed-width aria-hidden="true" />
                 </div>
                 <div class="min-w-0">
@@ -314,7 +314,7 @@ const supplierInfo = computed(() => {
             <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
                 <div class="flex items-center gap-4 border-b border-gray-900/5 bg-gray-50/80 px-6 py-5">
                     <div
-                        class="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-full bg-indigo-50 text-indigo-500 ring-1 ring-indigo-500/20">
+                        class="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-500 ring-1 ring-gray-300">
                         <Image
                             v-if="contactCard?.photo"
                             :src="contactCard.photo"
@@ -349,7 +349,7 @@ const supplierInfo = computed(() => {
                                 :href="row.href"
                                 :target="row.external ? '_blank' : undefined"
                                 :rel="row.external ? 'noopener noreferrer' : undefined"
-                                class="break-all text-gray-700 hover:text-indigo-500 hover:underline">
+                                class="break-all text-gray-700 hover:text-gray-900 hover:underline">
                                 {{ row.value }}
                             </a>
                             <span v-else class="break-all text-gray-700">{{ row.value }}</span>

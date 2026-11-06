@@ -26,12 +26,14 @@ use App\Services\SiteAudit\RichResultsTest;
 use App\Services\SiteAudit\RobotsTxt;
 use App\Services\SiteAudit\SerpPixelWidth;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
@@ -43,6 +45,8 @@ class AuditWebsite implements ShouldBeUnique
 
     public const string USER_AGENT = 'Mozilla/5.0 (compatible; AikuSiteAuditBot/1.0)';
 
+    public const string AUDIT_HEADER = 'X-Aiku-Site-Audit';
+
     public const int DEFAULT_CONCURRENCY = 2;
 
     public const int PAGES_PER_JOB = 1000;
@@ -50,6 +54,8 @@ class AuditWebsite implements ShouldBeUnique
     private const int SECONDS_PER_JOB = 900;
 
     private const int SECONDS_BETWEEN_JOBS = 30;
+
+    private const int SECONDS_WAITING_FOR_BUDGET = 60;
 
     private const int ABANDONED_AFTER_MINUTES = 60;
 
@@ -98,6 +104,8 @@ class AuditWebsite implements ShouldBeUnique
 
     private const int RESOURCES_PER_FETCH = 4;
 
+    private const int MIN_MS_PER_PAGE = 250;
+
     private const int RESOURCES_KEPT_PER_PAGE = 200;
 
     public const int SITEMAP_MAX_URLS = 50000;
@@ -114,7 +122,9 @@ class AuditWebsite implements ShouldBeUnique
 
     public int $jobTimeout = 1800;
 
-    public int $jobTries = 1;
+    public int $jobTries = 3;
+
+    public int $jobBackoff = 60;
 
     private Crawl $crawl;
 
@@ -152,6 +162,17 @@ class AuditWebsite implements ShouldBeUnique
     /** @var array<string, true> */
     private array $seen = [];
 
+    /**
+     * Pages that failed or answered 5xx, asked once more after every other page, so a deploy or a
+     * timeout is not reported as a broken page.
+     *
+     * @var array<int, array{url: string, depth: int, link_depth: int|null, retry: true}>
+     */
+    private array $retryQueue = [];
+
+    /** @var array<string, true> */
+    private array $retried = [];
+
     /** @var array<string, int> the number of sitemap files that list each URL */
     private array $inSitemap = [];
 
@@ -170,9 +191,9 @@ class AuditWebsite implements ShouldBeUnique
     /** @var array{max_depth: int|null, include: array<int, string>, exclude: array<int, string>, respect_robots_txt: bool, crawl_subdomains: bool, check_external_links: bool, check_images: bool} */
     private array $config = self::DEFAULT_CONFIG;
 
-    public function getJobUniqueId(Crawl $crawl, int $part = 0): string
+    public function getJobUniqueId(Crawl $crawl, int $part = 0, bool $untilFinished = false, int $waits = 0): string
     {
-        return $crawl->id.'-'.$part;
+        return $crawl->id.'-'.$part.'-'.$waits;
     }
 
     /**
@@ -180,8 +201,11 @@ class AuditWebsite implements ShouldBeUnique
      * or `SECONDS_PER_JOB`, keeps where it got to in the cache and queues the next part
      * `SECONDS_BETWEEN_JOBS` later, so no worker is held for hours and other jobs get a turn.
      * `$untilFinished` runs every part in this process, for the command without --async.
+     * Audits share `CONCURRENT_FETCH_BUDGET` fetches: one that finds the budget taken stays
+     * ready and asks again `SECONDS_WAITING_FOR_BUDGET` later, so twenty audits started at
+     * once take turns instead of crawling every storefront together.
      */
-    public function handle(Crawl $crawl, int $part = 0, bool $untilFinished = false): Crawl
+    public function handle(Crawl $crawl, int $part = 0, bool $untilFinished = false, int $waits = 0): Crawl
     {
         if ($crawl->type !== CrawlTypeEnum::AUDIT) {
             return $crawl;
@@ -195,11 +219,16 @@ class AuditWebsite implements ShouldBeUnique
                 return $crawl;
             }
 
+            if (!$this->claimConcurrency($untilFinished)) {
+                $crawl->touch();
+                self::dispatch($crawl, 0, false, $waits + 1)->delay(now()->addSeconds(self::SECONDS_WAITING_FOR_BUDGET));
+
+                return $crawl;
+            }
+
             $this->start();
         } else {
             if ($crawl->state !== CrawlStateEnum::RUNNING) {
-                Cache::forget(self::progressKey($crawl));
-
                 return $crawl;
             }
 
@@ -231,14 +260,21 @@ class AuditWebsite implements ShouldBeUnique
     }
 
     /**
-     * Closes an audit whose part was lost (a deploy, a worker that died): a running part writes
-     * its progress every few pages, so an audit untouched for `ABANDONED_AFTER_MINUTES` has no
-     * job left to finish it.
+     * Closes an audit whose part was lost (a deploy, a worker that died): a running part touches
+     * the crawl after every batch of pages, links or images and between parts, and a ready audit
+     * touches it each time it waits for a fetch slot, so an audit untouched for
+     * `ABANDONED_AFTER_MINUTES` has no job left to finish it.
      */
     public static function closeIfAbandoned(Crawl $crawl): bool
     {
-        if ($crawl->state !== CrawlStateEnum::RUNNING || $crawl->updated_at?->gt(now()->subMinutes(self::ABANDONED_AFTER_MINUTES))) {
+        if (!in_array($crawl->state, [CrawlStateEnum::READY, CrawlStateEnum::RUNNING], true) || $crawl->updated_at?->gt(now()->subMinutes(self::ABANDONED_AFTER_MINUTES))) {
             return false;
+        }
+
+        if ($crawl->state === CrawlStateEnum::READY) {
+            $crawl->update(['state' => CrawlStateEnum::FINISH, 'running' => false, 'finish_reason' => 'interrupted', 'end_at' => now()]);
+
+            return true;
         }
 
         self::close($crawl, 'interrupted');
@@ -246,11 +282,24 @@ class AuditWebsite implements ShouldBeUnique
         return true;
     }
 
+    /**
+     * A closed audit still gets its report: the issues of every page it got to, queued so a
+     * request that closes an abandoned audit is not held while 25k pages are checked.
+     */
     private static function close(Crawl $crawl, string $finishReason): void
     {
         $crawl->update(['state' => CrawlStateEnum::FINISH, 'running' => false, 'finish_reason' => $finishReason, 'end_at' => now()]);
 
-        Cache::forget(self::progressKey($crawl));
+        ReportSiteAudit::dispatch($crawl, $finishReason);
+    }
+
+    public function report(Crawl $crawl, string $finishReason): Crawl
+    {
+        $this->crawl  = $crawl;
+        $this->config = self::config($crawl);
+        $this->restoreProgress();
+
+        return $this->finish($finishReason);
     }
 
     private function start(): void
@@ -258,9 +307,6 @@ class AuditWebsite implements ShouldBeUnique
         $website = $this->crawl->website;
 
         $this->stopOtherAudits();
-        $this->claimConcurrency();
-
-        $this->crawl->update(['state' => CrawlStateEnum::RUNNING, 'start_at' => now(), 'running' => true]);
 
         $baseUrl                = self::publicBaseUrl($website);
         $this->host             = $this->hostWithoutWww(parse_url($baseUrl, PHP_URL_HOST) ?? '');
@@ -310,6 +356,11 @@ class AuditWebsite implements ShouldBeUnique
 
         Cache::forget(self::progressKey($this->crawl));
 
+        if ($finishReason === 'completed' && $this->crawl->is_full_audit) {
+            AskWebmastersToFixSiteAuditIssue::closeFixed($this->crawl);
+            ReviewSiteAuditPagesWithAi::dispatch($this->crawl);
+        }
+
         $this->pruneOldAudits($this->crawl->website);
 
         return $this->crawl;
@@ -322,6 +373,8 @@ class AuditWebsite implements ShouldBeUnique
 
     private function saveProgress(): void
     {
+        $this->crawl->touch();
+
         Cache::put(self::progressKey($this->crawl), gzcompress(serialize([
             'robots_txt'     => $this->robotsTxt,
             'queue'          => $this->queue,
@@ -330,6 +383,8 @@ class AuditWebsite implements ShouldBeUnique
             'resources_seen' => $this->resourcesSeen,
             'sitemap_files'  => $this->sitemapFiles,
             'seen'           => $this->seen,
+            'retry_queue'    => $this->retryQueue,
+            'retried'        => $this->retried,
             'in_sitemap'     => $this->inSitemap,
             'inlinks'        => $this->inlinks,
             'linked_from'    => $this->linkedFrom,
@@ -357,6 +412,8 @@ class AuditWebsite implements ShouldBeUnique
         $this->resourcesSeen    = $progress['resources_seen'] ?? [];
         $this->sitemapFiles     = $progress['sitemap_files'] ?? [];
         $this->seen             = $progress['seen'];
+        $this->retryQueue       = $progress['retry_queue'] ?? [];
+        $this->retried          = $progress['retried'] ?? [];
         $this->inSitemap        = array_map(intval(...), $progress['in_sitemap']);
         $this->inlinks          = $progress['inlinks'];
         $this->linkedFrom       = $progress['linked_from'];
@@ -387,6 +444,7 @@ class AuditWebsite implements ShouldBeUnique
                 }
 
                 $pagesInThisJob += intdiv($this->checkResources(array_splice($this->resourceQueue, 0, max(1, $this->crawl->concurrency) * self::RESOURCES_PER_FETCH)), self::RESOURCES_PER_FETCH);
+                $this->crawl->touch();
 
                 continue;
             }
@@ -397,11 +455,12 @@ class AuditWebsite implements ShouldBeUnique
                 $batchSize = min($batchSize, $maxPages - $processedPages);
             }
 
-            $batch = array_splice($this->queue, 0, $batchSize);
+            $batch          = array_splice($this->queue, 0, $batchSize);
+            $batchStartedAt = microtime(true);
 
             $responses = Http::pool(fn (Pool $pool) => array_map(
                 fn (array $item) => $pool->as($item['url'])
-                    ->withHeaders(['User-Agent' => self::USER_AGENT])
+                    ->withHeaders(['User-Agent' => self::USER_AGENT, self::AUDIT_HEADER => (string) $this->crawl->id])
                     ->withOptions(['allow_redirects' => false])
                     ->connectTimeout(10)
                     ->timeout(30)
@@ -415,21 +474,36 @@ class AuditWebsite implements ShouldBeUnique
                 $rows[] = $this->pageRow($item['url'], $item['depth'], $item['link_depth'] ?? null, $responses[$item['url']] ?? null);
             }
 
-            CrawlPage::insert($rows);
+            CrawlPage::upsert($rows, ['crawl_id', 'url_hash']);
             $this->storePendingLinks();
 
-            $processedPages += count($batch);
+            $processedPages += count(array_filter($batch, fn (array $item) => !isset($item['retry'])));
             $pagesInThisJob += count($batch);
 
             $this->crawl->update(['urls_processed' => $processedPages, 'urls_found' => count($this->seen)]);
+
+            $this->pace($batchStartedAt, count($batch));
         }
 
-        return 'completed';
+        return $processedPages ? 'completed' : 'blocked_by_robots';
     }
 
     /**
-     * Pages first, then the sitemap URLs the links never reached, then the external links and
-     * images those pages use.
+     * At most one page every `MIN_MS_PER_PAGE` per fetch slot, so an audit answered from the
+     * edge cache does not run as fast as the network allows.
+     */
+    private function pace(float $batchStartedAt, int $pages): void
+    {
+        $waitMicroseconds = (int) (($pages * self::MIN_MS_PER_PAGE / 1000 / max(1, $this->crawl->concurrency) - (microtime(true) - $batchStartedAt)) * 1_000_000);
+
+        if ($waitMicroseconds > 0) {
+            Sleep::usleep($waitMicroseconds);
+        }
+    }
+
+    /**
+     * Pages first, then the sitemap URLs the links never reached, then the pages that failed asked
+     * once more, then the external links and images those pages use.
      */
     private function hasWorkLeft(): bool
     {
@@ -439,6 +513,11 @@ class AuditWebsite implements ShouldBeUnique
             }
 
             $this->sitemapQueue = [];
+        }
+
+        if ($this->queue === [] && $this->retryQueue !== []) {
+            $this->queue      = $this->retryQueue;
+            $this->retryQueue = [];
         }
 
         return $this->queue !== [] || $this->resourceQueue !== [];
@@ -529,6 +608,11 @@ class AuditWebsite implements ShouldBeUnique
             'created_at'         => $now,
             'updated_at'         => $now,
         ];
+
+        if ((!$response instanceof Response || $response->serverError()) && !isset($this->retried[$row['url_hash']])) {
+            $this->retried[$row['url_hash']] = true;
+            $this->retryQueue[]              = ['url' => $url, 'depth' => $depth, 'link_depth' => $linkDepth, 'retry' => true];
+        }
 
         if (!$response instanceof Response) {
             $row['fetch_error'] = $response instanceof Throwable ? Str::limit($response->getMessage(), 500) : __('No response');
@@ -694,8 +778,18 @@ class AuditWebsite implements ShouldBeUnique
         ];
     }
 
+    /**
+     * Writes the links of the pages just fetched, replacing any a page already had in this audit,
+     * so a page fetched again (a retry, a part run again) does not count its links twice.
+     */
     private function storePendingLinks(): void
     {
+        $fromHashes = array_values(array_unique(array_column($this->pendingLinks, 'from_url_hash')));
+
+        if ($fromHashes !== []) {
+            DB::table('crawl_links')->where('crawl_id', $this->crawl->id)->whereIn('from_url_hash', $fromHashes)->delete();
+        }
+
         foreach (array_chunk($this->pendingLinks, 1000) as $chunk) {
             DB::table('crawl_links')->insert($chunk);
         }
@@ -832,6 +926,7 @@ class AuditWebsite implements ShouldBeUnique
             'is_nofollow'          => $html->isNofollowPage() || preg_match('/\b(nofollow|none)\b/i', (string) $response->header('X-Robots-Tag')) === 1,
             'lorem_ipsum'          => $html->hasLoremIpsum,
             'soft_404'             => $html->soft404Phrase,
+            'ssr_fallback'         => $response->header('X-Aiku-Ssr-Fallback') === '1',
             'internal_outlinks'    => count($internalOutlinks),
             'nofollow_internal'    => $this->examples(array_keys($nofollowInternal)),
             'empty_anchors'        => $emptyAnchors,
@@ -1259,12 +1354,34 @@ class AuditWebsite implements ShouldBeUnique
             ->each(fn (Crawl $crawl) => self::closeIfAbandoned($crawl) || StopCrawl::run($crawl));
     }
 
-    private function claimConcurrency(): void
+    private function claimConcurrency(bool $evenWithoutBudget): bool
     {
-        $concurrencyInUse = (int) Crawl::where('running', true)->where('id', '!=', $this->crawl->id)->sum('concurrency');
-        $available        = self::CONCURRENT_FETCH_BUDGET - $concurrencyInUse;
+        try {
+            return $this->claimConcurrencyUnderLock($evenWithoutBudget);
+        } catch (LockTimeoutException) {
+            return false;
+        }
+    }
 
-        $this->crawl->update(['concurrency' => max(1, min($available, $this->crawl->concurrency))]);
+    private function claimConcurrencyUnderLock(bool $evenWithoutBudget): bool
+    {
+        return Cache::lock('audit-website-concurrency', 10)->block(10, function () use ($evenWithoutBudget) {
+            $concurrencyInUse = (int) Crawl::where('running', true)->where('id', '!=', $this->crawl->id)->sum('concurrency');
+            $available        = self::CONCURRENT_FETCH_BUDGET - $concurrencyInUse;
+
+            if ($available < 1 && !$evenWithoutBudget) {
+                return false;
+            }
+
+            $this->crawl->update([
+                'concurrency' => max(1, min($available, $this->crawl->concurrency)),
+                'state'       => CrawlStateEnum::RUNNING,
+                'start_at'    => now(),
+                'running'     => true,
+            ]);
+
+            return true;
+        });
     }
 
     private function shouldStop(): bool

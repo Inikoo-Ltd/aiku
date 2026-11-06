@@ -3237,7 +3237,8 @@ describe('customer service tools', function () {
         ]);
         $waitingOutcome = App\Actions\Chat\ChatSession\StoreChatAiOutcome::run($whatsapp, App\Enums\CRM\Livechat\ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING);
         expect($listed([]))->toMatchArray(['draft_waiting' => true])
-            ->and($listed(['unopened_only' => true]))->toBeNull();
+            ->and($listed(['unopened_only' => true]))->toBeNull()
+            ->and(App\Actions\Chat\ChatSession\StoreChatAiOutcome::run($whatsapp, App\Enums\CRM\Livechat\ChatAiOutcomeEnum::THANKS)->outcome)->toBe(App\Enums\CRM\Livechat\ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING);
 
         $whatsapp->update(['last_visitor_message_at' => now()->addMinute()]);
         expect($listed([]))->not->toHaveKey('draft_waiting')
@@ -3701,6 +3702,11 @@ describe('customer service tools', function () {
             'sender_type'     => App\Enums\CRM\Livechat\ChatSenderTypeEnum::USER,
             'message_text'    => 'Thank you!',
         ]);
+        $this->chat->update(['last_visitor_message_at' => now()->addMinute()]);
+
+        ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'record_outcome', 'outcome' => 'suggestion_already_waiting', 'run_id' => $run->id])
+            ->assertHasErrors(['work the chat again']);
+        App\Actions\Chat\ChatSession\StoreChatAiOutcome::run($this->chat, App\Enums\CRM\Livechat\ChatAiOutcomeEnum::SUGGESTION_ALREADY_WAITING);
 
         ($this->csTool)(App\Mcp\Tools\CustomerServiceChatWriteTool::class, ['action' => 'record_outcome', 'outcome' => 'thanks', 'reason' => 'Only thanks us', 'run_id' => $run->id])->assertOk();
 

@@ -178,7 +178,7 @@ const onSelectStepQuantityDesktop = async (quantity: number) => {
 
     isDesktopStepSyncing.value = true
     try {
-        await _desktopAddToBasket.value?.setQuantity(quantity)
+        await _desktopAddToBasket.value?.selectQuantity(quantity)
     } finally {
         isDesktopStepSyncing.value = false
     }
@@ -191,7 +191,7 @@ const onSelectStepQuantityMobile = async (quantity: number) => {
 
     isMobileStepSyncing.value = true
     try {
-        await _mobileAddToBasket.value?.setQuantity(quantity)
+        await _mobileAddToBasket.value?.selectQuantity(quantity)
     } finally {
         isMobileStepSyncing.value = false
     }

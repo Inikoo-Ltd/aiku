@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import { computed, ref } from "vue"
 import { Link } from "@inertiajs/vue3"
 import qs from "qs"
 import Table from "@/Components/Table/Table.vue"
@@ -18,12 +19,12 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTrashAlt, faComments } from "@fal"
+import { faTrashAlt, faComments, faChevronRight, faLayerGroup, faHandHoldingUsd } from "@fal"
 
-library.add(faTrashAlt, faComments)
+library.add(faTrashAlt, faComments, faChevronRight, faLayerGroup, faHandHoldingUsd)
 
-defineProps<{
-	data: {}
+const props = defineProps<{
+	data: { data?: PurchaseOrder[] }
 	tab?: string
 	removablePurchaseOrderIds?: number[]
 }>()
@@ -33,6 +34,121 @@ const emit = defineEmits<{
 }>()
 
 const isInAgentOrganisation = isAgentOrganisation(route().params.organisation as string | undefined)
+
+type AgentOrderState = { label: string; icon: PurchaseOrder["state_icon"]; count: number }
+
+const expandedAgentOrders = ref<string[]>([])
+
+function toggleAgentOrder(agentOrderReference: string) {
+	expandedAgentOrders.value = expandedAgentOrders.value.includes(agentOrderReference)
+		? expandedAgentOrders.value.filter((reference) => reference !== agentOrderReference)
+		: [...expandedAgentOrders.value, agentOrderReference]
+}
+
+function sumOf(purchaseOrders: PurchaseOrder[], key: keyof PurchaseOrder): number | null {
+	const values = purchaseOrders.map((purchaseOrder) => purchaseOrder[key]).filter((value) => value !== null && value !== undefined)
+
+	return values.length ? values.reduce((total: number, value) => total + Number(value), 0) : null
+}
+
+function sharedValue(purchaseOrders: PurchaseOrder[], key: keyof PurchaseOrder) {
+	const values = new Set(purchaseOrders.map((purchaseOrder) => purchaseOrder[key]))
+
+	return values.size === 1 ? purchaseOrders[0][key] : null
+}
+
+function agentOrderStates(purchaseOrders: PurchaseOrder[]): AgentOrderState[] {
+	const states = new Map<string, AgentOrderState>()
+	purchaseOrders.forEach((purchaseOrder) => {
+		const state = states.get(purchaseOrder.state) ?? { label: purchaseOrder.state_label, icon: purchaseOrder.state_icon, count: 0 }
+		state.count++
+		states.set(purchaseOrder.state, state)
+	})
+
+	return [...states.values()]
+}
+
+function agentOrderShipments(purchaseOrders: PurchaseOrder[]): PurchaseOrder["shipments"] {
+	const shipments = new Map<string, NonNullable<PurchaseOrder["shipments"]>[number]>()
+	purchaseOrders.flatMap((purchaseOrder) => purchaseOrder.shipments ?? []).forEach((shipment) => {
+		const known = shipments.get(shipment.reference)
+		shipments.set(shipment.reference, known
+			? { ...known, cbm: known.cbm === null && shipment.cbm === null ? null : (known.cbm ?? 0) + (shipment.cbm ?? 0) }
+			: { ...shipment })
+	})
+
+	return [...shipments.values()]
+}
+
+function agentOrderGroupRow(agentOrderReference: string, purchaseOrders: PurchaseOrder[]) {
+	const sameCurrency = sharedValue(purchaseOrders, "org_currency_code") !== null
+
+	return {
+		id: `agent-order-${agentOrderReference}`,
+		slug: `agent-order-${agentOrderReference}`,
+		is_agent_order_group: true,
+		reference: agentOrderReference,
+		agent_order_reference: agentOrderReference,
+		agent_order_purchase_orders: purchaseOrders.length,
+		agent_order_states: agentOrderStates(purchaseOrders),
+		number_pending_line_answers: sumOf(purchaseOrders, "number_pending_line_answers") ?? 0,
+		number_without_deposit: purchaseOrders.filter((purchaseOrder) => purchaseOrder.is_without_deposit).length,
+		number_current_purchase_order_transactions: sumOf(purchaseOrders, "number_current_purchase_order_transactions"),
+		quantity_ordered: sumOf(purchaseOrders, "quantity_ordered"),
+		org_currency_code: sameCurrency ? purchaseOrders[0].org_currency_code : null,
+		org_total_cost: sameCurrency ? sumOf(purchaseOrders, "org_total_cost") : null,
+		org_net_amount: sameCurrency ? sumOf(purchaseOrders, "org_net_amount") : null,
+		date: purchaseOrders.map((purchaseOrder) => purchaseOrder.date).filter(Boolean).sort()[0] ?? null,
+		organisation_name: sharedValue(purchaseOrders, "organisation_name"),
+		organisation_code: sharedValue(purchaseOrders, "organisation_code"),
+		shipments: agentOrderShipments(purchaseOrders),
+	}
+}
+
+const tableResource = computed(() => {
+	const purchaseOrders = props.data?.data
+	if (!Array.isArray(purchaseOrders)) {
+		return props.data
+	}
+
+	const purchaseOrdersByAgentOrder = new Map<string, PurchaseOrder[]>()
+	purchaseOrders.forEach((purchaseOrder) => {
+		if (purchaseOrder.agent_order_reference) {
+			purchaseOrdersByAgentOrder.set(purchaseOrder.agent_order_reference, [...(purchaseOrdersByAgentOrder.get(purchaseOrder.agent_order_reference) ?? []), purchaseOrder])
+		}
+	})
+
+	const rows: Record<string, unknown>[] = []
+	const groupedAgentOrders = new Set<string>()
+	purchaseOrders.forEach((purchaseOrder) => {
+		const agentOrderReference = purchaseOrder.agent_order_reference
+		const agentOrderPurchaseOrders = agentOrderReference ? purchaseOrdersByAgentOrder.get(agentOrderReference) ?? [] : []
+		if (!agentOrderReference || agentOrderPurchaseOrders.length < 2) {
+			rows.push(purchaseOrder)
+			return
+		}
+
+		if (groupedAgentOrders.has(agentOrderReference)) {
+			return
+		}
+
+		groupedAgentOrders.add(agentOrderReference)
+		rows.push(agentOrderGroupRow(agentOrderReference, agentOrderPurchaseOrders))
+		if (expandedAgentOrders.value.includes(agentOrderReference)) {
+			rows.push(...agentOrderPurchaseOrders.map((agentOrderPurchaseOrder) => ({ ...agentOrderPurchaseOrder, is_agent_order_member: true })))
+		}
+	})
+
+	return { ...props.data, data: rows }
+})
+
+function agentOrderRowClass(row: Record<string, unknown>): string {
+	if (row.is_agent_order_group) {
+		return "bg-gray-50 hover:bg-gray-100"
+	}
+
+	return row.is_agent_order_member ? "bg-white hover:bg-gray-50" : ""
+}
 
 function PurchaseOrderRoute(purchaseOrder: PurchaseOrder) {
 	if (!purchaseOrder?.slug) {
@@ -181,9 +297,38 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 </script>
 
 <template>
-	<Table :resource="data" :name="tab" class="mt-5">
+	<Table :resource="tableResource" :name="tab" :rowColorFunction="agentOrderRowClass" class="mt-5">
 		<template #cell(reference)="{ item: purchaseOrder }">
-			<div class="flex items-center gap-1.5 whitespace-nowrap">
+			<div v-if="purchaseOrder.is_agent_order_group" class="flex items-center gap-1.5 whitespace-nowrap">
+				<button
+					type="button"
+					class="flex items-center gap-1.5 font-semibold text-gray-700 hover:text-[var(--app-accent)]"
+					:aria-expanded="expandedAgentOrders.includes(purchaseOrder.agent_order_reference)"
+					v-tooltip="ctrans('Agent order split into one purchase order per supplier')"
+					@click="toggleAgentOrder(purchaseOrder.agent_order_reference)">
+					<FontAwesomeIcon icon="fal fa-chevron-right" class="text-[10px] text-gray-400 transition-transform" :class="expandedAgentOrders.includes(purchaseOrder.agent_order_reference) ? 'rotate-90' : ''" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon icon="fal fa-layer-group" class="text-gray-400" fixed-width aria-hidden="true" />
+					{{ purchaseOrder.reference }}
+				</button>
+				<span class="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-normal text-gray-600">
+					{{ ctrans(":count POs", { count: purchaseOrder.agent_order_purchase_orders }) }}
+				</span>
+				<span
+					v-if="purchaseOrder.number_without_deposit"
+					v-tooltip="ctransChoice(':count purchase order has no deposit paid yet|:count purchase orders have no deposit paid yet', purchaseOrder.number_without_deposit)"
+					class="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 text-xs font-medium tabular-nums text-amber-700">
+					<FontAwesomeIcon :icon="faHandHoldingUsd" fixed-width aria-hidden="true" />
+					{{ ctrans(":count no deposit", { count: purchaseOrder.number_without_deposit }) }}
+				</span>
+				<span
+					v-if="purchaseOrder.number_pending_line_answers"
+					v-tooltip="ctransChoice(':count line with a new price or quantity waiting for an answer|:count lines with a new price or quantity waiting for an answer', purchaseOrder.number_pending_line_answers)"
+					class="relative inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 text-xs font-medium tabular-nums text-amber-700">
+					<FontAwesomeIcon :icon="faComments" fixed-width aria-hidden="true" />
+					{{ purchaseOrder.number_pending_line_answers }}
+				</span>
+			</div>
+			<div v-else class="flex items-center gap-1.5 whitespace-nowrap" :class="{ 'border-l-2 border-gray-200 pl-4': purchaseOrder.is_agent_order_member }">
 				<Link
 					v-if="PurchaseOrderRoute(purchaseOrder)"
 					:href="PurchaseOrderRoute(purchaseOrder)"
@@ -199,10 +344,21 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 					<FontAwesomeIcon :icon="faComments" fixed-width aria-hidden="true" />
 					{{ purchaseOrder.number_pending_line_answers }}
 				</span>
+				<span
+					v-if="purchaseOrder.is_without_deposit"
+					v-tooltip="ctrans('No deposit paid yet')"
+					class="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 text-xs font-medium text-amber-700">
+					<FontAwesomeIcon :icon="faHandHoldingUsd" fixed-width aria-hidden="true" />
+					{{ ctrans("No deposit") }}
+				</span>
 			</div>
 		</template>
 
 		<template #cell(parent_name)="{ item: purchaseOrder }">
+			<span v-if="purchaseOrder.is_agent_order_group" class="text-gray-500">
+				{{ ctransChoice(":count supplier|:count suppliers", purchaseOrder.agent_order_purchase_orders) }}
+			</span>
+			<template v-else>
 			<Link
 				v-if="purchaseOrder.parent_type === 'OrgSupplier' && SupplierRoute(purchaseOrder)"
 				:href="SupplierRoute(purchaseOrder)"
@@ -224,6 +380,7 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 				</Link>
 				<span v-else>{{ purchaseOrder.agent_name }}</span>
 			</div>
+			</template>
 		</template>
 
 		<template #cell(organisation_name)="{ item: purchaseOrder }">
@@ -231,34 +388,64 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 			<template v-else>{{ purchaseOrder.organisation_name }}</template>
 		</template>
 		<template #cell(state)="{ item: purchaseOrder }">
-			<div class="flex items-center gap-1">
+			<div v-if="purchaseOrder.is_agent_order_group" class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+				<span v-for="state in purchaseOrder.agent_order_states" :key="state.label" v-tooltip="state.label" class="flex items-center gap-0.5 whitespace-nowrap tabular-nums">
+					<Icon :data="state.icon" />
+					{{ state.count }}
+				</span>
+			</div>
+			<div v-else class="flex items-center gap-1">
 				<Icon :data="purchaseOrder.state_icon" />
 				<span>{{ purchaseOrder.state_label }}</span>
 			</div>
 		</template>
 
 		<template #cell(org_total_cost)="{ item: purchaseOrder }">
-			{{
+			<span v-if="purchaseOrder.org_total_cost === null || !purchaseOrder.org_currency_code" class="text-gray-400">—</span>
+			<span v-else :class="{ 'font-semibold': purchaseOrder.is_agent_order_group }">{{
 				useLocaleStore().currencyFormat(
 					purchaseOrder.org_currency_code,
 					purchaseOrder.org_total_cost
 				)
-			}}
+			}}</span>
 		</template>
 
 		<template #cell(org_net_amount)="{ item: purchaseOrder }">
-			{{
+			<span v-if="purchaseOrder.org_net_amount === null || !purchaseOrder.org_currency_code" class="text-gray-400">—</span>
+			<span v-else :class="{ 'font-semibold': purchaseOrder.is_agent_order_group }">{{
 				useLocaleStore().currencyFormat(
 					purchaseOrder.org_currency_code,
 					purchaseOrder.org_net_amount
 				)
-			}}
+			}}</span>
 		</template>
 
 		<template #cell(date)="{ item: purchaseOrder }">
 			<div class="text-right">
 				{{ useFormatTime(purchaseOrder.date, { formatTime: "EEE, do MMM yy" }) }}
 			</div>
+		</template>
+
+		<template #cell(shipments)="{ item: purchaseOrder }">
+			<div v-if="purchaseOrder.shipments?.length" class="flex flex-col gap-0.5">
+				<div v-for="shipment in purchaseOrder.shipments" :key="shipment.reference" class="flex items-center gap-1 whitespace-nowrap">
+					<Icon v-if="shipment.state_icon" :data="shipment.state_icon" />
+					<Link
+						v-if="shipment.show_route"
+						:href="route(shipment.show_route.name, shipment.show_route.parameters)"
+						class="secondaryLink">
+						{{ shipment.reference }}
+					</Link>
+					<span v-else>{{ shipment.reference }}</span>
+					<span
+						v-if="shipment.cbm !== null"
+						v-tooltip="ctrans('Space the items of this purchase order take in the container')"
+						class="text-xs tabular-nums text-gray-500">
+						{{ ctrans(":cbm m³", { cbm: useLocaleStore().number(shipment.cbm) }) }}
+					</span>
+				</div>
+			</div>
+			<span v-else class="text-gray-400">—</span>
 		</template>
 
 		<template #cell(actions)="{ item: purchaseOrder }">

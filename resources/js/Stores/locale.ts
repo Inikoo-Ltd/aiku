@@ -81,11 +81,12 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	const currencyFormatUnitCost = (currencyCode: string | null | undefined, amount: number | string | null | undefined): string => {
 		const num = typeof amount === "string" ? parseFloat(amount) : (amount ?? 0)
+		const wholeNumberPractice = !!currencyCode && WHOLE_NUMBER_PRACTICE_CURRENCIES.includes(currencyCode.toUpperCase()) && Number.isInteger(num)
 
 		return new Intl.NumberFormat(currencyCode ? localeForCurrency(currencyCode) : locale_iso.value || language.value.code, {
 			style: currencyCode ? "currency" : "decimal",
 			currency: currencyCode || undefined,
-			minimumFractionDigits: 2,
+			minimumFractionDigits: wholeNumberPractice ? 0 : 2,
 			maximumFractionDigits: 4,
 			currencyDisplay: "narrowSymbol",
 		}).format(num)

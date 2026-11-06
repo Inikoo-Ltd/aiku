@@ -14,9 +14,9 @@ import { useLocaleStore } from "@/Stores/locale"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle, faList, faClipboardList, faPeopleArrows } from "@fal"
+import { faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faList, faClipboardList, faPeopleArrows } from "@fal"
 
-library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faShip, faWarehouse, faCheckCircle, faList, faClipboardList, faPeopleArrows)
+library.add(faRocket, faCoins, faIndustryAlt, faClipboardCheck, faBox, faList, faClipboardList, faPeopleArrows)
 
 type Stage = { key: string; label: string; description: string; markable: boolean }
 type Filter = "open" | "needs_action" | "completed"
@@ -25,7 +25,7 @@ const props = defineProps<{
 	data: { stages: Stage[]; ribbons: JourneyRibbon[] }
 }>()
 
-const emit = defineEmits<{ list: [] }>()
+const emit = defineEmits<{ list: []; open: [purchaseOrderId: number] }>()
 
 const locale = useLocaleStore()
 
@@ -35,9 +35,6 @@ const stageIcons: Record<string, string> = {
 	in_production: "fal fa-industry-alt",
 	ready: "fal fa-clipboard-check",
 	handed_over: "fal fa-box",
-	arrived: "fal fa-ship",
-	received: "fal fa-warehouse",
-	products_online: "fal fa-check-circle",
 }
 
 const legend = [
@@ -92,7 +89,7 @@ const amount = (ribbon: JourneyRibbon): string => (ribbon.amount !== null && rib
 		</div>
 
 		<div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-			<table class="stages-table w-full min-w-[86rem] table-fixed border-collapse">
+			<table class="stages-table w-full min-w-[68rem] table-fixed border-collapse">
 				<colgroup>
 					<col class="w-[16rem]" />
 					<col v-for="stage in data.stages" :key="stage.key" class="w-[8.5rem]" />
@@ -124,7 +121,7 @@ const amount = (ribbon: JourneyRibbon): string => (ribbon.amount !== null && rib
 						<div class="min-w-0 flex-1 space-y-1 text-xs text-gray-600">
 							<div class="flex items-center gap-1.5">
 								<FontAwesomeIcon icon="fal fa-clipboard-list" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
-								<span class="min-w-0 truncate whitespace-nowrap text-sm font-semibold text-gray-900" :title="ribbon.reference">{{ ribbon.reference }}</span>
+								<button type="button" class="min-w-0 truncate whitespace-nowrap text-left text-sm font-semibold text-[var(--app-accent)] hover:underline" :title="ribbon.reference" @click="emit('open', ribbon.id)">{{ ribbon.reference }}</button>
 								<span class="ml-auto whitespace-nowrap text-sm font-semibold text-gray-700">{{ amount(ribbon) }}</span>
 							</div>
 							<div>{{ ctrans("for :organisation", { organisation: ribbon.organisation_name }) }}</div>

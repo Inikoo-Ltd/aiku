@@ -19,6 +19,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Tag;
 use App\Models\HumanResources\Employee;
+use App\Models\Masters\Competitor;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SupplyChain\Agent;
@@ -41,11 +42,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile|Competitor $model,
         array $imageData,
         string $scope = 'image',
         string $foreignKeyMedia = 'image_id'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile {
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile|Competitor {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);
@@ -60,12 +61,17 @@ class SaveModelImage
          * A person's own photograph is not stock the rest of the group may pick from: the image
          * galleries list every media in the group whose collection is `image`, so a staff avatar
          * kept there is offered to whoever is building a web page. Personal portraits get their
-         * own collection; a shop logo stays where marketing can reach it.
+         * own collection, and so does a competitor's homepage screenshot; a shop logo stays where
+         * marketing can reach it.
          */
-        $collection = $model instanceof User
-            || $model instanceof WebUser
-            || $model instanceof Employee
-            || $model instanceof Guest ? 'avatar' : 'image';
+        $collection = match (true) {
+            $model instanceof User,
+            $model instanceof WebUser,
+            $model instanceof Employee,
+            $model instanceof Guest => 'avatar',
+            $model instanceof Competitor => 'competitor',
+            default => 'image',
+        };
 
         $media = StoreMediaFromFile::run($model, $imageData, $collection);
 

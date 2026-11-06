@@ -508,6 +508,7 @@ use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterAssetsPrices;
 use App\Actions\Masters\MasterAsset\UpdateMasterAssetPrices;
+use App\Actions\Masters\Competitor\RefreshCompetitorIntel;
 use App\Actions\Masters\Competitor\ReviewMasterAssetCompetitorProduct;
 use App\Actions\Masters\Competitor\StoreCompetitor;
 use App\Actions\Masters\Competitor\UpdateCompetitor;
@@ -740,6 +741,8 @@ use App\Actions\Web\Crawl\StopCrawlFromCrawler;
 use App\Actions\Web\Crawl\StoreCrawl;
 use App\Actions\Web\Crawl\SaveCrawlSchedule;
 use App\Actions\Web\Crawl\DeleteCrawlSchedule;
+use App\Actions\Web\Crawl\AskWebmastersToFixSiteAuditIssue;
+use App\Actions\Web\Crawl\StartSiteAudit;
 use App\Actions\Web\Seo\AcceptSeoContentSuggestion;
 use App\Actions\Web\Seo\CheckSeoKeywordsNow;
 use App\Actions\Web\Seo\DeleteSeoAiPrompt;
@@ -1094,6 +1097,7 @@ Route::patch('master-asset/bulk-update-prices', UpdateBulkMasterAssetsPrices::cl
 Route::patch('master-asset-price-tip/{masterAssetPriceTip:id}/dismiss', DismissMasterAssetPriceTip::class)->name('master_asset_price_tip.dismiss');
 Route::post('competitor', StoreCompetitor::class)->name('competitor.store');
 Route::patch('competitor/{competitor:id}', UpdateCompetitor::class)->name('competitor.update');
+Route::post('competitor/{competitor:id}/refresh-intel', RefreshCompetitorIntel::class)->name('competitor.refresh_intel');
 Route::patch('master-asset-competitor-product/{masterAssetCompetitorProduct:id}/review', ReviewMasterAssetCompetitorProduct::class)->name('master_asset_competitor_product.review');
 
 Route::patch('products/{product:id}/repair-trade-units-to-master-product', SyncProductTradeUnitsToMasterAsset::class)->name('products.repair_mismatch_trade_units');
@@ -1630,6 +1634,8 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('crawl', StoreCrawl::class)->name('crawl.store');
     Route::post('crawl-schedule', SaveCrawlSchedule::class)->name('crawl_schedule.save');
     Route::delete('crawl-schedule', DeleteCrawlSchedule::class)->name('crawl_schedule.delete');
+    Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');
+    Route::post('site-audit/issues/{issueType}/ask-to-fix', AskWebmastersToFixSiteAuditIssue::class)->name('site_audit.ask_to_fix');
     Route::post('publish/header', [PublishWebsiteMarginal::class, 'header'])->name('publish.header');
     Route::post('publish/footer', [PublishWebsiteMarginal::class, 'footer'])->name('publish.footer');
 

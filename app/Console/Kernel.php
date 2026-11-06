@@ -1667,6 +1667,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('chat:alert-spikes')->everyFifteenMinutes()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'AlertChatMessageSpikes',
+                ),
+                name: 'AlertChatMessageSpikes',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('chat:learn-knowledge --days=7')->dailyAt('04:10')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'LearnChatKnowledge',
                 ),
@@ -1707,6 +1716,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'ImportCompetitorFeed',
                 ),
                 name: 'ImportCompetitorFeed',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->command('masters:competitor-intel')->weeklyOn(1, '05:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'FetchCompetitorIntel',
+                ),
+                name: 'FetchCompetitorIntel',
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );

@@ -24,6 +24,8 @@ class CompetitorProductsResource extends JsonResource
             'url'           => $this->url,
             'image_url'     => $this->image_url,
             'price'         => $this->price === null ? null : (float) $this->price,
+            'was_price'     => $this->was_price === null ? null : (float) $this->was_price,
+            'discount'      => $this->was_price > $this->price && $this->was_price > 0 ? (int) round(100 * ($this->was_price - $this->price) / $this->was_price) : null,
             'rrp'           => $this->rrp === null ? null : (float) $this->rrp,
             'units'         => (float) $this->units,
             'minimum_order' => $this->minimum_order,

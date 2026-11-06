@@ -24,6 +24,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int $competitor_product_id
  * @property bool $is_same_item
  * @property string|null $confidence Jev's probability for the pick
+ * @property string|null $competitor_units units in their pack for this match when it differs from the competitor product's own: staff set it, or 1 when our product is a set. Null uses the competitor product's units.
  * @property MasterAssetCompetitorProductStatusEnum $status
  * @property int|null $reviewed_by_user_id
  * @property \Illuminate\Support\Carbon|null $reviewed_at
@@ -40,6 +41,7 @@ class MasterAssetCompetitorProduct extends Model implements Auditable
 
     protected array $auditInclude = [
         'status',
+        'competitor_units',
     ];
 
     protected function casts(): array

@@ -30,3 +30,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | tests/** | .ai/rules/tests.md |
 | app/Mcp/Tools/CustomerService* | .ai/rules/tools.md |
 | app/Actions/Web/Webpage/** | .ai/rules/webpage.md |
+| apps/staff/** | apps/staff/.ai/rules/index.md (Flutter staff app: its own rules only) |

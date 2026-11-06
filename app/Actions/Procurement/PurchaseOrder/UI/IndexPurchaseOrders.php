@@ -23,6 +23,9 @@ use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\ImportSupplierPurchaseO
 use App\Actions\SupplyChain\Supplier\PurchaseOrderImport\PlanSupplierPurchaseOrderImport;
 use App\Actions\SupplyChain\Supplier\WithSupplierSubNavigation;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
+use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCbmInContainer;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
+use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
@@ -306,6 +309,10 @@ class IndexPurchaseOrders extends OrgAction
 
         $query->selectSub($this->pendingLineAnswersQuery()->selectRaw('count(*)'), 'number_pending_line_answers');
 
+        if ($this->showsShipments($parent)) {
+            $query->selectSub($this->shipmentsQuery(), 'shipments');
+        }
+
         return $query
             ->defaultSort('-purchase_orders.date')
             ->with([
@@ -343,6 +350,39 @@ class IndexPurchaseOrders extends OrgAction
             ->where(fn ($query) => $query
                 ->where('purchase_order_transactions.price_query_state', PurchaseOrderTransactionPriceQueryStateEnum::PENDING->value)
                 ->orWhere('purchase_order_transactions.quantity_query_state', PurchaseOrderTransactionQuantityQueryStateEnum::PENDING->value));
+    }
+
+    private function showsShipments(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|SupplierProduct|StockDelivery $parent): bool
+    {
+        return !$parent instanceof StockDelivery && ($this->viewingAgent || $this->getParentOrganisationAgent($parent));
+    }
+
+    /**
+     * The live containers the row's order is in, as a JSON array of {reference, slug, state, cbm}.
+     */
+    private function shipmentsQuery(): QueryBuilderForSubquery
+    {
+        return DB::table('purchase_order_stock_delivery')
+            ->join('stock_deliveries', 'stock_deliveries.id', 'purchase_order_stock_delivery.stock_delivery_id')
+            ->whereColumn('purchase_order_stock_delivery.purchase_order_id', 'purchase_orders.id')
+            ->whereNull('stock_deliveries.deleted_at')
+            ->whereNotIn('stock_deliveries.state', [StockDeliveryStateEnum::CANCELLED->value, StockDeliveryStateEnum::NOT_RECEIVED->value])
+            ->selectRaw("json_agg(json_build_object('reference', stock_deliveries.reference, 'slug', stock_deliveries.slug, 'state', stock_deliveries.state, 'cbm', (".self::orderVolumeInContainerSql().')) order by stock_deliveries.id)');
+    }
+
+    /**
+     * The space the order's own items take in the container, counted as the container page counts each item.
+     * Items saved before they kept their order line are matched by SKO, as StoreStockDeliveryFromPurchaseOrder does.
+     */
+    private static function orderVolumeInContainerSql(): string
+    {
+        return 'select sum('.SetStockDeliveryItemCbmInContainer::ITEM_VOLUME_SQL.") from stock_delivery_items as sdi
+            left join supplier_products as sp on sp.id = sdi.supplier_product_id
+            where sdi.stock_delivery_id = stock_deliveries.id and sdi.deleted_at is null
+            and sdi.state != '".StockDeliveryItemStateEnum::CANCELLED->value."'
+            and exists (select 1 from purchase_order_transactions as pot where pot.purchase_order_id = purchase_orders.id
+                and ((sdi.data->>'purchase_order_transaction_id')::bigint = pot.id
+                    or (sdi.data->>'purchase_order_transaction_id' is null and sdi.org_stock_id = pot.org_stock_id)))";
     }
 
     public function tableStructure(Group|Organisation|OrgAgent|OrgSupplier|OrgPartner|OrgStock|OrgSupplierProduct|Supplier|SupplierProduct|StockDelivery $parent, ?array $modelOperations = null, $prefix = null, bool $withRemoveFromContainer = false): Closure
@@ -393,6 +433,10 @@ class IndexPurchaseOrders extends OrgAction
                     ->column(key: 'number_current_purchase_order_transactions', label: __('Items'), canBeHidden: false, sortable: true, align: 'right')
                     ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'org_total_cost', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            }
+
+            if ($this->showsShipments($parent)) {
+                $table->column(key: 'shipments', label: __('Shipment'), canBeHidden: false);
             }
 
             if ($withRemoveFromContainer) {

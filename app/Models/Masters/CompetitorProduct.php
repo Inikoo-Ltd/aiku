@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $barcode
  * @property string|null $price in the competitor's currency, for the whole pack
  * @property string|null $rrp
+ * @property string|null $was_price the price before their current discount, when the shop shows one
  * @property string $units units in the pack
  * @property int|null $minimum_order
  * @property array $data description, material, size_cm, weight_g and tariff_code when the feed has them

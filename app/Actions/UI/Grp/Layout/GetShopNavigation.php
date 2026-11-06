@@ -583,13 +583,13 @@ class GetShopNavigation
                     "topMenu" => [
                         "subSections" => [
                             [
-                                "label"   => __("Site crawler"),
-                                "tooltip" => __("Crawl this website and inspect every URL, link and issue"),
-                                "icon"    => ["fal", "fa-spider"],
+                                "label"   => __("Site audit"),
+                                "tooltip" => __("Site audit"),
+                                "icon"    => ["fal", "fa-clipboard-check"],
                                 "root"    => "grp.org.shops.show.seo.site_audit.",
                                 "route"   => [
-                                    "name"       => "grp.websites.crawler.index",
-                                    "parameters" => ["website" => $shop->website->slug],
+                                    "name"       => "grp.org.shops.show.seo.site_audit.show",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug],
                                 ],
                             ],
                             [

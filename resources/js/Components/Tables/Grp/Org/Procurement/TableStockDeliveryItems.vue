@@ -258,6 +258,14 @@ function supplierProductRoute(item: { slug?: string }) {
     return route('grp.supply-chain.supplier_products.show', [item.slug])
 }
 
+function purchaseOrderRoute(purchaseOrder: { purchase_order_slug?: string | null }) {
+    if (!purchaseOrder.purchase_order_slug) {
+        return ''
+    }
+
+    return route('grp.org.procurement.purchase_orders.show', [route().params['organisation'], purchaseOrder.purchase_order_slug])
+}
+
 function orgStockRoute(item: { org_stock_id?: number }) {
     if (!item.org_stock_id) {
         return ''
@@ -743,7 +751,10 @@ async function savePackedInside(item: any, outerItemId: number | null) {
         <template #cell(purchase_orders)="{ item }">
             <div class="flex flex-col gap-0.5">
                 <span v-for="(purchaseOrder, index) in item.purchase_orders ?? []" :key="index" class="whitespace-nowrap text-sm">
-                    {{ purchaseOrder.purchase_order_reference ?? ctrans('No purchase order') }}
+                    <Link v-if="purchaseOrderRoute(purchaseOrder)" :href="purchaseOrderRoute(purchaseOrder)" class="secondaryLink">
+                        {{ purchaseOrder.purchase_order_reference }}
+                    </Link>
+                    <template v-else>{{ purchaseOrder.purchase_order_reference ?? ctrans('No purchase order') }}</template>
                     <span v-if="item.purchase_orders.length > 1" class="tabular-nums text-gray-500">({{ locale.number(Number(purchaseOrder.unit_quantity)) }})</span>
                 </span>
             </div>

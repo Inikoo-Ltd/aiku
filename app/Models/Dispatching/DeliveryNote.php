@@ -662,6 +662,15 @@ class DeliveryNote extends Model implements Auditable
         return $this->canBeShippedBy($user);
     }
 
+    /**
+     * PRE-73. The channel (eBay, Shopify) gets the tracking once, at dispatch, so a shipment
+     * swapped afterwards never reaches it. A wrong label is corrected by undispatching first.
+     */
+    public function areShipmentsLocked(): bool
+    {
+        return $this->state === DeliveryNoteStateEnum::DISPATCHED;
+    }
+
     public function canBeUndispatchedBy(User $user): bool
     {
         return $user->authTo([

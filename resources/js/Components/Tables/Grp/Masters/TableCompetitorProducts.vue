@@ -39,9 +39,15 @@ const locale = inject("locale", aikuLocaleStructure)
                 <span v-if="item.minimum_order" class="ml-2">{{ ctrans("Minimum :n", { n: item.minimum_order }) }}</span>
             </div>
         </template>
+        <template #cell(was_price)="{ item }">
+            <span v-if="item.was_price !== null" class="tabular-nums text-gray-400 line-through">{{ locale.currencyFormat(currencyCode, item.was_price) }}</span>
+        </template>
         <template #cell(price)="{ item }">
             <span v-if="item.price !== null" class="tabular-nums">{{ locale.currencyFormat(currencyCode, item.price) }}</span>
             <span v-else class="text-xs text-gray-400">{{ ctrans("Price hidden") }}</span>
+        </template>
+        <template #cell(discount)="{ item }">
+            <span v-if="item.discount !== null" class="tabular-nums">{{ item.discount }}%</span>
         </template>
         <template #cell(units)="{ item }">
             <span class="tabular-nums">{{ item.units }}</span>

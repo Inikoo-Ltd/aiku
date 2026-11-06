@@ -52,12 +52,32 @@ Un emparejamiento marcado como *Similar, not the same item* (similar, no es el m
 
 ## La página del competidor
 
-Pulsa el nombre de un competidor en la lista o en el panel para ver su tienda maestra, web, a quién vende, la moneda, cómo se leen sus precios, si aiku inicia sesión, su estado y último error, y dos pestañas:
+Pulsa el nombre de un competidor en la lista o en el panel. La cabecera muestra su logo, web, la plataforma en la que funciona su tienda (Shopify, WooCommerce, etc.), tienda maestra, a quién vende, la moneda, cómo se leen sus precios, cuándo se leyeron los precios por última vez y cuándo se actualizó el dossier por última vez. Después hay cuatro pestañas:
 
-- **Matches**: sus emparejamientos, con la misma revisión de tick y cruz;
-- **Products read**: todo lo leído de él, con precio, unidades y enlace.
+- **Dossier**, la pestaña por defecto: el informe de inteligencia sobre el competidor, creado cada semana con sus páginas públicas (ver abajo).
+- **Matches**: sus emparejamientos, con la misma revisión de tick y cruz.
+- **Products read**: todo lo leído de él, con el precio, el precio antes del descuento cuando la tienda lo muestra, cuánto se descuenta, unidades y enlace. El filtro **On sale now** deja solo los productos con descuento.
+- **Policies**: el texto de cada página de envíos, devoluciones y condiciones leída para el dossier, cada una con su enlace, para poder comprobar un dato del dossier con la página de la que salió.
 
 **Edit** abre el mismo formulario que al añadir, sin la tienda maestra.
+
+### El dossier
+
+Cada semana aiku abre en un navegador la página de inicio del competidor y sus páginas de envíos, devoluciones y condiciones, exactamente como lo haría un visitante, sin iniciar sesión. Hace una captura de pantalla de la página de inicio, lee lo que la empresa publica sobre sí misma, y la IA extrae los datos, cada uno con la página de la que salió, y escribe un resumen corto. El dossier también se crea al añadir un competidor y cada vez que pulsas **Refresh dossier** (tarda unos minutos; vuelve a la página más tarde).
+
+La pestaña muestra, de arriba abajo:
+
+- **Briefing**: de cuatro a seis frases sobre quiénes son, cómo fijan precios frente a nosotros, cuánto dependen de las ofertas, y sus envíos y condiciones, con una frase de posicionamiento.
+- **What changed**: lo que cambia respecto a la actualización anterior, con fechas: el mínimo para envío gratis, los costes o plazos de envío, el pedido mínimo, el plazo de devolución, una oferta o cupón que apareció o terminó, métodos de pago, teléfono, email o dirección, plataforma, un número de productos que cambió más del 10%, o un porcentaje en oferta que cambió más de 10 puntos. Los cambios anteriores siguen como una cronología corta. Un primer dossier dice que aún no hay nada con qué comparar.
+- **Screenshot** de su página de inicio; púlsala para ampliarla.
+- **Identity**: nombre de la empresa, teléfonos, emails, dirección, país y redes sociales, tal como los publica su web.
+- **Key numbers**: productos listados, rango de precios, porcentaje en oferta ahora, descuento medio, emparejamientos confirmados y la diferencia mediana frente a nosotros.
+- **Site-wide offers**: banners, códigos de cupón, descuentos por volumen o por tramos y descuentos por suscribirse al boletín, cada uno con su página de origen, más los anuncios de su página de inicio.
+- **Share of products on sale, last 90 days**: una línea con las lecturas diarias del catálogo, así una tienda con precio de lista alto que siempre está en oferta se ve como tal.
+- **Shipping and terms**: envío gratis desde, costes de envío, adónde envían, plazos de entrega, pedido mínimo, devoluciones y pagos, cada uno con un enlace a la página que lo dice. *Not found on their pages* significa que las páginas leídas no lo dicen.
+- **Most discounted right now**: sus productos con mayor descuento en la última lectura del catálogo.
+
+Un dato sale solo de las páginas leídas: a la IA se le indica que diga *not found* en lugar de adivinar. Cuando una web bloquea el navegador o no responde, el dossier conserva su último contenido y la cabecera muestra el error.
 
 <aside class="wayfinder"><strong>Dónde pulsar en aiku</strong>
 <ul>

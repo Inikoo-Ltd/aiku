@@ -98,12 +98,15 @@ class ImportCompetitorFeed
                     'updated_at'    => $startedAt,
                 ], $chunk),
                 ['competitor_id', 'code'],
-                ['url', 'image_url', 'name', 'barcode', 'price', 'rrp', 'minimum_order', 'data', 'fetched_at', 'updated_at']
+                ['url', 'image_url', 'name', 'barcode', 'price', 'was_price', 'rrp', 'minimum_order', 'data', 'fetched_at', 'updated_at']
             );
         }
 
         if ($isComplete) {
             $competitor->products()->where('fetched_at', '<', $startedAt)->delete();
+            if (static::readsOffers($competitor->feed_url)) {
+                static::writeDailyStats($competitor, $startedAt->toDateString());
+            }
         }
 
         $competitor->update([
@@ -117,9 +120,38 @@ class ImportCompetitorFeed
     }
 
     /**
+     * @return array{number_products: int, number_on_sale: int, average_discount: float|null}
+     */
+    public static function saleNumbers(Competitor $competitor): array
+    {
+        $numbers = $competitor->products()
+            ->selectRaw('count(*) as number_products, count(*) filter (where was_price > price) as number_on_sale, round(avg(100 * (was_price - price) / was_price) filter (where was_price > price), 2) as average_discount')
+            ->first();
+
+        return [
+            'number_products'  => (int) $numbers->number_products,
+            'number_on_sale'   => (int) $numbers->number_on_sale,
+            'average_discount' => $numbers->average_discount === null ? null : (float) $numbers->average_discount,
+        ];
+    }
+
+    /**
+     * Only Shopify and WooCommerce catalogues give the price before a discount.
+     */
+    public static function readsOffers(?string $feedUrl): bool
+    {
+        return $feedUrl && (static::isShopifyFeed($feedUrl) || static::isWooCommerceFeed($feedUrl));
+    }
+
+    public static function writeDailyStats(Competitor $competitor, string $date): void
+    {
+        $competitor->dailyStats()->updateOrCreate(['date' => $date], static::saleNumbers($competitor));
+    }
+
+    /**
      * Products with no code, name or price and discontinued ones are left out.
      *
-     * @return array<int, array{code: string, name: string, price: float, rrp: float|null, barcode: string|null, minimum_order: int|null, image_url: string|null, url: string|null, data: string}>
+     * @return array<int, array{code: string, name: string, price: float, was_price: null, rrp: float|null, barcode: string|null, minimum_order: int|null, image_url: string|null, url: string|null, data: string}>
      */
     public static function parse(string $content): array
     {
@@ -157,6 +189,7 @@ class ImportCompetitorFeed
                 'code'          => mb_substr($cell('code'), 0, 255),
                 'name'          => mb_substr($cell('name'), 0, 500),
                 'price'         => $price,
+                'was_price'     => null,
                 'rrp'           => (float) str_replace(',', '.', $cell('rrp')) ?: null,
                 'barcode'       => mb_substr($cell('barcode'), 0, 255) ?: null,
                 'minimum_order' => (int) $cell('minimum_order') ?: null,
@@ -195,7 +228,7 @@ class ImportCompetitorFeed
     }
 
     /**
-     * @return array<int, array{code: string, name: string, price: float, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string, data: string}>
+     * @return array<int, array{code: string, name: string, price: float, was_price: float|null, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string, data: string}>
      */
     public static function shopifyRows(string $feedUrl): array
     {
@@ -220,7 +253,7 @@ class ImportCompetitorFeed
      * variant's (e.g. "Mandarin Essential Oil 100ml") and its code the variant's id, as shops often give
      * every size of a product the same SKU.
      *
-     * @return array<string, array{code: string, name: string, price: float, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string, data: string}>
+     * @return array<string, array{code: string, name: string, price: float, was_price: float|null, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string, data: string}>
      */
     public static function parseShopify(array $products, string $feedUrl): array
     {
@@ -229,8 +262,9 @@ class ImportCompetitorFeed
         $rows = [];
         foreach ($products as $product) {
             foreach ($product['variants'] ?? [] as $variant) {
-                $price = (float) ($variant['price'] ?? 0);
-                $code  = (string) $variant['id'];
+                $price    = (float) ($variant['price'] ?? 0);
+                $wasPrice = (float) ($variant['compare_at_price'] ?? 0);
+                $code     = (string) $variant['id'];
                 if ($price <= 0) {
                     continue;
                 }
@@ -239,6 +273,7 @@ class ImportCompetitorFeed
                     'code'          => $code,
                     'name'          => mb_substr(trim($product['title'].(($variant['title'] ?? 'Default Title') === 'Default Title' ? '' : ' '.$variant['title'])), 0, 500),
                     'price'         => $price,
+                    'was_price'     => $wasPrice > $price ? $wasPrice : null,
                     'rrp'           => null,
                     'barcode'       => null,
                     'minimum_order' => null,
@@ -279,7 +314,7 @@ class ImportCompetitorFeed
      * does not list its variations they are left out rather than read at their lowest "from" price, and the
      * read counts as incomplete, so the options read before and their reviewed matches are kept.
      *
-     * @return array{0: array<int, array{code: string, name: string, price: float, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string|null, data: string}>, 1: bool}
+     * @return array{0: array<int, array{code: string, name: string, price: float, was_price: float|null, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string|null, data: string}>, 1: bool}
      */
     public static function wooCommerceRows(string $feedUrl): array
     {
@@ -311,13 +346,15 @@ class ImportCompetitorFeed
     }
 
     /**
-     * @return array<string, array{code: string, name: string, price: float, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string|null, data: string}>
+     * @return array<string, array{code: string, name: string, price: float, was_price: float|null, rrp: null, barcode: null, minimum_order: null, image_url: string|null, url: string|null, data: string}>
      */
     public static function parseWooCommerce(array $products): array
     {
         $rows = [];
         foreach ($products as $product) {
-            $price = (float) ($product['prices']['price'] ?? 0) / 10 ** (int) ($product['prices']['currency_minor_unit'] ?? 2);
+            $minorUnits = 10 ** (int) ($product['prices']['currency_minor_unit'] ?? 2);
+            $price      = (float) ($product['prices']['price'] ?? 0) / $minorUnits;
+            $wasPrice   = ($product['on_sale'] ?? false) ? (float) ($product['prices']['regular_price'] ?? 0) / $minorUnits : 0;
             if (($product['type'] ?? '') === 'variable' || $price <= 0) {
                 continue;
             }
@@ -326,11 +363,12 @@ class ImportCompetitorFeed
                 'code'          => (string) $product['id'],
                 'name'          => mb_substr(Str::squish(html_entity_decode(strip_tags($product['name'].' '.($product['variation'] ?? '')))), 0, 500),
                 'price'         => $price,
+                'was_price'     => $wasPrice > $price ? $wasPrice : null,
                 'rrp'           => null,
                 'barcode'       => null,
                 'minimum_order' => null,
                 'image_url'     => $product['images'][0]['src'] ?? null,
-                'url'           => $product['permalink'] ?? null,
+                'url'           => str_starts_with((string) ($product['permalink'] ?? ''), 'http') ? $product['permalink'] : null,
                 'data'          => json_encode(array_filter([
                     'description' => mb_substr(Str::squish(html_entity_decode(strip_tags(($product['short_description'] ?? '') ?: ($product['description'] ?? '')))), 0, 400),
                 ])),
