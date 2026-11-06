@@ -53,7 +53,7 @@ jobs:
             range="$latest..HEAD"
           fi
           IFS=. read -r major minor patch <<< "${latest#v}"
-          subjects=$(git log --no-merges --format=%s $range || true)
+          subjects=$(git log --no-merges --format=%s $range -- . ':!mobile' || true)
 
           # Both conventions in this repo mark a feature: a sparkle subject, and a
           # feat:/enhance: prefix. Either takes the minor, everything else is a patch

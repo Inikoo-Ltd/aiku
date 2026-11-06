@@ -27,7 +27,7 @@ export default ({ mode }) => {
         cors : true,
         watch: {
           usePolling: false,
-          ignored: ["**/storage/media/**", "**/vendor/**"]
+          ignored: ["**/storage/media/**", "**/vendor/**", "**/mobile/**"]
         }
       },
       plugins: [

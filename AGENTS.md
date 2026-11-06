@@ -3,6 +3,7 @@
 
 - DO not write code comments you must write clear, self-explanatory code instead
 - Do not create test file unless we ask you
+- `mobile/` is the Flutter picking app. It follows `mobile/CLAUDE.md` and `mobile/.ai/rules` only; the Laravel, PHP, Vue and Pest rules here do not apply to it. Start mobile sessions with `mobile/` as the working directory so its Dart MCP and plugin load
 
 ## Frontend translations use `ctrans`, never `trans`
 
