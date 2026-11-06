@@ -2,6 +2,7 @@
 
 use App\Actions\Iris\Blog\IndexIrisBlogs;
 use App\Actions\Web\Webpage\UI\IndexBlogWebpages;
+use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Actions\Web\Webpage\ProcessUpdateWebpageUrl;
 use App\Actions\Web\Webpage\StoreWebpage;
@@ -12,6 +13,9 @@ use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use App\Http\Resources\Web\WebpagesResource;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
 
@@ -155,4 +159,28 @@ test('a content change by a user records them as the last editor, a change made 
     UpdateWebpageContent::run($draft->refresh());
 
     expect($draft->unpublishedSnapshot->refresh()->publisher_id)->toBeNull();
+});
+
+test('publishing a blog bans the blog dashboard and its category listing so the new blog shows there', function () {
+    config(['iris.cache.varnish' => true, 'iris.cache.varnish_hosts' => ['http://varnish.test']]);
+    Http::fake();
+    Queue::fake();
+
+    $blog = createBlogWebpage($this->website, 'Freshly published guide', [
+        'state'    => WebpageStateEnum::IN_PROCESS,
+        'sub_type' => WebpageSubTypeEnum::BUSINESS_TIPS,
+    ]);
+
+    PublishWebpage::make()->action($blog, ['comment' => 'first publish'], strict: false);
+
+    $bannedUrls = collect(Http::recorded())
+        ->map(fn (array $exchange) => $exchange[0])
+        ->filter(fn (Request $request) => $request->method() === 'BAN' && $request->hasHeader('x-ban-url'))
+        ->map(fn (Request $request) => $request->header('x-ban-url')[0])
+        ->values()
+        ->all();
+
+    expect($blog->refresh()->state)->toBe(WebpageStateEnum::LIVE)
+        ->and($bannedUrls)->toContain('/blog')
+        ->and($bannedUrls)->toContain(WebpageSubTypeEnum::BUSINESS_TIPS->blogCategoryUrl());
 });
