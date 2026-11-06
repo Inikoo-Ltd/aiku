@@ -1,0 +1,4 @@
+{
+  "AIKU_API_BASE_URL": "http://10.0.2.2:8000",
+  "AIKU_APP_KEY": "one of the keys in aiku's MOBILE_APP_KEYS"
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dart_boost": {
+      "command": "dart",
+      "args": ["run", "dart_boost:mcp"]
+    }
+  }
+}
