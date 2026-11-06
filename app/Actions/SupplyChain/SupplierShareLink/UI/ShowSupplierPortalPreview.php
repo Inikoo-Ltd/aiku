@@ -80,6 +80,11 @@ class ShowSupplierPortalPreview extends OrgAction
         return $products->fromRequest($supplier, null, Validator::make($request->query(), $products->rules())->validate());
     }
 
+    public function purchaseOrder(Supplier $supplier, int $purchaseOrderId, ActionRequest $request): JsonResponse
+    {
+        return response()->json(ShowSupplierPortalPurchaseOrder::make()->handle($supplier, $purchaseOrderId));
+    }
+
     public function blocked(): never
     {
         throw ValidationException::withMessages(['preview' => __('This is a preview: nothing is sent or saved.')]);

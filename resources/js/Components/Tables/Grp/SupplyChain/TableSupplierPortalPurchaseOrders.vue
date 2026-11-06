@@ -8,6 +8,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 
 interface PurchaseOrderRow {
+	id: number
 	reference: string
 	organisation_name: string
 	state: string
@@ -32,6 +33,8 @@ const props = defineProps<{
 	}
 	tab: string
 }>()
+
+const emit = defineEmits<{ open: [purchaseOrderId: number] }>()
 
 const isPhone = useMediaQuery("(max-width: 767px)")
 
@@ -59,7 +62,7 @@ const stateClass = (order: PurchaseOrderRow) => (order.open ? "text-amber-700" :
 				<ul class="divide-y divide-gray-100 border-t border-gray-100">
 					<li v-for="order in data.data ?? []" :key="order.reference" class="space-y-1.5 px-4 py-3">
 						<div class="flex items-baseline justify-between gap-3">
-							<span class="text-base font-semibold text-gray-900">{{ order.reference }}</span>
+							<button type="button" class="whitespace-nowrap text-base font-semibold text-[var(--app-accent)]" @click="emit('open', order.id)">{{ order.reference }}</button>
 							<span class="text-base tabular-nums text-gray-900">{{ money(order.cost_items, order.currency_code) }}</span>
 						</div>
 						<div class="flex items-baseline justify-between gap-3 text-sm">
@@ -95,6 +98,9 @@ const stateClass = (order: PurchaseOrderRow) => (order.open ? "text-amber-700" :
 				</ul>
 			</template>
 
+			<template #cell(reference)="{ item }: { item: PurchaseOrderRow }">
+				<button type="button" class="whitespace-nowrap font-semibold text-[var(--app-accent)] hover:underline" @click="emit('open', item.id)">{{ item.reference }}</button>
+			</template>
 			<template #cell(state)="{ item }: { item: PurchaseOrderRow }">
 				<span class="whitespace-nowrap" :class="stateClass(item)">{{ item.state_label }}</span>
 				<span v-if="item.open && item.delivery_label" class="whitespace-nowrap text-xs text-gray-400"> · {{ item.delivery_label }}</span>

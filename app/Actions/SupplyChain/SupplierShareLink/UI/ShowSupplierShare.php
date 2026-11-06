@@ -129,6 +129,9 @@ class ShowSupplierShare
             'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
             'labels_print'         => $this->labelsPrint($token),
             'products_route'       => $token === null ? route('grp.supply-chain.suppliers.portal_preview.products', $supplier) : route('grp.supplier_share.products', $token),
+            'purchase_order_route' => $token === null
+                ? route('grp.supply-chain.suppliers.portal_preview.purchase_order', [$supplier, 'purchaseOrderId' => 0])
+                : route('grp.supplier_share.purchase_order', ['token' => $token, 'purchaseOrder' => 0]),
         ];
     }
 

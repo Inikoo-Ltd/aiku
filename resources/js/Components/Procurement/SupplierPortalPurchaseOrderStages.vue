@@ -25,7 +25,7 @@ const props = defineProps<{
 	data: { stages: Stage[]; ribbons: JourneyRibbon[] }
 }>()
 
-const emit = defineEmits<{ list: [] }>()
+const emit = defineEmits<{ list: []; open: [purchaseOrderId: number] }>()
 
 const locale = useLocaleStore()
 
@@ -121,7 +121,7 @@ const amount = (ribbon: JourneyRibbon): string => (ribbon.amount !== null && rib
 						<div class="min-w-0 flex-1 space-y-1 text-xs text-gray-600">
 							<div class="flex items-center gap-1.5">
 								<FontAwesomeIcon icon="fal fa-clipboard-list" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
-								<span class="min-w-0 truncate whitespace-nowrap text-sm font-semibold text-gray-900" :title="ribbon.reference">{{ ribbon.reference }}</span>
+								<button type="button" class="min-w-0 truncate whitespace-nowrap text-left text-sm font-semibold text-[var(--app-accent)] hover:underline" :title="ribbon.reference" @click="emit('open', ribbon.id)">{{ ribbon.reference }}</button>
 								<span class="ml-auto whitespace-nowrap text-sm font-semibold text-gray-700">{{ amount(ribbon) }}</span>
 							</div>
 							<div>{{ ctrans("for :organisation", { organisation: ribbon.organisation_name }) }}</div>

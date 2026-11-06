@@ -69,13 +69,46 @@ class IndexSupplierPortalPurchaseOrderStages
             ->all();
 
         return [
-            'stages'  => collect($journey->stages())
-                ->filter(fn (array $stage) => in_array($stage['key'], self::SUPPLIER_STAGES, true))
-                ->map(fn (array $stage) => [...$stage, 'markable' => false])
-                ->values()
-                ->all(),
+            'stages'  => $this->stages($journey),
             'ribbons' => $ribbons,
         ];
+    }
+
+    /**
+     * The stages of one order, for its own page. Orders received long ago are off the board and have none.
+     *
+     * @return array{stages: array<int, array<string, mixed>>, ribbon: array<string, mixed>}|null
+     */
+    public function forPurchaseOrder(Supplier $supplier, int $purchaseOrderId): ?array
+    {
+        $journey = ShowSupplyChainPurchaseOrderJourney::make();
+        $ribbon  = $journey->ribbons($supplier->group, $purchaseOrderId, $supplier)->first();
+
+        if (!$ribbon) {
+            return null;
+        }
+
+        $ribbon = $this->untilHandOver($ribbon);
+
+        return [
+            'stages' => $this->stages($journey),
+            'ribbon' => [
+                ...Arr::only($ribbon, ['current_stage', 'current_label', 'status', 'days_overdue', 'eta']),
+                'segments' => array_map(fn (array $segment) => [...$segment, 'mark_column' => null], $ribbon['segments']),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function stages(ShowSupplyChainPurchaseOrderJourney $journey): array
+    {
+        return collect($journey->stages())
+            ->filter(fn (array $stage) => in_array($stage['key'], self::SUPPLIER_STAGES, true))
+            ->map(fn (array $stage) => [...$stage, 'markable' => false])
+            ->values()
+            ->all();
     }
 
     /**

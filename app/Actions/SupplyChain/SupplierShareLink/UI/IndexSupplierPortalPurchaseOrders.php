@@ -37,7 +37,7 @@ class IndexSupplierPortalPurchaseOrders
         'cancelled' => [PurchaseOrderStateEnum::CANCELLED->value, PurchaseOrderStateEnum::NOT_RECEIVED->value],
     ];
 
-    private function sent(Supplier $supplier): Builder
+    public function sent(Supplier $supplier): Builder
     {
         return PurchaseOrder::query()
             ->where('purchase_orders.parent_type', 'OrgSupplier')
