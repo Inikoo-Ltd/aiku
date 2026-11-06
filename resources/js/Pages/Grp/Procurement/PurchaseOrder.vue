@@ -1639,6 +1639,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 						showButtonBar
 						fluid
 					/>
+					<p class="text-xs text-gray-500">{{ ctrans("Shown on the website as the expected back in stock date of the products in this purchase order that are out of stock.") }}</p>
 				</div>
 			</div>
 		</template>
@@ -1795,6 +1796,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				showButtonBar
 				fluid
 			/>
+			<p class="text-xs text-gray-500">{{ ctrans("Shown on the website as the expected back in stock date of the products in this purchase order that are out of stock.") }}</p>
 			<p v-if="estimatedDeliveryDateError" class="text-xs text-red-600">{{ estimatedDeliveryDateError }}</p>
 		</div>
 
