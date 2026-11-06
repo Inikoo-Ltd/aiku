@@ -14,6 +14,7 @@ use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderLabels;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Enums\SupplyChain\SupplierProduct\SupplierUnitEnum;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Supplier;
@@ -106,7 +107,7 @@ class ShowSupplierPortalPurchaseOrder
             'units_per_carton' => $unitsPerCarton ?: null,
             'cartons'          => $unitsPerCarton ? round((float) $line->quantity_ordered / $unitsPerCarton, 3) : null,
             'quantity'         => round((float) $line->quantity_ordered / $perSupplierUnit, 3),
-            'unit'             => $product?->supplier_unit ? $product->supplier_unit::labels()[$product->supplier_unit->value] : null,
+            'unit'             => $product?->supplier_unit ? SupplierUnitEnum::labels()[$product->supplier_unit->value] : null,
             'unit_price'       => $unitCost * $perSupplierUnit,
             'amount'           => (float) $line->net_amount,
             'currency_code'    => $product?->currency?->code ?? $purchaseOrder->currency->code,
