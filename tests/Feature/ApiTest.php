@@ -13,6 +13,9 @@ namespace Tests\Feature;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\SysAdmin\User\UserAddRoles;
+use App\Actions\UI\Grp\Layout\GetGroupNavigation;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Chat\ChatAiAccountUsageSample;
 use App\Models\Ordering\Order;
@@ -492,4 +495,98 @@ test('mobile theme update without a token is unauthorised', function () {
 
     patchJson(route('grp.api.mobile.profile.theme.update'), ['mobile_app_theme' => array_fill(0, 8, '#000000')], ['X-Aiku-App-Key' => 'mobile-test-key'])
         ->assertUnauthorized();
+});
+
+test('mobile profile returns the signed-in user with both themes', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $webTheme    = ['#4f46e5', '#f3f4f6', '#362cdb', '#fde047', '#4f46e5', '#f3f4f6', '#fcd34d', '#374151'];
+    $mobileTheme = ['#000000', '#f2f2f2', '#424242', '#fde047', '#8e44ad', '#ffffff', '#fcd34d', '#374151'];
+    $user        = createMobileAppUser($this->group, ['settings' => ['app_theme' => $webTheme, 'mobile_app_theme' => $mobileTheme]]);
+    $token       = $user->createToken('mobile|Profile phone', ['mobile'])->plainTextToken;
+    $this->app['auth']->forgetGuards();
+
+    getJson(route('grp.api.mobile.profile'), [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$token,
+    ])->assertOk()
+        ->assertJsonPath('data.username', $user->username)
+        ->assertJsonPath('data.app_theme', $webTheme)
+        ->assertJsonPath('data.mobile_app_theme', $mobileTheme);
+});
+
+test('mobile profile needs the app key, a token and the mobile ability', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $user        = createMobileAppUser($this->group);
+    $mobileToken = $user->createToken('mobile|Profile phone', ['mobile'])->plainTextToken;
+    $otherToken  = $user->createToken('Some integration', ['integration'])->plainTextToken;
+
+    $this->app['auth']->forgetGuards();
+    getJson(route('grp.api.mobile.profile'), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertUnauthorized();
+
+    $this->app['auth']->forgetGuards();
+    getJson(route('grp.api.mobile.profile'), ['Authorization' => 'Bearer '.$mobileToken])->assertNotFound();
+
+    $this->app['auth']->forgetGuards();
+    getJson(route('grp.api.mobile.profile'), [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$otherToken,
+    ])->assertForbidden();
+});
+
+test('mobile navigation without a token is unauthorised', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $this->app['auth']->forgetGuards();
+
+    getJson(route('grp.api.mobile.navigation'), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertUnauthorized();
+});
+
+test('mobile navigation gives a group user the web group menu and their organisations with shops', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    setPermissionsTeamId($this->group->id);
+    $webGroupKeys = collect(GetGroupNavigation::run($this->user))
+        ->filter(fn ($item, $key) => isset($item['label']) && !in_array($key, ['tasks', 'tickets', 'chat'], true))
+        ->keys()
+        ->values()
+        ->all();
+    $token = $this->user->createToken('mobile|Navigation phone', ['mobile'])->plainTextToken;
+    $this->app['auth']->forgetGuards();
+
+    $response = getJson(route('grp.api.mobile.navigation'), [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$token,
+    ])->assertOk();
+
+    $organisation = collect($response->json('organisations'))->firstWhere('slug', $this->organisation->slug);
+    $menuKeys     = collect([$response->json('group.menu'), ...collect($response->json('organisations'))->pluck('menu')])->flatten(1)->pluck('key');
+
+    expect($response->json('group.slug'))->toBe($this->group->slug)
+        ->and(collect($response->json('group.menu'))->pluck('key')->all())->toBe($webGroupKeys)
+        ->and(collect($organisation['shops'])->pluck('slug'))->toContain($this->shop->slug)
+        ->and($menuKeys)->not->toContain('tasks', 'tickets', 'chat', 'shops_index', 'warehouses_index')
+        ->and($response->json('tabs.tickets'))->toBeTrue();
+});
+
+test('mobile navigation gives a warehouse-only user no group area and the warehouse dispatching menu', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $this->app['auth']->shouldUse('web');
+    setPermissionsTeamId($this->group->id);
+    $warehouse = createWarehouse();
+    $picker    = createMobileAppUser($this->group);
+    UserAddRoles::run($picker, [RolesEnum::getRoleName(RolesEnum::DISPATCH_CLERK->value, $warehouse)]);
+    $token = $picker->createToken('mobile|Picker phone', ['mobile'])->plainTextToken;
+    $this->app['auth']->forgetGuards();
+
+    $response = getJson(route('grp.api.mobile.navigation'), [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$token,
+    ])->assertOk();
+
+    $organisation  = collect($response->json('organisations'))->firstWhere('slug', $warehouse->organisation->slug);
+    $warehouseArea = collect($organisation['warehouses'])->firstWhere('slug', $warehouse->slug);
+
+    expect($response->json('group'))->toBeNull()
+        ->and(collect($warehouseArea['menu'])->pluck('key'))->toContain('dispatching')
+        ->and($organisation['shops'])->toBe([])
+        ->and($response->json('tabs.tickets'))->toBeTrue()
+        ->and($response->json('tabs.chat'))->toBeFalse();
 });

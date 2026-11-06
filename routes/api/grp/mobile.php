@@ -9,6 +9,8 @@
 
 use App\Actions\Api\Group\Auth\LoginMobileApp;
 use App\Actions\Api\Group\Auth\LogoutMobileApp;
+use App\Actions\Api\Group\GetApiProfile;
+use App\Actions\Api\Group\GetMobileNavigation;
 use App\Actions\Api\Group\UpdateMobileAppTheme;
 use App\Actions\SysAdmin\User\PasswordResetLink;
 use App\Http\Middleware\VerifyMobileAppKey;
@@ -24,6 +26,8 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
 
     Route::middleware(['auth:sanctum', 'ability:mobile'])->group(function () {
         Route::post('/logout', LogoutMobileApp::class)->name('logout');
+        Route::get('/profile', GetApiProfile::class)->name('profile');
         Route::patch('/profile/theme', UpdateMobileAppTheme::class)->name('profile.theme.update');
+        Route::get('/navigation', GetMobileNavigation::class)->name('navigation');
     });
 });
