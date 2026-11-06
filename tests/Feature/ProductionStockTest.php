@@ -1232,6 +1232,18 @@ test('the ai assistant sets up artefacts, raw materials, tasks and recipes only 
     expect($reverted->standard_rate)->toBe($prodRate)
         ->and($reverted->effective_from->equalTo($datedBack->effective_from))->toBeTrue();
 
+    $recipe([
+        ['task' => 'POUR'.$suffix, 'label' => 'Red', 'waits_for' => [], 'units_per_artefact' => 1, 'target_per_hour' => null],
+        ['task' => 'POUR'.$suffix, 'label' => 'Blue', 'waits_for' => [], 'units_per_artefact' => 1, 'target_per_hour' => null],
+        ['task' => 'PACK'.$suffix, 'waits_for' => [1, 2], 'units_per_artefact' => 1, 'target_per_hour' => null],
+    ])->assertOk()->assertSee(['"label":"Red"', '"label":"Blue"', '"waits_for":[1,2]']);
+    $strands = $artefact->manufactureTasks()->get()->pluck('pivot');
+    expect($strands->pluck('label')->all())->toBe(['Red', 'Blue', null])
+        ->and($strands[0]->waits_for)->toBe([])
+        ->and($strands[2]->waits_for)->toBe([$strands[0]->id, $strands[1]->id]);
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::latest('id')->first(), $user);
+    expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['PROD']);
+
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'AID'.$suffix, 'name' => 'AI department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'AIF'.$suffix, 'name' => 'AI family']);
     $artefact->update(['artefact_family_id' => $family->id]);
