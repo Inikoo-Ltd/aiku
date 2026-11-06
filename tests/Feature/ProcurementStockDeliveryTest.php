@@ -1632,10 +1632,10 @@ test('agent commission invoice charges a rate on the products of the purchase or
 
     $handedOver = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 0, 10);
     $handedOver->updateQuietly(['handed_over_at' => '2026-10-03 09:00:00']);
-    $handedOver->purchaseOrderTransactions()->update(['unit_cost' => 50, 'agent_unit_expense' => 7]);
+    $handedOver->purchaseOrderTransactions()->update(['unit_cost' => null, 'net_amount' => 500, 'agent_unit_expense' => 7]);
 
     $inContainer = createConfirmedAgentOrder($this, $orgSupplier, $orgSupplierProduct, 1, 4);
-    $inContainer->purchaseOrderTransactions()->update(['unit_cost' => 25]);
+    $inContainer->purchaseOrderTransactions()->update(['unit_cost' => 25, 'net_amount' => 100]);
     $stockDelivery = createStockDeliveryWithItems($this, 'COMM-'.Str::random(6), [1]);
     placeDeliveryUnderAgentOrder($stockDelivery, $inContainer);
     $stockDelivery->updateQuietly(['dispatched_at' => '2026-10-20 00:00:00']);
