@@ -36,7 +36,7 @@ class GetAppointmentTypeAvailableSlots
             ->get()
             ->mapWithKeys(fn (AppointmentTypeDate $date) => [$date->date->toDateString() => $date->hours]);
 
-        $buffer   = $appointmentType->buffer_minutes;
+        $buffer   = $appointmentType->breakMinutes();
         $duration = $appointmentType->duration_minutes;
         $booked   = $this->bookedPeriods($appointmentType, $now, $lastDay->copy()->endOfDay(), $buffer);
         $taken    = $this->isOneAtATime($appointmentType->shop) ? $this->otherTypesBookedPeriods($appointmentType, $now, $lastDay->copy()->endOfDay(), $buffer) : collect();
@@ -52,10 +52,7 @@ class GetAppointmentTypeAvailableSlots
 
             $times = [];
             foreach ($ranges as $range) {
-                $start = Carbon::parse($date.' '.$range['from'], $timezone);
-                $close = Carbon::parse($date.' '.$range['to'], $timezone);
-
-                for ($slot = $start; $slot->copy()->addMinutes($duration)->lte($close); $slot = $slot->copy()->addMinutes($duration + $buffer)) {
+                foreach ($this->rangeStarts($appointmentType, $date, $range, $timezone) as $slot) {
                     if ($slot->lt($earliest)) {
                         continue;
                     }
@@ -130,6 +127,36 @@ class GetAppointmentTypeAvailableSlots
                 fn (int $a, int $b) => $a <=> $b,
             ])
             ->first();
+    }
+
+    /**
+     * Fixed start times are offered when the whole appointment fits inside the opening, so a day
+     * the type is closed offers none of them.
+     *
+     * @param array{from: string, to: string} $range
+     *
+     * @return array<int, Carbon>
+     */
+    private function rangeStarts(AppointmentType $appointmentType, string $date, array $range, string $timezone): array
+    {
+        $duration = $appointmentType->duration_minutes;
+        $open     = Carbon::parse($date.' '.$range['from'], $timezone);
+        $close    = Carbon::parse($date.' '.$range['to'], $timezone);
+
+        if ($startTimes = $appointmentType->startTimes()) {
+            return collect($startTimes)
+                ->map(fn (string $time) => Carbon::parse($date.' '.$time, $timezone))
+                ->filter(fn (Carbon $start) => $start->gte($open) && $start->copy()->addMinutes($duration)->lte($close))
+                ->values()
+                ->all();
+        }
+
+        $starts = [];
+        for ($slot = $open; $slot->copy()->addMinutes($duration)->lte($close); $slot = $slot->copy()->addMinutes($duration + $appointmentType->breakMinutes())) {
+            $starts[] = $slot;
+        }
+
+        return $starts;
     }
 
     /**

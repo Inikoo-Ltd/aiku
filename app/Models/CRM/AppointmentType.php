@@ -106,6 +106,26 @@ class AppointmentType extends Model implements Auditable
         return AppointmentTypeMediaEnum::tryFrom((string) data_get($this->data, 'media')) ?? AppointmentTypeMediaEnum::WHATSAPP;
     }
 
+    /**
+     * Times an appointment can start at (H:i, shop timezone), like 08:30 and 13:30. When empty,
+     * appointments follow each other from the opening time, one duration and break apart.
+     *
+     * @return array<int, string>
+     */
+    public function startTimes(): array
+    {
+        return (array) data_get($this->data, 'start_times', []);
+    }
+
+    /**
+     * The start times already set the gaps between appointments, so the break only spaces
+     * appointments that follow one another.
+     */
+    public function breakMinutes(): int
+    {
+        return $this->startTimes() ? 0 : $this->buffer_minutes;
+    }
+
     public function requiresPhone(): bool
     {
         return $this->media() === AppointmentTypeMediaEnum::WHATSAPP;

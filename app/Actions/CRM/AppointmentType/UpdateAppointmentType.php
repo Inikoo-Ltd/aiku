@@ -21,7 +21,7 @@ class UpdateAppointmentType extends OrgAction
     public function handle(AppointmentType $appointmentType, array $modelData): AppointmentType
     {
         $availability = $this->pullAvailability($modelData);
-        $modelData    = $this->applyMeetingPlace($modelData, $appointmentType);
+        $modelData    = $this->applyStartTimes($this->applyMeetingPlace($modelData, $appointmentType));
 
         $previousMeetingMode = $appointmentType->meeting_mode;
 

@@ -148,7 +148,7 @@ trait WithAppointmentRules
             $slots = GetAppointmentTypeAvailableSlots::make();
             $slots->lockShopAppointmentTypes(AppointmentType::withTrashed()->find($appointmentTypeId)->shop);
             $appointmentType = AppointmentType::withTrashed()->lockForUpdate()->find($appointmentTypeId);
-            $buffer          = $appointmentType->buffer_minutes;
+            $buffer          = $appointmentType->breakMinutes();
             $booked          = $others()
                 ->where('appointment_type_id', $appointmentTypeId)
                 ->where('starts_at', '<', $endsAt->copy()->addMinutes($buffer))
