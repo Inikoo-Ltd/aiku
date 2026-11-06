@@ -58,6 +58,7 @@ class ShowCrawl extends OrgAction
         $search   = is_string($request->query('search')) ? $request->query('search') : null;
         $sort     = is_string($request->query('sort')) ? $request->query('sort') : null;
         $desc     = $request->boolean('desc');
+        $segment  = is_string($request->query('segment')) && array_key_exists($request->query('segment'), GetCrawlTabRows::segments()) ? $request->query('segment') : null;
         $page     = max(1, (int) $request->query('page', 1));
         $perPage  = (int) $request->query('per_page', self::DEFAULT_PER_PAGE);
         $rows     = GetCrawlTabRows::make();
@@ -86,25 +87,28 @@ class ShowCrawl extends OrgAction
                 'crawl'       => fn () => $this->crawlSummary($crawl->refresh(), $canEdit),
                 'tabs'        => fn () => GetCrawlTabSummary::make()->handle($crawl),
                 'severities'  => CrawlIssueSeverityEnum::labels(),
+                'segments'    => GetCrawlTabRows::segments(),
                 'query'       => [
                     'tab'      => $this->crawlTab->value,
                     'filter'   => $filter,
                     'search'   => $search,
                     'sort'     => $sort,
                     'desc'     => $desc,
+                    'segment'  => $segment,
                     'page'     => $page,
                     'per_page' => $perPage,
                 ],
                 'table'       => fn () => [
-                    'columns' => $rows->columns($this->crawlTab, $filter),
-                    ...$rows->handle($crawl, $this->crawlTab, $filter, $search, $sort, $desc, $page, $perPage),
+                    'columns' => $rows->columns($this->crawlTab, $filter, $crawl),
+                    ...$rows->handle($crawl, $this->crawlTab, $filter, $search, $sort, $desc, $page, $perPage, $segment),
                 ],
                 'routes'      => [
-                    'self'    => ['name' => 'grp.websites.crawler.show', 'parameters' => [$crawl->id]],
-                    'details' => ['name' => 'grp.json.crawl.url_details', 'parameters' => [$crawl->id]],
-                    'export'  => ['name' => 'grp.websites.crawler.export', 'parameters' => [$crawl->id]],
-                    'report'  => ['name' => 'grp.websites.crawler.report', 'parameters' => [$crawl->id]],
-                    'compare' => ['name' => 'grp.websites.crawler.compare', 'parameters' => [$crawl->id]],
+                    'self'    => ['name' => 'grp.websites.crawler.show', 'parameters' => ['crawl' => $crawl->id]],
+                    'details' => ['name' => 'grp.json.crawl.url_details', 'parameters' => ['crawl' => $crawl->id]],
+                    'export'  => ['name' => 'grp.websites.crawler.export', 'parameters' => ['crawl' => $crawl->id]],
+                    'report'  => ['name' => 'grp.websites.crawler.report', 'parameters' => ['crawl' => $crawl->id]],
+                    'compare'   => ['name' => 'grp.websites.crawler.compare', 'parameters' => ['crawl' => $crawl->id]],
+                    'structure' => ['name' => 'grp.websites.crawler.structure', 'parameters' => ['crawl' => $crawl->id]],
                     'stop'    => $canEdit ? ['name' => 'grp.models.crawl.stop', 'parameters' => [$crawl->id], 'method' => 'patch'] : null,
                     'index'   => ['name' => 'grp.websites.crawler.index', 'parameters' => ['website' => $website->slug]],
                 ],
@@ -146,7 +150,7 @@ class ShowCrawl extends OrgAction
             [
                 'type'   => 'simple',
                 'simple' => [
-                    'route' => ['name' => 'grp.websites.crawler.show', 'parameters' => [$crawl->id]],
+                    'route' => ['name' => 'grp.websites.crawler.show', 'parameters' => ['crawl' => $crawl->id]],
                     'label' => $crawl->name ?: $crawl->website->domain.' #'.$crawl->id,
                 ],
             ],

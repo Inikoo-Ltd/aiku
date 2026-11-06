@@ -739,6 +739,8 @@ use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\Web\Crawl\StartSiteAudit;
 use App\Actions\Web\Crawl\StopCrawlFromCrawler;
 use App\Actions\Web\Crawl\StoreCrawl;
+use App\Actions\Web\Crawl\SaveCrawlSchedule;
+use App\Actions\Web\Crawl\DeleteCrawlSchedule;
 use App\Actions\Web\Seo\AcceptSeoContentSuggestion;
 use App\Actions\Web\Seo\CheckSeoKeywordsNow;
 use App\Actions\Web\Seo\DeleteSeoAiPrompt;
@@ -1628,6 +1630,8 @@ Route::patch('crawl/{crawl:id}/stop', StopCrawlFromCrawler::class)->name('crawl.
 Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('site-audit', StartSiteAudit::class)->name('site_audit.store');
     Route::post('crawl', StoreCrawl::class)->name('crawl.store');
+    Route::post('crawl-schedule', SaveCrawlSchedule::class)->name('crawl_schedule.save');
+    Route::delete('crawl-schedule', DeleteCrawlSchedule::class)->name('crawl_schedule.delete');
     Route::post('publish/header', [PublishWebsiteMarginal::class, 'header'])->name('publish.header');
     Route::post('publish/footer', [PublishWebsiteMarginal::class, 'footer'])->name('publish.footer');
 

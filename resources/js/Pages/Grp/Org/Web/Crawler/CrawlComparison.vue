@@ -138,7 +138,7 @@ const crawlLabel = (crawl: CrawlSummary) => crawl.name || (crawl.end_at ? useFor
                     <dt class="text-xs text-gray-500">{{ row.label }}</dt>
                     <dd class="mt-1 tabular-nums">
                         <span class="text-gray-500">{{ row.before === null ? "-" : locale.number(row.before) }}</span>
-                        <span class="text-gray-400"> → </span>
+                        <span class="text-gray-500" aria-hidden="true"> → </span>
                         <span class="font-medium text-gray-900">{{ row.now === null ? "-" : locale.number(row.now) }}</span>
                         <span v-if="row.before !== null && row.now !== null && row.before !== row.now" class="ml-1 text-xs" :class="changeClass(row.before, row.now, row.isBetterWhenLower)">
                             ({{ signed(Math.round((row.now - row.before) * 10) / 10) }})
@@ -171,13 +171,13 @@ const crawlLabel = (crawl: CrawlSummary) => crawl.name || (crawl.end_at ? useFor
                 <Column field="added" :header="ctrans('New')" class="text-right tabular-nums">
                     <template #body="{ data }">
                         <button v-if="data.added" type="button" class="text-red-600 hover:underline focus-visible:underline" @click="openUrls(data, 'added')">{{ signed(data.added) }}</button>
-                        <span v-else class="text-gray-400">0</span>
+                        <span v-else class="text-gray-500">0</span>
                     </template>
                 </Column>
                 <Column field="resolved" :header="ctrans('Fixed')" class="text-right tabular-nums">
                     <template #body="{ data }">
                         <button v-if="data.resolved" type="button" class="text-green-600 hover:underline focus-visible:underline" @click="openUrls(data, 'resolved')">{{ locale.number(data.resolved) }}</button>
-                        <span v-else class="text-gray-400">0</span>
+                        <span v-else class="text-gray-500">0</span>
                     </template>
                 </Column>
             </DataTable>

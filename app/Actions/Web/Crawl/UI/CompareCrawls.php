@@ -172,7 +172,7 @@ class CompareCrawls extends OrgAction
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'route' => ['name' => 'grp.websites.crawler.compare', 'parameters' => [$crawl->id]],
+                            'route' => ['name' => 'grp.websites.crawler.compare', 'parameters' => ['crawl' => $crawl->id]],
                             'label' => $title,
                         ],
                     ],
@@ -205,8 +205,8 @@ class CompareCrawls extends OrgAction
                     ...($side === 'resolved' ? $this->differenceUrls($previous, $crawl, $type) : $this->differenceUrls($crawl, $previous, $type)),
                 ] : null,
                 'routes'      => [
-                    'self'  => ['name' => 'grp.websites.crawler.compare', 'parameters' => [$crawl->id]],
-                    'crawl' => ['name' => 'grp.websites.crawler.show', 'parameters' => [$crawl->id]],
+                    'self'  => ['name' => 'grp.websites.crawler.compare', 'parameters' => ['crawl' => $crawl->id]],
+                    'crawl' => ['name' => 'grp.websites.crawler.show', 'parameters' => ['crawl' => $crawl->id]],
                 ],
             ]
         );

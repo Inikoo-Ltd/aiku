@@ -21,6 +21,7 @@ use App\Models\SysAdmin\User;
 use App\Models\Web\CrawlPage;
 use App\Models\Web\Website;
 use App\Services\SiteAudit\AuditedHtml;
+use App\Services\SiteAudit\CustomExtraction;
 use App\Services\SiteAudit\RobotsTxt;
 use App\Services\SiteAudit\SerpPixelWidth;
 use Illuminate\Console\Command;
@@ -67,7 +68,14 @@ class AuditWebsite implements ShouldBeUnique
         'check_images'         => true,
         'mode'                 => self::MODE_SPIDER,
         'urls'                 => [],
+        'custom_search'        => [],
+        'extractions'          => [],
     ];
+
+    /** the settings that add checks without changing which pages are crawled or how they are judged */
+    private const array ADDITIVE_CONFIG = ['custom_search', 'extractions'];
+
+    public const int CUSTOM_ITEMS_MAX = 10;
 
     public const string MODE_SPIDER = 'spider';
 
@@ -592,7 +600,13 @@ class AuditWebsite implements ShouldBeUnique
             }
         }
 
-        $row['facts'] = json_encode($this->pageFacts($url, $html, $response));
+        $facts = $this->pageFacts($url, $html, $response);
+
+        if ($this->config['custom_search'] !== [] || $this->config['extractions'] !== []) {
+            $facts['custom'] = CustomExtraction::run($response->body(), $this->config['custom_search'], $this->config['extractions']);
+        }
+
+        $row['facts'] = json_encode($facts);
 
         $this->collectLinks($url, $html, $canonical);
 
@@ -1280,7 +1294,9 @@ class AuditWebsite implements ShouldBeUnique
             return false;
         }
 
-        return $config === null || array_replace(self::DEFAULT_CONFIG, array_intersect_key($config, self::DEFAULT_CONFIG)) == self::DEFAULT_CONFIG;
+        $scopeDefaults = array_diff_key(self::DEFAULT_CONFIG, array_flip(self::ADDITIVE_CONFIG));
+
+        return $config === null || array_replace($scopeDefaults, array_intersect_key($config, $scopeDefaults)) == $scopeDefaults;
     }
 
     public static function startFor(Website $website, CrawlTriggerEnum $trigger, ?int $maxPages = null, int $concurrency = self::DEFAULT_CONCURRENCY, ?array $config = null, ?string $name = null, ?User $user = null): Crawl

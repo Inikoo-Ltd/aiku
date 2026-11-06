@@ -33,13 +33,13 @@ class ExportCrawlTab extends OrgAction
         return $this->canViewCrawlsOf($request->user(), $this->crawl->website);
     }
 
-    public function handle(Crawl $crawl, CrawlTabEnum $tab, ?string $filter): BinaryFileResponse
+    public function handle(Crawl $crawl, CrawlTabEnum $tab, ?string $filter, ?string $segment = null): BinaryFileResponse
     {
         $filterLabel = $filter ? (CrawlIssueTypeEnum::labels()[$filter] ?? $tab->stateFilters()[$filter] ?? $filter) : __('All');
         $title       = CrawlTabEnum::labels()[$tab->value].' - '.$filterLabel;
 
         return Excel::download(
-            new CrawlTabSheet($crawl, $tab, $filter, $title),
+            new CrawlTabSheet($crawl, $tab, $filter, $title, $segment),
             now()->format('Y-m-d').'-crawl-'.$crawl->website->slug.'-'.Str::slug($title).'.xlsx'
         );
     }
@@ -54,6 +54,8 @@ class ExportCrawlTab extends OrgAction
         $tab    = CrawlTabEnum::tryFrom((string) $request->query('tab')) ?? CrawlTabEnum::INTERNAL;
         $filter = $request->query('filter');
 
-        return $this->handle($crawl, $tab, is_string($filter) && $filter !== '' ? $filter : null);
+        $segment = $request->query('segment');
+
+        return $this->handle($crawl, $tab, is_string($filter) && $filter !== '' ? $filter : null, is_string($segment) && array_key_exists($segment, GetCrawlTabRows::segments()) ? $segment : null);
     }
 }

@@ -1515,6 +1515,17 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->command('crawl:scheduled')
+                    ->hourly()
+                    ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                        monitorSlug: 'RunScheduledCrawls',
+                    ),
+                name: 'RunScheduledCrawls',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->job(FetchBacklinks::makeJob())
                     ->weeklyOn(1, '01:00')
                     ->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(

@@ -42,18 +42,23 @@ class GetCrawlTabSummary
         $descriptions = CrawlIssueTypeEnum::descriptions();
         $howToFix     = CrawlIssueTypeEnum::howToFix();
 
-        return array_map(function (CrawlTabEnum $tab) use ($pageCounts, $resourceCounts, $issueCounts, $labels, $issueLabels, $descriptions, $howToFix) {
+        $rows          = GetCrawlTabRows::make();
+        $customFilters = $rows->customFilters($crawl);
+        $tabs          = array_filter(CrawlTabEnum::cases(), fn (CrawlTabEnum $tab) => $tab !== CrawlTabEnum::CUSTOM || $customFilters !== []);
+
+        return array_values(array_map(function (CrawlTabEnum $tab) use ($crawl, $rows, $customFilters, $pageCounts, $resourceCounts, $issueCounts, $labels, $issueLabels, $descriptions, $howToFix) {
             $counts = $tab->source() === 'pages' ? $pageCounts : ($resourceCounts[$tab->source()] ?? []);
 
             $counts['blocked_by_robots'] = $resourceCounts[AuditWebsite::BLOCKED_BY_ROBOTS]['all'] ?? 0;
 
             $stateFilters = [];
+            $tabFilters   = $tab === CrawlTabEnum::CUSTOM ? $customFilters : $tab->stateFilters();
 
-            foreach ($tab->stateFilters() as $key => $label) {
+            foreach ($tabFilters as $key => $label) {
                 $stateFilters[] = [
                     'key'         => $key,
                     'label'       => $label,
-                    'count'       => (int) ($counts[$key] ?? 0),
+                    'count'       => $tab === CrawlTabEnum::CUSTOM ? $rows->query($crawl, $tab, $key)->count() : (int) ($counts[$key] ?? 0),
                     'severity'    => null,
                     'description' => null,
                     'how_to_fix'  => null,
@@ -72,11 +77,11 @@ class GetCrawlTabSummary
             return [
                 'key'     => $tab->value,
                 'label'   => $labels[$tab->value],
-                'total'   => (int) ($counts['all'] ?? 0),
+                'total'   => $tab === CrawlTabEnum::CUSTOM ? $rows->query($crawl, $tab, null)->count() : (int) ($counts['all'] ?? 0),
                 'issues'  => array_sum(array_column($issueFilters, 'count')),
                 'filters' => [...$stateFilters, ...$issueFilters],
             ];
-        }, CrawlTabEnum::cases());
+        }, $tabs));
     }
 
     /**

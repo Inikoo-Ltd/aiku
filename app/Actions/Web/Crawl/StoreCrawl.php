@@ -16,6 +16,7 @@ use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Crawl;
 use App\Models\Web\Website;
+use App\Services\SiteAudit\CustomExtraction;
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -75,6 +76,19 @@ class StoreCrawl extends OrgAction
                 'check_images'         => (bool) Arr::get($modelData, 'check_images', true),
                 'mode'                 => $isListMode ? AuditWebsite::MODE_LIST : AuditWebsite::MODE_SPIDER,
                 'urls'                 => $listedUrls,
+                'custom_search'        => array_values(array_map(fn (array $search) => [
+                    'name'  => $search['name'],
+                    'mode'  => $search['mode'],
+                    'type'  => $search['type'],
+                    'value' => $search['value'],
+                ], Arr::get($modelData, 'custom_search', []))),
+                'extractions'          => array_values(array_map(fn (array $extraction) => [
+                    'name'      => $extraction['name'],
+                    'type'      => $extraction['type'],
+                    'selector'  => $extraction['selector'],
+                    'output'    => $extraction['output'] ?? 'text',
+                    'attribute' => $extraction['attribute'] ?? null,
+                ], Arr::get($modelData, 'extractions', []))),
             ],
             name: Arr::get($modelData, 'name'),
             user: $user
@@ -90,6 +104,22 @@ class StoreCrawl extends OrgAction
         $validPattern = function (string $attribute, mixed $value, Closure $fail) {
             if (!is_string($value) || !AuditWebsite::isValidPattern($value)) {
                 $fail(__('":pattern" is not a valid regular expression.', ['pattern' => is_string($value) ? $value : '']));
+            }
+        };
+
+        $validSearch = function (string $attribute, mixed $value, Closure $fail) {
+            $type = request()->input(str_replace('.value', '.type', $attribute));
+
+            if (!is_string($value) || !CustomExtraction::isValidSearch((string) $type, $value)) {
+                $fail(__('":value" is not a valid regular expression.', ['value' => is_string($value) ? $value : '']));
+            }
+        };
+
+        $validSelector = function (string $attribute, mixed $value, Closure $fail) {
+            $type = request()->input(str_replace('.selector', '.type', $attribute));
+
+            if (!is_string($value) || !CustomExtraction::isValidSelector((string) $type, $value)) {
+                $fail(__('":selector" is not a valid :type.', ['selector' => is_string($value) ? $value : '', 'type' => strtoupper((string) $type)]));
             }
         };
 
@@ -109,6 +139,17 @@ class StoreCrawl extends OrgAction
             'mode'                 => ['sometimes', 'in:'.AuditWebsite::MODE_SPIDER.','.AuditWebsite::MODE_LIST],
             'urls'                 => ['required_if:mode,'.AuditWebsite::MODE_LIST, 'array', 'max:'.AuditWebsite::LIST_MAX_URLS],
             'urls.*'               => ['nullable', 'string', 'max:2048'],
+            'custom_search'            => ['sometimes', 'array', 'max:'.AuditWebsite::CUSTOM_ITEMS_MAX],
+            'custom_search.*.name'     => ['required', 'string', 'max:60'],
+            'custom_search.*.mode'     => ['required', 'in:'.implode(',', CustomExtraction::SEARCH_MODES)],
+            'custom_search.*.type'     => ['required', 'in:'.implode(',', CustomExtraction::SEARCH_TYPES)],
+            'custom_search.*.value'    => ['required', 'string', 'max:255', $validSearch],
+            'extractions'              => ['sometimes', 'array', 'max:'.AuditWebsite::CUSTOM_ITEMS_MAX],
+            'extractions.*.name'       => ['required', 'string', 'max:60'],
+            'extractions.*.type'       => ['required', 'in:'.implode(',', CustomExtraction::EXTRACTION_TYPES)],
+            'extractions.*.selector'   => ['required', 'string', 'max:500', $validSelector],
+            'extractions.*.output'     => ['sometimes', 'in:'.implode(',', CustomExtraction::EXTRACTION_OUTPUTS)],
+            'extractions.*.attribute'  => ['required_if:extractions.*.output,attribute', 'nullable', 'string', 'max:100'],
         ];
     }
 

@@ -34,6 +34,7 @@ enum CrawlTabEnum: string
     case SITEMAPS         = 'sitemaps';
     case SECURITY         = 'security';
     case VALIDATION       = 'validation';
+    case CUSTOM           = 'custom';
 
     public static function labels(): array
     {
@@ -58,6 +59,7 @@ enum CrawlTabEnum: string
             self::SITEMAPS->value         => __('Sitemaps'),
             self::SECURITY->value         => __('Security'),
             self::VALIDATION->value       => __('Validation'),
+            self::CUSTOM->value           => __('Custom'),
         ];
     }
 
@@ -151,6 +153,7 @@ enum CrawlTabEnum: string
             self::SITEMAPS         => ['is_in_sitemap', 'sitemap_count', 'indexability'],
             self::SECURITY         => ['status_code', 'indexability'],
             self::VALIDATION       => ['status_code', 'bytes', 'indexability'],
+            self::CUSTOM           => ['status_code', 'indexability'],
             self::EXTERNAL         => ['status_code', 'inlinks'],
         };
     }

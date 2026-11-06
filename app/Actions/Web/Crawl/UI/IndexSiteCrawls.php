@@ -11,6 +11,7 @@ namespace App\Actions\Web\Crawl\UI;
 use App\Actions\OrgAction;
 use App\Actions\UI\Websites\WebsitesDashboard;
 use App\Actions\Web\Crawl\AuditWebsite;
+use App\Enums\Web\Crawl\CrawlScheduleFrequencyEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
@@ -18,6 +19,7 @@ use App\Http\Resources\Web\SiteCrawlsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Crawl;
+use App\Models\Web\CrawlSchedule;
 use App\Models\Web\SeoContentSuggestion;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
@@ -110,11 +112,11 @@ class IndexSiteCrawls extends OrgAction
                 ->withGlobalSearch()
                 ->withLabelRecord([__('crawl'), __('crawls')])
                 ->withEmptyState([
-                    'title' => __('No crawls yet'),
+                    'title'       => __('No crawls yet'),
+                    'description' => __('Start one with New crawl to see every URL, link and issue of a website.'),
                 ])
-                ->column(key: 'state', label: __('State'))
-                ->column(key: 'website_domain', label: __('Website'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('Name'))
+                ->column(key: 'website_domain', label: __('Crawl'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'state', label: __('Status'))
                 ->column(key: 'start_at', label: __('Started'), sortable: true)
                 ->column(key: 'urls_processed', label: __('URLs'), sortable: true, align: 'right')
                 ->column(key: 'health_score', label: __('Health'), sortable: true, align: 'right')
@@ -172,10 +174,18 @@ class IndexSiteCrawls extends OrgAction
                         'concurrency' => AuditWebsite::DEFAULT_CONCURRENCY,
                     ],
                     'maxConcurrency' => AuditWebsite::CONCURRENT_FETCH_BUDGET,
+                    'maxListUrls'    => AuditWebsite::LIST_MAX_URLS,
+                    'maxCustomItems' => AuditWebsite::CUSTOM_ITEMS_MAX,
                     'route'    => [
                         'name'   => 'grp.models.website.crawl.store',
                         'method' => 'post',
                     ],
+                ],
+                'schedules'   => $this->schedules($request->user(), $website),
+                'scheduleSettings' => [
+                    'frequencies' => CrawlScheduleFrequencyEnum::labels(),
+                    'saveRoute'   => ['name' => 'grp.models.website.crawl_schedule.save', 'method' => 'post'],
+                    'deleteRoute' => ['name' => 'grp.models.website.crawl_schedule.delete', 'method' => 'delete'],
                 ],
                 'data'        => SiteCrawlsResource::collection($this->handle($website, $this->viewableWebsiteIds($request->user()))),
             ]
@@ -196,6 +206,35 @@ class IndexSiteCrawls extends OrgAction
                 'id'     => $website->id,
                 'domain' => $website->domain,
                 'slug'   => $website->slug,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function schedules(User $user, ?Website $website): array
+    {
+        $websiteIds = $this->viewableWebsiteIds($user);
+
+        return CrawlSchedule::with(['website.shop', 'user'])
+            ->when($website, fn ($query) => $query->where('website_id', $website->id))
+            ->when($websiteIds !== null, fn ($query) => $query->whereIn('website_id', $websiteIds))
+            ->get()
+            ->sortBy(fn (CrawlSchedule $schedule) => $schedule->website->domain)
+            ->map(fn (CrawlSchedule $schedule) => [
+                'website_id'   => $schedule->website_id,
+                'domain'       => $schedule->website->domain,
+                'frequency'    => $schedule->frequency->value,
+                'weekday'      => $schedule->weekday,
+                'day_of_month' => $schedule->day_of_month,
+                'hour'         => $schedule->hour,
+                'is_active'    => $schedule->is_active,
+                'next_run_at'  => $schedule->next_run_at,
+                'last_run_at'  => $schedule->last_run_at,
+                'user_name'    => $schedule->user?->contact_name,
+                'can_edit'     => $schedule->website->shop && $this->canEditSeo($user, $schedule->website->shop),
             ])
             ->values()
             ->all();

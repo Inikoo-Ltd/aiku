@@ -70,6 +70,100 @@ class GetCrawlTabRows
     public const int MAX_PER_PAGE = 200;
 
     /**
+     * The kind of page behind a crawled URL, read from the webpage it was matched to, so a crawl can
+     * be looked at for products, families or the rest of the website on their own.
+     */
+    private const string SEGMENT_SQL = "(CASE
+        WHEN crawl_pages.webpage_id IS NULL THEN 'unmatched'
+        WHEN segment_webpages.sub_type = 'product' THEN 'product'
+        WHEN segment_webpages.sub_type = 'family' THEN 'family'
+        WHEN segment_webpages.sub_type IN ('department', 'sub_department') THEN 'department'
+        WHEN segment_webpages.sub_type = 'collection' THEN 'collection'
+        WHEN segment_webpages.type = 'blog' THEN 'blog'
+        ELSE 'other' END)";
+
+    /**
+     * @return array<string, string>
+     */
+    public static function segments(): array
+    {
+        return [
+            'product'    => __('Products'),
+            'family'     => __('Families'),
+            'department' => __('Departments'),
+            'collection' => __('Collections'),
+            'blog'       => __('Blog'),
+            'other'      => __('Other pages'),
+            'unmatched'  => __('Not a webpage'),
+        ];
+    }
+
+    private const string CUSTOM_KEY_PATTERN = '/^(search|extract)_(\d+)$/';
+
+    /**
+     * The filters of the Custom tab, one for each custom search and extraction the crawl ran: a
+     * search lists the pages that contain the text, or that do not, as it was set up; an extraction
+     * lists the pages where it found a value.
+     *
+     * @return array<string, string>
+     */
+    public function customFilters(Crawl $crawl): array
+    {
+        $config  = AuditWebsite::config($crawl);
+        $filters = [];
+
+        foreach ($config['custom_search'] as $index => $search) {
+            $filters['search_'.$index] = $search['mode'] === 'not_contains'
+                ? __(':name: does not contain', ['name' => $search['name']])
+                : __(':name: contains', ['name' => $search['name']]);
+        }
+
+        foreach ($config['extractions'] as $index => $extraction) {
+            $filters['extract_'.$index] = __(':name: found', ['name' => $extraction['name']]);
+        }
+
+        return $filters;
+    }
+
+    /**
+     * @return array<string, string> the SQL of each custom column, by column key
+     */
+    private function customColumns(Crawl $crawl): array
+    {
+        $config  = AuditWebsite::config($crawl);
+        $columns = [];
+
+        foreach (array_keys($config['custom_search']) as $index) {
+            $columns['search_'.$index] = "(crawl_pages.facts->'custom'->'search'->>".(int) $index.')::int';
+        }
+
+        foreach (array_keys($config['extractions']) as $index) {
+            $columns['extract_'.$index] = "crawl_pages.facts->'custom'->'extract'->".(int) $index;
+        }
+
+        return $columns;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function customColumnLabels(Crawl $crawl): array
+    {
+        $config = AuditWebsite::config($crawl);
+        $labels = [];
+
+        foreach ($config['custom_search'] as $index => $search) {
+            $labels['search_'.$index] = __(':name (matches)', ['name' => $search['name']]);
+        }
+
+        foreach ($config['extractions'] as $index => $extraction) {
+            $labels['extract_'.$index] = $extraction['name'];
+        }
+
+        return $labels;
+    }
+
+    /**
      * @return array{source: string, issue: CrawlIssueTypeEnum|null, state_filter: string|null}
      */
     public function resolveFilter(CrawlTabEnum $tab, ?string $filter): array
@@ -80,7 +174,7 @@ class GetCrawlTabRows
             return ['source' => 'pages', 'issue' => $issue, 'state_filter' => null];
         }
 
-        $stateFilter = $filter && array_key_exists($filter, $tab->stateFilters()) ? $filter : null;
+        $stateFilter = $filter && (array_key_exists($filter, $tab->stateFilters()) || ($tab === CrawlTabEnum::CUSTOM && preg_match(self::CUSTOM_KEY_PATTERN, $filter))) ? $filter : null;
 
         return [
             'source'       => $stateFilter === 'blocked_by_robots' ? AuditWebsite::BLOCKED_BY_ROBOTS : $tab->source(),
@@ -92,9 +186,18 @@ class GetCrawlTabRows
     /**
      * @return array<int, array{key: string, label: string, numeric: bool}>
      */
-    public function columns(CrawlTabEnum $tab, ?string $filter): array
+    public function columns(CrawlTabEnum $tab, ?string $filter, ?Crawl $crawl = null): array
     {
         $resolved = $this->resolveFilter($tab, $filter);
+
+        if ($tab === CrawlTabEnum::CUSTOM && $crawl && !$resolved['issue']) {
+            $labels = $this->customColumnLabels($crawl);
+
+            return [
+                ...array_map(fn (string $key) => ['key' => $key, 'label' => self::columnLabels()[$key], 'numeric' => $key === 'status_code'], $tab->pageColumns()),
+                ...array_map(fn (string $key) => ['key' => $key, 'label' => $labels[$key], 'numeric' => str_starts_with($key, 'search_')], array_keys($labels)),
+            ];
+        }
 
         $keys = match ($resolved['source']) {
             'link'  => ['status_code', 'content_type', 'inlinks'],
@@ -116,13 +219,17 @@ class GetCrawlTabRows
         ], array_values(array_unique(array_filter($keys, fn (string $key) => $resolved['source'] !== 'pages' || isset(self::PAGE_COLUMNS[$key]) || $key === 'details'))));
     }
 
-    public function query(Crawl $crawl, CrawlTabEnum $tab, ?string $filter, ?string $search = null): Builder
+    public function query(Crawl $crawl, CrawlTabEnum $tab, ?string $filter, ?string $search = null, ?string $segment = null): Builder
     {
         $resolved = $this->resolveFilter($tab, $filter);
 
         $query = $resolved['source'] === 'pages'
-            ? $this->pagesQuery($crawl, $resolved['issue'], $resolved['state_filter'])
+            ? $this->pagesQuery($crawl, $resolved['issue'], $resolved['state_filter'], $tab === CrawlTabEnum::CUSTOM)
             : $this->resourcesQuery($crawl, $resolved['source'], $resolved['state_filter']);
+
+        if ($resolved['source'] === 'pages' && $segment !== null && array_key_exists($segment, self::segments())) {
+            $query->whereRaw(self::SEGMENT_SQL.' = ?', [$segment]);
+        }
 
         if ($search !== null && trim($search) !== '') {
             $table = $resolved['source'] === 'pages' ? 'crawl_pages' : 'crawl_resources';
@@ -135,11 +242,11 @@ class GetCrawlTabRows
     /**
      * @return array{rows: array<int, array<string, mixed>>, total: int, page: int, per_page: int}
      */
-    public function handle(Crawl $crawl, CrawlTabEnum $tab, ?string $filter, ?string $search, ?string $sort, bool $descending, int $page, int $perPage): array
+    public function handle(Crawl $crawl, CrawlTabEnum $tab, ?string $filter, ?string $search, ?string $sort, bool $descending, int $page, int $perPage, ?string $segment = null): array
     {
         $perPage  = max(1, min(self::MAX_PER_PAGE, $perPage));
-        $columns  = array_column($this->columns($tab, $filter), 'key');
-        $query    = $this->query($crawl, $tab, $filter, $search);
+        $columns  = array_column($this->columns($tab, $filter, $crawl), 'key');
+        $query    = $this->query($crawl, $tab, $filter, $search, $segment);
         $total    = (clone $query)->count();
         $sortable = ['url', ...array_diff($columns, ['details'])];
 
@@ -176,10 +283,23 @@ class GetCrawlTabRows
         $values = [
             'url'      => $row->url,
             'url_hash' => $row->url_hash,
+            'segment'  => $row->segment ?? null,
         ];
 
         foreach ($columns as $column) {
             $value = $row->$column ?? null;
+
+            if (str_starts_with($column, 'extract_')) {
+                $values[$column] = $value === null ? null : implode(' | ', json_decode($value, true) ?: []);
+
+                continue;
+            }
+
+            if (str_starts_with($column, 'search_')) {
+                $values[$column] = $value === null ? null : (int) $value;
+
+                continue;
+            }
 
             $values[$column] = match (true) {
                 $column === 'details'                                  => $value === null ? null : json_decode($value, true),
@@ -194,22 +314,38 @@ class GetCrawlTabRows
         return $values;
     }
 
-    private function pagesQuery(Crawl $crawl, ?CrawlIssueTypeEnum $issue, ?string $stateFilter): Builder
+    private function pagesQuery(Crawl $crawl, ?CrawlIssueTypeEnum $issue, ?string $stateFilter, bool $withCustom = false): Builder
     {
-        $select = ['crawl_pages.url', 'crawl_pages.url_hash'];
+        $select        = ['crawl_pages.url', 'crawl_pages.url_hash'];
+        $customColumns = $withCustom ? $this->customColumns($crawl) : [];
 
-        foreach (self::PAGE_COLUMNS as $key => $expression) {
+        foreach ([...self::PAGE_COLUMNS, ...$customColumns] as $key => $expression) {
             $select[] = DB::raw("$expression as \"$key\"");
         }
 
         $query = DB::table('crawl_pages')
+            ->leftJoin('webpages as segment_webpages', 'segment_webpages.id', '=', 'crawl_pages.webpage_id')
             ->where('crawl_pages.crawl_id', $crawl->id)
-            ->select($select);
+            ->select([...$select, DB::raw(self::SEGMENT_SQL.' as "segment"')]);
 
         if ($issue) {
             $query->join('crawl_issues', 'crawl_issues.crawl_page_id', '=', 'crawl_pages.id')
                 ->where('crawl_issues.type', $issue->value)
                 ->addSelect('crawl_issues.details as details');
+        }
+
+        if ($withCustom) {
+            $query->whereNotNull(DB::raw("crawl_pages.facts->'custom'"));
+        }
+
+        if ($stateFilter && preg_match(self::CUSTOM_KEY_PATTERN, $stateFilter, $custom) && isset($customColumns[$stateFilter])) {
+            $isNotContains = $custom[1] === 'search' && (AuditWebsite::config($crawl)['custom_search'][(int) $custom[2]]['mode'] ?? null) === 'not_contains';
+
+            return match (true) {
+                $custom[1] === 'extract' => $query->whereRaw("jsonb_array_length(coalesce({$customColumns[$stateFilter]}, '[]'::jsonb)) > 0"),
+                $isNotContains           => $query->whereRaw("coalesce({$customColumns[$stateFilter]}, 0) = 0"),
+                default                  => $query->whereRaw("coalesce({$customColumns[$stateFilter]}, 0) > 0"),
+            };
         }
 
         return match ($stateFilter) {

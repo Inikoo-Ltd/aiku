@@ -33,13 +33,14 @@ class CrawlTabSheet implements FromQuery, WithHeadings, WithMapping, WithTitle, 
         private readonly CrawlTabEnum $tab,
         private readonly ?string $filter,
         private readonly string $title,
+        private readonly ?string $segment = null,
     ) {
-        $this->columns = GetCrawlTabRows::make()->columns($this->tab, $this->filter);
+        $this->columns = GetCrawlTabRows::make()->columns($this->tab, $this->filter, $this->crawl);
     }
 
     public function query(): Builder
     {
-        return GetCrawlTabRows::make()->query($this->crawl, $this->tab, $this->filter)->orderBy('url');
+        return GetCrawlTabRows::make()->query($this->crawl, $this->tab, $this->filter, null, $this->segment)->orderBy('url');
     }
 
     public function headings(): array
