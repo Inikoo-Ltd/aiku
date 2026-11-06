@@ -500,7 +500,7 @@ onUnmounted(() => {
 
         <!-- Section tabs: each one swaps the view below -->
         <!-- COLLAPSED -->
-        <div v-if="!layout.messagingSidebar.show" class="flex flex-col items-center pt-2 border-b border-[var(--chat-line)]">
+        <div v-if="!layout.messagingSidebar.show && !isRailPartHidden('messaging')" class="flex flex-col items-center pt-2 border-b border-[var(--chat-line)]">
             <div
                 v-for="tab in tabs.filter((tab) => tab.key === 'messages')"
                 :key="'rail-tab-' + tab.key"
@@ -549,7 +549,7 @@ onUnmounted(() => {
         </div>
 
         <!-- Messaging button -->
-        <div v-if="!layout.messagingSidebar.show" class="pt-2 flex justify-center items-center">
+        <div v-if="!layout.messagingSidebar.show" v-show="!isRailPartHidden('messaging')" class="pt-2 flex justify-center items-center">
             <button class="h-9 w-9 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)]" data-rail="open_messaging" v-tooltip="ctrans('Open messaging')" @click="openFullMessaging">
                 <FontAwesomeIcon icon="fal fa-expand-alt" fixed-width aria-hidden="true" />
             </button>
@@ -616,6 +616,7 @@ onUnmounted(() => {
                 +{{ newerConversationsHidden }}
             </button>
             <button
+                v-if="!isRailPartHidden('messaging')"
                 class="h-9 w-9 rounded-full bg-transparent border border-dashed border-[var(--chat-muted)] shrink-0 flex items-center justify-center text-[var(--chat-muted)] hover:text-[var(--chat-text)] hover:border-[var(--chat-text)]"
                 data-rail="chat_new_message"
                 v-tooltip="ctrans('New message')"

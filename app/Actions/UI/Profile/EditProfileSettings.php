@@ -282,6 +282,7 @@ class EditProfileSettings
 
         $labels = [
             'online'               => __('Colleagues online'),
+            'messaging'            => __('Messaging, expand and new message'),
             'chat_bubbles'         => __('Chat bubbles'),
             'tickets_queue'        => __('Tickets to fix'),
             'tickets_mine'         => __('Tickets I reported'),

@@ -47,7 +47,7 @@ class UpdateProfile extends OrgAction
         'ticket'           => ['popup', 'desktop', 'sound'],
     ];
 
-    public const array RAIL_BADGES = ['online', 'chat_bubbles', 'tickets_queue', 'tickets_mine', 'tasks', 'tasks_created', 'tasks_review', 'developments', 'dispatching_waiting', 'crm_waiting', 'crm_return', 'faire_skipped', 'master_updated', 'products_need_review'];
+    public const array RAIL_BADGES = ['online', 'messaging', 'chat_bubbles', 'tickets_queue', 'tickets_mine', 'tasks', 'tasks_created', 'tasks_review', 'developments', 'dispatching_waiting', 'crm_waiting', 'crm_return', 'faire_skipped', 'master_updated', 'products_need_review'];
 
     public function handle(User $user, array $modelData): User
     {
