@@ -41,7 +41,7 @@ class GetFamilySeoIssues
         }
 
         $auditPage = CrawlPage::where('webpage_id', $webpage->id)
-            ->whereHas('crawl', fn ($query) => $query->where('type', CrawlTypeEnum::AUDIT)->where('state', CrawlStateEnum::FINISH))
+            ->whereHas('crawl', fn ($query) => $query->where('type', CrawlTypeEnum::AUDIT)->where('is_full_audit', true)->where('state', CrawlStateEnum::FINISH))
             ->with(['crawl', 'issues'])
             ->orderByDesc('crawl_id')
             ->orderByRaw('status_code = 200 desc nulls last')

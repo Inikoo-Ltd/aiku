@@ -143,6 +143,7 @@ class GetSeoPortfolio
         return DB::table('crawls')
             ->whereIn('website_id', $websiteIds)
             ->where('type', CrawlTypeEnum::AUDIT->value)
+            ->where('is_full_audit', true)
             ->whereNotNull('health_score')
             ->orderByDesc('id')
             ->get(['website_id', 'health_score'])

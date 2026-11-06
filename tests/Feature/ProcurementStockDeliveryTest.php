@@ -115,6 +115,7 @@ use App\Models\SysAdmin\Organisation;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\AgentPayment;
 use App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry;
+use App\Actions\SupplyChain\AgentInvoice\UI\GetAgentContainerInvoiceData;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Actions\SupplyChain\AgentPayment\ImportAgentLedgerExcel;
 use App\Models\Procurement\PurchaseOrderTransaction;
@@ -1621,6 +1622,28 @@ test('an agent invoices a container from its lines, its charges are the ledger l
     $this->patch(route('grp.models.stock-delivery.dispatch', $stockDelivery->id), ['reason' => 'Packing list comes with the goods'])->assertSessionHasNoErrors();
 
     expect(fn () => StoreAgentInvoice::make()->handle($agent, $stockDelivery->refresh()))->toThrow(ValidationException::class);
+
+    $chargeTypes = collect(GetAgentContainerInvoiceData::run($agent->organisation, $stockDelivery->refresh())['charge_form']['types'])->pluck('value');
+    expect($chargeTypes)->toContain('container_supplies')->not->toContain('agent_fee')->not->toContain('transfer_received')->not->toContain('supplier_payment');
+
+    $addCharge = fn () => $this->post(route('grp.models.agent.ledger_entry.store', $agent->id), [
+        'organisation_id'   => $stockDelivery->organisation_id,
+        'stock_delivery_id' => $stockDelivery->id,
+        'type'              => 'container_supplies',
+        'date'              => date('Y-m-d'),
+        'amount'            => 1812.4,
+        'notes'             => 'Super Dry, dehumidifier packs, rope',
+    ]);
+    $addCharge()->assertSessionHasNoErrors();
+
+    $again->refresh();
+    expect((float) $again->total_amount)->toBe(1971.9)
+        ->and(collect($again->charges)->last())->toMatchArray(['type' => 'packing_charge', 'amount' => 1812.4, 'org_stock_id' => null])
+        ->and(\App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges::isApproved($again))->toBeFalse();
+
+    $stockDelivery->updateQuietly(['is_costed' => true]);
+    expect(GetAgentContainerInvoiceData::run($agent->organisation, $stockDelivery->refresh())['charge_form'])->toBeNull();
+    $addCharge()->assertSessionHasErrors('stock_delivery_id');
 });
 
 test('agent commission invoice charges a rate on the products of the purchase orders shipped in the month, by supplier (INI-208)', function () {

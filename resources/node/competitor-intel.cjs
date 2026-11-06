@@ -67,6 +67,7 @@ const extract = (socials, pageText) => {
 
     return {
         title: document.title,
+        lang: document.documentElement.lang || meta('og:locale') || null,
         description: meta('description') || meta('og:description'),
         og_site_name: meta('og:site_name'),
         generator: meta('generator'),

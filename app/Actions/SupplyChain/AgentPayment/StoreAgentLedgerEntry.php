@@ -120,6 +120,11 @@ class StoreAgentLedgerEntry extends OrgAction
             if (!$belongs) {
                 $validator->errors()->add('stock_delivery_id', __('Choose a container of this client that comes through you.'));
             }
+
+            $type = AgentPaymentTypeEnum::tryFrom((string) $this->get('type'));
+            if ($belongs && $type?->isCharge() && !SyncAgentInvoiceChargesFromLedger::chargesOpen(StockDelivery::find($stockDeliveryId))) {
+                $validator->errors()->add('stock_delivery_id', __('This container is already costed, its charges can no longer change.'));
+            }
         }
     }
 

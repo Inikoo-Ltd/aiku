@@ -36,6 +36,7 @@ const props = defineProps<{
         master_shop: { name: string; slug: string }
         sells_to: string
         currency_code: string
+        language: string | null
         read_method: string
         has_login: boolean
         status: string | null
@@ -81,6 +82,7 @@ const facts = computed(() => [
     { label: ctrans("Master shop"), value: props.competitor.master_shop.name, href: route("grp.masters.master_shops.show", { masterShop: props.competitor.master_shop.slug }) },
     { label: ctrans("Sells to"), value: props.competitor.sells_to },
     { label: ctrans("Currency of their prices"), value: props.competitor.currency_code },
+    { label: ctrans("Language of their website"), value: props.competitor.language ?? ctrans("Not known yet") },
     { label: ctrans("Prices read from"), value: readMethodLabels[props.competitor.read_method] + (props.competitor.has_login ? " · " + ctrans("logs in with our trade account") : "") },
 ])
 

@@ -24,6 +24,7 @@ enum AgentPaymentTypeEnum: string
     case SUPPLIER_DEPOSIT = 'supplier_deposit';
     case SUPPLIER_BALANCE = 'supplier_balance';
     case PACKAGING = 'packaging';
+    case CONTAINER_SUPPLIES = 'container_supplies';
     case INSPECTION = 'inspection';
     case SAMPLES = 'samples';
     case MOULD_OR_LOGO = 'mould_or_logo';
@@ -41,6 +42,7 @@ enum AgentPaymentTypeEnum: string
             'supplier_deposit'  => __('Supplier deposit'),
             'supplier_balance'  => __('Supplier balance'),
             'packaging'         => __('Product packaging'),
+            'container_supplies' => __('Container supplies'),
             'inspection'        => __('Inspection'),
             'samples'           => __('Samples'),
             'mould_or_logo'     => __('Mould or logo'),
@@ -59,6 +61,11 @@ enum AgentPaymentTypeEnum: string
     public function isSupplierPayment(): bool
     {
         return in_array($this, [self::SUPPLIER_PAYMENT, self::SUPPLIER_DEPOSIT, self::SUPPLIER_BALANCE], true);
+    }
+
+    public function isCharge(): bool
+    {
+        return !$this->isMoneyIn() && !$this->isSupplierPayment();
     }
 
     /**

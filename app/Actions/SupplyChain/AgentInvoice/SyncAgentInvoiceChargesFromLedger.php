@@ -34,7 +34,7 @@ class SyncAgentInvoiceChargesFromLedger
         /** @var AgentInvoice|null $agentInvoice */
         $agentInvoice = $stockDelivery->agentInvoice()->first();
 
-        if (!$agentInvoice || !self::followsLedger($agentInvoice) || $stockDelivery->is_costed || Arr::get($stockDelivery->data ?? [], ApplyAgentInvoiceCosting::APPLIED_AT)) {
+        if (!$agentInvoice || !self::followsLedger($agentInvoice) || !self::chargesOpen($stockDelivery)) {
             return null;
         }
 
@@ -64,6 +64,14 @@ class SyncAgentInvoiceChargesFromLedger
         ]);
 
         return $agentInvoice;
+    }
+
+    /**
+     * A container takes charges from the ledger until its costing takes them, also after it was dispatched.
+     */
+    public static function chargesOpen(StockDelivery $stockDelivery): bool
+    {
+        return !$stockDelivery->is_costed && !Arr::get($stockDelivery->data ?? [], ApplyAgentInvoiceCosting::APPLIED_AT);
     }
 
     /**
@@ -135,10 +143,7 @@ class SyncAgentInvoiceChargesFromLedger
      */
     public static function ledgerLines(StockDelivery $stockDelivery): \Illuminate\Support\Collection
     {
-        $notCharges = array_merge(
-            AgentPaymentTypeEnum::moneyInValues(),
-            array_map(fn (AgentPaymentTypeEnum $type) => $type->value, array_filter(AgentPaymentTypeEnum::cases(), fn (AgentPaymentTypeEnum $type) => $type->isSupplierPayment()))
-        );
+        $notCharges = array_merge(AgentPaymentTypeEnum::moneyInValues(), AgentPaymentTypeEnum::supplierPaymentValues());
 
         return AgentPayment::where('stock_delivery_id', $stockDelivery->id)
             ->whereNotIn('type', $notCharges)
@@ -151,7 +156,7 @@ class SyncAgentInvoiceChargesFromLedger
     public static function chargeType(AgentPaymentTypeEnum $type): string
     {
         return match ($type) {
-            AgentPaymentTypeEnum::PACKAGING     => SupplierAgreedTermTypeEnum::PACKING_CHARGE->value,
+            AgentPaymentTypeEnum::PACKAGING, AgentPaymentTypeEnum::CONTAINER_SUPPLIES => SupplierAgreedTermTypeEnum::PACKING_CHARGE->value,
             AgentPaymentTypeEnum::MOULD_OR_LOGO => SupplierAgreedTermTypeEnum::MOULD_OR_TOOLING_CHARGE->value,
             AgentPaymentTypeEnum::SAMPLES       => SupplierAgreedTermTypeEnum::SAMPLE_CHARGE->value,
             AgentPaymentTypeEnum::INLAND_CHARGE => SupplierAgreedTermTypeEnum::LOCAL_DELIVERY_TO_PORT_CHARGE->value,

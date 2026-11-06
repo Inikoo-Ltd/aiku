@@ -51,11 +51,11 @@ const formatDate = (dateString: string | null) => {
     }
 }
 
-const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
+const getStatusIcon = (status: string, valid: boolean, type?: string) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].icon
 
-const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
+const getStatusColor = (status: string, valid: boolean, type?: string) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].colorClass
 
-const getStatusText = (status: string, valid: boolean) => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].label)
+const getStatusText = (status: string, valid: boolean, type?: string) => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].label)
 
 </script>
 
@@ -70,16 +70,16 @@ const getStatusText = (status: string, valid: boolean) => ctrans(taxNumberCheckD
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
                         <FontAwesomeIcon 
-                            :icon="getStatusIcon(tax_number.status, tax_number.valid)"
-                            :class="getStatusColor(tax_number.status, tax_number.valid)" 
+                            :icon="getStatusIcon(tax_number.status, tax_number.valid, tax_number.type)"
+                            :class="getStatusColor(tax_number.status, tax_number.valid, tax_number.type)" 
                             class="text-sm"
                             fixed-width
                         />
 
                         <div class="space-y-2 whitespace-nowrap">
                             <p class="text-sm">
-                                <span class="font-medium" :class="getStatusColor(tax_number.status, tax_number.valid)">
-                                    {{ getStatusText(tax_number.status, tax_number.valid) }}
+                                <span class="font-medium" :class="getStatusColor(tax_number.status, tax_number.valid, tax_number.type)">
+                                    {{ getStatusText(tax_number.status, tax_number.valid, tax_number.type) }}
                                 </span>
 
                                 <!-- Country -->

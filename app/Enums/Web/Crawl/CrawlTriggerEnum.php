@@ -18,6 +18,7 @@ enum CrawlTriggerEnum: string
     case USER = 'user';
     case WEBSITE_UPDATE = 'website_update';
     case COMMAND = 'command';
+    case SCHEDULE = 'schedule';
 
 
 }

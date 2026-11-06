@@ -2,9 +2,9 @@
 import { computed, ref } from "vue"
 import { Link, router, usePage } from "@inertiajs/vue3"
 import { useConfirm } from "primevue/useconfirm"
-import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PaymentDialog, { PaymentPayload } from "@/Components/Procurement/PaymentDialog.vue"
+import AgentContainerChargeDialog, { ChargeForm } from "@/Components/Procurement/AgentContainerChargeDialog.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faFileInvoice, faFilePdf, faPlus, faTrashAlt, faPaperclip } from "@fal"
@@ -63,6 +63,7 @@ const props = defineProps<{
 		is_open: boolean
 		store_route: routeType
 		ledger_route: routeType | null
+		charge_form: ChargeForm | null
 	}
 	currencyCode: string
 }>()
@@ -83,13 +84,13 @@ const storePayment = (payload: PaymentPayload) => {
 	router.post(route(storeRoute.name, storeRoute.parameters), payload, {
 		preserveScroll: true,
 		forceFormData: true,
-		onStart: () => (paymentLoading.value = true),
-		onFinish: () => (paymentLoading.value = false),
-		onSuccess: () => {
-			isPaymentDialogOpen.value = false
-			notify({ title: ctrans("Payment recorded"), type: "success" })
+		onStart: () => {
+			paymentLoading.value = true
+			actionError.value = null
 		},
-		onError: (errors: Record<string, string>) => notify({ title: ctrans("Something went wrong"), text: Object.values(errors)[0], type: "error" }),
+		onFinish: () => (paymentLoading.value = false),
+		onSuccess: () => (isPaymentDialogOpen.value = false),
+		onError,
 	})
 }
 
@@ -105,27 +106,31 @@ const deletePayment = (row: Payment) => {
 		accept: () =>
 			router.delete(route(deleteRoute.name, deleteRoute.parameters), {
 				preserveScroll: true,
-				onSuccess: () => notify({ title: ctrans("Payment removed"), type: "success" }),
+				onStart: () => (actionError.value = null),
 				onError,
 			}),
 	})
 }
 
+const actionError = ref<string | null>(null)
 const errorMessage = computed(() => {
 	const errors = (page.props.errors ?? {}) as Record<string, string>
-	return Object.entries(errors).find(([key]) => key === "invoice" || key.startsWith("charges"))?.[1]
+	return actionError.value ?? Object.entries(errors).find(([key]) => key === "invoice" || key.startsWith("charges"))?.[1]
 })
 
-const onError = (errors: Record<string, string>) =>
-	notify({ title: ctrans("Something went wrong"), text: Object.values(errors)[0], type: "error" })
+const onError = (errors: Record<string, string>) => (actionError.value = Object.values(errors)[0] ?? ctrans("Something went wrong"))
+
+const isChargeDialogOpen = ref(false)
 
 const invoiceLoading = ref(false)
 const makeInvoice = () =>
 	router.post(route(props.data.store_route.name, props.data.store_route.parameters), {}, {
 		preserveScroll: true,
-		onStart: () => (invoiceLoading.value = true),
+		onStart: () => {
+			invoiceLoading.value = true
+			actionError.value = null
+		},
 		onFinish: () => (invoiceLoading.value = false),
-		onSuccess: () => notify({ title: ctrans("Invoice made"), type: "success" }),
 		onError,
 	})
 
@@ -197,12 +202,20 @@ const deposits = computed(() => props.data.invoice?.advance_payments.filter(paym
 			<div class="px-4 py-4">
 				<div class="flex items-center justify-between">
 					<h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ ctrans("Your charges") }}</h3>
-					<Link v-if="data.ledger_route" :href="route(data.ledger_route.name, data.ledger_route.parameters)" class="text-xs text-gray-500 underline hover:text-gray-800">{{ ctrans("Ledger") }}</Link>
+					<div class="flex items-center gap-3">
+						<Link v-if="data.ledger_route" :href="route(data.ledger_route.name, data.ledger_route.parameters)" class="text-xs text-gray-500 underline hover:text-gray-800">{{ ctrans("Ledger") }}</Link>
+						<Button v-if="data.charge_form" type="tertiary" size="xs" :label="ctrans('Add charge')" @click="isChargeDialogOpen = true">
+							<template #icon>
+								<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
+							</template>
+						</Button>
+					</div>
 				</div>
+				<AgentContainerChargeDialog v-if="data.charge_form" v-model:visible="isChargeDialogOpen" :chargeForm="data.charge_form" :currency="data.invoice.currency_code" :hasCharges="data.invoice.charges.length > 0" />
+				<p class="mt-1 text-xs text-gray-500">{{ ctrans("Charges are the money you paid out for this container, as recorded in your ledger against it: loading, inland charges, container supplies, packaging and other costs.") }}</p>
 				<p v-if="data.invoice.charges.length && !data.invoice.charges_approved" class="mt-2 rounded bg-amber-50 px-2 py-1 text-sm text-amber-700">{{ ctrans("Your charges are waiting for approval by the organisation paying them") }}</p>
 				<p v-else-if="data.invoice.charges.length" class="mt-2 rounded bg-green-50 px-2 py-1 text-sm text-green-700">{{ ctrans("Charges approved") }}</p>
-				<p v-if="!data.invoice.charges.length" class="mt-2 text-sm text-gray-500">{{ ctrans("The charges are the money paid out for this container in your ledger: record loading, inland charges, packaging and other costs there, against this container.") }}</p>
-				<ul v-else class="mt-2 space-y-1 text-sm">
+				<ul v-if="data.invoice.charges.length" class="mt-2 space-y-1 text-sm">
 					<li v-for="(charge, index) in data.invoice.charges" :key="index" class="flex justify-between gap-4">
 						<span class="text-gray-700">{{ charge.description }}</span>
 						<span class="tabular-nums text-gray-800">{{ money(Number(charge.amount)) }}</span>

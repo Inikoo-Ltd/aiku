@@ -602,6 +602,11 @@ class Website extends Model implements Auditable, HasMedia
         return $this->hasMany(Crawl::class);
     }
 
+    public function crawlSchedule(): HasOne
+    {
+        return $this->hasOne(CrawlSchedule::class);
+    }
+
     public function llmsTxt(): HasMany
     {
         return $this->hasMany(WebsiteLlmsTxt::class);

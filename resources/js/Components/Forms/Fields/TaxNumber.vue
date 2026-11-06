@@ -98,7 +98,7 @@ const isModalOpen = ref(false)
 const validationStatus = computed(() => {
     if (!props.fieldData?.value || isFormDirty.value) return null
 
-    const { status, valid, invalid_checked_at, checked_at, country } = props.fieldData.value
+    const { status, valid, invalid_checked_at, checked_at, country, type } = props.fieldData.value
 
     return {
         status,
@@ -106,6 +106,7 @@ const validationStatus = computed(() => {
         invalid_checked_at,
         checked_at,
         country,
+        type,
         vatNumber: props.fieldData.value.number
     }
 })
@@ -125,11 +126,11 @@ const formatDate = (dateString: string | null) => {
     }
 }
 
-const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
+const getStatusIcon = (status: string, valid: boolean, type?: string) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].icon
 
-const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
+const getStatusColor = (status: string, valid: boolean, type?: string) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].colorClass
 
-const getStatusText = (status: string, valid: boolean) => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].label)
+const getStatusText = (status: string, valid: boolean, type?: string) => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].label)
 
 const providedCountriesAddressData = props.options?.countriesAddressData ?? props.fieldData?.options?.countriesAddressData
 const fetchedCountriesAddressData = providedCountriesAddressData ? null : useCountriesAddressData()
@@ -311,15 +312,15 @@ const markAsValid = () => {
             <div class="flex items-start justify-between">
                 <div class="flex items-center space-x-2">
                     <FontAwesomeIcon 
-                        :icon="getStatusIcon(validationStatus.status, validationStatus.valid)"
-                        :class="getStatusColor(validationStatus.status, validationStatus.valid)" 
+                        :icon="getStatusIcon(validationStatus.status, validationStatus.valid, validationStatus.type)"
+                        :class="getStatusColor(validationStatus.status, validationStatus.valid, validationStatus.type)" 
                         class="text-sm" fixed-width />
 
                     <div class="space-y-2">
                         <p class="text-sm">
                             <span class="font-medium "
-                                :class="getStatusColor(validationStatus.status, validationStatus.valid)">
-                                {{ getStatusText(validationStatus.status, validationStatus.valid) }}
+                                :class="getStatusColor(validationStatus.status, validationStatus.valid, validationStatus.type)">
+                                {{ getStatusText(validationStatus.status, validationStatus.valid, validationStatus.type) }}
                             </span>
 
                             <!-- Country -->
@@ -345,8 +346,11 @@ const markAsValid = () => {
                                 {{ formatDate(validationStatus.checked_at) }}
                             </span>
                         </p>
-                        <p v-if="taxNumberCheckResult(validationStatus.status, validationStatus.valid) === 'pending'" class="text-xs text-gray-500">
+                        <p v-if="taxNumberCheckResult(validationStatus.status, validationStatus.valid, validationStatus.type) === 'pending'" class="text-xs text-gray-500">
                             {{ ctrans('VIES could not be reached, we will re-check automatically') }}
+                        </p>
+                        <p v-else-if="taxNumberCheckResult(validationStatus.status, validationStatus.valid, validationStatus.type) === 'not_checked' && validationStatus.type !== 'gb-vat'" class="text-xs text-gray-500">
+                            {{ ctrans('Only EU VAT numbers are validated') }}
                         </p>
                     </div>
                 </div>
