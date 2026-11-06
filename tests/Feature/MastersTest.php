@@ -4853,6 +4853,25 @@ describe('competitor prices, HELP-3605', function () {
             ->assertInertia(fn (AssertableInertia $page) => $page->where('dashboard.status.failures', fn ($failures) => collect($failures->toArray())->firstWhere('id', $this->competitor->id)['reason'] === 'The search link does not search')->etc());
     });
 
+    test('a search link missing its question mark lands on a not found page that is not taken for a search', function () {
+        $notFound = ['final_url' => 'https://rival.example.com/searchq=singing%20bowl', 'status' => 404, 'blocked' => false, 'text' => 'Page not found /searchq=singing bowl'];
+        $results  = ['final_url' => 'https://rival.example.com/search?q=singing%20bowl', 'status' => 200, 'blocked' => false, 'text' => 'Singing bowl results'];
+        $search   = fn (array $pages) => \App\Actions\Masters\Competitor\ResearchCompetitorPrices::searchIsBroken($pages, ['Singing bowl', 'Singing bowl']);
+
+        expect($search([$notFound, $notFound]))->toBeTrue()
+            ->and($search([$notFound, $results]))->toBeFalse()
+            ->and($search([array_merge($notFound, ['status' => 200]), array_merge($notFound, ['status' => 200])]))->toBeFalse();
+
+        $this->competitor->update(['search_url' => 'https://rival.example.com/searchq={query}']);
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode(['login_error' => null, 'cookies' => [], 'pages' => [array_merge($notFound, ['url' => 'https://rival.example.com/searchq=x', 'links' => []])]]))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response('<html></html>')]);
+
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+
+        expect($this->competitor->refresh()->status)->toBe(\App\Enums\Masters\Competitor\CompetitorStatusEnum::SEARCH_BROKEN);
+    });
+
     test('the dashboard explains the first steps when there are no competitors', function () {
         \App\Models\Masters\Competitor::where('group_id', group()->id)->delete();
 

@@ -146,7 +146,8 @@ class ResearchCompetitorPrices
     /**
      * A search link that does not search lands every product on the same page without the searched words,
      * like a results page that dropped the query. A page that keeps a searched word in its link or its text
-     * searched; one batch where none does means the link is wrong.
+     * searched; one batch where none does means the link is wrong. A page the website answers with "not found"
+     * did not search, whatever its own address holds: a link missing its "?" (/searchq=word) keeps the word in the address.
      *
      * @param  array<int, array>  $pages
      * @param  array<int, string>  $searchedNames
@@ -156,6 +157,10 @@ class ResearchCompetitorPrices
         $read = collect($pages)->filter(fn ($page) => filled($page['final_url'] ?? null) && filled($page['text'] ?? null) && !($page['blocked'] ?? false));
 
         return $read->isNotEmpty() && $read->every(function (array $page, int $index) use ($searchedNames) {
+            if (in_array($page['status'] ?? null, [404, 410], true)) {
+                return true;
+            }
+
             $word = collect(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($searchedNames[$index] ?? '')))->first(fn ($word) => mb_strlen($word) >= 4);
 
             return $word && !str_contains(mb_strtolower(urldecode($page['final_url'])), $word) && !str_contains(mb_strtolower($page['text']), $word);
