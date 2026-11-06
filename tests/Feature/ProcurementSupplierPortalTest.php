@@ -447,3 +447,13 @@ test('the supplier labels plan names only the organisations buying from the supp
     expect(collect($plan['organisations'])->pluck('id')->all())->toBe([$this->organisation->id])
         ->and($plan['organisation_id'])->toBe($this->organisation->id);
 });
+
+test('a supplier link prints at most five label PDFs a minute', function () {
+    [, , $token] = portalSupplier($this);
+    \Illuminate\Support\Facades\RateLimiter::clear('supplier-portal-labels:'.$token);
+
+    foreach (range(1, 5) as $ignored) {
+        $this->getJson(route('grp.supplier_share.labels', $token))->assertUnprocessable();
+    }
+    $this->getJson(route('grp.supplier_share.labels', $token))->assertTooManyRequests();
+});

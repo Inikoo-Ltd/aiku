@@ -51,7 +51,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::get('products', IndexSupplierPortalProducts::class)->name('products');
         Route::get('purchase-orders/{purchaseOrder}', ShowSupplierPortalPurchaseOrder::class)->whereNumber('purchaseOrder')->name('purchase_order');
         Route::get('images/{media:ulid}', DownloadSupplierPortalImage::class)->name('image');
-        Route::get('labels', PdfSupplierPortalLabels::class)->name('labels');
+        Route::get('labels', PdfSupplierPortalLabels::class)->middleware('throttle:supplier-portal-labels')->name('labels');
         Route::get('labels/plan', GetSupplierPortalLabelsPlan::class)->name('labels.plan');
     });
 
