@@ -42,6 +42,8 @@ trait WithAppointmentTypeRules
             'booking_window_days'           => [...$optional, 'integer', 'min:1', 'max:365'],
             'capacity_per_slot'             => [...$optional, 'integer', 'min:1', 'max:100'],
             'is_active'                     => [...$optional, 'boolean'],
+            'start_times'                   => [...$optional, 'nullable', 'array', 'max:48'],
+            'start_times.*'                 => ['required', 'date_format:H:i', 'distinct'],
             'availability'                  => [...$optional, 'array'],
             'availability.weekly'           => ['sometimes', 'array'],
             'availability.weekly.*'         => ['array'],
@@ -159,6 +161,23 @@ trait WithAppointmentTypeRules
         }
 
         $modelData['data'] = $data;
+
+        return $modelData;
+    }
+
+    protected function applyStartTimes(array $modelData): array
+    {
+        if (!Arr::has($modelData, 'start_times')) {
+            return $modelData;
+        }
+
+        $startTimes = collect((array) Arr::pull($modelData, 'start_times'))->map(fn ($time) => (string) $time)->unique()->sort()->values()->all();
+
+        if ($startTimes) {
+            $modelData['data']['start_times'] = $startTimes;
+        } else {
+            unset($modelData['data']['start_times']);
+        }
 
         return $modelData;
     }
