@@ -9,12 +9,12 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\Shipment\StoreShipment;
-use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
+use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,25 +48,17 @@ class SaveDeliveryNoteShippingFieldsAndRetryStoreShipping extends OrgAction
     }
 
 
-    public function updateDeliveryAddress(DeliveryNote $deliveryNote, $addressData): void
+    public function updateDeliveryAddress(DeliveryNote $deliveryNote, array $addressData): void
     {
-        $addressData = Arr::only($addressData, [
-            'address_line_1',
-            'address_line_2',
-            'sorting_code',
-            'postal_code',
-            'locality',
-            'dependent_locality',
-            'administrative_area',
-            'country_id'
-
-        ]);
-        UpdateAddress::run($deliveryNote->deliveryAddress, $addressData);
-        $deliveryNote->update(
-            [
-                'delivery_country_id' => $addressData['country_id'],
-            ]
-        );
+        if (!Arr::get($addressData, 'country_id')) {
+            return;
+        }
+        if (!$deliveryNote->isDeliveryAddressEditable()) {
+            throw ValidationException::withMessages([
+                'address' => __('The delivery address can only be changed before a shipment is created and while the delivery note is not dispatched or cancelled.'),
+            ]);
+        }
+        UpdateDeliveryNoteDeliveryAddress::make()->handle($deliveryNote, ['address' => $addressData]);
     }
 
     public function rules(): array
@@ -77,7 +69,7 @@ class SaveDeliveryNoteShippingFieldsAndRetryStoreShipping extends OrgAction
             'phone'        => ['sometimes', 'nullable', 'string'],
             'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'address'      => ['sometimes', 'array'],
+            'address'      => ['sometimes', 'array', new ValidAddress()],
 
 
         ];

@@ -1,4 +1,5 @@
 {
+    "The delivery address can only be changed before a shipment is created and while the delivery note is not dispatched or cancelled.": "La dirección de entrega solo se puede cambiar antes de crear un envío y mientras el albarán no esté despachado ni cancelado.",
     " Products for sale": "Productos a la venta",
     " Slots": "Huecos",
     " is handling this chat": "está atendiendo este chat",

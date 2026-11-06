@@ -707,6 +707,16 @@ class DeliveryNote extends Model implements Auditable
         return $this->state === DeliveryNoteStateEnum::DISPATCHED;
     }
 
+    /**
+     * PRE-77. Once a shipment exists the label already carries the old address.
+     */
+    public function isDeliveryAddressEditable(): bool
+    {
+        return $this->deliveryAddress !== null
+            && !in_array($this->state, [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED], true)
+            && !$this->shipments()->exists();
+    }
+
     public function canBeUndispatchedBy(User $user): bool
     {
         return $user->authTo([

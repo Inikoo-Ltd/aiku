@@ -1,4 +1,5 @@
 {
+    "The delivery address can only be changed before a shipment is created and while the delivery note is not dispatched or cancelled.": "Dodaciu adresu je možné zmeniť len pred vytvorením zásielky a kým dodací list nie je odoslaný ani zrušený.",
     " Products for sale": "Produkty na predaj",
     " Slots": "Sloty",
     " is handling this chat": "vybavuje tento čet",

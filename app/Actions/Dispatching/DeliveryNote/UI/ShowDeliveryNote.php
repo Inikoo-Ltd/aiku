@@ -1048,6 +1048,11 @@ class ShowDeliveryNote extends OrgAction
                 ]
             ],
             'delivery_address'             => AddressResource::make($deliveryNote->deliveryAddress),
+            'delivery_address_update_route' => request()->user() instanceof \App\Models\SysAdmin\User && $deliveryNote->canBeShippedBy(request()->user()) && $deliveryNote->isDeliveryAddressEditable() ? [
+                'method'     => 'patch',
+                'name'       => 'grp.models.delivery_note.update_address',
+                'parameters' => ['deliveryNote' => $deliveryNote->id],
+            ] : null,
             'is_forbidden_delivery'        => $this->isDeliveryForbiddenForShop($deliveryNote->shop, $deliveryNote->deliveryAddress),
             'picker'                       => $deliveryNote->pickerUser,
             'packer'                       => $deliveryNote->packerUser,

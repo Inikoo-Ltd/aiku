@@ -8142,3 +8142,46 @@ test('dispatch hub dropshipping and marketplace rows count picked and packing de
             + $stats->number_external_shop_delivery_notes_state_finalised
         );
 });
+
+test('customer service can change the delivery address of a delivery note before it has a shipment, PRE-77', function () {
+    [$deliveryNote] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $oldAddress    = $deliveryNote->deliveryAddress;
+    $oldLine       = $oldAddress->address_line_1;
+    $countryId     = $oldAddress->country_id;
+    $newAddress    = [
+        'address_line_1'      => 'Via Nuova 7',
+        'locality'            => 'Torino',
+        'postal_code'         => '10121',
+        'administrative_area' => 'TO',
+        'country_id'          => $countryId,
+    ];
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('warehouse-viewer', $this->warehouse)]);
+    patch(route('grp.models.delivery_note.update_address', $deliveryNote->id), ['address' => $newAddress])->assertForbidden();
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $deliveryNote->shop)]);
+    patch(route('grp.models.delivery_note.update_address', $deliveryNote->id), ['address' => $newAddress])->assertSessionHasNoErrors();
+
+    $deliveryNote->refresh();
+    expect($deliveryNote->deliveryAddress->address_line_1)->toBe('Via Nuova 7')
+        ->and($deliveryNote->address_id)->not->toBe($oldAddress->id)
+        ->and($oldAddress->refresh()->address_line_1)->toBe($oldLine)
+        ->and($deliveryNote->delivery_country_id)->toBe($countryId);
+
+    $deliveryNote->updateQuietly(['delivery_locked' => false]);
+    patch(route('grp.models.delivery_note.update_address', $deliveryNote->id), ['address' => [...$newAddress, 'address_line_1' => 'Via Unlocked 1']])->assertSessionHasNoErrors();
+    expect($deliveryNote->refresh()->deliveryAddress->address_line_1)->toBe('Via Unlocked 1')
+        ->and($deliveryNote->deliveryAddress->is_fixed)->toBeFalse();
+    $deliveryNote->updateQuietly(['delivery_locked' => true]);
+
+    $state = $deliveryNote->state;
+    $deliveryNote->updateQuietly(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    patch(route('grp.models.delivery_note.update_address', $deliveryNote->id), ['address' => [...$newAddress, 'address_line_1' => 'Too late']])->assertSessionHasErrors('address');
+    expect($deliveryNote->refresh()->deliveryAddress->address_line_1)->toBe('Via Unlocked 1');
+    $deliveryNote->updateQuietly(['state' => $state]);
+
+    actingAsUserWithRoles($user, $originalRoles);
+});
