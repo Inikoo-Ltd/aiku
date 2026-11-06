@@ -127,6 +127,9 @@ class IndexAgentMoneyRequests extends OrgAction
             'approve_route' => $canPay && !$depositRequest->isApproved()
                 ? ['name' => 'grp.models.deposit_request.approve', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
                 : null,
+            'unapprove_route' => $canPay && $depositRequest->isApproved() && $paid == 0
+                ? ['name' => 'grp.models.deposit_request.unapprove', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
+                : null,
             'pay_route'     => $canPay && $depositRequest->isApproved()
                 ? ['name' => 'grp.models.deposit_request.pay', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'post']
                 : null,

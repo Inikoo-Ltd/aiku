@@ -45,6 +45,7 @@ export interface MoneyRequestRow {
 	}[]
 	cancel_route: routeType | null
 	approve_route: routeType | null
+	unapprove_route: routeType | null
 	pay_route: routeType | null
 }
 
@@ -56,6 +57,7 @@ defineProps<{
 
 const emit = defineEmits<{
 	(e: "approve", row: MoneyRequestRow): void
+	(e: "unapprove", row: MoneyRequestRow): void
 	(e: "pay", row: MoneyRequestRow): void
 	(e: "cancel", row: MoneyRequestRow): void
 }>()
@@ -128,6 +130,11 @@ const stateClass: Record<string, string> = {
 				<Button v-if="item.approve_route" type="tertiary" size="xs" :label="ctrans('Approve')" :loading="approvingId === item.id" @click="emit('approve', item)">
 					<template #icon>
 						<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<Button v-if="item.unapprove_route" type="tertiary" size="xs" :label="ctrans('Cancel approval')" :loading="approvingId === item.id" @click="emit('unapprove', item)">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
 					</template>
 				</Button>
 				<Button v-if="item.pay_route" type="tertiary" size="xs" :label="ctrans('Pay')" @click="emit('pay', item)">

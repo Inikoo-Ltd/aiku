@@ -47,10 +47,13 @@ const approveError = ref<string | null>(null)
 
 const firstError = (errors: Record<string, string> | undefined) => Object.values(errors ?? {})[0] ?? ctrans("Something went wrong")
 
-const approve = (row: MoneyRequestRow) => {
-	if (!row.approve_route) return
+const approve = (row: MoneyRequestRow) => changeApproval(row, row.approve_route)
+const unapprove = (row: MoneyRequestRow) => changeApproval(row, row.unapprove_route)
+
+const changeApproval = (row: MoneyRequestRow, approvalRoute: MoneyRequestRow["approve_route"]) => {
+	if (!approvalRoute) return
 	approveError.value = null
-	router.patch(route(row.approve_route.name, row.approve_route.parameters), {}, {
+	router.patch(route(approvalRoute.name, approvalRoute.parameters), {}, {
 		preserveScroll: true,
 		onStart: () => (approvingId.value = row.id),
 		onFinish: () => (approvingId.value = null),
@@ -112,7 +115,7 @@ const pay = () => {
 
 	<p v-if="approveError" class="mx-4 mt-4 text-xs text-red-600">{{ approveError }}</p>
 
-	<TableAgentMoneyRequests :data="data.requests" :tab="tab" :approvingId="approvingId" @approve="approve" @pay="openPay" />
+	<TableAgentMoneyRequests :data="data.requests" :tab="tab" :approvingId="approvingId" @approve="approve" @unapprove="unapprove" @pay="openPay" />
 
 	<Dialog v-model:visible="isOpen" modal :header="ctrans('Pay :reference', { reference: paying?.reference ?? '' })" :style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<div v-if="paying" class="space-y-3">
