@@ -41,6 +41,18 @@ class DraftChatReply
      */
     public const string GAP = '~\[\[[^\]]*\]\]~u';
 
+    /**
+     * An assistant draft written since the customer last wrote is waiting: the inbox's draft_waiting rule.
+     */
+    public static function freshAssistantDraftWaiting(ChatSession|MetaChatSession $chatSession): bool
+    {
+        return $chatSession->newQuery()->whereKey($chatSession->id)
+            ->whereHas('aiDrafts', fn ($draft) => $draft->where('status', ChatAiDraftStatusEnum::PENDING->value)
+                ->whereRaw("facts->>'mode' = ?", [self::ASSISTANT])
+                ->whereColumn('chat_ai_drafts.created_at', '>=', $chatSession->getTable().'.last_visitor_message_at'))
+            ->exists();
+    }
+
     public static function pendingDraft(ChatSession|MetaChatSession $chatSession): ?ChatAiDraft
     {
         return ChatAiDraft::where($chatSession instanceof ChatSession ? 'chat_session_id' : 'meta_chat_session_id', $chatSession->id)
