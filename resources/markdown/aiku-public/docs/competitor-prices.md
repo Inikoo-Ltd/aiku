@@ -25,14 +25,14 @@ That is enough for a Shopify or WooCommerce shop that shows its prices: aiku fin
 For any other website, fill in one of the fields under **Where to read prices**:
 
 - **Product feed link**: the CSV or text file with all their products and prices that they give their trade customers. Best option; read every morning.
-- **Search link**: search their website for any word, copy the link of the results page and put `{query}` where the word was. aiku then searches their site every week for the master products that have an open price tip.
-- **Login page**, **login email** and **password**: only when they show prices to logged-in trade customers. The password is stored encrypted and never shown again; leave it empty when editing to keep it.
+- **Search link**: search their website for any word, copy the link of the results page and put `{query}` where the word was. aiku then searches their site every week for the master products that have an open price tip. When the link is left empty for a site with a login, or the one entered lands on a page without the searched words, aiku uses the search link the website publishes about itself if it has one; otherwise the competitor shows **The search link does not search**.
+- **Login page**, **login email** and **password**: only when they show prices to logged-in trade customers. The password is stored encrypted and never shown again; leave it empty when editing to keep it. aiku logs in afresh every time it searches.
 
 ## What the dashboard shows
 
 **Masters › Competitors** opens on the dashboard:
 
-- **Competitors**: how many were read fine, how many are failing and why (the website could not be opened, it blocked us, or the login failed), with the last error in plain words, and when the last read was.
+- **Competitors**: how many were read fine, how many are failing and why (the website could not be opened, it blocked us, the login failed, or the search link does not search), with the last error in plain words, and when the last read was.
 - **Matches to review**: how many matches the AI was not sure of. Click it to review them.
 - **Reviewed by staff this week** and **Confirmed this week**, each against last week.
 - One card per master shop: how many confirmed products you are **cheaper**, **about the same** (within 5%) or **dearer** on, the median difference, and the share of active master products that have at least one confirmed competitor price.

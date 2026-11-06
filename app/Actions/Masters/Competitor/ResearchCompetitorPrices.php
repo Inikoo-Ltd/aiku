@@ -56,18 +56,31 @@ class ResearchCompetitorPrices
         }
 
         $masterAssets = MasterAsset::whereIn('id', $masterAssetIds)->get()->values();
+        $search       = fn () => $this->browse($competitor, $masterAssets->map(fn (MasterAsset $masterAsset) => static::searchUrl($competitor, $masterAsset))->all());
 
-        $result = $this->browse($competitor, $masterAssets->map(fn (MasterAsset $masterAsset) => static::searchUrl($competitor, $masterAsset))->all());
+        $result       = $search();
+        $searchBroken = static::searchIsBroken($result['pages'] ?? [], $masterAssets->pluck('name')->all());
+        if ($searchBroken && ($publishedUrl = static::findSearchUrl($competitor->website)) && $publishedUrl !== $competitor->search_url) {
+            $competitor->update(['search_url' => $publishedUrl]);
+            $result       = $search();
+            $searchBroken = static::searchIsBroken($result['pages'] ?? [], $masterAssets->pluck('name')->all());
+        }
 
         $pages     = $result['pages'] ?? [];
-        $lastError = $result['error'] ?? $result['login_error'] ?? (Arr::last($pages)['blocked'] ?? false ? __('The website asked to prove we are not a robot') : null);
+        $lastError = $result['error'] ?? $result['login_error'] ?? match (true) {
+            Arr::last($pages)['blocked'] ?? false => __('The website asked to prove we are not a robot'),
+            $searchBroken                         => __('Their website showed a page without the searched words. Search their website for any word, copy the link of the results page and put {query} where the word was'),
+            default                               => null,
+        };
 
         $previousStatus = $competitor->status;
 
         $competitor->update([
             'status'     => match (true) {
                 isset($result['login_error']) => $result['login_error'] === 'blocked' ? CompetitorStatusEnum::BLOCKED : CompetitorStatusEnum::LOGIN_FAILED,
-                $lastError !== null           => isset($result['error']) ? CompetitorStatusEnum::ERROR : CompetitorStatusEnum::BLOCKED,
+                isset($result['error'])       => CompetitorStatusEnum::ERROR,
+                $searchBroken                 => CompetitorStatusEnum::SEARCH_BROKEN,
+                $lastError !== null           => CompetitorStatusEnum::BLOCKED,
                 default                       => CompetitorStatusEnum::OK,
             },
             'last_error' => $lastError,
@@ -80,7 +93,7 @@ class ResearchCompetitorPrices
         }
 
         $matches = 0;
-        foreach ($pages as $index => $page) {
+        foreach ($searchBroken ? [] : $pages as $index => $page) {
             if (empty($page['text']) || $page['blocked']) {
                 continue;
             }
@@ -127,6 +140,65 @@ class ResearchCompetitorPrices
         return strtok($url, '?').($parameters ? '?'.http_build_query($parameters) : '');
     }
 
+    /**
+     * A search link that does not search lands every product on the same page without the searched words,
+     * like a results page that dropped the query. A page that keeps a searched word in its link or its text
+     * searched; one batch where none does means the link is wrong.
+     *
+     * @param  array<int, array>  $pages
+     * @param  array<int, string>  $searchedNames
+     */
+    public static function searchIsBroken(array $pages, array $searchedNames): bool
+    {
+        $read = collect($pages)->filter(fn ($page) => filled($page['final_url'] ?? null) && filled($page['text'] ?? null) && !($page['blocked'] ?? false));
+
+        return $read->isNotEmpty() && $read->every(function (array $page, int $index) use ($searchedNames) {
+            $word = collect(preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($searchedNames[$index] ?? '')))->first(fn ($word) => mb_strlen($word) >= 4);
+
+            return $word && !str_contains(mb_strtolower(urldecode($page['final_url'])), $word) && !str_contains(mb_strtolower($page['text']), $word);
+        });
+    }
+
+    /**
+     * The search link a website publishes about itself (schema.org SearchAction), with {query} for the words,
+     * only when it is on the website's own domain.
+     */
+    public static function findSearchUrl(string $website): ?string
+    {
+        $html = rescue(fn () => Http::timeout(20)->get($website)->body(), '', report: false);
+        preg_match_all('#<script[^>]*application/ld\+json[^>]*>(.*?)</script>#si', $html, $scripts);
+
+        $actions = collect($scripts[1])->flatMap(fn ($script) => static::searchActions(json_decode(html_entity_decode($script), true)))->all();
+
+        $host = fn (?string $url) => preg_replace('/^www\./', '', mb_strtolower((string) parse_url((string) $url, PHP_URL_HOST)));
+        foreach ($actions as $action) {
+            $target = is_array($action['target'] ?? null) ? ($action['target']['urlTemplate'] ?? null) : ($action['target'] ?? null);
+            $name   = preg_match('/name=([\w-]+)/', (string) ($action['query-input'] ?? $action['query'] ?? ''), $match) ? $match[1] : 'search_term_string';
+            if (is_string($target) && str_contains($target, '{'.$name.'}') && preg_match('#^https?://#i', $target) && $host($target) === $host($website)) {
+                return str_replace('{'.$name.'}', '{query}', $target);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, array>
+     */
+    private static function searchActions(mixed $node): array
+    {
+        if (!is_array($node)) {
+            return [];
+        }
+
+        $found = str_contains(json_encode($node['@type'] ?? ''), 'SearchAction') ? [$node] : [];
+        foreach ($node as $child) {
+            $found = [...$found, ...static::searchActions($child)];
+        }
+
+        return $found;
+    }
+
     public static function searchUrl(Competitor $competitor, MasterAsset $masterAsset): string
     {
         return str_replace('{query}', urlencode($masterAsset->name), $competitor->search_url);
@@ -137,11 +209,13 @@ class ResearchCompetitorPrices
      */
     private function browse(Competitor $competitor, array $urls): array
     {
+        $logsIn = $competitor->login_url && $competitor->username;
+
         $process = Process::timeout(60 * (count($urls) + 2))
             ->input(json_encode([
                 'user_agent' => self::USER_AGENT,
-                'cookies'    => $competitor->cookies,
-                'login'      => $competitor->login_url && $competitor->username ? [
+                'cookies'    => $logsIn ? [] : $competitor->cookies,
+                'login'      => $logsIn ? [
                     'url'      => $competitor->login_url,
                     'username' => $competitor->username,
                     'password' => $competitor->password,
@@ -238,6 +312,15 @@ PROMPT;
     public function asCommand(Command $command): int
     {
         Nightwatch::dontSample();
+
+        Competitor::whereNull('search_url')
+            ->whereNull('feed_url')
+            ->whereNotNull('login_url')
+            ->each(function (Competitor $competitor) {
+                if ($searchUrl = static::findSearchUrl($competitor->website)) {
+                    $competitor->update(['search_url' => $searchUrl]);
+                }
+            });
 
         $competitors = Competitor::whereNotNull('search_url')
             ->whereNull('feed_url')
