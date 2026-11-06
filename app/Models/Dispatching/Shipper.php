@@ -119,6 +119,15 @@ class Shipper extends Model implements Auditable
             ->doNotGenerateSlugsOnUpdate();
     }
 
+    /**
+     * PRE-73. A manual shipper kept as a backup for a carrier's API (APC manual tracking) is easy
+     * to pick by mistake next to the API one, so only dispatch supervisors see and use it.
+     */
+    public function isSupervisorOnly(): bool
+    {
+        return (bool) data_get($this->settings, 'supervisor_only');
+    }
+
     public function organisation(): BelongsTo
     {
         return $this->belongsTo(Organisation::class);

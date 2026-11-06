@@ -43,6 +43,8 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
+use App\Models\Dispatching\Shipment;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Dropshipping\EbayUserStepEnum;
@@ -2665,4 +2667,60 @@ test('a family name is first sent to eBay with its department, so body brushes a
     $brush->setRelation('department', new ProductCategory(['code' => 'bath', 'name' => 'Bath & Body']));
 
     expect(StoreEbayProduct::categoryKeywords($brush))->toBe(['Brush Scrub & Scrape Bath & Body', 'Brush Scrub & Scrape', 'Facial & Bath Accessories', 'Bath & Body']);
+});
+
+test('staff cannot change the shipment of a dispatched eBay delivery note, and a manual shipper needs the tracking eBay will receive (PRE-73)', function () {
+    $ebayUser     = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $order        = dispatchedEbayOrder($this, $ebayUser, withShipment: false);
+    $deliveryNote = $order->deliveryNotes()->firstOrFail();
+    $deliveryNote->updateQuietly(['state' => DeliveryNoteStateEnum::PACKED]);
+    $manualShipper = StoreShipper::make()->action($this->organisation, ['code' => 'MN'.Str::random(4), 'name' => 'APC (manual tracking)', 'trade_as' => 'APC']);
+
+    expect(StoreShipment::make()->trackingChannel($deliveryNote))->toBe('eBay');
+
+    actingAs($this->user);
+    request()->setUserResolver(fn () => $this->user);
+
+    expect(fn () => StoreShipment::make()->action($deliveryNote->refresh(), $manualShipper, []))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Enter the tracking number');
+
+    $shipment = StoreShipment::make()->action($deliveryNote->refresh(), $manualShipper, ['tracking' => '2026110504810790208586001']);
+
+    $deliveryNote->updateQuietly(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+
+    expect(fn () => StoreShipment::make()->action($deliveryNote->refresh(), $manualShipper, ['tracking' => 'SECOND']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'already dispatched');
+
+    \Pest\Laravel\deleteJson(route('grp.models.shipment.delete', $shipment->id))->assertUnprocessable();
+    expect(Shipment::find($shipment->id))->not->toBeNull();
+
+    request()->setUserResolver(fn () => null);
+});
+
+test('a supervisor-only shipper is hidden from and refused to dispatch clerks (PRE-73)', function () {
+    $ebayUser     = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+    $order        = dispatchedEbayOrder($this, $ebayUser, withShipment: false);
+    $deliveryNote = $order->deliveryNotes()->firstOrFail();
+    $deliveryNote->updateQuietly(['state' => DeliveryNoteStateEnum::PACKED]);
+    $backupShipper = StoreShipper::make()->action($this->organisation, ['code' => 'SO'.Str::random(4), 'name' => 'APC (manual tracking)', 'trade_as' => 'APC']);
+    $backupShipper->update(['settings' => ['supervisor_only' => true]]);
+
+    $user          = $this->user;
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $listedIds     = fn () => collect(\Pest\Laravel\getJson(route('grp.json.shippers.index', [$this->organisation, 'perPage' => 500]))->assertOk()->json('data'))->pluck('id');
+    request()->setUserResolver(fn () => $user);
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('dispatch-clerk', $this->warehouse)]);
+    expect($listedIds())->not->toContain($backupShipper->id)
+        ->and(fn () => StoreShipment::make()->action($deliveryNote->refresh(), $backupShipper, ['tracking' => 'APC123']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Only a dispatch supervisor');
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('dispatch-supervisor', $this->warehouse)]);
+    expect($listedIds())->toContain($backupShipper->id)
+        ->and(StoreShipment::make()->action($deliveryNote->refresh(), $backupShipper, ['tracking' => 'APC123'])->shipper_id)->toBe($backupShipper->id);
+
+    request()->setUserResolver(fn () => null);
+    actingAsUserWithRoles($user, $originalRoles);
 });
