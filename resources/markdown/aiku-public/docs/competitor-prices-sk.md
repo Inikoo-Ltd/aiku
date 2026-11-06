@@ -50,7 +50,7 @@ Po každom čítaní AI porovná každý ich produkt s vašimi. Pár, v ktorom s
 
 Kliknite na **fajku**, keď je pár správny, a na **krížik**, keď nie je. Zamietnuté páry sa už nezobrazia. Voľby hore prepínajú medzi **To review**, **Confirmed**, **Rejected** a **All**; voľba **Confirmed** slúži zároveň ako porovnanie cien, zoraditeľné podľa rozdielu.
 
-Pár označený *Similar, not the same item* (podobný, nie rovnaká položka) sa ponechá ako nápoveda, ale do porovnania cien sa nikdy nezapočíta.
+Pár označený *Similar, not the same item* (podobný, nie rovnaká položka) sa ponechá ako nápoveda a do porovnania cien sa nezapočíta, kým naň neklikneš na **začiarknutie**: to znamená, že ide o rovnakú položku, a odvtedy sa započíta.
 
 ## Stránka konkurenta
 

@@ -50,7 +50,7 @@ Después de cada lectura, la IA compara cada uno de sus productos con los tuyos.
 
 Pulsa el **tick** cuando el emparejamiento es correcto y la **cruz** cuando no lo es. Los emparejamientos rechazados no vuelven a mostrarse. Los grupos de arriba alternan entre **To review**, **Confirmed**, **Rejected** y **All**; el grupo **Confirmed** sirve también como comparación de precios, ordenable por diferencia.
 
-Un emparejamiento marcado como *Similar, not the same item* (similar, no es el mismo artículo) se conserva como pista, pero nunca cuenta en la comparación de precios.
+Un emparejamiento marcado como *Similar, not the same item* (similar, no es el mismo artículo) se conserva como pista y no cuenta en la comparación de precios hasta que pulses el **tick**: el tick dice que es el mismo artículo y, desde entonces, cuenta.
 
 ## La página del competidor
 

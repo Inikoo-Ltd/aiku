@@ -50,7 +50,7 @@ After every read the AI compares each of their products with yours. A match it i
 
 Click the **tick** when it is the right match and the **cross** when it is not. Rejected matches are not shown again. The buckets at the top switch between **To review**, **Confirmed**, **Rejected** and **All**; the **Confirmed** bucket doubles as the price comparison, sortable by difference.
 
-A match marked *Similar, not the same item* is kept as a hint but never counted in the price comparison.
+A match marked *Similar, not the same item* is kept as a hint and not counted in the price comparison until you click the **tick** on it: the tick says it is the same item, and from then on it counts.
 
 ## The competitor page
 

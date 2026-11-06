@@ -186,6 +186,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Helpers\Country;
+use App\Models\Helpers\TaxNumber;
 use App\Actions\Ordering\Order\WriteOffOrderShortfall;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
@@ -570,11 +571,9 @@ test('store transaction for existing product adds to quantity instead of duplica
         ->and($order->transactions()->where('model_type', 'Product')->count())->toBe(1);
 })->depends('create transaction');
 
-test('proforma price breakdown shows gross, discount and net only when requested', function (Transaction $transaction) {
-    $transaction->update(['gross_amount' => 100, 'net_amount' => 80]);
-    $order = $transaction->order->refresh();
-
-    $renderProforma = fn (bool $priceBreakdown) => view('invoices.templates.pdf.proforma-invoice', [
+function renderProformaView(Order $order, bool $priceBreakdown = false): string
+{
+    return view('invoices.templates.pdf.proforma-invoice', [
         'shop'                 => $order->shop,
         'order'                => $order,
         'transactions'         => $order->transactions()->where('model_type', 'Product')->get(),
@@ -594,14 +593,45 @@ test('proforma price breakdown shows gross, discount and net only when requested
         'group_by_tariff_code' => false,
         'price_breakdown'      => $priceBreakdown,
     ])->render();
+}
+
+test('proforma price breakdown shows gross, discount and net only when requested', function (Transaction $transaction) {
+    $transaction->update(['gross_amount' => 100, 'net_amount' => 80]);
+    $order = $transaction->order->refresh();
 
     $symbol = $order->currency->symbol;
 
-    expect($renderProforma(true))->toContain(__('Gross'))
+    expect(renderProformaView($order, true))->toContain(__('Gross'))
         ->toContain($symbol.'100.00')
         ->toContain('-'.$symbol.'20.00')
         ->toContain($symbol.'80.00')
-        ->and($renderProforma(false))->not->toContain(__('Gross'));
+        ->and(renderProformaView($order))->not->toContain(__('Gross'));
+})->depends('create transaction');
+
+test('proforma shows the customer valid tax number and the delivery or collection address', function (Transaction $transaction) {
+    $order     = $transaction->order->refresh();
+    $customer  = $order->customer->replicate();
+    $taxNumber = new TaxNumber(['number' => 'PRE75TAXNUMBER', 'country_code' => 'HU', 'valid' => false]);
+    $customer->setRelation('taxNumber', $taxNumber);
+
+    $proformaOrder = $order->replicate()
+        ->setRelation('customer', $customer)
+        ->setRelation('billingAddress', new Address(['address_line_1' => 'PRE-75 billing street', 'country_id' => Country::where('code', 'FR')->value('id')]))
+        ->setRelation('deliveryAddress', new Address(['address_line_1' => 'PRE-75 delivery street', 'country_id' => Country::where('code', 'FR')->value('id')]));
+    $proformaOrder->collection_address_id = null;
+
+    expect(renderProformaView($proformaOrder))->not->toContain('PRE75TAXNUMBER')
+        ->toContain(__('Delivery address'))
+        ->toContain('PRE-75 delivery street');
+
+    $taxNumber->valid = true;
+
+    expect(renderProformaView($proformaOrder))->toContain('PRE75TAXNUMBER');
+
+    $proformaOrder->collection_address_id = $order->delivery_address_id;
+
+    expect(renderProformaView($proformaOrder))->toContain(__('Collection address'))
+        ->not->toContain('PRE-75 delivery street');
 })->depends('create transaction');
 
 test('create transaction from adjustment', function (Order $order) {
