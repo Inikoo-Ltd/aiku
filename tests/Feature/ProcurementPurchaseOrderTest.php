@@ -127,6 +127,10 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
+use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionPriceChange;
+use App\Actions\Procurement\PurchaseOrderTransaction\AnswerPurchaseOrderTransactionQuantityChange;
+use App\Actions\Procurement\PurchaseOrderTransaction\AnswerPurchaseOrderTransactionPriceChange;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Actions\SupplyChain\Supplier\MergeSuppliers;
@@ -4423,4 +4427,26 @@ test('a paid order owes the balance again once a quantity change raises its tota
 
     UpdatePurchaseOrderTransaction::make()->action($line->refresh(), ['quantity_ordered' => 10]);
     expect($order->refresh()->balance_paid_at)->not->toBeNull();
+});
+
+test('a request already answered by another buyer is not applied a second time', function () {
+    $orgAgent             = createFreshOrgAgent($this);
+    [$supplier, $product] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $order                = createConfirmedAgentOrder($this, $supplier, $product, 0, 10)->refresh();
+    $line                 = $order->purchaseOrderTransactions()->firstOrFail();
+    $unitCost             = (float) $line->unit_cost;
+
+    AskPurchaseOrderTransactionQuantityChange::make()->action($line, ['quantity_ordered' => 12]);
+    $staleLine = PurchaseOrderTransaction::findOrFail($line->id);
+    AnswerPurchaseOrderTransactionQuantityChange::make()->action($line->refresh(), ['answer' => 'rejected', 'quantity_ordered' => 12]);
+    expect(fn () => AnswerPurchaseOrderTransactionQuantityChange::make()->action($staleLine, ['answer' => 'accepted', 'quantity_ordered' => 12]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect((float) $line->refresh()->quantity_ordered)->toBe(10.0);
+
+    AskPurchaseOrderTransactionPriceChange::make()->action($line, ['unit_cost' => $unitCost + 1]);
+    $staleLine = PurchaseOrderTransaction::findOrFail($line->id);
+    AnswerPurchaseOrderTransactionPriceChange::make()->action($line->refresh(), ['answer' => 'rejected']);
+    expect(fn () => AnswerPurchaseOrderTransactionPriceChange::make()->action($staleLine, ['answer' => 'accepted']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect((float) $line->refresh()->unit_cost)->toEqual($unitCost);
 });
