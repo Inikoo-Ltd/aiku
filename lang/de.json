@@ -26454,5 +26454,6 @@
     "The supplier can not make it: give it to another supplier of the agent": "Der Lieferant kann es nicht herstellen: gib es einem anderen Lieferanten des Agenten",
     "This order had nothing left and was cancelled.": "Diese Bestellung hatte nichts mehr und wurde storniert.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Diese Bestellung hat nichts mehr, aber es wurde eine Anzahlung geleistet: hole sie zurück, bevor du die Bestellung stornierst.",
-    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "der Agent hat :quantity Einheiten von :code zu :supplier (:reference) verschoben, der Lieferant kann sie nicht herstellen."
+    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "der Agent hat :quantity Einheiten von :code zu :supplier (:reference) verschoben, der Lieferant kann sie nicht herstellen.",
+    "Open the chat in :shop": "Chat in :shop öffnen"
 }

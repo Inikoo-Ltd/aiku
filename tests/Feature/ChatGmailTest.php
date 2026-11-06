@@ -1065,6 +1065,24 @@ test('a supervisor moves a conversation to Couriers, which adds the sender domai
     $group->update(['settings' => $settings]);
 });
 
+test('an Aiku note naming another chat by id links to that conversation with its shop', function () {
+    actingAs($this->user);
+    $email = noiseTestEmailSession($this->shop, 'buyer@example.com', 'Enquiry', 'Do you sell bouquets singly?');
+    $chat  = noiseTestEmailSession($this->shop, 'buyer@example.com', 'Chasing', 'Any reply?');
+
+    $note = $chat->chatEvents()->create([
+        'event_type' => \App\Enums\CRM\Livechat\ChatEventTypeEnum::INTERNAL_NOTE,
+        'actor_type' => 'ai',
+        'payload'    => ['text' => "It is the email chat {$email->ulid} from the same buyer. Unknown 01ZZZZZZZZZZZZZZZZZZZZZZZZ stays text."],
+    ]);
+
+    expect((new \App\Http\Resources\CRM\Livechat\ChatTimelineEventResource($note))->resolve()['note_links'])->toBe([[
+        'ulid' => $email->ulid,
+        'shop' => $this->shop->name,
+        'url'  => route('grp.org.chat.inbox.conversation', [$this->organisation->slug, $email->ulid]),
+    ]]);
+});
+
 test('an inbound gmail message brings the rest of its gmail thread in as earlier chat messages', function () {
     fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
 

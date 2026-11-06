@@ -26444,5 +26444,6 @@
     "This mix went into :reference, which is already received or closed, it can no longer be corrected": "Esta mezcla se usó en :reference, que ya está recibida o cerrada, ya no se puede corregir",
     "What you make covers every line that needs it, in plan order, the extra pieces are kept for the next jobs": "Lo que haga cubre todas las líneas que lo necesitan, en el orden del plan, las piezas de más se guardan para los próximos trabajos",
     "Extra pieces in stock, used first by the next jobs: :count": "Piezas de más en stock, los próximos trabajos las usan primero: :count",
-    ":kg kg more than these lines need: make all of it, the extra pieces are kept for the next jobs": ":kg kg más de lo que necesitan estas líneas: hágalo todo, las piezas de más se guardan para los próximos trabajos"
+    ":kg kg more than these lines need: make all of it, the extra pieces are kept for the next jobs": ":kg kg más de lo que necesitan estas líneas: hágalo todo, las piezas de más se guardan para los próximos trabajos",
+    "Open the chat in :shop": "Abrir el chat en :shop"
 }
