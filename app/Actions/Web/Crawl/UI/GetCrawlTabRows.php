@@ -11,10 +11,21 @@ namespace App\Actions\Web\Crawl\UI;
 use App\Actions\Web\Crawl\AuditWebsite;
 use App\Enums\Web\Crawl\CrawlIssueTypeEnum;
 use App\Enums\Web\Crawl\CrawlTabEnum;
+use App\InertiaTable\InertiaTable;
 use App\Models\Web\Crawl;
+use App\Models\Web\CrawlPage;
+use App\Models\Web\CrawlResource;
+use App\Services\QueryBuilder;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
 
 /**
  * The rows of one tab and filter of a crawl, as the site crawler table and its export show them: the
@@ -82,8 +93,6 @@ class GetCrawlTabRows
     ];
 
     private const array DECIMAL_COLUMNS = ['reading_ease', 'vitals_cls', 'search_ctr', 'search_position'];
-
-    public const int MAX_PER_PAGE = 200;
 
     /**
      * The kind of page behind a crawled URL, read from the webpage it was matched to, so a crawl can
@@ -255,38 +264,57 @@ class GetCrawlTabRows
         return $query;
     }
 
-    /**
-     * @return array{rows: array<int, array<string, mixed>>, total: int, page: int, per_page: int}
-     */
-    public function handle(Crawl $crawl, CrawlTabEnum $tab, ?string $filter, ?string $search, ?string $sort, bool $descending, int $page, int $perPage, ?string $segment = null): array
+    public function handle(Crawl $crawl, CrawlTabEnum $tab, ?string $filter, ?string $segment = null): LengthAwarePaginator
     {
-        $perPage  = max(1, min(self::MAX_PER_PAGE, $perPage));
         $columns  = array_column($this->columns($tab, $filter, $crawl), 'key');
-        $query    = $this->query($crawl, $tab, $filter, $search, $segment);
-        $total    = (clone $query)->count();
         $sortable = ['url', ...array_diff($columns, ['details'])];
+        $model    = $this->resolveFilter($tab, $filter)['source'] === 'pages' ? CrawlPage::class : CrawlResource::class;
 
-        if ($sort !== null && in_array($sort, $sortable, true)) {
-            $query->orderByRaw('"'.$sort.'" '.($descending ? 'desc' : 'asc').' nulls last');
-        } elseif (in_array('inlinks', $columns, true)) {
-            $query->orderByDesc('inlinks');
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where('url', 'ilike', '%'.addcslashes(strip_tags($value), '%_\\').'%');
+        });
+
+        $nullsLast = new class () implements Sort {
+            public function __invoke(EloquentBuilder $query, bool $descending, string $property): void
+            {
+                $query->orderByRaw($query->getQuery()->getGrammar()->wrap($property).($descending ? ' desc' : ' asc').' nulls last');
+            }
+        };
+
+        $query = QueryBuilder::for($model::query()->withoutGlobalScopes()->fromSub($this->query($crawl, $tab, $filter, null, $segment), 'crawl_rows'));
+
+        if (in_array('inlinks', $columns, true)) {
+            $query->defaultSort(AllowedSort::custom('-inlinks', $nullsLast, 'inlinks'));
         }
 
-        $query->orderBy('url');
+        return $query
+            ->allowedSorts(array_map(fn (string $key) => AllowedSort::custom($key, $nullsLast), $sortable))
+            ->allowedFilters([$globalSearch])
+            ->orderBy('url')
+            ->withPaginator(null, tableName: request()->route()->getName())
+            ->withQueryString()
+            ->through(fn (Model $row) => $this->row((object) $row->getAttributes(), $columns));
+    }
 
-        $rows = $query
-            ->offset(($page - 1) * $perPage)
-            ->limit($perPage)
-            ->get()
-            ->map(fn (object $row) => $this->row($row, $columns))
-            ->all();
+    public function tableStructure(Crawl $crawl, CrawlTabEnum $tab, ?string $filter, string $emptyText): Closure
+    {
+        $columns = $this->columns($tab, $filter, $crawl);
 
-        return [
-            'rows'     => $rows,
-            'total'    => $total,
-            'page'     => $page,
-            'per_page' => $perPage,
-        ];
+        return function (InertiaTable $table) use ($columns, $emptyText) {
+            $table
+                ->withGlobalSearch(__('Search address'))
+                ->withLabelRecord([__('URL'), __('URLs')])
+                ->withEmptyState(['title' => $emptyText])
+                ->column(key: 'url', label: self::columnLabels()['url'], canBeHidden: false, sortable: true);
+
+            foreach ($columns as $column) {
+                $table->column(key: $column['key'], label: $column['label'], sortable: $column['key'] !== 'details', align: $column['numeric'] ? 'right' : null);
+            }
+
+            if (in_array('inlinks', array_column($columns, 'key'), true)) {
+                $table->defaultSort('-inlinks');
+            }
+        };
     }
 
     /**
