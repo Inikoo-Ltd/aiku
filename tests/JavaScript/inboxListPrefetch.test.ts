@@ -41,8 +41,10 @@ test("going to the inbox asks for the list it opened with last time, and the inb
 	visit("/org/aw/chat/inbox/01M52ZHJ1KPDCSXMVMF33CNSY2")
 
 	assert.deepEqual(requests, [{ url, params }])
-	assert.equal((await takePrefetchedList(url, params))?.data, "list")
-	assert.equal(takePrefetchedList(url, params), null, "handed out once")
+	const taken = takePrefetchedList(url, params)
+	assert.equal(taken.outcome, "prefetched")
+	assert.equal((await taken.response)?.data, "list")
+	assert.deepEqual(takePrefetchedList(url, params), { response: null, outcome: "fetched" }, "handed out once")
 })
 
 test("a different list, another organisation or page, a partial reload or a hover prefetch asks for nothing the inbox would take", () => {
@@ -50,7 +52,7 @@ test("a different list, another organisation or page, a partial reload or a hove
 	rememberFirstList(url, params)
 
 	visit("/org/aw/chat/inbox")
-	assert.equal(takePrefetchedList(url, { ...params, shop_ids: [2] }), null)
+	assert.deepEqual(takePrefetchedList(url, { ...params, shop_ids: [2] }), { response: null, outcome: "missed" })
 
 	visit("/org/sk/chat/inbox")
 	visit("/org/aw/chat/supervision")
@@ -62,7 +64,7 @@ test("a different list, another organisation or page, a partial reload or a hove
 	visit("/org/aw/chat/inbox", { method: "post" })
 
 	assert.equal(requests.length, 1)
-	assert.equal(takePrefetchedList(url, params), null)
+	assert.deepEqual(takePrefetchedList(url, params), { response: null, outcome: "fetched" })
 })
 
 test("an answer asked for too long ago is not used", (t) => {
@@ -73,7 +75,7 @@ test("an answer asked for too long ago is not used", (t) => {
 	visit("/org/aw/chat/inbox")
 	now += 10_001
 
-	assert.equal(takePrefetchedList(url, params), null)
+	assert.deepEqual(takePrefetchedList(url, params), { response: null, outcome: "missed" })
 })
 
 test("the inbox list key is the address followed by the parameters, in their order", () => {
@@ -87,7 +89,7 @@ test("a failed answer reaches whoever takes it, so the inbox can ask again", asy
 
 	visit("/org/aw/chat/inbox")
 
-	await assert.rejects(takePrefetchedList(url, params)!)
+	await assert.rejects(takePrefetchedList(url, params).response!)
 	answer = () => Promise.resolve({ data: "list" })
 })
 
@@ -98,7 +100,7 @@ test("Back or Forward drops an answer asked for before", () => {
 	visit("/org/aw/chat/inbox")
 	listeners.popstate()
 
-	assert.equal(takePrefetchedList(url, params), null)
+	assert.deepEqual(takePrefetchedList(url, params), { response: null, outcome: "fetched" })
 })
 
 test("nothing is remembered from a page that is not an inbox", () => {

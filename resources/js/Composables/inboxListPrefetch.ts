@@ -77,14 +77,22 @@ export const prefetchInboxListOnVisit = (router: typeof inertiaRouter) => {
 	})
 }
 
-/** The answer already on its way, if it is for exactly this list; handed out once. */
-export const takePrefetchedList = (url: string, params: Record<string, unknown>): Promise<AxiosResponse> | null => {
+/**
+ * The answer already on its way, if it is for exactly this list; handed out once. outcome says
+ * whether one was there to use (prefetched), there for another list or too old (missed), or never
+ * asked for (fetched), so production shows why the inbox had to ask.
+ */
+export const takePrefetchedList = (url: string, params: Record<string, unknown>): { response: Promise<AxiosResponse> | null, outcome: "prefetched" | "missed" | "fetched" } => {
 	const found = pending
 	pending = null
 
-	if (!found || found.key !== listKey(url, params) || performance.now() - found.startedAt > FRESH_MS) {
-		return null
+	if (!found) {
+		return { response: null, outcome: "fetched" }
 	}
 
-	return found.response
+	if (found.key !== listKey(url, params) || performance.now() - found.startedAt > FRESH_MS) {
+		return { response: null, outcome: "missed" }
+	}
+
+	return { response: found.response, outcome: "prefetched" }
 }

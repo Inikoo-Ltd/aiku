@@ -601,7 +601,16 @@ const storeSelection = () => {
     } catch {
         // A private window, or storage turned off. Losing the choice is not worth an error.
     }
+
+    if (!isEmbedded && showsOnlySavedSelection()) {
+        rememberFirstList(sessionsUrl.value, buildParams(1))
+    }
 }
+
+const showsOnlySavedSelection = () =>
+    !isFolderView.value && inboxView.value === "all" && viewMode.value === "my" && !searchQuery.value.trim()
+    && !selectedAgentIds.value.length && !dsKind.value && !promisedOnly.value && !starredOnly.value
+    && sortOrder.value === null && labelFilterId.value === null
 
 /**
  * Only what still exists is restored: shops come and go with the positions somebody holds, and
@@ -932,7 +941,7 @@ const currentListKey = computed(() => listKey(sessionsUrl.value, buildParams(1))
 let shownListKey = ""
 let reloadRequest = 0
 let prefetchedFirstList: Promise<AxiosResponse> | null = null
-let isFirstListPrefetched = false
+let firstListSource = "list:fetched"
 
 const reloadContacts = async (): Promise<boolean> => {
     const request = ++reloadRequest
@@ -950,7 +959,7 @@ const reloadContacts = async (): Promise<boolean> => {
     hasMore.value = false
     try {
         const res = await (prefetched?.catch(() => {
-            isFirstListPrefetched = false
+            firstListSource = "list:failed"
 
             return axios.get(url, { params })
         }) ?? axios.get(url, { params }))
@@ -3018,8 +3027,9 @@ dropWaitingInTeamView()
 watch([selectedStatuses, viewMode, promisedOnly, mailTab], onListFiltersChanged)
 
 if (!isEmbedded) {
-    prefetchedFirstList = takePrefetchedList(sessionsUrl.value, buildParams(1))
-    isFirstListPrefetched = prefetchedFirstList !== null
+    const firstList = takePrefetchedList(sessionsUrl.value, buildParams(1))
+    prefetchedFirstList = firstList.response
+    firstListSource = `list:${firstList.outcome}${props.initialSession ? ":conversation" : ""}`
 
     if (!props.preselectShopId && !props.selectedSessionUlid && !props.initialSession && !pendingSessionUlid.value && !pendingSessionChannel.value) {
         rememberFirstList(sessionsUrl.value, buildParams(1))
@@ -3046,7 +3056,7 @@ onMounted(async () => {
     // the background paints nothing, so there it does not wait for a paint.
     const listPainted = (isLoaded: boolean) => document.visibilityState === "hidden"
         ? nextTick()
-        : inboxOpening.listPainted(isLoaded, isFirstListPrefetched ? "list:prefetched" : "list:fetched")
+        : inboxOpening.listPainted(isLoaded, firstListSource)
 
     const isListLoaded = await firstListLoad
 
