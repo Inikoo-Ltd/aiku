@@ -221,6 +221,10 @@ trait WithSupplierProductShowcase
         return [
             'currency_code'          => $supplierProduct->currency?->code,
             'unit_cost'              => $unitCost,
+            'units_per_pack'         => $supplierProduct->units_per_pack,
+            'units_per_carton'       => $supplierProduct->units_per_carton,
+            'supplier_pack_cost'     => $supplierProduct->units_per_pack ? $unitCost * $supplierProduct->units_per_pack : null,
+            'supplier_carton_cost'   => $supplierProduct->units_per_carton ? $unitCost * $supplierProduct->units_per_carton : null,
             'extra_costs_percentage' => $extraCosts * 100,
             'delivered_unit_cost'    => $deliveredCost,
             'pack_cost'              => $supplierProduct->units_per_pack ? $deliveredCost * $supplierProduct->units_per_pack : null,

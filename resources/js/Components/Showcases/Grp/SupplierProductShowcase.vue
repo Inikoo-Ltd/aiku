@@ -33,6 +33,7 @@ import {
     faWeightHanging,
 } from "@fal"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 import Image from "@common/Components/Image.vue"
 import Icon from "@/Components/Icon.vue"
@@ -114,6 +115,10 @@ const props = defineProps<{
         costs: {
             currency_code: string | null
             unit_cost: number
+            units_per_pack?: number | null
+            units_per_carton?: number | null
+            supplier_pack_cost?: number | null
+            supplier_carton_cost?: number | null
             extra_costs_percentage?: number
             delivered_unit_cost?: number
             pack_cost?: number | null
@@ -233,8 +238,42 @@ const props = defineProps<{
 
 const locale = inject("locale", aikuLocaleStructure)
 
-const money = (value: number | null) =>
-    value === null || value === undefined ? "-" : locale.currencyFormat(props.data.costs.currency_code, value)
+const localeStore = useLocaleStore()
+
+const unitPrice = (value: number | null | undefined) =>
+    value === null || value === undefined ? null : localeStore.currencyFormatUnitCost(props.data.costs.currency_code, value)
+
+const totalPrice = (value: number | null | undefined) =>
+    value === null || value === undefined ? null : localeStore.currencyFormat(props.data.costs.currency_code, value)
+
+const unitsHint = (units: number | null | undefined) =>
+    units ? ctrans(":count units", { count: locale.number(units) }) : null
+
+const supplierPriceRows = computed(() => {
+    const costs = props.data.costs
+
+    return [
+        { key: "unit", label: ctrans("Per unit"), hint: null, value: unitPrice(costs.unit_cost), strong: true },
+        { key: "pack", label: ctrans("Per SKO"), hint: unitsHint(costs.units_per_pack), value: costs.units_per_pack && costs.units_per_pack > 1 ? totalPrice(costs.supplier_pack_cost) : null, strong: false },
+        { key: "carton", label: ctrans("Per carton"), hint: unitsHint(costs.units_per_carton), value: totalPrice(costs.supplier_carton_cost), strong: false },
+    ].filter((row) => row.value)
+})
+
+const landedPriceRows = computed(() => {
+    const costs = props.data.costs
+
+    if (costs.delivered_unit_cost === undefined) {
+        return []
+    }
+
+    return [
+        { key: "extra_costs", label: ctrans("Extra costs"), hint: null, value: `${locale.number(costs.extra_costs_percentage ?? 0)} %`, strong: false },
+        { key: "unit", label: ctrans("Delivered unit cost"), hint: null, value: unitPrice(costs.delivered_unit_cost), strong: true },
+        { key: "pack", label: ctrans("Delivered SKO cost"), hint: unitsHint(costs.units_per_pack), value: costs.units_per_pack && costs.units_per_pack > 1 ? totalPrice(costs.pack_cost) : null, strong: false },
+        { key: "carton", label: ctrans("Delivered carton cost"), hint: unitsHint(costs.units_per_carton), value: totalPrice(costs.carton_cost), strong: false },
+        { key: "unit_expense", label: ctrans("Unit expense (Group estimate)"), hint: null, value: unitPrice(props.data.supplierProductInfo?.unit_expense), strong: false },
+    ].filter((row) => row.value)
+})
 
 const packagingRows = computed(() => [
     {
@@ -268,11 +307,6 @@ const supplyingRows = computed(() => {
             key: "delivery_time",
             label: ctrans("Delivery time"),
             value: info.delivery_time ? ctrans(":days days", { days: info.delivery_time }) : null,
-        },
-        {
-            key: "unit_expense",
-            label: ctrans("Unit expense (Group estimate)"),
-            value: info.unit_expense ? money(info.unit_expense) : null,
         },
         {
             key: "barcode",
@@ -713,6 +747,39 @@ const availabilityBadge = (isAvailable: boolean) =>
                 <Icon :data="{ icon: 'fal fa-external-link' }" />
                 {{ ctrans("Supplier product in supply chain") }}
             </Link>
+        </section>
+
+        <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                <Icon :data="{ icon: 'fal fa-money-bill' }" />
+                {{ ctrans("Price") }}
+            </h3>
+            <dl class="divide-y divide-gray-100">
+                <div v-for="row in supplierPriceRows" :key="row.key" class="flex items-baseline justify-between gap-3 py-2">
+                    <dt class="text-sm text-gray-500">
+                        {{ row.label }}
+                        <span v-if="row.hint" class="text-xs text-gray-400">({{ row.hint }})</span>
+                    </dt>
+                    <dd class="whitespace-nowrap text-sm tabular-nums" :class="row.strong ? 'font-semibold text-gray-900' : 'text-gray-700'">{{ row.value }}</dd>
+                </div>
+            </dl>
+
+            <template v-if="landedPriceRows.length">
+                <h3 class="mb-3 mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <Icon :data="{ icon: 'fal fa-truck-container' }" />
+                    {{ ctrans("Landed cost") }}
+                    <InformationIcon :information="ctrans('What one unit costs us once it arrives: the supplier price plus the extra costs (shipping, duty and other expenses).')" class="text-gray-700" />
+                </h3>
+                <dl class="divide-y divide-gray-100">
+                    <div v-for="row in landedPriceRows" :key="row.key" class="flex items-baseline justify-between gap-3 py-2">
+                        <dt class="text-sm text-gray-500">
+                            {{ row.label }}
+                            <span v-if="row.hint" class="text-xs text-gray-400">({{ row.hint }})</span>
+                        </dt>
+                        <dd class="whitespace-nowrap text-sm tabular-nums" :class="row.strong ? 'font-semibold text-gray-900' : 'text-gray-700'">{{ row.value }}</dd>
+                    </div>
+                </dl>
+            </template>
         </section>
 
         <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
