@@ -16,9 +16,13 @@ export const taxNumberStatus = (
 	return isValidVatNumber(countryCode + number) ? "valid" : "invalid"
 }
 
-export type TaxNumberCheckResult = "valid" | "invalid" | "pending"
+export type TaxNumberCheckResult = "valid" | "invalid" | "pending" | "not_checked"
 
-export const taxNumberCheckResult = (status: string | null | undefined, valid: boolean | null | undefined): TaxNumberCheckResult => {
+export const taxNumberCheckResult = (
+	status: string | null | undefined,
+	valid: boolean | null | undefined,
+	type?: string | null,
+): TaxNumberCheckResult => {
 	if (status === "invalid") {
 		return "invalid"
 	}
@@ -27,11 +31,16 @@ export const taxNumberCheckResult = (status: string | null | undefined, valid: b
 		return "valid"
 	}
 
-	return status === "unknown" ? "pending" : "invalid"
+	if (status !== "unknown") {
+		return "invalid"
+	}
+
+	return type && type !== "eu-vat" ? "not_checked" : "pending"
 }
 
 export const taxNumberCheckDisplay: Record<TaxNumberCheckResult, { icon: string; colorClass: string; label: string }> = {
 	valid: { icon: "fas fa-check-circle", colorClass: "text-green-600", label: "Valid" },
 	invalid: { icon: "fas fa-exclamation-circle", colorClass: "text-red-600", label: "Invalid" },
 	pending: { icon: "fad fa-spinner-third", colorClass: "text-yellow-600", label: "Pending" },
+	not_checked: { icon: "fas fa-exclamation-circle", colorClass: "text-gray-500", label: "Not checked" },
 }

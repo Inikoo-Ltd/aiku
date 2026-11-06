@@ -267,11 +267,11 @@ const formatDate = (dateString: string | null) => {
     }
 }
 
-const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
+const getStatusIcon = (status: string, valid: boolean, type?: string) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].icon
 
-const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
+const getStatusColor = (status: string, valid: boolean, type?: string) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].colorClass
 
-const getStatusText = (status: string, valid: boolean) => trans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].label)
+const getStatusText = (status: string, valid: boolean, type?: string) => trans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].label)
 
 const churnRiskLevel = computed(() => {
     const risk = props.data?.stats?.churn_risk_prediction ?? 0
@@ -813,13 +813,13 @@ const submitNote = async () => {
                             <div class="flex items-start justify-between">
                                 <div class="flex items-center space-x-2">
                                     <FontAwesomeIcon
-                                        :icon="getStatusIcon(data.customer.tax_number.status, data.customer.tax_number.valid)"
-                                        :class="getStatusColor(data.customer.tax_number.status, data.customer.tax_number.valid)"
+                                        :icon="getStatusIcon(data.customer.tax_number.status, data.customer.tax_number.valid, data.customer.tax_number.type)"
+                                        :class="getStatusColor(data.customer.tax_number.status, data.customer.tax_number.valid, data.customer.tax_number.type)"
                                         class="text-sm" fixed-width />
                                     <div class="space-y-2">
                                         <p class="text-sm text-gray-900">
                                             <span class="font-medium">
-                                                {{ getStatusText(data.customer.tax_number.status, data.customer.tax_number.valid) }}
+                                                {{ getStatusText(data.customer.tax_number.status, data.customer.tax_number.valid, data.customer.tax_number.type) }}
                                             </span>
                                             <Tooltip v-if="data.customer.tax_number.country" class="inline ml-1">
                                                 <div class="inline hover:underline cursor-default">({{ data.customer.tax_number.country.data.name }})</div>

@@ -19,6 +19,9 @@ use Laravel\Nightwatch\Facades\Nightwatch;
  * VIES faults used to be stamped as "invalid" on the number itself, so an unknown share of the
  * invalid EU VAT numbers are false negatives from a throttle or an outage, not from VIES saying no.
  * Nothing on the row tells the two apart, so the only way back is to ask VIES again.
+ * Numbers VIES never answered for stay unknown after their round of delayed re-checks, while the
+ * customer is told a re-check will follow (PRE-74), so they are picked up here too. The least
+ * recently tried go first, so a daily run works through the backlog and keeps cycling.
  *
  * Sequential and paced on purpose: VIES throttles per member state (MS_MAX_CONCURRENT_REQ), and a
  * queue fan-out would earn exactly the faults this repairs.
@@ -31,19 +34,20 @@ class RevalidateEuTaxNumbersCommand extends Command
                            {--sleep=1500 : Milliseconds between VIES calls}
                            {--dry-run : Show what would be re-checked without calling VIES}';
 
-    protected $description = 'Re-check EU VAT numbers marked invalid, in case VIES was down when they were checked';
+    protected $description = 'Re-check EU VAT numbers that are invalid or still unchecked, least recently tried first, in case VIES was down when they were checked';
 
     public function handle(): int
     {
         Nightwatch::dontSample();
 
         $query = TaxNumber::where('type', TaxNumberTypeEnum::EU_VAT)
-            ->where('status', TaxNumberStatusEnum::INVALID)
+            ->whereIn('status', [TaxNumberStatusEnum::INVALID, TaxNumberStatusEnum::UNKNOWN])
             ->when($this->option('country'), fn ($query, $country) => $query->where('country_code', strtoupper($country)))
-            ->orderByDesc('invalid_checked_at');
+            ->orderByRaw('greatest(checked_at, external_service_failed_at) asc nulls first')
+            ->orderBy('id');
 
         if ($this->option('dry-run')) {
-            $this->line($query->count().' invalid EU VAT numbers match, '.$this->option('limit').' would be re-checked');
+            $this->line($query->count().' invalid or unchecked EU VAT numbers match, '.$this->option('limit').' would be re-checked');
 
             return 0;
         }

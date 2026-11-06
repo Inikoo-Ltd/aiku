@@ -157,11 +157,11 @@ const formatDate = (dateString: string | null) => {
     }
 }
 
-const getStatusIcon = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].icon
+const getStatusIcon = (status: string, valid: boolean, type?: string) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].icon
 
-const getStatusColor = (status: string, valid: boolean) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].colorClass
+const getStatusColor = (status: string, valid: boolean, type?: string) => taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].colorClass
 
-const getStatusText = (status: string, valid: boolean) => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid)].label)
+const getStatusText = (status: string, valid: boolean, type?: string) => ctrans(taxNumberCheckDisplay[taxNumberCheckResult(status, valid, type)].label)
 
 // Map prospect state to PrimeVue Tag severity
 const prospectStateSeverity = computed(() => {
@@ -358,8 +358,8 @@ const contactPreferencesData = computed(() => {
                             <div class="flex items-start justify-between">
                                 <div class="flex items-center space-x-2">
                                     <FontAwesomeIcon
-                                        :icon="getStatusIcon(data?.prospect?.customer?.tax_number?.status, data?.prospect?.customer?.tax_number?.valid)"
-                                        :class="getStatusColor(data?.prospect?.customer?.tax_number?.status, data?.prospect?.customer?.tax_number?.valid)"
+                                        :icon="getStatusIcon(data?.prospect?.customer?.tax_number?.status, data?.prospect?.customer?.tax_number?.valid, data?.prospect?.customer?.tax_number?.type)"
+                                        :class="getStatusColor(data?.prospect?.customer?.tax_number?.status, data?.prospect?.customer?.tax_number?.valid, data?.prospect?.customer?.tax_number?.type)"
                                         class="text-sm" fixed-width />
 
 
@@ -367,7 +367,7 @@ const contactPreferencesData = computed(() => {
                                         <p class="text-sm text-gray-900">
                                             <span class="font-medium ">
                                                 {{ getStatusText(data?.prospect?.customer?.tax_number?.status,
-                                                data?.prospect?.customer?.tax_number?.valid) }}
+                                                data?.prospect?.customer?.tax_number?.valid, data?.prospect?.customer?.tax_number?.type) }}
                                             </span>
                                             <!-- Country -->
                                             <Tooltip v-if="data?.prospect?.customer?.tax_number?.country"

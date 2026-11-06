@@ -16,3 +16,10 @@ test("a checked or manually validated number is valid", () => {
 	assert.equal(taxNumberCheckResult("valid", true), "valid")
 	assert.equal(taxNumberCheckResult("unknown", true), "valid")
 })
+
+test("an unchecked number that is not EU VAT is not checked, never pending on VIES", () => {
+	assert.equal(taxNumberCheckResult("unknown", false, "other"), "not_checked")
+	assert.equal(taxNumberCheckResult("unknown", false, "gb-vat"), "not_checked")
+	assert.equal(taxNumberCheckResult("unknown", false, "eu-vat"), "pending")
+	assert.equal(taxNumberCheckResult("valid", true, "other"), "valid")
+})
