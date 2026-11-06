@@ -8029,3 +8029,39 @@ test('flags a SKO whose weighed parcels disagree with its weight, and clears it 
     expect($orgStock->refresh()->has_wrong_weight)->toBeFalse()
         ->and($orgStock->measured_weight)->toBe(3050);
 });
+
+test('dispatch hub dropshipping and marketplace rows count picked and packing delivery notes', function () {
+    $this->organisation->orderingStats->update([
+        'number_dropshipping_shop_delivery_notes_state_picked'  => 7,
+        'number_dropshipping_shop_delivery_notes_state_packing' => 3,
+        'number_external_shop_delivery_notes_state_picked'      => 5,
+        'number_external_shop_delivery_notes_state_packing'     => 2,
+    ]);
+    $this->warehouse->refresh();
+
+    $dropshipping = \App\Actions\UI\Dispatch\GetDispatchHubDropshippingWidget::run($this->warehouse);
+    $marketplace  = \App\Actions\UI\Dispatch\GetDispatchHubExternalWidget::run($this->warehouse);
+    $stats        = $this->organisation->orderingStats->refresh();
+
+    expect($dropshipping['picked'])->toBe(7)
+        ->and($dropshipping['packing'])->toBe(3)
+        ->and($dropshipping['cases'])->toHaveKeys(['picked', 'packing'])
+        ->and($dropshipping['total'])->toBe(
+            $stats->number_dropshipping_shop_delivery_notes_state_unassigned
+            + $stats->number_dropshipping_shop_delivery_notes_state_queued
+            + $stats->number_dropshipping_shop_delivery_notes_state_handling
+            + $stats->number_dropshipping_shop_delivery_notes_state_handling_blocked
+            + 7 + 3
+            + $stats->number_dropshipping_shop_delivery_notes_state_packed
+            + $stats->number_dropshipping_shop_delivery_notes_state_finalised
+        )
+        ->and($marketplace['total'])->toBe(
+            $stats->number_external_shop_delivery_notes_state_unassigned
+            + $stats->number_external_shop_delivery_notes_state_queued
+            + $stats->number_external_shop_delivery_notes_state_handling
+            + $stats->number_external_shop_delivery_notes_state_handling_blocked
+            + 5 + 2
+            + $stats->number_external_shop_delivery_notes_state_packed
+            + $stats->number_external_shop_delivery_notes_state_finalised
+        );
+});

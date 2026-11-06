@@ -144,6 +144,8 @@ class GetDispatchHubExternalWidget
                 + $organisation->orderingStats->number_external_shop_delivery_notes_state_queued
                 + $organisation->orderingStats->number_external_shop_delivery_notes_state_handling
                 + $organisation->orderingStats->number_external_shop_delivery_notes_state_handling_blocked
+                + $organisation->orderingStats->number_external_shop_delivery_notes_state_picked
+                + $organisation->orderingStats->number_external_shop_delivery_notes_state_packing
                 + $organisation->orderingStats->number_external_shop_delivery_notes_state_packed
                 + $organisation->orderingStats->number_external_shop_delivery_notes_state_finalised,
         ];

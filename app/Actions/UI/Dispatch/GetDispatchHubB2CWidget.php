@@ -109,13 +109,13 @@ class GetDispatchHubB2CWidget
                 ],
                 'picked'           => [
                     'route' => [
-                        'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
+                        'name'       => 'grp.org.warehouses.show.dispatching.picked.delivery-notes.shop',
                         'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2C->value]
                     ],
                 ],
                 'packing'          => [
                     'route' => [
-                        'name'       => 'grp.org.warehouses.show.dispatching.packed.delivery-notes.shop',
+                        'name'       => 'grp.org.warehouses.show.dispatching.packing.delivery-notes.shop',
                         'parameters' => [$organisation->slug, $warehouse->slug, ShopTypeEnum::B2C->value]
                     ],
                 ],
