@@ -30,4 +30,13 @@ enum DepositRequestItemKindEnum: string
             'wallet'  => __('Cover the negative balance'),
         ];
     }
+
+    public function describeForPurchaseOrder(): string
+    {
+        return match ($this) {
+            self::ADVANCE => __('Advance payment for PO'),
+            self::BALANCE => __('Balance payment for PO'),
+            self::WALLET  => self::labels()[$this->value],
+        };
+    }
 }

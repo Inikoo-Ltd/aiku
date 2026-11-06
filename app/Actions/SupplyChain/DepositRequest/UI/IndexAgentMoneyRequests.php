@@ -15,6 +15,7 @@ use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\DepositRequest;
 use App\Models\SupplyChain\DepositRequestItem;
@@ -61,10 +62,12 @@ class IndexAgentMoneyRequests extends OrgAction
         );
 
         return $query
-            ->select(['deposit_requests.*', 'organisations.code as client_code', 'currencies.code as currency_code'])
+            ->select(['deposit_requests.*', 'organisations.code as client_code', 'organisations.slug as client_slug', 'currencies.code as currency_code'])
             ->selectSub(DB::table('deposit_request_items')->whereColumn('deposit_request_id', 'deposit_requests.id')->selectRaw('coalesce(sum(amount), 0)'), 'total')
             ->selectSub(DB::table('agent_payments')->whereColumn('deposit_request_id', 'deposit_requests.id')->whereNull('deleted_at')->selectRaw('coalesce(sum(amount), 0)'), 'paid')
-            ->with(['items.purchaseOrder:id,reference,agent_order_reference'])
+            ->with(['items.purchaseOrder' => fn ($query) => $query
+                ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
+                ->select(['purchase_orders.id', 'purchase_orders.slug', 'purchase_orders.reference', 'purchase_orders.agent_order_reference', 'suppliers.code as supplier_code', 'suppliers.name as supplier_name'])])
             ->defaultSort('-requested_at')
             ->allowedSorts(['requested_at', 'reference'])
             ->allowedFilters([AllowedFilter::callback('global', fn ($query, $value) => $query->where(fn ($query) => $query
@@ -86,6 +89,11 @@ class IndexAgentMoneyRequests extends OrgAction
         $paid  = round((float) $depositRequest->paid, 2);
         $open  = $depositRequest->state === DepositRequestStateEnum::REQUESTED;
 
+        $purchaseOrderRoute = fn (?PurchaseOrder $purchaseOrder) => $purchaseOrder ? [
+            'name'       => $forClient ? 'grp.org.procurement.purchase_orders.show' : 'grp.org.agent.purchase_orders.show',
+            'parameters' => [$forClient ? $depositRequest->client_slug : $depositRequest->agent->organisation->slug, $purchaseOrder->slug],
+        ] : null;
+
         return [
             'id'            => $depositRequest->id,
             'reference'     => $depositRequest->reference ?? '#'.$depositRequest->id,
@@ -99,10 +107,14 @@ class IndexAgentMoneyRequests extends OrgAction
             'outstanding'   => $open ? max(0, round($total - $paid, 2)) : 0,
             'notes'         => $depositRequest->notes,
             'lines'         => $depositRequest->items->map(fn (DepositRequestItem $item) => [
-                'kind'       => $item->kind->value,
-                'kind_label' => DepositRequestItemKindEnum::labels()[$item->kind->value],
-                'reference'  => $item->purchaseOrder?->reference,
-                'amount'     => (float) $item->amount,
+                'kind'          => $item->kind->value,
+                'kind_label'    => DepositRequestItemKindEnum::labels()[$item->kind->value],
+                'reference'     => $item->purchaseOrder?->reference,
+                'route'         => $purchaseOrderRoute($item->purchaseOrder),
+                'description'   => $item->purchaseOrder ? $item->kind->describeForPurchaseOrder() : DepositRequestItemKindEnum::labels()[$item->kind->value],
+                'supplier_code' => $item->purchaseOrder?->supplier_code,
+                'supplier_name' => $item->purchaseOrder?->supplier_name,
+                'amount'        => (float) $item->amount,
             ])->values()->all(),
             'cancel_route'  => !$forClient && $open && $paid == 0 && $user?->authTo("procurement.{$depositRequest->agent->organisation_id}.edit")
                 ? ['name' => 'grp.models.deposit_request.cancel', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
