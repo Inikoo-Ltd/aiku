@@ -85,10 +85,10 @@ class DeleteJobOrderItem extends OrgAction
                 }
             }
 
-            $unusedMixSteps = CancelJobOrder::unusedMixSteps($subJobs)
+            $sharedSteps = CancelJobOrder::sharedSteps($subJobs)
                 ->reject(fn (JobOrderItemTask $task) => $task->sessions->whereNotNull('mix_pool_key')->isNotEmpty());
-            if ($unusedMixSteps->isNotEmpty()) {
-                ShareMixPool::make()->giveBackAll($unusedMixSteps);
+            if ($sharedSteps->isNotEmpty()) {
+                ShareMixPool::make()->giveBackAll($sharedSteps);
                 $subJobs->each(fn (JobOrderItem $subJob) => $subJob->load(['tasks.sessions', 'tasks.sessionShares']));
             }
 

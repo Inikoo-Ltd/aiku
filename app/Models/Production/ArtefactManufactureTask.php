@@ -19,7 +19,6 @@ use Illuminate\Support\Collection;
  * @property numeric $units_per_artefact
  * @property numeric|null $standard_rate
  * @property float|null $mix_batch_kg
- * @property int|null $mix_shelf_life_days
  * @property bool $blocks_later_steps
  * @property string|null $label
  * @property array<int, int>|null $waits_for

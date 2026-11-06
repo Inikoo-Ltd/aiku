@@ -208,7 +208,7 @@ class Artefact extends Model implements Auditable, HasMedia
     {
         return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks')
             ->using(ArtefactManufactureTask::class)
-            ->withPivot('id', 'position', 'units_per_artefact', 'standard_rate', 'mix_batch_kg', 'mix_shelf_life_days', 'blocks_later_steps', 'label', 'waits_for')
+            ->withPivot('id', 'position', 'units_per_artefact', 'standard_rate', 'mix_batch_kg', 'blocks_later_steps', 'label', 'waits_for')
             ->orderByPivot('position')
             ->orderByPivot('id');
     }

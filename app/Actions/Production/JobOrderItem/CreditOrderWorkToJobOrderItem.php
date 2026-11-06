@@ -9,6 +9,7 @@
 namespace App\Actions\Production\JobOrderItem;
 
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -39,7 +40,7 @@ class CreditOrderWorkToJobOrderItem
 
         foreach ($jobOrderItem->tasks as $task) {
             $surplus = max(0, $surplusByStep[$task->stepKey()] ?? 0);
-            $floor   = $task->isRecordedInKg() ? 0 : (float) $task->quantity_made;
+            $floor   = $task->isRecordedInKg() || ShareMixPool::poolKey($task) ? 0 : (float) $task->quantity_made;
             $task->setRequiredQuantity(max($floor, round($task->requiredFor($jobOrderItem->quantity) - $surplus, 3)));
         }
 

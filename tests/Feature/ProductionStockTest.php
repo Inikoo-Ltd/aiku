@@ -1454,7 +1454,7 @@ test('the ai assistant puts SKOs on locations and sets up the factory location a
         ->and($department->fresh()->work_area_id)->toBeNull();
 });
 
-test('HELP-4562 one mix covers every open line of any product that uses it, the leftover goes to the next jobs and raw materials leave stock per mix', function () {
+test('HELP-4562 one mix and its Making cover every open line of any product that uses the strand, extra pieces go to the next jobs and raw materials leave stock per mix', function () {
     $user   = $this->guest->getUser();
     $suffix = rand(10000, 99999);
     $newOrgStock = fn () => \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, \App\Actions\Goods\Stock\StoreStock::make()->action(
@@ -1484,12 +1484,14 @@ test('HELP-4562 one mix covers every open line of any product that uses it, the 
 
     $mixing = StoreManufactureTask::make()->action($this->production, ['code' => 'MXP'.$suffix, 'name' => 'Mixing '.$suffix, 'is_piece_rate' => false, 'is_recorded_in_kg' => true]);
     $making = StoreManufactureTask::make()->action($this->production, ['code' => 'MKP'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
+    $boxing = StoreManufactureTask::make()->action($this->production, ['code' => 'BXP'.$suffix, 'name' => 'Boxing '.$suffix, 'is_piece_rate' => true]);
 
-    $box = function (string $code, float $kgPerBox, float $powderPerKg, ?\App\Models\Inventory\OrgStock $orgStock = null) use ($mixing, $making, $powder, $suffix) {
+    $box = function (string $code, float $kgPerBox, float $powderPerKg, ?\App\Models\Inventory\OrgStock $orgStock = null) use ($mixing, $making, $boxing, $powder, $suffix) {
         $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code.$suffix, 'name' => $code, 'org_stock_id' => $orgStock?->id]);
         $artefact->manufactureTasks()->sync([
             $mixing->id => ['position' => 1, 'units_per_artefact' => $kgPerBox, 'mix_batch_kg' => 50, 'label' => 'Light Blue'],
-            $making->id => ['position' => 2, 'units_per_artefact' => 1],
+            $making->id => ['position' => 2, 'units_per_artefact' => 1, 'label' => 'Light Blue'],
+            $boxing->id => ['position' => 3, 'units_per_artefact' => 1],
         ]);
         AttachRawMaterialToRecipeStep::make()->action($artefact->recipeSteps()->where('manufacture_task_id', $mixing->id)->first(), ['raw_material_id' => $powder->id, 'quantity_per_unit' => $kgPerBox * $powderPerKg]);
 
@@ -1503,7 +1505,7 @@ test('HELP-4562 one mix covers every open line of any product that uses it, the 
     expect($plainMix($plainOne)->mixPoolKey())->not->toBe($plainMix($plainTwo)->mixPoolKey());
 
     $boxOne   = $box('CBF01', 0.05, 1, $newOrgStock());
-    $boxTwo   = $box('CBF02', 0.1, 1);
+    $boxTwo   = $box('CBF02', 0.05, 1);
     $otherMix = $box('CBF09', 0.1, 2);
 
     $line = function (Artefact $artefact, int $quantity) {
@@ -1513,53 +1515,89 @@ test('HELP-4562 one mix covers every open line of any product that uses it, the 
 
         return $item->refresh();
     };
-    $mixOf = fn (JobOrderItem $item) => $item->tasks()->where('manufacture_task_id', $mixing->id)->first();
+    $mixOf    = fn (JobOrderItem $item) => $item->tasks()->where('manufacture_task_id', $mixing->id)->first();
+    $makingOf = fn (JobOrderItem $item) => $item->tasks()->where('manufacture_task_id', $making->id)->first();
+    $boxIt    = fn (JobOrderItem $item, int $boxes) => CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $item->tasks()->where('manufacture_task_id', $boxing->id)->first()), ['quantity_made' => $boxes]);
+    $done     = \App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum::DONE;
+    $floor    = fn () => collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->viewData('page')['props']['tasks']);
 
     $lineOne   = $line($boxOne, 300);
     $lineTwo   = $line($boxTwo, 200);
     $lineOther = $line($otherMix, 100);
 
-    $floorTasks = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->viewData('page')['props']['tasks']);
+    $floorTasks = $floor();
     $floorMix   = $floorTasks->firstWhere('id', $mixOf($lineOne)->id);
     expect($floorTasks->pluck('id'))->not->toContain($mixOf($lineTwo)->id)
         ->and($floorTasks->pluck('id'))->toContain($mixOf($lineOther)->id)
         ->and(array_column($floorMix['combined'], 'id'))->toBe([$mixOf($lineOne)->id, $mixOf($lineTwo)->id])
-        ->and($floorMix)->toMatchArray(['artefact_name' => 'Shared mix', 'separate_route' => null, 'quantity_required' => 35]);
-    expect($floorMix['mix_pool'])->toMatchArray(['needed_kg' => 35, 'leftover_kg' => 0, 'mixes' => 1, 'left_after_kg' => 15])
+        ->and($floorMix)->toMatchArray(['artefact_name' => 'Shared mix', 'separate_route' => null, 'quantity_required' => 25])
+        ->and($floorMix['mix_pool'])->toMatchArray(['unit' => 'kg', 'needed' => 25, 'in_stock' => null, 'mixes' => 1, 'left_after_kg' => 25])
         ->and(array_column($floorMix['mix_pool']['lines'], 'artefact_code'))->toBe(['CBF01'.$suffix, 'CBF02'.$suffix]);
+
+    collect([$lineOne, $lineTwo, $lineOther])->each(fn (JobOrderItem $item) => $item->jobOrder->update(['planned_for' => now()]));
+    $powderToBring = fn () => (float) (\App\Actions\Production\MaterialRequest\GetDayMaterialsChecklist::run($this->production, now()->toDateString())->firstWhere('id', $powder->id)?->needed_units ?? 0);
+    expect($powderToBring())->toBe(45.0);
 
     $mixSession = CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $mixOf($lineOne)), ['quantity_made' => 50]);
     $pool       = \App\Actions\Production\JobOrderItemTask\ShareMixPool::make();
-    $leftover   = fn () => (float) $pool->leftovers($this->production->id, $mixSession->mix_pool_key)->sum('leftover_kg');
-
-    expect((float) $mixOf($lineOne)->quantity_made)->toBe(15.0)
-        ->and($mixOf($lineOne)->state)->toBe(\App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum::DONE)
-        ->and((float) $mixOf($lineTwo)->quantity_made)->toBe(20.0)
-        ->and($mixOf($lineTwo)->state)->toBe(\App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum::DONE)
+    expect($powderToBring())->toBe(20.0)
+        ->and((float) $mixOf($lineOne)->quantity_made)->toBe(15.0)
+        ->and($mixOf($lineOne)->state)->toBe($done)
+        ->and((float) $mixOf($lineTwo)->quantity_made)->toBe(10.0)
         ->and((float) $mixOf($lineOther)->quantity_made)->toBe(0.0)
-        ->and($leftover())->toBe(15.0)
         ->and($powderLeft())->toBe(950.0);
 
+    $lineMixFresh = $line($boxOne, 100);
+    expect((float) $mixOf($lineMixFresh)->quantity_made)->toBe(0.0);
+    \App\Actions\Production\JobOrder\CancelJobOrder::make()->action($lineMixFresh->jobOrder, ['mode' => 'cancel', 'kind' => 'other', 'reason' => 'test']);
+
+    $floorMaking = $floor()->firstWhere('id', $makingOf($lineOne)->id);
+    expect(array_column($floorMaking['combined'], 'id'))->toBe([$makingOf($lineOne)->id, $makingOf($lineTwo)->id])
+        ->and($floorMaking['mix_pool'])->toMatchArray(['unit' => null, 'needed' => 500, 'in_stock' => 0, 'mixes' => null]);
+
+    $makingSession = CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $makingOf($lineOne)), ['quantity_made' => 1000]);
+    $inStock       = fn () => (float) $pool->leftovers($this->production->id, $makingSession->mix_pool_key)->sum('leftover_kg');
+    expect((float) $makingOf($lineOne)->quantity_made)->toBe(300.0)
+        ->and((float) $makingOf($lineTwo)->quantity_made)->toBe(200.0)
+        ->and((int) $lineOne->refresh()->quantity)->toBe(300)
+        ->and($inStock())->toBe(500.0);
+
     $lineThree = $line($boxOne, 200);
-    expect((float) $mixOf($lineThree)->quantity_made)->toBe(10.0)
-        ->and($leftover())->toBe(5.0);
+    expect((float) $makingOf($lineThree)->quantity_made)->toBe(200.0)
+        ->and($makingOf($lineThree)->state)->toBe($done)
+        ->and((float) $mixOf($lineThree)->quantity_made)->toBe(10.0)
+        ->and($mixOf($lineThree)->state)->toBe($done)
+        ->and($inStock())->toBe(300.0);
 
     \App\Actions\Production\JobOrderItem\UpdateJobOrderItem::make()->action($lineThree, ['quantity' => 100]);
-    expect((float) $mixOf($lineThree)->refresh()->quantity_made)->toBe(5.0)
-        ->and($leftover())->toBe(10.0);
+    expect((float) $makingOf($lineThree)->quantity_made)->toBe(100.0)
+        ->and($inStock())->toBe(400.0);
 
     \App\Actions\Production\JobOrder\CancelJobOrder::make()->action($lineTwo->jobOrder, ['mode' => 'cancel', 'kind' => 'other', 'reason' => 'test']);
-    expect((float) $mixOf($lineTwo)->quantity_made)->toBe(0.0)
-        ->and($leftover())->toBe(30.0);
+    expect((float) $makingOf($lineTwo)->quantity_made)->toBe(0.0)
+        ->and($inStock())->toBe(600.0);
+
+    $packedLine = $line($boxTwo, 100);
+    $boxIt($packedLine, 100);
+    \App\Actions\Production\JobOrder\CancelJobOrder::make()->action($packedLine->jobOrder, ['mode' => 'cancel', 'kind' => 'other', 'reason' => 'test']);
+    expect((float) $makingOf($packedLine)->quantity_made)->toBe(100.0)
+        ->and($inStock())->toBe(500.0);
 
     $backlogLine = StoreJobOrderItem::make()->action($lineThree->jobOrder, ['artefact_id' => $boxTwo->id, 'quantity' => 100]);
-    expect((float) $mixOf($backlogLine)->quantity_made)->toBe(10.0)
-        ->and($leftover())->toBe(20.0);
+    expect((float) $makingOf($backlogLine)->quantity_made)->toBe(100.0)
+        ->and($inStock())->toBe(400.0);
     \App\Actions\Production\JobOrderItem\DeleteJobOrderItem::make()->handle($backlogLine->refresh(), ['kind' => 'other', 'reason' => 'test']);
     expect(JobOrderItem::find($backlogLine->id))->toBeNull()
-        ->and($leftover())->toBe(30.0);
+        ->and($inStock())->toBe(500.0);
 
-    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $lineOne->tasks()->where('manufacture_task_id', $making->id)->first()), ['quantity_made' => 300]);
+    $partlyBoxed = $line($boxTwo, 300);
+    expect($inStock())->toBe(200.0);
+    $boxIt($partlyBoxed, 100);
+    \App\Actions\Production\JobOrder\CancelJobOrder::make()->action($partlyBoxed->jobOrder, ['mode' => 'cancel', 'kind' => 'other', 'reason' => 'test']);
+    expect((float) $makingOf($partlyBoxed)->quantity_made)->toBe(100.0)
+        ->and($inStock())->toBe(400.0);
+
+    $boxIt($lineOne, 300);
     \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($lineOne->jobOrder->refresh(), ['location_id' => $goodsIn->id]);
     expect($powderLeft())->toBe(950.0);
 
@@ -1573,35 +1611,30 @@ test('HELP-4562 one mix covers every open line of any product that uses it, the 
     expect($powderLeft())->toBe(950.0)
         ->and((float) $mixOf($lineOther)->quantity_made)->toBe(0.0);
 
-    $boxOne->recipeSteps()->where('manufacture_task_id', $mixing->id)->update(['mix_shelf_life_days' => 2]);
-    $boxTwo->recipeSteps()->where('manufacture_task_id', $mixing->id)->update(['mix_shelf_life_days' => 2]);
-    $lineFour = $line($boxTwo, 500);
-    expect((float) $mixOf($lineFour)->quantity_made)->toBe(30.0)
-        ->and($leftover())->toBe(0.0);
-    $fresh = CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $mixOf($lineFour)), ['quantity_made' => 50]);
-    expect($fresh->mix_use_by->toDateString())->toBe(now()->addDays(2)->toDateString())
-        ->and((float) $mixOf($lineFour)->quantity_made)->toBe(50.0)
-        ->and($leftover())->toBe(30.0);
+    $lineFour = $line($boxTwo, 1100);
+    expect((float) $makingOf($lineFour)->quantity_made)->toBe(400.0)
+        ->and((float) $mixOf($lineFour)->quantity_made)->toBe(20.0)
+        ->and($inStock())->toBe(0.0);
+    $secondMix = CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $mixOf($lineFour)), ['quantity_made' => 50]);
+    expect((float) $mixOf($lineFour)->quantity_made)->toBe(55.0)
+        ->and((float) $makingOf($lineFour)->quantity_made)->toBe(400.0)
+        ->and($powderLeft())->toBe(900.0);
 
-    $powderBefore = $powderLeft();
-    \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($fresh, ['quantity_made' => 100, 'reason' => 'second batch'], 'Supervisor');
-    expect((float) $mixOf($lineFour)->quantity_made)->toBe(50.0)
-        ->and($leftover())->toBe(80.0)
-        ->and($powderLeft())->toBe($powderBefore - 50);
-
-    $this->travel(3)->days();
-    expect((float) $mixOf($line($boxOne, 100))->quantity_made)->toBe(0.0);
-    $this->travelBack();
+    \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($secondMix, ['quantity_made' => 100, 'reason' => 'second batch'], 'Supervisor');
+    expect((float) $mixOf($lineFour)->quantity_made)->toBe(55.0)
+        ->and($powderLeft())->toBe(850.0);
 
     $carryLine = $line($boxOne, 200);
-    expect((float) $mixOf($carryLine)->quantity_made)->toBe(10.0);
+    expect((float) $mixOf($carryLine)->quantity_made)->toBe(0.0);
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $mixOf($carryLine)), ['quantity_made' => 50]);
     $powderBefore = $powderLeft();
-    $makingOf     = fn (JobOrderItem $item) => $item->tasks()->where('manufacture_task_id', $making->id)->first();
     CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $makingOf($carryLine)), ['quantity_made' => 100, 'outcome' => 'carry_over']);
     $carried = \App\Models\Production\JobOrder::where('data->carried_from', $carryLine->job_order_id)->firstOrFail()->jobOrderItems()->first();
+    expect($mixOf($carried)->state)->toBe($done);
     CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $makingOf($carried)), ['quantity_made' => 100]);
+    $boxIt($carryLine->refresh(), 100);
+    $boxIt($carried->refresh(), 100);
     \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($carryLine->jobOrder->refresh(), ['location_id' => $goodsIn->id]);
     \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($carried->jobOrder->refresh(), ['location_id' => $goodsIn->id]);
-    expect($powderLeft())->toBe($powderBefore)
-        ->and(fn () => \App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession::make()->action($fresh->refresh()))->toThrow(ValidationException::class, 'already received or closed');
+    expect($powderLeft())->toBe($powderBefore);
 });

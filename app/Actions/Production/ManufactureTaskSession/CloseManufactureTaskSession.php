@@ -109,7 +109,8 @@ class CloseManufactureTaskSession extends OrgAction
                     'quantity_made' => JobOrderItemTask::wholeMixBatchesMessage($mixBatchKg),
                 ]);
             }
-            $overproduced   = $isRecordedInKg ? 0 : round((float) $modelData['quantity_made'] - $left, 3);
+            $mixPoolKey     = ShareMixPool::poolKey($task);
+            $overproduced   = $isRecordedInKg || $mixPoolKey ? 0 : round((float) $modelData['quantity_made'] - $left, 3);
             $authorisedBy   = null;
             if ($overproduced > 0 && !$session->is_combined) {
                 $this->refusePastPreviousStepOfCarriedJob($task, (float) $modelData['quantity_made']);
@@ -123,14 +124,11 @@ class CloseManufactureTaskSession extends OrgAction
                 $authorisedBy = $this->overproductionManager($session, $modelData['manager_code']);
             }
 
-            $mixPoolKey = $isRecordedInKg ? ShareMixPool::poolKey($task) : null;
             if ($mixPoolKey) {
-                $shelfLifeDays = $task->recipeStep->mix_shelf_life_days;
                 $session->fill([
                     'quantity_made' => $modelData['quantity_made'],
                     'is_combined'   => true,
                     'mix_pool_key'  => $mixPoolKey,
-                    'mix_use_by'    => $shelfLifeDays ? $endedAt->copy()->addDays($shelfLifeDays) : null,
                 ]);
                 $shares  = ShareMixPool::make()->shareOut($session, $task, $mixPoolKey);
                 $members = $shares->map(fn ($share) => $share->jobOrderItemTask)->prepend($task)->unique('id')->values();

@@ -137,7 +137,7 @@ class CancelJobOrder extends OrgAction
             ));
 
             if ($totalMade == 0) {
-                ShareMixPool::make()->giveBackAll(self::unusedMixSteps($items));
+                ShareMixPool::make()->giveBackAll(self::sharedSteps($items));
             }
         });
 
@@ -145,16 +145,16 @@ class CancelJobOrder extends OrgAction
     }
 
     /**
-     * The mix steps of lines that used none of their mix yet: nothing after the mix was worked.
+     * The shared steps (a mix, or the Making of a labelled strand) of these lines: each hands back what its
+     * later steps have not used (ShareMixPool::giveBackAll, HELP-4562).
      *
      * @param  iterable<JobOrderItem>  $items  with tasks
      * @return Collection<int, JobOrderItemTask>
      */
-    public static function unusedMixSteps(iterable $items): Collection
+    public static function sharedSteps(iterable $items): Collection
     {
         return collect($items)
-            ->reject(fn (JobOrderItem $item) => $item->tasks->contains(fn (JobOrderItemTask $task) => !$task->isRecordedInKg() && (float) $task->quantity_made > 0))
-            ->flatMap(fn (JobOrderItem $item) => $item->tasks->filter(fn (JobOrderItemTask $task) => $task->isRecordedInKg()))
+            ->flatMap(fn (JobOrderItem $item) => $item->tasks->filter(fn (JobOrderItemTask $task) => ShareMixPool::poolKey($task)))
             ->values();
     }
 

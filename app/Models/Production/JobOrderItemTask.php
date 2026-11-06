@@ -142,7 +142,7 @@ class JobOrderItemTask extends Model
     {
         $this->update(['quantity_required' => $quantity]);
         $task = CalculateJobOrderItemTaskQuantities::run($this);
-        if (!$task->isRecordedInKg()) {
+        if (!ShareMixPool::poolKey($task)) {
             return $task;
         }
         ShareMixPool::make()->settle($task);

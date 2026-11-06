@@ -101,7 +101,7 @@ class GenerateJobOrderItemTasks
         }
 
         foreach ($tasks as $task) {
-            if ($task->wasRecentlyCreated && $task->isRecordedInKg()) {
+            if ($task->wasRecentlyCreated) {
                 ShareMixPool::make()->settle($task);
             }
         }

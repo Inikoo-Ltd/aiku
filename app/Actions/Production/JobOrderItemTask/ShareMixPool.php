@@ -20,10 +20,13 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * A mix is shared by every open line that uses it, whatever the product or job order (HELP-4562).
- * A mix recorded on one line goes to the lines that need it, that line first and then in plan order;
- * what no line needs stays on the session as leftover, given first to the next lines that need the mix.
- * The leftover is never stored: it is the session's kg less its shares.
+ * A mix is shared by every open line that uses it, whatever the product or job order (HELP-4562), and so
+ * is the Making of a labelled strand (Making – Light Blue) that turns it into pieces. What is recorded on
+ * one line goes to the lines that need it, that line first and then in plan order. Mix is made fresh and
+ * all of it is made into pieces, so mix no line needs is not kept for later lines; the extra pieces are:
+ * they stay on the Making session as the strand's balance, and the next lines that need the strand take
+ * them first, with their Making and their Mixing done. A balance is never stored: it is the session's
+ * quantity less its shares.
  */
 class ShareMixPool
 {
@@ -31,20 +34,70 @@ class ShareMixPool
 
     private const float EPSILON = 0.0005;
 
+    private const string MAKING = 'make:';
+
+    private const string OF_MIX = "\u{241E}";
+
     public static function poolKey(JobOrderItemTask $task): ?string
     {
-        if (!$task->isRecordedInKg() || !$task->recipeStep) {
+        if (!$task->recipeStep) {
+            return null;
+        }
+        if ($task->isRecordedInKg()) {
+            return $task->recipeStep->loadMissing('rawMaterials')->mixPoolKey();
+        }
+
+        $label = mb_strtolower(trim((string) $task->label));
+        if ($label === '') {
             return null;
         }
 
-        return $task->recipeStep->loadMissing('rawMaterials')->mixPoolKey();
+        $strand = $task->recipeStep->loadMissing('artefact.recipeSteps.manufactureTask', 'artefact.recipeSteps.rawMaterials')->artefact->recipeSteps
+            ->filter(fn ($step) => mb_strtolower(trim((string) $step->label)) === $label)
+            ->sortBy([['position', 'asc'], ['id', 'asc']])
+            ->values();
+        $mixAt = $strand->search(fn ($step) => $step->manufactureTask?->is_recorded_in_kg && $step->position <= $task->recipeStep->position);
+        if ($mixAt === false || $strand->get($mixAt + 1)?->id != $task->recipeStep->id) {
+            return null;
+        }
+
+        $mixStep      = $strand->get($mixAt);
+        $kgPerPiece   = round((float) $mixStep->units_per_artefact / ((float) $task->recipeStep->units_per_artefact ?: 1), 6);
+
+        return self::MAKING.$task->manufacture_task_id.'|'.$label.'|'.$kgPerPiece.self::OF_MIX.$mixStep->mixPoolKey();
+    }
+
+    public static function isMakingKey(string $poolKey): bool
+    {
+        return str_starts_with($poolKey, self::MAKING);
+    }
+
+    private static function mixKeyOf(string $makingKey): string
+    {
+        return explode(self::OF_MIX, $makingKey, 2)[1];
     }
 
     /**
-     * @return Collection<int, ManufactureTaskSessionShare> keyed by task id
+     * What a line's later steps already used of a shared step: never given back. Later steps are those of its
+     * strand and those every strand goes into (Packing).
      */
+    public static function usedByLaterSteps(JobOrderItemTask $task): float
+    {
+        $strand    = mb_strtolower(trim((string) $task->label));
+        $artefacts = JobOrderItemTask::where('job_order_item_id', $task->job_order_item_id)
+            ->where('position', '>', $task->position)
+            ->with('recipeStep', 'manufactureTask')
+            ->get()
+            ->filter(fn (JobOrderItemTask $later) => $strand === '' || in_array(mb_strtolower(trim((string) $later->label)), ['', $strand], true))
+            ->map(fn (JobOrderItemTask $later) => $later->artefactsIn())
+            ->max() ?? 0;
+
+        return min((float) $task->quantity_made, $task->requiredFor($artefacts));
+    }
+
     /**
      * @param  Collection<int, JobOrderItemTask>|null  $firstTo  lines served before the plan order, as a corrected mix goes back to the lines it went to
+     * @return Collection<int, ManufactureTaskSessionShare> keyed by task id
      */
     public function shareOut(ManufactureTaskSession $session, JobOrderItemTask $lead, string $poolKey, ?Collection $firstTo = null): Collection
     {
@@ -76,6 +129,9 @@ class ShareMixPool
                 'quantity_made'          => $given,
                 'quantity_rejected'      => 0,
             ]);
+            if (self::isMakingKey($poolKey)) {
+                $this->mixFor($task, $given, self::mixKeyOf($poolKey));
+            }
         }
         $session->unsetRelation('shares');
 
@@ -83,52 +139,94 @@ class ShareMixPool
     }
 
     /**
-     * Gives the leftover of earlier mixes to the open lines still waiting for this mix, oldest mix first.
-     */
-    /**
-     * @param  array<int, int>  $exceptTaskIds  lines leaving their job, never given mix
+     * Gives the extra pieces of a strand to the open lines still waiting for it, oldest first, with the
+     * mix they were made from. Mix itself is never kept for later lines.
+     *
+     * @param  array<int, int>  $exceptTaskIds  lines leaving their job, never given pieces
      */
     public function fill(int $productionId, string $poolKey, array $exceptTaskIds = []): void
     {
+        if (!self::isMakingKey($poolKey)) {
+            return;
+        }
         $this->lock($poolKey);
 
-        $leftovers = $this->leftovers($productionId, $poolKey);
-        if ($leftovers->isEmpty()) {
+        $balances = $this->leftovers($productionId, $poolKey);
+        if ($balances->isEmpty()) {
             return;
         }
 
         foreach ($this->tasksNeeding($productionId, $poolKey)->whereNotIn('id', $exceptTaskIds) as $task) {
-            $need = $this->stillNeeds($task);
-            foreach ($leftovers as $leftover) {
-                if ($need <= self::EPSILON) {
-                    break;
-                }
-                $given = round(min($need, $leftover->leftover_kg), 3);
-                if ($given <= self::EPSILON) {
-                    continue;
-                }
-                $share = ManufactureTaskSessionShare::firstOrNew(['manufacture_task_session_id' => $leftover->id, 'job_order_item_task_id' => $task->id], ['share' => 0, 'quantity_rejected' => 0, 'quantity_made' => 0]);
-                $share->quantity_made = round((float) $share->quantity_made + $given, 3);
-                $share->share         = round((float) $share->quantity_made / (float) $leftover->quantity_made, 6);
-                $share->save();
-
-                $leftover->leftover_kg = round($leftover->leftover_kg - $given, 3);
-                $need                  = round($need - $given, 3);
-            }
-            if ($need < $this->stillNeeds($task)) {
+            $given = $this->giveFrom($balances, $task, $this->stillNeeds($task));
+            if ($given > self::EPSILON) {
                 CalculateJobOrderItemTaskQuantities::run($task);
+                $this->mixFor($task, $given, self::mixKeyOf($poolKey));
             }
-            $leftovers = $leftovers->filter(fn (ManufactureTaskSession $leftover) => $leftover->leftover_kg > self::EPSILON);
-            if ($leftovers->isEmpty()) {
+            $balances = $balances->filter(fn (ManufactureTaskSession $balance) => $balance->leftover_kg > self::EPSILON)->values();
+            if ($balances->isEmpty()) {
                 return;
             }
         }
     }
 
     /**
-     * A line asking for less of a mix than it was given hands the difference back to the mix, newest mix first,
-     * so the next line that needs it gets it. A line carried to another job keeps it: its order credits it
-     * to the carried part (HELP-4509).
+     * Pieces given to a line were made from a mix already recorded, with its raw materials: the line's mix
+     * step is marked done for them from that mix, past what the mix has left if need be.
+     */
+    private function mixFor(JobOrderItemTask $making, float $pieces, string $mixKey): void
+    {
+        $mix = JobOrderItemTask::where('job_order_item_id', $making->job_order_item_id)
+            ->whereNotNull('artefact_manufacture_task_id')
+            ->with(['recipeStep.rawMaterials', 'manufactureTask'])
+            ->get()
+            ->first(fn (JobOrderItemTask $step) => self::poolKey($step) === $mixKey);
+        if (!$mix) {
+            return;
+        }
+
+        $kg = min($this->stillNeeds($mix), round($pieces / $making->unitsPerArtefact() * $mix->unitsPerArtefact(), 3));
+        if ($kg <= self::EPSILON) {
+            return;
+        }
+
+        $this->lock($mixKey);
+        $left = $kg - $this->giveFrom($this->leftovers($making->production_id, $mixKey), $mix, $kg);
+        if ($left > self::EPSILON && ($lastMix = $this->closedSessions($making->production_id, $mixKey)->last())) {
+            $this->giveFrom(collect([tap($lastMix, fn ($session) => $session->leftover_kg = $left)]), $mix, $left);
+        }
+        CalculateJobOrderItemTaskQuantities::run($mix);
+    }
+
+    /**
+     * @param  Collection<int, ManufactureTaskSession>  $sources  with leftover_kg, taken from in order
+     */
+    private function giveFrom(Collection $sources, JobOrderItemTask $task, float $need): float
+    {
+        $given = 0.0;
+        foreach ($sources as $source) {
+            if ($need - $given <= self::EPSILON) {
+                break;
+            }
+            $part = round(min($need - $given, $source->leftover_kg), 3);
+            if ($part <= self::EPSILON) {
+                continue;
+            }
+            $share = ManufactureTaskSessionShare::firstOrNew(['manufacture_task_session_id' => $source->id, 'job_order_item_task_id' => $task->id], ['share' => 0, 'quantity_rejected' => 0, 'quantity_made' => 0]);
+            $share->quantity_made = round((float) $share->quantity_made + $part, 3);
+            $share->share         = (float) $source->quantity_made > 0 ? round((float) $share->quantity_made / (float) $source->quantity_made, 6) : 0;
+            $share->save();
+
+            $source->leftover_kg = round($source->leftover_kg - $part, 3);
+            $given               = round($given + $part, 3);
+        }
+
+        return $given;
+    }
+
+    /**
+     * A line asking for less than it was given hands the difference back, newest session first: extra pieces
+     * go to the next line that needs the strand, mix stays unused. A line carried to another job keeps it:
+     * its order credits it to the carried part (HELP-4509).
      */
     public function settle(JobOrderItemTask $task): void
     {
@@ -139,7 +237,7 @@ class ShareMixPool
 
         DB::transaction(function () use ($task, $poolKey) {
             $this->lock($poolKey);
-            $excess = round((float) $task->quantity_made - (float) $task->quantity_required, 3);
+            $excess = round((float) $task->quantity_made - max((float) $task->quantity_required, self::usedByLaterSteps($task)), 3);
             if ($excess > self::EPSILON && !Arr::has($task->jobOrderItem->data ?? [], 'carried_to')) {
                 $this->giveBack($task, $excess);
             }
@@ -148,24 +246,33 @@ class ShareMixPool
     }
 
     /**
-     * A line leaving its job before any of its mix was used hands all of it back to the mix.
+     * A line leaving its job hands back what its later steps have not used: pieces first, then the mix they
+     * no longer need, and only then are the extra pieces given to the lines waiting for them.
      *
      * @param  iterable<JobOrderItemTask>  $tasks
      */
     public function giveBackAll(iterable $tasks): void
     {
-        $leavingIds = collect($tasks)->pluck('id')->all();
-        foreach ($tasks as $task) {
-            $poolKey = self::poolKey($task);
-            if (!$poolKey) {
-                continue;
+        $tasks      = collect($tasks)->sortByDesc('position')->values();
+        $leavingIds = $tasks->pluck('id')->all();
+        $poolKeys   = $tasks->mapWithKeys(fn (JobOrderItemTask $task) => [$task->id => self::poolKey($task)])->filter();
+
+        DB::transaction(function () use ($tasks, $leavingIds, $poolKeys) {
+            $poolKeys->unique()->sort()->each(fn (string $poolKey) => $this->lock($poolKey));
+            foreach ($tasks as $task) {
+                if (!isset($poolKeys[$task->id])) {
+                    continue;
+                }
+                $task->refresh();
+                $back = round((float) $task->quantity_made - self::usedByLaterSteps($task), 3);
+                if ($back > self::EPSILON) {
+                    $this->giveBack($task, $back);
+                }
             }
-            DB::transaction(function () use ($task, $poolKey, $leavingIds) {
-                $this->lock($poolKey);
-                $this->giveBack($task, INF);
-                $this->fill($task->production_id, $poolKey, $leavingIds);
-            });
-        }
+            foreach ($poolKeys->unique() as $poolKey) {
+                $this->fill($tasks->first()->production_id, $poolKey, $leavingIds);
+            }
+        });
     }
 
     private function giveBack(JobOrderItemTask $task, float $kg): void
@@ -210,31 +317,40 @@ class ShareMixPool
     }
 
     /**
+     * What each session has not given to a line yet: kg of mix made into extra pieces, or the extra pieces.
+     *
      * @return Collection<int, ManufactureTaskSession> with leftover_kg, oldest first
      */
     public function leftovers(int $productionId, string $poolKey): Collection
     {
-        return ManufactureTaskSession::where('production_id', $productionId)
-            ->where('mix_pool_key', $poolKey)
-            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
-            ->where(fn ($query) => $query->whereNull('mix_use_by')->orWhere('mix_use_by', '>', now()))
-            ->withSum('shares', 'quantity_made')
-            ->orderBy('ended_at')
-            ->orderBy('id')
-            ->get()
-            ->each(fn (ManufactureTaskSession $session) => $session->leftover_kg = round((float) $session->quantity_made - (float) $session->shares_sum_quantity_made, 3))
+        return $this->closedSessions($productionId, $poolKey)
             ->filter(fn (ManufactureTaskSession $session) => $session->leftover_kg > self::EPSILON)
             ->values();
     }
 
     /**
-     * Open lines whose step makes this mix and still asks for some, in plan order.
+     * @return Collection<int, ManufactureTaskSession> with leftover_kg, oldest first
+     */
+    private function closedSessions(int $productionId, string $poolKey): Collection
+    {
+        return ManufactureTaskSession::where('production_id', $productionId)
+            ->where('mix_pool_key', $poolKey)
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->withSum('shares', 'quantity_made')
+            ->orderBy('ended_at')
+            ->orderBy('id')
+            ->get()
+            ->each(fn (ManufactureTaskSession $session) => $session->leftover_kg = round((float) $session->quantity_made - (float) $session->shares_sum_quantity_made, 3));
+    }
+
+    /**
+     * Open lines whose step makes this mix, or this strand's pieces, and still asks for some, in plan order.
      *
      * @return Collection<int, JobOrderItemTask>
      */
     public function tasksNeeding(int $productionId, string $poolKey): Collection
     {
-        [$manufactureTaskId, $label] = explode('|', $poolKey);
+        [$manufactureTaskId, $label] = explode('|', self::isMakingKey($poolKey) ? substr($poolKey, strlen(self::MAKING)) : $poolKey);
 
         return JobOrderItemTask::query()
             ->select('job_order_item_tasks.*')
@@ -252,7 +368,7 @@ class ShareMixPool
             ->orderByRaw('job_orders.planned_for asc nulls last, job_orders.plan_position asc nulls last')
             ->orderBy('job_order_item_tasks.job_order_id')
             ->orderBy('job_order_item_tasks.id')
-            ->with(['recipeStep.rawMaterials', 'manufactureTask'])
+            ->with(['recipeStep.rawMaterials', 'recipeStep.artefact.recipeSteps.manufactureTask', 'recipeStep.artefact.recipeSteps.rawMaterials', 'manufactureTask'])
             ->get()
             ->filter(fn (JobOrderItemTask $task) => self::poolKey($task) === $poolKey)
             ->values();
@@ -263,8 +379,14 @@ class ShareMixPool
         return max(0, round((float) $task->quantity_required - (float) $task->quantity_made, 3));
     }
 
+    /**
+     * A strand's mix is always locked before its Making, whichever is asked first, so two closes never wait on each other.
+     */
     private function lock(string $poolKey): void
     {
+        if (self::isMakingKey($poolKey)) {
+            $this->lock(self::mixKeyOf($poolKey));
+        }
         DB::select('select pg_advisory_xact_lock(hashtext(?))', ['mix_pool:'.$poolKey]);
     }
 }

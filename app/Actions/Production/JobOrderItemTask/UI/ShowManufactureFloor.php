@@ -550,10 +550,11 @@ class ShowManufactureFloor extends OrgAction
     }
 
     /**
-     * What one mix covers (HELP-4562): every open line of any product waiting for this mix, the leftover
-     * of earlier mixes and how many whole batches are still to make.
+     * What one mix, or one Making of a labelled strand, covers (HELP-4562): every open line of any product
+     * waiting for it, how many whole mixes are still to make and how many kg more than these lines need
+     * (all of it is made into pieces), or the strand's extra pieces in stock, given first to the next lines.
      *
-     * @return array{lines: array<int, array{artefact_code: string, job_order_reference: string, units: float, kg: float}>, needed_kg: float, leftover_kg: float, leftover_use_by: string|null, mixes: int|null, batch_kg: float|null, left_after_kg: float|null}|null
+     * @return array{lines: array<int, array{artefact_code: string, job_order_reference: string, units: float, quantity: float}>, unit: string|null, needed: float, in_stock: float|null, mixes: int|null, batch_kg: float|null, left_after_kg: float|null}|null
      */
     private function mixPool(JobOrderItemTask $task): ?array
     {
@@ -563,28 +564,26 @@ class ShowManufactureFloor extends OrgAction
         }
 
         return $this->mixPools[$poolKey] ??= (function () use ($task, $poolKey) {
-            $pool      = ShareMixPool::make();
-            $lines     = $pool->tasksNeeding($task->production_id, $poolKey)->load(['jobOrder', 'jobOrderItem.artefact']);
-            $leftovers = $pool->leftovers($task->production_id, $poolKey);
-            $neededKg  = round($lines->sum(fn (JobOrderItemTask $line) => (float) $line->quantity_required - (float) $line->quantity_made), 3);
-            $leftover  = round($leftovers->sum('leftover_kg'), 3);
-            $batchKg   = $task->mixBatchKg();
-            $toMix     = max(0, $neededKg - $leftover);
-            $mixes     = $batchKg ? (int) ceil(round($toMix / $batchKg, 6)) : null;
+            $pool     = ShareMixPool::make();
+            $lines    = $pool->tasksNeeding($task->production_id, $poolKey)->load(['jobOrder', 'jobOrderItem.artefact']);
+            $needed   = round($lines->sum(fn (JobOrderItemTask $line) => (float) $line->quantity_required - (float) $line->quantity_made), 3);
+            $isMaking = ShareMixPool::isMakingKey($poolKey);
+            $batchKg  = $isMaking ? null : $task->mixBatchKg();
+            $mixes    = $batchKg ? (int) ceil(round($needed / $batchKg, 6)) : null;
 
             return [
-                'lines'           => $lines->map(fn (JobOrderItemTask $line) => [
+                'lines'         => $lines->map(fn (JobOrderItemTask $line) => [
                     'artefact_code'       => $line->jobOrderItem->artefact->code,
                     'job_order_reference' => $line->jobOrder->reference,
-                    'kg'                  => round((float) $line->quantity_required - (float) $line->quantity_made, 3),
+                    'quantity'            => round((float) $line->quantity_required - (float) $line->quantity_made, 3),
                     'units'               => floor(round(((float) $line->quantity_required - (float) $line->quantity_made) / $line->unitsPerArtefact(), 3)),
                 ])->values()->all(),
-                'needed_kg'       => $neededKg,
-                'leftover_kg'     => $leftover,
-                'leftover_use_by' => $leftovers->min('mix_use_by')?->toDateString(),
-                'mixes'           => $mixes,
-                'batch_kg'        => $batchKg,
-                'left_after_kg'   => $mixes !== null ? round($mixes * $batchKg - $toMix, 3) : null,
+                'unit'          => $task->unit(),
+                'needed'        => $needed,
+                'in_stock'      => $isMaking ? round($pool->leftovers($task->production_id, $poolKey)->sum('leftover_kg'), 3) : null,
+                'mixes'         => $mixes,
+                'batch_kg'      => $batchKg,
+                'left_after_kg' => $mixes !== null ? round($mixes * $batchKg - $needed, 3) : null,
             ];
         })();
     }

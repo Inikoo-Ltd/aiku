@@ -53,10 +53,10 @@ interface CombinedLine {
 }
 
 interface MixPool {
-    lines: { artefact_code: string, job_order_reference: string, units: number, kg: number }[]
-    needed_kg: number
-    leftover_kg: number
-    leftover_use_by: string | null
+    lines: { artefact_code: string, job_order_reference: string, units: number, quantity: number }[]
+    unit: string | null
+    needed: number
+    in_stock: number | null
     mixes: number | null
     batch_kg: number | null
     left_after_kg: number | null
@@ -574,19 +574,19 @@ function startTask(task: FloorTask) {
                     <div class="text-lg font-semibold text-gray-800">
                         {{ selectedTask.task_name }}<template v-if="selectedTask.mix_pool.mixes !== null">: {{ ctransChoice(':count mix (:kg kg)|:count mixes (:kg kg)', selectedTask.mix_pool.mixes, { count: selectedTask.mix_pool.mixes, kg: Math.round(selectedTask.mix_pool.mixes * (selectedTask.mix_pool.batch_kg ?? 0) * 1000) / 1000 }) }}</template>
                     </div>
-                    <div class="text-sm text-gray-500">{{ ctrans('One mix covers every line that uses it, in plan order') }}</div>
+                    <div class="text-sm text-gray-500">{{ selectedTask.mix_pool.unit ? ctrans('One mix covers every line that uses it, in plan order') : ctrans('What you make covers every line that needs it, in plan order, the extra pieces are kept for the next jobs') }}</div>
                     <table class="mt-2 w-full text-sm">
                         <tbody>
                             <tr v-for="line in selectedTask.mix_pool.lines" :key="line.job_order_reference + line.artefact_code" class="border-t border-gray-200">
                                 <td class="py-1 pr-3 font-medium whitespace-nowrap">{{ line.artefact_code }}</td>
                                 <td class="py-1 pr-3 text-gray-500 whitespace-nowrap">{{ line.job_order_reference }}</td>
                                 <td class="py-1 pr-3 text-right tabular-nums whitespace-nowrap">× {{ line.units }}</td>
-                                <td class="py-1 text-right tabular-nums whitespace-nowrap">{{ line.kg }} kg</td>
+                                <td class="py-1 text-right tabular-nums whitespace-nowrap">{{ line.quantity }}<template v-if="selectedTask.mix_pool.unit"> {{ selectedTask.mix_pool.unit }}</template></td>
                             </tr>
                         </tbody>
                     </table>
-                    <div v-if="selectedTask.mix_pool.leftover_kg > 0" class="mt-2 text-sm text-gray-700">{{ ctrans('Leftover mix to use first: :kg kg', { kg: selectedTask.mix_pool.leftover_kg }) }}<template v-if="selectedTask.mix_pool.leftover_use_by"> · {{ ctrans('use by :date', { date: selectedTask.mix_pool.leftover_use_by }) }}</template></div>
-                    <div v-if="selectedTask.mix_pool.left_after_kg" class="mt-1 text-sm text-gray-700">{{ ctrans(':kg kg left over, kept for the next jobs', { kg: selectedTask.mix_pool.left_after_kg }) }}</div>
+                    <div v-if="selectedTask.mix_pool.in_stock" class="mt-2 text-sm text-gray-700">{{ ctrans('Extra pieces in stock, used first by the next jobs: :count', { count: selectedTask.mix_pool.in_stock }) }}</div>
+                    <div v-if="selectedTask.mix_pool.left_after_kg" class="mt-1 text-sm text-gray-700">{{ ctrans(':kg kg more than these lines need: make all of it, the extra pieces are kept for the next jobs', { kg: selectedTask.mix_pool.left_after_kg }) }}</div>
                 </div>
                 <div v-if="selectedTask.artisan && !selectedTask.is_mine" class="text-gray-500 mb-2">{{ ctrans('For') }} {{ selectedTask.artisan }}</div>
                 <div v-else-if="selectedTask.only_for.length && !selectedTask.artisan" class="text-gray-500 mb-2">{{ ctrans('Only for') }} {{ selectedTask.only_for.join(', ') }}</div>

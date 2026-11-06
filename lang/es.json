@@ -26438,13 +26438,11 @@
     "Trolleys are not given to fulfilment picking sessions.": "Los carros no se asignan a sesiones de picking de fulfilment.",
     ":count mix (:kg kg)|:count mixes (:kg kg)": ":count mezcla (:kg kg)|:count mezclas (:kg kg)",
     "One mix covers every line that uses it, in plan order": "Una mezcla cubre todas las líneas que la usan, en el orden del plan",
-    "Leftover mix to use first: :kg kg": "Mezcla sobrante para usar primero: :kg kg",
-    "use by :date": "usar antes del :date",
-    ":kg kg left over, kept for the next jobs": "Sobran :kg kg, se guardan para los próximos trabajos",
-    "Mix keeps (days)": "Duración de la mezcla (días)",
-    "A mix is shared by every open line that uses it. Mix left over is given to the next lines first, until this many days after it was made. Empty: the leftover keeps.": "Una mezcla se comparte entre todas las líneas abiertas que la usan. La mezcla sobrante va primero a las siguientes líneas, hasta estos días después de hacerla. Vacío: el sobrante no caduca.",
     "A shared mix cannot be moved to another step, void it and enter it again": "Una mezcla compartida no se puede mover a otro paso, anúlela y regístrela de nuevo",
     "Shared mix": "Mezcla compartida",
     "This mix went into :reference, which is already received or closed, it can no longer be voided": "Esta mezcla se usó en :reference, que ya está recibida o cerrada, ya no se puede anular",
-    "This mix went into :reference, which is already received or closed, it can no longer be corrected": "Esta mezcla se usó en :reference, que ya está recibida o cerrada, ya no se puede corregir"
+    "This mix went into :reference, which is already received or closed, it can no longer be corrected": "Esta mezcla se usó en :reference, que ya está recibida o cerrada, ya no se puede corregir",
+    "What you make covers every line that needs it, in plan order, the extra pieces are kept for the next jobs": "Lo que haga cubre todas las líneas que lo necesitan, en el orden del plan, las piezas de más se guardan para los próximos trabajos",
+    "Extra pieces in stock, used first by the next jobs: :count": "Piezas de más en stock, los próximos trabajos las usan primero: :count",
+    ":kg kg more than these lines need: make all of it, the extra pieces are kept for the next jobs": ":kg kg más de lo que necesitan estas líneas: hágalo todo, las piezas de más se guardan para los próximos trabajos"
 }

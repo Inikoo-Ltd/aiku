@@ -78,7 +78,6 @@ class GetArtefactManufactureTasks
                 'units_per_artefact' => $task->pivot->units_per_artefact,
                 'is_recorded_in_kg'  => (bool) $task->is_recorded_in_kg,
                 'mix_batch_kg'       => $task->pivot->mix_batch_kg,
-                'mix_shelf_life_days' => $task->pivot->mix_shelf_life_days,
                 'blocks_later_steps' => $task->pivot->blocks_later_steps ?? true,
                 'standard_rate'      => $task->pivot->standard_rate,
                 'targets'            => $this->targets($task->pivot->standard_rate ?? $task->standard_rate, $bands, $source == 'artefact' ? $ownTiers : ($source == 'family' ? $familyTier : [])),

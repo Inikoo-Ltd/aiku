@@ -73,13 +73,14 @@ class CalculateManufactureTaskSessionPay
 
     /**
      * Band thresholds edited on the artefact's step, or else on its family's, as they stood when the session started (HELP-4465).
-     * ponytail: combined batches mix several recipes, so they keep the calculated thresholds.
+     * ponytail: combined batches mix several recipes, so they keep the calculated thresholds. A shared mix or Making
+     * (HELP-4562) is one step worked on its own line, so it keeps that line's edited thresholds.
      *
      * @return array{source: string, thresholds: array<string, float>}|null
      */
     public function editedTiers(ManufactureTaskSession $session, ?float $standardRate): ?array
     {
-        if ($standardRate === null || $session->is_combined || $session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY || ($session->activity_type && $session->activity_type != ManufactureTaskSessionActivityTypeEnum::PRODUCTION)) {
+        if ($standardRate === null || ($session->is_combined && !$session->mix_pool_key) || $session->artisan_pay_type == ArtisanPayTypeEnum::HOURLY || ($session->activity_type && $session->activity_type != ManufactureTaskSessionActivityTypeEnum::PRODUCTION)) {
             return null;
         }
 

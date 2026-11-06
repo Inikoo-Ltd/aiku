@@ -50,7 +50,7 @@ class SettleShortJobOrderItemTask
             $isCarried = $carryOver && $remainingArtefacts > 0;
             foreach ($item->tasks as $task) {
                 $required = min((float) $task->quantity_required, $task->requiredFor($madeArtefacts));
-                if ($isCarried && $task->isRecordedInKg()) {
+                if ($isCarried && ShareMixPool::poolKey($task)) {
                     $task->update(['quantity_required' => $required]);
                     CalculateJobOrderItemTaskQuantities::run($task);
                 } else {

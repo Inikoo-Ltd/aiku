@@ -26474,13 +26474,11 @@
     "Trolleys are not given to fulfilment picking sessions.": "Vozíky sa nepriraďujú k reláciám vychystávania pre fulfilment.",
     ":count mix (:kg kg)|:count mixes (:kg kg)": "{0} :count miešaní (:kg kg)|{1} :count miešanie (:kg kg)|[2,4] :count miešania (:kg kg)|[5,*] :count miešaní (:kg kg)",
     "One mix covers every line that uses it, in plan order": "Jedno miešanie pokryje všetky riadky, ktoré ho používajú, v poradí plánu",
-    "Leftover mix to use first: :kg kg": "Zvyšná zmes, použite ju najprv: :kg kg",
-    "use by :date": "spotrebujte do :date",
-    ":kg kg left over, kept for the next jobs": "Zostane :kg kg, odloží sa pre ďalšie zákazky",
-    "Mix keeps (days)": "Trvanlivosť zmesi (dni)",
-    "A mix is shared by every open line that uses it. Mix left over is given to the next lines first, until this many days after it was made. Empty: the leftover keeps.": "Zmes zdieľajú všetky otvorené riadky, ktoré ju používajú. Zvyšná zmes ide najprv ďalším riadkom, a to toľko dní od jej namiešania. Prázdne: zvyšok sa nekazí.",
     "A shared mix cannot be moved to another step, void it and enter it again": "Zdieľanú zmes nemožno presunúť na iný krok, zrušte ju a zadajte znova",
     "Shared mix": "Zdieľaná zmes",
     "This mix went into :reference, which is already received or closed, it can no longer be voided": "Táto zmes išla do :reference, ktorá je už prijatá alebo uzavretá, už ju nemožno zrušiť",
-    "This mix went into :reference, which is already received or closed, it can no longer be corrected": "Táto zmes išla do :reference, ktorá je už prijatá alebo uzavretá, už ju nemožno opraviť"
+    "This mix went into :reference, which is already received or closed, it can no longer be corrected": "Táto zmes išla do :reference, ktorá je už prijatá alebo uzavretá, už ju nemožno opraviť",
+    "What you make covers every line that needs it, in plan order, the extra pieces are kept for the next jobs": "Čo vyrobíte, pokryje všetky riadky, ktoré to potrebujú, v poradí plánu, kusy navyše sa odložia pre ďalšie zákazky",
+    "Extra pieces in stock, used first by the next jobs: :count": "Kusy navyše na sklade, ďalšie zákazky ich použijú najprv: :count",
+    ":kg kg more than these lines need: make all of it, the extra pieces are kept for the next jobs": "O :kg kg viac, než tieto riadky potrebujú: vyrobte všetko, kusy navyše sa odložia pre ďalšie zákazky"
 }
