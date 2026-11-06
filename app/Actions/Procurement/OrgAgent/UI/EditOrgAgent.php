@@ -170,8 +170,8 @@ class EditOrgAgent extends OrgAction
             'fields' => [
                 'money_request_payer_user_ids' => [
                     'type'        => 'multiselect-tags',
-                    'label'       => __('Approve and pay'),
-                    'information' => __('They are emailed when the agent asks for money, and can approve and pay the request.'),
+                    'label'       => __('Emailed to approve and pay'),
+                    'information' => __('Emailed when this agent asks for money, and can approve, reject and pay it even without accounting or procurement permission.'),
                     'options'     => $users,
                     'labelProp'   => 'name',
                     'valueProp'   => 'id',
@@ -180,8 +180,8 @@ class EditOrgAgent extends OrgAction
                 ],
                 'money_request_cc_user_ids' => [
                     'type'        => 'multiselect-tags',
-                    'label'       => __('Copy to'),
-                    'information' => __('They get a copy of the emails sent when the agent asks for money and when it is paid.'),
+                    'label'       => __('Emails CC\'d to'),
+                    'information' => __('Get a copy of the emails when this agent asks for money, and when it is paid or rejected. Being here does not let them approve or pay.'),
                     'options'     => $users,
                     'labelProp'   => 'name',
                     'valueProp'   => 'id',
