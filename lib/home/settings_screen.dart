@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../config/app_config.dart';
-import '../ui/aiku_palette.dart';
+import '../ui/app_colours.dart';
 
 /// Which build of the app this is and which aiku server it talks to.
 class SettingsScreen extends StatelessWidget {
@@ -29,25 +29,29 @@ class SettingsScreen extends StatelessWidget {
     (null, _) => 'Not set in this build',
   };
 
-  static const _valueStyle = TextStyle(fontSize: 14, color: AikuPalette.label);
-
   @override
   Widget build(BuildContext context) {
+    final colours = AppColours.of(context);
+    final valueStyle = TextStyle(fontSize: 14, color: colours.secondary);
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
           ListTile(
             key: versionKey,
+            iconColor: colours.accentText,
+            textColor: colours.ink,
             leading: const Icon(Icons.info_outline),
             title: const Text('App version'),
-            subtitle: Text(appVersion, style: _valueStyle),
+            subtitle: Text(appVersion, style: valueStyle),
           ),
           ListTile(
             key: serverKey,
+            iconColor: colours.accentText,
+            textColor: colours.ink,
             leading: const Icon(Icons.dns_outlined),
             title: const Text('Server'),
-            subtitle: Text(config.apiBaseUrl, style: _valueStyle),
+            subtitle: Text(config.apiBaseUrl, style: valueStyle),
           ),
         ],
       ),

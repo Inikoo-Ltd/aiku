@@ -13,11 +13,14 @@ import 'package:aiku_mobile/app.dart';
 import 'package:aiku_mobile/auth/auth_controller.dart';
 import 'package:aiku_mobile/auth/token_store.dart';
 import 'package:aiku_mobile/config/app_config.dart';
+import 'package:aiku_mobile/home/appearance.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'dashboard_fixtures.dart';
+import 'in_memory_appearance_store.dart';
 import 'in_memory_area_memory.dart';
 import 'in_memory_token_store.dart';
 
@@ -59,11 +62,14 @@ Map<String, Object?> profileJson({
 };
 
 /// A fake aiku: `GET navigation` answers [navigation], `GET profile`
-/// answers [profile] (Raul's saved profile when not given), and every other
-/// request goes to [otherwise] (a 500 when there is none).
+/// answers [profile] (Raul's saved profile when not given), the dashboards
+/// answer [groupDashboard] and [operations] (the fixtures when not given),
+/// and every other request goes to [otherwise] (a 500 when there is none).
 AikuHandler fakeAiku(
   Map<String, Object?> navigation, {
   Map<String, Object?>? profile,
+  Map<String, Object?>? groupDashboard,
+  Map<String, Object?>? operations,
   AikuHandler? otherwise,
 }) => (request) async {
   switch ((request.method, request.url.path)) {
@@ -71,6 +77,11 @@ AikuHandler fakeAiku(
       return jsonResponse(navigation, 200);
     case ('GET', '/app/api/mobile/profile'):
       return jsonResponse({'data': profile ?? profileJson()}, 200);
+    case ('GET', '/app/api/mobile/dashboard/group'):
+      return jsonResponse(groupDashboard ?? groupDashboardJson(), 200);
+    case ('GET', final String path)
+        when path.startsWith('/app/api/mobile/dashboard/operations'):
+      return jsonResponse(operations ?? operationsJson(), 200);
   }
   return otherwise == null ? http.Response('', 500) : otherwise(request);
 };
@@ -79,14 +90,17 @@ AikuHandler fakeAiku(
 class const SignedInApp({
   required final InMemoryTokenStore store,
   required final InMemoryAreaMemory areaMemory,
+  required final InMemoryAppearanceStore appearanceStore,
 });
 
 /// Pumps the whole app signed in as "raul" (Raul), on a phone-sized screen,
-/// and lets the first requests answer.
+/// and lets the first requests answer. [savedAppearance] is what the phone
+/// has kept from an earlier choice.
 Future<SignedInApp> pumpSignedInApp(
   WidgetTester tester,
   AikuHandler handler, {
   Map<String, String>? rememberedAreas,
+  Appearance? savedAppearance,
 }) async {
   tester.view.physicalSize = const Size(1080, 2340);
   tester.view.devicePixelRatio = 2.75;
@@ -114,6 +128,10 @@ Future<SignedInApp> pumpSignedInApp(
   );
   addTearDown(controller.dispose);
   await controller.restore();
+  final appearanceStore = InMemoryAppearanceStore(savedAppearance);
+  final appearance = AppearanceController(store: appearanceStore);
+  addTearDown(appearance.dispose);
+  await appearance.restore();
 
   await tester.pumpWidget(
     AikuApp(
@@ -121,11 +139,16 @@ Future<SignedInApp> pumpSignedInApp(
       client: client,
       config: config,
       areaMemory: areaMemory,
+      appearance: appearance,
     ),
   );
   await tester.pump();
   await tester.pump();
-  return SignedInApp(store: store, areaMemory: areaMemory);
+  return SignedInApp(
+    store: store,
+    areaMemory: areaMemory,
+    appearanceStore: appearanceStore,
+  );
 }
 
 /// Lets a drawer, popup menu or page transition finish.

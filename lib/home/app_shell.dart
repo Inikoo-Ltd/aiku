@@ -14,16 +14,15 @@ import '../api/navigation.dart';
 import '../auth/auth_controller.dart';
 import '../auth/token_store.dart';
 import '../config/app_config.dart';
-import '../ui/accent_shades.dart';
-import '../ui/aiku_buttons.dart';
-import '../ui/aiku_palette.dart';
-import '../ui/aiku_theme.dart';
-import '../ui/form_error_list.dart';
+import '../ui/app_colours.dart';
+import '../ui/load_problem.dart';
 import '../ui/loading_indicator.dart';
 import '../ui/menu_icons.dart';
+import 'appearance.dart';
 import 'area_drawer.dart';
 import 'area_homes.dart';
 import 'area_memory.dart';
+import 'dashboard_loader.dart';
 import 'navigation_controller.dart';
 import 'placeholder_screens.dart';
 import 'profile_menu.dart';
@@ -67,6 +66,7 @@ class AppShell extends StatefulWidget {
     required this.client,
     required this.config,
     required this.areaMemory,
+    required this.appearance,
   });
 
   /// Keys for tests.
@@ -90,6 +90,9 @@ class AppShell extends StatefulWidget {
   /// Remembers the last area on the phone.
   final AreaMemory areaMemory;
 
+  /// Light, dark or the phone's setting, chosen on the Theme screen.
+  final AppearanceController appearance;
+
   @override
   State<AppShell> createState() => _AppShellState();
 }
@@ -97,12 +100,17 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   late final NavigationController _navigation;
+  late final DashboardSource _dashboards;
   late final AppLifecycleListener _lifecycle;
   ShellTab _tab = ShellTab.home;
 
   @override
   void initState() {
     super.initState();
+    _dashboards = DashboardSource(
+      client: widget.client,
+      token: widget.session.token,
+    );
     _navigation = NavigationController(
       client: widget.client,
       token: widget.session.token,
@@ -148,9 +156,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final shades = AccentShades.fromAppTheme(
-      effectiveTheme(widget.session.profile),
-    );
+    final colours = AppColours.of(context);
 
     return ListenableBuilder(
       listenable: _navigation,
@@ -169,6 +175,7 @@ class _AppShellState extends State<AppShell> {
 
         return Scaffold(
           key: _scaffoldKey,
+          // The app bar is the top of the theme band (see the app's theme).
           appBar: AppBar(
             leading: IconButton(
               key: AppShell.menuButtonKey,
@@ -187,9 +194,11 @@ class _AppShellState extends State<AppShell> {
             actions: [
               ProfileMenu(
                 profile: widget.session.profile,
-                shades: shades,
                 onTheme: () => _push(
-                  (_) => ThemeScreen(controller: widget.authController),
+                  (_) => ThemeScreen(
+                    controller: widget.authController,
+                    appearance: widget.appearance,
+                  ),
                 ),
                 onSettings: () =>
                     _push((_) => SettingsScreen(config: widget.config)),
@@ -202,26 +211,24 @@ class _AppShellState extends State<AppShell> {
             NavigationReady(:final data, :final area) => AreaDrawer(
               data: data,
               area: area,
-              shades: shades,
               onSelectArea: _selectArea,
               onOpenUnbuilt: _openUnbuilt,
             ),
-            NavigationLoading() ||
-            NavigationFailed() => _WaitingDrawer(shades: shades),
+            NavigationLoading() || NavigationFailed() => const _WaitingDrawer(),
           },
           body: switch (state) {
             NavigationLoading() => Center(
-              child: LoadingIndicator(color: shades.accent, size: 24),
+              child: LoadingIndicator(color: colours.accentText, size: 24),
             ),
             NavigationFailed(:final messages) => _LoadFailed(
               messages: messages,
-              shades: shades,
               onRetry: _navigation.load,
             ),
             NavigationReady(:final area) => switch (tab) {
               ShellTab.home => AreaHome(
                 area: area,
-                shades: shades,
+                source: _dashboards,
+                onUnauthorised: widget.authController.sessionExpired,
                 onOpenUnbuilt: _openUnbuilt,
               ),
               ShellTab.tasks ||
@@ -232,26 +239,10 @@ class _AppShellState extends State<AppShell> {
           // A bar with Home alone would have nothing to switch to.
           bottomNavigationBar: tabs.length < 2
               ? null
-              : NavigationBar(
-                  key: AppShell.bottomBarKey,
-                  selectedIndex: tabs.indexOf(tab),
-                  onDestinationSelected: (index) =>
-                      setState(() => _tab = tabs[index]),
-                  backgroundColor: Colors.white,
-                  indicatorColor: shades.muted,
-                  height: 64,
-                  destinations: [
-                    for (final shellTab in tabs)
-                      NavigationDestination(
-                        key: shellTab.key,
-                        icon: Icon(shellTab.icon),
-                        selectedIcon: Icon(
-                          shellTab.selectedIcon,
-                          color: shades.deep,
-                        ),
-                        label: shellTab.label,
-                      ),
-                  ],
+              : _BottomBar(
+                  tabs: tabs,
+                  selected: tab,
+                  onSelected: (selected) => setState(() => _tab = selected),
                 ),
         );
       },
@@ -259,7 +250,64 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-/// The area's name, with what kind of area it is underneath.
+/// Home and the hubs aiku allows; the chosen one in the accent, no pill.
+class _BottomBar extends StatelessWidget {
+  const _BottomBar({
+    required this.tabs,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<ShellTab> tabs;
+  final ShellTab selected;
+  final ValueChanged<ShellTab> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colours = AppColours.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: colours.hairline)),
+      ),
+      child: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          labelTextStyle: WidgetStateProperty.resolveWith(
+            (states) => TextStyle(
+              fontSize: 12,
+              fontWeight: states.contains(WidgetState.selected)
+                  ? FontWeight.w600
+                  : FontWeight.w500,
+              color: states.contains(WidgetState.selected)
+                  ? colours.accentText
+                  : colours.muted,
+            ),
+          ),
+        ),
+        child: NavigationBar(
+          key: AppShell.bottomBarKey,
+          selectedIndex: tabs.indexOf(selected),
+          onDestinationSelected: (index) => onSelected(tabs[index]),
+          backgroundColor: colours.background,
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: Colors.transparent,
+          elevation: 0,
+          height: 60,
+          destinations: [
+            for (final tab in tabs)
+              NavigationDestination(
+                key: tab.key,
+                icon: Icon(tab.icon, color: colours.muted),
+                selectedIcon: Icon(tab.selectedIcon, color: colours.accentText),
+                label: tab.label,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The area's name, with what kind of area it is underneath, on the band.
 class _AreaTitle extends StatelessWidget {
   const _AreaTitle({super.key, required this.area});
 
@@ -267,6 +315,7 @@ class _AreaTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colours = AppColours.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -275,13 +324,17 @@ class _AreaTitle extends StatelessWidget {
           area.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: colours.onBand,
+          ),
         ),
         Text(
           areaSubtitle(area),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 12, color: AikuPalette.label),
+          style: TextStyle(fontSize: 12, color: colours.onBandMuted),
         ),
       ],
     );
@@ -290,29 +343,26 @@ class _AreaTitle extends StatelessWidget {
 
 /// What the drawer shows before the menus have arrived.
 class _WaitingDrawer extends StatelessWidget {
-  const _WaitingDrawer({required this.shades});
-
-  final AccentShades shades;
+  const _WaitingDrawer();
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: Colors.white,
-      child: Center(child: LoadingIndicator(color: shades.accent, size: 24)),
+      child: Center(
+        child: LoadingIndicator(
+          color: AppColours.of(context).accentText,
+          size: 24,
+        ),
+      ),
     );
   }
 }
 
 /// aiku could not be asked for the menus, or gave the user nothing to open.
 class _LoadFailed extends StatelessWidget {
-  const _LoadFailed({
-    required this.messages,
-    required this.shades,
-    required this.onRetry,
-  });
+  const _LoadFailed({required this.messages, required this.onRetry});
 
   final List<String> messages;
-  final AccentShades shades;
   final VoidCallback onRetry;
 
   @override
@@ -320,17 +370,10 @@ class _LoadFailed extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
       children: [
-        FormErrorList(messages: messages),
-        const SizedBox(height: 24),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: BorderedIconButton(
-            key: AppShell.retryKey,
-            label: 'Try again',
-            icon: Icons.refresh,
-            iconColor: shades.accent,
-            onPressed: onRetry,
-          ),
+        LoadProblem(
+          messages: messages,
+          onRetry: onRetry,
+          retryKey: AppShell.retryKey,
         ),
       ],
     );

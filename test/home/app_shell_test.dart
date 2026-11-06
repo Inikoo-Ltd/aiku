@@ -6,6 +6,7 @@
 */
 
 import 'package:aiku_mobile/api/navigation.dart';
+import 'package:aiku_mobile/auth/form_errors.dart';
 import 'package:aiku_mobile/auth/login_screen.dart';
 import 'package:aiku_mobile/home/app_shell.dart';
 import 'package:aiku_mobile/home/area_drawer.dart';
@@ -50,7 +51,7 @@ void main() {
     (tester) async {
       await pumpSignedInApp(tester, fakeAiku(groupUserNavigation()));
 
-      expect(find.byKey(GroupDashboard.targetKey), findsOneWidget);
+      expect(find.byKey(GroupDashboard.heroKey), findsOneWidget);
       expect(_titleText(tester), 'AW Group');
     },
   );
@@ -76,7 +77,7 @@ void main() {
     );
 
     expect(find.byKey(AppShell.bottomBarKey), findsNothing);
-    expect(find.byKey(GroupDashboard.targetKey), findsOneWidget);
+    expect(find.byKey(GroupDashboard.heroKey), findsOneWidget);
   });
 
   testWidgets('a hub tab shows its placeholder and Home goes back', (
@@ -88,12 +89,12 @@ void main() {
     await finishAnimations(tester);
 
     expect(find.byType(HubPlaceholder), findsOneWidget);
-    expect(find.byKey(GroupDashboard.targetKey), findsNothing);
+    expect(find.byKey(GroupDashboard.heroKey), findsNothing);
 
     await tester.tap(find.byKey(ShellTab.home.key));
     await finishAnimations(tester);
 
-    expect(find.byKey(GroupDashboard.targetKey), findsOneWidget);
+    expect(find.byKey(GroupDashboard.heroKey), findsOneWidget);
   });
 
   testWidgets('a picker opens on their warehouse home with Home and Tickets', (
@@ -105,6 +106,50 @@ void main() {
     expect(_titleText(tester), 'Europa Drive');
     expect(find.byKey(ShellTab.tickets.key), findsOneWidget);
     expect(find.byKey(ShellTab.chat.key), findsNothing);
+  });
+
+  testWidgets('a warehouse Home shows aiku’s stage counts for that warehouse', (
+    tester,
+  ) async {
+    final paths = <String>[];
+    final aiku = fakeAiku(pickerNavigation());
+    await pumpSignedInApp(tester, (request) {
+      paths.add(request.url.path);
+      return aiku(request);
+    });
+    await tester.pump();
+
+    expect(
+      paths,
+      contains('/app/api/mobile/dashboard/operations/europa-drive'),
+    );
+    final picking = tester
+        .widgetList<Text>(
+          find.descendant(
+            of: find.byKey(const ValueKey('stage.picking')),
+            matching: find.byType(Text),
+          ),
+        )
+        .map((text) => text.data);
+    expect(picking, containsAll(['Picking', '27']));
+  });
+
+  testWidgets('a warehouse the user may not see says so, with Try again', (
+    tester,
+  ) async {
+    final aiku = fakeAiku(pickerNavigation());
+    await pumpSignedInApp(
+      tester,
+      (request) => request.url.path.contains('/dashboard/operations')
+          ? Future.value(http.Response('', 403))
+          : aiku(request),
+    );
+    await tester.pump();
+
+    expect(find.byKey(WarehouseHome.retryKey), findsOneWidget);
+    expect(tester.widget<FormErrorList>(find.byType(FormErrorList)).messages, [
+      FormErrors.forbiddenMessage,
+    ]);
   });
 
   testWidgets('Start picking says picking is not on the app yet', (
@@ -333,7 +378,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.byKey(GroupDashboard.targetKey), findsOneWidget);
+    expect(find.byKey(GroupDashboard.heroKey), findsOneWidget);
   });
 
   testWidgets(
@@ -376,7 +421,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byKey(ShellTab.chat.key), findsOneWidget);
-      expect(find.byKey(GroupDashboard.targetKey), findsOneWidget);
+      expect(find.byKey(GroupDashboard.heroKey), findsOneWidget);
       expect(app.store.session?.profile.mobileAppTheme, amoled);
       expect(
         Theme.of(tester.element(find.byKey(AppShell.titleKey)))

@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'api_failure.dart';
 import 'login_result.dart';
+import 'dashboard.dart';
 import 'navigation.dart';
 
 /// Talks to aiku's mobile staff API under `/app/api/mobile`.
@@ -101,6 +102,31 @@ class AikuApiClient {
     return _profileFrom(response, url);
   }
 
+  /// The group dashboard's figures, as aiku's web dashboard computes them.
+  Future<GroupDashboardData> groupDashboard(String token) async {
+    final url = _mobileUrl('dashboard/group');
+    final response = await _send('GET', url, token: token);
+
+    return GroupDashboardData.fromJson(_decodeObject(response.body)) ??
+        (throw InvalidResponse(url));
+  }
+
+  /// Delivery notes per stage in the warehouse with [warehouseSlug], or in
+  /// every warehouse the user works in when it is null.
+  Future<OperationsData> operationsDashboard(
+    String token, {
+    String? warehouseSlug,
+  }) async {
+    final url = _mobileUrl(switch (warehouseSlug) {
+      final String slug => 'dashboard/operations/${Uri.encodeComponent(slug)}',
+      null => 'dashboard/operations',
+    });
+    final response = await _send('GET', url, token: token);
+
+    return OperationsData.fromJson(_decodeObject(response.body)) ??
+        (throw InvalidResponse(url));
+  }
+
   StaffProfile _profileFrom(http.Response response, Uri url) {
     if (_decodeObject(response.body) case {
       'data': final Map<String, Object?> profile,
@@ -173,6 +199,7 @@ class AikuApiClient {
 
     return switch (response.statusCode) {
       401 => const Unauthorised(),
+      403 => Forbidden(url),
       404 => AppNotAccepted(url),
       422 when body['code'] == 'otp_required' => OtpRequired(message),
       422 => ValidationFailure(message, _fieldErrors(body['errors'])),

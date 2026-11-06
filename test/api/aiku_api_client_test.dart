@@ -201,4 +201,41 @@ void main() {
       );
     },
   );
+
+  test('the dashboards are GETs with the token, one per warehouse', () async {
+    final paths = <String>[];
+    final client = _clientAnswering((request) async {
+      paths.add(request.url.path);
+      expect(request.method, 'GET');
+      expect(request.headers['Authorization'], 'Bearer 1|secret');
+      return request.url.path.endsWith('/dashboard/group')
+          ? _json({
+              'currency_code': 'GBP',
+              'intervals': <Object?>[],
+              'sales': null,
+            }, 200)
+          : _json({'stages': <Object?>[]}, 200);
+    });
+
+    await client.groupDashboard('1|secret');
+    await client.operationsDashboard('1|secret');
+    await client.operationsDashboard('1|secret', warehouseSlug: 'ed');
+
+    expect(paths, [
+      '/app/api/mobile/dashboard/group',
+      '/app/api/mobile/dashboard/operations',
+      '/app/api/mobile/dashboard/operations/ed',
+    ]);
+  });
+
+  test('a 403 is reported as forbidden', () async {
+    final client = _clientAnswering(
+      (_) async => _json({'message': 'This action is unauthorized.'}, 403),
+    );
+
+    await expectLater(
+      client.operationsDashboard('1|secret', warehouseSlug: 'ed'),
+      throwsA(isA<Forbidden>()),
+    );
+  });
 }

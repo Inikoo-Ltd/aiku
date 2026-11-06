@@ -6,10 +6,10 @@
 */
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../api/login_result.dart';
-import 'accent_shades.dart';
-import 'aiku_palette.dart';
+import 'app_colours.dart';
 
 /// One of aiku's theme presets: eight colours, of which slot 4 is the accent.
 class const AikuThemePreset(final String name, final List<String> colours) {
@@ -149,42 +149,78 @@ List<String> effectiveTheme(StaffProfile profile) {
   return aikuThemePresets.first.colours;
 }
 
-/// Material theme for the signed-in app.
+/// Material theme for the signed-in app, light or dark.
 ///
-/// The accent is aiku's `theme[4]` exactly, with text on it chosen by
-/// luminance. Everything else (containers, surfaces, outlines) comes from a
-/// tonal palette built on the accent with the fidelity variant, which keeps
-/// the accent's hue and colourfulness, so the rest of the app sits in tones
-/// that suit a phone screen around the user's colour.
-ThemeData signedInThemeData(AccentShades shades) {
-  final scheme = ColorScheme.fromSeed(
-    seedColor: shades.accent,
-    dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
-  ).copyWith(primary: shades.accent, onPrimary: shades.onAccent);
+/// In light the accent is aiku's `theme[4]` exactly, with text on it chosen
+/// by luminance; in dark an accent too dark to see is lightened within its
+/// own colour (see [AppColours]). Other roles come from a tonal palette
+/// built on the accent with the fidelity variant, which keeps the accent's
+/// hue, so the app sits in tones around the user's colour. The app bar is
+/// the theme-coloured band.
+ThemeData signedInThemeData(Color themeAccent, Brightness brightness) {
+  final colours = switch (brightness) {
+    Brightness.light => AppColours.light(themeAccent),
+    Brightness.dark => AppColours.dark(themeAccent),
+  };
+  final scheme =
+      ColorScheme.fromSeed(
+        seedColor: colours.accent,
+        brightness: brightness,
+        dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+      ).copyWith(
+        primary: colours.accent,
+        onPrimary: colours.onAccent,
+        surface: colours.background,
+        onSurface: colours.ink,
+        onSurfaceVariant: colours.secondary,
+        outlineVariant: colours.hairline,
+        error: colours.errorText,
+      );
+  final bandIsDark = colours.onBand.computeLuminance() > 0.5;
 
   return ThemeData(
     colorScheme: scheme,
-    scaffoldBackgroundColor: scheme.surfaceContainerLowest,
+    brightness: brightness,
+    scaffoldBackgroundColor: colours.background,
+    canvasColor: colours.background,
+    dividerColor: colours.hairline,
+    extensions: [colours],
     appBarTheme: AppBarTheme(
-      backgroundColor: scheme.surfaceContainerLowest,
-      foregroundColor: AikuPalette.ink,
+      backgroundColor: colours.band,
+      foregroundColor: colours.onBand,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
-      scrolledUnderElevation: 1,
+      scrolledUnderElevation: 0,
+      systemOverlayStyle: bandIsDark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
+    ),
+    drawerTheme: DrawerThemeData(backgroundColor: colours.background),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: colours.raised,
+      surfaceTintColor: Colors.transparent,
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: colours.raised,
+      surfaceTintColor: Colors.transparent,
+    ),
+    dividerTheme: DividerThemeData(color: colours.hairline),
+    progressIndicatorTheme: ProgressIndicatorThemeData(
+      color: colours.accentText,
     ),
     cardTheme: CardThemeData(
-      color: Colors.white,
+      color: colours.raised,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: const BorderRadius.all(Radius.circular(8)),
-        side: BorderSide(color: scheme.outlineVariant),
+        side: BorderSide(color: colours.hairline),
       ),
     ),
     textSelectionTheme: TextSelectionThemeData(
-      cursorColor: shades.accent,
-      selectionHandleColor: shades.accent,
-      selectionColor: shades.muted,
+      cursorColor: colours.accentText,
+      selectionHandleColor: colours.accentText,
+      selectionColor: colours.accent.withValues(alpha: 0.3),
     ),
   );
 }

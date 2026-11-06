@@ -11,6 +11,7 @@ import 'auth/auth_controller.dart';
 import 'auth/device_name.dart';
 import 'auth/token_store.dart';
 import 'config/app_config.dart';
+import 'home/appearance.dart';
 import 'home/area_memory.dart';
 
 void main() {
@@ -35,12 +36,18 @@ void main() {
   // has been read, so nothing waits on this here.
   unawaited(controller.restore());
 
+  final appearance = AppearanceController(store: SecureAppearanceStore());
+  // The app starts in the phone's appearance and switches if another was
+  // saved, so nothing waits on this either.
+  unawaited(appearance.restore());
+
   runApp(
     AikuApp(
       controller: controller,
       client: client,
       config: config,
       areaMemory: SecureAreaMemory(),
+      appearance: appearance,
     ),
   );
 }

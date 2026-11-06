@@ -8,8 +8,8 @@
 import 'package:flutter/material.dart';
 
 import '../api/navigation.dart';
-import '../ui/accent_shades.dart';
 import '../ui/aiku_palette.dart';
+import '../ui/app_colours.dart';
 import '../ui/menu_icons.dart';
 
 /// How many of an organisation's shops are listed before "N more shops".
@@ -22,7 +22,6 @@ class AreaDrawer extends StatefulWidget {
     super.key,
     required this.data,
     required this.area,
-    required this.shades,
     required this.onSelectArea,
     required this.onOpenUnbuilt,
   });
@@ -51,9 +50,6 @@ class AreaDrawer extends StatefulWidget {
   /// The area being worked in.
   final Area area;
 
-  /// The current theme's accent shades.
-  final AccentShades shades;
-
   /// Switches to another area.
   final ValueChanged<Area> onSelectArea;
 
@@ -75,10 +71,10 @@ class _AreaDrawerState extends State<AreaDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final colours = AppColours.of(context);
     final data = widget.data;
     final shopRows = _ShopRowBuilder(
       currentArea: widget.area,
-      shades: widget.shades,
       showsAllShopsOf: (organisation) =>
           _organisationsShowingAllShops.contains(organisation.key),
       onShowAllShops: _showAllShops,
@@ -86,14 +82,13 @@ class _AreaDrawerState extends State<AreaDrawer> {
     );
 
     return Drawer(
-      backgroundColor: Colors.white,
       child: SafeArea(
         child: ListTileTheme(
           dense: true,
-          iconColor: AikuPalette.label,
-          textColor: AikuPalette.ink,
-          selectedColor: widget.shades.deep,
-          selectedTileColor: widget.shades.soft,
+          iconColor: colours.secondary,
+          textColor: colours.ink,
+          selectedColor: colours.accentText,
+          selectedTileColor: Colors.transparent,
           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(8)),
@@ -107,7 +102,6 @@ class _AreaDrawerState extends State<AreaDrawer> {
                 child: _AreaCard(
                   key: AreaDrawer.areaCardKey,
                   area: widget.area,
-                  shades: widget.shades,
                   isOpen: _isChoosingArea,
                   onTap: data.hasChoice ? _toggleAreaList : null,
                 ),
@@ -121,7 +115,6 @@ class _AreaDrawerState extends State<AreaDrawer> {
                         key: AreaDrawer.areaListKey,
                         data: data,
                         currentArea: widget.area,
-                        shades: widget.shades,
                         shopRows: shopRows,
                         onSelectArea: widget.onSelectArea,
                       )
@@ -147,14 +140,12 @@ class _AreaList extends StatelessWidget {
     super.key,
     required this.data,
     required this.currentArea,
-    required this.shades,
     required this.shopRows,
     required this.onSelectArea,
   });
 
   final NavigationData data;
   final Area currentArea;
-  final AccentShades shades;
   final _ShopRowBuilder shopRows;
   final ValueChanged<Area> onSelectArea;
 
@@ -164,7 +155,6 @@ class _AreaList extends StatelessWidget {
       area: area,
       isCurrent: area.key == currentArea.key,
       isIndented: isIndented,
-      shades: shades,
       onTap: () => onSelectArea(area),
     );
 
@@ -258,7 +248,6 @@ class _AreaMenu extends StatelessWidget {
 /// Builds the area rows that need the drawer's "more shops" state.
 class const _ShopRowBuilder({
   required final Area currentArea,
-  required final AccentShades shades,
   required final bool Function(Area organisation) showsAllShopsOf,
   required final ValueChanged<Area> onShowAllShops,
   required final ValueChanged<Area> onSelectArea,
@@ -274,14 +263,9 @@ class const _ShopRowBuilder({
       for (final shop in hidden > 0 ? shops.take(_shopsBeforeMore) : shops)
         areaRow(shop, isIndented: true),
       if (hidden > 0)
-        ListTile(
+        _MoreShopsRow(
           key: AreaDrawer.moreShopsKey(organisation),
-          contentPadding: const EdgeInsets.only(left: 36, right: 12),
-          leading: Icon(Icons.expand_more, size: 20, color: shades.deep),
-          title: Text(
-            hidden == 1 ? '1 more shop' : '$hidden more shops',
-            style: TextStyle(color: shades.deep),
-          ),
+          hidden: hidden,
           onTap: () => onShowAllShops(organisation),
         ),
     ];
@@ -292,9 +276,29 @@ class const _ShopRowBuilder({
     area: area,
     isCurrent: area.key == currentArea.key,
     isIndented: isIndented,
-    shades: shades,
     onTap: () => onSelectArea(area),
   );
+}
+
+class _MoreShopsRow extends StatelessWidget {
+  const _MoreShopsRow({super.key, required this.hidden, required this.onTap});
+
+  final int hidden;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accentText = AppColours.of(context).accentText;
+    return ListTile(
+      contentPadding: const EdgeInsets.only(left: 36, right: 12),
+      leading: Icon(Icons.expand_more, size: 20, color: accentText),
+      title: Text(
+        hidden == 1 ? '1 more shop' : '$hidden more shops',
+        style: TextStyle(color: accentText),
+      ),
+      onTap: onTap,
+    );
+  }
 }
 
 class _AreaRow extends StatelessWidget {
@@ -302,27 +306,31 @@ class _AreaRow extends StatelessWidget {
     required this.area,
     required this.isCurrent,
     required this.isIndented,
-    required this.shades,
     required this.onTap,
   });
 
   final Area area;
   final bool isCurrent;
   final bool isIndented;
-  final AccentShades shades;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final colours = AppColours.of(context);
     return ListTile(
       key: AreaDrawer.areaKey(area),
       contentPadding: EdgeInsets.only(left: isIndented ? 36 : 12, right: 12),
       leading: Icon(areaIcon(area.type), size: 20),
       title: Text(area.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: isIndented ? null : Text(areaTypeLabel(area.type)),
+      subtitle: isIndented
+          ? null
+          : Text(
+              areaTypeLabel(area.type),
+              style: TextStyle(color: colours.secondary),
+            ),
       selected: isCurrent,
       trailing: isCurrent
-          ? Icon(Icons.check, size: 18, color: shades.accent)
+          ? Icon(Icons.check, size: 18, color: colours.accentText)
           : null,
       onTap: onTap,
     );
@@ -338,6 +346,7 @@ class _MenuEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colours = AppColours.of(context);
     final key = AreaDrawer.menuItemKey(item.key);
     final icon = Icon(menuIcon(item.icon), size: 20);
     final title = Text(item.label);
@@ -356,10 +365,10 @@ class _MenuEntry extends StatelessWidget {
       title: title,
       dense: true,
       tilePadding: const EdgeInsets.symmetric(horizontal: 12),
-      iconColor: AikuPalette.label,
-      collapsedIconColor: AikuPalette.label,
-      textColor: AikuPalette.ink,
-      collapsedTextColor: AikuPalette.ink,
+      iconColor: colours.secondary,
+      collapsedIconColor: colours.secondary,
+      textColor: colours.ink,
+      collapsedTextColor: colours.ink,
       shape: const Border(),
       collapsedShape: const Border(),
       childrenPadding: const EdgeInsets.only(left: 24),
@@ -375,70 +384,60 @@ class _MenuEntry extends StatelessWidget {
   }
 }
 
-/// The current area, tinted with the accent. Tapping it lists the other
-/// areas when there are any.
+/// The current area, on the page. Tapping it lists the other areas when
+/// there are any.
 class _AreaCard extends StatelessWidget {
   const _AreaCard({
     super.key,
     required this.area,
-    required this.shades,
     required this.isOpen,
     required this.onTap,
   });
 
   final Area area;
-  final AccentShades shades;
   final bool isOpen;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    const radius = BorderRadius.all(Radius.circular(10));
-    return Material(
-      color: shades.soft,
-      borderRadius: radius,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Icon(areaIcon(area.type), color: shades.deep),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      area.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AikuPalette.ink,
-                      ),
+    final colours = AppColours.of(context);
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        child: Row(
+          children: [
+            Icon(areaIcon(area.type), color: colours.accentText),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    area.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: colours.ink,
                     ),
-                    Text(
-                      areaSubtitle(area),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AikuPalette.label,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    areaSubtitle(area),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: colours.secondary),
+                  ),
+                ],
               ),
-              if (onTap != null)
-                Icon(
-                  isOpen ? Icons.expand_less : Icons.unfold_more,
-                  color: shades.deep,
-                ),
-            ],
-          ),
+            ),
+            if (onTap != null)
+              Icon(
+                isOpen ? Icons.expand_less : Icons.unfold_more,
+                color: colours.secondary,
+              ),
+          ],
         ),
       ),
     );
@@ -460,14 +459,14 @@ class _DrawerBrand extends StatelessWidget {
             semanticLabel: 'aiku logo',
           ),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'aiku',
             style: TextStyle(
               fontFamily: AikuPalette.brandFontFamily,
               fontSize: 22,
               fontWeight: FontWeight.w600,
-              fontVariations: [FontVariation.weight(600)],
-              color: AikuPalette.ink,
+              fontVariations: const [FontVariation.weight(600)],
+              color: AppColours.of(context).ink,
               letterSpacing: -0.5,
             ),
           ),
@@ -488,10 +487,10 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 6),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: AikuPalette.label,
+          color: AppColours.of(context).accentText,
         ),
       ),
     );
@@ -509,7 +508,7 @@ class _Caption extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 20, 12, 0),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 12, color: AikuPalette.label),
+        style: TextStyle(fontSize: 12, color: AppColours.of(context).secondary),
       ),
     );
   }

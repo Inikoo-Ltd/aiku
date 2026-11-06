@@ -43,6 +43,7 @@ class const FormErrors({
         messages: [message.isEmpty ? tooManyRequestsMessage : message],
       ),
       NetworkFailure() => const FormErrors(messages: [networkFailureMessage]),
+      Forbidden() => const FormErrors(messages: [forbiddenMessage]),
       ServerError(:final statusCode, :final url) ||
       UnexpectedStatus(:final statusCode, :final url) => FormErrors(
         messages: [
@@ -62,6 +63,10 @@ class const FormErrors({
   /// Shown for a 404 from a mobile route.
   static const appNotAcceptedMessage =
       "Can't sign in from this app. Make sure it's up to date, or ask your manager for help.";
+
+  /// Shown when aiku answers 403.
+  static const forbiddenMessage =
+      "Your aiku account isn't allowed to see this.";
 
   /// Shown when aiku can't be reached.
   static const networkFailureMessage =

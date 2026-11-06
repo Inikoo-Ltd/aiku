@@ -8,8 +8,7 @@
 import 'package:flutter/material.dart';
 
 import '../api/login_result.dart';
-import '../ui/accent_shades.dart';
-import '../ui/aiku_palette.dart';
+import '../ui/app_colours.dart';
 
 enum _ProfileAction { theme, settings, signOut }
 
@@ -19,7 +18,6 @@ class ProfileMenu extends StatelessWidget {
   const ProfileMenu({
     super.key,
     required this.profile,
-    required this.shades,
     required this.onTheme,
     required this.onSettings,
     required this.onSignOut,
@@ -34,9 +32,6 @@ class ProfileMenu extends StatelessWidget {
   /// The signed-in user.
   final StaffProfile profile;
 
-  /// The current theme's accent shades.
-  final AccentShades shades;
-
   /// Opens the Theme screen.
   final VoidCallback onTheme;
 
@@ -48,6 +43,7 @@ class ProfileMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colours = AppColours.of(context);
     final name = profile.contactName ?? profile.username;
     final initial = name.isEmpty ? '?' : name.characters.first.toUpperCase();
 
@@ -68,12 +64,15 @@ class ProfileMenu extends StatelessWidget {
             children: [
               Text(
                 name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: AikuPalette.ink,
+                  color: colours.ink,
                 ),
               ),
-              Text(profile.username, style: const TextStyle(fontSize: 12)),
+              Text(
+                profile.username,
+                style: TextStyle(fontSize: 12, color: colours.secondary),
+              ),
             ],
           ),
         ),
@@ -82,33 +81,37 @@ class ProfileMenu extends StatelessWidget {
           key: themeKey,
           action: _ProfileAction.theme,
           icon: Icons.palette_outlined,
-          iconColor: shades.accent,
+          iconColor: colours.accentText,
+          textColor: colours.ink,
           label: 'Theme',
         ),
         _item(
           key: settingsKey,
           action: _ProfileAction.settings,
           icon: Icons.settings_outlined,
-          iconColor: shades.accent,
+          iconColor: colours.accentText,
+          textColor: colours.ink,
           label: 'Settings',
         ),
         _item(
           key: signOutKey,
           action: _ProfileAction.signOut,
           icon: Icons.logout,
-          iconColor: AikuPalette.cancel,
+          iconColor: colours.errorText,
+          textColor: colours.ink,
           label: 'Log out',
         ),
       ],
+      // The picture sits on the theme band.
       child: Padding(
         padding: const EdgeInsets.all(4),
         child: CircleAvatar(
           radius: 16,
-          backgroundColor: shades.accent,
+          backgroundColor: colours.onBand.withValues(alpha: 0.2),
           child: Text(
             initial,
             style: TextStyle(
-              color: shades.onAccent,
+              color: colours.onBand,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -123,6 +126,7 @@ class ProfileMenu extends StatelessWidget {
     required _ProfileAction action,
     required IconData icon,
     required Color iconColor,
+    required Color textColor,
     required String label,
   }) {
     return PopupMenuItem(
@@ -132,7 +136,7 @@ class ProfileMenu extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: iconColor),
           const SizedBox(width: 10),
-          Text(label),
+          Text(label, style: TextStyle(color: textColor)),
         ],
       ),
     );

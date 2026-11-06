@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 
 import 'aiku_palette.dart';
+import 'app_colours.dart';
 import 'loading_indicator.dart';
 
 const _buttonHeight = 36.0;
@@ -109,13 +110,19 @@ class BorderedIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The signed-in app may be dark; the sign-in screens keep the web look.
+    final colours = Theme.of(context).extension<AppColours>();
     return OutlinedButton.icon(
       onPressed: isLoading ? null : onPressed,
       style: OutlinedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: AikuPalette.ink,
-        disabledForegroundColor: AikuPalette.label,
-        side: const BorderSide(color: AikuPalette.inputBorder),
+        backgroundColor: colours?.raised ?? Colors.white,
+        foregroundColor: colours?.ink ?? AikuPalette.ink,
+        disabledForegroundColor: colours?.secondary ?? AikuPalette.label,
+        side: BorderSide(
+          color: colours == null
+              ? AikuPalette.inputBorder
+              : Color.lerp(colours.hairline, colours.muted, 0.4)!,
+        ),
         shape: _buttonShape,
         minimumSize: const Size(0, _buttonHeight),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

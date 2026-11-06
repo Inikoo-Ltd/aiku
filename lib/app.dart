@@ -14,6 +14,7 @@ import 'auth/login_screen.dart';
 import 'auth/two_factor_screen.dart';
 import 'config/app_config.dart';
 import 'home/app_shell.dart';
+import 'home/appearance.dart';
 import 'home/area_memory.dart';
 import 'ui/accent_shades.dart';
 import 'ui/aiku_palette.dart';
@@ -29,10 +30,14 @@ class AikuApp extends StatefulWidget {
     required this.client,
     required this.config,
     required this.areaMemory,
+    required this.appearance,
   });
 
   /// The sign-in session.
   final AuthController controller;
+
+  /// Light, dark or the phone's setting, for the signed-in app.
+  final AppearanceController appearance;
 
   /// The aiku API, for screens that call it directly.
   final AikuApiClient client;
@@ -93,19 +98,29 @@ class _AikuAppState extends State<AikuApp> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.controller,
+      listenable: Listenable.merge([widget.controller, widget.appearance]),
       builder: (context, _) {
         final state = widget.controller.state;
+        final accent = switch (state) {
+          SignedIn(:final session) => AccentShades.fromAppTheme(
+            effectiveTheme(session.profile),
+          ).accent,
+          _ => null,
+        };
         return MaterialApp(
           title: 'aiku',
           debugShowCheckedModeBanner: false,
           navigatorKey: _navigatorKey,
-          theme: switch (state) {
-            SignedIn(:final session) => signedInThemeData(
-              AccentShades.fromAppTheme(effectiveTheme(session.profile)),
-            ),
-            _ => _signedOutTheme,
-          },
+          // The sign-in screens copy aiku's web login, which is light only.
+          theme: accent == null
+              ? _signedOutTheme
+              : signedInThemeData(accent, Brightness.light),
+          darkTheme: accent == null
+              ? null
+              : signedInThemeData(accent, Brightness.dark),
+          themeMode: accent == null
+              ? ThemeMode.light
+              : widget.appearance.appearance.themeMode,
           home: switch (state) {
             Restoring() => const _RestoringScreen(),
             SignedOut() => LoginScreen(
@@ -125,6 +140,7 @@ class _AikuAppState extends State<AikuApp> {
               client: widget.client,
               config: widget.config,
               areaMemory: widget.areaMemory,
+              appearance: widget.appearance,
             ),
           },
         );

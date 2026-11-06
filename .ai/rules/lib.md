@@ -64,7 +64,7 @@ Warehouse work (picking, packing, trolleys, picking sessions, scan to pick or pa
 
 ## Buttons have icons, dialogs are compact, no toasts or SnackBars, one loading style
 
-- **Every button has an icon** (aiku rule, 4 Nov 2026). Outside dialogs, buttons are white or transparent with a border, and the icon carries the colour: a red ✕ for cancel, a green ✓ for confirm, an amber warning for destructive actions. No grey fills.
+- **Every button has an icon** (aiku rule, 4 Nov 2026). Outside dialogs, buttons are white (the raised grey in dark mode) or transparent with a border, and the icon carries the colour: a red ✕ for cancel, a green ✓ for confirm, an amber warning for destructive actions. No grey fills. Use `BorderedIconButton`.
   - **Exception:** "Sign in" on the login screen and "Enter" on the two-factor screen have no icon and are filled with the accent, matching aiku's web login. Nothing else is exempt.
 - **Dialog footer:** Cancel is the bordered button, not stretched. Submit is the primary button, full width, filled with the accent, with its icon in the button's text colour. A destructive submit stays bordered and full width, with the amber icon.
 - **Dialog headers are compact:** a small grey semibold title and a small borderless close button. No big titles or big round ✕ buttons.
@@ -86,7 +86,10 @@ Feature folders under `lib/`, with tests mirroring them under `test/`:
 - `api/`: the aiku API client and its sealed `ApiFailure` types.
 - `auth/`: session controller, token store, device name, and the login, two-factor and forgot-password screens.
 - `home/`: signed-in screens.
-- `ui/`: shared look: palette, accent shades, watercolour background, brand header, card, fields and buttons.
+- `ui/`: shared look.
+  - Sign-in only: the palette (`AikuPalette`), the watercolour background and the brand header.
+  - Signed-in: `AppColours` (light and dark colours) and the dashboard building blocks (`dashboard_kit.dart`).
+  - Both: accent shades, fields and buttons.
 
 State lives in plain `ChangeNotifier` classes with no state-management package, passed into the widgets that need them; no globals. The HTTP client and secure storage are injected, so tests swap them for `MockClient` and an in-memory store.
 
@@ -107,3 +110,29 @@ Local development: aiku runs `php artisan serve --host=0.0.0.0 --port=8000` in W
 - Colours: `primary` is exactly `theme[4]`, and `onPrimary` follows the luminance rule (not `theme[5]`). The other roles come from `ColorScheme.fromSeed(seedColor: accent, dynamicSchemeVariant: DynamicSchemeVariant.fidelity)`, which keeps the accent's hue so the app sits in mobile-friendly tones around it (`signedInThemeData`).
 - Only the signed-in screens follow the theme. The login, two-factor and forgot-password screens keep the default accent.
 - Colours that carry meaning (status, stat tiles, charts) stay fixed and never follow the theme.
+
+## Light and dark appearance; the theme band; colours from AppColours
+
+- **Appearance.** The signed-in app has a light and a dark appearance. The Theme screen offers System / Light / Dark as radio options (`AppearanceController`). The choice is kept on the phone only (secure storage key `aiku.appearance`), never in aiku. System follows the phone's dark mode.
+- **Sign-in screens stay light.** Login, two-factor and forgot password copy aiku's web login.
+- **Signed-in widgets take colours from `AppColours.of(context)`.** That is a ThemeExtension built from `theme[4]` by `signedInThemeData(accent, brightness)`. Never use a hard-coded light colour such as `AikuPalette` or `Colors.white` in a signed-in screen. `AikuPalette` is for the sign-in screens only.
+- **Light.** The accent is `theme[4]` exactly, as `primary` and as the theme band. Only accent-coloured text on white (`accentText`) is darkened, and only until it reaches 4.5:1.
+- **Dark.**
+  - The page is a dark grey, never black, because black made the band and figures look harsh. The neutral scale is: page `#202124`, raised `#2A2B2F`, hairline `#3C4043`, text `#E8EAED`.
+  - Only an accent below 3:1 on the page is lightened, within its own hue (e.g. `#000000` in "Pure Black and White").
+  - The band is a deep tone of the accent, kept dark enough for white text at 4.5:1. Highlights are a light tone of the accent.
+- **The theme band.** The top of each Home (app bar, tabs and the leading figure) sits on `band`. Text on it uses `onBand`, which follows the luminance rule, and underlines and progress use `bandHighlight`.
+- **Fixed colours.** Status colours (amber blocked, green done, red error) and the stage palette never follow the theme, in either appearance.
+
+## Signed-in UI style: flat, led by the theme band
+
+- **Reuse the building blocks; don't rebuild them.** `lib/ui/dashboard_kit.dart` has `ThemeBand`, `TextTabs`, `SectionHeader`, `HeroFigure`, `Caption`, `StageList`, `formatCount`, `updatedAt` and `placeholderFigure`. Also use `AppColours` (`lib/ui/app_colours.dart`), `LoadProblem`, `PreviewNotice` and `NotConnectedCard`.
+- **Layout.** A Home starts with a `ThemeBand` that continues the app bar. It holds the screen's tabs and one leading `HeroFigure`, with an `updatedAt` caption on the right for live figures. Everything else sits flat on the page: sections under an accent `SectionHeader`, rows split by hairlines, and whitespace between sections.
+- **No pills and no boxed cards.** Don't use `Card`, `Chip`, `ChoiceChip` or `SegmentedButton`, and don't add rounded tinted fills around content. The bottom bar has no indicator pill; the chosen tab is drawn in `accentText`. Grids use a hairline `TableBorder`, not boxes.
+- **Choosing.** Switching between views of one screen uses `TextTabs`: underlined text with no tap box. On the band pass `onBand: true`. A setting with one value uses `RadioGroup` with `RadioListTile` rows: icon first, radio last. A longer list of options opens in a bottom sheet with a tick on the chosen one, like More periods.
+- **Figures.**
+  - Use tabular figures, and counts through `formatCount`.
+  - Money is shown exactly as aiku formats it, as full amounts. The app never abbreviates or re-formats money.
+  - While loading, show the same layout with `—`; the layout is its own skeleton.
+  - Live figures refresh on pull-to-refresh and when the app comes back to the foreground. A failed refresh keeps the old figures and adds a red line. A failed first load shows `LoadProblem` with Try again.
+- **Check both appearances.** Look at every new screen in light and dark. Also try a pale preset (Rosewater Blush or Spain Distribution 2) and a near-black one (Pure Black and White). Colour logic gets a test that loops over every preset.

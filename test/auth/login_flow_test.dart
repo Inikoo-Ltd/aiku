@@ -14,6 +14,7 @@ import 'package:aiku_mobile/auth/auth_controller.dart';
 import 'package:aiku_mobile/auth/login_screen.dart';
 import 'package:aiku_mobile/auth/two_factor_screen.dart';
 import 'package:aiku_mobile/config/app_config.dart';
+import 'package:aiku_mobile/home/appearance.dart';
 import 'package:aiku_mobile/ui/aiku_text_field.dart';
 import 'package:aiku_mobile/ui/loading_indicator.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import '../support/in_memory_appearance_store.dart';
 import '../support/in_memory_area_memory.dart';
 import '../support/in_memory_token_store.dart';
 
@@ -50,6 +52,7 @@ Future<AuthController> _pumpSignedOutApp(
       client: client,
       config: config,
       areaMemory: InMemoryAreaMemory(),
+      appearance: AppearanceController(store: InMemoryAppearanceStore()),
     ),
   );
   await tester.pump();

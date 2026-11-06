@@ -27,6 +27,9 @@ final class Unauthorised extends ApiFailure {
   const Unauthorised();
 }
 
+/// aiku refused with a 403: the user isn't allowed to see or do this.
+final class Forbidden(final Uri url) extends ApiFailure;
+
 /// A 404 from a mobile route: either the app key was refused or the server
 /// has no mobile routes. aiku answers both the same way on purpose.
 final class AppNotAccepted(final Uri url) extends ApiFailure;

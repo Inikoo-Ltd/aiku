@@ -7,46 +7,39 @@
 
 import 'package:flutter/material.dart';
 
-import 'accent_shades.dart';
-import 'aiku_palette.dart';
+import 'app_colours.dart';
 
-/// A soft accent strip saying a screen is layout only for now.
+/// A quiet line saying part of a screen isn't on the app yet.
 class PreviewNotice extends StatelessWidget {
-  const PreviewNotice({super.key, required this.shades, required this.text});
-
-  /// The current theme's accent shades.
-  final AccentShades shades;
+  const PreviewNotice({super.key, required this.text});
 
   /// What to say.
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: shades.soft,
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(Icons.info_outline, size: 18, color: shades.deep),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(fontSize: 13, color: shades.deep),
-              ),
-            ),
-          ],
+    final colours = AppColours.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(Icons.info_outline, size: 16, color: colours.accentText),
         ),
-      ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 13, color: colours.secondary),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// A card for content that isn't connected to aiku yet.
+/// Where content that isn't connected to aiku yet will go: an icon and a
+/// line of text on the page, no box.
 class NotConnectedCard extends StatelessWidget {
   const NotConnectedCard({super.key, required this.icon, required this.text});
 
@@ -58,20 +51,19 @@ class NotConnectedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(icon, size: 28, color: AikuPalette.placeholder),
-            const SizedBox(height: 8),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: AikuPalette.label),
-            ),
-          ],
-        ),
+    final colours = AppColours.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 28),
+      child: Column(
+        children: [
+          Icon(icon, size: 28, color: colours.muted),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: colours.secondary),
+          ),
+        ],
       ),
     );
   }

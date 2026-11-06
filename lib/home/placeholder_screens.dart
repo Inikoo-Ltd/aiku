@@ -7,7 +7,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../ui/aiku_palette.dart';
+import '../ui/app_colours.dart';
 
 /// Opened from a menu entry the app has no screen for yet.
 class NotOnMobileYetScreen extends StatelessWidget {
@@ -67,28 +67,29 @@ class _CentredMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colours = AppColours.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 40, color: AikuPalette.placeholder),
+            Icon(icon, size: 40, color: colours.accentText),
             const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AikuPalette.ink,
+                color: colours.ink,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               text,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: AikuPalette.label),
+              style: TextStyle(fontSize: 14, color: colours.secondary),
             ),
           ],
         ),

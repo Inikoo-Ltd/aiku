@@ -9,44 +9,83 @@ import 'package:flutter/material.dart';
 
 import '../auth/auth_controller.dart';
 import '../ui/accent_shades.dart';
-import '../ui/aiku_palette.dart';
+import '../ui/app_colours.dart';
 import '../ui/aiku_theme.dart';
+import '../ui/dashboard_kit.dart';
 import '../ui/form_error_list.dart';
 import '../ui/loading_indicator.dart';
+import 'appearance.dart';
 
-/// Picks the mobile theme from aiku's presets.
+/// Picks light, dark or the phone's setting, and the mobile theme from
+/// aiku's presets.
 ///
-/// The choice is saved on this phone straight away and then on aiku as the
-/// user's mobile theme; the web keeps its own theme.
+/// The appearance is kept on this phone only. The theme is saved on this
+/// phone straight away and then on aiku as the user's mobile theme; the web
+/// keeps its own theme.
 class ThemeScreen extends StatelessWidget {
-  const ThemeScreen({super.key, required this.controller});
+  const ThemeScreen({
+    super.key,
+    required this.controller,
+    required this.appearance,
+  });
 
   /// The key of the tile for the preset called [name], for tests.
   static ValueKey<String> presetKey(String name) => ValueKey('theme.$name');
 
-  /// Saves the choice.
+  /// The key of the appearance choice [appearance], for tests.
+  static ValueKey<String> appearanceKey(Appearance appearance) =>
+      ValueKey('theme.appearance.${appearance.name}');
+
+  /// Saves the theme.
   final AuthController controller;
 
-  static const _bodyStyle = TextStyle(fontSize: 14, color: AikuPalette.label);
+  /// Light, dark or the phone's setting.
+  final AppearanceController appearance;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Theme')),
       body: ListenableBuilder(
-        listenable: controller,
+        listenable: Listenable.merge([controller, appearance]),
         builder: (context, _) {
           final state = controller.state;
           if (state is! SignedIn) {
             return const SizedBox.shrink();
           }
+          final colours = AppColours.of(context);
+          final bodyStyle = TextStyle(fontSize: 14, color: colours.secondary);
           final profile = state.session.profile;
           final current = effectiveTheme(profile);
           final beingSaved = controller.themeBeingSaved;
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: [
+              const SectionHeader('Appearance'),
+              const SizedBox(height: 4),
+              RadioGroup<Appearance>(
+                groupValue: appearance.appearance,
+                onChanged: (choice) {
+                  if (choice != null) {
+                    appearance.choose(choice);
+                  }
+                },
+                child: Column(
+                  children: [
+                    for (final option in Appearance.values)
+                      _AppearanceOption(
+                        key: appearanceKey(option),
+                        option: option,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('Kept on this phone.', style: bodyStyle),
+              const SizedBox(height: 28),
+              const SectionHeader('Colour'),
+              const SizedBox(height: 6),
               Text(
                 profile.mobileAppTheme == null
                     ? 'The app follows your aiku web theme until you pick one '
@@ -54,7 +93,7 @@ class ThemeScreen extends StatelessWidget {
                           'the web keeps its own theme.'
                     : 'Saved on this phone and in aiku. The web keeps its own '
                           'theme.',
-                style: _bodyStyle,
+                style: bodyStyle,
               ),
               FormErrorList(messages: controller.themeErrors.messages),
               const SizedBox(height: 16),
@@ -71,6 +110,48 @@ class ThemeScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// One appearance as a row with a radio button, like the preset rows.
+class _AppearanceOption extends StatelessWidget {
+  const _AppearanceOption({super.key, required this.option});
+
+  final Appearance option;
+
+  @override
+  Widget build(BuildContext context) {
+    final colours = AppColours.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colours.hairline)),
+      ),
+      child: RadioListTile<Appearance>(
+        value: option,
+        contentPadding: EdgeInsets.zero,
+        controlAffinity: ListTileControlAffinity.trailing,
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? colours.accentText
+              : colours.muted,
+        ),
+        secondary: Icon(switch (option) {
+          Appearance.system => Icons.brightness_auto_outlined,
+          Appearance.light => Icons.light_mode_outlined,
+          Appearance.dark => Icons.dark_mode_outlined,
+        }, color: colours.accentText),
+        title: Text(
+          option.label,
+          style: TextStyle(fontSize: 14, color: colours.ink),
+        ),
+        subtitle: option == Appearance.system
+            ? Text(
+                'Follows the phone’s dark mode',
+                style: TextStyle(fontSize: 12, color: colours.secondary),
+              )
+            : null,
       ),
     );
   }
@@ -93,23 +174,30 @@ class _PresetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shades = AccentShades.fromAppTheme(preset.colours);
+    final colours = AppColours.of(context);
 
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-        side: BorderSide(
-          color: isSelected ? shades.accent : AikuPalette.inputBorder,
-          width: isSelected ? 2 : 1,
-        ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colours.hairline)),
       ),
-      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              CircleAvatar(radius: 16, backgroundColor: shades.accent),
+              // The preset's own accent, with an edge so a near-black or
+              // near-white accent still shows on either page.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: shades.accent,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Color.lerp(colours.hairline, colours.muted, 0.5)!,
+                  ),
+                ),
+                child: const SizedBox.square(dimension: 32),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -117,10 +205,12 @@ class _PresetTile extends StatelessWidget {
                   children: [
                     Text(
                       preset.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AikuPalette.ink,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                        color: colours.ink,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -131,10 +221,12 @@ class _PresetTile extends StatelessWidget {
               const SizedBox(width: 8),
               SizedBox.square(
                 dimension: 24,
+                // The chosen preset is the theme in use, so its readable
+                // accent marks it, even for pale presets.
                 child: isSaving
-                    ? Center(child: LoadingIndicator(color: shades.accent))
+                    ? Center(child: LoadingIndicator(color: colours.accentText))
                     : isSelected
-                    ? Icon(Icons.check_circle, color: shades.accent)
+                    ? Icon(Icons.check_circle, color: colours.accentText)
                     : null,
               ),
             ],
@@ -152,6 +244,7 @@ class _Swatches extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final edge = AppColours.of(context);
     return Row(
       children: [
         for (final colour in colours)
@@ -163,7 +256,10 @@ class _Swatches extends StatelessWidget {
                   for (var slot = 0; slot < 5; slot++) colour,
                 ]).accent,
                 borderRadius: const BorderRadius.all(Radius.circular(3)),
-                border: Border.all(color: const Color(0x1F000000)),
+                // Black and white swatches need an edge on either page.
+                border: Border.all(
+                  color: Color.lerp(edge.hairline, edge.muted, 0.5)!,
+                ),
               ),
               child: const SizedBox.square(dimension: 14),
             ),
