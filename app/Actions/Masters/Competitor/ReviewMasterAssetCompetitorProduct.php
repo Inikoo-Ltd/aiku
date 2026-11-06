@@ -19,7 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * Staff say whether the AI matched our product to the right competitor product, and how many units
- * their pack holds when the name does not say.
+ * their pack holds when the name does not say. A tick is staff saying it is the same item, also when
+ * the AI only called it similar, so it counts in the price comparison.
  */
 class ReviewMasterAssetCompetitorProduct extends OrgAction
 {
@@ -34,6 +35,7 @@ class ReviewMasterAssetCompetitorProduct extends OrgAction
         if (isset($modelData['status'])) {
             $masterAssetCompetitorProduct->update([
                 'status'              => $modelData['status'],
+                'is_same_item'        => $masterAssetCompetitorProduct->is_same_item || $modelData['status'] === MasterAssetCompetitorProductStatusEnum::CONFIRMED->value,
                 'reviewed_by_user_id' => $user?->id,
                 'reviewed_at'         => now(),
             ]);

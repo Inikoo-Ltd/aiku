@@ -4716,6 +4716,35 @@ describe('competitor prices, HELP-3605', function () {
         ])->assertSessionHasErrors('master_shop_id');
     });
 
+    test('a tick on a match the AI only called similar makes it the same item and counts it', function () use ($fakeBrowserAndAi) {
+        $fakeBrowserAndAi([
+            'login_error' => null,
+            'cookies'     => [],
+            'pages'       => [[
+                'url'     => 'https://rival.example.com/search?q=Brass',
+                'status'  => 200,
+                'blocked' => false,
+                'text'    => 'Brass bowl 10cm pack of 2 £16.00',
+                'links'   => [['href' => 'https://rival.example.com/p/brass-bowl?q=Brass+singing+bowl+10cm', 'text' => 'Brass bowl 10cm']],
+            ]],
+        ], [
+            ['url' => 'https://rival.example.com/p/brass-bowl?q=Brass+singing+bowl+10cm', 'name' => 'Brass bowl 10cm', 'price' => 16, 'units' => 2, 'minimum_order' => null, 'same_item' => false],
+        ]);
+
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
+        $match = \App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->sole();
+        $prices = fn () => \App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id);
+        expect($match->is_same_item)->toBeFalse();
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'rejected'])->assertRedirect();
+        expect($match->refresh()->is_same_item)->toBeFalse()
+            ->and($prices())->toBeNull();
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'confirmed'])->assertRedirect();
+        expect($match->refresh()->is_same_item)->toBeTrue()
+            ->and($prices())->toHaveCount(1);
+    });
+
     test('a search keeps only links that were on the page and staff confirm the match', function () use ($fakeBrowserAndAi) {
         $fakeBrowserAndAi([
             'login_error' => null,
