@@ -23,6 +23,8 @@ enum UserNotificationEnum: string
     case PURCHASE_ORDER_COMPLIANCE_DUE = 'purchase_order_compliance_due';
     case PURCHASE_ORDER_MINIMUM_POKE = 'purchase_order_minimum_poke';
     case PURCHASE_ORDER_BALANCE_DUE = 'purchase_order_balance_due';
+    case MONEY_REQUEST_CREATED = 'money_request_created';
+    case MONEY_REQUEST_PAID = 'money_request_paid';
     case SUPPLIER_PRODUCT_AVAILABILITY = 'supplier_product_availability';
     case PRODUCT_DEVELOPMENT_TASK = 'product_development_task';
     case PRODUCT_DEVELOPMENT_MENTION = 'product_development_mention';
@@ -45,6 +47,8 @@ enum UserNotificationEnum: string
         self::PURCHASE_ORDER_COMPLIANCE_DUE,
         self::PURCHASE_ORDER_MINIMUM_POKE,
         self::PURCHASE_ORDER_BALANCE_DUE,
+        self::MONEY_REQUEST_CREATED,
+        self::MONEY_REQUEST_PAID,
         self::SUPPLIER_PRODUCT_AVAILABILITY,
     ];
 
@@ -62,6 +66,8 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDERS_STUCK         => __('The weekly list of purchase orders past their expected date'),
             self::PURCHASE_ORDER_COMPLIANCE_DUE => __('Compliance documents of my purchase order are due'),
             self::PURCHASE_ORDER_BALANCE_DUE    => __('A purchase order passed its QC and its balance can be paid'),
+            self::MONEY_REQUEST_CREATED         => __('An agent asks for money on a money request I approve, pay or am copied on'),
+            self::MONEY_REQUEST_PAID            => __('A money request I asked for or am copied on is paid'),
             self::SUPPLIER_PRODUCT_AVAILABILITY => __('An agent changes the availability of a product my organisation buys'),
             self::PRODUCT_DEVELOPMENT_TASK      => __('A product development gives me a task or reminds me of one'),
             self::PRODUCT_DEVELOPMENT_MENTION   => __('Someone @mentions me on a product development'),
@@ -115,6 +121,8 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDERS_STUCK         => 'fal fa-hourglass-half',
             self::PURCHASE_ORDER_COMPLIANCE_DUE => 'fal fa-clipboard-check',
             self::PURCHASE_ORDER_BALANCE_DUE    => 'fal fa-file-invoice',
+            self::MONEY_REQUEST_CREATED         => 'fal fa-money-check-alt',
+            self::MONEY_REQUEST_PAID            => 'fal fa-hand-holding-usd',
             self::SUPPLIER_PRODUCT_AVAILABILITY => 'fal fa-box-check',
             self::PURCHASE_ORDER_MINIMUM_POKE   => 'fal fa-hand-point-right',
             self::PRODUCT_DEVELOPMENT_TASK      => 'fal fa-lightbulb-on',

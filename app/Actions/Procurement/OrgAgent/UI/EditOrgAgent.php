@@ -15,6 +15,7 @@ use App\Actions\Procurement\WithProcurementSerialReferences;
 use App\Enums\Procurement\OrgAgent\OrgAgentOrderContainerEnum;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -100,6 +101,10 @@ class EditOrgAgent extends OrgAction
             ],
         ];
 
+        if (!$this->ownsAgent($orgAgent)) {
+            $blueprint[] = $this->moneyRequestSection($orgAgent);
+        }
+
         $blueprint = array_merge($blueprint, $this->procurementSerialReferenceSections($orgAgent, [
             'name'       => 'grp.models.org_agent.update',
             'parameters' => $orgAgent->id,
@@ -138,6 +143,53 @@ class EditOrgAgent extends OrgAction
                 ],
             ]
         );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function moneyRequestSection(OrgAgent $orgAgent): array
+    {
+        $users = User::where('group_id', $orgAgent->group_id)
+            ->where('status', true)
+            ->orderBy('contact_name')
+            ->get(['id', 'contact_name', 'username'])
+            ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName()])
+            ->values()
+            ->all();
+
+        $updateRoute = [
+            'name'       => 'grp.models.org_agent.update',
+            'parameters' => $orgAgent->id,
+        ];
+
+        return [
+            'label'  => __('Money requests'),
+            'title'  => __('Money requests'),
+            'icon'   => 'fal fa-money-check-alt',
+            'fields' => [
+                'money_request_payer_user_ids' => [
+                    'type'        => 'multiselect-tags',
+                    'label'       => __('Approve and pay'),
+                    'information' => __('They are emailed when the agent asks for money, and can approve and pay the request.'),
+                    'options'     => $users,
+                    'labelProp'   => 'name',
+                    'valueProp'   => 'id',
+                    'value'       => $orgAgent->moneyRequestPayerIds(),
+                    'updateRoute' => $updateRoute,
+                ],
+                'money_request_cc_user_ids' => [
+                    'type'        => 'multiselect-tags',
+                    'label'       => __('Copy to'),
+                    'information' => __('They get a copy of the emails sent when the agent asks for money and when it is paid.'),
+                    'options'     => $users,
+                    'labelProp'   => 'name',
+                    'valueProp'   => 'id',
+                    'value'       => $orgAgent->moneyRequestCcIds(),
+                    'updateRoute' => $updateRoute,
+                ],
+            ],
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters, $suffix = null): array

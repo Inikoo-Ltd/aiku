@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\DepositRequest\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
@@ -65,7 +66,7 @@ class IndexAgentMoneyRequests extends OrgAction
             ->select(['deposit_requests.*', 'organisations.code as client_code', 'organisations.slug as client_slug', 'currencies.code as currency_code'])
             ->selectSub(DB::table('deposit_request_items')->whereColumn('deposit_request_id', 'deposit_requests.id')->selectRaw('coalesce(sum(amount), 0)'), 'total')
             ->selectSub(DB::table('agent_payments')->whereColumn('deposit_request_id', 'deposit_requests.id')->whereNull('deleted_at')->selectRaw('coalesce(sum(amount), 0)'), 'paid')
-            ->with(['items.purchaseOrder' => fn ($query) => $query
+            ->with(['requester:id,username,contact_name,nickname', 'approver:id,username,contact_name,nickname', 'items.purchaseOrder' => fn ($query) => $query
                 ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
                 ->select(['purchase_orders.id', 'purchase_orders.slug', 'purchase_orders.reference', 'purchase_orders.agent_order_reference', 'suppliers.code as supplier_code', 'suppliers.name as supplier_name'])])
             ->defaultSort('-requested_at')
@@ -85,9 +86,10 @@ class IndexAgentMoneyRequests extends OrgAction
      */
     public static function row(DepositRequest $depositRequest, ?User $user, bool $forClient): array
     {
-        $total = round((float) $depositRequest->total, 2);
-        $paid  = round((float) $depositRequest->paid, 2);
-        $open  = $depositRequest->state === DepositRequestStateEnum::REQUESTED;
+        $total  = round((float) $depositRequest->total, 2);
+        $paid   = round((float) $depositRequest->paid, 2);
+        $open   = $depositRequest->state === DepositRequestStateEnum::REQUESTED;
+        $canPay = $forClient && $open && ApproveAgentMoneyRequest::canPay($depositRequest, $user);
 
         $purchaseOrderRoute = fn (?PurchaseOrder $purchaseOrder) => $purchaseOrder ? [
             'name'       => $forClient ? 'grp.org.procurement.purchase_orders.show' : 'grp.org.agent.purchase_orders.show',
@@ -106,6 +108,9 @@ class IndexAgentMoneyRequests extends OrgAction
             'paid'          => $paid,
             'outstanding'   => $open ? max(0, round($total - $paid, 2)) : 0,
             'notes'         => $depositRequest->notes,
+            'requested_by'  => $depositRequest->requester?->chatName(),
+            'approved_at'   => $depositRequest->approved_at,
+            'approved_by'   => $depositRequest->approver?->chatName(),
             'lines'         => $depositRequest->items->map(fn (DepositRequestItem $item) => [
                 'kind'          => $item->kind->value,
                 'kind_label'    => DepositRequestItemKindEnum::labels()[$item->kind->value],
@@ -116,10 +121,13 @@ class IndexAgentMoneyRequests extends OrgAction
                 'supplier_name' => $item->purchaseOrder?->supplier_name,
                 'amount'        => (float) $item->amount,
             ])->values()->all(),
-            'cancel_route'  => !$forClient && $open && $paid == 0 && $user?->authTo("procurement.{$depositRequest->agent->organisation_id}.edit")
+            'cancel_route'  => !$forClient && $open && $paid == 0 && !$depositRequest->isApproved() && $user?->authTo("procurement.{$depositRequest->agent->organisation_id}.edit")
                 ? ['name' => 'grp.models.deposit_request.cancel', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
                 : null,
-            'pay_route'     => $forClient && $open && $user?->authTo(["procurement.$depositRequest->organisation_id.edit", "accounting.$depositRequest->organisation_id.edit"])
+            'approve_route' => $canPay && !$depositRequest->isApproved()
+                ? ['name' => 'grp.models.deposit_request.approve', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
+                : null,
+            'pay_route'     => $canPay && $depositRequest->isApproved()
                 ? ['name' => 'grp.models.deposit_request.pay', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'post']
                 : null,
         ];

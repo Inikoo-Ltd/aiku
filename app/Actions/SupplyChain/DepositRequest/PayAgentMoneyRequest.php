@@ -51,6 +51,9 @@ class PayAgentMoneyRequest extends OrgAction
             if ($depositRequest->state !== DepositRequestStateEnum::REQUESTED) {
                 throw ValidationException::withMessages(['request' => __('This request is no longer open.')]);
             }
+            if (!$depositRequest->isApproved()) {
+                throw ValidationException::withMessages(['request' => __('Approve the request before paying it.')]);
+            }
             if ((float) $modelData['amount'] > self::outstanding($depositRequest) + 0.005) {
                 throw ValidationException::withMessages(['amount' => __('That is more than is still due on this request.')]);
             }
@@ -91,7 +94,7 @@ class PayAgentMoneyRequest extends OrgAction
             'amount'          => ['required', 'numeric', 'gt:0', 'max:999999999999'],
             'original_amount' => ['nullable', 'numeric', 'gt:0', 'max:999999999999'],
             'reference'       => ['nullable', 'string', 'max:255'],
-            'receipt'         => ['nullable', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,heic'],
+            'receipt'         => [$this->asAction ? 'nullable' : 'required', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,heic'],
         ];
     }
 
@@ -99,6 +102,8 @@ class PayAgentMoneyRequest extends OrgAction
     {
         if ($this->depositRequest->state !== DepositRequestStateEnum::REQUESTED) {
             $validator->errors()->add('request', __('This request is no longer open.'));
+        } elseif (!$this->depositRequest->isApproved()) {
+            $validator->errors()->add('request', __('Approve the request before paying it.'));
         } elseif ((float) $this->get('amount') > self::outstanding($this->depositRequest) + 0.005) {
             $validator->errors()->add('amount', __('That is more than is still due on this request.'));
         }
@@ -115,9 +120,7 @@ class PayAgentMoneyRequest extends OrgAction
             return true;
         }
 
-        $clientId = $this->depositRequest->organisation_id;
-
-        return $clientId !== null && $request->user()->authTo(["procurement.$clientId.edit", "accounting.$clientId.edit"]);
+        return ApproveAgentMoneyRequest::canPay($this->depositRequest, $request->user());
     }
 
     public function asController(DepositRequest $depositRequest, ActionRequest $request): AgentPayment
@@ -126,7 +129,11 @@ class PayAgentMoneyRequest extends OrgAction
         abort_unless($depositRequest->organisation, 404);
         $this->initialisation($depositRequest->organisation, $request);
 
-        return $this->handle($depositRequest, $this->validatedData);
+        $transfer = $this->handle($depositRequest, $this->validatedData);
+
+        NotifyMoneyRequestPaid::run($depositRequest, $transfer, $request->user());
+
+        return $transfer;
     }
 
     /**

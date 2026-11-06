@@ -20,6 +20,7 @@ use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * A line of an agent's ledger for one client organisation, in the agent's currency. Money in is a transfer the
@@ -74,6 +75,20 @@ class AgentPayment extends Model
     }
 
     public const string RECORDED_BY_CLIENT = 'client';
+
+    public const int MONEY_REQUEST_TRANSFER_DAYS = 3;
+
+    /**
+     * When a transfer the client sent against a money request should reach the agent's bank.
+     */
+    public function expectedArrival(): ?Carbon
+    {
+        if ($this->deposit_request_id === null || $this->type !== AgentPaymentTypeEnum::TRANSFER_RECEIVED) {
+            return null;
+        }
+
+        return $this->date->copy()->addDays(self::MONEY_REQUEST_TRANSFER_DAYS);
+    }
 
     /**
      * A payment the client recorded itself, against a container or a money request: only the client removes it.

@@ -12,6 +12,7 @@ use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\Models\Helpers\Currency;
 use App\Models\Traits\InGroup;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,6 +29,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon $requested_at
  * @property \Illuminate\Support\Carbon|null $settled_at
  * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property int|null $created_by
+ * @property \Illuminate\Support\Carbon|null $approved_at
+ * @property int|null $approved_by
+ * @property-read User|null $requester
+ * @property-read User|null $approver
  * @property-read Agent $agent
  * @property-read Currency $currency
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DepositRequestItem> $items
@@ -43,6 +49,7 @@ class DepositRequest extends Model
         'requested_at' => 'datetime',
         'settled_at'   => 'datetime',
         'cancelled_at' => 'datetime',
+        'approved_at'  => 'datetime',
     ];
 
     public function agent(): BelongsTo
@@ -58,6 +65,21 @@ class DepositRequest extends Model
     public function organisation(): BelongsTo
     {
         return $this->belongsTo(Organisation::class);
+    }
+
+    public function requester(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->approved_at !== null;
     }
 
     /**

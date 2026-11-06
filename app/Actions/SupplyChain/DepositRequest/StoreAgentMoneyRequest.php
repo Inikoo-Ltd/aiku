@@ -54,6 +54,7 @@ class StoreAgentMoneyRequest extends OrgAction
                 'notes'           => Arr::get($modelData, 'notes'),
                 'state'           => DepositRequestStateEnum::REQUESTED,
                 'requested_at'    => now(),
+                'created_by'      => $this->asAction ? null : request()->user()?->id,
             ]);
 
             foreach ($modelData['lines'] as $line) {
@@ -156,6 +157,8 @@ class StoreAgentMoneyRequest extends OrgAction
                 $request->user(),
                 fn () => __('the agent asked for money for :reference', ['reference' => $purchaseOrder->reference])
             ));
+
+        NotifyMoneyRequestCreated::run($depositRequest);
 
         return $depositRequest;
     }

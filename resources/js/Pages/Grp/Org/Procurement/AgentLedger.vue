@@ -19,7 +19,7 @@ import Textarea from "primevue/textarea"
 import { useConfirm } from "primevue/useconfirm"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBook, faCheck, faExclamationTriangle, faPaperclip, faPencil, faPlus, faTimes, faTrashAlt } from "@fal"
+import { faBook, faCheck, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -30,7 +30,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faBook, faCheck, faExclamationTriangle, faPaperclip, faPencil, faPlus, faTimes, faTrashAlt)
+library.add(faBook, faCheck, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
 
 interface Wallet {
 	organisation_id: number
@@ -68,6 +68,7 @@ interface EntryRow {
 	reference: string | null
 	notes: string | null
 	receipt: string | null
+	expected_arrival: string | null
 	type: string
 	organisation_id: number
 	purchase_order_id: number | null
@@ -370,6 +371,10 @@ const confirmRemove = (row: EntryRow) =>
 				{{ money(item.currency_code, item.money_in) }}
 				<div v-if="item.original_amount" class="text-xs text-gray-400">
 					{{ money(item.original_currency_code, item.original_amount) }}
+				</div>
+				<div v-if="item.expected_arrival" class="mt-1 inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">
+					<FontAwesomeIcon icon="fal fa-shipping-fast" fixed-width aria-hidden="true" />
+					{{ ctrans("On its way, expected around :date", { date: useFormatTime(item.expected_arrival) }) }}
 				</div>
 			</div>
 		</template>

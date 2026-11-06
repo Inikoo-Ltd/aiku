@@ -15,8 +15,10 @@ use App\Models\Helpers\SerialReference;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Models\Traits\InOrganisation;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -39,6 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $source_id
+ * @property array<string, mixed> $settings
  * @property-read Agent|null $agent
  * @property-read Group|null $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Procurement\OrgSupplierProduct> $orgSupplierProducts
@@ -61,13 +64,36 @@ class OrgAgent extends Model
 
     protected $attributes = [
         'order_container' => '40ft',
+        'settings'        => '{}',
     ];
 
     protected function casts(): array
     {
         return [
             'order_container' => OrgAgentOrderContainerEnum::class,
+            'settings'        => 'array',
         ];
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function moneyRequestPayerIds(): array
+    {
+        return array_values(array_map('intval', Arr::get($this->settings ?? [], 'money_requests.payer_user_ids', [])));
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function moneyRequestCcIds(): array
+    {
+        return array_values(array_map('intval', Arr::get($this->settings ?? [], 'money_requests.cc_user_ids', [])));
+    }
+
+    public function isMoneyRequestPayer(?User $user): bool
+    {
+        return $user !== null && in_array($user->id, $this->moneyRequestPayerIds(), true);
     }
 
     public function getSlugOptions(): SlugOptions

@@ -8,7 +8,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link } from "@inertiajs/vue3"
-import { faHandHoldingUsd, faTimes } from "@fal"
+import { faCheck, faHandHoldingUsd, faTimes } from "@fal"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -16,7 +16,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 
-library.add(faHandHoldingUsd, faTimes)
+library.add(faCheck, faHandHoldingUsd, faTimes)
 
 export interface MoneyRequestRow {
 	id: number
@@ -30,6 +30,9 @@ export interface MoneyRequestRow {
 	paid: number
 	outstanding: number
 	notes: string | null
+	requested_by: string | null
+	approved_at: string | null
+	approved_by: string | null
 	lines: {
 		kind: string
 		kind_label: string
@@ -41,15 +44,18 @@ export interface MoneyRequestRow {
 		amount: number
 	}[]
 	cancel_route: routeType | null
+	approve_route: routeType | null
 	pay_route: routeType | null
 }
 
 defineProps<{
 	data: object
 	tab?: string
+	approvingId?: number | null
 }>()
 
 const emit = defineEmits<{
+	(e: "approve", row: MoneyRequestRow): void
 	(e: "pay", row: MoneyRequestRow): void
 	(e: "cancel", row: MoneyRequestRow): void
 }>()
@@ -97,6 +103,10 @@ const stateClass: Record<string, string> = {
 
 		<template #cell(state)="{ item }">
 			<span class="whitespace-nowrap rounded px-1.5 py-0.5 text-xs" :class="stateClass[item.state]">{{ item.state_label }}</span>
+			<div v-if="item.state === 'requested'" class="mt-1 whitespace-nowrap text-xs" :class="item.approved_at ? 'text-green-700' : 'text-gray-400'">
+				{{ item.approved_at ? ctrans("Approved by :user", { user: item.approved_by ?? "-" }) : ctrans("Waiting for approval") }}
+			</div>
+			<div v-if="item.requested_by" class="whitespace-nowrap text-xs text-gray-400">{{ ctrans("Asked by :user", { user: item.requested_by }) }}</div>
 		</template>
 
 		<template #cell(total)="{ item }">
@@ -115,6 +125,11 @@ const stateClass: Record<string, string> = {
 
 		<template #cell(actions)="{ item }">
 			<div class="flex justify-end gap-2">
+				<Button v-if="item.approve_route" type="tertiary" size="xs" :label="ctrans('Approve')" :loading="approvingId === item.id" @click="emit('approve', item)">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
 				<Button v-if="item.pay_route" type="tertiary" size="xs" :label="ctrans('Pay')" @click="emit('pay', item)">
 					<template #icon>
 						<FontAwesomeIcon icon="fal fa-hand-holding-usd" class="text-green-600" fixed-width aria-hidden="true" />

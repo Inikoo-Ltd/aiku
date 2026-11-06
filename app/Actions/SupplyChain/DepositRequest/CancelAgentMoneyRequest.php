@@ -33,6 +33,9 @@ class CancelAgentMoneyRequest extends OrgAction
             if ($depositRequest->state !== DepositRequestStateEnum::REQUESTED || $depositRequest->transfers()->exists()) {
                 throw ValidationException::withMessages(['request' => __('Only a request nothing has been paid against can be cancelled.')]);
             }
+            if ($depositRequest->isApproved()) {
+                throw ValidationException::withMessages(['request' => __('The client already approved this request, so it can not be cancelled.')]);
+            }
 
             $depositRequest->update([
                 'state'        => DepositRequestStateEnum::CANCELLED,

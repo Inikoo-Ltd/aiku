@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
 import FileUpload from "primevue/fileupload"
@@ -35,17 +34,34 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 const money = (code: string, amount: number) => locale.currencyFormat(code, amount)
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent] focus:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)] focus:!border-[var(--app-accent)]"
 const fullWidthInput = { pcInputText: { root: { class: "!w-full" } } }
 const chooseFilePt = { pcChooseButton: { root: { class: "!border !border-gray-300 !bg-white !text-gray-700 hover:!bg-gray-50" } } }
 
 const paying = ref<MoneyRequestRow | null>(null)
 const isOpen = computed({ get: () => paying.value !== null, set: (open: boolean) => !open && (paying.value = null) })
 const saving = ref(false)
+const payError = ref<string | null>(null)
+const approvingId = ref<number | null>(null)
+const approveError = ref<string | null>(null)
+
+const firstError = (errors: Record<string, string> | undefined) => Object.values(errors ?? {})[0] ?? ctrans("Something went wrong")
+
+const approve = (row: MoneyRequestRow) => {
+	if (!row.approve_route) return
+	approveError.value = null
+	router.patch(route(row.approve_route.name, row.approve_route.parameters), {}, {
+		preserveScroll: true,
+		onStart: () => (approvingId.value = row.id),
+		onFinish: () => (approvingId.value = null),
+		onError: (errors) => (approveError.value = `${row.reference}: ${firstError(errors)}`),
+	})
+}
 const form = ref({ date: new Date() as Date | null, amount: null as number | null, original_amount: null as number | null, reference: "", receipt: null as File | null })
 
 const openPay = (row: MoneyRequestRow) => {
 	form.value = { date: new Date(), amount: row.outstanding, original_amount: null, reference: "", receipt: null }
+	payError.value = null
 	paying.value = row
 }
 
@@ -53,7 +69,8 @@ const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth(
 
 const pay = () => {
 	const row = paying.value
-	if (!row?.pay_route || !form.value.date || !form.value.amount) return
+	if (!row?.pay_route || !form.value.date || !form.value.amount || !form.value.receipt) return
+	payError.value = null
 	router.post(
 		route(row.pay_route.name, row.pay_route.parameters),
 		{
@@ -68,11 +85,8 @@ const pay = () => {
 			forceFormData: true,
 			onStart: () => (saving.value = true),
 			onFinish: () => (saving.value = false),
-			onSuccess: () => {
-				paying.value = null
-				notify({ title: ctrans("Payment recorded"), type: "success" })
-			},
-			onError: (errors) => notify({ title: ctrans("Something went wrong"), text: Object.values(errors ?? {})[0] as string, type: "error" }),
+			onSuccess: () => (paying.value = null),
+			onError: (errors) => (payError.value = firstError(errors)),
 		}
 	)
 }
@@ -96,12 +110,15 @@ const pay = () => {
 		</div>
 	</div>
 
-	<TableAgentMoneyRequests :data="data.requests" :tab="tab" @pay="openPay" />
+	<p v-if="approveError" class="mx-4 mt-4 text-xs text-red-600">{{ approveError }}</p>
+
+	<TableAgentMoneyRequests :data="data.requests" :tab="tab" :approvingId="approvingId" @approve="approve" @pay="openPay" />
 
 	<Dialog v-model:visible="isOpen" modal :header="ctrans('Pay :reference', { reference: paying?.reference ?? '' })" :style="{ width: '30rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<div v-if="paying" class="space-y-3">
 			<p class="text-sm text-gray-600">
 				{{ ctrans("Record the transfer you sent to the agent. It goes into your balance with the agent and settles the request once it covers :amount.", { amount: money(paying.currency_code, paying.outstanding) }) }}
+				{{ ctrans("The agent and the people copied on this agent's money requests get an email with the bank statement.") }}
 			</p>
 			<div class="grid grid-cols-2 gap-3">
 				<label class="block text-sm">
@@ -122,7 +139,7 @@ const pay = () => {
 				<InputText v-model="form.reference" maxlength="255" class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
 			<div class="block text-sm">
-				<span class="text-gray-600">{{ ctrans("Bank statement (optional)") }}</span>
+				<span class="text-gray-600">{{ ctrans("Bank statement") }}</span>
 				<div class="mt-1">
 					<FileUpload mode="basic" :auto="false" customUpload accept=".pdf,image/*" :maxFileSize="20000000" :chooseLabel="ctrans('Choose file')" :pt="chooseFilePt" @select="(event: { files: File[] }) => (form.receipt = event.files[0] ?? null)">
 						<template #chooseicon>
@@ -132,15 +149,16 @@ const pay = () => {
 				</div>
 			</div>
 		</div>
-		<div class="mt-5 flex justify-end gap-2">
-			<Button type="tertiary" :label="ctrans('Cancel')" @click="paying = null">
+		<p v-if="payError" class="mt-3 text-xs text-red-600">{{ payError }}</p>
+		<div class="mt-5 flex w-full gap-2">
+			<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="paying = null">
 				<template #icon>
 					<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
 				</template>
 			</Button>
-			<Button type="tertiary" :label="ctrans('Record payment')" :disabled="!form.date || !form.amount" :loading="saving" @click="pay">
+			<Button type="primary" full :label="ctrans('Record payment')" :disabled="!form.date || !form.amount || !form.receipt" :loading="saving" @click="pay">
 				<template #icon>
-					<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
 				</template>
 			</Button>
 		</div>
