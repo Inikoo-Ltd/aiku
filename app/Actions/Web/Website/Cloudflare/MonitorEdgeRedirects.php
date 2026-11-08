@@ -131,7 +131,11 @@ class MonitorEdgeRedirects
         for ($hop = 0; $hop < self::MAX_HOPS; $hop++) {
             $response = $this->fetch($current, self::BROWSER_AGENT);
             if (!$response->redirect()) {
-                return $response->status() === 200 ? null : 'ends on HTTP '.$response->status().' at '.$current;
+                if ($response->status() === 200 || ($response->status() === 404 && $this->onlyHostChanged($url, $current))) {
+                    return null;
+                }
+
+                return 'ends on HTTP '.$response->status().' at '.$current;
             }
             $current = $this->absolute($current, (string) $response->header('Location'));
             if (in_array($current, $seen, true)) {
@@ -141,6 +145,17 @@ class MonitorEdgeRedirects
         }
 
         return 'more than '.self::MAX_HOPS.' redirects: '.implode(' -> ', $seen);
+    }
+
+    /**
+     * An apex to www or http to https redirect of a path that does not exist (bots asking for
+     * favicon.ico or old theme files) correctly ends on a 404: nothing is wrong with the redirect.
+     */
+    protected function onlyHostChanged(string $from, string $to): bool
+    {
+        $pathAndQuery = fn (string $url) => (parse_url($url, PHP_URL_PATH) ?? '/').'?'.parse_url($url, PHP_URL_QUERY);
+
+        return $pathAndQuery($from) === $pathAndQuery($to);
     }
 
     protected function location(string $url, string $userAgent): ?string
