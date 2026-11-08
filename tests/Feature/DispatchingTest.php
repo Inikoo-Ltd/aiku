@@ -3462,6 +3462,41 @@ test('a pick edited or deleted before its queued movement runs is taken off the 
     expect((float)$locationOrgStock->refresh()->quantity)->toBe(99.0);
 });
 
+test('a pick edited after its location was counted is given back and picked again after the count', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)->first();
+    $originalMovement = $picking->orgStockMovement;
+    $originalMovement->update(['date' => now()->subMinute()]);
+
+    \App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock::run($locationOrgStock, ['quantity' => 94]);
+
+    \App\Actions\Dispatching\Picking\UpdatePicking::make()->action($picking->refresh(), ['quantity' => 4]);
+
+    $ledger = \App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity::run($picking->orgStock, $picking->location, inCurrentTransaction: true);
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(96.0)
+        ->and($ledger)->toBe(96.0)
+        ->and((float)$originalMovement->refresh()->quantity)->toBe(-6.0)
+        ->and($picking->refresh()->org_stock_movement_id)->not->toBe($originalMovement->id)
+        ->and((float)$picking->orgStockMovement->quantity)->toBe(-4.0);
+});
+
+test('a pick edited after its queued movement skipped it is still taken off the shelf', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)->first();
+
+    $movement = $picking->orgStockMovement;
+    $picking->update(['org_stock_movement_id' => null]);
+    \App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement::make()->action($movement);
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(100.0);
+
+    \App\Actions\Dispatching\Picking\UpdatePicking::make()->action($picking->refresh(), ['quantity' => 5]);
+
+    expect((float)$picking->refresh()->orgStockMovement?->quantity)->toBe(-5.0)
+        ->and((float)$locationOrgStock->refresh()->quantity)->toBe(95.0);
+});
+
 test('picking and delivery note item repairs and reindex', function () {
     $pickingRepairs = \App\Actions\Dispatching\Picking\RepairPickingBatchCodes::run(true);
     $itemRepairs    = \App\Actions\Dispatching\DeliveryNoteItem\RepairDeliveryNoteItemBatchCodes::run(true);
