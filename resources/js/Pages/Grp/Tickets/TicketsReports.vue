@@ -43,12 +43,13 @@ const props = defineProps<{
         from: string
         created: number
         done: number
+        closed: number
         open: number
         median_hours: number | null
         oldest_open: { reference: string; age_days: number } | null
         csat: number | null
         csat_by_month: { month: string; average: number | null; total: number }[]
-        daily: { date: string; created: number; done: number; open: number }[]
+        daily: { date: string; created: number; done: number; closed: number; open: number }[]
         timezone: string
         by_quarter_hour: { slot: number; created: number; started: number; done: number; closed: number }[]
         breakdown: [string, string, string, string, string | null, number][]
@@ -97,7 +98,7 @@ const lineChart = computed(() => {
         labels: props.stats.daily.map((day) => bucketLabel(day.date)),
         datasets: [
             { label: ctrans("Created"), data: props.stats.daily.map((day) => day.created), borderColor: "#c0399f", backgroundColor: "#c0399f", tension: 0, borderWidth: 1.5, pointRadius },
-            { label: ctrans("Resolved"), data: props.stats.daily.map((day) => day.done), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius },
+            { label: ctrans("Closed"), data: props.stats.daily.map((day) => day.closed), borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius },
             { label: ctrans("Open"), data: props.stats.daily.map((day) => day.open), borderColor: "#f59e0b", backgroundColor: "#f59e0b", tension: 0, borderWidth: 1.5, pointRadius },
         ],
     }
@@ -660,9 +661,9 @@ const dashboardBoxes = computed(() => (props.stats.interval === "all" ? (["peopl
             <template #header>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-600">
                     <FontAwesomeIcon icon="fal fa-chart-line" class="text-pink-600" fixed-width aria-hidden="true" />
-                    {{ ctrans("Created vs Resolved") }}
+                    {{ ctrans("Created vs Closed") }}
                 </span>
-                <span class="text-xs text-gray-400">{{ stats.created }} {{ ctrans("created") }} · {{ stats.done }} {{ ctrans("resolved") }}</span>
+                <span class="text-xs text-gray-400">{{ stats.created }} {{ ctrans("created") }} · {{ stats.closed }} {{ ctrans("closed") }}</span>
             </template>
             <div class="grid gap-6 lg:grid-cols-5">
                 <div class="h-72 lg:col-span-3">

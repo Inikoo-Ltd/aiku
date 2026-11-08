@@ -85,6 +85,7 @@ class ShowTicketsReports extends OrgAction
                 'date'    => $day,
                 'created' => (int) ($createdByDay[$day] ?? 0),
                 'done'    => (int) ($resolvedByDay[$day] ?? 0),
+                'closed'  => (int) ($closedByDay[$day] ?? 0),
                 'open'    => $openTickets,
             ]);
             $cursor->add(1, $bucket);
@@ -169,6 +170,7 @@ class ShowTicketsReports extends OrgAction
             'from'          => $from->copy()->setTimezone($timezone)->toDateString(),
             'created'       => $daily->sum('created'),
             'done'          => $daily->sum('done'),
+            'closed'        => $daily->sum('closed'),
             'open'          => (int) $byStatus->except(['resolved', 'cancelled'])->sum(),
             'median_hours'  => $medianHours === null ? null : round((float) $medianHours, 1),
             'oldest_open'   => $oldestOpen ? ['reference' => $oldestOpen->reference, 'age_days' => (int) Carbon::parse($oldestOpen->created_at)->diffInDays()] : null,
