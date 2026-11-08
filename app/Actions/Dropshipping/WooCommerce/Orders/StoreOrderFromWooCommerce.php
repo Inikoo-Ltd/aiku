@@ -25,6 +25,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -55,6 +56,7 @@ class StoreOrderFromWooCommerce extends OrgAction
             'customer_reference'        => Arr::get($wooOrderData, 'number'),
             'platform_order_id'         => Arr::get($wooOrderData, 'order_key'),
             'delivery_address'          => $this->digestWooAddress(Arr::get($wooOrderData, 'shipping')),
+            'customer_notes'            => Str::limit(trim((string) Arr::get($wooOrderData, 'customer_note')), 4000, '') ?: null,
             'data'                      => ['woo_order' => $wooOrderData]
         ];
 
