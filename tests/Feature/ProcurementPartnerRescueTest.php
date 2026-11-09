@@ -337,12 +337,13 @@ test('a rescue line to a sister company is rounded up to the partner\'s carton w
     $supplierProduct->updateQuietly(['units_per_carton' => 24]);
 
     $buckets  = GetPartnerStockCoverBuckets::make();
-    $quantity = fn (string $spare, float $usage) => (int) DB::selectOne(
-        'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity
+    $row      = fn (string $spare, float $usage) => DB::selectOne(
+        'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity, rf.carton_skos
         from (select '.$usage.' as predicted_daily_usage) s, (select 3 as quantity_available, 2 as packed_in) os,
             (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, '.$sellerStock->id.' as id, 1 as packed_in) p, (select null::int as stock_family_id) stocks,
             lateral ('.(new ReflectionMethod($buckets, 'rowFacts'))->invoke($buckets, $this->orgPartner, 14)->toRawSql().') rf'
-    )->quantity;
+    );
+    $quantity = fn (string $spare, float $usage) => (int) $row($spare, $usage)->quantity;
 
     $partner = $this->orgPartner->partner;
     $wasHub  = $partner->is_manufacturing_hub;
@@ -351,16 +352,23 @@ test('a rescue line to a sister company is rounded up to the partner\'s carton w
         $rounded   = $quantity('500', 0.1);
         $unsold    = $quantity('500', 0.01);
         $tooScarce = $quantity('10', 0.1);
+        $supplierProduct->units_per_carton = null;
+        $supplierProduct->saveQuietly();
+        $noCarton = $row('500', 0.1);
     } finally {
         $partner->is_manufacturing_hub = $wasHub;
     }
+
+    expect(fn () => $supplierProduct->updateQuietly(['units_per_carton' => 0]))->toThrow(\Illuminate\Database\QueryException::class);
 
     $supplierProduct->updateQuietly(['units_per_carton' => $unitsPerCarton]);
     DB::table('org_stock_has_org_supplier_products')->where('id', $linkId)->delete();
 
     expect($rounded)->toBe(12)
         ->and($unsold)->toBe(1)
-        ->and($tooScarce)->toBe(3);
+        ->and($tooScarce)->toBe(3)
+        ->and((int) $noCarton->quantity)->toBe(3)
+        ->and((int) $noCarton->carton_skos)->toBe(1);
 });
 
 test('a sku on a rescue being prepared for another sister company is not offered again', function () {

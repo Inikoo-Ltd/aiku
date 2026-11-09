@@ -478,13 +478,13 @@ class GetPartnerStockCoverBuckets
 
     private function partnerCartonSkosSql(): string
     {
-        return "coalesce((select ceil(sp.units_per_carton / nullif(greatest(os.packed_in, 1), 0))
+        return "greatest(1, (select ceil(sp.units_per_carton / nullif(greatest(os.packed_in, 1), 0))
             from org_stock_has_org_supplier_products link
             join org_supplier_products osp on osp.id = link.org_supplier_product_id
             join supplier_products sp on sp.id = osp.supplier_product_id
             where link.org_stock_id = p.id and link.status
             order by link.local_priority desc
-            limit 1), 1)";
+            limit 1))";
     }
 
     /**
