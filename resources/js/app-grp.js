@@ -23,6 +23,7 @@ import ConfirmationService from "primevue/confirmationservice";
 import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
 import { setAgentOrganisations, withAgentRoutes } from "@/Composables/useAgentRoutes";
 import { cacheCurrentRoute } from "@/Composables/cacheCurrentRoute";
+import { reloadOnNewBuild } from "@/Composables/reloadOnNewBuild";
 import { ctrans } from "@/Composables/useTrans";
 import { skipUnchangedTooltips } from "@/Composables/skipUnchangedTooltips";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
@@ -86,29 +87,7 @@ const MyPreset = definePreset(Aura, {
 router.on("before", (event) => {
   event.detail.visit.headers["X-Current-Url"] = window.location.href;
 });
-router.on("location", (event) => {
-  if (!event.detail.versionChange
-    || document.activeElement?.closest("input, textarea, select, [contenteditable], [role=combobox]")
-    || document.querySelector("[role=dialog]")) {
-    return;
-  }
-  try {
-    if (Date.now() - Number(sessionStorage.getItem("aikuVersionReloadAt") || 0) < 60000) {
-      return;
-    }
-    sessionStorage.setItem("aikuVersionReloadAt", String(Date.now()));
-    sessionStorage.setItem("inertiaLocationVisit", JSON.stringify({ preserveScroll: true }));
-  } catch {
-    return;
-  }
-  event.preventDefault();
-  const url = event.detail.url;
-  if (url.href.split("#")[0] === window.location.href.split("#")[0]) {
-    window.location.reload();
-  } else {
-    window.location.href = url.href;
-  }
-});
+reloadOnNewBuild(router);
 trackVisitStarts(router);
 prefetchInboxListOnVisit(router);
 

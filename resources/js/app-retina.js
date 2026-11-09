@@ -23,6 +23,7 @@ import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
 import { ctrans } from "@/Composables/useTrans";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
+import { reloadOnNewBuild } from "@/Composables/reloadOnNewBuild";
 
 const MyPreset = definePreset(Aura, {
   semantic: {
@@ -95,6 +96,8 @@ let nextWebpagePreload = startWebpagePreload(JSON.parse(document.querySelector('
 router.on("before", (event) => {
   event.detail.visit.headers["X-Current-Url"] = window.location.href;
 });
+
+reloadOnNewBuild(router);
 
 router.on("beforeUpdate", (event) => {
   nextWebpagePreload = startWebpagePreload(event.detail.page);

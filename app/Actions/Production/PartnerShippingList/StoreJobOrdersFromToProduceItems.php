@@ -99,7 +99,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
     {
         return [
             'ids'   => ['required', 'list', 'min:1'],
-            'ids.*' => ['integer'],
+            'ids.*' => ['integer', 'min:1', 'max:2147483647'],
             'employee_id' => ['sometimes', 'nullable', 'integer', 'exists:employees,id'],
             'quantity'    => ['sometimes', 'nullable', 'numeric', 'min:1'],
             'planned_for' => ['sometimes', 'nullable', 'date_format:Y-m-d'],

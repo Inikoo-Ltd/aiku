@@ -1897,3 +1897,8 @@ test('a fill line follows its order line: quantity changes, removal and cancelli
     expect($rest->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
         ->and($rest->dismiss_reason)->toBe('order cancelled');
 });
+
+test('job orders from to-produce refuse ids beyond the integer range', function () {
+    expect(fn () => \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [1792585086231]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+});
