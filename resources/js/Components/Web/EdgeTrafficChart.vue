@@ -22,6 +22,7 @@ const props = withDefaults(defineProps<{
     eventIndexes?: number[]
     height?: string
     clickable?: boolean
+    points?: boolean
 }>(), {
     type: "bar",
     stacked: false,
@@ -29,6 +30,7 @@ const props = withDefaults(defineProps<{
     eventIndexes: () => [],
     height: "h-56",
     clickable: false,
+    points: false,
 })
 
 const emit = defineEmits<{ select: [index: number, datasetIndex: number | null] }>()
@@ -92,12 +94,13 @@ const chartData = computed(() => ({
         borderWidth: props.type === "line" ? 2 : 0,
         borderRadius: props.type === "bar" && !props.stacked ? 3 : 0,
         borderSkipped: false,
-        pointRadius: 0,
+        pointRadius: props.points ? 3 : 0,
+        pointBackgroundColor: dataset.color,
         pointHoverRadius: 4,
         pointHitRadius: 12,
-        tension: 0.3,
+        tension: props.points ? 0 : 0.3,
         spanGaps: false,
-        fill: props.type === "line" && props.datasets.length === 1,
+        fill: props.type === "line" && props.datasets.length === 1 && !props.points,
         maxBarThickness: 18,
     })),
 }))

@@ -88,12 +88,12 @@ class ShowCompetitorsDashboard extends OrgAction
         $thisWeek = $throughput($weekStart, $weekStart->copy()->addWeek());
         $lastWeek = $throughput($weekStart->copy()->subWeek(), $weekStart);
 
-        $trendStart = $weekStart->copy()->subWeeks(11);
+        $trendStart = now()->startOfDay()->subDays(29);
         $trend      = (clone $matches)
             ->where('master_asset_competitor_products.status', 'confirmed')
             ->whereRaw('coalesce(reviewed_at, master_asset_competitor_products.created_at) >= ?', [$trendStart])
-            ->selectRaw("date_trunc('week', coalesce(reviewed_at, master_asset_competitor_products.created_at))::date as week, count(*) as number")
-            ->groupBy('week')->pluck('number', 'week');
+            ->selectRaw("coalesce(reviewed_at, master_asset_competitor_products.created_at)::date as day, count(*) as number")
+            ->groupBy('day')->pluck('number', 'day');
 
         $statusLabels = [
             CompetitorStatusEnum::ERROR->value        => __('Could not open the website'),
@@ -126,10 +126,10 @@ class ShowCompetitorsDashboard extends OrgAction
                 'confirmed' => ['this_week' => (int) $thisWeek->confirmed, 'last_week' => (int) $lastWeek->confirmed],
             ],
             'by_master_shop'     => $byMasterShop,
-            'trend'              => collect(range(0, 11))->map(function (int $weeksAgo) use ($trendStart, $trend) {
-                $week = $trendStart->copy()->addWeeks($weeksAgo);
+            'trend'              => collect(range(0, 29))->map(function (int $days) use ($trendStart, $trend) {
+                $day = $trendStart->copy()->addDays($days)->toDateString();
 
-                return ['week' => $week->toDateString(), 'confirmed' => (int) ($trend[$week->toDateString()] ?? 0)];
+                return ['day' => $day, 'confirmed' => (int) ($trend[$day] ?? 0)];
             }),
         ];
     }

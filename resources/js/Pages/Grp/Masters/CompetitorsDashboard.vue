@@ -35,7 +35,7 @@ const props = defineProps<{
         to_review?: number
         throughput?: { reviewed: { this_week: number; last_week: number }; confirmed: { this_week: number; last_week: number } }
         by_master_shop?: MasterShopRow[]
-        trend?: { week: string; confirmed: number }[]
+        trend?: { day: string; confirmed: number }[]
     }
     competitors?: object
     they_cheaper?: object
@@ -48,7 +48,7 @@ const weekChange = (row: { this_week: number; last_week: number }) => row.this_w
 
 const share = (part: number, whole: number) => (whole ? Math.round((100 * part) / whole) : 0)
 
-const trendLabels = computed(() => (props.dashboard.trend ?? []).map((point) => useFormatTime(point.week, { formatTime: "dd MMM" })))
+const trendLabels = computed(() => (props.dashboard.trend ?? []).map((point) => useFormatTime(point.day, { formatTime: "dd MMM" })))
 const trendData = computed(() => [{ label: ctrans("Confirmed matches"), data: (props.dashboard.trend ?? []).map((point) => point.confirmed), color: "#6b7280" }])
 const trendTotal = computed(() => (props.dashboard.trend ?? []).reduce((carry, point) => carry + point.confirmed, 0))
 
@@ -94,11 +94,6 @@ const positionSegments = (row: MasterShopRow) => {
                     <span v-if="dashboard.status.not_read" class="ml-2 text-gray-500">{{ dashboard.status.not_read }} {{ ctrans("not read yet") }}</span>
                 </p>
                 <p class="text-xs text-gray-500">{{ dashboard.status.last_read ? ctrans("Last read :date", { date: useFormatTime(dashboard.status.last_read) }) : ctrans("Nothing read yet") }}</p>
-                <div v-for="failure in dashboard.status.failures" :key="failure.id" class="mt-2 text-xs">
-                    <Link :href="route('grp.masters.competitors.show', { competitor: failure.id })" class="font-medium text-gray-700 hover:underline">{{ failure.name }}</Link>
-                    <span class="text-red-600"> · {{ failure.reason }}</span>
-                    <div v-if="failure.last_error" class="text-gray-500">{{ failure.last_error }}</div>
-                </div>
             </section>
             <Link :href="route('grp.masters.competitors.prices.index')" class="rounded-lg border border-gray-300 bg-white p-4 hover:bg-gray-50">
                 <p class="text-xs text-gray-500">{{ ctrans("Matches to review") }}</p>
@@ -116,6 +111,30 @@ const positionSegments = (row: MasterShopRow) => {
                     </span>
                 </p>
                 <p class="text-xs text-gray-500">{{ key === 'reviewed' ? ctrans("Matches confirmed or rejected by hand") : ctrans("By staff or by the AI when it was sure") }}</p>
+            </section>
+        </div>
+
+        <section v-if="dashboard.status.failures?.length" class="rounded-lg border border-red-200 bg-white p-4">
+            <p class="font-medium">{{ ctrans("Competitors that could not be read") }}</p>
+            <div class="mt-2 grid gap-x-6 gap-y-2 text-xs md:grid-cols-2">
+                <div v-for="failure in dashboard.status.failures" :key="failure.id">
+                    <Link :href="route('grp.masters.competitors.show', { competitor: failure.id })" class="font-medium text-gray-700 hover:underline">{{ failure.name }}</Link>
+                    <span class="text-red-600"> · {{ failure.reason }}</span>
+                    <div v-if="failure.last_error" class="text-gray-500">{{ failure.last_error }}</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid gap-4">
+            <section>
+                <p class="font-medium">{{ ctrans("Where they are cheapest") }}</p>
+                <p class="text-xs text-gray-500">{{ ctrans("Confirmed matches with the biggest gap against us") }}</p>
+                <TableMasterAssetCompetitorProducts :data="they_cheaper" tab="they_cheaper" :canEdit="can_edit" />
+            </section>
+            <section>
+                <p class="font-medium">{{ ctrans("Where we are cheapest") }}</p>
+                <p class="text-xs text-gray-500">{{ ctrans("Confirmed matches with the biggest gap in our favour") }}</p>
+                <TableMasterAssetCompetitorProducts :data="we_cheaper" tab="we_cheaper" :canEdit="can_edit" />
             </section>
         </div>
 
@@ -152,25 +171,12 @@ const positionSegments = (row: MasterShopRow) => {
 
         <section class="rounded-lg border border-gray-300 bg-white p-4">
             <div class="flex items-baseline justify-between">
-                <p class="font-medium">{{ ctrans("Confirmed matches per week") }}</p>
-                <p class="text-xs text-gray-500">{{ ctrans(":n in the last 12 weeks", { n: locale.number(trendTotal) }) }}</p>
+                <p class="font-medium">{{ ctrans("Confirmed matches per day") }}</p>
+                <p class="text-xs text-gray-500">{{ ctrans(":n in the last 30 days", { n: locale.number(trendTotal) }) }}</p>
             </div>
-            <EdgeTrafficChart v-if="trendTotal" class="mt-2" type="line" :labels="trendLabels" :datasets="trendData" height="h-40" />
-            <p v-else class="mt-2 text-xs text-gray-500">{{ ctrans("No matches confirmed in the last 12 weeks") }}</p>
+            <EdgeTrafficChart v-if="trendTotal" class="mt-2" type="line" :labels="trendLabels" :datasets="trendData" height="h-40" points />
+            <p v-else class="mt-2 text-xs text-gray-500">{{ ctrans("No matches confirmed in the last 30 days") }}</p>
         </section>
-
-        <div class="grid gap-4">
-            <section>
-                <p class="font-medium">{{ ctrans("Where they are cheapest") }}</p>
-                <p class="text-xs text-gray-500">{{ ctrans("Confirmed matches with the biggest gap against us") }}</p>
-                <TableMasterAssetCompetitorProducts :data="they_cheaper" tab="they_cheaper" :canEdit="can_edit" />
-            </section>
-            <section>
-                <p class="font-medium">{{ ctrans("Where we are cheapest") }}</p>
-                <p class="text-xs text-gray-500">{{ ctrans("Confirmed matches with the biggest gap in our favour") }}</p>
-                <TableMasterAssetCompetitorProducts :data="we_cheaper" tab="we_cheaper" :canEdit="can_edit" />
-            </section>
-        </div>
 
         <section>
             <p class="font-medium">{{ ctrans("Competitors") }}</p>
