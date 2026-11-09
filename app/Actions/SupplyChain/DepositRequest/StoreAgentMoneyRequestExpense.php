@@ -22,15 +22,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * While building a money request the agent writes an expense it already paid for a client, such as a bank charge,
- * straight into that client's ledger as an other expense, so it shows up as a line to ask for. The description and
- * the receipt are required, as the client approves the line on them alone.
+ * straight into that client's ledger as an other expense, so it shows up as a line to ask for. The description is
+ * required; the receipt is optional, as the agent sometimes asks for the money before paying.
  */
 class StoreAgentMoneyRequestExpense extends OrgAction
 {
     private Agent $agent;
 
     /**
-     * @param  array{organisation_id: int, date: string, amount: float|string, notes: string, reference?: string|null, receipt: UploadedFile}  $modelData
+     * @param  array{organisation_id: int, date: string, amount: float|string, notes: string, reference?: string|null, receipt?: UploadedFile|null}  $modelData
      */
     public function handle(Agent $agent, array $modelData): AgentPayment
     {
@@ -41,7 +41,7 @@ class StoreAgentMoneyRequestExpense extends OrgAction
             'amount'          => $modelData['amount'],
             'notes'           => $modelData['notes'],
             'reference'       => Arr::get($modelData, 'reference'),
-            'receipt'         => $modelData['receipt'],
+            'receipt'         => Arr::get($modelData, 'receipt'),
         ]);
     }
 
@@ -53,7 +53,7 @@ class StoreAgentMoneyRequestExpense extends OrgAction
             'amount'          => ['required', 'numeric', 'gt:0', 'max:999999999999'],
             'notes'           => ['required', 'string', 'max:2000'],
             'reference'       => ['nullable', 'string', 'max:255'],
-            'receipt'         => ['required', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,heic'],
+            'receipt'         => ['nullable', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,heic'],
         ];
     }
 

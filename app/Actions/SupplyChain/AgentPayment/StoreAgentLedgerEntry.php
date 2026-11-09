@@ -30,7 +30,8 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * The agent writes a line of a client's ledger: a transfer the client sent, a refund from a supplier, or money it
  * spent from the client's funds. Amounts are in the agent's currency; a transfer also keeps what the client sent in
- * its own currency. Money spent needs its receipt, as the client is asked for it and approves it on that receipt.
+ * its own currency. Money spent needs its receipt, as the client is asked for it and approves it on that receipt;
+ * only an other expense may come without one, as the agent sometimes asks for the money before paying.
  */
 class StoreAgentLedgerEntry extends OrgAction
 {
@@ -96,7 +97,7 @@ class StoreAgentLedgerEntry extends OrgAction
             'original_amount'   => ['nullable', 'numeric', 'gt:0', 'max:999999999999'],
             'reference'         => ['nullable', 'string', 'max:255'],
             'notes'             => ['nullable', 'string', 'max:2000'],
-            'receipt'           => [Rule::requiredIf(fn () => !$this->asAction && !AgentPaymentTypeEnum::tryFrom((string) $this->get('type'))?->isMoneyIn()), 'nullable', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,heic'],
+            'receipt'           => [Rule::requiredIf(fn () => !$this->asAction && AgentPaymentTypeEnum::tryFrom((string) $this->get('type'))?->needsReceipt()), 'nullable', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,heic'],
         ];
     }
 

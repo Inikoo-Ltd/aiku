@@ -58,6 +58,11 @@ enum AgentPaymentTypeEnum: string
         return in_array($this, [self::TRANSFER_RECEIVED, self::SUPPLIER_REFUND], true);
     }
 
+    public function needsReceipt(): bool
+    {
+        return !$this->isMoneyIn() && $this !== self::OTHER_EXPENSE;
+    }
+
     public function isSupplierPayment(): bool
     {
         return in_array($this, [self::SUPPLIER_PAYMENT, self::SUPPLIER_DEPOSIT, self::SUPPLIER_BALANCE], true);

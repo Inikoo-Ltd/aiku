@@ -89,7 +89,7 @@ const props = defineProps<{
 		agent_fee_route_name: string
 		currency_code: string
 		clients: { id: number; label: string; currency_code: string }[]
-		types: { value: string; label: string; money_in: boolean; needs_order: boolean }[]
+		types: { value: string; label: string; money_in: boolean; needs_order: boolean; needs_receipt: boolean }[]
 		purchase_orders: Option[]
 		containers: Option[]
 	} | null
@@ -184,7 +184,7 @@ const canSave = computed(
 		!!entry.value.date &&
 		!!entry.value.amount &&
 		(!selectedType.value?.needs_order || !!entry.value.purchase_order_id || !!editing.value?.imported) &&
-		(!!editing.value || !!selectedType.value?.money_in || !!entry.value.receipt)
+		(!!editing.value || !selectedType.value?.needs_receipt || !!entry.value.receipt)
 )
 
 const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
@@ -452,7 +452,7 @@ const confirmRemove = (row: EntryRow) =>
 				<Textarea v-model="entry.notes" rows="2" autoResize class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
 			<div v-if="!editing" class="block text-sm">
-				<span v-if="selectedType?.money_in" class="text-gray-600">{{ ctrans("Receipt (optional)") }}</span>
+				<span v-if="!selectedType?.needs_receipt" class="text-gray-600">{{ ctrans("Receipt (optional)") }}</span>
 				<span v-else class="text-gray-600">{{ ctrans("Receipt") }} <span class="text-red-500">*</span></span>
 				<div class="mt-1">
 					<FileUpload mode="basic" :auto="false" customUpload accept=".pdf,image/*" :maxFileSize="20000000" :chooseLabel="ctrans('Choose file')" :pt="chooseFilePt" @select="(event: { files: File[] }) => (entry.receipt = event.files[0] ?? null)">

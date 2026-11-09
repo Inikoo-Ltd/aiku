@@ -84,7 +84,7 @@ class GetAgentContainerInvoiceData
             'stock_delivery_id' => $stockDelivery->id,
             'types'             => collect(AgentPaymentTypeEnum::cases())
                 ->filter(fn (AgentPaymentTypeEnum $type) => $type->isCharge() && $type !== AgentPaymentTypeEnum::AGENT_FEE)
-                ->map(fn (AgentPaymentTypeEnum $type) => ['value' => $type->value, 'label' => AgentPaymentTypeEnum::labels()[$type->value]])
+                ->map(fn (AgentPaymentTypeEnum $type) => ['value' => $type->value, 'label' => AgentPaymentTypeEnum::labels()[$type->value], 'needs_receipt' => $type->needsReceipt()])
                 ->values()->all(),
         ];
     }
