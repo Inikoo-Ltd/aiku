@@ -2177,6 +2177,7 @@ test('a trial run a development asks for shows the artisan the development, and 
     $record = fn (array $lines, ?string $notes = null) => post(route('grp.models.job-order.trial_run_formulation', ['jobOrder' => $jobOrder->id]), ['steps' => [['recipe_step_id' => $step->id, 'raw_materials' => $lines]], 'notes' => $notes]);
     $record([])->assertSessionHasErrors('formulation');
     $record([['raw_material_id' => $scent->id, 'quantity_per_unit' => 0]])->assertSessionHasErrors('steps.0.raw_materials.0.quantity_per_unit');
+    $sample->update(['notes' => 'Try a stronger scent']);
     $record([['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.097], ['raw_material_id' => $scent->id, 'quantity_per_unit' => 0.003]], '3% lavender')->assertRedirect()->assertSessionHasNoErrors();
 
     $formulation = $jobOrder->fresh()->data['formulation'];
@@ -2184,11 +2185,17 @@ test('a trial run a development asks for shows the artisan the development, and 
         ->and($formulation['notes'])->toBe('3% lavender')
         ->and($formulation['recorded_by_id'])->toBe($this->user->id)
         ->and($sample->fresh()->recipe)->toBe($formulation['recipe'])
+        ->and($sample->fresh()->notes)->toBe("Try a stronger scent\n\n3% lavender")
         ->and(\App\Models\Production\RecipeStepRawMaterial::where('artefact_manufacture_task_id', $step->id)->pluck('quantity_per_unit', 'raw_material_id')->map(fn ($quantity) => (float) $quantity)->all())->toEqual([$oil->id => 0.097, $scent->id => 0.003])
         ->and(collect(GetProductDevelopmentActivity::run($productDevelopment->fresh()))->pluck('sentence'))->toContain(__('Recorded the formulation of :sample in :job_order', ['sample' => $item->tradeUnit->code.' trial run 01', 'job_order' => $jobOrder->reference]));
 
+    $record([['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.097], ['raw_material_id' => $scent->id, 'quantity_per_unit' => 0.003]], '3% lavender, stirred longer')->assertSessionHasNoErrors();
+    expect($sample->fresh()->notes)->toBe("Try a stronger scent\n\n3% lavender, stirred longer");
+    get(route('grp.product_developments.show', [$productDevelopment->slug, 'tab' => 'formulation']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('formulation.skus.0.samples.0.notes', "Try a stronger scent\n\n3% lavender, stirred longer"));
+
     $brief = get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $jobOrder->id]))->json('brief');
-    expect($brief['formulation']['notes'])->toBe('3% lavender')
+    expect($brief['formulation']['notes'])->toBe('3% lavender, stirred longer')
         ->and(collect($brief['formulation']['recipe']['steps'][0]['raw_materials'])->pluck('code')->all())->toBe(['FOIL'.$item->id, 'FSCN'.$item->id]);
 
     $session = \App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession::make()->action($this->user, $task->fresh());

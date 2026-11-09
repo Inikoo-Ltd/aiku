@@ -23,9 +23,9 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import InputText from "primevue/inputtext"
 import Select from "primevue/select"
-import { faPauseCircle, faPlayCircle, faCheck, faTimes, faUndo, faBan } from "@fal"
+import { faPauseCircle, faPlayCircle, faCheck, faTimes, faUndo, faBan, faPrint } from "@fal"
 
-library.add(faSortShapesDown, faPlus, faTrashAlt, faUsers, faLink, faPauseCircle, faPlayCircle, faCheck, faTimes, faUndo, faBan)
+library.add(faSortShapesDown, faPlus, faTrashAlt, faUsers, faLink, faPauseCircle, faPlayCircle, faCheck, faTimes, faUndo, faBan, faPrint)
 
 interface Hold {
     reason: string
@@ -156,6 +156,12 @@ const props = defineProps<{
     trial_run_brief_route: null | { name: string, parameters: object }
     locations_fetch_route: null | { name: string, parameters: object }
 }>()
+
+const artisanChoices = computed(() => [{ id: null, name: ctrans('Anyone') }, ...props.artisan_options])
+
+function printJobList() {
+    window.open(route(props.pdf_route.name, props.pdf_route.parameters as Record<string, string>), '_blank')
+}
 
 function setArtisan(value: string) {
     if (!props.update_route) return
@@ -342,7 +348,7 @@ const subJobStateLabels: Record<SubJob["state"], string> = {
 }
 
 const subJobStateClasses: Record<SubJob["state"], string> = {
-    assigned: "bg-[--app-accent-soft] text-[--app-accent-strong]",
+    assigned: "bg-[var(--app-accent-soft)] text-[var(--app-accent-strong)]",
     in_progress: "bg-amber-50 text-amber-700",
     complete: "bg-green-50 text-green-700",
 }
@@ -452,58 +458,58 @@ function receiveIntoStock() {
     <PageHeading :data="pageHead" />
 
     <div class="px-4 py-4 max-w-4xl">
-        <div class="flex items-center gap-4 text-sm text-gray-600 mb-6">
-            <span class="rounded-full bg-gray-100 border border-gray-200 px-3 py-1 font-medium">{{ job_order.state_label }}</span>
-            <span v-if="job_order.date">{{ useFormatTime(job_order.date) }}</span>
-            <label class="flex items-center gap-1.5">
-                <span class="text-gray-400">{{ ctrans('For') }}</span>
-                <select v-if="update_route" :value="job_order.employee_id ?? ''" class="rounded border-gray-300 py-0.5 text-sm" @change="setArtisan(($event.target as HTMLSelectElement).value)">
-                    <option value="">{{ ctrans('Anyone') }}</option>
-                    <option v-for="option in artisan_options" :key="option.id" :value="option.id">{{ option.name }}</option>
-                </select>
-                <span v-else class="font-medium">{{ job_order.artisan ?? ctrans('Anyone') }}</span>
-            </label>
-            <span v-if="job_order.public_notes" class="truncate">{{ job_order.public_notes }}</span>
-            <a
-                :href="route(pdf_route.name, pdf_route.parameters)"
-                target="_blank"
-                class="ml-auto rounded border border-gray-300 bg-white text-gray-700 text-sm font-semibold px-4 py-2 hover:bg-gray-50"
-            >
-                {{ ctrans('Print job list') }}
-            </a>
-            <Button
-                v-if="hold_route && !job_order.hold"
-                type="tertiary"
-                :label="ctrans('Put on hold')"
-                :disabled="processing"
-                @click="openHoldDialog">
-                <template #icon><FontAwesomeIcon icon="fal fa-pause-circle" class="text-amber-500" fixed-width aria-hidden="true" /></template>
-            </Button>
-            <Button
-                v-if="cancel_route"
-                type="tertiary"
-                :label="ctrans('Back to backlog')"
-                :disabled="processing"
-                @click="openCancelDialog('backlog')">
-                <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-amber-500" fixed-width aria-hidden="true" /></template>
-            </Button>
-            <Button
-                v-if="cancel_route"
-                type="tertiary"
-                :label="ctrans('Cancel job')"
-                :disabled="processing"
-                @click="openCancelDialog('cancel')">
-                <template #icon><FontAwesomeIcon icon="fal fa-ban" class="text-red-500" fixed-width aria-hidden="true" /></template>
-            </Button>
-            <button
-                v-if="confirm_route"
-                type="button"
-                class="rounded bg-green-600 text-white text-sm font-semibold px-4 py-2 disabled:opacity-40"
-                :disabled="processing || !items.length"
-                @click="confirmJobOrder"
-            >
-                {{ ctrans('Release to floor') }}
-            </button>
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 text-sm text-gray-600">
+            <div class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+                <span class="whitespace-nowrap rounded-full border border-gray-200 bg-gray-100 px-3 py-1 font-medium">{{ job_order.state_label }}</span>
+                <span v-if="job_order.date" class="whitespace-nowrap">{{ useFormatTime(job_order.date) }}</span>
+                <label class="flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="text-gray-400">{{ ctrans('For') }}</span>
+                    <Select v-if="update_route" :modelValue="job_order.employee_id ?? null" :options="artisanChoices" optionLabel="name" optionValue="id" filter size="small" class="w-52" :placeholder="ctrans('Anyone')" @update:modelValue="(value) => setArtisan(value === null ? '' : String(value))" />
+                    <span v-else class="font-medium">{{ job_order.artisan ?? ctrans('Anyone') }}</span>
+                </label>
+                <span v-if="job_order.public_notes" class="min-w-0 truncate">{{ job_order.public_notes }}</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <Button type="tertiary" :label="ctrans('Print job list')" class="whitespace-nowrap" @click="printJobList">
+                    <template #icon><FontAwesomeIcon icon="fal fa-print" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button
+                    v-if="hold_route && !job_order.hold"
+                    type="tertiary"
+                    :label="ctrans('Put on hold')"
+                    class="whitespace-nowrap"
+                    :disabled="processing"
+                    @click="openHoldDialog">
+                    <template #icon><FontAwesomeIcon icon="fal fa-pause-circle" class="text-amber-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button
+                    v-if="cancel_route"
+                    type="tertiary"
+                    :label="ctrans('Back to backlog')"
+                    class="whitespace-nowrap"
+                    :disabled="processing"
+                    @click="openCancelDialog('backlog')">
+                    <template #icon><FontAwesomeIcon icon="fal fa-undo" class="text-amber-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button
+                    v-if="cancel_route"
+                    type="tertiary"
+                    :label="ctrans('Cancel job')"
+                    class="whitespace-nowrap"
+                    :disabled="processing"
+                    @click="openCancelDialog('cancel')">
+                    <template #icon><FontAwesomeIcon icon="fal fa-ban" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button
+                    v-if="confirm_route"
+                    type="tertiary"
+                    :label="ctrans('Release to floor')"
+                    class="whitespace-nowrap"
+                    :disabled="processing || !items.length"
+                    @click="confirmJobOrder">
+                    <template #icon><FontAwesomeIcon icon="fal fa-play-circle" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                </Button>
+            </div>
         </div>
         <TrialRunBrief v-if="trial_run_brief_route" :briefRoute="trial_run_brief_route" collapsible class="mb-6" />
         <div v-if="job_order.cancellation" class="mb-6 flex items-start gap-3 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-gray-700" role="status">
@@ -590,7 +596,7 @@ function receiveIntoStock() {
                 </div>
                 <form v-if="editingItemId === item.id" class="flex items-center gap-2" @submit.prevent="saveQuantity(item, editedQuantity)">
                     <input v-model.number="editedQuantity" type="number" min="1" step="1" class="w-24 rounded border-gray-300 text-sm tabular-nums" :aria-label="ctrans('Quantity')" />
-                    <button type="submit" class="text-sm font-medium text-[--app-accent]">{{ ctrans('Save') }}</button>
+                    <button type="submit" class="text-sm font-medium text-[var(--app-accent)]">{{ ctrans('Save') }}</button>
                     <button type="button" class="text-sm text-gray-500" @click="editingItemId = null">{{ ctrans('Cancel') }}</button>
                 </form>
                 <div v-else class="shrink-0 whitespace-nowrap tabular-nums text-gray-700">
@@ -676,7 +682,7 @@ function receiveIntoStock() {
                 <div class="mt-1 h-2 rounded-full bg-gray-100 overflow-hidden">
                     <div
                         class="h-full rounded-full"
-                        :class="task.state == 'done' ? 'bg-green-500' : 'bg-[--app-accent]'"
+                        :class="task.state == 'done' ? 'bg-green-500' : 'bg-[var(--app-accent)]'"
                         :style="{ width: progressPercent(task) + '%' }"
                     />
                 </div>
@@ -752,7 +758,7 @@ function receiveIntoStock() {
                     </template>
                 </div>
 
-                <button type="button" class="mt-3 rounded border border-[--app-accent-muted] text-[--app-accent] text-sm px-3 py-1.5" @click="addAssignment">
+                <button type="button" class="mt-3 rounded border border-[var(--app-accent-muted)] text-[var(--app-accent)] text-sm px-3 py-1.5" @click="addAssignment">
                     <FontAwesomeIcon :icon="['fal', 'plus']" fixed-width class="mr-1" />
                     {{ ctrans('Add artisan') }}
                 </button>
@@ -767,7 +773,7 @@ function receiveIntoStock() {
                     <button type="button" class="rounded border border-gray-300 text-sm px-4 py-2" @click="splittingItem = null">{{ ctrans('Cancel') }}</button>
                     <button
                         type="button"
-                        class="rounded bg-[--app-accent] text-[--app-accent-text] text-sm font-semibold px-4 py-2 disabled:opacity-40"
+                        class="rounded bg-[var(--app-accent)] text-[var(--app-accent-text)] text-sm font-semibold px-4 py-2 disabled:opacity-40"
                         :disabled="!canSaveAssignments || processing"
                         @click="saveAssignments"
                     >
@@ -910,15 +916,14 @@ function receiveIntoStock() {
                     {{ ctrans('recommended batch') }}: {{ selectedArtefactOption.recommended_batch_size }}
                 </div>
             </div>
-            <button
-                type="button"
-                class="rounded bg-[--app-accent] text-[--app-accent-text] text-sm px-3 py-2 disabled:opacity-50"
+            <Button
+                type="tertiary"
+                :label="ctrans('Add item')"
+                class="whitespace-nowrap"
                 :disabled="!newArtefactId || !newQuantity || processing"
-                @click="addItem"
-            >
-                <FontAwesomeIcon :icon="['fal', 'plus']" fixed-width class="mr-1" />
-                {{ ctrans('Add item') }}
-            </button>
+                @click="addItem">
+                <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+            </Button>
         </div>
         <div v-if="add_item_route && newArtefactCarriedTo.length" class="mt-2 text-sm text-amber-600">
             <span v-for="carried in newArtefactCarriedTo" :key="carried.slug" class="mr-3">
