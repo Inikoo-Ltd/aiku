@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\DepositRequest\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest;
+use App\Actions\SupplyChain\DepositRequest\RemindAgentMoneyRequest;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
@@ -116,6 +117,7 @@ class IndexAgentMoneyRequests extends OrgAction
             'last_reminded_at' => $depositRequest->last_reminded_at,
             'last_reminded_by' => $depositRequest->reminder?->chatName(),
             'number_reminders' => $depositRequest->number_reminders,
+            'next_reminder_at' => RemindAgentMoneyRequest::nextReminderAt($depositRequest),
             'lines'         => $depositRequest->items->map(fn (DepositRequestItem $item) => [
                 'kind'          => $item->kind->value,
                 'kind_label'    => DepositRequestItemKindEnum::labels()[$item->kind->value],

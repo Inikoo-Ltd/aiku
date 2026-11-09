@@ -39,6 +39,7 @@ export interface MoneyRequestRow {
 	last_reminded_at: string | null
 	last_reminded_by: string | null
 	number_reminders: number
+	next_reminder_at: string | null
 	lines: {
 		kind: string
 		kind_label: string
@@ -187,11 +188,19 @@ const stateClass: Record<string, string> = {
 		<template #cell(actions)="{ item }">
 			<div class="flex justify-end gap-2">
 				<div v-if="item.remind_route" class="flex flex-col items-end">
-					<Button type="tertiary" size="xs" :label="ctrans('Send reminder')" :loading="remindingId === item.id" @click="emit('remind', item)">
-						<template #icon>
-							<FontAwesomeIcon icon="fal fa-paper-plane" class="text-gray-500" fixed-width aria-hidden="true" />
-						</template>
-					</Button>
+					<span v-tooltip="item.next_reminder_at ? ctrans('One reminder an hour. Next one from :time', { time: useFormatTime(item.next_reminder_at, { formatTime: 'HH:mm' }) }) : undefined">
+						<Button
+							type="tertiary"
+							size="xs"
+							:label="ctrans('Send reminder')"
+							:loading="remindingId === item.id"
+							:disabled="!!item.next_reminder_at"
+							@click="emit('remind', item)">
+							<template #icon>
+								<FontAwesomeIcon icon="fal fa-paper-plane" class="text-gray-500" fixed-width aria-hidden="true" />
+							</template>
+						</Button>
+					</span>
 					<span class="mt-0.5 whitespace-nowrap text-xs text-gray-400" :title="item.last_reminded_at ? lastReminderTitle(item) : undefined">
 						{{ item.last_reminded_at ? ctrans("Last sent :time", { time: useRangeFromNow(item.last_reminded_at, { addSuffix: true }) }) : ctrans("No reminder sent yet") }}
 					</span>
