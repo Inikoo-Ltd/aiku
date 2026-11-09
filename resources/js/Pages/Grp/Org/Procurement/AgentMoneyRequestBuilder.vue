@@ -109,6 +109,11 @@ watch(
 
 const orderOf = (purchaseOrderId: number | null) => props.due.orders.find((order) => order.purchase_order_id === purchaseOrderId)
 
+const tickedCount = computed(() => lines.value.filter((line) => ticked[line.key]).length)
+const allTicked = computed(() => lines.value.length > 0 && tickedCount.value === lines.value.length)
+const someTicked = computed(() => tickedCount.value > 0 && !allTicked.value)
+const tickAll = (value: boolean) => lines.value.forEach((line) => (ticked[line.key] = value))
+
 const chosen = computed(() => lines.value.filter((line) => ticked[line.key] && Number(amounts[line.key]) > 0))
 const total = computed(() => chosen.value.reduce((sum, line) => sum + Number(amounts[line.key]), 0))
 
@@ -180,7 +185,16 @@ const send = () => {
 		<table class="min-w-full text-sm">
 			<thead class="whitespace-nowrap bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
 				<tr>
-					<th class="w-10 px-3 py-2"></th>
+					<th class="w-10 px-3 py-2">
+						<Checkbox
+							v-if="lines.length"
+							v-tooltip="allTicked ? ctrans('Unselect all') : ctrans('Select all')"
+							:modelValue="allTicked"
+							:indeterminate="someTicked"
+							binary
+							@update:modelValue="tickAll(!allTicked)"
+						/>
+					</th>
 					<th class="px-3 py-2 font-medium">{{ ctrans("For") }}</th>
 					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Order total") }}</th>
 					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Already asked") }}</th>
