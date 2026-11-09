@@ -15,6 +15,7 @@ use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactFamily;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -60,6 +61,8 @@ class UpdateArtefactFamily extends OrgAction
 
     public function rules(): array
     {
+        $departmentId = $this->get('artefact_department_id', $this->artefactFamily->artefact_department_id);
+
         return [
             'code'                   => [
                 'sometimes',
@@ -69,7 +72,7 @@ class UpdateArtefactFamily extends OrgAction
                 new IUnique(
                     table: 'artefact_families',
                     extraConditions: [
-                        ['column' => 'artefact_department_id', 'value' => $this->artefactFamily->artefact_department_id],
+                        ['column' => 'artefact_department_id', 'value' => $departmentId],
                         ['column' => 'id', 'operator' => '!=', 'value' => $this->artefactFamily->id],
                     ]
                 ),
@@ -81,6 +84,12 @@ class UpdateArtefactFamily extends OrgAction
                 'sometimes',
                 'required',
                 Rule::exists('artefact_departments', 'id')->where('production_id', $this->production->id),
+                function (string $attribute, mixed $value, Closure $fail) {
+                    $code = $this->get('code', $this->artefactFamily->code);
+                    if (ArtefactFamily::where('artefact_department_id', $value)->where('id', '!=', $this->artefactFamily->id)->whereRaw('lower(code) = lower(?)', [$code])->exists()) {
+                        $fail(__('That department already has a family with code :code', ['code' => $code]));
+                    }
+                },
             ],
         ];
     }

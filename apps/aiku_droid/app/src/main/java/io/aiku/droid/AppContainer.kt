@@ -1,0 +1,47 @@
+package io.aiku.droid
+
+import android.content.Context
+import android.os.Build
+import io.aiku.droid.data.api.AikuHttpClient
+import io.aiku.droid.data.api.AuthApi
+import io.aiku.droid.data.api.OkHttpMobileApi
+import io.aiku.droid.data.api.WarehouseApi
+import io.aiku.droid.data.session.DeviceSessionRepository
+import io.aiku.droid.data.session.KeystoreCipher
+import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.data.settings.DeviceSettings
+
+class AppContainer(context: Context) {
+
+    private val httpClient = AikuHttpClient.create(
+        apiBaseUrl = BuildConfig.AIKU_API_BASE_URL,
+        appKey = BuildConfig.AIKU_APP_KEY,
+        developmentHostAddress = BuildConfig.DEVELOPMENT_HOST_ADDRESS,
+        developmentCaCertificate = BuildConfig.DEVELOPMENT_CA_CERTIFICATE,
+    )
+
+    private val mobileApi = OkHttpMobileApi(httpClient, BuildConfig.AIKU_API_BASE_URL)
+
+    val authApi: AuthApi = mobileApi
+
+    val warehouseApi: WarehouseApi = mobileApi
+
+    val sessions: SessionRepository = DeviceSessionRepository(
+        preferences = context.getSharedPreferences(SESSION_PREFERENCES, Context.MODE_PRIVATE),
+        cipher = KeystoreCipher(SESSION_KEY_ALIAS),
+    )
+
+    val settings = DeviceSettings(context.getSharedPreferences(SETTINGS_PREFERENCES, Context.MODE_PRIVATE))
+
+    val deviceName: String = listOf(Build.MANUFACTURER, Build.MODEL)
+        .filter { it.isNotBlank() }
+        .joinToString(" ")
+        .take(MAX_DEVICE_NAME_LENGTH)
+
+    private companion object {
+        const val SESSION_PREFERENCES = "aiku_session"
+        const val SETTINGS_PREFERENCES = "aiku_settings"
+        const val SESSION_KEY_ALIAS = "aiku_session_key"
+        const val MAX_DEVICE_NAME_LENGTH = 100
+    }
+}

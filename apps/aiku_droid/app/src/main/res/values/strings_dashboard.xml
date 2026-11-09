@@ -1,0 +1,41 @@
+<resources>
+    <string name="dashboard_greeting">Good morning</string>
+    <string name="dashboard_profile">Your profile</string>
+    <string name="dashboard_search">Search</string>
+    <plurals name="dashboard_notifications_unread">
+        <item quantity="one">Notifications, %1$d unread</item>
+        <item quantity="other">Notifications, %1$d unread</item>
+    </plurals>
+    <string name="dashboard_change_warehouse">Change warehouse. Current: %1$s</string>
+    <string name="dashboard_shortcut_inventory">Inventory</string>
+    <string name="dashboard_shortcut_locations">Locations</string>
+    <string name="dashboard_shortcut_goods_in">Goods in</string>
+    <string name="dashboard_shortcut_goods_out">Goods out</string>
+    <string name="dashboard_view">View</string>
+    <string name="dashboard_view_all">View all</string>
+    <string name="dashboard_goods_out_title">Goods out</string>
+    <string name="dashboard_goods_out_subtitle">Dispatching backlog · Delivery notes</string>
+    <string name="dashboard_unassigned">Unassigned</string>
+    <string name="dashboard_in_queue">In Queue</string>
+    <string name="dashboard_handling">Handling</string>
+    <string name="dashboard_packed">Packed</string>
+    <plurals name="dashboard_blocked">
+        <item quantity="one">%1$d blocked</item>
+        <item quantity="other">%1$d blocked</item>
+    </plurals>
+    <string name="dashboard_dispatched_today">Dispatched today</string>
+    <string name="dashboard_dispatched_total">of %1$s</string>
+    <string name="dashboard_goods_in_title">Goods in</string>
+    <string name="dashboard_goods_in_subtitle">Stock deliveries</string>
+    <string name="dashboard_dispatched">Dispatched</string>
+    <string name="dashboard_received">Received</string>
+    <string name="dashboard_checked">Checked</string>
+    <string name="dashboard_inventory_title">Inventory</string>
+    <string name="dashboard_inventory_subtitle">%1$s SKUs in this warehouse</string>
+    <string name="dashboard_skus">SKUs</string>
+    <string name="dashboard_low">Low</string>
+    <string name="dashboard_critical">Critical</string>
+    <string name="dashboard_out_of_stock">Out of stock</string>
+    <string name="dashboard_assigned_to_me">Assigned to me</string>
+    <string name="dashboard_stock_movements">Stock movements</string>
+</resources>

@@ -861,3 +861,16 @@ test('artefact page steps through the list it was opened from', function () {
         ->where('navigation.next', null)
         ->where('navigation.position', '2 of 2'));
 });
+
+test('moving a family into a department that already has its code is a validation error', function () {
+    $from = StoreArtefactDepartment::make()->action($this->production, ['code' => 'DUPFROM', 'name' => 'Dup from']);
+    $to   = StoreArtefactDepartment::make()->action($this->production, ['code' => 'DUPTO', 'name' => 'Dup to']);
+    StoreArtefactFamily::make()->action($to, ['code' => 'DUPCLAY', 'name' => 'Clay there']);
+    $family = StoreArtefactFamily::make()->action($from, ['code' => 'DUPCLAY', 'name' => 'Clay here']);
+
+    expect(fn () => \App\Actions\Production\ArtefactFamily\UpdateArtefactFamily::make()->action($family, ['artefact_department_id' => $to->id]))
+        ->toThrow(ValidationException::class)
+        ->and(fn () => \App\Actions\Production\ArtefactFamily\UpdateArtefactFamily::make()->action($family, ['code' => 'dupclay', 'artefact_department_id' => $to->id]))
+        ->toThrow(ValidationException::class)
+        ->and($family->refresh()->artefact_department_id)->toBe($from->id);
+});

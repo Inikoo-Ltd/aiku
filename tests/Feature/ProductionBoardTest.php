@@ -224,6 +224,8 @@ test('mixes to prepare are derived from open job orders and become job orders', 
         ->and($missing[0]['code'])->toBe('MIX-BASE')
         ->and($missing[0]['needed'])->toBe(5.0)
         ->and($missing[0]['on_hand'])->toBe(2.0);
+    $lines = $jobOrder->jobOrderItems()->get()->push($created[0]->jobOrderItems()->first());
+    expect(GetJobOrderItemMissingMixes::make()->forJobOrderItems($lines))->toBe($lines->mapWithKeys(fn (JobOrderItem $line) => [$line->id => GetJobOrderItemMissingMixes::run($line)])->all());
 
     $mix->update(['quantity_on_location' => 50]);
     expect(GetJobOrderItemMissingMixes::run($jobOrder->jobOrderItems()->first()))->toBe([]);
@@ -1896,4 +1898,9 @@ test('a fill line follows its order line: quantity changes, removal and cancelli
     \App\Actions\Production\JobOrder\FillToOrder::make()->dismissForCancelledOrder($order->refresh());
     expect($rest->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
         ->and($rest->dismiss_reason)->toBe('order cancelled');
+});
+
+test('job orders from to-produce refuse ids beyond the integer range', function () {
+    expect(fn () => \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [1792585086231]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
 });

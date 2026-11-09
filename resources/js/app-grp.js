@@ -23,6 +23,7 @@ import ConfirmationService from "primevue/confirmationservice";
 import { ZiggyVue, route as ziggyRoute } from "ziggy-js";
 import { setAgentOrganisations, withAgentRoutes } from "@/Composables/useAgentRoutes";
 import { cacheCurrentRoute } from "@/Composables/cacheCurrentRoute";
+import { reloadOnNewBuild } from "@/Composables/reloadOnNewBuild";
 import { ctrans } from "@/Composables/useTrans";
 import { skipUnchangedTooltips } from "@/Composables/skipUnchangedTooltips";
 import { sentryDenyUrls, sentryIgnoreErrors } from "@/Composables/sentryNoise";
@@ -86,6 +87,7 @@ const MyPreset = definePreset(Aura, {
 router.on("before", (event) => {
   event.detail.visit.headers["X-Current-Url"] = window.location.href;
 });
+reloadOnNewBuild(router);
 trackVisitStarts(router);
 prefetchInboxListOnVisit(router);
 

@@ -149,6 +149,7 @@ use App\Actions\CRM\Appointment\Zoom\ZoomClient;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -3334,6 +3335,42 @@ describe('EU VAT re-validation (HELP-2374)', function () {
         $this->artisan('repair:eu-tax-numbers --country=ES --dry-run')
             ->expectsOutputToContain($matching.' invalid or unchecked EU VAT numbers match')
             ->assertSuccessful();
+    });
+
+    test('the daily re-check keeps going after a VIES fault', function () use ($storeTaxNumber) {
+        $taxNumber = $storeTaxNumber->call($this, 'B12345678');
+        $taxNumber->update(['valid' => false, 'status' => TaxNumberStatusEnum::UNKNOWN, 'checked_at' => null, 'external_service_failed_at' => null]);
+
+        $viesClient = new class () extends SoapClient {
+            public function __construct()
+            {
+            }
+
+            public function checkVat(array $request): never
+            {
+                throw new SoapFault('Server', 'MS_MAX_CONCURRENT_REQ');
+            }
+        };
+
+        $action = new class ($viesClient) extends ValidateEuropeanTaxNumber {
+            public function __construct(private readonly SoapClient $viesClient)
+            {
+                parent::__construct();
+            }
+
+            protected function getClient(): SoapClient
+            {
+                return $this->viesClient;
+            }
+        };
+        Artisan::all();
+        app()->instance(ValidateEuropeanTaxNumber::class, $action);
+
+        $this->artisan('repair:eu-tax-numbers --country=ES --limit=1 --sleep=0')
+            ->expectsOutputToContain('checked 1, recovered 0, VIES faults 1')
+            ->assertSuccessful();
+
+        app()->forgetInstance(ValidateEuropeanTaxNumber::class);
     });
 
     test('a delayed re-check does not schedule further re-checks', function () use ($storeTaxNumber) {

@@ -1,0 +1,60 @@
+<resources>
+    <string name="inventory_title">Inventory</string>
+    <string name="inventory_kicker">Inventory · %1$s</string>
+    <string name="inventory_section_families">SKUs Families</string>
+    <string name="inventory_section_skus">SKUs</string>
+
+    <string name="inventory_status_excess">Excess</string>
+    <string name="inventory_status_ideal">Ideal</string>
+    <string name="inventory_status_low">Low</string>
+    <string name="inventory_status_critical">Critical</string>
+    <string name="inventory_status_out_of_stock">Out of stock</string>
+    <string name="inventory_filter_all">All</string>
+    <string name="inventory_filter_with_count">%1$s %2$s</string>
+
+    <string name="inventory_skus_search">Reference or name</string>
+    <string name="inventory_skus_sorted">Sorted by reference</string>
+    <string name="inventory_skus_columns">Stock · unit value</string>
+    <string name="inventory_showing">Showing %1$s of %2$s · scroll for more</string>
+
+    <string name="inventory_dashboard_title">Dashboard</string>
+    <string name="inventory_dashboard_skus">SKUs</string>
+    <string name="inventory_dashboard_in_families">in %1$s families</string>
+    <string name="inventory_dashboard_stock_value">Stock value</string>
+    <string name="inventory_dashboard_at_unit_value">at unit value</string>
+    <string name="inventory_dashboard_stock_status">Stock status</string>
+    <string name="inventory_dashboard_movements_today">Stock movements today</string>
+    <string name="inventory_dashboard_movement_in">In</string>
+    <string name="inventory_dashboard_movement_out">Out</string>
+    <string name="inventory_dashboard_movement_transfers">Transfers</string>
+    <string name="inventory_dashboard_movement_adjustments">Adjust.</string>
+    <string name="inventory_dashboard_needs_attention">Needs attention</string>
+
+    <string name="inventory_families_search">Family code or name</string>
+    <string name="inventory_families_sorted">Sorted by code</string>
+    <string name="inventory_families_columns">SKUs · stock value</string>
+
+    <string name="inventory_family_kicker">SKU family</string>
+    <string name="inventory_family_skus">SKUs</string>
+    <string name="inventory_family_units">Units</string>
+    <string name="inventory_family_stock_value">Stock value</string>
+
+    <string name="inventory_sku_kicker">SKU</string>
+    <string name="inventory_sku_tab_overview">Overview</string>
+    <string name="inventory_sku_tab_stock_history">Stock history</string>
+    <string name="inventory_sku_tab_supplier_product">Supplier product</string>
+    <string name="inventory_sku_tab_products">Products</string>
+    <string name="inventory_sku_tab_images">Images</string>
+    <string name="inventory_sku_more_actions">More actions</string>
+    <string name="inventory_sku_image">Image</string>
+    <string name="inventory_sku_family">Family %1$s</string>
+    <string name="inventory_sku_unit_value">Unit value %1$s</string>
+    <string name="inventory_sku_stock">Stock</string>
+    <string name="inventory_sku_locations">Locations</string>
+    <string name="inventory_sku_stock_value">Stock value</string>
+    <string name="inventory_sku_picking">Picking</string>
+    <string name="inventory_sku_stock_history">Stock history</string>
+    <string name="inventory_sku_view_all">View all</string>
+    <string name="inventory_sku_adjustment">Adjustment</string>
+    <string name="inventory_sku_transfer">Location transfer</string>
+</resources>
