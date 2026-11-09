@@ -53,9 +53,9 @@ Se a associação falhar, a linha diz "Your product is not in the listing yet" (
 A tua <b>Pricing Policy</b> em <b>Manage Sales Channel</b> define o preço no eBay de todos os produtos a partir do RRP em tempo real:
 
 - <b>± % over live RRP</b> ou <b>± £ over live RRP</b> (€ nas lojas Europe e España): definimos o preço e mantemo-lo em sincronia quando o RRP muda. Quando gravas uma regra nova, perguntamos-te <b>Reprice every product?</b>. Clica em <b>Save and reprice</b> para atualizares todos os preços no eBay. Os produtos onde definiste o teu próprio preço não são tocados, a menos que marques também a caixa para os repores.
-- <b>Do not follow RRP</b>: defines os preços tu mesmo no eBay. Nunca os carregamos nem substituímos.
+- <b>Do not follow RRP</b>: defines os preços tu mesmo no eBay. Só enviamos um preço quando o produto é criado no eBay ou quando mudas o preço de um rascunho em <b>Edit Product</b>; depois de publicado, nunca o mudamos. Os rascunhos não aparecem no Seller Hub, por isso define o preço de um rascunho na janela <b>Edit Product</b> antes de o publicares.
 
-Para dares a alguns produtos o seu próprio preço, marca-os e clica em <b>Edit Price (…)</b>. Para mudar o título, a descrição ou o preço de um produto, clica no botão de editar na sua linha. A janela <b>Edit Product</b> tem <b>Title</b>, <b>Price Mapping</b> e <b>Description</b>. Clica em <b>Save & Publish</b> para enviares as alterações ao eBay agora, ou <b>Save as Draft</b>. O preço tem de continuar acima de zero.
+Para dares a alguns produtos o seu próprio preço, marca-os e clica em <b>Edit Price (…)</b>. Para mudar o título, a descrição ou o preço de um produto, clica no botão de editar na sua linha. A janela <b>Edit Product</b> tem <b>Title</b>, <b>Price Mapping</b> e <b>Description</b>. Clica em <b>Save & Publish</b> para enviares as alterações ao eBay agora, ou <b>Save as Draft</b>. O preço tem de continuar acima de zero. Num rascunho, <b>Save & Publish</b> também o publica no eBay com o título e o preço guardados.
 
 ## Stock
 

@@ -53,9 +53,9 @@ Se l'abbinamento fallisce, la riga dice "Your product is not in the listing yet"
 La tua <b>Pricing Policy</b> in <b>Manage Sales Channel</b> imposta il prezzo eBay di ogni prodotto a partire dal suo RRP corrente:
 
 - <b>± % over live RRP</b> o <b>± £ over live RRP</b> (€ nei negozi Europe e España): impostiamo il prezzo e lo teniamo allineato quando l'RRP cambia. Quando salvi una nuova regola ti viene chiesto <b>Reprice every product?</b>. Premi <b>Save and reprice</b> per aggiornare tutti i prezzi su eBay. I prodotti a cui hai impostato un prezzo tuo non vengono toccati, a meno che tu non spunti anche la casella per azzerarli.
-- <b>Do not follow RRP</b>: imposti i prezzi tu stesso su eBay. Non li carichiamo né li sovrascriviamo mai.
+- <b>Do not follow RRP</b>: imposti i prezzi tu stesso su eBay. Inviamo un prezzo solo quando il prodotto viene creato su eBay o quando cambi il prezzo di una bozza in <b>Edit Product</b>; una volta pubblicato non lo cambiamo mai. Le bozze non compaiono in Seller Hub, quindi imposta il prezzo di una bozza nella finestra <b>Edit Product</b> prima di pubblicarla.
 
-Per dare a certi prodotti un prezzo tutto loro, spuntali e premi <b>Edit Price (…)</b>. Per cambiare titolo, descrizione o prezzo di un prodotto, premi il pulsante di modifica sulla sua riga. La finestra <b>Edit Product</b> ha <b>Title</b>, <b>Price Mapping</b> e <b>Description</b>. Premi <b>Save & Publish</b> per inviare subito le modifiche a eBay, oppure <b>Save as Draft</b>. Il prezzo deve restare sopra zero.
+Per dare a certi prodotti un prezzo tutto loro, spuntali e premi <b>Edit Price (…)</b>. Per cambiare titolo, descrizione o prezzo di un prodotto, premi il pulsante di modifica sulla sua riga. La finestra <b>Edit Product</b> ha <b>Title</b>, <b>Price Mapping</b> e <b>Description</b>. Premi <b>Save & Publish</b> per inviare subito le modifiche a eBay, oppure <b>Save as Draft</b>. Il prezzo deve restare sopra zero. Su una bozza, <b>Save & Publish</b> la pubblica anche su eBay con il titolo e il prezzo salvati.
 
 ## Stock
 

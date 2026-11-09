@@ -53,9 +53,9 @@ Si la correspondance échoue, la ligne indique « Your product is not in the lis
 Votre <b>Pricing Policy</b> dans <b>Manage Sales Channel</b> fixe le prix eBay de chaque produit à partir de son PVC en direct :
 
 - <b>± % over live RRP</b> ou <b>± £ over live RRP</b> (€ sur les boutiques Europe et España) : nous fixons le prix et le suivons quand le PVC change. Quand vous enregistrez une nouvelle règle, on vous demande <b>Reprice every product?</b>. Appuyez sur <b>Save and reprice</b> pour mettre à jour tous les prix sur eBay. Les produits pour lesquels vous fixez votre propre prix ne sont pas touchés, sauf si vous cochez aussi la case pour les réinitialiser.
-- <b>Do not follow RRP</b> : vous fixez vous-même les prix sur eBay. Nous ne les envoyons ni ne les écrasons jamais.
+- <b>Do not follow RRP</b> : vous fixez vous-même les prix sur eBay. Nous n'envoyons un prix que quand le produit est créé sur eBay ou quand vous changez le prix d'un brouillon dans <b>Edit Product</b> ; une fois publié, nous ne le changeons jamais. Les brouillons n'apparaissent pas dans Seller Hub : fixez le prix d'un brouillon dans la fenêtre <b>Edit Product</b> avant de le publier.
 
-Pour donner leur propre prix à certains produits, cochez-les et appuyez sur <b>Edit Price (…)</b>. Pour changer le titre, la description ou le prix d'un produit, appuyez sur le bouton d'édition sur sa ligne. La fenêtre <b>Edit Product</b> comporte <b>Title</b>, <b>Price Mapping</b> et <b>Description</b>. Appuyez sur <b>Save & Publish</b> pour envoyer les changements à eBay tout de suite, ou sur <b>Save as Draft</b>. Le prix doit rester supérieur à zéro.
+Pour donner leur propre prix à certains produits, cochez-les et appuyez sur <b>Edit Price (…)</b>. Pour changer le titre, la description ou le prix d'un produit, appuyez sur le bouton d'édition sur sa ligne. La fenêtre <b>Edit Product</b> comporte <b>Title</b>, <b>Price Mapping</b> et <b>Description</b>. Appuyez sur <b>Save & Publish</b> pour envoyer les changements à eBay tout de suite, ou sur <b>Save as Draft</b>. Le prix doit rester supérieur à zéro. Sur un brouillon, <b>Save & Publish</b> le publie aussi sur eBay avec le titre et le prix enregistrés.
 
 ## Stock
 

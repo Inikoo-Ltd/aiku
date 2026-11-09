@@ -36,6 +36,7 @@ use App\Actions\Dropshipping\Ebay\UpdateShippingPolicyEbayUser;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInEbayPortfolio;
 use App\Actions\Maintenance\Dropshipping\SyncEbayChannelPoliciesFromEbay;
+use App\Actions\Retina\Dropshipping\Portfolio\UpdateAndUploadRetinaPortfolioToCurrentChannel;
 use App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
 use App\Events\UploadProductToSalesChannelProgressEvent;
@@ -1469,6 +1470,53 @@ test('publishing a draft records the listing id and switches the portfolio live'
         ->and($portfolio->platform_status)->toBeTrue()
         ->and(Arr::get($portfolio->data, 'is_platform_draft'))->toBeFalse()
         ->and($portfolio->upload_warning)->toBeNull();
+});
+
+test('a draft price typed in on a Do not follow RRP channel reaches the eBay draft, and Save & Publish publishes it', function () {
+    $ebayUser = ebayChannel($this);
+    $ebayUser->customerSalesChannel->update(['settings' => ['do_not_update_prices' => true, 'upload_as_draft' => true]]);
+    $portfolio = listedEbayPortfolio($this, $ebayUser);
+    $portfolio->update(['platform_status' => false, 'platform_product_variant_id' => null, 'data' => ['is_platform_draft' => true]]);
+
+    $ebayRoutes = [
+        '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 200, 'offerId' => 'offer-1', 'sku' => 'sku-on-ebay']]],
+        '/publish'                    => ['listingId' => '777000222'],
+        '/sell/inventory/v1/offer'    => ebayOfferRoutes(),
+        '/inventory_item/'            => ebayInventoryItemRoute(),
+    ];
+
+    fakeEbay($this, $ebayRoutes);
+    UpdateAndUploadRetinaPortfolioToCurrentChannel::make()->handle($portfolio->refresh(), ['customer_price' => '24.50'], true);
+
+    expect(Arr::get(sentEbayRequest('POST', '/sell/inventory/v1/bulk_update_price_quantity')->data(), 'requests.0.offers.0.price.value'))->toBe('24.50');
+    Http::assertNotSent(fn (Request $request) => str_ends_with($request->url(), '/publish'));
+
+    fakeEbay($this, $ebayRoutes);
+    UpdateAndUploadRetinaPortfolioToCurrentChannel::make()->handle($portfolio->refresh(), []);
+
+    Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'bulk_update_price_quantity') && filled(Arr::get($request->data(), 'requests.0.offers.0.price')));
+    $portfolio->refresh();
+    expect(sentEbayRequest('POST', '/sell/inventory/v1/offer/offer-1/publish'))->not->toBeNull()
+        ->and($portfolio->platform_product_variant_id)->toBe('777000222')
+        ->and(Arr::get($portfolio->data, 'is_platform_draft'))->toBeFalse();
+});
+
+test('a draft whose price eBay refuses is not published by Save & Publish', function () {
+    $ebayUser  = ebayChannel($this);
+    $portfolio = listedEbayPortfolio($this, $ebayUser);
+    $portfolio->update(['platform_status' => false, 'platform_product_variant_id' => null, 'data' => ['is_platform_draft' => true]]);
+
+    fakeEbay($this, [
+        '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 400, 'errors' => [['errorId' => 25002, 'message' => 'Price is too low']]]]],
+        '/publish'                    => ['listingId' => '777000333'],
+        '/sell/inventory/v1/offer'    => ebayOfferRoutes(),
+    ]);
+
+    expect(fn () => UpdateAndUploadRetinaPortfolioToCurrentChannel::make()->handle($portfolio->refresh(), ['customer_price' => '0.10']))
+        ->toThrow(ValidationException::class);
+
+    Http::assertNotSent(fn (Request $request) => str_ends_with($request->url(), '/publish'));
+    expect($portfolio->refresh()->platform_product_variant_id)->toBeNull();
 });
 
 test('publishing a draft eBay refuses explains the seller registration problem', function () {
