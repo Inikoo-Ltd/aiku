@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LoginView: View {
     var onSignIn: () -> Void = {}
+    var onSignInWithPasskey: () -> Void = {}
 
     @State private var form = LoginForm()
     @State private var isPasswordVisible = false
@@ -17,7 +18,11 @@ struct LoginView: View {
             VStack(spacing: 32) {
                 header
                 fields
-                signInButton
+                VStack(spacing: 16) {
+                    signInButton
+                    divider
+                    passkeyButton
+                }
             }
             .padding(.horizontal, 24)
             .padding(.top, 72)
@@ -102,6 +107,30 @@ struct LoginView: View {
         .buttonStyle(.borderedProminent)
         .disabled(!form.canSubmit)
         .accessibilityIdentifier("login.submit")
+    }
+
+    private var divider: some View {
+        HStack(spacing: 12) {
+            Rectangle().fill(Color(.separator)).frame(height: 1)
+            Text("or")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Rectangle().fill(Color(.separator)).frame(height: 1)
+        }
+    }
+
+    private var passkeyButton: some View {
+        Button {
+            focusedField = nil
+            onSignInWithPasskey()
+        } label: {
+            Label("Sign in with passkey", systemImage: "person.badge.key")
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityIdentifier("login.passkey")
     }
 
     private func submit() {

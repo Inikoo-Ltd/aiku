@@ -5,15 +5,28 @@ struct RootView: View {
 
     var body: some View {
         if isSignedIn {
-            NavigationStack {
-                HomeView()
-            }
+            MainView()
+                .environment(\.signOut, SignOutAction { isSignedIn = false })
         } else {
-            LoginView {
-                isSignedIn = true
-            }
+            LoginView(
+                onSignIn: { isSignedIn = true },
+                onSignInWithPasskey: { isSignedIn = true }
+            )
         }
     }
+}
+
+struct SignOutAction {
+    let action: @MainActor () -> Void
+
+    @MainActor
+    func callAsFunction() {
+        action()
+    }
+}
+
+extension EnvironmentValues {
+    @Entry var signOut = SignOutAction {}
 }
 
 #Preview {
