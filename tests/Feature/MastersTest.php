@@ -4820,7 +4820,7 @@ describe('competitor prices, HELP-3605', function () {
                 ->where('dashboard.throughput.confirmed.this_week', fn ($n) => $n >= 1)
                 ->where('dashboard.by_master_shop', fn ($shops) => ($shop = collect($shops->toArray())->firstWhere('slug', $this->competitorMasterShop->slug))
                     && $shop['dearer'] === 1 && $shop['cheaper'] === 0 && $shop['median_difference'] === -20 && $shop['products_with_price'] === 1)
-                ->where('dashboard.trend', fn ($weeks) => count($weeks) === 12 && collect($weeks->toArray())->last()['confirmed'] >= 1)
+                ->where('dashboard.trend', fn ($days) => count($days) === 30 && collect($days->toArray())->last()['confirmed'] >= 1)
                 ->where('they_cheaper.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray())['difference'] === -20)
                 ->where('we_cheaper.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray()) === null)
                 ->where('competitors.data', fn ($rows) => ($competitor = collect($rows->toArray())->firstWhere('id', $this->competitor->id)) && $competitor['number_confirmed'] === 1 && $competitor['median_difference'] === -20)

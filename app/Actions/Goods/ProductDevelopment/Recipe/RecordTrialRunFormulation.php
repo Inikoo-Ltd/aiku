@@ -26,6 +26,7 @@ use App\Models\Production\RawMaterial;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -98,13 +99,31 @@ class RecordTrialRunFormulation extends OrgAction
      */
     public static function isNeededToStart(JobOrder $jobOrder): bool
     {
-        return $jobOrder->isRequestedByDevelopment()
-            && !self::isRecorded($jobOrder)
-            && !ManufactureTaskSession::where('state', '!=', ManufactureTaskSessionStateEnum::VOIDED)
-                ->where(fn ($query) => $query
-                    ->whereIn('job_order_item_task_id', JobOrderItemTask::where('job_order_id', $jobOrder->id)->select('id'))
-                    ->orWhereIn('id', ManufactureTaskSessionShare::whereIn('job_order_item_task_id', JobOrderItemTask::where('job_order_id', $jobOrder->id)->select('id'))->select('manufacture_task_session_id')))
-                ->exists();
+        return in_array($jobOrder->id, self::jobOrdersNeedingFormulation(collect([$jobOrder])), true);
+    }
+
+    /**
+     * The ids of the job orders among these that cannot start before their formulation is recorded, in one query.
+     *
+     * @param  Collection<int, JobOrder>  $jobOrders
+     * @return array<int, int>
+     */
+    public static function jobOrdersNeedingFormulation(Collection $jobOrders): array
+    {
+        $waiting = $jobOrders->filter(fn (JobOrder $jobOrder) => $jobOrder->isRequestedByDevelopment() && !self::isRecorded($jobOrder))->pluck('id')->unique()->values();
+        if ($waiting->isEmpty()) {
+            return [];
+        }
+
+        $tasks   = JobOrderItemTask::whereIn('job_order_id', $waiting);
+        $started = JobOrderItemTask::whereIn('job_order_item_tasks.id', (clone $tasks)->select('id'))
+            ->where(fn ($query) => $query
+                ->whereIn('job_order_item_tasks.id', ManufactureTaskSession::where('state', '!=', ManufactureTaskSessionStateEnum::VOIDED)->whereNotNull('job_order_item_task_id')->select('job_order_item_task_id'))
+                ->orWhereIn('job_order_item_tasks.id', ManufactureTaskSessionShare::whereIn('manufacture_task_session_id', ManufactureTaskSession::where('state', '!=', ManufactureTaskSessionStateEnum::VOIDED)->select('id'))->select('job_order_item_task_id')))
+            ->distinct()
+            ->pluck('job_order_id');
+
+        return $waiting->diff($started)->values()->all();
     }
 
     public function handle(JobOrder $jobOrder, User $user, array $modelData): JobOrder
@@ -131,8 +150,9 @@ class RecordTrialRunFormulation extends OrgAction
                 }
             }
 
-            $recipe = ProductDevelopmentRecipes::recipe($artefact->fresh());
-            $notes  = trim((string) ($modelData['notes'] ?? '')) ?: null;
+            $recipe        = ProductDevelopmentRecipes::recipe($artefact->fresh());
+            $notes         = trim((string) ($modelData['notes'] ?? '')) ?: null;
+            $previousNotes = $jobOrder->data['formulation']['notes'] ?? null;
 
             $jobOrder->update(['data' => [
                 ...($jobOrder->data ?? []),
@@ -144,7 +164,7 @@ class RecordTrialRunFormulation extends OrgAction
                 ],
             ]]);
 
-            $sample->update(['recipe' => $recipe]);
+            $sample->update(['recipe' => $recipe, 'notes' => self::sampleNotes($sample->notes, $previousNotes, $notes)]);
 
             RecordProductDevelopmentActivity::record($sample->productDevelopment, RecordProductDevelopmentActivity::TRIAL_RUN_FORMULATED, [], [
                 'sample'    => ProductDevelopmentRecipes::label($sample),
@@ -232,6 +252,20 @@ class RecordTrialRunFormulation extends OrgAction
         $this->initialisationFromProduction($jobOrder->production, $modelData);
 
         return $this->handle($jobOrder, $user, $this->validatedData);
+    }
+
+    /**
+     * The trial run's notes on the formulation with what the artisan wrote: the development team's own notes stay,
+     * and the artisan's previous note is replaced when they change the formulation.
+     */
+    public static function sampleNotes(?string $current, ?string $previousNotes, ?string $notes): ?string
+    {
+        $current = trim((string) $current);
+        if ($previousNotes !== null && str_ends_with($current, $previousNotes)) {
+            $current = trim(substr($current, 0, -strlen($previousNotes)));
+        }
+
+        return implode("\n\n", array_filter([$current, $notes])) ?: null;
     }
 
     /**
