@@ -35,7 +35,7 @@ class SaveChatReplyDraft
 
     public function handle(ChatSession $chatSession, ChatAgent $agent, string $text): ?ChatReplyDraft
     {
-        if (trim($text) === '') {
+        if (trim($text) === '' || $this->isAiDraft($chatSession, $text)) {
             $this->forget($chatSession, $agent);
 
             return null;
@@ -51,6 +51,15 @@ class SaveChatReplyDraft
         }
 
         return $draft;
+    }
+
+    /**
+     * Aiku's draft word for word is not anybody's reply yet (HELP-4587): a copy of it left in a
+     * browser from before HELP-4523 would otherwise show as a colleague's draft.
+     */
+    private function isAiDraft(ChatSession $chatSession, string $text): bool
+    {
+        return $chatSession->aiDrafts()->whereRaw('trim(text) = ?', [trim($text)])->exists();
     }
 
     public function forget(ChatSession $chatSession, ChatAgent|int $agent): void

@@ -231,3 +231,42 @@ test('staff who do not work chat on the shop cannot read, write or take over its
     $this->actingAs($outsider)->patchJson(route('grp.org.chat.agents.sessions.reply_draft.take_over', $params), ['draft_id' => 1, 'agent_id' => 1])->assertForbidden();
     expect($session->replyDrafts()->count())->toBe(0);
 });
+
+test('Aiku\'s draft word for word is never saved as an agent\'s reply draft, and one that was is removed, HELP-4587', function () {
+    \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastChatListEvent::class]);
+
+    $lenka = ($this->newUser)();
+    makeChatWorker($lenka, $this->shop);
+
+    $session = \App\Models\Chat\ChatSession::create([
+        'ulid'             => (string) \Illuminate\Support\Str::ulid(),
+        'status'           => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::WAITING,
+        'guest_identifier' => 'guest_'.\Illuminate\Support\Str::random(5),
+        'language_id'      => 68,
+        'priority'         => \App\Enums\CRM\Livechat\ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    \App\Models\Chat\ChatAiDraft::create([
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'chat_session_id' => $session->id,
+        'topic'           => \App\Enums\CRM\Livechat\ChatTopicEnum::MISSING_OR_DAMAGED,
+        'intent'          => 'damaged_item',
+        'text'            => "Hi James,\n\nAustralia is outside our delivery area.",
+        'status'          => \App\Enums\CRM\Livechat\ChatAiDraftStatusEnum::DISCARDED,
+    ]);
+
+    $draftUrl = route('grp.org.chat.agents.sessions.reply_draft.update', [$this->organisation->slug, $session->ulid]);
+
+    $this->actingAs($lenka)->putJson($draftUrl, ['text' => "Hi James,\n\nAustralia is outside our delivery area.\n"])
+        ->assertOk()->assertJsonPath('saved', false);
+    expect($session->replyDrafts()->count())->toBe(0);
+
+    $this->actingAs($lenka)->putJson($draftUrl, ['text' => "Hi James,\n\nAustralia is outside our delivery area, sorry."])
+        ->assertOk()->assertJsonPath('saved', true);
+    $this->actingAs($lenka)->putJson($draftUrl, ['text' => "Hi James,\n\nAustralia is outside our delivery area.", 'existed' => true])
+        ->assertOk()->assertJsonPath('saved', false);
+    expect($session->replyDrafts()->count())->toBe(0);
+});

@@ -67,8 +67,8 @@ export const useChatReplyDraft = (sessionUlid: () => string | null | undefined, 
 
     const put = async (ulid: string, value: string) => {
         try {
-            await axios.put(draftRoute("update", ulid), { text: value, existed: serverHasMine.get(ulid) ?? false })
-            serverHasMine.set(ulid, !!value.trim())
+            const { data } = await axios.put(draftRoute("update", ulid), { text: value, existed: serverHasMine.get(ulid) ?? false })
+            serverHasMine.set(ulid, !!data?.saved)
             if (loadedFor === ulid) saveFailed.value = false
         } catch (error: any) {
             if (loadedFor !== ulid) return
