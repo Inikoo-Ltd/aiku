@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Deferred, Head, usePage } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import PartnerRescuableSummary, { type Rescuable } from "@/Components/Procurements/PartnerRescuableSummary.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -36,7 +36,6 @@ interface BuyerCard {
 	country_code: string | null
 	country_name: string | null
 	currency_code: string
-	rescuable: Rescuable
 	on_list: { lines: number; cost: number }
 	current: CurrentItem[]
 }
@@ -64,6 +63,12 @@ const shortDate = (date: string) => useFormatTime(date, { formatTime: "d MMM yyy
 
 const orderUrl = (buyer: BuyerCard) =>
 	route("grp.org.productions.show.intervention.order", [organisation, props.production, buyer.id])
+
+const leftOutUrl = (buyer: BuyerCard) =>
+	route("grp.org.productions.show.intervention.left_out", [organisation, props.production, buyer.id])
+
+const page = usePage()
+const rescuableOf = (buyer: BuyerCard) => page.props[`rescuable_${buyer.id}`] as Rescuable
 
 const stateClass = (item: CurrentItem) => {
 	if (item.type === "shopping_list" && item.state === "draft") {
@@ -112,20 +117,31 @@ const stateClass = (item: CurrentItem) => {
 			</div>
 
 			<div class="flex-1 space-y-3 px-4 py-3">
-				<PartnerRescuableSummary
-					:rescuable="buyer.rescuable"
-					:isHub="true"
-					:orgPartnerId="buyer.id"
-					:partnerName="buyer.name"
-					:currencyCode="buyer.currency_code"
-					:canCreate="can_order"
-					:onList="buyer.on_list"
-					:orderUrl="orderUrl(buyer)" />
-				<p
-					v-if="!buyer.rescuable.buckets.some((bucket) => bucket.count > 0)"
-					class="text-xs text-gray-500">
-					{{ ctrans("Nothing they need to order from us right now") }}
-				</p>
+				<Deferred :data="`rescuable_${buyer.id}`">
+					<template #fallback>
+						<div class="space-y-2">
+							<div class="skeleton h-14 rounded" />
+							<div class="skeleton h-24 rounded" />
+						</div>
+					</template>
+					<div class="space-y-3">
+						<PartnerRescuableSummary
+							:rescuable="rescuableOf(buyer)"
+							:isHub="true"
+							:orgPartnerId="buyer.id"
+							:partnerName="buyer.name"
+							:currencyCode="buyer.currency_code"
+							:canCreate="can_order"
+							:onList="buyer.on_list"
+							:orderUrl="orderUrl(buyer)"
+							:leftOutUrl="leftOutUrl(buyer)" />
+						<p
+							v-if="!rescuableOf(buyer).buckets.some((bucket) => bucket.count > 0)"
+							class="text-xs text-gray-500">
+							{{ ctrans("Nothing they need to order from us right now") }}
+						</p>
+					</div>
+				</Deferred>
 
 				<section class="overflow-hidden rounded-md ring-1 ring-gray-200">
 					<div

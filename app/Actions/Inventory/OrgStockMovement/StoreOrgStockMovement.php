@@ -112,6 +112,10 @@ class StoreOrgStockMovement extends OrgAction
 
         [$orgStockMovement, $locationOrgStock] = DB::transaction(function () use ($orgStock, $location, $modelData, $batches, &$runningQuantity, &$runningQuantityOrg) {
             $locationOrgStock = LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStock->id)->lockForUpdate()->first();
+            $locationOrgStock?->setRelation('orgStock', $orgStock)->setRelation('location', $location);
+            if ($locationOrgStock?->organisation_id === $orgStock->organisation_id) {
+                $locationOrgStock->setRelation('organisation', $orgStock->organisation);
+            }
 
             /** @var OrgStockMovement $orgStockMovement */
             $orgStockMovement = $orgStock->orgStockMovements()->create($modelData);
@@ -154,6 +158,7 @@ class StoreOrgStockMovement extends OrgAction
             CalculateValueLocationOrgStock::dispatch($locationOrgStock->id);
         }
 
+        $orgStockMovement->setRelation('orgStock', $orgStock);
         $this->hydrateOrgStockMovement($orgStockMovement);
 
         $process?->update(

@@ -19,6 +19,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -185,26 +186,20 @@ class GetPartnerStockCoverBuckets
      *
      * @return array{order: array{lines: int, cost: float}, buckets: array<int, array{bucket: string, label: string, tone: string, count: int, bestsellers: int, lost: float, cost: float, order_lines: int, order_cost: float, cheapest: float, order_cheapest: float}>, top: array<int, array<string, mixed>>}
      */
-    public function rescuable(OrgPartner $orgPartner, int $topLimit = 20): array
+    public function rescuable(OrgPartner $orgPartner, int $topLimit = 20, bool $withLeftOut = true): array
     {
         $leadTime = GetPartnerLeadTime::run($orgPartner);
-        [$query, $expression, $spare] = $this->rescuableQuery($orgPartner, $leadTime['days']);
+        $spare = $this->spareExpression($orgPartner, $leadTime['days']);
+        $cost  = "{$this->rescueQuantity($spare, $leadTime['days'], $orgPartner)} * {$this->partnerSkoPrice()}";
 
-        $cost    = "{$this->rescueQuantity($spare, $leadTime['days'], $orgPartner)} * {$this->partnerSkoPrice()}";
-        $inOrder = $this->inRescueOrder();
+        $items = $this->rescueItems($orgPartner, $leadTime['days'])
+            ->selectRaw("($cost)::numeric as cost, {$this->inRescueOrder()} as in_order")
+            ->get();
 
-        $perSko = $query
-            ->selectRaw("$expression as bucket, os.health_rank, s.projected_lost_revenue as lost, $cost as cost, $inOrder as in_order")
-            ->offset(0);
-
-        $counts = DB::query()->fromSub($perSko, 'sko')
-            ->selectRaw("bucket, count(*) as total, count(*) filter (where health_rank in ('A', 'B')) as bestsellers, coalesce(sum(lost), 0) as lost, coalesce(sum(cost), 0) as cost, coalesce(sum(cost) filter (where in_order), 0) as order_cost, count(*) filter (where in_order) as order_lines, min(cost) filter (where cost > 0) as cheapest, min(cost) filter (where in_order and cost > 0) as order_cheapest")
-            ->groupBy('bucket')
-            ->get()
-            ->keyBy('bucket');
+        $counts = $items->groupBy('bucket')->map($this->bucketTotals(...));
 
         $exchange = $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner);
-        $leftOut  = $this->leftOut($orgPartner, $leadTime['days']);
+        $leftOut  = $withLeftOut ? $this->leftOut($orgPartner, $leadTime['days']) : null;
 
         $defaultCounts = $counts->only(self::DEFAULT_ORDER_BUCKETS);
 
@@ -225,10 +220,56 @@ class GetPartnerStockCoverBuckets
                 'order_cost'  => round((float) ($counts->get($bucket)->order_cost ?? 0) * $exchange, 2),
                 'cheapest'       => round((float) ($counts->get($bucket)->cheapest ?? 0) * $exchange, 2),
                 'order_cheapest' => round((float) ($counts->get($bucket)->order_cheapest ?? 0) * $exchange, 2),
-                'left_out'    => (object) ($leftOut[$bucket] ?? []),
+                ...($leftOut === null ? [] : ['left_out' => (object) ($leftOut[$bucket] ?? [])]),
             ])->all(),
-            'top'     => $topLimit ? $this->rescueItems($orgPartner, $leadTime['days'])->limit($topLimit)->get()->map($this->rescueItem(...))->all() : [],
+            'top'     => $items->take($topLimit)->map($this->rescueItem(...))->values()->all(),
         ];
+    }
+
+    /**
+     * Why the SKOs of each order bucket are left out of a rescue, for the Prepare order dialog of the
+     * cards that leave left_out out of rescuable() to load fast.
+     *
+     * @return array<string, object> bucket => reason => SKOs
+     */
+    public function rescueLeftOut(OrgPartner $orgPartner): array
+    {
+        $leftOut = $this->leftOut($orgPartner, GetPartnerLeadTime::run($orgPartner)['days']);
+
+        return collect($this->orderBuckets($orgPartner))->mapWithKeys(fn (string $bucket) => [$bucket => (object) ($leftOut[$bucket] ?? [])])->all();
+    }
+
+    /**
+     * One bucket's totals from its rescuable rows, the counts and the top items coming from one pass
+     * over the SKOs instead of two. Cost is cast to numeric in the query (it is worked out in double
+     * precision, which Postgres may print as 5e-05) and summed with bcmath, so no float drift is added.
+     *
+     * @param  Collection<int, object>  $rows
+     */
+    private function bucketTotals(Collection $rows): object
+    {
+        $exactSum = fn (Collection $values): string => $values->filter(fn ($value) => $value !== null)
+            ->reduce(fn (string $total, string $value) => bcadd($total, $value, self::scaleOf($total, $value)), '0');
+        $exactMin = fn (Collection $values): ?string => $values->filter(fn ($value) => $value !== null && bccomp($value, '0', self::scaleOf($value)) > 0)
+            ->reduce(fn (?string $least, string $value) => $least === null || bccomp($value, $least, self::scaleOf($least, $value)) < 0 ? $value : $least);
+
+        $inOrder = $rows->filter(fn (object $row) => (bool) $row->in_order);
+
+        return (object) [
+            'total'          => $rows->count(),
+            'bestsellers'    => $rows->whereIn('health_rank', ['A', 'B'])->count(),
+            'lost'           => $exactSum($rows->pluck('projected_lost_revenue')),
+            'cost'           => $exactSum($rows->pluck('cost')),
+            'order_cost'     => $exactSum($inOrder->pluck('cost')),
+            'order_lines'    => $inOrder->count(),
+            'cheapest'       => $exactMin($rows->pluck('cost')),
+            'order_cheapest' => $exactMin($inOrder->pluck('cost')),
+        ];
+    }
+
+    private static function scaleOf(string ...$numbers): int
+    {
+        return max(array_map(fn (string $number) => strlen(strrchr($number, '.') ?: '.') - 1, $numbers));
     }
 
     /**

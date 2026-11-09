@@ -2568,3 +2568,38 @@ test('a digital agency organisation runs a CRM only shop that no selling organis
     \App\Actions\SysAdmin\Organisation\HydrateOrganisations::run($digitalAgency);
     \App\Actions\SysAdmin\Organisation\HydrateOrganisations::run($this->organisation);
 });
+
+test('a change in available quantity is broadcast to the organisation staff screens', function () {
+    $shop    = Shop::orderBy('id')->first() ?? StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    $product = UpdateProduct::make()->action(
+        StoreProduct::make()->action($shop, array_merge(Product::factory()->definition(), ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 10])),
+        ['state' => ProductStateEnum::ACTIVE, 'is_for_sale' => true]
+    );
+
+    $orgStock         = $this->orgStock2;
+    $stockAttributes  = ['is_on_demand', 'has_been_in_warehouse', 'quantity_available'];
+    $originalOrgStock = $orgStock->only($stockAttributes);
+
+    try {
+        $orgStock->update(['is_on_demand' => false, 'has_been_in_warehouse' => true, 'quantity_available' => 7]);
+        $product->orgStocks()->sync([$orgStock->id => ['quantity' => 1]]);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+
+        \Illuminate\Support\Facades\Event::fake([\App\Events\BroadcastProductAvailability::class]);
+
+        $orgStock->update(['quantity_available' => 3]);
+        ProductHydrateAvailableQuantity::run($product->refresh());
+        ProductHydrateAvailableQuantity::run($product->refresh());
+
+        \Illuminate\Support\Facades\Event::assertDispatchedTimes(\App\Events\BroadcastProductAvailability::class, 1);
+        \Illuminate\Support\Facades\Event::assertDispatched(
+            \App\Events\BroadcastProductAvailability::class,
+            fn (\App\Events\BroadcastProductAvailability $event) => $event->data['product_id'] === $product->id
+                && (int) $event->data['available_quantity'] === 3
+                && $event->broadcastOn()->name === 'private-grp.'.$product->organisation->slug.'.product_availability'
+        );
+    } finally {
+        $orgStock->update($originalOrgStock);
+        $product->orgStocks()->detach();
+    }
+});

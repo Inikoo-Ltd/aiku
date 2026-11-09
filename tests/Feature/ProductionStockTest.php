@@ -1638,3 +1638,101 @@ test('HELP-4562 one mix and its Making cover every open line of any product that
     \App\Actions\Production\JobOrder\ReceiveJobOrderIntoStock::make()->action($carried->jobOrder->refresh(), ['location_id' => $goodsIn->id]);
     expect($powderLeft())->toBe($powderBefore);
 });
+
+test('INI-221 putting away a job order values every movement at FIFO in a bounded number of queries', function () {
+    $user = $this->guest->getUser();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)->delete();
+    $wacStartDate = $this->organisation->wac_calculations_start_date;
+    $this->organisation->update(['wac_calculations_start_date' => now()->subYear()->toDateString()]);
+    $this->beforeApplicationDestroyed(fn () => $this->organisation->update(['wac_calculations_start_date' => $wacStartDate]));
+
+    $newOrgStock = function (array $attributes = []) {
+        $stock    = \App\Actions\Goods\Stock\StoreStock::make()->action($this->group, array_merge(\App\Models\Goods\Stock::factory()->definition(), ['state' => \App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+        $orgStock = \App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($this->organisation, $stock);
+        $orgStock->update(['packed_in' => 1] + $attributes);
+
+        return $orgStock;
+    };
+
+    $warehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-I221', 'name' => 'INI-221 warehouse']);
+    $area      = \App\Actions\Inventory\WarehouseArea\StoreWarehouseArea::make()->action($warehouse, ['code' => 'A-I221', 'name' => 'INI-221 area']);
+    $shelf     = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'SHELF-I221', 'name' => 'INI-221 shelf'] + \App\Models\Inventory\Location::factory()->definition());
+    $store     = \App\Actions\Inventory\Location\StoreLocation::make()->action($area, ['code' => 'RM-I221', 'name' => 'INI-221 raw materials'] + \App\Models\Inventory\Location::factory()->definition());
+
+    $rawOrgStocks = collect(range(1, 4))->map(function (int $n) use ($newOrgStock, $store) {
+        $orgStock = $newOrgStock();
+        \App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock::make()->action($orgStock, $store, []);
+        foreach ([[10, 2 * $n], [10, 3 * $n]] as [$quantity, $costPerSku]) {
+            \App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement::make()->action($orgStock, $store, [
+                'quantity'   => $quantity,
+                'org_amount' => $quantity * $costPerSku,
+                'type'       => \App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum::PURCHASE,
+            ]);
+        }
+
+        $rawMaterial = StoreRawMaterial::make()->action($this->production, [
+            'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+            'state'       => RawMaterialStateEnum::ORPHAN->value,
+            'code'        => 'I221RM'.$n,
+            'description' => 'INI-221 raw material '.$n,
+            'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+            'unit_cost'   => 1,
+        ]);
+        UpdateRawMaterial::make()->action($rawMaterial, ['org_stock_id' => $orgStock->id]);
+
+        return [$orgStock, $rawMaterial];
+    });
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $finishedOrgStocks = [];
+    foreach (['I221-SOAP', 'I221-BOMB'] as $code) {
+        $finishedOrgStocks[$code] = $newOrgStock(['current_supplier_sku_cost' => 7]);
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code, 'name' => $code, 'org_stock_id' => $finishedOrgStocks[$code]->id]);
+        $artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+        $recipeStep = ArtefactManufactureTask::where('artefact_id', $artefact->id)->first();
+        foreach ($rawOrgStocks as [, $rawMaterial]) {
+            AttachRawMaterialToRecipeStep::make()->action($recipeStep, ['raw_material_id' => $rawMaterial->id, 'quantity_per_unit' => 0.5]);
+        }
+        StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 4]);
+    }
+    ConfirmJobOrder::make()->action($jobOrder);
+    foreach ($jobOrder->jobOrderItems as $item) {
+        CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $item->tasks()->first()), ['quantity_made' => 4, 'outcome' => 'complete']);
+    }
+
+    $lastMovementId = \App\Models\Inventory\OrgStockMovement::max('id');
+    $queries        = [];
+    \Illuminate\Support\Facades\DB::listen(function ($query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
+    \Illuminate\Support\Facades\Queue::fake();
+
+    \App\Actions\Dispatching\ProductionOutput\PutAwayFinishedJobOrder::make()->action($warehouse, [$jobOrder->id], 'SHELF-I221', true);
+    $queryCount = count($queries);
+
+    $orgStockCodes = collect($rawOrgStocks)->mapWithKeys(fn ($pair, $index) => [$pair[0]->id => 'RM'.($index + 1)])
+        ->union(collect($finishedOrgStocks)->mapWithKeys(fn ($orgStock, $code) => [$orgStock->id => $code]));
+    $movements = \App\Models\Inventory\OrgStockMovement::where('id', '>', $lastMovementId)->orderBy('id')->get()
+        ->map(fn ($movement) => implode(' ', [
+            $orgStockCodes[$movement->org_stock_id],
+            $movement->type->value,
+            ...array_map(fn ($field) => $field.'='.($movement->{$field} === null ? 'null' : round((float) $movement->{$field}, 3)), ['quantity', 'org_amount', 'grp_amount', 'running_quantity', 'running_quantity_org_stock', 'running_lpp_value', 'running_wac_value', 'running_fifo_value']),
+        ]))->all();
+
+    expect($jobOrder->refresh()->state)->toBe(JobOrderStateEnum::RECEIVED)
+        ->and($movements)->toBe([
+            'I221-SOAP associate quantity=0 org_amount=0 grp_amount=0 running_quantity=null running_quantity_org_stock=null running_lpp_value=null running_wac_value=null running_fifo_value=null',
+            'I221-SOAP production quantity=4 org_amount=28 grp_amount=28 running_quantity=4 running_quantity_org_stock=4 running_lpp_value=28 running_wac_value=28 running_fifo_value=28',
+            'RM1 production quantity=-2 org_amount=-5 grp_amount=-5 running_quantity=18 running_quantity_org_stock=18 running_lpp_value=54 running_wac_value=45 running_fifo_value=46',
+            'RM2 production quantity=-2 org_amount=-10 grp_amount=-10 running_quantity=18 running_quantity_org_stock=18 running_lpp_value=108 running_wac_value=90 running_fifo_value=92',
+            'RM3 production quantity=-2 org_amount=-15 grp_amount=-15 running_quantity=18 running_quantity_org_stock=18 running_lpp_value=162 running_wac_value=135 running_fifo_value=138',
+            'RM4 production quantity=-2 org_amount=-20 grp_amount=-20 running_quantity=18 running_quantity_org_stock=18 running_lpp_value=216 running_wac_value=180 running_fifo_value=184',
+            'I221-BOMB associate quantity=0 org_amount=0 grp_amount=0 running_quantity=null running_quantity_org_stock=null running_lpp_value=null running_wac_value=null running_fifo_value=null',
+            'I221-BOMB production quantity=4 org_amount=28 grp_amount=28 running_quantity=4 running_quantity_org_stock=4 running_lpp_value=28 running_wac_value=28 running_fifo_value=28',
+            'RM1 production quantity=-2 org_amount=-5.111 grp_amount=-5.111 running_quantity=16 running_quantity_org_stock=16 running_lpp_value=48 running_wac_value=40 running_fifo_value=42',
+            'RM2 production quantity=-2 org_amount=-10.222 grp_amount=-10.222 running_quantity=16 running_quantity_org_stock=16 running_lpp_value=96 running_wac_value=80 running_fifo_value=84',
+            'RM3 production quantity=-2 org_amount=-15.333 grp_amount=-15.333 running_quantity=16 running_quantity_org_stock=16 running_lpp_value=144 running_wac_value=120 running_fifo_value=126',
+            'RM4 production quantity=-2 org_amount=-20.444 grp_amount=-20.444 running_quantity=16 running_quantity_org_stock=16 running_lpp_value=192 running_wac_value=160 running_fifo_value=168',
+        ])
+        ->and($queryCount)->toBeLessThan(370);
+});
