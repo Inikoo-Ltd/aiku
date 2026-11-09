@@ -2964,6 +2964,42 @@ describe('partner shopping list', function () {
             ->assertHasErrors(['NOPE-999']);
     });
 
+    test('the ai assistant removes hub drafts and keeps a sko out of order suggestions, both revertible', function () {
+        $user = $this->adminGuest->getUser();
+        $user->update(['can_use_mcp' => true, 'can_use_mcp_procurement' => true]);
+        $this->orgPartner->partner->update(['is_manufacturing_hub' => true]);
+        $this->buyerOrgStock->update(['is_excluded_from_auto_ordering' => false]);
+        $tool      = fn (array $arguments) => App\Mcp\Servers\AikuServer::actingAs($user)->tool(App\Mcp\Tools\HubShoppingListTool::class, ['organisation' => $this->orgPartner->organisation->slug, 'request_text' => 'remove it and stop suggesting it', ...$arguments]);
+        $draftLine = fn () => PartnerShoppingListItem::draftPartnerLineFor($this->orgPartner->id, $this->buyerOrgStock->id)->first();
+
+        $tool(['lines' => [['sko' => $this->buyerOrgStock->code, 'quantity' => 2]]])->assertOk();
+        $draftId = $draftLine()->id;
+
+        $tool(['remove' => [$this->buyerOrgStock->code], 'do_not_auto_order' => [['sko' => $this->buyerOrgStock->code, 'value' => true]]])
+            ->assertOk()->assertSee(['"removed":1', 'remove_log_id', 'auto_order_log_id']);
+        expect($draftLine())->toBeNull()
+            ->and($this->buyerOrgStock->refresh()->is_excluded_from_auto_ordering)->toBeTrue();
+
+        $tool(['remove' => [$this->buyerOrgStock->code]])->assertOk()->assertSee('No draft in the basket');
+
+        $changes = App\Models\SysAdmin\McpChange::latest('id')->limit(2)->get()->keyBy(fn ($change) => $change->type->value);
+        expect($changes['org_stock_auto_ordering']->canBeRevertedBy($user))->toBeTrue()
+            ->and($changes['partner_shopping_list']->canBeRevertedBy($user))->toBeTrue();
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($changes['org_stock_auto_ordering'], $user);
+
+        $tool(['lines' => [['sko' => $this->buyerOrgStock->code, 'quantity' => 2]]])->assertOk();
+        $orderedAgain = $draftLine();
+        $orderedAgain->update(['state' => ShoppingListItemStateEnum::OPEN]);
+        expect(fn () => App\Actions\SysAdmin\McpChange\RevertMcpChange::run($changes['partner_shopping_list'], $user))->toThrow(ValidationException::class);
+        $orderedAgain->forceDelete();
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($changes['partner_shopping_list'], $user);
+        expect($this->buyerOrgStock->refresh()->is_excluded_from_auto_ordering)->toBeFalse()
+            ->and($draftLine()->id)->toBe($draftId);
+
+        $tool(['lines' => [['sko' => $this->buyerOrgStock->code, 'quantity' => 2]], 'remove' => [$this->buyerOrgStock->code]])->assertHasErrors(['Both set and removed']);
+    });
+
     test('only users enrolled to place orders let the ai assistant submit the hub basket and change sent lines', function () {
         $user         = $this->adminGuest->getUser();
         $organisation = $this->orgPartner->organisation;

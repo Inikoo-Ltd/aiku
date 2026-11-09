@@ -74,6 +74,7 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::STOCK_LOCATIONS => $this->stockLocations($target),
             McpChangeTypeEnum::PRODUCTION_SETUP => $this->productionSetup($target),
             McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->supplierProductLinks($target),
+            McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->orgStockAutoOrdering($target),
         };
     }
 
@@ -98,6 +99,12 @@ class GetMcpChangeSnapshot
         if ($type === McpChangeTypeEnum::ORG_STOCK_STATE) {
             return collect($snapshot['org_stocks'])
                 ->map(fn (array $orgStock) => $orgStock['code'].': '.$orgStock['state'].($orgStock['scheduled'] ? ' (scheduled '.$orgStock['scheduled']['to_state'].')' : ''))
+                ->implode(', ');
+        }
+
+        if ($type === McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING) {
+            return collect($snapshot['org_stocks'])
+                ->map(fn (array $orgStock) => $orgStock['code'].': '.($orgStock['do_not_auto_order'] ? 'kept out of order suggestions' : 'suggested'))
                 ->implode(', ');
         }
 
@@ -382,6 +389,19 @@ class GetMcpChangeSnapshot
                     'lines'     => (int) $purchaseOrder->number_lines,
                 ]])
                 ->all();
+    }
+
+    private function orgStockAutoOrdering(array $target): array
+    {
+        return [
+            'org_stocks' => OrgStock::whereIn('id', $target['org_stock_ids'])
+                ->orderBy('id')
+                ->get(['id', 'code', 'is_excluded_from_auto_ordering'])
+                ->mapWithKeys(fn (OrgStock $orgStock) => [
+                    $orgStock->id => ['code' => $orgStock->code, 'do_not_auto_order' => (bool) $orgStock->is_excluded_from_auto_ordering],
+                ])
+                ->all(),
+        ];
     }
 
     private function partnerShoppingList(array $target): array

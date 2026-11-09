@@ -8,6 +8,8 @@
 
 namespace App\Mcp\Tools;
 
+use App\Actions\Inventory\OrgStock\UpdateOrgStock;
+use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\SubmitPartnerShoppingList;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
@@ -35,7 +37,7 @@ use Laravel\Mcp\Server\Tool;
  * Submitting the basket and changing lines already sent are orders: they also need
  * can_use_mcp_place_orders.
  */
-#[Description('Shows, fills and submits the shopping list (the basket) an organisation sends to the manufacturing hub. Plan the quantities with hub-order-planning-tool first. Without lines, sent_lines or submit it only shows the list (draft and sent lines). With lines it sets the quantity (in SKOs) of each SKO code as a draft in the basket: a SKO already in the basket gets the new quantity, not an extra one. The hub does not see drafts until the basket is submitted. The hub makes whole production batches only, so each quantity is raised to the next multiple of whole batches (open_lines shows what was saved); breaking a batch is only possible by a person on the shopping list page. Lines the hub cannot take are reported as skipped with the reason. For users enrolled to place orders: submit=true sends every draft to the hub, which starts producing it; sent_lines changes the quantity of lines already sent that the hub has not started (can_still_change in open_lines). Changing a sent line is dangerous: the hub may already be planning materials and batches around it. The first call is refused with that warning; tell the user, and only after they insist call again with accept ["change_submitted"]. Orders cannot be undone from the AI changes log. Only write after the user confirmed the codes, quantities and the submit in their own words, passing their request text.')]
+#[Description('Shows, fills and submits the shopping list (the basket) an organisation sends to the manufacturing hub. Plan the quantities with hub-order-planning-tool first. Without lines, sent_lines or submit it only shows the list (draft and sent lines). With lines it sets the quantity (in SKOs) of each SKO code as a draft in the basket: a SKO already in the basket gets the new quantity, not an extra one. The hub does not see drafts until the basket is submitted. The hub makes whole production batches only, so each quantity is raised to the next multiple of whole batches (open_lines shows what was saved); breaking a batch is only possible by a person on the shopping list page. Lines the hub cannot take are reported as skipped with the reason. remove takes the drafts of those SKO codes out of the basket (lines already sent are orders: change them with sent_lines). do_not_auto_order sets, per SKO of the buying organisation, whether it is kept out of suggested quantities from the hub, partners and suppliers for good (true) or suggested again (false); it does not stop ordering it by name. remove and do_not_auto_order are logged in the AI changes log and can be reverted there. For users enrolled to place orders: submit=true sends every draft to the hub, which starts producing it; sent_lines changes the quantity of lines already sent that the hub has not started (can_still_change in open_lines). Changing a sent line is dangerous: the hub may already be planning materials and batches around it. The first call is refused with that warning; tell the user, and only after they insist call again with accept ["change_submitted"]. Orders cannot be undone from the AI changes log. Only write after the user confirmed the codes, quantities and the submit in their own words, passing their request text.')]
 class HubShoppingListTool extends Tool
 {
     use WithMcpPermissions;
@@ -49,13 +51,18 @@ class HubShoppingListTool extends Tool
             'lines.*.sko'           => ['required', 'string'],
             'lines.*.quantity'      => ['required', 'numeric', 'min:0.01'],
             'lines.*.notes'         => ['sometimes', 'nullable', 'string', 'max:500'],
+            'remove'                => ['sometimes', 'array', 'min:1', 'max:200'],
+            'remove.*'              => ['required', 'string'],
+            'do_not_auto_order'         => ['sometimes', 'array', 'min:1', 'max:200'],
+            'do_not_auto_order.*.sko'   => ['required', 'string'],
+            'do_not_auto_order.*.value' => ['required', 'boolean'],
             'sent_lines'            => ['sometimes', 'array', 'min:1', 'max:200'],
             'sent_lines.*.sko'      => ['required', 'string'],
             'sent_lines.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'submit'                => ['sometimes', 'boolean'],
             'accept'                => ['sometimes', 'array'],
             'accept.*'              => ['string'],
-            'request_text'          => ['required_with:lines,sent_lines', 'required_if_accepted:submit', 'string', 'max:4000'],
+            'request_text'          => ['required_with:lines,sent_lines,remove,do_not_auto_order', 'required_if_accepted:submit', 'string', 'max:4000'],
         ]);
 
         $placesOrder = $request->boolean('submit') || $request->has('sent_lines');
@@ -64,7 +71,9 @@ class HubShoppingListTool extends Tool
             return Response::error('The hub shopping list is not enabled for this user. Do not retry; an administrator enrols it on the user\'s edit page.');
         }
 
-        if ($request->has('lines') && !$request->user()?->can_use_mcp_procurement) {
+        $editsList = $request->hasAny(['lines', 'remove', 'do_not_auto_order']);
+
+        if ($editsList && !$request->user()?->can_use_mcp_procurement) {
             return Response::error('Filling the hub shopping list is not enabled for this user. Do not retry; an administrator enrols it on the user\'s edit page.');
         }
 
@@ -83,7 +92,7 @@ class HubShoppingListTool extends Tool
             return Response::error("{$organisation->code} does not buy from a manufacturing hub.");
         }
 
-        if (!$request->has('lines') && !$placesOrder) {
+        if (!$editsList && !$placesOrder) {
             return Response::json($this->summary($orgPartner));
         }
 
@@ -101,11 +110,27 @@ class HubShoppingListTool extends Tool
 
         $lines     = collect($request->get('lines', []))->keyBy(fn (array $line) => strtolower(trim($line['sko'])));
         $sentLines = collect($request->get('sent_lines', []))->keyBy(fn (array $line) => strtolower(trim($line['sko'])));
-        $orgStocks = $this->orgStocks($organisation, $orgPartner, $lines->keys()->merge($sentLines->keys())->unique());
+        $removals  = collect($request->get('remove', []))->map(fn (string $code) => strtolower(trim($code)))->unique()->values();
+        $autoOrder = collect($request->get('do_not_auto_order', []))->keyBy(fn (array $line) => strtolower(trim($line['sko'])));
+        $orgStocks = $this->orgStocks($organisation, $orgPartner, $lines->keys()->merge($sentLines->keys())->merge($removals)->merge($autoOrder->keys())->unique());
 
-        $missing = $lines->merge($sentLines)->diffKeys($orgStocks)->pluck('sko');
+        $missing = $lines->merge($sentLines)->merge($autoOrder)->diffKeys($orgStocks)->pluck('sko')->merge($removals->diff($orgStocks->keys()));
         if ($missing->isNotEmpty()) {
             return Response::error('Unknown SKO codes in '.$organisation->code.' or '.$orgPartner->partner->code.': '.$missing->implode(', ').'. Nothing was changed.');
+        }
+
+        $overlap = $lines->keys()->intersect($removals);
+        if ($overlap->isNotEmpty()) {
+            return Response::error('Both set and removed in the same call: '.$overlap->map(fn (string $code) => $orgStocks[$code]->code)->implode(', ').'. Nothing was changed.');
+        }
+
+        $buyerOrgStocks = OrgStock::where('organisation_id', $organisation->id)
+            ->whereIn('stock_id', $autoOrder->keys()->map(fn (string $code) => $orgStocks[$code]->stock_id)->all())
+            ->get()
+            ->keyBy('stock_id');
+        $notStocked = $autoOrder->keys()->reject(fn (string $code) => $buyerOrgStocks->has($orgStocks[$code]->stock_id));
+        if ($notStocked->isNotEmpty()) {
+            return Response::error("Not a SKO of {$organisation->code}, so nothing suggests it: ".$notStocked->map(fn (string $code) => $orgStocks[$code]->code)->implode(', ').'. Nothing was changed.');
         }
 
         $codesById = $orgStocks->pluck('code', 'id');
@@ -134,6 +159,52 @@ class HubShoppingListTool extends Tool
                     'reason' => $skipped['reason'],
                 ])->all(),
                 'over_budget'   => $result['over_budget'],
+            ];
+        }
+
+        if ($removals->isNotEmpty()) {
+            $this->mcpChange = null;
+            $removed = $this->recordChange(
+                $request,
+                McpChangeTypeEnum::PARTNER_SHOPPING_LIST,
+                "Drafts removed from the shopping list of {$organisation->code} to {$orgPartner->partner->code}: ".$removals->map(fn (string $code) => $orgStocks[$code]->code)->implode(', '),
+                ['org_partner_id' => $orgPartner->id, 'stock_ids' => $removals->map(fn (string $code) => $orgStocks[$code]->stock_id)->unique()->values()->all()],
+                fn () => $this->removeDrafts($orgPartner, $removals->map(fn (string $code) => $orgStocks[$code])),
+                ['organisation' => $organisation->code]
+            );
+
+            $response = [
+                ...$response,
+                'changed'        => ($response['changed'] ?? false) || $removed['removed'] > 0,
+                'removed'        => $removed['removed'],
+                'remove_skipped' => $removed['skipped'],
+                'remove_log_id'  => $this->mcpChange?->id,
+            ];
+        }
+
+        if ($autoOrder->isNotEmpty()) {
+            $this->mcpChange = null;
+            $targets = $autoOrder->map(fn (array $line, string $code) => [$buyerOrgStocks[$orgStocks[$code]->stock_id], (bool) $line['value']]);
+            $this->recordChange(
+                $request,
+                McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING,
+                "Order suggestions of {$organisation->code}: ".$targets->map(fn (array $target) => $target[0]->code.($target[1] ? ' kept out' : ' suggested'))->implode(', '),
+                ['organisation_id' => $organisation->id, 'org_stock_ids' => $targets->map(fn (array $target) => $target[0]->id)->unique()->values()->all()],
+                function () use ($targets) {
+                    foreach ($targets as [$orgStock, $doNotAutoOrder]) {
+                        if ((bool) $orgStock->is_excluded_from_auto_ordering !== $doNotAutoOrder) {
+                            UpdateOrgStock::make()->action($orgStock, ['is_excluded_from_auto_ordering' => $doNotAutoOrder]);
+                        }
+                    }
+                },
+                ['organisation' => $organisation->code]
+            );
+
+            $response = [
+                ...$response,
+                'changed'               => ($response['changed'] ?? false) || $this->mcpChange !== null,
+                'do_not_auto_order'     => $targets->mapWithKeys(fn (array $target) => [$target[0]->code => $target[1]])->all(),
+                'auto_order_log_id'     => $this->mcpChange?->id,
             ];
         }
 
@@ -218,6 +289,42 @@ class HubShoppingListTool extends Tool
     }
 
     /**
+     * @param  Collection<int, OrgStock>  $orgStocks
+     *
+     * @return array{removed: int, skipped: array<int, array{sko: string, reason: string}>}
+     */
+    private function removeDrafts(OrgPartner $orgPartner, Collection $orgStocks): array
+    {
+        $removed = 0;
+        $skipped = [];
+
+        foreach ($orgStocks as $orgStock) {
+            $drafts = PartnerShoppingListItem::where('org_partner_id', $orgPartner->id)
+                ->where('stock_id', $orgStock->stock_id)
+                ->where('state', ShoppingListItemStateEnum::DRAFT)
+                ->whereNull('job_order_id')
+                ->whereNull('pre_picked_at')
+                ->get();
+
+            if ($drafts->isEmpty()) {
+                $skipped[] = ['sko' => $orgStock->code, 'reason' => 'No draft in the basket; a line already sent is changed with sent_lines'];
+                continue;
+            }
+
+            foreach ($drafts as $draft) {
+                try {
+                    DeletePartnerShoppingListItem::make()->action($draft);
+                    $removed++;
+                } catch (HttpException $exception) {
+                    $skipped[] = ['sko' => $orgStock->code, 'reason' => $exception->getMessage()];
+                }
+            }
+        }
+
+        return ['removed' => $removed, 'skipped' => $skipped];
+    }
+
+    /**
      * @param  Collection<int, string>  $codes
      *
      * @return Collection<string, OrgStock>
@@ -274,6 +381,11 @@ class HubShoppingListTool extends Tool
                 'quantity' => $schema->number()->description('SKOs wanted on the list for this code')->required(),
                 'notes'    => $schema->string()->description('Optional note for the hub'),
             ]))->description('SKOs to put in the basket as drafts, up to 200. Omit to only show the list'),
+            'remove'       => $schema->array()->items($schema->string())->description('SKO codes whose drafts are taken out of the basket'),
+            'do_not_auto_order' => $schema->array()->items($schema->object([
+                'sko'   => $schema->string()->description('SKO code')->required(),
+                'value' => $schema->boolean()->description('true keeps it out of suggested quantities for good, false lets it be suggested again')->required(),
+            ]))->description('Keep SKOs of the buying organisation out of order suggestions from the hub, partners and suppliers, or let them back in'),
             'sent_lines'   => $schema->array()->items($schema->object([
                 'sko'      => $schema->string()->description('SKO code')->required(),
                 'quantity' => $schema->number()->description('New SKO quantity of the line already sent')->required(),

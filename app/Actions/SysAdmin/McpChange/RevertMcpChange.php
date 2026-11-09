@@ -25,6 +25,7 @@ use App\Actions\Catalogue\ProductCategory\RelatedProducts\SyncProductCategoryRel
 use App\Actions\Inventory\OrgStock\DiscontinueOrgStocks;
 use App\Actions\Inventory\OrgStock\UpdateOrgStock;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
+use App\Actions\Procurement\OrgPartner\Hydrators\OrgPartnerHydrateShoppingListItems;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
 use App\Actions\SupplyChain\SupplierProduct\UpdateSupplierProduct;
 use App\Actions\Procurement\PartnerShoppingListItem\UpdatePartnerShoppingListItem;
@@ -41,6 +42,7 @@ use App\Actions\GoodsIn\StockDelivery\EvaluateStockDeliveryCosting;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\Production\Artefact\ArtefactStateEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\GoodsIn\StockDelivery;
@@ -120,6 +122,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::STOCK_LOCATIONS => $this->revertStockLocations($target, $mcpChange->before, $mcpChange->after, $user),
                 McpChangeTypeEnum::PRODUCTION_SETUP => $this->revertProductionSetup($target, $mcpChange->before),
                 McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->revertSupplierProductLinks($mcpChange),
+                McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->revertOrgStockAutoOrdering($mcpChange->before),
             };
 
             $mcpChange->update([
@@ -270,8 +273,34 @@ class RevertMcpChange
         SyncProductCategoryRelatedProducts::make()->action(ProductCategory::findOrFail($target['id']), ['product_ids' => $before['ids']]);
     }
 
+    private function revertOrgStockAutoOrdering(array $before): void
+    {
+        foreach ($before['org_stocks'] as $orgStockId => $orgStock) {
+            UpdateOrgStock::make()->action(OrgStock::findOrFail($orgStockId), ['is_excluded_from_auto_ordering' => $orgStock['do_not_auto_order']]);
+        }
+    }
+
+    /**
+     * A draft the assistant removed comes back as the same line, so its notes and who added it stay.
+     */
     private function revertPartnerShoppingList(array $before, array $after): void
     {
+        foreach (array_diff_key($before['lines'], $after['lines']) as $line) {
+            $item = PartnerShoppingListItem::withTrashed()->find($line['id']);
+
+            $orderedAgain = $item && PartnerShoppingListItem::where('org_partner_id', $item->org_partner_id)
+                ->where('stock_id', $item->stock_id)
+                ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
+                ->exists();
+
+            if (!$item?->trashed() || $item->state !== ShoppingListItemStateEnum::DRAFT || $orderedAgain) {
+                throw ValidationException::withMessages(['message' => __('This was changed again after the AI change, so it cannot be reverted automatically. Look at it and fix it by hand.')]);
+            }
+
+            $item->restore();
+            OrgPartnerHydrateShoppingListItems::dispatch($item->orgPartner);
+        }
+
         foreach ($after['lines'] as $stockId => $line) {
             $item     = PartnerShoppingListItem::findOrFail($line['id']);
             $previous = $before['lines'][$stockId] ?? null;

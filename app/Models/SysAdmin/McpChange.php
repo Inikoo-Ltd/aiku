@@ -12,6 +12,7 @@ use App\Actions\Production\WorkArea\WithWorkAreaAuthorisation;
 use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Enums\SysAdmin\McpChange\McpChangeTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
+use App\Models\Procurement\OrgPartner;
 use App\Models\Production\Production;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -113,6 +114,18 @@ class McpChange extends Model
             $production = $productionId ? Production::find($productionId) : null;
 
             return $production && WithWorkAreaAuthorisation::canManageWorkAreas($user, $production);
+        }
+
+        if ($this->type === McpChangeTypeEnum::PARTNER_SHOPPING_LIST) {
+            $organisationId = OrgPartner::find(data_get($this->data, 'target.org_partner_id'))?->organisation_id;
+
+            return $organisationId && $user->authTo("procurement.$organisationId.edit");
+        }
+
+        if ($this->type === McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING) {
+            $organisationId = data_get($this->data, 'target.organisation_id');
+
+            return $organisationId && $user->authTo("procurement.$organisationId.edit");
         }
 
         if ($this->type === McpChangeTypeEnum::STOCK_LOCATIONS) {
