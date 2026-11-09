@@ -203,7 +203,7 @@ class ProcessInboundEmail
             return $note;
         }
 
-        $isColleague = $this->isColleague($from['address']);
+        $isColleague = $this->isColleague($from['address'], $subject);
 
         // A colleague answering inside a customer's thread is not the customer writing back: the
         // reply would reopen the conversation and turn our answers towards the colleague. When the
@@ -660,9 +660,16 @@ class ProcessInboundEmail
         return $address !== null && isset(self::ourOwnAddresses()[strtolower($address)]);
     }
 
-    private function isColleague(?string $address): bool
+    /**
+     * A sibling shop's mailbox forwarding a customer's mail is customer service handing it over,
+     * not a mailshot (HELP-4565). Gmail always writes "Fwd:" whatever the mailbox's language.
+     */
+    private function isColleague(?string $address, ?string $subject): bool
     {
-        return $address !== null && (self::ourOwnAddresses()[strtolower($address)] ?? null) === ChatIgnoreReasonEnum::NOT_FOR_US;
+        $reason = $address !== null ? (self::ourOwnAddresses()[strtolower($address)] ?? null) : null;
+
+        return $reason === ChatIgnoreReasonEnum::NOT_FOR_US
+            || ($reason === ChatIgnoreReasonEnum::MARKETING && preg_match('/^\s*fwd?:/i', (string) $subject) === 1);
     }
 
     /**

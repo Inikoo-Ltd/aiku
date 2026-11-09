@@ -722,6 +722,51 @@ test('mail from one of our own shops or a staff buying account never becomes a c
     $staffLogin->forceDelete();
 });
 
+test('a sibling shop forwarding a customer mail to this mailbox reaches the colleagues folder, its mailshots are still filtered', function () {
+    $settings = $this->shop->settings ?? [];
+    $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
+    $this->shop->update(['settings' => $settings]);
+
+    $sibling      = \App\Models\Catalogue\Shop::where('id', '!=', $this->shop->id)->first() ?? $this->shop;
+    $siblingEmail = $sibling->email;
+    $sibling->update(['email' => 'care@siblingshop.test']);
+    \Illuminate\Support\Facades\Cache::forget('chat.our_own_email_addresses');
+
+    $fromSibling = fn (string $id, string $subject) => \Illuminate\Support\Facades\Http::response([
+        'id'       => $id,
+        'threadId' => 't'.$id,
+        'payload'  => [
+            'mimeType' => 'text/plain',
+            'headers'  => [
+                ['name' => 'From', 'value' => 'Sibling Customer Services <care@siblingshop.test>'],
+                ['name' => 'To', 'value' => 'Our Mailbox <care@shop.test>'],
+                ['name' => 'Subject', 'value' => $subject],
+            ],
+            'body'     => ['data' => rtrim(strtr(base64_encode("---------- Forwarded message ---------\nFrom: Allan <allan@example.com>"), '+/', '-_'), '=')],
+        ],
+    ]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                         => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/f1*' => $fromSibling('f1', 'Fwd: Dropping shipping and enquiry'),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/f2*' => $fromSibling('f2', 'Unlock 25% Off'),
+        'gmail.googleapis.com/gmail/v1/users/me/labels'       => \Illuminate\Support\Facades\Http::response(['labels' => [['id' => 'LF', 'name' => 'aiku/filtered'], ['id' => 'LI', 'name' => 'aiku/imported'], ['id' => 'LU', 'name' => 'aiku/unmatched']]]),
+        'gmail.googleapis.com/*'                              => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $forwarded = \App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'f1');
+
+    expect($forwarded?->chatSession->is_colleague)->toBeTrue()
+        ->and($forwarded->message_text)->toContain('allan@example.com')
+        ->and(\App\Actions\Comms\Mailbox\ProcessInboundEmail::run($this->shop, 'f2'))->toBeNull();
+    \Illuminate\Support\Facades\Http::assertSent(fn ($request) => str_ends_with($request->url(), 'messages/f2/modify') && $request['addLabelIds'] === ['LF']);
+
+    $forwarded->chatSession->messages()->forceDelete();
+    $forwarded->chatSession->forceDelete();
+    $sibling->update(['email' => $siblingEmail]);
+    \Illuminate\Support\Facades\Cache::forget('chat.our_own_email_addresses');
+});
+
 test('a bounced answer is told on its conversation without reopening it, a bounce of nothing of ours is filtered', function () {
     $settings = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'), 'history_id' => '1'];
