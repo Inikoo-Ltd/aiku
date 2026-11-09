@@ -128,7 +128,6 @@ class EditMasterProductInformation extends OrgAction
                     'seo_image_alt'    => $masterAsset->seo_image_alt,
                 ],
                 'information' => [
-                    'is_editable'           => (bool)$tradeUnit,
                     'trade_unit'            => $tradeUnit ? $this->tradeUnitData($tradeUnit) : null,
                     'number_trade_units'    => $masterAsset->tradeUnits->count(),
                     'marketing_weight'      => $masterAsset->marketing_weight,

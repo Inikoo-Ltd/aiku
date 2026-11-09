@@ -35,8 +35,7 @@ class MasterAssetHydrateMarketingWeightFromTradeUnits implements ShouldBeUnique
         }
 
         $tradeUnit       = $masterAsset->tradeUnits()->whereNotNull('marketing_weight')->orderBy('marketing_weight', 'desc')->first();
-        $marketingWeight = $tradeUnit?->marketing_weight;
-
+        $marketingWeight = $tradeUnit ? self::getSingleTradeUnitMarketingWeight($tradeUnit->marketing_weight, $tradeUnit->pivot->quantity, $masterAsset->units) : null;
 
         $masterAsset->updateQuietly(
             [

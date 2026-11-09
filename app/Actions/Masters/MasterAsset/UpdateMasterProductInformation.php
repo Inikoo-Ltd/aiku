@@ -8,48 +8,30 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
-use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rules\File;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Saves the "Edit product" page of a master product. Each value goes where it is kept: the texts,
- * price and barcode on the master product, the physical data on its trade unit (the master reads
- * them from it), and the shipping and return texts on its master family for all its products.
+ * Saves the "Edit product" page of a master product: the texts, price and barcode on the master
+ * product, and the shipping and return texts on its master family for all its products. The
+ * physical data (weights, dimensions, material, origin) belong to the trade unit, shared by the
+ * dropshipping and wholesale masters made of it, so they are only shown here and edited on the
+ * trade unit.
  */
 class UpdateMasterProductInformation extends OrgAction
 {
     use WithMastersEditAuthorisation;
-
-    private MasterAsset $masterAsset;
 
     public function handle(MasterAsset $masterAsset, array $modelData): MasterAsset
     {
         $masterData = Arr::only($modelData, ['code', 'name', 'price', 'description', 'description_extra', 'barcode', 'meta_description', 'seo_image', 'seo_image_url', 'seo_image_alt']);
         if ($masterData !== []) {
             UpdateMasterAsset::make()->action($masterAsset, $masterData);
-        }
-
-        $tradeUnitData = Arr::only($modelData, ['marketing_weight', 'gross_weight', 'marketing_ingredients', 'origin_country_id']);
-        if (Arr::has($modelData, 'dimensions_cm')) {
-            $tradeUnitData['marketing_dimensions'] = [
-                'type'  => 'rectangular',
-                'units' => 'cm',
-                ...collect(Arr::get($modelData, 'dimensions_cm'))->map(fn ($centimetres) => round((float)$centimetres / 100, 4))->all(),
-            ];
-        }
-
-        $tradeUnit = $masterAsset->tradeUnits()->count() === 1 ? $masterAsset->tradeUnits()->first() : null;
-        if ($tradeUnitData !== [] && $tradeUnit) {
-            $tradeUnit = UpdateTradeUnit::make()->action($tradeUnit, $tradeUnitData);
-            $this->syncFromTradeUnit($masterAsset, $tradeUnit);
         }
 
         $masterFamily = $masterAsset->masterFamily;
@@ -68,21 +50,6 @@ class UpdateMasterProductInformation extends OrgAction
         return $masterAsset->refresh();
     }
 
-    /**
-     * UpdateTradeUnit leaves dimensions and origin off the master and queues the weights, so the
-     * page would show the old values right after saving: the master takes them from its only trade
-     * unit here.
-     */
-    private function syncFromTradeUnit(MasterAsset $masterAsset, TradeUnit $tradeUnit): void
-    {
-        $masterAsset->updateQuietly([
-            'marketing_weight'     => $tradeUnit->marketing_weight,
-            'gross_weight'         => $tradeUnit->gross_weight,
-            'marketing_dimensions' => $tradeUnit->marketing_dimensions,
-            'origin_country_id'    => $tradeUnit->origin_country_id,
-        ]);
-    }
-
     public function rules(): array
     {
         return [
@@ -96,12 +63,6 @@ class UpdateMasterProductInformation extends OrgAction
             'seo_image'             => ['sometimes', 'nullable', File::image()->max(12 * 1024)],
             'seo_image_url'         => ['sometimes', 'nullable', 'string', 'max:2048'],
             'seo_image_alt'         => ['sometimes', 'nullable', 'string', 'max:255'],
-            'marketing_weight'      => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'gross_weight'          => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'dimensions_cm'         => ['sometimes', 'array:l,w,h'],
-            'dimensions_cm.*'       => ['required', 'numeric', 'min:1'],
-            'marketing_ingredients' => ['sometimes', 'nullable', 'string'],
-            'origin_country_id'     => ['sometimes', 'nullable', 'exists:countries,id'],
             'shared'                => ['sometimes', 'array:shipping,return_policy'],
             'shared.*'              => ['nullable', 'string', 'max:65500'],
         ];
@@ -113,31 +74,11 @@ class UpdateMasterProductInformation extends OrgAction
             'code.regex'          => __('Letters, numbers and hyphens only'),
             'price.gt'            => __('The price must be more than 0'),
             'barcode.regex'       => __('A barcode has 8, 12 or 13 digits'),
-            'dimensions_cm.*.min' => __('Each dimension is at least 1 cm'),
         ];
-    }
-
-    public function afterValidator(Validator $validator): void
-    {
-        $data = $validator->getData();
-
-        if (Arr::hasAny($data, ['marketing_weight', 'gross_weight'])) {
-            $netWeight      = Arr::get($data, 'marketing_weight', $this->masterAsset->marketing_weight);
-            $shippingWeight = Arr::get($data, 'gross_weight', $this->masterAsset->gross_weight);
-            if ($netWeight && $shippingWeight && $shippingWeight < $netWeight) {
-                $validator->errors()->add('gross_weight', __('The shipping weight cannot be below the net weight'));
-            }
-        }
-
-        $hasTradeUnitData = Arr::hasAny($data, ['marketing_weight', 'gross_weight', 'dimensions_cm', 'marketing_ingredients', 'origin_country_id']);
-        if ($hasTradeUnitData && $this->masterAsset->tradeUnits()->count() !== 1) {
-            $validator->errors()->add('marketing_weight', __('This product is made of several trade units: edit their data in each trade unit'));
-        }
     }
 
     public function asController(MasterAsset $masterAsset, ActionRequest $request): MasterAsset
     {
-        $this->masterAsset = $masterAsset;
         $this->initialisationFromGroup($masterAsset->group, $request);
 
         return $this->handle($masterAsset, $this->validatedData);

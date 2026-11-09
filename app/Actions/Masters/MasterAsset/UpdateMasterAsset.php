@@ -22,6 +22,7 @@ use App\Actions\Goods\Barcode\SyncBarcodeToMasterAsset;
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Catalogue\Product\TranslateProductGpsrText;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateMasterPricesRRPtoChild;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
@@ -340,6 +341,7 @@ class UpdateMasterAsset extends OrgAction
         }
 
         if ($wasChanged('units') || $unitsHandedBackToComposition) {
+            MasterAssetHydrateMarketingWeightFromTradeUnits::dispatch($masterAsset->id);
             foreach ($masterAsset->products()->where('has_independent_units', false)->get() as $product) {
                 UpdateProduct::run($product, [
                     'units' => $masterAsset->units,

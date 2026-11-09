@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowLeft, faCheck, faImage, faInfoCircle } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -43,7 +42,6 @@ const props = defineProps<{
         seo_image_alt: string | null
     }
     information: {
-        is_editable: boolean
         trade_unit: { code: string, route: routeType } | null
         number_trade_units: number
         marketing_weight: number | null
@@ -93,6 +91,7 @@ const form = ref<EditForm>(formFromProps())
 const savedForm = ref<EditForm>(formFromProps())
 const serverErrors = ref<Record<string, string>>({})
 const isSaving = ref(false)
+const saveStatus = ref<{ isSaved: boolean, message: string } | null>(null)
 const formKey = ref(0)
 
 const META_DESCRIPTION_MIN_LENGTH = 120
@@ -143,16 +142,6 @@ const clientErrors = computed(() => {
     if (!isPositive(value.price)) {
         errors.price = ctrans("The price must be more than 0")
     }
-    if (isPositive(value.marketing_weight) && isPositive(value.gross_weight) && Number(value.gross_weight) < Number(value.marketing_weight)) {
-        errors.gross_weight = ctrans("The shipping weight cannot be below the net weight")
-    }
-    const sides = (["l", "w", "h"] as const).map((side) => value.dimensions_cm[side])
-    const filledSides = sides.filter((side) => side !== null && String(side) !== "")
-    if (filledSides.length && filledSides.length < 3) {
-        errors.dimensions_cm = ctrans("Fill in the length, width and height")
-    } else if (filledSides.some((side) => Number(side) < 1)) {
-        errors.dimensions_cm = ctrans("Each dimension is at least 1 cm")
-    }
     if (value.barcode && !/^(\d{8}|\d{12}|\d{13})$/.test(value.barcode)) {
         errors.barcode = ctrans("A barcode has 8, 12 or 13 digits")
     }
@@ -198,16 +187,6 @@ const changedPayload = computed(() => {
             payload[key] = value[key]
         }
     }
-    if (props.information.is_editable) {
-        for (const key of ["marketing_weight", "gross_weight", "marketing_ingredients", "origin_country_id"] as const) {
-            if (isChanged(key)) {
-                payload[key] = value[key]
-            }
-        }
-        if (isChanged("dimensions_cm") && (["l", "w", "h"] as const).every((side) => value.dimensions_cm[side] !== null && String(value.dimensions_cm[side]) !== "")) {
-            payload.dimensions_cm = value.dimensions_cm
-        }
-    }
     if (props.shared && isChanged("shared")) {
         payload.shared = value.shared
     }
@@ -237,17 +216,18 @@ const save = () => {
         onStart: () => {
             isSaving.value = true
             serverErrors.value = {}
+            saveStatus.value = null
         },
         onSuccess: () => {
             form.value = formFromProps()
             savedForm.value = formFromProps()
             shareImageForm.value = shareImageFromProps()
             formKey.value++
-            notify({ title: ctrans("Saved"), text: ctrans("The product information has been updated"), type: "success" })
+            saveStatus.value = { isSaved: true, message: ctrans("Saved") }
         },
         onError: (errors) => {
             serverErrors.value = errors as Record<string, string>
-            notify({ title: ctrans("Not saved"), text: Object.values(errors)[0] ?? ctrans("The product could not be updated"), type: "error" })
+            saveStatus.value = { isSaved: false, message: Object.values(errors)[0] ?? ctrans("The product could not be updated") }
         },
         onFinish: () => (isSaving.value = false),
     })
@@ -334,14 +314,14 @@ const save = () => {
                     <p v-if="information.trade_unit" class="mb-3 flex items-start gap-2 rounded bg-gray-50 px-3 py-2 text-xs text-gray-600">
                         <FontAwesomeIcon :icon="faInfoCircle" class="mt-0.5 text-gray-400" fixed-width aria-hidden="true" />
                         <span>
-                            {{ ctrans("Weights, dimensions, material and origin are saved on the trade unit") }}
-                            <Link :href="route(information.trade_unit.route.name, information.trade_unit.route.parameters)" class="font-medium text-[--app-accent] hover:underline">{{ information.trade_unit.code }}</Link>,
-                            {{ ctrans("so every product made of it shows them too.") }}
+                            {{ ctrans("Weights, dimensions, material and origin come from the trade unit") }}
+                            <Link :href="route(information.trade_unit.route.name, information.trade_unit.route.parameters)" class="font-medium text-[var(--app-accent)] hover:underline">{{ information.trade_unit.code }}</Link>,
+                            {{ ctrans("shared by the dropshipping and wholesale products made of it: edit them there.") }}
                         </span>
                     </p>
                     <p v-else class="mb-3 flex items-start gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                         <FontAwesomeIcon :icon="faInfoCircle" class="mt-0.5" fixed-width aria-hidden="true" />
-                        {{ ctrans("This product is made of :count trade units: edit weights, dimensions, material and origin in each trade unit.", { count: String(information.number_trade_units) }) }}
+                        {{ ctrans("This product is made of :count trade units: weights, dimensions, material and origin are edited in each trade unit.", { count: String(information.number_trade_units) }) }}
                     </p>
 
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -467,6 +447,7 @@ const save = () => {
                         <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
+                <p v-if="saveStatus" class="text-xs" :class="saveStatus.isSaved ? 'text-green-600' : 'text-red-600'">{{ saveStatus.message }}</p>
             </aside>
         </div>
     </div>

@@ -55,4 +55,31 @@ trait WithWeightFromTradeUnits
 
         return $changed ? (int)ceil($weight) : null;
     }
+
+    /**
+     * Net weight is shown per unit ("120 g/Slice"). A product sold as one unit, or as a fraction
+     * of one (units up to 1), weighs its share of the trade unit: a slice that is 0.1 of a 1.2 kg
+     * loaf weighs 120 g, a pack of 10 bottles of 39 g weighs 390 g. A product of several units
+     * keeps the trade unit's weight, each unit being a trade unit. A quantity of 0.9 or more is a
+     * yield allowance (a 500 g candle at 0.96), not a fraction, so it counts as a whole one.
+     */
+    public static function getSingleTradeUnitMarketingWeight(?int $tradeUnitWeight, float|string|null $quantity, float|string|null $units): ?int
+    {
+        if ($tradeUnitWeight === null || !is_numeric($quantity)) {
+            return $tradeUnitWeight;
+        }
+
+        $quantity = (float)$quantity;
+        $units    = is_numeric($units) ? (float)$units : 1.0;
+
+        if ($quantity <= 0 || $units > 1) {
+            return $tradeUnitWeight;
+        }
+
+        if ($quantity >= 0.9 && $quantity < 1) {
+            $quantity = 1.0;
+        }
+
+        return (int)round($tradeUnitWeight * $quantity);
+    }
 }
