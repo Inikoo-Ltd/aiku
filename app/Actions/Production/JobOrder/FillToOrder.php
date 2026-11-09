@@ -37,9 +37,9 @@ class FillToOrder
 {
     use AsObject;
 
-    public function artefactFor(?Product $product): ?Artefact
+    public function artefactFor(mixed $product): ?Artefact
     {
-        if (!$product || $product->orgStocks->count() !== 1) {
+        if (!$product instanceof Product || $product->orgStocks->count() !== 1) {
             return null;
         }
 
