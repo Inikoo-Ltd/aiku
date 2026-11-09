@@ -9,15 +9,15 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link } from "@inertiajs/vue3"
 import { ref } from "vue"
-import { faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faTimes } from "@fal"
+import { faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faPaperPlane, faTimes } from "@fal"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { useFormatTime } from "@/Composables/useFormatTime"
+import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 
-library.add(faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faTimes)
+library.add(faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faPaperPlane, faTimes)
 
 export interface MoneyRequestRow {
 	id: number
@@ -36,6 +36,9 @@ export interface MoneyRequestRow {
 	approved_by: string | null
 	rejected_by: string | null
 	rejection_reason: string | null
+	last_reminded_at: string | null
+	last_reminded_by: string | null
+	number_reminders: number
 	lines: {
 		kind: string
 		kind_label: string
@@ -47,6 +50,7 @@ export interface MoneyRequestRow {
 		amount: number
 	}[]
 	cancel_route: routeType | null
+	remind_route: routeType | null
 	approve_route: routeType | null
 	unapprove_route: routeType | null
 	reject_route: routeType | null
@@ -57,6 +61,7 @@ defineProps<{
 	data: object
 	tab?: string
 	approvingId?: number | null
+	remindingId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -65,7 +70,15 @@ const emit = defineEmits<{
 	(e: "reject", row: MoneyRequestRow): void
 	(e: "pay", row: MoneyRequestRow): void
 	(e: "cancel", row: MoneyRequestRow): void
+	(e: "remind", row: MoneyRequestRow): void
 }>()
+
+const lastReminderTitle = (row: MoneyRequestRow): string =>
+	ctrans(":time by :user, :count reminders sent", {
+		time: useFormatTime(row.last_reminded_at!, { formatTime: "hm" }),
+		user: row.last_reminded_by ?? "-",
+		count: row.number_reminders,
+	})
 
 const locale = useLocaleStore()
 const money = (code: string, amount: number) => locale.currencyFormat(code, amount)
@@ -173,6 +186,16 @@ const stateClass: Record<string, string> = {
 
 		<template #cell(actions)="{ item }">
 			<div class="flex justify-end gap-2">
+				<div v-if="item.remind_route" class="flex flex-col items-end">
+					<Button type="tertiary" size="xs" :label="ctrans('Send reminder')" :loading="remindingId === item.id" @click="emit('remind', item)">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-paper-plane" class="text-gray-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<span class="mt-0.5 whitespace-nowrap text-xs text-gray-400" :title="item.last_reminded_at ? lastReminderTitle(item) : undefined">
+						{{ item.last_reminded_at ? ctrans("Last sent :time", { time: useRangeFromNow(item.last_reminded_at, { addSuffix: true }) }) : ctrans("No reminder sent yet") }}
+					</span>
+				</div>
 				<Button v-if="item.approve_route" type="tertiary" size="xs" :label="ctrans('Approve')" :loading="approvingId === item.id" @click="emit('approve', item)">
 					<template #icon>
 						<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />

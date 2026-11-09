@@ -11,16 +11,17 @@ import ConfirmDialog from "primevue/confirmdialog"
 import { useConfirm } from "primevue/useconfirm"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faArrowLeft, faExclamationTriangle, faMoneyCheckAlt, faPlus, faTimes } from "@fal"
+import { faArrowLeft, faExclamationTriangle, faMoneyCheckAlt, faPaperPlane, faPlus, faTimes } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import TableAgentMoneyRequests, { MoneyRequestRow } from "@/Components/Tables/Grp/Org/Procurement/TableAgentMoneyRequests.vue"
 import { capitalize } from "@/Composables/capitalize"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faArrowLeft, faExclamationTriangle, faMoneyCheckAlt, faPlus, faTimes)
+library.add(faArrowLeft, faExclamationTriangle, faMoneyCheckAlt, faPaperPlane, faPlus, faTimes)
 
 defineProps<{
 	title: string
@@ -32,8 +33,11 @@ defineProps<{
 const confirm = useConfirm()
 const isOpeningCreate = ref(false)
 const cancelError = ref<string | null>(null)
+const remindingId = ref<number | null>(null)
+const isReminderDialog = ref(false)
 
-const cancelRequest = (row: MoneyRequestRow) =>
+const cancelRequest = (row: MoneyRequestRow) => {
+	isReminderDialog.value = false
 	confirm.require({
 		group: "money-requests",
 		header: ctrans("Cancel :reference", { reference: row.reference }),
@@ -48,6 +52,30 @@ const cancelRequest = (row: MoneyRequestRow) =>
 			})
 		},
 	})
+}
+
+const remindRequest = (row: MoneyRequestRow) => {
+	isReminderDialog.value = true
+	confirm.require({
+		group: "money-requests",
+		header: ctrans("Send a reminder for :reference", { reference: row.reference }),
+		message: [
+			ctrans("The money request email is sent again to the client's payers and copied users."),
+			row.last_reminded_at ? ctrans("Last reminder sent :time by :user.", { time: useFormatTime(row.last_reminded_at, { formatTime: "hm" }), user: row.last_reminded_by ?? "-" }) : "",
+		].filter(Boolean).join(" "),
+		rejectLabel: ctrans("Back"),
+		acceptLabel: ctrans("Send reminder"),
+		accept: () => {
+			cancelError.value = null
+			router.post(route(row.remind_route!.name, row.remind_route!.parameters), {}, {
+				preserveScroll: true,
+				onStart: () => (remindingId.value = row.id),
+				onFinish: () => (remindingId.value = null),
+				onError: (errors) => (cancelError.value = `${row.reference}: ${Object.values(errors ?? {})[0] ?? ctrans("Something went wrong")}`),
+			})
+		},
+	})
+}
 </script>
 
 <template>
@@ -66,13 +94,14 @@ const cancelRequest = (row: MoneyRequestRow) =>
 
 	<p v-if="cancelError" class="mx-4 mt-4 text-xs text-red-600">{{ cancelError }}</p>
 
-	<TableAgentMoneyRequests :data="data" @cancel="cancelRequest" />
+	<TableAgentMoneyRequests :data="data" :remindingId="remindingId" @cancel="cancelRequest" @remind="remindRequest" />
 
 	<ConfirmDialog group="money-requests" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<template #container="{ message, acceptCallback, rejectCallback }">
 			<div class="rounded-lg bg-white p-5">
 				<div class="flex items-center gap-2 font-semibold text-gray-900">
-					<FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-if="isReminderDialog" icon="fal fa-paper-plane" class="text-gray-500" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-else icon="fal fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
 					{{ message.header }}
 				</div>
 				<p class="mt-3 text-sm text-gray-600">{{ message.message }}</p>
@@ -82,7 +111,12 @@ const cancelRequest = (row: MoneyRequestRow) =>
 							<FontAwesomeIcon icon="fal fa-arrow-left" class="text-gray-500" fixed-width aria-hidden="true" />
 						</template>
 					</Button>
-					<Button type="negative" :label="message.acceptLabel" @click="acceptCallback">
+					<Button v-if="isReminderDialog" type="primary" :label="message.acceptLabel" @click="acceptCallback">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button v-else type="negative" :label="message.acceptLabel" @click="acceptCallback">
 						<template #icon>
 							<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
 						</template>

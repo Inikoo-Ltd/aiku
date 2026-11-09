@@ -38,6 +38,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $rejected_by
  * @property string|null $rejection_reason
  * @property-read User|null $rejecter
+ * @property \Illuminate\Support\Carbon|null $last_reminded_at
+ * @property int|null $last_reminded_by
+ * @property int $number_reminders
+ * @property-read User|null $reminder
  * @property-read Agent $agent
  * @property-read Currency $currency
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DepositRequestItem> $items
@@ -55,6 +59,7 @@ class DepositRequest extends Model
         'cancelled_at' => 'datetime',
         'approved_at'  => 'datetime',
         'rejected_at'  => 'datetime',
+        'last_reminded_at' => 'datetime',
     ];
 
     public function agent(): BelongsTo
@@ -85,6 +90,11 @@ class DepositRequest extends Model
     public function rejecter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function reminder(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'last_reminded_by');
     }
 
     public function isApproved(): bool

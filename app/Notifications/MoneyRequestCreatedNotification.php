@@ -34,7 +34,8 @@ class MoneyRequestCreatedNotification extends Notification
         public string $amount,
         public array $lines,
         public string $recipientRole,
-        public array $route
+        public array $route,
+        public bool $isReminder = false
     ) {
     }
 
@@ -45,12 +46,16 @@ class MoneyRequestCreatedNotification extends Notification
 
     public function title(): string
     {
-        return __(':agent asks :client for :amount (money request :reference)', [
+        $parameters = [
             'agent'     => $this->depositRequest->agent->code,
             'client'    => $this->depositRequest->organisation->code,
             'amount'    => $this->amount,
             'reference' => $this->reference(),
-        ]);
+        ];
+
+        return $this->isReminder
+            ? __('Reminder: :agent still asks :client for :amount (money request :reference)', $parameters)
+            : __(':agent asks :client for :amount (money request :reference)', $parameters);
     }
 
     public function body(): string
@@ -65,7 +70,7 @@ class MoneyRequestCreatedNotification extends Notification
         return [
             'title' => $this->title(),
             'body'  => $this->body(),
-            'type'  => 'money_request_created',
+            'type'  => $this->isReminder ? 'money_request_reminder' : 'money_request_created',
             'slug'  => (string) $this->depositRequest->id,
             'route' => $this->route,
         ];

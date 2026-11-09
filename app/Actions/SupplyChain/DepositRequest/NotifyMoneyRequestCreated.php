@@ -26,7 +26,7 @@ class NotifyMoneyRequestCreated
     use AsAction;
     use WithMoneyRequestRecipients;
 
-    public function handle(DepositRequest $depositRequest): int
+    public function handle(DepositRequest $depositRequest, bool $isReminder = false): int
     {
         $depositRequest->loadMissing(['agent.organisation', 'organisation', 'currency', 'requester']);
         $depositRequest->load(['items.purchaseOrder' => fn ($query) => $query
@@ -48,14 +48,15 @@ class NotifyMoneyRequestCreated
                 ? ['name' => 'grp.org.agent.accounting.deposit_requests.index', 'parameters' => ['organisation' => $depositRequest->agent->organisation->slug]]
                 : ['name' => 'grp.org.procurement.org_agents.show', 'parameters' => ['organisation' => $depositRequest->organisation->slug, 'orgAgent' => $orgAgent->slug, 'tab' => 'money']];
 
-            $this->inLanguageOf($user, function () use ($depositRequest, $user, $role, $route, $total, $requesterName) {
+            $this->inLanguageOf($user, function () use ($depositRequest, $user, $role, $route, $total, $requesterName, $isReminder) {
                 $notification = new MoneyRequestCreatedNotification(
                     $depositRequest,
                     $requesterName,
                     self::money($depositRequest, $total),
                     $depositRequest->items->map(fn (DepositRequestItem $item) => self::describeLine($depositRequest, $item))->values()->all(),
                     $role,
-                    $route
+                    $route,
+                    $isReminder
                 );
 
                 NotifyUserOnChosenChannels::run(
