@@ -35,7 +35,7 @@ class DeductProductionRawMaterials
                 continue;
             }
 
-            $deductionLocationOrgStock = LocationOrgStock::where('org_stock_id', $orgStock->id)
+            $deductionLocationOrgStock = LocationOrgStock::with('location')->where('org_stock_id', $orgStock->id)
                 ->when($production->factory_location_id, fn ($query, $factoryLocationId) => $query->orderByRaw('(location_id = ? and quantity > 0) desc', [$factoryLocationId]))
                 ->orderByRaw("type = '".LocationStockTypeEnum::PICKING->value."' desc")
                 ->orderByDesc('quantity')
