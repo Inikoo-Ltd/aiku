@@ -68,6 +68,9 @@ class ShowManufactureFloor extends OrgAction
     /** @var array<int, string|null> reference of the job order a job's remainder was carried to, by its id */
     private array $carriedToReferences = [];
 
+    /** @var array<int, int> ids of the trial runs that cannot start before their formulation is recorded */
+    private array $trialRunsNeedingFormulation = [];
+
     public function handle(Production $production): Production
     {
         return $production;
@@ -160,6 +163,8 @@ class ShowManufactureFloor extends OrgAction
             ->each(fn (JobOrderItemTask $task) => $task->jobOrderItem->setRelation('jobOrder', $task->jobOrder));
 
         $openTasksByJobOrderItem = $openTasks->groupBy('job_order_item_id');
+
+        $this->trialRunsNeedingFormulation = RecordTrialRunFormulation::jobOrdersNeedingFormulation($openTasks->pluck('jobOrder')->push($openSession?->jobOrderItemTask?->jobOrder)->filter());
 
         $openTasks = $this->collapseSharedMixes($this->collapseCombined($openTasks), $openTasksByJobOrderItem);
 
@@ -552,7 +557,7 @@ class ShowManufactureFloor extends OrgAction
                 'method'     => 'patch',
             ] : null,
             'trial_run'           => !$isCombined && $task->jobOrder->isRequestedByDevelopment() ? [
-                'needs_formulation' => RecordTrialRunFormulation::isNeededToStart($task->jobOrder),
+                'needs_formulation' => in_array($task->job_order_id, $this->trialRunsNeedingFormulation, true),
                 'brief_route'       => ['name' => 'grp.json.production.job_order.trial_run_brief', 'parameters' => ['jobOrder' => $task->job_order_id]],
             ] : null,
             'start_route'         => [

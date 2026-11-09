@@ -26,15 +26,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The agent asks a client for money in one request: advances and balances of its supplier orders, the charges it
- * paid for each shipment, and what brings its wallet back to zero. Each line is checked against what is still due, so a request never asks
- * twice for the same money.
+ * paid for each shipment, and its expenses. Each line is checked against what is still due, so a request never asks
+ * twice for the same money, and the client's money the agent still holds is taken off as a credit line.
  */
 class StoreAgentMoneyRequest extends OrgAction
 {
     private Agent $agent;
 
     /**
-     * @param  array{organisation_id: int, reference?: string|null, notes?: string|null, lines: list<array{kind: string, purchase_order_id?: int|null, stock_delivery_id?: int|null, amount: float|string}>}  $modelData
+     * @param  array{organisation_id: int, reference?: string|null, notes?: string|null, lines: list<array{kind: string, purchase_order_id?: int|null, stock_delivery_id?: int|null, agent_payment_id?: int|null, amount: float|string}>}  $modelData
      */
     public function handle(Agent $agent, array $modelData): DepositRequest
     {
@@ -64,7 +64,17 @@ class StoreAgentMoneyRequest extends OrgAction
                     'kind'              => $kind,
                     'purchase_order_id' => in_array($kind, [DepositRequestItemKindEnum::ADVANCE, DepositRequestItemKindEnum::BALANCE], true) ? Arr::get($line, 'purchase_order_id') : null,
                     'stock_delivery_id' => $kind === DepositRequestItemKindEnum::SHIPMENT ? Arr::get($line, 'stock_delivery_id') : null,
+                    'agent_payment_id'  => $kind === DepositRequestItemKindEnum::EXPENSE ? Arr::get($line, 'agent_payment_id') : null,
                     'amount'            => round((float) $line['amount'], 2),
+                ]);
+            }
+
+            $credit = self::creditToTakeOff($agent, $client, $modelData['lines']);
+            if ($credit > 0) {
+                $depositRequest->items()->create([
+                    'organisation_id' => $client->id,
+                    'kind'            => DepositRequestItemKindEnum::CREDIT,
+                    'amount'          => -$credit,
                 ]);
             }
 
@@ -79,9 +89,10 @@ class StoreAgentMoneyRequest extends OrgAction
             'reference'                 => ['nullable', 'string', 'max:255'],
             'notes'                     => ['nullable', 'string', 'max:2000'],
             'lines'                     => ['required', 'array', 'min:1'],
-            'lines.*.kind'              => ['required', Rule::enum(DepositRequestItemKindEnum::class)],
+            'lines.*.kind'              => ['required', Rule::in(DepositRequestItemKindEnum::requestableValues())],
             'lines.*.purchase_order_id' => ['nullable', 'integer'],
             'lines.*.stock_delivery_id' => ['nullable', 'integer'],
+            'lines.*.agent_payment_id'  => ['nullable', 'integer'],
             'lines.*.amount'            => ['required', 'numeric', 'gt:0', 'max:999999999999'],
         ];
     }
@@ -98,23 +109,36 @@ class StoreAgentMoneyRequest extends OrgAction
     }
 
     /**
-     * Why the lines can not be asked for: twice the same line, an order that is not an open order of the client
-     * through this agent, a shipment with no charges left to ask for, or more than is still due. Null when they can.
+     * How much of the client's money the agent holds comes off the request: all of it, up to what the lines ask.
      *
-     * @param  list<array{kind: string, purchase_order_id?: int|null, stock_delivery_id?: int|null, amount: float|string}>  $lines
+     * @param  list<array{amount: float|string}>  $lines
+     */
+    public static function creditToTakeOff(Agent $agent, Organisation $client, array $lines): float
+    {
+        $asked = round(array_sum(array_map(fn (array $line) => (float) $line['amount'], $lines)), 2);
+
+        return round(min(GetAgentMoneyRequestLines::creditAvailable($agent, $client), $asked), 2);
+    }
+
+    /**
+     * Why the lines can not be asked for: twice the same line, an order with nothing left to ask for, a shipment with
+     * no charges left to ask for, an expense already asked for, or more than is still due. Null when they can.
+     *
+     * @param  list<array{kind: string, purchase_order_id?: int|null, stock_delivery_id?: int|null, agent_payment_id?: int|null, amount: float|string}>  $lines
      */
     public static function linesError(Agent $agent, Organisation $client, array $lines): ?string
     {
         $due        = GetAgentMoneyRequestLines::run($agent, $client);
         $orders     = collect($due['orders'])->keyBy('purchase_order_id');
-        $shipments = collect($due['shipments'])->keyBy('stock_delivery_id');
+        $shipments  = collect($due['shipments'])->keyBy('stock_delivery_id');
+        $expenses   = collect($due['expenses'])->keyBy('agent_payment_id');
         $seen       = [];
 
         foreach ($lines as $line) {
             $kind = DepositRequestItemKindEnum::from($line['kind']);
             $key  = $kind->value.':'.match ($kind) {
-                DepositRequestItemKindEnum::WALLET   => '',
                 DepositRequestItemKindEnum::SHIPMENT => Arr::get($line, 'stock_delivery_id'),
+                DepositRequestItemKindEnum::EXPENSE  => Arr::get($line, 'agent_payment_id'),
                 default                              => Arr::get($line, 'purchase_order_id'),
             };
 
@@ -124,16 +148,19 @@ class StoreAgentMoneyRequest extends OrgAction
             $seen[$key] = true;
 
             $limit = match ($kind) {
-                DepositRequestItemKindEnum::WALLET   => $due['negative_balance'],
                 DepositRequestItemKindEnum::ADVANCE  => $orders->get((int) Arr::get($line, 'purchase_order_id'))['advance_due'] ?? null,
                 DepositRequestItemKindEnum::BALANCE  => $orders->get((int) Arr::get($line, 'purchase_order_id'))['balance_due'] ?? null,
                 DepositRequestItemKindEnum::SHIPMENT => $shipments->get((int) Arr::get($line, 'stock_delivery_id'))['due'] ?? null,
+                DepositRequestItemKindEnum::EXPENSE  => $expenses->get((int) Arr::get($line, 'agent_payment_id'))['due'] ?? null,
+                default                              => null,
             };
 
             if ($limit === null) {
-                return $kind === DepositRequestItemKindEnum::SHIPMENT
-                    ? __('One of the shipments has no charges left to ask this client for.')
-                    : __('One of the orders is not an open order of this client through you.');
+                return match ($kind) {
+                    DepositRequestItemKindEnum::SHIPMENT => __('One of the shipments has no charges left to ask this client for.'),
+                    DepositRequestItemKindEnum::EXPENSE  => __('One of the expenses was already asked for.'),
+                    default                              => __('One of the orders has nothing left to ask this client for.'),
+                };
             }
 
             if ((float) $line['amount'] > $limit + 0.005) {
@@ -175,7 +202,7 @@ class StoreAgentMoneyRequest extends OrgAction
     }
 
     /**
-     * @param  array{organisation_id: int, lines: list<array{kind: string, purchase_order_id?: int|null, stock_delivery_id?: int|null, amount: float|string}>}  $modelData
+     * @param  array{organisation_id: int, lines: list<array{kind: string, purchase_order_id?: int|null, stock_delivery_id?: int|null, agent_payment_id?: int|null, amount: float|string}>}  $modelData
      */
     public function action(Agent $agent, array $modelData): DepositRequest
     {

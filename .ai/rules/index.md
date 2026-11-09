@@ -6,9 +6,11 @@ Before planning or editing, find the row whose globs match the file's path and r
 | --- | --- |
 | app/Actions/Procurement/** | .ai/rules/actions-procurement.md |
 | app/Actions/**/*TimeSeries*.php, app/Actions/** | .ai/rules/actions.md |
+| app/Actions/SupplyChain/AgentPayment/** | .ai/rules/agent-payment.md |
 | app/Actions/Chat/** | .ai/rules/chat.md |
 | app/Actions/Web/Website/Cloudflare/** | .ai/rules/cloudflare.md |
 | app/Actions/CRM/Customer/** | .ai/rules/crm.md |
+| app/Actions/SupplyChain/DepositRequest/** | .ai/rules/deposit-request.md |
 | devops/** | .ai/rules/devops.md |
 | app/Actions/Dispatching/** | .ai/rules/dispatching.md |
 | app/Actions/Dropshipping/** | .ai/rules/dropshipping.md |
