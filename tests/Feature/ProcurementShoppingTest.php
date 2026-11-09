@@ -31,6 +31,7 @@ use Illuminate\Support\Str;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Models\Production\Production;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
@@ -473,6 +474,20 @@ test('UI partner shopping list index', function () {
     $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [
         $this->organisation->slug, $this->orgPartner->id, 'filter[category]' => 'none,999999', 'filter[origin]' => 'us', 'filter[rank]' => 'A',
     ]))->assertOk();
+});
+
+test('partner shopping list keeps rows in place when lines share a created_at', function () {
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+    $orgStocks = createOrgStocks($this->orgPartner->organisation, Stock::orderBy('id')->take(2)->get()->all());
+
+    $older = StorePartnerShoppingListItem::make()->action($this->orgPartner, $orgStocks[0], ['quantity' => 1]);
+    $newer = StorePartnerShoppingListItem::make()->action($this->orgPartner, $orgStocks[1], ['quantity' => 1]);
+    PartnerShoppingListItem::whereIn('id', [$older->id, $newer->id])->update(['created_at' => now()->startOfMinute()]);
+
+    UpdatePartnerShoppingListItem::make()->action($newer->refresh(), ['priority' => 'urgent']);
+
+    $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('id')->take(2)->all() === [$newer->id, $older->id]));
 });
 
 test('UI partner shipping list index', function () {

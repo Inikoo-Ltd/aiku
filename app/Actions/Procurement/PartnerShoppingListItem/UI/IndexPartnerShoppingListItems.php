@@ -289,6 +289,7 @@ class IndexPartnerShoppingListItems extends OrgAction
                 ...collect($this->filterGroups($orgPartner))->map(fn ($group, $key) => AllowedFilter::callback($key, fn ($query, $value) => $group['engine']($query, (array) $value)))->values(),
             ])
             ->allowedSorts(['org_stock_code', 'priority', 'needed_by', 'state', 'created_at'])
+            ->orderByDesc('partner_shopping_list_items.id')
             ->withPaginator(null, tableName: request()->route()->getName())
             ->withQueryString();
 
