@@ -52,6 +52,7 @@ use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentArtworkL
 use App\Actions\Goods\ProductDevelopment\Design\SubmitProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\Design\ReviewProductDevelopmentArtwork;
 use App\Actions\Goods\ProductDevelopment\Design\CheckProductDevelopmentArtworkWithAi;
+use App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation;
 use App\Actions\Goods\ProductDevelopment\Json\TranslateProductDevelopmentLabel;
 use App\Actions\Goods\ProductDevelopment\DeleteProductDevelopmentLabelTranslation;
 use App\Actions\Goods\ProductDevelopment\Design\UpdateProductDevelopmentDesignVersion;
@@ -1843,6 +1844,7 @@ Route::patch('/job-order-item/{jobOrderItem:id}', UpdateJobOrderItem::class)->na
 Route::patch('/job-order-item/{jobOrderItem:id}/split', SplitJobOrderItem::class)->name('job-order-item.split')->withoutScopedBindings();
 Route::delete('/job-order-item/{jobOrderItem:id}', DeleteJobOrderItem::class)->name('job-order-item.delete')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/confirm', ConfirmJobOrder::class)->name('job-order.confirm')->withoutScopedBindings();
+Route::post('/job-order/{jobOrder:id}/trial-run-formulation', RecordTrialRunFormulation::class)->name('job-order.trial_run_formulation')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/receive', ReceiveJobOrderIntoStock::class)->name('job-order.receive')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/hold', HoldJobOrder::class)->name('job-order.hold')->withoutScopedBindings();
 Route::patch('/job-order/{jobOrder:id}/cancel', CancelJobOrder::class)->name('job-order.cancel')->withoutScopedBindings();

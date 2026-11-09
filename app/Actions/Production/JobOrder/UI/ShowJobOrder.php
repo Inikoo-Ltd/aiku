@@ -218,6 +218,7 @@ class ShowJobOrder extends OrgAction
                     'parameters' => ['jobOrder' => $jobOrder->id],
                 ] : null,
                 'is_trial_run'  => $jobOrder->isTrialRun(),
+                'trial_run_brief_route' => $jobOrder->isRequestedByDevelopment() ? ['name' => 'grp.json.production.job_order.trial_run_brief', 'parameters' => ['jobOrder' => $jobOrder->id]] : null,
                 'receive_route' => $this->canEdit && $jobOrder->state == JobOrderStateEnum::CONFIRMED && ($warehouse || $jobOrder->isTrialRun()) ? [
                     'name'       => 'grp.models.job-order.receive',
                     'parameters' => ['jobOrder' => $jobOrder->id],

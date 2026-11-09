@@ -215,7 +215,7 @@ class GetProductDevelopmentChecklistEditor
             'currency'     => $targetField?->isCost() ? ($item?->supplierProduct?->currency?->code ?? $this->supplierCurrency) : null,
             'writes_to'    => $targetField?->writesTo(),
             'needs_supplier_product' => $targetField?->isOnSupplierProduct() && !$item?->supplierProduct,
-            'value'        => $targetField ? $this->liveValue($targetField, $item) : ($row->key === UploadProductDevelopmentFactoryPhoto::KEY ? $this->factoryPhotos($row) : ($row->value['text'] ?? null)),
+            'value'        => $targetField ? self::liveValue($targetField, $item) : ($row->key === UploadProductDevelopmentFactoryPhoto::KEY ? $this->factoryPhotos($row) : ($row->value['text'] ?? null)),
             'na_reason'    => $row->na_reason,
             'saved_by'     => $row->completedBy?->contact_name ?: $row->completedBy?->username,
             'saved_at'     => $row->completed_at?->toIso8601String(),
@@ -251,7 +251,7 @@ class GetProductDevelopmentChecklistEditor
         ];
     }
 
-    private function liveValue(ProductDevelopmentTargetFieldEnum $targetField, ?ProductDevelopmentItem $item): mixed
+    public static function liveValue(ProductDevelopmentTargetFieldEnum $targetField, ?ProductDevelopmentItem $item): mixed
     {
         if ($item && $targetField->isConfirmedBySaving()) {
             return $targetField->groupValue($item->tradeUnit);
