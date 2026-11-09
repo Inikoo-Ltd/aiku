@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faContainerStorage } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
@@ -144,10 +145,33 @@ watch(
 
 const orderOf = (purchaseOrderId: number | null) => props.due.orders.find((order) => order.purchase_order_id === purchaseOrderId)
 
-const tickedCount = computed(() => lines.value.filter((line) => ticked[line.key]).length)
-const allTicked = computed(() => lines.value.length > 0 && tickedCount.value === lines.value.length)
+type LineFilter = "all" | "purchase_orders" | "containers"
+
+const lineFilter = ref<LineFilter>("all")
+const isPurchaseOrderLine = (line: Line) => line.kind === "advance" || line.kind === "balance"
+const purchaseOrderLines = computed(() => lines.value.filter(isPurchaseOrderLine))
+const containerLines = computed(() => lines.value.filter((line) => line.kind === "container"))
+
+const lineFilterOptions = computed<{ label: string; value: LineFilter; count: number; disabled: boolean }[]>(() => [
+	{ label: ctrans("All"), value: "all", count: lines.value.length, disabled: false },
+	{ label: ctrans("PO"), value: "purchase_orders", count: purchaseOrderLines.value.length, disabled: !purchaseOrderLines.value.length },
+	{ label: ctrans("Container"), value: "containers", count: containerLines.value.length, disabled: !containerLines.value.length },
+])
+
+const visibleLines = computed(() => {
+	if (lineFilter.value === "purchase_orders") return purchaseOrderLines.value
+	if (lineFilter.value === "containers") return containerLines.value
+	return lines.value
+})
+
+watch(visibleLines, (current) => {
+	if (!current.length && lineFilter.value !== "all") lineFilter.value = "all"
+})
+
+const tickedCount = computed(() => visibleLines.value.filter((line) => ticked[line.key]).length)
+const allTicked = computed(() => visibleLines.value.length > 0 && tickedCount.value === visibleLines.value.length)
 const someTicked = computed(() => tickedCount.value > 0 && !allTicked.value)
-const tickAll = (value: boolean) => lines.value.forEach((line) => (ticked[line.key] = value))
+const tickAll = (value: boolean) => visibleLines.value.forEach((line) => (ticked[line.key] = value))
 
 const chosen = computed(() => lines.value.filter((line) => ticked[line.key] && Number(amounts[line.key]) > 0))
 const total = computed(() => chosen.value.reduce((sum, line) => sum + Number(amounts[line.key]), 0))
@@ -281,7 +305,10 @@ const send = () => {
 
 	<div v-if="lines.length" class="sticky top-10 z-[5] mx-4 mt-4 bg-white pt-2">
 		<div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-4 py-2">
-			<span class="text-sm text-gray-600">{{ ctrans(":count of :total lines selected", { count: String(chosen.length), total: String(lines.length) }) }}</span>
+			<div class="flex flex-wrap items-center gap-3">
+				<SegmentedToggle v-model="lineFilter" :options="lineFilterOptions" :ariaLabel="ctrans('Show the lines for')" />
+				<span class="text-sm text-gray-600">{{ ctrans(":count of :total lines selected", { count: String(chosen.length), total: String(lines.length) }) }}</span>
+			</div>
 			<span class="flex items-baseline gap-2">
 				<span class="text-xs uppercase tracking-wide text-gray-500">{{ ctrans("To ask for") }}</span>
 				<span class="whitespace-nowrap text-lg font-semibold text-gray-900">{{ money(total) }}</span>
@@ -295,7 +322,7 @@ const send = () => {
 				<tr>
 					<th class="w-10 px-3 py-2">
 						<Checkbox
-							v-if="lines.length"
+							v-if="visibleLines.length"
 							v-tooltip="allTicked ? ctrans('Unselect all') : ctrans('Select all')"
 							:modelValue="allTicked"
 							:indeterminate="someTicked"
@@ -314,7 +341,7 @@ const send = () => {
 				<tr v-if="!lines.length">
 					<td colspan="6" class="px-3 py-6 text-center text-gray-400">{{ ctrans("Nothing is due from :client", { client: client.code }) }}</td>
 				</tr>
-				<tr v-for="line in lines" :key="line.key" :class="ticked[line.key] ? '' : 'text-gray-400'">
+				<tr v-for="line in visibleLines" :key="line.key" :class="ticked[line.key] ? '' : 'text-gray-400'">
 					<td class="px-3 py-2"><Checkbox v-model="ticked[line.key]" binary /></td>
 					<td class="min-w-[18rem] px-3 py-2">
 						<span v-if="line.kind === 'wallet'" class="font-medium">{{ ctrans("Cover the negative balance") }}</span>
