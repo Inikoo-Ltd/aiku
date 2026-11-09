@@ -12,6 +12,7 @@ import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { mixBatchesLabel } from "@/Composables/mixBatches"
 import Modal from "@/Components/Utils/Modal.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import TrialRunBrief from "@/Components/Production/TrialRunBrief.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -152,6 +153,7 @@ const props = defineProps<{
     pdf_route: { name: string, parameters: object }
     receive_route: null | { name: string, parameters: object }
     is_trial_run: boolean
+    trial_run_brief_route: null | { name: string, parameters: object }
     locations_fetch_route: null | { name: string, parameters: object }
 }>()
 
@@ -503,6 +505,7 @@ function receiveIntoStock() {
                 {{ ctrans('Release to floor') }}
             </button>
         </div>
+        <TrialRunBrief v-if="trial_run_brief_route" :briefRoute="trial_run_brief_route" collapsible class="mb-6" />
         <div v-if="job_order.cancellation" class="mb-6 flex items-start gap-3 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-gray-700" role="status">
             <FontAwesomeIcon :icon="job_order.cancellation.mode === 'backlog' ? 'fal fa-undo' : 'fal fa-ban'" class="mt-0.5 text-red-500" fixed-width aria-hidden="true" />
             <div class="flex-1">
