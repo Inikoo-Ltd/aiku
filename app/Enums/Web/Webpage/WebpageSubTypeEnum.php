@@ -9,6 +9,7 @@
 namespace App\Enums\Web\Webpage;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Enums\EnumHelperTrait;
 use Illuminate\Support\Arr;
 
@@ -51,6 +52,7 @@ enum WebpageSubTypeEnum: string
     case REGISTER_DASHBOARD_PAGE = "register_dashboard_page";
     case FORGOT_PASSWORD_PAGE = "forgot_password_page";
     case BLOG_DASHBOARD_PAGE = "blog_dashboard_page";
+    case NEW_IN_PAGE = "new_in_page";
 
     /** Legacy catch all still stored on existing webpages, resolved by resolveBlogCategory. */
     case BLOG = 'blog';
@@ -62,8 +64,12 @@ enum WebpageSubTypeEnum: string
 
     /**
      * System pages that back a website column, keyed by sub type.
+     * A page with template_web_blocks gets the families and product list blocks the website uses on its
+     * catalogue pages, so it looks like them and follows the website templates. A page whose url another
+     * webpage has is created at url_when_taken, see RepairCreateSystemPages. shop_types limits the
+     * websites that get the page.
      *
-     * @return array<string, array{web_block: string, website_field: string, url: string, title: string, replaces_web_blocks?: array<int, string>}>
+     * @return array<string, array{web_block: string|null, website_field: string, url: string, title: string, replaces_web_blocks?: array<int, string>, template_web_blocks?: array<int, WebBlockTemplateEnum>, url_when_taken?: string, shop_types?: array<int, ShopTypeEnum>}>
      */
     public static function systemPages(): array
     {
@@ -73,6 +79,15 @@ enum WebpageSubTypeEnum: string
             self::REGISTER_DASHBOARD_PAGE->value => ['web_block' => 'register-dashboard-2', 'website_field' => 'register_dashboard_page_id', 'url' => 'register-dashboard', 'title' => 'Register Dashboard', 'replaces_web_blocks' => ['register-dashboard']],
             self::FORGOT_PASSWORD_PAGE->value => ['web_block' => 'forgot-password', 'website_field' => 'forgot_password_page_id', 'url' => 'forgot-password', 'title' => 'Forgot Password'],
             self::BLOG_DASHBOARD_PAGE->value  => ['web_block' => 'blog-categories', 'website_field' => 'blog_dashboard_page_id', 'url' => 'blog', 'title' => 'Our Blog'],
+            self::NEW_IN_PAGE->value          => [
+                'web_block'           => null,
+                'template_web_blocks' => [WebBlockTemplateEnum::FAMILIES, WebBlockTemplateEnum::LIST_PRODUCTS],
+                'website_field'       => 'new_in_page_id',
+                'url'                 => 'new',
+                'title'               => 'New In',
+                'url_when_taken'      => 'new-in',
+                'shop_types'          => [ShopTypeEnum::B2B, ShopTypeEnum::B2C, ShopTypeEnum::DROPSHIPPING],
+            ],
         ];
     }
 
@@ -100,6 +115,7 @@ enum WebpageSubTypeEnum: string
             'register_dashboard_page' => __('Register Dashboard'),
             'forgot_password_page'  => __('Forgot Password'),
             'blog_dashboard_page'   => __('Blog Dashboard'),
+            'new_in_page'           => __('New In'),
         ];
     }
 

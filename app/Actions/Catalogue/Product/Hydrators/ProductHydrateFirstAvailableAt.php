@@ -2,6 +2,8 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Enums\Catalogue\Product\ProductBadgeEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Catalogue\Product;
@@ -29,6 +31,11 @@ class ProductHydrateFirstAvailableAt
         }
 
         $product->update(['first_available_at' => self::firstSoldAt($product) ?? now()]);
+
+        $newInPage = $product->shop?->website?->newInPage;
+        if ($newInPage && ProductBadgeEnum::resolve($product->first_available_at, null) === ProductBadgeEnum::NEW_IN) {
+            BreakWebpageCache::dispatch($newInPage);
+        }
 
         return $product;
     }
