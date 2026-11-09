@@ -9,6 +9,7 @@
 namespace App\Models\SupplyChain;
 
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $aspo_deposit_id
  * @property DepositRequestItemKindEnum $kind
  * @property int|null $purchase_order_id
+ * @property int|null $stock_delivery_id the container a container costs line asks for
  * @property int $organisation_id
  * @property numeric $amount
  * @property numeric $exchange
@@ -52,6 +54,11 @@ class DepositRequestItem extends Model
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    public function stockDelivery(): BelongsTo
+    {
+        return $this->belongsTo(StockDelivery::class);
     }
 
     public function organisation(): BelongsTo

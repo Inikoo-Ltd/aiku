@@ -30,7 +30,7 @@ class NotifyMoneyRequestCreated
     public function handle(DepositRequest $depositRequest, bool $isReminder = false): int
     {
         $depositRequest->loadMissing(['agent.organisation', 'organisation', 'currency', 'requester']);
-        $depositRequest->load(['items.purchaseOrder' => fn ($query) => $query
+        $depositRequest->load(['items.stockDelivery:id,reference', 'items.purchaseOrder' => fn ($query) => $query
             ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
             ->leftJoin('org_suppliers', fn ($join) => $join->on('org_suppliers.supplier_id', 'purchase_orders.supplier_id')->on('org_suppliers.organisation_id', 'purchase_orders.organisation_id'))
             ->leftJoin('users as buyers', 'buyers.id', 'purchase_orders.buyer_id')
@@ -134,7 +134,7 @@ class NotifyMoneyRequestCreated
     {
         $purchaseOrder = $item->purchaseOrder;
         $line          = [
-            'description'    => $item->kind->describeForPurchaseOrder(),
+            'description'    => $item->stockDelivery ? $item->kind->describeForPurchaseOrder().' '.$item->stockDelivery->reference : $item->kind->describeForPurchaseOrder(),
             'amount'         => self::money($depositRequest, (float) $item->amount),
             'purchase_order' => null,
         ];

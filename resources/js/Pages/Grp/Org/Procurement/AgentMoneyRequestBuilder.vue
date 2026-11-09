@@ -14,7 +14,7 @@ import Select from "primevue/select"
 import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle } from "@fal"
+import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faContainerStorage } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -23,7 +23,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle)
+library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faContainerStorage)
 
 interface DueOrder {
 	purchase_order_id: number
@@ -44,6 +44,16 @@ interface DueOrder {
 	balance_due: number
 }
 
+interface DueContainer {
+	stock_delivery_id: number
+	reference: string
+	route: routeType
+	charges: { type: string; label: string; amount: number }[]
+	total: number
+	requested: number
+	due: number
+}
+
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
@@ -54,6 +64,7 @@ const props = defineProps<{
 		currency_code: string
 		wallet: { received: number; paid: number; balance: number }
 		negative_balance: number
+		containers: DueContainer[]
 		orders: DueOrder[]
 	}
 	store_route: routeType
@@ -69,17 +80,40 @@ const ageInDays = (date: string | null) => (date ? Math.max(0, Math.round((Date.
 
 interface Line {
 	key: string
-	kind: "advance" | "balance" | "wallet"
+	kind: "advance" | "balance" | "container" | "wallet"
 	purchase_order_id: number | null
+	stock_delivery_id: number | null
 	order: DueOrder | null
+	container: DueContainer | null
 	due: number
 }
 
+const orderLine = (kind: "advance" | "balance", order: DueOrder, due: number): Line => ({
+	key: `${kind}:${order.purchase_order_id}`,
+	kind,
+	purchase_order_id: order.purchase_order_id,
+	stock_delivery_id: null,
+	order,
+	container: null,
+	due,
+})
+
 const lines = computed<Line[]>(() => [
-	...(props.due.negative_balance > 0 ? [{ key: "wallet", kind: "wallet" as const, purchase_order_id: null, order: null, due: props.due.negative_balance }] : []),
+	...(props.due.negative_balance > 0
+		? [{ key: "wallet", kind: "wallet" as const, purchase_order_id: null, stock_delivery_id: null, order: null, container: null, due: props.due.negative_balance }]
+		: []),
+	...(props.due.containers ?? []).map((container) => ({
+		key: `container:${container.stock_delivery_id}`,
+		kind: "container" as const,
+		purchase_order_id: null,
+		stock_delivery_id: container.stock_delivery_id,
+		order: null,
+		container,
+		due: container.due,
+	})),
 	...props.due.orders.flatMap((order) => [
-		...(order.advance_due > 0 ? [{ key: `advance:${order.purchase_order_id}`, kind: "advance" as const, purchase_order_id: order.purchase_order_id, order, due: order.advance_due }] : []),
-		...(order.balance_due > 0 ? [{ key: `balance:${order.purchase_order_id}`, kind: "balance" as const, purchase_order_id: order.purchase_order_id, order, due: order.balance_due }] : []),
+		...(order.advance_due > 0 ? [orderLine("advance", order, order.advance_due)] : []),
+		...(order.balance_due > 0 ? [orderLine("balance", order, order.balance_due)] : []),
 	]),
 ])
 
@@ -131,12 +165,20 @@ const allOrdersUrl = computed(() =>
 	route(route().current() as string, Object.fromEntries(Object.entries(route().params).filter(([key]) => key !== "purchase_order")))
 )
 
+const hasContainerLines = computed(() => (props.due.containers ?? []).length > 0)
+
 const walletHint = computed(() => {
 	const balance = props.due.wallet.balance
 	if (balance < 0) {
+		const replacements = { amount: money(-balance), client: props.client.code }
+		if (hasContainerLines.value) {
+			return props.due.negative_balance > 0
+				? ctrans("The agent has paid out :amount more than :client sent; container costs are asked per container below and the rest is the first line", replacements)
+				: ctrans("The agent has paid out :amount more than :client sent; container costs are asked per container below", replacements)
+		}
 		return props.due.negative_balance > 0
-			? ctrans("The agent has paid out :amount more than :client sent; covering it is the first line below", { amount: money(-balance), client: props.client.code })
-			: ctrans("The agent has paid out :amount more than :client sent; it was already asked for in an earlier request", { amount: money(-balance), client: props.client.code })
+			? ctrans("The agent has paid out :amount more than :client sent; covering it is the first line below", replacements)
+			: ctrans("The agent has paid out :amount more than :client sent; it was already asked for in an earlier request", replacements)
 	}
 	if (balance > 0) {
 		return ctrans(":amount of :client money is still unspent with the agent; it is not taken off the lines below, lower them if it should be used first", { amount: money(balance), client: props.client.code })
@@ -169,7 +211,12 @@ const send = () => {
 			organisation_id: props.client.id,
 			reference: reference.value || null,
 			notes: notes.value || null,
-			lines: chosen.value.map((line) => ({ kind: line.kind, purchase_order_id: line.purchase_order_id, amount: Number(amounts[line.key]) })),
+			lines: chosen.value.map((line) => ({
+				kind: line.kind,
+				purchase_order_id: line.purchase_order_id,
+				stock_delivery_id: line.stock_delivery_id,
+				amount: Number(amounts[line.key]),
+			})),
 		},
 		{
 			onStart: () => {
@@ -257,7 +304,7 @@ const send = () => {
 						/>
 					</th>
 					<th class="px-3 py-2 font-medium">{{ ctrans("For") }}</th>
-					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Order total") }}</th>
+					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Total") }}</th>
 					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Already asked") }}</th>
 					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Advance %") }}</th>
 					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Amount") }}</th>
@@ -271,6 +318,21 @@ const send = () => {
 					<td class="px-3 py-2"><Checkbox v-model="ticked[line.key]" binary /></td>
 					<td class="min-w-[18rem] px-3 py-2">
 						<span v-if="line.kind === 'wallet'" class="font-medium">{{ ctrans("Cover the negative balance") }}</span>
+						<div v-else-if="line.container" class="space-y-1 text-xs text-gray-600">
+							<div class="flex items-start gap-2">
+								<span class="flex items-center gap-1">
+									<FontAwesomeIcon v-tooltip="ctrans('Container')" icon="fal fa-container-storage" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+									<Link :href="route(line.container.route.name, line.container.route.parameters)" class="whitespace-nowrap text-sm font-semibold text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">{{ line.container.reference }}</Link>
+								</span>
+								<span class="ml-auto shrink-0 whitespace-nowrap rounded border border-gray-200 px-1.5 font-medium text-gray-700">{{ ctrans("Container costs") }}</span>
+							</div>
+							<div class="flex flex-wrap items-center gap-x-1">
+								<template v-for="(charge, index) in line.container.charges" :key="charge.type">
+									<span v-if="index" class="text-gray-400">·</span>
+									<span class="whitespace-nowrap">{{ charge.label }} {{ money(charge.amount) }}</span>
+								</template>
+							</div>
+						</div>
 						<div v-else-if="line.order" class="space-y-1 text-xs text-gray-600">
 							<div class="flex items-start gap-2">
 								<div class="flex min-w-0 flex-col">
@@ -297,10 +359,10 @@ const send = () => {
 						</div>
 					</td>
 					<td class="whitespace-nowrap px-3 py-2 text-right">
-						<template v-if="line.kind !== 'wallet'">{{ money(orderOf(line.purchase_order_id)!.total) }}</template>
+						<template v-if="line.order ?? line.container">{{ money((line.order ?? line.container)!.total) }}</template>
 					</td>
 					<td class="whitespace-nowrap px-3 py-2 text-right">
-						<template v-if="line.kind !== 'wallet'">{{ orderOf(line.purchase_order_id)!.requested ? money(orderOf(line.purchase_order_id)!.requested) : "-" }}</template>
+						<template v-if="line.order ?? line.container">{{ (line.order ?? line.container)!.requested ? money((line.order ?? line.container)!.requested) : "-" }}</template>
 					</td>
 					<td class="px-3 py-2 text-right">
 						<InputNumber

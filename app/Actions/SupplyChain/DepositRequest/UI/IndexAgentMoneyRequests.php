@@ -18,6 +18,7 @@ use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\InertiaTable\InertiaTable;
+use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\DepositRequest;
@@ -68,7 +69,7 @@ class IndexAgentMoneyRequests extends OrgAction
             ->select(['deposit_requests.*', 'organisations.code as client_code', 'organisations.slug as client_slug', 'currencies.code as currency_code'])
             ->selectSub(DB::table('deposit_request_items')->whereColumn('deposit_request_id', 'deposit_requests.id')->selectRaw('coalesce(sum(amount), 0)'), 'total')
             ->selectSub(DB::table('agent_payments')->whereColumn('deposit_request_id', 'deposit_requests.id')->whereNull('deleted_at')->selectRaw('coalesce(sum(amount), 0)'), 'paid')
-            ->with(['requester:id,username,contact_name,nickname', 'approver:id,username,contact_name,nickname', 'rejecter:id,username,contact_name,nickname', 'reminder:id,username,contact_name,nickname', 'items.purchaseOrder' => fn ($query) => $query
+            ->with(['requester:id,username,contact_name,nickname', 'approver:id,username,contact_name,nickname', 'rejecter:id,username,contact_name,nickname', 'reminder:id,username,contact_name,nickname', 'items.stockDelivery:id,slug,reference', 'items.purchaseOrder' => fn ($query) => $query
                 ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
                 ->select(['purchase_orders.id', 'purchase_orders.slug', 'purchase_orders.reference', 'purchase_orders.agent_order_reference', 'suppliers.code as supplier_code', 'suppliers.name as supplier_name'])])
             ->defaultSort('-requested_at')
@@ -78,7 +79,11 @@ class IndexAgentMoneyRequests extends OrgAction
                 ->orWhereExists(fn ($exists) => $exists->from('deposit_request_items')
                     ->join('purchase_orders', 'purchase_orders.id', 'deposit_request_items.purchase_order_id')
                     ->whereColumn('deposit_request_items.deposit_request_id', 'deposit_requests.id')
-                    ->where(fn ($match) => $match->whereAnyWordStartWith('purchase_orders.reference', $value)->orWhereAnyWordStartWith('purchase_orders.agent_order_reference', $value)))))])
+                    ->where(fn ($match) => $match->whereAnyWordStartWith('purchase_orders.reference', $value)->orWhereAnyWordStartWith('purchase_orders.agent_order_reference', $value)))
+                ->orWhereExists(fn ($exists) => $exists->from('deposit_request_items')
+                    ->join('stock_deliveries', 'stock_deliveries.id', 'deposit_request_items.stock_delivery_id')
+                    ->whereColumn('deposit_request_items.deposit_request_id', 'deposit_requests.id')
+                    ->where(fn ($match) => $match->whereAnyWordStartWith('stock_deliveries.reference', $value)))))])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }
@@ -97,6 +102,11 @@ class IndexAgentMoneyRequests extends OrgAction
         $purchaseOrderRoute = fn (?PurchaseOrder $purchaseOrder) => $purchaseOrder ? [
             'name'       => $forClient ? 'grp.org.procurement.purchase_orders.show' : 'grp.org.agent.purchase_orders.show',
             'parameters' => [$forClient ? $depositRequest->client_slug : $depositRequest->agent->organisation->slug, $purchaseOrder->slug],
+        ] : null;
+
+        $containerRoute = fn (?StockDelivery $stockDelivery) => $stockDelivery ? [
+            'name'       => $forClient ? 'grp.org.procurement.stock_deliveries.show' : 'grp.org.agent.stock_deliveries.show',
+            'parameters' => [$forClient ? $depositRequest->client_slug : $depositRequest->agent->organisation->slug, $stockDelivery->slug],
         ] : null;
 
         return [
@@ -124,8 +134,8 @@ class IndexAgentMoneyRequests extends OrgAction
             'lines'         => $depositRequest->items->map(fn (DepositRequestItem $item) => [
                 'kind'          => $item->kind->value,
                 'kind_label'    => DepositRequestItemKindEnum::labels()[$item->kind->value],
-                'reference'     => $item->purchaseOrder?->reference,
-                'route'         => $purchaseOrderRoute($item->purchaseOrder),
+                'reference'     => $item->purchaseOrder?->reference ?? $item->stockDelivery?->reference,
+                'route'         => $item->purchaseOrder ? $purchaseOrderRoute($item->purchaseOrder) : $containerRoute($item->stockDelivery),
                 'description'   => $item->purchaseOrder ? $item->kind->describeForPurchaseOrder() : DepositRequestItemKindEnum::labels()[$item->kind->value],
                 'supplier_code' => $item->purchaseOrder?->supplier_code,
                 'supplier_name' => $item->purchaseOrder?->supplier_name,

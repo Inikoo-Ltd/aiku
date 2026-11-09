@@ -12,7 +12,8 @@ use App\Enums\EnumHelperTrait;
 
 /**
  * What a line of an agent's money request asks the client for: the advance on a supplier order, the rest of
- * that order before it ships, or enough to bring the client's wallet with the agent back to zero.
+ * that order before it ships, the charges the agent paid for one container, or enough to bring the client's
+ * wallet with the agent back to zero.
  */
 enum DepositRequestItemKindEnum: string
 {
@@ -20,23 +21,25 @@ enum DepositRequestItemKindEnum: string
 
     case ADVANCE = 'advance';
     case BALANCE = 'balance';
+    case CONTAINER = 'container';
     case WALLET = 'wallet';
 
     public static function labels(): array
     {
         return [
-            'advance' => __('Advance'),
-            'balance' => __('Balance'),
-            'wallet'  => __('Cover the negative balance'),
+            'advance'   => __('Advance'),
+            'balance'   => __('Balance'),
+            'container' => __('Container costs'),
+            'wallet'    => __('Cover the negative balance'),
         ];
     }
 
     public function describeForPurchaseOrder(): string
     {
         return match ($this) {
-            self::ADVANCE => __('Advance payment for PO'),
-            self::BALANCE => __('Balance payment for PO'),
-            self::WALLET  => self::labels()[$this->value],
+            self::ADVANCE                 => __('Advance payment for PO'),
+            self::BALANCE                 => __('Balance payment for PO'),
+            self::CONTAINER, self::WALLET => self::labels()[$this->value],
         };
     }
 }

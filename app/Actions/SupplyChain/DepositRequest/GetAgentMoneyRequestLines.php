@@ -21,10 +21,13 @@ use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
  * What an agent can still ask a client for: on each open supplier order the advance (the supplier's advance %,
- * 30 when not set) and the rest of the order, less what is already covered, and whatever brings the client's
- * wallet back to zero. An order is covered by what was asked for it or, when more, by what the ledger shows paid
- * to its supplier: money paid out that was never asked for is already in the negative wallet, which its own line
- * asks for, so the order does not ask for it again. Amounts are in the agent's currency; orders in another currency are left out.
+ * 30 when not set) and the rest of the order, less what is already covered, the charges the agent paid for each
+ * container, and whatever brings the client's wallet back to zero. An order is covered by what was asked for it
+ * or, when more, by what the ledger shows paid to its supplier: money paid out that was never asked for is already
+ * in the negative wallet, which its own line asks for, so the order does not ask for it again. Container charges
+ * are the other way round: each container asks for its own, less what was asked for it or sent against it, so the
+ * wallet line leaves out what the container lines ask for or an open request already asked for.
+ * Amounts are in the agent's currency; orders in another currency are left out.
  */
 class GetAgentMoneyRequestLines
 {
@@ -33,7 +36,7 @@ class GetAgentMoneyRequestLines
     public const float DEFAULT_ADVANCE_PERCENTAGE = 30;
 
     /**
-     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, negative_balance: float, orders: list<array{purchase_order_id: int, purchase_order_slug: string, reference: string, submitted_at: string|null, placed_by: string|null, supplier_id: int|null, supplier_slug: string|null, supplier_code: string|null, supplier_name: string|null, supplier_company: string|null, supplier_nickname: string|null, total: float, requested: float, advance_percentage: float, advance_due: float, balance_due: float}>}
+     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, negative_balance: float, containers: list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>, orders: list<array{purchase_order_id: int, purchase_order_slug: string, reference: string, submitted_at: string|null, placed_by: string|null, supplier_id: int|null, supplier_slug: string|null, supplier_code: string|null, supplier_name: string|null, supplier_company: string|null, supplier_nickname: string|null, total: float, requested: float, advance_percentage: float, advance_due: float, balance_due: float}>}
      */
     public function handle(Agent $agent, Organisation $client, ?int $purchaseOrderId = null): array
     {
@@ -130,11 +133,98 @@ class GetAgentMoneyRequestLines
             ->where('deposit_request_items.kind', DepositRequestItemKindEnum::WALLET->value)
             ->sum('deposit_request_items.amount');
 
+        $containers                    = $this->containers($agent, $client, $currency->id);
+        $containersAskedInOpenRequests = (float) DB::table('deposit_request_items')
+            ->join('deposit_requests', 'deposit_requests.id', 'deposit_request_items.deposit_request_id')
+            ->where('deposit_requests.agent_id', $agent->id)
+            ->where('deposit_requests.organisation_id', $client->id)
+            ->where('deposit_requests.state', DepositRequestStateEnum::REQUESTED->value)
+            ->where('deposit_request_items.kind', DepositRequestItemKindEnum::CONTAINER->value)
+            ->sum('deposit_request_items.amount');
+        $containersStillDue            = array_sum(array_column($containers, 'due'));
+
         return [
             'currency_code'    => $currency->code,
             'wallet'           => ['received' => $wallet['received'], 'paid' => $wallet['paid'], 'balance' => $wallet['balance']],
-            'negative_balance' => max(0, round(-$wallet['balance'] - $walletAlreadyRequested, 2)),
+            'negative_balance' => max(0, round(-$wallet['balance'] - $walletAlreadyRequested - $containersStillDue - $containersAskedInOpenRequests, 2)),
+            'containers'       => $purchaseOrderId ? [] : array_values(array_filter($containers, fn (array $container) => $container['due'] > 0)),
             'orders'           => $orders,
         ];
+    }
+
+    /**
+     * Every container the agent paid charges for on the client's behalf, with what is still to ask for: the charges
+     * less what was asked for the container in a request still standing or, when more, sent against it directly.
+     *
+     * @return list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>
+     */
+    private function containers(Agent $agent, Organisation $client, int $currencyId): array
+    {
+        $chargeTypes = array_values(array_map(fn (AgentPaymentTypeEnum $type) => $type->value, array_filter(AgentPaymentTypeEnum::cases(), fn (AgentPaymentTypeEnum $type) => $type->isCharge())));
+
+        $charges = DB::table('agent_payments')
+            ->join('stock_deliveries', 'stock_deliveries.id', 'agent_payments.stock_delivery_id')
+            ->where('agent_payments.agent_id', $agent->id)
+            ->where('agent_payments.organisation_id', $client->id)
+            ->where('agent_payments.currency_id', $currencyId)
+            ->whereIn('agent_payments.type', $chargeTypes)
+            ->whereNull('agent_payments.deleted_at')
+            ->groupBy('agent_payments.stock_delivery_id', 'stock_deliveries.slug', 'stock_deliveries.reference', 'stock_deliveries.state', 'agent_payments.type')
+            ->orderBy('stock_deliveries.reference')
+            ->get([
+                'agent_payments.stock_delivery_id',
+                'stock_deliveries.slug',
+                'stock_deliveries.reference',
+                'stock_deliveries.state',
+                'agent_payments.type',
+                DB::raw('sum(agent_payments.amount) as amount'),
+            ]);
+
+        if ($charges->isEmpty()) {
+            return [];
+        }
+
+        $stockDeliveryIds = $charges->pluck('stock_delivery_id')->unique()->values()->all();
+
+        $requested = DB::table('deposit_request_items')
+            ->join('deposit_requests', 'deposit_requests.id', 'deposit_request_items.deposit_request_id')
+            ->whereNotIn('deposit_requests.state', [DepositRequestStateEnum::CANCELLED->value, DepositRequestStateEnum::REJECTED->value])
+            ->where('deposit_request_items.kind', DepositRequestItemKindEnum::CONTAINER->value)
+            ->whereIn('deposit_request_items.stock_delivery_id', $stockDeliveryIds)
+            ->groupBy('deposit_request_items.stock_delivery_id')
+            ->pluck(DB::raw('sum(deposit_request_items.amount)'), 'deposit_request_items.stock_delivery_id');
+
+        $sentAgainstContainer = DB::table('agent_payments')
+            ->where('agent_payments.agent_id', $agent->id)
+            ->where('agent_payments.organisation_id', $client->id)
+            ->where('agent_payments.type', AgentPaymentTypeEnum::TRANSFER_RECEIVED->value)
+            ->whereIn('agent_payments.stock_delivery_id', $stockDeliveryIds)
+            ->whereNull('agent_payments.deleted_at')
+            ->groupBy('agent_payments.stock_delivery_id')
+            ->pluck(DB::raw('sum(agent_payments.amount)'), 'agent_payments.stock_delivery_id');
+
+        $labels = AgentPaymentTypeEnum::labels();
+
+        return $charges->groupBy('stock_delivery_id')->map(function ($rows, $stockDeliveryId) use ($requested, $sentAgainstContainer, $labels) {
+            $first         = $rows->first();
+            $total         = round((float) $rows->sum('amount'), 2);
+            $requestedHere = round((float) ($requested[$stockDeliveryId] ?? 0), 2);
+            $covered       = max($requestedHere, round((float) ($sentAgainstContainer[$stockDeliveryId] ?? 0), 2));
+
+            return [
+                'stock_delivery_id'   => (int) $stockDeliveryId,
+                'stock_delivery_slug' => $first->slug,
+                'reference'           => $first->reference,
+                'state'               => $first->state,
+                'charges'             => $rows->map(fn ($row) => [
+                    'type'   => $row->type,
+                    'label'  => $labels[$row->type] ?? $row->type,
+                    'amount' => round((float) $row->amount, 2),
+                ])->sortByDesc('amount')->values()->all(),
+                'total'               => $total,
+                'requested'           => $requestedHere,
+                'due'                 => max(0, round($total - $covered, 2)),
+            ];
+        })->values()->all();
     }
 }
