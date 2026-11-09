@@ -17,6 +17,8 @@ library.add(faFileInvoice, faFilePdf, faPlus, faTrashAlt, faPaperclip)
 
 interface Charge {
 	description: string
+	label: string
+	notes: string | null
 	type?: string
 	amount: number | null
 }
@@ -217,7 +219,10 @@ const deposits = computed(() => props.data.invoice?.advance_payments.filter(paym
 				<p v-else-if="data.invoice.charges.length" class="mt-2 rounded bg-green-50 px-2 py-1 text-sm text-green-700">{{ ctrans("Charges approved") }}</p>
 				<ul v-if="data.invoice.charges.length" class="mt-2 space-y-1 text-sm">
 					<li v-for="(charge, index) in data.invoice.charges" :key="index" class="flex justify-between gap-4">
-						<span class="text-gray-700">{{ charge.description }}</span>
+						<span class="min-w-0">
+							<span class="text-gray-700">{{ charge.label }}</span>
+							<span v-if="charge.notes" class="ml-1.5 italic text-gray-400">{{ charge.notes }}</span>
+						</span>
 						<span class="tabular-nums text-gray-800">{{ money(Number(charge.amount)) }}</span>
 					</li>
 				</ul>

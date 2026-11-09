@@ -204,8 +204,8 @@ class IndexAgentLedger extends OrgAction
                 ->column(key: 'client_code', label: __('Client'), canBeHidden: false)
                 ->column(key: 'type', label: __('Type'), canBeHidden: false)
                 ->column(key: 'for', label: __('For'), canBeHidden: false)
-                ->column(key: 'money_in', label: __('In'), canBeHidden: false, align: 'right')
-                ->column(key: 'money_out', label: __('Out'), canBeHidden: false, align: 'right')
+                ->column(key: 'money_in', label: __('In'), tooltip: __('Money into the client\'s wallet held by the agent: transfers the client sent and refunds from suppliers. Increases the wallet balance'), canBeHidden: false, align: 'right', tooltipIcon: true)
+                ->column(key: 'money_out', label: __('Out'), tooltip: __('Money the agent spent from the client\'s wallet: supplier payments, charges and the agent fee. Decreases the wallet balance'), canBeHidden: false, align: 'right', tooltipIcon: true)
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false)
                 ->column(key: 'actions', label: '', canBeHidden: false, align: 'right')
                 ->defaultSort('-date');
