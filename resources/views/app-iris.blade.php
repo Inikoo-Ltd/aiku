@@ -11,7 +11,9 @@
         } catch (e) {}
     </script>
     <meta name="app-release" content="{{ config('sentry.release') }}">
+    @unless(str_contains(app(\Inertia\Ssr\SsrState::class)->setPage($page)->dispatch()?->head ?? '', '<title'))
     <title data-inertia>{{ $browserTitle ?? config('app.name') }}</title>
+    @endunless
 
 
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
