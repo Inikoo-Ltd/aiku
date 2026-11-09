@@ -1387,6 +1387,14 @@ test('a website guest on a test email domain is put in spam by rule', function (
         ->and($rule)->toBeNull();
 });
 
+test('the noise model is told a buyer calling it a partnership is genuine, and only selling us their own goods is spam', function () {
+    $definitions = \App\Enums\CRM\Livechat\ChatNoiseVerdictEnum::definitions();
+
+    expect($definitions['genuine'])->toContain('call it a partnership or a collaboration')
+        ->and($definitions['spam'])->toContain('their own products')
+        ->and($definitions['spam'])->not->toContain('collaborations');
+});
+
 test('customer uploads are capped at 10MB a file and 100MB a day per IP', function () {
     $ip = '203.0.113.'.random_int(1, 254);
     \Illuminate\Support\Facades\RateLimiter::clear('chat-customer-upload-bytes:'.$ip);

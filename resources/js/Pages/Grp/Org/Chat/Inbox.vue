@@ -1048,7 +1048,7 @@ const markSpam = async (c: Contact, spam: boolean) => {
         const routeName = sessionRoute(spam ? "spam" : "not_spam", c)
         await axios.patch(route(routeName, [props.organisation.slug, c.ulid]), {}, { withCredentials: true })
         // It moved to (or out of) the Spam tab — drop it from the current list.
-        contacts.value = contacts.value.filter((x) => x.ulid !== c.ulid)
+        removeFromList(c.ulid)
         if (selectedSession.value?.ulid === c.ulid) {
             selectedSession.value = null
             messages.value = []
@@ -1074,7 +1074,7 @@ const markRubbish = async (c: Contact, rubbish: boolean, reason?: string) => {
             reason ? { reason } : {},
             { withCredentials: true }
         )
-        contacts.value = contacts.value.filter((x) => x.ulid !== c.ulid)
+        removeFromList(c.ulid)
         if (selectedSession.value?.ulid === c.ulid) {
             selectedSession.value = null
             messages.value = []
@@ -1900,6 +1900,58 @@ const trashChat = async (c: Contact) => {
     }
 }
 
+// Several at once only where nobody is waiting for an answer: clearing the Spam and Ignored bins.
+const canBulkSelect = computed(() => (spamView.value || rubbishView.value) && !isReadOnly.value)
+const bulkSelected = ref<Record<string, boolean>>({})
+const isBulkTrashing = ref(false)
+const bulkError = ref("")
+
+const isBulkSelectable = (c: Contact) => canBulkSelect.value && (spamView.value ? !!c.is_spam : !!c.is_rubbish)
+const bulkSelectableContacts = computed(() => filteredContacts.value.filter(isBulkSelectable))
+const bulkSelectedContacts = computed(() => bulkSelectableContacts.value.filter((c) => bulkSelected.value[c.ulid]))
+const allBulkSelected = computed(() => bulkSelectableContacts.value.length > 0 && bulkSelectedContacts.value.length === bulkSelectableContacts.value.length)
+
+const toggleBulkSelected = (c: Contact) => {
+    bulkSelected.value = { ...bulkSelected.value, [c.ulid]: !bulkSelected.value[c.ulid] }
+}
+
+const toggleAllBulkSelected = () => {
+    bulkSelected.value = allBulkSelected.value ? {} : Object.fromEntries(bulkSelectableContacts.value.map((c) => [c.ulid, true]))
+}
+
+watch([spamView, rubbishView, selectedShopIds, canBulkSelect], () => {
+    bulkSelected.value = {}
+    bulkError.value = ""
+})
+
+const runBulk = async (action: (c: Contact) => Promise<unknown>) => {
+    if (isBulkTrashing.value) return
+    isBulkTrashing.value = true
+    bulkError.value = ""
+
+    for (const c of bulkSelectedContacts.value) {
+        await action(c)
+    }
+
+    const failed = bulkSelectedContacts.value.length
+    bulkSelected.value = Object.fromEntries(bulkSelectedContacts.value.map((c) => [c.ulid, true]))
+    bulkError.value = failed ? ctrans(":count could not be updated", { count: String(failed) }) : ""
+    isBulkTrashing.value = false
+    fetchInboxNotifications()
+}
+
+const trashBulkSelected = () => runBulk(async (c) => {
+    if (await patchSession(c, sessionRoute("trash", c), "delete")) {
+        removeFromList(c.ulid)
+    }
+})
+
+const restoreBulkSelected = () => {
+    const fromSpam = spamView.value
+
+    return runBulk((c) => fromSpam ? markSpam(c, false) : markRubbish(c, false))
+}
+
 const LABEL_COLOURS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280"]
 
 const newLabelName = ref("")
@@ -2699,6 +2751,7 @@ provide("chatInboxRow", reactive({
     mailTab, trashView, onlyClosed, isEmailMailbox, isMailLayout, isReadOnly, selectedShopId, selectedItemStyle,
     onRowClick, startLongPress, moveLongPress, cancelLongPress, onRowContextMenu, toggleHighlight, toggleRowMenu,
     openFiles, markSpam, channelBadge, emailSubject, formatPromiseTime, labelChipStyle, ownerInitials, writesInOtherLanguage,
+    isBulkSelectable, bulkSelected, toggleBulkSelected,
 }))
 
 const closePreview = () => {
@@ -4037,6 +4090,17 @@ onUnmounted(() => {
                 </div>
 
                 <div v-else>
+                    <div v-if="canBulkSelect" class="sticky top-0 z-40 flex items-center gap-2 border-b bg-white px-3 py-1.5 text-xs text-gray-600">
+                        <Checkbox :model-value="allBulkSelected" binary :aria-label="ctrans('Select all')" @update:model-value="toggleAllBulkSelected" />
+                        <span class="whitespace-nowrap">{{ bulkSelectedContacts.length ? ctrans(":count selected", { count: String(bulkSelectedContacts.length) }) : ctrans("Select all") }}</span>
+                        <span v-if="bulkError" class="truncate text-red-600">{{ bulkError }}</span>
+                        <template v-if="bulkSelectedContacts.length">
+                            <Button class="ml-auto" type="tertiary" size="xs" :icon="faRotateLeft"
+                                :label="spamView ? ctrans('Not spam') : ctrans('Not ignored')" :disabled="isBulkTrashing" @click="restoreBulkSelected" />
+                            <Button type="tertiary" size="xs" :icon="faTrash"
+                                :label="ctrans('Move to trash')" :loading="isBulkTrashing" @click="trashBulkSelected" />
+                        </template>
+                    </div>
                     <ChatInboxRow v-for="c in filteredContacts" :key="c.ulid" :c="c" :is-selected="selectedSession?.ulid === c.ulid" />
 
                     <div ref="sentinelEl" class="flex justify-center py-3">
