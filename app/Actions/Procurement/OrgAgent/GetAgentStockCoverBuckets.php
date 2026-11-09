@@ -60,7 +60,7 @@ class GetAgentStockCoverBuckets
      * sell, and with a lead time of a few days the watch window still reaches as far as the
      * projection looks ahead.
      */
-    private function bucketExpression(int $leadDays, string $alsoComingSkos = '0'): string
+    private function bucketExpression(int $leadDays, string $draftOrderSkos = '0'): string
     {
         $lead       = self::leadTimeExpression($leadDays);
         $understock = "coalesce((stock_families.data->'stock_cover'->>'understock_days')::int, 2 * $lead)";
@@ -68,11 +68,11 @@ class GetAgentStockCoverBuckets
         return "case
             when os.id is null then 'never'
             when os.state <> '".OrgStockStateEnum::ACTIVE->value."' then 'gone'
-            ".GetOrganisationStockCoverBuckets::outOfStockCase('os', 's', GetOrganisationStockCoverBuckets::make()->overstockDaysExpression(), $alsoComingSkos)."
+            ".GetOrganisationStockCoverBuckets::outOfStockCase('os', 's', GetOrganisationStockCoverBuckets::make()->overstockDaysExpression())."
             else ".GetOrganisationStockCoverBuckets::bucketOnCoverDaysExpression('os', 's', "greatest(4 * $lead, $understock, least(".ProjectOrganisationStockOuts::DAYS.", $lead + ".ProjectOrganisationStockOuts::REORDER_DAYS."))", "
                 ".GetOrganisationStockCoverBuckets::atRiskCases($lead, $understock, GetOrganisationStockCoverBuckets::make()->overstockDaysExpression(), "greatest(4 * $lead, least(".ProjectOrganisationStockOuts::DAYS.", $lead + ".ProjectOrganisationStockOuts::REORDER_DAYS."))")."
                 when coalesce(s.predicted_daily_usage, 0) = 0 and s.stock_value > 0 then 'dead'
-                else 'ok'", $alsoComingSkos).' end';
+                else 'ok'", draftOrderSkos: $draftOrderSkos).' end';
     }
 
     /**
