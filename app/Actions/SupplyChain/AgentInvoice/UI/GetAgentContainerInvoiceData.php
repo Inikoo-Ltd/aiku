@@ -97,7 +97,7 @@ class GetAgentContainerInvoiceData
             'date'             => $invoice->date->toDateString(),
             'currency_code'    => $invoice->currency->code,
             'goods_amount'     => (float) $invoice->goods_amount,
-            'charges'          => $invoice->charges ?? [],
+            'charges'          => $this->chargesData($invoice),
             'charges_amount'   => (float) $invoice->charges_amount,
             'charges_approved' => ApproveAgentInvoiceCharges::isApproved($invoice),
             'total_amount'     => (float) $invoice->total_amount,
@@ -110,5 +110,34 @@ class GetAgentContainerInvoiceData
                 'parameters' => [$organisation->slug, $invoice->id],
             ],
         ];
+    }
+
+    /**
+     * A charge synced from the ledger shows its type (and SKO) apart from the agent's notes; a charge typed by hand
+     * only has its description.
+     *
+     * @return array<int, array{description: string, label: string, notes: ?string, type: ?string, amount: float|null}>
+     */
+    private function chargesData(AgentInvoice $invoice): array
+    {
+        $charges     = $invoice->charges ?? [];
+        $ledgerLines = AgentPayment::whereIn('id', array_filter(array_column($charges, 'ledger_id')))
+            ->with('orgStock:id,code')
+            ->get()
+            ->keyBy('id');
+
+        return array_map(function (array $charge) use ($ledgerLines) {
+            $ledgerLine = $ledgerLines->get($charge['ledger_id'] ?? null);
+
+            return [
+                'description' => $charge['description'],
+                'label'       => $ledgerLine
+                    ? implode(' · ', array_filter([AgentPaymentTypeEnum::labels()[$ledgerLine->type->value], $ledgerLine->orgStock?->code]))
+                    : $charge['description'],
+                'notes'       => $ledgerLine?->notes,
+                'type'        => $charge['type'] ?? null,
+                'amount'      => $charge['amount'] ?? null,
+            ];
+        }, $charges);
     }
 }
