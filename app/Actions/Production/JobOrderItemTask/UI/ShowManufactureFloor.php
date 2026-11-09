@@ -130,7 +130,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openTasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->with(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.tradeUnit.image', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
+            ->with(['recipeStep.rawMaterials', 'recipeStep.artefact.recipeSteps.manufactureTask', 'recipeStep.artefact.recipeSteps.rawMaterials', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.tradeUnit.image', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
             ->join('job_order_items', 'job_order_items.id', '=', 'job_order_item_tasks.job_order_item_id')
             ->live()
@@ -156,7 +156,8 @@ class ShowManufactureFloor extends OrgAction
             ->orderBy('job_order_item_tasks.position')
             ->orderBy('job_order_item_tasks.id')
             ->select('job_order_item_tasks.*')
-            ->get();
+            ->get()
+            ->each(fn (JobOrderItemTask $task) => $task->jobOrderItem->setRelation('jobOrder', $task->jobOrder));
 
         $openTasksByJobOrderItem = $openTasks->groupBy('job_order_item_id');
 
@@ -164,6 +165,7 @@ class ShowManufactureFloor extends OrgAction
 
         $stepsByJobOrderItem = JobOrderItemTask::whereIn('job_order_item_id', $openTasksByJobOrderItem->keys())
             ->with([
+                'recipeStep',
                 'manufactureTask',
                 'sessions' => fn ($query) => $query->whereIn('state', [ManufactureTaskSessionStateEnum::OPEN, ManufactureTaskSessionStateEnum::CLOSED])->with('user'),
                 'sessionShares.session.user',
@@ -173,6 +175,11 @@ class ShowManufactureFloor extends OrgAction
             ->get()
             ->groupBy('job_order_item_id');
 
+        $this->missingMixes = array_map(
+            fn (array $missing) => array_column($missing, 'code'),
+            GetJobOrderItemMissingMixes::make()->forJobOrderItems($openTasks->concat(collect($this->combinedGroups)->flatten(1))->pluck('jobOrderItem')->unique('id'))
+        );
+
         $serializedSteps = [];
 
         $tasks = $openTasks
@@ -181,7 +188,7 @@ class ShowManufactureFloor extends OrgAction
                 $blockingStep = $members->map(fn (JobOrderItemTask $member) => match (true) {
                     $member->id == $task->id                         => $task->blockingStep($openTasksByJobOrderItem->get($task->job_order_item_id)),
                     $member->state == JobOrderItemTaskStateEnum::DONE => null,
-                    default                                          => $member->blockingStep($member->jobOrderItem->tasks),
+                    default                                          => $member->blockingStep($stepsByJobOrderItem->get($member->job_order_item_id) ?? $member->jobOrderItem->tasks),
                 })->filter()->first();
                 $workingOn    = $members->flatMap(fn (JobOrderItemTask $member) => $workingOnBy->get($member->id, []))->unique()->values()->all();
 
@@ -351,6 +358,8 @@ class ShowManufactureFloor extends OrgAction
      */
     public static function serializeNonProductiveSession(ManufactureTaskSession $session): array
     {
+        $language = $session->activity_type == ManufactureTaskSessionActivityTypeEnum::PREPARATION ? Language::where('code', app()->getLocale())->first() : null;
+
         return [
             'id'            => $session->id,
             'started_at'    => $session->started_at,
@@ -377,7 +386,7 @@ class ShowManufactureFloor extends OrgAction
             'preparation_reasons' => $session->activity_type == ManufactureTaskSessionActivityTypeEnum::PREPARATION
                 ? ManufacturePreparationReason::forProduction($session->production)->map(fn (ManufacturePreparationReason $reason) => [
                     'id'       => $reason->id,
-                    'label'    => $reason->nameIn(Language::where('code', app()->getLocale())->first()),
+                    'label'    => $reason->nameIn($language),
                     'is_other' => $reason->is_other,
                 ])->all()
                 : null,
@@ -631,13 +640,25 @@ class ShowManufactureFloor extends OrgAction
      */
     protected function collapseCombined(Collection $openTasks): Collection
     {
+        $combinedTaskIds = $openTasks->whereNotNull('combined_task_id')->pluck('combined_task_id')->unique()->values();
+        if ($combinedTaskIds->isEmpty()) {
+            return $openTasks;
+        }
+
+        $membersByCombinedTask = JobOrderItemTask::whereIn('combined_task_id', $combinedTaskIds)
+            ->live()
+            ->orderBy('id')
+            ->with(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks.manufactureTask', 'jobOrderItem.jobOrder.employee', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans'])
+            ->get()
+            ->groupBy('combined_task_id');
+
         $hidden = [];
-        foreach ($openTasks->whereNotNull('combined_task_id')->groupBy('combined_task_id') as $tasks) {
-            $group = $tasks->first()->combinedGroup();
-            if ($group->count() < 2) {
+        foreach ($combinedTaskIds as $combinedTaskId) {
+            $members = $membersByCombinedTask->get($combinedTaskId, collect());
+            if ($members->count() < 2) {
                 continue;
             }
-            $group->load(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans']);
+            $group = $members->where('id', $combinedTaskId)->concat($members->where('id', '!=', $combinedTaskId))->values();
 
             $standsFor = $group->first(fn (JobOrderItemTask $member) => $member->state != JobOrderItemTaskStateEnum::DONE);
             $openTask  = $openTasks->firstWhere('id', $standsFor?->id);
