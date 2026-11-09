@@ -9,7 +9,7 @@ import type { router as inertiaRouter } from "@inertiajs/vue3"
 
 const STORAGE_KEY = "inbox-first-list"
 const FRESH_MS = 10_000
-const INBOX_PATH = /^\/org\/([^/]+)\/(?:shops\/([^/]+)\/)?chat\/(inbox|supervision)(?:\/[0-9A-HJKMNP-TV-Z]{26})?$/
+const INBOX_PATH = /^\/org\/([^/]+)\/(?:shops\/([^/]+)\/)?chat\/(inbox|supervision)(\/[0-9A-HJKMNP-TV-Z]{26})?$/
 const CHANNELS = ["whatsapp", "website"]
 
 type Request = { url: string, params: Record<string, unknown> }
@@ -20,7 +20,8 @@ export const listKey = (url: string, params: Record<string, unknown>): string =>
 
 /**
  * Each inbox address opens on its own list: the organisation, inbox or supervision, the shop it
- * was opened from, and the channel a notification link asks for.
+ * was opened from, a conversation's own address (its shop, channel and status pick the list) and
+ * the channel a notification link asks for.
  */
 const slotOf = (address: URL): string | null => {
 	const match = address.pathname.match(INBOX_PATH)
@@ -31,7 +32,7 @@ const slotOf = (address: URL): string | null => {
 
 	const channel = address.searchParams.get("channel")
 
-	return [STORAGE_KEY, match[1], match[3], match[2] && `shop:${match[2]}`, CHANNELS.includes(channel ?? "") && channel]
+	return [STORAGE_KEY, match[1], match[3], match[2] && `shop:${match[2]}`, match[4] && "conversation", CHANNELS.includes(channel ?? "") && channel]
 		.filter(Boolean)
 		.join(":")
 }
