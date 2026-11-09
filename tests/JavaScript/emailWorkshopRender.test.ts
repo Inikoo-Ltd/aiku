@@ -175,3 +175,14 @@ test("merge tags imported from Beefree lose their code wrapper, so addresses are
 	assert.match(html, /<br>\[Invoice Address\] <code>kept<\/code>/)
 	assert.doesNotMatch(html, /data-bee-code/)
 })
+
+test("text and button paragraphs have no margin in the sent email, so Gmail spaces them as the editor does", () => {
+	const text = createModule(MODULE_TYPES.text)
+	text.descriptor.text = { html: "<p><strong>50% OFF</strong></p>", style: {} }
+	const button = createModule(MODULE_TYPES.button)
+	button.descriptor.button = { ...button.descriptor.button, label: '<p style="font-size:16px">Natural Teak Display</p>' }
+	const context = createRenderContext(emailWithBody(), 600)
+
+	assert.match(renderModuleHtml(text, context), /<p style="margin:0"><strong>50% OFF<\/strong><\/p>/)
+	assert.match(renderModuleHtml(button, context), /<p style="margin:0;font-size:16px">Natural Teak Display<\/p>/)
+})
