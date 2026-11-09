@@ -1201,7 +1201,6 @@
     "A line has no amount, or is a credit: enter it by hand.": "某一行没有金额，或为贷项：请手动输入。",
     "A line is in the request twice.": "请求中有重复的行。",
     "A line shows up here when there is stock to send to the partner gathering location": "当有库存需要发往合作伙伴集货地点时，此处会显示一行",
-    "A manager authorised extra on this entry, void it and enter it again": "经理已批准此条记录超出数量，请作废后重新录入",
     "A marketplace order is refunded on the marketplace. The goods can be received back here, but no refund is issued in Aiku.": "电商平台订单在电商平台上退款。货物可以在此处退回，但 Aiku 中不会发放退款。",
     "A material is no longer needed today, reload the page": "有物料今天已不再需要，请重新加载页面",
     "A new ETA was suggested": "已建议新的预计到达时间",

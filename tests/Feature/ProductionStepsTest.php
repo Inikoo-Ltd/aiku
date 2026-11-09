@@ -1447,6 +1447,84 @@ test('a supervisor moves an entry recorded on the wrong line to the line really 
         ->and(collect($otherJob->refresh()->data['corrections'])->last())->toMatchArray(['from_job' => $jobOrder->reference, 'to_job' => $otherJob->reference, 'to' => 5.0]);
 });
 
+test('an entry with a manager authorised extra moves to the job really made, and the extra comes off the job it was entered on (HELP-4589)', function () {
+    $user = auth()->user();
+    ManufactureTaskSession::where('user_id', $user->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)
+        ->update(['state' => ManufactureTaskSessionStateEnum::CLOSED, 'ended_at' => now()]);
+    ensurePayBandZero($this->production);
+
+    $suffix     = rand(10000, 99999);
+    $makingTask = StoreManufactureTask::make()->action($this->production, ['code' => 'OM'.$suffix, 'name' => 'Making '.$suffix, 'is_piece_rate' => true]);
+    $newLine    = function (string $code, int $quantity) use ($makingTask) {
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code, 'name' => $code]);
+        $artefact->manufactureTasks()->sync([$makingTask->id => ['position' => 1, 'units_per_artefact' => 1, 'standard_rate' => 30]]);
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $line     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => $quantity]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        return [$jobOrder, $line, $line->tasks()->first()];
+    };
+    [$rightJob, $rightLine, $rightStep] = $newLine('ACD06-'.$suffix, 15);
+    [$wrongJob, $wrongLine, $wrongStep] = $newLine('ACDR01-'.$suffix, 20);
+
+    $done = StartManufactureTaskSession::make()->action($user, $rightStep);
+    $done->update(['started_at' => now()->subHour()]);
+    CloseManufactureTaskSession::make()->action($done, ['quantity_made' => 15]);
+
+    $wrong = StartManufactureTaskSession::make()->action($user, $wrongStep);
+    $wrong->update(['quantity_made' => 27, 'state' => ManufactureTaskSessionStateEnum::CLOSED, 'started_at' => now()->subHour(), 'ended_at' => now()]);
+    $wrongStep->update(['quantity_required' => 27]);
+    $wrongLine->update(['quantity' => 27]);
+    $wrongJob->update(['data' => array_merge($wrongJob->data ?? [], ['overproductions' => [['session_id' => $wrong->id, 'quantity' => 7, 'manager' => 'Cornelius']]])]);
+    \App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities::run($wrongStep->refresh());
+
+    $move = fn (ManufactureTaskSession $session, $step, float $quantity) => \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($session->refresh(), ['quantity_made' => $quantity, 'job_order_item_task_id' => $step->id, 'reason' => 'ACD-06 made, entered on ACDR-01'], 'Martina');
+
+    $wrongJob->update(['data' => array_merge($wrongJob->data, ['overproductions' => [['session_id' => $wrong->id, 'quantity' => 7, 'taken_off_lines' => [$rightLine->id => 2]]]])]);
+    expect(fn () => $move($wrong, $rightStep, 27))->toThrow(ValidationException::class, 'was taken off '.$rightJob->reference);
+    $wrongJob->update(['data' => array_merge($wrongJob->data, ['overproductions' => [['session_id' => $wrong->id, 'quantity' => 7, 'manager' => 'Cornelius']]])]);
+
+    $moved = $move($wrong, $rightStep, 27);
+
+    expect($moved->job_order_item_task_id)->toBe($rightStep->id)
+        ->and((float) $moved->hours)->toEqualWithDelta(1.0, 0.001)
+        ->and((int) $rightLine->refresh()->quantity)->toBe(42)
+        ->and((float) $rightStep->refresh()->quantity_made)->toBe(42.0)
+        ->and($rightStep->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and((int) $wrongLine->refresh()->quantity)->toBe(20)
+        ->and((float) $wrongStep->refresh()->quantity_made)->toBe(0.0)
+        ->and((float) $wrongStep->quantity_required)->toBe(20.0)
+        ->and($wrongStep->state)->toBe(JobOrderItemTaskStateEnum::TODO)
+        ->and($wrongJob->refresh()->data['overproductions'])->toBe([])
+        ->and(collect($wrongJob->data['corrections'])->last())->toMatchArray(['authorised_extra_removed' => 7.0, 'from_job' => $wrongJob->reference, 'to_job' => $rightJob->reference, 'line_from' => 15, 'line_to' => 42])
+        ->and(collect($rightJob->refresh()->data['line_growths'])->last())->toMatchArray(['session_id' => $wrong->id, 'from' => 15, 'to' => 42]);
+
+    $packingTask = StoreManufactureTask::make()->action($this->production, ['code' => 'OP'.$suffix, 'name' => 'Packing '.$suffix, 'is_piece_rate' => true]);
+    $twoSteps    = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'TWO-'.$suffix, 'name' => 'TWO-'.$suffix]);
+    $twoSteps->manufactureTasks()->sync([
+        $makingTask->id  => ['position' => 1, 'units_per_artefact' => 1, 'standard_rate' => 30],
+        $packingTask->id => ['position' => 2, 'units_per_artefact' => 1, 'standard_rate' => 30],
+    ]);
+    $sameJob  = StoreJobOrder::make()->action($this->production, []);
+    $sameLine = StoreJobOrderItem::make()->action($sameJob, ['artefact_id' => $twoSteps->id, 'quantity' => 20]);
+    ConfirmJobOrder::make()->action($sameJob);
+    $making  = $sameLine->tasks()->where('manufacture_task_id', $makingTask->id)->first();
+    $packing = $sameLine->tasks()->where('manufacture_task_id', $packingTask->id)->first();
+
+    $onMaking = StartManufactureTaskSession::make()->action($user, $making);
+    $onMaking->update(['quantity_made' => 27, 'state' => ManufactureTaskSessionStateEnum::CLOSED, 'started_at' => now()->subHour(), 'ended_at' => now()]);
+    $making->update(['quantity_required' => 27]);
+    $packing->update(['quantity_required' => 27]);
+    $sameLine->update(['quantity' => 27]);
+    $sameJob->update(['data' => array_merge($sameJob->data ?? [], ['overproductions' => [['session_id' => $onMaking->id, 'quantity' => 7]]])]);
+    \App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities::run($making->refresh());
+
+    $move($onMaking, $packing, 27);
+    expect((int) $sameLine->refresh()->quantity)->toBe(27)
+        ->and((float) $packing->refresh()->quantity_made)->toBe(27.0)
+        ->and($sameJob->refresh()->data['overproductions'][0]['quantity'])->toEqual(7);
+});
+
 test('the day plan lists the materials its open steps need, the check asks the warehouse in whole boxes, and the warehouse walks them to the factory location', function () {
     $packingTask = stepTestManufactureTask($this->production);
     $warehouse   = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, ['code' => 'WH-MAT', 'name' => 'Materials warehouse']);

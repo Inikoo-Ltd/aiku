@@ -1201,7 +1201,6 @@
     "A line has no amount, or is a credit: enter it by hand.": "Riadok nemá sumu alebo je dobropis: zadajte ho ručne.",
     "A line is in the request twice.": "Riadok je v žiadosti dvakrát.",
     "A line shows up here when there is stock to send to the partner gathering location": "Riadok sa tu zobrazí, keď sú na sklade zásoby, ktoré možno poslať do zbernej lokácie partnera",
-    "A manager authorised extra on this entry, void it and enter it again": "Manažér schválil pri tomto zázname nadbytok, zneplatnite ho a zadajte znova",
     "A marketplace order is refunded on the marketplace. The goods can be received back here, but no refund is issued in Aiku.": "Peniaze za objednávku z trhoviska sa vracajú na trhovisku. Tovar sa dá prijať späť tu, ale v Aiku sa nevystaví vrátenie peňazí.",
     "A material is no longer needed today, reload the page": "Jeden z materiálov už dnes nie je potrebný, načítajte stránku znova",
     "A new ETA was suggested": "Bol navrhnutý nový termín",
