@@ -6,6 +6,7 @@ import InputText from "primevue/inputtext"
 import SelectButton from "primevue/selectbutton"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@common/Components/Image.vue"
+import type { Image as ImageProxy } from "@/types/Image"
 import { ctrans } from "@/Composables/useTrans"
 import { useColorTheme } from "@/Composables/useStockList"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -18,9 +19,9 @@ export interface PortalProfile {
 	name: string | null
 	phone: string | null
 	theme: number
-	avatar: object | null
+	avatar: ImageProxy | null
 	display_name: string
-	company_logo: object | null
+	company_logo: ImageProxy | null
 }
 
 const props = defineProps<{
