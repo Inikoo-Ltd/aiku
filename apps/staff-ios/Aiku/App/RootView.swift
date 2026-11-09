@@ -1,9 +1,17 @@
 import SwiftUI
 
 struct RootView: View {
+    @State private var isSignedIn = false
+
     var body: some View {
-        NavigationStack {
-            HomeView()
+        if isSignedIn {
+            NavigationStack {
+                HomeView()
+            }
+        } else {
+            LoginView {
+                isSignedIn = true
+            }
         }
     }
 }

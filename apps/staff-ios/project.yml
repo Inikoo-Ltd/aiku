@@ -29,6 +29,7 @@ targets:
         CFBundleDisplayName: Aiku
         AikuAPIBaseURL: $(API_BASE_URL)
         UILaunchScreen: {}
+        UIUserInterfaceStyle: Light
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
