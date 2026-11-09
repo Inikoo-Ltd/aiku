@@ -13,12 +13,15 @@ namespace Tests\Feature;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Chat\ChatAiAccountUsageSample;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -447,4 +450,66 @@ test('api profile includes the user app theme', function () {
     Sanctum::actingAs($user);
 
     getJson(route('grp.api.profile'))->assertOk()->assertJsonPath('data.app_theme', $appTheme);
+});
+
+test('mobile warehouses list what a dispatch clerk may do in each warehouse', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    Auth::shouldUse('web');
+    $warehouse = createWarehouse();
+    $user      = createMobileAppUser($this->group);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::DISPATCH_CLERK->value, $warehouse));
+    SetUserAuthorisedModels::run($user);
+    Sanctum::actingAs($user, ['mobile']);
+
+    getJson(route('grp.api.mobile.warehouses'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $warehouse->id)
+        ->assertJsonPath('data.0.code', $warehouse->code)
+        ->assertJsonPath('data.0.organisation.id', $warehouse->organisation_id)
+        ->assertJsonPath('data.0.can.view_goods_out', true)
+        ->assertJsonPath('data.0.can.pick_and_pack', true)
+        ->assertJsonPath('data.0.can.supervise_goods_out', false)
+        ->assertJsonPath('data.0.can.view_locations', true)
+        ->assertJsonPath('data.0.can.edit_locations', false)
+        ->assertJsonPath('data.0.can.view_inventory', false)
+        ->assertJsonPath('data.0.can.move_stock', false)
+        ->assertJsonPath('data.0.can.view_goods_in', false)
+        ->assertJsonPath('data.0.can.book_in', false);
+});
+
+test('mobile warehouses let a goods in clerk book in but not pick', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    Auth::shouldUse('web');
+    $warehouse = createWarehouse();
+    $user      = createMobileAppUser($this->group);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::GOODS_IN_CLERK->value, $warehouse));
+    SetUserAuthorisedModels::run($user);
+    Sanctum::actingAs($user, ['mobile']);
+
+    getJson(route('grp.api.mobile.warehouses'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.0.can.view_goods_in', true)
+        ->assertJsonPath('data.0.can.book_in', true)
+        ->assertJsonPath('data.0.can.view_goods_out', false)
+        ->assertJsonPath('data.0.can.pick_and_pack', false);
+});
+
+test('mobile warehouses are empty for a user with no warehouse role', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    Sanctum::actingAs(createMobileAppUser($this->group), ['mobile']);
+
+    getJson(route('grp.api.mobile.warehouses'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertExactJson(['data' => []]);
+});
+
+test('mobile warehouses need a mobile token and the app key', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $user = createMobileAppUser($this->group);
+
+    getJson(route('grp.api.mobile.warehouses'))->assertNotFound();
+
+    Sanctum::actingAs($user, ['other']);
+    getJson(route('grp.api.mobile.warehouses'), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
 });

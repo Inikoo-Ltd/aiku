@@ -1593,3 +1593,56 @@ test('HELP-4544 the recipe screen adds the same task again under a label, sets w
     \Pest\Laravel\delete(route('grp.models.artefact.recipe-step.detach', [$artefact->id, $red->id]))->assertSessionHasNoErrors();
     expect($artefact->recipeSteps()->where('manufacture_task_id', $mixing->id)->pluck('id')->all())->toBe([$green->id]);
 });
+
+test('INI-220 the floor runs the same number of queries however many tasks are open', function () {
+    $suffix  = rand(10000, 99999);
+    $mixing  = StoreManufactureTask::make()->action($this->production, ['code' => 'QMX'.$suffix, 'name' => 'Mixing', 'is_piece_rate' => true, 'is_recorded_in_kg' => true]);
+    $making  = StoreManufactureTask::make()->action($this->production, ['code' => 'QMK'.$suffix, 'name' => 'Making', 'is_piece_rate' => true]);
+    $packing = StoreManufactureTask::make()->action($this->production, ['code' => 'QPK'.$suffix, 'name' => 'Packing', 'is_piece_rate' => true]);
+    $user    = $this->guest->getUser();
+    $other   = stepTestSecondOperator($this->group);
+
+    $addLines = function (int $count) use ($suffix, $mixing, $making, $packing, $user, $other) {
+        $lines = collect();
+        foreach (range(1, $count) as $index) {
+            $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'QF'.$suffix.'x'.rand(1000, 9999), 'name' => 'Floor box '.$index]);
+            \App\Actions\Production\Artefact\SetArtefactsRecipe::make()->action($this->production, ['artefacts' => [$artefact->id], 'steps' => [
+                ['manufacture_task_id' => $mixing->id, 'label' => 'Q'.$suffix, 'position' => 1, 'units_per_artefact' => 0.1, 'waits_for' => [], 'raw_materials' => [['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 0.05]]],
+                ['manufacture_task_id' => $making->id, 'label' => 'Q'.$suffix, 'position' => 2, 'units_per_artefact' => 1, 'waits_for' => [0]],
+                ['manufacture_task_id' => $packing->id, 'position' => 3, 'units_per_artefact' => 1, 'waits_for' => [1]],
+            ]]);
+            $jobOrder = StoreJobOrder::make()->action($this->production, []);
+            $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 20]);
+            ConfirmJobOrder::make()->action($jobOrder);
+            $steps = $item->tasks()->orderBy('position')->get();
+            if ($index <= 2) {
+                CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $steps[0]), ['quantity_made' => 0.5]);
+                CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $steps[1]), ['quantity_made' => 3]);
+            }
+            $lines->push($steps);
+        }
+        \App\Actions\Production\JobOrderItemTask\CombineJobOrderItemTasks::make()->action($this->production, $lines->take(2)->map(fn ($steps) => $steps[2]->id)->all());
+
+        return $lines;
+    };
+
+    $floorQueries = function () {
+        \DB::flushQueryLog();
+        \DB::enableQueryLog();
+        get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->assertOk();
+        $log = \DB::getQueryLog();
+        \DB::disableQueryLog();
+
+        return collect($log)->pluck('query')->map(fn (string $sql) => preg_replace('/\\(\\?(, \\?)*\\)/', '(…)', preg_replace('/\\b\\d+\\b/', '?', $sql)));
+    };
+
+    StartManufactureTaskSession::make()->action($other, $addLines(2)->first()[1]);
+    $floorQueries();
+    $before = $floorQueries();
+    $addLines(4);
+    $after = $floorQueries();
+    ManufactureTaskSession::where('user_id', $other->id)->where('state', ManufactureTaskSessionStateEnum::OPEN)->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
+
+    $repeated = $after->countBy()->filter(fn (int $times, string $sql) => $times > ($before->countBy()[$sql] ?? 0))->map(fn (int $times, string $sql) => $times.' vs '.($before->countBy()[$sql] ?? 0));
+    expect($after->count())->toBe($before->count(), $repeated->map(fn ($n, $sql) => $n.'  '.substr($sql, 0, 300))->implode("\n"));
+});
