@@ -14,7 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faArrowLeft, faExclamationTriangle, faMoneyCheckAlt, faPaperPlane, faPlus, faTimes } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import TableAgentMoneyRequests, { MoneyRequestRow } from "@/Components/Tables/Grp/Org/Procurement/TableAgentMoneyRequests.vue"
+import TableAgentMoneyRequests, { MoneyRequestRecipient, MoneyRequestRow } from "@/Components/Tables/Grp/Org/Procurement/TableAgentMoneyRequests.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
@@ -35,6 +35,7 @@ const isOpeningCreate = ref(false)
 const cancelError = ref<string | null>(null)
 const remindingId = ref<number | null>(null)
 const isReminderDialog = ref(false)
+const reminderRecipients = ref<{ label: string; recipients: MoneyRequestRecipient[] }[]>([])
 
 const cancelRequest = (row: MoneyRequestRow) => {
 	isReminderDialog.value = false
@@ -56,6 +57,10 @@ const cancelRequest = (row: MoneyRequestRow) => {
 
 const remindRequest = (row: MoneyRequestRow) => {
 	isReminderDialog.value = true
+	reminderRecipients.value = [
+		{ label: ctrans("To"), recipients: row.reminder_recipients?.to ?? [] },
+		{ label: ctrans("Cc"), recipients: row.reminder_recipients?.cc ?? [] },
+	]
 	confirm.require({
 		group: "money-requests",
 		header: ctrans("Send a reminder for :reference", { reference: row.reference }),
@@ -105,6 +110,21 @@ const remindRequest = (row: MoneyRequestRow) => {
 					{{ message.header }}
 				</div>
 				<p class="mt-3 text-sm text-gray-600">{{ message.message }}</p>
+				<dl v-if="isReminderDialog" class="mt-3 space-y-2 text-sm">
+					<div v-for="group in reminderRecipients" :key="group.label" class="flex gap-3">
+						<dt class="w-8 shrink-0 font-medium text-gray-500">{{ group.label }}</dt>
+						<dd class="min-w-0 flex-1">
+							<span v-if="!group.recipients.length" class="text-gray-400">{{ ctrans("Nobody") }}</span>
+							<ul v-else class="space-y-1">
+								<li v-for="recipient in group.recipients" :key="`${recipient.name}-${recipient.email}`" :class="recipient.by_email ? 'text-gray-900' : 'text-gray-400'">
+									<span class="font-medium">{{ recipient.name }}</span>
+									<span class="ml-1 break-all text-xs" :class="recipient.by_email ? 'text-gray-500' : ''">{{ recipient.email ?? ctrans("no email") }}</span>
+									<span v-if="!recipient.by_email" class="block text-xs">{{ ctrans("Email off: told in aiku only") }}</span>
+								</li>
+							</ul>
+						</dd>
+					</div>
+				</dl>
 				<div class="mt-5 flex justify-end gap-2">
 					<Button type="tertiary" :label="message.rejectLabel" @click="rejectCallback">
 						<template #icon>

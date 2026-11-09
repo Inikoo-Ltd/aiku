@@ -15,6 +15,7 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\DepositRequest;
 use App\Models\SupplyChain\DepositRequestItem;
 use App\Notifications\MoneyRequestCreatedNotification;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -32,13 +33,8 @@ class NotifyMoneyRequestCreated
         $depositRequest->load(['items.purchaseOrder' => fn ($query) => $query
             ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
             ->select(['purchase_orders.id', 'purchase_orders.reference', 'suppliers.code as supplier_code'])]);
-        $orgAgent = self::clientOrgAgent($depositRequest);
-
-        $recipients = $this->recipients([
-            MoneyRequestCreatedNotification::FOR_PAYER     => $orgAgent?->moneyRequestPayerIds() ?? [],
-            MoneyRequestCreatedNotification::FOR_COPY      => $orgAgent?->moneyRequestCcIds() ?? [],
-            MoneyRequestCreatedNotification::FOR_REQUESTER => array_filter([$depositRequest->created_by]),
-        ]);
+        $orgAgent   = self::clientOrgAgent($depositRequest);
+        $recipients = $this->recipients(self::userIdsByRole($depositRequest, $orgAgent));
 
         $total         = (float) $depositRequest->items->sum('amount');
         $requesterName = $depositRequest->requester?->chatName() ?? $depositRequest->agent->code;
@@ -71,6 +67,41 @@ class NotifyMoneyRequestCreated
         }
 
         return $recipients->count();
+    }
+
+    /**
+     * Who the email goes to (the client's payers) and who gets a copy (copied users and the agent user who asked).
+     *
+     * @return array{to: list<array{name: string, email: string|null, by_email: bool}>, cc: list<array{name: string, email: string|null, by_email: bool}>}
+     */
+    public static function emailRecipients(DepositRequest $depositRequest): array
+    {
+        $recipients = (new self())->recipients(self::userIdsByRole($depositRequest, self::clientOrgAgent($depositRequest)))
+            ->map(fn (array $recipient) => [
+                'role'     => $recipient['role'],
+                'name'     => $recipient['user']->chatName(),
+                'email'    => $recipient['user']->email,
+                'by_email' => (bool) $recipient['user']->email && in_array('email', UserNotificationEnum::MONEY_REQUEST_CREATED->channelsFor($recipient['user']), true),
+            ]);
+
+        $withoutRole = fn ($recipients) => $recipients->map(fn (array $recipient) => Arr::except($recipient, 'role'))->values()->all();
+
+        return [
+            'to' => $withoutRole($recipients->where('role', MoneyRequestCreatedNotification::FOR_PAYER)),
+            'cc' => $withoutRole($recipients->where('role', '!=', MoneyRequestCreatedNotification::FOR_PAYER)),
+        ];
+    }
+
+    /**
+     * @return array<string, array<int, int|null>>
+     */
+    private static function userIdsByRole(DepositRequest $depositRequest, ?OrgAgent $orgAgent): array
+    {
+        return [
+            MoneyRequestCreatedNotification::FOR_PAYER     => $orgAgent?->moneyRequestPayerIds() ?? [],
+            MoneyRequestCreatedNotification::FOR_COPY      => $orgAgent?->moneyRequestCcIds() ?? [],
+            MoneyRequestCreatedNotification::FOR_REQUESTER => array_filter([$depositRequest->created_by]),
+        ];
     }
 
     public static function clientOrgAgent(DepositRequest $depositRequest): ?OrgAgent

@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\DepositRequest\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\DepositRequest\ApproveAgentMoneyRequest;
+use App\Actions\SupplyChain\DepositRequest\NotifyMoneyRequestCreated;
 use App\Actions\SupplyChain\DepositRequest\RemindAgentMoneyRequest;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\SupplyChain\AspoDeposit\UI\ShowAgentAccountingDashboard;
@@ -91,6 +92,7 @@ class IndexAgentMoneyRequests extends OrgAction
         $paid   = round((float) $depositRequest->paid, 2);
         $open   = $depositRequest->state === DepositRequestStateEnum::REQUESTED;
         $canPay = $forClient && $open && ApproveAgentMoneyRequest::canPay($depositRequest, $user);
+        $canRemind = !$forClient && $open && $user?->authTo("procurement.{$depositRequest->agent->organisation_id}.edit");
 
         $purchaseOrderRoute = fn (?PurchaseOrder $purchaseOrder) => $purchaseOrder ? [
             'name'       => $forClient ? 'grp.org.procurement.purchase_orders.show' : 'grp.org.agent.purchase_orders.show',
@@ -118,6 +120,7 @@ class IndexAgentMoneyRequests extends OrgAction
             'last_reminded_by' => $depositRequest->reminder?->chatName(),
             'number_reminders' => $depositRequest->number_reminders,
             'next_reminder_at' => RemindAgentMoneyRequest::nextReminderAt($depositRequest),
+            'reminder_recipients' => $canRemind ? NotifyMoneyRequestCreated::emailRecipients($depositRequest) : null,
             'lines'         => $depositRequest->items->map(fn (DepositRequestItem $item) => [
                 'kind'          => $item->kind->value,
                 'kind_label'    => DepositRequestItemKindEnum::labels()[$item->kind->value],
@@ -131,7 +134,7 @@ class IndexAgentMoneyRequests extends OrgAction
             'cancel_route'  => !$forClient && $open && $paid == 0 && !$depositRequest->isApproved() && $user?->authTo("procurement.{$depositRequest->agent->organisation_id}.edit")
                 ? ['name' => 'grp.models.deposit_request.cancel', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'patch']
                 : null,
-            'remind_route'  => !$forClient && $open && $user?->authTo("procurement.{$depositRequest->agent->organisation_id}.edit")
+            'remind_route'  => $canRemind
                 ? ['name' => 'grp.models.deposit_request.remind', 'parameters' => ['depositRequest' => $depositRequest->id], 'method' => 'post']
                 : null,
             'approve_route' => $canPay && !$depositRequest->isApproved()
