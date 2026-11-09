@@ -1977,7 +1977,7 @@ test('the NEW IN page lists the products of its own shop inside their NEW IN per
     $newShop = fn (): Shop => tap(
         StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value])),
         fn (Shop $shop) => StoreWebsite::make()->action($shop, Website::factory()->definition())
-    );
+    )->refresh();
     $newFamily = function (Shop $shop): ProductCategory {
         $family = StoreProductCategory::make()->action(
             StoreProductCategory::make()->action($shop, array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::DEPARTMENT->value])),

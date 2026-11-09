@@ -3608,7 +3608,7 @@ test('the stock delivery timeline takes each purchase order step from the earlie
         ->and($timeline['purchase_order_'.PurchaseOrderStateEnum::SUBMITTED->value]['timestamp']->toDateTimeString())->toBe('2026-03-08 09:00:00');
 });
 
-test('a money request takes off what the agent already paid the supplier, a transfer can not pay more than is due and removing it opens the request again, and only the agent sets its fee (HELP-4097)', function () {
+test('a money request asks an open order\'s advance by what was asked only, not what the agent already paid the supplier, a transfer can not pay more than is due and removing it opens the request again, and only the agent sets its fee (HELP-4097)', function () {
     $orgAgent          = createFreshOrgAgent($this);
     $order             = UpdatePurchaseOrderStateToSubmitted::make()->action(collect(createAgentPurchaseOrders($this, $orgAgent, 1))->first()->refresh())->refresh();
     $agent             = $orgAgent->agent;
@@ -3624,18 +3624,18 @@ test('a money request takes off what the agent already paid the supplier, a tran
     $paid       = round($advance / 2, 2);
 
     \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'type' => 'supplier_deposit', 'date' => date('Y-m-d'), 'amount' => $paid, 'purchase_order_id' => $order->id]);
-    expect(abs($advanceDue() - ($advance - $paid)))->toBeLessThan(0.001);
+    expect(abs($advanceDue() - $advance))->toBeLessThan(0.001);
 
     $order->updateQuietly(['created_at' => '2026-10-01', 'agent_order_reference' => null]);
     expect($advanceDue())->toBe(0.0);
     $order->updateQuietly(['created_at' => now()]);
-    expect(abs($advanceDue() - ($advance - $paid)))->toBeLessThan(0.001);
+    expect(abs($advanceDue() - $advance))->toBeLessThan(0.001);
 
     actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-mr-'.Str::lower(Str::random(6))));
 
-    $this->post(route('grp.models.agent.money_request.store', $agent->id), ['organisation_id' => $client->id, 'lines' => [['kind' => 'advance', 'purchase_order_id' => $order->id, 'amount' => $advance]]])
+    $this->post(route('grp.models.agent.money_request.store', $agent->id), ['organisation_id' => $client->id, 'lines' => [['kind' => 'advance', 'purchase_order_id' => $order->id, 'amount' => $advance + 1]]])
         ->assertSessionHasErrors('lines');
-    $this->post(route('grp.models.agent.money_request.store', $agent->id), ['organisation_id' => $client->id, 'lines' => [['kind' => 'advance', 'purchase_order_id' => $order->id, 'amount' => $advance - $paid]]])
+    $this->post(route('grp.models.agent.money_request.store', $agent->id), ['organisation_id' => $client->id, 'lines' => [['kind' => 'advance', 'purchase_order_id' => $order->id, 'amount' => $advance]]])
         ->assertSessionHasNoErrors();
     $depositRequest = \App\Models\SupplyChain\DepositRequest::where('agent_id', $agent->id)->latest('id')->firstOrFail();
 
@@ -3650,8 +3650,8 @@ test('a money request takes off what the agent already paid the supplier, a tran
     $this->patch(route('grp.models.org_agent.agent_fee.update', $orgAgent->id), ['agent_fee_percentage' => 0])->assertForbidden();
     $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertSessionHasNoErrors();
     $receipt = fn () => \Illuminate\Http\UploadedFile::fake()->create('statement.pdf', 10, 'application/pdf');
-    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance - $paid + 1, 'receipt' => $receipt()])->assertSessionHasErrors('amount');
-    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance - $paid, 'receipt' => $receipt()])->assertSessionHasNoErrors();
+    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance + 1, 'receipt' => $receipt()])->assertSessionHasErrors('amount');
+    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance, 'receipt' => $receipt()])->assertSessionHasNoErrors();
 
     $transfer = \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $depositRequest->id)->firstOrFail();
     expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
