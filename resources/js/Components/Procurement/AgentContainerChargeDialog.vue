@@ -27,7 +27,7 @@ export interface ChargeForm {
 	store_route: routeType
 	organisation_id: number
 	stock_delivery_id: number
-	types: { value: string; label: string }[]
+	types: { value: string; label: string; needs_receipt: boolean }[]
 }
 
 const props = defineProps<{
@@ -78,7 +78,9 @@ const amountPlaceholder = computed(() => {
 	}).format(0)
 })
 
-const canSave = computed(() => !!charge.value.type && !!charge.value.date && !!charge.value.amount && !!charge.value.receipt)
+const selectedType = computed(() => props.chargeForm.types.find((type) => type.value === charge.value.type))
+
+const canSave = computed(() => !!charge.value.type && !!charge.value.date && !!charge.value.amount && (!selectedType.value?.needs_receipt || !!charge.value.receipt))
 
 const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
@@ -133,7 +135,8 @@ const save = () => {
 				<Textarea v-model="charge.notes" rows="2" autoResize maxlength="2000" class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
 			<div class="block text-sm">
-				<span class="text-gray-600">{{ ctrans("Receipt") }} <span class="text-red-500">*</span></span>
+				<span v-if="!selectedType?.needs_receipt" class="text-gray-600">{{ ctrans("Receipt (optional)") }}</span>
+				<span v-else class="text-gray-600">{{ ctrans("Receipt") }} <span class="text-red-500">*</span></span>
 				<div class="mt-1">
 					<FileUpload mode="basic" :auto="false" customUpload accept=".pdf,image/*" :maxFileSize="20000000" :chooseLabel="ctrans('Choose file')" :pt="chooseFilePt" @select="(event: { files: File[] }) => (charge.receipt = event.files[0] ?? null)">
 						<template #chooseicon>

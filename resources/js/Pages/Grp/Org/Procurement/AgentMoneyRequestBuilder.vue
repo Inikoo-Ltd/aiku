@@ -493,7 +493,7 @@ const send = () => {
 	</div>
 
 	<div class="mx-4 mt-2">
-		<Button type="tertiary" :label="ctrans('Add other expense')" @click="isExpenseDialogOpen = true">
+		<Button type="dashed" key=2 :label="ctrans('Add other expense')" @click="isExpenseDialogOpen = true">
 			<template #icon>
 				<FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
 			</template>

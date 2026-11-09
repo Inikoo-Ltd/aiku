@@ -60,7 +60,7 @@ watch(visible, (isVisible) => {
 
 const amountInputOptions = computed(() => locale.currencyInputOptions(props.currency))
 
-const canSave = computed(() => !!expense.value.notes.trim() && !!expense.value.date && !!expense.value.amount && !!expense.value.receipt)
+const canSave = computed(() => !!expense.value.notes.trim() && !!expense.value.date && !!expense.value.amount)
 
 const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 
@@ -95,7 +95,7 @@ const save = () => {
 	<Dialog v-model:visible="visible" modal dismissableMask :header="ctrans('Add other expense')" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<div class="space-y-3">
 			<p class="text-sm text-gray-600">
-				{{ ctrans("Money you already paid for :client that belongs to no order or shipment, such as a bank charge. It is recorded in the ledger as an other expense and added to this request.", { client: clientCode }) }}
+				{{ ctrans("Money you paid, or still have to pay, for :client that belongs to no order or shipment, such as a bank charge. It is recorded in the ledger as an other expense and added to this request.", { client: clientCode }) }}
 			</p>
 			<label class="block text-sm">
 				<span class="text-gray-600">{{ ctrans("What it is for") }} <span class="text-red-500">*</span></span>
@@ -116,7 +116,7 @@ const save = () => {
 				<InputText v-model="expense.reference" maxlength="255" class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
 			<div class="block text-sm">
-				<span class="text-gray-600">{{ ctrans("Receipt") }} <span class="text-red-500">*</span></span>
+				<span class="text-gray-600">{{ ctrans("Receipt (optional)") }}</span>
 				<div class="mt-1">
 					<FileUpload mode="basic" :auto="false" customUpload accept=".pdf,image/*" :maxFileSize="20000000" :chooseLabel="ctrans('Choose file')" :pt="chooseFilePt" @select="(event: { files: File[] }) => (expense.receipt = event.files[0] ?? null)">
 						<template #chooseicon>

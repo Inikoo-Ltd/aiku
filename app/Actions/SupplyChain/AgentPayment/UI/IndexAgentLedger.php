@@ -267,6 +267,7 @@ class IndexAgentLedger extends OrgAction
                         'label'          => AgentPaymentTypeEnum::labels()[$type->value],
                         'money_in'       => $type->isMoneyIn(),
                         'needs_order'    => $type->isSupplierPayment(),
+                        'needs_receipt'  => $type->needsReceipt(),
                     ])->values()->all(),
                     'purchase_orders' => $this->openPurchaseOrders($clients),
                     'containers'      => $this->recentContainers($clients),
