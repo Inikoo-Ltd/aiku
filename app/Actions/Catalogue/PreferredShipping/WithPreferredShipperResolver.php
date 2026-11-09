@@ -123,6 +123,7 @@ trait WithPreferredShipperResolver
             })
             ->when(!$deliveryNote->is_premium_dispatch, fn ($query) => $query->where('priority_only', false))
             ->whereHas('shipper', fn ($query) => $query->where('status', true))
+            ->orderBy('id')
             ->get();
 
         return $this->pickPreferredShippingRule($rules, $countryId, $postalCode, $this->weightForShipperChoice($deliveryNote));

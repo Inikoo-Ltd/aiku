@@ -118,6 +118,7 @@ use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\SysAdmin\GetSectionRoute;
+use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
@@ -773,6 +774,31 @@ test('a priority-only shipping rule applies only to priority delivery notes of i
     $deliveryNote->update(['is_premium_dispatch' => $wasPremium]);
     $rule->delete();
     $priorityShipper->delete();
+})->depends('create second delivery note');
+
+test('each destination of a shop priority set can have its own locked shipping rule', function (DeliveryNote $deliveryNote) {
+    $organisation  = $deliveryNote->organisation;
+    $lockedShipper = StoreShipper::make()->action($organisation, ['code' => 'LCK2', 'name' => 'Locked Destinations', 'trade_as' => 'lck2']);
+    $countryIds    = Country::where('status', true)->orderBy('id')->limit(2)->pluck('id');
+    $existingRows  = $organisation->preferredShippings()->get()->map(fn ($rule) => $rule->only(['id', 'shipper_id', 'shop_id', 'country_id', 'postcode', 'important', 'priority_only', 'trade_scope', 'min_weight', 'max_weight']))->all();
+
+    $lockedRule = fn (int $countryId) => [
+        'shipper_id'    => $lockedShipper->id,
+        'shop_id'       => $deliveryNote->shop_id,
+        'country_id'    => $countryId,
+        'important'     => true,
+        'priority_only' => true,
+        'trade_scope'   => 'b2b',
+    ];
+
+    UpdateOrganisation::make()->action($organisation, ['preferred_shipping' => [...$existingRows, $lockedRule($countryIds[0]), $lockedRule($countryIds[1])]]);
+    expect($organisation->preferredShippings()->where('shipper_id', $lockedShipper->id)->where('important', true)->count())->toBe(2);
+
+    expect(fn () => UpdateOrganisation::make()->action($organisation, ['preferred_shipping' => [...$existingRows, $lockedRule($countryIds[0]), $lockedRule($countryIds[0])]]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class, 'Only one rule per destination');
+
+    UpdateOrganisation::make()->action($organisation, ['preferred_shipping' => $existingRows]);
+    $lockedShipper->delete();
 })->depends('create second delivery note');
 
 test('update shipment', function ($lastShipment) {

@@ -155,9 +155,19 @@ const removeRow = (row: PreferredShippingRow) => {
     rows.splice(rows.indexOf(row), 1)
 }
 
+const lockScopeKey = (row: PreferredShippingRow) => [
+    row.trade_scope,
+    row.shop_id ?? "",
+    row.priority_only ? 1 : 0,
+    row.country_id ?? "",
+    (row.postcode ?? "").toUpperCase().replace(/\s+/g, ""),
+    row.min_weight ?? "",
+    row.max_weight ?? "",
+].join("|")
+
 const setImportant = (target: PreferredShippingRow, value: boolean) => {
     rows.forEach((row: PreferredShippingRow) => {
-        if (row.trade_scope === target.trade_scope && row.shop_id === target.shop_id && row.priority_only === target.priority_only) {
+        if (lockScopeKey(row) === lockScopeKey(target)) {
             row.important = row === target ? value : false
         }
     })

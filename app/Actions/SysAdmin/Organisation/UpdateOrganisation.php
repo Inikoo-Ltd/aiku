@@ -252,9 +252,17 @@ class UpdateOrganisation extends OrgAction
         if (Arr::has($modelData, 'preferred_shipping')) {
             $preferredShippingRows = Arr::pull($modelData, 'preferred_shipping');
 
-            $importantPerScope = collect($preferredShippingRows)->where('important', true)->countBy(fn ($row) => Arr::get($row, 'trade_scope', 'b2b').'|'.Arr::get($row, 'shop_id').'|'.(int) Arr::get($row, 'priority_only', false));
+            $importantPerScope = collect($preferredShippingRows)->where('important', true)->countBy(fn ($row) => implode('|', [
+                Arr::get($row, 'trade_scope', 'b2b'),
+                Arr::get($row, 'shop_id'),
+                (int) Arr::get($row, 'priority_only', false),
+                Arr::get($row, 'country_id'),
+                strtoupper(preg_replace('/\s+/', '', Arr::get($row, 'postcode') ?? '')),
+                Arr::get($row, 'min_weight'),
+                Arr::get($row, 'max_weight'),
+            ]));
             if ($importantPerScope->max() > 1) {
-                throw ValidationException::withMessages(['preferred_shipping' => __('Only one rule per set can be marked as important')]);
+                throw ValidationException::withMessages(['preferred_shipping' => __('Only one rule per destination can be marked as important')]);
             }
 
             $keptIds = [];
