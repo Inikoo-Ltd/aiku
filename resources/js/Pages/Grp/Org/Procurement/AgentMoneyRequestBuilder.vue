@@ -181,7 +181,17 @@ const send = () => {
 		<div v-if="purchase_order" class="text-sm text-gray-500">{{ ctrans("Only :reference", { reference: purchase_order }) }}</div>
 	</div>
 
-	<div class="mx-4 mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white">
+	<div v-if="lines.length" class="sticky top-10 z-[5] mx-4 mt-4 bg-white pt-2">
+		<div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-4 py-2">
+			<span class="text-sm text-gray-600">{{ ctrans(":count of :total lines selected", { count: String(chosen.length), total: String(lines.length) }) }}</span>
+			<span class="flex items-baseline gap-2">
+				<span class="text-xs uppercase tracking-wide text-gray-500">{{ ctrans("To ask for") }}</span>
+				<span class="whitespace-nowrap text-lg font-semibold text-gray-900">{{ money(total) }}</span>
+			</span>
+		</div>
+	</div>
+
+	<div class="mx-4 overflow-x-auto rounded-lg border border-gray-200 bg-white" :class="lines.length ? 'mt-2' : 'mt-4'">
 		<table class="min-w-full text-sm">
 			<thead class="whitespace-nowrap bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
 				<tr>
