@@ -131,6 +131,7 @@ class IndexAgentLedger extends OrgAction
             ->with('agent:id,organisation_id')
             ->defaultSort('-date')
             ->allowedSorts(['date', 'amount'])
+            ->orderByDesc('agent_payments.id')
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
