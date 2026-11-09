@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
+import { useIntersectionObserver } from "@vueuse/core"
 import Checkbox from "primevue/checkbox"
 import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
@@ -18,6 +19,7 @@ import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle,
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+import PingIcon from "@/Components/Utils/PingIcon.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
@@ -180,6 +182,10 @@ const reference = ref(props.purchase_order ?? "")
 const notes = ref("")
 const sending = ref(false)
 const sendError = ref<string | null>(null)
+const sendBarEnd = ref<HTMLElement | null>(null)
+const isSendBarFloating = ref(false)
+useIntersectionObserver(sendBarEnd, ([entry]) => (isSendBarFloating.value = !entry.isIntersecting))
+
 const advanceMessages = reactive<Record<number, { text: string; isError: boolean }>>({})
 
 const switchClient = (slug: string) =>
@@ -431,8 +437,20 @@ const send = () => {
 		</label>
 	</div>
 
-	<div class="mx-4 my-5 flex flex-col items-end gap-1">
-		<Button type="primary" icon="fal fa-paper-plane" :label="ctrans('Send request')" :disabled="!chosen.length" :loading="sending" @click="send" />
+	<div
+		class="sticky bottom-0 z-[5] mt-2 flex flex-col items-end gap-1 border-t px-4 pt-3 pb-6 transition-[background-color,box-shadow,border-color] duration-200"
+		:class="isSendBarFloating ? 'border-gray-200 bg-white/95 shadow-[0_-4px_12px_rgb(0_0_0/0.08)] backdrop-blur' : 'border-transparent'">
+		<div class="flex flex-wrap items-center justify-end gap-4">
+			<span v-if="isSendBarFloating" class="flex items-baseline gap-2">
+				<span class="text-xs uppercase tracking-wide text-gray-500">{{ ctrans(":count lines", { count: String(chosen.length) }) }}</span>
+				<span class="whitespace-nowrap text-base font-semibold text-gray-900">{{ money(total) }}</span>
+			</span>
+			<span class="relative inline-flex">
+				<Button type="primary" icon="fal fa-paper-plane" :label="ctrans('Send request')" :disabled="!chosen.length" :loading="sending" @click="send" />
+				<PingIcon v-if="chosen.length && !sending" class="pointer-events-none !absolute -right-1 -top-1 text-[7px] text-amber-500" aria-hidden="true" />
+			</span>
+		</div>
 		<div v-if="sendError" class="text-xs text-red-600">{{ sendError }}</div>
 	</div>
+	<div ref="sendBarEnd" class="mb-2 h-px" />
 </template>
