@@ -19,6 +19,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faCheck, faPaperclip } from "@fal"
 import { ctrans } from "@/Composables/useTrans"
 import { routeType } from "@/types/route"
+import { useLocaleStore } from "@/Stores/locale"
 
 library.add(faTimes, faCheck, faPaperclip)
 
@@ -36,6 +37,8 @@ const props = defineProps<{
 }>()
 
 const visible = defineModel<boolean>("visible", { required: true })
+
+const locale = useLocaleStore()
 
 const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)] focus:!border-[var(--app-accent)]"
 const fullWidthInput = { pcInputText: { root: { class: "!w-full" } } }
@@ -57,6 +60,22 @@ watch(visible, (isVisible) => {
 		charge.value = emptyCharge()
 		errorMessage.value = null
 	}
+})
+
+const amountInputOptions = computed(() => locale.currencyInputOptions(props.currency))
+const amountPlaceholder = computed(() => {
+	const options = amountInputOptions.value
+	if (!("currency" in options)) {
+		return "0"
+	}
+
+	return new Intl.NumberFormat(options.locale, {
+		style: "currency",
+		currency: options.currency,
+		currencyDisplay: options.currencyDisplay,
+		minimumFractionDigits: options.minFractionDigits,
+		maximumFractionDigits: options.maxFractionDigits,
+	}).format(0)
 })
 
 const canSave = computed(() => !!charge.value.type && !!charge.value.date && !!charge.value.amount)
@@ -106,7 +125,7 @@ const save = () => {
 				</label>
 				<label class="block text-sm">
 					<span class="text-gray-600">{{ ctrans("Amount") }}</span>
-					<InputNumber v-model="charge.amount" mode="currency" :currency="currency" :min="0" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
+					<InputNumber v-model="charge.amount" v-bind="amountInputOptions" :min="0" class="mt-1 w-full" :placeholder="amountPlaceholder" :class="fieldFocusClass" :pt="fullWidthInput" />
 				</label>
 			</div>
 			<label class="block text-sm">
