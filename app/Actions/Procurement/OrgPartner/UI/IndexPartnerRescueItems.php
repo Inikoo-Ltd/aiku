@@ -74,7 +74,7 @@ class IndexPartnerRescueItems extends OrgAction
                     'name'   => $this->orgPartner->partner->name,
                     'is_hub' => $this->orgPartner->partner->is_manufacturing_hub,
                 ],
-                'rescueBuckets' => GetPartnerStockCoverBuckets::make()->rescuable($this->orgPartner, 0)['buckets'],
+                'rescueBuckets' => GetPartnerStockCoverBuckets::make()->rescuable($this->orgPartner, 0, withLeftOut: false)['buckets'],
                 'draftReference' => $this->orgPartner->partner->is_manufacturing_hub ? null : $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->value('reference'),
                 'items'         => $items,
             ]

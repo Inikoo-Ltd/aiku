@@ -6,7 +6,8 @@
 
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
-import { computed, onBeforeUnmount, ref } from "vue"
+import { computed, onBeforeUnmount, ref, watch } from "vue"
+import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -26,7 +27,7 @@ interface RescueBucket {
 	order_cost: number
 	cheapest: number
 	order_cheapest: number
-	left_out: Record<string, number>
+	left_out?: Record<string, number>
 }
 
 const props = withDefaults(
@@ -43,8 +44,9 @@ const props = withDefaults(
 		inline?: boolean
 		orderUrl?: string | null
 		bucketTotals?: Record<string, number> | null
+		leftOutUrl?: string | null
 	}>(),
-	{ size: "s", isHub: false, onList: null, inline: false, bucketTotals: null }
+	{ size: "s", isHub: false, onList: null, inline: false, bucketTotals: null, leftOutUrl: null }
 )
 
 const locale = useLocaleStore()
@@ -130,6 +132,41 @@ const skippedLines = computed(() =>
 const showWhy = ref(props.inline)
 const errorMessage = ref<string | null>(null)
 
+const loadedLeftOut = ref<Record<string, Record<string, number>> | null>(null)
+const isLoadingLeftOut = ref(false)
+const leftOutError = ref<string | null>(null)
+const needsLeftOut = computed(() => props.buckets.some((bucket) => !bucket.left_out) && !loadedLeftOut.value)
+const leftOutOf = (bucket: RescueBucket) => bucket.left_out ?? loadedLeftOut.value?.[bucket.bucket] ?? {}
+
+let leftOutRequest = 0
+
+const loadLeftOut = async () => {
+	if (!needsLeftOut.value) {
+		return
+	}
+	const request = ++leftOutRequest
+	isLoadingLeftOut.value = true
+	leftOutError.value = null
+	try {
+		const response = await axios.get(
+			props.leftOutUrl ?? route("grp.json.org_partner.rescue_left_out", { orgPartner: props.orgPartnerId })
+		)
+		if (request === leftOutRequest) {
+			loadedLeftOut.value = response.data
+		}
+	} catch {
+		if (request === leftOutRequest) {
+			leftOutError.value = ctrans("Could not load the reasons, please try again")
+		}
+	} finally {
+		if (request === leftOutRequest) {
+			isLoadingLeftOut.value = false
+		}
+	}
+}
+
+watch(showWhy, (isShown) => isShown && loadLeftOut(), { immediate: true })
+
 const leftOutLabels = computed<Record<string, string>>(() => ({
 	not_selling: ctrans("Not selling any more"),
 	excluded: ctrans("Set never to order automatically"),
@@ -157,7 +194,7 @@ const whyRows = computed(() => {
 	props.buckets
 		.filter((bucket) => bucket.count === 0 || selectedBuckets.value.includes(bucket.bucket))
 		.forEach((bucket) => {
-			Object.entries(bucket.left_out ?? {}).forEach(([reason, count]) => {
+			Object.entries(leftOutOf(bucket)).forEach(([reason, count]) => {
 				totals[reason] = (totals[reason] ?? 0) + count
 			})
 		})
@@ -226,6 +263,10 @@ const prepare = () => {
 			},
 			onSuccess: () => {
 				isAsking.value = false
+				leftOutRequest++
+				isLoadingLeftOut.value = false
+				loadedLeftOut.value = null
+				showWhy.value = props.inline
 			},
 			onError: (errors) => {
 				errorMessage.value =
@@ -415,42 +456,48 @@ onBeforeUnmount(stopTimer)
 				</div>
 
 				<div v-if="showWhy" class="rounded-lg border border-gray-200 px-3 py-2.5 text-xs">
-					<p class="mb-2 text-gray-500">
-						{{
-							ctrans(
-								"Of our :total items out of stock, doomed or critical, these are why most are not in this order:",
-								{ total: locale.number(whyTotal) }
-							)
-						}}
-					</p>
-					<table class="w-full">
-						<tbody>
-							<tr
-								v-for="row in whyRows"
-								:key="row.reason"
-								class="border-b border-gray-100">
-								<td class="py-1 pr-2 text-gray-600">{{ row.label }}</td>
-								<td class="py-1 text-right tabular-nums text-gray-900">
-									{{ locale.number(row.count) }}
-								</td>
-							</tr>
-							<tr>
-								<td class="pt-1.5 pr-2 font-semibold text-gray-900">
-									{{ ctrans("In this order") }}
-								</td>
-								<td
-									class="pt-1.5 text-right font-semibold tabular-nums text-gray-900">
-									{{ locale.number(estimate.lines) }}
-								</td>
-							</tr>
-						</tbody>
-					</table>
+					<div v-if="isLoadingLeftOut" class="flex justify-center py-2 text-gray-400">
+						<LoadingIcon />
+					</div>
+					<p v-else-if="leftOutError" class="text-red-600">{{ leftOutError }}</p>
+					<template v-else>
+						<p class="mb-2 text-gray-500">
+							{{
+								ctrans(
+									"Of our :total items out of stock, doomed or critical, these are why most are not in this order:",
+									{ total: locale.number(whyTotal) }
+								)
+							}}
+						</p>
+						<table class="w-full">
+							<tbody>
+								<tr
+									v-for="row in whyRows"
+									:key="row.reason"
+									class="border-b border-gray-100">
+									<td class="py-1 pr-2 text-gray-600">{{ row.label }}</td>
+									<td class="py-1 text-right tabular-nums text-gray-900">
+										{{ locale.number(row.count) }}
+									</td>
+								</tr>
+								<tr>
+									<td class="pt-1.5 pr-2 font-semibold text-gray-900">
+										{{ ctrans("In this order") }}
+									</td>
+									<td
+										class="pt-1.5 text-right font-semibold tabular-nums text-gray-900">
+										{{ locale.number(estimate.lines) }}
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</template>
 				</div>
 
 				<label class="block">
 					<span class="text-gray-600">{{ ctrans("Budget (optional)") }}</span>
 					<div
-						class="mt-1 flex items-center rounded-md ring-1 ring-gray-300 focus-within:ring-[--app-accent]">
+						class="mt-1 flex items-center rounded-md ring-1 ring-gray-300 focus-within:ring-[var(--app-accent)]">
 						<span class="pl-3 text-gray-500">{{ currencySymbol }}</span>
 						<input
 							v-model.number="budget"
@@ -517,7 +564,7 @@ onBeforeUnmount(stopTimer)
 				class="flex flex-col items-center gap-3 px-4 py-6 text-center text-sm text-gray-700"
 				role="status"
 				aria-live="polite">
-				<LoadingIcon class="text-3xl text-[--app-accent]" />
+				<LoadingIcon class="text-3xl text-[var(--app-accent)]" />
 				<div class="font-semibold text-gray-900">{{ ctrans("Crunching the numbers") }}</div>
 				<div class="text-gray-500">{{ stepText }}…</div>
 				<div class="text-xs text-gray-400">

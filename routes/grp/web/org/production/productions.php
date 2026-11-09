@@ -26,6 +26,7 @@ use App\Actions\Production\Restock\QueueArtefactsToProduce;
 use App\Actions\Production\Restock\UI\ShowToRestock;
 use App\Actions\Production\PartnerShippingList\UI\GetProductionQueueCounts;
 use App\Actions\Production\PartnerShippingList\UI\IndexPrePickList;
+use App\Actions\Procurement\OrgPartner\UI\GetPartnerRescueLeftOut;
 use App\Actions\Production\Intervention\PrepareInterventionOrder;
 use App\Actions\Production\Intervention\UI\IndexInterventions;
 use App\Actions\Production\Artefact\UI\CreateArtefact;
@@ -165,6 +166,7 @@ Route::prefix('{production}')
                     ->group(function () {
                         Route::get('', IndexInterventions::class)->name('index');
                         Route::post('{orgPartner:id}/order', PrepareInterventionOrder::class)->name('order')->withoutScopedBindings();
+                        Route::get('{orgPartner:id}/left-out', [GetPartnerRescueLeftOut::class, 'inIntervention'])->name('left_out')->withoutScopedBindings();
                     });
 
                 Route::name('.crafts.')->prefix('crafts')

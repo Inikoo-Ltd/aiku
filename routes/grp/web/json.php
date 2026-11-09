@@ -169,6 +169,7 @@ use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterS
 use App\Actions\Ordering\Order\GetChargesInOrder;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexPartnerShoppingListOrgStocks;
+use App\Actions\Procurement\OrgPartner\UI\GetPartnerRescueLeftOut;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\SysAdmin\Group\Json\GetAllTradeUnitsInGroup;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
@@ -277,6 +278,7 @@ Route::get('master-product-category/{masterProductCategory:id}/products-by-codes
 Route::get('master-shop/{masterShop:id}/products-by-codes', [GetMasterProductsByCodes::class, 'inMasterShopController'])->name('master_shop.products_by_codes')->withoutScopedBindings();
 Route::get('master-shop/{masterShop:id}/product-categories-by-codes', GetMasterProductCategoriesByCodes::class)->name('master_shop.product_categories_by_codes')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory:id}/shops-content', GetShopsContentInMasterProductCategory::class)->name('master_product_category.shops_content.index')->withoutScopedBindings();
+Route::get('org-partner/{orgPartner:id}/rescue-left-out', GetPartnerRescueLeftOut::class)->name('org_partner.rescue_left_out');
 Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShoppingListOrgStocks::class)->name('org_partner.shopping_list_org_stocks')->middleware(EnsurePartnerIsManufacturingHub::class);
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 Route::get('org-partner/{orgPartner}/purchase-order/{purchaseOrder}/org-stocks', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgPartner'])->name('org-partner.purchase-order-org-stocks');

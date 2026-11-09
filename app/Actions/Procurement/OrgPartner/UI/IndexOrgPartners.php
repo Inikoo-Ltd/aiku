@@ -74,7 +74,7 @@ class IndexOrgPartners extends OrgAction
                 ? [
                     'open_shopping_list_items'       => (int) $stats?->number_open_shopping_list_items,
                     'open_shopping_list_items_value' => round((float) $stats?->open_shopping_list_items_value * $orgPartner->exchangeToOrgCurrency() * GetPartnerBuyingPriceFactor::run($orgPartner), 2),
-                    'rescuable'                      => $topLimit === null ? null : GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, $topLimit),
+                    'rescuable'                      => $topLimit === null ? null : GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, $topLimit, withLeftOut: false),
                     'current'                        => $this->shoppingListRows($orgPartner)->concat($this->stockDeliveryRows($orgPartner))->values()->all(),
                     'production'                     => GetPartnerProductionLanes::run($orgPartner),
                 ]
@@ -110,7 +110,7 @@ class IndexOrgPartners extends OrgAction
             'purchase_orders'   => (int) $orgPartner->stats?->number_purchase_orders,
             'last_submitted_at' => $orgPartner->purchaseOrders()->max('submitted_at'),
             'current'           => $stockDeliveries->concat($purchaseOrders)->values()->all(),
-            'rescuable'         => $topLimit === null ? null : GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, $topLimit),
+            'rescuable'         => $topLimit === null ? null : GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, $topLimit, withLeftOut: false),
         ];
     }
 
@@ -189,7 +189,7 @@ class IndexOrgPartners extends OrgAction
                 'live_channel'  => $orgPartners->contains(fn (OrgPartner $orgPartner) => $orgPartner->partner->is_manufacturing_hub)
                     ? 'grp.org.'.$this->organisation->id.'.partner-production'
                     : null,
-                'rescuable'     => Inertia::defer(fn () => $orgPartners->mapWithKeys(fn (OrgPartner $orgPartner) => [$orgPartner->id => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner)])->all()),
+                'rescuable'     => Inertia::defer(fn () => $orgPartners->mapWithKeys(fn (OrgPartner $orgPartner) => [$orgPartner->id => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, withLeftOut: false)])->all()),
             ]
         );
     }
