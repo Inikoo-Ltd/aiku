@@ -61,8 +61,8 @@ const salesChange = computed(() => (props.teaser ? percentChange(props.teaser.to
 const chartData = computed(() => ({
 	labels: props.teaser?.sales.map((row) => row.date) ?? [],
 	datasets: [
-		{ label: ctrans("Sales"), data: props.teaser?.sales.map((row) => row.sales) ?? [], borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius: 0 },
-		{ label: ctrans("Year before"), data: props.teaser?.compare_sales.map((row) => row.sales) ?? [], borderColor: "#9ca3af", backgroundColor: "#9ca3af", borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: 0 },
+		{ label: ctrans("Sales"), data: props.teaser?.sales.map((row) => row.sales) ?? [], borderColor: "#1f845a", backgroundColor: "#1f845a", tension: 0, borderWidth: 1.5, pointRadius: props.compact ? 0 : 2, pointHoverRadius: 4 },
+		{ label: ctrans("Year before"), data: props.teaser?.compare_sales.map((row) => row.sales) ?? [], borderColor: "#9ca3af", backgroundColor: "#9ca3af", borderDash: [4, 3], tension: 0, borderWidth: 1.5, pointRadius: props.compact ? 0 : 2, pointHoverRadius: 4 },
 	],
 }))
 
@@ -142,9 +142,9 @@ const chartOptions = {
 		</template>
 
 		<div v-else class="space-y-2">
-			<div class="h-5 w-40 animate-pulse rounded bg-gray-100" />
-			<div class="h-40 animate-pulse rounded bg-gray-100" />
-			<div class="h-4 w-56 animate-pulse rounded bg-gray-100" />
+			<div class="skeleton h-5 w-40 rounded" />
+			<div class="skeleton h-40 rounded" />
+			<div class="skeleton h-4 w-56 rounded" />
 		</div>
 	</div>
 </template>
