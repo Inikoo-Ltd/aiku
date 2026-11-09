@@ -24,6 +24,7 @@ enum MasterAssetTabsEnum: string
     // case PRODUCTS = 'products';
     case IMAGES = 'images';
     case SALES = 'sales';
+    case COMPETITORS = 'competitors';
 
     case HISTORY = 'history';
     case TRADE_UNITS = 'trade_units';
@@ -64,6 +65,11 @@ enum MasterAssetTabsEnum: string
             MasterAssetTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+
+            MasterAssetTabsEnum::COMPETITORS => [
+                'title' => __('Competitors'),
+                'icon'  => 'fal fa-balance-scale',
             ],
 
             MasterAssetTabsEnum::TRADE_UNITS => [

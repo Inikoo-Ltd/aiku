@@ -59,6 +59,6 @@ class StoreCompetitor extends OrgAction
 
     public function htmlResponse(Competitor $competitor): RedirectResponse
     {
-        return Redirect::route('grp.masters.competitors.show', ['competitor' => $competitor->id]);
+        return Redirect::route('grp.masters.competitors.show', ['competitor' => $competitor->slug]);
     }
 }

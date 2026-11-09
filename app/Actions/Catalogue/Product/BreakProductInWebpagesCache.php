@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Enums\Catalogue\Product\ProductBadgeEnum;
 use App\Actions\Web\Webpage\BanVarnishWebpage;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
@@ -29,7 +30,8 @@ class BreakProductInWebpagesCache
 
     /**
      * Every webpage whose content shows this product: its own page plus the
-     * family/department/sub-department listings and any collections it is in.
+     * family/department/sub-department listings, any collections it is in and,
+     * while it is NEW IN, the website's NEW IN page.
      *
      * @return Collection<int, Webpage> keyed by webpage id
      */
@@ -40,6 +42,7 @@ class BreakProductInWebpagesCache
             $product->family?->webpage,
             $product->department?->webpage,
             $product->subDepartment?->webpage,
+            ProductBadgeEnum::resolve($product->first_available_at, null) === ProductBadgeEnum::NEW_IN ? $product->shop?->website?->newInPage : null,
         ])
             ->concat($product->containedByCollections->map(fn (\App\Models\Catalogue\Collection $collection) => $collection->webpage)->all())
             ->filter()

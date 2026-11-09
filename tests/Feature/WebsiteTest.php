@@ -40,6 +40,7 @@ use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\WebBlock\RemapWebBlockLayoutLinksToWebsite;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\StoreRedirectFromWebpage;
 use App\Actions\Web\Website\FetchCruxRecords;
 use App\Actions\Web\Webpage\HydrateWebpage;
@@ -80,6 +81,11 @@ use App\Actions\Web\Website\HydrateWebsite;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberHitsLast24Hours;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateNumberVisitorsLast24Hours;
 use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\Layouts\FetchUsedFamiliesWebBlock;
+use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
+use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
+use App\Actions\Catalogue\Shop\StoreShop;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Webpage\DeleteWebpage;
@@ -4291,7 +4297,7 @@ test('storing a system page wires it to the website', function (Website $website
 
         expect($website->refresh()->{$systemPage['website_field']})->toBe($webpage->id)
             ->and($webpage->webBlocks()->count())->toBeGreaterThan(0)
-            ->and($webpage->webBlocks()->first()->webBlockType->code)->toBe($systemPage['web_block'])
+            ->and($webpage->webBlocks()->first()->webBlockType->code)->toBe($systemPage['web_block'] ?? FetchUsedFamiliesWebBlock::run($website))
             ->and(WebpageSubTypeEnum::labels())->toHaveKey($subTypeValue);
     }
 })->depends('launch website');
@@ -4346,6 +4352,69 @@ test('repair create system pages replaces the register dashboard block with regi
     expect($registerDashboard->webBlocks()->count())->toBe(1)
         ->and($registerDashboard->webBlocks()->first()->webBlockType->code)->toBe('register-dashboard-2');
 })->depends('launch website');
+
+test('repair create system pages drafts the NEW IN page without touching the live /new page, and the switch puts it live there', function () {
+    $shop    = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    $website = LaunchWebsite::make()->action(StoreWebsite::make()->action($shop, Website::factory()->definition()));
+
+    $oldNewPage = StoreWebpage::make()->action($website, array_merge(Webpage::factory()->definition(), ['url' => 'new', 'code' => 'New']));
+    PublishWebpage::make()->action($oldNewPage, ['comment' => 'hand picked new arrivals']);
+    $newArrivalsPage = StoreWebpage::make()->action($website, array_merge(Webpage::factory()->definition(), ['url' => 'new-arrivals', 'code' => 'new-arrivals']));
+    PublishWebpage::make()->action($newArrivalsPage, ['comment' => 'hand picked new arrivals']);
+    $oldRedirect = StoreRedirectFromWebsite::make()->action($website, ['from_url' => 'https://'.$website->domain.'/new_arrivals', 'to_url' => $oldNewPage->id]);
+
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    $newInPage = $website->refresh()->newInPage;
+    $blockCodes = fn (): array => $newInPage->refresh()->webBlocks()->get()->map(fn ($webBlock) => $webBlock->webBlockType->code)->all();
+
+    expect($newInPage->url)->toBe('new-in')
+        ->and($newInPage->type)->toBe(WebpageTypeEnum::SYSTEM_PAGE)
+        ->and($newInPage->sub_type)->toBe(WebpageSubTypeEnum::NEW_IN_PAGE)
+        ->and($newInPage->state)->not->toBe(WebpageStateEnum::LIVE)
+        ->and($blockCodes())->toBe([FetchUsedFamiliesWebBlock::run($website), FetchUsedProductsWebBlock::run($website)])
+        ->and($oldNewPage->refresh()->url)->toBe('new')
+        ->and($oldNewPage->state)->toBe(WebpageStateEnum::LIVE);
+
+    $newInPage->modelHasWebBlocks()->whereHas('webBlock.webBlockType', fn ($query) => $query->whereIn('code', WebBlockTemplateEnum::LIST_PRODUCTS->templateCodes()))->delete();
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    expect(Webpage::where('website_id', $website->id)->where('sub_type', WebpageSubTypeEnum::NEW_IN_PAGE)->count())->toBe(1)
+        ->and($blockCodes())->toBe([FetchUsedFamiliesWebBlock::run($website), FetchUsedProductsWebBlock::run($website)]);
+
+    $this->artisan('website:switch_to_new_in_page', ['website' => $website->slug, '--replace' => ['new-arrivals']])->assertSuccessful();
+
+    $newInPage->refresh();
+    $oldNewPage->refresh();
+
+    expect($newInPage->url)->toBe('new')
+        ->and($newInPage->state)->toBe(WebpageStateEnum::LIVE)
+        ->and($oldNewPage->url)->toBe('new-old')
+        ->and($oldNewPage->code)->toBe('new-old')
+        ->and($oldNewPage->state)->toBe(WebpageStateEnum::CLOSED)
+        ->and($newArrivalsPage->refresh()->state)->toBe(WebpageStateEnum::CLOSED)
+        ->and(Redirect::where('website_id', $website->id)->where('from_path', 'new')->exists())->toBeFalse()
+        ->and(Redirect::where('website_id', $website->id)->where('from_path', 'new-old')->value('to_webpage_id'))->toBe($newInPage->id)
+        ->and(Redirect::where('website_id', $website->id)->where('from_path', 'new-arrivals')->value('to_webpage_id'))->toBe($newInPage->id)
+        ->and($oldRedirect->refresh()->to_webpage_id)->toBe($newInPage->id);
+});
+
+test('switching to the NEW IN page refuses a page to replace that is not live, and changes nothing', function () {
+    $shop    = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+    $website = LaunchWebsite::make()->action(StoreWebsite::make()->action($shop, Website::factory()->definition()));
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    $this->artisan('website:switch_to_new_in_page', ['website' => $website->slug, '--replace' => ['new-arrivals']])->assertFailed();
+
+    expect($website->refresh()->newInPage->state)->not->toBe(WebpageStateEnum::LIVE);
+});
+
+test('repair create system pages gives a fulfilment website no NEW IN page', function (Website $website) {
+    $this->artisan('repair:create_system_pages', ['--website_id' => $website->id])->assertSuccessful();
+
+    expect($website->refresh()->new_in_page_id)->toBeNull()
+        ->and($website->loginPage)->not->toBeNull();
+})->depends('launch fulfilment website from command');
 
 test('retina login renders the iris login block only when that page is live', function (Website $website) {
     config()->set('iris.cache.webpage_path.ttl', 0);

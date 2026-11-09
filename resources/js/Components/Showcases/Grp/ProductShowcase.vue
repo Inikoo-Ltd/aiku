@@ -219,8 +219,6 @@ const getTooltips = () => {
 </script>
 
 <template>
-	<ProductCompleteness v-if="data.completeness" :completeness="data.completeness" class="mx-3 mt-3 lg:ml-5" />
-
 	<div class="w-full px-4 py-3 mb-3 shadow-sm grid grid-cols-2">
 		<div class="text-xl font-semibold text-gray-800 whitespace-pre-wrap justify-self-start">
 			<!-- Units box -->
@@ -401,6 +399,8 @@ const getTooltips = () => {
 		</div>
 
 	</div>
+
+	<ProductCompleteness v-if="data.completeness" :completeness="data.completeness" class="mx-3 mt-6 lg:ml-5" />
 </template>
 
 <style scoped>

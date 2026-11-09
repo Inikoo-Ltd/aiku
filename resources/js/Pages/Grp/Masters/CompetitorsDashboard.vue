@@ -31,7 +31,7 @@ const props = defineProps<{
     can_edit: boolean
     dashboard: {
         number_competitors: number
-        status?: { ok: number; failing: number; not_read: number; last_read: string | null; failures: { id: number; name: string; reason: string; last_error: string | null; fetched_at: string | null }[] }
+        status?: { ok: number; failing: number; not_read: number; last_read: string | null; failures: { id: number; slug: string; name: string; reason: string; last_error: string | null; fetched_at: string | null }[] }
         to_review?: number
         throughput?: { reviewed: { this_week: number; last_week: number }; confirmed: { this_week: number; last_week: number } }
         by_master_shop?: MasterShopRow[]
@@ -118,7 +118,7 @@ const positionSegments = (row: MasterShopRow) => {
             <p class="font-medium">{{ ctrans("Competitors that could not be read") }}</p>
             <div class="mt-2 grid gap-x-6 gap-y-2 text-xs md:grid-cols-2">
                 <div v-for="failure in dashboard.status.failures" :key="failure.id">
-                    <Link :href="route('grp.masters.competitors.show', { competitor: failure.id })" class="font-medium text-gray-700 hover:underline">{{ failure.name }}</Link>
+                    <Link :href="route('grp.masters.competitors.show', { competitor: failure.slug })" class="font-medium text-gray-700 hover:underline">{{ failure.name }}</Link>
                     <span class="text-red-600"> · {{ failure.reason }}</span>
                     <div v-if="failure.last_error" class="text-gray-500">{{ failure.last_error }}</div>
                 </div>

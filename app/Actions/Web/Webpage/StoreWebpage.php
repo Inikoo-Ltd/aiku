@@ -237,7 +237,12 @@ class StoreWebpage extends OrgAction
                     $systemPage = Arr::get(WebpageSubTypeEnum::systemPages(), $webpage->sub_type?->value);
 
                     if ($systemPage) {
-                        $this->createWebBlock($webpage, $systemPage['web_block']);
+                        if ($systemPage['web_block']) {
+                            $this->createWebBlock($webpage, $systemPage['web_block']);
+                        }
+                        foreach (Arr::get($systemPage, 'template_web_blocks', []) as $webBlockTemplate) {
+                            $this->createWebBlockFromWebsiteTemplate($webpage, $webBlockTemplate);
+                        }
                         $webpage->website->update([$systemPage['website_field'] => $webpage->id]);
                     }
                 }

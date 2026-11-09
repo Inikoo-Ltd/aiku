@@ -23,6 +23,7 @@ class CompetitorsResource extends JsonResource
     {
         return [
             'id'                => $this->id,
+            'slug'              => $this->slug,
             'name'              => $this->name,
             'website'           => $this->website,
             'master_shop_slug'  => $this->master_shop_slug,

@@ -66,7 +66,7 @@ class ShowCompetitor extends OrgAction
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => __('Edit'),
-                            'route' => ['name' => 'grp.masters.competitors.edit', 'parameters' => ['competitor' => $competitor->id]],
+                            'route' => ['name' => 'grp.masters.competitors.edit', 'parameters' => ['competitor' => $competitor->slug]],
                         ],
                     ] : [],
                 ],

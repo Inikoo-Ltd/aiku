@@ -34,7 +34,7 @@ const props = defineProps<{
             returns?: Fact
             payments?: { methods?: string[]; source?: string | null }
             offers?: { text: string; kind: string; source: string | null }[]
-            briefing?: string | null
+            briefing?: { label: string; text: string }[] | string | null
             positioning?: string | null
         }
         numbers: { number_products: number; number_on_sale: number; share_on_sale: number | null; average_discount: number | null; price_min: number | null; price_max: number | null; number_confirmed: number; median_difference: number | null }
@@ -108,7 +108,15 @@ const hostOf = (url?: string | null) => {
 
         <div v-if="intel.briefing" class="rounded-lg border border-gray-200 bg-white px-4 py-3">
             <div class="text-xs text-gray-500">{{ ctrans("Briefing") }} <span v-if="intel.positioning">· {{ intel.positioning }}</span></div>
-            <p class="mt-1 leading-relaxed text-gray-800">{{ intel.briefing }}</p>
+            <dl v-if="Array.isArray(intel.briefing)" class="mt-2 grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-x-4 gap-y-1.5">
+                <template v-for="(point, index) in intel.briefing" :key="index">
+                    <dt class="text-gray-500">{{ point.label }}</dt>
+                    <dd class="text-gray-800">{{ point.text }}</dd>
+                </template>
+            </dl>
+            <ul v-else class="mt-2 list-disc space-y-1 pl-5 text-gray-800">
+                <li v-for="(sentence, index) in intel.briefing.split(/(?<=[.!?])\s+(?=[A-Z])/)" :key="index">{{ sentence }}</li>
+            </ul>
         </div>
 
         <div v-if="hasIntel" class="rounded-lg border border-gray-200 bg-white px-4 py-3">

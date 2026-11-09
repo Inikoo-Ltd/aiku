@@ -95,7 +95,7 @@ const chartData = computed(() => ({
         borderRadius: props.type === "bar" && !props.stacked ? 3 : 0,
         borderSkipped: false,
         pointRadius: props.points ? 3 : 0,
-        pointBackgroundColor: dataset.color,
+        pointBackgroundColor: props.points ? dataset.color : undefined,
         pointHoverRadius: 4,
         pointHitRadius: 12,
         tension: props.points ? 0 : 0.3,

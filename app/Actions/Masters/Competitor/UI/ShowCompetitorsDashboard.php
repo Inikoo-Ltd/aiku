@@ -113,6 +113,7 @@ class ShowCompetitorsDashboard extends OrgAction
                 'failures' => $competitors->whereIn('status', $failing)
                     ->map(fn (Competitor $competitor) => [
                         'id'         => $competitor->id,
+                        'slug'       => $competitor->slug,
                         'name'       => $competitor->name,
                         'reason'     => $statusLabels[$competitor->status->value],
                         'last_error' => $competitor->last_error,

@@ -6,7 +6,6 @@ import { ref, onMounted, watch, computed, toRaw, inject } from "vue"
 import MobileShowMoreButton from "@/Iris/Components/MobileShowMoreButton.vue"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
 import FilterProducts from "@/Components/CMS/Webpage/Products/FilterProduct.vue"
 import Drawer from "primevue/drawer"
@@ -78,6 +77,7 @@ const products = ref<any[]>(
 )
 const loadingInitial = ref(false)
 const loadingMore = ref(false)
+const loadError = ref<string | null>(null)
 const q = ref("")
 const orderBy = ref(
 	layout.params?.order_by || props.fieldValue?.sub_type == "family"
@@ -133,6 +133,13 @@ const getRoutes = () => {
 				},
 			},
 		}
+	} else if (props.fieldValue.model_type === "NewIn") {
+		return {
+			iris: {
+				route_products: { name: "iris.json.new_in.in_stock_products.index", parameters: {} },
+				route_out_of_stock_products: { name: "iris.json.new_in.out_of_stock_products.index", parameters: {} },
+			},
+		}
 	}
 
 	return { iris: { route_products: null, route_out_of_stock_products: null } }
@@ -186,6 +193,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
 		if (firstLoad.value == 1) loadingInitial.value = true
 	}
 
+	loadError.value = null
 	const filters = buildFilters()
 	const routes = getRoutes()
 	const useOutOfStock = isFetchingOutOfStock.value
@@ -228,7 +236,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
 			await fetchProducts(true, true)
 		}
 	} catch (error) {
-		notify({ title: "Error", text: "Failed to load products.", type: "error" })
+		loadError.value = ctrans("Failed to load products.")
 	} finally {
 		loadingInitial.value = false
 		loadingMore.value = false
@@ -368,6 +376,8 @@ const getRouteForProductPortfolio = () => {
 		return route("iris.json.collection.portfolio_data", {
 			collection: model_id,
 		})
+	} else if (model_type == "NewIn") {
+		return route("iris.json.new_in.portfolio_data")
 	}
 }
 
@@ -384,11 +394,7 @@ const fetchProductHasPortfolio = async () => {
 		productHasPortfolio.value.list = response.data || []
 	} catch (error) {
 		console.error(error)
-		notify({
-			title: "Error",
-			text: "Failed to load product portfolio.",
-			type: "error",
-		})
+		loadError.value = ctrans("Failed to load product portfolio.")
 	} finally {
 		productHasPortfolio.value.isLoading = false
 	}
@@ -641,6 +647,8 @@ const search_class = ref(
 						:count="mobileHiddenProductsCount"
 						@show="showAllProductsOnMobile = true" />
 				</div>
+
+				<p v-if="loadError" class="my-4 text-center text-xs text-red-500">{{ loadError }}</p>
 
 				<!-- Load More -->
 				<div

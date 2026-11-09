@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Masters\Competitor\UI\IndexMasterAssetCompetitorProducts;
 use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductsShowcaseData;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterAsset\Json\GetPriceRebelProducts;
@@ -105,6 +106,7 @@ class GetMasterProductShowcase
                 ->keys()
                 ->values(),
             'pricingCosts'        => $this->getPricingCosts($masterAsset),
+            'competitors'         => IndexMasterAssetCompetitorProducts::make()->summary($masterAsset),
             'is_dropship'         => $masterAsset->masterShop?->type == ShopTypeEnum::DROPSHIPPING,
             'masterProduct'       => MasterProductResource::make($masterAsset)->resolve(),
             'properties'          => $properties,

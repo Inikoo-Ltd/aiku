@@ -49,7 +49,7 @@ class EditCompetitor extends OrgAction
                             'label' => __('Exit edit'),
                             'route' => [
                                 'name'       => 'grp.masters.competitors.show',
-                                'parameters' => ['competitor' => $competitor->id],
+                                'parameters' => ['competitor' => $competitor->slug],
                             ],
                         ],
                     ],

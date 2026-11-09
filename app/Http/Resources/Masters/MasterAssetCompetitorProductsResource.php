@@ -30,6 +30,7 @@ class MasterAssetCompetitorProductsResource extends JsonResource
             'master_shop_slug'        => $this->master_shop_slug,
             'master_shop_name'        => $this->master_shop_name,
             'competitor_id'           => $this->competitor_id,
+            'competitor_slug'         => $this->competitor_slug,
             'competitor_name'         => $this->competitor_name,
             'competitor_product_name' => $this->competitor_product_name,
             'competitor_product_url'  => $this->competitor_product_url,

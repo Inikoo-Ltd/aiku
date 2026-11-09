@@ -17,7 +17,8 @@ import {
 	faBox,
 	faVideo,
 	faTimesCircle,
-	faCheckCircle
+	faCheckCircle,
+	faBalanceScale
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faThumbtack } from "@fas"
 import { faStarfighter, faStarshipFreighter } from "@far"
@@ -87,6 +88,10 @@ const props = defineProps<{
         rebel_rrp : {}
 		majorCurrencies?: string[]
 		pricingCosts?: Record<string, number | null> | null
+		competitors?: {
+			to_review: number
+			prices: { competitor_slug: string, competitor: string, price: number | null, difference: number | null, currency_code: string }[]
+		} | null
 		availability_status: {
 			is_for_sale: boolean
 			product: {}[]
@@ -538,6 +543,28 @@ const isModalProductForSale = ref(false)
 						</div>
 					</div>
 				</Popover>
+				<div v-if="data.competitors" class="w-full rounded-md border border-solid border-gray-300 px-3 py-1.5">
+					<div class="flex items-center justify-between gap-3 text-xs font-semibold text-gray-500">
+						<span class="flex min-w-0 items-center gap-2">
+							<FontAwesomeIcon :icon="faBalanceScale" fixed-width />
+							<span class="truncate">{{ ctrans('Competitors / Unit') }}</span>
+						</span>
+						<button type="button" class="whitespace-nowrap font-normal text-gray-400 hover:text-gray-600" @click="handleTabUpdate('competitors')">
+							<span v-if="data.competitors.to_review" class="mr-1 text-amber-600">{{ ctrans(':count to review', { count: data.competitors.to_review }) }}</span>
+							{{ ctrans('See all') }}
+						</button>
+					</div>
+					<div v-if="data.competitors.prices.length" class="mt-1 grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-2 gap-y-0.5 tabular-nums text-sm">
+						<template v-for="(competitor, index) in data.competitors.prices" :key="index">
+							<Link :href="route('grp.masters.competitors.show', { competitor: competitor.competitor_slug })" class="truncate text-gray-600 hover:underline">{{ competitor.competitor }}</Link>
+							<span class="text-right text-xs" :class="(competitor.difference ?? 0) < 0 ? 'text-red-500' : 'text-green-600'">
+								<template v-if="competitor.difference !== null">{{ competitor.difference > 0 ? '+' : '' }}{{ competitor.difference }}%</template>
+							</span>
+							<span class="text-right font-medium text-gray-700">{{ competitor.price === null ? '' : locale.currencyFormat(competitor.currency_code, competitor.price) }}</span>
+						</template>
+					</div>
+					<div v-else class="mt-1 text-xs text-gray-400">{{ ctrans('No confirmed competitor prices yet') }}</div>
+				</div>
 			</div>
 			<div class="mr-3">
 				<SalesAnalysisTeaser :teaser="salesAnalysisTeaser" class="mb-4" />
