@@ -66,21 +66,17 @@ class EditOutboxInShop extends OrgAction
             'title' => '',
             'fields' => [
                 'state' => [
-                    'type' => 'select',
-                    'label' => __('Notification State'),
-                    'placeholder' => __('Notification State'),
-                    'options' => [
-                        ['label' => __(OutboxStateEnum::ACTIVE->value), 'value' => OutboxStateEnum::ACTIVE->value ],
-                        ['label' => __(OutboxStateEnum::SUSPENDED->value), 'value' => OutboxStateEnum::SUSPENDED->value],
-                    ],
-                    'required' => true,
-                    'mode' => 'single',
-                    'value' => $outbox->state->value,
+                    'type' => 'toggle',
+                    'label' => __('Active'),
+                    'value' => $outbox->state === OutboxStateEnum::ACTIVE,
                 ],
             ]
         ];
 
-        $fields[] = $subjectField; // init fields
+        /** The on-hold emails write their own subject per reminder, in the shop's language (HELP-4580) */
+        if ($outbox->code !== OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD) {
+            $fields[] = $subjectField;
+        }
 
         switch ($outbox->code) {
             case OutboxCodeEnum::GOLD_REWARD_REMINDER_1:

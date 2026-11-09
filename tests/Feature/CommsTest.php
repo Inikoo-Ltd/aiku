@@ -3614,6 +3614,13 @@ test('cannot activate review reminder outbox without days_after', function () {
         ->and($outbox->days_after)->toBe(5);
 });
 
+test('the outbox state toggle switches it between active and suspended', function () {
+    $outbox = createOutboxDirectly($this->shop, OutboxCode::ORDER_CONFIRMATION);
+
+    expect(UpdateOutbox::make()->action($outbox, ['state' => false])->state)->toBe(OutboxStateEnum::SUSPENDED)
+        ->and(UpdateOutbox::make()->action($outbox, ['state' => true])->state)->toBe(OutboxStateEnum::ACTIVE);
+});
+
 test('outbox showcase returns email funnel stats', function () {
     $outbox = $this->shop->outboxes()->where('code', OutboxCode::REVIEW_REMINDER->value)->first();
 

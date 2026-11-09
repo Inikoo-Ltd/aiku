@@ -338,7 +338,7 @@ class SendSesEmail
             && $dispatchedEmail->outbox?->code === OutboxCodeEnum::PASSWORD_REMINDER;
     }
 
-    /** The payment emails of an unpaid channel order are kept so CS can see on the order which one the customer got (HELP-4580) */
+    /** Every email listed on an order keeps its copy, so CS see on the order its subject and what the customer got (HELP-4580) */
     public function keepsCopy(DispatchedEmail $dispatchedEmail): bool
     {
         return in_array($dispatchedEmail->outbox?->code, [
@@ -349,6 +349,7 @@ class SendSesEmail
             OutboxCodeEnum::RENTAL_AGREEMENT,
             OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
         ], true);
     }
 

@@ -103,6 +103,15 @@ class UpdateOutbox extends OrgAction
         ];
     }
 
+    /** The edit form shows the state as an on/off toggle */
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $state = $this->get('state');
+        if (is_bool($state) || in_array($state, ['true', 'false', '1', '0', 1, 0], true)) {
+            $this->set('state', filter_var($state, FILTER_VALIDATE_BOOLEAN) ? OutboxStateEnum::ACTIVE->value : OutboxStateEnum::SUSPENDED->value);
+        }
+    }
+
     public function afterValidator(Validator $validator): void
     {
         $state = $this->get('state');

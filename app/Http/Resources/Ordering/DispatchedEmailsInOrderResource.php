@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Ordering;
 
 use App\Models\Comms\Mailshot;
+use App\Models\Comms\Outbox;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -26,6 +27,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
  * @property mixed $id
+ * @property ?string $email_type
+ * @property ?int $outbox_id
  *
  */
 class DispatchedEmailsInOrderResource extends JsonResource
@@ -39,6 +42,7 @@ class DispatchedEmailsInOrderResource extends JsonResource
             'id'                           => $this->id,
             'number_clicks'                => $this->number_clicks,
             'number_reads'                 => $this->number_reads,
+            'type'                         => $this->typeIcon(),
             'state'                        => $mailshot->state->stateIcon()[$mailshot->state->value],
             'subject'                      => $this->subject,
             'sent_at'                      => $this->sent_at,
@@ -52,6 +56,24 @@ class DispatchedEmailsInOrderResource extends JsonResource
             'body_preview' => $this->is_body_encoded ? $this->decodeBodySafely($this->body_preview) : $this->body_preview,
 
         );
+    }
+
+    /** The on-hold emails share one outbox, so their type comes from what the sender recorded; outboxes are looked up, not joined, because archived emails are read from a database without them (HELP-4580) */
+    private function typeIcon(): array
+    {
+        return match ($this->email_type ?? Outbox::find($this->outbox_id)?->code?->value) {
+            'notice' => ['tooltip' => __('Order on hold, payment needed'), 'icon' => 'fal fa-hand-paper'],
+            'reminder' => ['tooltip' => __('Payment reminder'), 'icon' => 'fal fa-bell'],
+            'final_reminder' => ['tooltip' => __('Final payment reminder'), 'icon' => 'fal fa-hourglass-end'],
+            'no_delivery' => ['tooltip' => __('Order on hold, no delivery to this address'), 'icon' => 'fal fa-ban'],
+            'channel_order_on_hold' => ['tooltip' => __('Order on hold'), 'icon' => 'fal fa-hand-paper'],
+            'order_confirmation' => ['tooltip' => __('Order confirmation'), 'icon' => 'fal fa-shopping-cart'],
+            'delivery_confirmation' => ['tooltip' => __('Delivery confirmation'), 'icon' => 'fal fa-truck'],
+            'pre_order_update' => ['tooltip' => __('Pre-order update'), 'icon' => 'fal fa-calendar-alt'],
+            'send_purchase_order_to_supplier' => ['tooltip' => __('Purchase order'), 'icon' => 'fal fa-clipboard-list'],
+            'send_invoice_to_customer' => ['tooltip' => __('Invoice'), 'icon' => 'fal fa-file-invoice-dollar'],
+            default => ['tooltip' => __('Email'), 'icon' => 'fal fa-envelope'],
+        };
     }
 
     private function decodeBodySafely($body): string
