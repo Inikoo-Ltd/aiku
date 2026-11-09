@@ -26,7 +26,7 @@ use App\Models\Goods\ProductDevelopmentItem;
 use App\Models\Goods\ProductDevelopmentSample;
 use App\Models\SysAdmin\User;
 use App\Models\Production\Artefact;
-use App\Models\Production\ManufactureTask;
+use App\Models\Production\ArtefactManufactureTask;
 use App\Models\Production\RecipeStepRawMaterial;
 
 /**
@@ -121,17 +121,17 @@ class ProductDevelopmentRecipes
      */
     public static function recipe(Artefact $artefact): array
     {
-        $artefact->loadMissing('manufactureTasks');
-        $linesByStep = RecipeStepRawMaterial::whereIn('artefact_manufacture_task_id', $artefact->manufactureTasks->pluck('pivot.id'))
+        $recipeSteps = $artefact->recipeSteps()->with('manufactureTask')->get();
+        $linesByStep = RecipeStepRawMaterial::whereIn('artefact_manufacture_task_id', $recipeSteps->pluck('id'))
             ->with('rawMaterial')
             ->orderBy('id')
             ->get()
             ->groupBy('artefact_manufacture_task_id');
 
-        $steps = $artefact->manufactureTasks->map(fn (ManufactureTask $task) => [
-            'position'      => $task->pivot->position,
-            'name'          => $task->name,
-            'raw_materials' => $linesByStep->get($task->pivot->id, collect())->map(fn (RecipeStepRawMaterial $line) => [
+        $steps = $recipeSteps->map(fn (ArtefactManufactureTask $step) => [
+            'position'      => $step->position,
+            'name'          => $step->name(),
+            'raw_materials' => $linesByStep->get($step->id, collect())->map(fn (RecipeStepRawMaterial $line) => [
                 'code'        => $line->rawMaterial->code,
                 'description' => $line->rawMaterial->description,
                 'unit'        => $line->rawMaterial->unit->value,

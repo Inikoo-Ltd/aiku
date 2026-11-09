@@ -32,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $model_id
  * @property-read ProductDevelopment|null $productDevelopment
  * @property-read ProductDevelopmentItem|null $item
+ * @property-read ProductDevelopmentDesignRound|null $designRound
  * @property-read Media|null $media
  * @property-read User|null $uploadedBy
  * @mixin \Eloquent
@@ -55,6 +56,11 @@ class ProductDevelopmentFile extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(ProductDevelopmentItem::class, 'product_development_item_id');
+    }
+
+    public function designRound(): BelongsTo
+    {
+        return $this->belongsTo(ProductDevelopmentDesignRound::class, 'design_round_id');
     }
 
     public function media(): BelongsTo

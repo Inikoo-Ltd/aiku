@@ -190,6 +190,7 @@ use App\Actions\Web\Website\Analytics\GetLiveVisitorTrail;
 use App\Actions\Web\Website\UI\Json\FetchFamilyDescriptionBlockLayout;
 use App\Http\Middleware\EnsurePartnerIsManufacturingHub;
 use Illuminate\Support\Facades\Route;
+use App\Actions\Goods\ProductDevelopment\UI\GetTrialRunBrief;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
 Route::get('seo-tracked-keyword/{seoTrackedKeyword:id}/history', GetSeoKeywordHistory::class)->name('seo_tracked_keyword.history');
@@ -312,6 +313,7 @@ Route::get('production/{production:id}/artefact-families', [IndexArtefactFamilie
 Route::get('production/{production:id}/artefacts', [IndexArtefacts::class, 'inJson'])->name('production.artefacts.index');
 Route::get('production/{production:id}/manufacture-tasks', GetManufactureTasks::class)->name('production.manufacture_tasks.index');
 Route::get('production/{production:id}/raw-materials', GetRawMaterials::class)->name('production.raw_materials.index');
+Route::get('production/job-order/{jobOrder:id}/trial-run-brief', GetTrialRunBrief::class)->name('production.job_order.trial_run_brief');
 Route::get('manufacture-task-session/{manufactureTaskSession:id}/move-targets', GetManufactureTaskSessionMoveTargets::class)->name('manufacture_task_session.move_targets');
 Route::get('brands', GetBrands::class)->name('brands.index');
 

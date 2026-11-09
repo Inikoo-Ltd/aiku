@@ -11,6 +11,8 @@ import { ctrans, ctransChoice } from '@/Composables/useTrans'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import ManufactureWorkingCard from '@/Components/ManufactureWorkingCard.vue'
+import TrialRunBrief, { type TrialRunBriefData } from '@/Components/Production/TrialRunBrief.vue'
+import TrialRunFormulation from '@/Components/Production/TrialRunFormulation.vue'
 import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
 import Image from '@common/Components/Image.vue'
@@ -97,6 +99,10 @@ interface FloorTask {
     separate_route: null | { name: string, parameters: object }
     start_route: { name: string, parameters: object }
     is_quantity_only: boolean
+    trial_run: null | {
+        needs_formulation: boolean
+        brief_route: { name: string, parameters: object }
+    }
 }
 
 const props = defineProps<{
@@ -373,7 +379,29 @@ function isPieceRateWarning(task: FloorTask): boolean {
     return props.is_hourly && task.is_piece_rate
 }
 
+const trialBrief = ref<TrialRunBriefData | null>(null)
+const formulatingFor = ref<number | null>(null)
+const briefRefresh = ref(0)
+
+watch(selectedTaskId, () => {
+    formulatingFor.value = null
+    trialBrief.value = null
+})
+
+function formulationSaved(taskId: number) {
+    formulatingFor.value = null
+    briefRefresh.value++
+    const task = props.tasks.find(candidate => candidate.id == taskId)
+    if (task && !task.trial_run?.needs_formulation) {
+        startTask(task)
+    }
+}
+
 function startTask(task: FloorTask) {
+    if (task.trial_run?.needs_formulation) {
+        formulatingFor.value = task.id
+        return
+    }
     if ((isPieceRateWarning(task) || hasLookAlike(task)) && confirmStartFor.value !== task.id) {
         confirmStartFor.value = task.id
         return
@@ -555,7 +583,10 @@ function startTask(task: FloorTask) {
 
             <div v-if="open_break" class="flex-1 flex items-center text-gray-400 text-lg">{{ isKioskBreak ? ctrans('Clock back in to continue working') : ctrans('Finish your break to continue working') }}</div>
 
-            <ManufactureWorkingCard v-else-if="open_session" :key="open_session.id" :session="open_session" :server-time="server_time" class="w-full max-w-5xl" />
+            <template v-else-if="open_session">
+                <ManufactureWorkingCard :key="open_session.id" :session="open_session" :server-time="server_time" class="w-full max-w-5xl" />
+                <TrialRunBrief v-if="open_session.task?.trial_run" :key="'working-' + open_session.id" :briefRoute="open_session.task.trial_run.brief_route" collapsible class="w-full max-w-5xl" />
+            </template>
 
             <div v-else-if="selectedTask" class="flex-1 flex flex-col justify-center w-full max-w-2xl text-center">
                 <div v-if="startError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">{{ startError }}</div>
@@ -615,12 +646,23 @@ function startTask(task: FloorTask) {
                         </button>
                     </div>
                 </div>
+                <template v-else-if="selectedTask.can_start && formulatingFor === selectedTask.id">
+                    <TrialRunFormulation v-if="trialBrief?.form" :form="trialBrief.form" :sku="selectedTask.artefact_code" cancellable
+                        @saved="formulationSaved(selectedTask.id)" @cancel="formulatingFor = null" />
+                    <div v-else class="rounded-xl border-2 border-amber-300 bg-amber-50 p-5 text-lg text-amber-800">
+                        {{ trialBrief ? ctrans('The formulation of this trial run must be recorded before it starts. Ask the production manager to record it or to assign the trial run to you.') : ctrans('Loading the trial run…') }}
+                    </div>
+                </template>
                 <button v-else-if="selectedTask.can_start" type="button"
                     class="rounded-xl bg-[var(--app-accent)] text-[var(--app-accent-text)] text-2xl font-semibold px-16 py-5 disabled:opacity-40"
                     :disabled="processing"
                     @click="startTask(selectedTask)">
                     {{ selectedTask.is_quantity_only ? ctrans('ENTER QUANTITY') : ctrans('START') }}
                 </button>
+                <div v-if="selectedTask.trial_run?.needs_formulation && formulatingFor !== selectedTask.id" class="mt-2 text-sm text-gray-500">{{ ctrans('Step 1 is the formulation: you record what goes into the sample first') }}</div>
+
+                <TrialRunBrief v-if="selectedTask.trial_run" :key="selectedTask.id" :briefRoute="selectedTask.trial_run.brief_route" :refreshKey="briefRefresh" class="mt-6"
+                    @loaded="(brief) => trialBrief = brief" />
 
                 <div v-if="selectedTask.combined && !selectedTask.is_shared_mix" class="mt-8 rounded-xl border border-gray-200 bg-white text-left">
                     <div class="px-4 py-2 border-b border-gray-200 text-sm text-gray-600 flex items-center justify-between gap-3">

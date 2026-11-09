@@ -21,8 +21,8 @@ use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Marks a sample ready for review. Its recipe is copied from Production now, so it keeps the formulation it
- * was made from whatever happens to the recipe later, and the reviewers are told.
+ * Marks a sample ready for review. It keeps the formulation recorded when its trial run started, or else the
+ * recipe in Production now, whatever happens to the recipe later, and the reviewers are told.
  */
 class SubmitProductDevelopmentSample extends OrgAction
 {
@@ -46,7 +46,7 @@ class SubmitProductDevelopmentSample extends OrgAction
     {
         $sample->update([
             'status'   => ProductDevelopmentSampleStatusEnum::READY_FOR_REVIEW,
-            'recipe'   => ProductDevelopmentRecipes::recipe($sample->item->artefact),
+            'recipe'   => $sample->jobOrder?->data['formulation']['recipe'] ?? ProductDevelopmentRecipes::recipe($sample->item->artefact),
             'ready_at' => now(),
         ]);
 

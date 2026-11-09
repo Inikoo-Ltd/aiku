@@ -10,6 +10,7 @@
 namespace App\Actions\Helpers\Media\UI;
 
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
+use App\Actions\Goods\ProductDevelopment\UI\GetTrialRunBrief;
 use App\Models\Goods\ProductDevelopment;
 use App\Models\Goods\ProductDevelopmentComment;
 use App\Models\Accounting\Invoice;
@@ -139,7 +140,7 @@ class DownloadAttachment
             $owner instanceof AgentGoodsReceipt => $user->authTo(["procurement.{$owner->agent->organisation_id}.view"]),
             $owner instanceof Supplier => $user->authTo(['supply-chain.view']),
             $owner instanceof SupplierSubmission => $user->authTo(['supply-chain.view', 'compliance.view']),
-            $owner instanceof ProductDevelopment => (new ProductDevelopmentAccess())->canView($user, $owner),
+            $owner instanceof ProductDevelopment => (new ProductDevelopmentAccess())->canView($user, $owner) || GetTrialRunBrief::canSeeFile($user, $media),
             $owner instanceof ProductDevelopmentComment => $owner->productDevelopment && (new ProductDevelopmentAccess())->canView($user, $owner->productDevelopment),
             $owner instanceof Agent => $user->authTo(array_merge(
                 ["procurement.$owner->organisation_id.view"],

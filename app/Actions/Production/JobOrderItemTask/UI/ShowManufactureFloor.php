@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\JobOrderItemTask\UI;
 
+use App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\Production\JobOrderItemTask\SettleShortJobOrderItemTask;
 use App\Actions\Production\JobOrderItemTask\ShareMixPool;
@@ -540,6 +541,10 @@ class ShowManufactureFloor extends OrgAction
                 'name'       => 'grp.models.job-order-item-task.separate',
                 'parameters' => ['jobOrderItemTask' => $task->id],
                 'method'     => 'patch',
+            ] : null,
+            'trial_run'           => !$isCombined && $task->jobOrder->isRequestedByDevelopment() ? [
+                'needs_formulation' => RecordTrialRunFormulation::isNeededToStart($task->jobOrder),
+                'brief_route'       => ['name' => 'grp.json.production.job_order.trial_run_brief', 'parameters' => ['jobOrder' => $task->job_order_id]],
             ] : null,
             'start_route'         => [
                 'name'       => 'grp.models.job-order-item-task.session.store',
