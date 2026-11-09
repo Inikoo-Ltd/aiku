@@ -334,6 +334,26 @@ test('webhook for an awaiting shipment order creates the client, the address and
     return [$tiktokUser, $order];
 });
 
+test('an order shipped by tiktok keeps its note off the shipping label', function () {
+    $tiktokUser = tiktokChannel($this->customer);
+    $portfolio  = tiktokListedPortfolio($tiktokUser, $this->product, 'TT-SHIPPED-BY-TIKTOK');
+    $orderId    = '5769824317278'.random_int(10000, 99999);
+
+    fakeTiktokOrderIntake(
+        [tiktokOrder($orderId, [['product_id' => 'TT-SHIPPED-BY-TIKTOK']], ['shipping_type' => 'TIKTOK'])],
+        ['TT-SHIPPED-BY-TIKTOK' => ['external_product_id' => (string) $portfolio->id]]
+    );
+
+    HandleOrderIncomingTiktok::run(tiktokWebhookPayload($tiktokUser, $orderId));
+
+    $order = Order::where('customer_id', $this->customer->id)->where('platform_order_id', $orderId)->firstOrFail();
+
+    expect($order->is_shipping_by_external)->toBeTrue()
+        ->and($order->shipping_notes)->toBeNull()
+        ->and($order->internal_notes)->toContain('Shipped by TikTok')
+        ->and($order->internal_notes)->toContain($orderId);
+});
+
 test('the same webhook delivered twice does not create a second order', function () {
     $tiktokUser = tiktokChannel($this->customer);
     $portfolio  = tiktokListedPortfolio($tiktokUser, $this->product, 'TT-TWICE');
@@ -1081,4 +1101,27 @@ test('package dimensions convert the metre marketing dimensions to centimetres a
         'height' => '10.00',
         'unit'   => 'CENTIMETER',
     ]);
+});
+
+test('order page tells CS what to do with an order TikTok ships, only while it can still be sent', function () {
+    $tiktok = new \App\Models\Dropshipping\Platform(['type' => \App\Enums\Ordering\Platform\PlatformTypeEnum::TIKTOK]);
+    $order  = new \App\Models\Ordering\Order(['is_shipping_by_external' => true, 'state' => OrderStateEnum::IN_WAREHOUSE, 'platform_order_id' => '576982431727852369']);
+    $order->setRelation('platform', $tiktok);
+    $showOrder = \App\Actions\Ordering\Order\UI\ShowOrder::make();
+
+    expect($showOrder->getShippedByTiktokAlert($order))
+        ->status->toBe('warning')
+        ->description->toContain('Shipped by Seller')
+        ->description->toContain('576982431727852369');
+
+    $order->state = OrderStateEnum::DISPATCHED;
+    expect($showOrder->getShippedByTiktokAlert($order))->toBeNull();
+
+    $order->state                   = OrderStateEnum::IN_WAREHOUSE;
+    $order->is_shipping_by_external = false;
+    expect($showOrder->getShippedByTiktokAlert($order))->toBeNull();
+
+    $order->is_shipping_by_external = true;
+    $order->setRelation('platform', new \App\Models\Dropshipping\Platform(['type' => \App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY]));
+    expect($showOrder->getShippedByTiktokAlert($order))->toBeNull();
 });
