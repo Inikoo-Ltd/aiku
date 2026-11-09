@@ -69,7 +69,7 @@ class IndexAgentMoneyRequests extends OrgAction
             ->select(['deposit_requests.*', 'organisations.code as client_code', 'organisations.slug as client_slug', 'currencies.code as currency_code'])
             ->selectSub(DB::table('deposit_request_items')->whereColumn('deposit_request_id', 'deposit_requests.id')->selectRaw('coalesce(sum(amount), 0)'), 'total')
             ->selectSub(DB::table('agent_payments')->whereColumn('deposit_request_id', 'deposit_requests.id')->whereNull('deleted_at')->selectRaw('coalesce(sum(amount), 0)'), 'paid')
-            ->with(['requester:id,username,contact_name,nickname', 'approver:id,username,contact_name,nickname', 'rejecter:id,username,contact_name,nickname', 'reminder:id,username,contact_name,nickname', 'items.stockDelivery:id,slug,reference', 'items.purchaseOrder' => fn ($query) => $query
+            ->with(['requester:id,username,contact_name,nickname', 'approver:id,username,contact_name,nickname', 'rejecter:id,username,contact_name,nickname', 'reminder:id,username,contact_name,nickname', 'items.stockDelivery:id,slug,reference', 'items.agentPayment:id,type,reference,notes', 'items.purchaseOrder' => fn ($query) => $query
                 ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
                 ->select(['purchase_orders.id', 'purchase_orders.slug', 'purchase_orders.reference', 'purchase_orders.agent_order_reference', 'suppliers.code as supplier_code', 'suppliers.name as supplier_name'])])
             ->defaultSort('-requested_at')
@@ -136,7 +136,7 @@ class IndexAgentMoneyRequests extends OrgAction
                 'kind_label'    => DepositRequestItemKindEnum::labels()[$item->kind->value],
                 'reference'     => $item->purchaseOrder?->reference ?? $item->stockDelivery?->reference,
                 'route'         => $item->purchaseOrder ? $purchaseOrderRoute($item->purchaseOrder) : $shipmentRoute($item->stockDelivery),
-                'description'   => $item->purchaseOrder ? $item->kind->describeForPurchaseOrder() : DepositRequestItemKindEnum::labels()[$item->kind->value],
+                'description'   => $item->purchaseOrder ? $item->kind->describeForPurchaseOrder() : DepositRequestItem::describeExpense($item),
                 'supplier_code' => $item->purchaseOrder?->supplier_code,
                 'supplier_name' => $item->purchaseOrder?->supplier_name,
                 'amount'        => (float) $item->amount,

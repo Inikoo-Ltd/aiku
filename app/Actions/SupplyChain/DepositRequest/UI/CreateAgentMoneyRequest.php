@@ -21,8 +21,9 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Where the agent builds a money request for one client: the wallet, the charges paid for each shipment, then
- * every open order with its advance ready ticked and its balance to tick when the goods are about to ship.
+ * Where the agent builds a money request for one client: the charges paid for each shipment, the expenses of the
+ * ledger, then every open order with its advance ready ticked and its balance to tick when the goods are about to
+ * ship. The client's money the agent still holds is taken off at the end.
  */
 class CreateAgentMoneyRequest extends OrgAction
 {
@@ -57,6 +58,10 @@ class CreateAgentMoneyRequest extends OrgAction
             ...$shipment,
             'route' => ['name' => 'grp.org.agent.stock_deliveries.show', 'parameters' => ['organisation' => $organisation->slug, 'stockDelivery' => $shipment['stock_delivery_slug']]],
         ], $due['shipments']);
+        $due['expenses'] = array_map(fn (array $expense) => [
+            ...$expense,
+            'purchase_order_route' => $expense['purchase_order_slug'] ? ['name' => 'grp.org.agent.purchase_orders.show', 'parameters' => ['organisation' => $organisation->slug, 'purchaseOrder' => $expense['purchase_order_slug']]] : null,
+        ], $due['expenses']);
 
         return Inertia::render(
             'Org/Procurement/AgentMoneyRequestBuilder',
@@ -73,6 +78,7 @@ class CreateAgentMoneyRequest extends OrgAction
                 'purchase_order' => $purchaseOrder?->reference,
                 'due'         => $due,
                 'store_route' => ['name' => 'grp.models.agent.money_request.store', 'parameters' => ['agent' => $agent->id]],
+                'expense_store_route' => ['name' => 'grp.models.agent.money_request_expense.store', 'parameters' => ['agent' => $agent->id]],
                 'advance_route_name' => 'grp.models.supplier.advance_percentage.update',
             ]
         );

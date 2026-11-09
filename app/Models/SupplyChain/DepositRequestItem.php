@@ -8,6 +8,7 @@
 
 namespace App\Models\SupplyChain;
 
+use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestItemKindEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
@@ -22,12 +23,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property DepositRequestItemKindEnum $kind
  * @property int|null $purchase_order_id
  * @property int|null $stock_delivery_id the shipment a shipment costs line asks for
+ * @property int|null $agent_payment_id the ledger entry an expense line asks for
  * @property int $organisation_id
  * @property numeric $amount
  * @property numeric $exchange
  * @property \Illuminate\Support\Carbon|null $paid_at
  * @property-read DepositRequest $depositRequest
  * @property-read AspoDeposit $aspoDeposit
+ * @property-read AgentPayment|null $agentPayment
  * @property-read Organisation $organisation
  */
 class DepositRequestItem extends Model
@@ -59,6 +62,27 @@ class DepositRequestItem extends Model
     public function stockDelivery(): BelongsTo
     {
         return $this->belongsTo(StockDelivery::class);
+    }
+
+    /**
+     * What a line that belongs to no order asks for: an expense reads as its ledger type and note.
+     */
+    public static function describeExpense(self $item): string
+    {
+        $label = DepositRequestItemKindEnum::labels()[$item->kind->value];
+        if ($item->kind !== DepositRequestItemKindEnum::EXPENSE || !$item->agentPayment) {
+            return $label;
+        }
+
+        return implode(' · ', array_filter([
+            AgentPaymentTypeEnum::labels()[$item->agentPayment->type->value] ?? $label,
+            $item->agentPayment->notes,
+        ]));
+    }
+
+    public function agentPayment(): BelongsTo
+    {
+        return $this->belongsTo(AgentPayment::class)->withTrashed();
     }
 
     public function organisation(): BelongsTo

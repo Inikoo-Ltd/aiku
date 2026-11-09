@@ -19,7 +19,8 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * The client agrees to send the money an agent asked for. Only an approved request can be paid.
+ * The client agrees to send the money an agent asked for. Only an approved request can be paid. A request the
+ * client's money already with the agent covers in full has nothing to send, so approving it settles it.
  */
 class ApproveAgentMoneyRequest extends OrgAction
 {
@@ -43,6 +44,11 @@ class ApproveAgentMoneyRequest extends OrgAction
                 'approved_at' => now(),
                 'approved_by' => $approver?->id,
             ]);
+
+            if (PayAgentMoneyRequest::outstanding($depositRequest) <= 0.005) {
+                $depositRequest->update(['state' => DepositRequestStateEnum::SETTLED, 'settled_at' => now()]);
+                $depositRequest->items()->whereNull('paid_at')->update(['paid_at' => now()]);
+            }
 
             return $depositRequest;
         });

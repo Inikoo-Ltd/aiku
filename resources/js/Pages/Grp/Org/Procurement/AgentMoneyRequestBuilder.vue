@@ -15,22 +15,24 @@ import Select from "primevue/select"
 import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast } from "@fal"
+import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
+import AgentMoneyRequestExpenseDialog from "@/Components/Procurement/AgentMoneyRequestExpenseDialog.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast)
+library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast, faReceipt, faPaperclip, faPlus, faHandHoldingUsd)
 
 interface DueOrder {
 	purchase_order_id: number
 	reference: string
+	is_open: boolean
 	submitted_at: string | null
 	placed_by: string | null
 	route: routeType
@@ -42,6 +44,7 @@ interface DueOrder {
 	supplier_route: routeType | null
 	total: number
 	requested: number
+	paid_to_supplier: number
 	advance_percentage: number
 	advance_due: number
 	balance_due: number
@@ -57,6 +60,23 @@ interface DueShipment {
 	due: number
 }
 
+interface DueExpense {
+	agent_payment_id: number
+	type: string
+	type_label: string
+	date: string
+	amount: number
+	requested: number
+	due: number
+	reference: string | null
+	notes: string | null
+	supplier_code: string | null
+	supplier_name: string | null
+	purchase_order_reference: string | null
+	purchase_order_route: routeType | null
+	has_receipt: boolean
+}
+
 const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
@@ -66,11 +86,13 @@ const props = defineProps<{
 	due: {
 		currency_code: string
 		wallet: { received: number; paid: number; balance: number }
-		negative_balance: number
+		credit_available: number
 		shipments: DueShipment[]
+		expenses: DueExpense[]
 		orders: DueOrder[]
 	}
 	store_route: routeType
+	expense_store_route: routeType
 	advance_route_name: string
 }>()
 
@@ -83,36 +105,45 @@ const ageInDays = (date: string | null) => (date ? Math.max(0, Math.round((Date.
 
 interface Line {
 	key: string
-	kind: "advance" | "balance" | "shipment" | "wallet"
+	kind: "advance" | "balance" | "shipment" | "expense"
 	purchase_order_id: number | null
 	stock_delivery_id: number | null
+	agent_payment_id: number | null
 	order: DueOrder | null
 	shipment: DueShipment | null
+	expense: DueExpense | null
 	due: number
 }
 
+const isBalanceAlreadyPaid = (order: DueOrder | null) => !!order && (!order.is_open || order.paid_to_supplier > order.requested + order.advance_due + 0.005)
+
+const emptyLine = { purchase_order_id: null, stock_delivery_id: null, agent_payment_id: null, order: null, shipment: null, expense: null }
+
 const orderLine = (kind: "advance" | "balance", order: DueOrder, due: number): Line => ({
+	...emptyLine,
 	key: `${kind}:${order.purchase_order_id}`,
 	kind,
 	purchase_order_id: order.purchase_order_id,
-	stock_delivery_id: null,
 	order,
-	shipment: null,
 	due,
 })
 
 const lines = computed<Line[]>(() => [
-	...(props.due.negative_balance > 0
-		? [{ key: "wallet", kind: "wallet" as const, purchase_order_id: null, stock_delivery_id: null, order: null, shipment: null, due: props.due.negative_balance }]
-		: []),
 	...(props.due.shipments ?? []).map((shipment) => ({
+		...emptyLine,
 		key: `shipment:${shipment.stock_delivery_id}`,
 		kind: "shipment" as const,
-		purchase_order_id: null,
 		stock_delivery_id: shipment.stock_delivery_id,
-		order: null,
 		shipment,
 		due: shipment.due,
+	})),
+	...(props.due.expenses ?? []).map((expense) => ({
+		...emptyLine,
+		key: `expense:${expense.agent_payment_id}`,
+		kind: "expense" as const,
+		agent_payment_id: expense.agent_payment_id,
+		expense,
+		due: expense.due,
 	})),
 	...props.due.orders.flatMap((order) => [
 		...(order.advance_due > 0 ? [orderLine("advance", order, order.advance_due)] : []),
@@ -128,7 +159,7 @@ watch(
 	lines,
 	(current) => {
 		current.forEach((line) => {
-			if (!(line.key in ticked)) ticked[line.key] = line.kind !== "balance"
+			if (!(line.key in ticked)) ticked[line.key] = line.kind !== "balance" || isBalanceAlreadyPaid(line.order)
 			const amount = amounts[line.key]
 			const untouched = amount === undefined || amount === null || amount === offeredDue[line.key]
 			amounts[line.key] = untouched ? line.due : Math.min(amount, line.due)
@@ -147,28 +178,28 @@ watch(
 
 const orderOf = (purchaseOrderId: number | null) => props.due.orders.find((order) => order.purchase_order_id === purchaseOrderId)
 
-type LineFilter = "all" | "purchase_orders" | "shipments"
+type LineFilter = "all" | "purchase_orders" | "shipments" | "expenses"
 
 const lineFilter = ref<LineFilter>("all")
 const isPurchaseOrderLine = (line: Line) => line.kind === "advance" || line.kind === "balance"
 const purchaseOrderLines = computed(() => lines.value.filter(isPurchaseOrderLine))
 const shipmentLines = computed(() => lines.value.filter((line) => line.kind === "shipment"))
+const expenseLines = computed(() => lines.value.filter((line) => line.kind === "expense"))
 
-const lineFilterOptions = computed<{ label: string; value: LineFilter; count: number; disabled: boolean }[]>(() => [
-	{ label: ctrans("All"), value: "all", count: lines.value.length, disabled: false },
-	{ label: ctrans("PO"), value: "purchase_orders", count: purchaseOrderLines.value.length, disabled: !purchaseOrderLines.value.length },
-	{ label: ctrans("Shipment"), value: "shipments", count: shipmentLines.value.length, disabled: !shipmentLines.value.length },
+const lineFilterOptions = computed<{ label: string; value: LineFilter; count: number }[]>(() => [
+	{ label: ctrans("All"), value: "all", count: lines.value.length },
+	{ label: ctrans("PO"), value: "purchase_orders", count: purchaseOrderLines.value.length },
+	{ label: ctrans("Shipment"), value: "shipments", count: shipmentLines.value.length },
+	{ label: ctrans("Expenses"), value: "expenses", count: expenseLines.value.length },
 ])
 
 const visibleLines = computed(() => {
 	if (lineFilter.value === "purchase_orders") return purchaseOrderLines.value
 	if (lineFilter.value === "shipments") return shipmentLines.value
+	if (lineFilter.value === "expenses") return expenseLines.value
 	return lines.value
 })
 
-watch(visibleLines, (current) => {
-	if (!current.length && lineFilter.value !== "all") lineFilter.value = "all"
-})
 
 const tickedCount = computed(() => visibleLines.value.filter((line) => ticked[line.key]).length)
 const allTicked = computed(() => visibleLines.value.length > 0 && tickedCount.value === visibleLines.value.length)
@@ -176,7 +207,13 @@ const someTicked = computed(() => tickedCount.value > 0 && !allTicked.value)
 const tickAll = (value: boolean) => visibleLines.value.forEach((line) => (ticked[line.key] = value))
 
 const chosen = computed(() => lines.value.filter((line) => ticked[line.key] && Number(amounts[line.key]) > 0))
-const total = computed(() => chosen.value.reduce((sum, line) => sum + Number(amounts[line.key]), 0))
+const subtotal = computed(() => chosen.value.reduce((sum, line) => sum + Number(amounts[line.key]), 0))
+const credit = computed(() => Math.round(Math.min(props.due.credit_available, subtotal.value) * 100) / 100)
+const total = computed(() => subtotal.value - credit.value)
+const isExpenseDialogOpen = ref(false)
+const lineTotal = (line: Line) => line.expense?.amount ?? (line.order ?? line.shipment)?.total ?? 0
+const lineRequested = (line: Line) => (line.order ?? line.shipment ?? line.expense)?.requested ?? 0
+const onExpenseSaved = () => (lineFilter.value = "expenses")
 
 const reference = ref(props.purchase_order ?? "")
 const notes = ref("")
@@ -195,26 +232,11 @@ const allOrdersUrl = computed(() =>
 	route(route().current() as string, Object.fromEntries(Object.entries(route().params).filter(([key]) => key !== "purchase_order")))
 )
 
-const hasShipmentLines = computed(() => (props.due.shipments ?? []).length > 0)
-
-const walletHint = computed(() => {
-	const balance = props.due.wallet.balance
-	if (balance < 0) {
-		const replacements = { amount: money(-balance), client: props.client.code }
-		if (hasShipmentLines.value) {
-			return props.due.negative_balance > 0
-				? ctrans("The agent has paid out :amount more than :client sent; shipment costs are asked per shipment below and the rest is the first line", replacements)
-				: ctrans("The agent has paid out :amount more than :client sent; shipment costs are asked per shipment below", replacements)
-		}
-		return props.due.negative_balance > 0
-			? ctrans("The agent has paid out :amount more than :client sent; covering it is the first line below", replacements)
-			: ctrans("The agent has paid out :amount more than :client sent; it was already asked for in an earlier request", replacements)
-	}
-	if (balance > 0) {
-		return ctrans(":amount of :client money is still unspent with the agent; it is not taken off the lines below, lower them if it should be used first", { amount: money(balance), client: props.client.code })
-	}
-	return null
-})
+const creditHint = computed(() =>
+	props.due.credit_available > 0
+		? ctrans(":amount of :client money is already with the agent and no request used it yet: it is taken off this request, so :client only sends the rest", { amount: money(props.due.credit_available), client: props.client.code })
+		: null
+)
 
 const saveAdvance = (order: DueOrder, percentage: number | null) => {
 	if (!order.supplier_id || percentage === order.advance_percentage) return
@@ -245,6 +267,7 @@ const send = () => {
 				kind: line.kind,
 				purchase_order_id: line.purchase_order_id,
 				stock_delivery_id: line.stock_delivery_id,
+				agent_payment_id: line.agent_payment_id,
 				amount: Number(amounts[line.key]),
 			})),
 		},
@@ -303,9 +326,9 @@ const send = () => {
 			</div>
 		</div>
 
-		<div v-if="walletHint" class="flex items-start gap-2 border-t border-gray-200 px-4 py-2 text-xs" :class="due.wallet.balance < 0 ? 'bg-amber-50 text-amber-800' : 'bg-gray-50 text-gray-600'">
+		<div v-if="creditHint" class="flex items-start gap-2 border-t border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-600">
 			<FontAwesomeIcon icon="fal fa-info-circle" fixed-width class="mt-0.5 shrink-0" aria-hidden="true" />
-			<span>{{ walletHint }}</span>
+			<span>{{ creditHint }}</span>
 		</div>
 	</div>
 
@@ -347,10 +370,37 @@ const send = () => {
 				<tr v-if="!lines.length">
 					<td colspan="6" class="px-3 py-6 text-center text-gray-400">{{ ctrans("Nothing is due from :client", { client: client.code }) }}</td>
 				</tr>
+				<tr v-else-if="!visibleLines.length">
+					<td colspan="6" class="px-3 py-6 text-center text-gray-400">{{ ctrans("No results") }}</td>
+				</tr>
 				<tr v-for="line in visibleLines" :key="line.key" :class="ticked[line.key] ? '' : 'text-gray-400'">
 					<td class="px-3 py-2"><Checkbox v-model="ticked[line.key]" binary /></td>
 					<td class="min-w-[18rem] px-3 py-2">
-						<span v-if="line.kind === 'wallet'" class="font-medium">{{ ctrans("Cover the negative balance") }}</span>
+						<div v-if="line.expense" class="space-y-1 text-xs text-gray-600">
+							<div class="flex items-start gap-2">
+								<span class="flex min-w-0 items-start gap-1">
+									<FontAwesomeIcon v-tooltip="ctrans('Expense')" icon="fal fa-receipt" class="mt-0.5 shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+									<span class="text-sm font-semibold leading-snug text-gray-900">{{ line.expense.notes || line.expense.type_label }}</span>
+								</span>
+								<span class="ml-auto shrink-0 whitespace-nowrap rounded border border-gray-200 px-1.5 font-medium text-gray-700">{{ line.expense.type_label }}</span>
+							</div>
+							<div class="flex flex-wrap items-center gap-x-1">
+								<span class="whitespace-nowrap">{{ ctrans("Paid on :date", { date: line.expense.date }) }}</span>
+								<template v-if="line.expense.supplier_code">
+									<span class="text-gray-400">·</span>
+									<span :title="line.expense.supplier_name ?? undefined">{{ line.expense.supplier_name ?? line.expense.supplier_code }}</span>
+								</template>
+								<template v-if="line.expense.purchase_order_reference">
+									<span class="text-gray-400">·</span>
+									<Link v-if="line.expense.purchase_order_route" :href="route(line.expense.purchase_order_route.name, line.expense.purchase_order_route.parameters)" class="whitespace-nowrap text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">{{ line.expense.purchase_order_reference }}</Link>
+								</template>
+								<template v-if="line.expense.reference">
+									<span class="text-gray-400">·</span>
+									<span class="whitespace-nowrap">{{ line.expense.reference }}</span>
+								</template>
+								<FontAwesomeIcon v-if="line.expense.has_receipt" v-tooltip="ctrans('Receipt in the ledger')" icon="fal fa-paperclip" class="ml-1 text-gray-400" fixed-width aria-hidden="true" />
+							</div>
+						</div>
 						<div v-else-if="line.shipment" class="space-y-1 text-xs text-gray-600">
 							<div class="flex items-start gap-2">
 								<span class="flex items-center gap-1">
@@ -391,12 +441,8 @@ const send = () => {
 							</div>
 						</div>
 					</td>
-					<td class="whitespace-nowrap px-3 py-2 text-right">
-						<template v-if="line.order ?? line.shipment">{{ money((line.order ?? line.shipment)!.total) }}</template>
-					</td>
-					<td class="whitespace-nowrap px-3 py-2 text-right">
-						<template v-if="line.order ?? line.shipment">{{ (line.order ?? line.shipment)!.requested ? money((line.order ?? line.shipment)!.requested) : "-" }}</template>
-					</td>
+					<td class="whitespace-nowrap px-3 py-2 text-right">{{ money(lineTotal(line)) }}</td>
+					<td class="whitespace-nowrap px-3 py-2 text-right">{{ lineRequested(line) ? money(lineRequested(line)) : "-" }}</td>
 					<td class="px-3 py-2 text-right">
 						<InputNumber
 							v-if="line.kind === 'advance'"
@@ -418,12 +464,35 @@ const send = () => {
 				</tr>
 			</tbody>
 			<tfoot v-if="lines.length" class="border-t border-gray-200">
+				<template v-if="credit > 0">
+					<tr>
+						<td colspan="5" class="px-3 pt-2 text-right text-xs uppercase tracking-wide text-gray-500">{{ ctrans("Lines") }}</td>
+						<td class="whitespace-nowrap px-3 pt-2 text-right text-gray-800">{{ money(subtotal) }}</td>
+					</tr>
+					<tr>
+						<td colspan="5" class="px-3 text-right text-xs text-gray-500">
+							<span class="inline-flex items-center gap-1">
+								<FontAwesomeIcon icon="fal fa-hand-holding-usd" fixed-width aria-hidden="true" />
+								{{ ctrans(":client money already with the agent", { client: client.code }) }}
+							</span>
+						</td>
+						<td class="whitespace-nowrap px-3 text-right text-gray-800">−{{ money(credit) }}</td>
+					</tr>
+				</template>
 				<tr>
 					<td colspan="5" class="px-3 py-2 text-right text-xs uppercase tracking-wide text-gray-500">{{ ctrans("To ask for") }}</td>
 					<td class="whitespace-nowrap px-3 py-2 text-right font-semibold text-gray-800">{{ money(total) }}</td>
 				</tr>
 			</tfoot>
 		</table>
+	</div>
+
+	<div class="mx-4 mt-2">
+		<Button type="tertiary" :label="ctrans('Add other expense')" @click="isExpenseDialogOpen = true">
+			<template #icon>
+				<FontAwesomeIcon icon="fal fa-plus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+			</template>
+		</Button>
 	</div>
 
 	<div class="mx-4 mt-4 grid gap-3 sm:grid-cols-2">
@@ -453,4 +522,13 @@ const send = () => {
 		<div v-if="sendError" class="text-xs text-red-600">{{ sendError }}</div>
 	</div>
 	<div ref="sendBarEnd" class="mb-2 h-px" />
+
+	<AgentMoneyRequestExpenseDialog
+		v-model:visible="isExpenseDialogOpen"
+		:storeRoute="expense_store_route"
+		:organisationId="client.id"
+		:clientCode="client.code"
+		:currency="due.currency_code"
+		@saved="onExpenseSaved"
+	/>
 </template>
