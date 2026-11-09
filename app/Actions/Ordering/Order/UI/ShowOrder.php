@@ -482,7 +482,6 @@ class ShowOrder extends OrgAction
                     ],
                 ] : null,
                 'email_customer_out_of_stock_lines' => Inertia::optional(fn () => $this->getOutOfStockLines($order)),
-                'alert'       => $this->getShippedByTiktokAlert($order),
                 'staff_chat'  => [
                     'context_type' => 'Order',
                     'context_id'   => $order->id,
@@ -866,25 +865,6 @@ class ShowOrder extends OrgAction
                     OrderTabsEnum::HISTORY->value
                 )
             );
-    }
-
-    /**
-     * @return array{status: string, title: string, description: string}|null
-     */
-    public function getShippedByTiktokAlert(Order $order): ?array
-    {
-        if (!$order->is_shipping_by_external
-            || $order->platform?->type !== PlatformTypeEnum::TIKTOK
-            || in_array($order->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED])
-            || $order->deliveryNotes()->whereHas('shipments')->exists()) {
-            return null;
-        }
-
-        return [
-            'status'      => 'warning',
-            'title'       => __('Shipped by TikTok: do not cancel this order'),
-            'description' => __("The customer's TikTok Shop is set to \"Shipped by TikTok\", so the address here is hidden with asterisks. That is normal: the warehouse picks and packs it as usual, and when it is packed the system gets TikTok's shipping label, which has the real address. If the packed delivery note still has no label, press the button there to get the shipment from TikTok. Optional: suggest to the customer to set their TikTok Shop to \"Shipped by Seller\" so the address shows in full. TikTok order ID: :id", ['id' => $order->platform_order_id]),
-        ];
     }
 
     /**

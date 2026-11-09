@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedTiktokAddress;
 use App\Actions\RetinaAction;
@@ -84,8 +85,10 @@ class StoreTiktokOrder extends RetinaAction
 
         if ($shipByTiktok) {
             UpdateOrder::run($order, [
-                'internal_notes' => __("Shipped by TikTok: the address is hidden, TikTok's label is fetched when the order is packed. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
+                'shipping_notes' => __("We're unable to ship this order due to customer's default shipping template is not 'Shipped by Seller' and the default handover method is DROP_OFF. TikTok Order ID: :__tiktokOrderId", ['__tiktokOrderId' => $order->platform_order_id])
             ]);
+
+            // CancelOrder::run($order);
         }
 
         $order = $this->payAndSubmitOrder($order);
