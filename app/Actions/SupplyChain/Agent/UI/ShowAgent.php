@@ -154,8 +154,8 @@ class ShowAgent extends OrgAction
                     : Inertia::optional(fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($agent, AgentTabsEnum::NOTES->value, null, false))),
 
                 AgentTabsEnum::HISTORY->value => $this->tab == AgentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value)))
+                    fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value, auditScope: GetAgentHistoryAuditScope::run($agent, ['type' => 'Agent', 'id' => $agent->id, 'label' => $agent->code])))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($agent, AgentTabsEnum::HISTORY->value, auditScope: GetAgentHistoryAuditScope::run($agent, ['type' => 'Agent', 'id' => $agent->id, 'label' => $agent->code]))))
 
 
             ]
@@ -163,7 +163,8 @@ class ShowAgent extends OrgAction
             ->table(IndexProcurementNotes::make()->tableStructure(prefix: AgentTabsEnum::NOTES->value))
             ->table(
                 IndexHistory::make()->tableStructure(
-                    prefix: AgentTabsEnum::HISTORY->value
+                    prefix: AgentTabsEnum::HISTORY->value,
+                    withRecordColumn: true
                 )
             )->table(IndexAttachments::make()->tableStructure(prefix: AgentTabsEnum::ATTACHMENTS->value));
     }

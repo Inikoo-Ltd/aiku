@@ -1843,6 +1843,9 @@ test('UI show agent', function () {
             ->where('pageHead.actions.0.route.parameters.0', $agent->slug)
             ->has('tabs');
     });
+
+    $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'history']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('history.data'));
 });
 
 test('UI edit agent', function () {

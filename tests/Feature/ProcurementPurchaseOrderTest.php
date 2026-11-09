@@ -3673,6 +3673,11 @@ test('a money request asks an open order\'s advance by what was asked only, not 
     $this->get(route('grp.media.download', $receipt->ulid))->assertNotFound();
 
     actingAs($this->adminGuest->getUser());
+
+    $history = collect($this->get(route('grp.org.procurement.org_agents.show', [$client->slug, $orgAgent->slug, 'tab' => 'history']))
+        ->assertOk()->viewData('page')['props']['history']['data']);
+    expect($history->where('auditable_type', 'AgentPayment')->pluck('auditable_id'))->toContain($transfer->id)
+        ->and($history->where('auditable_type', 'DepositRequest')->where('auditable_id', $depositRequest->id)->pluck('new_values')->pluck('state'))->toContain('settled');
 });
 
 test('an agent order the agent keeps a ledger for shows its goods, money requested and paid to the factory instead of paying the factory, and the agent accounting dashboard shows the ledger and money requests (HELP-4097)', function () {

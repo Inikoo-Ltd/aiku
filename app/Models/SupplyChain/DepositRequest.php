@@ -10,12 +10,14 @@ namespace App\Models\SupplyChain;
 
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\Models\Helpers\Currency;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InGroup;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property int $id
@@ -46,9 +48,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Currency $currency
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DepositRequestItem> $items
  */
-class DepositRequest extends Model
+class DepositRequest extends Model implements Auditable
 {
     use InGroup;
+    use HasHistory;
+
+    protected array $auditInclude = [
+        'reference',
+        'state',
+        'notes',
+        'rejection_reason',
+    ];
+
+    public function generateTags(): array
+    {
+        return ['procurement'];
+    }
 
     protected $guarded = [];
 
