@@ -84,3 +84,13 @@ test('outside production every email says loudly that it is a test email', funct
         ->toContain(e(config('app.domain')))
         ->and($action->markHtmlBodyAsNotProduction('<p>Hi</p>'))->toStartWith('<div style="background:#dc2626');
 });
+
+test('the payment emails of an unpaid channel order keep a copy for the order', function () {
+    $onHold = (new DispatchedEmail())
+        ->setRelation('outbox', new Outbox(['code' => OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD]));
+    $passwordReset = (new DispatchedEmail())
+        ->setRelation('outbox', new Outbox(['code' => OutboxCodeEnum::PASSWORD_REMINDER]));
+
+    expect(SendSesEmail::make()->keepsCopy($onHold))->toBeTrue()
+        ->and(SendSesEmail::make()->keepsCopy($passwordReset))->toBeFalse();
+});

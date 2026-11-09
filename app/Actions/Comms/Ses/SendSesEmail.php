@@ -165,15 +165,7 @@ class SendSesEmail
 
                     $this->sendCopy($sesClient, $rawEmail, $emailData['Destination']['CcAddresses']);
 
-                    if (!$isTest && $dispatchedEmail->outbox
-                        && in_array($dispatchedEmail->outbox->code, [
-                            OutboxCodeEnum::DELIVERY_CONFIRMATION,
-                            OutboxCodeEnum::ORDER_CONFIRMATION,
-                            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
-                            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-                            OutboxCodeEnum::RENTAL_AGREEMENT,
-                            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER,
-                        ])) {
+                    if (!$isTest && $this->keepsCopy($dispatchedEmail)) {
                         StoreEmailCopy::make()->action($dispatchedEmail, [
                             'subject' => $subject,
                             'body'    => $emailHtmlBody
@@ -344,6 +336,20 @@ class SendSesEmail
     {
         return config('app.send_password_reset_to_recipient_in_non_production_env')
             && $dispatchedEmail->outbox?->code === OutboxCodeEnum::PASSWORD_REMINDER;
+    }
+
+    /** The payment emails of an unpaid channel order are kept so CS can see on the order which one the customer got (HELP-4580) */
+    public function keepsCopy(DispatchedEmail $dispatchedEmail): bool
+    {
+        return in_array($dispatchedEmail->outbox?->code, [
+            OutboxCodeEnum::DELIVERY_CONFIRMATION,
+            OutboxCodeEnum::ORDER_CONFIRMATION,
+            OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
+            OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            OutboxCodeEnum::RENTAL_AGREEMENT,
+            OutboxCodeEnum::SEND_PURCHASE_ORDER_TO_SUPPLIER,
+            OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+        ], true);
     }
 
     /** Exponential backoff with jitter, capped so the whole retry run stays well under the queue retry_after. */
