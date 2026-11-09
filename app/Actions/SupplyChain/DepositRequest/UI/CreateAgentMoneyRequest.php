@@ -21,7 +21,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * Where the agent builds a money request for one client: the wallet, the charges paid for each container, then
+ * Where the agent builds a money request for one client: the wallet, the charges paid for each shipment, then
  * every open order with its advance ready ticked and its balance to tick when the goods are about to ship.
  */
 class CreateAgentMoneyRequest extends OrgAction
@@ -53,10 +53,10 @@ class CreateAgentMoneyRequest extends OrgAction
             'route'          => ['name' => 'grp.org.agent.purchase_orders.show', 'parameters' => ['organisation' => $organisation->slug, 'purchaseOrder' => $order['purchase_order_slug']]],
             'supplier_route' => $order['supplier_slug'] ? ['name' => 'grp.org.agent.sales.suppliers.show', 'parameters' => ['organisation' => $organisation->slug, 'supplier' => $order['supplier_slug']]] : null,
         ], $due['orders']);
-        $due['containers'] = array_map(fn (array $container) => [
-            ...$container,
-            'route' => ['name' => 'grp.org.agent.stock_deliveries.show', 'parameters' => ['organisation' => $organisation->slug, 'stockDelivery' => $container['stock_delivery_slug']]],
-        ], $due['containers']);
+        $due['shipments'] = array_map(fn (array $shipment) => [
+            ...$shipment,
+            'route' => ['name' => 'grp.org.agent.stock_deliveries.show', 'parameters' => ['organisation' => $organisation->slug, 'stockDelivery' => $shipment['stock_delivery_slug']]],
+        ], $due['shipments']);
 
         return Inertia::render(
             'Org/Procurement/AgentMoneyRequestBuilder',

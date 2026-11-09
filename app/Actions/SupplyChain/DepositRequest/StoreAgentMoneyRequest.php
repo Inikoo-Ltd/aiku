@@ -26,7 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The agent asks a client for money in one request: advances and balances of its supplier orders, the charges it
- * paid for each container, and what brings its wallet back to zero. Each line is checked against what is still due, so a request never asks
+ * paid for each shipment, and what brings its wallet back to zero. Each line is checked against what is still due, so a request never asks
  * twice for the same money.
  */
 class StoreAgentMoneyRequest extends OrgAction
@@ -63,7 +63,7 @@ class StoreAgentMoneyRequest extends OrgAction
                     'organisation_id'   => $client->id,
                     'kind'              => $kind,
                     'purchase_order_id' => in_array($kind, [DepositRequestItemKindEnum::ADVANCE, DepositRequestItemKindEnum::BALANCE], true) ? Arr::get($line, 'purchase_order_id') : null,
-                    'stock_delivery_id' => $kind === DepositRequestItemKindEnum::CONTAINER ? Arr::get($line, 'stock_delivery_id') : null,
+                    'stock_delivery_id' => $kind === DepositRequestItemKindEnum::SHIPMENT ? Arr::get($line, 'stock_delivery_id') : null,
                     'amount'            => round((float) $line['amount'], 2),
                 ]);
             }
@@ -99,7 +99,7 @@ class StoreAgentMoneyRequest extends OrgAction
 
     /**
      * Why the lines can not be asked for: twice the same line, an order that is not an open order of the client
-     * through this agent, a container with no charges left to ask for, or more than is still due. Null when they can.
+     * through this agent, a shipment with no charges left to ask for, or more than is still due. Null when they can.
      *
      * @param  list<array{kind: string, purchase_order_id?: int|null, stock_delivery_id?: int|null, amount: float|string}>  $lines
      */
@@ -107,15 +107,15 @@ class StoreAgentMoneyRequest extends OrgAction
     {
         $due        = GetAgentMoneyRequestLines::run($agent, $client);
         $orders     = collect($due['orders'])->keyBy('purchase_order_id');
-        $containers = collect($due['containers'])->keyBy('stock_delivery_id');
+        $shipments = collect($due['shipments'])->keyBy('stock_delivery_id');
         $seen       = [];
 
         foreach ($lines as $line) {
             $kind = DepositRequestItemKindEnum::from($line['kind']);
             $key  = $kind->value.':'.match ($kind) {
-                DepositRequestItemKindEnum::WALLET    => '',
-                DepositRequestItemKindEnum::CONTAINER => Arr::get($line, 'stock_delivery_id'),
-                default                               => Arr::get($line, 'purchase_order_id'),
+                DepositRequestItemKindEnum::WALLET   => '',
+                DepositRequestItemKindEnum::SHIPMENT => Arr::get($line, 'stock_delivery_id'),
+                default                              => Arr::get($line, 'purchase_order_id'),
             };
 
             if (isset($seen[$key])) {
@@ -124,15 +124,15 @@ class StoreAgentMoneyRequest extends OrgAction
             $seen[$key] = true;
 
             $limit = match ($kind) {
-                DepositRequestItemKindEnum::WALLET    => $due['negative_balance'],
-                DepositRequestItemKindEnum::ADVANCE   => $orders->get((int) Arr::get($line, 'purchase_order_id'))['advance_due'] ?? null,
-                DepositRequestItemKindEnum::BALANCE   => $orders->get((int) Arr::get($line, 'purchase_order_id'))['balance_due'] ?? null,
-                DepositRequestItemKindEnum::CONTAINER => $containers->get((int) Arr::get($line, 'stock_delivery_id'))['due'] ?? null,
+                DepositRequestItemKindEnum::WALLET   => $due['negative_balance'],
+                DepositRequestItemKindEnum::ADVANCE  => $orders->get((int) Arr::get($line, 'purchase_order_id'))['advance_due'] ?? null,
+                DepositRequestItemKindEnum::BALANCE  => $orders->get((int) Arr::get($line, 'purchase_order_id'))['balance_due'] ?? null,
+                DepositRequestItemKindEnum::SHIPMENT => $shipments->get((int) Arr::get($line, 'stock_delivery_id'))['due'] ?? null,
             };
 
             if ($limit === null) {
-                return $kind === DepositRequestItemKindEnum::CONTAINER
-                    ? __('One of the containers has no charges left to ask this client for.')
+                return $kind === DepositRequestItemKindEnum::SHIPMENT
+                    ? __('One of the shipments has no charges left to ask this client for.')
                     : __('One of the orders is not an open order of this client through you.');
             }
 

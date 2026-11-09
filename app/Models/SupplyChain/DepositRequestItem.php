@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $aspo_deposit_id
  * @property DepositRequestItemKindEnum $kind
  * @property int|null $purchase_order_id
- * @property int|null $stock_delivery_id the container a container costs line asks for
+ * @property int|null $stock_delivery_id the shipment a shipment costs line asks for
  * @property int $organisation_id
  * @property numeric $amount
  * @property numeric $exchange

@@ -15,7 +15,7 @@ import Select from "primevue/select"
 import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faContainerStorage } from "@fal"
+import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
@@ -26,7 +26,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faContainerStorage)
+library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle, faShippingFast)
 
 interface DueOrder {
 	purchase_order_id: number
@@ -47,7 +47,7 @@ interface DueOrder {
 	balance_due: number
 }
 
-interface DueContainer {
+interface DueShipment {
 	stock_delivery_id: number
 	reference: string
 	route: routeType
@@ -67,7 +67,7 @@ const props = defineProps<{
 		currency_code: string
 		wallet: { received: number; paid: number; balance: number }
 		negative_balance: number
-		containers: DueContainer[]
+		shipments: DueShipment[]
 		orders: DueOrder[]
 	}
 	store_route: routeType
@@ -83,11 +83,11 @@ const ageInDays = (date: string | null) => (date ? Math.max(0, Math.round((Date.
 
 interface Line {
 	key: string
-	kind: "advance" | "balance" | "container" | "wallet"
+	kind: "advance" | "balance" | "shipment" | "wallet"
 	purchase_order_id: number | null
 	stock_delivery_id: number | null
 	order: DueOrder | null
-	container: DueContainer | null
+	shipment: DueShipment | null
 	due: number
 }
 
@@ -97,22 +97,22 @@ const orderLine = (kind: "advance" | "balance", order: DueOrder, due: number): L
 	purchase_order_id: order.purchase_order_id,
 	stock_delivery_id: null,
 	order,
-	container: null,
+	shipment: null,
 	due,
 })
 
 const lines = computed<Line[]>(() => [
 	...(props.due.negative_balance > 0
-		? [{ key: "wallet", kind: "wallet" as const, purchase_order_id: null, stock_delivery_id: null, order: null, container: null, due: props.due.negative_balance }]
+		? [{ key: "wallet", kind: "wallet" as const, purchase_order_id: null, stock_delivery_id: null, order: null, shipment: null, due: props.due.negative_balance }]
 		: []),
-	...(props.due.containers ?? []).map((container) => ({
-		key: `container:${container.stock_delivery_id}`,
-		kind: "container" as const,
+	...(props.due.shipments ?? []).map((shipment) => ({
+		key: `shipment:${shipment.stock_delivery_id}`,
+		kind: "shipment" as const,
 		purchase_order_id: null,
-		stock_delivery_id: container.stock_delivery_id,
+		stock_delivery_id: shipment.stock_delivery_id,
 		order: null,
-		container,
-		due: container.due,
+		shipment,
+		due: shipment.due,
 	})),
 	...props.due.orders.flatMap((order) => [
 		...(order.advance_due > 0 ? [orderLine("advance", order, order.advance_due)] : []),
@@ -147,22 +147,22 @@ watch(
 
 const orderOf = (purchaseOrderId: number | null) => props.due.orders.find((order) => order.purchase_order_id === purchaseOrderId)
 
-type LineFilter = "all" | "purchase_orders" | "containers"
+type LineFilter = "all" | "purchase_orders" | "shipments"
 
 const lineFilter = ref<LineFilter>("all")
 const isPurchaseOrderLine = (line: Line) => line.kind === "advance" || line.kind === "balance"
 const purchaseOrderLines = computed(() => lines.value.filter(isPurchaseOrderLine))
-const containerLines = computed(() => lines.value.filter((line) => line.kind === "container"))
+const shipmentLines = computed(() => lines.value.filter((line) => line.kind === "shipment"))
 
 const lineFilterOptions = computed<{ label: string; value: LineFilter; count: number; disabled: boolean }[]>(() => [
 	{ label: ctrans("All"), value: "all", count: lines.value.length, disabled: false },
 	{ label: ctrans("PO"), value: "purchase_orders", count: purchaseOrderLines.value.length, disabled: !purchaseOrderLines.value.length },
-	{ label: ctrans("Container"), value: "containers", count: containerLines.value.length, disabled: !containerLines.value.length },
+	{ label: ctrans("Shipment"), value: "shipments", count: shipmentLines.value.length, disabled: !shipmentLines.value.length },
 ])
 
 const visibleLines = computed(() => {
 	if (lineFilter.value === "purchase_orders") return purchaseOrderLines.value
-	if (lineFilter.value === "containers") return containerLines.value
+	if (lineFilter.value === "shipments") return shipmentLines.value
 	return lines.value
 })
 
@@ -195,16 +195,16 @@ const allOrdersUrl = computed(() =>
 	route(route().current() as string, Object.fromEntries(Object.entries(route().params).filter(([key]) => key !== "purchase_order")))
 )
 
-const hasContainerLines = computed(() => (props.due.containers ?? []).length > 0)
+const hasShipmentLines = computed(() => (props.due.shipments ?? []).length > 0)
 
 const walletHint = computed(() => {
 	const balance = props.due.wallet.balance
 	if (balance < 0) {
 		const replacements = { amount: money(-balance), client: props.client.code }
-		if (hasContainerLines.value) {
+		if (hasShipmentLines.value) {
 			return props.due.negative_balance > 0
-				? ctrans("The agent has paid out :amount more than :client sent; container costs are asked per container below and the rest is the first line", replacements)
-				: ctrans("The agent has paid out :amount more than :client sent; container costs are asked per container below", replacements)
+				? ctrans("The agent has paid out :amount more than :client sent; shipment costs are asked per shipment below and the rest is the first line", replacements)
+				: ctrans("The agent has paid out :amount more than :client sent; shipment costs are asked per shipment below", replacements)
 		}
 		return props.due.negative_balance > 0
 			? ctrans("The agent has paid out :amount more than :client sent; covering it is the first line below", replacements)
@@ -351,16 +351,16 @@ const send = () => {
 					<td class="px-3 py-2"><Checkbox v-model="ticked[line.key]" binary /></td>
 					<td class="min-w-[18rem] px-3 py-2">
 						<span v-if="line.kind === 'wallet'" class="font-medium">{{ ctrans("Cover the negative balance") }}</span>
-						<div v-else-if="line.container" class="space-y-1 text-xs text-gray-600">
+						<div v-else-if="line.shipment" class="space-y-1 text-xs text-gray-600">
 							<div class="flex items-start gap-2">
 								<span class="flex items-center gap-1">
-									<FontAwesomeIcon v-tooltip="ctrans('Container')" icon="fal fa-container-storage" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
-									<Link :href="route(line.container.route.name, line.container.route.parameters)" class="whitespace-nowrap text-sm font-semibold text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">{{ line.container.reference }}</Link>
+									<FontAwesomeIcon v-tooltip="ctrans('Shipment')" icon="fal fa-shipping-fast" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+									<Link :href="route(line.shipment.route.name, line.shipment.route.parameters)" class="whitespace-nowrap text-sm font-semibold text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">{{ line.shipment.reference }}</Link>
 								</span>
-								<span class="ml-auto shrink-0 whitespace-nowrap rounded border border-gray-200 px-1.5 font-medium text-gray-700">{{ ctrans("Container costs") }}</span>
+								<span class="ml-auto shrink-0 whitespace-nowrap rounded border border-gray-200 px-1.5 font-medium text-gray-700">{{ ctrans("Shipment costs") }}</span>
 							</div>
 							<div class="flex flex-wrap items-center gap-x-1">
-								<template v-for="(charge, index) in line.container.charges" :key="charge.type">
+								<template v-for="(charge, index) in line.shipment.charges" :key="charge.type">
 									<span v-if="index" class="text-gray-400">·</span>
 									<span class="whitespace-nowrap">{{ charge.label }} {{ money(charge.amount) }}</span>
 								</template>
@@ -392,10 +392,10 @@ const send = () => {
 						</div>
 					</td>
 					<td class="whitespace-nowrap px-3 py-2 text-right">
-						<template v-if="line.order ?? line.container">{{ money((line.order ?? line.container)!.total) }}</template>
+						<template v-if="line.order ?? line.shipment">{{ money((line.order ?? line.shipment)!.total) }}</template>
 					</td>
 					<td class="whitespace-nowrap px-3 py-2 text-right">
-						<template v-if="line.order ?? line.container">{{ (line.order ?? line.container)!.requested ? money((line.order ?? line.container)!.requested) : "-" }}</template>
+						<template v-if="line.order ?? line.shipment">{{ (line.order ?? line.shipment)!.requested ? money((line.order ?? line.shipment)!.requested) : "-" }}</template>
 					</td>
 					<td class="px-3 py-2 text-right">
 						<InputNumber
@@ -438,7 +438,7 @@ const send = () => {
 	</div>
 
 	<div
-		class="sticky bottom-0 z-[5] mt-2 flex flex-col items-end gap-1 border-t px-4 pt-3 pb-6 transition-[background-color,box-shadow,border-color] duration-200"
+		class="sticky bottom-0 z-[5] mt-2 flex flex-col items-end gap-1 border-t px-4 pt-3 pb-7 transition-[background-color,box-shadow,border-color] duration-200"
 		:class="isSendBarFloating ? 'border-gray-200 bg-white/95 shadow-[0_-4px_12px_rgb(0_0_0/0.08)] backdrop-blur' : 'border-transparent'">
 		<div class="flex flex-wrap items-center justify-end gap-4">
 			<span v-if="isSendBarFloating" class="flex items-baseline gap-2">

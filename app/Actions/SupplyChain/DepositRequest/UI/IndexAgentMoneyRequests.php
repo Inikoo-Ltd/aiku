@@ -104,7 +104,7 @@ class IndexAgentMoneyRequests extends OrgAction
             'parameters' => [$forClient ? $depositRequest->client_slug : $depositRequest->agent->organisation->slug, $purchaseOrder->slug],
         ] : null;
 
-        $containerRoute = fn (?StockDelivery $stockDelivery) => $stockDelivery ? [
+        $shipmentRoute = fn (?StockDelivery $stockDelivery) => $stockDelivery ? [
             'name'       => $forClient ? 'grp.org.procurement.stock_deliveries.show' : 'grp.org.agent.stock_deliveries.show',
             'parameters' => [$forClient ? $depositRequest->client_slug : $depositRequest->agent->organisation->slug, $stockDelivery->slug],
         ] : null;
@@ -135,7 +135,7 @@ class IndexAgentMoneyRequests extends OrgAction
                 'kind'          => $item->kind->value,
                 'kind_label'    => DepositRequestItemKindEnum::labels()[$item->kind->value],
                 'reference'     => $item->purchaseOrder?->reference ?? $item->stockDelivery?->reference,
-                'route'         => $item->purchaseOrder ? $purchaseOrderRoute($item->purchaseOrder) : $containerRoute($item->stockDelivery),
+                'route'         => $item->purchaseOrder ? $purchaseOrderRoute($item->purchaseOrder) : $shipmentRoute($item->stockDelivery),
                 'description'   => $item->purchaseOrder ? $item->kind->describeForPurchaseOrder() : DepositRequestItemKindEnum::labels()[$item->kind->value],
                 'supplier_code' => $item->purchaseOrder?->supplier_code,
                 'supplier_name' => $item->purchaseOrder?->supplier_name,
