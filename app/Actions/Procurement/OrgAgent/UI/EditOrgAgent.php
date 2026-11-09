@@ -153,8 +153,8 @@ class EditOrgAgent extends OrgAction
         $users = User::where('group_id', $orgAgent->group_id)
             ->where('status', true)
             ->orderBy('contact_name')
-            ->get(['id', 'contact_name', 'username'])
-            ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName()])
+            ->get(['id', 'contact_name', 'username', 'email'])
+            ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName(), 'email' => $user->email])
             ->values()
             ->all();
 
@@ -169,24 +169,26 @@ class EditOrgAgent extends OrgAction
             'icon'   => 'fal fa-money-check-alt',
             'fields' => [
                 'money_request_payer_user_ids' => [
-                    'type'        => 'multiselect-tags',
-                    'label'       => __('Emailed to approve and pay'),
-                    'information' => __('Emailed when this agent asks for money, and can approve and pay it. Accounting users can already approve and pay, but are not emailed.'),
-                    'options'     => $users,
-                    'labelProp'   => 'name',
-                    'valueProp'   => 'id',
-                    'value'       => $orgAgent->moneyRequestPayerIds(),
-                    'updateRoute' => $updateRoute,
+                    'type'            => 'multiselect-tags',
+                    'label'           => __('Emailed to approve and pay'),
+                    'information'     => __('Emailed when this agent asks for money, and can approve and pay it. Accounting users can already approve and pay, but are not emailed.'),
+                    'options'         => $users,
+                    'labelProp'       => 'name',
+                    'valueProp'       => 'id',
+                    'descriptionProp' => 'email',
+                    'value'           => $orgAgent->moneyRequestPayerIds(),
+                    'updateRoute'     => $updateRoute,
                 ],
                 'money_request_cc_user_ids' => [
-                    'type'        => 'multiselect-tags',
-                    'label'       => __('Emails CC\'d to'),
-                    'information' => __('Get a copy of the emails when this agent asks for money, and when it is paid or rejected. Being here does not let them approve or pay.'),
-                    'options'     => $users,
-                    'labelProp'   => 'name',
-                    'valueProp'   => 'id',
-                    'value'       => $orgAgent->moneyRequestCcIds(),
-                    'updateRoute' => $updateRoute,
+                    'type'            => 'multiselect-tags',
+                    'label'           => __('Emails CC\'d to'),
+                    'information'     => __('Get a copy of the emails when this agent asks for money, and when it is paid or rejected. Being here does not let them approve or pay.'),
+                    'options'         => $users,
+                    'labelProp'       => 'name',
+                    'valueProp'       => 'id',
+                    'descriptionProp' => 'email',
+                    'value'           => $orgAgent->moneyRequestCcIds(),
+                    'updateRoute'     => $updateRoute,
                 ],
             ],
         ];
