@@ -14,6 +14,7 @@ use App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum;
 use App\Http\Resources\Masters\MasterAssetCompetitorProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\Competitor;
+use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetCompetitorProduct;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
@@ -37,7 +38,7 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
 
     private string $bucket = 'to_review';
 
-    public function handle(Group|Competitor $parent, string $bucket = 'to_review', ?string $prefix = null, ?string $sort = null, ?int $limit = null): LengthAwarePaginator
+    public function handle(Group|Competitor|MasterAsset $parent, string $bucket = 'to_review', ?string $prefix = null, ?string $sort = null, ?int $limit = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -60,7 +61,8 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
             ->join('competitor_products', 'competitor_products.id', '=', 'master_asset_competitor_products.competitor_product_id')
             ->join('competitors', 'competitors.id', '=', 'competitor_products.competitor_id')
             ->when($parent instanceof Group, fn ($query) => $query->where('master_assets.group_id', $parent->id))
-            ->when($parent instanceof Competitor, fn ($query) => $query->where('competitors.id', $parent->id));
+            ->when($parent instanceof Competitor, fn ($query) => $query->where('competitors.id', $parent->id))
+            ->when($parent instanceof MasterAsset, fn ($query) => $query->where('master_asset_competitor_products.master_asset_id', $parent->id));
 
         match ($bucket) {
             'confirmed' => $query->where('master_asset_competitor_products.status', MasterAssetCompetitorProductStatusEnum::CONFIRMED),
@@ -89,6 +91,7 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
                 'master_shops.slug as master_shop_slug',
                 'master_shops.name as master_shop_name',
                 'competitors.id as competitor_id',
+                'competitors.slug as competitor_slug',
                 'competitors.name as competitor_name',
                 'competitor_products.name as competitor_product_name',
                 'competitor_products.url as competitor_product_url',
@@ -103,9 +106,42 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null, bool $withMasterShop = true, ?string $sort = null, bool $withReview = true): Closure
+    /**
+     * What competitors charge for this product, for its overview: the confirmed same-item prices, cheapest first,
+     * and how many matches still wait for a review.
+     *
+     * @return array{to_review: int, prices: array<int, array{competitor_slug: string, competitor: string, price: float|null, difference: int|null, currency_code: string}>}|null
+     */
+    public function summary(MasterAsset $masterAsset): ?array
     {
-        return function (InertiaTable $table) use ($prefix, $withMasterShop, $sort, $withReview) {
+        $matches = MasterAssetCompetitorProduct::where('master_asset_id', $masterAsset->id);
+        $toReview = (clone $matches)->where('status', MasterAssetCompetitorProductStatusEnum::SUGGESTED)->count();
+        $sql      = $this->competitorPriceSql($masterAsset->group);
+
+        $prices = $matches
+            ->join('master_assets', 'master_assets.id', '=', 'master_asset_competitor_products.master_asset_id')
+            ->join('competitor_products', 'competitor_products.id', '=', 'master_asset_competitor_products.competitor_product_id')
+            ->join('competitors', 'competitors.id', '=', 'competitor_products.competitor_id')
+            ->where('master_asset_competitor_products.status', MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->where('master_asset_competitor_products.is_same_item', true)
+            ->selectRaw("competitors.slug as competitor_slug, competitors.name as competitor, {$sql['theirs']} as price, {$sql['difference']} as difference, {$sql['currency']} as currency_code")
+            ->orderByRaw("{$sql['difference']} asc nulls last")
+            ->get()
+            ->map(fn ($row) => [
+                'competitor_slug' => $row->competitor_slug,
+                'competitor'    => $row->competitor,
+                'price'         => $row->price === null ? null : (float) $row->price,
+                'difference'    => $row->difference === null ? null : (int) $row->difference,
+                'currency_code' => $row->currency_code,
+            ])
+            ->all();
+
+        return $toReview || $prices ? ['to_review' => $toReview, 'prices' => $prices] : null;
+    }
+
+    public function tableStructure(?string $prefix = null, bool $withMasterShop = true, ?string $sort = null, bool $withReview = true, bool $withProduct = true): Closure
+    {
+        return function (InertiaTable $table) use ($prefix, $withMasterShop, $sort, $withReview, $withProduct) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
@@ -115,8 +151,10 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
                 ->withEmptyState([
                     'title'       => __('No competitor prices here'),
                     'description' => __('Competitor products are matched to ours after each read; the AI suggests the matches it is not sure of'),
-                ])
-                ->column(key: 'code', label: __('Product'), sortable: true, searchable: true);
+                ]);
+            if ($withProduct) {
+                $table->column(key: 'code', label: __('Product'), sortable: true, searchable: true);
+            }
             if ($withMasterShop) {
                 $table->column(key: 'master_shop_name', label: __('Master shop'), sortable: true);
             }

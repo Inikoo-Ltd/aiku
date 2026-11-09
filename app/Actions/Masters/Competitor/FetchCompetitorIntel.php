@@ -227,7 +227,9 @@ PROMPT;
     }
 
     /**
-     * @return array{briefing: string|null, positioning: string|null}
+     * The briefing is a few labelled one-line points, so it is read at a glance instead of as a paragraph.
+     *
+     * @return array{briefing: array<int, array{label: string, text: string}>|null, positioning: string|null}
      */
     private function brief(Competitor $competitor, array $intel, array $changes): array
     {
@@ -237,10 +239,12 @@ PROMPT;
             : 'nothing since the last refresh';
 
         $prompt = <<<PROMPT
-You write a competitor briefing for Tomas, who sets our prices, and David, who runs the company. Plain English, no jargon, no bullet points, only what the facts below support.
+You write a competitor briefing for Tomas, who sets our prices, and David, who runs the company. They scan it in seconds, so: plain English, no jargon, short words, only what the facts below support.
 The competitor is {$competitor->name} ({$competitor->website}), sells to {$competitor->sells_to->value} customers, prices in {$competitor->currency->code}. "numbers" are what we measured from their catalogue and our confirmed product matches: median_difference is how much dearer (positive) or cheaper (negative) they are than us per unit, in percent; share_on_sale is the share of their products on offer right now.
 
-Reply with JSON only: {"briefing":"4 to 6 sentences: who they are, how they price against us, how much they rely on offers, their shipping and terms, and anything that changed","positioning":"one line on how they position themselves, e.g. premium, cheap and cheerful, trade-only"}
+Reply with JSON only: {"points":[{"label":"...","text":"..."}],"positioning":"a few words on how they position themselves, e.g. premium, cheap and cheerful, trade-only"}
+"points" has 4 to 6 items, in this order, each with one of these labels: "Who they are", "Price vs us", "Offers", "Shipping", "Returns & terms", "What changed". Leave a point out when the facts say nothing about it, and leave out "What changed" when nothing changed.
+Each "text" is one short sentence of at most 15 words, numbers written as digits (e.g. "About 2x our price per unit, from 3 matched products, too few to be sure"). Never repeat the label in the text.
 
 Facts:
 $facts
@@ -252,7 +256,11 @@ PROMPT;
         $answer = static::json(AskToAi::run($prompt, config('services.competitor_intel.briefing_model'), ['response_format' => ['type' => 'json_object']]));
 
         return [
-            'briefing'    => static::clean($answer['briefing'] ?? null),
+            'briefing'    => collect(is_array($answer['points'] ?? null) ? $answer['points'] : [])
+                ->map(fn ($point) => is_array($point) ? ['label' => static::clean($point['label'] ?? null), 'text' => static::clean($point['text'] ?? null)] : null)
+                ->filter(fn ($point) => $point && $point['label'] && $point['text'])
+                ->values()
+                ->all() ?: null,
             'positioning' => static::clean($answer['positioning'] ?? null),
         ];
     }

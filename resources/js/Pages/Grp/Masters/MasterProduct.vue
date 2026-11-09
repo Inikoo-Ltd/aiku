@@ -4,7 +4,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faCube, faFileInvoice, faFolder, faFolderOpen, faAtom, faFolderTree,
     faChartLine, faShoppingCart, faStickyNote, faMoneyBillWave,
-    faTools
+    faTools, faBalanceScale
 } from "@fal"
 import { faCheckCircle, faShapes, faStar } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -36,12 +36,13 @@ import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
 import { faWarning } from "@fortawesome/free-solid-svg-icons"
 import SalesAnalysis from "@/Components/SalesAnalysis/SalesAnalysis.vue"
+import TableMasterAssetCompetitorProducts from "@/Components/Tables/Grp/Masters/TableMasterAssetCompetitorProducts.vue"
 
 const screenType = inject('screenType', ref('desktop'))
 
 library.add(
     faChartLine, faCheckCircle, faFolderTree, faFolder, faCube,
-    faShoppingCart, faFileInvoice, faStickyNote, faMoneyBillWave, faFolderOpen, faAtom
+    faShoppingCart, faFileInvoice, faStickyNote, faMoneyBillWave, faFolderOpen, faAtom, faBalanceScale
 )
 
 const props = defineProps<{
@@ -56,6 +57,8 @@ const props = defineProps<{
     language?: {}
     products?: {}
     sales?: {}
+    competitors?: {}
+    can_edit?: boolean
     trade_units?: {}
     salesData?: {}
     sales_analysis?: object
@@ -116,6 +119,7 @@ const component = computed(() => {
         attachments: TradeUnitDocuments,
         sales: ProductCategoryTimeSeriesTable,
         sales_analysis: SalesAnalysis,
+        competitors: TableMasterAssetCompetitorProducts,
     }
     return components[currentTab.value]
 })
@@ -255,7 +259,7 @@ onMounted(() => {
         <MasterAnomalyBlocks :anomalies="anomalies" />
     </div>
 
-    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :salesAnalysisTeaser="sales_analysis_teaser" :anomalies="anomalies" :handleTabUpdate :currency="currency" />
+    <component :is="component" :tab="currentTab" :master="true" :data="props[currentTab]" :salesData="props.salesData" :salesAnalysisTeaser="sales_analysis_teaser" :anomalies="anomalies" :handleTabUpdate :currency="currency" :canEdit="can_edit" />
 
     <!-- ✅ PrimeVue Dialog -->
     <Dialog 

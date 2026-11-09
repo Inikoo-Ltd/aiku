@@ -29,6 +29,8 @@ use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
+use App\Actions\Masters\Competitor\UI\IndexMasterAssetCompetitorProducts;
+use App\Http\Resources\Masters\MasterAssetCompetitorProductsResource;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
@@ -306,6 +308,12 @@ class ShowMasterProduct extends OrgAction
                     fn () => GetMasterProductTimeSeriesData::run($masterAsset)
                     : Inertia::optional(fn () => GetMasterProductTimeSeriesData::run($masterAsset)),
 
+                'can_edit' => $this->canEdit,
+
+                MasterAssetTabsEnum::COMPETITORS->value => $this->tab == MasterAssetTabsEnum::COMPETITORS->value ?
+                    fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterAsset, 'all', MasterAssetTabsEnum::COMPETITORS->value))
+                    : Inertia::optional(fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($masterAsset, 'all', MasterAssetTabsEnum::COMPETITORS->value))),
+
                 MasterAssetTabsEnum::TRADE_UNITS->value => $this->tab == MasterAssetTabsEnum::TRADE_UNITS->value ?
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
                     : Inertia::optional(fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
@@ -337,7 +345,8 @@ class ShowMasterProduct extends OrgAction
             ->table(IndexMasterAssetTimeSeries::make()->tableStructure(MasterAssetTabsEnum::SALES->value))
             ->table(IndexMailshots::make()->tableStructure($masterAsset))
             ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: MasterAssetTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: MasterAssetTabsEnum::HISTORY->value))
+            ->table(IndexMasterAssetCompetitorProducts::make()->tableStructure(MasterAssetTabsEnum::COMPETITORS->value, withMasterShop: false, withProduct: false));
     }
 
     public function jsonResponse(MasterAsset $masterAsset): MasterProductResource

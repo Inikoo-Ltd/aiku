@@ -84,7 +84,7 @@ const money = (value: number | null, currencyCode: string) => value === null ? "
             <span class="tabular-nums">{{ money(item.our_unit_price, item.currency_code) }}</span>
         </template>
         <template #cell(competitor_name)="{ item }">
-            <Link :href="route('grp.masters.competitors.show', { competitor: item.competitor_id })" class="font-medium text-gray-700 hover:underline whitespace-nowrap">
+            <Link :href="route('grp.masters.competitors.show', { competitor: item.competitor_slug })" class="font-medium text-gray-700 hover:underline whitespace-nowrap">
                 {{ item.competitor_name }}
             </Link>
         </template>

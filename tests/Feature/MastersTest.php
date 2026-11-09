@@ -4664,7 +4664,7 @@ describe('competitor prices, HELP-3605', function () {
             'login_url'   => 'https://trade.example.com/login',
             'username'    => 'buyer@example.com',
             'password'    => 'trade-secret',
-        ])->assertRedirect(route('grp.masters.competitors.show', $this->competitorMasterShop->competitors()->where('name', 'Trade rival')->value('id')));
+        ])->assertRedirect(route('grp.masters.competitors.show', $this->competitorMasterShop->competitors()->where('name', 'Trade rival')->value('slug')));
 
         $competitor = $this->competitorMasterShop->competitors()->where('name', 'Trade rival')->firstOrFail();
         expect($competitor->password)->toBe('trade-secret')
@@ -4679,10 +4679,10 @@ describe('competitor prices, HELP-3605', function () {
         expect($competitor->password)->toBe('trade-secret')
             ->and($competitor->cookies)->toBeNull();
 
-        get(route('grp.masters.competitors.edit', $competitor->id))
+        get(route('grp.masters.competitors.edit', $competitor->slug))
             ->assertOk()
             ->assertDontSee('trade-secret');
-        get(route('grp.masters.competitors.show', $competitor->id))
+        get(route('grp.masters.competitors.show', $competitor->slug))
             ->assertOk()
             ->assertDontSee('trade-secret')
             ->assertDontSee('buyer@example.com')
@@ -4793,10 +4793,10 @@ describe('competitor prices, HELP-3605', function () {
                     && !array_key_exists('password', $competitor) && !array_key_exists('feed_url', $competitor))
                 ->etc());
 
-        get(route('grp.masters.competitors.show', [$this->competitor->id, 'tab' => 'matches']))
+        get(route('grp.masters.competitors.show', [$this->competitor->slug, 'tab' => 'matches']))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page->component('Masters/Competitor')->has('matches.data', 1)->where('matches.data.0.status', 'suggested')->etc());
-        get(route('grp.masters.competitors.show', [$this->competitor->id, 'tab' => 'products']))
+        get(route('grp.masters.competitors.show', [$this->competitor->slug, 'tab' => 'products']))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page->has('products.data', 1)->where('products.data.0.price', 16)->where('products.data.0.units', 2)->etc());
 
@@ -4930,9 +4930,9 @@ describe('competitor prices, HELP-3605', function () {
             foreach (['grp.masters.competitors.dashboard', 'grp.masters.competitors.index', 'grp.masters.competitors.prices.index'] as $routeName) {
                 get(route($routeName))->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->where('can_edit', false)->missing('pageHead.actions.0')->etc());
             }
-            get(route('grp.masters.competitors.show', $this->competitor->id))->assertOk();
+            get(route('grp.masters.competitors.show', $this->competitor->slug))->assertOk();
             get(route('grp.masters.competitors.create'))->assertForbidden();
-            get(route('grp.masters.competitors.edit', $this->competitor->id))->assertForbidden();
+            get(route('grp.masters.competitors.edit', $this->competitor->slug))->assertForbidden();
             post(route('grp.models.competitor.store'), ['master_shop_id' => $this->competitorMasterShop->id, 'name' => 'Nope', 'website' => 'https://nope.example.com', 'sells_to' => 'wholesale', 'currency_id' => group()->currency_id])->assertForbidden();
             \Pest\Laravel\patch(route('grp.models.competitor.update', $this->competitor->id), ['name' => 'Nope'])->assertForbidden();
             \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'confirmed'])->assertForbidden();
@@ -5003,7 +5003,7 @@ describe('competitor prices, HELP-3605', function () {
             ->and(\App\Actions\Masters\Competitor\FetchCompetitorIntel::languageId(''))->toBeNull();
 
         \Pest\Laravel\patch(route('grp.models.competitor.update', $this->competitor->id), ['language_id' => $spanish->id])->assertRedirect();
-        get(route('grp.masters.competitors.show', $this->competitor->id))
+        get(route('grp.masters.competitors.show', $this->competitor->slug))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page->where('competitor.language', $spanish->name)->etc());
     });
@@ -5049,9 +5049,23 @@ describe('competitor prices, HELP-3605', function () {
                 ->where('data.data', fn ($rows) => ($match = collect($rows->toArray())->firstWhere('code', $this->competitorMasterAsset->code))
                     && $match['is_auto_confirmed'] === true && $match['confidence'] === 90)
                 ->etc());
-        get(route('grp.masters.competitors.show', $this->competitor->id))
+        get(route('grp.masters.competitors.show', $this->competitor->slug))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page->where('competitor.read_method', 'feed')->etc());
+        get(route('grp.masters.master_shops.show.master_products.show', ['masterShop' => $this->competitorMasterAsset->masterShop->slug, 'masterProduct' => $this->competitorMasterAsset->slug, 'tab' => 'competitors']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('tabs.navigation.competitors.title', 'Competitors')
+                ->where('competitors.data', fn ($rows) => collect($rows->toArray())->pluck('competitor_product_name')->all() === ['Set of 12 Brass Singing Bowls 10cm'])
+                ->etc());
+        get(route('grp.masters.master_shops.show.master_products.show', ['masterShop' => $this->competitorMasterAsset->masterShop->slug, 'masterProduct' => $this->competitorMasterAsset->slug]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('showcase.competitors.to_review', 0)
+                ->where('showcase.competitors.prices.0.competitor', $this->competitor->name)
+                ->where('showcase.competitors.prices.0.competitor_slug', $this->competitor->slug)
+                ->where('showcase.competitors.prices.0.difference', -20)
+                ->etc());
     });
 
     test('a competitor with only a website that is a Shopify shop has its catalogue read as the feed, one row per pack size', function () {
@@ -5353,16 +5367,16 @@ describe('competitor prices, HELP-3605', function () {
         $this->competitor->products()->create(['code' => 'CSV-1', 'name' => 'Csv row', 'price' => 5, 'fetched_at' => now()]);
         expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::parse("code,name,price\nA-1,Bowl,9.5")[0]['was_price'])->toBeNull();
 
-        $page = get(route('grp.masters.competitors.show', ['competitor' => $shop->id, 'tab' => 'products', 'products_sort' => '-discount']))->assertOk();
+        $page = get(route('grp.masters.competitors.show', ['competitor' => $shop->slug, 'tab' => 'products', 'products_sort' => '-discount']))->assertOk();
         $products = collect($page->viewData('page')['props']['products']['data']);
         expect($products->pluck('discount')->all())->toBe([50, 25, null, null])
             ->and($products->first()['was_price'])->toEqual(4);
 
-        $onSale = get(route('grp.masters.competitors.show', ['competitor' => $shop->id, 'tab' => 'products', 'products_elements' => ['on_sale' => 'yes']]))->assertOk();
+        $onSale = get(route('grp.masters.competitors.show', ['competitor' => $shop->slug, 'tab' => 'products', 'products_elements' => ['on_sale' => 'yes']]))->assertOk();
         expect(collect($onSale->viewData('page')['props']['products']['data'])->pluck('code')->sort()->values()->all())->toBe(['11', '14']);
     });
 
-    $fakeIntel = function (array $homepage, array $facts, array $pages = [], ?string $briefing = 'They are dearer than us and lean on coupons.') {
+    $fakeIntel = function (array $homepage, array $facts, array $pages = [], ?array $briefing = [['label' => 'Price vs us', 'text' => 'They are dearer than us.'], ['label' => 'Offers', 'text' => 'They lean on coupons.']]) {
         $image = imagecreatetruecolor(4, 4);
         ob_start();
         imagejpeg($image);
@@ -5377,7 +5391,7 @@ describe('competitor prices, HELP-3605', function () {
         \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
         \Illuminate\Support\Facades\Http::fake([
             'openrouter.ai/*' => fn (\Illuminate\Http\Client\Request $request) => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => json_encode(
-                $request['model'] === config('services.competitor_intel.briefing_model') ? ['briefing' => $briefing, 'positioning' => 'Premium oils'] : $facts
+                $request['model'] === config('services.competitor_intel.briefing_model') ? ['points' => $briefing, 'positioning' => 'Premium oils'] : $facts
             )]]], 'usage' => ['prompt_tokens' => 10, 'completion_tokens' => 5, 'cost' => 0.001]]),
         ]);
     };
@@ -5425,7 +5439,7 @@ describe('competitor prices, HELP-3605', function () {
             ->and($intel['offers'][0]['kind'])->toBe('newsletter')
             ->and($intel['offers'][0]['source'])->toBe('https://rival.example.com/')
             ->and($intel['identity']['source'])->toBe('https://rival.example.com/')
-            ->and($intel['briefing'])->toBe('They are dearer than us and lean on coupons.')
+            ->and($intel['briefing'])->toEqual([['label' => 'Price vs us', 'text' => 'They are dearer than us.'], ['label' => 'Offers', 'text' => 'They lean on coupons.']])
             ->and($intel['positioning'])->toBe('Premium oils')
             ->and($intel['pages'][0]['url'])->toBe('https://rival.example.com/policies/shipping-policy')
             ->and($intel['numbers']['number_products'])->toBe(0)
@@ -5478,7 +5492,7 @@ describe('competitor prices, HELP-3605', function () {
         expect($intel['shipping']['free_shipping_threshold'])->toBeNull()
             ->and($intel['returns']['window'])->toBeNull()
             ->and($intel['offers'])->toBe([])
-            ->and($intel['briefing'])->toBe('They are dearer than us and lean on coupons.')
+            ->and($intel['briefing'])->toEqual([['label' => 'Price vs us', 'text' => 'They are dearer than us.'], ['label' => 'Offers', 'text' => 'They lean on coupons.']])
             ->and($this->competitor->intelSnapshots()->latest('id')->first()->changes)->toBe([]);
     });
 
@@ -5496,13 +5510,13 @@ describe('competitor prices, HELP-3605', function () {
         $fakeIntel([], $facts);
         \App\Actions\Masters\Competitor\FetchCompetitorIntel::run($this->competitor);
 
-        $response = get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->id]))->assertOk();
+        $response = get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->slug]))->assertOk();
         $props    = $response->viewData('page')['props'];
         $json     = json_encode($props);
         expect($props['tabs']['current'])->toBe('dossier')
             ->and($props['competitor']['platform'])->toBe('shopify')
             ->and($props['competitor']['screenshot']['original'])->toBeString()
-            ->and($props['dossier']['intel']['briefing'])->toBe('They are dearer than us and lean on coupons.')
+            ->and($props['dossier']['intel']['briefing'])->toEqual([['label' => 'Price vs us', 'text' => 'They are dearer than us.'], ['label' => 'Offers', 'text' => 'They lean on coupons.']])
             ->and($props['dossier']['intel'])->not->toHaveKey('pages')
             ->and($props['dossier']['numbers']['number_products'])->toBe(2)
             ->and($props['dossier']['numbers']['share_on_sale'])->toBe(50)
@@ -5516,7 +5530,7 @@ describe('competitor prices, HELP-3605', function () {
             ->and($props['refresh_route']['name'])->toBe('grp.models.competitor.refresh_intel')
             ->and($json)->not->toContain('trade-secret', 'secret-feed', 'cookie-secret', 'buyer@example.com', 'feed_url', 'password');
 
-        $policies = get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->id, 'tab' => 'policies']))->assertOk()->viewData('page')['props'];
+        $policies = get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->slug, 'tab' => 'policies']))->assertOk()->viewData('page')['props'];
         expect($policies['policies'][0]['url'])->toBe('https://rival.example.com/policies/shipping-policy')
             ->and($policies['policies'][0]['text'])->toContain('Free shipping over £50');
 
@@ -5524,7 +5538,7 @@ describe('competitor prices, HELP-3605', function () {
         $fresh = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
             'name' => 'Unread rival', 'website' => 'https://unread.example.com', 'sells_to' => 'consumer', 'currency_id' => group()->currency_id,
         ]);
-        $unread = get(route('grp.masters.competitors.show', ['competitor' => $fresh->id]))->assertOk()->viewData('page')['props'];
+        $unread = get(route('grp.masters.competitors.show', ['competitor' => $fresh->slug]))->assertOk()->viewData('page')['props'];
         expect($unread['competitor']['intel_fetched_at'])->toBeNull()
             ->and($unread['dossier']['changes'])->toBeNull()
             ->and($unread['dossier']['intel'])->toBe([]);
@@ -5597,7 +5611,7 @@ describe('competitor prices, HELP-3605', function () {
             ->and($marketplace->priceChecks()->first()->image->collection_name)->toBe('competitor')
             ->and(collect(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id))->firstWhere('competitor', 'Marketplace')['difference_pct'])->toBe(-50);
 
-        $props = get(route('grp.masters.competitors.show', ['competitor' => $marketplace->id]))->assertOk()->viewData('page')['props'];
+        $props = get(route('grp.masters.competitors.show', ['competitor' => $marketplace->slug]))->assertOk()->viewData('page')['props'];
         expect(array_keys($props['tabs']['navigation']))->toBe(['price_checks', 'matches'])
             ->and($props['tabs']['current'])->toBe('price_checks')
             ->and($props['competitor']['read_method'])->toBe('hand')
@@ -5608,7 +5622,7 @@ describe('competitor prices, HELP-3605', function () {
             ->and($props['price_checks']['data'][0]['screenshot']['original'])->not->toBeEmpty()
             ->and($props['price_checks']['data'][1]['change'])->toBeNull();
 
-        expect(array_keys(get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->id]))->viewData('page')['props']['tabs']['navigation']))->not->toContain('price_checks');
+        expect(array_keys(get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->slug]))->viewData('page')['props']['tabs']['navigation']))->not->toContain('price_checks');
     });
 });
 

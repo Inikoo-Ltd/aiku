@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 /**
  * A competitor's website whose prices are read every week for HELP-3605, from its product feed or
@@ -26,6 +28,7 @@ use Spatie\MediaLibrary\HasMedia;
  *
  * @property int $id
  * @property int $group_id
+ * @property string $slug
  * @property int $master_shop_id
  * @property string $name
  * @property string $website
@@ -60,8 +63,23 @@ use Spatie\MediaLibrary\HasMedia;
 class Competitor extends Model implements HasMedia
 {
     use HasImage;
+    use HasSlug;
 
     protected $guarded = [];
+
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom('name')
+            ->saveSlugsTo('slug')
+            ->doNotGenerateSlugsOnUpdate()
+            ->slugsShouldBeNoLongerThan(64);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 
     protected $hidden = ['feed_url', 'username', 'password', 'cookies'];
 

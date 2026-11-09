@@ -52,6 +52,7 @@ class IndexCompetitors extends OrgAction
             ->leftJoinSub($confirmed, 'confirmed', 'confirmed.competitor_id', '=', 'competitors.id')
             ->select([
                 'competitors.id',
+                'competitors.slug',
                 'competitors.name',
                 'competitors.website',
                 'competitors.sells_to',
