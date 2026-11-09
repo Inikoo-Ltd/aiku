@@ -16,7 +16,11 @@ use App\Enums\Web\Crawl\CrawlLinkPositionEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
 use App\Models\Web\Crawl;
 use App\Models\Web\CrawlPage;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\UI\Catalogue\FamilyTabsEnum;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -88,7 +92,7 @@ class GetCrawlUrlDetails extends OrgAction
     private function pageDetails(CrawlPage $page): array
     {
         $facts   = $page->facts ?? [];
-        $webpage = $page->webpage_id ? Webpage::with(['website', 'shop', 'organisation'])->find($page->webpage_id) : null;
+        $webpage = $page->webpage_id ? Webpage::with(['website', 'shop', 'organisation', 'model'])->find($page->webpage_id) : null;
 
         return array_values(array_filter([
             ['label' => __('Address'), 'value' => $page->url],
@@ -124,7 +128,41 @@ class GetCrawlUrlDetails extends OrgAction
                 'value' => $webpage->code,
                 'link'  => route('grp.org.shops.show.web.webpages.show', [$webpage->organisation->slug, $webpage->shop->slug, $webpage->website->slug, $webpage->slug]),
             ] : null,
+            $webpage ? $this->seoSuggestionsLink($webpage) : null,
         ], fn (?array $detail) => $detail !== null && $detail['value'] !== null && $detail['value'] !== ''));
+    }
+
+    /**
+     * Where the SEO team reviews this page and writes its suggestions: the SEO review tab of the
+     * product, or the edit page tab of the family. Other pages have no such review.
+     *
+     * @return array{label: string, value: string, link: string}|null
+     */
+    private function seoSuggestionsLink(Webpage $webpage): ?array
+    {
+        $model = $webpage->model;
+
+        if (!$webpage->organisation || !$webpage->shop) {
+            return null;
+        }
+
+        $link = match (true) {
+            $model instanceof Product => route('grp.org.shops.show.catalogue.products.all_products.setting', [
+                'organisation' => $webpage->organisation->slug,
+                'shop'         => $webpage->shop->slug,
+                'product'      => $model->slug,
+                'tab'          => 'seo_review',
+            ]),
+            $model instanceof ProductCategory && $model->type === ProductCategoryTypeEnum::FAMILY => route('grp.org.shops.show.catalogue.families.show', [
+                'organisation' => $webpage->organisation->slug,
+                'shop'         => $webpage->shop->slug,
+                'family'       => $model->slug,
+                'tab'          => FamilyTabsEnum::EDIT_PAGE->value,
+            ]),
+            default => null,
+        };
+
+        return $link ? ['label' => __('SEO suggestions'), 'value' => __('Open the SEO review'), 'link' => $link] : null;
     }
 
     /**
