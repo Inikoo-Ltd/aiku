@@ -420,13 +420,13 @@ const confirmRemove = (row: EntryRow) =>
 				</label>
 				<label class="block text-sm">
 					<span class="text-gray-600">{{ ctrans("Amount") }} <span class="text-red-500">*</span></span>
-					<InputNumber v-model="entry.amount" mode="currency" :currency="form.currency_code" :min="0" :disabled="!!editing" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
+					<InputNumber v-model="entry.amount" v-bind="locale.currencyInputOptions(form.currency_code)" :min="0" :disabled="!!editing" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
 					<span v-if="editing" class="mt-1 block text-xs text-gray-400">{{ ctrans("To change the amount, remove the line and record it again.") }}</span>
 				</label>
 			</div>
 			<label v-if="!editing && selectedType?.value === 'transfer_received' && selectedClient" class="block text-sm">
 				<span class="text-gray-600">{{ ctrans("Amount the client sent (:currency)", { currency: selectedClient.currency_code }) }}</span>
-				<InputNumber v-model="entry.original_amount" mode="currency" :currency="selectedClient.currency_code" :min="0" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
+				<InputNumber v-model="entry.original_amount" v-bind="locale.currencyInputOptions(selectedClient.currency_code)" :min="0" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
 			</label>
 			<label class="block text-sm">
 				<span class="text-gray-600">{{ selectedType?.needs_order ? ctrans("Supplier order") : ctrans("Supplier order (optional)") }} <span v-if="selectedType?.needs_order" class="text-red-500">*</span></span>
