@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\UI;
 
+use App\Actions\Masters\Competitor\UI\ShowCompetitorsDashboard;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\CRM\Customer\GetShopCustomersDashboard;
@@ -137,6 +138,9 @@ class ShowShop extends OrgAction
             'title'            => __('Shop').' '.$shop->code,
             'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
             'dashboard'   => $dashboard,
+            'competitors' => $shop->master_shop_id && $request->user()->authTo('masters.view')
+                ? Inertia::defer(fn () => ShowCompetitorsDashboard::summary($shop->group, [$shop->master_shop_id]))
+                : null,
             'customers_dashboard'   => Inertia::optional(fn () => GetShopCustomersDashboard::run($shop)),
             'sales_analysis'        => Inertia::optional(fn () => GetShopSalesAnalysis::run($shop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'partners']))),
         ]);

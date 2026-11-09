@@ -4825,6 +4825,31 @@ describe('competitor prices, HELP-3605', function () {
                 ->where('we_cheaper.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray()) === null)
                 ->where('competitors.data', fn ($rows) => ($competitor = collect($rows->toArray())->firstWhere('id', $this->competitor->id)) && $competitor['number_confirmed'] === 1 && $competitor['median_difference'] === -20)
                 ->etc());
+
+        get(route('grp.dashboard.show'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->component('Dashboard/GrpDashboard')
+                ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                    ->where('competitors.dearer', fn ($dearer) => $dearer >= 1)
+                    ->where('competitors.number_competitors', fn ($number) => $number >= 1)
+                    ->etc()));
+
+        $shop             = \App\Models\Catalogue\Shop::where('group_id', group()->id)->firstOrFail();
+        $shopMasterShopId = $shop->master_shop_id;
+        $shop->update(['master_shop_id' => $this->competitorMasterShop->id]);
+        $competitorsOfTheShop = fn (AssertableInertia $reload) => $reload
+            ->where('competitors.dearer', 1)
+            ->where('competitors.cheaper', 0)
+            ->etc();
+
+        get(route('grp.org.shops.show.dashboard.show', [$shop->organisation->slug, $shop->slug]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->loadDeferredProps($competitorsOfTheShop));
+        get(route('grp.org.dashboard.show', [$shop->organisation->slug]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->loadDeferredProps($competitorsOfTheShop));
+
+        $shop->update(['master_shop_id' => $shopMasterShopId]);
     });
 
     test('a site with a trade login is logged into afresh for every batch, without the cookies of the last one', function () use ($fakeBrowserAndAi) {

@@ -21,6 +21,7 @@ import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 import ProductDevelopmentWaitingWidget, { type ProductDevelopmentWaitingWidgetData } from "@/Components/Goods/ProductDevelopment/ProductDevelopmentWaitingWidget.vue"
 import CleanHandoverPanel, { type CleanHandoverData } from "@/Components/Procurement/CleanHandoverPanel.vue"
 import ShopMonthTarget from "@/Components/DataDisplay/Dashboard/ShopMonthTarget.vue"
+import CompetitorsSummaryLine from "@/Components/DataDisplay/Dashboard/CompetitorsSummaryLine.vue"
 import AgentDashboardPurchaseOrders, { type AgentDashboardPurchaseOrdersData } from "@/Components/Procurement/AgentDashboardPurchaseOrders.vue"
 
 library.add(faTriangle, faChevronDown, faSortDown, faSortUp, faPlay, faSitemap)
@@ -31,6 +32,7 @@ const props = defineProps<{
 	isAgentOrganisation?: boolean
 	agentPurchaseOrders?: AgentDashboardPurchaseOrdersData
 	productDevelopmentsWaiting?: ProductDevelopmentWaitingWidgetData | null
+	competitors?: object | null
 	salesTargets?: {
 		month: InstanceType<typeof ShopMonthTarget>["$props"]["monthTarget"]
 		year: InstanceType<typeof ShopMonthTarget>["$props"]["yearTarget"]
@@ -99,12 +101,17 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			<template #fallback>
 				<div class="skeleton mx-4 mt-4 h-72 rounded-lg" aria-busy="true" />
 			</template>
-			<ShopMonthTarget v-if="props.salesTargets" :month-target="props.salesTargets.month" :year-target="props.salesTargets.year" />
+			<ShopMonthTarget v-if="props.salesTargets" :month-target="props.salesTargets.month" :year-target="props.salesTargets.year">
+				<template v-if="props.competitors !== null" #footer>
+					<CompetitorsSummaryLine />
+				</template>
+			</ShopMonthTarget>
 		</Deferred>
 		<KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
 			<TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" gutterClass="px-4" />
 		</KeepAlive>
 
+		<div v-if="props.dashboard?.super_blocks?.[0]" class="mx-4 mt-4 rounded-lg border border-gray-200 bg-white pb-4 shadow-sm">
 		<DashboardSettings
 			v-if="props.dashboard?.super_blocks?.[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
@@ -122,6 +129,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
 			@onChangeTab="onChangeDashboardTab"
 		/>
+		</div>
 		<Deferred v-if="props.productDevelopmentsWaiting !== null" data="productDevelopmentsWaiting">
 			<template #fallback>
 				<div class="skeleton mx-4 my-4 h-40 rounded-lg" />

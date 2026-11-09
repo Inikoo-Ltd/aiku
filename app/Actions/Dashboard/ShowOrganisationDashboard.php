@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dashboard;
 
+use App\Actions\Masters\Competitor\UI\ShowCompetitorsDashboard;
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
@@ -129,6 +130,9 @@ class ShowOrganisationDashboard extends OrgAction
                 'breadcrumbs'   => $this->getBreadcrumbs($request->route()->originalParameters(), __('Dashboard')),
                 'dashboard'     => $dashboard,
                 'salesTargets'  => $salesTargets,
+                'competitors'   => $salesTargets && $request->user()->authTo('masters.view')
+                    ? Inertia::defer(fn () => ShowCompetitorsDashboard::summary($organisation->group, $organisation->shops()->whereNotNull('master_shop_id')->distinct()->pluck('master_shop_id')->all()))
+                    : null,
                 'cleanHandover' => $this->getCleanHandover($organisation, $request->user()),
                 'isAgentOrganisation' => $organisation->type === OrganisationTypeEnum::AGENT,
                 'agentPurchaseOrders' => $organisation->type === OrganisationTypeEnum::AGENT ? Inertia::defer(fn () => $this->getAgentPurchaseOrders($organisation)) : null,

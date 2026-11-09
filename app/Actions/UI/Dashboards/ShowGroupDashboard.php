@@ -3,6 +3,7 @@
 namespace App\Actions\UI\Dashboards;
 
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn;
+use App\Actions\Masters\Competitor\UI\ShowCompetitorsDashboard;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopMonthSalesTarget;
 use App\Actions\Catalogue\Shop\SalesTarget\GetShopYearSalesTarget;
 use App\Actions\Helpers\Dashboard\DashboardIntervalFilters;
@@ -128,6 +129,7 @@ class ShowGroupDashboard extends OrgAction
                     'month' => GetShopMonthSalesTarget::run($group, $user),
                     'year'  => GetShopYearSalesTarget::run($group, $user),
                 ]),
+                'competitors'        => $user->authTo('masters.view') ? Inertia::defer(fn () => ShowCompetitorsDashboard::summary($group)) : null,
                 'stockHistoryGroup'  => $this->getGroupStockHistoryData($group),
                 'warehouseOverview'  => Inertia::defer(fn () => GetGroupWarehouseDashboardData::run($group)),
                 'operations'         => $operations,

@@ -513,13 +513,14 @@ const donutOptions = {
             <span><span class="font-semibold">{{ ctrans("Today's tip") }}:</span> {{ periodData.tip }}</span>
         </p>
 
+        <div v-if="children.length || $slots.footer" class="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <div class="min-w-0"><slot name="footer" /></div>
+            <button v-if="children.length" type="button" class="text-xs text-gray-400 hover:text-gray-700" :aria-expanded="showAllCategories" @click="showAllCategories = !showAllCategories">
+                {{ showAllCategories ? ctrans("Hide all targets") : ctrans("Show all targets") }}
+                <FontAwesomeIcon icon="fal fa-chevron-down" class="ml-0.5 transition-transform duration-300" :class="showAllCategories ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
+            </button>
+        </div>
         <template v-if="children.length">
-            <div class="mt-3 flex justify-end">
-                <button type="button" class="text-xs text-gray-400 hover:text-gray-700" :aria-expanded="showAllCategories" @click="showAllCategories = !showAllCategories">
-                    {{ showAllCategories ? ctrans("Hide all targets") : ctrans("Show all targets") }}
-                    <FontAwesomeIcon icon="fal fa-chevron-down" class="ml-0.5 transition-transform duration-300" :class="showAllCategories ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
-                </button>
-            </div>
             <div class="grid transition-all duration-300 ease-out" :class="showAllCategories ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'">
                 <div class="overflow-hidden">
                     <div class="overflow-x-auto border-t border-gray-100 pt-3">

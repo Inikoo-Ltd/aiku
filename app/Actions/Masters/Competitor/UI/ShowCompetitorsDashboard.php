@@ -35,9 +35,14 @@ class ShowCompetitorsDashboard extends OrgAction
 
     public const int SAME_PRICE_BAND = 5;
 
-    public function handle(Group $group): array
+    /**
+     * @param  array<int>|null  $masterShopIds  only these master shops, for an organisation or shop dashboard
+     */
+    public function handle(Group $group, ?array $masterShopIds = null): array
     {
-        $competitors = Competitor::where('group_id', $group->id)->get();
+        $competitors = Competitor::where('group_id', $group->id)
+            ->when($masterShopIds !== null, fn ($query) => $query->whereIn('master_shop_id', $masterShopIds))
+            ->get();
         if ($competitors->isEmpty()) {
             return ['number_competitors' => 0];
         }
@@ -47,7 +52,8 @@ class ShowCompetitorsDashboard extends OrgAction
             ->join('master_assets', 'master_assets.id', '=', 'master_asset_competitor_products.master_asset_id')
             ->join('competitor_products', 'competitor_products.id', '=', 'master_asset_competitor_products.competitor_product_id')
             ->join('competitors', 'competitors.id', '=', 'competitor_products.competitor_id')
-            ->where('master_assets.group_id', $group->id);
+            ->where('master_assets.group_id', $group->id)
+            ->when($masterShopIds !== null, fn ($query) => $query->whereIn('master_asset_competitor_products.master_shop_id', $masterShopIds));
 
         $band     = self::SAME_PRICE_BAND;
         $position = (clone $matches)
@@ -121,7 +127,9 @@ class ShowCompetitorsDashboard extends OrgAction
                     ])->values(),
             ],
             'to_review'          => MasterAssetCompetitorProduct::join('master_assets', 'master_assets.id', '=', 'master_asset_competitor_products.master_asset_id')
-                ->where('master_assets.group_id', $group->id)->where('master_asset_competitor_products.status', 'suggested')->count(),
+                ->where('master_assets.group_id', $group->id)->where('master_asset_competitor_products.status', 'suggested')
+                ->when($masterShopIds !== null, fn ($query) => $query->whereIn('master_asset_competitor_products.master_shop_id', $masterShopIds))
+                ->count(),
             'throughput'         => [
                 'reviewed'  => ['this_week' => (int) $thisWeek->reviewed, 'last_week' => (int) $lastWeek->reviewed],
                 'confirmed' => ['this_week' => (int) $thisWeek->confirmed, 'last_week' => (int) $lastWeek->confirmed],
@@ -132,6 +140,31 @@ class ShowCompetitorsDashboard extends OrgAction
 
                 return ['day' => $day, 'confirmed' => (int) ($trend[$day] ?? 0)];
             }),
+        ];
+    }
+
+    /**
+     * The one line under the month target on the group, organisation and shop dashboards.
+     *
+     * @param  array<int>|null  $masterShopIds
+     * @return array{number_competitors: int, cheaper: int, same: int, dearer: int, to_review: int, failing: int}|null
+     */
+    public static function summary(Group $group, ?array $masterShopIds = null): ?array
+    {
+        $dashboard = static::run($group, $masterShopIds);
+        if (!$dashboard['number_competitors']) {
+            return null;
+        }
+
+        $byMasterShop = collect($dashboard['by_master_shop']);
+
+        return [
+            'number_competitors' => $dashboard['number_competitors'],
+            'cheaper'            => $byMasterShop->sum('cheaper'),
+            'same'               => $byMasterShop->sum('same'),
+            'dearer'             => $byMasterShop->sum('dearer'),
+            'to_review'          => $dashboard['to_review'],
+            'failing'            => $dashboard['status']['failing'],
         ];
     }
 
