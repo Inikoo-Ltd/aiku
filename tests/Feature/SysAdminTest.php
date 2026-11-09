@@ -93,6 +93,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use App\Actions\UI\Grp\Layout\GetGroupNavigation;
 use App\Actions\UI\Grp\GetFirstLoadProps;
+use App\Actions\UI\Grp\Layout\GetOrganisationsLayout;
 use App\Models\DevOps\AppDeployment;
 use Illuminate\Support\Facades\DB;
 use App\Actions\UI\Grp\Layout\GetLayout;
@@ -2257,7 +2258,7 @@ test('employee job position edit flushes menu cache even if recache job never ru
 
     Queue::fake();
 
-    $menuCacheKey = 'grp-first-load-props:'.$user->id.':'.$user->language->code.':'.(AppDeployment::latest()->first()?->id ?? 0);
+    $menuCacheKey = GetFirstLoadProps::make()->cacheKey($user, $user->language);
     Cache::tags('grp-first-load-props:'.$user->id)->put($menuCacheKey, ['layout' => 'stale'], 3600);
     Cache::tags('auth-user:'.$user->id)->put('can:probe', true, 3600);
 
@@ -2275,8 +2276,7 @@ test('breaking ui props only flushes them, and the next page rebuilds them fresh
     $user = $employee->getUser();
     setPermissionsTeamId($user->group_id);
 
-    $deploymentId = AppDeployment::latest()->first()?->id ?? 0;
-    Cache::tags('grp-first-load-props:'.$user->id)->put('grp-first-load-props:'.$user->id.':'.$user->language->code.':'.$deploymentId, ['layout' => 'stale'], 3600);
+    Cache::tags('grp-first-load-props:'.$user->id)->put(GetFirstLoadProps::make()->cacheKey($user, $user->language), ['layout' => 'stale'], 3600);
 
     DB::enableQueryLog();
     BreakUserUiProps::run($user);
@@ -2287,6 +2287,61 @@ test('breaking ui props only flushes them, and the next page rebuilds them fresh
     expect(data_get($firstLoad, 'layout.navigation.grp'))->toEqual(GetGroupNavigation::run(User::find($user->id)));
 })->depends('employee job position in another organisation');
 
+
+test('the cached layout survives a deploy that leaves the menu alone', function (Employee $employee) {
+    config()->set('ui.cache.layout', true);
+    $user = User::find($employee->getUser()->id);
+    setPermissionsTeamId($user->group_id);
+
+    $cacheKey = GetFirstLoadProps::make()->cacheKey($user, $user->language);
+    Cache::tags('grp-first-load-props:'.$user->id)->put($cacheKey, ['layout' => ['cached_before_deploy' => true]], 3600);
+
+    AppDeployment::create(['commit_hash' => 'ini230ini230', 'semantic_version' => 'v9.230.0']);
+
+    expect(GetFirstLoadProps::make()->cacheKey($user, $user->language))->toBe($cacheKey)
+        ->and(data_get(GetFirstLoadProps::make()->handle($user), 'layout.cached_before_deploy'))->toBeTrue()
+        ->and(data_get(GetFirstLoadProps::make()->handle($user), 'last_deployment_hash'))->toBe('ini230ini230');
+
+    BreakUserUiProps::run($user);
+})->depends('employee job position in another organisation');
+
+test('a full page load sends the menu of its organisation only and no badges', function (Employee $employee) {
+    config()->set('ui.cache.layout', true);
+    $user = User::find($employee->getUser()->id);
+    setPermissionsTeamId($user->group_id);
+    $organisation = $user->authorisedOrganisations()->firstOrFail();
+
+    $firstLoad = GetFirstLoadProps::make()->handle($user, $organisation);
+
+    expect(array_keys(data_get($firstLoad, 'layout.navigation.org')))->toBe([$organisation->slug])
+        ->and(data_get($firstLoad, 'layout.navigation.org.'.$organisation->slug))->toEqual(GetOrganisationsLayout::run($user, $organisation))
+        ->and($firstLoad)->not->toHaveKeys(['ticket_badges', 'notifications', 'crm_waiting_count'])
+        ->and(data_get(GetFirstLoadProps::make()->handle($user), 'layout.navigation.org'))->toBe([]);
+})->depends('employee job position in another organisation');
+
+test('the layout fetches another organisation menu only when the user is authorised in it', function (Employee $employee) {
+    $user = User::find($employee->getUser()->id);
+    setPermissionsTeamId($user->group_id);
+    $organisation = $user->authorisedOrganisations()->firstOrFail();
+
+    $response = actingAs($user)->getJson(route('grp.json.layout.organisation_navigation', $organisation))->assertOk();
+    expect($response->json('navigation'))->toEqual(json_decode(json_encode(GetOrganisationsLayout::run($user, $organisation)), true));
+
+    $notAuthorised = Organisation::whereNotIn('id', $user->authorisedOrganisations()->pluck('organisations.id'))->firstOrFail();
+    actingAs($user)->getJson(route('grp.json.layout.organisation_navigation', $notAuthorised))->assertForbidden();
+})->depends('employee job position in another organisation');
+
+test('the layout badges come from their own request', function (Employee $employee) {
+    $user = User::find($employee->getUser()->id);
+    setPermissionsTeamId($user->group_id);
+
+    actingAs($user)->getJson(route('grp.json.layout.badges'))
+        ->assertOk()
+        ->assertJsonStructure([
+            'notifications', 'ticket_badges', 'task_badges', 'development_badges', 'leave_covers', 'dispatching_waiting_count',
+            'crm_waiting_count', 'crm_return_count', 'master_updated_count', 'products_need_review_count', 'faire_skipped_count',
+        ]);
+})->depends('employee job position in another organisation');
 
 test('GetSectionRoute resolves section codes for all scopes', function (Group $group, Organisation $organisation, Shop $shop) {
     app()->instance('group', $group);

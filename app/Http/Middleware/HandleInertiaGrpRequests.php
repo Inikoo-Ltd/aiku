@@ -15,6 +15,7 @@ use App\Actions\UI\AikuPublic\BlogPosts;
 use App\Actions\UI\Grp\GetFirstLoadProps;
 use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
 use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Closure;
 use Illuminate\Http\Request;
@@ -80,6 +81,17 @@ class HandleInertiaGrpRequests extends Middleware
         };
     }
 
+    private function routeOrganisation(Request $request): ?Organisation
+    {
+        $organisation = $request->route('organisation');
+
+        if (is_string($organisation)) {
+            return Organisation::where('slug', $organisation)->first();
+        }
+
+        return $organisation instanceof Organisation ? $organisation : null;
+    }
+
     private function canMoveStockInRouteWarehouse(Request $request, ?User $user): ?bool
     {
         $warehouse = $request->route('warehouse');
@@ -128,7 +140,7 @@ class HandleInertiaGrpRequests extends Middleware
 
 
         if (!$request->inertia() || Session::get('reloadLayout')) {
-            $firstLoadOnlyProps = GetFirstLoadProps::run($user);
+            $firstLoadOnlyProps = GetFirstLoadProps::run($user, $this->routeOrganisation($request));
             $request->attributes->set(self::LAYOUT_SHARED_ATTRIBUTE, true);
         }
 

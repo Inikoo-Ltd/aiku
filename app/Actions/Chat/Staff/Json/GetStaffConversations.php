@@ -73,6 +73,11 @@ class GetStaffConversations
 
     public function asController(ActionRequest $request): AnonymousResourceCollection
     {
-        return StaffConversationResource::collection($this->handle($request->user()));
+        $conversations = $this->handle($request->user());
+        $resources     = StaffConversationResource::collection($conversations);
+        $resources->collection->each(fn (StaffConversationResource $resource) => $resource->avatarsApart = true);
+        $people = new Collection($conversations->pluck('participants')->flatten(1)->unique('id')->values()->all());
+
+        return $resources->additional(['avatars' => (object) GetStaffCoworkers::make()->avatarsByUser($people)]);
     }
 }

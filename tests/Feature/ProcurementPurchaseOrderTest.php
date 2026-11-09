@@ -502,9 +502,9 @@ test('agent manager only sees their own agent organisation', function () {
         ->and($agentUser->authTo('agent.'.$organisation->id))->toBeTrue()
         ->and($agentUser->worksOnlyForAgents())->toBeTrue()
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($agentUser)))->toBe(['tickets'])
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)))->toBe([$organisation->slug])
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['agent_orders', 'agent_suppliers', 'agent_products', 'agent_warehouse', 'agent_accounting', 'agent_reports', 'hr', 'agent_settings'])
-        ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]['agent_suppliers']['topMenu']['subSections'])->pluck('root')->all())->toBe([
+        ->and($agentUser->authorisedOrganisations->pluck('slug')->all())->toBe([$organisation->slug])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser, $organisation)))->toBe(['agent_orders', 'agent_suppliers', 'agent_products', 'agent_warehouse', 'agent_accounting', 'agent_reports', 'hr', 'agent_settings'])
+        ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser, $organisation)['agent_suppliers']['topMenu']['subSections'])->pluck('root')->all())->toBe([
             'grp.org.agent.org_suppliers.',
         ]);
 

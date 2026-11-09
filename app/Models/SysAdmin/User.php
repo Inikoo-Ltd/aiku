@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -209,6 +210,15 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     public function chatName(): string
     {
         return $this->nickname ?: ($this->contact_name ?: $this->username);
+    }
+
+    /**
+     * The staff chat screens draw avatars through Image (avif and original, 1x and 2x) and TicketUserAvatar (original),
+     * so the webp and png links GetPictureSources also signs are left out: they were half of every coworker and conversation list.
+     */
+    public static function chatAvatarOf(?array $sources): ?array
+    {
+        return $sources ? Arr::only($sources, ['original', 'original_2x', 'avif', 'avif_2x']) : null;
     }
 
     public function searchIndexShouldBeUpdated(): bool
