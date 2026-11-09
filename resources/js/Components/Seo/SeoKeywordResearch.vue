@@ -12,12 +12,16 @@ import Select from "primevue/select"
 import DataTable from "primevue/datatable"
 import Column from "primevue/column"
 import Tag from "primevue/tag"
+import Popover from "primevue/popover"
+import InputNumber from "primevue/inputnumber"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import SeoExportButton from "@/Components/Seo/SeoExportButton.vue"
 import { featureLabel } from "@/Components/Seo/serpFeatures"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faChevronDown, faTimes } from "@fal"
 import type { SeoKeywordOptions, SeoKeywordRoutes, SeoResearchQuery } from "@/Components/Seo/types"
 
 type MonthlySearches = { year: number, month: number, searches: number }
@@ -67,7 +71,54 @@ const trackingKeyword = ref<string | null>(null)
 const intentFilter = ref("all")
 const firstRow = ref(0)
 
-watch(intentFilter, () => firstRow.value = 0)
+type WordRange = { min: number | null, max: number | null }
+
+const wordFilter = ref<WordRange>({ min: null, max: null })
+const wordDraft = ref<WordRange>({ min: null, max: null })
+const wordPopover = ref<InstanceType<typeof Popover> | null>(null)
+
+const wordCount = (keyword: string) => keyword.trim().split(/\s+/).filter(Boolean).length
+
+const matchesWords = (keyword: string, range: WordRange) => {
+    const words = wordCount(keyword)
+
+    return (range.min === null || words >= range.min) && (range.max === null || words <= range.max)
+}
+
+const isWordFilterOn = computed(() => wordFilter.value.min !== null || wordFilter.value.max !== null)
+
+const wordFilterLabel = computed(() => {
+    const { min, max } = wordFilter.value
+
+    if (min !== null && min === max) {
+        return ctrans("Words: :count", { count: min })
+    }
+
+    if (min !== null && max !== null) {
+        return ctrans("Words: :min to :max", { min, max })
+    }
+
+    return min !== null ? ctrans("Words: :min or more", { min }) : ctrans("Words: up to :max", { max })
+})
+
+const openWordFilter = (event: Event) => {
+    wordDraft.value = { ...wordFilter.value }
+    wordPopover.value?.toggle(event)
+}
+
+const applyWordFilter = () => {
+    const { min, max } = wordDraft.value
+
+    wordFilter.value = min !== null && max !== null && min > max ? { min: max, max: min } : { min, max }
+    wordPopover.value?.hide()
+}
+
+const clearWordFilter = () => {
+    wordFilter.value = { min: null, max: null }
+    wordPopover.value?.hide()
+}
+
+watch([intentFilter, wordFilter], () => firstRow.value = 0)
 
 const guessScope = (url: string) => {
     const value = url.trim()
@@ -127,12 +178,16 @@ const intentOptions = computed(() => [
     { value: "all", label: ctrans("All") },
     ...Object.entries(intentLabels).map(([value, label]) => ({
         value,
-        label: `${label} (${props.data?.keyword_data.ideas.filter((idea) => idea.intent === value).length ?? 0})`,
+        label: `${label} (${wordMatchedIdeas.value.filter((idea) => idea.intent === value).length})`,
     })),
 ])
 
-const ideas = computed(() => (props.data?.keyword_data.ideas ?? [])
-    .filter((idea) => intentFilter.value === "all" || idea.intent === intentFilter.value))
+const wordMatchedIdeas = computed(() => (props.data?.keyword_data.ideas ?? [])
+    .filter((idea) => matchesWords(idea.keyword, wordFilter.value)))
+
+const ideas = computed(() => wordMatchedIdeas.value
+    .filter((idea) => intentFilter.value === "all" || idea.intent === intentFilter.value)
+    .map((idea) => ({ ...idea, words: wordCount(idea.keyword) })))
 
 const competitionLabels: Record<string, string> = {
     LOW: ctrans("Low"),
@@ -212,12 +267,51 @@ const trendBars = (idea: KeywordIdea) => {
                     </div>
                     <div v-if="data.keyword_data.ideas.length" class="flex flex-wrap items-center gap-2">
                         <SegmentedToggle v-model="intentFilter" :options="intentOptions" :ariaLabel="ctrans('Search intent')" />
+                        <button
+                            type="button"
+                            class="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
+                            :class="isWordFilterOn ? 'border-gray-500 bg-gray-50 font-medium text-gray-900' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'"
+                            aria-haspopup="dialog"
+                            @click="openWordFilter">
+                            {{ ctrans("Words") }}
+                            <FontAwesomeIcon :icon="faChevronDown" class="text-xs text-gray-500" fixed-width aria-hidden="true" />
+                        </button>
                         <SeoExportButton
                             table="research"
-                            :extra="{ intent: intentFilter === 'all' ? null : intentFilter }"
-                            :tooltip="ctrans('Download these keyword ideas as an Excel file, with the intent chosen here')" />
+                            :extra="{ intent: intentFilter === 'all' ? null : intentFilter, words_min: wordFilter.min, words_max: wordFilter.max }"
+                            :tooltip="ctrans('Download these keyword ideas as an Excel file, with the intent and word count chosen here')" />
                     </div>
                 </div>
+
+                <div v-if="isWordFilterOn" class="flex flex-wrap items-center gap-2 border-b border-gray-100 px-5 py-2 text-xs">
+                    <span class="font-medium text-gray-700">{{ ctrans(":count keywords match", { count: locale.number(ideas.length) }) }}</span>
+                    <span class="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white py-0.5 pl-2.5 pr-1 text-gray-700">
+                        {{ wordFilterLabel }}
+                        <button
+                            type="button"
+                            class="flex h-5 w-5 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
+                            :aria-label="ctrans('Remove filter :filter', { filter: wordFilterLabel })"
+                            @click="clearWordFilter">
+                            <FontAwesomeIcon :icon="faTimes" fixed-width aria-hidden="true" />
+                        </button>
+                    </span>
+                </div>
+
+                <Popover ref="wordPopover">
+                    <form class="w-72 space-y-3 text-sm" @submit.prevent="applyWordFilter">
+                        <p class="font-medium text-gray-700">{{ ctrans("Number of words in the keyword") }}</p>
+                        <div class="flex items-center gap-2">
+                            <InputNumber v-model="wordDraft.min" :min="1" :max="20" :useGrouping="false" :placeholder="ctrans('From')" :aria-label="ctrans('At least this many words')" inputClass="w-full" class="flex-1" />
+                            <span class="text-gray-500" aria-hidden="true">{{ ctrans("to") }}</span>
+                            <InputNumber v-model="wordDraft.max" :min="1" :max="20" :useGrouping="false" :placeholder="ctrans('To')" :aria-label="ctrans('At most this many words')" inputClass="w-full" class="flex-1" />
+                        </div>
+                        <p class="text-xs text-gray-600">{{ ctrans("Use the same number in both for an exact count, or fill only one side.") }}</p>
+                        <div class="flex justify-end gap-2">
+                            <Button type="tertiary" size="xs" :label="ctrans('Clear')" @click="clearWordFilter" />
+                            <Button type="primary" size="xs" :label="ctrans('Apply')" @click="applyWordFilter" />
+                        </div>
+                    </form>
+                </Popover>
 
                 <div v-if="data.keyword_data.error" role="alert" class="px-5 py-4 text-sm text-gray-700">
                     <p class="font-medium text-gray-900">{{ ctrans("DataForSEO did not answer.") }}</p>
@@ -241,6 +335,11 @@ const trendBars = (idea: KeywordIdea) => {
                     class="text-sm"
                     :pt="tablePt">
                     <Column field="keyword" :header="ctrans('Keyword')" sortable />
+                    <Column field="words" sortable :pt="numericColumnPt">
+                        <template #header>
+                            <span v-tooltip="ctrans('Number of words in the keyword')">{{ ctrans("Words") }}</span>
+                        </template>
+                    </Column>
                     <Column field="intent" :header="ctrans('Intent')" sortable>
                         <template #body="{ data: idea }">
                             <span v-if="idea.intent" v-tooltip="idea.secondary_intents.length ? ctrans('Also: :intents', { intents: idea.secondary_intents.map((intent: string) => intentLabels[intent] ?? intent).join(', ') }) : undefined">
@@ -260,7 +359,7 @@ const trendBars = (idea: KeywordIdea) => {
                     <Column :header="ctrans('Last 12 months')">
                         <template #body="{ data: idea }">
                             <div class="flex h-5 items-end gap-px" aria-hidden="true">
-                                <span v-for="bar in trendBars(idea)" :key="bar.key" :title="bar.title" class="w-1.5 rounded-sm bg-[--app-accent-muted]" :style="{ height: `${bar.height}px` }" />
+                                <span v-for="bar in trendBars(idea)" :key="bar.key" :title="bar.title" class="w-1.5 rounded-sm bg-[var(--app-accent-muted)]" :style="{ height: `${bar.height}px` }" />
                             </div>
                         </template>
                     </Column>

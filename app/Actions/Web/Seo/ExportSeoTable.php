@@ -122,19 +122,28 @@ class ExportSeoTable extends OrgAction
      * export costs no DataForSEO credit within 24 hours of it; the intent filter is applied on
      * screen, so the button sends it along.
      */
+    private static function wordCount(string $keyword): int
+    {
+        return count(preg_split('/\s+/u', trim($keyword), -1, PREG_SPLIT_NO_EMPTY));
+    }
+
     private function research(Shop $shop, ActionRequest $request): array
     {
         $research = ShowSeoKeywords::make()->research($shop, ShowSeoKeywords::make()->researchQuery($shop, $request));
         $intent   = $request->query('intent');
+        $wordsMin = is_numeric($request->query('words_min')) ? (int) $request->query('words_min') : null;
+        $wordsMax = is_numeric($request->query('words_max')) ? (int) $request->query('words_max') : null;
 
         abort_if(!$research || $research['keyword_data']['error'], 404);
 
         return [
-            ['Keyword', 'Monthly searches', 'Trend (last 12 months)', 'Competition', 'CPC', 'Low top of page bid', 'High top of page bid', 'KD', 'Intent', 'Secondary intents', 'SERP features', 'SERP updated', 'Tracked'],
+            ['Keyword', 'Words', 'Monthly searches', 'Trend (last 12 months)', 'Competition', 'CPC', 'Low top of page bid', 'High top of page bid', 'KD', 'Intent', 'Secondary intents', 'SERP features', 'SERP updated', 'Tracked'],
             collect($research['keyword_data']['ideas'])
                 ->filter(fn (array $idea) => !$intent || $idea['intent'] === $intent)
+                ->filter(fn (array $idea) => ($wordsMin === null || self::wordCount($idea['keyword']) >= $wordsMin) && ($wordsMax === null || self::wordCount($idea['keyword']) <= $wordsMax))
                 ->map(fn (array $idea) => [
                     $idea['keyword'],
+                    self::wordCount($idea['keyword']),
                     $idea['avg_monthly_searches'],
                     collect($idea['monthly_searches'])->take(-12)->pluck('searches')->implode(', '),
                     $idea['competition'],
