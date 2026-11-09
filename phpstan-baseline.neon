@@ -1021,24 +1021,6 @@ parameters:
 			path: app/Actions/Comms/BackInStockReminder/UI/ProductHasBackInStockReminders.php
 
 		-
-			message: '#^Variable \$clientId on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.variable
-			count: 1
-			path: app/Actions/Comms/BeeFreeSDK/AuthenticateBeefreeAccount.php
-
-		-
-			message: '#^Variable \$clientSecret on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.variable
-			count: 1
-			path: app/Actions/Comms/BeeFreeSDK/AuthenticateBeefreeAccount.php
-
-		-
-			message: '#^Access to an undefined property App\\Actions\\Comms\\EmailTemplate\\UploadImagesToEmailTemplate\:\:\$scope\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/Comms/EmailTemplate/UploadImagesToEmailTemplate.php
-
-		-
 			message: '#^Anonymous function has an unused use \$parent\.$#'
 			identifier: closure.unusedUse
 			count: 1

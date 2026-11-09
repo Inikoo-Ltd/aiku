@@ -262,8 +262,6 @@ export const createIconItem = (): Record<string, any> => ({
     textPosition: 'bottom',
 })
 
-const SOCIAL_ICON_BASE_URL = 'https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets'
-
 export const DEFAULT_SOCIAL_ICON_SET = 't-outline-circle-dark-black'
 
 export const SOCIAL_ICON_SETS: Array<{ label: string, value: string }> = [
@@ -301,6 +299,8 @@ export const SOCIAL_NETWORKS: Array<{ name: string, label: string, url: string }
 
 const BEEFREE_ICON_SRC_PATTERN = /\/social-networks-icon-sets\/([^/]+)\/([^/@]+)@2x\.png$/
 
+const RENAMED_SOCIAL_NETWORKS: Record<string, string> = { twitter: 'x' }
+
 let socialIconSources: Record<string, string> = {}
 
 export const setSocialIconSources = (sources: Record<string, string> | null | undefined): void => {
@@ -308,7 +308,7 @@ export const setSocialIconSources = (sources: Record<string, string> | null | un
 }
 
 export const socialIconSrc = (network: string, iconSet: string = DEFAULT_SOCIAL_ICON_SET): string =>
-    socialIconSources[`${iconSet}/${network}`] ?? `${SOCIAL_ICON_BASE_URL}/${iconSet}/${network}@2x.png`
+    socialIconSources[`${iconSet}/${RENAMED_SOCIAL_NETWORKS[network] ?? network}`] ?? ''
 
 export const socialIconSetOf = (icon: Record<string, any>): string | null =>
     icon.iconSet ?? BEEFREE_ICON_SRC_PATTERN.exec(String(icon.image?.src ?? ''))?.[1] ?? null

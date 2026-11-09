@@ -44,18 +44,6 @@ class UpdateGroupSettings extends OrgAction
         }
         Cache::forget('bound-group-'.$group->id);
 
-        if (Arr::has($modelData, 'client_id')) {
-            data_set($modelData, 'settings.beefree.client_id', Arr::pull($modelData, 'client_id'));
-        }
-        if (Arr::has($modelData, 'client_secret')) {
-            data_set($modelData, 'settings.beefree.client_secret', Arr::pull($modelData, 'client_secret'));
-        }
-        if (Arr::has($modelData, 'page_builder_client_id')) {
-            data_set($modelData, 'settings.beefree.page_builder.client_id', Arr::pull($modelData, 'page_builder_client_id'));
-        }
-        if (Arr::has($modelData, 'page_builder_client_secret')) {
-            data_set($modelData, 'settings.beefree.page_builder.client_secret', Arr::pull($modelData, 'page_builder_client_secret'));
-        }
         if (Arr::has($modelData, 'staff_chat_quick_replies')) {
             $quickReplies = collect(explode("\n", (string) Arr::pull($modelData, 'staff_chat_quick_replies')))
                 ->map(fn ($line) => trim($line))
@@ -64,9 +52,6 @@ class UpdateGroupSettings extends OrgAction
                 ->values()
                 ->all();
             data_set($modelData, 'settings.staff_chat.quick_replies', $quickReplies);
-        }
-        if (Arr::has($modelData, 'grant_type')) {
-            data_set($modelData, 'settings.beefree.grant_type', Arr::pull($modelData, 'grant_type'));
         }
         if (Arr::has($modelData, 'printnode_api_key')) {
             data_set($modelData, 'settings.printnode.apikey', Arr::pull($modelData, 'printnode_api_key'));
@@ -131,11 +116,6 @@ class UpdateGroupSettings extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
-            'client_id'                         => ['sometimes', 'string', 'nullable'],
-            'client_secret'                     => ['sometimes', 'string', 'nullable'],
-            'page_builder_client_id'            => ['sometimes', 'string', 'nullable'],
-            'page_builder_client_secret'        => ['sometimes', 'string', 'nullable'],
-            'grant_type'                        => ['sometimes', 'string', 'nullable'],
             'staff_chat_quick_replies'          => ['sometimes', 'nullable', 'string', 'max:1000'],
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],

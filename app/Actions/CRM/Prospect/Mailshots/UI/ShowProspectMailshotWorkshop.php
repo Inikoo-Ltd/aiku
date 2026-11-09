@@ -212,7 +212,6 @@ class ShowProspectMailshotWorkshop extends OrgAction
                     'name'       => 'grp.models.email.video-thumbnail.store',
                     'parameters' => ['email' => $email->id]
                 ],
-                'emailEditor'         => $email->shop?->emailEditor()->value,
                 'websiteTheme'        => GetEmailWebsiteTheme::run($email->shop),
                 'imageCategories'     => IndexShopGalleryImages::categories($email->shop),
                 'updateRoute'         => [
