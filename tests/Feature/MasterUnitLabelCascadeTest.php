@@ -568,3 +568,66 @@ test('the master product edit information page edits the meta description and sh
     expect($this->masterAsset->seo_image_id)->not->toBeNull()
         ->and($this->masterAsset->seo_image_url)->toBeNull();
 });
+
+test('the master edit information page shows the trade unit data but never writes it, the trade unit is shared with other masters', function () {
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+
+    $loaf = TradeUnit::find($this->bottle);
+    $loaf->update(['is_divisible' => true, 'marketing_weight' => 1200, 'gross_weight' => 1200]);
+
+    $slice = StoreMasterAsset::make()->action($this->masterFamily, [
+        'code'        => 'UL-SLICE',
+        'name'        => 'soap slice',
+        'is_main'     => true,
+        'type'        => MasterAssetTypeEnum::PRODUCT,
+        'price'       => 3,
+        'stocks'      => [],
+        'trade_units' => [
+            ['id' => $loaf->id, 'quantity' => 0.1],
+        ],
+    ]);
+
+    get(route('grp.masters.master_shops.show.master_products.edit_information', [$this->masterShop->slug, $slice->slug]))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Masters/EditMasterProductInformation')
+            ->where('information.marketing_weight', 120)
+            ->where('information.gross_weight', 120)
+            ->where('information.trade_unit.code', $loaf->code)
+            ->etc());
+
+    post(route('grp.models.master_asset.information.update', $slice->id), [
+        '_method'          => 'patch',
+        'name'             => 'soap slice renamed',
+        'marketing_weight' => 115,
+        'gross_weight'     => 130,
+    ])->assertSessionHasNoErrors();
+
+    expect($slice->refresh()->name)->toBe('soap slice renamed')
+        ->and($slice->marketing_weight)->toBe(120)
+        ->and($loaf->refresh()->marketing_weight)->toBe(1200)
+        ->and($loaf->gross_weight)->toBe(1200);
+});
+
+test('changing the units of a single trade unit master recalculates its net weight', function () {
+    $loaf = TradeUnit::find($this->bottle);
+    $loaf->update(['is_divisible' => true, 'marketing_weight' => 1200]);
+
+    $slice = StoreMasterAsset::make()->action($this->masterFamily, [
+        'code'        => 'UL-SLICE2',
+        'name'        => 'soap slice',
+        'is_main'     => true,
+        'type'        => MasterAssetTypeEnum::PRODUCT,
+        'price'       => 3,
+        'stocks'      => [],
+        'trade_units' => [
+            ['id' => $loaf->id, 'quantity' => 0.1],
+        ],
+    ]);
+
+    expect($slice->refresh()->marketing_weight)->toBe(120);
+
+    UpdateMasterAsset::make()->action($slice, ['has_independent_units' => true, 'units' => 2]);
+
+    expect($slice->refresh()->marketing_weight)->toBe(1200);
+});
