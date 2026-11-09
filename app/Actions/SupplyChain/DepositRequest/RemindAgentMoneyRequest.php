@@ -24,7 +24,7 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class RemindAgentMoneyRequest extends OrgAction
 {
-    public const int MINUTES_BETWEEN_REMINDERS = 60;
+    public const int MINUTES_BETWEEN_REMINDERS = 0;  //  TODO: change to 60 (means 60 minutes) after testing phase is finish
 
     private DepositRequest $depositRequest;
 
