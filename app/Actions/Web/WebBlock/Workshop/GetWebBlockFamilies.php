@@ -24,6 +24,10 @@ class GetWebBlockFamilies
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
+        if ($webpage->sub_type == WebpageSubTypeEnum::NEW_IN_PAGE) {
+            return GetWebBlockNewInFamilies::run($webpage, $webBlock);
+        }
+
         if ($webpage->model instanceof ProductCategory || $webpage->model instanceof Collection) {
             $hasOverviewPage = false;
 

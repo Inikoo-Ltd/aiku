@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageForWorkshopResource;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -23,6 +24,10 @@ class GetWebBlockProducts
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
+        if ($webpage->sub_type == WebpageSubTypeEnum::NEW_IN_PAGE) {
+            return GetWebBlockNewInProducts::run($webpage, $webBlock);
+        }
+
         /** @var Collection|ProductCategory $model */
         $model = $webpage->model;
 

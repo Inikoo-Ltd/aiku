@@ -9,6 +9,8 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\StoreWebBlock;
+use App\Actions\Web\Website\Layouts\FetchUsedFamiliesWebBlock;
+use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
 use App\Enums\Web\WebBlockType\WebBlockTemplateEnum;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlockType;
@@ -67,6 +69,29 @@ trait WithStoreWebpage
         UpdateWebpageContent::run($webpage);
 
         return $modelHasWebBlock;
+    }
+
+    /**
+     * Adds the families or product list block the website uses on its catalogue pages, as a collection
+     * page gets them. families-4 lists the families of a department, so a page without one gets families-3.
+     */
+    protected function createWebBlockFromWebsiteTemplate(Webpage $webpage, WebBlockTemplateEnum $webBlockTemplate): ?ModelHasWebBlocks
+    {
+        $code = match ($webBlockTemplate) {
+            WebBlockTemplateEnum::FAMILIES      => FetchUsedFamiliesWebBlock::run($webpage->website),
+            WebBlockTemplateEnum::LIST_PRODUCTS => FetchUsedProductsWebBlock::run($webpage->website),
+            default                             => null,
+        };
+
+        if (!$code) {
+            return null;
+        }
+
+        if ($code == 'families-4') {
+            return $this->createWebBlock($webpage, 'families-3');
+        }
+
+        return $this->createWebBlockFromSavedTemplate($webpage, $webBlockTemplate, $code);
     }
 
     protected function createWebBlockFromSavedTemplate(Webpage $webpage, WebBlockTemplateEnum $webBlockTemplate, string $webBlockCode): ?ModelHasWebBlocks
