@@ -1,0 +1,7 @@
+<resources>
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_mark_all_read">Mark all as read</string>
+    <string name="notifications_today">Today</string>
+    <string name="notifications_earlier">Earlier</string>
+    <string name="notifications_unread">Unread</string>
+</resources>

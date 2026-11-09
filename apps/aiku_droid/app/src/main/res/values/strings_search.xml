@@ -1,0 +1,12 @@
+<resources>
+    <string name="search_label">Search</string>
+    <string name="search_placeholder">Search SKU, location, delivery note</string>
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_skus">SKUs</string>
+    <string name="search_filter_locations">Locations</string>
+    <string name="search_filter_delivery_notes">Delivery notes</string>
+    <string name="search_section_skus">SKUs · %1$d</string>
+    <string name="search_section_families">SKUs Families · %1$d</string>
+    <string name="search_family_summary">%1$s · %2$d SKUs</string>
+    <string name="search_recent">Recent searches</string>
+</resources>

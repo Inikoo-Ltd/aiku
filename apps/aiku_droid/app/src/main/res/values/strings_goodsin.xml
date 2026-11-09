@@ -1,0 +1,58 @@
+<resources>
+    <string name="goodsin_title">Goods in</string>
+    <string name="goodsin_tab_backlog">Backlog</string>
+    <string name="goodsin_tab_stock_deliveries">Stock deliveries</string>
+    <string name="goodsin_tab_fulfilment_deliveries">Fulfilment deliveries</string>
+
+    <string name="goodsin_backlog_intro">Work waiting at goods-in, in the order it needs doing.</string>
+    <string name="goodsin_backlog_received">Received · to check</string>
+    <string name="goodsin_backlog_checked">Checked · to place</string>
+    <string name="goodsin_backlog_dispatched">Dispatched · on the way</string>
+    <string name="goodsin_action_check">Check</string>
+    <string name="goodsin_action_place">Place</string>
+
+    <string name="goodsin_search_placeholder">Reference</string>
+    <string name="goodsin_filter_open">Open</string>
+    <string name="goodsin_filter_with_count" translatable="false">%1$s %2$d</string>
+    <string name="goodsin_sorted_by_reference">Sorted by reference</string>
+    <string name="goodsin_flow_hint">Flow: Dispatched → Received → Checked → Placed</string>
+    <string name="goodsin_state_dispatched">Dispatched</string>
+    <string name="goodsin_state_received">Received</string>
+    <string name="goodsin_state_checked">Checked</string>
+    <string name="goodsin_state_placed">Placed</string>
+    <string name="goodsin_check_items">Check items</string>
+    <string name="goodsin_place_in_locations">Place in locations</string>
+    <string name="goodsin_list_footer">Placed and cancelled deliveries are in “All”</string>
+    <string name="goodsin_no_results">No stock deliveries match your search.</string>
+
+    <string name="goodsin_supplier_delivery">Supplier delivery</string>
+    <string name="goodsin_more_actions">More actions</string>
+    <string name="goodsin_tab_attachments">Attachments</string>
+    <string name="goodsin_tab_history">History</string>
+    <string name="goodsin_tab_data">Data</string>
+    <string name="goodsin_supplier">Supplier</string>
+    <string name="goodsin_received_at">Received</string>
+
+    <string name="goodsin_scan_to_receive">Scan items to receive</string>
+    <string name="goodsin_scanner_ready">Scanner device ready · just scan, each scan adds 1</string>
+    <string name="goodsin_use_camera">Use camera</string>
+    <string name="goodsin_type_code">Type code</string>
+
+    <string name="goodsin_items">Items</string>
+    <plurals name="goodsin_items_checked">
+        <item quantity="one">%1$d of %2$d checked</item>
+        <item quantity="other">%1$d of %2$d checked</item>
+    </plurals>
+    <string name="goodsin_short_by">Short by %1$d</string>
+    <string name="goodsin_expected">%1$s · expected %2$d</string>
+    <string name="goodsin_quantity_of" translatable="false">%1$s / %2$d</string>
+    <string name="goodsin_quantity_missing" translatable="false">—</string>
+    <string name="goodsin_of_total" translatable="false">/ %1$d</string>
+    <string name="goodsin_minus" translatable="false">−</string>
+    <string name="goodsin_plus" translatable="false">+</string>
+    <string name="goodsin_decrease_received">Decrease received quantity</string>
+    <string name="goodsin_increase_received">Increase received quantity</string>
+
+    <string name="goodsin_scan">Scan</string>
+    <string name="goodsin_confirm_next">Confirm item · next</string>
+</resources>

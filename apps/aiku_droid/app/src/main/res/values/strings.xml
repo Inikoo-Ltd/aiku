@@ -1,4 +1,87 @@
 <resources>
     <string name="app_name">Aiku Droid</string>
-    <string name="placeholder_subtitle">Picking and packing</string>
+    <string name="brand_name" translatable="false">aiku</string>
+
+    <string name="login_tagline">a box packed well is a promise kept.</string>
+    <string name="login_username">Username</string>
+    <string name="login_password">Password</string>
+    <string name="login_password_placeholder" translatable="false">••••••••</string>
+    <string name="login_show_password">Show password</string>
+    <string name="login_hide_password">Hide password</string>
+    <string name="login_forgot_password">Forgot password?</string>
+    <string name="login_remember_me">Remember me</string>
+    <string name="login_sign_in">Sign in</string>
+    <string name="login_signing_in">Signing in…</string>
+    <string name="login_try_again">Try again</string>
+    <string name="login_username_required">Enter your username.</string>
+    <string name="login_password_required">Enter your password.</string>
+    <string name="login_failed_title">Couldn\'t sign in</string>
+    <string name="login_failed_body">Check your details and try again.</string>
+
+    <string name="otp_title">Two-step verification</string>
+    <string name="otp_description">Enter the 6-digit code from your authenticator app to finish signing in as %1$s.</string>
+    <string name="otp_label">Authentication code</string>
+    <string name="otp_placeholder" translatable="false">000000</string>
+    <string name="otp_verify">Verify</string>
+    <string name="otp_verifying">Verifying…</string>
+    <string name="otp_required">Enter the 6-digit code.</string>
+    <string name="back_to_sign_in">Back to sign in</string>
+
+    <string name="reset_title">Forgot password</string>
+    <string name="reset_description">Enter your email. We\'ll send a link to reset your password.</string>
+    <string name="reset_email_label">Email</string>
+    <string name="reset_email_placeholder" translatable="false">name@company.com</string>
+    <string name="reset_send">Send reset link</string>
+    <string name="reset_sending">Sending…</string>
+    <string name="reset_email_required">Enter your email address.</string>
+    <string name="reset_failed_title">Couldn\'t send the link</string>
+    <string name="reset_sent_description">If this account exists, a reset link is on its way. Check your email.</string>
+    <string name="reset_no_email">No email on your account? Ask your warehouse manager.</string>
+
+    <string name="alert_offline_title">No connection</string>
+    <string name="alert_offline_sign_in_body">Sign in needs internet — check Wi-Fi and try again.</string>
+    <string name="alert_offline_reset_body">Sending a reset link needs internet — check Wi-Fi and try again.</string>
+    <string name="alert_app_key_title">This app can\'t connect to aiku</string>
+    <string name="alert_app_key_body">Its app key wasn\'t accepted. Ask your administrator to check the app\'s set-up.</string>
+    <string name="alert_server_title">aiku is having trouble</string>
+    <string name="alert_server_body">The server answered with error %1$d. Try again in a moment.</string>
+
+    <string name="footer_open_source">aiku is open source software (AGPL-3.0)</string>
+    <string name="footer_email" translatable="false">hello@aiku.io</string>
+
+    <string name="nav_back">Back</string>
+    <string name="nav_warehouse_menu">Warehouse menu</string>
+    <string name="nav_scan">Scan barcode</string>
+    <string name="tab_dashboard">Dashboard</string>
+    <string name="tab_inventory">Inventory</string>
+    <string name="tab_goods_in">Goods in</string>
+    <string name="tab_goods_out">Goods out</string>
+
+    <string name="no_access_title">Not available to you here</string>
+    <string name="no_access_body">Your role in this warehouse doesn\'t include this. Ask your supervisor if you need it.</string>
+    <string name="no_access_back">Back to dashboard</string>
+
+    <string name="warehouses_failed_title">Couldn\'t load your warehouses</string>
+    <string name="warehouses_unreachable">No connection — check Wi-Fi and try again.</string>
+    <string name="warehouses_retry">Try again</string>
+    <string name="warehouses_none_title">No warehouse access yet</string>
+    <string name="warehouses_none_body">Your account isn\'t set up for any warehouse. Ask your supervisor to give you a warehouse role in aiku.</string>
+    <string name="sign_out">Sign out</string>
+
+    <string name="switcher_title">Change warehouse</string>
+    <string name="switcher_current">%1$s · current</string>
+    <string name="switcher_note">Only warehouses you have permission for are listed. Every screen follows the chosen warehouse.</string>
+    <string name="switcher_switch">Switch</string>
+
+    <string name="theme_deep_sea">Deep Sea Serenity</string>
+    <string name="theme_rosewater">Rosewater Blush</string>
+    <string name="theme_amoled">Amoled</string>
+    <string name="theme_black_white">Black and White</string>
+    <string name="theme_uk_aw">UK AW Distributions</string>
+    <string name="theme_es_purple">Spain · purple</string>
+    <string name="theme_es_blue">Spain · blue</string>
+    <string name="theme_es_gold">Spain · gold</string>
+    <string name="theme_es_rose">Spain · rose</string>
+    <string name="theme_es_olive">Spain · olive</string>
+    <string name="theme_pure_bw">Pure Black and White</string>
 </resources>

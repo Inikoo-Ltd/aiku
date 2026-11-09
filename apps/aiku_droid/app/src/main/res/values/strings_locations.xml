@@ -1,0 +1,37 @@
+<resources>
+    <string name="locations_title">Locations</string>
+    <string name="locations_section_warehouse">Warehouse</string>
+    <string name="locations_section_areas">Areas</string>
+    <string name="locations_section_locations">Locations</string>
+    <string name="locations_search">Location code</string>
+    <string name="locations_filter_all">All areas</string>
+    <string name="locations_filter_broken">Broken</string>
+    <string name="locations_sorted">Sorted by code</string>
+    <string name="locations_legend_stocks">Stocks</string>
+    <string name="locations_legend_fulfilment">Fulfilment</string>
+    <string name="locations_allows_stocks">Allows stocks</string>
+    <string name="locations_allows_fulfilment">Allows fulfilment</string>
+    <string name="locations_stock_value_caption">stock value</string>
+    <string name="locations_flag_audit">Audit in process</string>
+    <string name="locations_flag_broken">Broken</string>
+    <string name="locations_showing">Showing %1$s of %2$s · scroll for more</string>
+
+    <string name="locations_detail_kicker">Location</string>
+    <string name="locations_tab_overview">Overview</string>
+    <string name="locations_tab_skus">SKUs</string>
+    <string name="locations_tab_pallets">Pallets</string>
+    <string name="locations_tab_movements">Stock movements</string>
+    <string name="locations_tab_history">History</string>
+    <string name="locations_more_actions">More actions</string>
+    <string name="locations_status_operational">Operational</string>
+    <string name="locations_detail_area">Warehouse area</string>
+    <string name="locations_detail_stock_value">Stock value</string>
+    <string name="locations_detail_weight">Weight</string>
+    <string name="locations_detail_cbm">CBM (Cubic meter)</string>
+    <string name="locations_detail_capacity">Capacity used (weight)</string>
+    <string name="locations_detail_skus">SKUs · %1$s</string>
+    <string name="locations_detail_view_all">View all</string>
+    <string name="locations_detail_movements">Stock movements</string>
+    <string name="locations_detail_audit">Stock audit</string>
+    <string name="locations_detail_transfer">Location transfer</string>
+</resources>
