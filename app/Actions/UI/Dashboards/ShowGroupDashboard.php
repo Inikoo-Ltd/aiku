@@ -129,7 +129,7 @@ class ShowGroupDashboard extends OrgAction
                     'month' => GetShopMonthSalesTarget::run($group, $user),
                     'year'  => GetShopYearSalesTarget::run($group, $user),
                 ]),
-                'competitors'        => $user->authTo('masters.view') ? Inertia::defer(fn () => ShowCompetitorsDashboard::summary($group)) : null,
+                'competitors'        => $user->authTo('masters.view') ? Inertia::optional(fn () => ShowCompetitorsDashboard::summary($group)) : null,
                 'stockHistoryGroup'  => $this->getGroupStockHistoryData($group),
                 'warehouseOverview'  => Inertia::defer(fn () => GetGroupWarehouseDashboardData::run($group)),
                 'operations'         => $operations,

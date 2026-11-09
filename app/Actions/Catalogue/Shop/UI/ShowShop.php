@@ -139,7 +139,7 @@ class ShowShop extends OrgAction
             'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
             'dashboard'   => $dashboard,
             'competitors' => $shop->master_shop_id && $request->user()->authTo('masters.view')
-                ? Inertia::defer(fn () => ShowCompetitorsDashboard::summary($shop->group, [$shop->master_shop_id]))
+                ? Inertia::optional(fn () => ShowCompetitorsDashboard::summary($shop->group, [$shop->master_shop_id]))
                 : null,
             'customers_dashboard'   => Inertia::optional(fn () => GetShopCustomersDashboard::run($shop)),
             'sales_analysis'        => Inertia::optional(fn () => GetShopSalesAnalysis::run($shop, $request->only(['from', 'to', 'compareFrom', 'compareTo', 'partners']))),

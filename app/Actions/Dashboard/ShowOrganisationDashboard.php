@@ -131,7 +131,7 @@ class ShowOrganisationDashboard extends OrgAction
                 'dashboard'     => $dashboard,
                 'salesTargets'  => $salesTargets,
                 'competitors'   => $salesTargets && $request->user()->authTo('masters.view')
-                    ? Inertia::defer(fn () => ShowCompetitorsDashboard::summary($organisation->group, $organisation->shops()->whereNotNull('master_shop_id')->distinct()->pluck('master_shop_id')->all()))
+                    ? Inertia::optional(fn () => ShowCompetitorsDashboard::summary($organisation->group, $organisation->shops()->whereNotNull('master_shop_id')->distinct()->pluck('master_shop_id')->all()))
                     : null,
                 'cleanHandover' => $this->getCleanHandover($organisation, $request->user()),
                 'isAgentOrganisation' => $organisation->type === OrganisationTypeEnum::AGENT,

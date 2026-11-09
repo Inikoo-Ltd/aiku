@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue"
-import { Deferred, Link, usePage } from "@inertiajs/vue3"
+import { Link, usePage, WhenVisible } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -23,7 +23,7 @@ const width = (part: number) => (100 * part) / compared.value + "%"
 </script>
 
 <template>
-    <Deferred data="competitors">
+    <WhenVisible data="competitors">
         <template #fallback>
             <div class="skeleton h-4 w-72 rounded" aria-busy="true" />
         </template>
@@ -43,5 +43,5 @@ const width = (part: number) => (100 * part) / compared.value + "%"
             <span v-if="summary.to_review">· {{ ctrans(":count to review", { count: summary.to_review }) }}</span>
             <span v-if="summary.failing" class="text-amber-600">· {{ ctrans(":count not read", { count: summary.failing }) }}</span>
         </Link>
-    </Deferred>
+    </WhenVisible>
 </template>

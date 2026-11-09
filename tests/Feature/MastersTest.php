@@ -4826,30 +4826,43 @@ describe('competitor prices, HELP-3605', function () {
                 ->where('competitors.data', fn ($rows) => ($competitor = collect($rows->toArray())->firstWhere('id', $this->competitor->id)) && $competitor['number_confirmed'] === 1 && $competitor['median_difference'] === -20)
                 ->etc());
 
+        \App\Actions\Masters\Competitor\StoreCompetitor::make()->action(createFreshMasterShop(), [
+            'name'        => 'Rival elsewhere',
+            'website'     => 'https://elsewhere.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+        ]);
+        $countCompetitors = fn (?array $masterShopIds = null) => \App\Models\Masters\Competitor::where('group_id', group()->id)
+            ->when($masterShopIds !== null, fn ($query) => $query->whereIn('master_shop_id', $masterShopIds))->count();
+
         get(route('grp.dashboard.show'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page->component('Dashboard/GrpDashboard')
-                ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+                ->missing('competitors')
+                ->reloadOnly('competitors', fn (AssertableInertia $reload) => $reload
                     ->where('competitors.dearer', fn ($dearer) => $dearer >= 1)
-                    ->where('competitors.number_competitors', fn ($number) => $number >= 1)
-                    ->etc()));
+                    ->where('competitors.number_competitors', $countCompetitors())));
 
         $shop             = \App\Models\Catalogue\Shop::where('group_id', group()->id)->firstOrFail();
         $shopMasterShopId = $shop->master_shop_id;
         $shop->update(['master_shop_id' => $this->competitorMasterShop->id]);
-        $competitorsOfTheShop = fn (AssertableInertia $reload) => $reload
+        $competitorsOf = fn (int $number) => fn (AssertableInertia $reload) => $reload
+            ->where('competitors.number_competitors', $number)
             ->where('competitors.dearer', 1)
-            ->where('competitors.cheaper', 0)
-            ->etc();
+            ->where('competitors.cheaper', 0);
 
-        get(route('grp.org.shops.show.dashboard.show', [$shop->organisation->slug, $shop->slug]))
-            ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page->loadDeferredProps($competitorsOfTheShop));
-        get(route('grp.org.dashboard.show', [$shop->organisation->slug]))
-            ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page->loadDeferredProps($competitorsOfTheShop));
+        try {
+            expect($countCompetitors())->toBeGreaterThan($countCompetitors([$this->competitorMasterShop->id]));
 
-        $shop->update(['master_shop_id' => $shopMasterShopId]);
+            get(route('grp.org.shops.show.dashboard.show', [$shop->organisation->slug, $shop->slug]))
+                ->assertOk()
+                ->assertInertia(fn (AssertableInertia $page) => $page->reloadOnly('competitors', $competitorsOf($countCompetitors([$this->competitorMasterShop->id]))));
+            get(route('grp.org.dashboard.show', [$shop->organisation->slug]))
+                ->assertOk()
+                ->assertInertia(fn (AssertableInertia $page) => $page->reloadOnly('competitors', $competitorsOf($countCompetitors($shop->organisation->shops()->whereNotNull('master_shop_id')->pluck('master_shop_id')->all()))));
+        } finally {
+            $shop->update(['master_shop_id' => $shopMasterShopId]);
+        }
     });
 
     test('a site with a trade login is logged into afresh for every batch, without the cookies of the last one', function () use ($fakeBrowserAndAi) {

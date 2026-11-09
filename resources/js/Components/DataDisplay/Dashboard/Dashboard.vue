@@ -159,7 +159,7 @@ onMounted(() => {
             :month-target="props.dashboard.super_blocks[0].month_target"
             :year-target="props.dashboard.super_blocks[0].year_target"
         >
-            <template v-if="usePage().props.competitors != null" #footer>
+            <template v-if="usePage().props.competitors !== null" #footer>
                 <CompetitorsSummaryLine />
             </template>
         </ShopMonthTarget>
