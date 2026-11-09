@@ -14,8 +14,11 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\JobOrder;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
 use App\Models\Production\JobOrderItem;
+use Illuminate\Support\Arr;
 use App\Models\Production\JobOrderItemTask;
+use Illuminate\Support\Collection;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\ManufactureTaskSessionShare;
 use App\Models\SysAdmin\User;
@@ -95,6 +98,10 @@ class CancelJobOrder extends OrgAction
             $lines = PartnerShoppingListItem::where('job_order_id', $lockedJobOrder->id)->where('state', ShoppingListItemStateEnum::OPEN)->get();
             foreach ($lines as $line) {
                 $coveredSkos = isset($packedInByLine[$line->id]) ? round($coveredUnitsByLine[$line->id] / $packedInByLine[$line->id], 3) : 0;
+                $fillItem    = $items->first(fn (JobOrderItem $item) => Arr::get($item->data, 'fill.to_produce_id') == $line->id);
+                if ($fillItem) {
+                    $coveredSkos = (float) ($madeByItem[$fillItem->id] ?? 0);
+                }
                 $line->moveUncoveredTo($coveredSkos, null);
             }
 
@@ -105,6 +112,7 @@ class CancelJobOrder extends OrgAction
                     foreach ($item->tasks as $task) {
                         $task->setRequiredQuantity(min((float) $task->quantity_required, $task->requiredFor($made)));
                     }
+                    FillToOrder::make()->release($item);
                 }
             } else {
                 self::leaveCombinedBatches($taskIds->all());
@@ -127,9 +135,27 @@ class CancelJobOrder extends OrgAction
                 ['data' => $data],
                 $totalMade > 0 ? [] : ['state' => JobOrderStateEnum::NOT_RECEIVED, 'not_received_at' => now()]
             ));
+
+            if ($totalMade == 0) {
+                ShareMixPool::make()->giveBackAll(self::sharedSteps($items));
+            }
         });
 
         return $jobOrder->refresh();
+    }
+
+    /**
+     * The shared steps (a mix, or the Making of a labelled strand) of these lines: each hands back what its
+     * later steps have not used (ShareMixPool::giveBackAll, HELP-4562).
+     *
+     * @param  iterable<JobOrderItem>  $items  with tasks
+     * @return Collection<int, JobOrderItemTask>
+     */
+    public static function sharedSteps(iterable $items): Collection
+    {
+        return collect($items)
+            ->flatMap(fn (JobOrderItem $item) => $item->tasks->filter(fn (JobOrderItemTask $task) => ShareMixPool::poolKey($task)))
+            ->values();
     }
 
     /**

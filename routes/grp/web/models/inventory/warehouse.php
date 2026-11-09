@@ -25,6 +25,8 @@ use App\Actions\Dispatching\Shipper\UpdateShipper;
 use App\Actions\Dispatching\Trolley\DeleteTrolley;
 use App\Actions\Dispatching\Trolley\StoreTrolley;
 use App\Actions\Fulfilment\PickingSession\StoreFulfilmentPickingSession;
+use App\Actions\Dispatching\Trolley\AttachTrolleyToPickingSession;
+use App\Actions\Dispatching\Trolley\DetachTrolleyFromPickingSession;
 use App\Actions\Fulfilment\PickingSession\StartPickFulfilmentPickingSession;
 use App\Actions\Fulfilment\PickingSession\AddPalletReturnsToPickingSession;
 use App\Actions\Fulfilment\PickingSession\RemovePalletReturnsFromPickingSession;
@@ -77,6 +79,8 @@ Route::patch('picking-session/{pickingSession:id}/add-delivery-notes', AddDelive
 Route::patch('picking-session/{pickingSession:id}/remove-delivery-notes', RemoveDeliveryNotesFromPickingSession::class)->name('picking_session.remove_delivery_notes')->withoutScopedBindings();
 Route::patch('picking-session/{pickingSession:id}/add-pallet-returns', AddPalletReturnsToPickingSession::class)->name('picking_session.add_pallet_returns')->withoutScopedBindings();
 Route::patch('picking-session/{pickingSession:id}/remove-pallet-returns', RemovePalletReturnsFromPickingSession::class)->name('picking_session.remove_pallet_returns')->withoutScopedBindings();
+Route::patch('picking-session/{pickingSession:id}/attach-trolley/{trolley:id}', AttachTrolleyToPickingSession::class)->name('picking_session.trolleys.attach')->withoutScopedBindings();
+Route::patch('picking-session/{pickingSession:id}/detach-trolley/{trolley:id}', DetachTrolleyFromPickingSession::class)->name('picking_session.trolleys.detach')->withoutScopedBindings();
 
 Route::post('warehouse/{warehouse:id}/batch-code', StoreBatchCode::class)->name('warehouse.batch_code.store');
 Route::post('warehouse/{warehouse:id}/batch-code/upload', [ImportBatchCodes::class, 'inWarehouse'])->name('warehouse.batch_codes.upload')->withoutScopedBindings();

@@ -478,6 +478,7 @@ class SendChatMessageByGmail
     {
         $isHtmlSignature = $signature !== '' && $signature !== strip_tags($signature);
         $messageHtml     = self::placePictures(self::markupToHtml($messageText), $pictureIds);
+        $messageText     = preg_replace(self::LABELLED_LINK, '$1 ($2)', $messageText) ?? $messageText;
         $messageText     = trim(preg_replace_callback("/\n?".self::PICTURE_TOKEN."\n?/u", fn (array $match) => self::isPicture($match, $pictureIds) ? "\n" : $match[0], $messageText) ?? $messageText);
 
         if (! $pictureIds && ! $isHtmlSignature && $messageHtml === nl2br(e($messageText))) {
@@ -511,6 +512,12 @@ class SendChatMessageByGmail
     }
 
     public const string PICTURE_TOKEN = '\[[^\[\]\n:]{1,24}:\s*([A-Za-z0-9-]{1,64})\s*\]';
+
+    /**
+     * Words the agent put a link on, written [words](https://...) by the composer
+     * (editorDocToMarkup in useWhatsappMarkup.ts, which must stay in step).
+     */
+    public const string LABELLED_LINK = '/\[([^\[\]\n]+)\]\((https?:\/\/[^\s()<>"]+)\)/iu';
 
     /**
      * A translator may return [imagen: id] or [Bild:id]: any such bracket naming one of the
@@ -603,12 +610,17 @@ class SendChatMessageByGmail
     {
         $links = [];
         $text  = str_replace("\0", "", $text);
-        $text  = preg_replace_callback('/\b(?:https?:\/\/|www\.)[^\s<>"]+/iu', function (array $match) use (&$links): string {
+        $text  = preg_replace_callback(self::LABELLED_LINK, function (array $match) use (&$links): string {
+            $links[] = ['url' => $match[2], 'label' => $match[1]];
+
+            return "\0".(count($links) - 1)."\0";
+        }, $text) ?? $text;
+        $text = preg_replace_callback('/\b(?:https?:\/\/|www\.)[^\s<>"]+/iu', function (array $match) use (&$links): string {
             $url = preg_replace('/[.,;:!?\'")\]*_~]+$/u', '', $match[0]) ?? $match[0];
             while (strlen($match[0]) > strlen($url) && $match[0][strlen($url)] === ')' && substr_count($url, '(') > substr_count($url, ')')) {
                 $url .= ')';
             }
-            $links[] = $url;
+            $links[] = ['url' => $url, 'label' => $url];
 
             return "\0".(count($links) - 1)."\0".substr($match[0], strlen($url));
         }, $text) ?? $text;
@@ -625,10 +637,10 @@ class SendChatMessageByGmail
         }
 
         $html = preg_replace_callback('/\0(\d+)\0/', function (array $match) use ($links): string {
-            $url  = $links[(int) $match[1]];
+            ['url' => $url, 'label' => $label] = $links[(int) $match[1]];
             $href = preg_match('/^www\./i', $url) ? 'https://'.$url : $url;
 
-            return '<a href="'.e($href).'" target="_blank" rel="noopener noreferrer">'.e($url).'</a>';
+            return '<a href="'.e($href).'" target="_blank" rel="noopener noreferrer">'.e($label).'</a>';
         }, $html) ?? $html;
 
         return nl2br($html);

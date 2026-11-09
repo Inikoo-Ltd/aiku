@@ -245,3 +245,35 @@ test('the shop chat settings list its saved contacts and the organisation\'s, to
     get(route('grp.org.chat.settings', [$this->organisation->slug]))
         ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page->missing('tabs.navigation.email_contacts')->where('emailContacts', null));
 });
+
+test('HELP-4553 the search offers the addresses this shop emailed lately, newest first, beside the saved contacts', function () {
+    $token   = $this->token;
+    $session = fn (Shop $shop, string $email, array $attributes = []) => \App\Models\Chat\ChatSession::create(array_merge([
+        'ulid'     => (string) Str::ulid(),
+        'status'   => \App\Enums\CRM\Livechat\ChatSessionStatusEnum::ACTIVE,
+        'channel'  => \App\Enums\CRM\Livechat\ChatChannelEnum::EMAIL,
+        'shop_id'  => $shop->id,
+        'metadata' => ['email' => $email, 'name' => $email],
+    ], $attributes));
+
+    $session($this->shop, "older-$token@example.com", ['created_at' => now()->subHours(3)]);
+    $session($this->shop, "Today-$token@example.com", ['metadata' => ['email' => "Today-$token@example.com", 'name' => "Jana $token"]]);
+    $session($this->shop, "today-$token@example.com", ['created_at' => now()->subHour()]);
+    $session($this->shop, "saved-$token@example.com");
+    $session($this->shop, "spam-$token@example.com", ['is_spam' => true]);
+    $session($this->shop, "stale-$token@example.com", ['created_at' => now()->subDays(\App\Actions\Chat\EmailContact\SearchChatEmailContacts::RECENT_DAYS + 1)]);
+    $session($this->shop, "ongoing-$token@example.com", ['created_at' => now()->subDays(200), 'last_visitor_message_at' => now()->subHours(2)]);
+    $session($this->otherShop, "elsewhere-$token@example.com");
+    emailContactFor($this->organisation, $this->shop, "Saved $token", "saved-$token@example.com");
+
+    actingAsUserWithOnlyPermissions($this->staff, ["chat.{$this->shop->id}"]);
+
+    $response = getJson(route('grp.org.chat.agents.email_contacts.search', [$this->organisation->slug, $this->shop->id, 'query' => $token]))->assertOk();
+
+    expect($response->json('data.*.email'))->toBe(["saved-$token@example.com"])
+        ->and($response->json('recent'))->toBe([
+            ['name' => "Jana $token", 'email' => "today-$token@example.com"],
+            ['name' => null, 'email' => "ongoing-$token@example.com"],
+            ['name' => null, 'email' => "older-$token@example.com"],
+        ]);
+});

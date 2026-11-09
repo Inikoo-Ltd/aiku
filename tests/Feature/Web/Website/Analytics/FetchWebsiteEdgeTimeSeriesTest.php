@@ -494,17 +494,27 @@ it('flags an edge redirect that differs from what our servers answer, or that lo
         'https://shop.test/stale'     => ['edge' => 'https://shop.test/old', 'origin' => '/new'],
         'https://shop.test/a'         => ['edge' => '/b', 'origin' => '/b'],
         'https://shop.test/b'         => ['edge' => 'https://shop.test/a', 'origin' => 'https://shop.test/a'],
+        'https://shop.test/favicon.ico'     => ['edge' => 'https://www.shop.test/favicon.ico', 'origin' => 'https://www.shop.test/favicon.ico'],
+        'https://www.shop.test/favicon.ico' => ['edge' => 404, 'origin' => 404],
+        'https://shop.test/sku-31'          => ['edge' => 'https://shop.test/family/sku-31', 'origin' => 'https://shop.test/family/sku-31'],
+        'https://shop.test/family/sku-31'   => ['edge' => 404, 'origin' => 404],
     ];
     Http::fake(function (Request $request) use ($answers) {
         $side     = $request->header('User-Agent')[0] === MonitorEdgeRedirects::ORIGIN_AGENT ? 'origin' : 'edge';
         $location = $answers[$request->url()][$side];
 
-        return $location === null ? Http::response('page') : Http::response('', 301, ['Location' => $location]);
+        return match (true) {
+            $location === null => Http::response('page'),
+            $location === 404  => Http::response('', 404),
+            default            => Http::response('', 301, ['Location' => $location]),
+        };
     });
 
     $monitor = new MonitorEdgeRedirects();
 
     expect($monitor->check('https://shop.test/ok'))->toBeNull()
         ->and($monitor->check('https://shop.test/stale'))->toBe('Cloudflare sends to https://shop.test/old, our servers to https://shop.test/new')
-        ->and($monitor->check('https://shop.test/a'))->toBe('redirect loop: https://shop.test/a -> https://shop.test/b -> https://shop.test/a');
+        ->and($monitor->check('https://shop.test/a'))->toBe('redirect loop: https://shop.test/a -> https://shop.test/b -> https://shop.test/a')
+        ->and($monitor->check('https://shop.test/favicon.ico'))->toBeNull()
+        ->and($monitor->check('https://shop.test/sku-31'))->toBe('ends on HTTP 404 at https://shop.test/family/sku-31');
 });

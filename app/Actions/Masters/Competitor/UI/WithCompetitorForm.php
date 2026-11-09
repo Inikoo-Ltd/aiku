@@ -82,6 +82,12 @@ trait WithCompetitorForm
                 'label'  => __('Where to read prices'),
                 'icon'   => 'fa-light fa-search',
                 'fields' => [
+                    'prices_by_hand' => [
+                        'type'        => 'toggle',
+                        'label'       => __('Prices checked by hand'),
+                        'information' => __('For marketplaces that block automated visits: nothing is read from their website, and each month someone adds the prices they see on the competitor page'),
+                        'value'       => $competitor?->prices_by_hand ?? false,
+                    ],
                     'feed_url'   => [
                         'type'        => 'input',
                         'label'       => __('Product feed link'),

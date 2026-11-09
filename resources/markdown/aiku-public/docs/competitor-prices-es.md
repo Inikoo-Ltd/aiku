@@ -8,7 +8,7 @@ category: shop
 ---
 
 <aside class="tldr">
-En <b>Masters › Competitors</b> le dices a aiku qué webs de la competencia vigilar. aiku lee por su cuenta sus productos y precios, los empareja con tus productos maestros y muestra <b>dónde eres más barato, parecido o más caro</b>, por unidad y en la moneda del grupo. La IA confirma los emparejamientos de los que está segura y te pide <b>revisar el resto</b> con un tick o una cruz. Los precios confirmados también aparecen en las <a href="/docs/price-tips-es">sugerencias de precio</a>.
+En <b>Masters › Competitors</b> le dices a aiku qué webs de la competencia vigilar. aiku lee por su cuenta sus productos y precios, los empareja con tus productos maestros y muestra <b>dónde eres más barato, parecido o más caro</b>, por unidad, en su moneda frente a tu propio precio en ella. Los marketplaces que bloquean las visitas automáticas se <b>revisan a mano</b> una vez al mes. La IA confirma los emparejamientos de los que está segura y te pide <b>revisar el resto</b> con un tick o una cruz. Los precios confirmados también aparecen en las <a href="/docs/price-tips-es">sugerencias de precio</a>.
 </aside>
 
 ## Añadir un competidor
@@ -30,6 +30,19 @@ Para cualquier otra web, rellena uno de los campos de **Where to read prices** (
 - **Search link** (enlace de búsqueda): busca cualquier palabra en su web, copia el enlace de la página de resultados y pon `{query}` donde estaba la palabra. aiku buscará entonces en su web cada semana los productos maestros que tengan una sugerencia de precio abierta. Si el enlace se deja vacío en una web con acceso de cliente, o el introducido lleva a una página sin las palabras buscadas, aiku usa el enlace de búsqueda que la propia web publica, si lo tiene; si no, el competidor muestra **The search link does not search**.
 - **Login page** (página de acceso), **login email** y **password**: solo cuando muestran precios a clientes profesionales con sesión iniciada. La contraseña se guarda cifrada y no se vuelve a mostrar; déjala vacía al editar para conservarla. aiku inicia sesión de nuevo cada vez que busca.
 
+## Marketplaces revisados a mano
+
+Los grandes marketplaces que venden directamente al consumidor bloquean las visitas automáticas con controles de seguridad e inicios de sesión, así que aiku no puede leerlos. Añádelos como competidor que vende a **consumidores**, en la moneda que ves en su web, y activa **Prices checked by hand**. aiku no abre nunca su web: ni catálogo, ni búsqueda, ni dossier.
+
+Una vez al mes, abre su web como comprador en la UE, busca nuestros productos expuestos (empieza por los fabricados en China, donde estos vendedores son más fuertes) y, en la página del competidor, pulsa **Add price check** por cada anuncio que sea el mismo artículo que el nuestro:
+
+- **Our product code**, el código del producto maestro;
+- el **enlace a su anuncio**, para que cualquiera lo abra y vea el precio con sus propios ojos;
+- **su nombre de producto**, el **precio del pack** (IVA incluido, con el envío si lo cobran), las **unidades del pack** y los **días de entrega** que prometen;
+- una **captura de pantalla** de su anuncio con el precio a la vista: elige el archivo o pégala directamente desde el portapapeles con Ctrl+V / Cmd+V. Es la prueba del precio y se conserva aunque el anuncio cambie o desaparezca.
+
+El anuncio pasa a ser un emparejamiento confirmado, así que cuenta en el panel, en la comparación de precios **Confirmed** y en las sugerencias de precio como cualquier otro. Además se guarda cada revisión: la pestaña **Price checks** las lista de la más reciente a la más antigua, con su precio por unidad, el tuyo, la diferencia, el cambio desde la revisión anterior del mismo anuncio, los días de entrega, quién revisó y la captura (púlsala para verla a tamaño completo). Añadir el mismo enlace el mes siguiente añade una fila nueva, así el historial muestra si se están abaratando.
+
 ## Qué muestra el panel
 
 **Masters › Competitors** se abre en el panel:
@@ -46,7 +59,7 @@ Hasta que se añade el primer competidor, el panel explica qué hacer.
 
 ## Revisar emparejamientos
 
-Después de cada lectura, la IA compara cada uno de sus productos con los tuyos. Un emparejamiento del que está segura se **confirma solo** (marcado *auto*); los demás esperan en **Prices to review**. Cada fila muestra tu producto, tu precio por unidad, su producto con un enlace, su precio por unidad en la moneda del grupo y la diferencia: en rojo cuando ellos son más baratos, en verde cuando son más caros.
+Después de cada lectura, la IA compara cada uno de sus productos con los tuyos. Un emparejamiento del que está segura se **confirma solo** (marcado *auto*); los demás esperan en **Prices to review**. Cada fila muestra tu producto, tu precio por unidad, su producto con un enlace, su precio por unidad y la diferencia: en rojo cuando ellos son más baratos, en verde cuando son más caros. Ambos precios van en su moneda, el tuyo tomado de tu precio en esa moneda (un precio de AW class en euros para un competidor en euros); solo cuando no tienes precio en su moneda se convierten los dos a la moneda del grupo.
 
 Pulsa el **tick** cuando el emparejamiento es correcto y la **cruz** cuando no lo es. Los emparejamientos rechazados no vuelven a mostrarse. Los grupos de arriba alternan entre **To review**, **Confirmed**, **Rejected** y **All**; el grupo **Confirmed** sirve también como comparación de precios, ordenable por diferencia.
 
@@ -88,6 +101,7 @@ Un dato sale solo de las páginas leídas: a la IA se le indica que diga *not fo
 <li><b>Revisar emparejamientos:</b> <b>Masters</b> → <b>Competitors</b> → <b>Prices to review</b> → tick o cruz en cada fila.</li>
 <li><b>Comparación de precios:</b> <b>Masters</b> → <b>Competitors</b> → <b>Prices to review</b> → <b>Confirmed</b>.</li>
 <li><b>Un competidor:</b> <b>Masters</b> → <b>Competitors</b> → <b>Competitors</b> → pulsa su nombre.</li>
+<li><b>Añadir un precio revisado a mano:</b> abre el competidor → <b>Add price check</b>; el historial está en la pestaña <b>Price checks</b>.</li>
 </ul>
 </aside>
 

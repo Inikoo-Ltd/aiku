@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\Ordering\PreOrder\HydratePreOrderReservedStock;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
@@ -95,6 +96,7 @@ class CancelOrder extends OrgAction
             $this->cancelTransactions($order, $date);
 
             ReopenPartnerShoppingListItemsOfTransactions::run($order->transactions()->pluck('id')->all());
+            FillToOrder::make()->dismissForCancelledOrder($order);
 
             /** A cancelled pre-order may keep its deposit (HELP-3432): only the rest goes back */
             $refundAmount = round(min((float)$order->payment_amount, (float)Arr::get($modelData, 'refund_amount', $order->payment_amount)), 2);

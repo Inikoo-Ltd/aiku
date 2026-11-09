@@ -7,6 +7,7 @@ use App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSession;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\Trolley;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionGrouped;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
@@ -233,9 +234,27 @@ class ShowPickingSession extends OrgAction
                 'contact_name' => $pickingSession->user->contact_name,
             ] : null,
             'can_work'                    => $canWork,
+            'trolleys'                    => $pickingSession->trolleys()->orderBy('name')->get()->map(fn (Trolley $trolley) => [
+                'id'   => $trolley->id,
+                'slug' => $trolley->slug,
+                'name' => $trolley->name,
+            ])->all(),
+            'can_change_trolleys'         => $canWork && $pickingSession->state != PickingSessionStateEnum::PACKING_FINISHED,
             'routes'                      => [
                 'update'       => !$canWork ? null : [
                     'name'       => 'grp.models.picking_session.update',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id,
+                    ],
+                ],
+                'attach_trolley' => [
+                    'name'       => 'grp.models.picking_session.trolleys.attach',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id,
+                    ],
+                ],
+                'detach_trolley' => [
+                    'name'       => 'grp.models.picking_session.trolleys.detach',
                     'parameters' => [
                         'pickingSession' => $pickingSession->id,
                     ],

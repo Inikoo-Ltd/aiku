@@ -8,9 +8,12 @@
 
 namespace App\Actions\Production\ManufactureTaskSession;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrderItem\UpdateJobOrderItem;
 use App\Actions\Production\JobOrderItemTask\CalculateJobOrderItemTaskQuantities;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
+use App\Actions\Production\RawMaterial\TakeMixRawMaterialsFromStock;
 use App\Enums\Production\Artisan\ArtisanPayTypeEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
@@ -38,6 +41,8 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
      */
     public function handle(ManufactureTaskSession $session, array $modelData): ManufactureTaskSession
     {
+        FillToOrder::make()->refuseAfterRelease($session->jobOrderItemTask?->jobOrderItem);
+
         return DB::transaction(function () use ($session, $modelData) {
             $session = ManufactureTaskSession::lockForUpdate()->find($session->id);
 
@@ -52,6 +57,9 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
 
         if ($session->state != ManufactureTaskSessionStateEnum::CLOSED || $session->isNonProductive()) {
             $this->refuse(__('Only a finished production entry can be corrected'));
+        }
+        if ($session->mix_pool_key) {
+            return $this->correctSharedMix($session, $quantity, $previous, $modelData);
         }
         if ($session->is_combined) {
             $this->refuse(__('A combined batch cannot be corrected, void it and enter it again'));
@@ -143,6 +151,70 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         if ($quantity < $previous) {
             $this->undoLineGrowth($session, $task->refresh());
         }
+
+        return CalculateManufactureTaskSessionPay::run($session);
+    }
+
+    /**
+     * A shared mix corrected (HELP-4562) is shared out again from scratch with its new kg, and its raw materials follow.
+     */
+    private function correctSharedMix(ManufactureTaskSession $session, float $quantity, float $previous, array $modelData): ManufactureTaskSession
+    {
+        if ($reference = ShareMixPool::settledLineOf($session)) {
+            $this->refuse(__('This mix went into :reference, which is already received or closed, it can no longer be corrected', ['reference' => $reference]));
+        }
+        $task = JobOrderItemTask::lockForUpdate()->find($session->job_order_item_task_id);
+        if (($modelData['job_order_item_task_id'] ?? $task->id) != $task->id) {
+            $this->refuse(__('A shared mix cannot be moved to another step, void it and enter it again'));
+        }
+        if ($quantity == $previous) {
+            $this->refuse(__('The entry is already :quantity', ['quantity' => $previous]));
+        }
+        $reason = trim($modelData['reason'] ?? '');
+        if ($quantity > $previous && $reason === '') {
+            $this->refuse(__('Say why the entry goes up'));
+        }
+        $mixBatchKg = $task->mixBatchKg();
+        if ($mixBatchKg && !JobOrderItemTask::isWholeMixBatches($quantity, $mixBatchKg)) {
+            $this->refuse(JobOrderItemTask::wholeMixBatchesMessage($mixBatchKg));
+        }
+
+        $jobOrder              = $task->jobOrder;
+        $data                  = $jobOrder->data ?? [];
+        $data['corrections'][] = [
+            'session_id'    => $session->id,
+            'step'          => $task->stepName(),
+            'artefact_code' => $task->jobOrderItem->artefact->code,
+            'pack_size'     => null,
+            'from'          => $previous,
+            'to'            => $quantity,
+            'reason'        => $reason ?: null,
+            'by'            => $this->correctedBy,
+            'at'            => now()->toIso8601String(),
+        ];
+        $jobOrder->update(['data' => $data]);
+
+        $recipeStep = $task->recipeStep;
+        if ($recipeStep) {
+            TakeMixRawMaterialsFromStock::run($session, $recipeStep, putBack: true);
+        }
+
+        $sharedWith = $session->shares()->with('jobOrderItemTask')->get()->pluck('jobOrderItemTask');
+        $session->shares()->delete();
+        $sharedWith->each(fn (JobOrderItemTask $line) => CalculateJobOrderItemTaskQuantities::run($line));
+
+        $session->quantity_made   = $quantity;
+        $session->is_under_target = CloseManufactureTaskSession::make()->isUnderTarget($session);
+        $session->save();
+
+        if ($recipeStep) {
+            TakeMixRawMaterialsFromStock::run($session, $recipeStep);
+        }
+        $pool = ShareMixPool::make();
+        foreach ($pool->shareOut($session, $task->refresh(), $session->mix_pool_key, $sharedWith) as $share) {
+            CalculateJobOrderItemTaskQuantities::run($share->jobOrderItemTask);
+        }
+        $pool->fill($session->production_id, $session->mix_pool_key);
 
         return CalculateManufactureTaskSessionPay::run($session);
     }

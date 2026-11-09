@@ -267,7 +267,7 @@ trait IsDeliveryNotesIndex
                     "-$dateColumn",
                 ]
             )
-            ->with('trolleys')
+            ->with(['trolleys', 'pickingSessionTrolleys'])
             ->select($selectColumns)
             ->selectRaw(
                 "

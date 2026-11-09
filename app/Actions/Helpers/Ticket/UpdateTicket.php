@@ -43,8 +43,9 @@ class UpdateTicket extends OrgAction
         $reopensOnQaFailure = (bool) Arr::pull($modelData, 'reopen', true);
 
         $asker = auth()->user();
-        if ($question !== '' && $asker instanceof User) {
-            if (Arr::get($modelData, 'status') === TicketStatusEnum::PENDING_DEPLOY->value) {
+        $isHoldingForDeploy = Arr::get($modelData, 'status') === TicketStatusEnum::PENDING_DEPLOY->value;
+        if (($question !== '' || ($isHoldingForDeploy && $images)) && $asker instanceof User) {
+            if ($isHoldingForDeploy) {
                 TicketComment::where('ticket_id', $ticket->id)->where('type', TicketCommentTypeEnum::WAITING_FOR_DEPLOYMENT)->get()->each->delete();
                 TicketComment::create([
                     'ticket_id'   => $ticket->id,

@@ -2,7 +2,7 @@ import { onBeforeUnmount, Ref, watch } from "vue"
 
 const storageKey = (key: string) => `composer-draft:${key}`
 
-const readDraft = (key: string): string => {
+export const readComposerDraft = (key: string): string => {
     try {
         return localStorage.getItem(storageKey(key)) ?? ""
     } catch {
@@ -10,7 +10,7 @@ const readDraft = (key: string): string => {
     }
 }
 
-const writeDraft = (key: string, text: string) => {
+export const writeComposerDraft = (key: string, text: string) => {
     try {
         if (text.trim()) {
             localStorage.setItem(storageKey(key), text)
@@ -24,20 +24,20 @@ const writeDraft = (key: string, text: string) => {
 
 export const useComposerDraft = (key: () => string | null | undefined, text: Ref<string>) => {
     watch(key, (currentKey) => {
-        text.value = currentKey ? readDraft(currentKey) : ""
+        text.value = currentKey ? readComposerDraft(currentKey) : ""
     }, { immediate: true })
 
     watch(text, (value) => {
         const currentKey = key()
         if (currentKey) {
-            writeDraft(currentKey, value ?? "")
+            writeComposerDraft(currentKey, value ?? "")
         }
     })
 
     return () => {
         const currentKey = key()
         if (currentKey) {
-            writeDraft(currentKey, "")
+            writeComposerDraft(currentKey, "")
         }
     }
 }

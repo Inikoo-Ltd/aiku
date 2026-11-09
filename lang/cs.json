@@ -26658,5 +26658,6 @@
     "The supplier can not make it: give it to another supplier of the agent": "Dodavatel to nedokáže vyrobit: dejte to jinému dodavateli agenta",
     "This order had nothing left and was cancelled.": "V této objednávce nic nezbylo a byla zrušena.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "V této objednávce nic nezbylo, ale byla na ni zaplacena záloha: získejte ji zpět před zrušením objednávky.",
-    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agent přesunul :quantity kusů :code k :supplier (:reference), dodavatel je nedokáže vyrobit."
+    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agent přesunul :quantity kusů :code k :supplier (:reference), dodavatel je nedokáže vyrobit.",
+    "Open the chat in :shop": "Otevřít chat v :shop"
 }

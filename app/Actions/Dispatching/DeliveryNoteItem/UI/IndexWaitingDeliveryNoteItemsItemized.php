@@ -32,6 +32,9 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $trolleysInUseCondition = 't.id IN (SELECT dnt.trolley_id FROM delivery_note_has_trolleys dnt WHERE dnt.delivery_note_id = delivery_notes.id)'
+            .' OR t.picking_session_id IN (SELECT pshdn.picking_session_id FROM picking_session_has_delivery_notes pshdn WHERE pshdn.delivery_note_id = delivery_notes.id)';
+
         $oppositeWaitingColumn = $waitingType == 'warehouse' ? 'has_waiting_crm' : 'has_waiting_warehouse';
 
         $query = QueryBuilder::for(DeliveryNoteItem::class);
@@ -57,6 +60,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
         $query->where('delivery_note_items.quantity_required', '>', 0);
 
         $query->orderByRaw('delivery_notes.is_premium_dispatch DESC NULLS LAST');
+        $query->orderByRaw('delivery_note_items.waiting_warehouse_released_at ASC NULLS LAST');
 
         return $query->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select(array_merge(
@@ -64,6 +68,7 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                 $this->getDeliveryNoteItemPickingSelect(),
                 [
                     'delivery_note_items.notes',
+                    'delivery_note_items.waiting_warehouse_released_at',
                     'delivery_notes.id as delivery_note_id',
                     'delivery_notes.slug as delivery_note_slug',
                     'delivery_notes.reference as delivery_note_reference',
@@ -80,8 +85,8 @@ class IndexWaitingDeliveryNoteItemsItemized extends OrgAction
                     'shops.slug as shop_slug',
                 ]
             ))
-            ->selectRaw('(SELECT string_agg(t.name, \', \' ORDER BY t.name) FROM delivery_note_has_trolleys dnt JOIN trolleys t ON t.id = dnt.trolley_id WHERE dnt.delivery_note_id = delivery_notes.id) as trolley_names')
-            ->selectRaw('(SELECT json_agg(json_build_object(\'id\', t.id, \'name\', t.name) ORDER BY t.name) FROM delivery_note_has_trolleys dnt JOIN trolleys t ON t.id = dnt.trolley_id WHERE dnt.delivery_note_id = delivery_notes.id) as trolleys_data')
+            ->selectRaw("(SELECT string_agg(t.name, ', ' ORDER BY t.name) FROM trolleys t WHERE ($trolleysInUseCondition)) as trolley_names")
+            ->selectRaw("(SELECT json_agg(json_build_object('id', t.id, 'name', t.name, 'is_picking_session_trolley', t.picking_session_id IS NOT NULL) ORDER BY t.name) FROM trolleys t WHERE ($trolleysInUseCondition)) as trolleys_data")
             ->selectRaw('(SELECT string_agg(pb.code, \', \' ORDER BY pb.code) FROM picked_bay_has_delivery_notes pbdn JOIN picked_bays pb ON pb.id = pbdn.picked_bay_id WHERE pbdn.delivery_note_id = delivery_notes.id) as picked_bay_codes')
             ->selectRaw("(SELECT count(*) FROM delivery_note_items dni_opp WHERE dni_opp.delivery_note_id = delivery_notes.id AND dni_opp.$oppositeWaitingColumn = true) as opposite_waiting_count")
             ->allowedSorts(['org_stock_name', 'org_stock_code', 'picking_position'])

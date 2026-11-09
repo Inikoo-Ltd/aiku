@@ -1461,6 +1461,7 @@ test('a carried job takes the mix its order already made, and extra made on one 
         ->and((float) $sibling->tasks()->orderBy('position')->get()->last()->quantity_required)->toBe(6.0)
         ->and(JobOrderItem::whereIn('id', $item->orderItems()->pluck('id'))->sum('quantity'))->toEqual(20);
 
+    $this->artefact->manufactureTasks()->updateExistingPivot($mixing->id, ['label' => 'Second mix']);
     $jobOrder = StoreJobOrder::make()->action($this->production, []);
     $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10]);
     ConfirmJobOrder::make()->action($jobOrder);

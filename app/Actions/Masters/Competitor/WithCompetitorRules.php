@@ -28,6 +28,7 @@ trait WithCompetitorRules
             'login_url'   => ['sometimes', 'nullable', 'url:http,https', 'max:2000'],
             'username'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'password'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'prices_by_hand' => ['sometimes', 'boolean'],
         ];
     }
 

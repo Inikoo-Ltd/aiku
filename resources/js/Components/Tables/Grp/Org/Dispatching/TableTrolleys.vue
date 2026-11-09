@@ -50,6 +50,21 @@ const deliveryNoteRoute = (trolley: {}) => {
     }
 }
 
+const pickingSessionRoute = (trolley: {}) => {
+    switch (route().current()) {
+        case 'grp.org.warehouses.show.dispatching.trolleys.show':
+        case 'grp.org.warehouses.show.dispatching.trolleys.index':
+            return route(
+                'grp.org.warehouses.show.dispatching.picking_sessions.show',
+                {
+                    organisation: route().params['organisation'],
+                    warehouse: route().params['warehouse'],
+                    pickingSession: trolley.current_picking_session.slug
+                })
+        default:
+            return '#'
+    }
+}
 
 const deleteTrolley = (trolley: any) => {
 	router.delete(route('grp.models.trolleys.delete', {
@@ -99,6 +114,9 @@ const deleteTrolley = (trolley: any) => {
                         {{ trolley['current_delivery_note']['number_items'] > 1 ? ctrans('items') : ctrans('item') }})
                 </span>
             </Link>
+            <Link v-else-if="trolley['current_picking_session']" :href="pickingSessionRoute(trolley)" class="primaryLink w-fit">
+                {{ ctrans('Picking session') }} {{ trolley['current_picking_session']['reference'] }}
+            </Link>
             <span v-else class="italic text-xs opacity-60">
                 {{ ctrans('No current delivery note') }}
             </span>
@@ -106,7 +124,7 @@ const deleteTrolley = (trolley: any) => {
 
 		<template #cell(actions)="{item: trolley}">
 			<Button
-				v-if="!trolley.current_delivery_note?.id"
+				v-if="!trolley.current_delivery_note?.id && !trolley.current_picking_session?.id"
 				v-tooltip="ctrans('Delete trolley')"
 				@click="deleteTrolley(trolley)"
 				:type="'negative'"

@@ -33,27 +33,37 @@ const TRAILING_PUNCTUATION = /[.,;:!?'")\]*_~]+$/
  * never opens a tag, and puts them back as anchors at the end. Trailing punctuation stays
  * outside the link, except a closing bracket the URL itself opened, as Wikipedia's do.
  */
-const extractLinks = (value: string): [string, string[]] => {
-    const links: string[] = []
+const LABELLED_LINK = /\[([^[\]\n]+)\]\((https?:\/\/[^\s()<>"]+)\)/gi
+
+type ExtractedLink = { url: string, label: string }
+
+const extractLinks = (value: string, labelledLinks: boolean): [string, ExtractedLink[]] => {
+    const links: ExtractedLink[] = []
     value = value.replace(/\u0000/g, "")
+    if (labelledLinks) {
+        value = value.replace(LABELLED_LINK, (_, label: string, url: string) => {
+            links.push({ url, label })
+            return `\u0000${links.length - 1}\u0000`
+        })
+    }
 
     const text = value.replace(URL_PATTERN, (match) => {
         let url = match.replace(TRAILING_PUNCTUATION, "")
         while (match.length > url.length && match[url.length] === ")" && url.split("(").length > url.split(")").length) {
             url += ")"
         }
-        links.push(url)
+        links.push({ url, label: url })
         return `\u0000${links.length - 1}\u0000${match.slice(url.length)}`
     })
 
     return [text, links]
 }
 
-const restoreLinks = (html: string, links: string[]) =>
+const restoreLinks = (html: string, links: ExtractedLink[]) =>
     html.replace(/\u0000(\d+)\u0000/g, (_, index) => {
-        const url = links[Number(index)]
+        const { url, label } = links[Number(index)]
         const href = /^www\./i.test(url) ? `https://${url}` : url
-        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer nofollow" class="underline break-all">${escapeHtml(url)}</a>`
+        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer nofollow" class="underline break-all">${escapeHtml(label)}</a>`
     })
 
 /**
@@ -62,12 +72,12 @@ const restoreLinks = (html: string, links: string[]) =>
  * has none, so it is only offered on website and email conversations. The email a customer
  * receives is rendered by SendChatMessageByGmail::markupToHtml, which must stay in step.
  */
-export const formatWhatsappMarkup = (value?: string | null): string => {
+export const formatWhatsappMarkup = (value?: string | null, labelledLinks = false): string => {
     if (!value) {
         return ""
     }
 
-    const [withoutLinks, links] = extractLinks(stripPictureTokens(value))
+    const [withoutLinks, links] = extractLinks(stripPictureTokens(value), labelledLinks)
     let text = escapeHtml(withoutLinks)
 
     text = text.replace(
@@ -118,7 +128,7 @@ export const markupToEditorHtml = (value?: string | null, pictureSource?: (pictu
         }
 
         if (!kind) {
-            html += `<p>${formatWhatsappMarkup(line)}</p>`
+            html += `<p>${formatWhatsappMarkup(line, true)}</p>`
             index++
             continue
         }
@@ -126,7 +136,7 @@ export const markupToEditorHtml = (value?: string | null, pictureSource?: (pictu
         const start = kind === "ol" ? parseInt(line, 10) : 1
         html += start === 1 ? `<${kind}>` : `<${kind} start="${start}">`
         while (index < lines.length && (kind === "ul" ? lines[index].startsWith("• ") : /^\d+\. /.test(lines[index]))) {
-            html += `<li><p>${formatWhatsappMarkup(lines[index].replace(LIST_LINE, ""))}</p></li>`
+            html += `<li><p>${formatWhatsappMarkup(lines[index].replace(LIST_LINE, ""), true)}</p></li>`
             index++
         }
         html += `</${kind}>`
@@ -138,7 +148,7 @@ export const markupToEditorHtml = (value?: string | null, pictureSource?: (pictu
 type EditorNode = {
     type: string
     text?: string
-    marks?: { type: string }[]
+    marks?: { type: string, attrs?: Record<string, any> }[]
     attrs?: Record<string, any>
     content?: EditorNode[]
 }
@@ -150,6 +160,17 @@ const MARKERS: [string, string][] = [
     ["strike", "~"],
     ["code", "```"],
 ]
+
+const linkHref = (node: EditorNode): string | null => {
+    const href = node.marks?.find((mark) => mark.type === "link")?.attrs?.href
+    const encoded = typeof href === "string" ? href.replace(/\(/g, "%28").replace(/\)/g, "%29") : ""
+    return /^https?:\/\/[^\s<>"]+$/i.test(encoded) ? encoded : null
+}
+
+const markersOf = (node: EditorNode): string[] => {
+    const names = (node.marks ?? []).map((mark) => mark.type)
+    return MARKERS.filter(([name]) => names.includes(name)).map(([, marker]) => marker)
+}
 
 const inlineToMarkup = (nodes: EditorNode[] = []): string => {
     let output = ""
@@ -165,7 +186,27 @@ const inlineToMarkup = (nodes: EditorNode[] = []): string => {
         return shared
     }
 
-    for (const node of nodes) {
+    for (let index = 0; index < nodes.length; index++) {
+        const node = nodes[index]
+        const href = linkHref(node)
+
+        if (href) {
+            let label = node.text ?? ""
+            while (index + 1 < nodes.length && linkHref(nodes[index + 1]) === href) {
+                label += nodes[++index].text ?? ""
+            }
+            const [, lead, core, trail] = label.replace(/[[\]\n]/g, "").match(/^(\s*)([\s\S]*?)(\s*)$/) ?? ["", "", label, ""]
+            const wanted = markersOf(node)
+            const shared = moveTo(wanted)
+            output += lead
+            wanted.slice(shared).forEach((marker) => (output += marker))
+            const isBareUrl = core === href || (/^www\./i.test(core) && `https://${core}` === href)
+            output += !core ? href : isBareUrl ? core : `[${core}](${href})`
+            open = wanted
+            pendingSpace = trail
+            continue
+        }
+
         if (node.type === "hardBreak") {
             moveTo([])
             open = []
@@ -181,8 +222,7 @@ const inlineToMarkup = (nodes: EditorNode[] = []): string => {
             continue
         }
 
-        const names = (node.marks ?? []).map((mark) => mark.type)
-        const wanted = MARKERS.filter(([name]) => names.includes(name)).map(([, marker]) => marker)
+        const wanted = markersOf(node)
         const shared = moveTo(wanted)
 
         output += lead

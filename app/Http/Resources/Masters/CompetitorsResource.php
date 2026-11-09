@@ -31,7 +31,7 @@ class CompetitorsResource extends JsonResource
             'currency_code'     => $this->currency_code,
             'has_login'         => (bool) $this->has_login,
             'has_search'        => (bool) $this->has_search,
-            'read_method'       => static::readMethod($this->feed_url, (bool) $this->has_search),
+            'read_method'       => static::readMethod($this->feed_url, (bool) $this->has_search, (bool) $this->prices_by_hand),
             'status'            => $this->status?->value,
             'last_error'        => $this->last_error,
             'fetched_at'        => $this->fetched_at,
@@ -41,9 +41,10 @@ class CompetitorsResource extends JsonResource
         ];
     }
 
-    public static function readMethod(?string $feedUrl, bool $hasSearch): string
+    public static function readMethod(?string $feedUrl, bool $hasSearch, bool $byHand = false): string
     {
         return match (true) {
+            $byHand                                                       => 'hand',
             $feedUrl && ImportCompetitorFeed::isShopifyFeed($feedUrl)     => 'shopify',
             $feedUrl && ImportCompetitorFeed::isWooCommerceFeed($feedUrl) => 'woocommerce',
             (bool) $feedUrl                                               => 'feed',

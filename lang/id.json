@@ -23357,5 +23357,6 @@
     "The supplier can not make it: give it to another supplier of the agent": "Supplier tidak bisa membuatnya: berikan ke supplier lain dari agen",
     "This order had nothing left and was cancelled.": "Pesanan ini sudah tidak berisi apa pun dan dibatalkan.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Pesanan ini sudah tidak berisi apa pun tetapi sudah dibayar deposit: tarik kembali sebelum membatalkan pesanan.",
-    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agen memindahkan :quantity unit :code ke :supplier (:reference), supplier tidak bisa membuatnya."
+    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agen memindahkan :quantity unit :code ke :supplier (:reference), supplier tidak bisa membuatnya.",
+    "Open the chat in :shop": "Buka chat di :shop"
 }

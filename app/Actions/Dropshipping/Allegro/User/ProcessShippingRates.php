@@ -14,6 +14,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\AllegroUser;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -26,6 +27,8 @@ class ProcessShippingRates extends RetinaAction
     use WithActionUpdate;
     use WithAllegroDispatchLocation;
     use WithAllegroShippingRates;
+
+    private const int MAX_DELIVERY_METHOD_ATTEMPTS = 5;
 
     /**
      * Creates our shipping price list on the seller's account.
@@ -54,45 +57,22 @@ class ProcessShippingRates extends RetinaAction
 
         try {
             $deliveryMethods = Arr::get($allegroUser->getDeliveryMethods(), 'deliveryMethods', []);
-            $deliveryMethod = $this->pickAllegroDeliveryMethod($deliveryMethods, $marketplaceId, $destinationCountry, $dispatchCountry);
+            $candidates = $this->allegroDeliveryMethodCandidates($deliveryMethods, $marketplaceId, $destinationCountry, $dispatchCountry);
 
-            if (!$deliveryMethod) {
+            if ($candidates->isEmpty()) {
                 return ['message' => "Allegro has no delivery method from $dispatchCountry to $destinationCountry on $marketplaceId."];
             }
 
-            $maxWeightData = [];
-            if (Arr::get($deliveryMethod, 'shippingRatesConstraints.maxPackageWeight.supported')) {
-                $maxWeightData = [
-                    'maxPackageWeight' => [
-                        'value' => 30,
-                        'unit' => 'KILOGRAM'
-                    ],
-                ];
+            $result = [];
+            foreach ($candidates->take(self::MAX_DELIVERY_METHOD_ATTEMPTS) as $deliveryMethod) {
+                $result = $allegroUser->createShippingRates($this->allegroShippingRatesPayload($allegroUser, $deliveryMethod, $destinationCountry, $dispatchCountry, $amount));
+
+                if (Arr::get($result, 'id')) {
+                    return $result;
+                }
             }
 
-            return $allegroUser->createShippingRates([
-                'name' => $this->allegroShippingRatesName($allegroUser, $destinationCountry),
-                'type' => 'PHYSICAL',
-                'dispatchCountry' => $dispatchCountry,
-                'rates' => [
-                    [
-                        'deliveryMethod' => [
-                            'id' => Arr::get($deliveryMethod, 'id'),
-                        ],
-                        'maxQuantityPerPackage' => 30,
-                        ...$maxWeightData,
-                        'firstItemRate' => [
-                            'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.firstItemRate.currency'),
-                            'amount' => $amount
-                        ],
-                        'nextItemRate' => [
-                            'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.nextItemRate.currency')
-                                ?? Arr::get($deliveryMethod, 'shippingRatesConstraints.firstItemRate.currency'),
-                            'amount' => '0'
-                        ],
-                    ]
-                ]
-            ]);
+            return $result;
         } catch (\Exception $e) {
             Sentry::captureException($e);
 
@@ -101,10 +81,55 @@ class ProcessShippingRates extends RetinaAction
     }
 
     /**
-     * A prepaid method Allegro lets us put on a price list, to the marketplace's country,
-     * from our dispatch country when Allegro has one, else from anywhere.
+     * @return array<string, mixed>
      */
-    public function pickAllegroDeliveryMethod(array $deliveryMethods, string $marketplaceId, string $destinationCountry, string $dispatchCountry): ?array
+    private function allegroShippingRatesPayload(AllegroUser $allegroUser, array $deliveryMethod, string $destinationCountry, string $dispatchCountry, string $amount): array
+    {
+        $maxWeightData = [];
+        if (Arr::get($deliveryMethod, 'shippingRatesConstraints.maxPackageWeight.supported')) {
+            $maxWeightData = [
+                'maxPackageWeight' => [
+                    'value' => 30,
+                    'unit' => 'KILOGRAM'
+                ],
+            ];
+        }
+
+        return [
+            'name' => $this->allegroShippingRatesName($allegroUser, $destinationCountry),
+            'type' => 'PHYSICAL',
+            'dispatchCountry' => $dispatchCountry,
+            'rates' => [
+                [
+                    'deliveryMethod' => [
+                        'id' => Arr::get($deliveryMethod, 'id'),
+                    ],
+                    'maxQuantityPerPackage' => 30,
+                    ...$maxWeightData,
+                    'firstItemRate' => [
+                        'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.firstItemRate.currency'),
+                        'amount' => $amount
+                    ],
+                    'nextItemRate' => [
+                        'currency' => Arr::get($deliveryMethod, 'shippingRatesConstraints.nextItemRate.currency')
+                            ?? Arr::get($deliveryMethod, 'shippingRatesConstraints.firstItemRate.currency'),
+                        'amount' => '0'
+                    ],
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Prepaid methods Allegro lets us put on a price list, to the marketplace's country:
+     * from our dispatch country first, then from anywhere.
+     *
+     * Allegro does not say which methods it keeps for company accounts (DPD Courier Poland
+     * is one), so a private seller is refused the first pick and we try the next one.
+     *
+     * @return Collection<int, array>
+     */
+    public function allegroDeliveryMethodCandidates(array $deliveryMethods, string $marketplaceId, string $destinationCountry, string $dispatchCountry): Collection
     {
         $usable = collect($deliveryMethods)->filter(
             fn (array $method) => Arr::get($method, 'shippingRatesConstraints.allowed', true)
@@ -113,7 +138,8 @@ class ProcessShippingRates extends RetinaAction
                 && in_array($marketplaceId, Arr::get($method, 'marketplaces', [$marketplaceId]))
         );
 
-        return $usable->firstWhere('dispatchCountry', $dispatchCountry)
-            ?? $usable->first(fn (array $method) => Arr::get($method, 'dispatchCountry') === null);
+        return $usable->where('dispatchCountry', $dispatchCountry)
+            ->merge($usable->filter(fn (array $method) => Arr::get($method, 'dispatchCountry') === null))
+            ->values();
     }
 }

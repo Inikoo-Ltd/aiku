@@ -10,6 +10,7 @@ const props = defineProps<{
         event_type?: string | null
         description?: string
         note?: string | null
+        note_links?: { ulid: string, shop: string | null, url: string }[]
         payload?: Record<string, any> | null
         created_at?: string
     }
@@ -43,6 +44,17 @@ const isPhoneCall = computed(() => props.event.event_type === "phone_call")
 const isInternalNote = computed(() => props.event.event_type === "internal_note")
 
 const payload = computed(() => props.event.payload ?? {})
+
+const noteParts = computed(() => {
+    const links = props.event.note_links ?? []
+    const text = props.event.note ?? ""
+
+    if (!links.length) return [{ text }]
+
+    const pattern = new RegExp(`(${links.map((link) => link.ulid).join("|")})`)
+
+    return text.split(pattern).map((part) => ({ text: part, link: links.find((link) => link.ulid === part) }))
+})
 
 const duration = computed(() => {
     const seconds = Number(payload.value.duration_seconds ?? 0)
@@ -106,7 +118,7 @@ const stamp = computed(() => {
                 <img src="/art/invader.svg" alt="aiku" class="h-4 select-none" />
                 <span>{{ headline }}</span>
             </div>
-            <div class="whitespace-pre-line text-xs leading-relaxed text-pink-950">{{ event.note }}</div>
+            <div class="whitespace-pre-line text-xs leading-relaxed text-pink-950"><template v-for="(part, index) in noteParts" :key="index"><a v-if="part.link" :href="part.link.url" target="_blank" rel="noopener" class="font-semibold text-gray-700 underline hover:text-gray-900">{{ ctrans("Open the chat in :shop", { shop: part.link.shop ?? "" }) }}</a><template v-else>{{ part.text }}</template></template></div>
             <div class="mt-1 text-right text-[10px] text-pink-400">{{ stamp }}</div>
         </div>
     </div>

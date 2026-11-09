@@ -45,6 +45,7 @@ class SendBackWaitingWarehouse extends OrgAction
             'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
             'quantity_waiting_warehouse' => $newQuantityWaitingWarehouse,
             'quantity_waiting_crm'       => 0,
+            'waiting_warehouse_released_at' => now(),
         ];
 
         if (Arr::has($modelData, 'note')) {

@@ -20,6 +20,7 @@ use App\Models\Helpers\Brand;
 use App\Models\Helpers\Tag;
 use App\Models\HumanResources\Employee;
 use App\Models\Masters\Competitor;
+use App\Models\Masters\CompetitorPriceCheck;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SupplyChain\Agent;
@@ -42,11 +43,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile|Competitor $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile|Competitor|CompetitorPriceCheck $model,
         array $imageData,
         string $scope = 'image',
         string $foreignKeyMedia = 'image_id'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile|Competitor {
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|MasterCollection|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand|AnnouncementTemplate|Packaging|UnidentifiedReturn|SupplierPortalProfile|Competitor|CompetitorPriceCheck {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);
@@ -69,7 +70,8 @@ class SaveModelImage
             $model instanceof WebUser,
             $model instanceof Employee,
             $model instanceof Guest => 'avatar',
-            $model instanceof Competitor => 'competitor',
+            $model instanceof Competitor,
+            $model instanceof CompetitorPriceCheck => 'competitor',
             default => 'image',
         };
 

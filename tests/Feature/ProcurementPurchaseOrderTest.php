@@ -3648,8 +3648,10 @@ test('a money request takes off what the agent already paid the supplier, a tran
     actingAs($clientUser);
 
     $this->patch(route('grp.models.org_agent.agent_fee.update', $orgAgent->id), ['agent_fee_percentage' => 0])->assertForbidden();
-    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance - $paid + 1])->assertSessionHasErrors('amount');
-    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance - $paid])->assertSessionHasNoErrors();
+    $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertSessionHasNoErrors();
+    $receipt = fn () => \Illuminate\Http\UploadedFile::fake()->create('statement.pdf', 10, 'application/pdf');
+    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance - $paid + 1, 'receipt' => $receipt()])->assertSessionHasErrors('amount');
+    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance - $paid, 'receipt' => $receipt()])->assertSessionHasNoErrors();
 
     $transfer = \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $depositRequest->id)->firstOrFail();
     expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
@@ -3660,16 +3662,8 @@ test('a money request takes off what the agent already paid the supplier, a tran
     $this->delete(route('grp.models.agent_payment.delete', $transfer->id))->assertForbidden();
 
     actingAs($clientUser);
-    $this->delete(route('grp.models.agent_payment.delete', $transfer->id))->assertSessionHasNoErrors();
-    expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::REQUESTED)
-        ->and($depositRequest->settled_at)->toBeNull()
-        ->and($depositRequest->items()->whereNotNull('paid_at')->exists())->toBeFalse();
-
-    actingAs($agentUser);
-    $this->patch(route('grp.models.deposit_request.cancel', $depositRequest->id))->assertSessionHasNoErrors();
-    expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::CANCELLED)
-        ->and(abs($advanceDue() - ($advance - $paid)))->toBeLessThan(0.001);
-    actingAs($clientUser);
+    $this->delete(route('grp.models.agent_payment.delete', $transfer->id))->assertForbidden();
+    expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED);
 
     $walletLine = \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'type' => 'transfer_received', 'date' => date('Y-m-d'), 'amount' => 1, 'receipt' => \Illuminate\Http\UploadedFile::fake()->create('receipt.pdf', 10, 'application/pdf')]);
     $receipt    = \App\Models\Helpers\Media::findOrFail($walletLine->media_id);

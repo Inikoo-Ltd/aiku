@@ -10,6 +10,7 @@ const props = defineProps<{
     trolleys: {
         id: number
         name: string
+        is_picking_session_trolley?: boolean
     }[]
     deliveryNote: {
         id: number
@@ -31,11 +32,17 @@ const props = defineProps<{
                 {{ ctrans("Trolleys") }}:
             </dt>
             <dd class="flex flex-wrap gap-y-0.5 gap-x-2 text-gray-500 align-middle">
-                <div v-for="trolley in trolleys" class="bg-pink-400/30 rounded-sm pl-1 text-pink-800 flex items-center">
+                <div
+                    v-for="trolley in trolleys"
+                    :key="trolley.id"
+                    v-tooltip="trolley.is_picking_session_trolley ? ctrans('Trolley of the picking session') : undefined"
+                    class="bg-pink-400/30 rounded-sm px-1 text-pink-800 flex items-center"
+                >
                     {{ trolley.name }}
 
                     <!-- Section: detach Trolley -->
                     <ModalConfirmationDelete
+                        v-if="!trolley.is_picking_session_trolley"
                         :title="ctrans('Are you sure you want to unselect Trolley :trolleyName ?', { trolleyName: trolley.name})"
                         :description="ctrans('The trolley will unselected from this Delivery. You can add it again if you want.')"
                         :noLabel="ctrans('Yes, unselect')"

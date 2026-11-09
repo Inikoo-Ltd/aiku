@@ -34,6 +34,7 @@ use Illuminate\Support\Arr;
  * @property mixed $effective_weight
  * @property mixed $picking_sessions_count
  * @property mixed $picking_session_ids
+ * @method array trolleysInUseForDisplay()
  * @property mixed $waiting_warehouse_count
  * @property mixed $waiting_crm_count
  * @property mixed $is_premium_dispatch
@@ -135,11 +136,7 @@ class DeliveryNotesResource extends JsonResource
             'public_notes'                => $this->public_notes,
             'shipping_notes'              => $this->shipping_notes,
             'shipping_data'               => $this->shipping_data,
-            'trolleys'                    => $this->trolleys->map(fn ($trolley) => [
-                'id'   => $trolley->id,
-                'slug' => $trolley->slug,
-                'name' => $trolley->name,
-            ])->values()->toArray() ?: null,
+            'trolleys'                    => $this->trolleysInUseForDisplay() ?: null,
             'picked_bays'                => Arr::get($this->data, 'picked_bays'),
             'picker'                      => Arr::get($this->data, 'picker'),
             'packer'                      => Arr::get($this->data, 'packer'),

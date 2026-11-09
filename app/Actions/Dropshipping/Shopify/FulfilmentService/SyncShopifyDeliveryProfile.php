@@ -154,7 +154,7 @@ class SyncShopifyDeliveryProfile
                 $changes['zonesToDelete']          = $profile['zoneIds'];
                 $changes['locationGroupsToUpdate'] = [[
                     'id'            => $profile['locationGroupId'],
-                    'zonesToCreate' => $zones,
+                    'zonesToCreate' => self::keepZonesTurnedOff($zones, $profile['turnedOffZoneNames']),
                 ]];
             }
 
@@ -492,6 +492,45 @@ class SyncShopifyDeliveryProfile
         return $methods;
     }
 
+    /**
+     * Replacing the rates deletes the zones and creates them again, so a zone whose rates the merchant turned
+     * off in Shopify would come back on after every change of our rates or of the exchange rate (PRE-82).
+     * ponytail: kept per zone, all rates off; a single band turned off comes back on, since Shopify gives the
+     * methods in no order we can match to our bands.
+     *
+     * @param  list<array<string, mixed>>  $locationGroupZones
+     * @return list<string>
+     */
+    public static function turnedOffZoneNames(array $locationGroupZones): array
+    {
+        return collect($locationGroupZones)
+            ->filter(function (array $locationGroupZone) {
+                $methods = Arr::get($locationGroupZone, 'methodDefinitions.nodes', []);
+
+                return $methods !== [] && !in_array(true, Arr::pluck($methods, 'active'), true);
+            })
+            ->pluck('zone.name')
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $zones
+     * @param  list<string>  $turnedOffZoneNames
+     * @return list<array<string, mixed>>
+     */
+    public static function keepZonesTurnedOff(array $zones, array $turnedOffZoneNames): array
+    {
+        return array_map(function (array $zone) use ($turnedOffZoneNames) {
+            if (in_array($zone['name'], $turnedOffZoneNames, true)) {
+                $zone['methodDefinitionsToCreate'] = array_map(fn (array $method) => [...$method, 'active' => false], $zone['methodDefinitionsToCreate']);
+            }
+
+            return $zone;
+        }, $zones);
+    }
+
     private static function highestPrice(array $priceData): ?float
     {
         $prices = array_filter(Arr::pluck(Arr::get($priceData, 'steps', []), 'price'), 'is_numeric');
@@ -500,7 +539,7 @@ class SyncShopifyDeliveryProfile
     }
 
     /**
-     * @return array{0: bool, 1: array{id: string, name: string|null, locationGroupId: string, zoneIds: list<string>, variantIds: list<string>}|null|string}
+     * @return array{0: bool, 1: array{id: string, name: string|null, locationGroupId: string, zoneIds: list<string>, turnedOffZoneNames: list<string>, variantIds: list<string>}|null|string}
      *         null when the merchant deleted the profile
      */
     /**
@@ -537,6 +576,12 @@ class SyncShopifyDeliveryProfile
                             nodes {
                                 zone {
                                     id
+                                    name
+                                }
+                                methodDefinitions(first: 50) {
+                                    nodes {
+                                        active
+                                    }
                                 }
                             }
                         }
@@ -576,6 +621,7 @@ class SyncShopifyDeliveryProfile
                 'name'            => $node['name'] ?? null,
                 'locationGroupId' => Arr::get($node, 'profileLocationGroups.0.locationGroup.id'),
                 'zoneIds'         => Arr::pluck(Arr::get($node, 'profileLocationGroups.0.locationGroupZones.nodes', []), 'zone.id'),
+                'turnedOffZoneNames' => self::turnedOffZoneNames(Arr::get($node, 'profileLocationGroups.0.locationGroupZones.nodes', [])),
                 'variantIds'      => [],
             ];
 

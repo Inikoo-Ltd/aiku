@@ -165,3 +165,20 @@ it('addresses the label to the company before the contact', function (array $par
     'contact only'          => [['to_company_name' => '', 'to_contact_name' => 'Anja.Lange'], 'Anja.Lange'],
     'neither'               => [['to_company_name' => null, 'to_contact_name' => ''], 'anonymous'],
 ]);
+
+it('writes the letters GLS Spain drops from street and city the German way', function (?string $value, string $expected) {
+    expect((new CallApiGlsEsShipping())->spellForGlsEs($value))->toBe($expected);
+})->with([
+    'ü in street'            => ['Hülläcker, 1', 'Huelläcker, 1'],
+    'ß and ü'                => ['Mühlenstraße 33 ', 'Muehlenstrasse 33'],
+    'capital Ü'              => ['Überweg 2', 'Ueberweg 2'],
+    'city'                   => ['Gießen', 'Giessen'],
+    'letters GLS prints'     => ['Ölweg Göthe Äpfel ñé Ç ø', 'Ölweg Göthe Äpfel ñé Ç ø'],
+    'slovak'                 => ['Štúrova 12, Žilina', 'Stúrova 12, Zilina'],
+    'czech and polish'       => ['Řečkovice, Łódź Świętokrzyska', 'Reckovice, Lódz Swietokrzyska'],
+    'hungarian and turkish'  => ['Kőszeg Űrhajós, Ağrı Şişli', 'Koszeg Urhajós, Agri Sisli'],
+    'Ã, À, û and quotes'     => ["São Tomé, Àvila, Bûche, O’Brien", "Sao Tomé, Avila, Buche, O'Brien"],
+    'spanish floor signs'    => ['C/ Mayor 3º 2ª, Piso 2°', 'C/ Mayor 3º 2ª, Piso 2º'],
+    'decomposed ü'           => ["Mu\u{0308}hle", 'Muehle'],
+    'missing'                => [null, ''],
+]);

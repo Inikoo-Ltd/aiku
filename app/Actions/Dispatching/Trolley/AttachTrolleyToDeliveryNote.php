@@ -17,6 +17,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Trolley;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
 use App\Actions\Audits\DispatchSimpleAudit;
 
 class AttachTrolleyToDeliveryNote extends OrgAction
@@ -61,6 +62,16 @@ class AttachTrolleyToDeliveryNote extends OrgAction
     public function asController(DeliveryNote $deliveryNote, Trolley $trolley, ActionRequest $request): void
     {
         $this->initialisationFromWarehouse($deliveryNote->warehouse, $request);
+
+        if ($trolley->picking_session_id) {
+            throw ValidationException::withMessages([
+                'trolley' => __('Trolley :trolley is already used by picking session :session.', [
+                    'trolley' => $trolley->name,
+                    'session' => $trolley->pickingSession?->reference,
+                ]),
+            ]);
+        }
+
         $this->handle($trolley, $deliveryNote);
     }
 

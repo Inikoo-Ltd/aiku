@@ -47,8 +47,15 @@ class SettleShortJobOrderItemTask
             }
 
             $item->update(['quantity' => $madeArtefacts]);
+            $isCarried = $carryOver && $remainingArtefacts > 0;
             foreach ($item->tasks as $task) {
-                $task->setRequiredQuantity(min((float) $task->quantity_required, $task->requiredFor($madeArtefacts)));
+                $required = min((float) $task->quantity_required, $task->requiredFor($madeArtefacts));
+                if ($isCarried && ShareMixPool::poolKey($task)) {
+                    $task->update(['quantity_required' => $required]);
+                    CalculateJobOrderItemTaskQuantities::run($task);
+                } else {
+                    $task->setRequiredQuantity($required);
+                }
             }
 
             if (!$carryOver || $remainingArtefacts <= 0) {
@@ -67,6 +74,7 @@ class SettleShortJobOrderItemTask
             $carriedItem = StoreJobOrderItem::make()->action($carried, [
                 'artefact_id' => $item->artefact_id,
                 'quantity'    => $remainingArtefacts,
+                'data'        => Arr::only($item->data ?? [], ['fill']),
             ]);
             $item->update(['data' => array_merge($item->data ?? [], ['carried_to' => $carried->id])]);
             foreach ($carriedItem->tasks as $carriedTask) {

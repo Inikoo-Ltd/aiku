@@ -10,6 +10,7 @@ namespace Tests\Unit;
 
 use App\Actions\Dropshipping\Allegro\Product\ProposeAllegroProduct;
 use App\Actions\Dropshipping\Allegro\Product\StoreProductToAllegro;
+use App\Actions\Dropshipping\Allegro\User\ProcessShippingRates;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Dropshipping\AllegroUser;
@@ -181,4 +182,39 @@ test('a portfolio already live on Allegro is not uploaded again, so no duplicate
     $portfolio->setRelation('customerSalesChannel', $customerSalesChannel);
 
     expect(StoreProductToAllegro::run($portfolio))->toBe($portfolio);
+});
+
+test('a private Allegro seller refused a company-only delivery method gets our price list on the next usable method', function () {
+    $prepaidToPoland = fn (string $id, ?string $dispatchCountry) => [
+        'id'                       => $id,
+        'paymentPolicy'            => 'IN_ADVANCE',
+        'destinationCountry'       => 'PL',
+        'dispatchCountry'          => $dispatchCountry,
+        'marketplaces'             => ['allegro-pl'],
+        'shippingRatesConstraints' => ['allowed' => true, 'firstItemRate' => ['currency' => 'PLN']],
+    ];
+
+    $allegroUser = Mockery::mock(AllegroUser::class)->makePartial();
+    $allegroUser->setRelation('customerSalesChannel', (new CustomerSalesChannel())->forceFill(['slug' => 'cdeu-004423-allegro']));
+    $allegroUser->shouldReceive('getDeliveryMethods')->andReturn(['deliveryMethods' => [
+        ['paymentPolicy' => 'CASH_ON_DELIVERY'] + $prepaidToPoland('cash-on-delivery', 'SK'),
+        $prepaidToPoland('inpost', null),
+        $prepaidToPoland('dpd-company-only', 'SK'),
+        $prepaidToPoland('poczta-polska', 'SK'),
+    ]]);
+
+    $triedMethods = [];
+    $allegroUser->shouldReceive('createShippingRates')->andReturnUsing(function (array $data) use (&$triedMethods) {
+        $methodId      = $data['rates'][0]['deliveryMethod']['id'];
+        $triedMethods[] = $methodId;
+
+        return $methodId === 'dpd-company-only'
+            ? ['message' => 'Allegro DPD Courier Poland delivery option is available only for companies.']
+            : ['id' => 'rates-1'];
+    });
+
+    $result = ProcessShippingRates::make()->handle($allegroUser, 'allegro-pl');
+
+    expect($result)->toBe(['id' => 'rates-1'])
+        ->and($triedMethods)->toBe(['dpd-company-only', 'poczta-polska']);
 });

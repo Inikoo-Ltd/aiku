@@ -47,6 +47,18 @@ interface Cancellation {
     units_returned: number
 }
 
+interface LineReturn {
+    artefact_code: string
+    kind: string
+    kind_label: string | null
+    reason: string | null
+    units_kept: number
+    units_returned: number
+    lines_returned: number
+    by: string | null
+    at: string
+}
+
 interface ItemTask {
     id: number
     position: number
@@ -123,12 +135,14 @@ const props = defineProps<{
         hold: Hold | null
         holds: Hold[]
         cancellation: Cancellation | null
+        line_returns: LineReturn[]
     }
     can_see_pay: boolean
     hold_route: null | { name: string, parameters: object }
     hold_kind_options: { value: string, label: string }[]
     cancel_route: null | { name: string, parameters: object }
     cancel_kind_options: { value: string, label: string }[]
+    line_return_kind_options: { value: string, label: string }[]
     artisan_options: { id: number, name: string }[]
     update_route: null | { name: string, parameters: object }
     items: Item[]
@@ -222,17 +236,30 @@ function saveQuantity(item: { id: number, update_route: null | { name: string, p
     )
 }
 
-const removingItemId = ref<number | null>(null)
+const returningItem = ref<Item | null>(null)
+const returnKind = ref("missing_materials")
+const returnReason = ref("")
+const returnErrors = ref<string[]>([])
 
-function removeItem(item: { id: number, delete_route: null | { name: string, parameters: object } }) {
-    if (!item.delete_route) return
-    delete quantityErrors.value[item.id]
+function openReturnDialog(item: Item) {
+    returningItem.value = item
+    returnKind.value = "missing_materials"
+    returnReason.value = ""
+    returnErrors.value = []
+}
+
+function returnItemToBacklog() {
+    const item = returningItem.value
+    if (!item?.delete_route) return
+    processing.value = true
     router.delete(
         route(item.delete_route.name, item.delete_route.parameters),
         {
+            data: { kind: returnKind.value, reason: returnReason.value },
             preserveScroll: true,
-            onSuccess: () => removingItemId.value = null,
-            onError: (errors) => quantityErrors.value[item.id] = Object.values(errors).join(' '),
+            onSuccess: () => returningItem.value = null,
+            onError: (errors) => returnErrors.value = Object.values(errors),
+            onFinish: () => processing.value = false,
         }
     )
 }
@@ -487,6 +514,14 @@ function receiveIntoStock() {
                 <div class="text-xs text-gray-500">{{ job_order.cancellation.by ?? '—' }} · {{ useFormatTime(job_order.cancellation.at, { formatTime: 'hm' }) }}</div>
             </div>
         </div>
+        <div v-if="job_order.line_returns?.length" class="mb-6 rounded border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <div class="font-semibold mb-1">{{ ctrans('Lines sent back to the backlog') }}</div>
+            <div v-for="(entry, index) in job_order.line_returns" :key="index">
+                {{ entry.artefact_code }}: {{ ctrans(':returned units back to To Produce', { returned: entry.units_returned }) }}<template v-if="entry.units_kept">, {{ ctrans(':kept made units stay on this job', { kept: entry.units_kept }) }}</template>
+                <span class="text-gray-600">· {{ [entry.kind !== 'other' ? entry.kind_label : null, entry.reason].filter(Boolean).join(' – ') }}</span>
+                <span class="text-gray-500">· {{ entry.by ?? '—' }} · {{ useFormatTime(entry.at, { formatTime: 'hm' }) }}</span>
+            </div>
+        </div>
         <div v-if="job_order.hold" class="mb-6 flex items-start gap-3 rounded border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-gray-700" role="status">
             <FontAwesomeIcon icon="fal fa-pause-circle" class="mt-0.5 text-yellow-600" fixed-width aria-hidden="true" />
             <div class="flex-1">
@@ -555,11 +590,6 @@ function receiveIntoStock() {
                     <button type="submit" class="text-sm font-medium text-[--app-accent]">{{ ctrans('Save') }}</button>
                     <button type="button" class="text-sm text-gray-500" @click="editingItemId = null">{{ ctrans('Cancel') }}</button>
                 </form>
-                <div v-else-if="removingItemId === item.id" class="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm">
-                    <span class="text-gray-700">{{ ctrans('Remove this line?') }}</span>
-                    <button type="button" class="font-medium text-red-600" @click="removeItem(item)">{{ ctrans('Remove') }}</button>
-                    <button type="button" class="text-gray-500" @click="removingItemId = null">{{ ctrans('Cancel') }}</button>
-                </div>
                 <div v-else class="shrink-0 whitespace-nowrap tabular-nums text-gray-700">
                     × {{ item.quantity }}
                     <button v-if="item.update_route" type="button" class="ml-2 text-sm text-[var(--app-accent)]" @click="startEditingQuantity(item)">{{ ctrans('Change') }}</button>
@@ -567,9 +597,9 @@ function receiveIntoStock() {
                         <FontAwesomeIcon :icon="['fal', 'users']" fixed-width class="mr-0.5" />
                         {{ item.sub_jobs.length ? ctrans('Change artisans') : ctrans('Split / Assign multiple artisans') }}
                     </button>
-                    <button v-if="item.delete_route" type="button" class="ml-3 text-sm text-gray-500 hover:text-red-600" @click="removingItemId = item.id">
-                        <FontAwesomeIcon :icon="['fal', 'trash-alt']" fixed-width class="mr-0.5" />
-                        {{ ctrans('Remove') }}
+                    <button v-if="item.delete_route" type="button" class="ml-3 text-sm text-gray-500 hover:text-red-600" @click="openReturnDialog(item)">
+                        <FontAwesomeIcon :icon="['fal', 'undo']" fixed-width class="mr-0.5" />
+                        {{ ctrans('Back to backlog') }}
                     </button>
                 </div>
             </div>
@@ -779,6 +809,30 @@ function receiveIntoStock() {
                         <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
                     </Button>
                     <Button type="tertiary" :label="cancelMode === 'backlog' ? ctrans('Back to backlog') : ctrans('Cancel job')" :disabled="(cancelKind === 'other' && !cancelReason.trim()) || processing" @click="cancelJobOrder">
+                        <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                </div>
+            </form>
+        </Modal>
+
+        <Modal :isOpen="!!returningItem" width="w-full max-w-md" closeButton @onClose="returningItem = null">
+            <form v-if="returningItem" class="space-y-3" @submit.prevent="returnItemToBacklog">
+                <div class="text-lg font-semibold">
+                    {{ ctrans('Send :code back to the backlog', { code: returningItem.artefact_code }) }}
+                </div>
+                <div class="text-sm text-gray-500">
+                    <template v-if="returningItem.produced_quantity">{{ ctrans('The :count units already made stay on this line to be received. The rest is taken off the artisan\'s tablet and its demand goes back to To Produce, to be planned again.', { count: returningItem.produced_quantity }) }}</template>
+                    <template v-else>{{ ctrans('This line is taken off the job and the artisan\'s tablet. Its demand goes back to To Produce, to be planned again; nothing is lost.') }}</template>
+                    {{ ctrans('The other lines of :reference carry on as they are.', { reference: job_order.reference }) }}
+                </div>
+                <SegmentedToggle v-model="returnKind" :options="line_return_kind_options" :ariaLabel="ctrans('Why')" />
+                <InputText v-model="returnReason" class="w-full" maxlength="255" autofocus :placeholder="ctrans('e.g. Out of sandalwood oil')" :aria-label="ctrans('Reason')" />
+                <div v-for="error in returnErrors" :key="error" class="text-sm text-red-600">{{ error }}</div>
+                <div class="flex justify-end gap-2">
+                    <Button type="tertiary" :label="ctrans('Keep the line')" @click="returningItem = null">
+                        <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <Button type="tertiary" :label="ctrans('Back to backlog')" :disabled="(returnKind === 'other' && !returnReason.trim()) || processing" @click="returnItemToBacklog">
                         <template #icon><FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" /></template>
                     </Button>
                 </div>

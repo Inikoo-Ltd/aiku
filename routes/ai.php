@@ -6,6 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Helpers\Ticket\StoreTicketUpload;
 use App\Http\Middleware\EnsureCanUseMcp;
 use App\Http\Middleware\LogMcpRequest;
 use App\Mcp\Servers\AikuServer;
@@ -45,3 +46,5 @@ Route::get('/.well-known/oauth-authorization-server/{path}', $authorizationServe
     ->name('aiku.mcp.oauth.authorization-server.nested');
 
 Mcp::web('/mcp/aiku', AikuServer::class)->middleware(['auth:mcp,mcp-oauth', EnsureCanUseMcp::class, 'bind_group', LogMcpRequest::class]);
+
+Route::post('/mcp/ticket-uploads/{user}/{upload}', StoreTicketUpload::class)->whereNumber('user')->middleware(['signed', 'throttle:60,1'])->name('mcp.ticket_upload');

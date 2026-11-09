@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, toRef } from "vue"
+import { ref, computed, watch, toRef, nextTick } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import axios from "axios"
 import Dialog from "primevue/dialog"
@@ -14,12 +14,12 @@ import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
 import EditorWritingQualityCheck from "@/Components/WritingQuality/EditorWritingQualityCheck.vue"
 import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { useComposerDraft } from "@/Composables/useComposerDraft"
+import { readComposerDraft, useComposerDraft, writeComposerDraft } from "@/Composables/useComposerDraft"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faAddressBook, faPaperPlane, faTimes, faTrashAlt } from "@fal"
-library.add(faAddressBook, faPaperPlane, faTimes, faTrashAlt)
+import { faAddressBook, faHistory, faPaperPlane, faTimes, faTrashAlt } from "@fal"
+library.add(faAddressBook, faHistory, faPaperPlane, faTimes, faTrashAlt)
 
 type SavedContact = {
     id: number
@@ -50,6 +50,7 @@ const customerSearch = ref("")
 const existingProspect = ref<{ name: string | null, company_name: string | null, owner: string | null } | null>(null)
 let prospectLookupTimer: ReturnType<typeof setTimeout> | undefined
 const savedContacts = ref<SavedContact[]>([])
+const recentAddresses = ref<Array<{ name: string | null, email: string }>>([])
 const pickedContact = ref<SavedContact | null>(null)
 let savedContactsTimer: ReturnType<typeof setTimeout> | undefined
 const currentOrganisation = String((route().params as Record<string, any>)?.organisation ?? "aw")
@@ -70,6 +71,34 @@ const form = useForm({
 const newEmailDraftKey = (field: string) => () => `new-email:${currentShopId.value ?? "none"}:${field}`
 const clearSubjectDraft = useComposerDraft(newEmailDraftKey("subject"), toRef(form, "subject"))
 const clearMessageDraft = useComposerDraft(newEmailDraftKey("message"), toRef(form, "message"))
+const recipientDraftKey = newEmailDraftKey("to")
+const isDraftRestored = ref(false)
+
+watch([() => form.email, isNotACustomer], ([addresses, toAddress]) => {
+    if (visible.value && currentShopId.value) {
+        writeComposerDraft(recipientDraftKey(), toAddress ? addresses : "")
+    }
+})
+
+const restoreDraft = () => {
+    const recipient = currentShopId.value ? readComposerDraft(recipientDraftKey()) : ""
+    isDraftRestored.value = !!currentShopId.value
+        && ["to", "subject", "message"].some((field) => readComposerDraft(newEmailDraftKey(field)()).trim())
+    if (recipient) {
+        isNotACustomer.value = true
+        nextTick(() => {
+            form.email = recipient
+        })
+    }
+}
+
+const discardDraft = () => {
+    clearSubjectDraft()
+    clearMessageDraft()
+    writeComposerDraft(recipientDraftKey(), "")
+    form.reset("email", "subject", "message", "attachments")
+    isDraftRestored.value = false
+}
 
 const fetchRoute = computed<routeType>(() => ({
     name: "grp.json.shop.customers",
@@ -104,7 +133,7 @@ const visibleSavedContacts = computed(() => {
     return savedContacts.value.filter((contact) => contact.email.toLowerCase() !== firstAddress.value)
 })
 
-watch([savedContactsQuery, visible], ([search, isVisible]) => {
+watch([savedContactsQuery, visible, isNotACustomer, currentShopId], ([search, isVisible]) => {
     clearTimeout(savedContactsTimer)
     if (!isVisible || !currentShopId.value || search === null || (!isNotACustomer.value && !search)) {
         return
@@ -116,9 +145,33 @@ watch([savedContactsQuery, visible], ([search, isVisible]) => {
         )
         if (savedContactsQuery.value === search) {
             savedContacts.value = data.data
+            recentAddresses.value = data.recent ?? []
         }
     }, 250)
 })
+
+const visibleRecentAddresses = computed(() => {
+    if (pickedContact.value || savedContactsQuery.value === null) {
+        return []
+    }
+    if (!isNotACustomer.value && (selectedCustomer.value || !savedContactsQuery.value)) {
+        return []
+    }
+    return recentAddresses.value.filter((recent) => recent.email !== firstAddress.value)
+})
+
+const pickRecentAddress = (recent: { name: string | null, email: string }) => {
+    const fill = () => {
+        form.email = recent.email
+        form.contact_name = recent.name ?? ""
+    }
+    if (isNotACustomer.value) {
+        fill()
+    } else {
+        isNotACustomer.value = true
+        nextTick(fill)
+    }
+}
 
 const confirmingDeleteContactId = ref<number | null>(null)
 const deletingContactId = ref<number | null>(null)
@@ -211,25 +264,28 @@ const send = () => {
         save_as_contact: isNotACustomer.value && !pickedContact.value && !isSavedContact.value && data.save_as_contact,
     })).post(target, {
         onSuccess: () => {
-            clearSubjectDraft()
-            clearMessageDraft()
-            form.reset("subject", "message", "attachments")
+            discardDraft()
             visible.value = false
         },
     })
 }
 
 watch(pickedShopId, () => {
+    if (visible.value) {
+        restoreDraft()
+    }
     customerId.value = null
     selectedCustomer.value = null
     pickedContact.value = null
     savedContacts.value = []
+    recentAddresses.value = []
 })
 
 watch(visible, (isVisible) => {
     if (isVisible) {
         pickedShopId.value = props.shopId ?? props.shops?.[0]?.id ?? null
         isNotACustomer.value = !!props.toAddress
+        restoreDraft()
     } else {
         isNotACustomer.value = false
         customerSearch.value = ""
@@ -237,6 +293,7 @@ watch(visible, (isVisible) => {
         selectedCustomer.value = null
         pickedContact.value = null
         savedContacts.value = []
+        recentAddresses.value = []
         form.reset("email", "save_as_prospect", "save_as_contact", "contact_name", "company_name")
         form.clearErrors()
     }
@@ -250,6 +307,13 @@ watch(visible, (isVisible) => {
             <p class="text-xs text-gray-500 leading-snug">
                 {{ ctrans("It opens a conversation in this inbox, and their reply comes back to it.") }}
             </p>
+
+            <div v-if="isDraftRestored" class="flex items-center justify-between gap-2 rounded-md bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
+                <span>{{ ctrans("Your unsent email from last time. It is kept on this computer until you send or discard it.") }}</span>
+                <button type="button" class="shrink-0 font-medium text-gray-700 hover:underline" @click="discardDraft">
+                    {{ ctrans("Discard draft") }}
+                </button>
+            </div>
 
             <div v-if="(shops?.length ?? 0) > 1" class="flex flex-col gap-1">
                 <label for="new-email-shop" class="text-xs font-medium text-gray-600">{{ ctrans("From") }}</label>
@@ -298,7 +362,7 @@ watch(visible, (isVisible) => {
                 <ul class="max-h-48 overflow-y-auto rounded-md border border-gray-200 divide-y divide-gray-100">
                     <li v-for="contact in visibleSavedContacts" :key="contact.id" class="group/contact flex items-center">
                         <button type="button"
-                            class="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-3 px-3 py-1.5 text-left text-sm hover:bg-[--app-accent-soft] focus:outline-none focus-visible:ring-1 focus-visible:ring-[--app-accent]"
+                            class="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-3 px-3 py-1.5 text-left text-sm hover:bg-[var(--app-accent-soft)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]"
                             @mousedown.prevent="pickContact(contact)">
                             <span class="truncate" :title="contact.name">
                                 <FontAwesomeIcon icon="fal fa-address-book" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />
@@ -319,6 +383,23 @@ watch(visible, (isVisible) => {
                     </li>
                 </ul>
                 <p v-if="contactError" class="text-xs text-red-500 leading-snug">{{ contactError }}</p>
+            </div>
+
+            <div v-if="visibleRecentAddresses.length" class="flex flex-col gap-1">
+                <span class="text-xs font-medium text-gray-600">{{ ctrans("Emailed recently") }}</span>
+                <ul class="max-h-48 overflow-y-auto rounded-md border border-gray-200 divide-y divide-gray-100">
+                    <li v-for="recent in visibleRecentAddresses" :key="recent.email">
+                        <button type="button"
+                            class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-baseline gap-3 px-3 py-1.5 text-left text-sm hover:bg-[var(--app-accent-soft)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]"
+                            @mousedown.prevent="pickRecentAddress(recent)">
+                            <span class="truncate" :title="recent.name ?? recent.email">
+                                <FontAwesomeIcon icon="fal fa-history" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />
+                                {{ recent.name ?? recent.email }}
+                            </span>
+                            <span class="truncate text-gray-500" :title="recent.email">{{ recent.email }}</span>
+                        </button>
+                    </li>
+                </ul>
             </div>
 
             <button type="button" class="self-start text-xs font-medium text-gray-700 hover:underline"
@@ -360,12 +441,12 @@ watch(visible, (isVisible) => {
             <PureInput v-model="form.subject" :placeholder="ctrans('Subject')" />
             <div>
                 <div class="mb-1 flex items-center gap-1">
-                    <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline />
+                    <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline allow-link />
                     <div class="mx-1 h-5 w-px bg-gray-200" />
                     <PolishMessageButton v-model="form.message" channel="email" />
                     <EditorWritingQualityCheck compact :editor="messageEditor?.editor" context="customer_email" />
                 </div>
-                <ChatMessageEditor ref="messageEditor" v-model="form.message" :placeholder="ctrans('Message')" allow-underline
+                <ChatMessageEditor ref="messageEditor" v-model="form.message" :placeholder="ctrans('Message')" allow-underline allow-link
                     class="rounded-md border border-gray-300 px-3 py-2 focus-within:border-gray-500 [&_.ProseMirror]:min-h-64 [&_.ProseMirror]:max-h-[60vh]" />
             </div>
             <EmailAttachmentPicker v-model="form.attachments" :errors="form.errors" />

@@ -13,6 +13,7 @@ import AutoComplete from "primevue/autocomplete"
 import { followPointer } from "@/Composables/followPointer"
 import { cleanEmailText } from "@/Composables/cleanEmailText"
 import { stripPictureTokens } from "@/Composables/useWhatsappMarkup"
+import { readComposerDraft } from "@/Composables/useComposerDraft"
 import type { MarketingMailshot } from "@/Components/Chat/MarketingFolder.vue"
 import NewWhatsappChatDialog from "@/Components/Chat/NewWhatsappChatDialog.vue"
 import NewEmailChatDialog from "@/Components/Chat/NewEmailChatDialog.vue"
@@ -600,7 +601,16 @@ const storeSelection = () => {
     } catch {
         // A private window, or storage turned off. Losing the choice is not worth an error.
     }
+
+    if (!isEmbedded && showsOnlySavedSelection()) {
+        rememberFirstList(sessionsUrl.value, buildParams(1), route(props.supervisor ? "grp.org.chat.supervision" : "grp.org.chat.inbox", [props.organisation.slug]))
+    }
 }
+
+const showsOnlySavedSelection = () =>
+    !isFolderView.value && inboxView.value === "all" && viewMode.value === "my" && !searchQuery.value.trim()
+    && !selectedAgentIds.value.length && !dsKind.value && !promisedOnly.value && !starredOnly.value
+    && sortOrder.value === null && labelFilterId.value === null
 
 /**
  * Only what still exists is restored: shops come and go with the positions somebody holds, and
@@ -931,7 +941,7 @@ const currentListKey = computed(() => listKey(sessionsUrl.value, buildParams(1))
 let shownListKey = ""
 let reloadRequest = 0
 let prefetchedFirstList: Promise<AxiosResponse> | null = null
-let isFirstListPrefetched = false
+let firstListSource = "list:fetched"
 
 const reloadContacts = async (): Promise<boolean> => {
     const request = ++reloadRequest
@@ -949,7 +959,7 @@ const reloadContacts = async (): Promise<boolean> => {
     hasMore.value = false
     try {
         const res = await (prefetched?.catch(() => {
-            isFirstListPrefetched = false
+            firstListSource = "list:failed"
 
             return axios.get(url, { params })
         }) ?? axios.get(url, { params }))
@@ -1217,6 +1227,11 @@ const newEmailBlockedReason = computed<string | null>(() => {
 
     return null
 })
+
+const newEmailShopId = computed(() => newEmailShops.value.some((shop) => shop.id === selectedShopId.value) ? selectedShopId.value : null)
+
+const hasNewEmailDraft = computed(() => !newEmailVisible.value && newEmailShops.value.some((shop) =>
+    ["to", "subject", "message"].some((field) => readComposerDraft(`new-email:${shop.id}:${field}`).trim())))
 
 const inboxRailCollapsed = useLocalStorage(`chat-inbox-rail-collapsed:${layout.user?.id ?? "anonymous"}`, false)
 
@@ -3012,10 +3027,11 @@ dropWaitingInTeamView()
 watch([selectedStatuses, viewMode, promisedOnly, mailTab], onListFiltersChanged)
 
 if (!isEmbedded) {
-    prefetchedFirstList = takePrefetchedList(sessionsUrl.value, buildParams(1))
-    isFirstListPrefetched = prefetchedFirstList !== null
+    const firstList = takePrefetchedList(sessionsUrl.value, buildParams(1))
+    prefetchedFirstList = firstList.response
+    firstListSource = `list:${firstList.outcome}${props.initialSession ? ":conversation" : ""}`
 
-    if (!props.preselectShopId && !props.selectedSessionUlid && !props.initialSession && !pendingSessionUlid.value && !pendingSessionChannel.value) {
+    if (!props.selectedSessionUlid && !props.initialSession) {
         rememberFirstList(sessionsUrl.value, buildParams(1))
     }
 }
@@ -3040,7 +3056,7 @@ onMounted(async () => {
     // the background paints nothing, so there it does not wait for a paint.
     const listPainted = (isLoaded: boolean) => document.visibilityState === "hidden"
         ? nextTick()
-        : inboxOpening.listPainted(isLoaded, isFirstListPrefetched ? "list:prefetched" : "list:fetched")
+        : inboxOpening.listPainted(isLoaded, firstListSource)
 
     const isListLoaded = await firstListLoad
 
@@ -3176,7 +3192,7 @@ onUnmounted(() => {
     <NewWhatsappChatDialog v-model:visible="newChatVisible" :shop-id="selectedShopId"
         @created="onWhatsappChatCreated" />
 
-    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="newEmailShops.some((shop) => shop.id === selectedShopId) ? selectedShopId : null" :shops="newEmailShops" :to-address="carrierView" />
+    <NewEmailChatDialog v-model:visible="newEmailVisible" :shop-id="newEmailShopId" :shops="newEmailShops" :to-address="carrierView" />
 
     <ChatPreviewModal :contact="previewContact" @close="closePreview" @open="openFromPreview" />
     <ChatFilesDialog v-model:visible="filesVisible" :session-ulid="filesUlid" :is-whatsapp="false" />
@@ -3815,13 +3831,14 @@ onUnmounted(() => {
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 self-start">
                     <button v-if="showNewEmailButton" type="button"
-                        v-tooltip="newEmailBlockedReason ?? ctrans('New email')"
+                        v-tooltip="newEmailBlockedReason ?? (hasNewEmailDraft ? ctrans('New email: you have an unsent email, it opens where you left it') : ctrans('New email'))"
                         :aria-disabled="newEmailBlockedReason !== null"
                         class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium"
                         :class="newEmailBlockedReason ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-100 text-[--app-accent]'"
                         @click="newEmailBlockedReason === null && (newEmailVisible = true)">
                         <FontAwesomeIcon :icon="faPlus" class="text-xs" fixed-width />
                         {{ ctrans("New email") }}
+                        <span v-if="hasNewEmailDraft" class="h-1.5 w-1.5 rounded-full bg-amber-500" aria-hidden="true" />
                     </button>
 
                     <button v-if="isChannelOn('whatsapp') && !isReadOnly && !isFolderView" type="button"

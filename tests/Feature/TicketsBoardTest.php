@@ -89,6 +89,7 @@ test('tickets dashboard counts created, done, status and assignees', function ()
 
     expect($stats['created'])->toBe($before['created'] + 2)
         ->and($stats['done'])->toBe($before['done'] + 1)
+        ->and($stats['closed'])->toBe($before['closed'] + 1)
         ->and($stats['open'])->toBe($before['open'] + 1)
         ->and(count($stats['daily']))->toBe(8)
         ->and(collect($stats['daily'])->last()['open'])->toBe(collect($before['daily'])->last()['open'] + 1)

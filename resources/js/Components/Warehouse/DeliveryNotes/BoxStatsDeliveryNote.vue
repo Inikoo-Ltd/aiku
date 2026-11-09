@@ -26,6 +26,8 @@ import ChangePickedBays from "@/Components/DeliveryNote/ChangePickedBays.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ManageTrolleysInDeliveryNote from "@/Components/DeliveryNote/ManageTrolleysInDeliveryNote.vue"
 import Select from 'primevue/select';
+import Dialog from "primevue/dialog"
+import PureAddress from "@/Components/Pure/PureAddress.vue"
 import { faExchangeAlt, faLock , faLockOpen} from "@far"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import CopyButton from "@/Components/Utils/CopyButton.vue"
@@ -60,6 +62,7 @@ const props = withDefaults(defineProps<{
             phone?: string
         }
         delivery_address: Address,
+        delivery_address_update_route?: routeType | null
         is_forbidden_delivery?: boolean
         products: {
             estimated_weight: number
@@ -190,6 +193,27 @@ const onReplaceAll = () => {
     emit('replace-all')
 }
 
+
+const isModalAddress = ref(false)
+const addressDraft = ref<Address | null>(null)
+const addressError = ref<string | null>(null)
+const isSavingAddress = ref(false)
+const openAddressEditor = () => {
+    addressDraft.value = { ...props.boxStats.delivery_address }
+    addressError.value = null
+    isModalAddress.value = true
+}
+const onSaveAddress = () => {
+    const route_ = props.boxStats.delivery_address_update_route
+    if (!route_) return
+    router.patch(route(route_.name, route_.parameters), { address: addressDraft.value }, {
+        preserveScroll: true,
+        onStart: () => isSavingAddress.value = true,
+        onFinish: () => isSavingAddress.value = false,
+        onSuccess: () => isModalAddress.value = false,
+        onError: (errors) => addressError.value = Object.values(errors).join(' '),
+    })
+}
 
 const isModalToQueue = ref(false);
 const selectedPicker = ref(props.boxStats.picker);
@@ -557,6 +581,10 @@ function returnNoteRoute(returnDeliveryNote) {
                             <div v-html="boxStats.delivery_address.formatted_address"
                                 class="xtext-xs text-gray-600 leading-snug">
                             </div>
+                            <button v-if="boxStats.delivery_address_update_route" type="button" @click="openAddressEditor"
+                                class="mt-2 text-xs text-gray-500 hover:text-gray-700 underline">
+                                {{ ctrans("Edit delivery address") }}
+                            </button>
                         </div>
                     </div>
 
@@ -666,11 +694,11 @@ function returnNoteRoute(returnDeliveryNote) {
 
                     <!-- Section: Trolleys -->
                     <ManageTrolleysInDeliveryNote
-                        v-if="!(['unassigned', 'queued', 'dispatched', 'packed'].includes(deliveryNote.state)) && boxStats?.shop_type !== 'dropshipping'"
+                        v-if="!(['unassigned', 'queued', 'dispatched', 'packed'].includes(deliveryNote.state)) && (boxStats?.shop_type !== 'dropshipping' || boxStats?.trolleys?.length)"
                         :deliveryNote
                         :trolleys="boxStats.trolleys"
                         :warehouse
-                        :isEditable
+                        :isEditable="isEditable && boxStats?.shop_type !== 'dropshipping'"
                     />
                     
                     <!-- Section: Picked Bays -->
@@ -1116,6 +1144,13 @@ function returnNoteRoute(returnDeliveryNote) {
 			</div>
 		</div>
 	</Modal>
+    <Dialog v-model:visible="isModalAddress" modal :header="ctrans('Delivery address')" :style="{ width: '32rem' }" :breakpoints="{ '640px': '92vw' }">
+        <PureAddress v-if="addressDraft" v-model="addressDraft" :options="{}" />
+        <p v-if="addressError" class="mt-2 text-sm text-red-600">{{ addressError }}</p>
+        <div class="mt-4 flex justify-end">
+            <Button :label="ctrans('Save')" :loading="isSavingAddress" @click="onSaveAddress" />
+        </div>
+    </Dialog>
 </template>
 
 <style scoped>

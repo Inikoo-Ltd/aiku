@@ -29,6 +29,7 @@ import { routeType } from "@/types/route"
 import { debounce } from "lodash-es"
 import StaffChatContextButtons from "@/Components/Messaging/StaffChatContextButtons.vue"
 import ButtonBackToPicking from "@/Components/DeliveryNote/ButtonBackToPicking.vue"
+import PickingSessionTrolleys from "@/Components/Warehouse/PickingSessions/PickingSessionTrolleys.vue"
 
 
 const props = defineProps<{
@@ -50,9 +51,13 @@ const props = defineProps<{
         scan_route: routeType
     }
     incomplete_sets?: { delivery_note_reference: string, action: any }[]
+    trolleys?: { id: number, slug: string, name: string }[]
+    can_change_trolleys?: boolean
     routes?: {
         update: { name: string, parameters: object }
         pickers_list: { name: string, parameters: object }
+        attach_trolley: routeType
+        detach_trolley: routeType
     }
     timelines: {
         [key: string]: TSTimeline
@@ -275,6 +280,16 @@ const handleModalSuccess = () => {
     </PageHeading>
     <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
         <TimelineResponsive :options="timelines" :state="data.data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
+    </div>
+    <div v-if="!isFulfilmentSession && trolleys && routes?.attach_trolley" class="px-4 py-2 border-b border-gray-200">
+        <PickingSessionTrolleys
+            :pickingSessionReference="data.data.reference"
+            :warehouse="{ slug: String(route().params.warehouse ?? '') }"
+            :trolleys="trolleys"
+            :canChange="!!can_change_trolleys"
+            :attachRoute="routes.attach_trolley"
+            :detachRoute="routes.detach_trolley"
+        />
     </div>
     <!-- Section: Scan a barcode to pack the matching item of the delivery note it belongs to -->
     <ScanToPackDeliveryNote

@@ -28,7 +28,7 @@ class WarehouseHydrateTrolleys implements ShouldBeUnique
     {
         $allTrolleys     = $warehouse->trolleys()->count();
         $currentTrolleys = $warehouse->trolleys()->where('status', true)->count();
-        $usedTrolleys    = $warehouse->trolleys()->where('status', true)->whereNotNull('current_delivery_note_id')->count();
+        $usedTrolleys    = $warehouse->trolleys()->where('status', true)->where(fn ($query) => $query->whereNotNull('current_delivery_note_id')->orWhereNotNull('picking_session_id'))->count();
 
 
         $stats = [

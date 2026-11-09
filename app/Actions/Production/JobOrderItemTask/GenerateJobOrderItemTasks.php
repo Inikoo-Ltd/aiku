@@ -100,6 +100,12 @@ class GenerateJobOrderItemTasks
             $tasks[] = $task;
         }
 
+        foreach ($tasks as $task) {
+            if ($task->wasRecentlyCreated) {
+                ShareMixPool::make()->settle($task);
+            }
+        }
+
         if (in_array($jobOrder->state, JobOrderStateEnum::open())) {
             $jobOrderItem->tasks()
                 ->where(fn ($query) => $query->whereNull('artefact_manufacture_task_id')->orWhereNotIn('artefact_manufacture_task_id', $artefact->recipeSteps()->select('id')))

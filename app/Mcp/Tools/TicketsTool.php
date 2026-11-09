@@ -10,6 +10,7 @@ namespace App\Mcp\Tools;
 
 use App\Http\Resources\Helpers\TicketCommentResource;
 use App\Http\Resources\Helpers\TicketResource;
+use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Models\Helpers\Ticket;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -51,10 +52,13 @@ class TicketsTool extends Tool
                 return Response::error('Ticket not found or not visible to you.');
             }
 
-            return Response::json([
-                'ticket'   => TicketResource::make($ticket)->resolve(),
-                'comments' => TicketCommentResource::collection($ticket->commentsVisibleTo($user)->with('author', 'ticket')->orderBy('id')->get())->resolve(),
-            ]);
+            $heldComment = $ticket->status !== TicketStatusEnum::PENDING_DEPLOY || !$ticket->canContributeBy($user) ? null : $ticket->deployComment()->with('author', 'ticket')->first();
+
+            return Response::json(array_filter([
+                'ticket'        => TicketResource::make($ticket)->resolve(),
+                'comments'      => TicketCommentResource::collection($ticket->commentsVisibleTo($user)->with('author', 'ticket')->orderBy('id')->get())->resolve(),
+                'held_comment'  => $heldComment ? TicketCommentResource::make($heldComment)->resolve() : null,
+            ], fn ($value) => $value !== null));
         }
 
         $query

@@ -40,7 +40,7 @@ class ResearchCompetitorPrices
 
     public int $jobTimeout = 1800;
 
-    public const string MODEL = 'openai/gpt-5.6-luna';
+    public const string MODEL = 'anthropic/claude-haiku-5.5';
 
     public const string USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36';
 
@@ -379,6 +379,7 @@ PROMPT;
         Competitor::whereNull('search_url')
             ->whereNull('feed_url')
             ->whereNotNull('login_url')
+            ->where('prices_by_hand', false)
             ->each(function (Competitor $competitor) {
                 if ($searchUrl = $this->publishedSearchUrl($competitor)) {
                     $competitor->update(['search_url' => $searchUrl]);
@@ -387,6 +388,7 @@ PROMPT;
 
         $competitors = Competitor::whereNotNull('search_url')
             ->whereNull('feed_url')
+            ->where('prices_by_hand', false)
             ->when($command->option('competitor'), fn ($query, $id) => $query->where('id', $id))
             ->when($command->option('master-shop'), fn ($query, $slug) => $query->whereHas('masterShop', fn ($query) => $query->where('slug', $slug)))
             ->get();

@@ -280,6 +280,17 @@ class JobOrderItem extends Model
         return ($inRecipe->isNotEmpty() ? $inRecipe : $this->tasks)->last();
     }
 
+    /** A bottle filled to order shows its oil and order: "Fill 10ml – FOKG-02 Lavender, order 12345" (HELP-4556) */
+    public function displayName(): ?string
+    {
+        $fill = Arr::get($this->data, 'fill');
+        if (!$fill) {
+            return $this->artefact->name;
+        }
+
+        return $this->artefact->name.' – '.trim($fill['oil'].' '.($fill['oil_name'] ?? '')).($fill['order'] ? ', '.__('order :reference', ['reference' => $fill['order']]) : '');
+    }
+
     public function isFinished(): bool
     {
         return !$this->tasks->contains(fn (JobOrderItemTask $task) => $task->state !== JobOrderItemTaskStateEnum::DONE);

@@ -87,7 +87,11 @@ use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
+use App\Actions\Dispatching\DeliveryNote\UpdateState\CancelDeliveryNote;
 use App\Actions\Dispatching\Trolley\AttachTrolleyToDeliveryNote;
+use Illuminate\Validation\ValidationException;
+use App\Http\Resources\Dispatching\DeliveryNotesResource;
+use App\Actions\Dispatching\Trolley\AttachTrolleyToPickingSession;
 use App\Actions\Dispatching\Trolley\DeleteTrolley;
 use App\Actions\Dispatching\Trolley\DetachTrolleyFromDeliveryNote;
 use App\Actions\Dispatching\Trolley\StoreTrolley;
@@ -3155,7 +3159,12 @@ test('picking waiting warehouse and crm flow', function () {
 
     $item->update(['quantity_waiting_crm' => 2]);
     $sentBack = \App\Actions\Dispatching\Picking\SendBackWaitingWarehouse::make()->action($item->refresh(), $this->user, []);
-    expect($sentBack->has_waiting_crm)->toBeFalse();
+    expect($sentBack->has_waiting_crm)->toBeFalse()
+        ->and($sentBack->waiting_warehouse_released_at)->not->toBeNull();
+
+    $sentBack->update(['quantity_picked' => 5, 'quantity_waiting_warehouse' => 0, 'locked_at' => null]);
+    $heldAgain = \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($sentBack->refresh(), $this->user, ['quantity' => 1]);
+    expect($heldAgain->waiting_warehouse_released_at)->toBeNull();
 });
 
 test('picking the last of a line in a picking session sets the line and its note as picked', function () {
@@ -3453,6 +3462,41 @@ test('a pick edited or deleted before its queued movement runs is taken off the 
     expect((float)$locationOrgStock->refresh()->quantity)->toBe(99.0);
 });
 
+test('a pick edited after its location was counted is given back and picked again after the count', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)->first();
+    $originalMovement = $picking->orgStockMovement;
+    $originalMovement->update(['date' => now()->subMinute()]);
+
+    \App\Actions\Inventory\LocationOrgStock\AuditLocationOrgStock::run($locationOrgStock, ['quantity' => 94]);
+
+    \App\Actions\Dispatching\Picking\UpdatePicking::make()->action($picking->refresh(), ['quantity' => 4]);
+
+    $ledger = \App\Actions\Inventory\LocationOrgStock\GetLocationOrgStockQuantity::run($picking->orgStock, $picking->location, inCurrentTransaction: true);
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(96.0)
+        ->and($ledger)->toBe(96.0)
+        ->and((float)$originalMovement->refresh()->quantity)->toBe(-6.0)
+        ->and($picking->refresh()->org_stock_movement_id)->not->toBe($originalMovement->id)
+        ->and((float)$picking->orgStockMovement->quantity)->toBe(-4.0);
+});
+
+test('a pick edited after its queued movement skipped it is still taken off the shelf', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 6);
+    $picking          = $item->pickings()->where('type', PickingTypeEnum::PICK)->first();
+    $locationOrgStock = \App\Models\Inventory\LocationOrgStock::where('location_id', $picking->location_id)->where('org_stock_id', $picking->org_stock_id)->first();
+
+    $movement = $picking->orgStockMovement;
+    $picking->update(['org_stock_movement_id' => null]);
+    \App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement::make()->action($movement);
+    expect((float)$locationOrgStock->refresh()->quantity)->toBe(100.0);
+
+    \App\Actions\Dispatching\Picking\UpdatePicking::make()->action($picking->refresh(), ['quantity' => 5]);
+
+    expect((float)$picking->refresh()->orgStockMovement?->quantity)->toBe(-5.0)
+        ->and((float)$locationOrgStock->refresh()->quantity)->toBe(95.0);
+});
+
 test('picking and delivery note item repairs and reindex', function () {
     $pickingRepairs = \App\Actions\Dispatching\Picking\RepairPickingBatchCodes::run(true);
     $itemRepairs    = \App\Actions\Dispatching\DeliveryNoteItem\RepairDeliveryNoteItemBatchCodes::run(true);
@@ -3491,6 +3535,79 @@ test('picking session delivery notes json and change trolley and item packing ro
     $packedBefore = intval($item->refresh()->quantity_packed);
     patch(route('grp.models.delivery_note_item.packing.store', [$item->id]), ['quantity' => 1]);
     expect(intval($item->refresh()->quantity_packed))->toBeGreaterThanOrEqual($packedBefore);
+});
+
+test('a trolley given to a picking session shows on its delivery notes and is freed when the session is packed, HELP-4559', function () {
+    $deliveryNote   = makeDeliveryNote($this);
+    $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$deliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $trolley      = StoreTrolley::make()->handle($this->warehouse, ['name' => 'ps_'.Str::random(4)]);
+    $otherTrolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'ps_'.Str::random(4)]);
+
+    patch(route('grp.models.picking_session.trolleys.attach', [$pickingSession->id, $trolley->id]))->assertRedirect();
+
+    expect($trolley->refresh()->picking_session_id)->toBe($pickingSession->id)
+        ->and($pickingSession->refresh()->number_trolleys)->toBe(1);
+
+    $deliveryNote->refresh();
+    expect($deliveryNote->trolleysInUseForDisplay())->toBe([[
+        'id'                         => $trolley->id,
+        'slug'                       => $trolley->slug,
+        'name'                       => $trolley->name,
+        'is_picking_session_trolley' => true,
+    ]])
+        ->and(DeliveryNotesResource::make($deliveryNote)->resolve()['trolleys'][0]['name'])->toBe($trolley->name);
+
+    $availableIds = collect(get(route('grp.json.available_trolleys.list', [$this->warehouse->slug]))->json('data'))->pluck('id');
+    expect($availableIds)->not->toContain($trolley->id)->toContain($otherTrolley->id);
+
+    $secondDeliveryNote = makeDeliveryNote($this);
+    patch(route('grp.models.delivery_note.trolleys.attach', [$secondDeliveryNote->id, $trolley->id]))->assertSessionHasErrors('trolley');
+    expect($secondDeliveryNote->trolleys()->count())->toBe(0);
+
+    $otherSession = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$secondDeliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    expect(fn () => AttachTrolleyToPickingSession::make()->handle($trolley, $otherSession))->toThrow(ValidationException::class);
+
+    get(route('grp.org.warehouses.show.dispatching.picking_sessions.show', [$this->organisation->slug, $this->warehouse->slug, $pickingSession->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('trolleys.0.id', $trolley->id)
+            ->where('can_change_trolleys', true)
+            ->etc());
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::PACKED]);
+    AutoFinishPackingPickingSession::run($pickingSession->fresh());
+
+    expect($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED)
+        ->and($pickingSession->number_trolleys)->toBe(0)
+        ->and($trolley->refresh()->picking_session_id)->toBeNull();
+
+    AttachTrolleyToPickingSession::make()->handle($trolley, $otherSession);
+    patch(route('grp.models.picking_session.trolleys.detach', [$otherSession->id, $trolley->id]))->assertRedirect();
+    expect($trolley->refresh()->picking_session_id)->toBeNull();
+});
+
+test('cancelling the last unpacked note of a picking session finishes it and frees its trolley, HELP-4559', function () {
+    $packedDeliveryNote    = makeDeliveryNote($this);
+    $cancelledDeliveryNote = makeDeliveryNote($this);
+    $pickingSession        = StorePickingSession::make()->handle($this->warehouse, [
+        'delivery_notes' => [$packedDeliveryNote->id, $cancelledDeliveryNote->id],
+        'user_id'        => $this->user->id,
+    ]);
+    $trolley = StoreTrolley::make()->handle($this->warehouse, ['name' => 'pc_'.Str::random(4)]);
+    AttachTrolleyToPickingSession::make()->handle($trolley, $pickingSession);
+
+    $packedDeliveryNote->update(['state' => DeliveryNoteStateEnum::PACKED]);
+    expect($trolley->refresh()->picking_session_id)->toBe($pickingSession->id);
+
+    CancelDeliveryNote::run($cancelledDeliveryNote->refresh(), $this->user, false);
+
+    expect($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED)
+        ->and($trolley->refresh()->picking_session_id)->toBeNull();
 });
 
 function apiShipper($ctx, string $apiShipper)
@@ -4825,7 +4942,7 @@ test('lines waiting for customer service show the order CRM note and the warehou
     $deliveryNote->update(['number_items_waiting_crm' => 1, 'private_warehouse_note' => 'shelf empty']);
     $deliveryNote->orders()->first()->update(['internal_notes' => '30/9 emailed re oos']);
 
-    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug, 'radioFilter' => 'with_warehouse']))
         ->assertOk()
         ->viewData('page')['props']['waiting_crm_items']['data'];
 
@@ -4841,7 +4958,7 @@ test('lines waiting for customer service flag other items still waiting in the w
     $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1, 'quantity_not_picked' => 1]);
     $deliveryNote->update(['number_items_waiting_crm' => 1, 'number_items_waiting_warehouse' => 2]);
 
-    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug, 'radioFilter' => 'with_warehouse']))
         ->assertOk()
         ->viewData('page')['props']['waiting_crm_items']['data'];
 
@@ -4852,6 +4969,36 @@ test('lines waiting for customer service flag other items still waiting in the w
         ->and($row['delivery_note_number_items_not_picked'])->toBeGreaterThanOrEqual(1);
 });
 
+test('pending orders waiting items list only orders the warehouse has finished by default, the rest under still with warehouse', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+
+    $item->update(['quantity_picked' => 0, 'quantity_waiting_crm' => 1]);
+
+    $waitingDeliveryNoteIds = function (?string $radio) use ($deliveryNote) {
+        $parameters = [$this->organisation->slug, $deliveryNote->shop->slug];
+        if ($radio) {
+            $parameters['radioFilter'] = $radio;
+        }
+
+        return collect(get(route('grp.org.shops.show.ordering.backlog.waiting_items', $parameters))
+            ->assertOk()
+            ->viewData('page')['props']['waiting_crm_items']['data'])->pluck('delivery_note_id');
+    };
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING, 'number_items_waiting_crm' => 1, 'number_items_waiting_warehouse' => 0]);
+    expect($waitingDeliveryNoteIds(null))->not->toContain($deliveryNote->id)
+        ->and($waitingDeliveryNoteIds('with_warehouse'))->toContain($deliveryNote->id);
+
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED, 'number_items_waiting_warehouse' => 1]);
+    expect($waitingDeliveryNoteIds(null))->not->toContain($deliveryNote->id)
+        ->and($waitingDeliveryNoteIds('with_warehouse'))->toContain($deliveryNote->id);
+
+    $deliveryNote->update(['number_items_waiting_warehouse' => 0]);
+    expect($waitingDeliveryNoteIds(null))->toContain($deliveryNote->id)
+        ->and($waitingDeliveryNoteIds('ready'))->toContain($deliveryNote->id)
+        ->and($waitingDeliveryNoteIds('with_warehouse'))->not->toContain($deliveryNote->id);
+});
+
 test('lines waiting for customer service carry the product order line net and tax inclusive amounts', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 
@@ -4860,7 +5007,7 @@ test('lines waiting for customer service carry the product order line net and ta
     $transaction = $item->transaction;
     $transaction->update(['net_amount' => 10]);
 
-    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug]))
+    $rows = get(route('grp.org.shops.show.ordering.backlog.waiting_items', [$this->organisation->slug, $deliveryNote->shop->slug, 'radioFilter' => 'with_warehouse']))
         ->assertOk()
         ->viewData('page')['props']['waiting_crm_items']['data'];
 
@@ -7993,4 +8140,83 @@ test('flags a SKO whose weighed parcels disagree with its weight, and clears it 
 
     expect($orgStock->refresh()->has_wrong_weight)->toBeFalse()
         ->and($orgStock->measured_weight)->toBe(3050);
+});
+
+test('dispatch hub dropshipping and marketplace rows count picked and packing delivery notes', function () {
+    $this->organisation->orderingStats->update([
+        'number_dropshipping_shop_delivery_notes_state_picked'  => 7,
+        'number_dropshipping_shop_delivery_notes_state_packing' => 3,
+        'number_external_shop_delivery_notes_state_picked'      => 5,
+        'number_external_shop_delivery_notes_state_packing'     => 2,
+    ]);
+    $this->warehouse->refresh();
+
+    $dropshipping = \App\Actions\UI\Dispatch\GetDispatchHubDropshippingWidget::run($this->warehouse);
+    $marketplace  = \App\Actions\UI\Dispatch\GetDispatchHubExternalWidget::run($this->warehouse);
+    $stats        = $this->organisation->orderingStats->refresh();
+
+    expect($dropshipping['picked'])->toBe(7)
+        ->and($dropshipping['packing'])->toBe(3)
+        ->and($dropshipping['cases'])->toHaveKeys(['picked', 'packing'])
+        ->and($dropshipping['total'])->toBe(
+            $stats->number_dropshipping_shop_delivery_notes_state_unassigned
+            + $stats->number_dropshipping_shop_delivery_notes_state_queued
+            + $stats->number_dropshipping_shop_delivery_notes_state_handling
+            + $stats->number_dropshipping_shop_delivery_notes_state_handling_blocked
+            + 7 + 3
+            + $stats->number_dropshipping_shop_delivery_notes_state_packed
+            + $stats->number_dropshipping_shop_delivery_notes_state_finalised
+        )
+        ->and($marketplace['total'])->toBe(
+            $stats->number_external_shop_delivery_notes_state_unassigned
+            + $stats->number_external_shop_delivery_notes_state_queued
+            + $stats->number_external_shop_delivery_notes_state_handling
+            + $stats->number_external_shop_delivery_notes_state_handling_blocked
+            + 5 + 2
+            + $stats->number_external_shop_delivery_notes_state_packed
+            + $stats->number_external_shop_delivery_notes_state_finalised
+        );
+});
+
+test('customer service can change the delivery address of a delivery note before it has a shipment, PRE-77', function () {
+    [$deliveryNote] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+
+    $user          = $this->adminGuest->getUser();
+    $originalRoles = $user->roles->pluck('name')->toArray();
+    $oldAddress    = $deliveryNote->deliveryAddress;
+    $oldLine       = $oldAddress->address_line_1;
+    $countryId     = $oldAddress->country_id;
+    $newAddress    = [
+        'address_line_1'      => 'Via Nuova 7',
+        'locality'            => 'Torino',
+        'postal_code'         => '10121',
+        'administrative_area' => 'TO',
+        'country_id'          => $countryId,
+    ];
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName('warehouse-viewer', $this->warehouse)]);
+    patch(route('grp.models.delivery_note.update_address', $deliveryNote->id), ['address' => $newAddress])->assertForbidden();
+
+    actingAsUserWithRoles($user, [RolesEnum::getRoleName(RolesEnum::CUSTOMER_SERVICE_CLERK->value, $deliveryNote->shop)]);
+    patch(route('grp.models.delivery_note.update_address', $deliveryNote->id), ['address' => $newAddress])->assertSessionHasNoErrors();
+
+    $deliveryNote->refresh();
+    expect($deliveryNote->deliveryAddress->address_line_1)->toBe('Via Nuova 7')
+        ->and($deliveryNote->address_id)->not->toBe($oldAddress->id)
+        ->and($oldAddress->refresh()->address_line_1)->toBe($oldLine)
+        ->and($deliveryNote->delivery_country_id)->toBe($countryId);
+
+    $deliveryNote->updateQuietly(['delivery_locked' => false]);
+    patch(route('grp.models.delivery_note.update_address', $deliveryNote->id), ['address' => [...$newAddress, 'address_line_1' => 'Via Unlocked 1']])->assertSessionHasNoErrors();
+    expect($deliveryNote->refresh()->deliveryAddress->address_line_1)->toBe('Via Unlocked 1')
+        ->and($deliveryNote->deliveryAddress->is_fixed)->toBeFalse();
+    $deliveryNote->updateQuietly(['delivery_locked' => true]);
+
+    $state = $deliveryNote->state;
+    $deliveryNote->updateQuietly(['state' => DeliveryNoteStateEnum::DISPATCHED]);
+    patch(route('grp.models.delivery_note.update_address', $deliveryNote->id), ['address' => [...$newAddress, 'address_line_1' => 'Too late']])->assertSessionHasErrors('address');
+    expect($deliveryNote->refresh()->deliveryAddress->address_line_1)->toBe('Via Unlocked 1');
+    $deliveryNote->updateQuietly(['state' => $state]);
+
+    actingAsUserWithRoles($user, $originalRoles);
 });

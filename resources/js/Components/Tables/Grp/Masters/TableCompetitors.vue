@@ -33,6 +33,7 @@ const readMethodLabels: Record<string, string> = {
     woocommerce: ctrans("WooCommerce catalogue"),
     feed: ctrans("Product feed"),
     search: ctrans("Website search"),
+    hand: ctrans("Checked by hand"),
     none: ctrans("Nothing yet"),
 }
 </script>

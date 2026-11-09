@@ -9,7 +9,8 @@ import type { router as inertiaRouter } from "@inertiajs/vue3"
 
 const STORAGE_KEY = "inbox-first-list"
 const FRESH_MS = 10_000
-const INBOX_PATH = /^\/org\/([^/]+)\/chat\/(inbox|supervision)(?:\/[0-9A-HJKMNP-TV-Z]{26})?$/
+const INBOX_PATH = /^\/org\/([^/]+)\/(?:shops\/([^/]+)\/)?chat\/(inbox|supervision)(?:\/[0-9A-HJKMNP-TV-Z]{26})?$/
+const CHANNELS = ["whatsapp", "website"]
 
 type Request = { url: string, params: Record<string, unknown> }
 
@@ -17,16 +18,27 @@ let pending: { key: string, startedAt: number, response: Promise<AxiosResponse> 
 
 export const listKey = (url: string, params: Record<string, unknown>): string => url + JSON.stringify(params)
 
-/** The organisation and the page (inbox or supervision) an inbox address is for. */
-const slotOf = (path: string): string | null => {
-	const match = path.match(INBOX_PATH)
+/**
+ * Each inbox address opens on its own list: the organisation, inbox or supervision, the shop it
+ * was opened from, and the channel a notification link asks for.
+ */
+const slotOf = (address: URL): string | null => {
+	const match = address.pathname.match(INBOX_PATH)
 
-	return match ? `${STORAGE_KEY}:${match[1]}:${match[2]}` : null
+	if (!match) {
+		return null
+	}
+
+	const channel = address.searchParams.get("channel")
+
+	return [STORAGE_KEY, match[1], match[3], match[2] && `shop:${match[2]}`, CHANNELS.includes(channel ?? "") && channel]
+		.filter(Boolean)
+		.join(":")
 }
 
-/** What the inbox asked for when it last opened on this page of this organisation, so the next visit can ask for it straight away. */
-export const rememberFirstList = (url: string, params: Record<string, unknown>) => {
-	const slot = slotOf(window.location.pathname)
+/** What the inbox asked for when it last opened on this address, so the next visit there can ask for it straight away. */
+export const rememberFirstList = (url: string, params: Record<string, unknown>, address: string = window.location.href) => {
+	const slot = slotOf(new URL(address, window.location.href))
 
 	if (!slot) {
 		return
@@ -60,7 +72,7 @@ export const prefetchInboxListOnVisit = (router: typeof inertiaRouter) => {
 			return
 		}
 
-		const slot = slotOf(visit.url.pathname)
+		const slot = slotOf(visit.url)
 		const remembered = slot ? rememberedIn(slot) : null
 
 		if (!remembered?.url || !remembered.params) {
@@ -77,14 +89,22 @@ export const prefetchInboxListOnVisit = (router: typeof inertiaRouter) => {
 	})
 }
 
-/** The answer already on its way, if it is for exactly this list; handed out once. */
-export const takePrefetchedList = (url: string, params: Record<string, unknown>): Promise<AxiosResponse> | null => {
+/**
+ * The answer already on its way, if it is for exactly this list; handed out once. outcome says
+ * whether one was there to use (prefetched), there for another list or too old (missed), or never
+ * asked for (fetched), so production shows why the inbox had to ask.
+ */
+export const takePrefetchedList = (url: string, params: Record<string, unknown>): { response: Promise<AxiosResponse> | null, outcome: "prefetched" | "missed" | "fetched" } => {
 	const found = pending
 	pending = null
 
-	if (!found || found.key !== listKey(url, params) || performance.now() - found.startedAt > FRESH_MS) {
-		return null
+	if (!found) {
+		return { response: null, outcome: "fetched" }
 	}
 
-	return found.response
+	if (found.key !== listKey(url, params) || performance.now() - found.startedAt > FRESH_MS) {
+		return { response: null, outcome: "missed" }
+	}
+
+	return { response: found.response, outcome: "prefetched" }
 }

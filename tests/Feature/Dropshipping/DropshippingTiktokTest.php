@@ -465,6 +465,26 @@ test('dispatch sends the tracking number with the shipping provider matched on t
         && $request->data() === ['tracking_number' => 'TRK-0001', 'shipping_provider_id' => '7117858858072016687']);
 })->depends('webhook for an awaiting shipment order creates the client, the address and one transaction per product');
 
+test('an APC dispatch sends the waybill, not the per-parcel item numbers', function (array $fixtures) {
+    [$tiktokUser, $order] = $fixtures;
+
+    fakeTiktok([
+        '/shipping_providers' => tiktokOk(['shipping_providers' => [['id' => '7117858858072016690', 'name' => 'APC Overnight']]]),
+        '/shipping_info/update' => tiktokOk([]),
+    ]);
+
+    $shipment = new Shipment([
+        'tracking'     => '2026110604810790208716001 2026110604810790208716002',
+        'trade_as'     => 'APC overnight',
+        'api_response' => ['Orders' => ['Order' => ['WayBill' => '2026110604810790208716']]],
+    ]);
+
+    FulfillOrderToTiktok::make()->fulfillBySeller($tiktokUser, $order->platform_order_id, $order, $shipment);
+
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), '/shipping_info/update')
+        && $request->data() === ['tracking_number' => '2026110604810790208716', 'shipping_provider_id' => '7117858858072016690']);
+})->depends('webhook for an awaiting shipment order creates the client, the address and one transaction per product');
+
 test('dispatch with an unknown shipper sends the tracking without a provider and a tiktok rejection comes back as an error', function (array $fixtures) {
     [$tiktokUser, $order] = $fixtures;
 

@@ -29,6 +29,15 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
 {
     use WithOrderingAuthorisation;
 
+    public const string READY = 'ready';
+    public const string WITH_WAREHOUSE = 'with_warehouse';
+
+    public static function whereReadyToContactCustomer($query): void
+    {
+        $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value)
+            ->where('delivery_notes.number_items_waiting_warehouse', 0);
+    }
+
     public function handle(Shop $shop, ?string $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -54,6 +63,22 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
             DeliveryNoteStateEnum::HANDLING->value,
             DeliveryNoteStateEnum::HANDLING_BLOCKED->value,
         ]);
+
+        $query->whereRadioFilter(
+            allowedElements: [self::READY, self::WITH_WAREHOUSE],
+            defaultValue: self::READY,
+            engine: function ($query, string $value) {
+                if ($value === self::READY) {
+                    static::whereReadyToContactCustomer($query);
+                } else {
+                    $query->where(function ($query) {
+                        $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING->value)
+                            ->orWhere('delivery_notes.number_items_waiting_warehouse', '>', 0);
+                    });
+                }
+            },
+            prefix: $prefix
+        );
 
         return $query->defaultSort('delivery_notes.id')
             ->select([
@@ -85,12 +110,29 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(?string $prefix = null): Closure
+    public function tableStructure(Shop $shop, ?string $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($shop, $prefix) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
             }
+
+            $waiting = DeliveryNote::where('shop_id', $shop->id)
+                ->where('number_items_waiting_crm', '>', 0)
+                ->whereIn('state', [DeliveryNoteStateEnum::HANDLING, DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+
+            $ready = clone $waiting;
+            static::whereReadyToContactCustomer($ready);
+            $readyCount = $ready->count();
+
+            $table->radioFilterGroup(
+                key: 'radio',
+                elements: [
+                    ['label' => __('Ready to contact customer').' ('.$readyCount.')', 'value' => self::READY],
+                    ['label' => __('Still with warehouse').' ('.((clone $waiting)->count() - $readyCount).')', 'value' => self::WITH_WAREHOUSE],
+                ],
+                default: self::READY
+            );
 
             $table->withEmptyState([
                 'title' => __('There is not delivery note with waiting items'),
@@ -120,7 +162,7 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
                 ],
                 'waiting_crm_items' => WaitingDeliveryNoteItemsCrmGroupedResource::collection($items),
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure($parent));
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop

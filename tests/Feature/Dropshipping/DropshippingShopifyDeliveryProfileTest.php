@@ -78,14 +78,14 @@ function deliveryProfileChannel($test): array
     return [$channel, $shopifyUser, $zone, $portfolio];
 }
 
-function appDeliveryProfile(array $variantIds, ?string $name, ?string $id = 'gid://shopify/DeliveryProfile/900'): array
+function appDeliveryProfile(array $variantIds, ?string $name, ?string $id = 'gid://shopify/DeliveryProfile/900', ?array $locationGroupZones = null): array
 {
     return ShopifyFake::graphql(['deliveryProfile' => $id ? [
         'id'                    => $id,
         'name'                  => $name,
         'profileLocationGroups' => [[
             'locationGroup'      => ['id' => 'gid://shopify/DeliveryLocationGroup/40'],
-            'locationGroupZones' => ['nodes' => [['zone' => ['id' => 'gid://shopify/DeliveryZone/50']]]],
+            'locationGroupZones' => ['nodes' => $locationGroupZones ?? [['zone' => ['id' => 'gid://shopify/DeliveryZone/50']]]],
         ]],
         'profileItems'          => [
             'pageInfo' => ['hasNextPage' => false, 'endCursor' => null],
@@ -455,4 +455,35 @@ test('fetching customers from Shopify waits and retries a throttled answer', fun
     FetchRetinaCustomerClientFromShopify::make()->handle($shopifyUser);
 
     expect(ShopifyFake::calls('GET customers.json'))->toHaveCount(2);
+});
+
+test('rates the merchant turned off in a zone stay off when our rates are replaced', function () {
+    [$channel, $shopifyUser, $zone] = deliveryProfileChannel($this);
+    $name = 'AW Connect shipping ('.$channel->slug.')';
+    $shopifyUser->update(['data' => [...$shopifyUser->data, 'delivery_profile' => ['id' => 'gid://shopify/DeliveryProfile/900', 'rates_fingerprint' => 'old']]]);
+    StoreShippingZone::make()->action($zone->schema, [
+        'code'        => 'PZ2',
+        'name'        => 'Zone 2',
+        'status'      => true,
+        'territories' => [['country_code' => 'SE']],
+        'price'       => ['type' => 'Step Order Estimated Weight', 'steps' => [['from' => 0, 'to' => 'INF', 'price' => 9.99]]],
+        'position'    => 2,
+        'is_failover' => false,
+    ]);
+
+    ShopifyFake::fake([
+        'getAppDeliveryProfile'    => appDeliveryProfile(['gid://shopify/ProductVariant/7001'], $name, locationGroupZones: [
+            ['zone' => ['id' => 'gid://shopify/DeliveryZone/50', 'name' => 'Zone 1'], 'methodDefinitions' => ['nodes' => [['active' => false], ['active' => false]]]],
+            ['zone' => ['id' => 'gid://shopify/DeliveryZone/51', 'name' => 'Zone 2'], 'methodDefinitions' => ['nodes' => [['active' => true]]]],
+        ]),
+        'appDeliveryProfileUpdate' => ShopifyFake::graphql(['deliveryProfileUpdate' => ['userErrors' => []]]),
+    ]);
+
+    [$status, $message] = SyncShopifyDeliveryProfile::run($channel);
+    $zonesCreated = collect(ShopifyFake::calls('appDeliveryProfileUpdate')[0]['variables']['profile']['locationGroupsToUpdate'][0]['zonesToCreate'])->keyBy('name');
+
+    expect($status)->toBeTrue()
+        ->and($message)->toBe('Rates replaced, added 0 and removed 0 variant(s)')
+        ->and(array_column($zonesCreated['Zone 1']['methodDefinitionsToCreate'], 'active'))->toBe([false, false])
+        ->and(array_column($zonesCreated['Zone 2']['methodDefinitionsToCreate'], 'active'))->toBe([true]);
 });

@@ -15,6 +15,10 @@ use App\Enums\Helpers\Ticket\TicketStatusEnum;
 use App\Mcp\Servers\AikuServer;
 use App\Models\SysAdmin\User;
 use App\Mcp\Tools\TicketAttachmentTool;
+use App\Mcp\Tools\TicketsTool;
+use App\Mcp\Tools\TicketUploadLinkTool;
+use App\Mcp\Tools\TicketWriteTool;
+use App\Actions\Helpers\Ticket\UpdateTicket;
 use App\Models\Helpers\TicketComment;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
@@ -451,4 +455,43 @@ test('assistant reads ticket attachments through MCP, within the ticket visibili
     $ticket->update(['is_confidential' => true]);
     $tool($qa, 'invoice.pdf')->assertHasErrors(['Ticket not found or not visible to you.']);
     expect($stock)->toBeInstanceOf(TicketComment::class);
+});
+
+test('a file uploaded through a signed link is attached to a held pending deploy comment and can be read back', function () {
+    $ticket = StoreTicket::make()->action($this->group, ['subject' => 'Attach by link']);
+    UpdateTicket::make()->action($ticket, ['status' => TicketStatusEnum::IN_PROGRESS->value, 'assignee_id' => $this->user->id]);
+    $png = UploadedFile::fake()->image('proof.png', 40, 30);
+    $bytes = file_get_contents($png->getRealPath());
+
+    $response   = AikuServer::actingAs($this->user)->tool(TicketUploadLinkTool::class, [])->assertOk();
+    $link       = json_decode((fn () => $this->content()[0])->call($response), true);
+
+    post(str_replace('signature=', 'signature=x', $link['upload_url']), ['file' => $png])->assertForbidden();
+    post($link['upload_url'], ['file' => UploadedFile::fake()->create('evil.php', 1)], ['Accept' => '*/*'])->assertStatus(422)->assertJsonValidationErrors('file');
+    post($link['upload_url'], ['file' => $png])->assertOk()->assertJson(['upload_id' => $link['upload_id'], 'name' => 'proof.png']);
+    post($link['upload_url'], ['file' => $png])->assertStatus(409);
+
+    $stranger = User::factory()->create(['group_id' => $this->group->id]);
+    $stranger->assignRole('help-desk-supervisor');
+    AikuServer::actingAs($stranger)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'comment' => 'mine now', 'uploads' => [$link['upload_id']]])->assertHasErrors();
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'comment' => 'Fixed, see screenshot', 'uploads' => [$link['upload_id']]])
+        ->assertOk()->assertSee('held_comment');
+
+    $held = $ticket->deployComment()->sole();
+    expect($held->getMedia('ticket_images')->sole()->name)->toBe('proof.png');
+    AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => $ticket->reference])->assertOk()->assertSee('Fixed, see screenshot');
+    AikuServer::actingAs($this->user)->tool(TicketAttachmentTool::class, ['reference' => $ticket->reference, 'attachment' => 'proof.png'])->assertOk()->assertSee(base64_encode($bytes));
+
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'comment' => 'Second try', 'uploads' => [$link['upload_id']]])->assertHasErrors();
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'status' => 'pending_deploy', 'comment' => 'Second try'])
+        ->assertOk()->assertSee('was replaced');
+
+    $last = json_decode((fn () => $this->content()[0])->call(AikuServer::actingAs($this->user)->tool(TicketUploadLinkTool::class, [])), true);
+    post($last['upload_url'], ['file' => $png])->assertOk();
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'ask_qa' => 'anyone', 'comment' => 'check', 'uploads' => [$last['upload_id']]])->assertHasErrors();
+    AikuServer::actingAs($this->user)->tool(TicketWriteTool::class, ['reference' => $ticket->reference, 'acting_as' => $stranger->username, 'comment' => 'on behalf', 'uploads' => [$last['upload_id']]])->assertOk()->assertSee('"attached":1');
+
+    $ticket->refresh()->update(['status' => TicketStatusEnum::IN_PROGRESS]);
+    AikuServer::actingAs($this->user)->tool(TicketsTool::class, ['reference' => $ticket->reference])->assertOk()->assertDontSee('held_comment');
 });

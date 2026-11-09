@@ -176,8 +176,8 @@ const packsToUnits = (quantity: number, packedIn: number): number => Math.round(
 
 // The server only accepts a whole count of single items, anything else stays expressed in packs.
 const toUnitsPayload = (quantity: number, packedIn: number): number | null => {
-    const units = quantity * packedIn
-    return Number.isInteger(units) ? units : null
+    const units = Math.round(quantity * packedIn)
+    return units > 0 && Math.abs(quantity - units / packedIn) < 1e-6 ? units : null
 }
 
 const unitsToPacks = (units: number, packedIn: number): number => Math.round((units / packedIn) * 1e6) / 1e6

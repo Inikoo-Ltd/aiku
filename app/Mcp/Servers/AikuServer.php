@@ -46,6 +46,7 @@ use App\Mcp\Tools\MyAccessTool;
 use App\Mcp\Tools\TicketAttachmentTool;
 use App\Mcp\Tools\TicketsTool;
 use App\Mcp\Tools\TicketWriteTool;
+use App\Mcp\Tools\TicketUploadLinkTool;
 use App\Mcp\Tools\OffersOverviewTool;
 use App\Mcp\Tools\OrderStatusTool;
 use App\Mcp\Tools\OrderFunnelTool;
@@ -100,6 +101,7 @@ class AikuServer extends Server
         TicketsTool::class,
         TicketAttachmentTool::class,
         TicketWriteTool::class,
+        TicketUploadLinkTool::class,
         DiscordMessageTool::class,
         StaffTaskWriteTool::class,
         StaffTasksTool::class,

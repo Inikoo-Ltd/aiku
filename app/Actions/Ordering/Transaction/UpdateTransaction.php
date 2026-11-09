@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Transaction;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\LogBasketEvent;
@@ -100,6 +101,10 @@ class UpdateTransaction extends OrgAction
 
         if ((float) $transaction->quantity_ordered < $quantityBefore) {
             ReturnLoweredQuantityToPartnerShoppingList::run($transaction);
+        }
+
+        if ((float) $transaction->quantity_ordered != $quantityBefore) {
+            FillToOrder::make()->followOrderLine($transaction, (float) $transaction->quantity_ordered);
         }
 
         if ($this->strict) {

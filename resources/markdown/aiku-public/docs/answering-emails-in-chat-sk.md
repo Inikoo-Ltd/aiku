@@ -21,6 +21,14 @@ Schránka obchodu musí byť raz pripojená - pozrite si <a href="/docs/connecti
 
 E-mail sa pripojí do <b>Waiting</b> (čaká) ako ktorákoľvek konverzácia a <b>Assign to me</b> (prideliť mne) ho urobí vaším - zvyšok nájdete v <a href="/docs/customer-chat-sk">Rozhovor so zákazníkmi v Chate</a>. Prichádza s ním celé vlákno. Vaša odpoveď sa odošle zo schránky obchodu v tom istom vlákne, a keď zákazník odpovie, vráti sa späť do tej istej konverzácie, nie do novej.
 
+## Písanie nového e-mailu
+
+<b>Nový e-mail</b> píše zákazníkovi alebo na ľubovoľnú adresu cez <b>Poslať na e-mailovú adresu</b>. Kým píšete, komu je určený, okno ponúkne vaše uložené kontakty a pod <b>Nedávno písané</b> adresy, na ktoré tento obchod písal alebo z ktorých dostal e-mail za posledných 90 dní, takže adresa, ktorú ste použili ráno, je na jedno kliknutie.
+
+E-mail, ktorý zatvoríte bez odoslania, sa uloží ako koncept: komu je určený, predmet a text. Malá bodka pri <b>Nový e-mail</b> ukazuje, že na vás čaká, a po otvorení sa vráti tam, kde ste skončili. Kliknite na <b>Zahodiť koncept</b>, ak chcete začať odznova. Koncept sa uchováva na počítači, na ktorom ste ho písali.
+
+Ak chcete dať odkaz na slová, napríklad na kód produktu, označte ich, kliknite na tlačidlo odkazu na lište formátovania a vložte webovú adresu. Zákazník uvidí slová ako odkaz. Kliknutím na tlačidlo odkazu pri prepojenom slove adresu zmeníte alebo odkaz odstránite. Webová adresa napísaná samostatne sa stane odkazom sama, ako doteraz.
+
 ## Prikladanie súborov
 
 Kliknite na kancelársku sponku alebo presuňte súbory do konverzácie. Priložiť môžete obrázky (JPG, PNG, WebP, AVIF), PDF, súbory Word, Excel, CSV, text, PowerPoint a zip, najviac 30 naraz a každý do 100 MB. To isté platí pre <b>New email</b>. Súbory sa k e-mailu priložia, kým sa spolu zmestia do približne 18 MB; ostatné idú v e-maile ako odkazy na stiahnutie, pretože e-mailové služby odmietnu správu väčšiu než približne 25 MB.

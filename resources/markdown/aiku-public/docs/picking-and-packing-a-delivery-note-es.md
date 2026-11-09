@@ -34,6 +34,8 @@ Un albarán se vuelve pickeable por sí solo, desde la pestaña **To do**, o com
 
 Al pulsar **Start picking** en un albarán, este pasa a **Handling** y se registra quién lo está pickeando. Si el albarán estaba en cola dentro de una sesión, al arrancar el picking de la sesión todos sus albaranes pasan a **Handling** de la misma manera, y quien inició la sesión se convierte en el picker de cada uno. Un albarán ya asignado a otra persona muestra un candado cerrado en lugar del botón de picking — pulsa **Unlock to pick** para hacerte cargo de él.
 
+Una sesión de picking puede llevar uno o varios carros (trolleys). Pulsa **+ Trolley** debajo de la línea de tiempo de la sesión para elegir los carros donde van los productos de la sesión; cada uno aparece entonces junto a cada albarán de la sesión en las listas de **Waiting** y en el propio albarán, para que quien repone un producto que falta sepa a qué carro llevarlo. Un carro de una sesión no puede darse a otra sesión ni a otro albarán hasta que se quite con su **×**, y se libera solo cuando todos los albaranes de la sesión están empaquetados.
+
 Mientras se pickea un albarán, una línea puede resultar necesitar una decisión que el picker no puede tomar en el puesto — por ejemplo un reemplazo o una liberación desde el almacén. Cuando eso ocurre, todo el albarán pasa a **Waiting** en lugar de dejar que el picking continúe alrededor del problema. En cuanto ya no queda nada realmente pendiente, aparece un botón **Auto Finish Waiting**, y al pulsarlo se revisa el albarán y, si de verdad todas las líneas están resueltas, lo lleva a **Picked**.
 
 ## Lotes
@@ -74,6 +76,7 @@ Un albarán puede cancelarse desde cualquier etapa antes de finalizarse o expedi
 <ul>
 <li><b>Ver albaranes por etapa:</b> tu almacén → <b>Dispatching → Delivery notes</b>, luego elige una pestaña de etapa — <b>To do</b>, <b>Queued</b>, <b>Handling</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packing</b>, <b>Packed</b>, <b>Finalised</b>, <b>Dispatched</b> o <b>All</b>.</li>
 <li><b>Trabajar sesiones de picking:</b> tu almacén → <b>Dispatching → Picking sessions</b> → pestañas de etapa <b>In Process</b>, <b>Picking</b>, <b>Waiting</b>, <b>Picked</b>, <b>Packed</b>.</li>
+<li><b>Indicar a reposición qué carro usa una sesión:</b> abre la sesión de picking → <b>+ Trolley</b> debajo de la línea de tiempo.</li>
 <li><b>Falta una pieza de un set completo:</b> devuelve a su estantería las demás piezas indicadas en el tooltip, y pulsa <b>Parts put back</b> en el albarán.</li>
 <li><b>Avanzar un albarán:</b> abre el albarán y usa su botón de etapa — <b>Start picking</b>, <b>Auto Finish Waiting</b>, <b>Start packing</b> / <b>Set as packed</b>, <b>Finalise and Dispatch</b>, <b>Dispatch</b>. Los botones de deshacer (<b>Undo set as picked</b>, <b>Undo packing</b>, <b>Unpack</b>, <b>Undispatch</b>) lo devuelven atrás.</li>
 </ul>

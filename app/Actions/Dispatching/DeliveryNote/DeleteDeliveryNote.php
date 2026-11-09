@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\PickedBay\DetachDeliveryNoteFromPickedBays;
+use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
@@ -27,6 +28,8 @@ class DeleteDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
+        $pickingSessions = $deliveryNote->pickingSessions()->get();
+
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
             $deliveryNote = $this->update($deliveryNote, $modelData);
 
@@ -45,6 +48,10 @@ class DeleteDeliveryNote extends OrgAction
 
             return $deliveryNote;
         });
+
+        foreach ($pickingSessions as $pickingSession) {
+            AutoFinishPackingPickingSession::run($pickingSession);
+        }
 
         $this->storeDeliveryNoteHydrators($deliveryNote);
         $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);

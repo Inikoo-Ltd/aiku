@@ -12,7 +12,12 @@ namespace App\Actions\Dispatching\Picking;
 use App\Actions\Dispatching\BatchCode\Hydrators\BatchCodeHydrateDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Dispatching\Picking\Traits\AutoIgnoreZeroQuantityItems;
+use App\Actions\Inventory\OrgStockMovement\AllocateOrgStockMovementBatches;
+use App\Actions\Inventory\OrgStockMovement\StoreOrgStockMovement;
 use App\Actions\Inventory\OrgStockMovement\UpdateOrgStockMovement;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementClassEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
+use App\Models\Inventory\OrgStockMovement;
 use App\Actions\OrgAction;
 use App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteWorkAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -94,15 +99,24 @@ class UpdatePicking extends OrgAction
         $picking        = $this->update($picking, $modelData);
         $batchChanged   = $oldBatchCodeId != $picking->batch_code_id;
 
-        if ($picking->orgStockMovement && ($oldQuantity != $picking->quantity || $batchChanged)) {
-            $movementData = ['quantity' => -($picking->quantity)];
-            if ($picking->batch_code_id) {
-                $movementData['batches'] = [['batch_code_id' => $picking->batch_code_id, 'quantity' => (float)$picking->quantity]];
-            } elseif ($batchChanged) {
-                $movementData['batches'] = [];
-            }
+        $movement = $picking->orgStockMovement;
+        if ($movement && ($oldQuantity != $picking->quantity || $batchChanged)) {
+            $batches = $picking->batch_code_id ? [['batch_code_id' => $picking->batch_code_id, 'quantity' => (float)$picking->quantity]] : [];
 
-            UpdateOrgStockMovement::make()->action($picking->orgStockMovement, $movementData);
+            if ($this->locationCountedSince($movement)) {
+                $this->pickAgainAfterTheCount($picking, $movement, $batches);
+            } else {
+                $movementData = ['quantity' => -($picking->quantity)];
+                if ($picking->batch_code_id || $batchChanged) {
+                    $movementData['batches'] = $batches;
+                }
+
+                UpdateOrgStockMovement::make()->action($movement, $movementData);
+            }
+        }
+
+        if (!$picking->org_stock_movement_id && $picking->type == PickingTypeEnum::PICK && (float)$picking->quantity > 0) {
+            StorePickingOrgStockMovement::dispatch($picking->id, $this->user?->id ?? $picking->picker_user_id)->afterCommit();
         }
 
         if ($batchChanged) {
@@ -116,6 +130,52 @@ class UpdatePicking extends OrgAction
         }
 
         return $picking->refresh();
+    }
+
+    private function locationCountedSince(OrgStockMovement $movement): bool
+    {
+        return OrgStockMovement::where('org_stock_id', $movement->org_stock_id)
+            ->where('location_id', $movement->location_id)
+            ->where('class', OrgStockMovementClassEnum::HELPER)
+            ->where('date', '>', $movement->date)
+            ->exists();
+    }
+
+    /**
+     * A count after the pick already holds what the pick took, and a location's level is its
+     * last count plus the movements dated after it. Editing the pick's movement in place would
+     * change the shelf with a change dated before the count, invisible to that sum. So the old
+     * movement is given back and the pick is taken again, both dated now.
+     *
+     * @param array<int, array{batch_code_id: int, quantity: float}> $batches
+     */
+    private function pickAgainAfterTheCount(Picking $picking, OrgStockMovement $movement, array $batches): void
+    {
+        StoreOrgStockMovement::run(
+            $movement->orgStock,
+            $movement->location,
+            [
+                'quantity' => -(float)$movement->quantity,
+                'type'     => OrgStockMovementTypeEnum::CANCEL_PICKED,
+                'user_id'  => $this->user?->id,
+                'batches'  => AllocateOrgStockMovementBatches::make()->movedBatches($movement),
+            ],
+            $picking
+        );
+
+        StoreOrgStockMovement::run(
+            $movement->orgStock,
+            $movement->location,
+            [
+                'quantity' => -(float)$picking->quantity,
+                'type'     => OrgStockMovementTypeEnum::PICKED,
+                'user_id'  => $this->user?->id,
+                'batches'  => $batches,
+            ],
+            $picking
+        );
+
+        $picking->refresh();
     }
 
     /**

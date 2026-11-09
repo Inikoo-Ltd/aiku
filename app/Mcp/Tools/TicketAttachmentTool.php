@@ -54,7 +54,7 @@ class TicketAttachmentTool extends Tool
             ->where(fn ($query) => $query->where('ulid', $wanted)->orWhere('name', $wanted))
             ->where(fn ($query) => $query
                 ->where(fn ($ticketMedia) => $ticketMedia->where('model_type', $ticket->getMorphClass())->where('model_id', $ticket->id))
-                ->orWhere(fn ($commentMedia) => $commentMedia->where('model_type', (new TicketComment())->getMorphClass())->whereIn('model_id', $ticket->comments()->select('id'))))
+                ->orWhere(fn ($commentMedia) => $commentMedia->where('model_type', (new TicketComment())->getMorphClass())->whereIn('model_id', TicketComment::where('ticket_id', $ticket->id)->select('id'))))
             ->orderByDesc('id')
             ->get()
             ->first(fn (Media $media) => $ticket->hasAttachmentVisibleTo($media, $user));

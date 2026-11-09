@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
@@ -119,6 +120,26 @@ class SendOrderToWarehouse extends OrgAction
         return true;
     }
 
+    /** Bottles filled to order hold the whole order until the artisan has filled them; FillToOrder::release sends it (HELP-4556) */
+    private function waitingForFilling(Order $order): bool
+    {
+        $lines = FillToOrder::make()->pendingLines($order);
+        if ($lines->isEmpty()) {
+            return false;
+        }
+
+        $note = collect([
+            self::withoutHeldNote($order->private_warehouse_note),
+            self::HELD_MARKER.' '.__('waiting for filling: :products', ['products' => $lines->map(fn ($line) => $line->transaction->model->code)->unique()->implode(', ')]),
+        ])->filter()->implode(' — ');
+
+        if ($note !== $order->private_warehouse_note) {
+            $this->update($order, ['private_warehouse_note' => $note]);
+        }
+
+        return true;
+    }
+
     /** The note without the held warning, keeping whatever staff wrote around it */
     public static function withoutHeldNote(?string $note): ?string
     {
@@ -187,7 +208,7 @@ class SendOrderToWarehouse extends OrgAction
         }
 
 
-        if ($this->missingAddress($order) || $this->missingComposition($order)) {
+        if ($this->missingAddress($order) || $this->missingComposition($order) || $this->waitingForFilling($order)) {
             return null;
         }
 

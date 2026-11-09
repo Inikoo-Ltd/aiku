@@ -15,6 +15,7 @@ use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\JobOrderItem\JobOrderItemStateEnum;
 use App\Enums\Production\JobOrderItem\JobOrderItemStatusEnum;
 use App\Models\CRM\WebUser;
+use App\Actions\Production\JobOrderItemTask\ShareMixPool;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -61,7 +62,8 @@ class UpdateJobOrderItem extends OrgAction
         }
 
         foreach ($this->jobOrderItem->tasks as $task) {
-            if (!$task->isRecordedInKg() && $task->requiredFor($this->get('quantity')) < $task->quantity_made) {
+            $alreadyMade = ShareMixPool::poolKey($task) ? ShareMixPool::usedByLaterSteps($task) : (float) $task->quantity_made;
+            if (!$task->isRecordedInKg() && $task->requiredFor($this->get('quantity')) < $alreadyMade) {
                 $validator->errors()->add('quantity', __('More than that is already made, the quantity cannot go below it.'));
 
                 return;

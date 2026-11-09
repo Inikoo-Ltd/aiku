@@ -76,7 +76,7 @@ class FulfillOrderToTiktok extends OrgAction
         );
 
         $response = $tiktokUser->updateShippingInfo($fulfillOrderId, [
-            'tracking_number' => $shipment->tracking,
+            'tracking_number' => self::trackingNumber($shipment),
             'shipping_provider_id' => Arr::get($shippingProvider, 'id')
         ]);
 
@@ -85,6 +85,14 @@ class FulfillOrderToTiktok extends OrgAction
         }
 
         return $response;
+    }
+
+    /**
+     * APC stores one item number per parcel (WayBill + 001, 002…), which APC's tracking does not find; its WayBill is the shipment's own reference.
+     */
+    public static function trackingNumber(Shipment $shipment): ?string
+    {
+        return Arr::get($shipment->api_response, 'Orders.Order.WayBill') ?: $shipment->tracking;
     }
 
     /**

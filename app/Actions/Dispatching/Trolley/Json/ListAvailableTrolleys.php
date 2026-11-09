@@ -38,7 +38,8 @@ class ListAvailableTrolleys extends OrgAction
 
         $query = QueryBuilder::for(Trolley::class)
             ->where('trolleys.warehouse_id', $warehouse->id)
-            ->whereNull('trolleys.current_delivery_note_id');
+            ->whereNull('trolleys.current_delivery_note_id')
+            ->whereNull('trolleys.picking_session_id');
 
         return $query
             ->select([

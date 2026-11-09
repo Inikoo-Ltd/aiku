@@ -30,7 +30,7 @@ class GroupHydrateTrolleys implements ShouldBeUnique
         $allTrolleys     = $group->trolleys()->count();
         $currentTrolleys = $group->trolleys()->where('status', true)->count();
         $usedTrolleys    = $group->trolleys()->where('status', true)
-            ->whereNotNull('current_delivery_note_id')->count();
+            ->where(fn ($query) => $query->whereNotNull('current_delivery_note_id')->orWhereNotNull('picking_session_id'))->count();
 
 
         $stats = [

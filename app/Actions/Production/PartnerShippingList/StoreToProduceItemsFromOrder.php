@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\PartnerShippingList;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Order;
@@ -41,6 +42,18 @@ class StoreToProduceItemsFromOrder
                 continue;
             }
 
+            if ($fillArtefact = FillToOrder::make()->artefactFor($product)) {
+                $items[] = PartnerShoppingListItem::create([
+                    'group_id'        => $order->group_id,
+                    'organisation_id' => $order->organisation_id,
+                    'stock_id'        => $product->orgStocks->first()->stock_id,
+                    'org_stock_id'    => $product->orgStocks->first()->id,
+                    'quantity'        => (float) $transaction->quantity_ordered,
+                    'transaction_id'  => $transaction->id,
+                ]);
+                continue;
+            }
+
             /** @var OrgStock $orgStock */
             foreach ($product->orgStocks as $orgStock) {
                 $hasArtefact = Artefact::where('organisation_id', $order->organisation_id)
@@ -51,7 +64,7 @@ class StoreToProduceItemsFromOrder
                 }
 
                 $skosNeeded = (float) $transaction->quantity_ordered * (float) ($orgStock->pivot->quantity ?: 1);
-                $shortfall  = round($skosNeeded - (float) $orgStock->quantity_in_locations, 3);
+                $shortfall  = round($skosNeeded - max((float) $orgStock->quantity_available, 0), 3);
                 if ($shortfall <= 0) {
                     continue;
                 }

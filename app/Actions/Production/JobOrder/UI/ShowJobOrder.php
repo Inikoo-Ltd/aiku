@@ -175,6 +175,7 @@ class ShowJobOrder extends OrgAction
                     'hold'            => $this->holdWithLabel($jobOrder->data['hold'] ?? null),
                     'holds'           => array_map(fn (array $hold) => $this->holdWithLabel($hold), $jobOrder->data['holds'] ?? []),
                     'cancellation'    => $this->cancellationWithLabel($jobOrder->data['cancellation'] ?? null),
+                    'line_returns'    => array_map(fn (array $lineReturn) => array_merge($lineReturn, ['kind_label' => DeleteJobOrderItem::kindLabels()[$lineReturn['kind']] ?? null]), $jobOrder->data['line_returns'] ?? []),
                 ],
                 'can_see_pay'       => $this->canSeePay,
                 'hold_route'        => $this->canHold && ($isOpen || isset($jobOrder->data['hold'])) ? [
@@ -186,6 +187,7 @@ class ShowJobOrder extends OrgAction
                     'parameters' => ['jobOrder' => $jobOrder->id],
                 ] : null,
                 'cancel_kind_options' => collect(CancelJobOrder::kindLabels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+                'line_return_kind_options' => collect(DeleteJobOrderItem::kindLabels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
                 'hold_kind_options' => collect(HoldJobOrder::kindLabels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
                 'artisan_options' => $this->canEdit ? GetArtisanDepartments::make()->departmentFirst(
                     $this->production,

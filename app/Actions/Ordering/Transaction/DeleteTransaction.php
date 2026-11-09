@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Transaction;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
 use App\Actions\Dispatching\DeliveryNoteItem\DeleteDeliveryNoteItem;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
@@ -46,6 +47,7 @@ class DeleteTransaction extends OrgAction
                 DeleteInvoiceTransaction::run($transaction->invoiceTransaction);
             }
 
+            FillToOrder::make()->followOrderLine($transaction, 0);
             $transaction->delete();
 
             ReopenPartnerShoppingListItemsOfTransactions::run([$transaction->id]);

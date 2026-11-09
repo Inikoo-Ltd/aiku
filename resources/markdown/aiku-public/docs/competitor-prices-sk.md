@@ -8,7 +8,7 @@ category: shop
 ---
 
 <aside class="tldr">
-V <b>Masters › Competitors</b> (Konkurenti) aiku poviete, ktoré webové stránky konkurentov má sledovať. aiku si ich produkty a ceny prečíta samo, spáruje ich s vašimi hlavnými produktmi a ukáže, <b>kde ste lacnejší, približne rovnakí alebo drahší</b>, na jednotku a v mene skupiny. AI potvrdí páry, v ktorých si je istá, a <b>zvyšok vám dá na kontrolu</b> s fajkou alebo krížikom. Potvrdené ceny sa ukazujú aj v <a href="/docs/price-tips-sk">cenových tipoch</a>.
+V <b>Masters › Competitors</b> (Konkurenti) aiku poviete, ktoré webové stránky konkurentov má sledovať. aiku si ich produkty a ceny prečíta samo, spáruje ich s vašimi hlavnými produktmi a ukáže, <b>kde ste lacnejší, približne rovnakí alebo drahší</b>, na jednotku, v ich mene oproti vašej vlastnej cene v nej. Trhoviská, ktoré blokujú automatické návštevy, sa <b>kontrolujú ručne</b> raz za mesiac. AI potvrdí páry, v ktorých si je istá, a <b>zvyšok vám dá na kontrolu</b> s fajkou alebo krížikom. Potvrdené ceny sa ukazujú aj v <a href="/docs/price-tips-sk">cenových tipoch</a>.
 </aside>
 
 ## Pridanie konkurenta
@@ -30,6 +30,19 @@ Pri akejkoľvek inej webovej stránke vyplňte jedno z polí v **Where to read p
 - **Search link** (odkaz na vyhľadávanie): vyhľadajte na ich webe ľubovoľné slovo, skopírujte odkaz na stránku s výsledkami a na miesto slova vložte `{query}`. aiku potom každý týždeň vyhľadáva na ich webe hlavné produkty, ktoré majú otvorený cenový tip. Ak odkaz pri webe s prihlásením necháte prázdny alebo zadaný odkaz vedie na stránku bez hľadaných slov, aiku použije odkaz na vyhľadávanie, ktorý web o sebe zverejňuje, ak ho má; inak sa pri konkurentovi zobrazí **The search link does not search**.
 - **Login page** (prihlasovacia stránka), **login email** a **password**: iba keď ceny ukazujú prihláseným obchodným zákazníkom. Heslo sa ukladá zašifrované a už sa nezobrazí; pri úprave ho nechajte prázdne, ak ho chcete zachovať. aiku sa pri každom vyhľadávaní prihlási nanovo.
 
+## Trhoviská kontrolované ručne
+
+Veľké trhoviská, ktoré predávajú priamo zákazníkom, blokujú automatické návštevy bezpečnostnými kontrolami a prihlásením, takže ich aiku nevie prečítať. Pridajte ich ako konkurenta, ktorý predáva **zákazníkom**, v mene, ktorú vidíte na ich stránke, a zapnite **Prices checked by hand**. aiku potom ich stránku nikdy neotvorí: žiadny katalóg, vyhľadávanie ani dossier.
+
+Raz za mesiac otvorte ich stránku ako kupujúci v EÚ, vyhľadajte naše ohrozené produkty (začnite tými vyrobenými v Číne, kde sú títo predajcovia najsilnejší) a na stránke konkurenta kliknite na **Add price check** pri každej ponuke, ktorá je rovnaký tovar ako náš:
+
+- **Our product code**, kód hlavného produktu;
+- **odkaz na ich ponuku**, aby ju ktokoľvek mohol otvoriť a vidieť cenu na vlastné oči;
+- **ich názov produktu**, **cenu za balenie** (s DPH, s dopravou, ak ju účtujú), **počet kusov v balení** a **dni doručenia**, ktoré sľubujú;
+- **snímku obrazovky** ich ponuky s viditeľnou cenou: vyberte súbor alebo ju vložte priamo zo schránky cez Ctrl+V / Cmd+V. Je to dôkaz ceny a zostane, aj keď sa ponuka zmení alebo zmizne.
+
+Ponuka sa stane potvrdeným párom, takže sa počíta na prehľade, v porovnaní cien **Confirmed** a v cenových tipoch ako každý iný. Každá kontrola sa navyše uchová: karta **Price checks** ich zobrazuje od najnovšej, s ich cenou za jednotku, vašou, rozdielom, zmenou od predchádzajúcej kontroly tej istej ponuky, dňami doručenia, kto kontroloval a snímkou obrazovky (kliknutím ju zväčšíte). Pridanie toho istého odkazu o mesiac pridá nový riadok, takže história ukáže, či zlacňujú.
+
 ## Čo ukazuje dashboard
 
 **Masters › Competitors** sa otvorí na dashboarde:
@@ -46,7 +59,7 @@ Kým nepridáte prvého konkurenta, dashboard vysvetlí, čo robiť.
 
 ## Kontrola párov
 
-Po každom čítaní AI porovná každý ich produkt s vašimi. Pár, v ktorom si je istá, sa **potvrdí sám** (označený *auto*); ostatné čakajú v **Prices to review**. Každý riadok ukazuje váš produkt, vašu cenu za jednotku, ich produkt s odkazom, ich cenu za jednotku v mene skupiny a rozdiel: červený, keď sú lacnejší, zelený, keď sú drahší.
+Po každom čítaní AI porovná každý ich produkt s vašimi. Pár, v ktorom si je istá, sa **potvrdí sám** (označený *auto*); ostatné čakajú v **Prices to review**. Každý riadok ukazuje váš produkt, vašu cenu za jednotku, ich produkt s odkazom, ich cenu za jednotku a rozdiel: červený, keď sú lacnejší, zelený, keď sú drahší. Obe ceny sú v ich mene, vaša podľa vašej ceny v tej mene (cena AW class v eurách pre konkurenta v eurách); iba keď v ich mene cenu nemáte, prepočítajú sa obe na menu skupiny.
 
 Kliknite na **fajku**, keď je pár správny, a na **krížik**, keď nie je. Zamietnuté páry sa už nezobrazia. Voľby hore prepínajú medzi **To review**, **Confirmed**, **Rejected** a **All**; voľba **Confirmed** slúži zároveň ako porovnanie cien, zoraditeľné podľa rozdielu.
 
@@ -88,6 +101,7 @@ Karta ukazuje zhora nadol:
 <li><b>Skontrolovať páry:</b> <b>Masters</b> → <b>Competitors</b> → <b>Prices to review</b> → fajka alebo krížik na každom riadku.</li>
 <li><b>Porovnanie cien:</b> <b>Masters</b> → <b>Competitors</b> → <b>Prices to review</b> → <b>Confirmed</b>.</li>
 <li><b>Jeden konkurent:</b> <b>Masters</b> → <b>Competitors</b> → <b>Competitors</b> → kliknite na jeho názov.</li>
+<li><b>Pridať ručne skontrolovanú cenu:</b> otvorte konkurenta → <b>Add price check</b>; história je na karte <b>Price checks</b>.</li>
 </ul>
 </aside>
 

@@ -14,6 +14,7 @@ use App\Actions\Production\JobOrder\StoreJobOrdersGroupedByArtisan;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
 use App\Models\Production\Production;
@@ -61,6 +62,12 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
                 'batch_code'  => $item->batch_code,
                 'expiry_date' => $item->expiry_date?->format('Y-m-d'),
                 'after'       => fn (JobOrder $jobOrder) => $item->update(['job_order_id' => $jobOrder->id]),
+                'fill'        => $artefact->org_stock_id ? null : [
+                    'to_produce_id' => $item->id,
+                    'oil'           => $item->orgStock->code,
+                    'oil_name'      => $item->orgStock->name,
+                    'order'         => $item->transaction?->order?->reference,
+                ],
             ];
         }
 
@@ -71,6 +78,10 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
 
     private function resolveArtefact(Production $production, PartnerShoppingListItem $item): ?Artefact
     {
+        if ($item->transaction_id && ($fillArtefact = FillToOrder::make()->artefactFor($item->transaction?->model))) {
+            return $fillArtefact->production_id == $production->id ? $fillArtefact : null;
+        }
+
         $orgStockId = OrgStock::where('organisation_id', $production->organisation_id)
             ->where('stock_id', $item->stock_id)
             ->value('id');

@@ -493,7 +493,7 @@ PROMPT;
     {
         Nightwatch::dontSample();
 
-        $competitors = Competitor::query()
+        $competitors = Competitor::where('prices_by_hand', false)
             ->when($command->option('competitor'), fn ($query, $id) => $query->where('id', $id))
             ->get();
 

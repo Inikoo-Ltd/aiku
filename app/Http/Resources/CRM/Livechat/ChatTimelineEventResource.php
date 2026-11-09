@@ -9,6 +9,7 @@ namespace App\Http\Resources\CRM\Livechat;
 
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Models\Chat\ChatAgent;
+use App\Models\Chat\ChatSession;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
@@ -31,9 +32,35 @@ class ChatTimelineEventResource extends JsonResource
             'actor_name'  => $this->actorName(),
             'description' => $this->describe($eventType),
             'note'        => $eventType === ChatEventTypeEnum::INTERNAL_NOTE ? $this->payload('text') : null,
+            'note_links'  => $eventType === ChatEventTypeEnum::INTERNAL_NOTE ? $this->noteLinks((string) $this->payload('text'), auth()->user()?->group_id) : [],
             'created_at'  => $this->created_at,
             'timestamp'   => $this->created_at?->timestamp,
         ];
+    }
+
+    /**
+     * Chats Aiku names in a note, by id, become links to that conversation with its shop,
+     * so a colleague filtering the inbox to another shop still lands on it in one click.
+     *
+     * @return array<int, array{ulid: string, shop: string|null, url: string}>
+     */
+    protected function noteLinks(string $text, ?int $groupId): array
+    {
+        preg_match_all('/\\b[0-9A-HJKMNP-TV-Z]{26}\\b/', $text, $matches);
+
+        if (!$groupId || !$matches[0]) {
+            return [];
+        }
+
+        return ChatSession::with('shop.organisation')
+            ->whereIn('ulid', array_unique($matches[0]))
+            ->whereHas('shop', fn ($query) => $query->where('group_id', $groupId))
+            ->get()
+            ->map(fn (ChatSession $chatSession) => [
+                'ulid' => $chatSession->ulid,
+                'shop' => $chatSession->shop?->name,
+                'url'  => route('grp.org.chat.inbox.conversation', [$chatSession->shop->organisation->slug, $chatSession->ulid]),
+            ])->values()->all();
     }
 
     protected function payload(string $key, $default = null)

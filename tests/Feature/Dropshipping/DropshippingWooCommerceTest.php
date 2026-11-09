@@ -477,7 +477,8 @@ test('fetching orders imports a paid processing order with its client, address a
         ->and($order->transactions()->first()->historic_asset_id)->toBe($portfolio->item->currentHistoricProduct->id)
         ->and($order->deliveryAddress->address_line_1)->toBe('2 Shipping Street')
         ->and($order->deliveryAddress->postal_code)->toBe('S2 2BB')
-        ->and($order->deliveryAddress->country_code)->toBe('GB');
+        ->and($order->deliveryAddress->country_code)->toBe('GB')
+        ->and($order->customer_notes)->toBeNull();
 
     $client = $order->customerClient;
     expect($client->reference)->toBe('John Doe Acme Ltd'.$channel->id)
@@ -506,6 +507,20 @@ test('fetching the same order again does not import it twice and a returning cli
         ->and($channel->clients()->count())->toBe(1)
         ->and($channel->clients()->first()->email)->toBe('new.mail@example.com')
         ->and($channel->clients()->first()->phone)->toBe('+440114000111');
+});
+
+test('the end customer checkout note is stored as the order customer notes', function () {
+    $wooCommerceUser = wooConnect(wooCustomer($this->shop));
+    $channel         = $wooCommerceUser->customerSalesChannel;
+    wooPortfolio($channel, $this->product, '93');
+
+    wooFake([
+        'GET orders' => Http::response([wooOrder(728, [wooLineItem(316, 93)], ['customer_note' => "  Packeta Z-BOX 12345\n"])]),
+    ]);
+
+    FetchWooUserOrders::run($wooCommerceUser);
+
+    expect($channel->orders()->first()->customer_notes)->toBe('Packeta Z-BOX 12345');
 });
 
 test('unpaid, cancelled and address-less orders are skipped', function () {
