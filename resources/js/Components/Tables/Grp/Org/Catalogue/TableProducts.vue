@@ -27,6 +27,7 @@ import { faWarning, faXmark } from "@fortawesome/free-solid-svg-icons"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import Image from "@common/Components/Image.vue"
 import { ctrans } from "@/Composables/useTrans"
+import { useProductAvailabilityLive } from "@/Composables/useProductAvailabilityLive"
 import { faTriangle, faEquals, faMinus, faShapes, faStar, faThumbtack, faRunning} from "@fas"
 import LabelSKU from "@/Components/Utils/Product/LabelSKU.vue"
 import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
@@ -565,6 +566,13 @@ function getMargin(item: ProductItem) {
     return Number((((p - cost) / p) * 100).toFixed(1))
 }
 
+
+const { pendingProductIds } = useProductAvailabilityLive((update) => {
+    const product = ((props.data as { data?: { id: number }[] })?.data ?? []).find(row => row.id === update.product_id)
+    if (product) {
+        Object.assign(product, { available_quantity: update.available_quantity, is_on_demand: update.is_on_demand })
+    }
+})
 
 onMounted(() => {
     if (typeof window !== "undefined") {
@@ -1221,6 +1229,7 @@ const familyRoute = (item) => {
                 <span class="text-xs italic text-gray-400">{{ ctrans("on demand") }}</span>
             </span>
             <template v-else>{{ item['available_quantity'] ?? 0 }}</template>
+            <LoadingIcon v-if="pendingProductIds.has(item.id)" v-tooltip="ctrans('Recalculating availability')" class="ml-1 text-xs text-gray-400" />
         </template>
 
         <template #cell(workflow)="{ item: product }">

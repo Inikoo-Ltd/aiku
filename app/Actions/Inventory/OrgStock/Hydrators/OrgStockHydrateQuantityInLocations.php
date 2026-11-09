@@ -124,7 +124,7 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             //            ]);
 
             foreach ($orgStock->products()->with(['group', 'organisation', 'shop', 'family', 'webpage', 'asset', 'orgStocks'])->get() as $product) {
-                ProductHydrateAvailableQuantity::run($product);
+                ProductHydrateAvailableQuantity::dispatch($product);
             }
 
             OrgStockHydrateStockValue::dispatch($orgStock);

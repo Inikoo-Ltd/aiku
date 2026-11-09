@@ -53,3 +53,8 @@ test('delivery note state counters take a state change that arrives while they r
             ->and($class::makeUniqueJob(1))->toBeInstanceOf(BoundedUniqueUntilProcessingJobDecorator::class);
     }
 });
+
+test('product availability takes a stock change that arrives while it recounts', function () {
+    expect(actionsUniqueUntilProcessing())->toContain(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::class)
+        ->and(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::makeUniqueJob(new \App\Models\Catalogue\Product()))->toBeInstanceOf(BoundedUniqueUntilProcessingJobDecorator::class);
+});

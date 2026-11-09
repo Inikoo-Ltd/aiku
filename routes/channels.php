@@ -219,6 +219,10 @@ Broadcast::channel("grp.{organisation}.stock_movement", function () {
     return true;
 });
 
+Broadcast::channel("grp.{organisation}.product_availability", function (User $user, string $organisation) {
+    return $user->authorisedOrganisations()->where('organisations.slug', $organisation)->exists();
+});
+
 Broadcast::channel("grp.{organisation}.warehouse.{warehouse}.low_stock_audit", function () {
     return true;
 });

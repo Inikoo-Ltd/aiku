@@ -81,7 +81,12 @@ class ReceiveJobOrderIntoStock extends OrgAction
                 ]);
             }
 
-            $items = $jobOrder->jobOrderItems()->lockForUpdate()->with(['artefact', 'tasks'])->get();
+            $items = $jobOrder->jobOrderItems()->lockForUpdate()->with([
+                'artefact.manufactureTasks',
+                'artefact.orgStock.organisation.currency',
+                'artefact.orgStock.group.currency',
+                'tasks.recipeStep',
+            ])->get();
 
             $toReceive = [];
             foreach ($items as $item) {
@@ -284,7 +289,7 @@ class ReceiveJobOrderIntoStock extends OrgAction
     {
         $recipeSteps = ArtefactManufactureTask::where('artefact_id', $item->artefact_id)
             ->whereNotIn('id', $this->stepsTakenWithTheirMix($item))
-            ->with('rawMaterials.rawMaterial.orgStock')
+            ->with(['rawMaterials.rawMaterial.orgStock.organisation.currency', 'rawMaterials.rawMaterial.orgStock.group.currency'])
             ->get();
 
         $consumptionByOrgStock = [];

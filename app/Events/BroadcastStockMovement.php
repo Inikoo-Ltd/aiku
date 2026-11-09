@@ -39,6 +39,7 @@ class BroadcastStockMovement implements ShouldBroadcastNow
                 'org_stock_id'      => $orgStock->id,
                 'location_id'       => $location->id,
                 'new_quantity'      => $locationOrgStock->quantity,
+                'product_ids'       => $orgStock->products()->pluck('products.id')->all(),
             ]
         ];
     }
