@@ -80,7 +80,7 @@ enum PurchaseOrderStateEnum: string
             'cancelled'    => [
                 'tooltip' => __('Cancelled'),
                 'icon'    => 'fal fa-times-circle',
-                'class'   => 'text-danger-500',
+                'class'   => 'text-red-500',
                 'color'   => 'danger',
                 'app'     => [
                     'name' => 'times-circle',
