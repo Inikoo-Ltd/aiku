@@ -7,11 +7,9 @@ use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Helpers\Brand;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Laravel\Telescope\Telescope;
 
 class RedoBrandTimeSeries implements ShouldBeUnique
 {
@@ -31,13 +29,6 @@ class RedoBrandTimeSeries implements ShouldBeUnique
     public function getJobUniqueId(string $from, string $to): string
     {
         return "{$from}_$to";
-    }
-
-    protected function beforeCommand(Command $command): void
-    {
-        if (class_exists(Telescope::class)) {
-            Telescope::stopRecording();
-        }
     }
 
     protected function dateRangeSources(): array
