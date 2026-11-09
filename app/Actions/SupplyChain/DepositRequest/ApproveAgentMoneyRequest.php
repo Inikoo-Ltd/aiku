@@ -81,7 +81,11 @@ class ApproveAgentMoneyRequest extends OrgAction
         abort_unless($depositRequest->organisation, 404);
         $this->initialisation($depositRequest->organisation, $request);
 
-        return $this->handle($depositRequest, $request->user());
+        $depositRequest = $this->handle($depositRequest, $request->user());
+
+        NotifyMoneyRequestApproved::run($depositRequest, $request->user());
+
+        return $depositRequest;
     }
 
     public function htmlResponse(): RedirectResponse

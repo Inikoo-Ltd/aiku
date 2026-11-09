@@ -24,9 +24,11 @@ enum UserNotificationEnum: string
     case PURCHASE_ORDER_MINIMUM_POKE = 'purchase_order_minimum_poke';
     case PURCHASE_ORDER_BALANCE_DUE = 'purchase_order_balance_due';
     case MONEY_REQUEST_CREATED = 'money_request_created';
+    case MONEY_REQUEST_APPROVED = 'money_request_approved';
     case MONEY_REQUEST_PAID = 'money_request_paid';
     case MONEY_REQUEST_UNAPPROVED = 'money_request_unapproved';
     case MONEY_REQUEST_REJECTED = 'money_request_rejected';
+    case MONEY_REQUEST_CANCELLED = 'money_request_cancelled';
     case SUPPLIER_PRODUCT_AVAILABILITY = 'supplier_product_availability';
     case PRODUCT_DEVELOPMENT_TASK = 'product_development_task';
     case PRODUCT_DEVELOPMENT_MENTION = 'product_development_mention';
@@ -50,9 +52,11 @@ enum UserNotificationEnum: string
         self::PURCHASE_ORDER_MINIMUM_POKE,
         self::PURCHASE_ORDER_BALANCE_DUE,
         self::MONEY_REQUEST_CREATED,
+        self::MONEY_REQUEST_APPROVED,
         self::MONEY_REQUEST_PAID,
         self::MONEY_REQUEST_UNAPPROVED,
         self::MONEY_REQUEST_REJECTED,
+        self::MONEY_REQUEST_CANCELLED,
         self::SUPPLIER_PRODUCT_AVAILABILITY,
     ];
 
@@ -71,9 +75,11 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDER_COMPLIANCE_DUE => __('Compliance documents of my purchase order are due'),
             self::PURCHASE_ORDER_BALANCE_DUE    => __('A purchase order passed its QC and its balance can be paid'),
             self::MONEY_REQUEST_CREATED         => __('An agent asks for money on a money request I approve, pay or am copied on'),
+            self::MONEY_REQUEST_APPROVED        => __('The client approves a money request I asked for or am copied on'),
             self::MONEY_REQUEST_PAID            => __('A money request I asked for or am copied on is paid'),
             self::MONEY_REQUEST_UNAPPROVED      => __('The client cancels its approval of a money request I asked for'),
             self::MONEY_REQUEST_REJECTED        => __('The client rejects a money request I asked for or am copied on'),
+            self::MONEY_REQUEST_CANCELLED       => __('An agent withdraws a money request I approve, pay or am copied on'),
             self::SUPPLIER_PRODUCT_AVAILABILITY => __('An agent changes the availability of a product my organisation buys'),
             self::PRODUCT_DEVELOPMENT_TASK      => __('A product development gives me a task or reminds me of one'),
             self::PRODUCT_DEVELOPMENT_MENTION   => __('Someone @mentions me on a product development'),
@@ -128,9 +134,11 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDER_COMPLIANCE_DUE => 'fal fa-clipboard-check',
             self::PURCHASE_ORDER_BALANCE_DUE    => 'fal fa-file-invoice',
             self::MONEY_REQUEST_CREATED         => 'fal fa-money-check-alt',
+            self::MONEY_REQUEST_APPROVED        => 'fal fa-thumbs-up',
             self::MONEY_REQUEST_PAID            => 'fal fa-hand-holding-usd',
             self::MONEY_REQUEST_UNAPPROVED      => 'fal fa-undo',
             self::MONEY_REQUEST_REJECTED        => 'fal fa-ban',
+            self::MONEY_REQUEST_CANCELLED       => 'fal fa-times-circle',
             self::SUPPLIER_PRODUCT_AVAILABILITY => 'fal fa-box-check',
             self::PURCHASE_ORDER_MINIMUM_POKE   => 'fal fa-hand-point-right',
             self::PRODUCT_DEVELOPMENT_TASK      => 'fal fa-lightbulb-on',

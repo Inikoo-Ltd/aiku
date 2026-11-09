@@ -59,7 +59,11 @@ class CancelAgentMoneyRequest extends OrgAction
         $this->depositRequest = $depositRequest;
         $this->initialisation($depositRequest->agent->organisation, $request);
 
-        return $this->handle($depositRequest);
+        $depositRequest = $this->handle($depositRequest);
+
+        NotifyMoneyRequestCancelled::run($depositRequest, $request->user());
+
+        return $depositRequest;
     }
 
     public function htmlResponse(): RedirectResponse
