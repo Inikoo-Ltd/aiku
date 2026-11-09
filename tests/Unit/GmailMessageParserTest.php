@@ -112,6 +112,15 @@ test('a quote inside a comment or a stylesheet does not cut the email', function
         ->and(GmailMessageParser::body(['payload' => gmailTextPart('text/html', '<style>/* <blockquote type="cite"> */</style>Hello order 123', 'utf-8')]))->toBe('Hello order 123');
 });
 
+test('a less-than sign that cannot open a tag does not cut the rest of the message', function () {
+    expect(stripTagsKeepingEmailAddresses('ethyl alcohol at 20-<50% in Section 3. Could you confirm? <b>ok</b> <3 <'))
+        ->toBe('ethyl alcohol at 20-<50% in Section 3. Could you confirm? ok <3 <')
+        ->and(stripTagsKeepingEmailAddresses('<<script>alert(1)</script> <!-- x --> <?php y ?>z'))->toBe('alert(1)  z')
+        ->and(stripTagsKeepingEmailAddresses('<<img>img src=x onerror=alert(1)> <<b>/div> <<!-- -->svg> <<<b>b>i'))->toBe('img src=x onerror=alert(1)> /div> svg> b>i')
+        ->and(stripTagsKeepingEmailAddresses("\u{E002}<3"))->toBe('<3')
+        ->and(GmailMessageParser::body(['payload' => gmailTextPart('text/html', '<p>at 20-&lt;50% in Section 3</p>', 'utf-8')]))->toBe('at 20-<50% in Section 3');
+});
+
 test('an address with a nul byte or in invalid utf-8 never keeps the nul or any markup', function () {
     expect(stripTagsKeepingEmailAddresses("<a@b\0c> ok"))->toBe(' ok')
         ->and(stripTagsKeepingEmailAddresses("<a@b.c> \xff <img src=x onerror=alert(1)>"))->toBe("<a@b.c> \xff ");

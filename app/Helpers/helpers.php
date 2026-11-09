@@ -1133,16 +1133,23 @@ if (!function_exists('stripTagsKeepingEmailAddresses')) {
     /**
      * strip_tags reads "Lavera <lavera@example.com>" as a tag and the address vanished from the
      * customer's email. An address in angle brackets survives; it has no "/", "=" or quotes, so
-     * nothing kept can carry an attribute. Everything else is stripped as before.
+     * nothing kept can carry an attribute. A "<" that cannot open a tag ("20-<50%", "<3") is kept
+     * too: strip_tags read it as an unclosed tag and dropped the rest of the message. One that would
+     * open a tag once the markup after it is gone ("<<b>script>") is dropped instead.
      */
     function stripTagsKeepingEmailAddresses(string $text): string
     {
         $open  = "\u{E000}";
         $close = "\u{E001}";
 
-        $text = str_replace([$open, $close], '', $text);
-        $text = preg_replace('/<([^\s\0<>@\/="\']+@[^\s\0<>@\/="\']+)>/', $open.'$1'.$close, $text) ?? $text;
+        $lessThan = "\u{E002}";
 
-        return str_replace([$open, $close], ['<', '>'], strip_tags($text));
+        $text = str_replace([$open, $close, $lessThan], '', $text);
+        $text = preg_replace('/<([^\s\0<>@\/="\']+@[^\s\0<>@\/="\']+)>/', $open.'$1'.$close, $text) ?? $text;
+        $text = preg_replace('/<(?![a-zA-Z\/!?\0])/', $lessThan, $text) ?? $text;
+        $text = strip_tags($text);
+        $text = preg_replace('/'.$lessThan.'(?=(?:'.$lessThan.')*[a-zA-Z\/!?\0])/', '', $text) ?? $text;
+
+        return str_replace([$open, $close, $lessThan], ['<', '>', '<'], $text);
     }
 }
