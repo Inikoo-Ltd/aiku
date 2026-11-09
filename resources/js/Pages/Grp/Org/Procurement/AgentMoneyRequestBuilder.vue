@@ -62,6 +62,7 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 const money = (amount: number) => locale.currencyFormat(props.due.currency_code, amount)
+const amountInputOptions = computed(() => locale.currencyInputOptions(props.due.currency_code))
 const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)] focus:!border-[var(--app-accent)]"
 
 const ageInDays = (date: string | null) => (date ? Math.max(0, Math.round((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(date)) / 86400000)) : null)
@@ -267,7 +268,7 @@ const send = () => {
 						</div>
 					</td>
 					<td class="px-3 py-2 text-right">
-						<InputNumber v-model="amounts[line.key]" mode="currency" :currency="due.currency_code" :min="0" :max="line.due" :disabled="!ticked[line.key]" inputClass="w-36 text-right" :class="fieldFocusClass" />
+						<InputNumber v-model="amounts[line.key]" v-bind="amountInputOptions" :min="0" :max="line.due" :disabled="!ticked[line.key]" inputClass="w-36 text-right" :class="fieldFocusClass" />
 					</td>
 				</tr>
 			</tbody>
