@@ -41,6 +41,14 @@ use App\Actions\Catalogue\Shop\HydrateShops;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Actions\Web\Website\Layouts\FetchUsedFamiliesWebBlock;
+use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
+use App\Actions\Catalogue\Product\Json\GetIrisNewInProducts;
+use App\Actions\Web\Webpage\BreakWebpageCache;
+use App\Actions\Web\Webpage\BreakNewInPagesCache;
+use App\Actions\Web\Webpage\StoreWebpage;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Billables\Service\ServiceStateEnum;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
@@ -1963,6 +1971,86 @@ test('a product sold or live with stock before it is stamped available, or creat
         ->and($oldNeverSold->refresh()->first_available_at->equalTo($createdLongBefore))->toBeTrue()
         ->and($liveWithStock->refresh()->first_available_at->equalTo($inStockSince))->toBeTrue()
         ->and($ranOutBefore->refresh()->first_available_at->equalTo($stampedAt))->toBeTrue();
+});
+
+test('the NEW IN page lists the products of its own shop inside their NEW IN period and their families, newest first, each on its own countdown', function () {
+    $newShop = fn (): Shop => tap(
+        StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value])),
+        fn (Shop $shop) => StoreWebsite::make()->action($shop, Website::factory()->definition())
+    );
+    $newFamily = function (Shop $shop): ProductCategory {
+        $family = StoreProductCategory::make()->action(
+            StoreProductCategory::make()->action($shop, array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::DEPARTMENT->value])),
+            array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::FAMILY->value])
+        );
+        $family->updateQuietly(['state' => ProductCategoryStateEnum::ACTIVE, 'show_in_website' => true]);
+        StoreProductCategoryWebpage::make()->action($family->refresh())->updateQuietly(['state' => WebpageStateEnum::LIVE]);
+
+        return $family->refresh();
+    };
+    $onTheWebsite = function (ProductCategory $family, $firstAvailableAt, int $stock = 5): Product {
+        $product = UpdateProduct::make()->action(
+            StoreProduct::make()->action($family, array_merge(Product::factory()->definition(), ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 10])),
+            ['state' => ProductStateEnum::ACTIVE]
+        );
+        StoreProductWebpage::make()->action($product)->updateQuietly(['state' => WebpageStateEnum::LIVE]);
+        $product->updateQuietly(['is_for_sale' => true, 'price' => 10, 'available_quantity' => $stock, 'first_available_at' => $firstAvailableAt]);
+
+        return $product->refresh();
+    };
+
+    $shop      = $newShop();
+    $otherShop = $newShop();
+
+    $existingFamily = $newFamily($shop);
+    $secondFamily   = $newFamily($shop);
+    $quietFamily    = $newFamily($shop);
+
+    $onTheWebsite($existingFamily, now()->subDays(200));
+    $arrivedYesterday   = $onTheWebsite($existingFamily, now()->subDay());
+    $soldOutAfterArrive = $onTheWebsite($existingFamily, now()->subDays(3), stock: 0);
+    $arrivedFiveDaysAgo = $onTheWebsite($secondFamily, now()->subDays(5));
+    $onTheWebsite($quietFamily, now()->subDays(31));
+    $onTheWebsite($newFamily($otherShop), now()->subDay());
+
+    $productIds = fn (string $stockMode): array => collect(GetIrisNewInProducts::run(shop: $shop, stockMode: $stockMode)->items())->pluck('id')->all();
+    $familyCodes = function () use ($shop): array {
+        $newInPage = new Webpage();
+        $newInPage->shop_id = $shop->id;
+
+        return (new class () {
+            use \App\Actions\Web\WebBlock\Traits\WithNewInFamiliesQuery;
+        })->getNewInFamilies($newInPage)->pluck('code')->all();
+    };
+
+    expect($productIds('in_stock'))->toBe([$arrivedYesterday->id, $arrivedFiveDaysAgo->id])
+        ->and($productIds('out_of_stock'))->toBe([$soldOutAfterArrive->id])
+        ->and($familyCodes())->toBe([$existingFamily->code, $secondFamily->code]);
+
+    $newInPage = StoreWebpage::make()->action($shop->website, array_merge(Webpage::factory()->definition(), [
+        'url'      => 'new',
+        'code'     => 'new',
+        'type'     => WebpageTypeEnum::SYSTEM_PAGE->value,
+        'sub_type' => WebpageSubTypeEnum::NEW_IN_PAGE->value,
+    ]));
+    $newInPage->updateQuietly(['state' => WebpageStateEnum::LIVE]);
+
+    expect($shop->website->refresh()->new_in_page_id)->toBe($newInPage->id)
+        ->and($newInPage->webBlocks()->get()->map(fn ($webBlock) => $webBlock->webBlockType->code)->all())->toBe([FetchUsedFamiliesWebBlock::run($shop->website), FetchUsedProductsWebBlock::run($shop->website)]);
+
+    $this->travel(25)->days();
+    $this->travel(12)->hours();
+
+    $breakWebpageCache = BreakWebpageCache::mock();
+    $breakWebpageCache->shouldReceive('handle')->withArgs(fn (?Webpage $webpage) => $webpage?->id === $newInPage->id)->once();
+    $breakWebpageCache->shouldReceive('handle')->withAnyArgs()->zeroOrMoreTimes();
+
+    BreakNewInPagesCache::run();
+
+    expect($productIds('in_stock'))->toBe([$arrivedYesterday->id])
+        ->and($familyCodes())->toBe([$existingFamily->code]);
+
+    $this->travelBack();
 });
 
 test('the out of stock date is set when stock runs out and is kept while the product stays out', function () {

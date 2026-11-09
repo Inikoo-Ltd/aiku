@@ -6,7 +6,6 @@ import { getStyles } from "@/Composables/styles"
 import { ref, onMounted, onBeforeUnmount, watch, computed, toRaw, inject, defineAsyncComponent, nextTick } from "vue"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { notify } from "@kyvg/vue3-notification"
 import { routeType } from "@/types/route"
 import Skeleton from "primevue/skeleton"
 import { debounce, get } from "lodash-es"
@@ -91,6 +90,7 @@ const isFetchingOutOfStock = ref(false)
 const isNewArrivals = ref(false)
 const isLoadingInitial = ref(false)
 const isLoadingMore = ref(false)
+const loadError = ref<string | null>(null)
 
 
 const getRoutes = () => {
@@ -118,6 +118,13 @@ const getRoutes = () => {
                     name: "iris.json.collection.out_of_stock_products.index",
                     parameters: { collection: props.fieldValue.model_id }
                 }
+            }
+        };
+    } else if (props.fieldValue.model_type === "NewIn") {
+        return {
+            iris: {
+                route_products: { name: "iris.json.new_in.in_stock_products.index", parameters: {} },
+                route_out_of_stock_products: { name: "iris.json.new_in.out_of_stock_products.index", parameters: {} }
             }
         };
     }
@@ -173,6 +180,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         isLoadingMore.value = true;
     }
 
+    loadError.value = null;
     const filters = buildFilters();
     // console.log("Filters used in API call:", filters);
     const routes = getRoutes();
@@ -226,7 +234,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         if (freshInStockProducts) {
             products.value = freshInStockProducts;
         }
-        notify({ title: "Error", text: "Failed to load products.", type: "error" });
+        loadError.value = ctrans("Failed to load products.");
     } finally {
         isLoadingInitial.value = false;
         isLoadingMore.value = false;
@@ -591,6 +599,8 @@ watch(
                 <div v-if="isMobileCollapsed" class="lg:hidden mt-4 mb-7 px-2">
                     <MobileShowMoreButton :count="mobileHiddenProductsCount" @show="showAllProductsOnMobile = true" />
                 </div>
+
+                <p v-if="loadError" class="my-4 text-center text-xs text-red-500">{{ loadError }}</p>
 
                 <!-- Load More -->
                 <!--  {{ page   }}{{ lastPage }} -->
