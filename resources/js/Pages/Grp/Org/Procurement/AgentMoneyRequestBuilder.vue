@@ -14,7 +14,7 @@ import Select from "primevue/select"
 import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperPlane, faUser, faClipboardList } from "@fal"
+import { faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -23,7 +23,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faPaperPlane, faUser, faClipboardList)
+library.add(faPaperPlane, faUser, faClipboardList, faTimes, faWallet, faInfoCircle)
 
 interface DueOrder {
 	purchase_order_id: number
@@ -127,6 +127,23 @@ const advanceMessages = reactive<Record<number, { text: string; isError: boolean
 const switchClient = (slug: string) =>
 	router.get(route(route().current() as string, { ...route().params, client: slug }), {}, { preserveScroll: true })
 
+const allOrdersUrl = computed(() =>
+	route(route().current() as string, Object.fromEntries(Object.entries(route().params).filter(([key]) => key !== "purchase_order")))
+)
+
+const walletHint = computed(() => {
+	const balance = props.due.wallet.balance
+	if (balance < 0) {
+		return props.due.negative_balance > 0
+			? ctrans("The agent has paid out :amount more than :client sent; covering it is the first line below", { amount: money(-balance), client: props.client.code })
+			: ctrans("The agent has paid out :amount more than :client sent; it was already asked for in an earlier request", { amount: money(-balance), client: props.client.code })
+	}
+	if (balance > 0) {
+		return ctrans(":amount of :client money is still unspent with the agent; it is not taken off the lines below, lower them if it should be used first", { amount: money(balance), client: props.client.code })
+	}
+	return null
+})
+
 const saveAdvance = (order: DueOrder, percentage: number | null) => {
 	if (!order.supplier_id || percentage === order.advance_percentage) return
 	router.patch(route(props.advance_route_name, { supplier: order.supplier_id }), { advance_percentage: percentage }, {
@@ -170,16 +187,49 @@ const send = () => {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" />
 
-	<div class="mx-4 mt-4 flex flex-wrap items-end gap-4">
-		<label class="block text-sm">
-			<span class="text-gray-600">{{ ctrans("Client") }}</span>
-			<Select :modelValue="client.slug" :options="clients" optionLabel="label" optionValue="slug" class="mt-1 w-72" :class="fieldFocusClass" @update:modelValue="switchClient" />
-		</label>
-		<div class="rounded-lg border border-gray-200 bg-white px-4 py-2">
-			<div class="text-xs text-gray-400">{{ ctrans("Wallet balance") }}</div>
-			<div class="font-semibold" :class="due.wallet.balance < 0 ? 'text-red-600' : 'text-gray-800'">{{ money(due.wallet.balance) }}</div>
+	<div class="mx-4 mt-4 rounded-lg border border-gray-200 bg-white">
+		<div class="flex flex-wrap items-start justify-between gap-x-8 gap-y-4 p-4">
+			<div class="flex flex-col gap-2">
+				<label for="money-request-client" class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ ctrans("Client") }}</label>
+				<Select inputId="money-request-client" :modelValue="client.slug" :options="clients" optionLabel="label" optionValue="slug" filter class="w-80 max-w-full" :class="fieldFocusClass" @update:modelValue="switchClient" />
+				<div v-if="purchase_order" class="flex items-center gap-2 text-xs">
+					<span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-2 py-0.5 text-gray-700">
+						<FontAwesomeIcon icon="fal fa-clipboard-list" fixed-width aria-hidden="true" />
+						{{ ctrans("Only :reference", { reference: purchase_order }) }}
+					</span>
+					<Link :href="allOrdersUrl" preserveScroll class="inline-flex items-center gap-1 text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">
+						<FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
+						{{ ctrans("Show all orders") }}
+					</Link>
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				<span class="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+					<FontAwesomeIcon icon="fal fa-wallet" fixed-width aria-hidden="true" />
+					{{ ctrans(":client wallet held by the agent", { client: client.code }) }}
+				</span>
+				<dl class="grid grid-cols-3 divide-x divide-gray-200 rounded-lg border border-gray-200">
+					<div class="px-4 py-2">
+						<dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Received") }}</dt>
+						<dd class="whitespace-nowrap font-medium text-gray-800">{{ money(due.wallet.received) }}</dd>
+					</div>
+					<div class="px-4 py-2">
+						<dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Paid out") }}</dt>
+						<dd class="whitespace-nowrap font-medium text-gray-800">{{ money(due.wallet.paid) }}</dd>
+					</div>
+					<div class="px-4 py-2">
+						<dt class="whitespace-nowrap text-xs text-gray-500">{{ ctrans("Balance") }}</dt>
+						<dd class="whitespace-nowrap font-semibold" :class="due.wallet.balance < 0 ? 'text-red-600' : due.wallet.balance > 0 ? 'text-green-600' : 'text-gray-800'">{{ money(due.wallet.balance) }}</dd>
+					</div>
+				</dl>
+			</div>
 		</div>
-		<div v-if="purchase_order" class="text-sm text-gray-500">{{ ctrans("Only :reference", { reference: purchase_order }) }}</div>
+
+		<div v-if="walletHint" class="flex items-start gap-2 border-t border-gray-200 px-4 py-2 text-xs" :class="due.wallet.balance < 0 ? 'bg-amber-50 text-amber-800' : 'bg-gray-50 text-gray-600'">
+			<FontAwesomeIcon icon="fal fa-info-circle" fixed-width class="mt-0.5 shrink-0" aria-hidden="true" />
+			<span>{{ walletHint }}</span>
+		</div>
 	</div>
 
 	<div v-if="lines.length" class="sticky top-10 z-[5] mx-4 mt-4 bg-white pt-2">
