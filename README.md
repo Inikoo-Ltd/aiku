@@ -78,7 +78,7 @@ A built-in CMS and storefront engine: drag-and-drop web blocks, banners, announc
 Self-service for B2B, dropshipping and fulfilment customers: orders, invoices, pallets, channel connections, saved cards, top-ups, API keys.
 
 ### 💬 CRM, marketing & comms
-Customers, prospects, web users, reviews, polls, back-in-stock reminders. Transactional and marketing email with a visual editor (BeeFree), mailshots, outboxes, SES delivery tracking. Live customer chat and internal staff chat. Marketing attribution by traffic source.
+Customers, prospects, web users, reviews, polls, back-in-stock reminders. Transactional and marketing email with our own visual email editor, mailshots, outboxes, SES delivery tracking. Live customer chat and internal staff chat. Marketing attribution by traffic source.
 
 
 ### 💳 Accounting & payments

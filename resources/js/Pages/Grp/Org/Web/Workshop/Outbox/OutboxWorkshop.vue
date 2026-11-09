@@ -7,7 +7,6 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Unlayer from "@/Components/CMS/Website/Outboxes/Unlayer/UnlayerV2.vue"
 import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
-import Beetree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Dialog from 'primevue/dialog';
@@ -42,7 +41,6 @@ const props = defineProps<{
     builder: string
     imagesUploadRoute: routeType
     videoThumbnailRoute?: routeType
-    emailEditor?: 'aiku' | 'beefree'
     websiteTheme?: { color: string[], fontFamily: string | null } | null
     imageCategories?: Array<{ key: string, label: string, route: routeType }>
     updateRoute: routeType
@@ -62,7 +60,7 @@ const comment = ref('')
 const isLoading = ref(false)
 const isLoadingTemplate = ref(false)
 const openTemplates = ref(false)
-const _beefree = ref()
+const _emailWorkshop = ref()
 const _unlayer = ref()
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
@@ -203,36 +201,13 @@ const updateActiveValue = async (action) => {
     )
 }
 
-const autoSave = async (jsonFile) => {
-    axios
-        .patch(
-            route(props.updateRoute.name, props.updateRoute.parameters),
-            {
-                layout: JSON.parse(jsonFile),
-                /*  compiled_layout: htmlFile */
-            },
-        )
-        .then((response) => {
-            // Handle success (equivalent to onFinish)
-        })
-        .catch((error) => {
-            console.error("autosave failed:", error);
-            notify({
-                title: "Failed to save",
-                type: "error",
-            })
-        })
-        .finally(() => {
-        });
-}
-
 const onSchedulePublish = (event) => {
     event.stopPropagation()
     _popover.value.toggle(event);
 }
 
 const isModalChooseTemplate = ref(false)
-const isBeefreeReady = ref(false)
+const isEditorReady = ref(false)
 const activeSnapshot = ref(props.snapshot)
 
 const isRefreshingLayout = useFreshAfterHistoryRestore(['snapshot'], () => {
@@ -296,7 +271,7 @@ const schedulePublish = async () => {
         <template #otherBefore>
             <Button v-if="builder == 'beefree'" @click="() => isModalChooseTemplate = true" :label="ctrans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
-                :icon="faSyncAlt" :disabled="!isBeefreeReady" />
+                :icon="faSyncAlt" :disabled="!isEditorReady" />
         </template>
     </PageHeading>
 
@@ -322,18 +297,11 @@ const schedulePublish = async () => {
     </Modal>
 
     <div v-if="isRefreshingLayout" />
-    <Beetree v-else-if="builder == 'beefree' && emailEditor === 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
-        :shopId="shopId" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
-        @ready="isBeefreeReady = $event" />
-
-    <!-- email workshop -->
     <EmailWorkshop v-else-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
         :snapshot="activeSnapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" :shopSlug="shopSlug"
         :shopId="shopId" @onSave="onSendPublish"
-        @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_beefree"
-        @ready="isBeefreeReady = $event" />
+        @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_emailWorkshop"
+        @ready="isEditorReady = $event" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"

@@ -6,7 +6,6 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Unlayer from "@/Components/CMS/Website/Outboxes/Unlayer/UnlayerV2.vue"
 import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
-import Beetree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Dialog from 'primevue/dialog';
@@ -47,7 +46,6 @@ const props = defineProps<{
     builder: string
     imagesUploadRoute: routeType
     videoThumbnailRoute?: routeType
-    emailEditor?: 'aiku' | 'beefree'
     websiteTheme?: { color: string[], fontFamily: string | null } | null
     imageCategories?: Array<{ key: string, label: string, route: routeType }>
     updateRoute: routeType
@@ -73,7 +71,7 @@ const props = defineProps<{
 
 const isUtmLinksModalOpen = ref(false)
 const openUtmLinks = async () => {
-    await _beefree.value?.saveDraftNow?.()
+    await _emailWorkshop.value?.saveDraftNow?.()
     isUtmLinksModalOpen.value = true
 }
 
@@ -101,7 +99,7 @@ const comment = ref('')
 const isLoading = ref(false)
 const isLoadingTemplate = ref(false)
 const openTemplates = ref(false)
-const _beefree = ref()
+const _emailWorkshop = ref()
 const _unlayer = ref()
 const visibleEmailTestModal = ref(false)
 const visibleSAveEmailTemplateModal = ref(false)
@@ -265,31 +263,6 @@ const updateActiveValue = async (action) => {
     )
 }
 
-const autoSave = async (jsonFile) => {
-    axios
-        .patch(
-            route(props.updateRoute.name, props.updateRoute.parameters),
-            {
-                layout: JSON.parse(jsonFile),
-                /*  compiled_layout: htmlFile */
-            },
-        )
-        .then((response) => {
-            // console.log("autosave successful:", response.data);
-            // Handle success (equivalent to onFinish)
-        })
-        .catch((error) => {
-            console.error("autosave failed:", error);
-            notify({
-                title: "Failed to save",
-                type: "error",
-            })
-        })
-        .finally(() => {
-            // console.log("autosave finished.");
-        });
-}
-
 const onSchedulePublish = (event) => {
     event.stopPropagation()
     _popover.value.toggle(event);
@@ -327,7 +300,7 @@ const isRefreshingLayout = useFreshAfterHistoryRestore(['unpublished_layout', 's
 const page = usePage()
 const tabs = computed(() => page.props.tabs)
 const currentTab = ref<string>(tabs.value.current)
-const isBeefreeReady = ref(false)
+const isEditorReady = ref(false)
 
 const tabData = computed(() => {
     return page.props[currentTab.value] ?? []
@@ -391,7 +364,7 @@ onMounted(() => {
         <template #otherBefore>
             <Button @click="() => isModalCloneTemplateEmail = true" :label="ctrans('Choose Template')"
                 class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
-                :icon="faSyncAlt" :disabled="!isBeefreeReady" />
+                :icon="faSyncAlt" :disabled="!isEditorReady" />
         </template>
         <template #button-utm="{ action }">
             <Button :label="action.label" type="tertiary" :icon="faLink" @click="openUtmLinks" />
@@ -449,16 +422,10 @@ onMounted(() => {
     </Modal>
 
     <div v-if="isRefreshingLayout" />
-    <Beetree v-else-if="builder == 'beefree' && emailEditor === 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-        :snapshot="activeSnapshot" :mergeTags="mergeTags" :organisationSlug="organisationSlug" @onSave="onSendPublish"
-        @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate" ref="_beefree"
-        :unpublished_layout="unpublished_layout" @ready="isBeefreeReady = $event" />
-
-    <!-- email workshop -->
     <EmailWorkshop v-else-if="builder == 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
         :snapshot="activeSnapshot" :mergeTags="mergeTags" :socialIcons="socialIcons" :organisationSlug="organisationSlug" @onSave="onSendPublish"
-        @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_beefree"
-        :unpublished_layout="unpublished_layout" @ready="isBeefreeReady = $event" />
+        @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate" ref="_emailWorkshop"
+        :unpublished_layout="unpublished_layout" @ready="isEditorReady = $event" />
 
     <!-- unlayer -->
     <Unlayer v-else-if="builder == 'unlayer'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"

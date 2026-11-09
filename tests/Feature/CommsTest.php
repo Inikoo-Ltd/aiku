@@ -13,7 +13,6 @@ namespace Tests\Feature;
 use Illuminate\Http\UploadedFile;
 use App\Actions\Comms\SesNotification\ProcessSesNotification;
 use App\Actions\Catalogue\Shop\StoreShop;
-use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\GetEmailWebsiteTheme;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\DispatchedEmail\HydrateDispatchedEmails;
@@ -119,7 +118,6 @@ use App\Actions\Maintenance\Comms\RepairEmailSocialIcons;
 use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Enums\Comms\Email\EmailBuilderEnum;
-use App\Enums\Comms\Email\EmailEditorEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailStateEnum;
 use App\Enums\Comms\EmailDeliveryChannel\EmailDeliveryChannelStateEnum;
 use App\Enums\Comms\EmailTrackingEvent\EmailTrackingEventTypeEnum;
@@ -848,6 +846,31 @@ test('repair email social icons swaps only beefree social icons for our seeded i
         ->and($snapshot->compiled_layout)->toBe("<img src=\"$ownIcon\"><img src=\"$externalImage\">");
 
     $this->artisan('repair:email-social-icons')->assertSuccessful();
+})->depends('update mailshot');
+
+test('repair email social icons swaps old beefree twitter icons for our own x icons', function (Mailshot $mailShot) {
+    SeedEmailSocialIcons::run($this->group);
+    $twitterIcon = 'https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png';
+
+    $email = StoreEmail::make()->action($mailShot, null, [
+        'subject'               => 'Twitter icon repair',
+        'body'                  => 'Twitter icon repair',
+        'layout'                => ['icons' => [['image' => ['src' => $twitterIcon]]]],
+        'compiled_layout'       => "<img src=\"$twitterIcon\">",
+        'state'                 => 'active',
+        'builder'               => EmailBuilderEnum::BEEFREE,
+        'snapshot_state'        => SnapshotStateEnum::LIVE,
+        'snapshot_recyclable'   => true,
+        'snapshot_first_commit' => true,
+    ], strict: false);
+
+    $result = RepairEmailSocialIcons::run($email->liveSnapshot);
+
+    $ownIcon  = GetEmailSocialIcons::run($this->group)['circle-color/x'];
+    $snapshot = $email->refresh()->liveSnapshot;
+    expect($result)->toBe(['replaced' => 1, 'missing' => []])
+        ->and($snapshot->layout['icons'][0])->toMatchArray(['image' => ['src' => $ownIcon], 'iconSet' => 'circle-color', 'name' => 'x'])
+        ->and($snapshot->compiled_layout)->toBe("<img src=\"$ownIcon\">");
 })->depends('update mailshot');
 
 test('repair email social icons command repairs only the emails of the given shop', function (Mailshot $mailShot) {
@@ -2985,37 +3008,9 @@ test('UI show mailshot template workshop', function (EmailTemplate $emailTemplat
             ->has('snapshot')
             ->has('mergeTags')
             ->where('imagesUploadRoute.name', 'grp.models.email-templates.images.store')
+            ->missing('emailEditor')
             ->has('breadcrumbs');
     });
-})->depends('update mailshot template');
-
-test('shop email editor defaults to beefree and can be switched to aiku', function (EmailTemplate $emailTemplate) {
-    $shop = $emailTemplate->shop;
-    $shop->update(['settings' => Arr::except($shop->settings ?? [], 'email_editor')]);
-
-    expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::BEEFREE);
-    $trackingSettings = Arr::get($shop->settings, 'mailshot_tracking');
-
-    $this->patch(route('grp.models.org.shop.update', [$shop->organisation_id, $shop->id]), [
-        'email_editor' => 'aiku',
-    ])->assertRedirect();
-
-    expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::AIKU)
-        ->and(Arr::get($shop->settings, 'mailshot_tracking'))->toBe($trackingSettings);
-
-    $this->get(route('grp.org.shops.show.settings.edit', [$shop->organisation->slug, $shop->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')->etc());
-
-    $this->get(route('grp.org.shops.show.marketing.templates.workshop', [$shop->organisation->slug, $shop->slug, $emailTemplate->slug]))
-        ->assertInertia(fn (AssertableInertia $page) => $page->where('emailEditor', 'aiku')->etc());
-
-    $this->patch(route('grp.models.org.shop.update', [$shop->organisation_id, $shop->id]), [
-        'email_editor' => 'unlayer',
-    ])->assertSessionHasErrors('email_editor');
-
-    UpdateShop::make()->action($shop, ['email_editor' => 'beefree']);
-
-    expect($shop->refresh()->emailEditor())->toBe(EmailEditorEnum::BEEFREE);
 })->depends('update mailshot template');
 
 test('email workshop offers the shop website theme', function (EmailTemplate $emailTemplate) {
@@ -4773,36 +4768,6 @@ test('process ses notification deletes itself when no matching dispatched email'
     expect(\App\Models\Comms\SesNotification::find($sesNotification->id))->toBeNull();
 });
 
-test('authenticate beefree account and export json to html', function () {
-    \Illuminate\Support\Facades\Http::fake([
-        'auth.getbee.io/*' => \Illuminate\Support\Facades\Http::response(['access_token' => 'test-token'], 200),
-        'api.getbee.io/*'  => \Illuminate\Support\Facades\Http::response('<div>compiled</div>', 200),
-    ]);
-
-    UpdateGroupSettings::make()->action($this->group, [
-        'client_id'     => 'xxx',
-        'client_secret' => 'xxx',
-        'grant_type'    => 'whatever'
-    ]);
-
-    $authResult = \App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount::make()->action($this->organisation);
-
-    expect($authResult['access_token'])->toBe('test-token');
-
-    $html = \App\Actions\Comms\BeeFreeSDK\BeefreeExportJsonToHtml::make()->handle($this->organisation, ['json' => ['body' => 'test']]);
-
-    expect($html)->toBe('<div>compiled</div>');
-});
-
-test('authenticate beefree account throws when credentials missing', function () {
-    $settings = $this->group->settings;
-    unset($settings['beefree']);
-    $this->group->update(['settings' => $settings]);
-
-    expect(fn () => \App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount::make()->action($this->organisation))
-        ->toThrow(\Exception::class, 'BeeFree credentials not configured');
-});
-
 test('show unsubscribe from aurora', function () {
     $response = (new \App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora())->htmlResponse();
 
@@ -5693,25 +5658,6 @@ test('mailshot template and urls json answer the marketing staff of any shop and
         }
     }
 })->depends('update mailshot');
-
-test('the beefree editor token is given only to staff who edit a website, marketing or crm of a shop in the group, INI-076', function () {
-    \Illuminate\Support\Facades\Http::fake(['auth.getbee.io/*' => \Illuminate\Support\Facades\Http::response(['access_token' => 'token'])]);
-    \Illuminate\Support\Facades\Cache::flush();
-    $settings = $this->group->settings ?? [];
-    data_set($settings, 'beefree', array_merge(\Illuminate\Support\Arr::get($settings, 'beefree', []), ['client_id' => 'id', 'client_secret' => 'secret']));
-    $this->group->update(['settings' => $settings]);
-
-    $url  = route('grp.json.beefree.authenticate', $this->organisation->slug);
-    $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
-
-    actingAsUserWithOnlyPermissions($user, ["human-resources.{$this->organisation->id}.view"]);
-    postJson($url, ['uid' => 'test-'.$user->id])->assertForbidden();
-
-    foreach (["marketing.{$this->shop->id}.edit", "web.{$this->shop->id}.edit", "crm.{$this->shop->id}.edit"] as $permission) {
-        actingAsUserWithOnlyPermissions($user, [$permission]);
-        postJson($url, ['uid' => 'test-'.$user->id])->assertOk();
-    }
-});
 
 test('workshop opened with a template keeps the saved draft once it has been edited', function () {
     $outbox   = $this->shop->outboxes()->where('outboxes.code', OutboxCodeEnum::MARKETING)->first();

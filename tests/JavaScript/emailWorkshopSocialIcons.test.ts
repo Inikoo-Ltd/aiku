@@ -45,3 +45,26 @@ test("changing the icon style moves old beefree icons to our own icons and keeps
 	assert.equal(legacyFacebook.image.src, "https://img.aiku.test/circle-black-facebook.png")
 	assert.equal(custom.image.src, "https://example.com/my-instagram.png")
 })
+
+test("an icon missing from our own set is left empty instead of loading it from beefree", () => {
+	setSocialIconSources(ownIcons)
+
+	assert.equal(socialIconSrc("discord", "circle-blue"), "")
+})
+
+test("changing the icon style turns old beefree twitter icons into our own x icons", () => {
+	setSocialIconSources({ "circle-black/x": "https://img.aiku.test/circle-black-x.png" })
+	const legacyTwitter = { name: "twitter", image: { src: "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png" } }
+	const unnamedTwitter = { image: { src: "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/circle-color/twitter@2x.png" } }
+
+	applySocialIconSet([legacyTwitter, unnamedTwitter], "circle-black")
+
+	assert.equal(legacyTwitter.image.src, "https://img.aiku.test/circle-black-x.png")
+	assert.equal(unnamedTwitter.image.src, "https://img.aiku.test/circle-black-x.png")
+})
+
+test("resetting an old beefree twitter icon uses our own x icon", () => {
+	setSocialIconSources({ "circle-black/x": "https://img.aiku.test/circle-black-x.png" })
+
+	assert.equal(socialIconSrc("twitter", "circle-black"), "https://img.aiku.test/circle-black-x.png")
+})

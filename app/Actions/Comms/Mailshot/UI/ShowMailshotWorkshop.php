@@ -18,7 +18,6 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
-use App\Enums\Comms\Email\EmailEditorEnum;
 use App\Actions\SupplyChain\SupplierMailshot\UI\ShowSupplierMailshot;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\EmailTemplate;
@@ -183,7 +182,6 @@ class ShowMailshotWorkshop extends OrgAction
                     'name'       => 'grp.models.email.video-thumbnail.store',
                     'parameters' => ['email' => $email->id]
                 ],
-                'emailEditor'         => $mailshot->type === MailshotTypeEnum::SUPPLIER ? EmailEditorEnum::AIKU->value : $email->shop?->emailEditor()->value,
                 'websiteTheme'        => GetEmailWebsiteTheme::run($email->shop),
                 'imageCategories'     => IndexShopGalleryImages::categories($email->shop),
                 'updateRoute'         => [

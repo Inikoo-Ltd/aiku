@@ -1732,17 +1732,11 @@ test('UserTypeEnum count reads sysadmin stats', function (Group $group) {
 
 test('update group settings action', function (Group $group) {
     $group = UpdateGroupSettings::make()->action($group, [
-        'client_id'          => 'beefree-id',
-        'client_secret'      => 'beefree-secret',
-        'grant_type'         => 'password',
         'printnode_api_key'  => 'pn-key',
         'print_by_printnode' => true,
     ]);
 
-    expect(Arr::get($group->settings, 'beefree.client_id'))->toBe('beefree-id')
-        ->and(Arr::get($group->settings, 'beefree.client_secret'))->toBe('beefree-secret')
-        ->and(Arr::get($group->settings, 'beefree.grant_type'))->toBe('password')
-        ->and(Arr::get($group->settings, 'printnode.apikey'))->toBe('pn-key')
+    expect(Arr::get($group->settings, 'printnode.apikey'))->toBe('pn-key')
         ->and(Arr::get($group->settings, 'printnode.print_by_printnode'))->toBeTrue();
 })->depends('create group');
 

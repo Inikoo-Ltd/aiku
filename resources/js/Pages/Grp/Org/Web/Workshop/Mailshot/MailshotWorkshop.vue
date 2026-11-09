@@ -5,7 +5,6 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import Unlayer from "@/Components/CMS/Website/Outboxes/Unlayer/UnlayerV2.vue"
 import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
-import Beetree from '@/Components/CMS/Website/Outboxes/Beefree.vue'
 import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import Dialog from 'primevue/dialog';
@@ -42,7 +41,6 @@ const props = defineProps<{
     builder: string
     imagesUploadRoute: routeType
     videoThumbnailRoute?: routeType
-    emailEditor?: 'aiku' | 'beefree'
     websiteTheme?: { color: string[], fontFamily: string | null } | null
     imageCategories?: Array<{ key: string, label: string, route: routeType }>
     updateRoute: routeType
@@ -103,7 +101,6 @@ const comment = ref('')
 const isLoading = ref(false)
 const isLoadingTemplate = ref(false)
 const openTemplates = ref(false)
-const _beefree = ref()
 const _unlayer = ref()
 const _emailWorkshop = ref()
 const visibleEmailTestModal = ref(false)
@@ -285,35 +282,6 @@ const updateActiveValue = async (action) => {
     )
 }
 
-const autoSave = async (jsonFile) => {
-    if (!props.can_edit) {
-        return
-    }
-
-    axios
-        .patch(
-            route(props.updateRoute.name, props.updateRoute.parameters),
-            {
-                layout: JSON.parse(jsonFile),
-                /*  compiled_layout: htmlFile */
-            },
-        )
-        .then((response) => {
-            // console.log("autosave successful:", response.data);
-            // Handle success (equivalent to onFinish)
-        })
-        .catch((error) => {
-            console.error("autosave failed:", error);
-            notify({
-                title: "Failed to save",
-                type: "error",
-            })
-        })
-        .finally(() => {
-            // console.log("autosave finished.");
-        });
-}
-
 const onSchedulePublish = (event) => {
     event.stopPropagation()
     _popover.value.toggle(event);
@@ -351,7 +319,6 @@ const isRefreshingLayout = useFreshAfterHistoryRestore(['unpublished_layout', 's
 const page = usePage()
 const tabs = computed(() => page.props.tabs)
 const currentTab = ref<string>(tabs.value.current)
-const isBeefreeReady = ref(false)
 
 const tabData = computed(() => {
     return page.props[currentTab.value] ?? []
@@ -391,11 +358,6 @@ onMounted(() => {
         <template #afterTitle2>
             <MailshotJourney :steps="journey" class="ml-4" />
         </template>
-        <template v-if="builder == 'beefree' && emailEditor === 'beefree'" #otherBefore>
-            <Button v-if="can_edit" @click="() => isModalCloneTemplateEmail = true" :label="ctrans('Choose Template')"
-                class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit" type="secondary"
-                :icon="faThLarge" :disabled="!isBeefreeReady" />
-        </template>
         <template #button-utm="{ action }">
             <Button :label="action.label" type="tertiary" :icon="faLink" @click="openUtmLinks" />
         </template>
@@ -433,13 +395,7 @@ onMounted(() => {
     </Dialog>
 
     <template v-if="builder == 'beefree' && !isRefreshingLayout">
-        <Beetree v-if="emailEditor === 'beefree'" :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute"
-            :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags"
-            :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
-            @onSave="onSendPublish" @sendTest="openSendTest" @auto-save="autoSave" @saveTemplate="onSaveTemplate"
-            ref="_beefree" @ready="isBeefreeReady = $event" />
-
-        <EmailWorkshop v-else :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
+        <EmailWorkshop :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
             :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags" :socialIcons="socialIcons"
             :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
             @onSave="onSendPublish" @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate"
