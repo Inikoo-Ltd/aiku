@@ -814,6 +814,8 @@ describe('production reward pay bands', function () {
 
     test('a step given its first target repays this week\'s sessions made without one and leaves earlier weeks alone', function () {
         $this->manufactureTask->update(['standard_rate' => null]);
+        \App\Models\Production\ArtefactStepTarget::where('artefact_id', $this->artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->delete();
+        $lastWeekStart = now(\App\Actions\Production\Artefact\SetArtefactStepTarget::timezone($this->artefact))->startOfWeek(Carbon::MONDAY)->subDays(3)->utc();
         $recipe = fn (?float $standardRate) => SetArtefactsRecipe::make()->action($this->production, [
             'artefacts' => [$this->artefact->id],
             'steps'     => [[
@@ -827,7 +829,7 @@ describe('production reward pay bands', function () {
 
         $thisWeek = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run(makePayBandSession($this->payBandJobOrderItemTask, 900, 4.9333));
         $lastWeek = makePayBandSession($this->payBandJobOrderItemTask, 900, 4.9333);
-        $lastWeek->update(['started_at' => now()->startOfWeek()->subDays(3), 'ended_at' => now()->startOfWeek()->subDays(3)->addSeconds(17760)]);
+        $lastWeek->update(['started_at' => $lastWeekStart, 'ended_at' => $lastWeekStart->copy()->addSeconds(17760)]);
         $lastWeek = \App\Actions\Production\ManufactureTaskSession\CalculateManufactureTaskSessionPay::run($lastWeek);
 
         expect($thisWeek->band_code)->toBe('0')
