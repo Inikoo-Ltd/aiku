@@ -178,6 +178,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use App\Actions\Web\WebsiteVisitor\ProcessWebsiteVisitorTracking;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -4953,6 +4954,32 @@ test('website and webpage varnish purges need the web edit permission of the sho
     expect(app('router')->getRoutes()->getByName('grp.models.translate')->methods())->toBe(['POST'])
         ->and(Route::has('grp.profile.update'))->toBeFalse();
 })->depends('launch website');
+
+test('a browser that starts a new visitor on every page is dropped after 60 in an hour', function (Webpage $webpage) {
+    Queue::fake();
+    $website   = $webpage->website;
+    $userAgent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
+    $ip        = '203.0.113.'.random_int(1, 254);
+    $visitors  = fn () => DB::table('website_visitors')->where('website_id', $website->id)->where('user_agent', $userAgent)->count();
+    $before    = $visitors();
+    $track     = fn (string $ip) => ProcessWebsiteVisitorTracking::run(
+        'flood-'.Str::random(16),
+        $website,
+        null,
+        $userAgent,
+        $ip,
+        'https://'.$website->domain.'/',
+        'https://www.google.com/',
+        ['GB', null, null, null, null],
+    );
+
+    foreach (range(1, ProcessWebsiteVisitorTracking::MAX_NEW_VISITORS_PER_HOUR + 5) as $ignored) {
+        $track($ip);
+    }
+    $track('198.51.100.'.random_int(1, 254));
+
+    expect($visitors() - $before)->toBe(ProcessWebsiteVisitorTracking::MAX_NEW_VISITORS_PER_HOUR + 1);
+})->depends('create webpage');
 
 test('store website page view looks an unknown path up once, then remembers there is no webpage', function (Webpage $webpage) {
     $website = $webpage->website;

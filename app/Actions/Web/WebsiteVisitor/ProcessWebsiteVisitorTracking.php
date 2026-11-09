@@ -26,6 +26,8 @@ class ProcessWebsiteVisitorTracking
     public int $jobTimeout = 120;
     public int $jobTries = 1;
 
+    public const int MAX_NEW_VISITORS_PER_HOUR = 60;
+
 
     public function handle(
         string $sessionId,
@@ -56,6 +58,10 @@ class ProcessWebsiteVisitorTracking
                 $visitor->update(['visitor_uuid' => $visitorUuid]);
             }
         } else {
+            if (! $webUser && $this->isCookielessFlood($ip, $userAgent)) {
+                return;
+            }
+
             $browserData = GetBrowserInfo::run($userAgent);
 
             $visitor = StoreWebsiteVisitor::run(
@@ -87,5 +93,18 @@ class ProcessWebsiteVisitorTracking
                 SyncCustomerWebActivities::dispatch($customer, now()->startOfDay())->delay(10);
             }
         }
+    }
+
+    /**
+     * A browser that drops its cookies starts a new visitor on every page. Real shoppers keep the
+     * cookie; the busiest real ip and browser pair made 51 new visitors in an hour, while the bot
+     * on 8 Nov 2026 made up to 1,800 an hour from each ip with a normal Chrome user agent.
+     */
+    protected function isCookielessFlood(string $ip, string $userAgent): bool
+    {
+        $key = 'visitor:new:'.StoreWebsiteVisitor::hashVisitor($ip, $userAgent)['visitor_hash'].':'.now()->format('YmdH');
+        Cache::add($key, 0, 3600);
+
+        return Cache::increment($key) > self::MAX_NEW_VISITORS_PER_HOUR;
     }
 }

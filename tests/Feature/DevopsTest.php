@@ -1110,4 +1110,7 @@ it('records varnish per web box from the server metrics sampler and charts it on
             ->where('varnish.range', '7d')
             ->has('varnish.buckets', 168)
             ->where('varnish.hosts.varnish-box-a.hits.167', 60));
+
+    $this->get(route('grp.websites.index', ['tab' => 'varnish']))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page->where('varnish.range', '7d'));
 });
