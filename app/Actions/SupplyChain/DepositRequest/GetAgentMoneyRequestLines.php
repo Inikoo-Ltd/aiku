@@ -36,7 +36,7 @@ class GetAgentMoneyRequestLines
     public const float DEFAULT_ADVANCE_PERCENTAGE = 30;
 
     /**
-     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, credit_available: float, shipments: list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>, expenses: list<array{agent_payment_id: int, type: string, type_label: string, date: string, amount: float, requested: float, due: float, reference: string|null, notes: string|null, supplier_code: string|null, supplier_name: string|null, purchase_order_reference: string|null, purchase_order_slug: string|null, has_receipt: bool}>, orders: list<array{purchase_order_id: int, purchase_order_slug: string, reference: string, is_open: bool, submitted_at: string|null, placed_by: string|null, supplier_id: int|null, supplier_slug: string|null, supplier_code: string|null, supplier_name: string|null, supplier_company: string|null, supplier_nickname: string|null, total: float, requested: float, paid_to_supplier: float, advance_percentage: float, advance_due: float, balance_due: float}>}
+     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, credit_available: float, shipments: list<array{stock_delivery_id: int, stock_delivery_slug: string, reference: string, state: string|null, charges: list<array{type: string, label: string, amount: float}>, total: float, requested: float, due: float}>, expenses: list<array{agent_payment_id: int, type: string, type_label: string, date: string, amount: float, requested: float, due: float, reference: string|null, notes: string|null, supplier_code: string|null, supplier_name: string|null, purchase_order_reference: string|null, purchase_order_slug: string|null, receipt: string|null}>, orders: list<array{purchase_order_id: int, purchase_order_slug: string, reference: string, is_open: bool, submitted_at: string|null, placed_by: string|null, supplier_id: int|null, supplier_slug: string|null, supplier_code: string|null, supplier_name: string|null, supplier_company: string|null, supplier_nickname: string|null, total: float, requested: float, paid_to_supplier: float, advance_percentage: float, advance_due: float, balance_due: float}>}
      */
     public function handle(Agent $agent, Organisation $client, ?int $purchaseOrderId = null): array
     {
@@ -203,6 +203,7 @@ class GetAgentMoneyRequestLines
         return DB::table('agent_payments')
             ->leftJoin('suppliers', 'suppliers.id', 'agent_payments.supplier_id')
             ->leftJoin('purchase_orders', 'purchase_orders.id', 'agent_payments.purchase_order_id')
+            ->leftJoin('media', 'media.id', 'agent_payments.media_id')
             ->leftJoinSub($requested, 'requested', 'requested.agent_payment_id', 'agent_payments.id')
             ->where('agent_payments.agent_id', $agent->id)
             ->where('agent_payments.organisation_id', $client->id)
@@ -221,7 +222,7 @@ class GetAgentMoneyRequestLines
                 'agent_payments.amount',
                 'agent_payments.reference',
                 'agent_payments.notes',
-                'agent_payments.media_id',
+                'media.ulid as receipt',
                 'suppliers.code as supplier_code',
                 'suppliers.name as supplier_name',
                 'purchase_orders.reference as purchase_order_reference',
@@ -246,7 +247,7 @@ class GetAgentMoneyRequestLines
                     'supplier_name'            => $entry->supplier_name,
                     'purchase_order_reference' => $entry->purchase_order_reference,
                     'purchase_order_slug'      => $entry->purchase_order_slug,
-                    'has_receipt'              => $entry->media_id !== null,
+                    'receipt'                  => $entry->receipt,
                 ];
             })
             ->values()

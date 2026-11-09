@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
@@ -100,34 +99,34 @@ const props = defineProps<{
 const locale = useLocaleStore()
 const money = (code: string, amount: number) => locale.currencyFormat(code, amount)
 
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent] focus:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)] focus:!border-[var(--app-accent)]"
 const fullWidthInput = { pcInputText: { root: { class: "!w-full" } } }
 const chooseFilePt = { pcChooseButton: { root: { class: "!border !border-gray-300 !bg-white !text-gray-700 hover:!bg-gray-50" } } }
 
+const firstError = (errors: Record<string, string>) => Object.values(errors ?? {})[0] ?? ctrans("Something went wrong")
+
 const feeWallet = ref<Wallet | null>(null)
 const feePercentage = ref<number | null>(null)
+const feeError = ref<string | null>(null)
 const isFeeOpen = computed({ get: () => feeWallet.value !== null, set: (open: boolean) => !open && (feeWallet.value = null) })
 const openFee = (wallet: Wallet) => {
 	feeWallet.value = wallet
 	feePercentage.value = wallet.agent_fee_percentage
+	feeError.value = null
 }
 const saveFee = () => {
 	if (!props.form || !feeWallet.value?.org_agent_id) return
 	router.patch(route(props.form.agent_fee_route_name, { orgAgent: feeWallet.value.org_agent_id }), { agent_fee_percentage: feePercentage.value }, {
 		preserveScroll: true,
-		onSuccess: () => {
-			feeWallet.value = null
-			notify({ title: ctrans("Saved"), type: "success" })
-		},
-		onError,
+		onSuccess: () => (feeWallet.value = null),
+		onError: (errors) => (feeError.value = firstError(errors)),
 	})
 }
 
-const onError = (errors: Record<string, string>) =>
-	notify({ title: ctrans("Something went wrong"), text: Object.values(errors ?? {})[0], type: "error" })
-
 const isOpen = ref(false)
 const saving = ref(false)
+const entryError = ref<string | null>(null)
+const removeError = ref<string | null>(null)
 const editing = ref<EntryRow | null>(null)
 
 const emptyEntry = () => ({
@@ -184,7 +183,8 @@ const canSave = computed(
 		!!entry.value.organisation_id &&
 		!!entry.value.date &&
 		!!entry.value.amount &&
-		(!selectedType.value?.needs_order || !!entry.value.purchase_order_id || !!editing.value?.imported)
+		(!selectedType.value?.needs_order || !!entry.value.purchase_order_id || !!editing.value?.imported) &&
+		(!!editing.value || !!selectedType.value?.money_in || !!entry.value.receipt)
 )
 
 const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
@@ -192,6 +192,7 @@ const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth(
 const openEntry = () => {
 	editing.value = null
 	entry.value = emptyEntry()
+	entryError.value = null
 	isOpen.value = true
 }
 
@@ -209,6 +210,7 @@ const openEdit = (row: EntryRow) => {
 		reference: row.reference ?? "",
 		notes: row.notes ?? "",
 	}
+	entryError.value = null
 	isOpen.value = true
 }
 
@@ -231,11 +233,8 @@ const saveEdit = () => {
 			preserveScroll: true,
 			onStart: () => (saving.value = true),
 			onFinish: () => (saving.value = false),
-			onSuccess: () => {
-				isOpen.value = false
-				notify({ title: ctrans("Saved"), type: "success" })
-			},
-			onError,
+			onSuccess: () => (isOpen.value = false),
+			onError: (errors) => (entryError.value = firstError(errors)),
 		}
 	)
 }
@@ -263,11 +262,8 @@ const save = () => {
 			forceFormData: true,
 			onStart: () => (saving.value = true),
 			onFinish: () => (saving.value = false),
-			onSuccess: () => {
-				isOpen.value = false
-				notify({ title: ctrans("Recorded"), type: "success" })
-			},
-			onError,
+			onSuccess: () => (isOpen.value = false),
+			onError: (errors) => (entryError.value = firstError(errors)),
 		}
 	)
 }
@@ -288,8 +284,8 @@ const confirmRemove = (row: EntryRow) =>
 		accept: () =>
 			router.delete(route(row.delete_route!.name, row.delete_route!.parameters), {
 				preserveScroll: true,
-				onSuccess: () => notify({ title: ctrans("Removed"), type: "success" }),
-				onError,
+				onStart: () => (removeError.value = null),
+				onError: (errors) => (removeError.value = firstError(errors)),
 			}),
 	})
 </script>
@@ -305,6 +301,8 @@ const confirmRemove = (row: EntryRow) =>
 			</Button>
 		</template>
 	</PageHeading>
+
+	<p v-if="removeError" class="mx-4 mt-2 text-xs text-red-600">{{ removeError }}</p>
 
 	<div class="mx-4 mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 		<div v-for="wallet in wallets" :key="`${wallet.organisation_id}-${wallet.currency_code}`" class="rounded-lg border border-gray-200 bg-white p-4">
@@ -403,11 +401,11 @@ const confirmRemove = (row: EntryRow) =>
 	<Dialog v-if="form" v-model:visible="isOpen" modal :header="editing ? ctrans('Edit line') : ctrans('Record money')" :style="{ width: '32rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<div class="space-y-3">
 			<label class="block text-sm">
-				<span class="text-gray-600">{{ ctrans("Client") }}</span>
+				<span class="text-gray-600">{{ ctrans("Client") }} <span class="text-red-500">*</span></span>
 				<Select v-model="entry.organisation_id" :options="form.clients" optionLabel="label" optionValue="id" :disabled="!!editing" class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
 			<label class="block text-sm">
-				<span class="text-gray-600">{{ ctrans("Type") }}</span>
+				<span class="text-gray-600">{{ ctrans("Type") }} <span class="text-red-500">*</span></span>
 				<Select v-model="entry.type" :options="typeOptions" optionLabel="label" optionValue="value" class="mt-1 w-full" :class="fieldFocusClass">
 					<template #option="{ option }">
 						<span>{{ option.label }}</span>
@@ -417,11 +415,11 @@ const confirmRemove = (row: EntryRow) =>
 			</label>
 			<div class="grid grid-cols-2 gap-3">
 				<label class="block text-sm">
-					<span class="text-gray-600">{{ ctrans("Date") }}</span>
+					<span class="text-gray-600">{{ ctrans("Date") }} <span class="text-red-500">*</span></span>
 					<DatePicker v-model="entry.date" dateFormat="dd/mm/yy" :maxDate="new Date()" :manualInput="false" showIcon iconDisplay="input" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
 				</label>
 				<label class="block text-sm">
-					<span class="text-gray-600">{{ ctrans("Amount") }}</span>
+					<span class="text-gray-600">{{ ctrans("Amount") }} <span class="text-red-500">*</span></span>
 					<InputNumber v-model="entry.amount" mode="currency" :currency="form.currency_code" :min="0" :disabled="!!editing" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
 					<span v-if="editing" class="mt-1 block text-xs text-gray-400">{{ ctrans("To change the amount, remove the line and record it again.") }}</span>
 				</label>
@@ -431,7 +429,7 @@ const confirmRemove = (row: EntryRow) =>
 				<InputNumber v-model="entry.original_amount" mode="currency" :currency="selectedClient.currency_code" :min="0" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
 			</label>
 			<label class="block text-sm">
-				<span class="text-gray-600">{{ selectedType?.needs_order ? ctrans("Supplier order") : ctrans("Supplier order (optional)") }}</span>
+				<span class="text-gray-600">{{ selectedType?.needs_order ? ctrans("Supplier order") : ctrans("Supplier order (optional)") }} <span v-if="selectedType?.needs_order" class="text-red-500">*</span></span>
 				<Select v-model="entry.purchase_order_id" :options="clientOrders" optionLabel="label" optionValue="id" filter showClear :disabled="!entry.organisation_id" class="mt-1 w-full" :class="fieldFocusClass" />
 				<span v-if="selectedType?.needs_order && entry.organisation_id && !clientOrders.length" class="mt-1 block text-xs text-amber-700">
 					{{ ctrans("This client has no open order through you: record it as another type, or choose another client.") }}
@@ -454,7 +452,8 @@ const confirmRemove = (row: EntryRow) =>
 				<Textarea v-model="entry.notes" rows="2" autoResize class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
 			<div v-if="!editing" class="block text-sm">
-				<span class="text-gray-600">{{ ctrans("Receipt (optional)") }}</span>
+				<span v-if="selectedType?.money_in" class="text-gray-600">{{ ctrans("Receipt (optional)") }}</span>
+				<span v-else class="text-gray-600">{{ ctrans("Receipt") }} <span class="text-red-500">*</span></span>
 				<div class="mt-1">
 					<FileUpload mode="basic" :auto="false" customUpload accept=".pdf,image/*" :maxFileSize="20000000" :chooseLabel="ctrans('Choose file')" :pt="chooseFilePt" @select="(event: { files: File[] }) => (entry.receipt = event.files[0] ?? null)">
 						<template #chooseicon>
@@ -463,19 +462,22 @@ const confirmRemove = (row: EntryRow) =>
 					</FileUpload>
 				</div>
 			</div>
+			<p v-if="entryError" class="text-xs text-red-600">{{ entryError }}</p>
 		</div>
-		<div class="mt-5 flex justify-end gap-2">
-			<Button type="tertiary" :label="ctrans('Cancel')" @click="isOpen = false">
-				<template #icon>
-					<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
-			<Button type="tertiary" :label="editing ? ctrans('Save') : ctrans('Record entry')" :disabled="!canSave" :loading="saving" @click="editing ? saveEdit() : save()">
-				<template #icon>
-					<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
-		</div>
+		<template #footer>
+			<div class="flex w-full gap-2">
+				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isOpen = false">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<Button type="primary" full :label="editing ? ctrans('Save') : ctrans('Record entry')" :disabled="!canSave" :loading="saving" @click="editing ? saveEdit() : save()">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</div>
+		</template>
 	</Dialog>
 
 	<Dialog v-if="form" v-model:visible="isFeeOpen" modal :header="ctrans('Agent fee for :client', { client: feeWallet?.code ?? '' })" :style="{ width: '24rem', maxWidth: 'calc(100vw - 2rem)' }">
@@ -483,18 +485,21 @@ const confirmRemove = (row: EntryRow) =>
 			<span class="text-gray-600">{{ ctrans("Share of the goods of each container (empty is 2%)") }}</span>
 			<InputNumber v-model="feePercentage" :min="0" :max="100" :maxFractionDigits="2" suffix="%" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
 		</label>
-		<div class="mt-5 flex justify-end gap-2">
-			<Button type="tertiary" :label="ctrans('Cancel')" @click="feeWallet = null">
-				<template #icon>
-					<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
-			<Button type="tertiary" :label="ctrans('Save')" @click="saveFee">
-				<template #icon>
-					<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
-		</div>
+		<p v-if="feeError" class="mt-2 text-xs text-red-600">{{ feeError }}</p>
+		<template #footer>
+			<div class="flex w-full gap-2">
+				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="feeWallet = null">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<Button type="primary" full :label="ctrans('Save')" @click="saveFee">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</div>
+		</template>
 	</Dialog>
 
 	<ConfirmDialog group="agent-ledger" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
@@ -505,15 +510,15 @@ const confirmRemove = (row: EntryRow) =>
 					{{ message.header }}
 				</div>
 				<p class="mt-3 text-sm text-gray-600">{{ message.message }}</p>
-				<div class="mt-5 flex justify-end gap-2">
-					<Button type="tertiary" :label="message.rejectLabel" @click="rejectCallback">
+				<div class="mt-5 flex w-full gap-2">
+					<Button type="tertiary" class="shrink-0" :label="message.rejectLabel" @click="rejectCallback">
 						<template #icon>
 							<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
 						</template>
 					</Button>
-					<Button type="tertiary" :label="message.acceptLabel" @click="acceptCallback">
+					<Button type="tertiary" full :label="message.acceptLabel" @click="acceptCallback">
 						<template #icon>
-							<FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-500" fixed-width aria-hidden="true" />
+							<FontAwesomeIcon icon="fal fa-trash-alt" class="text-amber-500" fixed-width aria-hidden="true" />
 						</template>
 					</Button>
 				</div>

@@ -9,7 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link } from "@inertiajs/vue3"
 import { ref } from "vue"
-import { faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faPaperPlane, faTimes } from "@fal"
+import { faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faPaperPlane, faPaperclip, faTimes } from "@fal"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
@@ -17,7 +17,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 
-library.add(faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faPaperPlane, faTimes)
+library.add(faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faPaperPlane, faPaperclip, faTimes)
 
 export interface MoneyRequestRecipient {
 	name: string
@@ -56,6 +56,8 @@ export interface MoneyRequestRow {
 		supplier_code: string | null
 		supplier_name: string | null
 		amount: number
+		receipt: string | null
+		no_receipt: boolean
 	}[]
 	cancel_route: routeType | null
 	remind_route: routeType | null
@@ -160,6 +162,11 @@ const stateClass: Record<string, string> = {
 							<template v-else-if="line.reference">{{ line.reference }}</template>
 						</span>
 						<span v-if="line.supplier_code" class="ml-1.5 text-xs text-gray-400" :title="line.supplier_name ?? undefined">{{ line.supplier_name ?? line.supplier_code }}</span>
+						<a v-if="line.receipt" :href="route('grp.media.download', { media: line.receipt, inline: 1 })" target="_blank" rel="noopener" class="ml-1.5 whitespace-nowrap text-xs text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">
+							<FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+							{{ ctrans("Receipt") }}
+						</a>
+						<span v-else-if="line.no_receipt" class="ml-1.5 whitespace-nowrap rounded border border-amber-200 bg-amber-50 px-1.5 text-xs text-amber-700">{{ ctrans("No receipt") }}</span>
 					</span>
 					<span class="whitespace-nowrap tabular-nums text-gray-500">{{ money(item.currency_code, line.amount) }}</span>
 				</li>

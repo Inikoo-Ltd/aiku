@@ -31,3 +31,6 @@ INI-167 (31 Oct 2026): Inertia 3 has its own XHR client, so an axios interceptor
 
 ## Loading indicators use LoadingIcon
 Vika, 2 Nov 2026: every loading state shows `@/Components/Utils/LoadingIcon.vue` (`<LoadingIcon />`), never a hand-written `FontAwesomeIcon` spinner (`fa-spinner-third` with `spin`/`animate-spin`) or a pulsing stand-in icon. A placeholder that stands in for content still loading (deferred props, a first fetch) is a skeleton with the `skeleton` class from `resources/css/app.css` (`class="skeleton h-14 rounded"`), never `animate-pulse bg-gray-100`. Convert any you find in a file you touch.
+
+## Required fields carry a red asterisk
+Vika, 9 Nov 2026: every form or dialog label of a field the user must fill ends with a red asterisk, `{{ ctrans("Amount") }} <span class="text-red-500">*</span>` inside the label's text span, so the user sees what blocks the save before pressing it. A field that is required only sometimes shows it under the same condition (`<span v-if="selectedType?.needs_order" class="text-red-500">*</span>`). Optional fields get no asterisk (an "(optional)" suffix is fine). Add the missing asterisks in any form you touch.

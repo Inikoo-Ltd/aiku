@@ -74,7 +74,7 @@ interface DueExpense {
 	supplier_name: string | null
 	purchase_order_reference: string | null
 	purchase_order_route: routeType | null
-	has_receipt: boolean
+	receipt: string | null
 }
 
 const props = defineProps<{
@@ -398,7 +398,12 @@ const send = () => {
 									<span class="text-gray-400">·</span>
 									<span class="whitespace-nowrap">{{ line.expense.reference }}</span>
 								</template>
-								<FontAwesomeIcon v-if="line.expense.has_receipt" v-tooltip="ctrans('Receipt in the ledger')" icon="fal fa-paperclip" class="ml-1 text-gray-400" fixed-width aria-hidden="true" />
+								<span class="text-gray-400">·</span>
+								<a v-if="line.expense.receipt" :href="route('grp.media.download', { media: line.expense.receipt, inline: 1 })" target="_blank" rel="noopener" class="whitespace-nowrap text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline">
+									<FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
+									{{ ctrans("Receipt") }}
+								</a>
+								<span v-else class="whitespace-nowrap rounded border border-amber-200 bg-amber-50 px-1.5 text-amber-700">{{ ctrans("No receipt") }}</span>
 							</div>
 						</div>
 						<div v-else-if="line.shipment" class="space-y-1 text-xs text-gray-600">
