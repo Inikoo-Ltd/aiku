@@ -41,7 +41,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $checked_at Last time was validated online
  * @property \Illuminate\Support\Carbon|null $invalid_checked_at Last time was validated online with tax number invalid
- * @property string|null $external_service_failed_at Last time on;ine validation fail due external service down
+ * @property \Illuminate\Support\Carbon|null $external_service_failed_at Last time on;ine validation fail due external service down
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property TaxNumberValidationTypeEnum|null $validation_type
  * @property int|null $manual_validation_user_id
@@ -67,6 +67,7 @@ class TaxNumber extends Model implements Auditable
         'audited_at'         => 'datetime',
         'checked_at'         => 'datetime',
         'invalid_checked_at' => 'datetime',
+        'external_service_failed_at' => 'datetime',
         'rechecks_scheduled_at' => 'datetime',
         'validation_type'    => TaxNumberValidationTypeEnum::class,
         'status'             => TaxNumberStatusEnum::class,
