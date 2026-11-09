@@ -18,7 +18,6 @@ use App\Enums\Catalogue\Review\ReviewContextEnum;
 use App\Enums\Catalogue\Shop\ShopEngineEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Comms\Email\EmailEditorEnum;
 use Illuminate\Support\Arr;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
@@ -1028,11 +1027,6 @@ class Shop extends Model implements HasMedia, Auditable
     public function cancelsUnpaidBankOrders(): bool
     {
         return (bool) $this->unpaidBankOrderSetting('enabled');
-    }
-
-    public function emailEditor(): EmailEditorEnum
-    {
-        return EmailEditorEnum::tryFrom((string) Arr::get($this->settings, 'email_editor')) ?? EmailEditorEnum::BEEFREE;
     }
 
     public function sendsNewsletterToSuppliers(): bool

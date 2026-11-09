@@ -75,7 +75,6 @@ use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryForRelatedWebBl
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInShop;
 use App\Actions\Catalogue\ProductCategory\Json\GetSubDepartmentsInWorkshop;
-use App\Actions\Comms\BeeFreeSDK\AuthenticateBeefreeAccount;
 use App\Actions\Comms\EmailCopy\GetEmailCopy;
 use App\Actions\Comms\EmailTemplate\GetEmailTemplateLayout;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
@@ -400,8 +399,6 @@ Route::post('master-shop/{masterShop}/pricing-sales', [GetMasterProductsPricingS
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
 
 Route::get('timezones', IndexTimeZones::class)->name('timezones');
-
-Route::post('beefree/{organisation}/authenticate', AuthenticateBeefreeAccount::class)->name('beefree.authenticate');
 
 Route::get('product/{product}/trade-units', GetExternalProductTradeUnits::class)->name('product.external.trade-units-linked');
 Route::post('master-product/{masterAsset}/check-org-stocks-existence', CheckMasterAssetTradeUnitOrgStockExistence::class)->name('master_product.check_org_stock_existence');

@@ -19,6 +19,8 @@ class RepairEmailSocialIcons
 
     public const string BEEFREE_ICON_PATTERN = '~^https?://[^/]+/public/resources/social-networks-icon-sets/([^/]+)/([^/@]+)@2x\.png$~';
 
+    private const array RENAMED_NETWORKS = ['twitter' => 'x'];
+
     /**
      * @var array<string, string|null> beefree icon url => own icon url, null when the icon is not in our seeded set
      */
@@ -62,7 +64,7 @@ class RepairEmailSocialIcons
         $iconSrc = $node['image']['src'] ?? null;
         if (is_string($iconSrc) && preg_match(self::BEEFREE_ICON_PATTERN, $iconSrc, $match) && $this->ownIconUrl($iconSrc, $socialIcons)) {
             $node['iconSet'] = $match[1];
-            $node['name']    ??= $match[2];
+            $node['name']    ??= $this->network($match[2]);
         }
 
         foreach ($node as $key => $value) {
@@ -85,7 +87,12 @@ class RepairEmailSocialIcons
             return null;
         }
 
-        return $this->ownIconUrls[$url] ??= $socialIcons["$match[1]/$match[2]"] ?? null;
+        return $this->ownIconUrls[$url] ??= $socialIcons["$match[1]/{$this->network($match[2])}"] ?? null;
+    }
+
+    private function network(string $beefreeNetwork): string
+    {
+        return self::RENAMED_NETWORKS[$beefreeNetwork] ?? $beefreeNetwork;
     }
 
     public string $commandSignature = 'repair:email-social-icons {shop? : Only repair the emails and email templates of this shop slug}';

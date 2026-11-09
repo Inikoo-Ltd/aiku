@@ -108,7 +108,6 @@ class ShowMailshotTemplateWorkshop extends OrgAction
                     'name'       => 'grp.models.email-templates.video-thumbnail.store',
                     'parameters' => ['emailTemplate' => $emailTemplate->id]
                 ],
-                'emailEditor'         => $emailTemplate->shop?->emailEditor()->value,
                 'websiteTheme'        => GetEmailWebsiteTheme::run($emailTemplate->shop),
                 'imageCategories'     => IndexShopGalleryImages::categories($emailTemplate->shop),
                 'updateRoute'         => [

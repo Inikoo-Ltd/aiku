@@ -131,45 +131,6 @@ class EditGroupSettings extends OrgAction
                         ],
                     ],
                     [
-                        'label'  => __('Page Builder'),
-                        'icon'   => 'fa-light fa-pager',
-                        'fields' => [
-                            "page_builder_client_id" => [
-                                "type"        => "input",
-                                "label"       => __("Beefree Client ID"),
-                                "value"       => Arr::get($group->settings, 'beefree.page_builder.client_id', ''),
-                            ],
-                            "page_builder_client_secret" => [
-                                "type"        => "input",
-                                "label"       => __("Beefree Client Secret"),
-                                "value"       => Arr::get($group->settings, 'beefree.page_builder.client_secret', ''),
-                            ],
-                        ],
-
-                    ],
-                    [
-                        'label'  => __('Email Builder'),
-                        'icon'   => 'fa-light fa-satellite-dish',
-                        'fields' => [
-                            "client_id" => [
-                                "type"        => "input",
-                                "label"       => __("Beefree Client ID"),
-                                "value"       => $group->settings['beefree']['client_id'] ?? '',
-                            ],
-                            "client_secret" => [
-                                "type"        => "input",
-                                "label"       => __("Beefree Client Secret"),
-                                "value"       => $group->settings['beefree']['client_secret'] ?? '',
-                            ],
-                            // "grant_type" => [
-                            //     "type"        => "input",
-                            //     "label"       => __("Grant Type"),
-                            //     "value"       => $group->settings['beefree']['grant_type'] ?? '',
-                            // ],
-                        ],
-
-                    ],
-                    [
                         'label'  => __('AWS-SES configuration'),
                         'icon'   => 'fa-light fa-key',
                         'fields' => SesConfigurationBlueprint::make(
