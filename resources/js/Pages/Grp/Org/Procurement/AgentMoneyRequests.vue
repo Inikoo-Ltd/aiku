@@ -128,7 +128,7 @@ const remindRequest = (row: MoneyRequestRow) => {
 								<li v-for="recipient in group.recipients" :key="`${recipient.name}-${recipient.email}`" :class="recipient.by_email ? 'text-gray-900' : 'text-gray-400'">
 									<span class="font-medium">{{ recipient.name }}</span>
 									<span class="ml-1 break-all text-xs" :class="recipient.by_email ? 'text-gray-500' : ''">{{ recipient.email ?? ctrans("no email") }}</span>
-									<span v-if="!recipient.by_email" class="block text-xs">{{ ctrans("Email off: told in aiku only") }}</span>
+									<span v-if="!recipient.by_email" class="block text-xs">{{ recipient.email ? ctrans("Email off: only notified in aiku") : ctrans("Only notified in aiku") }}</span>
 								</li>
 							</ul>
 						</dd>
