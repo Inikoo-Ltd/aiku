@@ -135,7 +135,8 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
             ProductStatusEnum::FOR_SALE,
             ProductStatusEnum::OUT_OF_STOCK,
             ProductStatusEnum::COMING_SOON,
-            ProductStatusEnum::NOT_FOR_SALE
+            ProductStatusEnum::NOT_FOR_SALE,
+            ProductStatusEnum::DISCONTINUED
         ])) {
             if ($availableQuantity == 0) {
                 $status = ProductStatusEnum::OUT_OF_STOCK;
