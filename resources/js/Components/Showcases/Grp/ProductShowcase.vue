@@ -9,6 +9,8 @@ import { ref, computed, inject } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo} from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode, faCheckCircle, faTimesCircle } from "@fas"
 import { ctrans } from "@/Composables/useTrans"
+import { useProductAvailabilityLive } from "@/Composables/useProductAvailabilityLive"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
@@ -148,6 +150,13 @@ const shelfQuantity = computed(() => {
 		.map((part) => Math.floor(Number(part.quantity_available ?? 0) / Number(part.quantity)))
 
 	return quantities.length ? Math.max(0, Math.min(...quantities)) : 0
+})
+
+const { pendingProductIds } = useProductAvailabilityLive((update) => {
+	const product = props.data?.product?.data
+	if (product && product.id === update.product_id) {
+		Object.assign(product, { stock: update.available_quantity, is_on_demand: update.is_on_demand })
+	}
 })
 
 const stockStatus = computed(() => {
@@ -327,6 +336,7 @@ const getTooltips = () => {
 				<span class="flex flex-wrap items-baseline gap-x-2">
 					<span class="text-xl font-semibold text-gray-800">{{ stockStatus.label }}</span>
 					<span v-if="stockStatus.detail" class="text-sm tabular-nums text-gray-500">{{ stockStatus.detail }}</span>
+					<LoadingIcon v-if="pendingProductIds.has(data.product?.data?.id)" v-tooltip="ctrans('Recalculating availability')" class="text-sm text-gray-400" />
 				</span>
 			</div>
 

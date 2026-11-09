@@ -13,6 +13,7 @@ use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Events\BroadcastProductAvailability;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
@@ -48,6 +49,22 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
     }
 
     public function handle(Product $product): Product
+    {
+        $oldQuantity = $product->available_quantity;
+        $oldStatus   = $product->status;
+        $oldOnDemand = $product->is_on_demand;
+
+        $product = $this->hydrate($product);
+
+        $quantityChanged = $product->available_quantity != $oldQuantity || is_null($product->available_quantity) !== is_null($oldQuantity);
+        if ($quantityChanged || $product->status !== $oldStatus || $product->is_on_demand !== $oldOnDemand) {
+            rescue(fn () => BroadcastProductAvailability::dispatch($product), report: false);
+        }
+
+        return $product;
+    }
+
+    private function hydrate(Product $product): Product
     {
         if ($product->state == ProductStateEnum::DISCONTINUED) {
             $wasAvailable = $product->available_quantity > 0;
