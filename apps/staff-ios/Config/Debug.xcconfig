@@ -1,0 +1,6 @@
+#include "Shared.xcconfig"
+
+AIKU_BUNDLE_ID = com.inikoo.aiku.dev
+API_BASE_URL = http:/$()/aiku.test/app/api
+
+#include? "Local.xcconfig"
