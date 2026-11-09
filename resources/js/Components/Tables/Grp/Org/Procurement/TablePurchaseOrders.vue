@@ -142,9 +142,13 @@ const tableResource = computed(() => {
 	return { ...props.data, data: rows }
 })
 
-function agentOrderRowClass(row: Record<string, unknown>): string {
+function purchaseOrderRowClass(row: Record<string, unknown>): string {
 	if (row.is_agent_order_group) {
 		return "bg-gray-50 hover:bg-gray-100"
+	}
+
+	if (row.state === "cancelled") {
+		return "bg-red-50 hover:bg-red-100"
 	}
 
 	return row.is_agent_order_member ? "bg-white hover:bg-gray-50" : ""
@@ -297,7 +301,7 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 </script>
 
 <template>
-	<Table :resource="tableResource" :name="tab" :rowColorFunction="agentOrderRowClass" class="mt-5">
+	<Table :resource="tableResource" :name="tab" :rowColorFunction="purchaseOrderRowClass" class="mt-5">
 		<template #cell(reference)="{ item: purchaseOrder }">
 			<div v-if="purchaseOrder.is_agent_order_group" class="flex items-center gap-1.5 whitespace-nowrap">
 				<button
