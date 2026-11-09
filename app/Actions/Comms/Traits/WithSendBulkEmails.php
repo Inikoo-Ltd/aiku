@@ -194,7 +194,7 @@ trait WithSendBulkEmails
             'email-body' => Arr::get($additionalData, 'email_body'),
             'platform' => Arr::get($additionalData, 'platform'),
             'balance' => Arr::get($additionalData, 'balance'),
-            'products' => Arr::get($additionalData, 'products'),
+            'products', 'updated-products' => Arr::get($additionalData, 'products'),
 
             'offer-code' => Arr::get($additionalData, 'offer_code'),
             'offer-name' => Arr::get($additionalData, 'offer_name'),

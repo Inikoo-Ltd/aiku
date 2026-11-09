@@ -136,6 +136,7 @@ use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\ChatEmailRecipient;
+use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use App\Models\Comms\EmailAddress;
@@ -5684,4 +5685,15 @@ test('workshop opened with a template keeps the saved draft once it has been edi
         ->where('unpublished_layout', ['body' => 'translated draft'])
         ->where('openTemplateSelector', false)
         ->etc());
+});
+
+test('updated products merge tag renders the price change product list', function () {
+    $sender = new class () {
+        use WithSendBulkEmails;
+    };
+
+    $replace = fn (string $tag) => (fn () => $this->replaceMergeTags($tag, new DispatchedEmail(), additionalData: ['products' => '<table>SoyP-01</table>']))->call($sender);
+
+    expect($replace('Updated Products'))->toBe('<table>SoyP-01</table>')
+        ->and($replace('Products'))->toBe('<table>SoyP-01</table>');
 });
