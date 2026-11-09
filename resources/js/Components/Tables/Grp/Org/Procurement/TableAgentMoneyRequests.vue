@@ -8,7 +8,8 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Link } from "@inertiajs/vue3"
-import { faBan, faCheck, faHandHoldingUsd, faTimes } from "@fal"
+import { ref } from "vue"
+import { faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faTimes } from "@fal"
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -16,7 +17,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 
-library.add(faBan, faCheck, faHandHoldingUsd, faTimes)
+library.add(faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faTimes)
 
 export interface MoneyRequestRow {
 	id: number
@@ -69,6 +70,26 @@ const emit = defineEmits<{
 const locale = useLocaleStore()
 const money = (code: string, amount: number) => locale.currencyFormat(code, amount)
 
+const collapsedReferenceCount = 3
+const expandedReferences = ref(new Set<number>())
+
+const referencesOf = (reference: string): string[] => reference.split(",").map((part) => part.trim()).filter(Boolean)
+
+const visibleReferences = (row: MoneyRequestRow): string[] => {
+	const references = referencesOf(row.reference)
+	return expandedReferences.value.has(row.id) ? references : references.slice(0, collapsedReferenceCount)
+}
+
+const toggleReferences = (id: number) => {
+	const expanded = new Set(expandedReferences.value)
+	if (expanded.has(id)) {
+		expanded.delete(id)
+	} else {
+		expanded.add(id)
+	}
+	expandedReferences.value = expanded
+}
+
 const stateClass: Record<string, string> = {
 	requested: "bg-amber-50 text-amber-700",
 	settled: "bg-green-50 text-green-700",
@@ -84,7 +105,24 @@ const stateClass: Record<string, string> = {
 		</template>
 
 		<template #cell(reference)="{ item }">
-			<span class="whitespace-nowrap font-medium text-gray-700">{{ item.reference }}</span>
+			<div class="flex max-w-xs flex-wrap items-center gap-1">
+				<span
+					v-for="reference in visibleReferences(item)"
+					:key="reference"
+					class="whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700">
+					{{ reference }}
+				</span>
+				<Button
+					v-if="referencesOf(item.reference).length > collapsedReferenceCount"
+					type="tertiary"
+					size="xxs"
+					:label="expandedReferences.has(item.id) ? ctrans('Show less') : ctrans('+:count more', { count: referencesOf(item.reference).length - collapsedReferenceCount })"
+					@click="toggleReferences(item.id)">
+					<template #icon>
+						<FontAwesomeIcon :icon="expandedReferences.has(item.id) ? faChevronUp : faChevronDown" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</div>
 		</template>
 
 		<template #cell(client_code)="{ item }">
