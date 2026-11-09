@@ -1,0 +1,4 @@
+#include "Shared.xcconfig"
+
+AIKU_BUNDLE_ID = com.inikoo.aiku
+API_BASE_URL = https:/$()/aiku.io/app/api

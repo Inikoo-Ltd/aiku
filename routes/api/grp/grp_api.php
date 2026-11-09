@@ -63,6 +63,8 @@ Route::prefix("chats")
         ->name("chats.")
         ->group(__DIR__ . "/chat_api.php");
 
+Route::prefix('mobile')->name('mobile.')->group(__DIR__.'/mobile.php');
+
 Route::prefix('appointments')->name('appointments.')->group(function () {
     Route::get('widget-config', GetAppointmentWidgetConfig::class)->name('widget.config');
     Route::post('widget-booking', StoreAppointmentWidgetBooking::class)->name('widget.booking')->middleware('throttle:iris-appointment-booking');
