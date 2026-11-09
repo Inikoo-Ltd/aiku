@@ -19,7 +19,7 @@ import {
 import Image from "@common/Components/Image.vue"
 //import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
-import { buildBlogTableOfContents, htmlToPlainText } from "@/Iris/Composables/useBlogTableOfContents"
+import { blogTitleInlineHtml, buildBlogTableOfContents, htmlToPlainText } from "@/Iris/Composables/useBlogTableOfContents"
 
 library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin, faXTwitter, faWhatsapp)
 
@@ -100,6 +100,7 @@ onUnmounted(() => {
   headingObserver = null
 })
 
+const titleHtml = computed(() => blogTitleInlineHtml(props.fieldValue.title ?? ""))
 const plainTitle = computed(() => htmlToPlainText(props.fieldValue.title ?? ""))
 
 const shareUrl = computed(() => encodeURIComponent(pageUrl.value))
@@ -155,11 +156,7 @@ const screenType = inject("screenType", "desktop")
 
     <!-- Main Content -->
     <article class="w-full min-w-0 max-w-3xl mx-auto">
-      <!-- <h1 class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900">
-        {{ fieldValue.title }}
-      </h1> -->
-
-      <div v-html="fieldValue.title" :style="{fontFamily: 'Raleway, sans-serif', ...getStyles(fieldValue.properties, screenType)}" class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900"/>
+      <h1 v-html="titleHtml" :style="{fontFamily: 'Raleway, sans-serif', ...getStyles(fieldValue.properties, screenType)}" class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900"/>
 
       <div class="text-sm text-gray-500 mb-6">
         {{ displayDate }}
