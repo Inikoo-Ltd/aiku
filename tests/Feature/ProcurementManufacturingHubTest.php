@@ -752,6 +752,21 @@ describe('partner shopping list', function () {
             ->and($line['quantity'])->toBe(3.0);
     });
 
+    test('a finalised partner order not yet dispatched stays on its way until its stock delivery exists', function () {
+        $item   = submittedPartnerShoppingListItem($this->orgPartner, $this->buyerOrgStock, ['quantity' => 4]);
+        $result = CherryPickPartnerShoppingListItems::make()->action($this->orgPartner->partner, [['id' => $item->id]]);
+        $result['orders'][0]->update(['state' => OrderStateEnum::FINALISED]);
+
+        $line = collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('type', 'partner_request');
+
+        expect($line['reference'])->toBe($result['orders'][0]->reference)
+            ->and($line['quantity'])->toBe(4.0);
+
+        $result['orders'][0]->update(['state' => OrderStateEnum::DISPATCHED]);
+
+        expect(collect(GetProductIncomingStock::make()->forOrgStocks([$this->buyerOrgStock->id]))->firstWhere('type', 'partner_request'))->toBeNull();
+    });
+
     test('a website shows quantity and date only of a partner purchase order on its way', function () {
         $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
         $purchaseOrder = $this->orgPartner->purchaseOrders()->where('state', PurchaseOrderStateEnum::IN_PROCESS)->latest()->first()
