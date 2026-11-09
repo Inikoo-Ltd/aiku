@@ -9,5 +9,6 @@ final class AikuUITests: XCTestCase {
         XCTAssertTrue(app.textFields["login.username"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.secureTextFields["login.password"].exists)
         XCTAssertFalse(app.buttons["login.submit"].isEnabled)
+        XCTAssertTrue(app.buttons["login.passkey"].isEnabled)
     }
 }

@@ -9,9 +9,10 @@ struct RootView: View {
                 HomeView()
             }
         } else {
-            LoginView {
-                isSignedIn = true
-            }
+            LoginView(
+                onSignIn: { isSignedIn = true },
+                onSignInWithPasskey: { isSignedIn = true }
+            )
         }
     }
 }
