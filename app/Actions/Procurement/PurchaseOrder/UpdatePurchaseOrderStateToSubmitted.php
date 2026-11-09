@@ -39,6 +39,9 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
 
     private PurchaseOrder $purchaseOrder;
 
+    /** @var array{by: string, at: string, reason: string, organisations: array<int, string>}|null */
+    private ?array $sentWithoutWaiting = null;
+
     public function afterValidator(Validator $validator): void
     {
         if ($this->purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS) {
@@ -51,8 +54,8 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
             $validator->errors()->add('transactions', __('Purchase order must have at least one item to be submitted'));
         }
 
-        if (!$this->asAction && $waiting = SendAgentDraftsToAgent::organisationsNotReady($this->purchaseOrder)) {
-            $validator->errors()->add('purchase_order', __(':organisations are also ordering from this supplier and have not said they are ready. Submit it from POs to submit.', ['organisations' => implode(', ', $waiting)]));
+        if (!$this->asAction && !$this->get('submit_without_waiting_reason') && $waiting = SendAgentDraftsToAgent::organisationsNotReady($this->purchaseOrder)) {
+            $validator->errors()->add('others_not_ready', __(':organisations are also ordering from this supplier and have not said they are ready. Submit it from POs to submit.', ['organisations' => implode(', ', $waiting)]));
         }
 
         if (!$this->asAction && !$this->get('critical_notes_acknowledged') && GetPurchaseOrderAgreement::make()->hasCriticalNotes($this->purchaseOrder)) {
@@ -111,6 +114,10 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
             'submitted_at' => now(),
         ];
 
+        if ($this->sentWithoutWaiting && $this->sentWithoutWaiting['organisations']) {
+            $updateData['data'] = array_merge($purchaseOrder->data ?? [], ['sent_without_waiting' => $this->sentWithoutWaiting]);
+        }
+
         if ($purchaseOrder->estimated_delivery_days === null) {
             $deliveryDays = $purchaseOrder->purchaseOrderTransactions()
                 ->where('purchase_order_transactions.state', PurchaseOrderTransactionStateEnum::SUBMITTED)
@@ -146,6 +153,7 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
         return [
             'send_via' => ['sometimes', 'nullable', 'string', 'in:email,whatsapp'],
             'critical_notes_acknowledged' => ['sometimes', 'boolean'],
+            'submit_without_waiting_reason' => ['sometimes', 'nullable', 'string', 'min:10', 'max:1000'],
         ];
     }
 
@@ -153,6 +161,15 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
     {
         $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, $request);
+
+        if ($reason = Arr::get($this->validatedData, 'submit_without_waiting_reason')) {
+            $this->sentWithoutWaiting = [
+                'by'            => $request->user()->contact_name ?? $request->user()->username,
+                'at'            => now()->toIso8601String(),
+                'reason'        => $reason,
+                'organisations' => SendAgentDraftsToAgent::organisationsNotReady($purchaseOrder),
+            ];
+        }
 
         return $this->handle($purchaseOrder, Arr::get($this->validatedData, 'send_via'));
     }

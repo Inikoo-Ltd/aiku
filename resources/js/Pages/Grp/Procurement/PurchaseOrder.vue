@@ -38,6 +38,7 @@ import IconField from "primevue/iconfield"
 import InputIcon from "primevue/inputicon"
 import InputText from "primevue/inputtext"
 import RadioButton from "primevue/radiobutton"
+import Textarea from "primevue/textarea"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
@@ -569,14 +570,25 @@ const submitPurchaseOrder = (action: any) => {
 		return
 	}
 
-	router.patch(route(action.route.name, action.route.parameters), { send_via: sendVia.value === doNotSend ? null : sendVia.value, critical_notes_acknowledged: criticalNotesAcknowledged.value }, {
+	router.patch(route(action.route.name, action.route.parameters), {
+		send_via: sendVia.value === doNotSend ? null : sendVia.value,
+		critical_notes_acknowledged: criticalNotesAcknowledged.value,
+		submit_without_waiting_reason: submitWithoutWaitingReason.value.trim() || null,
+	}, {
 		onStart: () => { submitLoading.value = true },
 		onFinish: () => {
 			submitLoading.value = false
 			submitDialogAction.value = null
 			sendVia.value = doNotSend
 		},
+		onSuccess: () => {
+			submitProblemsOpen.value = false
+			submitWithoutWaitingReason.value = ""
+		},
 		onError: (errors) => {
+			othersNotReady.value = "others_not_ready" in errors
+			submitAction.value = action
+			retrySendVia.value = sendVia.value
 			submitErrors.value = Object.values(errors).flat() as string[]
 			submitProblemsOpen.value = true
 			router.reload({ only: ["submit_problems"] })
@@ -585,6 +597,17 @@ const submitPurchaseOrder = (action: any) => {
 }
 
 const submitErrors = ref<string[]>([])
+const othersNotReady = ref(false)
+const submitAction = ref<any>(null)
+const submitWithoutWaitingReason = ref("")
+const retrySendVia = ref<string>(doNotSend)
+
+const submitWithoutWaiting = () => {
+	submitProblemsOpen.value = false
+	sendVia.value = retrySendVia.value
+	submitDialogAction.value = submitAction.value
+	submitPurchaseOrder(submitAction.value)
+}
 const submitProblemsOpen = ref(false)
 const taskProblem = ref<SubmitProblem | null>(null)
 
@@ -1095,7 +1118,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:icon="action.icon"
 				:tooltip="action.tooltip"
 				:loading="submitLoading"
-				@click="() => submitPurchaseOrder(action)"
+				@click="() => { submitWithoutWaitingReason = ''; submitPurchaseOrder(action) }"
 			/>
 		</template>
 
@@ -1756,13 +1779,36 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			</li>
 		</ul>
 		<p class="mt-3 text-xs text-gray-500">{{ ctrans("Once it is corrected, press Submit again.") }}</p>
+		<div v-if="othersNotReady" class="mt-4 flex flex-col gap-2 border-t border-gray-200 pt-3">
+			<label for="purchase-order-submit-without-waiting" class="text-sm font-medium text-gray-700">
+				{{ ctrans("Or submit only this order now, without waiting for them. Write why:") }} <span class="text-red-500">*</span>
+			</label>
+			<Textarea id="purchase-order-submit-without-waiting" v-model="submitWithoutWaitingReason" rows="2" autoResize maxlength="1000" fluid />
+			<p class="text-xs text-gray-500">{{ ctrans("Their orders stay as drafts for them to submit later.") }}</p>
+		</div>
 
 		<template #footer>
-			<Button :label="ctrans('Close')" type="tertiary" @click="submitProblemsOpen = false">
-				<template #icon>
-					<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
-				</template>
-			</Button>
+			<div class="flex w-full gap-2">
+				<Button :label="ctrans('Close')" type="tertiary" class="shrink-0" @click="submitProblemsOpen = false">
+					<template #icon>
+						<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<Button
+					v-if="othersNotReady"
+					:label="ctrans('Submit without waiting')"
+					type="primary"
+					full
+					class="disabled:opacity-50"
+					:disabled="submitWithoutWaitingReason.trim().length < 10"
+					:loading="submitLoading"
+					@click="submitWithoutWaiting"
+				>
+					<template #icon>
+						<FontAwesomeIcon :icon="faPaperPlane" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</div>
 		</template>
 	</Dialog>
 
