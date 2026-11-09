@@ -21,7 +21,7 @@ import SupplierPortalPurchaseOrderDialog from "@/Components/Procurement/Supplier
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart, faComputerClassic } from "@fas"
-import { faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags } from "@fal"
+import { faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faQuoteLeft } from "@fal"
 
 library.add(faLock, faEnvelope, faPhone, faUserTie, faMapMarkerAlt, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic)
 
@@ -237,17 +237,30 @@ onMounted(() => {
 			<div class="mx-auto space-y-4 p-4 lg:p-8" :class="fullWidthTabs.includes(tab) ? 'max-w-none' : 'max-w-6xl'">
 
 				<template v-if="tab === 'home'">
-					<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-						<p class="text-sm font-semibold text-gray-800">
-							{{ ctrans("Thank you for trading with :group.", { group }) }}
-							<span class="font-normal text-gray-700">{{ ctrans("We are pleased to be your distribution partner in Europe.") }}</span>
-						</p>
-						<details class="mt-1 text-sm text-gray-600">
-							<summary class="cursor-pointer select-none text-xs text-gray-400">{{ ctrans("Read our message") }}</summary>
-							<p class="mt-2">{{ welcome[0] }}</p>
-							<p class="mt-2 font-semibold text-gray-700">{{ welcome[1] }}</p>
-						</details>
-					</div>
+					<article class="relative overflow-hidden rounded-lg border border-gray-200 border-l-4 bg-indigo-50 p-5 shadow-sm" :style="{ borderLeftColor: navigationTheme.background }">
+						<FontAwesomeIcon :icon="faQuoteLeft" class="pointer-events-none absolute right-5 top-4 text-5xl text-gray-100" aria-hidden="true" />
+						<header class="relative flex items-center gap-3">
+							<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-base font-semibold" :style="{ backgroundColor: navigationTheme.background, color: navigationTheme.text }">
+								{{ group.charAt(0).toUpperCase() }}
+							</div>
+							<div class="min-w-0">
+								<p class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans("A message from :group", { group }) }}</p>
+								<p class="text-sm font-semibold text-gray-800">{{ ctrans("Dear :supplier,", { supplier: supplier.name }) }}</p>
+							</div>
+						</header>
+						<div class="relative mt-4 space-y-3 text-sm leading-relaxed text-gray-600">
+							<p class="font-semibold text-gray-800">
+								{{ ctrans("Thank you for trading with :group.", { group }) }}
+								<span class="font-normal text-gray-700">{{ ctrans("We are pleased to be your distribution partner in Europe.") }}</span>
+							</p>
+							<p>{{ welcome[0] }}</p>
+							<p class="font-semibold text-gray-700">{{ welcome[1] }}</p>
+						</div>
+						<footer class="relative mt-5 border-t border-gray-100 pt-3 text-sm">
+							<p class="text-gray-500">{{ ctrans("With warm regards,") }}</p>
+							<p class="font-semibold text-gray-800">{{ ctrans("The :group team", { group }) }}</p>
+						</footer>
+					</article>
 	<section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
 						<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
 							<h2 class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ ctrans("Sales in the last 12 months") }}</h2>
