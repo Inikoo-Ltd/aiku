@@ -6,8 +6,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue"
-import { Head, router } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
+import { Head, Link, router } from "@inertiajs/vue3"
 import Checkbox from "primevue/checkbox"
 import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
@@ -15,7 +14,7 @@ import Select from "primevue/select"
 import Textarea from "primevue/textarea"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPaperPlane } from "@fal"
+import { faPaperPlane, faUser, faClipboardList } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -24,14 +23,20 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faPaperPlane)
+library.add(faPaperPlane, faUser, faClipboardList)
 
 interface DueOrder {
 	purchase_order_id: number
 	reference: string
+	submitted_at: string | null
+	placed_by: string | null
+	route: routeType
 	supplier_id: number | null
 	supplier_code: string | null
 	supplier_name: string | null
+	supplier_company: string | null
+	supplier_nickname: string | null
+	supplier_route: routeType | null
 	total: number
 	requested: number
 	advance_percentage: number
@@ -57,20 +62,23 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 const money = (amount: number) => locale.currencyFormat(props.due.currency_code, amount)
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent] focus:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)] focus:!border-[var(--app-accent)]"
+
+const ageInDays = (date: string | null) => (date ? Math.max(0, Math.round((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(date)) / 86400000)) : null)
 
 interface Line {
 	key: string
 	kind: "advance" | "balance" | "wallet"
 	purchase_order_id: number | null
+	order: DueOrder | null
 	due: number
 }
 
 const lines = computed<Line[]>(() => [
-	...(props.due.negative_balance > 0 ? [{ key: "wallet", kind: "wallet" as const, purchase_order_id: null, due: props.due.negative_balance }] : []),
+	...(props.due.negative_balance > 0 ? [{ key: "wallet", kind: "wallet" as const, purchase_order_id: null, order: null, due: props.due.negative_balance }] : []),
 	...props.due.orders.flatMap((order) => [
-		...(order.advance_due > 0 ? [{ key: `advance:${order.purchase_order_id}`, kind: "advance" as const, purchase_order_id: order.purchase_order_id, due: order.advance_due }] : []),
-		...(order.balance_due > 0 ? [{ key: `balance:${order.purchase_order_id}`, kind: "balance" as const, purchase_order_id: order.purchase_order_id, due: order.balance_due }] : []),
+		...(order.advance_due > 0 ? [{ key: `advance:${order.purchase_order_id}`, kind: "advance" as const, purchase_order_id: order.purchase_order_id, order, due: order.advance_due }] : []),
+		...(order.balance_due > 0 ? [{ key: `balance:${order.purchase_order_id}`, kind: "balance" as const, purchase_order_id: order.purchase_order_id, order, due: order.balance_due }] : []),
 	]),
 ])
 
@@ -107,6 +115,8 @@ const total = computed(() => chosen.value.reduce((sum, line) => sum + Number(amo
 const reference = ref(props.purchase_order ?? "")
 const notes = ref("")
 const sending = ref(false)
+const sendError = ref<string | null>(null)
+const advanceMessages = reactive<Record<number, { text: string; isError: boolean }>>({})
 
 const switchClient = (slug: string) =>
 	router.get(route(route().current() as string, { ...route().params, client: slug }), {}, { preserveScroll: true })
@@ -117,13 +127,14 @@ const saveAdvance = (order: DueOrder, percentage: number | null) => {
 		preserveScroll: true,
 		preserveState: true,
 		onSuccess: () =>
-			notify({
-				title:
+			(advanceMessages[order.purchase_order_id] = {
+				text:
 					percentage === null
 						? ctrans(":supplier is back to the usual 30% in advance", { supplier: order.supplier_code ?? "" })
 						: ctrans(":supplier asks :percentage% in advance from now on", { supplier: order.supplier_code ?? "", percentage: String(percentage) }),
-				type: "success",
+				isError: false,
 			}),
+		onError: (errors) => (advanceMessages[order.purchase_order_id] = { text: (Object.values(errors ?? {})[0] as string) ?? ctrans("Something went wrong"), isError: true }),
 	})
 }
 
@@ -138,10 +149,12 @@ const send = () => {
 			lines: chosen.value.map((line) => ({ kind: line.kind, purchase_order_id: line.purchase_order_id, amount: Number(amounts[line.key]) })),
 		},
 		{
-			onStart: () => (sending.value = true),
+			onStart: () => {
+				sending.value = true
+				sendError.value = null
+			},
 			onFinish: () => (sending.value = false),
-			onSuccess: () => notify({ title: ctrans("Money request sent to :client", { client: props.client.code }), type: "success" }),
-			onError: (errors) => notify({ title: ctrans("Something went wrong"), text: Object.values(errors ?? {})[0] as string, type: "error" }),
+			onError: (errors) => (sendError.value = (Object.values(errors ?? {})[0] as string) ?? ctrans("Something went wrong")),
 		}
 	)
 }
@@ -169,7 +182,6 @@ const send = () => {
 				<tr>
 					<th class="w-10 px-3 py-2"></th>
 					<th class="px-3 py-2 font-medium">{{ ctrans("For") }}</th>
-					<th class="px-3 py-2 font-medium">{{ ctrans("Supplier") }}</th>
 					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Order total") }}</th>
 					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Already asked") }}</th>
 					<th class="px-3 py-2 text-right font-medium">{{ ctrans("Advance %") }}</th>
@@ -178,21 +190,36 @@ const send = () => {
 			</thead>
 			<tbody class="divide-y divide-gray-100">
 				<tr v-if="!lines.length">
-					<td colspan="7" class="px-3 py-6 text-center text-gray-400">{{ ctrans("Nothing is due from :client", { client: client.code }) }}</td>
+					<td colspan="6" class="px-3 py-6 text-center text-gray-400">{{ ctrans("Nothing is due from :client", { client: client.code }) }}</td>
 				</tr>
 				<tr v-for="line in lines" :key="line.key" :class="ticked[line.key] ? '' : 'text-gray-400'">
 					<td class="px-3 py-2"><Checkbox v-model="ticked[line.key]" binary /></td>
-					<td class="px-3 py-2">
-						<template v-if="line.kind === 'wallet'">
-							<span class="font-medium">{{ ctrans("Cover the negative balance") }}</span>
-						</template>
-						<template v-else>
-							<span class="font-medium">{{ line.kind === "advance" ? ctrans("Advance") : ctrans("Balance") }}</span>
-							<span class="ml-2 whitespace-nowrap">{{ orderOf(line.purchase_order_id)?.reference }}</span>
-						</template>
-					</td>
-					<td class="px-3 py-2">
-						<span v-if="line.kind !== 'wallet'" class="whitespace-nowrap">{{ orderOf(line.purchase_order_id)?.supplier_code }}</span>
+					<td class="min-w-[18rem] px-3 py-2">
+						<span v-if="line.kind === 'wallet'" class="font-medium">{{ ctrans("Cover the negative balance") }}</span>
+						<div v-else-if="line.order" class="space-y-1 text-xs text-gray-600">
+							<div class="flex items-start gap-2">
+								<div class="flex min-w-0 flex-col">
+									<Link v-if="line.order.supplier_route" :href="route(line.order.supplier_route.name, line.order.supplier_route.parameters)" class="text-sm font-semibold leading-snug text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" :title="line.order.supplier_code ?? ''">{{ line.order.supplier_company ?? line.order.supplier_code }}</Link>
+									<span v-else class="text-sm font-semibold leading-snug text-gray-900" :title="line.order.supplier_code ?? ''">{{ line.order.supplier_company ?? line.order.supplier_code }}</span>
+									<span v-if="line.order.supplier_nickname" class="text-gray-500">{{ line.order.supplier_nickname }}</span>
+								</div>
+								<span class="ml-auto shrink-0 whitespace-nowrap rounded border border-gray-200 px-1.5 font-medium text-gray-700">{{ line.kind === "advance" ? ctrans("Advance") : ctrans("Balance") }}</span>
+							</div>
+							<div class="flex flex-wrap items-center gap-x-1">
+								<span class="flex items-center gap-1">
+									<FontAwesomeIcon v-tooltip="ctrans('Placed by')" icon="fal fa-user" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+									{{ line.order.placed_by ?? ctrans("Unknown") }}
+								</span>
+								<template v-if="line.order.submitted_at">
+									<span class="text-gray-400">·</span>
+									<span class="whitespace-nowrap" :title="ctrans('Calendar days since the order was submitted (Day Zero)')">{{ ctrans("Age") }} Z+{{ ageInDays(line.order.submitted_at) }}</span>
+								</template>
+							</div>
+							<div class="flex items-center gap-1">
+								<FontAwesomeIcon v-tooltip="ctrans('Purchase order')" icon="fal fa-clipboard-list" class="shrink-0 text-gray-400" fixed-width aria-hidden="true" />
+								<Link :href="route(line.order.route.name, line.order.route.parameters)" class="min-w-0 truncate whitespace-nowrap text-[var(--app-accent)] hover:text-[var(--app-accent-strong)] hover:underline" :title="line.order.reference">{{ line.order.reference }}</Link>
+							</div>
+						</div>
 					</td>
 					<td class="whitespace-nowrap px-3 py-2 text-right">
 						<template v-if="line.kind !== 'wallet'">{{ money(orderOf(line.purchase_order_id)!.total) }}</template>
@@ -211,6 +238,9 @@ const send = () => {
 							:class="fieldFocusClass"
 							@blur="saveAdvance(orderOf(line.purchase_order_id)!, percentages[line.purchase_order_id!])"
 						/>
+						<div v-if="line.kind === 'advance' && advanceMessages[line.purchase_order_id!]" class="mt-1 max-w-[12rem] text-xs" :class="advanceMessages[line.purchase_order_id!].isError ? 'text-red-600' : 'text-green-600'">
+							{{ advanceMessages[line.purchase_order_id!].text }}
+						</div>
 					</td>
 					<td class="px-3 py-2 text-right">
 						<InputNumber v-model="amounts[line.key]" mode="currency" :currency="due.currency_code" :min="0" :max="line.due" :disabled="!ticked[line.key]" inputClass="w-36 text-right" :class="fieldFocusClass" />
@@ -219,7 +249,7 @@ const send = () => {
 			</tbody>
 			<tfoot v-if="lines.length" class="border-t border-gray-200">
 				<tr>
-					<td colspan="6" class="px-3 py-2 text-right text-xs uppercase tracking-wide text-gray-500">{{ ctrans("To ask for") }}</td>
+					<td colspan="5" class="px-3 py-2 text-right text-xs uppercase tracking-wide text-gray-500">{{ ctrans("To ask for") }}</td>
 					<td class="whitespace-nowrap px-3 py-2 text-right font-semibold text-gray-800">{{ money(total) }}</td>
 				</tr>
 			</tfoot>
@@ -237,7 +267,8 @@ const send = () => {
 		</label>
 	</div>
 
-	<div class="mx-4 my-5 flex justify-end">
-		<Button type="primary" icon="fal fa-paper-plane" :label="ctrans('Send request')" :disabled="!chosen.length" :loading="sending" @click="send" /> 
+	<div class="mx-4 my-5 flex flex-col items-end gap-1">
+		<Button type="primary" icon="fal fa-paper-plane" :label="ctrans('Send request')" :disabled="!chosen.length" :loading="sending" @click="send" />
+		<div v-if="sendError" class="text-xs text-red-600">{{ sendError }}</div>
 	</div>
 </template>

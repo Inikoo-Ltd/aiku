@@ -47,6 +47,12 @@ class CreateAgentMoneyRequest extends OrgAction
         $client  = $clients->firstWhere('slug', $request->string('client')->value()) ?? $clients->first();
         abort_unless($client, 404);
         $purchaseOrder = PurchaseOrder::where('organisation_id', $client->id)->where('agent_id', $agent->id)->find($request->integer('purchase_order'));
+        $due           = GetAgentMoneyRequestLines::run($agent, $client, $purchaseOrder?->id);
+        $due['orders'] = array_map(fn (array $order) => [
+            ...$order,
+            'route'          => ['name' => 'grp.org.agent.purchase_orders.show', 'parameters' => ['organisation' => $organisation->slug, 'purchaseOrder' => $order['purchase_order_slug']]],
+            'supplier_route' => $order['supplier_slug'] ? ['name' => 'grp.org.agent.sales.suppliers.show', 'parameters' => ['organisation' => $organisation->slug, 'supplier' => $order['supplier_slug']]] : null,
+        ], $due['orders']);
 
         return Inertia::render(
             'Org/Procurement/AgentMoneyRequestBuilder',
@@ -61,7 +67,7 @@ class CreateAgentMoneyRequest extends OrgAction
                 'clients'     => $clients->map(fn (Organisation $organisation) => ['slug' => $organisation->slug, 'label' => $organisation->code.' · '.$organisation->name])->values()->all(),
                 'client'      => ['id' => $client->id, 'slug' => $client->slug, 'code' => $client->code],
                 'purchase_order' => $purchaseOrder?->reference,
-                'due'         => GetAgentMoneyRequestLines::run($agent, $client, $purchaseOrder?->id),
+                'due'         => $due,
                 'store_route' => ['name' => 'grp.models.agent.money_request.store', 'parameters' => ['agent' => $agent->id]],
                 'advance_route_name' => 'grp.models.supplier.advance_percentage.update',
             ]

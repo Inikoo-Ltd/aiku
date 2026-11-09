@@ -33,7 +33,7 @@ class GetAgentMoneyRequestLines
     public const float DEFAULT_ADVANCE_PERCENTAGE = 30;
 
     /**
-     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, negative_balance: float, orders: list<array{purchase_order_id: int, reference: string, supplier_id: int|null, supplier_code: string|null, supplier_name: string|null, total: float, requested: float, advance_percentage: float, advance_due: float, balance_due: float}>}
+     * @return array{currency_code: string, wallet: array{received: float, paid: float, balance: float}, negative_balance: float, orders: list<array{purchase_order_id: int, purchase_order_slug: string, reference: string, submitted_at: string|null, placed_by: string|null, supplier_id: int|null, supplier_slug: string|null, supplier_code: string|null, supplier_name: string|null, supplier_company: string|null, supplier_nickname: string|null, total: float, requested: float, advance_percentage: float, advance_due: float, balance_due: float}>}
      */
     public function handle(Agent $agent, Organisation $client, ?int $purchaseOrderId = null): array
     {
@@ -66,17 +66,24 @@ class GetAgentMoneyRequestLines
             ->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
             ->when($purchaseOrderId, fn ($query) => $query->where('purchase_orders.id', $purchaseOrderId))
             ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
+            ->leftJoin('users as buyers', 'buyers.id', 'purchase_orders.buyer_id')
             ->leftJoinSub($requested, 'requested', 'requested.purchase_order_id', 'purchase_orders.id')
             ->leftJoinSub($paidToSuppliers, 'paid_to_suppliers', 'paid_to_suppliers.purchase_order_id', 'purchase_orders.id')
             ->orderBy('purchase_orders.reference')
             ->orderBy('suppliers.code')
             ->get([
                 'purchase_orders.id',
+                'purchase_orders.slug',
                 'purchase_orders.reference',
+                'purchase_orders.submitted_at',
                 'purchase_orders.supplier_id',
                 'purchase_orders.cost_items',
+                'suppliers.slug as supplier_slug',
                 'suppliers.code as supplier_code',
                 'suppliers.name as supplier_name',
+                'suppliers.company_name as supplier_company_name',
+                'buyers.contact_name as buyer_name',
+                'buyers.username as buyer_username',
                 'suppliers.advance_percentage',
                 'requested.amount as requested',
                 'paid_to_suppliers.amount as paid_to_supplier',
@@ -88,13 +95,20 @@ class GetAgentMoneyRequestLines
                 $covered    = max($requested, $paid);
                 $percentage = $purchaseOrder->advance_percentage !== null ? (float) $purchaseOrder->advance_percentage : self::DEFAULT_ADVANCE_PERCENTAGE;
                 $advanceDue = max(0, round($total * $percentage / 100 - $covered, 2));
+                $company    = $purchaseOrder->supplier_company_name ?: $purchaseOrder->supplier_name;
 
                 return [
                     'purchase_order_id'     => $purchaseOrder->id,
+                    'purchase_order_slug'   => $purchaseOrder->slug,
                     'reference'             => $purchaseOrder->reference,
+                    'submitted_at'          => $purchaseOrder->submitted_at?->toDateString(),
+                    'placed_by'             => $purchaseOrder->buyer_name ?: $purchaseOrder->buyer_username,
                     'supplier_id'           => $purchaseOrder->supplier_id,
+                    'supplier_slug'         => $purchaseOrder->supplier_slug,
                     'supplier_code'         => $purchaseOrder->supplier_code,
                     'supplier_name'         => $purchaseOrder->supplier_name,
+                    'supplier_company'      => $company,
+                    'supplier_nickname'     => $purchaseOrder->supplier_name && $purchaseOrder->supplier_name !== $company ? $purchaseOrder->supplier_name : null,
                     'total'                 => $total,
                     'requested'             => $requested,
                     'paid_to_supplier'      => $paid,

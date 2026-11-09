@@ -19,6 +19,12 @@ import { routeType } from "@/types/route"
 
 library.add(faBan, faCheck, faChevronDown, faChevronUp, faHandHoldingUsd, faPaperPlane, faTimes)
 
+export interface MoneyRequestRecipient {
+	name: string
+	email: string | null
+	by_email: boolean
+}
+
 export interface MoneyRequestRow {
 	id: number
 	reference: string
@@ -40,6 +46,7 @@ export interface MoneyRequestRow {
 	last_reminded_by: string | null
 	number_reminders: number
 	next_reminder_at: string | null
+	reminder_recipients: { to: MoneyRequestRecipient[]; cc: MoneyRequestRecipient[] } | null
 	lines: {
 		kind: string
 		kind_label: string

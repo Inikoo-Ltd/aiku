@@ -81,6 +81,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
             if ($isNewPurchaseOrder) {
                 $targetPurchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, [
+                    'reference'   => $this->referenceForMovedLines($sourcePurchaseOrder, $orgSupplier),
                     'buyer_id'    => $sourcePurchaseOrder->buyer_id,
                     'currency_id' => $sourcePurchaseOrder->currency_id,
                 ], strict: false);
@@ -229,6 +230,28 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
                 && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->doesntExist())
             ->sortBy('id')
             ->first();
+    }
+
+    /**
+     * The source reference with the new supplier's code, the way buyers split agent orders by hand (AWChina-94-SK-KEL):
+     * a line already moved once swaps the previous supplier's code instead of stacking codes.
+     */
+    public function referenceForMovedLines(PurchaseOrder $sourcePurchaseOrder, OrgSupplier $orgSupplier): string
+    {
+        $supplierCode     = $orgSupplier->supplier->code;
+        $sourceParentCode = (string) $sourcePurchaseOrder->parent_code;
+        $baseReference    = $sourceParentCode !== ''
+            ? preg_replace('/-'.preg_quote($sourceParentCode, '/').'$/i', '', $sourcePurchaseOrder->reference)
+            : $sourcePurchaseOrder->reference;
+
+        $reference = $baseReference.'-'.$supplierCode;
+        $copy      = 1;
+        while (PurchaseOrder::where('organisation_id', $sourcePurchaseOrder->organisation_id)->whereRaw('lower(reference) = ?', [mb_strtolower($reference)])->exists()) {
+            $copy++;
+            $reference = $baseReference.'-'.$supplierCode.'-'.$copy;
+        }
+
+        return $reference;
     }
 
     /**

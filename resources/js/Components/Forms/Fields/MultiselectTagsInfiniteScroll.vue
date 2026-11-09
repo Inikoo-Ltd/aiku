@@ -18,6 +18,7 @@ const props = defineProps<{
         options?: any[] | Record<string, any>
         labelProp?: string
         valueProp?: string
+        descriptionProp?: string
         placeholder?: string
     }
 }>()
@@ -30,6 +31,7 @@ const normalizedOptions = computed(() => {
     const opts = props.fieldData?.options
     const labelProp = props.fieldData?.labelProp || 'name'
     const valueProp = props.fieldData?.valueProp || 'id'
+    const descriptionProp = props.fieldData?.descriptionProp
 
     if (!opts) return []
 
@@ -40,6 +42,7 @@ const normalizedOptions = computed(() => {
     return Object.keys(opts).map(key => ({
         [valueProp]: opts[key][valueProp],
         [labelProp]: opts[key][labelProp],
+        ...(descriptionProp ? { [descriptionProp]: opts[key][descriptionProp] } : {}),
     }))
 })
 
@@ -50,6 +53,10 @@ const formSelectedTags = computed({
         props.form[props.fieldName] = val
     },
 })
+
+const filterFields = computed(() =>
+    [props.fieldData?.labelProp || 'name', props.fieldData?.descriptionProp].filter(Boolean) as string[]
+)
 
 // Cari option by ID
 const findTagById = (id: number | string) => {
@@ -92,8 +99,17 @@ const findTagById = (id: number | string) => {
                 :maxSelectedLabels="3"
                 :selectedItemsLabel="ctrans('{0} items selected')"
                 filter
+                :filterFields="filterFields"
                 class="w-full md:w-80"
             >
+                <template v-if="fieldData?.descriptionProp" #option="{ option }">
+                    <div class="flex flex-col leading-tight">
+                        <span>{{ option[fieldData?.labelProp || 'name'] }}</span>
+                        <span v-if="option[fieldData.descriptionProp]" class="text-xs text-gray-500">
+                            {{ option[fieldData.descriptionProp] }}
+                        </span>
+                    </div>
+                </template>
                 <template #footer>
                     <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
                         <Button
