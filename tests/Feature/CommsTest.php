@@ -13,7 +13,11 @@ namespace Tests\Feature;
 use Illuminate\Http\UploadedFile;
 use App\Actions\Comms\SesNotification\ProcessSesNotification;
 use App\Actions\Catalogue\Shop\StoreShop;
+use App\Actions\Comms\Email\ConvertEmailImagesToOriginalFormat;
 use App\Actions\Comms\Email\GetEmailWebsiteTheme;
+use App\Actions\Comms\Email\UploadImagesToEmail;
+use App\Actions\Helpers\Images\GetImgProxyUrl;
+use App\Actions\Helpers\Images\ShortenWebsiteImageUrls;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\DispatchedEmail\HydrateDispatchedEmails;
 use App\Actions\Comms\Email\SendResetPasswordEmail;
@@ -136,6 +140,7 @@ use App\Enums\Comms\WhatsappCampaign\WhatsappCampaignTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\ChatEmailRecipient;
+use App\Actions\Comms\Ses\SendSesEmail;
 use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
@@ -5696,4 +5701,41 @@ test('updated products merge tag renders the price change product list', functio
 
     expect($replace('Updated Products'))->toBe('<table>SoyP-01</table>')
         ->and($replace('Products'))->toBe('<table>SoyP-01</table>');
+});
+
+test('emails send AVIF and WebP image links as the uploaded JPEG, both imgproxy and website short links', function () {
+    $media = UploadImagesToEmail::run($this->shop, ['images' => [UploadedFile::fake()->image('zcc-display.jpg', 40, 40)]])->first();
+
+    $image           = $media->getImage()->resize(0, 600);
+    $avifUrl         = GetImgProxyUrl::run((clone $image)->extension('avif'));
+    $webpUrl         = GetImgProxyUrl::run((clone $image)->extension('webp'));
+    $jpegUrl         = GetImgProxyUrl::run((clone $image)->extension(null));
+    $bannerAvifUrl   = GetImgProxyUrl::run($media->getImage()->resize(1440, 1440)->quality(70)->extension('avif'));
+    $bannerJpegUrl   = GetImgProxyUrl::run($media->getImage()->resize(1440, 1440)->quality(70)->extension(null));
+    $shortener       = ShortenWebsiteImageUrls::make();
+    preg_match($shortener->pattern(), $avifUrl, $avifParts);
+    $shortAvifUrl    = $shortener->shortUrl($avifParts, 'https://www.awartisan.test', 'zcc-display');
+    $notOurs         = 'https://cdn.example.com/i/abc/AbCdEfGh/360x360.avif';
+
+    $html = ConvertEmailImagesToOriginalFormat::run("<img src=\"$avifUrl\"><img src=\"$webpUrl\"><img src=\"$shortAvifUrl\"><img src=\"$notOurs\"><img src=\"$bannerAvifUrl\">");
+
+    expect($shortAvifUrl)->toEndWith('/zcc-display.avif')
+        ->and($jpegUrl)->not->toContain('.avif')
+        ->and($bannerAvifUrl)->toContain('/q:70/')
+        ->and($html)->toBe("<img src=\"$jpegUrl\"><img src=\"$jpegUrl\"><img src=\"$jpegUrl\"><img src=\"$notOurs\"><img src=\"$bannerJpegUrl\">")
+        ->and(ConvertEmailImagesToOriginalFormat::run('<img src="'.$jpegUrl.'">'))->toBe('<img src="'.$jpegUrl.'">');
+
+    $sentHtml = null;
+    SendSesEmail::shouldRun()->andReturnUsing(function (string $subject, string $emailHtmlBody, DispatchedEmail $dispatchedEmail) use (&$sentHtml) {
+        $sentHtml = $emailHtmlBody;
+
+        return $dispatchedEmail;
+    });
+    $sender = new class () {
+        use WithSendBulkEmails;
+    };
+
+    $sender->sendEmailWithMergeTags(new DispatchedEmail(), 'shop@example.com', 'Written in the Stars', "<p>Zodiac\n    fizzers</p>\n<img\nsrc=\"$avifUrl\"\nalt=\"Sun > Moon\nZodiac\"><a\nhref=\"https://shop.test/long/\npath\">Shop</a>");
+
+    expect($sentHtml)->toBe("<p>Zodiac fizzers</p> <img src=\"$jpegUrl\" alt=\"Sun > MoonZodiac\"><a href=\"https://shop.test/long/path\">Shop</a>");
 });

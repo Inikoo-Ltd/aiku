@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Traits;
 
+use App\Actions\Comms\Email\ConvertEmailImagesToOriginalFormat;
 use App\Actions\Comms\Ses\SendSesEmail;
 use App\Models\Comms\ChatEmailRecipient;
 use App\Models\Comms\DispatchedEmail;
@@ -42,6 +43,7 @@ trait WithSendBulkEmails
     ): DispatchedEmail {
         $html = $emailHtmlBody;
         $html = $this->processStyles($html);
+        $html = ConvertEmailImagesToOriginalFormat::run($html);
 
         // Remove MSO conditional comments temporarily
         // 's' flag = dot matches newline, 'u' flag = UTF-8 safe
@@ -75,7 +77,12 @@ trait WithSendBulkEmails
         }
 
         // 'u' flag ensures multibyte UTF-8 characters are not corrupted
-        $html = preg_replace('/\R+/u', '', $html);
+        $html = preg_replace_callback(
+            '/<[a-z](?:"[^"]*"|\'[^\']*\'|[^\'">])*+>/iu',
+            fn (array $tag) => preg_replace_callback('/"[^"]*"|\'[^\']*\'/u', fn (array $value) => preg_replace('/\R+/u', '', $value[0]), $tag[0]),
+            $html
+        );
+        $html = preg_replace('/\s*\R\s*/u', ' ', $html);
 
         if ($previewText) {
             $html = $this->injectPreviewText($html, $previewText);
