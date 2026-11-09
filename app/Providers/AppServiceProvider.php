@@ -69,11 +69,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(BaseTranslation::class, function () {
             return new Translation();
         });
-
-        if ($this->app->environment('local')) {
-            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
-            $this->app->register(TelescopeServiceProvider::class);
-        }
     }
 
     /**

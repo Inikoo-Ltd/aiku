@@ -12,11 +12,9 @@ use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\WithTimeSeriesRedo;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Comms\Outbox;
-use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Laravel\Telescope\Telescope;
 
 class RedoOutboxTimeSeries implements ShouldBeUnique
 {
@@ -36,13 +34,6 @@ class RedoOutboxTimeSeries implements ShouldBeUnique
     public function getJobUniqueId(int $outboxId, string $from, string $to): string
     {
         return "{$outboxId}_{$from}_$to";
-    }
-
-    protected function beforeCommand(Command $command): void
-    {
-        if (class_exists(Telescope::class)) {
-            Telescope::stopRecording();
-        }
     }
 
     protected function dateRangeSources(): array

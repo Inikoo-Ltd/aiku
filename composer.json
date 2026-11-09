@@ -56,7 +56,6 @@
     "laravel/sanctum": "^4",
     "laravel/scout": "^10.0",
     "laravel/slack-notification-channel": "^3.6",
-    "laravel/telescope": "^5.0",
     "laravel/tinker": "^3.0",
     "league/flysystem-aws-s3-v3": "^3.0",
     "lorisleiva/laravel-actions": "^2.4",
@@ -159,13 +158,6 @@
       "@php artisan key:generate --ansi"
     ],
     "analyse": "phpstan analyse --memory-limit=4G"
-  },
-  "extra": {
-    "laravel": {
-      "dont-discover": [
-        "laravel/telescope"
-      ]
-    }
   },
   "config": {
     "optimize-autoloader": true,
