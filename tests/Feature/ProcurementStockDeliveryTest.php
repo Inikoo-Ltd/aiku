@@ -516,6 +516,33 @@ test('UI index supplier products in org supplier shows live state counts and his
     });
 });
 
+test('UI index supplier products in org supplier flags products the supplier no longer has', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition(),
+    );
+    $orgSupplier = $supplier->orgSuppliers()
+        ->where('organisation_id', $this->organisation->id)
+        ->firstOrFail();
+
+    $codes = [];
+    foreach ([true, false] as $isAvailable) {
+        $supplierProductData = SupplierProduct::factory()->definition();
+        data_set($supplierProductData, 'stock_id', $this->stock->id);
+        data_set($supplierProductData, 'state', SupplierProductStateEnum::ACTIVE);
+
+        $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+        UpdateSupplierProduct::make()->action($supplierProduct, ['is_available' => $isAvailable]);
+        $codes[$supplierProduct->code] = $isAvailable ? 'available' : 'unavailable';
+    }
+
+    $this->get(route('grp.org.procurement.org_suppliers.show.supplier_products.index', [$this->organisation->slug, $orgSupplier->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('index.data', 2)
+            ->where('index.data', fn ($rows) => collect($rows)->mapWithKeys(fn ($row) => [$row['code'] => $row['availability_status']])->all() == $codes)
+            ->etc());
+});
+
 test('UI index stock deliveries in org supplier shows purchase order action', function () {
     $this->get(route('grp.org.procurement.org_suppliers.show.stock_deliveries.index', [
         $this->organisation->slug,
@@ -1773,7 +1800,7 @@ test('an agent opens a shipment that goes as a full container, LCL, by air or as
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pageHead.title', __('Current shipments')));
 
-    expect(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run(auth()->user())[$agent->organisation->slug]['agent_orders']['topMenu']['subSections'])->pluck('route.name'))->toContain('grp.org.agent.stock_deliveries.index');
+    expect(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run(auth()->user(), $agent->organisation)['agent_orders']['topMenu']['subSections'])->pluck('route.name'))->toContain('grp.org.agent.stock_deliveries.index');
 
     $this->get(route('grp.org.agent.stock_deliveries.show', [$agent->organisation->slug, $byAir->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page

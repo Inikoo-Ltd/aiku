@@ -175,6 +175,7 @@ class IndexOrgSupplierProducts extends OrgAction
                     ->select('org_stocks.code'),
                 'internal_code'
             );
+            $queryBuilder->selectRaw("case when supplier_products.is_available and org_supplier_products.is_available then 'available' else 'unavailable' end as availability_status");
         }
 
         if ($organisationAgent) {
