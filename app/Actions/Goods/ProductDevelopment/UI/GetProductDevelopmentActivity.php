@@ -137,6 +137,7 @@ class GetProductDevelopmentActivity
                 RecordProductDevelopmentActivity::COMPONENT_PURCHASE_ORDER_LINKED => [__('Linked purchase order :reference to :component', ['reference' => $new['purchase_order'] ?? '', 'component' => $new['component'] ?? '']), []],
                 RecordProductDevelopmentActivity::COMPONENT_PURCHASE_ORDER_UNLINKED => [__('Unlinked purchase order :reference from :component', ['reference' => $new['purchase_order'] ?? '', 'component' => $new['component'] ?? '']), []],
                 RecordProductDevelopmentActivity::SAMPLE_STARTED => [__('Started :sample', ['sample' => $new['sample'] ?? '']), []],
+                RecordProductDevelopmentActivity::TRIAL_RUN_FORMULATED => [__('Recorded the formulation of :sample in :job_order', ['sample' => $new['sample'] ?? '', 'job_order' => $new['job_order'] ?? '']), []],
                 RecordProductDevelopmentActivity::SAMPLE_READY => [__(':sample is ready for review', ['sample' => $new['sample'] ?? '']), $this->noteChange(__('Notes'), $new['notes'] ?? null)],
                 RecordProductDevelopmentActivity::SAMPLE_APPROVED => [__('Approved :sample', ['sample' => $new['sample'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],
                 RecordProductDevelopmentActivity::SAMPLE_CHANGES_REQUIRED => [__('Asked for changes on :sample', ['sample' => $new['sample'] ?? '']), $this->noteChange(__('Comment'), $new['comment'] ?? null)],

@@ -2144,6 +2144,87 @@ test('an in-house development makes each SKU as an artefact of its production un
         ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.formulation'));
 });
 
+test('a trial run a development asks for shows the artisan the development, and its first step is the formulation, which the development keeps, HELP-4545', function () {
+    [$productDevelopment, $production] = inHouseDevelopment($this, 1);
+    $item                              = $productDevelopment->items()->with(['artefact', 'tradeUnit'])->firstOrFail();
+    $productDevelopment->updateQuietly(['brief' => 'A calming bath oil for the evening']);
+    $item->update(['brief' => 'Lavender, 100 ml bottle']);
+    $step  = \App\Models\Production\ArtefactManufactureTask::where('artefact_id', $item->artefact_id)->firstOrFail();
+    $oil   = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, ['type' => 'stock', 'code' => 'FOIL'.$item->id, 'description' => 'Almond oil', 'unit' => 'kilogram']);
+    $scent = \App\Actions\Production\RawMaterial\StoreRawMaterial::make()->action($production, ['type' => 'stock', 'code' => 'FSCN'.$item->id, 'description' => 'Lavender fragrance', 'unit' => 'kilogram']);
+    \App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep::make()->action($step, ['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.1]);
+
+    $jobOrder = \App\Actions\Goods\ProductDevelopment\Recipe\CreateProductDevelopmentSampleJob::make()->action($productDevelopment->fresh(), $this->user, ['item_ids' => [$item->id], 'quantity' => 4])[0];
+    \App\Actions\Production\JobOrder\ConfirmJobOrder::make()->action($jobOrder);
+    $task   = $jobOrder->jobOrderItems()->firstOrFail()->tasks()->firstOrFail();
+    $sample = $item->samples()->firstOrFail();
+
+    $brief = get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $jobOrder->id]))->assertOk()->json('brief');
+    expect($brief['development']['code'])->toBe($productDevelopment->code)
+        ->and($brief['sku']['code'])->toBe($item->tradeUnit->code)
+        ->and($brief['trial_run'])->toBe('01')
+        ->and($brief['brief'])->toBe(['development' => 'A calming bath oil for the evening', 'sku' => 'Lavender, 100 ml bottle'])
+        ->and($brief['formulation'])->toBeNull()
+        ->and($brief['form']['steps'][0]['id'])->toBe($step->id)
+        ->and(collect($brief['form']['steps'][0]['raw_materials'])->pluck('code')->all())->toBe(['FOIL'.$item->id])
+        ->and(fn () => \App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession::make()->action($this->user, $task->fresh()))
+        ->toThrow(ValidationException::class, 'Record the formulation of this trial run first');
+
+    $floorTask = collect(get(route('grp.org.productions.show.floor', [$production->organisation->slug, $production->slug]))->viewData('page')['props']['tasks'])->firstWhere('id', $task->id);
+    expect($floorTask['trial_run']['needs_formulation'])->toBeTrue()
+        ->and($floorTask['trial_run']['brief_route']['parameters'])->toBe(['jobOrder' => $jobOrder->id]);
+
+    $record = fn (array $lines, ?string $notes = null) => post(route('grp.models.job-order.trial_run_formulation', ['jobOrder' => $jobOrder->id]), ['steps' => [['recipe_step_id' => $step->id, 'raw_materials' => $lines]], 'notes' => $notes]);
+    $record([])->assertSessionHasErrors('formulation');
+    $record([['raw_material_id' => $scent->id, 'quantity_per_unit' => 0]])->assertSessionHasErrors('steps.0.raw_materials.0.quantity_per_unit');
+    $record([['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.097], ['raw_material_id' => $scent->id, 'quantity_per_unit' => 0.003]], '3% lavender')->assertRedirect()->assertSessionHasNoErrors();
+
+    $formulation = $jobOrder->fresh()->data['formulation'];
+    expect(collect($formulation['recipe']['ingredients'])->pluck('percent', 'code')->all())->toEqual(['FOIL'.$item->id => 97.0, 'FSCN'.$item->id => 3.0])
+        ->and($formulation['notes'])->toBe('3% lavender')
+        ->and($formulation['recorded_by_id'])->toBe($this->user->id)
+        ->and($sample->fresh()->recipe)->toBe($formulation['recipe'])
+        ->and(\App\Models\Production\RecipeStepRawMaterial::where('artefact_manufacture_task_id', $step->id)->pluck('quantity_per_unit', 'raw_material_id')->map(fn ($quantity) => (float) $quantity)->all())->toEqual([$oil->id => 0.097, $scent->id => 0.003])
+        ->and(collect(GetProductDevelopmentActivity::run($productDevelopment->fresh()))->pluck('sentence'))->toContain(__('Recorded the formulation of :sample in :job_order', ['sample' => $item->tradeUnit->code.' trial run 01', 'job_order' => $jobOrder->reference]));
+
+    $brief = get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $jobOrder->id]))->json('brief');
+    expect($brief['formulation']['notes'])->toBe('3% lavender')
+        ->and(collect($brief['formulation']['recipe']['steps'][0]['raw_materials'])->pluck('code')->all())->toBe(['FOIL'.$item->id, 'FSCN'.$item->id]);
+
+    $session = \App\Actions\Production\ManufactureTaskSession\StartManufactureTaskSession::make()->action($this->user, $task->fresh());
+    expect($session->state)->toBe(\App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::OPEN);
+    $session->update(['state' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::VOIDED]);
+
+    $alreadyMade = \App\Actions\Production\JobOrder\StoreTrialRunJobOrder::make()->action($production, ['artefact_id' => $item->artefact_id, 'quantity' => 2, 'product_development' => $productDevelopment->code]);
+    $madeTask    = $alreadyMade->jobOrderItems()->firstOrFail()->tasks()->firstOrFail();
+    expect(\App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation::isNeededToStart($alreadyMade))->toBeTrue();
+    $session->replicate()->fill(['job_order_item_task_id' => $madeTask->id, 'job_order_id' => $alreadyMade->id, 'state' => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum::CLOSED])->save();
+    expect(\App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation::isNeededToStart($alreadyMade->fresh()))->toBeFalse();
+
+    \App\Models\Production\RecipeStepRawMaterial::where('raw_material_id', $scent->id)->update(['quantity_per_unit' => 0.005]);
+    \App\Actions\Goods\ProductDevelopment\Recipe\SubmitProductDevelopmentSample::make()->action($sample->fresh(), $this->user);
+    expect(collect($sample->fresh()->recipe['ingredients'])->firstWhere('code', 'FSCN'.$item->id)['quantity'])->toEqual(0.003);
+    $record([['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.09]])->assertSessionHasErrors('formulation');
+
+    $concept = StoreProductDevelopmentDesignVersion::make()->action($productDevelopment, $this->user, ['round' => 'concept']);
+    \App\Actions\Goods\ProductDevelopment\Design\UploadProductDevelopmentDesignArtwork::make()->action($concept, $this->user, ['file' => UploadedFile::fake()->image('concept.jpg')]);
+    SubmitProductDevelopmentDesignVersion::make()->action($concept->fresh(), $this->user);
+    $conceptUrl = get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $jobOrder->id]))->json('brief.concept.upload.url');
+    expect($conceptUrl)->not->toBeNull();
+
+    $artisan = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($artisan, ["productions_operations.{$production->id}.view"]);
+    expect(get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $jobOrder->id]))->assertOk()->json('brief.form'))->toBeNull();
+    $record([['raw_material_id' => $oil->id, 'quantity_per_unit' => 0.09]])->assertForbidden();
+    get($conceptUrl)->assertOk();
+
+    $outsider = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($outsider, []);
+    get($conceptUrl)->assertNotFound();
+    get(route('grp.json.production.job_order.trial_run_brief', ['jobOrder' => $jobOrder->id]))->assertForbidden();
+    actingAs($this->user);
+});
+
 test('in-house SKUs get packaging and components with their own approval, shown to compliance with materials and documents and on the buyer\'s list with what is left to order, HELP-4192', function () {
     [$productDevelopment] = inHouseDevelopment($this);
     [$first, $second]     = $productDevelopment->items()->orderBy('id')->get()->all();

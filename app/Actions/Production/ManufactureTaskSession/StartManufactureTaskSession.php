@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufactureTaskSession;
 
+use App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation;
 use App\Actions\SysAdmin\User\GetUserCurrentEmployee;
 use App\Actions\OrgAction;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
@@ -87,6 +88,12 @@ class StartManufactureTaskSession extends OrgAction
             } elseif ($jobOrder->state != JobOrderStateEnum::CONFIRMED) {
                 throw ValidationException::withMessages([
                     'job_order_item_task_id' => __('This job order has not been released to the floor'),
+                ]);
+            }
+
+            if (RecordTrialRunFormulation::isNeededToStart($jobOrder)) {
+                throw ValidationException::withMessages([
+                    'job_order_item_task_id' => __('Record the formulation of this trial run first'),
                 ]);
             }
         }

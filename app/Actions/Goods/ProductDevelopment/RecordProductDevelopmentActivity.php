@@ -89,6 +89,8 @@ class RecordProductDevelopmentActivity
 
     public const string SAMPLE_READY = 'sample_ready';
 
+    public const string TRIAL_RUN_FORMULATED = 'trial_run_formulated';
+
     public const string SAMPLE_APPROVED = 'sample_approved';
 
     public const string SAMPLE_CHANGES_REQUIRED = 'sample_changes_required';
