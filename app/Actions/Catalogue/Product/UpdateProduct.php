@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHeathAndSafetyFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\Catalogue\Shop\BreakShopPricesCache;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithDuplicatedBarcode;
@@ -306,6 +307,10 @@ class UpdateProduct extends OrgAction
                     'description_extra' => [$product->shop->language->code => Arr::pull($modelData, 'description_extra')]
                 ]
             ]);
+        }
+
+        if (Arr::has($changed, 'units')) {
+            ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
         }
 
         if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit', 'is_golden_product'])) {
