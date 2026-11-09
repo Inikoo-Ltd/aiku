@@ -75,7 +75,6 @@ class IndexInterventions extends OrgAction
             'country_code'  => $buyer->country?->code,
             'country_name'  => $buyer->country?->name,
             'currency_code' => $buyer->currency?->code,
-            'rescuable'     => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner),
             'on_list'       => ['lines' => $draft['lines'] ?? 0, 'cost' => $draft['value'] ?? 0],
             'current'       => $shoppingList
                 ->map(fn (array $row) => collect($row)->except('url')->all())
@@ -112,7 +111,10 @@ class IndexInterventions extends OrgAction
                     "productions_operations.{$this->production->id}.orchestrate",
                 ]),
                 'production'  => $this->production->slug,
-                'buyers'      => $orgPartners->map(fn (OrgPartner $orgPartner) => $this->buyerCard($orgPartner))->all(),
+                'buyers'      => fn () => $orgPartners->map(fn (OrgPartner $orgPartner) => $this->buyerCard($orgPartner))->all(),
+                ...$orgPartners->mapWithKeys(fn (OrgPartner $orgPartner) => [
+                    'rescuable_'.$orgPartner->id => Inertia::defer(fn () => GetPartnerStockCoverBuckets::make()->rescuable($orgPartner, withLeftOut: false), 'buyer_'.$orgPartner->id),
+                ])->all(),
             ]
         );
     }

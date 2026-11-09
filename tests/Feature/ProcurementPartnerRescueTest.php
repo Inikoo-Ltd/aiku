@@ -210,9 +210,12 @@ test('UI Index org partners', function () {
                 'rescuable.'.$this->orgPartner->id,
                 fn (AssertableInertia $rescuable) => $this->orgPartner->partner->is_manufacturing_hub
                     ? $rescuable->has('buckets', 4)->has('top')->etc()
-                    : $rescuable->has('buckets', 3)->has('buckets.0.left_out')->has('top')->etc()
+                    : $rescuable->has('buckets', 3)->missing('buckets.0.left_out')->has('top')->etc()
             ));
     });
+
+    expect($this->getJson(route('grp.json.org_partner.rescue_left_out', [$this->orgPartner->id]))->assertOk()->json())
+        ->toEqual(json_decode(json_encode(GetPartnerStockCoverBuckets::make()->rescueLeftOut($this->orgPartner)), true));
 
     $user          = $this->adminGuest->getUser();
     $originalRoles = $user->roles->pluck('name')->toArray();
@@ -220,6 +223,8 @@ test('UI Index org partners', function () {
     $this->get(route('grp.org.procurement.org_partners.index', [$this->organisation->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('can_create_purchase_orders', false)->etc());
     $this->post(route('grp.models.org-partner.purchase-order.store', [$this->orgPartner->id]))->assertForbidden();
+    actingAsUserWithRoles($user, []);
+    $this->getJson(route('grp.json.org_partner.rescue_left_out', [$this->orgPartner->id]))->assertForbidden();
     actingAsUserWithRoles($user, $originalRoles);
 });
 

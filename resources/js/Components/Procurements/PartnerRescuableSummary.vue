@@ -25,7 +25,7 @@ export interface Rescuable {
 		order_cost: number
 		cheapest: number
 		order_cheapest: number
-		left_out: Record<string, number>
+		left_out?: Record<string, number>
 	}[]
 	top: {
 		code: string
@@ -56,8 +56,9 @@ const props = withDefaults(
 		analyseUrl?: string | null
 		buttonSize?: string
 		orderUrl?: string | null
+		leftOutUrl?: string | null
 	}>(),
-	{ canCreate: false, draftReference: null, onList: null, analyseUrl: null, buttonSize: "xs", seeAllUrl: null, orderUrl: null }
+	{ canCreate: false, draftReference: null, onList: null, analyseUrl: null, buttonSize: "xs", seeAllUrl: null, orderUrl: null, leftOutUrl: null }
 )
 
 const locale = useLocaleStore()
@@ -283,6 +284,7 @@ const hasRescuable = computed(() => props.rescuable.buckets.some((bucket) => buc
 					:onList="onList"
 					:analyseUrl="analyseUrl"
 					:orderUrl="orderUrl"
+					:leftOutUrl="leftOutUrl"
 					:size="buttonSize" />
 				<span
 					v-if="rescuable.order.lines"

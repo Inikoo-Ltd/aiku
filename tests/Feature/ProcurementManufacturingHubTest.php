@@ -3297,7 +3297,15 @@ describe('partner shopping list', function () {
                     ->component('Org/Production/Interventions')
                     ->where('can_order', true)
                     ->has('buyers', 1)
-                    ->has('buyers.0', fn (AssertableInertia $card) => $card->where('id', $buyerPartner->id)->has('rescuable.buckets')->etc()));
+                    ->has('buyers.0', fn (AssertableInertia $card) => $card->where('id', $buyerPartner->id)->missing('rescuable')->etc())
+                    ->missing('rescuable_'.$buyerPartner->id)
+                    ->loadDeferredProps('buyer_'.$buyerPartner->id, fn (AssertableInertia $page) => $page
+                        ->has('rescuable_'.$buyerPartner->id.'.buckets', 4)
+                        ->missing('rescuable_'.$buyerPartner->id.'.buckets.0.left_out')));
+
+            $leftOutUrl = fn (OrgPartner $orgPartner) => route('grp.org.productions.show.intervention.left_out', [$seller->slug, $production->slug, $orgPartner->id]);
+            $this->getJson($leftOutUrl($buyerPartner))->assertOk()->assertJsonStructure(['out', 'w1', 'w2', 'w3']);
+            $this->getJson($leftOutUrl($this->orgPartner))->assertNotFound();
 
             $order($buyerPartner)->assertSessionHasNoErrors()->assertRedirect();
 
@@ -3318,6 +3326,7 @@ describe('partner shopping list', function () {
 
             actingAsUserWithRoles($user, []);
             $order($buyerPartner)->assertForbidden();
+            $this->getJson($leftOutUrl($buyerPartner))->assertForbidden();
         } finally {
             actingAsUserWithRoles($user, $originalRoles);
         }
