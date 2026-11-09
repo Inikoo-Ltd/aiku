@@ -32,7 +32,21 @@ class NotifyMoneyRequestCreated
         $depositRequest->loadMissing(['agent.organisation', 'organisation', 'currency', 'requester']);
         $depositRequest->load(['items.purchaseOrder' => fn ($query) => $query
             ->leftJoin('suppliers', 'suppliers.id', 'purchase_orders.supplier_id')
-            ->select(['purchase_orders.id', 'purchase_orders.reference', 'suppliers.code as supplier_code'])]);
+            ->leftJoin('org_suppliers', fn ($join) => $join->on('org_suppliers.supplier_id', 'purchase_orders.supplier_id')->on('org_suppliers.organisation_id', 'purchase_orders.organisation_id'))
+            ->leftJoin('users as buyers', 'buyers.id', 'purchase_orders.buyer_id')
+            ->select([
+                'purchase_orders.id',
+                'purchase_orders.slug',
+                'purchase_orders.reference',
+                'purchase_orders.submitted_at',
+                'suppliers.slug as supplier_slug',
+                'suppliers.code as supplier_code',
+                'suppliers.name as supplier_name',
+                'suppliers.company_name as supplier_company_name',
+                'org_suppliers.slug as org_supplier_slug',
+                'buyers.contact_name as buyer_name',
+                'buyers.username as buyer_username',
+            ])]);
         $orgAgent   = self::clientOrgAgent($depositRequest);
         $recipients = $this->recipients(self::userIdsByRole($depositRequest, $orgAgent));
 
@@ -49,7 +63,7 @@ class NotifyMoneyRequestCreated
                     $depositRequest,
                     $requesterName,
                     self::money($depositRequest, $total),
-                    $depositRequest->items->map(fn (DepositRequestItem $item) => self::describeLine($depositRequest, $item))->values()->all(),
+                    $depositRequest->items->map(fn (DepositRequestItem $item) => self::describeLine($depositRequest, $item, $role === MoneyRequestCreatedNotification::FOR_REQUESTER))->values()->all(),
                     $role,
                     $route,
                     $isReminder
@@ -111,14 +125,48 @@ class NotifyMoneyRequestCreated
             ->first();
     }
 
-    private static function describeLine(DepositRequest $depositRequest, DepositRequestItem $item): string
+    /**
+     * The agent user who asked opens the agent's copy of the order and supplier; the client's users open their own.
+     *
+     * @return array{description: string, amount: string, purchase_order: array{reference: string, url: string, submitted_at: string|null, placed_by: string|null, supplier_code: string|null, supplier_company: string|null, supplier_nickname: string|null, supplier_url: string|null}|null}
+     */
+    private static function describeLine(DepositRequest $depositRequest, DepositRequestItem $item, bool $forAgent): array
     {
         $purchaseOrder = $item->purchaseOrder;
-        $description   = $purchaseOrder
-            ? trim($item->kind->describeForPurchaseOrder().' '.$purchaseOrder->reference.($purchaseOrder->supplier_code ? ' ('.$purchaseOrder->supplier_code.')' : ''))
-            : $item->kind->describeForPurchaseOrder();
+        $line          = [
+            'description'    => $item->kind->describeForPurchaseOrder(),
+            'amount'         => self::money($depositRequest, (float) $item->amount),
+            'purchase_order' => null,
+        ];
 
-        return $description.': '.self::money($depositRequest, (float) $item->amount);
+        if (!$purchaseOrder) {
+            return $line;
+        }
+
+        $agentOrganisationSlug = $depositRequest->agent->organisation->slug;
+        $clientSlug            = $depositRequest->organisation->slug;
+        $company               = $purchaseOrder->supplier_company_name ?: $purchaseOrder->supplier_name;
+
+        $supplierUrl = match (true) {
+            $forAgent && (bool) $purchaseOrder->supplier_slug      => route('grp.org.agent.sales.suppliers.show', [$agentOrganisationSlug, $purchaseOrder->supplier_slug]),
+            !$forAgent && (bool) $purchaseOrder->org_supplier_slug => route('grp.org.procurement.org_suppliers.show', [$clientSlug, $purchaseOrder->org_supplier_slug]),
+            default                                                => null,
+        };
+
+        $line['purchase_order'] = [
+            'reference'         => $purchaseOrder->reference,
+            'url'               => $forAgent
+                ? route('grp.org.agent.purchase_orders.show', [$agentOrganisationSlug, $purchaseOrder->slug])
+                : route('grp.org.procurement.purchase_orders.show', [$clientSlug, $purchaseOrder->slug]),
+            'submitted_at'      => $purchaseOrder->submitted_at?->isoFormat('D MMM YYYY'),
+            'placed_by'         => $purchaseOrder->buyer_name ?: $purchaseOrder->buyer_username,
+            'supplier_code'     => $purchaseOrder->supplier_code,
+            'supplier_company'  => $company,
+            'supplier_nickname' => $purchaseOrder->supplier_name && $purchaseOrder->supplier_name !== $company ? $purchaseOrder->supplier_name : null,
+            'supplier_url'      => $supplierUrl,
+        ];
+
+        return $line;
     }
 
     public static function money(DepositRequest $depositRequest, float $amount): string
