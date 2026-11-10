@@ -60,7 +60,7 @@ Každý zákazník sa môže opýtať 6 otázok za minútu, 40 za hodinu a 120 z
 
 Keď náklady na AI za mesiac dosiahnu **Monthly AI budget**, poradca sa na tomto webe pozastaví do prvého dňa nasledujúceho mesiaca: tlačidlo **Ask** sa už neponúka a nové otázky sa neprijímajú. Odpoveď, ktorá je už na ceste, ešte dorazí. Zvýšte rozpočet a poradca sa vráti do minúty či dvoch. Ak sa v tej istej chvíli pýta viac zákazníkov, výdavky môžu rozpočet mierne prekročiť.
 
-Každá konverzácia sa uchováva, spolu s produktmi, ktoré poradca zobrazil, tými, na ktoré zákazník klikol, a tými, ktoré pridal do košíka do 24 hodín od ich zobrazenia.
+Každá konverzácia sa uchováva, spolu s produktmi, ktoré poradca zobrazil, tými, na ktoré zákazník klikol, a tými, ktoré pridal do košíka do 24 hodín od ich zobrazenia. Zaznamenáva sa aj zvýšenie množstva produktu, ktorý poradca zobrazil, nezávisle od pridaní. Každé volanie AI sa zaznamenáva s jeho nákladmi a časom trvania, rovnako ako každá otázka odmietnutá limitmi vyššie alebo rozpočtom, spolu s dôvodom.
 
 ## Keep exploring
 
@@ -86,7 +86,7 @@ Blok sa načíta po výsledkoch vyhľadávania, takže samotné vyhľadávanie j
 
 ### Čo sa zaznamenáva
 
-Prvé kliknutie na návrh sa zaznamená pri vyhľadávaní spolu s tým, o aký druh návrhu išlo: did you mean, súvisiace alebo populárne vyhľadávanie, rodina, best sellers, new arrivals alebo forgotten favourites. Vyhľadávania zamestnaneckých účtov sa nezaznamenávajú vôbec, preto ak chcete vidieť vlastné kliknutia, testujte so zákazníckym účtom, ktorý nie je zamestnanecký.
+Každé vyhľadávanie zaznamenáva, ktoré návrhy sa ponúkli a či sa blok dostal do zorného poľa na obrazovke zákazníka. Zaznamenáva sa každé kliknutie, na výsledok alebo na návrh, spolu s tým, o aký druh návrhu išlo (did you mean, súvisiace alebo populárne vyhľadávanie, rodina, best sellers, new arrivals alebo forgotten favourites) a či bolo na produkte alebo na tlačidle jeho karty, najviac 20 kliknutí na vyhľadávanie. Každé vyhľadávanie zaznamenáva aj to, či sa tlačidlo **Ask** ponúkalo danému zákazníkovi. Vyhľadávania zamestnaneckých účtov sa nezaznamenávajú vôbec, preto ak chcete vidieť vlastné kliknutia, testujte so zákazníckym účtom, ktorý nie je zamestnanecký.
 
 ## Sledovanie výkonu
 
@@ -107,7 +107,9 @@ Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa t
 
 **Where customers leave** (kde zákazníci odchádzajú) počíta konverzácie podľa počtu položených otázok. **Engagement and value** (zapojenie a hodnota) udáva priemerný čas a počet správ konverzácie, priemernú objednávku zákazníkov, ktorí asistenta použili, v porovnaní s ostatnými zákazníkmi, a rodiny, ktoré zákazník objednal prvýkrát po tom, čo mu ich asistent zobrazil. **Families suggested** (navrhnuté rodiny) uvádza najčastejšie zobrazené rodiny s tým, koľko konverzácií ich rozkliklo, pridalo a objednalo.
 
-**Search on the website** (vyhľadávanie na webe) pokrýva Keep exploring: vyhľadávania za obdobie, tie bez výsledkov, kliknutia na návrh podľa druhu a koľko vyhľadávaní bez výsledkov nasledovalo kliknutie na návrh. Riadi sa len dátumami, webom a jazykom.
+**Search on the website** (vyhľadávanie na webe) pokrýva Keep exploring: vyhľadávania za obdobie, tie bez výsledkov, koľko vyhľadávaní dostalo návrhy a koľko zákazníkov ich videlo, a koľko vyhľadávaní bez výsledkov nasledovalo kliknutie na návrh. Pri každom druhu návrhu ukazuje, ako často sa ponúkol, kliknutia a mieru. Riadi sa len dátumami, webom a jazykom.
+
+**From the search box to a question** (od vyhľadávacieho poľa k otázke) ukazuje, koľko vyhľadávaní sa uskutočnilo s ponúkaným tlačidlom **Ask**, v koľkých z nich sa zobrazila ponuka opýtať sa a koľko konverzácií sa otvorilo z vyhľadávacieho poľa, pričom pod tým sú otázky odmietnuté limitmi alebo rozpočtom.
 
 Hlavné čísla a kroky lievika sú odkazy: otvoria konverzácie, ktoré za nimi stoja.
 

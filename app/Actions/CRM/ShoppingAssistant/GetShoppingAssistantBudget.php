@@ -15,14 +15,14 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * The monthly AI spend cap of a website's shopping assistant, in US dollars: the website's own
- * budget or the config default, against the cost of every message of this calendar month. The
- * budget is read from the database, not from the website passed in, because the storefront's
- * copy comes from a cache that is not flushed when the budget changes.
+ * budget or the config default, against the cost of every model call of this calendar month
+ * (shopping_assistant_model_calls, written as each call returns, so a turn killed by its timeout
+ * still counts what it spent). The budget is read from the database, not from the website passed
+ * in, because the storefront's copy comes from a cache that is not flushed when the budget changes.
  *
  * ponytail: the result is cached 60 s and checked before a question is queued, so questions asked
- * at the same moment can overshoot the cap by a few answers, and a turn whose job is killed by its
- * timeout stores no cost, so the spend can be slightly under the provider's bill; reserve an amount
- * per accepted question if the overshoot ever matters.
+ * at the same moment can overshoot the cap by a few answers; reserve an amount per accepted
+ * question if the overshoot ever matters.
  */
 class GetShoppingAssistantBudget
 {
@@ -38,11 +38,11 @@ class GetShoppingAssistantBudget
             $override = data_get($settings, 'shopping_assistant.monthly_budget');
             $monthly  = is_numeric($override) ? (float) $override : (float) config('services.shopping_assistant.monthly_budget');
 
-            $spent = (float) DB::table('shopping_assistant_messages')
-                ->join('shopping_assistant_conversations', 'shopping_assistant_conversations.id', '=', 'shopping_assistant_messages.shopping_assistant_conversation_id')
+            $spent = (float) DB::table('shopping_assistant_model_calls')
+                ->join('shopping_assistant_conversations', 'shopping_assistant_conversations.id', '=', 'shopping_assistant_model_calls.shopping_assistant_conversation_id')
                 ->where('shopping_assistant_conversations.website_id', $website->id)
-                ->where('shopping_assistant_messages.created_at', '>=', now()->startOfMonth())
-                ->sum('shopping_assistant_messages.cost');
+                ->where('shopping_assistant_model_calls.created_at', '>=', now()->startOfMonth())
+                ->sum('shopping_assistant_model_calls.cost');
 
             return [
                 'monthly'    => $monthly,

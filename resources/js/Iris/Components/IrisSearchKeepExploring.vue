@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onMounted, ref, watch } from "vue"
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
@@ -37,10 +37,12 @@ const props = defineProps<{
     familyIds: number[]
     isResultsLoading: boolean
     hasNoResults: boolean
+    searchLogUlid: string | null
 }>()
 
 const emit = defineEmits<{
-    (e: "suggestionClick", url: string, suggestion: string): void
+    (e: "suggestionClick", url: string, suggestion: string, target: "link" | "button"): void
+    (e: "suggestionsViewed", ulid: string): void
 }>()
 
 defineSlots<{
@@ -55,6 +57,9 @@ const suggestions = ref<KeepExploring | null>(null)
 const searchHadNoResults = ref(false)
 let fetchedQuery: string | null = null
 let abortController: AbortController | null = null
+let unseenUlid: string | null = null
+let viewObserver: IntersectionObserver | null = null
+const sectionElement = ref<HTMLElement | null>(null)
 
 const isEnabled = computed(() => isMounted.value && !!layout?.iris?.search_keep_exploring)
 
@@ -64,6 +69,7 @@ const fetchSuggestions = async () => {
         return
     }
     fetchedQuery = query
+    const ulid = props.searchLogUlid
     searchHadNoResults.value = props.hasNoResults
     abortController?.abort()
     abortController = new AbortController()
@@ -72,10 +78,11 @@ const fetchSuggestions = async () => {
     isLoading.value = true
     try {
         const { data } = await axios.get(route("iris.json.search.keep_exploring"), {
-            params: { q: query, families: props.familyIds.length ? props.familyIds : undefined },
+            params: { q: query, families: props.familyIds.length ? props.familyIds : undefined, search_log: ulid || undefined },
             signal,
         })
         if (!signal.aborted) {
+            unseenUlid = ulid
             suggestions.value = data
         }
     } catch {
@@ -89,7 +96,30 @@ const fetchSuggestions = async () => {
     }
 }
 
+const stopWatchingView = () => {
+    viewObserver?.disconnect()
+    viewObserver = null
+}
+
+watch(sectionElement, (element) => {
+    stopWatchingView()
+    if (!element || !unseenUlid || typeof IntersectionObserver === "undefined") {
+        return
+    }
+    viewObserver = new IntersectionObserver((entries) => {
+        if (!unseenUlid || !entries.some((entry) => entry.isIntersecting)) {
+            return
+        }
+        emit("suggestionsViewed", unseenUlid)
+        unseenUlid = null
+        stopWatchingView()
+    })
+    viewObserver.observe(element)
+})
+
 watch(() => props.query, () => {
+    stopWatchingView()
+    unseenUlid = null
     abortController?.abort()
     fetchedQuery = null
     suggestions.value = null
@@ -102,6 +132,8 @@ onMounted(() => {
     isMounted.value = true
 })
 
+onBeforeUnmount(stopWatchingView)
+
 const searchUrl = (term: string) => `/search?q=${encodeURIComponent(term)}`
 
 const groupTitle = (group: KeepExploringGroup) => {
@@ -111,7 +143,7 @@ const groupTitle = (group: KeepExploringGroup) => {
     return group.key === "new_arrivals" ? ctrans("New arrivals") : ctrans("Your forgotten favourites")
 }
 
-const onSearchClick = (term: string, suggestion: string) => emit("suggestionClick", searchUrl(term), suggestion)
+const onSearchClick = (term: string, suggestion: string) => emit("suggestionClick", searchUrl(term), suggestion, "link")
 
 const groups = computed(() => (suggestions.value?.products ?? [])
     .filter((group) => group.items?.length)
@@ -125,16 +157,17 @@ const hasContent = computed(() => !!(didYouMean.value || searchItems.value.lengt
 
 const onProductClick = (event: MouseEvent, product: ProductResource, suggestion: string) => {
     const target = event.target as HTMLElement | null
-    if (!target?.closest("a") || target.closest("button") || !product.url) {
+    const clickTarget = target?.closest("button") ? "button" : target?.closest("a") ? "link" : null
+    if (!clickTarget || !product.url) {
         return
     }
-    emit("suggestionClick", product.url, suggestion)
+    emit("suggestionClick", product.url, suggestion, clickTarget)
 }
 </script>
 
 <template>
     <div v-if="isEnabled && isLoading" class="keep-exploring skeleton keep-exploring-skeleton rounded" />
-    <section v-else-if="isEnabled && hasContent" class="keep-exploring">
+    <section v-else-if="isEnabled && hasContent" ref="sectionElement" class="keep-exploring">
         <p v-if="didYouMean" class="keep-exploring-did-you-mean">
             {{ ctrans("Did you mean") }}
             <LinkIris :href="searchUrl(didYouMean)" class="font-bold underline text-[var(--theme-color-0)]"
@@ -158,7 +191,7 @@ const onProductClick = (event: MouseEvent, product: ProductResource, suggestion:
                 <p class="keep-exploring-label">{{ ctrans("Sells well with") }}</p>
                 <div class="keep-exploring-families">
                     <LinkIris v-for="family in families" :key="family.id" :href="family.url" class="keep-exploring-family"
-                        @click="() => emit('suggestionClick', family.url, 'family')">
+                        @click="() => emit('suggestionClick', family.url, 'family', 'link')">
                         <div class="keep-exploring-family-image">
                             <Image v-if="family.image" :src="family.image" class="absolute inset-0 h-full w-full object-cover" />
                         </div>

@@ -36,6 +36,7 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\WebsiteSearchLog;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -1123,4 +1124,140 @@ test('keep exploring best sellers say similar shops only when every one comes fr
     \Illuminate\Support\Facades\DB::table('segment_product_sales')->where('shop_id', $this->shop->id)->where('level', \App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::LEVEL_SHOP)->delete();
 
     expect($groups()['best_sellers'])->toBe(['similar_shops' => true, 'ids' => [$typeBestSeller->id]]);
+});
+
+function irisSearchClickLog(object $test, array $extra = []): WebsiteSearchLog
+{
+    return StoreWebsiteSearchLog::run(array_merge([
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $test->organisation->group_id,
+        'organisation_id' => $test->organisation->id,
+        'shop_id'         => $test->shop->id,
+        'website_id'      => $test->website->id,
+        'session_id'      => 'click-'.Str::random(12),
+        'scope'           => 'catalogue_page',
+        'query'           => 'candles',
+        'results_count'   => 3,
+    ], $extra));
+}
+
+test('the search log stores whether the assistant was offered, a refinement in either order keeps it true, and the param stays out of every cache key', function () {
+    $searchCalls = [];
+    Search::shouldRun()->andReturnUsing(function (...$arguments) use (&$searchCalls) {
+        $searchCalls[] = $arguments;
+
+        return irisSearchResults();
+    });
+
+    $base    = 'http://'.$this->website->domain.'/json/search/catalogue';
+    $offered = $this->getJson($base.'?q=candles&assistant=1')->assertOk()->json('search_log_ulid');
+    $plain   = $this->getJson($base.'?q=lamps')->assertOk()->json('search_log_ulid');
+
+    expect(WebsiteSearchLog::where('ulid', $offered)->value('assistant_available'))->toBeTrue()
+        ->and(WebsiteSearchLog::where('ulid', $plain)->value('assistant_available'))->toBeFalse()
+        ->and($searchCalls)->toHaveCount(2)
+        ->and([$searchCalls[0][0], $searchCalls[0][1], $searchCalls[0][2]])->toEqual(['catalogue', 'candles', $searchCalls[1][2]]);
+
+    foreach ([[true, false], [false, true]] as [$first, $second]) {
+        $log     = irisSearchClickLog($this, ['query' => 'tea', 'scope' => 'catalogue', 'assistant_available' => $first]);
+        $refined = irisSearchClickLog($this, ['query' => 'tealights', 'session_id' => $log->session_id, 'assistant_available' => $second]);
+        expect($refined->id)->toBe($log->id)
+            ->and($log->refresh()->assistant_available)->toBeTrue();
+    }
+
+    $action = \App\Actions\Search\SearchIrisCataloguePage::make();
+    $shop   = $this->shop;
+    $site   = $this->website;
+    (function () use ($shop, $site) {
+        $this->shop    = $shop;
+        $this->website = $site;
+    })->call($action);
+    $cacheKey = 'iris-search-page:'.$this->website->id.':'.md5('assistant lamps');
+    Cache::forget($cacheKey);
+    $action->handle(['q' => 'assistant lamps', 'assistant' => true]);
+
+    expect(Cache::has($cacheKey))->toBeTrue()
+        ->and($action->rules())->toHaveKey('assistant');
+});
+
+test('keep exploring stores what it suggested on the search log of the same website once, never on another website\'s, and suggestions viewed is set once', function () {
+    keepExploringOn($this);
+    $ulid      = (string) Str::ulid();
+    $otherUlid = (string) Str::ulid();
+    keepExploringSearchLog($this, 'candles', 'ke-log-'.Str::random(12), ['ulid' => $ulid]);
+    keepExploringSearchLog($this, 'candles', 'ke-log-'.Str::random(12), ['ulid' => $otherUlid, 'website_id' => $this->website->id + 100000]);
+
+    $response = $this->getJson(keepExploringUrl($this, ['q' => 'candles', 'search_log' => $ulid]))->assertOk();
+    $this->getJson(keepExploringUrl($this, ['q' => 'candles', 'search_log' => $otherUlid]))->assertOk();
+    $this->getJson(keepExploringUrl($this, ['q' => 'candles', 'search_log' => 'short']))->assertStatus(422);
+
+    $stored = WebsiteSearchLog::where('ulid', $ulid)->first()->suggestions;
+    $groups = collect($response->json('products'))->keyBy('key');
+
+    expect($stored)->toEqual([
+        'did_you_mean' => $response->json('did_you_mean'),
+        'searches'     => $response->json('searches'),
+        'families'     => array_column($response->json('families'), 'id'),
+        'products'     => [
+            'best_sellers' => array_column($groups->get('best_sellers')['items'] ?? [], 'id'),
+            'new_arrivals' => array_column($groups->get('new_arrivals')['items'] ?? [], 'id'),
+            'forgotten'    => array_column($groups->get('forgotten')['items'] ?? [], 'id'),
+        ],
+    ])
+        ->and(WebsiteSearchLog::where('ulid', $otherUlid)->value('suggestions'))->toBeNull();
+
+    DB::table('website_search_logs')->where('ulid', $ulid)->update(['suggestions' => json_encode(['kept' => true])]);
+    $this->getJson(keepExploringUrl($this, ['q' => 'lavender', 'search_log' => $ulid]))->assertOk();
+    expect(WebsiteSearchLog::where('ulid', $ulid)->first()->suggestions)->toBe(['kept' => true]);
+
+    $viewed = 'http://'.$this->website->domain.'/json/search/suggestions-viewed';
+    $this->travelTo(now()->startOfSecond());
+    $this->postJson($viewed, ['ulid' => $ulid])->assertOk()->assertExactJson(['ok' => true]);
+    $firstSeen = WebsiteSearchLog::where('ulid', $ulid)->first()->suggestions_viewed_at;
+    $this->travel(5)->minutes();
+    $this->postJson($viewed, ['ulid' => $ulid])->assertOk()->assertExactJson(['ok' => true]);
+    $this->postJson($viewed, ['ulid' => (string) Str::ulid()])->assertOk();
+    $this->travelBack();
+
+    expect($firstSeen)->not->toBeNull()
+        ->and(WebsiteSearchLog::where('ulid', $ulid)->first()->suggestions_viewed_at->equalTo($firstSeen))->toBeTrue()
+        ->and(Route::getRoutes()->getByName('iris.json.search.suggestions_viewed')->gatherMiddleware())->toContain('throttle:iris-search');
+});
+
+test('every search click is stored with its type, kind and target up to 20 a search, and a suggestion click on a button leaves the first suggestion click to a link', function () {
+    $log   = irisSearchClickLog($this);
+    Event::fake([WebsiteSearchStatsUpdated::class]);
+    $click = fn (array $data) => $this->postJson('http://'.$this->website->domain.'/json/search/click', array_merge(['ulid' => $log->ulid], $data))->assertOk();
+
+    $click(['url' => '/candles/pillar', 'suggestion' => 'family', 'target' => 'button']);
+    expect($log->refresh()->suggestion_clicked_at)->toBeNull()
+        ->and($log->suggestion_kind)->toBeNull();
+
+    $click(['url' => '/lavender-soap', 'suggestion' => 'best_sellers', 'target' => 'link']);
+    $click(['url' => '/new-candle', 'suggestion' => 'new_arrivals']);
+    $click(['url' => '/some-product', 'target' => 'button']);
+    $click(['url' => '/another-product']);
+    $this->postJson('http://'.$this->website->domain.'/json/search/click', ['ulid' => $log->ulid, 'url' => '/x', 'target' => 'elsewhere'])->assertStatus(422);
+
+    $log->refresh();
+    $rows = DB::table('website_search_log_clicks')->where('website_search_log_id', $log->id)->orderBy('id')->get();
+
+    expect($log->suggestion_kind)->toBe('best_sellers')
+        ->and($log->suggestion_url)->toBe('/lavender-soap')
+        ->and($log->clicked_url)->toBe('/some-product')
+        ->and($log->clicked_at)->not->toBeNull()
+        ->and($rows->map(fn ($row) => [$row->type, $row->kind, $row->target, $row->url, $row->website_id])->all())->toBe([
+            ['suggestion', 'family', 'button', '/candles/pillar', $this->website->id],
+            ['suggestion', 'best_sellers', 'link', '/lavender-soap', $this->website->id],
+            ['suggestion', 'new_arrivals', 'link', '/new-candle', $this->website->id],
+            ['result', null, 'button', '/some-product', $this->website->id],
+            ['result', null, 'link', '/another-product', $this->website->id],
+        ]);
+    Event::assertDispatchedTimes(WebsiteSearchStatsUpdated::class, 1);
+
+    foreach (range(1, 20) as $index) {
+        $click(['url' => '/more-'.$index]);
+    }
+
+    expect(DB::table('website_search_log_clicks')->where('website_search_log_id', $log->id)->count())->toBe(20);
 });

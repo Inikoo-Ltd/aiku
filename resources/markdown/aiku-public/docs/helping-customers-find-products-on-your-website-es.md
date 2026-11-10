@@ -60,7 +60,7 @@ Cada cliente puede hacer 6 preguntas por minuto, 40 por hora y 120 al día. Una 
 
 Cuando el coste de IA del mes llega al **Monthly AI budget**, el asesor se pausa en esa web hasta el primer día del mes siguiente: el botón **Ask** deja de ofrecerse y no se aceptan preguntas nuevas. Una respuesta que ya está en camino llega igualmente. Sube el presupuesto y el asesor vuelve en uno o dos minutos. Si varios clientes preguntan en el mismo momento, el gasto puede superar el presupuesto ligeramente.
 
-Cada conversación se guarda, con los productos que mostró el asesor, los que el cliente pulsó y los que añadió a la cesta dentro de las 24 horas siguientes a verlos.
+Cada conversación se guarda, con los productos que mostró el asesor, los que el cliente pulsó y los que añadió a la cesta dentro de las 24 horas siguientes a verlos. También se registra el aumento de la cantidad de un producto que mostró el asesor, aparte de las adiciones. Cada llamada a la IA se registra con su coste y lo que tardó, y también cada pregunta rechazada por los límites de arriba o por el presupuesto, con el motivo.
 
 ## Keep exploring
 
@@ -86,7 +86,7 @@ El bloque se carga después de los resultados de la búsqueda, así que la búsq
 
 ### Qué se registra
 
-El primer clic en una sugerencia se registra en la búsqueda, con el tipo de sugerencia que era: did you mean, búsqueda relacionada o popular, familia, best sellers, new arrivals o forgotten favourites. Las búsquedas de las cuentas de personal no se registran en absoluto, así que prueba con una cuenta de cliente que no sea de personal si quieres ver tus propios clics.
+Cada búsqueda registra qué sugerencias se ofrecieron y si el bloque llegó a verse en la pantalla del cliente. Se registra cada clic, en un resultado o en una sugerencia, con el tipo de sugerencia que era (did you mean, búsqueda relacionada o popular, familia, best sellers, new arrivals o forgotten favourites) y si fue en el producto o en un botón de su tarjeta, hasta 20 clics por búsqueda. Cada búsqueda registra también si el botón **Ask** se ofreció a ese cliente. Las búsquedas de las cuentas de personal no se registran en absoluto, así que prueba con una cuenta de cliente que no sea de personal si quieres ver tus propios clics.
 
 ## Ver cómo funciona
 
@@ -107,7 +107,9 @@ Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se ab
 
 **Where customers leave** (dónde se van los clientes) cuenta las conversaciones según el número de preguntas hechas. **Engagement and value** (participación y valor) da el tiempo y los mensajes medios de una conversación, el pedido medio de los clientes que usaron el asistente frente a los demás clientes, y las familias que un cliente pidió por primera vez después de que el asistente se las mostrara. **Families suggested** (familias sugeridas) lista las familias mostradas con más frecuencia, con cuántas conversaciones las pulsaron, las añadieron y las pidieron.
 
-**Search on the website** (búsqueda en la web) cubre Keep exploring: las búsquedas del periodo, las que no tuvieron resultados, los clics en una sugerencia por tipo, y cuántas búsquedas sin resultados fueron seguidas de un clic en una sugerencia. Solo sigue las fechas, la web y el idioma.
+**Search on the website** (búsqueda en la web) cubre Keep exploring: las búsquedas del periodo, las que no tuvieron resultados, cuántas búsquedas recibieron sugerencias y cuántos clientes las vieron, y cuántas búsquedas sin resultados fueron seguidas de un clic en una sugerencia. Para cada tipo de sugerencia muestra cuántas veces se ofreció, los clics y la tasa. Solo sigue las fechas, la web y el idioma.
+
+**From the search box to a question** (del cuadro de búsqueda a una pregunta) muestra en cuántas búsquedas se ofreció el botón **Ask**, en cuántas de ellas se mostró la oferta de preguntar, y cuántas conversaciones se abrieron desde el cuadro de búsqueda, con las preguntas rechazadas por los límites o por el presupuesto debajo.
 
 Las cifras principales y los pasos del embudo son enlaces: abren las conversaciones que hay detrás.
 

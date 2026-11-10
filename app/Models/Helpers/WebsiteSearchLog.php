@@ -36,6 +36,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $suggestion_kind
  * @property string|null $suggestion_url
  * @property \Illuminate\Support\Carbon|null $suggestion_clicked_at
+ * @property bool|null $assistant_available
+ * @property array<string, mixed>|null $suggestions
+ * @property \Illuminate\Support\Carbon|null $suggestions_viewed_at
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteSearchLog newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteSearchLog newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteSearchLog query()
@@ -48,5 +51,8 @@ class WebsiteSearchLog extends Model
     protected $casts = [
         'clicked_at'            => 'datetime',
         'suggestion_clicked_at' => 'datetime',
+        'assistant_available'   => 'boolean',
+        'suggestions'           => 'array',
+        'suggestions_viewed_at' => 'datetime',
     ];
 }

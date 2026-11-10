@@ -740,7 +740,7 @@ test('the assistant report leaves out staff and command line conversations, rate
 test('the assistant report search block counts submitted searches, rescued zero results and suggestion kinds, and names the filters it cannot apply', function () {
     GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
     $website = createWebsite($this->shop);
-    $log     = fn (array $data) => DB::table('website_search_logs')->insert(array_merge([
+    $log     = fn (array $data) => DB::table('website_search_logs')->insertGetId(array_merge([
         'ulid'            => (string) Str::ulid(),
         'group_id'        => $website->group_id,
         'organisation_id' => $website->organisation_id,
@@ -752,7 +752,8 @@ test('the assistant report search block counts submitted searches, rescued zero 
     ], $data));
 
     $log(['query' => 'Lavender Oil ', 'results_count' => 5, 'clicked_at' => '2022-03-05 10:01:00']);
-    $log(['query' => 'xyzzq', 'suggestion_kind' => 'did_you_mean', 'suggestion_clicked_at' => '2022-03-05 10:01:00']);
+    $rescued = $log(['query' => 'xyzzq', 'suggestion_kind' => 'did_you_mean', 'suggestion_clicked_at' => '2022-03-05 10:01:00']);
+    DB::table('website_search_log_clicks')->insert(['website_search_log_id' => $rescued, 'website_id' => $website->id, 'type' => 'suggestion', 'kind' => 'did_you_mean', 'target' => 'link', 'url' => '/search?q=xyz', 'created_at' => '2022-03-05 10:01:00']);
     $log(['query' => 'XYZZQ']);
     $log(['query' => 'xyzzq', 'scope' => 'dropdown']);
     $log(['query' => 'xyzzq', 'created_at' => '2022-02-20 10:00:00']);
@@ -827,6 +828,12 @@ function shoppingAssistantSpend(Website $website, float $cost, ?string $createdA
     $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($website->shop), $entryPoint);
     $conversation->update(['website_id' => $website->id]);
     $message = $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Here you go.', 'cost' => $cost]);
+    DB::table('shopping_assistant_model_calls')->insert([
+        'shopping_assistant_conversation_id' => $conversation->id,
+        'shopping_assistant_message_id'      => $message->id,
+        'cost'                               => $cost,
+        'created_at'                         => $createdAt ?? now(),
+    ]);
     if ($createdAt) {
         DB::table('shopping_assistant_messages')->where('id', $message->id)->update(['created_at' => $createdAt]);
     }
@@ -944,4 +951,266 @@ test('the assistant is called Aura unless the group sets a name, and a website\'
     UpdateWebsite::make()->action($website, ['shopping_assistant_name' => null]);
     expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Aura'])
         ->and(data_get($group->refresh()->settings, 'shopping_assistant.name'))->toBeNull();
+});
+
+test('a bulk add records added for the new lines of shown products only, once, and a raised quantity records increased while a lowered one records nothing', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $shown    = shoppingAssistantProduct($this->product);
+    $carded   = shoppingAssistantProduct($this->product);
+    $notShown = shoppingAssistantProduct($this->product);
+    $message  = shoppingAssistantShown($customer, [$shown->id, $carded->id]);
+    $base     = 'http://'.$website->domain.'/models/';
+
+    $lines = collect($this->actingAs($webUser, 'retina')->postJson($base.'store-transactions', ['lines' => [
+        ['product_id' => $shown->id, 'quantity' => 2],
+        ['product_id' => $notShown->id, 'quantity' => 1],
+    ]])->assertOk()->json('lines'))->keyBy('product_id');
+    $this->actingAs($webUser, 'retina')->postJson($base.'store-transactions', ['lines' => [['product_id' => $shown->id, 'quantity' => 4]]])->assertOk();
+
+    $cardedTransaction = $this->actingAs($webUser, 'retina')->postJson($base.$carded->id.'/store-transaction', ['quantity' => 3])->assertOk()->json('transaction_id');
+    $this->actingAs($webUser, 'retina')->postJson($base.$cardedTransaction.'/update-transaction', ['quantity_ordered' => 1])->assertOk();
+
+    $shownTransaction = $lines[$shown->id]['transaction_id'];
+    $this->actingAs($webUser, 'retina')->postJson($base.$shownTransaction.'/update-transaction', ['quantity_ordered' => 6])->assertOk();
+    $this->actingAs($webUser, 'retina')->postJson($base.$shownTransaction.'/update-transaction', ['quantity_ordered' => 7])->assertOk();
+
+    $events = ShoppingAssistantEvent::where('shopping_assistant_conversation_id', $message->shopping_assistant_conversation_id)
+        ->whereIn('type', [ShoppingAssistantEventTypeEnum::ADDED, ShoppingAssistantEventTypeEnum::INCREASED])
+        ->orderBy('id')
+        ->get();
+
+    expect($events->map(fn ($event) => [$event->type->value, $event->product_id, $event->transaction_id, (float) $event->quantity, $event->shopping_assistant_message_id])->all())->toBe([
+        ['added', $shown->id, $shownTransaction, 2.0, $message->id],
+        ['added', $carded->id, $cardedTransaction, 3.0, $message->id],
+        ['increased', $shown->id, $shownTransaction, 6.0, $message->id],
+    ])
+        ->and(ShoppingAssistantEvent::where('product_id', $notShown->id)->exists())->toBeFalse();
+});
+
+test('an increased event moves neither the strict figures nor the added step of the assistant report', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website      = createWebsite($this->shop);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $product      = shoppingAssistantProduct($this->product);
+    $conversation = shoppingAssistantShownAt($customer, [$product->id], '2020-05-05 10:00:00');
+    $line         = shoppingAssistantOrderLine($customer, $product, '2020-05-06 10:00:00', 25);
+    $conversation->events()->create(['type' => ShoppingAssistantEventTypeEnum::INCREASED, 'product_id' => $product->id, 'transaction_id' => $line, 'quantity' => 4, 'created_at' => '2020-05-05 10:05:00']);
+
+    $report = shoppingAssistantReport($website, '2020-05-01', '2020-05-31');
+
+    expect($report['kpis']['strict_orders']['value'])->toBe(0)
+        ->and($report['kpis']['strict_revenue']['value'])->toBe(0.0)
+        ->and($report['kpis']['revenue']['value'])->toBe(25.0)
+        ->and(collect($report['funnel'])->pluck('value', 'key')->only(['shown', 'added'])->all())->toBe(['shown' => 1, 'added' => 0]);
+});
+
+test('a question refused by the rate limit or a spent budget is logged once a minute per reason with the usual answer, and anonymising wipes it', function () {
+    Queue::fake();
+    $website = shoppingAssistantStorefront($this);
+    $limited = shoppingAssistantCustomer($this->shop);
+    $broke   = shoppingAssistantCustomer($this->shop);
+    $url     = 'http://'.$website->domain.'/json/shopping-assistant/ask';
+    $rows    = fn (Customer $customer) => DB::table('shopping_assistant_refusals')->where('customer_id', $customer->id)->orderBy('id')->get();
+    $this->travelTo(now()->startOfMinute()->addSeconds(5));
+
+    $limitedUser = shoppingAssistantWebUser($limited);
+    foreach (range(1, 6) as $ignored) {
+        $this->actingAs($limitedUser, 'retina')->postJson($url, ['message' => 'Ideas'])->assertStatus(202);
+    }
+    $this->actingAs($limitedUser, 'retina')->postJson($url, ['message' => str_repeat('a', 990).' too many questions'])
+        ->assertStatus(429)
+        ->assertHeader('Retry-After')
+        ->assertHeader('X-RateLimit-Limit', 6)
+        ->assertJsonPath('message', 'Too Many Attempts.');
+    $this->actingAs($limitedUser, 'retina')->postJson($url, ['message' => 'Again'])->assertStatus(429);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 0]);
+    $brokeUser = shoppingAssistantWebUser($broke);
+    $this->actingAs($brokeUser, 'retina')->postJson($url, ['message' => 'Mugs for a cafe'])->assertNotFound();
+    $this->actingAs($brokeUser, 'retina')->postJson($url, ['message' => 'Mugs again'])->assertNotFound();
+
+    $refused = $rows($limited)->first();
+    expect($rows($limited))->toHaveCount(1)
+        ->and($refused->reason)->toBe('rate_limit')
+        ->and($refused->website_id)->toBe($website->id)
+        ->and($refused->shop_id)->toBe($this->shop->id)
+        ->and(mb_strlen($refused->question))->toBe(1000)
+        ->and($rows($broke)->map(fn ($row) => [$row->reason, $row->question])->all())->toBe([['budget', 'Mugs for a cafe']]);
+
+    $this->travel(1)->minutes();
+    $this->actingAs($brokeUser, 'retina')->postJson($url, ['message' => 'Mugs once more'])->assertNotFound();
+    expect($rows($broke)->pluck('question')->all())->toBe(['Mugs for a cafe', 'Mugs once more']);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => false, 'shopping_assistant_monthly_budget' => null]);
+    $this->travel(1)->minutes();
+    $this->actingAs($brokeUser, 'retina')->postJson($url, ['message' => 'Switched off'])->assertNotFound();
+    expect($rows($broke))->toHaveCount(2);
+    $this->travelBack();
+
+    AnonymiseCustomer::make()->action($broke, 'Erasure request', false);
+    expect($rows($broke)->pluck('question')->filter()->all())->toBe([])
+        ->and($rows($broke))->toHaveCount(2);
+});
+
+test('every model call is stored as it returns and the conversation, the message and the budget count it once, even when the turn throws', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $product  = shoppingAssistantProduct($this->product);
+    shoppingAssistantStoppedOrdering($customer, $product);
+    $stoppedOrdering = shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('products_they_stopped_ordering', [])]], 'tool_calls');
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push($stoppedOrdering)
+        ->push(shoppingAssistantPresent(['reply' => 'Worth bringing back.', 'must_haves' => [$product->id]]))
+        ->push($stoppedOrdering)
+        ->push($stoppedOrdering)]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
+    $conversation->update(['website_id' => $website->id]);
+    $budgetBefore = shoppingAssistantBudget($website)['spent'];
+    $calls        = fn () => DB::table('shopping_assistant_model_calls')->where('shopping_assistant_conversation_id', $conversation->id)->orderBy('id')->get();
+
+    $message = AskShoppingAssistant::run($conversation, 'What should I restock?')['message'];
+    $conversation->refresh();
+
+    expect($calls()->map(fn ($call) => [$call->shopping_assistant_message_id, $call->customer_message_id !== null, $call->finish_reason, (int) $call->prompt_tokens, $call->latency_ms !== null])->all())->toBe([
+        [$message->id, true, 'tool_calls', 100, true],
+        [$message->id, true, 'tool_calls', 200, true],
+    ])
+        ->and((float) $calls()->sum('cost'))->toEqualWithDelta(0.03, 0.000001)
+        ->and((float) $message->cost)->toEqualWithDelta(0.03, 0.000001)
+        ->and($message->model_calls)->toBe(2)
+        ->and((float) $conversation->cost)->toEqualWithDelta(0.03, 0.000001)
+        ->and($conversation->model_calls)->toBe(2)
+        ->and($conversation->prompt_tokens)->toBe(300)
+        ->and($conversation->completion_tokens)->toBe(50)
+        ->and(shoppingAssistantBudget($website)['spent'])->toEqualWithDelta($budgetBefore + 0.03, 0.000001);
+
+    $executed = 0;
+    GetShoppingAssistantTools::partialMock()->shouldReceive('execute')->andReturnUsing(function () use (&$executed) {
+        if (++$executed > 1) {
+            throw new RuntimeException('boom');
+        }
+
+        return ['content' => [], 'products' => [], 'error' => null];
+    });
+
+    $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'And something new?');
+    AnswerShoppingAssistantMessage::run($customerMessage);
+    $conversation->refresh();
+
+    $fallback = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->first();
+    $failed   = $calls()->where('customer_message_id', $customerMessage->id);
+
+    expect($failed)->toHaveCount(2)
+        ->and($failed->pluck('shopping_assistant_message_id')->unique()->values()->all())->toBe([$fallback->id])
+        ->and($fallback->flags)->toBe(['model_unavailable'])
+        ->and($fallback->model_calls)->toBe(2)
+        ->and((float) $fallback->cost)->toEqualWithDelta(0.02, 0.000001)
+        ->and($conversation->model_calls)->toBe(4)
+        ->and((float) $conversation->cost)->toEqualWithDelta(0.05, 0.000001)
+        ->and((float) $calls()->sum('cost'))->toEqualWithDelta((float) $conversation->cost, 0.000001)
+        ->and(shoppingAssistantBudget($website)['spent'])->toEqualWithDelta($budgetBefore + 0.05, 0.000001);
+});
+
+test('the model call backfill keeps this month\'s budget as the messages had it, and running it again adds nothing', function () {
+    $website      = shoppingAssistantStorefront($this);
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::SEARCH);
+    $conversation->update(['website_id' => $website->id]);
+    $lastMonth = $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Old', 'model_calls' => 2, 'cost' => 0.3]);
+    DB::table('shopping_assistant_messages')->where('id', $lastMonth->id)->update(['created_at' => now()->startOfMonth()->subDay()]);
+    $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Old too', 'model_calls' => 3, 'cost' => 0.45]);
+    shoppingAssistantSpend($website, 0.2);
+
+    $callsSum = fn () => (float) DB::table('shopping_assistant_model_calls')->where('shopping_assistant_conversation_id', $conversation->id)->where('created_at', '>=', now()->startOfMonth())->sum('cost');
+    $backfill = require base_path('database/migrations/2026_11_11_150100_backfill_shopping_assistant_model_calls.php');
+    $before   = shoppingAssistantBudget($website)['spent'];
+
+    $backfill->up();
+    expect(shoppingAssistantBudget($website)['spent'])->toEqualWithDelta($before + 0.45, 0.000001)
+        ->and($callsSum())->toEqualWithDelta(0.45, 0.000001);
+
+    $backfill->up();
+    expect(shoppingAssistantBudget($website)['spent'])->toEqualWithDelta($before + 0.45, 0.000001)
+        ->and(DB::table('shopping_assistant_model_calls')->where('shopping_assistant_message_id', $lastMonth->id)->count())->toBe(1);
+});
+
+test('the assistant report counts what Keep exploring offered, was seen and clicked by kind, how far the assistant reached and the questions it refused', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website = createWebsite($this->shop);
+    $log     = fn (array $data) => DB::table('website_search_logs')->insertGetId(array_merge([
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $website->group_id,
+        'organisation_id' => $website->organisation_id,
+        'shop_id'         => $website->shop_id,
+        'website_id'      => $website->id,
+        'scope'           => 'catalogue_page',
+        'results_count'   => 4,
+        'created_at'      => '2019-03-05 10:00:00',
+    ], $data));
+    $suggestions = fn (array $data) => json_encode(array_replace_recursive([
+        'did_you_mean' => null,
+        'searches'     => ['kind' => 'popular', 'items' => []],
+        'families'     => [],
+        'products'     => ['best_sellers' => [], 'new_arrivals' => [], 'forgotten' => []],
+    ], $data));
+    $click = fn (int $logId, string $type, ?string $kind, int $websiteId) => DB::table('website_search_log_clicks')->insert([
+        'website_search_log_id' => $logId, 'website_id' => $websiteId, 'type' => $type, 'kind' => $kind, 'target' => 'link', 'url' => '/x', 'created_at' => '2019-03-05 10:02:00',
+    ]);
+
+    $question = $log(['query' => 'lavender oil for spas', 'assistant_available' => true, 'suggestions_viewed_at' => '2019-03-05 10:01:00', 'suggestions' => $suggestions([
+        'did_you_mean' => 'lavender', 'searches' => ['kind' => 'related', 'items' => ['lavender soap']], 'families' => [11], 'products' => ['best_sellers' => [12]],
+    ])]);
+    $log(['query' => 'mugs?', 'assistant_available' => true, 'suggestions' => $suggestions(['products' => ['new_arrivals' => [13]]])]);
+    $log(['query' => 'tealights', 'assistant_available' => true]);
+    $log(['query' => 'xyzzq', 'scope' => 'catalogue', 'results_count' => 0, 'assistant_available' => true]);
+    $log(['query' => 'big candles for my shop?', 'assistant_available' => false]);
+    $log(['query' => 'soap', 'results_count' => 0, 'assistant_available' => true, 'suggestions_viewed_at' => '2019-02-20 10:01:00', 'created_at' => '2019-02-20 10:00:00']);
+
+    $click($question, 'suggestion', 'did_you_mean', $website->id);
+    $click($question, 'suggestion', 'family', $website->id);
+    $click($question, 'suggestion', 'family', $website->id);
+    $click($question, 'suggestion', 'new_arrivals', $website->id);
+    $click($question, 'result', null, $website->id);
+    $click($question, 'suggestion', 'family', $website->id + 100000);
+
+    shoppingAssistantShownAt(shoppingAssistantCustomer($this->shop), [$this->product->id], '2019-03-05 10:00:00');
+    shoppingAssistantShownAt(shoppingAssistantCustomer($this->shop), [$this->product->id], '2019-03-06 10:00:00')->update(['entry_point' => ShoppingAssistantEntryPointEnum::PROFILE]);
+
+    $refused  = shoppingAssistantCustomer($this->shop);
+    $staff    = shoppingAssistantCustomer($this->shop);
+    $staff->update(['is_staff' => true]);
+    $refusal  = fn (Customer $customer, string $reason, string $at) => DB::table('shopping_assistant_refusals')->insert([
+        'group_id' => $website->group_id, 'organisation_id' => $website->organisation_id, 'shop_id' => $website->shop_id, 'website_id' => $website->id,
+        'customer_id' => $customer->id, 'reason' => $reason, 'question' => 'Hello', 'created_at' => $at,
+    ]);
+    $refusal($refused, 'rate_limit', '2019-03-05 10:00:00');
+    $refusal($refused, 'rate_limit', '2019-03-07 10:00:00');
+    $refusal($staff, 'rate_limit', '2019-03-07 10:00:00');
+    $refusal($refused, 'budget', '2019-02-25 10:00:00');
+
+    $report = shoppingAssistantReport($website, '2019-03-01', '2019-03-10');
+
+    expect($report['search']['seen'])->toBe(['value' => 1, 'previous' => 1])
+        ->and($report['search']['offered'])->toBe(['value' => 2, 'previous' => 0])
+        ->and($report['search']['by_kind'])->toBe([
+            ['kind' => 'did_you_mean', 'shown' => 1, 'clicks' => 1],
+            ['kind' => 'related_search', 'shown' => 1, 'clicks' => 0],
+            ['kind' => 'popular_search', 'shown' => 0, 'clicks' => 0],
+            ['kind' => 'family', 'shown' => 1, 'clicks' => 2],
+            ['kind' => 'best_sellers', 'shown' => 1, 'clicks' => 0],
+            ['kind' => 'new_arrivals', 'shown' => 1, 'clicks' => 1],
+            ['kind' => 'forgotten', 'shown' => 0, 'clicks' => 0],
+        ])
+        ->and($report['assistant_reach'])->toBe([
+            'available' => ['value' => 4, 'previous' => 1],
+            'offered'   => ['value' => 3, 'previous' => 1],
+            'asked'     => ['value' => 1, 'previous' => 0],
+        ])
+        ->and($report['refusals'])->toBe([
+            'rate_limit' => ['value' => 2, 'previous' => 0],
+            'budget'     => ['value' => 0, 'previous' => 1],
+        ]);
 });

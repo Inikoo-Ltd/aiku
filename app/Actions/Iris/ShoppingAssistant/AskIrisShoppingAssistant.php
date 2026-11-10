@@ -12,6 +12,7 @@ use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantMessage;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation;
+use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRefusal;
 use App\Actions\IrisAction;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
@@ -58,7 +59,13 @@ class AskIrisShoppingAssistant extends IrisAction
 
         $customerId = $this->signedInCustomerId();
         $customer   = $customerId ? Customer::find($customerId) : null;
-        abort_unless($customer && GetShoppingAssistantSettings::run($this->website, $customer, true), 404);
+        abort_unless($customer, 404);
+        if (!GetShoppingAssistantSettings::run($this->website, $customer, true)) {
+            if (GetShoppingAssistantSettings::run($this->website, $customer)) {
+                StoreShoppingAssistantRefusal::afterResponse($this->website, $customer->id, StoreShoppingAssistantRefusal::BUDGET, $request->input('message'));
+            }
+            abort(404);
+        }
 
         $conversation = null;
         if ($ulid = Arr::get($this->validatedData, 'conversation')) {

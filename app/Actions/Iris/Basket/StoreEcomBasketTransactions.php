@@ -6,6 +6,7 @@
 
 namespace App\Actions\Iris\Basket;
 
+use App\Actions\CRM\ShoppingAssistant\RecordShoppingAssistantBasketAdd;
 use App\Actions\IrisAction;
 use App\Actions\Traits\InteractsWithOrderInBasket;
 use App\Actions\Traits\WithCustomerPurchasableProduct;
@@ -153,7 +154,19 @@ class StoreEcomBasketTransactions extends IrisAction
 
         $this->initialisation($request);
 
-        return $this->handle($customer, $this->validatedData['lines']);
+        $result = $this->handle($customer, $this->validatedData['lines']);
+
+        RecordShoppingAssistantBasketAdd::afterResponse(
+            $this->website,
+            $customer,
+            collect($result['lines'])->where('status', 'added')->map(fn (array $line) => [
+                'product_id'     => $line['product_id'],
+                'transaction_id' => $line['transaction_id'],
+                'quantity'       => $line['quantity_ordered'],
+            ])->values()->all()
+        );
+
+        return $result;
     }
 
     /**

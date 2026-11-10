@@ -8,9 +8,11 @@
 
 namespace App\Actions\Iris\Basket;
 
+use App\Actions\CRM\ShoppingAssistant\RecordShoppingAssistantBasketAdd;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Traits\WithCustomerPurchasableProduct;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Transaction;
@@ -75,7 +77,19 @@ class UpdateEcomBasketTransaction extends IrisAction
                 : StoreEcomBasketTransaction::make()->handle($customer, $product, ['quantity' => $quantity]);
         }
 
-        return $this->handle($transaction, $this->validatedData);
+        $previousQuantity = (float) $transaction->quantity_ordered;
+        $transaction      = $this->handle($transaction, $this->validatedData);
+
+        if ($transaction->model_type === 'Product' && !$transaction->trashed() && (float) $transaction->quantity_ordered > $previousQuantity) {
+            RecordShoppingAssistantBasketAdd::afterResponse(
+                $this->website,
+                $customer,
+                [['product_id' => $transaction->model_id, 'transaction_id' => $transaction->id, 'quantity' => $transaction->quantity_ordered]],
+                ShoppingAssistantEventTypeEnum::INCREASED
+            );
+        }
+
+        return $transaction;
     }
 
     public function htmlResponse(): RedirectResponse

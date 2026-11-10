@@ -168,12 +168,12 @@ class AskShoppingAssistant
                 }
             }
 
+            if ($turn['call_ids']) {
+                DB::table('shopping_assistant_model_calls')->whereIn('id', $turn['call_ids'])->update(['shopping_assistant_message_id' => $assistantMessage->id]);
+            }
+
             $conversation->update([
                 'messages_count'    => $conversation->messages_count + 1,
-                'model_calls'       => $conversation->model_calls + $turn['model_calls'],
-                'prompt_tokens'     => $conversation->prompt_tokens + $turn['prompt_tokens'],
-                'completion_tokens' => $conversation->completion_tokens + $turn['completion_tokens'],
-                'cost'              => (float) $conversation->cost + $turn['cost'],
                 'model'             => $model,
                 'last_message_at'   => now(),
             ]);
@@ -213,14 +213,16 @@ class AskShoppingAssistant
     }
 
     /**
-     * The tool loop. Model calls run outside any transaction, and a failure on a later call keeps
-     * the tokens, cost and tool log of the earlier ones.
+     * The tool loop. Model calls run outside any transaction. Each call that returns usage is stored
+     * at once in shopping_assistant_model_calls and added to the conversation totals, so a turn that
+     * throws or is killed later keeps what it spent; the assistant message gets the turn's totals only
+     * for display, and the conversation is never raised again at the end of the turn.
      *
-     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float}
+     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
      */
     private function runModel(ShoppingAssistantConversation $conversation, ?Customer $customer, ShoppingAssistantMessage $customerMessage, string $message, string $model): array
     {
-        $turn = ['answer' => null, 'found' => [], 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0];
+        $turn = ['answer' => null, 'found' => [], 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
 
         if (!$customer) {
             $turn['flags'][] = 'model_unavailable';
@@ -236,7 +238,8 @@ class AskShoppingAssistant
         );
 
         for ($call = 0; $call < (int) config('services.shopping_assistant.max_model_calls'); $call++) {
-            $response = $this->callModel($model, $messages, $tools->definitions());
+            $callStartedAt = hrtime(true);
+            $response      = $this->callModel($model, $messages, $tools->definitions());
 
             if ($response === null) {
                 $turn['flags'][] = 'model_unavailable';
@@ -244,13 +247,18 @@ class AskShoppingAssistant
                 return $turn;
             }
 
-            $usage = is_array($response['usage'] ?? null) ? $response['usage'] : [];
-            $turn['model_calls']++;
-            $turn['prompt_tokens']     += (int) ($usage['prompt_tokens'] ?? 0);
-            $turn['completion_tokens'] += (int) ($usage['completion_tokens'] ?? 0);
-            $turn['cost']              += (float) ($this->aiUsageCost($usage) ?? 0);
+            $usage            = is_array($response['usage'] ?? null) ? $response['usage'] : [];
+            $choice           = $response['choices'][0] ?? null;
+            $promptTokens     = (int) ($usage['prompt_tokens'] ?? 0);
+            $completionTokens = (int) ($usage['completion_tokens'] ?? 0);
+            $cost             = (float) ($this->aiUsageCost($usage) ?? 0);
 
-            $choice    = $response['choices'][0] ?? null;
+            $turn['model_calls']++;
+            $turn['prompt_tokens']     += $promptTokens;
+            $turn['completion_tokens'] += $completionTokens;
+            $turn['cost']              += $cost;
+            $turn['call_ids'][]        = $this->storeModelCall($conversation, $customerMessage, $model, $promptTokens, $completionTokens, $cost, (int) round((hrtime(true) - $callStartedAt) / 1e6), is_array($choice) ? ($choice['finish_reason'] ?? null) : null);
+
             $assistant = is_array($choice) ? ($choice['message'] ?? null) : null;
 
             if (!is_array($assistant) || ($choice['finish_reason'] ?? null) === 'content_filter') {
@@ -320,6 +328,30 @@ class AskShoppingAssistant
         $turn['flags'][] = 'model_call_limit';
 
         return $turn;
+    }
+
+    private function storeModelCall(ShoppingAssistantConversation $conversation, ShoppingAssistantMessage $customerMessage, string $model, int $promptTokens, int $completionTokens, float $cost, int $latency, mixed $finishReason): int
+    {
+        $callId = DB::table('shopping_assistant_model_calls')->insertGetId([
+            'shopping_assistant_conversation_id' => $conversation->id,
+            'customer_message_id'                => $customerMessage->id,
+            'model'                              => $model,
+            'prompt_tokens'                      => $promptTokens,
+            'completion_tokens'                  => $completionTokens,
+            'cost'                               => $cost,
+            'latency_ms'                         => $latency,
+            'finish_reason'                      => is_string($finishReason) ? mb_substr($finishReason, 0, 255) : null,
+            'created_at'                         => now(),
+        ]);
+
+        $conversation->incrementEach([
+            'model_calls'       => 1,
+            'prompt_tokens'     => $promptTokens,
+            'completion_tokens' => $completionTokens,
+            'cost'              => $cost,
+        ]);
+
+        return $callId;
     }
 
     /**

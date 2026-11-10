@@ -118,7 +118,7 @@ const fetchResults = debounce(async (query: string) => {
     isInternalLoading.value = true
     try {
         const { data } = await axios.get(
-            route(searchRoute('catalogue'), { q: query, source: 'desktop_bar' }),
+            route(searchRoute('catalogue'), { q: query, source: 'desktop_bar', ...(assistant.value ? { assistant: 1 } : {}) }),
             { signal: abort.signal }
         )
         cacheResponse(query, data)

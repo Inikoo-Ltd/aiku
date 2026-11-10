@@ -43,10 +43,14 @@ type Overview = {
         zero_result_rate?: Metric
         suggestion_clicks?: Metric
         zero_rescued?: Metric
-        by_kind?: { kind: string; clicks: number }[]
+        seen?: Metric
+        offered?: Metric
+        by_kind?: { kind: string; shown?: number; clicks: number }[]
         top_queries?: { query: string; searches: number; clicks: number }[]
         top_zero_queries?: { query: string; searches: number; rescued: number }[]
     }
+    assistant_reach?: { available?: Metric; offered?: Metric; asked?: Metric }
+    refusals?: { rate_limit?: Metric; budget?: Metric }
 }
 
 type FilterKey = "website" | "language" | "entry_point" | "shop_type" | "country"
@@ -427,8 +431,46 @@ const kindLabels: Record<string, string> = {
 const clicksByKind = computed(() => {
     const rows = search.value?.by_kind ?? []
     const max = Math.max(0, ...rows.map((row) => row.clicks ?? 0))
-    return rows.map((row) => ({ label: kindLabels[row.kind] ?? row.kind, clicks: row.clicks ?? 0, width: max > 0 ? ((row.clicks ?? 0) / max) * 100 : 0 }))
+    return rows.map((row) => ({
+        label: kindLabels[row.kind] ?? row.kind,
+        shown: row.shown ?? null,
+        clicks: row.clicks ?? 0,
+        rate: row.shown ? (row.clicks ?? 0) / row.shown : null,
+        width: max > 0 ? ((row.clicks ?? 0) / max) * 100 : 0,
+    }))
 })
+
+const seenShare = computed(() => {
+    const offered = search.value?.offered?.value ?? 0
+    return offered > 0 ? (search.value?.seen?.value ?? 0) / offered : null
+})
+
+const assistantReach = computed(() => {
+    const reach = props.overview?.assistant_reach
+    if (!reach) return []
+    const steps = [
+        { key: "available", label: ctrans("Searches with the Ask button"), metric: reach.available },
+        { key: "offered", label: ctrans("Offer shown"), metric: reach.offered },
+        { key: "asked", label: ctrans("Conversations opened from search"), metric: reach.asked },
+    ]
+    const first = steps[0].metric?.value ?? 0
+    return steps.map((step, index) => {
+        const value = step.metric?.value ?? 0
+        const previousStep = index > 0 ? steps[index - 1].metric?.value ?? 0 : 0
+        return {
+            ...step,
+            value,
+            change: change(step.metric),
+            width: first > 0 ? Math.min(Math.max((value / first) * 100, value > 0 ? 1 : 0), 100) : 0,
+            ofPrevious: index > 0 && previousStep > 0 ? value / previousStep : null,
+        }
+    })
+})
+
+const refusals = computed(() => ({
+    rateLimit: props.overview?.refusals?.rate_limit?.value ?? 0,
+    budget: props.overview?.refusals?.budget?.value ?? 0,
+}))
 
 const conversationsTable = computed(() => props.conversations)
 </script>
@@ -541,6 +583,36 @@ const conversationsTable = computed(() => props.conversations)
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div v-if="assistantReach.length" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                    <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("From the search box to a question") }}</h3>
+                    <table class="w-full text-sm">
+                        <thead class="whitespace-nowrap text-xs text-gray-400">
+                            <tr>
+                                <th class="pb-1 text-left font-medium" />
+                                <th class="pb-1 text-left font-medium" />
+                                <th class="pb-1 pl-3 text-right font-medium">{{ ctrans("Count") }}</th>
+                                <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Change") }}</th>
+                                <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Of previous") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="step in assistantReach" :key="step.key">
+                                <td class="whitespace-nowrap py-1.5 pr-3 text-gray-700">{{ step.label }}</td>
+                                <td class="w-full py-1.5">
+                                    <div class="h-3 rounded-sm bg-gray-100">
+                                        <div class="h-3 rounded-sm bg-[var(--app-accent)]" :style="{ width: step.width + '%' }" />
+                                    </div>
+                                </td>
+                                <td class="py-1.5 pl-3 text-right font-medium tabular-nums text-gray-900">{{ locale.number(step.value) }}</td>
+                                <td class="whitespace-nowrap py-1.5 pl-4 text-right text-xs tabular-nums" :class="step.change?.cls">{{ step.change?.text ?? "" }}</td>
+                                <td class="py-1.5 pl-4 text-right tabular-nums text-gray-500">{{ step.ofPrevious === null ? "" : percent(step.ofPrevious) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p v-if="refusals.rateLimit > 0 || refusals.budget > 0" class="mt-2 text-xs text-gray-500">
+                        {{ ctrans("Questions refused: :rate_limit by the rate limit, :budget by the budget", { rate_limit: locale.number(refusals.rateLimit), budget: locale.number(refusals.budget) }) }}
+                    </p>
                 </div>
                 <p v-if="showMaturityNote" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
                     {{ ctrans("Conversations after :date can still turn into orders: orders, revenue and conversion for them are not final.", { date: shortDate(overview.mature_until) }) }}
@@ -681,7 +753,7 @@ const conversationsTable = computed(() => props.conversations)
                     <p v-if="ignoredFilters" class="text-xs text-gray-500">{{ ctrans("Search figures ignore: :filters", { filters: ignoredFilters }) }}</p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <div class="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
                     <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
                         <div class="text-xs text-gray-500">{{ ctrans("Searches") }}</div>
                         <GoogleAdsMetric :value="search.searches?.value ?? 0" kind="count" :previous="comparable(search.searches)" size="lg" />
@@ -701,21 +773,43 @@ const conversationsTable = computed(() => props.conversations)
                         <div class="text-xs text-gray-500">{{ ctrans("No-result searches rescued") }}</div>
                         <GoogleAdsMetric :value="search.zero_rescued?.value ?? 0" kind="count" :previous="comparable(search.zero_rescued)" size="lg" />
                     </div>
+                    <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+                        <div class="text-xs text-gray-500">{{ ctrans("Suggestions offered") }}</div>
+                        <GoogleAdsMetric :value="search.offered?.value ?? 0" kind="count" :previous="comparable(search.offered)" size="lg" />
+                    </div>
+                    <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+                        <div class="text-xs text-gray-500">{{ ctrans("Suggestions seen") }}</div>
+                        <GoogleAdsMetric :value="search.seen?.value ?? 0" kind="count" :previous="comparable(search.seen)" size="lg" />
+                        <div v-if="seenShare !== null" class="text-xs tabular-nums text-gray-500">
+                            {{ ctrans(":rate of offered", { rate: percent(seenShare) }) }}
+                        </div>
+                    </div>
                 </div>
 
                 <div class="grid gap-4 xl:grid-cols-3">
                     <div class="rounded-lg border border-gray-200 bg-white p-4">
                         <h4 class="mb-3 text-xs font-medium text-gray-500">{{ ctrans("Clicks by kind") }}</h4>
                         <table class="w-full text-sm">
+                            <thead class="whitespace-nowrap text-xs text-gray-400">
+                                <tr>
+                                    <th class="pb-1 text-left font-medium" />
+                                    <th class="pb-1 pl-3 text-right font-medium">{{ ctrans("Offered") }}</th>
+                                    <th class="pb-1 pl-3 text-right font-medium">{{ ctrans("Clicks") }}</th>
+                                    <th class="pb-1 font-medium" />
+                                    <th class="pb-1 pl-3 text-right font-medium">{{ ctrans("Rate") }}</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 <tr v-for="row in clicksByKind" :key="row.label">
                                     <td class="whitespace-nowrap py-1 pr-3 text-gray-700">{{ row.label }}</td>
-                                    <td class="w-full py-1">
-                                        <div class="h-2.5 rounded-sm bg-gray-100">
+                                    <td class="py-1 pl-3 text-right tabular-nums text-gray-500">{{ row.shown === null ? "" : locale.number(row.shown) }}</td>
+                                    <td class="py-1 pl-3 text-right tabular-nums text-gray-900">{{ locale.number(row.clicks) }}</td>
+                                    <td class="w-full py-1 pl-3">
+                                        <div class="h-2.5 min-w-8 rounded-sm bg-gray-100">
                                             <div class="h-2.5 rounded-sm bg-[var(--app-accent)]" :style="{ width: row.width + '%' }" />
                                         </div>
                                     </td>
-                                    <td class="w-14 py-1 text-right tabular-nums text-gray-900">{{ locale.number(row.clicks) }}</td>
+                                    <td class="whitespace-nowrap py-1 pl-3 text-right tabular-nums text-gray-500">{{ row.rate === null ? "" : percent(row.rate) }}</td>
                                 </tr>
                             </tbody>
                         </table>

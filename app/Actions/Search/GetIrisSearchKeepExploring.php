@@ -331,6 +331,7 @@ class GetIrisSearchKeepExploring extends IrisAction
             'q'          => ['required', 'string', 'max:100'],
             'families'   => ['sometimes', 'array', 'max:5'],
             'families.*' => ['integer'],
+            'search_log' => ['sometimes', 'nullable', 'string', 'size:26'],
         ];
     }
 
@@ -340,6 +341,41 @@ class GetIrisSearchKeepExploring extends IrisAction
 
         $this->initialisation($request);
 
-        return $this->handle($this->validatedData);
+        $result = $this->handle($this->validatedData);
+
+        if ($searchLogUlid = Arr::get($this->validatedData, 'search_log')) {
+            $websiteId   = $this->website->id;
+            $suggestions = $this->suggestionIds($result);
+            logAfterResponse(fn () => DB::table('website_search_logs')
+                ->where('ulid', $searchLogUlid)
+                ->where('website_id', $websiteId)
+                ->whereNull('suggestions')
+                ->update(['suggestions' => json_encode($suggestions)]));
+        }
+
+        return $result;
+    }
+
+    /**
+     * What was offered, as ids, for the search log row: stored after the response on the row of the
+     * same website that has none yet. The row itself is written after the response of the search
+     * request; when it is not there yet the update finds nothing and the suggestions are not logged.
+     *
+     * @param array<string, mixed> $result
+     *
+     * @return array{did_you_mean: ?string, searches: array{kind: string, items: array<int, string>}, families: array<int, int>, products: array{best_sellers: array<int, int>, new_arrivals: array<int, int>, forgotten: array<int, int>}}
+     */
+    private function suggestionIds(array $result): array
+    {
+        $products = collect($result['products'])->keyBy('key');
+
+        return [
+            'did_you_mean' => $result['did_you_mean'],
+            'searches'     => $result['searches'],
+            'families'     => array_column($result['families'], 'id'),
+            'products'     => collect(['best_sellers', 'new_arrivals', 'forgotten'])
+                ->mapWithKeys(fn (string $key) => [$key => array_column($products->get($key)['items'] ?? [], 'id')])
+                ->all(),
+        ];
     }
 }

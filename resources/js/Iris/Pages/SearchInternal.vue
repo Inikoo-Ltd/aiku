@@ -100,22 +100,28 @@ const searchQuery = computed(() => {
 
 const products = ref<ProductResource[]>([])
 
-const { assistant, askLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
+const { assistant, isOfferedNow, askLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
 const showAssistantBanner = computed(() => !!assistant.value && !!searchQuery.value.trim()
     && (looksLikeANeed(searchQuery.value) || (!isInternalLoading.value && !products.value.length)))
 const searchLogUlid = ref<string | null>(null)
 
 // keepalive fetch survives the navigation the click triggers
-const recordClick = (url?: string | null, suggestion?: string) => {
-    if (!searchLogUlid.value || !url) return
+const sendSearchBeacon = (routeName: string, body: Record<string, unknown>) => {
     const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '')
-    fetch(route('iris.json.search.click'), {
+    fetch(route(routeName), {
         method: 'POST',
         keepalive: true,
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': token },
-        body: JSON.stringify({ ulid: searchLogUlid.value, url, suggestion }),
+        body: JSON.stringify(body),
     }).catch(() => {})
 }
+const recordClick = (url?: string | null, suggestion?: string, target: 'link' | 'button' = 'link') => {
+    if (!searchLogUlid.value || !url) return
+    sendSearchBeacon('iris.json.search.click', { ulid: searchLogUlid.value, url, suggestion, target })
+}
+const recordResultClick = (event: MouseEvent, url?: string | null) =>
+    recordClick(url, undefined, (event.target as HTMLElement | null)?.closest('button') ? 'button' : 'link')
+const recordSuggestionsViewed = (ulid: string) => sendSearchBeacon('iris.json.search.suggestions_viewed', { ulid })
 const facets = ref<InternalFacets>(emptyFacets())
 const collections = ref<InternalCatalogueItem[]>([])
 // Only sent by SearchIrisCataloguePage when a customer is signed in, and only their own documents
@@ -178,6 +184,7 @@ const fetchInternalResults = async ({ pageNumber = 1, append = false, resultsOnl
                     price_max: priceMax.value !== '' ? priceMax.value : undefined,
                     sort: sortBy.value || undefined,
                     source: 'search_page',
+                    assistant: isOfferedNow() ? 1 : undefined,
                 },
                 signal: internalAbort.signal,
             }
@@ -643,7 +650,7 @@ const isMobileFilterOpen = ref(false)
                             <div v-for="product in products" :key="product.id"
                                 :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                                 class="relative rounded flex md:flex-1 justify-center"
-                                @click.capture="() => recordClick(product.url)">
+                                @click.capture="(event) => recordResultClick(event, product.url)">
                                 <RenderProduct :code="productCardCode" :product="product"
                                     :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                     :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
@@ -674,7 +681,8 @@ const isMobileFilterOpen = ref(false)
 
                         <IrisSearchKeepExploring :query="searchQuery" :family-ids="topFamilyIds"
                             :is-results-loading="isInternalLoading" :has-no-results="!products.length"
-                            @suggestion-click="recordClick">
+                            :search-log-ulid="searchLogUlid"
+                            @suggestion-click="recordClick" @suggestions-viewed="recordSuggestionsViewed">
                             <template #product="{ product }">
                                 <div :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                                     class="relative rounded flex md:flex-1 justify-center">

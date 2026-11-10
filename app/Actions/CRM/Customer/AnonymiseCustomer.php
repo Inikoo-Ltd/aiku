@@ -218,11 +218,13 @@ class AnonymiseCustomer extends OrgAction
     }
 
     /**
-     * Wipes what the customer wrote and was told by the shopping assistant. Counters, tokens, cost
-     * and the product ids of the events stay for reporting.
+     * Wipes what the customer wrote and was told by the shopping assistant, and the questions it
+     * refused. Counters, tokens, cost and the product ids of the events stay for reporting.
      */
     private function anonymiseShoppingAssistantConversations(Customer $customer): void
     {
+        DB::table('shopping_assistant_refusals')->where('customer_id', $customer->id)->update(['question' => null]);
+
         $conversationIds = ShoppingAssistantConversation::where('customer_id', $customer->id)->pluck('id');
         if ($conversationIds->isEmpty()) {
             return;

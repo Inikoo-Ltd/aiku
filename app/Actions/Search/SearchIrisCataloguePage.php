@@ -458,6 +458,7 @@ class SearchIrisCataloguePage extends IrisAction
             'per_page'     => ['sometimes', 'integer', 'min:1', 'max:100'],
             'sort'         => ['sometimes', 'nullable', 'in:price_amount:asc,price_amount:desc'],
             'source'       => ['sometimes', 'nullable', 'string', 'max:64'],
+            'assistant'    => ['sometimes', 'nullable', 'boolean'],
         ];
     }
 

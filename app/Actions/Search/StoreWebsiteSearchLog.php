@@ -33,10 +33,13 @@ class StoreWebsiteSearchLog
 
         $refined = $this->refinedLog($modelData);
         if ($refined) {
-            $refined->update(Arr::only($modelData, [
-                'ulid', 'query', 'scope',
-                'results_count', 'keyword_results_count', 'vector_results_count',
-            ]));
+            $refined->update(array_merge(
+                Arr::only($modelData, [
+                    'ulid', 'query', 'scope',
+                    'results_count', 'keyword_results_count', 'vector_results_count',
+                ]),
+                Arr::has($modelData, 'assistant_available') ? ['assistant_available' => $refined->assistant_available || Arr::get($modelData, 'assistant_available')] : []
+            ));
 
             return $refined;
         }
@@ -64,7 +67,8 @@ class StoreWebsiteSearchLog
      * An identical query re-fired later in the session (pagination, facets, sorting on the
      * search page) reuses its row too, or it would count as a fresh search every time.
      * The reused row keeps its original source: the control that started the search is
-     * what the entry point breakdown is after, not the one that refined it.
+     * what the entry point breakdown is after, not the one that refined it. Its assistant flag
+     * stays true once any request of the search had the Ask button offered.
      * A click on a Keep exploring suggestion ends the search like a result click does.
      */
     protected function refinedLog(array $modelData): ?WebsiteSearchLog

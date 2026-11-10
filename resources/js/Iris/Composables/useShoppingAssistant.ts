@@ -23,6 +23,17 @@ export const useShoppingAssistant = () => {
 
     const assistant = computed<ShoppingAssistant | null>(() => isMounted.value ? layout?.iris?.shopping_assistant ?? null : null)
 
+    const isOfferedNow = (): boolean => {
+        if (layout?.iris?.shopping_assistant) {
+            return true
+        }
+        try {
+            return !!JSON.parse(localStorage.getItem("iris") || "{}")?.shopping_assistant
+        } catch {
+            return false
+        }
+    }
+
     const askLabel = computed(() => assistant.value?.name
         ? ctrans("Ask :name", { name: assistant.value.name })
         : ctrans("Ask our range advisor"))
@@ -43,5 +54,5 @@ export const useShoppingAssistant = () => {
         }
     }
 
-    return { assistant, askLabel, offerLabel, looksLikeANeed, openAssistant }
+    return { assistant, isOfferedNow, askLabel, offerLabel, looksLikeANeed, openAssistant }
 }

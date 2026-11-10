@@ -60,7 +60,7 @@ Each customer can ask 6 questions a minute, 40 an hour and 120 a day. An answer 
 
 When the AI cost of the month reaches the **Monthly AI budget**, the advisor pauses on that website until the first day of the next month: the **Ask** button is no longer offered and new questions are not accepted. An answer already on its way still arrives. Raise the budget and the advisor is back within a minute or two. Several customers asking at the same moment can take the spend slightly over the budget.
 
-Every conversation is kept, with the products the advisor showed, the ones the customer clicked and the ones they added to the basket within 24 hours of seeing them.
+Every conversation is kept, with the products the advisor showed, the ones the customer clicked and the ones they added to the basket within 24 hours of seeing them. Raising the quantity of a product the advisor showed is recorded too, apart from the adds. Every AI call is recorded with its cost and how long it took, and so is every question turned away by the limits above or by the budget, with the reason.
 
 ## Keep exploring
 
@@ -86,7 +86,7 @@ The block loads after the search results, so the search itself is as fast as bef
 
 ### What is recorded
 
-The first click on a suggestion is recorded on the search, with what kind of suggestion it was: did you mean, related or popular search, family, best sellers, new arrivals or forgotten favourites. Searches by staff accounts are not recorded at all, so test with a customer account that is not staff if you want to see your own clicks.
+Each search records which suggestions were offered and whether the block came into view on the customer's screen. Every click is recorded, on a result or on a suggestion, with what kind of suggestion it was (did you mean, related or popular search, family, best sellers, new arrivals or forgotten favourites) and whether it was on the product or on a button of its card, up to 20 clicks per search. Each search also records whether the **Ask** button was on offer to that customer. Searches by staff accounts are not recorded at all, so test with a customer account that is not staff if you want to see your own clicks.
 
 ## Seeing how it performs
 
@@ -107,7 +107,9 @@ At the top you choose the dates and can narrow the figures by language, by where
 
 **Where customers leave** counts the conversations by the number of questions asked. **Engagement and value** gives the average time and messages of a conversation, the average order of customers who used the assistant against the other customers, and the families a customer ordered for the first time after the assistant showed them. **Families suggested** lists the families shown most often, with how many conversations clicked, added and ordered them.
 
-**Search on the website** covers Keep exploring: the searches of the period, those with no results, the clicks on a suggestion by kind, and how many searches with no results were followed by a click on a suggestion. It follows the dates, the website and the language only.
+**Search on the website** covers Keep exploring: the searches of the period, those with no results, how many searches were offered suggestions and how many customers saw them, and how many searches with no results were followed by a click on a suggestion. For each kind of suggestion it shows how often it was offered, the clicks and the rate. It follows the dates, the website and the language only.
+
+**From the search box to a question** shows how many searches were made with the **Ask** button on offer, in how many of them the offer to ask was shown, and how many conversations were opened from the search box, with the questions refused by the limits or by the budget under it.
 
 The main figures and the funnel steps are links: they open the conversations behind them.
 

@@ -117,6 +117,7 @@ class IrisAction
             'customer_id'     => $request->user()?->customer_id,
             'scope'           => $scope,
             'source'          => $this->searchSource(),
+            'assistant_available' => (bool) Arr::get($this->validatedData, 'assistant', false),
             'query'           => mb_substr($query, 0, 255),
             'session_id'      => $request->hasSession() ? $request->session()->getId() : null,
             'results_count'         => $resultsCount,

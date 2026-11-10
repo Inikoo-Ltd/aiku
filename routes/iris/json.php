@@ -63,6 +63,7 @@ use App\Actions\Reviews\Iris\GetIrisReviews;
 use App\Actions\Search\GetIrisSearchFeaturedItems;
 use App\Actions\Search\GetIrisSearchKeepExploring;
 use App\Actions\Search\RecordWebsiteSearchClick;
+use App\Actions\Search\RecordWebsiteSearchSuggestionsViewed;
 use App\Actions\Search\SearchIrisCatalogue;
 use App\Actions\Search\SearchIrisCataloguePage;
 use App\Actions\Iris\ShoppingAssistant\AskIrisShoppingAssistant;
@@ -106,6 +107,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('search/catalogue-page', SearchIrisCataloguePage::class)->name('search.catalogue_page')->middleware('throttle:iris-search');
     Route::get('search/keep-exploring', GetIrisSearchKeepExploring::class)->name('search.keep_exploring')->middleware('throttle:iris-search');
     Route::post('search/click', RecordWebsiteSearchClick::class)->name('search.click')->middleware('throttle:iris-search');
+    Route::post('search/suggestions-viewed', RecordWebsiteSearchSuggestionsViewed::class)->name('search.suggestions_viewed')->middleware('throttle:iris-search');
     Route::get('search/featured-items', GetIrisSearchFeaturedItems::class)->name('search.featured_items')->middleware('throttle:iris-search');
 
     Route::get('/sidebar', GetIrisSidebarData::class)->name('sidebar');

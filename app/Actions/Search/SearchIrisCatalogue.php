@@ -77,6 +77,7 @@ class SearchIrisCatalogue extends IrisAction
         return [
             'q'      => ['required', 'string', 'max:100'],
             'source' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'assistant' => ['sometimes', 'nullable', 'boolean'],
         ];
     }
 

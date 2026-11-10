@@ -165,6 +165,9 @@ const fetchResults = debounce(async (query: string) => {
     if (irisSearchMobileSource.value) {
         searchParams.source = irisSearchMobileSource.value
     }
+    if (assistant.value) {
+        searchParams.assistant = '1'
+    }
     try {
         const { data } = await axios.get(
             route(searchRoute('catalogue'), searchParams),

@@ -17,4 +17,5 @@ enum ShoppingAssistantEventTypeEnum: string
     case SHOWN = 'shown';
     case CLICKED = 'clicked';
     case ADDED = 'added';
+    case INCREASED = 'increased';
 }

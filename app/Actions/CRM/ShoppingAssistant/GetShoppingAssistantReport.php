@@ -28,8 +28,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * before that moment plus services.shopping_assistant.attribution_days. A line two conversations showed
  * counts once, for the earliest showing among all the customer's conversations.
  *
- * The strict figures are a lower bound: only an add from a card records an `added` event with its
- * transaction, so bulk adds and quantity edits in the basket are not in them.
+ * The strict figures are a lower bound: only an add from a card or a new line of a bulk add records
+ * an `added` event with its transaction. A quantity raised later in the basket is an `increased`
+ * event, which no figure of this report counts.
  *
  * new_families looks for an earlier ordered line of each (customer, family) pair of the attributed
  * lines. The pairs are few, as they come from attributed lines only, and each lookup goes through
@@ -115,7 +116,9 @@ class GetShoppingAssistantReport
                 self::QUESTION_BUCKETS
             ),
             'families'      => $this->families($filters, $from, $to, $amountColumn),
-            'search'        => $this->search($filters, $from, $to, $previousFrom, $previousTo),
+            'search'          => $this->search($filters, $from, $to, $previousFrom, $previousTo),
+            'assistant_reach' => $this->assistantReach($filters, $from, $to, $previousFrom, $previousTo),
+            'refusals'        => $this->refusals($filters, $from, $to, $previousFrom, $previousTo),
         ];
     }
 
@@ -535,11 +538,23 @@ class GetShoppingAssistantReport
             ->where('created_at', '>=', $periodFrom->toIso8601String())
             ->where('created_at', '<=', $periodTo->toIso8601String());
 
+        $offeredKinds = [
+            'did_you_mean'   => "suggestions->>'did_you_mean' is not null",
+            'related_search' => "suggestions->'searches'->>'kind' = 'related' and jsonb_array_length(suggestions->'searches'->'items') > 0",
+            'popular_search' => "suggestions->'searches'->>'kind' = 'popular' and jsonb_array_length(suggestions->'searches'->'items') > 0",
+            'family'         => "jsonb_array_length(suggestions->'families') > 0",
+            'best_sellers'   => "jsonb_array_length(suggestions->'products'->'best_sellers') > 0",
+            'new_arrivals'   => "jsonb_array_length(suggestions->'products'->'new_arrivals') > 0",
+            'forgotten'      => "jsonb_array_length(suggestions->'products'->'forgotten') > 0",
+        ];
+
         $totals = fn (CarbonImmutable $periodFrom, CarbonImmutable $periodTo) => $logs($periodFrom, $periodTo)
             ->selectRaw('count(*) as searches')
             ->selectRaw('count(*) filter (where results_count = 0) as zero_results')
             ->selectRaw('count(suggestion_clicked_at) as suggestion_clicks')
             ->selectRaw('count(suggestion_clicked_at) filter (where results_count = 0) as zero_rescued')
+            ->selectRaw('count(suggestions_viewed_at) as seen')
+            ->selectRaw('count(suggestions) as offered')
             ->first();
 
         $current  = $totals($from, $to);
@@ -548,11 +563,19 @@ class GetShoppingAssistantReport
         $metric   = fn (string $key) => ['value' => (int) $current->{$key}, 'previous' => (int) $previous->{$key}];
         $zeroRate = fn ($period) => $period->searches ? $period->zero_results / $period->searches : 0;
 
-        $byKind = $logs($from, $to)
-            ->whereNotNull('suggestion_clicked_at')
-            ->selectRaw('suggestion_kind, count(*) as clicks')
-            ->groupBy('suggestion_kind')
-            ->pluck('clicks', 'suggestion_kind');
+        $shownByKind = (array) $logs($from, $to)
+            ->whereNotNull('suggestions')
+            ->selectRaw(collect($offeredKinds)->map(fn (string $condition, string $kind) => "count(*) filter (where $condition) as $kind")->implode(', '))
+            ->first();
+
+        $clicksByKind = DB::table('website_search_log_clicks')
+            ->whereIn('website_id', $filters['search_website_ids'])
+            ->where('type', 'suggestion')
+            ->where('created_at', '>=', $from->toIso8601String())
+            ->where('created_at', '<=', $to->toIso8601String())
+            ->selectRaw('kind, count(*) as clicks')
+            ->groupBy('kind')
+            ->pluck('clicks', 'kind');
 
         $grouped = fn () => $logs($from, $to)
             ->selectRaw('lower(trim(query)) as query, count(*) as searches')
@@ -569,8 +592,10 @@ class GetShoppingAssistantReport
             'zero_result_rate'  => ['value' => $zeroRate($current), 'previous' => $zeroRate($previous)],
             'suggestion_clicks' => $metric('suggestion_clicks'),
             'zero_rescued'      => $metric('zero_rescued'),
+            'seen'              => $metric('seen'),
+            'offered'           => $metric('offered'),
             'by_kind'           => array_map(
-                fn (string $kind) => ['kind' => $kind, 'clicks' => (int) ($byKind[$kind] ?? 0)],
+                fn (string $kind) => ['kind' => $kind, 'shown' => (int) ($shownByKind[$kind] ?? 0), 'clicks' => (int) ($clicksByKind[$kind] ?? 0)],
                 RecordWebsiteSearchClick::SUGGESTION_KINDS
             ),
             'top_queries'       => $grouped()->selectRaw('count(clicked_at) as clicks')->get()
@@ -578,6 +603,70 @@ class GetShoppingAssistantReport
             'top_zero_queries'  => $grouped()->where('results_count', 0)->selectRaw('count(suggestion_clicked_at) as rescued')->get()
                 ->map(fn ($row) => ['query' => $row->query, 'searches' => (int) $row->searches, 'rescued' => (int) $row->rescued])->all(),
         ];
+    }
+
+    /**
+     * How many searches could have become a question. Search logs of both the dropdown and the results
+     * page count, as the Ask button is offered in both: `available` when it was offered, `offered`
+     * when such a search also read like a question (4 or more words or a "?", the storefront's rule)
+     * or found nothing, `asked` the conversations opened from the search box. Only the dates, the
+     * website and the language apply: a search log has no entry point or customer segment, and
+     * `asked` leaves the entry point, shop type and country filters aside too, to stay comparable.
+     *
+     * @param  Filters  $filters
+     */
+    private function assistantReach(array $filters, CarbonImmutable $from, CarbonImmutable $to, CarbonImmutable $previousFrom, CarbonImmutable $previousTo): array
+    {
+        $period = function (CarbonImmutable $periodFrom, CarbonImmutable $periodTo) use ($filters) {
+            $searches = DB::table('website_search_logs')
+                ->whereIn('website_id', $filters['search_website_ids'])
+                ->where('created_at', '>=', $periodFrom->toIso8601String())
+                ->where('created_at', '<=', $periodTo->toIso8601String())
+                ->where('assistant_available', true)
+                ->selectRaw('count(*) as available')
+                ->selectRaw("count(*) filter (where results_count = 0 or position(? in query) > 0 or array_length(regexp_split_to_array(trim(query), '\s+'), 1) >= 4) as offered", ['?'])
+                ->first();
+
+            $asked = $this->conversationsQuery(
+                [...$filters, 'entry_point' => ShoppingAssistantEntryPointEnum::SEARCH->value, 'shop_type' => null, 'country' => null],
+                $periodFrom,
+                $periodTo
+            )->count();
+
+            return ['available' => (int) $searches->available, 'offered' => (int) $searches->offered, 'asked' => $asked];
+        };
+
+        $current  = $period($from, $to);
+        $previous = $period($previousFrom, $previousTo);
+
+        return collect($current)->map(fn (int $value, string $key) => ['value' => $value, 'previous' => $previous[$key]])->all();
+    }
+
+    /**
+     * Questions refused by the rate limit or a spent monthly budget, staff customers left out. Only
+     * the dates, the website and the language (of the website's shop) apply; the entry point, shop
+     * type and country filters are not applied.
+     *
+     * @param  Filters  $filters
+     */
+    private function refusals(array $filters, CarbonImmutable $from, CarbonImmutable $to, CarbonImmutable $previousFrom, CarbonImmutable $previousTo): array
+    {
+        $counts = fn (CarbonImmutable $periodFrom, CarbonImmutable $periodTo) => DB::table('shopping_assistant_refusals')
+            ->join('customers', 'customers.id', '=', 'shopping_assistant_refusals.customer_id')
+            ->whereIn('shopping_assistant_refusals.website_id', $filters['search_website_ids'])
+            ->where('shopping_assistant_refusals.created_at', '>=', $periodFrom->toIso8601String())
+            ->where('shopping_assistant_refusals.created_at', '<=', $periodTo->toIso8601String())
+            ->whereRaw('coalesce(customers.is_staff, false) = false')
+            ->selectRaw('shopping_assistant_refusals.reason, count(*) as refusals')
+            ->groupBy('shopping_assistant_refusals.reason')
+            ->pluck('refusals', 'reason');
+
+        $current  = $counts($from, $to);
+        $previous = $counts($previousFrom, $previousTo);
+
+        return collect([StoreShoppingAssistantRefusal::RATE_LIMIT, StoreShoppingAssistantRefusal::BUDGET])
+            ->mapWithKeys(fn (string $reason) => [$reason => ['value' => (int) ($current[$reason] ?? 0), 'previous' => (int) ($previous[$reason] ?? 0)]])
+            ->all();
     }
 
     /**

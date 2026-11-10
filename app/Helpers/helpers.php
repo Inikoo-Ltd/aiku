@@ -1153,3 +1153,23 @@ if (!function_exists('stripTagsKeepingEmailAddresses')) {
         return str_replace([$open, $close, $lessThan], ['<', '>', '<'], $text);
     }
 }
+
+if (!function_exists('logAfterResponse')) {
+    /**
+     * Runs a logging write once, after the response has been sent; a failure is reported and never
+     * reaches the customer. The application keeps its terminating callbacks for its whole life, so
+     * the callback disarms itself and is not replayed where one application serves several
+     * requests, as in tests.
+     */
+    function logAfterResponse(callable $callback): void
+    {
+        $pending = true;
+
+        app()->terminating(function () use (&$pending, $callback) {
+            if ($pending) {
+                $pending = false;
+                rescue($callback);
+            }
+        });
+    }
+}

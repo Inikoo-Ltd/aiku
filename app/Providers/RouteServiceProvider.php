@@ -8,8 +8,10 @@
 
 namespace App\Providers;
 
+use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRefusal;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
@@ -258,14 +260,21 @@ class RouteServiceProvider extends ServiceProvider
         /*
          * Every storefront assistant question spends AI credit. Keyed on the customer, so web users
          * of one customer share a bucket; without a user the key is the IP, never one shared guest bucket.
+         * A refused question is logged after the response and the usual 429 is thrown unchanged.
          */
         RateLimiter::for('shopping-assistant', function (Request $request) {
-            $key = $request->user('retina')?->customer_id ?? 'ip:'.$request->ip();
+            $customerId = $request->user('retina')?->customer_id;
+            $key        = $customerId ?? 'ip:'.$request->ip();
+            $refused    = function (Request $request, array $headers) use ($customerId) {
+                StoreShoppingAssistantRefusal::afterResponse($request->input('website'), $customerId, StoreShoppingAssistantRefusal::RATE_LIMIT, $request->input('message'));
+
+                throw new ThrottleRequestsException('Too Many Attempts.', null, $headers);
+            };
 
             return [
-                Limit::perMinute(6)->by('shopping-assistant-minute:'.$key),
-                Limit::perHour(40)->by('shopping-assistant-hour:'.$key),
-                Limit::perDay(120)->by('shopping-assistant-day:'.$key),
+                Limit::perMinute(6)->by('shopping-assistant-minute:'.$key)->response($refused),
+                Limit::perHour(40)->by('shopping-assistant-hour:'.$key)->response($refused),
+                Limit::perDay(120)->by('shopping-assistant-day:'.$key)->response($refused),
             ];
         });
 
