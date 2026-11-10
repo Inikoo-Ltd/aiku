@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\AgentInvoice;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryCostTypeEnum;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
@@ -66,8 +67,10 @@ class ApplyAgentInvoiceCosting
                     continue;
                 }
 
-                UpdateStockDeliveryItemCost::make()->action($item, ['cost_items' => $this->receivedCost($item, $line)]);
+                UpdateStockDeliveryItemCost::make()->withoutHydratingCosts()->action($item, ['cost_items' => $this->receivedCost($item, $line)]);
             }
+
+            StockDeliveriesHydrateCosts::run($stockDelivery);
 
             $receivedAt = $agentInvoice->date->toDateString();
             $charges    = collect($agentInvoice->charges ?? []);

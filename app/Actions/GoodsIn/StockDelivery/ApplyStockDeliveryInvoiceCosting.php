@@ -8,6 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery;
 
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStockDeliveryItemCost;
 use App\Actions\GoodsIn\StockDeliveryServiceInvoice\SyncStockDeliveryServiceInvoiceCosts;
 use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
@@ -157,8 +158,10 @@ class ApplyStockDeliveryInvoiceCosting extends OrgAction
             foreach ($costs as $itemId => $cost) {
                 /** @var StockDeliveryItem $item */
                 $item = $items->get($itemId);
-                UpdateStockDeliveryItemCost::make()->action($item, ['cost_items' => $cost]);
+                UpdateStockDeliveryItemCost::make()->withoutHydratingCosts()->action($item, ['cost_items' => $cost]);
             }
+
+            StockDeliveriesHydrateCosts::run($stockDelivery);
 
             $freight = collect($review['charges'])
                 ->filter(fn (array $charge, int $index) => $modelData['charge_types'][$index] === self::FREIGHT && (float) $charge['amount'] > 0);

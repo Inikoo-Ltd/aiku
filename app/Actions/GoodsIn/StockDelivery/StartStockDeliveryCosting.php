@@ -38,35 +38,43 @@ class StartStockDeliveryCosting extends OrgAction
         }
     }
 
+    /**
+     * Placing and the agent invoice costing commit together: a costing that fails half way leaves the delivery
+     * booked in to be started again, never placed without its invoice (AWChina-142, 6 Nov 2026).
+     */
     public function handle(StockDelivery $stockDelivery): StockDelivery
     {
-        $stockDelivery->items()
-            ->whereNull('cost_items')
-            ->update([
-                'cost_items' => DB::raw('net_amount'),
-                'cost_total' => DB::raw('net_amount + coalesce(cost_extra, 0) + coalesce(cost_shipping, 0) + coalesce(cost_duties, 0) + coalesce(cost_tax, 0)'),
+        $stockDelivery = DB::transaction(function () use ($stockDelivery) {
+            $stockDelivery->items()
+                ->whereNull('cost_items')
+                ->update([
+                    'cost_items' => DB::raw('net_amount'),
+                    'cost_total' => DB::raw('net_amount + coalesce(cost_extra, 0) + coalesce(cost_shipping, 0) + coalesce(cost_duties, 0) + coalesce(cost_tax, 0)'),
+                ]);
+
+            $stockDelivery = $this->update($stockDelivery, [
+                'state'     => StockDeliveryStateEnum::PLACED,
+                'placed_at' => now(),
             ]);
 
-        $stockDelivery = $this->update($stockDelivery, [
-            'state'     => StockDeliveryStateEnum::PLACED,
-            'placed_at' => now(),
-        ]);
+            UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
 
-        UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery);
-
-        if ($stockDelivery->agent_id) {
-            ApplyAgentInvoiceCosting::run($stockDelivery);
-            $stockDelivery->refresh();
-        }
-
-        if ($stockDelivery->parent_type === 'OrgPartner') {
-            EvaluateStockDeliveryCosting::run($stockDelivery);
-        } else {
-            if ($stockDelivery->costs()->exists()) {
-                EvaluateStockDeliveryCosting::redistribute($stockDelivery);
+            if ($stockDelivery->agent_id) {
+                ApplyAgentInvoiceCosting::run($stockDelivery);
+                $stockDelivery->refresh();
             }
-            StockDeliveriesHydrateCosts::run($stockDelivery);
-        }
+
+            if ($stockDelivery->parent_type === 'OrgPartner') {
+                EvaluateStockDeliveryCosting::run($stockDelivery);
+            } else {
+                if ($stockDelivery->costs()->exists()) {
+                    EvaluateStockDeliveryCosting::redistribute($stockDelivery);
+                }
+                StockDeliveriesHydrateCosts::run($stockDelivery);
+            }
+
+            return $stockDelivery;
+        });
 
         $this->runStockDeliveryHydrators($stockDelivery);
 

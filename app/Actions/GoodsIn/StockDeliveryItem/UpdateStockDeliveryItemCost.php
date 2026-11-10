@@ -35,6 +35,20 @@ class UpdateStockDeliveryItemCost extends OrgAction
 
     private StockDeliveryItem $stockDeliveryItem;
 
+    private bool $hydratesCosts = true;
+
+    /**
+     * For callers that cost many lines in one go and hydrate the delivery once afterwards: hydrating per line
+     * recomputes every purchase order of the delivery each time (AWChina-142: 136 lines × 30 orders ran past
+     * the 45s request limit and the costing rolled back).
+     */
+    public function withoutHydratingCosts(): static
+    {
+        $this->hydratesCosts = false;
+
+        return $this;
+    }
+
     public function rules(): array
     {
         return collect(self::COST_FIELDS)
@@ -81,7 +95,9 @@ class UpdateStockDeliveryItemCost extends OrgAction
             $stockDelivery->update(['data' => array_merge($stockDelivery->data, ['costing_hand_split' => $handSplit])]);
         }
 
-        StockDeliveriesHydrateCosts::run($stockDeliveryItem->stockDelivery);
+        if ($this->hydratesCosts) {
+            StockDeliveriesHydrateCosts::run($stockDeliveryItem->stockDelivery);
+        }
 
         return $stockDeliveryItem->refresh();
     }

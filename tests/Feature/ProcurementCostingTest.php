@@ -1042,6 +1042,7 @@ test('a placed agent container is costed from its agent invoice and completes it
 
     expect((float) $items[0]->cost_items)->toBe(100.0)
         ->and((float) $items[1]->cost_items)->toBe(225.0)
+        ->and((float) $stockDelivery->cost_items)->toBe(325.0)
         ->and((float) $costs->firstWhere('type', StockDeliveryCostTypeEnum::SHIPPING)->amount)->toBe(50.0)
         ->and((float) $costs->where('type', StockDeliveryCostTypeEnum::EXTRA)->sum('amount'))->toBe(40.0)
         ->and((float) $costs->firstWhere('type', StockDeliveryCostTypeEnum::AGENT_INVOICE)->amount)->toBe(490.0)
@@ -1081,6 +1082,28 @@ test('a placed agent container is costed from its agent invoice and completes it
         ->and((float) $items->sum('cost_duties'))->toEqualWithDelta(65 / (float) ($stockDelivery->org_exchange ?: 1), 0.02)
         ->and((float) $items[1]->cost_extra)->toBeGreaterThan((float) $items[0]->cost_extra)
         ->and(ApplyAgentInvoiceCosting::run($stockDelivery))->toBeNull();
+});
+
+test('an agent container whose invoice costing fails stays booked in, never placed without its invoice', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'AGENT-ROLLBACK-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $this->agent->id]);
+    StoreAgentInvoice::make()->handle($this->agent, $stockDelivery->refresh());
+
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action($stockDelivery);
+    foreach ($stockDelivery->items()->get() as $item) {
+        $item = SetStockDeliveryItemCheckedQuantity::make()->action($item->fresh(), ['unit_quantity_checked' => 10]);
+        SetStockDeliveryItemAsPlaced::make()->action($item, ['location_org_stock_id' => createLocationOrgStockFor($this, $item)->id]);
+    }
+
+    ApplyAgentInvoiceCosting::shouldRun()->andThrow(new RuntimeException('request killed'));
+
+    expect(fn () => StartStockDeliveryCosting::make()->action($stockDelivery->fresh()))->toThrow(RuntimeException::class);
+
+    $stockDelivery = $stockDelivery->fresh();
+
+    expect($stockDelivery->state)->toBe(StockDeliveryStateEnum::BOOKED_IN)
+        ->and($stockDelivery->placed_at)->toBeNull();
 });
 
 test('an agent invoice entered by hand on a received container says what it waits for, not that it was not received (HELP-4594)', function () {
