@@ -215,6 +215,7 @@ const isWeakValue = (value: number | null | undefined) => {
                             <div v-if="item.breakdown_icons?.length" class="hidden md:flex items-center gap-2 text-xs text-gray-400">
                                 <span class="w-14" />
                                 <span v-if="data.totals[item.key]?.shared !== undefined" class="w-7 md:w-9 -ml-1" />
+                                <span v-if="data.totals[item.key]?.recent" class="w-11 md:w-14" />
                                 <span class="inline-flex border border-transparent divide-x divide-transparent">
                                     <span v-for="(part, partIndex) in item.breakdown_icons" :key="partIndex" v-tooltip="part.tooltip" class="w-9 text-center">
                                         <FontAwesomeIcon :icon="part.icon" fixed-width aria-hidden="true" />
@@ -249,6 +250,19 @@ const isWeakValue = (value: number | null | undefined) => {
                                     v-tooltip="data.data[row.key]?.[item.key]?.shared ? data.data[row.key]?.[item.key]?.shared_tooltip : undefined"
                                     :class="['w-7 md:w-9 -ml-1 text-left text-xs md:text-sm tabular-nums', data.data[row.key]?.[item.key]?.shared ? 'text-violet-600' : '']"
                                 >{{ data.data[row.key]?.[item.key]?.shared ? `(${data.data[row.key]?.[item.key]?.shared})` : '' }}</span>
+
+                                <!-- Section: Recently arrived -->
+                                <span v-if="data.totals[item.key]?.recent" class="w-11 md:w-14">
+                                    <component
+                                        v-if="data.data[row.key]?.[item.key]?.recent"
+                                        :is="getSafeRoute(data.data[row.key]?.[item.key]?.recent?.route_target) ? Link : 'span'"
+                                        :href="getSafeRoute(data.data[row.key]?.[item.key]?.recent?.route_target) ?? undefined"
+                                        v-tooltip="data.data[row.key]?.[item.key]?.recent?.tooltip"
+                                        class="w-full inline-flex items-center justify-center rounded border border-orange-300 bg-orange-50 px-1 py-px text-[9px] md:text-[10px] leading-tight font-medium text-orange-700 tabular-nums whitespace-nowrap hover:bg-orange-100"
+                                    >
+                                        {{ ctrans(":count new", { count: data.data[row.key]?.[item.key]?.recent?.value }) }}
+                                    </component>
+                                </span>
 
                                 <!-- Section: Warning -->
                                 <Link v-if="data.data[row.key]?.[item.key]?.warning"
@@ -317,6 +331,17 @@ const isWeakValue = (value: number | null | undefined) => {
                                 v-tooltip="data.totals[item.key]?.shared ? data.totals[item.key]?.shared_tooltip : undefined"
                                 :class="['w-7 md:w-9 -ml-1 text-left text-xs md:text-sm tabular-nums', data.totals[item.key]?.shared ? 'text-violet-600' : '']"
                             >{{ data.totals[item.key]?.shared ? `(${data.totals[item.key]?.shared})` : '' }}</span>
+
+                            <!-- Section: Recently arrived -->
+                            <component
+                                v-if="data.totals[item.key]?.recent"
+                                :is="getSafeRoute(data.totals[item.key]?.recent?.route_target) ? Link : 'span'"
+                                :href="getSafeRoute(data.totals[item.key]?.recent?.route_target) ?? undefined"
+                                v-tooltip="data.totals[item.key]?.recent?.tooltip"
+                                class="w-11 md:w-14 inline-flex items-center justify-center rounded border border-orange-300 bg-orange-50 px-1 py-px text-[9px] md:text-[10px] leading-tight font-medium text-orange-700 tabular-nums whitespace-nowrap hover:bg-orange-100"
+                            >
+                                {{ ctrans(":count new", { count: data.totals[item.key]?.recent?.value }) }}
+                            </component>
 
                             <!-- Section: Warning -->
                             <Link v-if="data.totals[item.key]?.warning"

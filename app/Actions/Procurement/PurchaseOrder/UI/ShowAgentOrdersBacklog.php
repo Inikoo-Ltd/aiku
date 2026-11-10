@@ -19,6 +19,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -55,22 +56,29 @@ class ShowAgentOrdersBacklog extends OrgAction
      */
     public const array WAREHOUSE_STAGE = ['wh_received', 'In stock', 'fal fa-warehouse-alt'];
 
+    public const int RECENT_DAYS = 7;
+
     public function handle(Agent $agent, Organisation $organisation): array
     {
         $progress     = PurchaseOrderStageEnum::progressSql();
         $factoryStage = PurchaseOrderStageEnum::factoryStageSql();
+        $recentSince  = now()->subDays(self::RECENT_DAYS)->startOfDay();
         $inStock      = 'exists (select 1 from agent_warehouse_stocks where agent_warehouse_stocks.purchase_order_id = purchase_orders.id and agent_warehouse_stocks.quantity > 0 and '.AgentWarehouseStock::heldQuantitySql().' > 0)';
 
         $purchaseOrders = DB::table('purchase_orders')
             ->where('agent_id', $agent->id)
             ->whereNull('deleted_at')
             ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
-            ->selectRaw("organisation_id, ($progress) as stage, ($factoryStage) as factory_stage, count(*) as number, count(*) filter (where $inStock) as shared, coalesce(sum(number_current_purchase_order_transactions), 0) as lines")
+            ->selectRaw("organisation_id, ($progress) as stage, ($factoryStage) as factory_stage, count(*) as number, count(*) filter (where $inStock) as shared, count(*) filter (where submitted_at >= ?) as recent, coalesce(sum(number_current_purchase_order_transactions), 0) as lines", [$recentSince])
             ->groupBy('organisation_id', 'stage', 'factory_stage')
             ->get();
 
         $factoryStages = [];
+        $recent        = [];
         foreach ($purchaseOrders as $row) {
+            if (in_array($row->stage, self::PURCHASE_ORDER_STAGES['po_submitted'][0])) {
+                $recent[$row->organisation_id] = ($recent[$row->organisation_id] ?? 0) + (int) $row->recent;
+            }
             if (in_array($row->stage, self::PURCHASE_ORDER_STAGES['po_in_factory'][0])) {
                 $factoryStages[$row->organisation_id][$row->factory_stage] = ($factoryStages[$row->organisation_id][$row->factory_stage] ?? 0) + (int) $row->number;
             }
@@ -111,7 +119,7 @@ class ShowAgentOrdersBacklog extends OrgAction
 
         $clients = Organisation::whereIn('id', array_keys($counts))->orderBy('code')->get(['id', 'slug', 'code']);
 
-        $cell = fn (string $key, int $value, int $sharedNumber, int $productLines, ?string $clientSlug, array $stages) => [
+        $cell = fn (string $key, int $value, int $sharedNumber, int $productLines, ?string $clientSlug, array $stages, int $recentNumber = 0) => [
             'value'        => $value,
             ...(isset(self::SHIPMENT_STAGES[$key]) ? [] : [
                 'shared'         => $sharedNumber,
@@ -122,6 +130,13 @@ class ShowAgentOrdersBacklog extends OrgAction
             'lines'        => $productLines,
             'lines_route'  => $key === self::WAREHOUSE_STAGE[0] ? $this->drillDown($organisation, $key, $clientSlug) : $this->linesRoute($organisation, $key, $clientSlug),
             'route_target' => $this->drillDown($organisation, $key, $clientSlug),
+            ...($key === 'po_submitted' && $recentNumber ? [
+                'recent' => [
+                    'value'        => $recentNumber,
+                    'tooltip'      => __('Sent by the client in the last :days days', ['days' => self::RECENT_DAYS]),
+                    'route_target' => $this->recentDrillDown($organisation, $clientSlug, $recentSince),
+                ],
+            ] : []),
             ...($key === 'po_in_factory' ? [
                 'breakdown' => collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn (string $label, string $stage) => [
                     'value'        => $stages[$stage] ?? 0,
@@ -154,11 +169,11 @@ class ShowAgentOrdersBacklog extends OrgAction
             ],
             'data'      => $clients->mapWithKeys(fn (Organisation $client) => [
                 $client->slug => collect($keys)->mapWithKeys(fn (string $key) => [
-                    $key => $cell($key, $counts[$client->id][$key] ?? 0, $shared[$client->id][$key] ?? 0, $lines[$client->id][$key] ?? 0, $client->slug, $factoryStages[$client->id] ?? []),
+                    $key => $cell($key, $counts[$client->id][$key] ?? 0, $shared[$client->id][$key] ?? 0, $lines[$client->id][$key] ?? 0, $client->slug, $factoryStages[$client->id] ?? [], $recent[$client->id] ?? 0),
                 ])->all(),
             ])->all(),
             'totals'    => collect($keys)->mapWithKeys(fn (string $key) => [
-                $key => $cell($key, collect($counts)->sum(fn ($row) => $row[$key] ?? 0), collect($shared)->sum(fn ($row) => $row[$key] ?? 0), collect($lines)->sum(fn ($row) => $row[$key] ?? 0), null, collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn ($label, $stage) => collect($factoryStages)->sum(fn ($row) => $row[$stage] ?? 0))->all()),
+                $key => $cell($key, collect($counts)->sum(fn ($row) => $row[$key] ?? 0), collect($shared)->sum(fn ($row) => $row[$key] ?? 0), collect($lines)->sum(fn ($row) => $row[$key] ?? 0), null, collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn ($label, $stage) => collect($factoryStages)->sum(fn ($row) => $row[$stage] ?? 0))->all(), array_sum($recent)),
             ])->all(),
             'row_totals' => [],
         ];
@@ -208,6 +223,20 @@ class ShowAgentOrdersBacklog extends OrgAction
             'parameters' => [
                 'organisation' => $organisation->slug,
                 '_query'       => array_merge(['stage' => $key], $clientSlug ? ['filter[organisation]' => $clientSlug] : []),
+            ],
+        ];
+    }
+
+    private function recentDrillDown(Organisation $organisation, ?string $clientSlug, CarbonInterface $since): array
+    {
+        return [
+            'name'       => 'grp.org.agent.incoming_purchase_orders.index',
+            'parameters' => [
+                'organisation' => $organisation->slug,
+                '_query'       => array_merge(
+                    $clientSlug ? ['filter[organisation]' => $clientSlug] : [],
+                    ['between[submitted_at]' => $since->format('Ymd').'-'.now()->format('Ymd'), 'sort' => '-submitted_at'],
+                ),
             ],
         ];
     }

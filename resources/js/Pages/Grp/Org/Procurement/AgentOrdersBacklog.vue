@@ -26,6 +26,7 @@ interface Cell {
     value: number
     shared?: number
     shared_tooltip?: string
+    recent?: { value: number; tooltip: string; route_target?: RouteTarget }
     lines?: number
     lines_route?: RouteTarget
     route_target?: RouteTarget
@@ -103,6 +104,14 @@ const cellOf = (clientKey: string, stageKey: string): Cell | undefined =>
                         :class="['w-8 text-right font-medium tabular-nums', cellOf(client.key, stage.key)?.value ? '' : 'text-gray-300']"
                     >{{ cellOf(client.key, stage.key)?.value ?? 0 }}</component>
                     <span class="w-7 text-xs tabular-nums text-violet-600">{{ cellOf(client.key, stage.key)?.shared ? `(${cellOf(client.key, stage.key)?.shared})` : "" }}</span>
+                    <component
+                        v-if="cellOf(client.key, stage.key)?.recent"
+                        :is="cellOf(client.key, stage.key)?.recent?.route_target ? Link : 'span'"
+                        :href="href(cellOf(client.key, stage.key)?.recent?.route_target)"
+                        class="inline-flex items-center justify-center rounded border border-orange-300 bg-orange-50 px-1 py-px text-[9px] md:text-[10px] leading-tight font-medium text-orange-700 tabular-nums whitespace-nowrap hover:bg-orange-100"
+                    >
+                        {{ ctrans(":count new", { count: cellOf(client.key, stage.key)?.recent?.value }) }}
+                    </component>
                     <component
                         :is="cellOf(client.key, stage.key)?.lines_route ? Link : 'span'"
                         :href="href(cellOf(client.key, stage.key)?.lines_route)"
