@@ -980,6 +980,7 @@ describe('production reward pay bands', function () {
     });
 
     test('an hourly artisan gets no tier, bonus or under-target flag, and their sessions this week follow the pay type', function () {
+        \App\Models\HumanResources\Employee::enableAuditing();
         $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(12, 0));
         AttachManufactureTaskToArtefact::make()->action($this->artefact, [
             'manufacture_task_id' => $this->manufactureTask->id,
@@ -1249,6 +1250,8 @@ describe('production reward pay bands', function () {
     });
 
     test('changing a recipe step position keeps its target', function () {
+        \App\Models\Production\ArtefactStepTarget::where('artefact_id', $this->artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->delete();
+        \App\Models\Production\ArtefactManufactureTask::where('artefact_id', $this->artefact->id)->where('manufacture_task_id', $this->manufactureTask->id)->update(['standard_rate' => null]);
         AttachManufactureTaskToArtefact::make()->action($this->artefact, [
             'manufacture_task_id' => $this->manufactureTask->id,
             'position'            => 1,

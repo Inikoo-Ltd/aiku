@@ -121,7 +121,7 @@ return [
          * What customers say about the products: chats, reviews, polls, delivery feedback.
          */
         'feedback' => [
-            'chat_*', 'meta_chat_*', 'meta_channels', 'meta_message_templates', 'reviews', 'review_*', 'polls', 'poll_*',
+            'chat_*', 'shopping_assistant_*', 'meta_chat_*', 'meta_channels', 'meta_message_templates', 'reviews', 'review_*', 'polls', 'poll_*',
             'feedbacks', 'model_has_feedbacks', '*_has_feedback',
         ],
 
