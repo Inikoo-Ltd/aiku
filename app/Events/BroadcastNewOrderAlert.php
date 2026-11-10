@@ -21,7 +21,7 @@ class BroadcastNewOrderAlert implements ShouldBroadcast
     public bool $afterCommit = true;
 
     /**
-     * @param  array{order_id: int, types: array<int, string>, reference: string, customer: string, amount: float, currency: string, is_unpaid: bool, url: string}  $alert
+     * @param  array{order_id: int, types: array<int, string>, reference: string, customer: string, amount: float, currency: string, org_amount: float|null, org_currency: string|null, is_unpaid: bool, url: string}  $alert
      */
     public function __construct(public int $shopId, public array $alert)
     {

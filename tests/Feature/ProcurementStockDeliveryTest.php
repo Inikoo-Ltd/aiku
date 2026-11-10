@@ -1525,7 +1525,7 @@ test('an agent\'s Excel balance sheet comes into the ledger as opening lines plu
     $balance     = $spreadsheet->getActiveSheet()->setTitle('Balance');
     $balance->setCellValue('D4', 3360);
     $balance->fromArray([
-        ['2025-12-01', 1000, null, 'Notes / Exchange rate', null, null, null, null, null, null],
+        [null, 1000, null, 'Notes / Exchange rate', null, null, null, null, null, null],
         ['2025-12-05', null, 400, 'payment to shop', null, null, null, null, 'OLD', '12'],
         ['2026-02-01', 5000, null, 'Notes / Exchange rate', null, null, null, 'TT-5000', null, null],
         ['2026-02-03', null, 1200, 'payment to shop', null, null, null, null, $this->orgStocks[0]->code, $orderNumber],
@@ -1720,6 +1720,12 @@ test('an agent invoices a container from its lines, its charges are the ledger l
     expect((float) $again->total_amount)->toBe(1971.9)
         ->and(collect($again->charges)->last())->toMatchArray(['type' => 'packing_charge', 'amount' => 1812.4, 'org_stock_id' => null])
         ->and(\App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges::isApproved($again))->toBeFalse();
+
+    $handFee = $ledgerLine(['type' => 'agent_fee', 'amount' => 9, 'notes' => 'Container value fee from the balance sheet']);
+    $again->refresh();
+    expect(AgentPayment::where('stock_delivery_id', $stockDelivery->id)->where('type', AgentPaymentTypeEnum::AGENT_FEE)->pluck('id')->all())->toBe([$handFee->id])
+        ->and(AgentPayment::onlyTrashed()->whereKey($fee->id)->exists())->toBeTrue()
+        ->and((float) $again->total_amount)->toBe(1973.9);
 
     $stockDelivery->updateQuietly(['is_costed' => true]);
     expect(GetAgentContainerInvoiceData::run($agent->organisation, $stockDelivery->refresh())['charge_form'])->toBeNull();

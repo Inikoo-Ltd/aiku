@@ -6642,7 +6642,18 @@ test('submitting an ecom order broadcasts a new order alert sized against the sh
         && $event->alert['types'] === [OrderAlertTypeEnum::ECOM_SMALL->value]
         && $event->alert['reference'] === $order->reference
         && str_ends_with($event->alert['url'], '/orders/'.$order->slug)
-        && $event->broadcastOn()[0]->name === 'private-grp.shop.'.$this->shop->id.'.new-orders');
+        && $event->broadcastOn()[0]->name === 'private-grp.shop.'.$this->shop->id.'.new-orders'
+        && $event->alert['org_currency'] === $order->organisation->currency->code);
+
+    $order->refresh()->update(['org_exchange' => 0.25, 'total_amount' => 100]);
+    SendNewOrderAlert::make()->handle($order->fresh());
+    Event::assertDispatched(BroadcastNewOrderAlert::class, fn (BroadcastNewOrderAlert $event) => $event->alert['org_amount'] === 25.0);
+
+    Event::fake([BroadcastNewOrderAlert::class]);
+    $order->update(['currency_id' => $order->organisation->currency_id]);
+    SendNewOrderAlert::make()->handle($order->fresh());
+    Event::assertDispatched(BroadcastNewOrderAlert::class, fn (BroadcastNewOrderAlert $event) => $event->alert['org_amount'] === null
+        && $event->alert['org_currency'] === null);
 
     $this->shop->update(['settings' => Arr::except($this->shop->fresh()->settings, 'order_alerts')]);
 });

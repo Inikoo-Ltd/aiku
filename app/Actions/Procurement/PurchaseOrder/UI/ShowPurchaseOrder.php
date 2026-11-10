@@ -384,6 +384,8 @@ class ShowPurchaseOrder extends OrgAction
                         'volume'                   => $hasItems ? Arr::get($weightAndVolume, 'volume') : 0,
                         'is_weight_partial'        => $hasItems && Arr::get($weightAndVolume, 'is_weight_partial'),
                         'is_volume_partial'        => $hasItems && Arr::get($weightAndVolume, 'is_volume_partial'),
+                        'total_skos'               => $hasItems ? Arr::get($weightAndVolume, 'skos') : 0,
+                        'total_units'              => $hasItems ? Arr::get($weightAndVolume, 'units') : 0,
                         'production_time'          => null, // Todo: not sure in which states this should appear, so far only known when the purchase order is cancelled
                         'delivery_time'            => null, // Todo: not sure in which states this should appear, so far only known when the purchase order is cancelled
                     ],

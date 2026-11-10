@@ -34,7 +34,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  * Excel's; every row from the cut-off becomes its own line. A supplier payment is tied to the one order its
  * order number and product code point to; rows the agent has to look at again (no single order, an unclear expense)
  * come in flagged for review. The sheet dates a row on the day the goods reached the warehouse, so a row with no date
- * or a future date is goods still to arrive: it comes in with no date, flagged until the agent sets it. It only reads
+ * or a future date is goods still to arrive: it comes in with no date, flagged until the agent sets it. A row that
+ * lost its date among rows from before the cut-off is history and goes into the opening lines with them. It only reads
  * the file unless told to apply, and replaces a client's earlier import only when asked and nothing of it was touched.
  */
 class ImportAgentLedgerExcel
@@ -102,7 +103,7 @@ class ImportAgentLedgerExcel
             $lastDate    = $date ?? $lastDate;
             $matchingOn  = $date ?? $lastDate ?? $from->copy()->subDay();
 
-            if ($date?->lt($from)) {
+            if ($matchingOn->lt($from)) {
                 $opening['received'] += $moneyIn;
                 $opening['paid']     += $moneyOut;
                 continue;
@@ -446,7 +447,7 @@ class ImportAgentLedgerExcel
         $review = $lines->whereNotNull('review_reason');
 
         $command->info(($apply ? 'Imported' : 'Dry run, nothing saved').": $client->code with $agent->code, {$result['rows']} money rows in the sheet");
-        $command->line('Before '.$command->option('from').': received '.number_format($result['opening']['received'], 2).', paid '.number_format($result['opening']['paid'], 2).' (two opening lines)');
+        $command->line('Before '.$command->option('from').' (and rows with no date among them): received '.number_format($result['opening']['received'], 2).', paid '.number_format($result['opening']['paid'], 2).' (two opening lines)');
         $command->table(['Type', 'Lines', 'Amount'], $lines->groupBy(fn (array $line) => $line['type']->value)
             ->map(fn ($group, $type) => [$type, $group->count(), number_format($group->sum('amount'), 2)])->values()->all());
         $command->line('Tied to an order: '.$lines->whereNotNull('purchase_order_id')->count().', to a container: '.$lines->whereNotNull('stock_delivery_id')->count()

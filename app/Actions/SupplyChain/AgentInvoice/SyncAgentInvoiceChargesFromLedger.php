@@ -38,6 +38,8 @@ class SyncAgentInvoiceChargesFromLedger
             return null;
         }
 
+        self::dropAutomaticFeeWhenRecordedByHand($stockDelivery);
+
         $charges = self::ledgerLines($stockDelivery)
             ->map(fn (AgentPayment $line) => [
                 'description'  => implode(' · ', array_filter([AgentPaymentTypeEnum::labels()[$line->type->value], $line->orgStock?->code, $line->notes])),
@@ -64,6 +66,18 @@ class SyncAgentInvoiceChargesFromLedger
         ]);
 
         return $agentInvoice;
+    }
+
+    /**
+     * A fee the agent recorded for the container (by hand or from its balance sheet) replaces the one worked out
+     * when the invoice was issued, so the container is not charged twice.
+     */
+    private static function dropAutomaticFeeWhenRecordedByHand(StockDelivery $stockDelivery): void
+    {
+        $fees = AgentPayment::where('stock_delivery_id', $stockDelivery->id)->where('type', AgentPaymentTypeEnum::AGENT_FEE)->get();
+        if ($fees->contains(fn (AgentPayment $fee) => !Arr::get($fee->data, 'agent_fee_of_invoice'))) {
+            $fees->filter(fn (AgentPayment $fee) => Arr::get($fee->data, 'agent_fee_of_invoice'))->each(fn (AgentPayment $fee) => $fee->delete());
+        }
     }
 
     /**
@@ -101,6 +115,8 @@ class SyncAgentInvoiceChargesFromLedger
         $fees    = AgentPayment::where('stock_delivery_id', $stockDelivery->id)->where('type', AgentPaymentTypeEnum::AGENT_FEE)->get();
         $autoFee = $fees->first(fn (AgentPayment $fee) => Arr::get($fee->data, 'agent_fee_of_invoice'));
         if ($fees->contains(fn (AgentPayment $fee) => !Arr::get($fee->data, 'agent_fee_of_invoice'))) {
+            self::dropAutomaticFeeWhenRecordedByHand($stockDelivery);
+
             return;
         }
 

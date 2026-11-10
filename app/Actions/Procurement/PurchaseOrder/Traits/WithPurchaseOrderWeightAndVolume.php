@@ -12,17 +12,22 @@ trait WithPurchaseOrderWeightAndVolume
     {
         $lines = DB::table('purchase_order_transactions as pot')
             ->leftJoin('supplier_products as sp', 'sp.id', '=', 'pot.supplier_product_id')
+            ->leftJoin('org_stocks as os', 'os.id', '=', 'pot.org_stock_id')
             ->where('pot.purchase_order_id', $purchaseOrder->id)
             ->selectRaw("pot.state = 'cancelled' as is_cancelled")
             ->selectSub($this->tradeUnitWeightSubQuery('gross_weight'), 'gross_weight')
             ->selectSub($this->tradeUnitWeightSubQuery('net_weight'), 'net_weight')
-            ->selectRaw('sp.cbm * pot.quantity_ordered / nullif(sp.units_per_carton, 0) as volume');
+            ->selectRaw('sp.cbm * pot.quantity_ordered / nullif(sp.units_per_carton, 0) as volume')
+            ->selectRaw('pot.quantity_ordered as units')
+            ->selectRaw('pot.quantity_ordered / coalesce(nullif(os.packed_in, 0), nullif(sp.units_per_pack, 0), 1) as skos');
 
         $totals = DB::query()
             ->fromSub($lines, 'line')
             ->selectRaw('sum(line.gross_weight) filter (where not line.is_cancelled) as gross_weight')
             ->selectRaw('sum(line.net_weight) filter (where not line.is_cancelled) as net_weight')
             ->selectRaw('sum(line.volume) filter (where not line.is_cancelled) as volume')
+            ->selectRaw('coalesce(sum(line.units) filter (where not line.is_cancelled), 0) as units')
+            ->selectRaw('coalesce(sum(line.skos) filter (where not line.is_cancelled), 0) as skos')
             ->selectRaw('count(*) filter (where line.gross_weight is null and not line.is_cancelled) as unknown_weight_lines')
             ->selectRaw('count(*) filter (where line.volume is null and not line.is_cancelled) as unknown_volume_lines')
             ->selectRaw('count(*) as total_lines')
@@ -34,6 +39,8 @@ trait WithPurchaseOrderWeightAndVolume
                 'gross_weight'      => 0.0,
                 'net_weight'        => 0.0,
                 'volume'            => 0.0,
+                'units'             => 0.0,
+                'skos'              => 0.0,
                 'is_weight_partial' => false,
                 'is_volume_partial' => false,
             ];
@@ -43,6 +50,8 @@ trait WithPurchaseOrderWeightAndVolume
             'gross_weight'      => $this->gramsToKilograms($totals->gross_weight),
             'net_weight'        => $this->gramsToKilograms($totals->net_weight),
             'volume'            => $totals->volume === null ? null : round($totals->volume, 2),
+            'units'             => round((float) $totals->units, 3),
+            'skos'              => round((float) $totals->skos, 3),
             'is_weight_partial' => $totals->unknown_weight_lines > 0,
             'is_volume_partial' => $totals->unknown_volume_lines > 0,
         ];

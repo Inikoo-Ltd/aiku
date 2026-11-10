@@ -55,7 +55,9 @@ class SendNewOrderAlert
             return;
         }
 
-        $shop = $order->shop;
+        $shop        = $order->shop;
+        $orgCurrency = $order->organisation->currency;
+        $inOrgCurrency = $order->currency_id === $orgCurrency->id || $order->org_exchange === null;
 
         BroadcastNewOrderAlert::dispatch($shop->id, [
             'order_id'  => $order->id,
@@ -65,6 +67,8 @@ class SendNewOrderAlert
             'customer'  => (string) ($order->customerClient?->name ?: $order->customer?->name),
             'amount'    => (float) $order->total_amount,
             'currency'  => $order->currency->code,
+            'org_amount'   => $inOrgCurrency ? null : round((float) $order->total_amount * (float) $order->org_exchange, 2),
+            'org_currency' => $inOrgCurrency ? null : $orgCurrency->code,
             'is_unpaid' => in_array(OrderAlertTypeEnum::DROPSHIPPING_UNPAID, $types, true),
             'url'       => route('grp.org.shops.show.ordering.orders.show', [$order->organisation->slug, $shop->slug, $order->slug]),
         ]);
