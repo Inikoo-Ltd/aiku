@@ -23363,6 +23363,20 @@
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Pesanan ini sudah tidak berisi apa pun tetapi sudah dibayar deposit: tarik kembali sebelum membatalkan pesanan.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agen memindahkan :quantity unit :code ke :supplier (:reference), supplier tidak bisa membuatnya.",
     "Open the chat in :shop": "Buka chat di :shop",
+    "Quantity of :size": "Jumlah untuk :size",
+    ":price per litre": ":price per liter",
+    "Price not available": "Harga tidak tersedia",
+    ":quantity+ containers: :percentage off": ":quantity+ kemasan: diskon :percentage",
+    "Price excl. VAT": "Harga belum termasuk PPN",
+    "Line total": "Total baris",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "Diskon volume menghitung kemasan dari satu ukuran; ukuran yang berbeda tidak dijumlahkan.",
+    "Your discount: :label": "Diskon Anda: :label",
+    "Total excl. VAT": "Total belum termasuk PPN",
+    "Update basket": "Perbarui keranjang",
+    "Add selected items to basket": "Tambahkan item terpilih ke keranjang",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "Ukuran adalah isi setiap kemasan. Jumlah adalah banyaknya kemasan.",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "Diskon yang bergantung pada seluruh pesanan diterapkan saat item sudah ada di keranjang.",
     "% of active": "% dari aktif",
     "Active customers": "Pelanggan aktif",
     "Active customers (24 months)": "Pelanggan aktif (24 bulan)",
@@ -23383,5 +23397,6 @@
     "Shop types": "Jenis toko",
     "Spa \/ wellness": "Spa \/ kesehatan",
     "Told us": "Disampaikan pelanggan",
-    "With shop type": "Dengan jenis toko"
+    "With shop type": "Dengan jenis toko",
+    ":size sample": "Sampel :size"
 }

@@ -17,10 +17,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class GetProductsOfVariant extends IrisAction
 {
+    use WithStepDiscountColumn;
+    use WithVariantColumns;
+
     public function handle(Variant $variant): array
     {
         return [
-            'products' => $variant->allProductForSale
+            'products' => $variant->allProductForSale()
+            ->select('products.*', $this->getStepDiscountColumn(), $this->getVariantOptionLabelColumn())
+            ->get()
                 ->map(
                     fn ($product) =>
                     ProductOfVariantResource::make($product)

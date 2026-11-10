@@ -26654,5 +26654,20 @@
     "This order had nothing left and was cancelled.": "V této objednávce nic nezbylo a byla zrušena.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "V této objednávce nic nezbylo, ale byla na ni zaplacena záloha: získejte ji zpět před zrušením objednávky.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agent přesunul :quantity kusů :code k :supplier (:reference), dodavatel je nedokáže vyrobit.",
-    "Open the chat in :shop": "Otevřít chat v :shop"
+    "Open the chat in :shop": "Otevřít chat v :shop",
+    "Quantity of :size": "Množství velikosti :size",
+    ":price per litre": ":price za litr",
+    "Price not available": "Cena není k dispozici",
+    ":quantity+ containers: :percentage off": ":quantity+ nádob: sleva :percentage",
+    "Price excl. VAT": "Cena bez DPH",
+    "Line total": "Celkem za řádek",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "Množstevní slevy se počítají z nádob jedné velikosti; různé velikosti se nesčítají.",
+    "Your discount: :label": "Vaše sleva: :label",
+    "Total excl. VAT": "Celkem bez DPH",
+    "Update basket": "Aktualizovat košík",
+    "Add selected items to basket": "Přidat vybrané položky do košíku",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "Velikost je množství v jedné nádobě. Množství je počet nádob.",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "Slevy závislé na celé objednávce se uplatní, když jsou položky v košíku.",
+    ":size sample": "Vzorek :size"
 }

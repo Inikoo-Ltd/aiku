@@ -25394,6 +25394,20 @@
     "This order had nothing left and was cancelled.": "Esta encomenda já não tinha nada e foi cancelada.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Esta encomenda já não tem nada mas foi pago um depósito: recupere-o antes de cancelar a encomenda.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "o agente moveu :quantity unidades de :code para :supplier (:reference), o fornecedor não as consegue produzir.",
+    "Quantity of :size": "Quantidade de :size",
+    ":price per litre": ":price por litro",
+    "Price not available": "Preço indisponível",
+    ":quantity+ containers: :percentage off": ":quantity+ embalagens: :percentage de desconto",
+    "Price excl. VAT": "Preço sem IVA",
+    "Line total": "Total da linha",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "Os descontos por volume contam as embalagens de um só tamanho; tamanhos diferentes não se somam.",
+    "Your discount: :label": "O seu desconto: :label",
+    "Total excl. VAT": "Total sem IVA",
+    "Update basket": "Atualizar cesto",
+    "Add selected items to basket": "Adicionar os artigos selecionados ao cesto",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "O tamanho é a quantidade em cada embalagem. A quantidade é o número de embalagens.",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "Os descontos que dependem de toda a encomenda são aplicados quando os artigos estão no cesto.",
     "% of active": "% de ativos",
     "Active customers": "Clientes ativos",
     "Active customers (24 months)": "Clientes ativos (24 meses)",
@@ -25413,5 +25427,6 @@
     "Shop types": "Tipos de loja",
     "Spa \/ wellness": "Spa \/ bem-estar",
     "Told us": "O cliente informou-nos",
-    "With shop type": "Com tipo de loja"
+    "With shop type": "Com tipo de loja",
+    ":size sample": "Amostra de :size"
 }

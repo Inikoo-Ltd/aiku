@@ -11,6 +11,7 @@ import { Table as TableTS } from "@/types/Table"
 import { Link, router } from "@inertiajs/vue3"
 import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from '@/Composables/useTrans'
+import { basketSizeSuffix } from "@/Composables/useBasketSizeSuffix"
 import { debounce, get, set } from "lodash-es"
 import { computed, inject, reactive, ref } from "vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
@@ -215,7 +216,7 @@ const isOffersData = (offersData: any): boolean => {
                     {{ item.asset_code }}
                 </span>
                 <div class="text-base"><span v-if="Number(item.units) > 1" class="mr-1">{{ Number(item.units)
-                        }}x</span>{{ item.asset_name }}</div>
+                        }}x</span>{{ item.asset_name }}{{ basketSizeSuffix(item.asset_name, item.size_label) }}</div>
                 <div v-if="item.is_bonus_stock" v-tooltip="item.bonus_stock_label"
                     class="mt-1 inline-flex items-center gap-x-1 rounded px-2 py-0.5 text-xs font-medium bg-[color-mix(in_srgb,var(--theme-color-0)_12%,white)] text-[var(--theme-color-0)]">
                     <FontAwesomeIcon :icon="faGift" fixed-width aria-hidden="true" />
@@ -318,7 +319,7 @@ const isOffersData = (offersData: any): boolean => {
                                     <span v-if="item.units > 1" class="mr-1">
                                         {{ Number(item.units) }}x
                                     </span>
-                                    {{ item.asset_name }}
+                                    {{ item.asset_name }}{{ basketSizeSuffix(item.asset_name, item.size_label) }}
                                 </a>
                                 <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                     <div class="text-xs text-gray-400">{{ item.asset_code }}</div>

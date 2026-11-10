@@ -60,6 +60,7 @@ import InformationSideProduct from "@/Components/CMS/Webpage/Product1/Informatio
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
+import VariantSizeOrderingTable from "@/Iris/Components/IrisBlocks/Product/Ecom/VariantSizeOrderingTable.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 import { getOfferTextColorClass } from "@/Composables/offerColors"
 import { Popover } from "primevue"
@@ -340,6 +341,12 @@ const variantAxisLabel = computed(() =>
         .join(" / ")
 )
 
+const showSizesTable = computed(() =>
+    Boolean(props.fieldValue?.setting?.variant_sizes_table)
+    && (props.listProducts?.length ?? 0) > 1
+    && (props.fieldValue?.variant?.data?.variants?.length ?? 0) === 1
+)
+
 const selectedVariantLabel = computed(() =>
     props.listProducts?.find(item => item.code === product.value.code)?.variant_label
     || product.value.variant_label
@@ -578,22 +585,22 @@ onMounted(async () => {
 
                 <StepDiscountOffer
                     class="mt-3"
-                    v-if="layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
+                    v-if="!showSizesTable && layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
                     :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
                     :originalPrice="product.price" :unit="product.unit" :units="product.units"
                     :quantity="orderedQuantity" :isSubmitting="isDesktopStepSyncing"
                     @selectQuantity="onSelectStepQuantityDesktop" />
 
-                <div class="mt-4 mb-4 flex gap-2">
+                <div v-if="!showSizesTable || (layout?.iris?.is_logged_in && !(product.stock > 0))" class="mt-4 mb-4 flex gap-2">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
-                        <EcomAddToBasketv2 v-if="product.stock > 0 || product.pre_order" ref="_desktopAddToBasket" v-model:product="product"
+                        <EcomAddToBasketv2 v-if="!showSizesTable && (product.stock > 0 || product.pre_order)" ref="_desktopAddToBasket" v-model:product="product"
                             :customerData="customerData" :key="keyCustomer"
                             :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket" />
-                        <ButtonOutOfStock v-else :product="product" />
+                        <ButtonOutOfStock v-else-if="!(product.stock > 0 || product.pre_order)" :product="product" />
                     </div>
 
-                    <LinkIris v-else :href="urlLoginWithRedirect()"
+                    <LinkIris v-else-if="!showSizesTable" :href="urlLoginWithRedirect()"
                         class="block w-full rounded border px-3 py-2 text-center text-sm text-gray-600"
                         :style="getStyles(fieldValue?.buttonLogin?.properties, screenType)">
                         {{ ctrans("Login or Register for Wholesale Prices") }}
@@ -610,7 +617,10 @@ onMounted(async () => {
                     </div>
                 </LinkIris>
 
-                <div v-if="listProducts && listProducts.length > 0" class="mt-5">
+                <VariantSizeOrderingTable v-if="showSizesTable" :listProducts="listProducts" :axisLabel="variantAxisLabel"
+                    :productName="product.name" :isLoggedIn="Boolean(layout?.iris?.is_logged_in)" />
+
+                <div v-else-if="listProducts && listProducts.length > 0" class="mt-5">
                     <div v-if="selectedVariantLabel" class="mb-1 text-sm">
                         <span v-if="variantAxisLabel" class="font-semibold">{{ variantAxisLabel }}:</span>
                         <span class="ml-1">{{ selectedVariantLabel }}</span>
@@ -828,7 +838,7 @@ onMounted(async () => {
             </template>
 
             <StepDiscountOffer
-                v-if="layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
+                v-if="!showSizesTable && layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
                 :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
                 :originalPrice="product.price" :unit="product.unit" :units="product.units"
                 :quantity="orderedQuantity" :isSubmitting="isMobileStepSyncing"
@@ -843,25 +853,28 @@ onMounted(async () => {
                 <span>{{ customerData?.back_in_stock ? ctrans("Notified") : ctrans("Remind me") }}</span>
             </button>
 
+            <VariantSizeOrderingTable v-if="showSizesTable" :listProducts="listProducts" :axisLabel="variantAxisLabel"
+                :productName="product.name" :isLoggedIn="Boolean(layout?.iris?.is_logged_in)" />
+
             <template v-if="layout?.iris?.is_logged_in">
                 <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
-                <EcomAddToBasketv2 v-if="product.stock > 0 || product.pre_order" ref="_mobileAddToBasket" v-model:product="product"
+                <EcomAddToBasketv2 v-if="!showSizesTable && (product.stock > 0 || product.pre_order)" ref="_mobileAddToBasket" v-model:product="product"
                     :customerData="customerData" :key="keyCustomer"
                     :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket w-full" />
-                <ButtonOutOfStock v-else :product="product" />
+                <ButtonOutOfStock v-else-if="!(product.stock > 0 || product.pre_order)" :product="product" />
             </template>
 
-            <LinkIris v-else :href="urlLoginWithRedirect()"
+            <LinkIris v-else-if="!showSizesTable" :href="urlLoginWithRedirect()"
                 class="block w-full rounded border px-3 py-2 text-center text-sm text-gray-600">
                 {{ ctrans("Login or Register for Wholesale Prices") }}
             </LinkIris>
 
-            <div v-if="listProducts?.length && selectedVariantLabel" class="text-sm">
+            <div v-if="!showSizesTable && listProducts?.length && selectedVariantLabel" class="text-sm">
                 <span v-if="variantAxisLabel" class="font-semibold">{{ variantAxisLabel }}:</span>
                 <span class="ml-1">{{ selectedVariantLabel }}</span>
             </div>
 
-            <Swiper v-if="listProducts?.length" :slides-per-view="2.4" :space-between="12">
+            <Swiper v-if="!showSizesTable && listProducts?.length" :slides-per-view="2.4" :space-between="12">
                 <SwiperSlide v-for="item in listProducts" :key="item.id">
                     <button @click="onSelectProduct(item)" :disabled="item.code === product.code"
                         class="w-full overflow-hidden rounded-xl border">

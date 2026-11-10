@@ -1153,6 +1153,10 @@ test('iris variant products list sends the offers and step discount each variant
         ->and($variantProduct['family_id'])->toBe($product->family_id)
         ->and(collect($variantProduct['step_discount']['steps'])->pluck('min_quantity')->all())->toBe([1, 5])
         ->and(collect($variantProduct['step_discount']['steps'])->pluck('price')->all())->toEqual([8.5, 7.5]);
+
+    $productPageSize = collect(\App\Actions\Catalogue\Product\Json\GetProductsOfVariant::run($variant)['products'])->firstWhere('id', $variantProduct['id']);
+
+    expect(collect($productPageSize['step_discount']['steps'])->pluck('min_quantity')->all())->toBe([1, 5]);
 });
 
 test('a variant leader is searchable by the codes of its other options', function () {

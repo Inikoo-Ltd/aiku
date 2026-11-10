@@ -25670,5 +25670,20 @@
     "The supplier can not make it: give it to another supplier of the agent": "Furnizorul nu îl poate produce: dă-l altui furnizor al agentului",
     "This order had nothing left and was cancelled.": "Această comandă nu mai avea nimic și a fost anulată.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Această comandă nu mai are nimic, dar s-a plătit un avans: recuperează-l înainte de a anula comanda.",
-    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agentul a mutat :quantity unități de :code la :supplier (:reference), furnizorul nu le poate produce."
+    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agentul a mutat :quantity unități de :code la :supplier (:reference), furnizorul nu le poate produce.",
+    "Quantity of :size": "Cantitate pentru :size",
+    ":price per litre": ":price pe litru",
+    "Price not available": "Preț indisponibil",
+    ":quantity+ containers: :percentage off": ":quantity+ recipiente: reducere :percentage",
+    "Price excl. VAT": "Preț fără TVA",
+    "Line total": "Total linie",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "Reducerile de volum numără recipientele aceleiași mărimi; mărimile diferite nu se adună.",
+    "Your discount: :label": "Reducerea dvs.: :label",
+    "Total excl. VAT": "Total fără TVA",
+    "Update basket": "Actualizați coșul",
+    "Add selected items to basket": "Adăugați articolele selectate în coș",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "Mărimea este cantitatea din fiecare recipient. Cantitatea este numărul de recipiente.",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "Reducerile care depind de întreaga comandă se aplică atunci când articolele sunt în coș.",
+    ":size sample": "Mostră :size"
 }

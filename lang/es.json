@@ -26453,6 +26453,20 @@
     "Order confirmation": "Confirmación del pedido",
     "Delivery confirmation": "Confirmación de envío",
     "Pre-order update": "Novedades de la reserva",
+    "Quantity of :size": "Cantidad de :size",
+    ":price per litre": ":price por litro",
+    "Price not available": "Precio no disponible",
+    ":quantity+ containers: :percentage off": ":quantity+ envases: :percentage de descuento",
+    "Price excl. VAT": "Precio sin IVA",
+    "Line total": "Total de la línea",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "Los descuentos por volumen cuentan los envases de un mismo tamaño; los distintos tamaños no se suman.",
+    "Your discount: :label": "Su descuento: :label",
+    "Total excl. VAT": "Total sin IVA",
+    "Update basket": "Actualizar cesta",
+    "Add selected items to basket": "Añadir los artículos seleccionados a la cesta",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "El tamaño es la cantidad de cada envase. La cantidad es el número de envases.",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "Los descuentos que dependen de todo el pedido se aplican cuando los artículos están en la cesta.",
     "% of active": "% de activos",
     "Active customers": "Clientes activos",
     "Active customers (24 months)": "Clientes activos (24 meses)",
@@ -26472,5 +26486,6 @@
     "Shop types": "Tipos de tienda",
     "Spa \/ wellness": "Spa \/ bienestar",
     "Told us": "Nos lo dijo el cliente",
-    "With shop type": "Con tipo de tienda"
+    "With shop type": "Con tipo de tienda",
+    ":size sample": "Muestra de :size"
 }

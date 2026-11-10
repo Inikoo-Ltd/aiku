@@ -41,7 +41,7 @@ class StoreEcomBasketTransaction extends IrisAction
      * @throws \Illuminate\Validation\ValidationException
      * @throws \Throwable
      */
-    private function addProductToBasket(Customer $customer, Product $product, array $modelData): Transaction
+    public function addProductToBasket(Customer $customer, Product $product, array $modelData): Transaction
     {
         $order = $this->getOrderInBasket($customer);
 
