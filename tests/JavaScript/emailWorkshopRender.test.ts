@@ -186,3 +186,10 @@ test("text and button paragraphs have no margin in the sent email, so Gmail spac
 	assert.match(renderModuleHtml(text, context), /<p style="margin:0"><strong>50% OFF<\/strong><\/p>/)
 	assert.match(renderModuleHtml(button, context), /<p style="margin:0;font-size:16px">Natural Teak Display<\/p>/)
 })
+
+test("an empty paragraph typed as a blank line between paragraphs keeps its line in the sent email", () => {
+	const text = createModule(MODULE_TYPES.text)
+	text.descriptor.text = { html: "<p>Turn up the colour!</p><p></p><p>Black Friday savings</p>", style: {} }
+
+	assert.match(renderModuleHtml(text, createRenderContext(emailWithBody(), 600)), /<p style="margin:0 0 0 0">Turn up the colour!<\/p><p style="margin:0 0 0 0">&nbsp;<\/p><p style="margin:0">Black Friday savings<\/p>/)
+})

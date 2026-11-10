@@ -111,7 +111,8 @@ export const applyLinkColor = (html: string, linkColor: string | undefined, isUn
         return `<a${attributes.replace(styleMatch[0], ` style="${[...additions, styleMatch[1]].filter(Boolean).join(';')}"`)}>`
     })
 
-const paragraphSpacingHtml = (html: string, spacing: string | undefined): string => {
+const paragraphSpacingHtml = (rawHtml: string, spacing: string | undefined): string => {
+    const html = rawHtml.replace(/(<p(?=[\s>])[^>]*>)\s*(<\/p>)/gi, '$1&nbsp;$2')
     const paragraphs = html.match(/<p(?=[\s>])[^>]*>/gi) ?? []
     let seen = 0
 
