@@ -203,6 +203,7 @@ class Website extends Model implements Auditable, HasMedia
         'hreflang',
         'shopping_assistant.enabled',
         'shopping_assistant.name',
+        'search_keep_exploring',
     ];
 
     protected static function booted(): void

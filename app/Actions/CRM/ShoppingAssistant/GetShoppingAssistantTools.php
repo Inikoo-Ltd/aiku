@@ -207,7 +207,7 @@ class GetShoppingAssistantTools
     {
         $products = GetSegmentBestSellers::run($customer->shop, $customer->shop_type?->value, data_get($customer->location, 0), [
             'customer' => $customer,
-            'area'     => $this->area($customer),
+            'area'     => RebuildRangeAdvisorSales::areaOf($customer),
             'limit'    => $this->limit($arguments),
         ])['items'];
 
@@ -308,18 +308,6 @@ class GetShoppingAssistantTools
     private function segmentReasonCode(Product $product): string
     {
         return self::SEGMENT_REASON_CODES[$product->segment_level] ?? 'best_seller';
-    }
-
-    private function area(Customer $customer): ?string
-    {
-        if (!$customer->address_id) {
-            return null;
-        }
-
-        return DB::table('addresses')
-            ->where('addresses.id', $customer->address_id)
-            ->selectRaw(RebuildRangeAdvisorSales::AREA_SQL.' as area')
-            ->first()?->area;
     }
 
     /**

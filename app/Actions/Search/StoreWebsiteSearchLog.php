@@ -65,6 +65,7 @@ class StoreWebsiteSearchLog
      * search page) reuses its row too, or it would count as a fresh search every time.
      * The reused row keeps its original source: the control that started the search is
      * what the entry point breakdown is after, not the one that refined it.
+     * A click on a Keep exploring suggestion ends the search like a result click does.
      */
     protected function refinedLog(array $modelData): ?WebsiteSearchLog
     {
@@ -85,7 +86,7 @@ class StoreWebsiteSearchLog
             return $previous;
         }
 
-        if ($previous->clicked_at || $previous->created_at->lt(now()->subSeconds(15))) {
+        if ($previous->clicked_at || $previous->suggestion_clicked_at || $previous->created_at->lt(now()->subSeconds(15))) {
             return null;
         }
 

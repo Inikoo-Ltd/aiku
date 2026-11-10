@@ -10,6 +10,7 @@ import { useFormatTime } from '@/Composables/useFormatTime'
 import { getStyles } from '@/Composables/styles'
 import Image from '@common/Components/Image.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
+import IrisSearchKeepExploring from '@/Iris/Components/IrisSearchKeepExploring.vue'
 import RenderProduct from '@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { FreeMode } from 'swiper/modules'
@@ -105,14 +106,14 @@ const showAssistantBanner = computed(() => !!assistant.value && !!searchQuery.va
 const searchLogUlid = ref<string | null>(null)
 
 // keepalive fetch survives the navigation the click triggers
-const recordClick = (url?: string | null) => {
+const recordClick = (url?: string | null, suggestion?: string) => {
     if (!searchLogUlid.value || !url) return
     const token = decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? '')
     fetch(route('iris.json.search.click'), {
         method: 'POST',
         keepalive: true,
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-XSRF-TOKEN': token },
-        body: JSON.stringify({ ulid: searchLogUlid.value, url }),
+        body: JSON.stringify({ ulid: searchLogUlid.value, url, suggestion }),
     }).catch(() => {})
 }
 const facets = ref<InternalFacets>(emptyFacets())
@@ -287,6 +288,11 @@ const resetFilters = () => {
 const loadMore = () => {
     fetchInternalResults({ pageNumber: currentPage.value + 1, append: true })
 }
+
+const topFamilyIds = computed(() => [...facets.value.families]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+    .map((family) => family.id))
 
 const facetGroups = computed(() => [
     { key: 'families', label: ctrans('Categories'), selection: 'categories' as const, items: facets.value.families },
@@ -665,6 +671,23 @@ const isMobileFilterOpen = ref(false)
                                 1 - {{ products.length }} {{ ctrans('of') }} {{ totalResults }} {{ ctrans('results') }}
                             </div>
                         </div>
+
+                        <IrisSearchKeepExploring :query="searchQuery" :family-ids="topFamilyIds"
+                            :is-results-loading="isInternalLoading" :has-no-results="!products.length"
+                            @suggestion-click="recordClick">
+                            <template #product="{ product }">
+                                <div :style="getStyles(fieldValue?.card_product?.properties, screenType)"
+                                    class="relative rounded flex md:flex-1 justify-center">
+                                    <RenderProduct :code="productCardCode" :product="product"
+                                        :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                        :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
+                                        :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
+                                        :button="fieldValue?.button"
+                                        :hasInBasketList="get(layout, ['family_page', 'productInBasket', 'list'], [])"
+                                        :bestSeller="fieldValue?.bestseller" :screenType />
+                                </div>
+                            </template>
+                        </IrisSearchKeepExploring>
                     </main>
                 </div>
             </div>

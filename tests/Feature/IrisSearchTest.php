@@ -806,3 +806,321 @@ test('ticket searches are never served from the shared short-query cache, their 
 
     expect(Cache::has($key))->toBeFalse();
 });
+
+function keepExploringOn(object $test): void
+{
+    \App\Actions\Web\Website\UpdateWebsite::make()->action($test->website->refresh(), ['search_keep_exploring' => true]);
+    expect($test->website->refresh()->settings['search_keep_exploring'])->toBeTrue();
+    Cache::flush();
+}
+
+function keepExploringUrl(object $test, array $params): string
+{
+    return 'http://'.$test->website->domain.'/json/search/keep-exploring?'.http_build_query($params);
+}
+
+function keepExploringSearchLog(object $test, string $query, string $sessionId, array $extra = []): void
+{
+    WebsiteSearchLog::create(array_merge([
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $test->organisation->group_id,
+        'organisation_id' => $test->organisation->id,
+        'shop_id'         => $test->shop->id,
+        'website_id'      => $test->website->id,
+        'scope'           => 'catalogue_page',
+        'query'           => $query,
+        'session_id'      => $sessionId,
+        'results_count'   => 4,
+    ], $extra));
+}
+
+/**
+ * @return array<int, int>
+ */
+function keepExploringCustomers(object $test, int $count = 6): array
+{
+    return collect(range(1, $count))->map(fn () => StoreCustomer::make()->action($test->shop, Customer::factory()->definition())->id)->all();
+}
+
+/**
+ * @param array<int, int> $customerIds
+ */
+function keepExploringPopular(object $test, string $query, array $customerIds): void
+{
+    foreach ($customerIds as $customerId) {
+        keepExploringSearchLog($test, $query, 'ke-popular-'.Str::random(12), ['customer_id' => $customerId]);
+    }
+}
+
+function keepExploringWord(): string
+{
+    return fake()->unique()->lexify('??????');
+}
+
+test('keep exploring answers only when the website switch is on', function () {
+    $this->website->update(['settings' => array_merge($this->website->refresh()->settings ?? [], ['search_keep_exploring' => false])]);
+
+    $this->getJson(keepExploringUrl($this, ['q' => 'candles']))->assertNotFound();
+
+    keepExploringOn($this);
+
+    $this->getJson(keepExploringUrl($this, ['q' => 'candles']))->assertOk()
+        ->assertJsonStructure(['did_you_mean', 'searches' => ['kind', 'items'], 'families', 'products']);
+    $this->getJson(keepExploringUrl($this, ['q' => 'candles', 'families' => [1, 2, 3, 4, 5, 6]]))->assertStatus(422);
+    expect(Route::getRoutes()->getByName('iris.json.search.keep_exploring')->gatherMiddleware())->toContain('throttle:iris-search');
+});
+
+test('related searches need three different customers in the same sessions, else popular searches are offered', function () {
+    keepExploringOn($this);
+    $customerIds = keepExploringCustomers($this);
+
+    [$seed, $related, $oneCustomer, $dropdownOnly, $zeroResults, $lonely, $visitorsOnlyPair, $popularWithVisitorsOnly] = array_map(fn () => keepExploringWord(), range(1, 8));
+    $withDigits = keepExploringWord().' 2024';
+    $withAt     = keepExploringWord().'@mail';
+
+    foreach ([$related, $oneCustomer, $dropdownOnly, $zeroResults, $withDigits, $withAt, $visitorsOnlyPair] as $popularQuery) {
+        keepExploringPopular($this, $popularQuery, $customerIds);
+    }
+
+    foreach (range(1, 10) as $visit) {
+        keepExploringSearchLog($this, $popularWithVisitorsOnly, 'ke-visitor-'.Str::random(12));
+    }
+
+    foreach (array_slice($customerIds, 0, 3) as $customerId) {
+        $session = 'ke-related-'.Str::random(12);
+        keepExploringSearchLog($this, $seed, $session, ['scope' => 'catalogue']);
+        foreach ([$related, $withDigits, $withAt, $popularWithVisitorsOnly] as $coOccurring) {
+            keepExploringSearchLog($this, $coOccurring, $session, ['customer_id' => $customerId]);
+        }
+        keepExploringSearchLog($this, $dropdownOnly, $session, ['scope' => 'catalogue', 'customer_id' => $customerId]);
+        keepExploringSearchLog($this, $zeroResults, $session, ['results_count' => 0, 'customer_id' => $customerId]);
+    }
+
+    foreach (range(1, 5) as $visit) {
+        $session = 'ke-visitor-pair-'.Str::random(12);
+        keepExploringSearchLog($this, $seed, $session);
+        keepExploringSearchLog($this, $visitorsOnlyPair, $session);
+    }
+
+    foreach (range(1, 5) as $visit) {
+        $session = 'ke-one-customer-'.Str::random(12);
+        keepExploringSearchLog($this, $seed, $session, ['customer_id' => $customerIds[5]]);
+        keepExploringSearchLog($this, $oneCustomer, $session, ['customer_id' => $customerIds[5]]);
+    }
+
+    $searches = $this->getJson(keepExploringUrl($this, ['q' => ' '.strtoupper($seed).' ']))->assertOk()->json('searches');
+    expect($searches)->toBe(['kind' => 'related', 'items' => [$related]]);
+
+    $searches = $this->getJson(keepExploringUrl($this, ['q' => $lonely]))->assertOk()->json('searches');
+    expect($searches['kind'])->toBe('popular')
+        ->and($searches['items'])->not->toBeEmpty()
+        ->and($searches['items'])->not->toContain($lonely)
+        ->and($searches['items'])->not->toContain($popularWithVisitorsOnly)
+        ->and(collect($searches['items'])->filter(fn (string $item) => preg_match('/[0-9@]/', $item))->all())->toBe([]);
+});
+
+test('did you mean offers a popular spelling of a query, never for a popular query, and copes with any alphabet', function () {
+    keepExploringOn($this);
+    $popularSpelling = keepExploringWord().' '.keepExploringWord();
+    keepExploringPopular($this, $popularSpelling, keepExploringCustomers($this, 5));
+
+    $this->getJson(keepExploringUrl($this, ['q' => str_replace(' ', '', $popularSpelling)]))->assertOk()
+        ->assertJsonPath('did_you_mean', $popularSpelling);
+
+    $this->getJson(keepExploringUrl($this, ['q' => $popularSpelling]))->assertOk()
+        ->assertJsonPath('did_you_mean', null);
+
+    foreach (['свечи ароматические', 'crème brûlée', '香薰蜡烛'] as $query) {
+        $this->getJson(keepExploringUrl($this, ['q' => $query]))->assertOk();
+    }
+});
+
+test('keep exploring products are only live and in stock, a visitor gets no forgotten group, and nothing about other customers leaks', function () {
+    keepExploringOn($this);
+    keepExploringPopular($this, keepExploringWord(), keepExploringCustomers($this, 5));
+
+    [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
+    $webpage = $product->webpage ?: StoreProductWebpage::make()->action($product);
+    $webpage->update(['state' => WebpageStateEnum::LIVE]);
+    $product->refresh()->updateQuietly(['available_quantity' => 10, 'has_live_webpage' => true, 'first_available_at' => now()]);
+
+    $groupedIds = function () {
+        $response = $this->getJson(keepExploringUrl($this, ['q' => keepExploringWord()]))->assertOk();
+
+        expect(preg_match('/"(segment_[^"]*|customers|revenue|customer_[^"]*)"\s*:/', $response->getContent()))->toBe(0)
+            ->and($response->json('searches.items'))->not->toBeEmpty()
+            ->and(collect($response->json('products'))->pluck('key')->all())->not->toContain('forgotten');
+
+        return collect($response->json('products'))->mapWithKeys(fn (array $group) => [$group['key'] => collect($group['items'])->pluck('id')->all()])->all();
+    };
+
+    expect($groupedIds()['new_arrivals'] ?? [])->toContain($product->id);
+
+    $product->updateQuietly(['available_quantity' => 0]);
+    expect(collect($groupedIds())->flatten()->all())->not->toContain($product->id);
+
+    $product->updateQuietly(['available_quantity' => 10]);
+    $webpage->update(['state' => WebpageStateEnum::CLOSED]);
+    expect(collect($groupedIds())->flatten()->all())->not->toContain($product->id);
+});
+
+test('keep exploring families are related families of this shop with something to buy, ids of another shop are ignored', function () {
+    keepExploringOn($this);
+
+    [, $product] = createProduct($this->shop);
+    $product->update(['is_for_sale' => true]);
+    ($product->webpage ?: StoreProductWebpage::make()->action($product))->update(['state' => WebpageStateEnum::LIVE]);
+    $product->refresh()->updateQuietly(['available_quantity' => 10, 'has_live_webpage' => true]);
+
+    $relatedFamily = $product->family;
+    $relatedFamily->updateQuietly(['show_in_website' => true, 'state' => \App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum::ACTIVE]);
+    ($relatedFamily->webpage ?: StoreProductCategoryWebpage::make()->action($relatedFamily))->update(['state' => WebpageStateEnum::LIVE]);
+
+    $newCategory = function ($shop) {
+        $data = \App\Models\Catalogue\ProductCategory::factory()->definition();
+        data_set($data, 'type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT->value);
+
+        return \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($shop, $data);
+    };
+
+    $searchedFamily = $newCategory($this->shop);
+    $otherShopCategory = $newCategory(createOwnShop('keep exploring other shop')[2]);
+
+    foreach ([$searchedFamily, $otherShopCategory] as $category) {
+        \Illuminate\Support\Facades\DB::table('product_category_has_related_product_categories')->insert([
+            'product_category_id'         => $category->id,
+            'related_product_category_id' => $relatedFamily->id,
+            'position'                    => 1,
+        ]);
+    }
+
+    $families = $this->getJson(keepExploringUrl($this, ['q' => 'candles', 'families' => [$searchedFamily->id]]))->assertOk()->json('families');
+    expect(collect($families)->pluck('id')->all())->toBe([$relatedFamily->id])
+        ->and(array_keys($families[0]))->toBe(['id', 'name', 'url', 'image'])
+        ->and($families[0]['url'])->not->toBeNull();
+
+    $this->getJson(keepExploringUrl($this, ['q' => 'candles', 'families' => [$otherShopCategory->id]]))->assertOk()
+        ->assertJsonPath('families', []);
+});
+
+test('a keep exploring click is stored once apart from the result click and ends the search in that session', function () {
+    Event::fake([WebsiteSearchStatsUpdated::class]);
+
+    $log = StoreWebsiteSearchLog::run([
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $this->organisation->group_id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'website_id'      => $this->website->id,
+        'session_id'      => 'ke-click-'.Str::random(12),
+        'scope'           => 'catalogue_page',
+        'query'           => 'candles',
+        'results_count'   => 3,
+    ]);
+    Event::fake([WebsiteSearchStatsUpdated::class]);
+
+    $click = fn (string $suggestion, string $url) => $this->postJson('http://'.$this->website->domain.'/json/search/click', [
+        'ulid'       => $log->ulid,
+        'url'        => $url,
+        'suggestion' => $suggestion,
+    ]);
+
+    $click('related_search', '/search?q=candles+white')->assertOk();
+    $click('family', '/candles/pillar')->assertOk();
+    $click('anything', '/x')->assertStatus(422);
+
+    $log->refresh();
+    expect($log->suggestion_kind)->toBe('related_search')
+        ->and($log->suggestion_url)->toBe('/search?q=candles+white')
+        ->and($log->suggestion_clicked_at)->not->toBeNull()
+        ->and($log->clicked_at)->toBeNull()
+        ->and($log->clicked_url)->toBeNull();
+    Event::assertNotDispatched(WebsiteSearchStatsUpdated::class);
+
+    $next = StoreWebsiteSearchLog::run(array_merge($log->only(['group_id', 'organisation_id', 'shop_id', 'website_id', 'session_id', 'scope', 'results_count']), [
+        'ulid'  => (string) Str::ulid(),
+        'query' => 'candles white',
+    ]));
+    expect($next->id)->not->toBe($log->id)
+        ->and($log->refresh()->query)->toBe('candles');
+});
+
+test('keep exploring best sellers say similar shops only when every one comes from the shop type, and a customer gets the products they stopped ordering', function () {
+    keepExploringOn($this);
+
+    [, $seed] = createProduct($this->shop);
+    $liveProduct = function () use ($seed) {
+        $product = \App\Actions\Catalogue\Product\StoreProduct::make()->action($seed->family, array_merge(
+            \App\Models\Catalogue\Product::factory()->definition(),
+            ['trade_units' => [['id' => $seed->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 10]
+        ));
+        $product->update(['state' => \App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE, 'is_for_sale' => true]);
+        ($product->webpage ?: StoreProductWebpage::make()->action($product))->update(['state' => WebpageStateEnum::LIVE]);
+        $product->refresh()->updateQuietly(['has_live_webpage' => true, 'price' => 10, 'available_quantity' => 1000]);
+
+        return $product->refresh();
+    };
+    [$shopBestSeller, $typeBestSeller, $stopped] = [$liveProduct(), $liveProduct(), $liveProduct()];
+    $shopType = \App\Enums\CRM\Customer\CustomerShopTypeEnum::GIFT_SHOP->value;
+
+    \Illuminate\Support\Facades\DB::table('segment_product_sales')->where('shop_id', $this->shop->id)->delete();
+    $segmentRow = fn (\App\Models\Catalogue\Product $product, string $level, ?string $type) => [
+        'shop_id'           => $this->shop->id,
+        'level'             => $level,
+        'shop_type'         => $type,
+        'product_id'        => $product->id,
+        'family_id'         => $product->family_id,
+        'segment_customers' => 40,
+        'customers'         => 12,
+        'repeat_customers'  => 5,
+        'revenue'           => 999.50,
+    ];
+    \Illuminate\Support\Facades\DB::table('segment_product_sales')->insert([
+        $segmentRow($shopBestSeller, \App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::LEVEL_SHOP, null),
+        $segmentRow($typeBestSeller, \App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::LEVEL_TYPE, $shopType),
+    ]);
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer->updateQuietly(['shop_type' => $shopType]);
+    \Illuminate\Support\Facades\DB::table('customer_product_purchases')->insert([
+        'customer_id'      => $customer->id,
+        'shop_id'          => $customer->shop_id,
+        'product_id'       => $stopped->id,
+        'family_id'        => $stopped->family_id,
+        'orders'           => 3,
+        'orders_12m'       => 0,
+        'quantity_12m'     => 0,
+        'spend_12m'        => 0,
+        'first_ordered_at' => now()->subMonths(30),
+        'last_ordered_at'  => now()->subMonths(14),
+    ]);
+    $webUser = \App\Actions\CRM\WebUser\StoreWebUser::make()->action($customer, [
+        'username' => 'ke-'.Str::lower(Str::random(10)),
+        'email'    => 'ke-'.Str::lower(Str::random(10)).'@example.com',
+        'password' => 'test',
+    ]);
+
+    $groups = function () {
+        $response = $this->getJson(keepExploringUrl($this, ['q' => keepExploringWord()]))->assertOk();
+        expect(preg_match('/"(segment_[^"]*|customers|revenue|customer_[^"]*)"\s*:/', $response->getContent()))->toBe(0);
+
+        return collect($response->json('products'))->keyBy('key')
+            ->map(fn (array $group) => ['similar_shops' => $group['similar_shops'] ?? null, 'ids' => collect($group['items'])->pluck('id')->all()])
+            ->all();
+    };
+
+    $visitor = $groups();
+    expect($visitor['best_sellers'])->toBe(['similar_shops' => false, 'ids' => [$shopBestSeller->id]])
+        ->and($visitor)->not->toHaveKey('forgotten');
+
+    $this->actingAs($webUser, 'retina');
+
+    $signedIn = $groups();
+    expect($signedIn['best_sellers'])->toBe(['similar_shops' => false, 'ids' => [$typeBestSeller->id, $shopBestSeller->id]])
+        ->and($signedIn['forgotten']['ids'])->toBe([$stopped->id]);
+
+    \Illuminate\Support\Facades\DB::table('segment_product_sales')->where('shop_id', $this->shop->id)->where('level', \App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::LEVEL_SHOP)->delete();
+
+    expect($groups()['best_sellers'])->toBe(['similar_shops' => true, 'ids' => [$typeBestSeller->id]]);
+});

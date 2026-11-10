@@ -12,6 +12,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -314,6 +315,21 @@ class RebuildRangeAdvisorSales
         $continent = DB::table('countries')->where('code', $countryCode)->value('continent');
 
         return $continent ? strtolower($continent) : null;
+    }
+
+    /**
+     * The area of the customer's address, worked out with the same AREA_SQL the rebuild uses.
+     */
+    public static function areaOf(Customer $customer): ?string
+    {
+        if (!$customer->address_id) {
+            return null;
+        }
+
+        return DB::table('addresses')
+            ->where('addresses.id', $customer->address_id)
+            ->selectRaw(self::AREA_SQL.' as area')
+            ->first()?->area;
     }
 
     public function asCommand(Command $command): int

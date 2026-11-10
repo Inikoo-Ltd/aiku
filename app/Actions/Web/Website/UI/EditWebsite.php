@@ -256,6 +256,18 @@ class EditWebsite extends OrgAction
                 ]
             ];
             $blueprints[] = [
+                'label'  => __('Search page'),
+                'icon'   => 'fa-light fa-browser',
+                'fields' => [
+                    'search_keep_exploring' => [
+                        'type'        => 'toggle',
+                        'information' => __('Shows related searches, families and products under the search results'),
+                        'label'       => __('Keep exploring suggestions on the search page'),
+                        'value'       => (bool)data_get($website->settings, 'search_keep_exploring', false),
+                    ],
+                ]
+            ];
+            $blueprints[] = [
                 'label'  => __('Sound Player'),
                 'icon'   => 'fal fa-music',
                 'fields' => [

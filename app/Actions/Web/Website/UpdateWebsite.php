@@ -190,6 +190,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, 'settings.shopping_assistant.enabled', (bool)Arr::pull($modelData, 'shopping_assistant_enabled'));
         }
 
+        if (Arr::has($modelData, 'search_keep_exploring')) {
+            data_set($modelData, 'settings.search_keep_exploring', (bool)Arr::pull($modelData, 'search_keep_exploring'));
+        }
+
         if (Arr::has($modelData, 'shopping_assistant_name')) {
             data_set($modelData, 'settings.shopping_assistant.name', Arr::pull($modelData, 'shopping_assistant_name'));
         }
@@ -310,6 +314,7 @@ class UpdateWebsite extends OrgAction
             'show_price'                                 => ['sometimes', 'nullable', 'boolean'],
             'shopping_assistant_enabled'                 => ['sometimes', 'boolean'],
             'shopping_assistant_name'                    => ['sometimes', 'nullable', 'string', 'max:30'],
+            'search_keep_exploring'                      => ['sometimes', 'boolean'],
             'hreflang_group'                             => ['sometimes', 'nullable', 'string', 'max:64'],
             'hreflang_code'                              => ['sometimes', 'nullable', 'string', 'regex:/^[a-z]{2,3}(-[A-Z]{2})?$/'],
             'hreflang_x_default'                         => ['sometimes', 'boolean'],
