@@ -34,10 +34,10 @@ class ReopenWebpage extends OrgAction
         foreach (Redirect::where('from_webpage_id', $webpage->id)->get() as $redirect) {
             $redirect->forceDelete();
         }
-        if ($redirect = Redirect::where('from_url', $webpage->canonical_url)->first()) {
+        if ($redirect = Redirect::where('website_id', $webpage->website_id)->where('from_url', $webpage->canonical_url)->first()) {
             $redirect->forceDelete();
         }
-        if ($redirect = Redirect::where('from_path', $webpage->url)->first()) {
+        if ($redirect = Redirect::where('website_id', $webpage->website_id)->where('from_path', $webpage->url)->first()) {
             $redirect->forceDelete();
         }
 
