@@ -669,6 +669,8 @@ type NewOrderEvent = {
 	customer: string
 	amount: number
 	currency: string
+	org_amount?: number | null
+	org_currency?: string | null
 	is_unpaid: boolean
 	url: string
 }
@@ -681,6 +683,9 @@ const formatMoney = (amount: number, currency: string) => {
 	}
 }
 
+const orderMoney = (event: Pick<NewOrderEvent, "amount" | "currency" | "org_amount" | "org_currency">) =>
+	event.org_currency && event.org_amount != null ? formatMoney(event.org_amount, event.org_currency) : formatMoney(event.amount, event.currency)
+
 const popupDurationMs = () => (useLayoutStore().user?.settings?.alert_preview_seconds ?? 6) * 1000
 
 type OrderPopup = Omit<NewOrderEvent, "url"> & { url: string | null; type?: string; sound_blocked?: boolean }
@@ -689,9 +694,14 @@ export const showOrderPopup = (event: OrderPopup) => {
 	notify({
 		group: "alert-popups",
 		title: event.is_unpaid ? ctrans("Unpaid order · :shop", { shop: event.shop }) : ctrans("New order · :shop", { shop: event.shop }),
-		text: `${event.reference} · ${event.customer} · ${formatMoney(event.amount, event.currency)}`,
+		text: `${event.reference} · ${event.customer} · ${orderMoney(event)}`,
 		duration: popupDurationMs(),
-		data: { ...event, kind: "order", money: formatMoney(event.amount, event.currency) },
+		data: {
+			...event,
+			kind: "order",
+			money: orderMoney(event),
+			shop_money: event.org_currency && event.org_amount != null ? formatMoney(event.amount, event.currency) : null,
+		},
 	})
 }
 
@@ -816,7 +826,7 @@ export const startOrderAlerts = () => {
 		const punch = ORDER_ALERT_PUNCH[type] ?? 2
 
 		const title = event.is_unpaid ? ctrans("Unpaid order · :shop", { shop: event.shop }) : ctrans("New order · :shop", { shop: event.shop })
-		const body = `${event.reference} · ${event.customer} · ${formatMoney(event.amount, event.currency)}`
+		const body = `${event.reference} · ${event.customer} · ${orderMoney(event)}`
 
 		if (preferences.popup.show && document.visibilityState === "visible") {
 			showOrderPopup({ ...event, type, sound_blocked: (navigator as any).userActivation?.hasBeenActive === false })

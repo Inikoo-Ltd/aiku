@@ -473,7 +473,7 @@ const safeTheme = computed(() => {
                 :heading="`${item.data.reference} · ${item.data.customer}`"
                 :url="item.data.url"
                 @close="close">
-                <div class="text-sm font-semibold tabular-nums" :class="orderAmountClass(item.data.type)">{{ item.data.money }}</div>
+                <div class="text-sm font-semibold tabular-nums" :class="orderAmountClass(item.data.type)">{{ item.data.money }} <span v-if="item.data.shop_money" class="ml-1 text-xs font-normal text-gray-500">{{ item.data.shop_money }}</span></div>
                 <div v-if="item.data.sound_blocked" class="mt-1 text-xs text-gray-500">{{ ctrans("Click anywhere in aiku to switch the sound on") }}</div>
                 <template #actions>
                     <button
