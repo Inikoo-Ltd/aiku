@@ -38,6 +38,9 @@ class StoreEcomBasketTransaction extends IrisAction
     }
 
     /**
+     * Sets the quantity of the product in the customer's basket. Callers must hold the
+     * customer's basket lock, as handle() does.
+     *
      * @throws \Illuminate\Validation\ValidationException
      * @throws \Throwable
      */

@@ -29,6 +29,12 @@ export default {
 					label: "Show information",
 					props_data: {},
 				},
+				{
+					key: ["variant_size_tiles"],
+					type: "switch",
+					label: "Use the old size tiles instead of the sizes table",
+					props_data: {},
+				},
 			],
 		},
 		{

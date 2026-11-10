@@ -342,7 +342,7 @@ const variantAxisLabel = computed(() =>
 )
 
 const showSizesTable = computed(() =>
-    Boolean(props.fieldValue?.setting?.variant_sizes_table)
+    !props.fieldValue?.setting?.variant_size_tiles
     && (props.listProducts?.length ?? 0) > 1
     && (props.fieldValue?.variant?.data?.variants?.length ?? 0) === 1
 )
@@ -618,7 +618,8 @@ onMounted(async () => {
                 </LinkIris>
 
                 <VariantSizeOrderingTable v-if="showSizesTable" :listProducts="listProducts" :axisLabel="variantAxisLabel"
-                    :productName="product.name" :isLoggedIn="Boolean(layout?.iris?.is_logged_in)" />
+                    :productName="product.name" :isLoggedIn="Boolean(layout?.iris?.is_logged_in)"
+                    :selectedProductId="product.id" @selectProduct="onSelectProduct" />
 
                 <div v-else-if="listProducts && listProducts.length > 0" class="mt-5">
                     <div v-if="selectedVariantLabel" class="mb-1 text-sm">
@@ -854,7 +855,8 @@ onMounted(async () => {
             </button>
 
             <VariantSizeOrderingTable v-if="showSizesTable" :listProducts="listProducts" :axisLabel="variantAxisLabel"
-                :productName="product.name" :isLoggedIn="Boolean(layout?.iris?.is_logged_in)" />
+                :productName="product.name" :isLoggedIn="Boolean(layout?.iris?.is_logged_in)"
+                    :selectedProductId="product.id" @selectProduct="onSelectProduct" />
 
             <template v-if="layout?.iris?.is_logged_in">
                 <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />

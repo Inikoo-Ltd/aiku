@@ -38,9 +38,9 @@ export default {
 					props_data: {},
 				},
 				{
-					key: ["variant_sizes_table"],
+					key: ["variant_size_tiles"],
 					type: "switch",
-					label: "Order all sizes in one table",
+					label: "Use the old size tiles instead of the sizes table",
 					props_data: {},
 				},
 			],

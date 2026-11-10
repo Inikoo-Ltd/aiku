@@ -1,24 +1,25 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from "vue"
+import { computed, inject, ref, watch, type Ref } from "vue"
 import axios from "axios"
 import { set } from "lodash-es"
 import { createReusableTemplate } from "@vueuse/core"
 import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck } from "@fal"
+import { faCheck, faCartPlus, faSyncAlt, faTrashAlt } from "@fal"
 import { faCircle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
+import Image from "@common/Components/Image.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getBestOffer } from "@/Composables/useOffers"
 
-library.add(faCheck, faCircle)
+library.add(faCheck, faCircle, faCartPlus, faSyncAlt, faTrashAlt)
 
 interface SizeProduct {
     id: number
@@ -38,6 +39,7 @@ interface SizeProduct {
     offers_data?: any
     currency_code?: string
     status_label?: string
+    web_images?: { main?: { original?: any, thumbnail?: any } } | null
 }
 
 interface SavedLine {
@@ -50,11 +52,25 @@ const props = withDefaults(defineProps<{
     axisLabel?: string
     productName?: string
     isLoggedIn?: boolean
+    selectedProductId?: number | null
 }>(), {
     axisLabel: "",
     productName: "",
-    isLoggedIn: false
+    isLoggedIn: false,
+    selectedProductId: null
 })
+
+const emits = defineEmits<{
+    (e: "selectProduct", product: SizeProduct): void
+}>()
+
+const isViewing = (product: SizeProduct): boolean => props.selectedProductId === product.id
+
+const viewSize = (product: SizeProduct) => {
+    if (!isViewing(product)) {
+        emits("selectProduct", product)
+    }
+}
 
 const layout = inject<any>("layout", retinaLayoutStructure)
 const customerDataByProduct = inject<any>("variantCustomerData", null)
@@ -62,8 +78,8 @@ const patchCustomerData = inject<((productId: number, patch: Record<string, any>
 const locale = useLocaleStore()
 
 const [DefineQuantity, ReuseQuantity] = createReusableTemplate<{ product: SizeProduct }>()
-const [DefinePrice, ReusePrice] = createReusableTemplate<{ product: SizeProduct }>()
 const [DefineAvailability, ReuseAvailability] = createReusableTemplate<{ product: SizeProduct }>()
+const [DefineLineTotal, ReuseLineTotal] = createReusableTemplate<{ product: SizeProduct }>()
 
 const refreshCustomerData = inject<(() => Promise<void>) | null>("refreshVariantCustomerData", null)
 
@@ -80,28 +96,14 @@ const basketLine = (product: SizeProduct): SavedLine => {
 
 const basketQuantity = (product: SizeProduct): number => basketLine(product).quantity
 
-const quantities = ref<Record<number, number>>({})
-const touched = ref<Set<number>>(new Set())
+const drafts = inject<Ref<Record<number, number>>>("variantOrderDrafts", ref({}))
 const limitHints = ref<Record<number, string>>({})
 const rowMessages = ref<Record<number, string>>({})
 
-const syncQuantities = () => {
-    const next = { ...quantities.value }
-
-    props.listProducts.forEach((product) => {
-        if (!touched.value.has(product.id)) {
-            next[product.id] = basketQuantity(product)
-        }
-    })
-
-    quantities.value = next
+const clearDraft = (productId: number) => {
+    const { [productId]: _cleared, ...remaining } = drafts.value
+    drafts.value = remaining
 }
-
-watch(
-    () => [props.listProducts, customerDataByProduct?.value],
-    syncQuantities,
-    { immediate: true, deep: true }
-)
 
 const price = (product: SizeProduct): number => Number(product.price) || 0
 
@@ -124,23 +126,22 @@ const rowCanChange = (product: SizeProduct): boolean => isOrderable(product) || 
 
 const showsLineTotal = (product: SizeProduct): boolean => rowCanChange(product) && selectedQuantity(product) > 0
 
-const selectedQuantity = (product: SizeProduct): number => quantities.value[product.id] ?? 0
+const selectedQuantity = (product: SizeProduct): number => drafts.value[product.id] ?? basketQuantity(product)
 
 const setQuantity = (product: SizeProduct, value: number | null) => {
     const quantity = Math.max(0, Math.round(Number(value) || 0))
     const max = maxQuantity(product)
 
-    touched.value.add(product.id)
     delete rowMessages.value[product.id]
 
     if (quantity > max) {
         limitHints.value[product.id] = ctrans("You cannot add more than :stock items.", { stock: String(max) })
-        quantities.value[product.id] = max
+        drafts.value = { ...drafts.value, [product.id]: max }
         return
     }
 
     delete limitHints.value[product.id]
-    quantities.value[product.id] = quantity
+    drafts.value = { ...drafts.value, [product.id]: quantity }
 }
 
 const isGoldRewardCustomer = computed<boolean>(() =>
@@ -284,13 +285,48 @@ const pricePerLitre = (product: SizeProduct): number | null =>
 const tierSteps = (product: SizeProduct) =>
     props.isLoggedIn ? stepSteps(product).filter((step) => Number(step.percentage_off) > 0) : []
 
-const tiersLabel = (product: SizeProduct): string =>
-    tierSteps(product)
-        .map((step) => ctrans(":quantity+ containers: :percentage off", {
-            quantity: String(step.min_quantity),
-            percentage: percentageLabel(Number(step.percentage_off))
-        }))
-        .join(" · ")
+const tierContainerPrice = (product: SizeProduct, percentageOff: number): number =>
+    roundMoney(price(product) * (1 - percentageOff))
+
+const appliedTierMinQuantity = (product: SizeProduct): number | null => {
+    const reached = tierSteps(product).filter((step) => selectedQuantity(product) >= step.min_quantity)
+
+    return reached.length ? reached[reached.length - 1].min_quantity : null
+}
+
+const isTierReached = (product: SizeProduct, step: { min_quantity: number }): boolean =>
+    appliedTierMinQuantity(product) === step.min_quantity
+
+const lineSaving = (product: SizeProduct): number =>
+    showsLineTotal(product) ? Math.max(0, roundMoney(selectedQuantity(product) * price(product) - lineTotal(product))) : 0
+
+const nextTier = (product: SizeProduct): { min_quantity: number, percentage_off: number } | null => {
+    if (!rowCanChange(product) || !isOrderable(product)) {
+        return null
+    }
+
+    const current = effectivePercentage(product)
+    const quantity = selectedQuantity(product)
+
+    return tierSteps(product).find((step) =>
+        step.min_quantity > quantity
+        && Number(step.percentage_off) > current
+        && step.min_quantity <= maxQuantity(product)
+    ) ?? null
+}
+
+const nextTierHint = (product: SizeProduct): string | null => {
+    const step = nextTier(product)
+
+    if (!step || selectedQuantity(product) <= 0) {
+        return null
+    }
+
+    return ctrans("Add :quantity more for :price each", {
+        quantity: String(step.min_quantity - selectedQuantity(product)),
+        price: String(formatPrice(product, tierContainerPrice(product, Number(step.percentage_off))))
+    })
+}
 
 const hasSizes = computed<boolean>(() => props.listProducts.some((product: any) => product.size_resolved))
 
@@ -337,9 +373,62 @@ const changedProducts = computed<SizeProduct[]>(() =>
     props.listProducts.filter((product) => selectedQuantity(product) !== basketQuantity(product))
 )
 
-const allChangedAreInBasket = computed<boolean>(() =>
-    changedProducts.value.length > 0 && changedProducts.value.every((product) => basketQuantity(product) > 0)
+const changeSummary = computed<string>(() =>
+    changedProducts.value
+        .map((product) => {
+            const difference = selectedQuantity(product) - basketQuantity(product)
+
+            if (selectedQuantity(product) === 0) {
+                return ctrans("remove :size", { size: sizeOf(product) })
+            }
+
+            return `${difference > 0 ? "+" : "−"}${Math.abs(difference)} × ${sizeOf(product)}`
+        })
+        .join(", ")
 )
+
+const saveButton = computed<{ label: string, icon: string, hint: string }>(() => {
+    const changed = changedProducts.value
+
+    if (!changed.length) {
+        const hasBasketLines = props.listProducts.some((product) => basketQuantity(product) > 0)
+
+        return hasBasketLines
+            ? { label: ctrans("Your basket is up to date"), icon: "fal fa-check", hint: ctrans("Change a quantity above to update your basket.") }
+            : { label: ctrans("Add to basket"), icon: "fal fa-cart-plus", hint: ctrans("Enter a quantity for one or more sizes to add them.") }
+    }
+
+    const adding = changed.filter((product) => basketQuantity(product) === 0)
+    const removing = changed.filter((product) => selectedQuantity(product) === 0)
+
+    if (adding.length === changed.length) {
+        const containers = adding.reduce((total, product) => total + selectedQuantity(product), 0)
+
+        return {
+            label: adding.length > 1
+                ? ctrans("Add :containers containers in :sizes sizes to basket", { containers: String(containers), sizes: String(adding.length) })
+                : ctrans("Add :quantity × :size to basket", { quantity: String(containers), size: sizeOf(adding[0]) }),
+            icon: "fal fa-cart-plus",
+            hint: changeSummary.value,
+        }
+    }
+
+    if (removing.length === changed.length) {
+        return {
+            label: removing.length > 1
+                ? ctrans("Remove :sizes sizes from basket", { sizes: String(removing.length) })
+                : ctrans("Remove :size from basket", { size: sizeOf(removing[0]) }),
+            icon: "fal fa-trash-alt",
+            hint: changeSummary.value,
+        }
+    }
+
+    return {
+        label: ctrans("Update basket (:count changes)", { count: String(changed.length) }),
+        icon: "fal fa-sync-alt",
+        hint: changeSummary.value,
+    }
+})
 
 const grossTotal = computed<number>(() =>
     roundMoney(props.listProducts.reduce((total, product) => total + (rowCanChange(product) ? selectedQuantity(product) * price(product) : 0), 0))
@@ -355,7 +444,7 @@ const currencyCode = computed<string>(() => props.listProducts[0]?.currency_code
 
 const isSaving = ref(false)
 const requestError = ref<string | null>(null)
-const confirmation = ref<{ quantity: number, size: string }[]>([])
+const confirmation = ref<{ quantity: number, change: number, size: string }[]>([])
 
 const updateBasketList = (product: SizeProduct, line: any) => {
     const currentList = layout?.family_page?.productInBasket?.list || {}
@@ -390,7 +479,7 @@ const applyBasketListChange = (list: Record<string, any>, previous: Record<strin
 
         const { [product.id]: _dropped, ...remaining } = savedAmounts.value
         savedAmounts.value = remaining
-        touched.value.delete(product.id)
+        clearDraft(product.id)
         patchCustomerData?.(product.id, {
             quantity_ordered: entryQuantity || null,
             quantity_ordered_new: entryQuantity || null,
@@ -420,7 +509,8 @@ const onSave = async () => {
             lines: changedProducts.value.map((product) => ({ product_id: product.id, quantity: selectedQuantity(product) }))
         })
 
-        const added: { quantity: number, size: string }[] = []
+        const added: { quantity: number, change: number, size: string }[] = []
+        const previousQuantities = Object.fromEntries(changedProducts.value.map((product) => [product.id, basketQuantity(product)]))
 
         response.data.lines.forEach((line: any) => {
             const product = props.listProducts.find((item) => item.id === line.product_id)
@@ -434,7 +524,7 @@ const onSave = async () => {
                 return
             }
 
-            touched.value.delete(product.id)
+            clearDraft(product.id)
             savedAmounts.value = {
                 ...savedAmounts.value,
                 [product.id]: { quantity: line.quantity_ordered, net: Number(line.net_amount), label: line.offer_label ?? null }
@@ -447,7 +537,11 @@ const onSave = async () => {
             })
 
             if (line.status === "added" || line.status === "updated") {
-                added.push({ quantity: line.quantity_ordered, size: sizeOf(product) })
+                added.push({
+                    quantity: line.quantity_ordered,
+                    change: line.quantity_ordered - (previousQuantities[product.id] ?? 0),
+                    size: sizeOf(product)
+                })
             }
         })
 
@@ -456,7 +550,6 @@ const onSave = async () => {
         savedAmounts.value = Object.fromEntries(Object.entries(savedAmounts.value).filter(([id]) => keptIds.has(Number(id))))
 
         confirmation.value = added
-        syncQuantities()
         layout?.reload_handle?.()
         await refreshCustomerData?.()
     } catch (error: any) {
@@ -473,7 +566,7 @@ const onSave = async () => {
     <div class="variant-size-ordering mt-5">
         <DefineQuantity v-slot="{ product }">
             <div v-if="rowCanChange(product)" class="flex flex-col items-start gap-1">
-                <InputNumber :modelValue="quantities[product.id] ?? 0" :min="0" :max="maxQuantity(product) === Infinity ? undefined : maxQuantity(product)"
+                <InputNumber :modelValue="selectedQuantity(product)" :min="0" :max="maxQuantity(product) === Infinity ? undefined : maxQuantity(product)"
                     :useGrouping="false" :maxFractionDigits="0" showButtons buttonLayout="horizontal" :disabled="isSaving"
                     :inputId="`size-qty-${product.id}`" :ariaLabel="ctrans('Quantity of :size', { size: sizeOf(product) })"
                     :inputStyle="{ width: '2.75rem', textAlign: 'center', padding: '0.25rem' }" class="sizes-quantity"
@@ -486,20 +579,6 @@ const onSave = async () => {
             <span v-else class="text-sm text-gray-500">{{ ctrans("Not available") }}</span>
         </DefineQuantity>
 
-        <DefinePrice v-slot="{ product }">
-            <div v-if="price(product) > 0">
-                <div class="font-semibold text-gray-900">
-                    <span v-if="isLoggedIn && hasDiscountApplied(product)" class="mr-1 text-xs font-normal text-gray-400 line-through">{{ formatPrice(product, price(product)) }}</span>
-                    <span>{{ formatPrice(product, isLoggedIn ? containerPrice(product) : price(product)) }}</span>
-                </div>
-                <div v-if="pricePerLitre(product) !== null" class="text-xs text-gray-500">
-                    {{ ctrans(":price per litre", { price: String(formatPrice(product, pricePerLitre(product) as number)) }) }}
-                </div>
-                <div v-if="tiersLabel(product)" class="mt-0.5 text-xs text-gray-500">{{ tiersLabel(product) }}</div>
-            </div>
-            <span v-else class="text-sm text-gray-500">{{ ctrans("Price not available") }}</span>
-        </DefinePrice>
-
         <DefineAvailability v-slot="{ product }">
             <LabelComingSoon v-if="product.is_coming_soon && !product.pre_order" :product="product" />
             <div v-else class="flex items-center gap-2 text-sm text-gray-600">
@@ -508,65 +587,86 @@ const onSave = async () => {
             </div>
         </DefineAvailability>
 
-        <div class="mb-2 text-sm font-semibold text-gray-800">{{ axisLabel || ctrans("Size") }}</div>
-        <p v-if="hasSizes" class="mb-3 text-xs text-gray-500">{{ ctrans("Size is the amount in each container. Quantity is the number of containers.") }}</p>
+        <DefineLineTotal v-slot="{ product }">
+            <template v-if="showsLineTotal(product)">
+                <div class="font-semibold text-gray-900">{{ formatPrice(product, lineTotal(product)) }}</div>
+                <div v-if="lineSaving(product) > 0" class="text-xs font-medium text-green-600">
+                    {{ ctrans("You save :amount", { amount: String(formatPrice(product, lineSaving(product))) }) }}
+                </div>
+            </template>
+            <span v-else class="text-gray-400">—</span>
+            <div v-if="nextTierHint(product)" class="mt-0.5 text-xs text-gray-500">{{ nextTierHint(product) }}</div>
+        </DefineLineTotal>
+
+        <div class="step-header mb-2 flex items-center gap-3">
+            <span class="header-line" />
+            <span class="header-text">{{ isLoggedIn && hasTiers ? ctrans("Buy more, save more") : (hasSizes ? ctrans("Choose sizes") : (axisLabel || ctrans("Size"))) }}</span>
+            <span class="header-line" />
+        </div>
+        <p v-if="hasSizes" class="mb-3 text-xs text-gray-500">
+            {{ ctrans("Size is the amount in each container. Quantity is the number of containers you receive: 5 × 1L is five 1L containers, not one 5L container.") }}
+        </p>
 
         <template v-if="isLoggedIn">
-            <table class="sizes-table w-full text-left text-sm">
-                <thead class="whitespace-nowrap border-b border-gray-300 text-gray-700">
-                    <tr>
-                        <th class="py-2 pr-3 font-medium">{{ hasSizes ? ctrans("Size") : (axisLabel || ctrans("Option")) }}</th>
-                        <th class="py-2 pr-3 font-medium">{{ ctrans("Price excl. VAT") }}</th>
-                        <th class="py-2 pr-3 font-medium">{{ ctrans("Availability") }}</th>
-                        <th class="py-2 pr-3 font-medium">{{ ctrans("Quantity") }}</th>
-                        <th class="py-2 text-right font-medium">{{ ctrans("Line total") }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <template v-for="product in listProducts" :key="product.id">
-                        <tr class="border-b border-gray-200 align-top">
-                            <td class="py-3 pr-3">
-                                <div class="font-semibold text-gray-900">{{ sizeOf(product) }}</div>
-                                <div class="whitespace-nowrap text-xs text-gray-400">{{ product.code }}</div>
-                            </td>
-                            <td class="py-3 pr-3"><ReusePrice :product="product" /></td>
-                            <td class="py-3 pr-3"><ReuseAvailability :product="product" /></td>
-                            <td class="py-3 pr-3"><ReuseQuantity :product="product" /></td>
-                            <td class="py-3 text-right font-semibold tabular-nums">
-                                <template v-if="showsLineTotal(product)">{{ formatPrice(product, lineTotal(product)) }}</template>
-                                <template v-else>—</template>
-                            </td>
-                        </tr>
-                        <tr v-if="rowMessages[product.id]">
-                            <td colspan="5" class="pb-2 text-xs text-red-600">{{ rowMessages[product.id] }}</td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
-
-            <div class="sizes-cards space-y-3">
-                <div v-for="product in listProducts" :key="product.id" class="rounded-lg border border-gray-200 p-3">
+            <div class="flex flex-col gap-3">
+                <div v-for="product in listProducts" :key="product.id" class="size-card rounded-xl border px-4 py-3"
+                    :class="{ 'is-active': selectedQuantity(product) > 0, 'is-viewing': isViewing(product), 'is-disabled': !rowCanChange(product) }"
+                    @click="viewSize(product)">
                     <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <div class="font-semibold text-gray-900">{{ sizeOf(product) }}</div>
-                            <div class="whitespace-nowrap text-xs text-gray-400">{{ product.code }}</div>
+                        <button type="button" class="flex min-w-0 items-start gap-3 text-left focus:outline-none"
+                            :aria-pressed="isViewing(product)"
+                            :aria-label="ctrans('Show photos and details of :size', { size: sizeOf(product) })"
+                            @click.stop="viewSize(product)">
+                            <span class="size-thumb">
+                                <Image v-if="product.web_images?.main?.thumbnail || product.web_images?.main?.original"
+                                    :src="product.web_images?.main?.thumbnail ?? product.web_images?.main?.original" :alt="sizeOf(product)"
+                                    class="h-full w-full object-contain" />
+                            </span>
+                            <span class="min-w-0">
+                            <span class="block text-base font-bold text-gray-900">{{ sizeOf(product) }}</span>
+                            <span v-if="isViewing(product)" class="viewing-label">{{ ctrans("Shown above") }}</span>
+                            <span class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                                <span class="whitespace-nowrap">{{ product.code }}</span>
+                                <ReuseAvailability :product="product" />
+                            </span>
+                            </span>
+                        </button>
+                        <div class="shrink-0 text-right">
+                            <template v-if="price(product) > 0">
+                                <div class="text-base font-bold text-gray-900">
+                                    {{ formatPrice(product, containerPrice(product)) }}
+                                    <span class="text-xs font-normal text-gray-500">{{ ctrans("each") }}</span>
+                                </div>
+                                <div v-if="hasDiscountApplied(product)" class="text-sm text-gray-400 line-through">{{ formatPrice(product, price(product)) }}</div>
+                                <div v-if="pricePerLitre(product) !== null" class="text-xs text-gray-500">
+                                    {{ ctrans(":price per litre", { price: String(formatPrice(product, pricePerLitre(product) as number)) }) }}
+                                </div>
+                            </template>
+                            <span v-else class="text-sm text-gray-500">{{ ctrans("Price not available") }}</span>
                         </div>
-                        <div class="text-right"><ReusePrice :product="product" /></div>
                     </div>
-                    <div class="mt-2"><ReuseAvailability :product="product" /></div>
+
+                    <div v-if="tierSteps(product).length && rowCanChange(product)" class="mt-2 flex flex-wrap gap-1.5" @click.stop
+                        :aria-label="ctrans('Volume prices for :size', { size: sizeOf(product) })">
+                        <button v-for="step in tierSteps(product)" :key="step.min_quantity" type="button" class="tier-chip"
+                            :class="{ 'is-reached': isTierReached(product, step) }" :disabled="isSaving"
+                            @click="setQuantity(product, step.min_quantity)">
+                            <span class="font-bold">{{ step.min_quantity }}+</span>
+                            {{ formatPrice(product, tierContainerPrice(product, Number(step.percentage_off))) }}
+                            <span class="save-badge">{{ ctrans("Save :percentage", { percentage: percentageLabel(Number(step.percentage_off)) }) }}</span>
+                        </button>
+                    </div>
+
                     <div class="mt-3 flex items-center justify-between gap-3">
-                        <ReuseQuantity :product="product" />
-                        <div class="font-semibold tabular-nums">
-                            <template v-if="showsLineTotal(product)">{{ formatPrice(product, lineTotal(product)) }}</template>
-                            <template v-else>—</template>
-                        </div>
+                        <div @click.stop><ReuseQuantity :product="product" /></div>
+                        <div class="text-right tabular-nums"><ReuseLineTotal :product="product" /></div>
                     </div>
                     <div v-if="rowMessages[product.id]" class="mt-2 text-xs text-red-600">{{ rowMessages[product.id] }}</div>
                 </div>
             </div>
 
             <p v-if="hasTiers" class="mt-3 text-xs text-gray-500">
-                {{ ctrans("Volume discounts count the containers of one size; different sizes are not added together.") }}
+                {{ ctrans("Volume prices apply automatically and count the containers of one size in your basket; different sizes are not added together.") }}
             </p>
             <p v-if="discountLabels" class="mt-1 text-xs text-gray-500">
                 {{ ctrans("Your discount: :label", { label: discountLabels }) }}
@@ -583,20 +683,34 @@ const onSave = async () => {
 
                 <p class="text-xs text-gray-500">{{ ctrans("Discounts that depend on the whole order are applied when the items are in the basket.") }}</p>
 
-                <Button type="tertiary" full :loading="isSaving" :disabled="!changedProducts.length" @click="onSave">
+                <Button :type="changedProducts.length ? 'primary' : 'tertiary'" size="lg" full :loading="isSaving"
+                    :disabled="!changedProducts.length || isSaving" class="save-button" :class="{ 'is-idle': !changedProducts.length }" @click="onSave">
                     <template #loading><LoadingIcon v-if="isSaving" /></template>
                     <template #icon>
-                        <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon :icon="saveButton.icon" fixed-width aria-hidden="true" />
                     </template>
-                    <template #label>{{ allChangedAreInBasket ? ctrans("Update basket") : ctrans("Add selected items to basket") }}</template>
+                    <template #label>{{ saveButton.label }}</template>
                 </Button>
+                <p class="text-center text-xs" :class="changedProducts.length ? 'font-medium text-gray-700' : 'text-gray-500'">
+                    <template v-if="changedProducts.length">{{ ctrans("Not saved yet:") }} </template>{{ saveButton.hint }}
+                </p>
 
                 <div v-if="requestError" class="text-xs text-red-600">{{ requestError }}</div>
 
                 <div v-if="confirmation.length" class="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800" role="status">
-                    <div class="font-semibold">{{ productName }}</div>
+                    <div class="font-semibold">{{ ctrans("Basket updated") }}: {{ productName }}</div>
                     <ul class="mt-1 space-y-0.5">
-                        <li v-for="line in confirmation" :key="line.size">{{ ctrans(":quantity × :size", { quantity: String(line.quantity), size: line.size }) }}</li>
+                        <li v-for="line in confirmation" :key="line.size">
+                            <template v-if="line.change > 0 && line.change !== line.quantity">
+                                {{ ctrans(":change × :size added, :quantity in your basket", { change: String(line.change), size: line.size, quantity: String(line.quantity) }) }}
+                            </template>
+                            <template v-else-if="line.change > 0">
+                                {{ ctrans(":quantity × :size added", { quantity: String(line.quantity), size: line.size }) }}
+                            </template>
+                            <template v-else>
+                                {{ ctrans(":size changed to :quantity in your basket", { quantity: String(line.quantity), size: line.size }) }}
+                            </template>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -618,46 +732,121 @@ const onSave = async () => {
 
 <style scoped>
 .variant-size-ordering {
-    container-type: inline-size;
+    --step-color: #c48497;
 }
 
-.variant-size-ordering table.sizes-table {
-    display: none;
+.header-line {
+    flex: 1;
+    height: 1px;
+    background: color-mix(in srgb, var(--step-color) 30%, #d1d5db);
 }
 
-@container (min-width: 440px) {
-    .variant-size-ordering table.sizes-table {
-        display: table;
-    }
-
-    .variant-size-ordering .sizes-cards {
-        display: none;
-    }
+.header-text {
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--step-color);
 }
 
-.variant-size-ordering table.sizes-table {
-    margin: 0;
-    table-layout: auto;
-    border-width: 0;
+.size-card {
+    cursor: pointer;
+    border-color: color-mix(in srgb, var(--step-color) 25%, white);
+    background: color-mix(in srgb, var(--step-color) 4%, white);
+    transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-.variant-size-ordering table.sizes-table th,
-.variant-size-ordering table.sizes-table td {
-    border-width: 0 0 1px;
-    background-color: transparent;
-    padding: 0.5rem 0.5rem 0.5rem 0;
+.size-card:hover {
+    border-color: color-mix(in srgb, var(--step-color) 60%, white);
 }
 
-.variant-size-ordering table.sizes-table th {
-    font-size: 0.75rem;
+.size-card.is-active {
+    border-width: 2px;
+    border-color: var(--step-color);
+    background: white;
 }
 
-.variant-size-ordering table.sizes-table th:last-child,
-.variant-size-ordering table.sizes-table td:last-child {
-    padding-right: 0;
+.size-card.is-viewing {
+    border-width: 2px;
+    border-color: var(--step-color);
+    background: color-mix(in srgb, var(--step-color) 10%, white);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--step-color) 18%, transparent);
+    cursor: default;
+}
+
+.size-thumb {
+    display: block;
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.viewing-label {
+    display: inline-block;
+    margin-top: 2px;
+    padding: 0 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: white;
+    background: var(--step-color);
+    border-radius: 9999px;
+}
+
+.size-card.is-disabled {
+    opacity: 0.6;
+}
+
+.tier-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 4px 3px 10px;
+    font-size: 12px;
+    color: #374151;
+    background: white;
+    border: 1px solid color-mix(in srgb, var(--step-color) 30%, #e5e7eb);
+    border-radius: 9999px;
+    transition: border-color 0.2s ease;
+}
+
+.tier-chip:hover:not(:disabled) {
+    border-color: var(--step-color);
+}
+
+.tier-chip.is-reached {
+    border-color: var(--step-color);
+    background: color-mix(in srgb, var(--step-color) 10%, white);
+}
+
+.save-badge {
+    padding: 1px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--step-color);
+    background: color-mix(in srgb, var(--step-color) 12%, white);
+    border-radius: 9999px;
+}
+
+.tier-chip.is-reached .save-badge {
+    color: white;
+    background: var(--step-color);
+}
+
+.save-button.is-idle {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .sizes-quantity :deep(.p-inputnumber-button) {
-    width: 1.75rem;
+    width: 2rem;
 }
 </style>

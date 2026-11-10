@@ -207,6 +207,7 @@ const patchCustomerData = (productId: number, patch: Record<string, boolean>) =>
 provide("variantCustomerData", customerData)
 provide("patchVariantCustomerData", patchCustomerData)
 provide("refreshVariantCustomerData", () => fetchAllOrderingData())
+provide("variantOrderDrafts", ref<Record<number, number>>({}))
 
 const submitCustomerFlag = ({
   product,

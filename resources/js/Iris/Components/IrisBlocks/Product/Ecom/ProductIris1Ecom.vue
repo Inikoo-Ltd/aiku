@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch, onMounted, nextTick } from "vue"
+import { ref, inject, computed, watch, onMounted } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faHeart, faEnvelope } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus, faChevronCircleLeft, faChevronCircleRight } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus } from "@fas"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
@@ -14,6 +14,7 @@ import Image from "@common/Components/Image.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import LinkIris from "@/Iris/Components/LinkIris.vue"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
+import VariantStepOrdering from "@/Iris/Components/IrisBlocks/Product/Ecom/VariantStepOrdering.vue"
 
 import { ctrans } from "@/Composables/useTrans"
 import StockInfoPopover from "@/Components/Iris/Products/StockInfoPopover.vue"
@@ -25,8 +26,6 @@ import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
-import { Swiper, SwiperSlide } from "swiper/vue"
-import "swiper/css"
 import { faImage } from "@far"
 import NonMemberPriceLabel from "@/Components/Utils/Iris/Family/NonMemberPriceLabel.vue"
 import ProductPrices2 from "@/Components/CMS/Webpage/Product1/ProductPrices2.vue"
@@ -35,7 +34,6 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import MemberPriceLabel from "@/Components/Utils/Iris/Family/MemberPriceLabel.vue"
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 
-import { Navigation, Thumbs } from 'swiper/modules'
 // import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
@@ -197,19 +195,11 @@ const onSelectStepQuantityMobile = async (quantity: number) => {
     }
 }
 
-const variantPrevEl = ref<HTMLElement | null>(null)
-const variantNextEl = ref<HTMLElement | null>(null)
-
-const varinatNavigation = ref({
-  prevEl: null as HTMLElement | null,
-  nextEl: null as HTMLElement | null,
-})
-
-const isVariantSwiperLocked = ref(true)
-
-const syncVariantNavigationState = (swiper: any) => {
-  isVariantSwiperLocked.value = swiper.isLocked ?? (swiper.isBeginning && swiper.isEnd)
-}
+const hasSizesPanel = computed<boolean>(() =>
+    !props.fieldValue?.setting?.variant_size_tiles
+    && (props.listProducts?.length ?? 0) > 1
+    && (props.fieldValue?.variant?.data?.variants?.length ?? 0) === 1
+)
 
 const showDiscount = computed(() => {
     return (
@@ -218,16 +208,6 @@ const showDiscount = computed(() => {
         !(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty) &&
         bestOffer.value?.type === 'Category Quantity Ordered Order Interval'
     )
-})
-
-
-watch([variantPrevEl, variantNextEl], () => {
-  if (variantPrevEl.value && variantNextEl.value) {
-    varinatNavigation.value = {
-      prevEl: variantPrevEl.value,
-      nextEl: variantNextEl.value,
-    }
-  }
 })
 
 // Section: GTM / dataLayer - view_item
@@ -241,10 +221,7 @@ const pushViewItem = () => {
     }))
 }
 
-onMounted(async () => {
-  await nextTick()
-  varinatNavigation.value.prevEl = variantPrevEl.value
-  varinatNavigation.value.nextEl = variantNextEl.value
+onMounted(() => {
   pushViewItem()
 })
 
@@ -420,9 +397,18 @@ onMounted(async () => {
 
                 </div>
 
+                <VariantStepOrdering
+                    v-if="hasSizesPanel"
+                    :product="product"
+                    :listProducts="listProducts"
+                    :isLoggedIn="Boolean(layout?.iris?.is_logged_in)"
+                    :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+                    @selectProduct="onSelectProduct"
+                />
+
                 <!-- Section: Step discount (buy more, save more) -->
                 <StepDiscountOffer
-                    v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+                    v-if="!hasSizesPanel && layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
                     class="mt-3"
                     :stepDiscount="product.step_discount"
                     :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
@@ -433,10 +419,10 @@ onMounted(async () => {
                     @selectQuantity="onSelectStepQuantityDesktop"
                 />
 
-                <PreOrderInfo v-if="product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" class="mt-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
+                <PreOrderInfo v-if="!hasSizesPanel && product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" class="mt-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
 
                 <!-- Section: ADD TO CART -->
-                <div class="mt-4 flex gap-2 mb-6">
+                <div v-if="!hasSizesPanel" class="mt-4 flex gap-2 mb-6">
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="(product.status !== 'coming-soon' || product.pre_order) && layout?.iris?.is_logged_in" class="w-full">
                         <EcomAddToBasketv2 v-if="product.stock || product.pre_order" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
@@ -457,55 +443,26 @@ onMounted(async () => {
                 </div>
 
                 
-                <div v-if="listProducts && listProducts.length > 0" class="group bg-white shadow-sm p-0.5 rounded-md mb-4">
-                    <Swiper :modules="[Navigation]" :navigation="varinatNavigation" :space-between="6"
-                        :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
-                            640: { slidesPerView: 4.5 },
-                            1024: { slidesPerView: 4 }
-                        }"
-                        @swiper="syncVariantNavigationState" @resize="syncVariantNavigationState"
-                        @breakpoint="syncVariantNavigationState" @lock="syncVariantNavigationState"
-                        @unlock="syncVariantNavigationState">
-
-                        <div v-show="!isVariantSwiperLocked"
-                            class="absolute inset-0 pointer-events-none z-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div ref="variantPrevEl"
-                                class="absolute left-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
-                                <FontAwesomeIcon :icon="faChevronCircleLeft" fixed-width />
-                            </div>
-
-                            <div ref="variantNextEl"
-                                class="absolute right-2 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-60 hover:opacity-100 pointer-events-auto">
-                                <FontAwesomeIcon :icon="faChevronCircleRight" fixed-width />
-                            </div>
+                <div v-if="!hasSizesPanel && listProducts && listProducts.length > 0" class="grid grid-cols-4 gap-1.5 bg-white shadow-sm p-0.5 rounded-md mb-4">
+                    <button v-for="item in listProducts" :key="item.id" @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
+                        'relative w-full rounded-lg border transition overflow-hidden flex flex-col',
+                        item.code === product.code
+                            ? 'ring-1 primary'
+                            : 'border-gray-200 hover:border-gray-300'
+                    ]">
+                        <div class="relative w-full aspect-square bg-gray-50">
+                            <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
+                                :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
+                            <FontAwesomeIcon v-else :icon="faImage"
+                                class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
                         </div>
 
-                        <SwiperSlide v-for="item in listProducts" :key="item.id">
-                            <button @click="onSelectProduct(item)" :disabled="item.code === product.code" :class="[
-                                'relative w-full rounded-lg border transition overflow-hidden flex flex-col',
-                                item.code === product.code
-                                    ? 'ring-1 primary'
-                                    : 'border-gray-200 hover:border-gray-300'
-                            ]">
-                                <!-- IMAGE FULL AREA -->
-                                <div class="relative w-full aspect-square bg-gray-50">
-                                    <Image v-if="item?.web_images?.main?.original" :src="item.web_images.main.original"
-                                        :alt="item.code" class="absolute inset-0 w-full h-full object-contain" />
-                                    <FontAwesomeIcon v-else :icon="faImage"
-                                        class="absolute inset-0 m-auto text-gray-300 text-xl" fixed-width />
-                                </div>
-
-                                <!-- VARIANT LABEL -->
-                                <div class="p-1">
-                                    <span :class="[
-                                        'block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700'
-                                    ]">
-                                        {{ item.variant_label }}
-                                    </span>
-                                </div>
-                            </button>
-                        </SwiperSlide>
-                    </Swiper>
+                        <div class="p-1">
+                            <span class="block text-[11px] font-medium px-2 py-0.5 rounded text-center truncate bg-gray-100 text-gray-700">
+                                {{ item.variant_label }}
+                            </span>
+                        </div>
+                    </button>
                 </div>
 
                 <!-- DESCRIPTION -->
@@ -728,9 +685,18 @@ onMounted(async () => {
             </span>
         </button>
 
+        <VariantStepOrdering
+            v-if="hasSizesPanel"
+            :product="product"
+            :listProducts="listProducts"
+            :isLoggedIn="Boolean(layout?.iris?.is_logged_in)"
+            :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+            @selectProduct="onSelectProduct"
+        />
+
         <!-- Section: Step discount (buy more, save more) -->
         <StepDiscountOffer
-            v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+            v-if="!hasSizesPanel && layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
             class="mt-4"
             :stepDiscount="product.step_discount"
             :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
@@ -742,7 +708,7 @@ onMounted(async () => {
         />
         
         <!-- ADD TO CART -->
-        <div class="mt-5 space-y-2">
+        <div v-if="!hasSizesPanel" class="mt-5 space-y-2">
             <PreOrderInfo v-if="product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
 
             <EcomAddToBasketv2
@@ -768,43 +734,36 @@ onMounted(async () => {
         </div>
 
         <!-- VARIANTS -->
-        <div v-if="listProducts?.length" class="bg-white shadow-sm p-1 rounded-md my-5">
-            <Swiper
-                :modules="[Navigation]"
-                :navigation="varinatNavigation"
-                :slides-per-view="3.2"
-                :space-between="6"
+        <div v-if="!hasSizesPanel && listProducts?.length" class="grid grid-cols-3 gap-1.5 bg-white shadow-sm p-1 rounded-md my-5">
+            <button
+                v-for="item in listProducts"
+                :key="item.id"
+                @click="onSelectProduct(item)"
+                :disabled="item.code === product.code"
+                class="w-full rounded-lg border overflow-hidden"
+                :class="item.code === product.code
+                    ? 'ring-1 primary'
+                    : 'border-gray-200'"
             >
-                <SwiperSlide v-for="item in listProducts" :key="item.id">
-                    <button
-                        @click="onSelectProduct(item)"
-                        :disabled="item.code === product.code"
-                        class="w-full rounded-lg border overflow-hidden"
-                        :class="item.code === product.code
-                            ? 'ring-1 primary'
-                            : 'border-gray-200'"
-                    >
-                        <div class="aspect-square bg-gray-50 relative">
-                            <Image
-                                v-if="item?.web_images?.main?.original"
-                                :src="item.web_images.main.original"
-                                class="absolute inset-0 object-contain"
-                            />
-                            <FontAwesomeIcon
-                                v-else
-                                :icon="faImage"
-                                class="absolute inset-0 m-auto text-gray-300" fixed-width
-                            />
-                        </div>
+                <div class="aspect-square bg-gray-50 relative">
+                    <Image
+                        v-if="item?.web_images?.main?.original"
+                        :src="item.web_images.main.original"
+                        class="absolute inset-0 object-contain"
+                    />
+                    <FontAwesomeIcon
+                        v-else
+                        :icon="faImage"
+                        class="absolute inset-0 m-auto text-gray-300" fixed-width
+                    />
+                </div>
 
-                        <div class="p-1">
-                            <span class="block text-[11px] bg-gray-100 rounded px-2 py-0.5 truncate">
-                                {{ item.variant_label }}
-                            </span>
-                        </div>
-                    </button>
-                </SwiperSlide>
-            </Swiper>
+                <div class="p-1">
+                    <span class="block text-[11px] bg-gray-100 rounded px-2 py-0.5 truncate">
+                        {{ item.variant_label }}
+                    </span>
+                </div>
+            </button>
         </div>
 
         <!-- DESCRIPTION -->
