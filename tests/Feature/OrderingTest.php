@@ -5777,9 +5777,13 @@ test('range advisor segments need five buyers and the gap analysis lists what si
     $orderOf($customer, [$own]);
     $orderOf($customer, [$forgotten], now()->subMonths(13));
 
+    $segmentCustomers = $buyers->concat([$customer]);
+    DB::table('addresses')->whereIn('id', $segmentCustomers->pluck('address_id'))->update(['postal_code' => '28013', 'country_code' => 'SE']);
+    DB::table('customers')->whereIn('id', $segmentCustomers->pluck('id'))->update(['location' => json_encode(['SE', 'Sweden', 'Stockholm'])]);
+
     \App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::run($this->shop);
 
-    $country     = data_get($customer->location, 0);
+    $country     = 'SE';
     $bestSellers = \App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country);
     $popularRow  = $bestSellers['items']->firstWhere('id', $popular->id);
 
@@ -5788,6 +5792,12 @@ test('range advisor segments need five buyers and the gap analysis lists what si
         ->and($popularRow->segment_repeat_customers)->toBe(2)
         ->and($popularRow->segment_reorder_rate)->toBe(0.4)
         ->and($popularRow->segment_revenue)->toBeGreaterThan(0)
+        ->and($popularRow->segment_level)->toBe('type_country')
+        ->and($bestSellers['items']->pluck('id')->duplicates()->all())->toBe([])
+        ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', 'NO')['segment'])->toMatchArray(['level' => 'type_group', 'region' => 'nordics', 'customers' => 6])
+        ->and(\App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::regionOf('US'))->toBe('na')
+        ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country, ['area' => '28'])['segment'])->toMatchArray(['level' => 'type_area', 'area' => '28', 'customers' => 6])
+        ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country, ['area' => '99'])['segment']['level'])->toBe('type_country')
         ->and($bestSellers['items']->pluck('id')->all())->not->toContain($rare->id)
         ->and($bestSellers['items']->pluck('id')->all())->not->toContain($own->id)
         ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, null, $country)['segment']['level'])->toBe('country')
@@ -5800,7 +5810,7 @@ test('range advisor segments need five buyers and the gap analysis lists what si
 
     $gaps = \App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps::run($customer->fresh());
 
-    expect($gaps['segment']['level'])->toBe('type_country')
+    expect($gaps['segment']['level'])->toBe('type_area')
         ->and($gaps['missing']->pluck('id')->all())->toContain($popular->id)
         ->and($gaps['missing']->pluck('id')->all())->not->toContain($own->id)
         ->and($gaps['forgotten']->pluck('id')->all())->toBe([$forgotten->id])
