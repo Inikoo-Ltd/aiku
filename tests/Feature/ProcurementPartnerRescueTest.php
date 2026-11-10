@@ -292,10 +292,19 @@ test('ordering from the manufacturing hub fills the shopping list, never a rescu
                 from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available) os, (select null::int as stock_family_id) stocks,
                     (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 6 as packed_in) p,
                     lateral ('.(new ReflectionMethod($buckets, 'rowFacts'))->invoke($buckets, $orgPartner, 14)->toRawSql().') rf')->quantity)
-            ->toBe((int) ceil(0.5 * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS))
+            ->toBe((int) ceil(0.5 * 2 * 14 - 3))
             ->and(collect($buckets->rescuable($orgPartner, 0)['buckets'])->pluck('bucket')->all())->toBe(['out', 'w1', 'w2'])
             ->and($buckets->rescuable($orgPartner, 0)['buckets'][0])->toHaveKeys(['cheapest', 'order_cheapest'])
             ->and(fn () => StoreRescuePurchaseOrder::make()->handle($orgPartner))->toThrow(ValidationException::class);
+
+        $hubQuantity = fn (float $usage, float $stock, int $batch) => (int) DB::selectOne('select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, 'null::numeric', 54, $orgPartner).' as quantity
+            from (select '.$usage.' as predicted_daily_usage) s, (select '.$stock.' as quantity_available) os, (select null::int as stock_family_id) stocks,
+                (select 108 as critical_days, 0 as partner_sko_price, '.$batch.' as order_quantum) rf')->quantity;
+
+        expect($hubQuantity(6.0686, 555, 1))->toBe(101)
+            ->and($hubQuantity(0.1328, 1.061, 26))->toBe(26)
+            ->and($hubQuantity(0.4085, 20, 18))->toBe(18)
+            ->and($hubQuantity(0.0563, 0, 1))->toBe(6);
 
         $this->post(route('grp.models.org-partner.shopping_list_order.store', ['orgPartner' => $orgPartner->id]))
             ->assertSessionHasErrors('rescue');
@@ -307,6 +316,8 @@ test('ordering from the manufacturing hub fills the shopping list, never a rescu
 });
 
 test('a rescue line orders at least a month of sales, never more than the partner can spare', function () {
+    $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
+    $this->orgPartner->refresh();
     $buckets  = GetPartnerStockCoverBuckets::make();
     $quantity = fn (string $spare) => DB::selectOne(
         'select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, $spare, 14, $this->orgPartner).' as quantity

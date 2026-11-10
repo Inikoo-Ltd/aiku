@@ -433,19 +433,32 @@ class GetPartnerStockCoverBuckets
      * than the partner can spare. Picking it at the partner and putting it away here takes 3 to 4
      * minutes, about 0.70 at 12 an hour (80 s a pick on average, Oct 2026), so a 10 line keeps handling
      * under a tenth of what it brings.
+     *
+     * From the manufacturing hub the quantity is the one the ordering card suggests, so a line the
+     * order adds is never one its own card calls overstock: what covers the critical threshold, with
+     * no month of sales on top and the line value raise stopping at the overstock edge, in whole
+     * batches, and one batch fewer when the whole ones pass the overstock edge and one fewer still
+     * lasts the lead time and lands nearer the threshold.
      */
     private function rescueQuantity(string $spare, int $leadDays, OrgPartner $orgPartner): string
     {
         $need     = "ceil(s.predicted_daily_usage * {$this->criticalDays()} - greatest(os.quantity_available, 0))";
         $forValue = 'least(coalesce(ceil('.self::MINIMUM_LINE_VALUE.' / nullif('.$this->orgSkoPrice($orgPartner).', 0)), 0), ceil(s.predicted_daily_usage * '.self::MAXIMUM_COVER_DAYS.'))';
 
-        $quantity = "least($spare, greatest(1, $need, ceil(s.predicted_daily_usage * ".self::MINIMUM_COVER_DAYS."), $forValue))";
-
         if ($orgPartner->partner->is_manufacturing_hub) {
-            $quantum = $this->orderQuantum($orgPartner);
+            $quantum   = $this->orderQuantum($orgPartner);
+            $stock     = 'greatest(os.quantity_available, 0)';
+            $usage     = 'nullif(s.predicted_daily_usage, 0)';
+            $overstock = "coalesce((select (sf.data->'stock_cover'->>'overstock_days')::int from stock_families sf where sf.id = stocks.stock_family_id), ".GetOrganisationStockCoverBuckets::EXCESS_DAYS.')';
+            $whole     = "(ceil(greatest(1, $need, least($forValue, floor(s.predicted_daily_usage * $overstock - $stock))) / $quantum) * $quantum)";
+            $fewer     = "($whole - $quantum)";
 
-            return "(ceil($quantity / $quantum) * $quantum)";
+            return "(case when ($stock + $whole) / $usage > $overstock and $fewer > 0 and ($stock + $fewer) / $usage >= $leadDays
+                and {$this->criticalDays()} - ($stock + $fewer) / $usage < ($stock + $whole) / $usage - {$this->criticalDays()}
+                then $fewer else $whole end)";
         }
+
+        $quantity = "least($spare, greatest(1, $need, ceil(s.predicted_daily_usage * ".self::MINIMUM_COVER_DAYS."), $forValue))";
 
         $carton      = $this->partnerCartonSkos();
         $inCartons   = "(ceil($quantity / $carton) * $carton)";
