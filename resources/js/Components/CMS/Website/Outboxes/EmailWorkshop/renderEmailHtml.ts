@@ -236,7 +236,7 @@ const renderText = (module: EmailModule, context: RenderContext): string => {
     const linkColor = text.computedStyle?.linkColor ?? context.linkColor
     const isUnderlined = isLinkUnderlined(text.computedStyle?.linkUnderline, context.isLinkUnderlined)
 
-    return blockTable('text_block', module, context, `<div style="${styleToString(text.style)}">${applyLinkColor(text.html ?? '', linkColor, isUnderlined)}</div>`)
+    return blockTable('text_block', module, context, `<div style="${styleToString(text.style)}">${paragraphSpacingHtml(applyLinkColor(text.html ?? '', linkColor, isUnderlined), text.computedStyle?.paragraphSpacing ?? '0')}</div>`)
 }
 
 const withStyleAttribute = (attributes: string, style: string): string => {
@@ -294,7 +294,7 @@ const renderButton = (module: EmailModule, context: RenderContext): string => {
         'button_block',
         module,
         context,
-        `<div class="alignment" align="${escapeAttribute(align)}"><a class="button" href="${escapeAttribute(button.href)}" target="${escapeAttribute(button.target ?? '_blank')}" style="${buttonLinkStyle(module, context.isMobile)}"><span style="word-break:break-word">${button.label ?? ''}</span></a></div>`,
+        `<div class="alignment" align="${escapeAttribute(align)}"><a class="button" href="${escapeAttribute(button.href)}" target="${escapeAttribute(button.target ?? '_blank')}" style="${buttonLinkStyle(module, context.isMobile)}"><span style="word-break:break-word">${paragraphSpacingHtml(button.label ?? '', '0')}</span></a></div>`,
         `text-align:${escapeAttribute(align)}`,
     )
 }

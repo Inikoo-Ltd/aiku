@@ -1,6 +1,7 @@
 import { useLayoutStore } from "@/Stores/layout"
 import { useLocaleStore } from "@/Stores/locale"
 import { router, usePage } from "@inertiajs/vue3"
+import axios from "axios"
 import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
 import { useEchoGrpPersonal } from '@/Stores/echo-grp-personal.js'
@@ -147,6 +148,42 @@ export const initialiseApp = () => {
         loadLanguageAsync(usePage().props.localeData.language.code)
     }
 
+    const applyBadges = (badges: Record<string, any>) => {
+        layout.notifications = badges.notifications
+        layout.ticket_badges = badges.ticket_badges
+        layout.task_badges = badges.task_badges
+        layout.development_badges = badges.development_badges
+        layout.leave_covers = badges.leave_covers
+        layout.dispatching_waiting_count = badges.dispatching_waiting_count
+        layout.crm_waiting_count = badges.crm_waiting_count
+        layout.crm_return_count = badges.crm_return_count
+        layout.products_need_review_count = badges.products_need_review_count
+        layout.master_updated_count = badges.master_updated_count
+        layout.faire_skipped_count = badges.faire_skipped_count
+
+        const coveredLeaveIds = layout.leave_covers.map((cover) => cover.id).join(",")
+        layout.rightSidebar.leaveCovers = {
+            show: layout.leave_covers.length > 0 && localStorage.getItem("leaveCoversDismissed") !== coveredLeaveIds,
+            coveredLeaveIds,
+        }
+    }
+
+    const fetchBadgesAfterPageLoad = () => {
+        axios.get(route("grp.json.layout.badges"))
+            .then(({ data }) => applyBadges(data))
+            .catch(() => {})
+    }
+
+    if (usePage().props?.auth?.user && typeof window !== "undefined") {
+        if (document.readyState === "complete") {
+            fetchBadgesAfterPageLoad()
+        } else {
+            window.addEventListener("load", fetchBadgesAfterPageLoad, { once: true })
+        }
+    }
+
+    const organisationNavigationRequested = new Set<string>()
+
     // Compared by identity so a colour the user has just picked in their profile is not immediately
     // overwritten by the props of the page load they picked it on
     let appliedOrganisationColours: { [key: string]: string } | undefined
@@ -230,7 +267,9 @@ export const initialiseApp = () => {
 
         // Set Navigation (for LeftSidebar)
         if (usePage().props.layout?.navigation) {
-            layout.navigation = usePage().props.layout.navigation ?? null
+            const navigation = usePage().props.layout.navigation
+            layout.navigation = { ...navigation, org: Array.isArray(navigation.org) ? {} : navigation.org }
+            organisationNavigationRequested.clear()
         }
 
         // Set Bookmarks (for Breadcrumbs), sent on first load only
@@ -254,10 +293,6 @@ export const initialiseApp = () => {
             layout.user = usePage().props.auth.user
         }
 
-        if (usePage().props.notifications) {
-            layout.notifications = usePage().props.notifications
-        }
-
         if (usePage().props.avatar_thumbnail) {
             layout.avatar_thumbnail = usePage().props.avatar_thumbnail
         }
@@ -266,52 +301,20 @@ export const initialiseApp = () => {
             layout.order_alerts = usePage().props.order_alerts as any
         }
 
-        if (usePage().props.ticket_badges !== undefined) {
-            layout.ticket_badges = usePage().props.ticket_badges as any
-        }
-
-        if (usePage().props.task_badges !== undefined) {
-            layout.task_badges = usePage().props.task_badges as any
-        }
-
-        if (usePage().props.development_badges !== undefined) {
-            layout.development_badges = usePage().props.development_badges as any
-        }
-
-        if (usePage().props.leave_covers !== undefined) {
-            layout.leave_covers = usePage().props.leave_covers as any
-            const coveredLeaveIds = layout.leave_covers.map((cover) => cover.id).join(",")
-            const dismissedLeaveIds = typeof window !== "undefined" ? localStorage.getItem("leaveCoversDismissed") : null
-            layout.rightSidebar.leaveCovers = {
-                show: layout.leave_covers.length > 0 && dismissedLeaveIds !== coveredLeaveIds,
-                coveredLeaveIds,
-            }
-        }
-
-        if (usePage().props.dispatching_waiting_count !== undefined) {
-            layout.dispatching_waiting_count = usePage().props.dispatching_waiting_count as number
-        }
-
-        if (usePage().props.crm_waiting_count !== undefined) {
-            layout.crm_waiting_count = usePage().props.crm_waiting_count as number
-        }
-
-        if (usePage().props.crm_return_count !== undefined) {
-            layout.crm_return_count = usePage().props.crm_return_count as number
-        }
-
-        if (usePage().props.products_need_review_count !== undefined) {
-            layout.products_need_review_count = usePage().props.products_need_review_count as number
-        }
-
-        if (usePage().props.master_updated_count !== undefined) {
-            layout.master_updated_count = usePage().props.master_updated_count as number
-        }
-
-        if (usePage().props.faire_skipped_count !== undefined) {
-            layout.faire_skipped_count = usePage().props.faire_skipped_count as number
-        }
-
         layout.app.name = "Aiku"
+    })
+
+    watchEffect(() => {
+        const organisation = layout.currentParams?.organisation
+        if (!organisation || !layout.navigation?.org || layout.navigation.org[organisation] || organisationNavigationRequested.has(organisation)) {
+            return
+        }
+
+        organisationNavigationRequested.add(organisation)
+        axios.get(route("grp.json.layout.organisation_navigation", { organisation }))
+            .then(({ data }) => {
+                layout.navigation.org[organisation] = data.navigation
+            })
+            .catch(() => organisationNavigationRequested.delete(organisation))
     })
 }

@@ -22,6 +22,7 @@ import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardSho
 import ShopIntervalStats from "@/Components/DataDisplay/Dashboard/ShopIntervalStats.vue"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import ShopMonthTarget from "@/Components/DataDisplay/Dashboard/ShopMonthTarget.vue"
+import CompetitorsSummaryLine from "@/Components/DataDisplay/Dashboard/CompetitorsSummaryLine.vue"
 import GroupWarehouseOverview from "@/Components/DataDisplay/Dashboard/GroupWarehouseOverview.vue"
 import OperationsDashboard from "@/Components/DataDisplay/Dashboard/OperationsDashboard.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -74,6 +75,7 @@ const props = defineProps<{
 	} | null
 	operations?: { section: string; route: { name: string } } | null
 	productDevelopmentsWaiting?: ProductDevelopmentWaitingWidgetData | null
+	competitors?: { number_competitors: number; cheaper: number; same: number; dearer: number; to_review: number; failing: number } | null
 }>()
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
@@ -343,7 +345,11 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 			<template #fallback>
 				<div class="skeleton mx-4 mt-4 h-72 rounded-lg" aria-busy="true" />
 			</template>
-			<ShopMonthTarget v-if="props.salesTargets" :month-target="props.salesTargets.month" :year-target="props.salesTargets.year" />
+			<ShopMonthTarget v-if="props.salesTargets" :month-target="props.salesTargets.month" :year-target="props.salesTargets.year">
+				<template v-if="props.competitors !== null" #footer>
+					<CompetitorsSummaryLine />
+				</template>
+			</ShopMonthTarget>
 		</Deferred>
 
 		<KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
@@ -352,6 +358,7 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 
 		<ShopIntervalStats v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks" :shop-blocks="props.dashboard?.super_blocks?.[0]?.shop_blocks" />
 
+		<div v-if="props.dashboard?.super_blocks?.[0]?.blocks" class="mx-4 mt-4 rounded-lg border border-gray-200 bg-white pb-4 shadow-sm">
 		<DashboardSettings
 			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
@@ -387,10 +394,11 @@ const onChangeDashboardTab = async (tabSlug: string): Promise<void> => {
 
 		<DashboardWidget
 			v-if="props.dashboard?.super_blocks?.[0]?.blocks"
-			class="mt-12"
+			class="mt-6"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>
+		</div>
 
 		<DashboardShopWidget
 			v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks"

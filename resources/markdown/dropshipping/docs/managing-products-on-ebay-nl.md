@@ -53,9 +53,9 @@ Mislukt het koppelen, dan zegt de rij "Your product is not in the listing yet": 
 Uw <b>Pricing Policy</b> in <b>Manage Sales Channel</b> bepaalt de eBay-prijs van elk product op basis van de actuele adviesprijs:
 
 - <b>± % over live RRP</b> of <b>± £ over live RRP</b> (€ bij de shops Europe en España): wij stellen de prijs in en houden hem gelijke tred met de adviesprijs. Slaat u een nieuwe regel op, dan wordt gevraagd <b>Reprice every product?</b>. Druk op <b>Save and reprice</b> om alle prijzen op eBay bij te werken. Producten waarvoor u uw eigen prijs instelde, worden niet aangeraakt, tenzij u ook het vakje aanvinkt om ze te resetten.
-- <b>Do not follow RRP</b>: u stelt zelf prijzen in op eBay. Wij uploaden of overschrijven ze nooit.
+- <b>Do not follow RRP</b>: u stelt zelf prijzen in op eBay. Wij sturen alleen een prijs wanneer het product op eBay wordt aangemaakt of wanneer u de prijs van een concept wijzigt in <b>Edit Product</b>; na publicatie wijzigen wij hem nooit. Concepten verschijnen niet in Seller Hub, dus stel de prijs van een concept in het venster <b>Edit Product</b> in voordat u het publiceert.
 
-Om sommige producten hun eigen prijs te geven, vinkt u ze aan en drukt u op <b>Edit Price (…)</b>. Om de titel, omschrijving of prijs van één product te wijzigen, drukt u op de bewerkknop op de rij ervan. Het venster <b>Edit Product</b> heeft <b>Title</b>, <b>Price Mapping</b> en <b>Description</b>. Druk op <b>Save & Publish</b> om de wijzigingen nu naar eBay te sturen, of op <b>Save as Draft</b>. De prijs moet boven nul blijven.
+Om sommige producten hun eigen prijs te geven, vinkt u ze aan en drukt u op <b>Edit Price (…)</b>. Om de titel, omschrijving of prijs van één product te wijzigen, drukt u op de bewerkknop op de rij ervan. Het venster <b>Edit Product</b> heeft <b>Title</b>, <b>Price Mapping</b> en <b>Description</b>. Druk op <b>Save & Publish</b> om de wijzigingen nu naar eBay te sturen, of op <b>Save as Draft</b>. De prijs moet boven nul blijven. Bij een concept publiceert <b>Save & Publish</b> het ook op eBay, met de opgeslagen titel en prijs.
 
 ## Voorraad
 

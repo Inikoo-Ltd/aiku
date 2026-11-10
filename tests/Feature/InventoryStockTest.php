@@ -1603,8 +1603,10 @@ test('stock, sko and trade unit showcases list their supplier products with link
 
 test('the sko list search and the search index find a sko by the code of its supplier product', function () {
     $warehouse = createWarehouse();
-    [$stock, $other] = array_slice(createStocks($this->group), 0, 2);
-    [$orgStock, $otherOrgStock] = createOrgStocks($this->organisation, [$stock, $other]);
+    $freshStock = fn (): Stock => StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), ['state' => StockStateEnum::ACTIVE]));
+    [$stock, $other] = [$freshStock(), $freshStock()];
+    $orgStock      = StoreOrgStock::make()->action($this->organisation, $stock, OrgStock::factory()->definition());
+    $otherOrgStock = StoreOrgStock::make()->action($this->organisation, $other, OrgStock::factory()->definition());
 
     $supplier = StoreSupplier::make()->action($this->group, Supplier::factory()->definition());
     OrgSupplier::where('supplier_id', $supplier->id)->where('organisation_id', $this->organisation->id)->exists()

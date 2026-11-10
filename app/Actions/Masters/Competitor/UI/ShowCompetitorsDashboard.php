@@ -18,6 +18,8 @@ use App\Models\Masters\Competitor;
 use App\Models\Masters\MasterAssetCompetitorProduct;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,9 +37,15 @@ class ShowCompetitorsDashboard extends OrgAction
 
     public const int SAME_PRICE_BAND = 5;
 
-    public function handle(Group $group): array
+    /**
+     * @param  array<int>|null  $masterShopIds  only these master shops, for an organisation or shop dashboard
+     * @param  bool  $withActivity  the weekly review counts and the 30-day trend, which the one-line summary does not show
+     */
+    public function handle(Group $group, ?array $masterShopIds = null, bool $withActivity = true): array
     {
-        $competitors = Competitor::where('group_id', $group->id)->get();
+        $competitors = Competitor::where('group_id', $group->id)
+            ->when($masterShopIds !== null, fn ($query) => $query->whereIn('master_shop_id', $masterShopIds))
+            ->get();
         if ($competitors->isEmpty()) {
             return ['number_competitors' => 0];
         }
@@ -47,7 +55,8 @@ class ShowCompetitorsDashboard extends OrgAction
             ->join('master_assets', 'master_assets.id', '=', 'master_asset_competitor_products.master_asset_id')
             ->join('competitor_products', 'competitor_products.id', '=', 'master_asset_competitor_products.competitor_product_id')
             ->join('competitors', 'competitors.id', '=', 'competitor_products.competitor_id')
-            ->where('master_assets.group_id', $group->id);
+            ->where('master_assets.group_id', $group->id)
+            ->when($masterShopIds !== null, fn ($query) => $query->whereIn('master_asset_competitor_products.master_shop_id', $masterShopIds));
 
         $band     = self::SAME_PRICE_BAND;
         $position = (clone $matches)
@@ -80,21 +89,6 @@ class ShowCompetitorsDashboard extends OrgAction
                 'active_products'     => (int) ($activeProducts[$masterShop->id] ?? 0),
             ])->values();
 
-        $weekStart = now()->startOfWeek();
-        $throughput = fn ($from, $to) => (clone $matches)
-            ->selectRaw("count(*) filter (where reviewed_at >= ? and reviewed_at < ?) as reviewed,
-                count(*) filter (where master_asset_competitor_products.status = 'confirmed' and coalesce(reviewed_at, master_asset_competitor_products.created_at) >= ? and coalesce(reviewed_at, master_asset_competitor_products.created_at) < ?) as confirmed", [$from, $to, $from, $to])
-            ->first();
-        $thisWeek = $throughput($weekStart, $weekStart->copy()->addWeek());
-        $lastWeek = $throughput($weekStart->copy()->subWeek(), $weekStart);
-
-        $trendStart = now()->startOfDay()->subDays(29);
-        $trend      = (clone $matches)
-            ->where('master_asset_competitor_products.status', 'confirmed')
-            ->whereRaw('coalesce(reviewed_at, master_asset_competitor_products.created_at) >= ?', [$trendStart])
-            ->selectRaw("coalesce(reviewed_at, master_asset_competitor_products.created_at)::date as day, count(*) as number")
-            ->groupBy('day')->pluck('number', 'day');
-
         $statusLabels = [
             CompetitorStatusEnum::ERROR->value        => __('Could not open the website'),
             CompetitorStatusEnum::BLOCKED->value      => __('The website blocked us'),
@@ -102,6 +96,8 @@ class ShowCompetitorsDashboard extends OrgAction
             CompetitorStatusEnum::SEARCH_BROKEN->value => __('The search link does not search'),
         ];
         $failing = [CompetitorStatusEnum::ERROR, CompetitorStatusEnum::BLOCKED, CompetitorStatusEnum::LOGIN_FAILED, CompetitorStatusEnum::SEARCH_BROKEN];
+
+        $activity = $withActivity ? $this->activity($matches) : ['throughput' => null, 'trend' => null];
 
         return [
             'number_competitors' => $competitors->count(),
@@ -121,17 +117,70 @@ class ShowCompetitorsDashboard extends OrgAction
                     ])->values(),
             ],
             'to_review'          => MasterAssetCompetitorProduct::join('master_assets', 'master_assets.id', '=', 'master_asset_competitor_products.master_asset_id')
-                ->where('master_assets.group_id', $group->id)->where('master_asset_competitor_products.status', 'suggested')->count(),
-            'throughput'         => [
+                ->where('master_assets.group_id', $group->id)->where('master_asset_competitor_products.status', 'suggested')
+                ->when($masterShopIds !== null, fn ($query) => $query->whereIn('master_asset_competitor_products.master_shop_id', $masterShopIds))
+                ->count(),
+            'throughput'         => $activity['throughput'],
+            'by_master_shop'     => $byMasterShop,
+            'trend'              => $activity['trend'],
+        ];
+    }
+
+    /**
+     * @return array{throughput: array, trend: Collection}
+     */
+    private function activity(Builder $matches): array
+    {
+        $weekStart = now()->startOfWeek();
+        $throughput = fn ($from, $to) => (clone $matches)
+            ->selectRaw("count(*) filter (where reviewed_at >= ? and reviewed_at < ?) as reviewed,
+                count(*) filter (where master_asset_competitor_products.status = 'confirmed' and coalesce(reviewed_at, master_asset_competitor_products.created_at) >= ? and coalesce(reviewed_at, master_asset_competitor_products.created_at) < ?) as confirmed", [$from, $to, $from, $to])
+            ->first();
+        $thisWeek = $throughput($weekStart, $weekStart->copy()->addWeek());
+        $lastWeek = $throughput($weekStart->copy()->subWeek(), $weekStart);
+
+        $trendStart = now()->startOfDay()->subDays(29);
+        $trend      = (clone $matches)
+            ->where('master_asset_competitor_products.status', 'confirmed')
+            ->whereRaw('coalesce(reviewed_at, master_asset_competitor_products.created_at) >= ?', [$trendStart])
+            ->selectRaw("coalesce(reviewed_at, master_asset_competitor_products.created_at)::date as day, count(*) as number")
+            ->groupBy('day')->pluck('number', 'day');
+
+        return [
+            'throughput' => [
                 'reviewed'  => ['this_week' => (int) $thisWeek->reviewed, 'last_week' => (int) $lastWeek->reviewed],
                 'confirmed' => ['this_week' => (int) $thisWeek->confirmed, 'last_week' => (int) $lastWeek->confirmed],
             ],
-            'by_master_shop'     => $byMasterShop,
-            'trend'              => collect(range(0, 29))->map(function (int $days) use ($trendStart, $trend) {
+            'trend'      => collect(range(0, 29))->map(function (int $days) use ($trendStart, $trend) {
                 $day = $trendStart->copy()->addDays($days)->toDateString();
 
                 return ['day' => $day, 'confirmed' => (int) ($trend[$day] ?? 0)];
             }),
+        ];
+    }
+
+    /**
+     * The one line under the month target on the group, organisation and shop dashboards.
+     *
+     * @param  array<int>|null  $masterShopIds
+     * @return array{number_competitors: int, cheaper: int, same: int, dearer: int, to_review: int, failing: int}|null
+     */
+    public static function summary(Group $group, ?array $masterShopIds = null): ?array
+    {
+        $dashboard = static::run($group, $masterShopIds, false);
+        if (!$dashboard['number_competitors']) {
+            return null;
+        }
+
+        $byMasterShop = collect($dashboard['by_master_shop']);
+
+        return [
+            'number_competitors' => $dashboard['number_competitors'],
+            'cheaper'            => $byMasterShop->sum('cheaper'),
+            'same'               => $byMasterShop->sum('same'),
+            'dearer'             => $byMasterShop->sum('dearer'),
+            'to_review'          => $dashboard['to_review'],
+            'failing'            => $dashboard['status']['failing'],
         ];
     }
 

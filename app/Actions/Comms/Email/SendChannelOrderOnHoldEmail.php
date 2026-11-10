@@ -84,11 +84,9 @@ class SendChannelOrderOnHoldEmail extends OrgAction
             return null;
         }
         $order->dispatchedEmails()->attach($dispatchedEmail, ['outbox_id' => $outbox->id]);
+        $dispatchedEmail->update(['data' => array_merge((array) $dispatchedEmail->data, ['email_type' => $this->emailType($order, $reminder)])]);
 
-        $subject = $outbox->emailOngoingRun?->email?->subject;
-        if ($subject) {
-            $subject = str_replace('[Order Number]', $order->reference, $subject);
-        }
+        $subject = $this->subject($order, $reminder);
 
         $result = $this->sendEmailWithMergeTags(
             $dispatchedEmail,
@@ -245,6 +243,33 @@ class SendChannelOrderOnHoldEmail extends OrgAction
         }
 
         return $html.$this->viewOrderButtonHtml($order);
+    }
+
+    public function emailType(Order $order, int $reminder): string
+    {
+        if (data_get($order->data, 'banned_delivery')) {
+            return 'no_delivery';
+        }
+
+        return match ($reminder) {
+            self::REMINDER => 'reminder',
+            self::FINAL_REMINDER => 'final_reminder',
+            default => 'notice',
+        };
+    }
+
+    /**
+     * The subject is written here, in the shop's language, for the same reason as the body: the outbox
+     * template's subject was one fixed English line, the same on the notice and both reminders (HELP-4580).
+     */
+    public function subject(Order $order, int $reminder): string
+    {
+        return match ($this->emailType($order, $reminder)) {
+            'no_delivery' => __('Order :reference is on hold and will not be sent out', ['reference' => $order->reference]),
+            'reminder' => __('Reminder: order :reference is still on hold, payment needed', ['reference' => $order->reference]),
+            'final_reminder' => __('Final reminder: order :reference will be cancelled if not paid', ['reference' => $order->reference]),
+            default => __('Order :reference is on hold, payment needed', ['reference' => $order->reference]),
+        };
     }
 
     /** Carbon formats an unknown locale as an empty string, which would leave "pay by" with no date */

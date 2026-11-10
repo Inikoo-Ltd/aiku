@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp\Layout;
 
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -16,20 +17,13 @@ class GetOrganisationsLayout
 {
     use AsAction;
 
-    public function handle(User $user): array
+    public function handle(User $user, Organisation $organisation): array
     {
-        $navigation = [];
-
-        foreach ($user->authorisedOrganisations as $organisation) {
-            if ($organisation->type == OrganisationTypeEnum::AGENT) {
-                $navigation[$organisation->slug] = GetAgentOrganisationNavigation::run($user, $organisation);
-            } elseif ($organisation->type == OrganisationTypeEnum::SHOP) {
-                $navigation[$organisation->slug] = GetOrganisationNavigation::run($user, $organisation);
-            } elseif ($organisation->type == OrganisationTypeEnum::DIGITAL_AGENCY) {
-                $navigation[$organisation->slug] = GetDigitalAgencyOrganisationNavigation::run($user, $organisation);
-            }
-        }
-
-        return $navigation;
+        return match ($organisation->type) {
+            OrganisationTypeEnum::AGENT => GetAgentOrganisationNavigation::run($user, $organisation),
+            OrganisationTypeEnum::SHOP => GetOrganisationNavigation::run($user, $organisation),
+            OrganisationTypeEnum::DIGITAL_AGENCY => GetDigitalAgencyOrganisationNavigation::run($user, $organisation),
+            default => [],
+        };
     }
 }

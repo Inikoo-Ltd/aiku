@@ -89,6 +89,8 @@ use App\Models\Billables\Charge;
 use App\Models\Billables\Service;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
+use App\Actions\Catalogue\Product\StoreProduct;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\ShopSalesTarget;
@@ -1020,6 +1022,31 @@ test('UI Index catalogue product inside department', function () {
             ->component('Org/Catalogue/Products')
             ->has('title')
             ->has('breadcrumbs', 4);
+    });
+});
+
+test('UI Index catalogue product inside department sorts by the column picked', function () {
+    $highStockProduct = Product::where('family_id', $this->family->id)->where('code', 'zz-help-4574')->first()
+        ?? StoreProduct::make()->action($this->family, array_merge(Product::factory()->definition(), [
+            'code'        => 'zz-help-4574',
+            'price'       => 100,
+            'trade_units' => [['id' => $this->product->tradeUnits()->first()->id, 'quantity' => 1]],
+        ]));
+    $highStockProduct->updateQuietly(['state' => ProductStateEnum::ACTIVE, 'available_quantity' => 1000, 'is_main' => true]);
+    $this->product->updateQuietly(['state' => ProductStateEnum::ACTIVE, 'available_quantity' => 1]);
+
+    $response = get(route('grp.org.shops.show.catalogue.departments.show.products.index', [
+        $this->organisation->slug,
+        $this->shop->slug,
+        $this->department->slug,
+        'index_sort'    => '-available_quantity',
+        'index_perPage' => 1000,
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) use ($highStockProduct) {
+        $codes = collect($page->toArray()['props']['index']['data'])->pluck('code')->values();
+        expect($codes)->toContain($highStockProduct->code, $this->product->code)
+            ->and($codes->search($highStockProduct->code))->toBeLessThan($codes->search($this->product->code));
     });
 });
 

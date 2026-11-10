@@ -1200,7 +1200,7 @@ test('staff decline an appointment request from the list', function () {
         'state'               => AppointmentStateEnum::REQUESTED->value,
     ]);
 
-    $listUrl = route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug, 'tab' => 'requested']);
+    $listUrl = route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug, 'elements' => ['state' => 'requested']]);
 
     $this->from($listUrl)
         ->patch(route('grp.models.appointment.decline', ['appointment' => $appointment->id]), ['reason' => 'Fully booked'])
@@ -1738,17 +1738,69 @@ test('appointment history keeps every reschedule and change of state', function 
 });
 
 test('UI Index appointments', function (Appointment $appointment) {
-    $this->get(route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug, 'tab' => 'upcoming']))
+    $this->get(route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug]))
         ->assertInertia(function (AssertableInertia $page) use ($appointment) {
             $page
                 ->component('Org/Shop/CRM/Appointments')
                 ->has('breadcrumbs', 3)
                 ->has('pageHead.subNavigation', 6)
-                ->where('tabs.current', 'upcoming')
-                ->has('tabs.navigation.requested')
-                ->where('upcoming.data', fn ($rows) => collect($rows)->contains('id', $appointment->id));
+                ->missing('tabs')
+                ->has('tableQueryBuilderProps.default.elementGroups.state.elements.cancelled')
+                ->where('data.data', fn ($rows) => collect($rows)->contains('id', $appointment->id));
         });
 })->depends('cancel and rebook an appointment');
+
+test('every appointment in the list shows its state with who set it, cancelled ones included', function () {
+    Appointment::enableAuditing();
+
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'             => 'Closed list '.Str::random(6),
+        'meeting_mode'     => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+        'duration_minutes' => 30,
+    ]);
+    $day = now()->addDays(5)->format('Y-m-d');
+
+    $cancelled = StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => $day.' 10:00',
+        'contact_name'        => 'Cancelled '.Str::random(6),
+    ]);
+    UpdateAppointment::make()->action($cancelled, ['state' => AppointmentStateEnum::CANCELLED->value, 'state_reason' => 'Changed plans']);
+
+    $upcoming = StoreAppointment::make()->action($this->shop, [
+        'appointment_type_id' => $appointmentType->id,
+        'starts_at'           => $day.' 12:00',
+        'contact_name'        => 'Upcoming '.Str::random(6),
+        'created_by_user_id'  => $this->user->id,
+    ]);
+
+    $rowsFor = function (array $parameters): \Illuminate\Support\Collection {
+        $rows = collect();
+        $this->get(route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug, ...$parameters]))
+            ->assertInertia(function (AssertableInertia $page) use (&$rows) {
+                $rows = collect($page->toArray()['props']['data']['data']);
+            });
+
+        return $rows;
+    };
+
+    $all = $rowsFor(['perPage' => 1000]);
+    $row = $all->firstWhere('id', $cancelled->id);
+
+    expect($all->pluck('id'))->toContain($cancelled->id, $upcoming->id)
+        ->and($row['status']['label'])->toBe('Cancelled')
+        ->and($row['status']['by'])->toBe($this->user->chatName())
+        ->and($row['status']['reason'])->toBe('Changed plans')
+        ->and($all->firstWhere('id', $upcoming->id)['status']['label'])->toBe('Accepted')
+        ->and($all->firstWhere('id', $upcoming->id)['status']['by'])->toBe($this->user->chatName())
+        ->and($all->firstWhere('id', $upcoming->id)['status']['reason'])->toBeNull();
+
+    $onlyCancelled = $rowsFor(['elements' => ['state' => 'cancelled'], 'perPage' => 1000]);
+
+    expect($onlyCancelled->pluck('id'))->toContain($cancelled->id)
+        ->not->toContain($upcoming->id)
+        ->and($onlyCancelled->pluck('state')->unique()->values()->all())->toBe(['cancelled']);
+});
 
 test('UI Show appointments dashboard', function (Appointment $appointment) {
     $dashboardUrl = route('grp.org.shops.show.crm.appointments.dashboard', [$this->organisation->slug, $this->shop->slug]);

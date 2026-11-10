@@ -502,9 +502,9 @@ test('agent manager only sees their own agent organisation', function () {
         ->and($agentUser->authTo('agent.'.$organisation->id))->toBeTrue()
         ->and($agentUser->worksOnlyForAgents())->toBeTrue()
         ->and(array_keys(\App\Actions\UI\Grp\Layout\GetGroupNavigation::run($agentUser)))->toBe(['tickets'])
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)))->toBe([$organisation->slug])
-        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]))->toBe(['agent_orders', 'agent_suppliers', 'agent_products', 'agent_warehouse', 'agent_accounting', 'agent_reports', 'hr', 'agent_settings'])
-        ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser)[$organisation->slug]['agent_suppliers']['topMenu']['subSections'])->pluck('root')->all())->toBe([
+        ->and($agentUser->authorisedOrganisations->pluck('slug')->all())->toBe([$organisation->slug])
+        ->and(array_keys(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser, $organisation)))->toBe(['agent_orders', 'agent_suppliers', 'agent_products', 'agent_warehouse', 'agent_accounting', 'agent_reports', 'hr', 'agent_settings'])
+        ->and(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run($agentUser, $organisation)['agent_suppliers']['topMenu']['subSections'])->pluck('root')->all())->toBe([
             'grp.org.agent.org_suppliers.',
         ]);
 
@@ -3608,7 +3608,7 @@ test('the stock delivery timeline takes each purchase order step from the earlie
         ->and($timeline['purchase_order_'.PurchaseOrderStateEnum::SUBMITTED->value]['timestamp']->toDateTimeString())->toBe('2026-03-08 09:00:00');
 });
 
-test('a money request takes off what the agent already paid the supplier, a transfer can not pay more than is due and removing it opens the request again, and only the agent sets its fee (HELP-4097)', function () {
+test('a money request asks an open order\'s advance by what was asked only, not what the agent already paid the supplier, a transfer can not pay more than is due and removing it opens the request again, and only the agent sets its fee (HELP-4097)', function () {
     $orgAgent          = createFreshOrgAgent($this);
     $order             = UpdatePurchaseOrderStateToSubmitted::make()->action(collect(createAgentPurchaseOrders($this, $orgAgent, 1))->first()->refresh())->refresh();
     $agent             = $orgAgent->agent;
@@ -3624,18 +3624,18 @@ test('a money request takes off what the agent already paid the supplier, a tran
     $paid       = round($advance / 2, 2);
 
     \App\Actions\SupplyChain\AgentPayment\StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $client->id, 'type' => 'supplier_deposit', 'date' => date('Y-m-d'), 'amount' => $paid, 'purchase_order_id' => $order->id]);
-    expect(abs($advanceDue() - ($advance - $paid)))->toBeLessThan(0.001);
+    expect(abs($advanceDue() - $advance))->toBeLessThan(0.001);
 
     $order->updateQuietly(['created_at' => '2026-10-01', 'agent_order_reference' => null]);
     expect($advanceDue())->toBe(0.0);
     $order->updateQuietly(['created_at' => now()]);
-    expect(abs($advanceDue() - ($advance - $paid)))->toBeLessThan(0.001);
+    expect(abs($advanceDue() - $advance))->toBeLessThan(0.001);
 
     actingAs(agentOrganisationAdmin($agentOrganisation, 'agt-mr-'.Str::lower(Str::random(6))));
 
-    $this->post(route('grp.models.agent.money_request.store', $agent->id), ['organisation_id' => $client->id, 'lines' => [['kind' => 'advance', 'purchase_order_id' => $order->id, 'amount' => $advance]]])
+    $this->post(route('grp.models.agent.money_request.store', $agent->id), ['organisation_id' => $client->id, 'lines' => [['kind' => 'advance', 'purchase_order_id' => $order->id, 'amount' => $advance + 1]]])
         ->assertSessionHasErrors('lines');
-    $this->post(route('grp.models.agent.money_request.store', $agent->id), ['organisation_id' => $client->id, 'lines' => [['kind' => 'advance', 'purchase_order_id' => $order->id, 'amount' => $advance - $paid]]])
+    $this->post(route('grp.models.agent.money_request.store', $agent->id), ['organisation_id' => $client->id, 'lines' => [['kind' => 'advance', 'purchase_order_id' => $order->id, 'amount' => $advance]]])
         ->assertSessionHasNoErrors();
     $depositRequest = \App\Models\SupplyChain\DepositRequest::where('agent_id', $agent->id)->latest('id')->firstOrFail();
 
@@ -3650,8 +3650,8 @@ test('a money request takes off what the agent already paid the supplier, a tran
     $this->patch(route('grp.models.org_agent.agent_fee.update', $orgAgent->id), ['agent_fee_percentage' => 0])->assertForbidden();
     $this->patch(route('grp.models.deposit_request.approve', $depositRequest->id))->assertSessionHasNoErrors();
     $receipt = fn () => \Illuminate\Http\UploadedFile::fake()->create('statement.pdf', 10, 'application/pdf');
-    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance - $paid + 1, 'receipt' => $receipt()])->assertSessionHasErrors('amount');
-    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance - $paid, 'receipt' => $receipt()])->assertSessionHasNoErrors();
+    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance + 1, 'receipt' => $receipt()])->assertSessionHasErrors('amount');
+    $this->post(route('grp.models.deposit_request.pay', $depositRequest->id), ['date' => date('Y-m-d'), 'amount' => $advance, 'receipt' => $receipt()])->assertSessionHasNoErrors();
 
     $transfer = \App\Models\SupplyChain\AgentPayment::where('deposit_request_id', $depositRequest->id)->firstOrFail();
     expect($depositRequest->refresh()->state)->toBe(\App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum::SETTLED)
@@ -3673,6 +3673,11 @@ test('a money request takes off what the agent already paid the supplier, a tran
     $this->get(route('grp.media.download', $receipt->ulid))->assertNotFound();
 
     actingAs($this->adminGuest->getUser());
+
+    $history = collect($this->get(route('grp.org.procurement.org_agents.show', [$client->slug, $orgAgent->slug, 'tab' => 'history']))
+        ->assertOk()->viewData('page')['props']['history']['data']);
+    expect($history->where('auditable_type', 'AgentPayment')->pluck('auditable_id'))->toContain($transfer->id)
+        ->and($history->where('auditable_type', 'DepositRequest')->where('auditable_id', $depositRequest->id)->pluck('new_values')->pluck('state'))->toContain('settled');
 });
 
 test('an agent order the agent keeps a ledger for shows its goods, money requested and paid to the factory instead of paying the factory, and the agent accounting dashboard shows the ledger and money requests (HELP-4097)', function () {

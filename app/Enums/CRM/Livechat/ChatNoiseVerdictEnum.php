@@ -33,8 +33,8 @@ enum ChatNoiseVerdictEnum: string
     public static function definitions(): array
     {
         return [
-            'genuine'                => 'a person who wants something from us as a seller: a customer or somebody who may become one, asking about products, prices, an order, delivery, an account. Also anybody we are already dealing with, such as a courier or a supplier answering us. A voicemail notice is genuine too: somebody rang us and is waiting to be called back. When in doubt, this one.',
-            'spam'                   => 'unsolicited selling to us or fishing: somebody offering their products, manufacturing, SEO, marketing, collaborations, loans, legal scares, or small talk with no request.',
+            'genuine'                => 'a person who wants something from us as a seller: a customer or somebody who may become one, asking about products, prices, an order, delivery, an account. Also anybody we are already dealing with, such as a courier or a supplier answering us. A voicemail notice is genuine too: somebody rang us and is waiting to be called back. Somebody who wants to buy or resell our products is genuine even when they call it a partnership or a collaboration, or ask for samples and discounts. When in doubt, this one.',
+            'spam'                   => 'unsolicited selling to us or fishing: somebody offering their own products, manufacturing, SEO, marketing, services, loans, legal scares, influencers or promoters asking for free products, or small talk with no request.',
             'out_of_office'          => 'an automatic reply saying the person is away.',
             'marketing'              => 'a newsletter or a promotion sent to a list.',
             'supplier_circular'      => 'a stock list or an offer a supplier sends to all its customers at once.',

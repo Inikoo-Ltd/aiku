@@ -127,6 +127,22 @@ describe('staff messaging', function () {
             ->and($queries->filter(fn (string $sql) => preg_match('/from "(delivery_notes|orders|picking_sessions)"/', $sql))->count())->toBeLessThanOrEqual(3);
     });
 
+    test('the conversations list sends each avatar once beside the list, with only the links the screens draw', function () {
+        Event::fake([\App\Events\StaffMessageSent::class]);
+        fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);
+        $conversation = \App\Actions\Chat\Staff\StoreStaffConversation::run($this->user, ['user_ids' => [$this->otherUser->id]]);
+        \App\Actions\Chat\Staff\SendStaffMessage::run($conversation, $this->user, ['body' => 'avatars apart']);
+
+        $response = actingAs($this->user)->getJson(route('grp.chat.staff.conversations.index'))->assertOk();
+        $listed   = collect($response->json('data'))->firstWhere('ulid', $conversation->ulid);
+        $sources  = ['original' => 'a', 'original_2x' => 'b', 'avif' => 'c', 'avif_2x' => 'd', 'webp' => 'e', 'webp_2x' => 'f', 'png' => 'g', 'png_2x' => 'h'];
+
+        expect($listed['participants'])->each->not->toHaveKey('avatar')
+            ->and($response->getContent())->toContain('"avatars":{')
+            ->and(User::chatAvatarOf($sources))->toBe(['original' => 'a', 'original_2x' => 'b', 'avif' => 'c', 'avif_2x' => 'd'])
+            ->and(User::chatAvatarOf(null))->toBeNull();
+    });
+
     test('reaction toggles on and off', function () {
         Event::fake([\App\Events\StaffMessageSent::class]);
         fakeActionJobs(\App\Actions\Chat\Staff\TranslateStaffMessage::class);

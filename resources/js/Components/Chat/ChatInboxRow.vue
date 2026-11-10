@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faStar, faStoreAlt, faEye, faPaperclip } from "@fal"
 import { faEllipsisVertical, faBan, faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import Checkbox from "primevue/checkbox"
 import { ctrans } from "@/Composables/useTrans"
 import { capitalize } from "@/Composables/capitalize"
 import { waitingLeft } from "@/Composables/useChatWaitingForCustomer"
@@ -49,6 +50,10 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                 class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
                 <LoadingIcon class="w-6 h-6 text-white" />
             </div>
+
+            <span v-if="ctx.isBulkSelectable(c)" class="shrink-0 flex items-center" @click.stop @pointerdown.stop>
+                <Checkbox :model-value="!!ctx.bulkSelected[c.ulid]" binary :aria-label="ctrans('Select')" @update:model-value="ctx.toggleBulkSelected(c)" />
+            </span>
 
             <button v-if="!ctx.trashView && !ctx.isReadOnly" type="button"
                 :data-tooltip="c.is_highlighted ? ctrans('Remove highlight') : ctrans('Highlight')"
@@ -162,6 +167,10 @@ const promiseLabel = (at: string) => ctx.minuteClock && ctx.formatPromiseTime(at
                 class="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
                 <LoadingIcon class="w-8 h-8 text-white" />
             </div>
+
+            <span v-if="ctx.isBulkSelectable(c)" class="shrink-0 flex items-center" @click.stop @pointerdown.stop>
+                <Checkbox :model-value="!!ctx.bulkSelected[c.ulid]" binary :aria-label="ctrans('Select')" @update:model-value="ctx.toggleBulkSelected(c)" />
+            </span>
 
             <button v-if="!ctx.isReadOnly" type="button"
                 class="absolute top-1/2 right-2 -translate-y-1/2 z-30 w-7 h-7 flex items-center justify-center rounded-full bg-white text-gray-500 shadow-md ring-1 ring-gray-200 hover:bg-gray-100 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"

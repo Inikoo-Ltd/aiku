@@ -89,7 +89,7 @@ class GetStaffCoworkers
      * @param Collection<int, User> $users
      * @return array<int, array|null> user id => picture sources
      */
-    protected function avatarsByUser(Collection $users): array
+    public function avatarsByUser(Collection $users): array
     {
         $keys = $users->filter(fn (User $user) => $user->image_id)
             ->mapWithKeys(fn (User $user) => [$user->id => 'staff-avatar:'.$user->id.':'.$user->image_id]);
@@ -108,7 +108,7 @@ class GetStaffCoworkers
             $avatars = array_merge($avatars, $fresh);
         }
 
-        return $keys->map(fn (string $key) => $avatars[$key])->all();
+        return $keys->map(fn (string $key) => User::chatAvatarOf($avatars[$key]))->all();
     }
 
     /**

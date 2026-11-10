@@ -1918,3 +1918,24 @@ test('an accepted channel order to a country the shop does not deliver to is hel
             ->and($listed('deliverable'))->toBeFalse();
     });
 });
+
+test('each on-hold email names the order and says whether it is the notice, a reminder or the final reminder', function () {
+    $order = (new Order())->forceFill(['reference' => 'AWD-1', 'data' => []]);
+    $email = SendChannelOrderOnHoldEmail::make();
+
+    expect($email->subject($order, SendChannelOrderOnHoldEmail::NOTICE))->toBe('Order AWD-1 is on hold, payment needed')
+        ->and($email->subject($order, SendChannelOrderOnHoldEmail::REMINDER))->toBe('Reminder: order AWD-1 is still on hold, payment needed')
+        ->and($email->subject($order, SendChannelOrderOnHoldEmail::FINAL_REMINDER))->toBe('Final reminder: order AWD-1 will be cancelled if not paid')
+        ->and($email->emailType($order, SendChannelOrderOnHoldEmail::FINAL_REMINDER))->toBe('final_reminder');
+
+    $order->data = ['banned_delivery' => ['country_code' => 'XX']];
+    expect($email->emailType($order, SendChannelOrderOnHoldEmail::REMINDER))->toBe('no_delivery')
+        ->and($email->subject($order, SendChannelOrderOnHoldEmail::REMINDER))->toBe('Order AWD-1 is on hold and will not be sent out');
+
+    app()->setLocale('es');
+    try {
+        expect($email->subject($order->forceFill(['data' => []]), SendChannelOrderOnHoldEmail::REMINDER))->toBe('Recordatorio: el pedido AWD-1 sigue retenido, pago pendiente');
+    } finally {
+        app()->setLocale('en');
+    }
+});

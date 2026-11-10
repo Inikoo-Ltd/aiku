@@ -31,6 +31,7 @@ use Illuminate\Support\Str;
 use App\Actions\SysAdmin\Organisation\StoreOrganisation;
 use App\Models\Production\Production;
 use App\Actions\Procurement\PartnerShoppingListItem\DeletePartnerShoppingListItem;
+use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItem;
 use App\Actions\Procurement\PartnerShoppingListItem\StorePartnerShoppingListItems;
 use App\Actions\Procurement\OrgPartner\GetPartnerStockCoverBuckets;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
@@ -473,6 +474,20 @@ test('UI partner shopping list index', function () {
     $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [
         $this->organisation->slug, $this->orgPartner->id, 'filter[category]' => 'none,999999', 'filter[origin]' => 'us', 'filter[rank]' => 'A',
     ]))->assertOk();
+});
+
+test('partner shopping list keeps rows in place when lines share a created_at', function () {
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)->forceDelete();
+    $orgStocks = createOrgStocks($this->orgPartner->organisation, Stock::orderBy('id')->take(2)->get()->all());
+
+    $older = StorePartnerShoppingListItem::make()->action($this->orgPartner, $orgStocks[0], ['quantity' => 1]);
+    $newer = StorePartnerShoppingListItem::make()->action($this->orgPartner, $orgStocks[1], ['quantity' => 1]);
+    PartnerShoppingListItem::whereIn('id', [$older->id, $newer->id])->update(['created_at' => now()->startOfMinute()]);
+
+    UpdatePartnerShoppingListItem::make()->action($newer->refresh(), ['priority' => 'urgent']);
+
+    $this->get(route('grp.org.procurement.org_partners.show.shopping_list.index', [$this->organisation->slug, $this->orgPartner->id]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', fn ($rows) => collect($rows)->pluck('id')->take(2)->all() === [$newer->id, $older->id]));
 });
 
 test('UI partner shipping list index', function () {
@@ -1193,6 +1208,15 @@ test('agent stock groups read the lead time the ordering card reads and are neve
     expect($isOut())->toBeTrue()
         ->and($bucketOnPurchaseOrderPage(null))->toBe('out')
         ->and($bucketOnPurchaseOrderPage($purchaseOrder->id + 1000000))->toBe('out')
+        ->and($bucketOnPurchaseOrderPage($purchaseOrder->id))->toBe('out');
+
+    $orgStock->update(['quantity_available' => 10]);
+    $orgStock->stats()->updateOrCreate([], ['days_of_cover' => 30, 'predicted_daily_usage' => 1, 'stock_value' => 100]);
+    expect($bucketOnPurchaseOrderPage(null))->toBe('w1')
+        ->and($bucketOnPurchaseOrderPage($purchaseOrder->id))->toBe('w1');
+
+    $orgStock->stats()->updateOrCreate([], ['days_of_cover' => 100, 'predicted_daily_usage' => 1, 'stock_value' => 100]);
+    expect($bucketOnPurchaseOrderPage(null))->toBe('w2')
         ->and($bucketOnPurchaseOrderPage($purchaseOrder->id))->toBe('ok');
     DB::table('purchase_orders')->where('id', $purchaseOrder->id)->update(['deleted_at' => now()]);
 
@@ -2009,7 +2033,7 @@ test('agent drafts are sent once every organisation is ready, or early with a re
     expect(App\Actions\Procurement\OrgAgent\SendAgentDraftsToAgent::organisationsNotReady($ours))->toBe([$otherOrganisation->code]);
     expect(App\Actions\Procurement\OrgAgent\SendAgentDraftsToAgent::organisationsNotReady((clone $ours)->forceFill(['data' => ['from_upload_id' => 1]])))->toBe([]);
 
-    $this->patch(route('grp.models.purchase-order.submit', $ours->id))->assertSessionHasErrors('purchase_order');
+    $this->patch(route('grp.models.purchase-order.submit', $ours->id))->assertSessionHasErrors('others_not_ready');
     expect($ours->fresh()->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS);
 
     $tell = App\Actions\Procurement\OrgAgent\TellOrganisationsAboutSupplierDraft::make();
@@ -2042,6 +2066,17 @@ test('agent drafts are sent once every organisation is ready, or early with a re
         ->and($theirs->fresh()->data)->not->toHaveKey('sent_without_waiting');
 
     expect(fn () => $send->handle($theirOrgAgent, [$supplier->id]))->toThrow(ValidationException::class);
+
+    $oursAlone   = $draftWithLine($ourOrgSupplier);
+    $theirsAlone = $draftWithLine($theirOrgSupplier);
+
+    $this->patch(route('grp.models.purchase-order.submit', $oursAlone->id), ['submit_without_waiting_reason' => 'short'])->assertSessionHasErrors('submit_without_waiting_reason');
+    $this->patch(route('grp.models.purchase-order.submit', $oursAlone->id), ['submit_without_waiting_reason' => 'Our container leaves Friday'])->assertSessionHasNoErrors();
+
+    expect($oursAlone->fresh()->state)->toBe(PurchaseOrderStateEnum::SUBMITTED)
+        ->and($oursAlone->fresh()->data['sent_without_waiting']['reason'])->toBe('Our container leaves Friday')
+        ->and($oursAlone->fresh()->data['sent_without_waiting']['organisations'])->toBe([$otherOrganisation->code])
+        ->and($theirsAlone->fresh()->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS);
 });
 
 test('agent purchase orders board starts at submitted so the agent never sees a draft', function () {

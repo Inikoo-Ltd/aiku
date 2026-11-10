@@ -480,6 +480,14 @@ test('hydrate available quantity recovers stale not-for-sale status', function (
     $product->updateQuietly(['is_for_sale' => true]);
     $product = ProductHydrateAvailableQuantity::run($product->refresh());
     expect($product->status)->not->toBe(ProductStatusEnum::NOT_FOR_SALE);
+
+    $product = UpdateProduct::make()->action($product, ['state' => ProductStateEnum::DISCONTINUED]);
+    expect($product->refresh()->status)->toBe(ProductStatusEnum::DISCONTINUED);
+
+    $product = UpdateProduct::make()->action($product, ['state' => ProductStateEnum::ACTIVE, 'is_for_sale' => true]);
+    $product->refresh();
+    expect($product->status)->not->toBe(ProductStatusEnum::DISCONTINUED)
+        ->and($product->is_for_sale)->toBeTrue();
 })->depends('update product');
 
 test('update product trade units recalculates units', function (Product $product) {
@@ -1977,7 +1985,7 @@ test('the NEW IN page lists the products of its own shop inside their NEW IN per
     $newShop = fn (): Shop => tap(
         StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value])),
         fn (Shop $shop) => StoreWebsite::make()->action($shop, Website::factory()->definition())
-    );
+    )->refresh();
     $newFamily = function (Shop $shop): ProductCategory {
         $family = StoreProductCategory::make()->action(
             StoreProductCategory::make()->action($shop, array_merge(ProductCategory::factory()->definition(), ['type' => ProductCategoryTypeEnum::DEPARTMENT->value])),

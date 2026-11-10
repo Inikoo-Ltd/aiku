@@ -16,11 +16,13 @@ use App\Models\Helpers\Currency;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasHistory;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * A line of an agent's ledger for one client organisation, in the agent's currency. Money in is a transfer the
@@ -52,10 +54,57 @@ use Illuminate\Support\Carbon;
  * @property int|null $media_id
  * @property int|null $created_by
  */
-class AgentPayment extends Model
+class AgentPayment extends Model implements Auditable
 {
     use InGroup;
     use SoftDeletes;
+    use HasHistory;
+
+    protected array $auditInclude = [
+        'amount',
+        'type',
+        'date',
+        'method',
+        'reference',
+        'notes',
+    ];
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public function transformAudit(array $data): array
+    {
+        $typeLabels   = AgentPaymentTypeEnum::labels();
+        $methodLabels = PurchaseOrderPaymentMethodEnum::labels();
+        $humanise     = fn (string $key, mixed $value): mixed => match ($key) {
+            'type'   => $typeLabels[$value instanceof \BackedEnum ? $value->value : $value] ?? $value,
+            'method' => $value ? ($methodLabels[$value instanceof \BackedEnum ? $value->value : $value] ?? $value) : $value,
+            'date'   => $value ? Carbon::parse($value)->format('j M Y') : $value,
+            default  => $value,
+        };
+
+        foreach (['old_values', 'new_values'] as $side) {
+            $values = [];
+            foreach ($this->auditInclude as $key) {
+                if (array_key_exists($key, $data[$side] ?? [])) {
+                    $values[$key] = $humanise($key, $data[$side][$key]);
+                }
+            }
+            $data[$side] = $values;
+        }
+
+        if (($data['event'] ?? null) === 'created') {
+            unset($data['new_values']['type'], $data['new_values']['reference']);
+        }
+
+        return $data;
+    }
+
+    public function generateTags(): array
+    {
+        return ['procurement'];
+    }
 
     protected $guarded = [];
 

@@ -18,6 +18,7 @@ use App\Enums\Production\Artisan\ArtisanPayTypeEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
+use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\SysAdmin\User;
@@ -102,17 +103,10 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
             $this->refuse(JobOrderItemTask::wholeMixBatchesMessage($mixBatchKg));
         }
 
-        $data       = $jobOrder->data ?? [];
-        $authorised = collect($data['overproductions'] ?? [])->where('session_id', $session->id);
-        $extra      = (float) $authorised->sum('quantity');
-        $extraLeft  = round(max(0, $extra - max(0, $previous - $quantity)), 3);
-        $takenOff   = $authorised->pluck('taken_off_lines')->filter()->first() ?? [];
+        $extra     = $this->authorisedExtra($jobOrder, $session);
+        $extraLeft = round(max(0, $extra - max(0, $previous - $quantity)), 3);
 
-        $data['overproductions'] = collect($data['overproductions'] ?? [])
-            ->map(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id ? array_merge($entry, ['quantity' => $extraLeft]) : $entry)
-            ->reject(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id && $extraLeft <= 0)
-            ->values()
-            ->all();
+        $data                  = $jobOrder->data ?? [];
         $data['corrections'][] = [
             'session_id'    => $session->id,
             'step'          => $task->stepName(),
@@ -130,22 +124,7 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         $session->is_under_target = CloseManufactureTaskSession::make()->isUnderTarget($session);
         $session->save();
 
-        if ($extra > $extraLeft) {
-            $required         = round((float) $task->quantity_required - ($extra - $extraLeft), 3);
-
-            $task->setRequiredQuantity($required);
-            $quantityBefore = (int) $item->quantity;
-            UpdateJobOrderItem::make()->action($item, ['quantity' => max(1, min($quantityBefore, (int) $task->artefactsIn($required)))]);
-
-            if ($takenOff) {
-                $stillTakenOff = CloseManufactureTaskSession::make()->giveBackToRestOfOrder($item, $takenOff, $quantityBefore - (int) $item->refresh()->quantity);
-                $data          = $jobOrder->refresh()->data;
-                $data['overproductions'] = collect($data['overproductions'] ?? [])
-                    ->map(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id ? array_merge(Arr::except($entry, 'taken_off_lines'), $stillTakenOff ? ['taken_off_lines' => $stillTakenOff] : []) : $entry)
-                    ->all();
-                $jobOrder->update(['data' => $data]);
-            }
-        }
+        $this->giveBackAuthorisedExtra($session, $task, $extraLeft);
 
         CalculateJobOrderItemTaskQuantities::run($task->refresh());
         if ($quantity < $previous) {
@@ -241,9 +220,10 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         if ($reason === '') {
             $this->refuse(__('Say why the entry moves'));
         }
-
-        if (collect($fromJob->data['overproductions'] ?? [])->where('session_id', $session->id)->isNotEmpty()) {
-            $this->refuse(__('A manager authorised extra on this entry, void it and enter it again'));
+        $sameLine = $from->job_order_item_id == $toItem->id;
+        $takenOff = collect($fromJob->data['overproductions'] ?? [])->where('session_id', $session->id)->pluck('taken_off_lines')->filter()->first() ?? [];
+        if (!$sameLine && array_key_exists($toItem->id, $takenOff)) {
+            $this->refuse(__('A manager\'s extra on this entry was taken off :reference, void it and enter it again', ['reference' => $toJob->reference]));
         }
 
         $packSize = $to->packSize();
@@ -267,6 +247,8 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         }
         $lineAfter = (int) $toItem->refresh()->quantity;
 
+        $authorisedExtra = $sameLine ? 0 : $this->authorisedExtra($fromJob, $session);
+
         $correction = [
             'session_id'    => $session->id,
             'step'          => $to->stepName(),
@@ -285,6 +267,9 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         if ($fromJob->id != $toJob->id) {
             $correction['from_job'] = $fromJob->reference;
             $correction['to_job']   = $toJob->reference;
+        }
+        if ($authorisedExtra > 0) {
+            $correction['authorised_extra_removed'] = $authorisedExtra;
         }
         if ($lineAfter != $lineBefore) {
             $correction['line_from'] = $lineBefore;
@@ -316,6 +301,9 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
         $session->save();
 
         CalculateJobOrderItemTaskQuantities::run($from->refresh());
+        if (!$sameLine) {
+            $this->giveBackAuthorisedExtra($session, $from->refresh(), 0);
+        }
         $this->undoLineGrowth($session, $from->refresh());
         $from->refresh()->followRecipeWhenNothingRecorded();
         CalculateJobOrderItemTaskQuantities::run($to->refresh());
@@ -352,6 +340,51 @@ class CorrectManufactureTaskSessionQuantity extends OrgAction
             ->values()
             ->all();
         $jobOrder->update(['data' => $data]);
+    }
+
+    private function authorisedExtra(JobOrder $jobOrder, ManufactureTaskSession $session): float
+    {
+        return (float) collect($jobOrder->refresh()->data['overproductions'] ?? [])->where('session_id', $session->id)->sum('quantity');
+    }
+
+    /**
+     * Extra a manager authorised on an entry (CloseManufactureTaskSession) is kept only up to $extraLeft:
+     * the rest comes off the step and its line, and goes back to the order lines it was taken off.
+     * An entry moved to another line (HELP-4589) keeps none, the extra was made on the line it moves to;
+     * moved to another step of the same line it keeps it all, the line really holds those goods.
+     */
+    private function giveBackAuthorisedExtra(ManufactureTaskSession $session, JobOrderItemTask $task, float $extraLeft): void
+    {
+        $jobOrder   = $task->jobOrder->refresh();
+        $item       = $task->jobOrderItem;
+        $data       = $jobOrder->data ?? [];
+        $authorised = collect($data['overproductions'] ?? [])->where('session_id', $session->id);
+        $extra      = (float) $authorised->sum('quantity');
+        if ($extra <= $extraLeft) {
+            return;
+        }
+        $takenOff = $authorised->pluck('taken_off_lines')->filter()->first() ?? [];
+
+        $data['overproductions'] = collect($data['overproductions'])
+            ->map(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id ? array_merge($entry, ['quantity' => $extraLeft]) : $entry)
+            ->reject(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id && $extraLeft <= 0)
+            ->values()
+            ->all();
+        $jobOrder->update(['data' => $data]);
+
+        $required = round((float) $task->quantity_required - ($extra - $extraLeft), 3);
+        $task->setRequiredQuantity($required);
+        $quantityBefore = (int) $item->quantity;
+        UpdateJobOrderItem::make()->action($item, ['quantity' => max(1, min($quantityBefore, (int) $task->artefactsIn($required)))]);
+
+        if ($takenOff) {
+            $stillTakenOff           = CloseManufactureTaskSession::make()->giveBackToRestOfOrder($item, $takenOff, $quantityBefore - (int) $item->refresh()->quantity);
+            $data                    = $jobOrder->refresh()->data;
+            $data['overproductions'] = collect($data['overproductions'] ?? [])
+                ->map(fn (array $entry) => ($entry['session_id'] ?? null) == $session->id ? array_merge(Arr::except($entry, 'taken_off_lines'), $stillTakenOff ? ['taken_off_lines' => $stillTakenOff] : []) : $entry)
+                ->all();
+            $jobOrder->update(['data' => $data]);
+        }
     }
 
     private function refuse(string $message): never

@@ -15,6 +15,7 @@ use App\Actions\Procurement\SupplierAgreedTerm\UI\IndexSupplierAgreedTerms;
 use App\Http\Resources\Procurement\ProcurementNoteResource;
 use App\Http\Resources\Procurement\SupplierAgreedTermResource;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\SupplyChain\Agent\UI\GetAgentHistoryAuditScope;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -64,6 +65,8 @@ class ShowOrgAgent extends OrgAction
     public function htmlResponse(OrgAgent $orgAgent, ActionRequest $request): Response
     {
         $forAgent = $this->organisation->type === OrganisationTypeEnum::AGENT || $orgAgent->organisation_id !== $this->organisation->id;
+
+        $history = fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value, auditScope: GetAgentHistoryAuditScope::run($orgAgent->agent, ['type' => 'OrgAgent', 'id' => $orgAgent->id, 'label' => $orgAgent->agent->code], $orgAgent->organisation_id)));
 
         return Inertia::render(
             'Procurement/OrgAgent',
@@ -168,13 +171,11 @@ class ShowOrgAgent extends OrgAction
                     fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($orgAgent->agent, OrgAgentTabsEnum::NOTES->value, $orgAgent->organisation, $forAgent))
                     : Inertia::optional(fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($orgAgent->agent, OrgAgentTabsEnum::NOTES->value, $orgAgent->organisation, $forAgent))),
 
-                OrgAgentTabsEnum::HISTORY->value => $this->tab == OrgAgentTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($orgAgent, OrgAgentTabsEnum::HISTORY->value)))
+                OrgAgentTabsEnum::HISTORY->value => $this->tab == OrgAgentTabsEnum::HISTORY->value ? $history : Inertia::optional($history)
             ]
         )->table(IndexSupplierAgreedTerms::make()->tableStructure(prefix: OrgAgentTabsEnum::AGREED_TERMS->value))
             ->table(IndexProcurementNotes::make()->tableStructure(prefix: OrgAgentTabsEnum::NOTES->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: OrgAgentTabsEnum::HISTORY->value, withRecordColumn: true))
             ->table(IndexSupplierMessages::make()->tableStructure($orgAgent, prefix: OrgAgentTabsEnum::INBOX->value))
             ->table(IndexAgentMoneyRequests::make()->tableStructure(prefix: OrgAgentTabsEnum::MONEY->value, forClient: true))
             ->table(IndexAttachments::make()->tableStructure(prefix: OrgAgentTabsEnum::ATTACHMENTS->value));

@@ -22,7 +22,16 @@ import {
     faSquare,
     faTimesCircle,
     faVirus,
-    faEyeEvil
+    faEyeEvil,
+    faBell,
+    faHourglassEnd,
+    faBan,
+    faShoppingCart,
+    faTruck,
+    faCalendarAlt,
+    faFileInvoiceDollar,
+    faEnvelope,
+    faClipboardList
 } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Icon from "@/Components/Icon.vue";
@@ -48,7 +57,16 @@ library.add(
     faHandPaper,
     faCheck,
     faTimesCircle,
-    faEyeEvil
+    faEyeEvil,
+    faBell,
+    faHourglassEnd,
+    faBan,
+    faShoppingCart,
+    faTruck,
+    faCalendarAlt,
+    faFileInvoiceDollar,
+    faEnvelope,
+    faClipboardList
 );
 defineProps<{
     data: object,
@@ -81,6 +99,9 @@ const locale = inject("locale", aikuLocaleStructure);
 <template>
     <div>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(type)="{ item: dispatchedEmail }">
+            <Icon v-if="dispatchedEmail.type" :data="dispatchedEmail.type" />
+        </template>
         <template #cell(state)="{ item: dispatchedEmail }">
             <Icon v-if="dispatchedEmail.state" :data="dispatchedEmail.state" />
             <Icon v-if="dispatchedEmail.state_icon" :data="dispatchedEmail.state_icon" />

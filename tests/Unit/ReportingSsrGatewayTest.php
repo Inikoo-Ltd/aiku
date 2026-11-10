@@ -131,3 +131,20 @@ test('a server rendered page keeps its cache headers', function () {
     expect($response->headers->has('X-Aiku-Ssr-Fallback'))->toBeFalse()
         ->and($response->headers->get('Cache-Control'))->toContain('s-maxage=300');
 });
+
+test('a storefront page carries one title: the SSR one, or the fallback when SSR gives none', function () {
+    $page = ['component' => 'Iris/Home', 'props' => [], 'url' => '/', 'version' => ''];
+    $titleCount = function (array $ssrHead) use ($page): int {
+        Http::fake(['http://127.0.0.1:13714/render' => Http::response(['head' => $ssrHead, 'body' => '<div></div>'])]);
+        app()->forgetInstance(\Inertia\Ssr\SsrState::class);
+
+        return substr_count(view('app-iris', ['page' => $page])->render(), '<title');
+    };
+
+    expect($titleCount(['<title data-inertia>Shop</title>']))->toBe(1)
+        ->and($titleCount([]))->toBe(1);
+
+    Http::fake(['http://127.0.0.1:13714/render' => Http::response([], 400)]);
+    app()->forgetInstance(\Inertia\Ssr\SsrState::class);
+    expect(substr_count(view('app-iris', ['page' => $page])->render(), '<title'))->toBe(1);
+});

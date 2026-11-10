@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\UpdateShopifyProductVariant;
 use App\Actions\Dropshipping\Wix\Product\UpdateWixProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateWooProduct;
+use App\Actions\Retina\Ebay\PublishRetinaEbayPortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithRetinaCustomerOwnedRouteModels;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -62,15 +63,18 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
             data_set($modelData, 'settings.pricing.value', $pricingValue);
         }
 
-        if (Arr::has($modelData, 'customer_price')) {
+        $setsPrice = Arr::has($modelData, 'customer_price');
+        if ($setsPrice) {
             data_set($modelData, 'settings.pricing_opt_out', true);
         }
 
         $portfolio = UpdatePortfolio::run($portfolio, $modelData);
 
-        if (! $isDraft) {
+        if ($isDraft && $portfolio->platform->type === PlatformTypeEnum::EBAY && Arr::get($portfolio->data, 'is_platform_draft')) {
+            $this->updateEbayChannel($portfolio, $setsPrice, publishDraft: false);
+        } elseif (! $isDraft) {
             match ($portfolio->platform->type) {
-                PlatformTypeEnum::EBAY => $this->updateEbayChannel($portfolio),
+                PlatformTypeEnum::EBAY => $this->updateEbayChannel($portfolio, $setsPrice),
                 PlatformTypeEnum::WOOCOMMERCE => UpdateWooProduct::run($portfolio),
                 PlatformTypeEnum::SHOPIFY => $this->updateShopifyChannel($portfolio),
                 PlatformTypeEnum::WIX => UpdateWixProduct::run($portfolio),
@@ -79,9 +83,13 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
         }
     }
 
-    public function updateEbayChannel(Portfolio $portfolio): void
+    public function updateEbayChannel(Portfolio $portfolio, bool $setsPrice = false, bool $publishDraft = true): void
     {
-        $ebayError = UpdateEbayOffer::run($portfolio, withTitle: true);
+        $ebayError = UpdateEbayOffer::run($portfolio, withTitle: true, withPrice: $setsPrice);
+
+        if (!$ebayError && $publishDraft && Arr::get($portfolio->data, 'is_platform_draft')) {
+            $ebayError = PublishRetinaEbayPortfolio::run($portfolio)->upload_warning;
+        }
 
         if ($ebayError) {
             throw ValidationException::withMessages([
@@ -105,7 +113,7 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
     {
         return [
             'customer_product_name' => ['sometimes', 'string', 'max:255'],
-            'customer_price' => ['sometimes', 'string', 'numeric'],
+            'customer_price' => ['sometimes', 'string', 'numeric', 'gt:0'],
             'customer_description' => ['sometimes', 'string', 'max:10000'],
             'pricing_type' => ['sometimes', 'required', Rule::in(['percent', 'fixed', 'not_follow'])],
             'pricing_value' => ['exclude_if:pricing_type,not_follow', 'required_with:pricing_type', 'numeric', 'gte:-100'],

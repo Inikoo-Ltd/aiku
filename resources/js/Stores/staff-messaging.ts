@@ -173,6 +173,10 @@ export const useStaffMessaging = defineStore("staff-messaging", {
             const { data } = await axios.get(route("grp.chat.staff.conversations.index"))
             if (!Array.isArray(data?.data)) return
 
+            const avatars: Record<number, StaffParticipant["avatar"]> = data.avatars ?? {}
+            for (const conversation of data.data as StaffConversation[]) {
+                for (const participant of conversation.participants) participant.avatar = avatars[participant.id] ?? null
+            }
             this.conversations = data.data
             this.fetched = true
 

@@ -223,6 +223,10 @@ const iconList: { [key: string]: string } = {
             </template>
         </template>
 
+        <template v-else-if="layout.currentParams?.organisation">
+            <div v-for="placeholder in 8" :key="placeholder" class="skeleton h-7 rounded opacity-30" />
+        </template>
+
         <!-- LeftSidebar: Grp -->
         <template v-else>
             <template v-for="(grpNav, itemKey) in layout.navigation.grp" :key="itemKey">

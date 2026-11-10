@@ -395,7 +395,14 @@ class GetProductIncomingStock
                     ->orWhere(function ($query) {
                         $query->where('partner_shopping_list_items.state', ShoppingListItemStateEnum::ORDERED)
                             ->whereNull('transactions.deleted_at')
-                            ->whereIn('orders.state', [OrderStateEnum::CREATING->value, OrderStateEnum::SUBMITTED->value]);
+                            ->whereNotIn('orders.state', [OrderStateEnum::DISPATCHED->value, OrderStateEnum::CANCELLED->value])
+                            ->whereNotExists(function ($query) {
+                                $query->select(DB::raw(1))
+                                    ->from('delivery_note_order')
+                                    ->join('stock_deliveries', 'stock_deliveries.delivery_note_id', 'delivery_note_order.delivery_note_id')
+                                    ->whereColumn('delivery_note_order.order_id', 'orders.id')
+                                    ->whereNull('stock_deliveries.deleted_at');
+                            });
                     });
             })
             ->get([

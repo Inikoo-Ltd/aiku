@@ -30,6 +30,18 @@ export const htmlToPlainText = (html: string): string =>
 		.replace(/\s+/g, " ")
 		.trim()
 
+const TITLE_BLOCK_OPENING_PATTERN = /<(p|div|h[1-6])\b[^>]*>/gi
+const TITLE_BLOCK_CLOSING_PATTERN = /<\/(p|div|h[1-6])\s*>/gi
+const TITLE_LINE_BREAK_PATTERN = /^(\s*<br\s*\/?>)+|(<br\s*\/?>\s*)+$/gi
+
+export const blogTitleInlineHtml = (html: string): string =>
+	(html ?? "")
+		.replace(TITLE_BLOCK_CLOSING_PATTERN, "<br>")
+		.replace(TITLE_BLOCK_OPENING_PATTERN, "")
+		.trim()
+		.replace(TITLE_LINE_BREAK_PATTERN, "")
+		.trim()
+
 const readId = (attributes: string): string | null => {
 	const match = attributes.match(ID_ATTRIBUTE_PATTERN)
 

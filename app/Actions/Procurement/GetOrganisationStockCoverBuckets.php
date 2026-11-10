@@ -248,12 +248,17 @@ class GetOrganisationStockCoverBuckets
      * enough on the way is not called doomed. The cases read cover.days; it is worked out once a row
      * (the offset keeps the planner from repeating it in every case) and what is coming is only
      * looked up inside the widest window: a SKO covered by its shelf alone needs no second look.
+     * cover.days_landed leaves out $draftOrderSkos: a draft purchase order lands a full lead time from
+     * now at the earliest, so it cannot save a SKO from being doomed (HELP-4572), only from the later groups.
      */
-    public static function bucketOnCoverDaysExpression(string $orgStocks, string $stats, string $widestWindowDays, string $cases, string $alsoComingSkos = '0'): string
+    public static function bucketOnCoverDaysExpression(string $orgStocks, string $stats, string $widestWindowDays, string $cases, string $alsoComingSkos = '0', string $draftOrderSkos = '0'): string
     {
-        return "(select case $cases end from (select case when $stats.predicted_daily_usage > 0 and $stats.days_of_cover <= $widestWindowDays
-            then $stats.days_of_cover + (".self::comingSkosExpression($orgStocks)." + $alsoComingSkos) / $stats.predicted_daily_usage
-            else $stats.days_of_cover end as days offset 0) as cover)";
+        return "(select case $cases end from (select landed.days as days_landed,
+                landed.days + case when $stats.predicted_daily_usage > 0 and $stats.days_of_cover <= $widestWindowDays
+                    then ($draftOrderSkos) / $stats.predicted_daily_usage else 0 end as days
+            from (select case when $stats.predicted_daily_usage > 0 and $stats.days_of_cover <= $widestWindowDays
+                then $stats.days_of_cover + (".self::comingSkosExpression($orgStocks)." + $alsoComingSkos) / $stats.predicted_daily_usage
+                else $stats.days_of_cover end as days offset 0) as landed offset 0) as cover)";
     }
 
     /**
@@ -271,7 +276,7 @@ class GetOrganisationStockCoverBuckets
      */
     public static function atRiskCases(string $lead, string $understock, string $overstock, string $watchDays): string
     {
-        return "when cover.days <= $lead then 'w1'
+        return "when cover.days_landed <= $lead then 'w1'
                 when cover.days <= least($understock, $overstock) then 'w2'
                 when cover.days <= least(3 * $lead, $overstock) then 'w3'
                 when cover.days <= least($watchDays, $overstock) then 'w4'";

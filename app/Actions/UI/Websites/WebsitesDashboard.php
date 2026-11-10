@@ -51,7 +51,8 @@ class WebsitesDashboard extends OrgAction
         $query   = fn (string $key) => is_string(request()->query($key)) ? request()->query($key) : null;
         $website = $query('website');
         $days    = $query('days') === null ? null : (int) $query('days');
-        [$website, $days] = $this->rememberedFilters($user, $website, $days);
+        $range   = array_key_exists((string) $query('varnish_range'), GetWebsitesVarnishMetrics::RANGES) ? $query('varnish_range') : null;
+        [$website, $days, $range] = $this->rememberedFilters($user, $website, $days, $range);
         $day     = $query('day');
         $country = $query('country');
 
@@ -85,8 +86,8 @@ class WebsitesDashboard extends OrgAction
                     : Inertia::optional(fn () => WebsiteVisitorCountriesResource::collection(IndexWebsiteVisitorCountries::make()->handle($group, $user, $website, $days, $day, $country, WebsiteDashboardTabsEnum::VISITOR_COUNTRIES->value))),
 
                 WebsiteDashboardTabsEnum::VARNISH->value => $this->tab == WebsiteDashboardTabsEnum::VARNISH->value ?
-                    fn () => GetWebsitesVarnishMetrics::run($group, request()->query('varnish_range'))
-                    : Inertia::optional(fn () => GetWebsitesVarnishMetrics::run($group, request()->query('varnish_range'))),
+                    fn () => GetWebsitesVarnishMetrics::run($group, $range)
+                    : Inertia::optional(fn () => GetWebsitesVarnishMetrics::run($group, $range)),
 
                 'edge_filters' => $this->edgeFilters($group, $user, $website, $days, $day, $country),
 
@@ -101,24 +102,25 @@ class WebsitesDashboard extends OrgAction
     }
 
     /**
-     * The website and period chosen last are kept in the user's settings, so a refresh or a new
-     * login opens the dashboard as it was left.
+     * The website, period and Varnish range chosen last are kept in the user's settings, so a
+     * refresh, a new login or another device opens the dashboard as it was left.
      *
-     * @return array{0: string|null, 1: int|null}
+     * @return array{0: string|null, 1: int|null, 2: string|null}
      */
-    protected function rememberedFilters(User $user, ?string $website, ?int $days): array
+    protected function rememberedFilters(User $user, ?string $website, ?int $days, ?string $range): array
     {
         $saved  = Arr::get($user->settings ?? [], 'websites_dashboard', []);
-        $chosen = [
-            'website' => $website ?? Arr::get($saved, 'website'),
-            'days'    => $days ?? Arr::get($saved, 'days'),
-        ];
+        $chosen = array_filter([
+            'website'       => $website ?? Arr::get($saved, 'website'),
+            'days'          => $days ?? Arr::get($saved, 'days'),
+            'varnish_range' => $range ?? Arr::get($saved, 'varnish_range'),
+        ], fn ($value) => $value !== null);
 
         if ($chosen != $saved) {
             $user->updateQuietly(['settings' => array_merge($user->settings ?? [], ['websites_dashboard' => $chosen])]);
         }
 
-        return [$chosen['website'], $chosen['days'] === null ? null : (int) $chosen['days']];
+        return [Arr::get($chosen, 'website'), isset($chosen['days']) ? (int) $chosen['days'] : null, Arr::get($chosen, 'varnish_range')];
     }
 
     /**

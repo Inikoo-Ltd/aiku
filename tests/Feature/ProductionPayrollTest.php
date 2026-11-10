@@ -785,6 +785,7 @@ describe('production reward pay bands', function () {
     });
 
     test('a recipe step target overrides the task target, sets the pay band and is snapshotted when the session closes', function () {
+        $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(12, 0));
         $this->manufactureTask->update(['standard_rate' => 10000]);
 
         SetArtefactsRecipe::make()->action($this->production, [
@@ -945,6 +946,7 @@ describe('production reward pay bands', function () {
     });
 
     test('a session closed below its step target is flagged and a manager logs the reason', function () {
+        $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(12, 0));
         AttachManufactureTaskToArtefact::make()->action($this->artefact, [
             'manufacture_task_id' => $this->manufactureTask->id,
             'position'            => 1,
@@ -978,6 +980,7 @@ describe('production reward pay bands', function () {
     });
 
     test('an hourly artisan gets no tier, bonus or under-target flag, and their sessions this week follow the pay type', function () {
+        $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(12, 0));
         AttachManufactureTaskToArtefact::make()->action($this->artefact, [
             'manufacture_task_id' => $this->manufactureTask->id,
             'position'            => 1,
@@ -1115,6 +1118,7 @@ describe('production reward pay bands', function () {
     });
 
     test('hours on a product in development go to the development band, guru dev for a guru, with no target check or manager pin', function () {
+        $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(12, 0));
         $this->manufactureTask->update(['standard_rate' => null, 'is_piece_rate' => true]);
         \App\Actions\Production\Artefact\SetArtefactStepTarget::run($this->artefact, $this->manufactureTask->id, null);
 
@@ -1167,6 +1171,7 @@ describe('production reward pay bands', function () {
     });
 
     test('job lines that share a step are made as one combined batch and the quantity and time are shared back to each line', function () {
+        $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(12, 0));
         $suffix    = rand(10000, 99999);
         $artefacts = collect(['CMB-A', 'CMB-B'])->map(function (string $code) use ($suffix) {
             $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code.$suffix, 'name' => 'Combined '.$code]);

@@ -53,9 +53,9 @@ Schlägt der Abgleich fehl, zeigt die Zeile „Your product is not in the listin
 Ihre <b>Pricing Policy</b> in <b>Manage Sales Channel</b> legt den eBay-Preis jedes Produkts anhand seiner aktuellen UVP fest:
 
 - <b>± % over live RRP</b> oder <b>± £ over live RRP</b> (€ in den Shops Europe und España): Wir legen den Preis fest und halten ihn synchron, wenn sich die UVP ändert. Speichern Sie eine neue Regel, werden Sie gefragt: <b>Reprice every product?</b>. Drücken Sie <b>Save and reprice</b>, um alle Preise bei eBay zu aktualisieren. Produkte, bei denen Sie einen eigenen Preis festgelegt haben, bleiben unberührt, außer Sie haken zusätzlich das Kästchen zum Zurücksetzen an.
-- <b>Do not follow RRP</b>: Sie legen die Preise bei eBay selbst fest. Wir laden sie nie hoch und überschreiben sie nicht.
+- <b>Do not follow RRP</b>: Sie legen die Preise bei eBay selbst fest. Wir senden einen Preis nur, wenn das Produkt bei eBay erstellt wird oder wenn Sie den Preis eines Entwurfs in <b>Edit Product</b> ändern; nach der Veröffentlichung ändern wir ihn nie. Entwürfe erscheinen nicht im Seller Hub, legen Sie den Preis eines Entwurfs daher im Fenster <b>Edit Product</b> fest, bevor Sie ihn veröffentlichen.
 
-Um einigen Produkten einen eigenen Preis zu geben, haken Sie sie an und drücken Sie <b>Edit Price (…)</b>. Um Titel, Beschreibung oder Preis eines einzelnen Produkts zu ändern, drücken Sie die Bearbeiten-Schaltfläche in seiner Zeile. Das Fenster <b>Edit Product</b> hat <b>Title</b>, <b>Price Mapping</b> und <b>Description</b>. Drücken Sie <b>Save & Publish</b>, um die Änderungen sofort an eBay zu senden, oder <b>Save as Draft</b>. Der Preis muss über null bleiben.
+Um einigen Produkten einen eigenen Preis zu geben, haken Sie sie an und drücken Sie <b>Edit Price (…)</b>. Um Titel, Beschreibung oder Preis eines einzelnen Produkts zu ändern, drücken Sie die Bearbeiten-Schaltfläche in seiner Zeile. Das Fenster <b>Edit Product</b> hat <b>Title</b>, <b>Price Mapping</b> und <b>Description</b>. Drücken Sie <b>Save & Publish</b>, um die Änderungen sofort an eBay zu senden, oder <b>Save as Draft</b>. Der Preis muss über null bleiben. Bei einem Entwurf veröffentlicht <b>Save & Publish</b> ihn außerdem bei eBay, mit dem gespeicherten Titel und Preis.
 
 ## Lagerbestand
 

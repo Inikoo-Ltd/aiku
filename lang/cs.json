@@ -1274,7 +1274,6 @@
     "A line has no amount, or is a credit: enter it by hand.": "Řádek nemá částku nebo je dobropis: zadejte jej ručně.",
     "A line is in the request twice.": "Řádek je v požadavku dvakrát.",
     "A line shows up here when there is stock to send to the partner gathering location": "Zde se zobrazí řádek, pokud je k dispozici zásoba k odeslání na sběrné místo partnera.",
-    "A manager authorised extra on this entry, void it and enter it again": "Manažer povolil u tohoto záznamu navíc, zneplatněte jej a zadejte znovu",
     "A marketplace order is refunded on the marketplace. The goods can be received back here, but no refund is issued in Aiku.": "Objednávka na tržišti je vrácena na tržišti. Zboží lze zde přijmout zpět, ale v Aiku se peníze nevrací.",
     "A marketplace order is refunded or replaced on the marketplace. The goods can be received back here, but no refund or replacement is made in Aiku.": "Objednávka z tržiště se vrací nebo nahrazuje na tržišti. Zboží lze zde přijmout zpět, ale v Aiku se neprovádí žádná refundace ani náhrada.",
     "A material is no longer needed today, reload the page": "Materiál už dnes není potřeba, načtěte stránku znovu",

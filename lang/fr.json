@@ -10892,7 +10892,6 @@
     "Type the reason": "Saisissez le motif",
     "This job is not waiting for an answer about the end of the shift": "Cet ordre n'attend pas de réponse concernant la fin de l'horaire de travail",
     "A combined batch cannot be corrected, void it and enter it again": "Un lot regroupé ne peut pas être corrigé, annulez-le et saisissez-le à nouveau",
-    "A manager authorised extra on this entry, void it and enter it again": "Un responsable a autorisé un surplus sur cette saisie, annulez-la et saisissez-la à nouveau",
     "Only :left left on :step": "Il ne reste que :left sur :step",
     "Only a finished production entry can be corrected": "Seule une saisie de production terminée peut être corrigée",
     "Pick another step of the same job line": "Choisissez une autre étape de la même ligne d'ordre",

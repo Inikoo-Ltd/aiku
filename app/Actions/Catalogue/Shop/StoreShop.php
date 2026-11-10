@@ -24,6 +24,7 @@ use App\Actions\SysAdmin\Group\Seeders\SeedAikuScopedSections;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
 use App\Actions\SysAdmin\Organisation\SetIconAsShopLogo;
 use App\Actions\Traits\Rules\WithStoreShopRules;
+use App\Actions\UI\Grp\BreakUserUiProps;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
@@ -239,8 +240,7 @@ class StoreShop extends OrgAction
             MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);
         }
         CreateDiscretionaryCharges::run($shop);
-
-
+        BreakUserUiProps::make()->redoAllUsers();
 
         return $shop;
     }

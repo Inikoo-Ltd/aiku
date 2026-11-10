@@ -444,6 +444,8 @@ class AppServiceProvider extends ServiceProvider
                 'Supplier'                         => 'App\Models\SupplyChain\Supplier',
                 'SupplierPortalProfile'            => 'App\Models\SupplyChain\SupplierPortalProfile',
                 'Agent'                            => 'App\Models\SupplyChain\Agent',
+                'AgentPayment'                     => 'App\Models\SupplyChain\AgentPayment',
+                'DepositRequest'                   => 'App\Models\SupplyChain\DepositRequest',
 
                 // Sysadmin
                 'Admin'                            => 'App\Models\SysAdmin\Admin',

@@ -200,11 +200,6 @@ class IndexProductsInProductCategory extends OrgAction
                     $query
                         ->orderBy('products.index_under_family')
                         ->orderBy('products.code');
-                },
-                function ($query) use ($prefix) {
-                    if ($prefix !== ProductTabsEnum::SALES->value) {
-                        $query->orderBy('products.code');
-                    }
                 }
             )
             ->allowedSorts([

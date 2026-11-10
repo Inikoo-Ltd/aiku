@@ -53,7 +53,7 @@ Si el emparejamiento falla, la fila dice "Your product is not in the listing yet
 Tu <b>Pricing Policy</b> en <b>Gestionar el canal de ventas</b> fija el precio de eBay de cada producto a partir de su PVP en vivo:
 
 - <b>± % over live RRP</b> o <b>± £ over live RRP</b> (€ en las tiendas Europe y España): fijamos el precio y lo mantenemos actualizado cuando cambia el PVP. Cuando guardas una regla nueva te preguntamos <b>Reprice every product?</b>. Pulsa <b>Save and reprice</b> para actualizar todos los precios en eBay. Los productos en los que has puesto tu propio precio no se tocan, a menos que también marques la casilla para restablecerlos.
-- <b>Do not follow RRP</b>: pones los precios tú mismo en eBay. Nunca subimos ni sobrescribimos esos precios.
+- <b>Do not follow RRP</b>: pones los precios tú mismo en eBay. Solo enviamos un precio cuando el producto se crea en eBay o cuando cambias el precio de un borrador en <b>Edit Product</b>; una vez publicado, nunca lo cambiamos. Los borradores no aparecen en Seller Hub, así que pon el precio de un borrador en la ventana <b>Edit Product</b> antes de publicarlo.
 
 Para dar a algunos productos su propio precio, márcalos y pulsa <b>Edit Price (…)</b>. Para cambiar el título, la descripción o el precio de un producto, pulsa el botón de editar en su fila. La ventana <b>Editar producto</b> tiene <b>Título</b>, <b>Price Mapping</b> y <b>Descripción</b>. Pulsa <b>Guardar y publicar</b> para enviar los cambios a eBay ahora, o <b>Guardar como borrador</b>. El precio debe seguir por encima de cero.
 

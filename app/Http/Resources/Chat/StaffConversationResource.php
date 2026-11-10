@@ -21,6 +21,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class StaffConversationResource extends JsonResource
 {
+    /** The conversation list sends each person's avatar once beside the list instead of in every conversation they are in. */
+    public bool $avatarsApart = false;
+
     protected function contextUrl(): ?string
     {
         return self::urlFor($this->context_type, $this->context);
@@ -77,7 +80,7 @@ class StaffConversationResource extends JsonResource
             'id'     => $user->id,
             'name'   => $user->chatName(),
             'handle' => $user->nickname ?: $user->username,
-            'avatar' => $user->image_id ? $user->imageSources(0, 48) : null,
+            ...($this->avatarsApart ? [] : ['avatar' => $user->image_id ? User::chatAvatarOf($user->imageSources(0, 48)) : null]),
             'last_seen_at' => Cache::remember('staff-last-seen:'.$user->id, 120, fn () => UserRequest::where('user_id', $user->id)->max('date')),
             'last_read_at' => $user->pivot?->last_read_at ? Carbon::parse($user->pivot->last_read_at)->toIso8601ZuluString('microsecond') : null,
         ])->values();

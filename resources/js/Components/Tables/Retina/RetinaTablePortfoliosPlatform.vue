@@ -334,6 +334,7 @@ const openEditModal = (item) => {
 		basePrice: item?.product_rrp,
 		pricing_type: item?.price_rule?.type ?? "percent",
 		pricing_value: item?.price_rule?.value ?? 0,
+		price: Number(item?.customer_price) || null,
 	}
 }
 
@@ -434,8 +435,13 @@ const editProductComputedPrice = computed(() =>
 		selectedEditProduct.value?.pricing_type || "percent"
 	)
 )
+const editsDraftOwnPrice = computed(() =>
+	!!selectedEditProduct.value?.is_platform_draft &&
+	(!!props.customerSalesChannel?.do_not_update_prices || selectedEditProduct.value?.pricing_type === "not_follow"))
 const isEditProductPriceInvalid = computed(() =>
-	selectedEditProduct.value?.pricing_type !== "not_follow" && editProductComputedPrice.value <= 0)
+	editsDraftOwnPrice.value
+		? !(selectedEditProduct.value?.price > 0)
+		: !props.customerSalesChannel?.do_not_update_prices && selectedEditProduct.value?.pricing_type !== "not_follow" && editProductComputedPrice.value <= 0)
 const editProductPriceColor = computed(() => {
 	if (isEditProductPriceInvalid.value) return "text-red-600"
 	const rrp = selectedEditProduct.value?.product_rrp || 0
@@ -476,6 +482,7 @@ const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
 			...(props.customerSalesChannel?.do_not_update_prices
 				? {}
 				: { pricing_type: sel.pricing_type, pricing_value: sel.pricing_value }),
+			...(editsDraftOwnPrice.value && sel.price !== (Number(sel.customer_price) || null) ? { price: sel.price } : {}),
 			description: sel.description,
 		},
 		{
@@ -1505,8 +1512,24 @@ const compTableFilterForSale = computed(() => {
 				<div v-else class="mt-3 min-h-[56px] flex items-center text-sm text-gray-500">
 					{{ ctrans("This product's eBay price stays as it is. We will not update it, even when the RRP changes.") }}
 				</div>
-				<div v-if="isEditProductPriceInvalid" class="mt-1 text-sm text-red-600">
+				<div v-if="isEditProductPriceInvalid && !editsDraftOwnPrice" class="mt-1 text-sm text-red-600">
 					{{ ctrans("This adjustment takes the price to zero or below. Your eBay price must be greater than zero.") }}
+				</div>
+			</div>
+
+			<div v-if="editsDraftOwnPrice" class="mb-3">
+				<label for="edit-product-price" class="block text-sm font-semibold">{{ ctrans("Draft price") }}</label>
+				<InputNumber
+					v-model="selectedEditProduct.price"
+					inputId="edit-product-price"
+					mode="currency"
+					:currency="layout?.iris?.currency?.code || 'GBP'"
+					:min="0"
+					:minFractionDigits="2"
+					:maxFractionDigits="2"
+					size="small" />
+				<div class="mt-1 text-sm text-gray-500">
+					{{ ctrans("Drafts do not show in eBay Seller Hub, so set the price here. It is sent to eBay when you publish; after that you manage it on eBay.") }}
 				</div>
 			</div>
 

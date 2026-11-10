@@ -152,7 +152,7 @@ test('agent org admin can log in with aurora legacy password', function (Agent $
     expect($user->auth_type)->toBe(UserAuthTypeEnum::DEFAULT)
         ->and($user->legacy_password)->toBeNull()
         ->and(Hash::check('aurora-password', $user->password))->toBeTrue()
-        ->and(array_keys(GetOrganisationsLayout::run($user)[$organisation->slug]))->toBe(['agent_orders', 'agent_suppliers', 'agent_products', 'agent_warehouse', 'agent_accounting', 'agent_reports', 'hr', 'agent_settings'])
+        ->and(array_keys(GetOrganisationsLayout::run($user, $organisation)))->toBe(['agent_orders', 'agent_suppliers', 'agent_products', 'agent_warehouse', 'agent_accounting', 'agent_reports', 'hr', 'agent_settings'])
         ->and($user->hasGroupAccess())->toBeFalse()
         ->and(array_keys(GetGroupNavigation::run($user)))->toBe(['tickets']);
 
@@ -1843,6 +1843,9 @@ test('UI show agent', function () {
             ->where('pageHead.actions.0.route.parameters.0', $agent->slug)
             ->has('tabs');
     });
+
+    $this->get(route('grp.supply-chain.agents.show', [$agent->slug, 'tab' => 'history']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->has('history.data'));
 });
 
 test('UI edit agent', function () {

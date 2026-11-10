@@ -13,6 +13,8 @@ use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransaction
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexRecentPartnerShoppingListUploads;
 use App\Actions\Helpers\Gallery\Json\IndexShopGalleryImages;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
+use App\Actions\UI\Grp\Json\GetLayoutBadges;
+use App\Actions\UI\Grp\Json\GetLayoutOrganisationNavigation;
 use App\Actions\Helpers\WritingQuality\CheckWritingQuality;
 use App\Actions\Helpers\WritingQuality\PolishWriting;
 use App\Actions\Web\Seo\Json\GetSeoContentBrief;
@@ -458,3 +460,6 @@ Route::get('tickets/{ticket:id}/link-search', SearchTicketsToLink::class)->name(
 Route::get('tickets/{ticket:id}/row', GetTicketRow::class)->name('ticket.row')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/pull-request', GetTicketPullRequest::class)->name('ticket.pull_request')->whereNumber('ticket');
 Route::get('tickets/{ticket:id}/chat', GetTicketChat::class)->name('ticket.chat')->whereNumber('ticket');
+
+Route::get('layout/badges', GetLayoutBadges::class)->name('layout.badges');
+Route::get('layout/organisation-navigation/{organisation:slug}', GetLayoutOrganisationNavigation::class)->name('layout.organisation_navigation');

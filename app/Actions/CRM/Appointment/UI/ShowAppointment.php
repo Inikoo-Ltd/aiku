@@ -8,9 +8,7 @@ use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Http\Resources\CRM\AppointmentResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Appointment;
-use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\Organisation;
-use App\Models\SysAdmin\User;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -89,11 +87,7 @@ class ShowAppointment extends OrgAction
         ]];
 
         foreach ($appointment->audits()->with('user')->where('event', 'updated')->orderBy('id')->get() as $audit) {
-            $by = match (true) {
-                $audit->user instanceof User    => $audit->user->chatName(),
-                $audit->user instanceof WebUser => $appointment->contact_name,
-                default                         => null,
-            };
+            $by = Appointment::auditAuthorName($audit, $appointment->contact_name);
 
             $movedFrom = $audit->old_values['starts_at'] ?? null;
             $movedTo   = $audit->new_values['starts_at'] ?? null;
@@ -109,7 +103,8 @@ class ShowAppointment extends OrgAction
 
             $state = AppointmentStateEnum::tryFrom((string) ($audit->new_values['state'] ?? ''));
             if ($state) {
-                $reason   = $state === AppointmentStateEnum::DECLINED ? ($audit->new_values['state_reason'] ?? null) : null;
+                $reason   = in_array($state, AppointmentStateEnum::closed(), true) ? ($audit->new_values['state_reason'] ?? null) : null;
+                $by       ??= $state === AppointmentStateEnum::CANCELLED ? $appointment->contact_name : null;
                 $events[] = [
                     'at'         => $audit->created_at,
                     'icon'       => $state->icon()['icon'],

@@ -77,6 +77,7 @@ class IndexShoppingListItems extends OrgAction
             ->defaultSort('-created_at')
             ->allowedFilters([$globalSearch])
             ->allowedSorts(['supplier_product_code', 'priority', 'needed_by', 'state', 'created_at'])
+            ->orderByDesc('shopping_list_items.id')
             ->withPaginator(null, tableName: request()->route()->getName())
             ->withQueryString();
     }

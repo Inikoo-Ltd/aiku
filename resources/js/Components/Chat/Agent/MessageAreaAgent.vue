@@ -807,6 +807,7 @@ const toggleComposerExpanded = () => {
 const aiDraftBox = ref<InstanceType<typeof ChatAiDraftBox> | null>(null)
 const aiDraftText = ref<string | null>(null)
 let aiDraftId: number | null = null
+let latestAiDraftId: number | null = null
 const heldAiDraft = ref<{ text: string, draftId?: number } | null>(null)
 
 const { colleagueDraft, isLoaded: isReplyDraftLoaded, saveFailed: replyDraftSaveFailed, carriedOnBy, takeOverColleagueDraft, refreshColleagueDraft } = useChatReplyDraft(
@@ -818,20 +819,21 @@ const { colleagueDraft, isLoaded: isReplyDraftLoaded, saveFailed: replyDraftSave
 watch(() => props.session?.ulid, () => {
     aiDraftText.value = null
     heldAiDraft.value = null
+    latestAiDraftId = null
 })
 
-// ponytail: one storage key per draft offered, never pruned; a few bytes each, sweep them if it ever matters
-const offeredKey = (draftId: number) => `chat-ai-draft-offered:${draftId}`
-const wasOffered = (draftId: number) => {
+// ponytail: one storage key per draft an agent emptied out of the box, never pruned; a few bytes each, sweep them if it ever matters
+const clearedKey = (draftId: number) => `chat-ai-draft-cleared:${draftId}`
+const wasCleared = (draftId: number) => {
     try {
-        return localStorage.getItem(offeredKey(draftId)) !== null
+        return localStorage.getItem(clearedKey(draftId)) !== null
     } catch {
         return false
     }
 }
-const markOffered = (draftId: number) => {
+const markCleared = (draftId: number) => {
     try {
-        localStorage.setItem(offeredKey(draftId), "1")
+        localStorage.setItem(clearedKey(draftId), "1")
     } catch {
         return
     }
@@ -840,6 +842,7 @@ const markOffered = (draftId: number) => {
 // An email reply starts from Aiku's draft, unless the agent has begun one of their own or
 // already cleared this draft out of the box. A newer draft replaces an older one left untouched.
 const offerAiDraft = (text: string, draftId?: number) => {
+    if (draftId) latestAiDraftId = draftId
     // The agent's own saved reply, or a colleague's, comes before Aiku's draft (HELP-4523).
     if (!isReplyDraftLoaded.value || colleagueDraft.value) {
         heldAiDraft.value = { text, draftId }
@@ -847,14 +850,13 @@ const offerAiDraft = (text: string, draftId?: number) => {
     }
 
     const isUntouchedDraft = aiDraftText.value !== null && newMessage.value === aiDraftText.value
-    const isFree = !newMessage.value.trim() && !(draftId && wasOffered(draftId))
+    const isFree = !newMessage.value.trim() && !(draftId && wasCleared(draftId))
 
     if (newMessage.value !== text && !isUntouchedDraft && !isFree) {
         if (draftId !== aiDraftId) aiDraftText.value = null
         return
     }
 
-    if (draftId) markOffered(draftId)
     aiDraftId = draftId ?? null
     newMessage.value = text
     aiDraftText.value = text
@@ -989,6 +991,10 @@ const isInlinePicture = (attachment: SelectedAttachment) =>
     !!attachment.pictureId && newMessage.value.includes(pictureToken(attachment.pictureId))
 
 const onEditorInput = (text: string) => {
+    if (!text.trim() && aiDraftText.value !== null && aiDraftId) {
+        markCleared(aiDraftId)
+        aiDraftText.value = null
+    }
     dropDeletedPictures(text)
     handleTyping()
 
@@ -1234,6 +1240,7 @@ const sendMessage = async () => {
 
     const text = newMessage.value
     const sessionUlid = props.session?.ulid
+    if (latestAiDraftId) markCleared(latestAiDraftId)
     aiDraftText.value = null
     newMessage.value = ""
     typingUser.value = null

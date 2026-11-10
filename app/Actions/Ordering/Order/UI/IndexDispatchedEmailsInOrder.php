@@ -18,6 +18,7 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class IndexDispatchedEmailsInOrder extends OrgAction
 {
@@ -58,6 +59,8 @@ class IndexDispatchedEmailsInOrder extends OrgAction
                 'email_copies.subject as subject',
                 'email_copies.body as body_preview',
                 'email_copies.is_body_encoded',
+                'dispatched_emails.outbox_id',
+                DB::raw("dispatched_emails.data->>'email_type' as email_type"),
             ])
             ->allowedSorts(['number_email_tracking_events', 'sent_at', 'number_reads', 'mask_as_spam', 'number_clicks', 'email_addresses.email_address'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -72,6 +75,7 @@ class IndexDispatchedEmailsInOrder extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
+            $table->column(key: 'type', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'state', label: 'State', canBeHidden: false, type: 'icon');
             $table->column(key: 'subject', label: 'Subject', canBeHidden: false, sortable: true);
             $table->column(key: 'email_address', label: __('Email'), canBeHidden: false, sortable: true);

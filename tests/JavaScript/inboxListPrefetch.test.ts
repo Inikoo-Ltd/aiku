@@ -38,7 +38,7 @@ test("going to the inbox asks for the list it opened with last time, and the inb
 	location.href = "https://app.aiku.test/org/aw/chat/inbox"
 	rememberFirstList(url, params)
 
-	visit("/org/aw/chat/inbox/01M52ZHJ1KPDCSXMVMF33CNSY2")
+	visit("/org/aw/chat/inbox")
 
 	assert.deepEqual(requests, [{ url, params }])
 	const taken = takePrefetchedList(url, params)
@@ -145,4 +145,23 @@ test("a choice changed while a notification link is open is remembered for the i
 	rememberFirstList(url, params, "https://app.aiku.test/org/aw/chat/inbox")
 
 	assert.deepEqual([...store.keys()], ["inbox-first-list:aw:inbox"])
+})
+
+test("a conversation's address opens on the list the last conversation opened on, apart from the inbox", () => {
+	store.clear()
+	requests.length = 0
+	const conversationParams = { ...params, statuses: ["active"] }
+
+	location.href = "https://app.aiku.test/org/aw/chat/inbox"
+	rememberFirstList(url, params)
+	location.href = "https://app.aiku.test/org/aw/chat/inbox/01M52ZHJ1KPDCSXMVMF33CNSY2"
+	rememberFirstList(url, conversationParams)
+
+	visit("/org/aw/chat/inbox/01M6GNVSNA35CFVBB4YB9MSCNM")
+	assert.equal(takePrefetchedList(url, conversationParams).outcome, "prefetched")
+
+	visit("/org/aw/chat/inbox")
+	assert.equal(takePrefetchedList(url, params).outcome, "prefetched")
+
+	assert.deepEqual([...store.keys()].sort(), ["inbox-first-list:aw:inbox", "inbox-first-list:aw:inbox:conversation"])
 })

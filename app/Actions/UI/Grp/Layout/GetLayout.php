@@ -36,7 +36,7 @@ class GetLayout
             'bookmarks'      => $user->bookmarks,
             'navigation'     => [
                 'grp' => GetGroupNavigation::run($user),
-                'org' => GetOrganisationsLayout::run($user),
+                'org' => [],
             ],
             'app_theme'      => $user->settings['app_theme'] ?? null,
             'org_themes'     => $this->getOrganisationThemes($user),

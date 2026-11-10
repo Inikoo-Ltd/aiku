@@ -516,6 +516,33 @@ test('UI index supplier products in org supplier shows live state counts and his
     });
 });
 
+test('UI index supplier products in org supplier flags products the supplier no longer has', function () {
+    $supplier = StoreSupplier::make()->action(
+        parent: $this->group,
+        modelData: Supplier::factory()->definition(),
+    );
+    $orgSupplier = $supplier->orgSuppliers()
+        ->where('organisation_id', $this->organisation->id)
+        ->firstOrFail();
+
+    $codes = [];
+    foreach ([true, false] as $isAvailable) {
+        $supplierProductData = SupplierProduct::factory()->definition();
+        data_set($supplierProductData, 'stock_id', $this->stock->id);
+        data_set($supplierProductData, 'state', SupplierProductStateEnum::ACTIVE);
+
+        $supplierProduct = StoreSupplierProduct::make()->action($supplier, $supplierProductData);
+        UpdateSupplierProduct::make()->action($supplierProduct, ['is_available' => $isAvailable]);
+        $codes[$supplierProduct->code] = $isAvailable ? 'available' : 'unavailable';
+    }
+
+    $this->get(route('grp.org.procurement.org_suppliers.show.supplier_products.index', [$this->organisation->slug, $orgSupplier->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('index.data', 2)
+            ->where('index.data', fn ($rows) => collect($rows)->mapWithKeys(fn ($row) => [$row['code'] => $row['availability_status']])->all() == $codes)
+            ->etc());
+});
+
 test('UI index stock deliveries in org supplier shows purchase order action', function () {
     $this->get(route('grp.org.procurement.org_suppliers.show.stock_deliveries.index', [
         $this->organisation->slug,
@@ -1437,11 +1464,12 @@ test('the agent keeps each client\'s money in a ledger: transfers in, supplier p
 
     $this->post($storeRoute, $entry + ['type' => 'transfer_received', 'amount' => 10000, 'original_amount' => 1300, 'reference' => 'TT-LEDGER'])->assertSessionHasNoErrors();
     $this->post($storeRoute, $entry + ['type' => 'supplier_deposit', 'amount' => 3000])->assertSessionHasErrors('purchase_order_id');
-    $this->post($storeRoute, $entry + ['type' => 'supplier_deposit', 'amount' => 3000, 'purchase_order_id' => $purchaseOrder->id])->assertSessionHasNoErrors();
-    $this->post($storeRoute, $entry + ['type' => 'packaging', 'amount' => 500, 'stock_delivery_id' => $stockDelivery->id, 'notes' => 'Hang tags'])->assertSessionHasNoErrors();
+    $receipt    = fn () => \Illuminate\Http\UploadedFile::fake()->create('receipt.pdf', 10, 'application/pdf');
+    $this->post($storeRoute, $entry + ['type' => 'supplier_deposit', 'amount' => 3000, 'purchase_order_id' => $purchaseOrder->id, 'receipt' => $receipt()])->assertSessionHasNoErrors();
+    $this->post($storeRoute, $entry + ['type' => 'packaging', 'amount' => 500, 'stock_delivery_id' => $stockDelivery->id, 'notes' => 'Hang tags', 'receipt' => $receipt()])->assertSessionHasNoErrors();
     $this->post($storeRoute, ['organisation_id' => $this->agent->organisation_id, 'date' => date('Y-m-d'), 'type' => 'packaging', 'amount' => 1])->assertSessionHasErrors('organisation_id');
     $this->post($storeRoute, $entry + ['type' => 'packaging', 'amount' => 5, 'org_stock_id' => $this->orgStocks[1]->id])->assertSessionHasErrors('org_stock_id');
-    $this->post($storeRoute, $entry + ['type' => 'inspection', 'amount' => 40, 'reference' => 'INSP-'.Str::random(6)])->assertSessionHasNoErrors();
+    $this->post($storeRoute, $entry + ['type' => 'inspection', 'amount' => 40, 'reference' => 'INSP-'.Str::random(6), 'receipt' => $receipt()])->assertSessionHasNoErrors();
     $inspection = AgentPayment::where('agent_id', $this->agent->id)->where('type', AgentPaymentTypeEnum::INSPECTION)->latest('id')->firstOrFail();
 
     $transfer = AgentPayment::where('agent_id', $this->agent->id)->where('reference', 'TT-LEDGER')->latest('id')->firstOrFail();
@@ -1633,6 +1661,7 @@ test('an agent invoices a container from its lines, its charges are the ledger l
         'date'              => date('Y-m-d'),
         'amount'            => 1812.4,
         'notes'             => 'Super Dry, dehumidifier packs, rope',
+        'receipt'           => \Illuminate\Http\UploadedFile::fake()->create('receipt.pdf', 10, 'application/pdf'),
     ]);
     $addCharge()->assertSessionHasNoErrors();
 
@@ -1771,7 +1800,7 @@ test('an agent opens a shipment that goes as a full container, LCL, by air or as
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('pageHead.title', __('Current shipments')));
 
-    expect(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run(auth()->user())[$agent->organisation->slug]['agent_orders']['topMenu']['subSections'])->pluck('route.name'))->toContain('grp.org.agent.stock_deliveries.index');
+    expect(collect(\App\Actions\UI\Grp\Layout\GetOrganisationsLayout::run(auth()->user(), $agent->organisation)['agent_orders']['topMenu']['subSections'])->pluck('route.name'))->toContain('grp.org.agent.stock_deliveries.index');
 
     $this->get(route('grp.org.agent.stock_deliveries.show', [$agent->organisation->slug, $byAir->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page

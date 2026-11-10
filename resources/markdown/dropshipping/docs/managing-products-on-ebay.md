@@ -54,9 +54,9 @@ If matching fails, the row says "Your product is not in the listing yet": we cou
 Your <b>Pricing Policy</b> in <b>Manage Sales Channel</b> sets the eBay price of every product from its live RRP:
 
 - <b>± % over live RRP</b> or <b>± £ over live RRP</b> (€ in the Europe and España shops): we set the price and keep it in step when the RRP changes. When you save a new rule you are asked <b>Reprice every product?</b>. Press <b>Save and reprice</b> to update all prices on eBay. Products where you set your own price are not touched, unless you also tick the box to reset them.
-- <b>Do not follow RRP</b>: you set prices yourself on eBay. We never upload or overwrite them.
+- <b>Do not follow RRP</b>: you set prices yourself on eBay. We send a price only when the product is created on eBay, or when you change a draft's price in <b>Edit Product</b>; once it is published we never change it. Drafts do not show in Seller Hub, so set a draft's price in the <b>Edit Product</b> window before you publish it.
 
-To give some products their own price, tick them and press <b>Edit Price (…)</b>. To change one product's title, description or price, press the edit button on its row. The <b>Edit Product</b> window has <b>Title</b>, <b>Price Mapping</b> and <b>Description</b>. Press <b>Save & Publish</b> to send the changes to eBay now, or <b>Save as Draft</b>. The price must stay above zero.
+To give some products their own price, tick them and press <b>Edit Price (…)</b>. To change one product's title, description or price, press the edit button on its row. The <b>Edit Product</b> window has <b>Title</b>, <b>Price Mapping</b> and <b>Description</b>. Press <b>Save & Publish</b> to send the changes to eBay now, or <b>Save as Draft</b>. The price must stay above zero. On a draft, <b>Save & Publish</b> also publishes it on eBay with the title and price you saved.
 
 ## Stock
 

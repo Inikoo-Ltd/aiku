@@ -5,7 +5,7 @@ import DashboardWidget from "./DashboardWidget.vue"
 import ChannelHealthBadges from "./ChannelHealthBadges.vue"
 import ShopDashboardWidgets from "./ShopDashboardWidgets.vue"
 import { ref, provide, computed, onMounted } from "vue"
-import { Link, router } from "@inertiajs/vue3"
+import { Link, router, usePage } from "@inertiajs/vue3"
 import { route } from "ziggy-js"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import {
@@ -28,6 +28,7 @@ import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardSho
 import { useTabChange } from "@/Composables/tab-change"
 import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue"
 import ShopMonthTarget from "@/Components/DataDisplay/Dashboard/ShopMonthTarget.vue"
+import CompetitorsSummaryLine from "@/Components/DataDisplay/Dashboard/CompetitorsSummaryLine.vue"
 import ShopMonthBriefing from "@/Components/DataDisplay/Dashboard/ShopMonthBriefing.vue"
 import axios from "axios"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -157,7 +158,11 @@ onMounted(() => {
             v-if="inSection('target') && props.dashboard?.super_blocks?.[0]?.month_target"
             :month-target="props.dashboard.super_blocks[0].month_target"
             :year-target="props.dashboard.super_blocks[0].year_target"
-        />
+        >
+            <template v-if="usePage().props.competitors !== null" #footer>
+                <CompetitorsSummaryLine />
+            </template>
+        </ShopMonthTarget>
 
         <KeepAlive v-if="inSection('target') && props.dashboard?.super_blocks?.[0]?.tabs_box">
             <TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" gutterClass="px-4" />
@@ -181,6 +186,7 @@ onMounted(() => {
             :channel-health="props.dashboard?.super_blocks?.[0]?.channel_health"
         />
 
+        <div v-if="!sections || !inSection('target', 'sales_analysis', 'customers')" class="mx-4 mt-4 rounded-lg border border-gray-200 bg-white pb-4 shadow-sm">
 		<DashboardSettings
             v-if="!sections || !inSection('target', 'sales_analysis', 'customers')"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
@@ -231,6 +237,7 @@ onMounted(() => {
             :interval="props.dashboard?.super_blocks?.[0]?.intervals?.value"
             :data="props.dashboard?.super_blocks?.[0]?.shop_blocks"
         />
+        </div>
 
         <ShopDashboardWidgets
             v-if="(!sections || !inSection('target', 'sales_analysis', 'customers', 'platforms')) && props.dashboard?.super_blocks?.[0]?.widgets_route"

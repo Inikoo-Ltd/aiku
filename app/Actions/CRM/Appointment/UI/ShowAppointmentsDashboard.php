@@ -7,8 +7,8 @@ use App\Actions\CRM\AppointmentType\UI\WithAppointmentsSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\CRM\Appointment\AppointmentSourceEnum;
+use App\Enums\CRM\Appointment\AppointmentListFilterEnum;
 use App\Enums\CRM\Appointment\AppointmentStateEnum;
-use App\Enums\UI\CRM\AppointmentsTabsEnum;
 use App\Http\Resources\CRM\AppointmentsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -124,7 +124,14 @@ class ShowAppointmentsDashboard extends OrgAction
         $next = $shop->appointments()
             ->whereIn('state', AppointmentStateEnum::holdingSlot())
             ->where('ends_at', '>=', $now)
-            ->with(['appointmentType', 'visitor', 'user', 'shop.timezone'])
+            ->with([
+                'appointmentType',
+                'visitor',
+                'user',
+                'createdBy',
+                'shop.timezone',
+                'audits' => fn ($query) => $query->where('event', 'updated')->with('user')->orderBy('id'),
+            ])
             ->orderBy('starts_at')
             ->limit(self::NEXT_APPOINTMENTS)
             ->get();
@@ -139,7 +146,7 @@ class ShowAppointmentsDashboard extends OrgAction
                     'value'      => (int) $counts->requested,
                     'icon'       => 'fal fa-hourglass-half',
                     'icon_class' => 'text-amber-500',
-                    'route'      => $this->getTabRoute($shop, AppointmentsTabsEnum::REQUESTED),
+                    'route'      => $this->getListRoute($shop, AppointmentListFilterEnum::REQUESTED),
                 ],
                 [
                     'key'        => 'today',
@@ -147,7 +154,7 @@ class ShowAppointmentsDashboard extends OrgAction
                     'value'      => (int) $counts->today,
                     'icon'       => 'fal fa-calendar-day',
                     'icon_class' => 'text-gray-400',
-                    'route'      => $this->getTabRoute($shop, AppointmentsTabsEnum::UPCOMING),
+                    'route'      => $this->getListRoute($shop, AppointmentListFilterEnum::UPCOMING),
                 ],
                 [
                     'key'        => 'next_seven_days',
@@ -155,7 +162,7 @@ class ShowAppointmentsDashboard extends OrgAction
                     'value'      => (int) $counts->next_seven_days,
                     'icon'       => 'fal fa-calendar-week',
                     'icon_class' => 'text-gray-400',
-                    'route'      => $this->getTabRoute($shop, AppointmentsTabsEnum::UPCOMING),
+                    'route'      => $this->getListRoute($shop, AppointmentListFilterEnum::UPCOMING),
                 ],
                 [
                     'key'        => 'upcoming',
@@ -163,7 +170,7 @@ class ShowAppointmentsDashboard extends OrgAction
                     'value'      => (int) $counts->upcoming,
                     'icon'       => 'fal fa-calendar-check',
                     'icon_class' => 'text-green-500',
-                    'route'      => $this->getTabRoute($shop, AppointmentsTabsEnum::UPCOMING),
+                    'route'      => $this->getListRoute($shop, AppointmentListFilterEnum::UPCOMING),
                 ],
             ],
             'states'          => [
@@ -171,31 +178,31 @@ class ShowAppointmentsDashboard extends OrgAction
                     'label' => __('Requested'),
                     'value' => (int) $counts->requested,
                     'icon'  => AppointmentStateEnum::REQUESTED->icon(),
-                    'route' => $this->getTabRoute($shop, AppointmentsTabsEnum::REQUESTED),
+                    'route' => $this->getListRoute($shop, AppointmentListFilterEnum::REQUESTED),
                 ],
                 [
                     'label' => __('Upcoming'),
                     'value' => (int) $counts->upcoming,
                     'icon'  => AppointmentStateEnum::ACCEPTED->icon(),
-                    'route' => $this->getTabRoute($shop, AppointmentsTabsEnum::UPCOMING),
+                    'route' => $this->getListRoute($shop, AppointmentListFilterEnum::UPCOMING),
                 ],
                 [
                     'label' => __('Past'),
                     'value' => (int) $counts->past,
                     'icon'  => ['icon' => 'fal fa-history', 'tooltip' => __('Past'), 'class' => 'text-gray-400'],
-                    'route' => $this->getTabRoute($shop, AppointmentsTabsEnum::PAST),
+                    'route' => $this->getListRoute($shop, AppointmentListFilterEnum::PAST),
                 ],
                 [
                     'label' => __('Declined'),
                     'value' => (int) $counts->declined,
                     'icon'  => AppointmentStateEnum::DECLINED->icon(),
-                    'route' => $this->getTabRoute($shop, AppointmentsTabsEnum::CANCELLED),
+                    'route' => $this->getListRoute($shop, AppointmentListFilterEnum::DECLINED),
                 ],
                 [
                     'label' => __('Cancelled'),
                     'value' => (int) $counts->cancelled,
                     'icon'  => AppointmentStateEnum::CANCELLED->icon(),
-                    'route' => $this->getTabRoute($shop, AppointmentsTabsEnum::CANCELLED),
+                    'route' => $this->getListRoute($shop, AppointmentListFilterEnum::CANCELLED),
                 ],
             ],
             'types'           => $types->map(fn (object $type) => [
@@ -218,16 +225,16 @@ class ShowAppointmentsDashboard extends OrgAction
     }
 
     /**
-     * @return array{name: string, parameters: array<string, string>}
+     * @return array{name: string, parameters: array<string, mixed>}
      */
-    private function getTabRoute(Shop $shop, AppointmentsTabsEnum $tab): array
+    private function getListRoute(Shop $shop, AppointmentListFilterEnum $filter): array
     {
         return [
             'name'       => 'grp.org.shops.show.crm.appointments.index',
             'parameters' => [
                 'organisation' => $shop->organisation->slug,
                 'shop'         => $shop->slug,
-                'tab'          => $tab->value,
+                'elements'     => ['state' => $filter->value],
             ],
         ];
     }
