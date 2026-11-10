@@ -26621,5 +26621,7 @@
     ":quantity × :size": ":quantity × :size",
     "Size is the amount in each container. Quantity is the number of containers.": "La taille est la contenance de chaque contenant. La quantité est le nombre de contenants.",
     "Discounts that depend on the whole order are applied when the items are in the basket.": "Les remises qui dépendent de toute la commande s'appliquent lorsque les articles sont dans le panier.",
-    ":size sample": "Échantillon :size"
+    ":size sample": "Échantillon :size",
+    "Date not set yet": "Date pas encore définie",
+    "Date not set yet: set the arrival date": "Date pas encore définie : indiquez la date d'arrivée"
 }

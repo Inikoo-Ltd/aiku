@@ -274,7 +274,7 @@ class IndexAgentLedger extends OrgAction
                 ] : null,
                 'data'        => $entries->through(fn (AgentPayment $entry) => [
                     'id'                     => $entry->id,
-                    'date'                   => $entry->date->toDateString(),
+                    'date'                   => $entry->date?->toDateString(),
                     'client_code'            => $entry->client_code,
                     'type'                   => $entry->type->value,
                     'type_label'             => AgentPaymentTypeEnum::labels()[$entry->type->value],

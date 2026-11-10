@@ -52,7 +52,7 @@ class MoneyRequestPaidNotification extends Notification
     {
         return __(':user sent it on :date. It takes about :days days to arrive, so expect it around :arrival. The bank statement is on the ledger.', [
             'user'    => $this->payerName,
-            'date'    => $this->transfer->date->toFormattedDateString(),
+            'date'    => $this->transfer->date?->toFormattedDateString(),
             'days'    => AgentPayment::MONEY_REQUEST_TRANSFER_DAYS,
             'arrival' => $this->transfer->expectedArrival()?->toFormattedDateString(),
         ]);

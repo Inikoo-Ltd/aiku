@@ -77,6 +77,7 @@ class ShowAgentAccountingDashboard extends OrgAction
             ->where('agent_payments.agent_id', $agent->id)
             ->whereIn('agent_payments.type', AgentPaymentTypeEnum::supplierPaymentValues())
             ->whereNull('agent_payments.deleted_at')
+            ->whereNotNull('agent_payments.date')
             ->orderByDesc('agent_payments.date')
             ->orderByDesc('agent_payments.id')
             ->limit(5)

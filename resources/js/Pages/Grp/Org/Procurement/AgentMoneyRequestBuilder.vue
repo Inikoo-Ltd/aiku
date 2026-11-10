@@ -64,7 +64,7 @@ interface DueExpense {
 	agent_payment_id: number
 	type: string
 	type_label: string
-	date: string
+	date: string | null
 	amount: number
 	requested: number
 	due: number
@@ -385,7 +385,7 @@ const send = () => {
 								<span class="ml-auto shrink-0 whitespace-nowrap rounded border border-gray-200 px-1.5 font-medium text-gray-700">{{ line.expense.type_label }}</span>
 							</div>
 							<div class="flex flex-wrap items-center gap-x-1">
-								<span class="whitespace-nowrap">{{ ctrans("Paid on :date", { date: line.expense.date }) }}</span>
+								<span class="whitespace-nowrap">{{ line.expense.date ? ctrans("Paid on :date", { date: line.expense.date }) : ctrans("Date not set yet") }}</span>
 								<template v-if="line.expense.supplier_code">
 									<span class="text-gray-400">·</span>
 									<span :title="line.expense.supplier_name ?? undefined">{{ line.expense.supplier_name ?? line.expense.supplier_code }}</span>

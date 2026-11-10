@@ -106,7 +106,7 @@ class AgentInvoice extends Model
             ->map(fn (AgentPayment $payment) => [
                 'type'      => 'payment',
                 'reference' => $payment->reference,
-                'date'      => $payment->date->toDateString(),
+                'date'      => $payment->date?->toDateString(),
                 'amount'    => (float) $payment->amount,
             ]);
 

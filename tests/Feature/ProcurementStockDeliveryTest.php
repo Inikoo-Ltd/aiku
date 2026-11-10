@@ -1497,7 +1497,7 @@ test('the agent keeps each client\'s money in a ledger: transfers in, supplier p
     actingAs($this->adminGuest->getUser());
 });
 
-test('an agent\'s Excel balance sheet comes into the ledger as opening lines plus one line per row, with the rows to review flagged, and only when applied (HELP-4097)', function () {
+test('an agent\'s Excel balance sheet comes into the ledger as opening lines plus one line per row, with the rows to review flagged, only when applied, and can be imported again while untouched (HELP-4097, INI-234)', function () {
     $orgAgent      = createFreshOrgAgent($this);
     $agent         = $orgAgent->agent;
     $orderNumber   = (string) random_int(100000, 999999);
@@ -1510,10 +1510,20 @@ test('an agent\'s Excel balance sheet comes into the ledger as opening lines plu
     $newPurchaseOrder = StorePurchaseOrder::make()->action($newOrgSupplier, []);
     StorePurchaseOrderTransaction::make()->action($newPurchaseOrder, $newOrgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[1], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 2]));
     $newPurchaseOrder->update(['reference' => "LEDGER-$newOrderNumber"]);
+    $containerNumber = random_int(100000, 999999);
+    $mainContainer   = createStockDeliveryWithItems($this, 'LEDGER-MAIN-'.Str::random(6), [10, 4]);
+    $mainContainer->updateQuietly(['agent_id' => $agent->id, 'reference' => "AWChina-{$containerNumber}_UK (40HC)", 'number_stock_delivery_items' => 2]);
+    $extraContainer = createStockDeliveryWithItems($this, 'LEDGER-EXTRA-'.Str::random(6), [1]);
+    $extraContainer->updateQuietly(['agent_id' => $agent->id, 'reference' => "AWChina-$containerNumber-FGDB", 'number_stock_delivery_items' => 1]);
+    $datedOrderNumber = (string) random_int(100000, 999999);
+    [$datedOrgSupplier, $datedOrgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $datedPurchaseOrder = StorePurchaseOrder::make()->action($datedOrgSupplier, []);
+    StorePurchaseOrderTransaction::make()->action($datedPurchaseOrder, $datedOrgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[2], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 1]));
+    $datedPurchaseOrder->update(['reference' => "LEDGER-$datedOrderNumber (21.08.2026)"]);
 
     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
     $balance     = $spreadsheet->getActiveSheet()->setTitle('Balance');
-    $balance->setCellValue('I1', 3650);
+    $balance->setCellValue('D4', 3360);
     $balance->fromArray([
         ['2025-12-01', 1000, null, 'Notes / Exchange rate', null, null, null, null, null, null],
         ['2025-12-05', null, 400, 'payment to shop', null, null, null, null, 'OLD', '12'],
@@ -1525,25 +1535,39 @@ test('an agent\'s Excel balance sheet comes into the ledger as opening lines plu
         ['2026-02-06', null, 50, 'Taxi to the factory', null, null, 50, null, null, null],
         ['2026-02-07', null, 70, 'payment to shop', null, null, null, null, $this->orgStocks[0]->code, '777'],
         ['2026-02-08', null, 30, 'payment to shop', null, null, null, null, $this->orgStocks[1]->code, $newOrderNumber],
+        ['2026-02-09', null, 80, 'Electricity charges', null, 80, null, null, null, null],
+        ['2026-02-09', null, 60, 'Inspection report', null, 60, null, null, null, null],
+        ['2026-02-09', null, 40, 'Mould for the logo', null, null, 40, null, null, null],
+        ['2026-02-10', null, 75, "CONTAINER LOADING-$containerNumber", null, null, 75, null, null, null],
+        ['2099-01-01', null, 20, 'AWPSP CAR', null, 20, null, null, null, null],
+        ['2026-02-11', null, 15, 'payment to shop', null, null, null, null, $this->orgStocks[2]->code, $datedOrderNumber],
     ], null, 'A7');
-    $fund = $spreadsheet->createSheet()->setTitle('Fund');
+    $fund = $spreadsheet->createSheet()->setTitle('AW Fund');
     $fund->fromArray([['2026-01-30', 650, 'EURO', null, null, 5000]], null, 'A5');
     $path = tempnam(sys_get_temp_dir(), 'ledger').'.xlsx';
     (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
 
-    $import = fn (bool $apply) => ImportAgentLedgerExcel::make()->handle($agent, $this->organisation, $path, Carbon::parse('2026-01-01'), 'LEDGER-#', $apply);
+    $import = fn (bool $apply, bool $replace = false) => ImportAgentLedgerExcel::make()->handle($agent, $this->organisation, $path, Carbon::parse('2026-01-01'), 'LEDGER-#', $apply, $replace);
 
     $dryRun = $import(false);
     expect(AgentPayment::where('agent_id', $agent->id)->count())->toBe(0)
-        ->and($dryRun['rows'])->toBe(10)
+        ->and($dryRun['rows'])->toBe(16)
         ->and($dryRun['opening'])->toBe(['received' => 1000.0, 'paid' => 400.0])
-        ->and($dryRun['balance'])->toBe(3650.0)
-        ->and($dryRun['excel_balance'])->toBe(3650.0);
+        ->and($dryRun['balance'])->toBe(3360.0)
+        ->and($dryRun['excel_balance'])->toBe(3360.0);
 
     $import(true);
-    $lines = AgentPayment::where('agent_id', $agent->id)->where('organisation_id', $this->organisation->id)->get()->keyBy(fn (AgentPayment $line) => $line->data['row'] ?? ($line->type->isMoneyIn() ? 'opening_in' : 'opening_out'));
+    $manual = StoreAgentLedgerEntry::make()->action($agent, ['organisation_id' => $this->organisation->id, 'date' => date('Y-m-d'), 'type' => 'other_expense', 'amount' => 5, 'notes' => 'Kept on re-import']);
+    $import(true, true);
+    $ledgerLines = fn () => AgentPayment::where('agent_id', $agent->id)->where('organisation_id', $this->organisation->id)->where('data->source', ImportAgentLedgerExcel::SOURCE)->get()
+        ->keyBy(fn (AgentPayment $line) => $line->data['row'] ?? ($line->type->isMoneyIn() ? 'opening_in' : 'opening_out'));
+    $lines = $ledgerLines();
 
-    expect($lines)->toHaveCount(10)
+    expect($lines)->toHaveCount(16)
+        ->and(AgentPayment::whereKey($manual->id)->exists())->toBeTrue()
+        ->and(AgentPayment::onlyTrashed()->where('agent_id', $agent->id)->whereNotNull('data->replaced_at')->count())->toBe(16)
+        ->and($lines[22]->purchase_order_id)->toBe($datedPurchaseOrder->id)
+        ->and($lines[22]->data)->not->toHaveKey('linked_by')
         ->and((float) $lines['opening_in']->amount)->toBe(1000.0)
         ->and($lines['opening_in']->date->toDateString())->toBe('2025-12-31')
         ->and((float) $lines[9]->original_amount)->toBe(650.0)
@@ -1552,8 +1576,16 @@ test('an agent\'s Excel balance sheet comes into the ledger as opening lines plu
         ->and($lines[10]->needs_review)->toBeFalse()
         ->and($lines[11]->review_reason)->toBe('Not tied to one order')
         ->and($lines[12]->type)->toBe(AgentPaymentTypeEnum::PACKAGING)
-        ->and($lines[12]->review_reason)->toBe('No date in the Excel')
-        ->and($lines[12]->date->toDateString())->toBe('2026-02-04')
+        ->and($lines[12]->review_reason)->toBe(ImportAgentLedgerExcel::DATE_NOT_SET)
+        ->and($lines[12]->date)->toBeNull()
+        ->and($lines[21]->date)->toBeNull()
+        ->and($lines[21]->needs_review)->toBeTrue()
+        ->and($lines[17]->type)->toBe(AgentPaymentTypeEnum::OTHER_EXPENSE)
+        ->and($lines[17]->needs_review)->toBeFalse()
+        ->and($lines[18]->type)->toBe(AgentPaymentTypeEnum::INSPECTION)
+        ->and($lines[19]->type)->toBe(AgentPaymentTypeEnum::MOULD_OR_LOGO)
+        ->and($lines[20]->stock_delivery_id)->toBe($mainContainer->id)
+        ->and($lines[20]->data['container_candidates'])->toBe(2)
         ->and($lines[13]->type)->toBe(AgentPaymentTypeEnum::INLAND_CHARGE)
         ->and($lines[14]->review_reason)->toBe('Expense type unclear')
         ->and($lines[15]->purchase_order_id)->toBe($purchaseOrder->id)
@@ -1565,6 +1597,22 @@ test('an agent\'s Excel balance sheet comes into the ledger as opening lines plu
 
     setPermissionsTeamId($this->group->id);
     actingAs(agentOrganisationAdmin($agent->organisation, 'agt-lg-'.Str::lower(Str::random(6))));
+    $this->travel(2)->seconds();
+
+    $this->get(route('grp.org.agent.accounting.ledger.index', [$agent->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data.0.date', null)->where('data.data.1.date', null));
+    $this->get(route('grp.org.agent.accounting.dashboard', [$agent->organisation->slug]))->assertOk();
+    $this->get(route('grp.org.agent.accounting.deposit_requests.create', [$agent->organisation->slug, 'client' => $this->organisation->slug]))->assertOk();
+
+    $undated = route('grp.models.agent_payment.update', $lines[12]->id);
+    $this->patch($undated, ['type' => 'packaging', 'stock_delivery_id' => $mainContainer->id])->assertSessionHasNoErrors();
+    expect($lines[12]->refresh()->date)->toBeNull()
+        ->and($lines[12]->needs_review)->toBeTrue()
+        ->and($lines[12]->stock_delivery_id)->toBe($mainContainer->id);
+    $this->patch($undated, ['date' => '2026-02-04', 'type' => 'packaging', 'stock_delivery_id' => $mainContainer->id])->assertSessionHasNoErrors();
+    expect($lines[12]->refresh()->date->toDateString())->toBe('2026-02-04')
+        ->and($lines[12]->needs_review)->toBeFalse();
+    $this->patch(route('grp.models.agent_payment.update', $lines[13]->id), ['type' => 'inland_charge'])->assertSessionHasErrors('date');
 
     $update = route('grp.models.agent_payment.update', $lines[11]->id);
     $this->patch($update, ['date' => '2026-02-04', 'type' => 'transfer_received'])->assertSessionHasErrors('type');
@@ -1578,6 +1626,9 @@ test('an agent\'s Excel balance sheet comes into the ledger as opening lines plu
 
     $this->get(route('grp.org.agent.accounting.ledger.index', [$agent->organisation->slug, 'elements' => ['review' => 'needs_review']]))
         ->assertInertia(fn (AssertableInertia $page) => $page->has('data.data', 2));
+
+    expect(fn () => $import(true, true))->toThrow(Exception::class, 'edited')
+        ->and($ledgerLines())->toHaveCount(16);
 
     actingAs($this->adminGuest->getUser());
 });

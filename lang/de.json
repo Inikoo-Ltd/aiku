@@ -26465,5 +26465,7 @@
     ":quantity × :size": ":quantity × :size",
     "Size is the amount in each container. Quantity is the number of containers.": "Die Größe ist die Füllmenge je Gebinde. Die Menge ist die Anzahl der Gebinde.",
     "Discounts that depend on the whole order are applied when the items are in the basket.": "Rabatte, die von der gesamten Bestellung abhängen, werden angewendet, sobald die Artikel im Warenkorb liegen.",
-    ":size sample": "Probe :size"
+    ":size sample": "Probe :size",
+    "Date not set yet": "Datum noch nicht festgelegt",
+    "Date not set yet: set the arrival date": "Datum noch nicht festgelegt: Ankunftsdatum festlegen"
 }

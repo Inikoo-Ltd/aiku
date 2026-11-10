@@ -25685,5 +25685,7 @@
     ":quantity × :size": ":quantity × :size",
     "Size is the amount in each container. Quantity is the number of containers.": "Mărimea este cantitatea din fiecare recipient. Cantitatea este numărul de recipiente.",
     "Discounts that depend on the whole order are applied when the items are in the basket.": "Reducerile care depind de întreaga comandă se aplică atunci când articolele sunt în coș.",
-    ":size sample": "Mostră :size"
+    ":size sample": "Mostră :size",
+    "Date not set yet": "Data nu este încă setată",
+    "Date not set yet: set the arrival date": "Data nu este încă setată: setați data sosirii"
 }
