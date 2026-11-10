@@ -35,6 +35,7 @@ class MasterAssetCompetitorProductsResource extends JsonResource
             'competitor_product_name' => $this->competitor_product_name,
             'competitor_product_url'  => $this->competitor_product_url,
             'competitor_units'        => (float) $this->competitor_units,
+            'compared_as_units'       => $this->compared_as_units === null ? null : (float) $this->compared_as_units,
             'minimum_order'           => $this->minimum_order,
             'our_unit_price'          => $this->our_unit_price === null ? null : (float) $this->our_unit_price,
             'competitor_unit_price'   => $this->competitor_unit_price === null ? null : (float) $this->competitor_unit_price,

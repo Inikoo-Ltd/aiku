@@ -61,6 +61,8 @@ Kým nepridáte prvého konkurenta, dashboard vysvetlí, čo robiť.
 
 Po každom čítaní AI porovná každý ich produkt s vašimi. Pár, v ktorom si je istá, sa **potvrdí sám** (označený *auto*); ostatné čakajú v **Prices to review**. Každý riadok ukazuje váš produkt, vašu cenu za jednotku, ich produkt s odkazom, ich cenu za jednotku a rozdiel: červený, keď sú lacnejší, zelený, keď sú drahší. Obe ceny sú v ich mene, vaša podľa vašej ceny v tej mene (cena AW class v eurách pre konkurenta v eurách); iba keď v ich mene cenu nemáte, prepočítajú sa obe na menu skupiny.
 
+**Units in their pack** (kusy v ich balení) pod ich produktom je číslo, ktorým sa delí ich cena. Balenia sa na oboch stranách nie vždy počítajú rovnako: vaša krabica s 12 balíčkami môže byť vedená ako 1 jednotka, kým ich je zadaná ako 12, alebo sa ich krabica s 12 kusmi prečíta ako 1. Keď by tým ich cena za jednotku vyšla pod 40 % alebo nad 250 % vašej, kým balenie oproti baleniu sú obe ceny blízko, aiku berie balenia ako rovnaké a porovná ich balenie oproti baleniu; riadok to označí textom *Compared pack against pack*. Rozdiel, ktorý je aj potom veľmi veľký, je skutočný rozdiel alebo nesprávny pár: otvorte ich odkaz a skontrolujte to.
+
 Kliknite na **fajku**, keď je pár správny, a na **krížik**, keď nie je. Zamietnuté páry sa už nezobrazia. Voľby hore prepínajú medzi **To review**, **Confirmed**, **Rejected** a **All**; voľba **Confirmed** slúži zároveň ako porovnanie cien, zoraditeľné podľa rozdielu.
 
 Pár označený *Similar, not the same item* (podobný, nie rovnaká položka) sa ponechá ako nápoveda a do porovnania cien sa nezapočíta, kým naň neklikneš na **začiarknutie**: to znamená, že ide o rovnakú položku, a odvtedy sa započíta.

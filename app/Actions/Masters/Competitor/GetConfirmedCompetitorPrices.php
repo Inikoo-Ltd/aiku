@@ -27,6 +27,10 @@ class GetConfirmedCompetitorPrices
 {
     use AsObject;
 
+    public const float BELIEVABLE_FROM = 0.4;
+
+    public const float BELIEVABLE_TO = 2.5;
+
     /**
      * @param  array<int, int>  $masterAssetIds
      * @return Collection<int, array<int, array{competitor: string, sells_to: string, same_item: bool, difference_pct: int}>>
@@ -80,15 +84,36 @@ class GetConfirmedCompetitorPrices
         $units      = max($units, 1);
 
         if ($local > 0) {
+            $units = static::comparedUnits($local, $ourUnits, (float) $price, $units);
+
             return [$local / $ourUnits, $price === null ? null : $price / $units, $competitor->currency];
         }
 
         $exchanges[$competitor->currency_id] ??= GetCurrencyExchange::run($competitor->currency, $currency);
+        $units = static::comparedUnits($ourPriceIn($currency), $ourUnits, (float) $price * (float) $exchanges[$competitor->currency_id], $units);
 
         return [
             $ourPriceIn($currency) > 0 ? $ourPriceIn($currency) / $ourUnits : null,
             $price !== null && $exchanges[$competitor->currency_id] ? $price * $exchanges[$competitor->currency_id] / $units : null,
             $currency,
         ];
+    }
+
+    /**
+     * The units their pack is counted as. The two pack counts are not always counted the same way (our box of 12
+     * packets held as 1 unit against their 12, or their box of 12 read as 1 against our 12), which puts their
+     * price per unit a pack size away from ours. When per unit they are outside 40% to 250% of our price while
+     * pack against pack they are inside it, the packs are the same and theirs counts as many units as ours.
+     */
+    public static function comparedUnits(float $ourPackPrice, float $ourUnits, float $theirPackPrice, float $units): float
+    {
+        if ($units === $ourUnits || $ourPackPrice <= 0) {
+            return $units;
+        }
+
+        $believable = fn (float $ratio): bool => $ratio >= self::BELIEVABLE_FROM && $ratio <= self::BELIEVABLE_TO;
+        $packRatio  = $theirPackPrice / $ourPackPrice;
+
+        return $believable($packRatio) && !$believable($packRatio * $ourUnits / $units) ? $ourUnits : $units;
     }
 }

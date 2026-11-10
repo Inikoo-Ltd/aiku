@@ -104,6 +104,10 @@ const money = (value: number | null, currencyCode: string) => value === null ? "
                 <InputNumber :modelValue="item.competitor_units" :min="1" :maxFractionDigits="3" size="small" inputClass="!w-16 !py-0.5 text-right"
                     :disabled="!canEdit || savingUnits === item.id" @input="unitsDraft[item.id] = $event.value" @blur="saveUnits(item)" />
             </div>
+            <div v-if="item.compared_as_units !== null" class="mt-1 text-xs text-amber-600"
+                v-tooltip="ctrans('With the units in their pack as entered, their price per unit would be under 40% or over 250% of ours, while pack against pack the prices are close. So their pack is taken to hold what ours holds.')">
+                {{ ctrans("Compared pack against pack, as :n units like ours", { n: item.compared_as_units }) }}
+            </div>
             <div v-if="unitsError?.id === item.id" class="mt-1 text-xs text-red-600">{{ unitsError.message }}</div>
         </template>
         <template #cell(competitor_unit_price)="{ item }">
@@ -115,6 +119,10 @@ const money = (value: number | null, currencyCode: string) => value === null ? "
                 v-tooltip="item.difference < 0 ? ctrans('They are cheaper') : ctrans('They are dearer')">
                 {{ item.difference > 0 ? "+" : "" }}{{ item.difference }}%
             </span>
+            <div v-if="item.difference !== null && (item.difference < -60 || item.difference > 150)" class="text-xs text-amber-600 whitespace-nowrap"
+                v-tooltip="ctrans('A gap this large is rarely real. Open their link and check the units in their pack, or reject the match if it is another product.')">
+                {{ ctrans("Check units or match") }}
+            </div>
         </template>
         <template #cell(status)="{ item }">
             <div class="flex items-center gap-x-1">
