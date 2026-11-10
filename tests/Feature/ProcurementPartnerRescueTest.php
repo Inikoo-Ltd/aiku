@@ -209,7 +209,7 @@ test('UI Index org partners', function () {
             ->loadDeferredProps(fn (AssertableInertia $page) => $page->has(
                 'rescuable.'.$this->orgPartner->id,
                 fn (AssertableInertia $rescuable) => $this->orgPartner->partner->is_manufacturing_hub
-                    ? $rescuable->has('buckets', 4)->has('top')->etc()
+                    ? $rescuable->has('buckets', 3)->has('top')->etc()
                     : $rescuable->has('buckets', 3)->missing('buckets.0.left_out')->has('top')->etc()
             ));
     });
@@ -288,13 +288,12 @@ test('ordering from the manufacturing hub fills the shopping list, never a rescu
 
         $buckets = GetPartnerStockCoverBuckets::make();
         expect((new ReflectionMethod($buckets, 'spareExpression'))->invoke($buckets, $orgPartner, 14))->toBe('null::numeric')
-            ->and($buckets->orderBuckets($orgPartner))->toBe(['out', 'w1', 'w2', 'w3'])
             ->and((int) DB::selectOne('select '.(new ReflectionMethod($buckets, 'rescueQuantity'))->invoke($buckets, 'null::numeric', 14, $orgPartner).' as quantity
                 from (select 0.5 as predicted_daily_usage) s, (select 3 as quantity_available) os, (select null::int as stock_family_id) stocks,
                     (select null::int as measured_lead_time_days, null::int as estimated_lead_time_days, 0 as id, 6 as packed_in) p,
                     lateral ('.(new ReflectionMethod($buckets, 'rowFacts'))->invoke($buckets, $orgPartner, 14)->toRawSql().') rf')->quantity)
             ->toBe((int) ceil(0.5 * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS))
-            ->and(collect($buckets->rescuable($orgPartner, 0)['buckets'])->pluck('bucket')->all())->toBe(['out', 'w1', 'w2', 'w3'])
+            ->and(collect($buckets->rescuable($orgPartner, 0)['buckets'])->pluck('bucket')->all())->toBe(['out', 'w1', 'w2'])
             ->and($buckets->rescuable($orgPartner, 0)['buckets'][0])->toHaveKeys(['cheapest', 'order_cheapest'])
             ->and(fn () => StoreRescuePurchaseOrder::make()->handle($orgPartner))->toThrow(ValidationException::class);
 

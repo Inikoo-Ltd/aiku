@@ -299,6 +299,7 @@ class IndexAgentCoverBucketItems extends OrgAction
                 'org_stock_code'       => $orgStock?->code,
                 'discontinue_suggestions' => $discontinueSuggestions->get($row->org_stock_id) ?? ['times' => 0, 'people' => 0],
                 'stock_in_locations'   => $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations),
+                'stock_available'      => $orgStock?->quantity_available === null ? null : trimDecimalZeros(max(0, $orgStock->quantity_available)),
                 'quarterly_usage'      => $quarterlyUsage->get($row->org_stock_id) ?? [],
                 'stock_cover'          => GetOrgStockBuyingSignals::run($orgStock, $supplierProducts->get($row->supplier_product_id), fallbackLeadTimeDays: $this->agentLeadDays),
                 'stock_deliveries'     => $stockDeliveries->get($row->org_stock_id),

@@ -460,6 +460,7 @@ class IndexPartnerShoppingListItems extends OrgAction
             $row->can_be_poked             = $this->isSentView && $row->canBePoked();
             $row->is_recently_poked        = $row->poked_at?->gt(now()->subHour()) ?? false;
             $row->stock_in_locations       = $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations);
+            $row->stock_available          = $orgStock?->quantity_available === null ? null : trimDecimalZeros(max(0, $orgStock->quantity_available));
             $row->stock_cover              = $orgStock ? GetOrgStockBuyingSignals::run($orgStock, null, $leadTimeDays) : null;
             $row->quarterly_usage          = $quarterlyUsage->get($row->org_stock_id) ?? collect();
             $row->stock_deliveries         = $stockDeliveries->get($row->org_stock_id);

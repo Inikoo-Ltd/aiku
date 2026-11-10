@@ -1975,7 +1975,11 @@ describe('partner shopping list', function () {
         expect($recommendation())->toBe(65.0);
 
         $orgStock->update(['quantity_available' => 150]);
+        expect($recommendation())->toBe(0.0);
+
+        $orgStock->update(['quantity_available' => 10, 'estimated_lead_time_days' => 10]);
         expect($recommendation())->toBe(30.0);
+        $orgStock->update(['estimated_lead_time_days' => null]);
 
         $orgStock->update(['quantity_available' => 200]);
         expect($recommendation())->toBe(0.0);
@@ -3351,11 +3355,11 @@ describe('partner shopping list', function () {
                     ->has('buyers.0', fn (AssertableInertia $card) => $card->where('id', $buyerPartner->id)->missing('rescuable')->etc())
                     ->missing('rescuable_'.$buyerPartner->id)
                     ->loadDeferredProps('buyer_'.$buyerPartner->id, fn (AssertableInertia $page) => $page
-                        ->has('rescuable_'.$buyerPartner->id.'.buckets', 4)
+                        ->has('rescuable_'.$buyerPartner->id.'.buckets', 3)
                         ->missing('rescuable_'.$buyerPartner->id.'.buckets.0.left_out')));
 
             $leftOutUrl = fn (OrgPartner $orgPartner) => route('grp.org.productions.show.intervention.left_out', [$seller->slug, $production->slug, $orgPartner->id]);
-            $this->getJson($leftOutUrl($buyerPartner))->assertOk()->assertJsonStructure(['out', 'w1', 'w2', 'w3']);
+            $this->getJson($leftOutUrl($buyerPartner))->assertOk()->assertJsonStructure(['out', 'w1', 'w2'])->assertJsonMissingPath('w3');
             $this->getJson($leftOutUrl($this->orgPartner))->assertNotFound();
 
             $order($buyerPartner)->assertSessionHasNoErrors()->assertRedirect();

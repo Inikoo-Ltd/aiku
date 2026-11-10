@@ -34,6 +34,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property float|null $net_amount
  * @property float|null $org_net_amount
  * @property float|null $stock_in_locations
+ * @property float|null $stock_available
  * @property \Illuminate\Support\Collection|null $quarterly_usage
  * @property array{days: float|null, days_worst_case: float|null, out_of_stock_at: string|null}|null $stock_cover
  * @property \Illuminate\Support\Collection|null $other_open_purchase_orders
@@ -92,6 +93,7 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
             'lead_time_measured' => $this->measured_lead_time_days !== null,
             'other_organisations_drafts' => $this->other_organisations_drafts ?? [],
             'stock_in_locations' => $this->stock_in_locations === null ? null : trimDecimalZeros($this->stock_in_locations),
+            'stock_available'    => $this->stock_available === null ? null : trimDecimalZeros(max(0, $this->stock_available)),
             'quarterly_usage'  => $this->quarterly_usage ?? [],
             'discontinue_suggestions' => $this->discontinue_suggestions,
             'stock_cover'      => $this->stock_cover ?? null,

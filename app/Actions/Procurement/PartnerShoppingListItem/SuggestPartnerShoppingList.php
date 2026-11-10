@@ -290,7 +290,7 @@ class SuggestPartnerShoppingList extends OrgAction
 
     /**
      * A hub bucket is filled with the quantities the order button uses, which cover the partner's real
-     * lead time; the stored recommended quantity assumes a fixed one and is zero for danger SKOs.
+     * lead time; the stored recommended quantity assumes a fixed one.
      * Lines are rounded up to whole batches and taken worst first while they fit the budget.
      *
      * @param array<int, array<string, mixed>> $candidates
