@@ -26,6 +26,7 @@ use App\Enums\HumanResources\Employee\EmploymentTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Mcp\Resources\AikuDataGuideResource;
 use App\Mcp\Servers\AikuServer;
+use App\Mcp\Tools\CompetitorMatchReviewTool;
 use App\Mcp\Tools\CustomerConversionTool;
 use App\Mcp\Tools\CustomerEmailPressureTool;
 use App\Mcp\Tools\CustomerNotesTool;
@@ -2209,6 +2210,161 @@ describe('family pricing review tool', function () {
             'master_shop' => 'no-such-master-shop',
             'family'      => $this->reviewMasterFamily->code,
         ])->assertHasErrors(['does not match any master shop'])->assertSee($this->reviewMasterShop->code);
+    });
+});
+
+describe('competitor match review tool', function () {
+    beforeEach(function () {
+        $masterShop = StoreMasterShop::make()->action($this->group, [
+            'type' => ShopTypeEnum::B2B,
+            'code' => 'CMR-'.uniqid(),
+            'name' => 'Match review master shop',
+        ]);
+        $masterFamily = StoreMasterFamily::make()->action(
+            StoreMasterDepartment::make()->action($masterShop, ['code' => 'CMRD-'.uniqid(), 'name' => 'Match review department']),
+            ['code' => 'CMRF-'.uniqid(), 'name' => 'Match review family', 'type' => MasterProductCategoryTypeEnum::FAMILY]
+        );
+        $this->matchMasterAsset = StoreMasterAsset::make()->action($masterFamily, [
+            'code'    => 'CMRP-'.uniqid(),
+            'name'    => 'Golden incense box of 12 packets',
+            'is_main' => true,
+            'type'    => MasterAssetTypeEnum::PRODUCT,
+            'price'   => 7.35,
+            'stocks'  => [],
+        ]);
+        $this->matchMasterAsset->updateQuietly(['status' => true, 'units' => 1, 'unit' => 'Box', 'master_prices' => [$this->group->currency->code => ['value' => '7.35', 'independent' => false]]]);
+
+        $competitor = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($masterShop, [
+            'name'        => 'Rival',
+            'website'     => 'https://rival.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => $this->group->currency_id,
+        ]);
+        $this->newMatch = fn (float $price, array $attributes = []) => \App\Models\Masters\MasterAssetCompetitorProduct::create($attributes + [
+            'master_shop_id'        => $masterShop->id,
+            'master_asset_id'       => $this->matchMasterAsset->id,
+            'competitor_product_id' => $competitor->products()->create(['code' => 'R-'.uniqid(), 'name' => 'Golden incense 15 grams', 'url' => 'https://rival.example.com/p/'.uniqid(), 'price' => $price, 'data' => ['description' => '12 boxes of 15 g'], 'fetched_at' => now()])->id,
+            'is_same_item'          => true,
+            'status'                => \App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED,
+        ]);
+        $this->queued = function () {
+            Illuminate\Support\Facades\Auth::setUser($this->user);
+
+            return collect(json_decode((string) app(CompetitorMatchReviewTool::class)->handle(new Laravel\Mcp\Request(['limit' => 50]))->content(), true)['matches'])
+                ->where('ours.code', $this->matchMasterAsset->code)->values();
+        };
+    });
+
+    test('a user without masters permission is denied, and viewing alone does not save', function () {
+        $match = ($this->newMatch)(7.8, ['competitor_units' => 12]);
+
+        AikuServer::actingAs(guestWithoutPositions($this->group)->getUser())->tool(CompetitorMatchReviewTool::class, [])->assertHasErrors(['Permission denied.']);
+
+        expect($match->refresh()->checked_at)->toBeNull();
+    });
+
+    test('doubtful confirmed matches come first with both sides, and a verdict sets the units in our terms and leaves the queue', function () {
+        $inferred = ($this->newMatch)(7.8, ['competitor_units' => 12]);
+        $fine     = ($this->newMatch)(7.5);
+
+        $queued = ($this->queued)();
+        expect($queued->pluck('match_id')->all())->toBe([$inferred->id, $fine->id])
+            ->and($queued[0]['stage'])->toBe(1)
+            ->and($queued[0]['comparison']['compared_pack_against_pack'])->toBeTrue()
+            ->and($queued[0]['comparison']['difference_pct'])->toBe(6)
+            ->and($queued[0]['ours']['unit'])->toBe('Box')
+            ->and($queued[0]['theirs']['description'])->toBe('12 boxes of 15 g')
+            ->and($queued[1]['stage'])->toBe(2);
+
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, [
+            'match_id' => $inferred->id,
+            'decision' => 'same_item',
+            'units'    => 1,
+            'note'     => 'Their listing says 12 boxes of 15 g, the box we sell as one unit.',
+        ])->assertOk()->assertSee('"units_verified":true')->assertSee('"difference_pct":6')->assertSee('"compared_pack_against_pack":false');
+
+        $inferred->refresh();
+        expect((float) $inferred->competitor_units)->toBe(1.0)
+            ->and($inferred->units_verified)->toBeTrue()
+            ->and($inferred->reviewed_by_user_id)->toBeNull()
+            ->and($inferred->check_note)->toContain('12 boxes')
+            ->and(($this->queued)()->pluck('match_id')->all())->toBe([$fine->id]);
+    });
+
+    test('verified units are compared as they are even when the gap is large, and the answer says so', function () {
+        $single = ($this->newMatch)(0.7);
+
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, [
+            'match_id' => $single->id,
+            'decision' => 'same_item',
+            'units'    => 0.083,
+            'note'     => 'Their listing is one 15 g packet; our box holds 12.',
+        ])->assertOk()->assertSee('"difference_pct":15')->assertDontSee('still_out_of_range');
+
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, [
+            'match_id' => $single->id,
+            'decision' => 'same_item',
+            'units'    => 1,
+            'note'     => 'One box.',
+        ])->assertOk()->assertSee('"difference_pct":-90')->assertSee('still_out_of_range');
+    });
+
+    test('a different item is rejected without a staff reviewer, and cannot tell only leaves a note', function () {
+        $other   = ($this->newMatch)(7.8, ['status' => \App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::SUGGESTED]);
+        $unclear = ($this->newMatch)(7.8);
+
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, ['match_id' => $other->id, 'decision' => 'different_item', 'note' => 'Another brand.'])->assertOk()->assertSee('"status":"rejected"');
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, ['match_id' => $unclear->id, 'decision' => 'cannot_tell', 'note' => 'The listing gives no pack size.'])->assertOk();
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, ['match_id' => $unclear->id, 'decision' => 'same_item', 'note' => 'No units.'])->assertHasErrors();
+
+        expect($other->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->and($other->is_same_item)->toBeFalse()
+            ->and($other->reviewed_by_user_id)->toBeNull()
+            ->and($unclear->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and($unclear->units_verified)->toBeFalse()
+            ->and($unclear->check_note)->toBe('The listing gives no pack size.')
+            ->and(($this->queued)())->toBeEmpty();
+    });
+
+    test('what a person decided stands and the verdict is kept as a note', function () {
+        $confirmed = ($this->newMatch)(7.8, ['reviewed_by_user_id' => $this->user->id, 'reviewed_at' => now()]);
+        $rejected  = ($this->newMatch)(7.8, ['status' => \App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED, 'reviewed_by_user_id' => $this->user->id, 'reviewed_at' => now()]);
+
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, ['match_id' => $confirmed->id, 'decision' => 'different_item', 'note' => 'Another scent.'])->assertOk()->assertSee('A person reviewed this match');
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, ['match_id' => $rejected->id, 'decision' => 'same_item', 'units' => 1, 'note' => 'Same box.'])->assertOk()->assertSee('A person rejected this match');
+
+        expect($confirmed->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and($confirmed->check_note)->toBe('Another scent.')
+            ->and($rejected->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->and($rejected->units_verified)->toBeFalse();
+    });
+
+    test('units a person typed are kept: the match is neither rejected nor recounted, and it says so in the queue', function () {
+        $typed = ($this->newMatch)(7.8);
+        Illuminate\Support\Facades\DB::table('audits')->insert([
+            'group_id'       => $this->group->id,
+            'user_type'      => 'User',
+            'user_id'        => $this->user->id,
+            'tags'           => json_encode(['catalogue']),
+            'event'          => 'updated',
+            'auditable_type' => 'MasterAssetCompetitorProduct',
+            'auditable_id'   => $typed->id,
+            'old_values'     => json_encode(['competitor_units' => null]),
+            'new_values'     => json_encode(['competitor_units' => 12]),
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+        $typed->updateQuietly(['competitor_units' => 12]);
+
+        expect(($this->queued)()->firstWhere('match_id', $typed->id)['staff']['units_set_by_staff'])->toBeTrue();
+
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, ['match_id' => $typed->id, 'decision' => 'different_item', 'note' => 'Another brand.'])->assertOk()->assertSee('A person entered the units of this match, so it was not rejected');
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, ['match_id' => $typed->id, 'decision' => 'same_item', 'units' => 1, 'note' => 'The same box we sell as one unit.'])->assertOk()->assertSee('A person entered the units of this match, so they were not changed');
+
+        expect($typed->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and((float) $typed->competitor_units)->toBe(12.0)
+            ->and($typed->units_verified)->toBeFalse()
+            ->and($typed->check_note)->toBe('The same box we sell as one unit.');
     });
 });
 

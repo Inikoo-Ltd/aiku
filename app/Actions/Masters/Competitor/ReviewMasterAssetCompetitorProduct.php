@@ -29,7 +29,7 @@ class ReviewMasterAssetCompetitorProduct extends OrgAction
     public function handle(MasterAssetCompetitorProduct $masterAssetCompetitorProduct, array $modelData, ?User $user = null): MasterAssetCompetitorProduct
     {
         if (isset($modelData['competitor_units'])) {
-            $masterAssetCompetitorProduct->update(['competitor_units' => $modelData['competitor_units']]);
+            $masterAssetCompetitorProduct->update(['competitor_units' => $modelData['competitor_units'], 'units_verified' => false]);
         }
 
         if (isset($modelData['status'])) {

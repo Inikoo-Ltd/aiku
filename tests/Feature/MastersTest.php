@@ -5352,6 +5352,19 @@ describe('competitor prices, HELP-3605', function () {
             ->and($compare(12, 12, 7.8))->toEqual([6, 6, null])
             ->and($compare(12, null, 0.7))->toEqual([14, 14, null])
             ->and($compare(1, 12, 0.7))->toEqual([-99, -99, null]);
+
+        $match->update(['units_verified' => true]);
+        expect($compare(1, 12, 7.8))->toEqual([-91, -91, null]);
+
+        $listed = fn (string $bucket) => get(route("grp.masters.competitors.prices.$bucket"))->assertOk()->viewData('page')['props']['data']['data'];
+        $match->update(['status' => \App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED, 'is_same_item' => false, 'checked_at' => now(), 'check_note' => 'Another brand.']);
+        expect(collect($listed('rejected_by_ai'))->firstWhere('id', $match->id)['check_note'])->toBe('Another brand.')
+            ->and(collect($listed('rejected'))->firstWhere('id', $match->id))->toBeNull();
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'confirmed'])->assertRedirect();
+        expect($match->refresh()->is_same_item)->toBeTrue()
+            ->and(collect($listed('rejected_by_ai'))->firstWhere('id', $match->id))->toBeNull()
+            ->and(collect($listed('confirmed'))->firstWhere('id', $match->id))->not->toBeNull();
     });
 
     test('a different volume or weight in the name is never the same item', function () {

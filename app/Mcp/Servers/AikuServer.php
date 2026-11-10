@@ -9,6 +9,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\AiChangesTool;
+use App\Mcp\Tools\CompetitorMatchReviewTool;
 use App\Mcp\Tools\CustomerConversionTool;
 use App\Mcp\Tools\CustomerEmailPressureTool;
 use App\Mcp\Tools\CustomerLookupTool;
@@ -151,6 +152,7 @@ class AikuServer extends Server
         ProductionSetupTool::class,
         StockDeliveryCostsTool::class,
         FamilyPricingReviewTool::class,
+        CompetitorMatchReviewTool::class,
         HubOrderPlanningTool::class,
         HubShoppingListTool::class,
         PartnerRescueOrderTool::class,
