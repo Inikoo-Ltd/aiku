@@ -21,6 +21,7 @@ use App\Actions\CRM\Customer\GoogleAds\SyncShopCustomersToGoogleAds;
 use App\Actions\CRM\Customer\UI\ExportCustomers;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
+use App\Actions\CRM\Customer\UI\IndexCustomerShopTypes;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\WebUser\UI\CreateWebUser;
@@ -47,6 +48,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('', IndexCustomers::class)->name('index');
 Route::get('create', CreateCustomer::class)->name('create');
 Route::get('export', [ExportCustomers::class, 'inShop'])->name('export');
+Route::get('shop-types', IndexCustomerShopTypes::class)->name('shop_types.index');
 Route::post('sync-to-google-ads', SyncShopCustomersToGoogleAds::class)->name('sync_to_google_ads');
 Route::get('{customer}/edit', EditCustomer::class)->name('edit');
 Route::prefix('{customer}')->as('show')->group(function () {

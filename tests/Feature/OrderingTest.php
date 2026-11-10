@@ -5743,6 +5743,142 @@ test('weekly product suggestions give the AI half AI picks with reasons and fall
         ->and(collect($insights['recommendations'])->pluck('suggestion_reason')->filter()->all())->toBe([]);
 });
 
+test('range advisor segments need five buyers and the gap analysis lists what similar shops buy', function () {
+    [, $sharedProduct] = createProduct($this->shop);
+    $newProduct = function () use ($sharedProduct) {
+        $product = StoreProduct::make()->action($sharedProduct->family, array_merge(
+            Product::factory()->definition(),
+            ['trade_units' => [['id' => $sharedProduct->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 10]
+        ));
+        $product->update(['state' => ProductStateEnum::ACTIVE, 'status' => ProductStatusEnum::FOR_SALE, 'is_for_sale' => true, 'has_live_webpage' => true, 'price' => 10, 'available_quantity' => 1000]);
+
+        return $product;
+    };
+    [$popular, $rare, $own, $forgotten] = [$newProduct(), $newProduct(), $newProduct(), $newProduct()];
+
+    $orderOf = function ($customer, array $products, $date = null) {
+        $order = StoreOrder::make()->action($customer, Order::factory()->definition());
+        foreach ($products as $product) {
+            StoreTransaction::make()->action($order, $product->currentHistoricProduct, Transaction::factory()->definition());
+        }
+        $order->update(['state' => OrderStateEnum::DISPATCHED, 'date' => $date ?? now()->subDays(5)]);
+    };
+    $giftShop = fn () => tap(freshCustomerLike($this->shop, $this->customer))->update(['shop_type' => \App\Enums\CRM\Customer\CustomerShopTypeEnum::GIFT_SHOP]);
+
+    $buyers = collect(range(1, 5))->map(fn () => $giftShop());
+    foreach ($buyers as $index => $buyer) {
+        $orderOf($buyer, $index < 4 ? [$popular, $rare] : [$popular]);
+    }
+    $orderOf($buyers[0], [$popular]);
+    $orderOf($buyers[1], [$popular]);
+    $orderOf($buyers[4], [$own]);
+
+    $customer = $giftShop();
+    $orderOf($customer, [$own]);
+    $orderOf($customer, [$forgotten], now()->subMonths(13));
+
+    \App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::run($this->shop);
+
+    $country     = data_get($customer->location, 0);
+    $bestSellers = \App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country);
+    $popularRow  = $bestSellers['items']->firstWhere('id', $popular->id);
+
+    expect($bestSellers['segment'])->toMatchArray(['level' => 'type_country', 'shop_type' => 'gift_shop', 'country_code' => $country, 'customers' => 6])
+        ->and($popularRow->segment_customers_buying)->toBe(5)
+        ->and($popularRow->segment_repeat_customers)->toBe(2)
+        ->and($popularRow->segment_reorder_rate)->toBe(0.4)
+        ->and($popularRow->segment_revenue)->toBeGreaterThan(0)
+        ->and($bestSellers['items']->pluck('id')->all())->not->toContain($rare->id)
+        ->and($bestSellers['items']->pluck('id')->all())->not->toContain($own->id)
+        ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, null, $country)['segment']['level'])->toBe('country')
+        ->and(DB::table('segment_product_sales')->where('shop_id', $this->shop->id)->where('customers', '<', 5)->count())->toBe(0);
+
+    $familyRow = DB::table('segment_product_sales')->where('shop_id', $this->shop->id)->where('level', 'type_country')->where('shop_type', 'gift_shop')->whereNull('product_id')->where('family_id', $popular->family_id)->first();
+
+    expect($familyRow->customers)->toBe(6)
+        ->and($familyRow->repeat_customers)->toBe(3);
+
+    $gaps = \App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps::run($customer->fresh());
+
+    expect($gaps['segment']['level'])->toBe('type_country')
+        ->and($gaps['missing']->pluck('id')->all())->toContain($popular->id)
+        ->and($gaps['missing']->pluck('id')->all())->not->toContain($own->id)
+        ->and($gaps['forgotten']->pluck('id')->all())->toBe([$forgotten->id])
+        ->and($gaps['forgotten']->first()->customer_orders)->toBe(1);
+
+    $segmentRows = DB::table('segment_product_sales')->where('shop_id', $this->shop->id)->count();
+    DB::table('products')->where('id', $popular->id)->update(['available_quantity' => 0]);
+    \App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::run($this->shop);
+
+    expect(DB::table('segment_product_sales')->where('shop_id', $this->shop->id)->count())->toBe($segmentRows)
+        ->and(\App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps::run($customer->fresh())['missing']->pluck('id')->all())->not->toContain($popular->id);
+});
+
+test('a customer shop type set by staff is counted in the shop type coverage report', function () {
+    $shopState = DB::table('shops')->where('id', $this->shop->id)->value('state');
+    DB::table('shops')->where('id', $this->shop->id)->update(['state' => ShopStateEnum::OPEN->value]);
+
+    $customer = freshCustomerLike($this->shop, $this->customer);
+    $customer->update(['last_invoiced_at' => now()]);
+
+    $coverage = fn () => collect(\App\Actions\CRM\Customer\ReportCustomerShopTypeCoverage::run(24))->firstWhere('shop', $this->shop->code);
+    $before   = $coverage();
+
+    $customer = UpdateCustomer::make()->action($customer, ['shop_type' => 'gift_shop']);
+    $after    = $coverage();
+
+    expect($customer->shop_type)->toBe(\App\Enums\CRM\Customer\CustomerShopTypeEnum::GIFT_SHOP)
+        ->and($customer->shop_type_source)->toBe(\App\Enums\CRM\Customer\CustomerShopTypeSourceEnum::STAFF)
+        ->and($after->active)->toBe($before->active)
+        ->and($after->with_shop_type)->toBe($before->with_shop_type + 1)
+        ->and($after->source_staff)->toBe($before->source_staff + 1);
+
+    $customer = UpdateCustomer::make()->action($customer, ['shop_type' => null]);
+
+    expect($customer->shop_type)->toBeNull()
+        ->and($customer->shop_type_source)->toBeNull();
+
+    DB::table('shops')->where('id', $this->shop->id)->update(['state' => $shopState]);
+});
+
+test('catalogue meaning search embeds website products once and returns the nearest product in stock', function () {
+    [, $sharedProduct] = createProduct($this->shop);
+    $newProduct = function (string $name) use ($sharedProduct) {
+        $product = StoreProduct::make()->action($sharedProduct->family, array_merge(
+            Product::factory()->definition(),
+            ['trade_units' => [['id' => $sharedProduct->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 10, 'name' => $name]
+        ));
+        $product->update(['state' => ProductStateEnum::ACTIVE, 'status' => ProductStatusEnum::FOR_SALE, 'is_for_sale' => true, 'has_live_webpage' => true, 'price' => 10, 'available_quantity' => 1000]);
+
+        return $product;
+    };
+    $incense = $newProduct('Zorbalin incense sticks');
+    $soap    = $newProduct('Olive oil soap bar');
+    DB::table('products')->whereIn('id', [$incense->id, $soap->id])->update(['is_in_website' => true]);
+
+    config(['services.openrouter.api_key' => 'test']);
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), 'zorbalin') ? 0 : 1 => 1.0]);
+    Http::fake(['*' => fn ($request) => Http::response(['data' => collect($request['input'])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()])]);
+
+    $first  = \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+    $second = \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+    $found  = \App\Actions\Catalogue\Search\SearchCatalogueByMeaning::run($this->shop, 'zorbalin for a yoga studio');
+
+    expect($first['embedded'])->toBeGreaterThanOrEqual(2)
+        ->and($first['failed'])->toBe(0)
+        ->and($second['embedded'])->toBe(0)
+        ->and($second['unchanged'])->toBe($first['embedded'] + $first['unchanged'])
+        ->and($found->first()->id)->toBe($incense->id)
+        ->and((float) $found->first()->distance)->toBeLessThan(0.01);
+
+    DB::table('products')->where('id', $incense->id)->update(['available_quantity' => 0]);
+    DB::table('products')->where('id', $soap->id)->update(['is_in_website' => false]);
+
+    expect(\App\Actions\Catalogue\Search\SearchCatalogueByMeaning::run($this->shop, 'zorbalin')->pluck('id')->all())->not->toContain($incense->id)
+        ->and(\App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop)['removed'])->toBe(1)
+        ->and(\App\Actions\Catalogue\Search\SearchCatalogueByMeaning::run($this->shop, ' '))->toBeEmpty();
+});
+
 test('adds from the customer dashboard are logged per section and counted as ordered once the basket is submitted', function () {
     $website = createWebsite($this->shop);
     $website->update(['status' => true]);

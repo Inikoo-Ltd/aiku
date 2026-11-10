@@ -38,6 +38,20 @@ trait WithCustomersSubNavigation
             ]
         ];
 
+        if ($this->parent instanceof Shop && $this->parent->type === ShopTypeEnum::B2B) {
+            $meta[] = [
+                'route'    => [
+                    'name'       => 'grp.org.shops.show.crm.customers.shop_types.index',
+                    'parameters' => $request->route()->originalParameters()
+                ],
+                'label'    => __('Shop types'),
+                'leftIcon' => [
+                    'icon'    => 'fal fa-store',
+                    'tooltip' => __('Shop types')
+                ]
+            ];
+        }
+
         if ($this->parent instanceof Shop && $this->parent->engine !== ShopEngineEnum::FAIRE) {
             $meta[] = [
                 'route'     => [

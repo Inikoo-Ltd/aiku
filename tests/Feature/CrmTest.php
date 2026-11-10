@@ -4100,3 +4100,75 @@ test('a basket going to the old default delivery address follows the new one; on
     expect($followingBasket->refresh()->deliveryAddress->address_line_1)->toBe($secondNewAddress['address_line_1'])
         ->and($elsewhereBasket->refresh()->deliveryAddress->address_line_1)->toBe($oneOffAddress['address_line_1']);
 });
+
+test('shop types page shows the coverage of the shop and lists its active customers by shop type', function () {
+    $originalShop = DB::table('shops')->where('id', $this->shop->id)->first(['type', 'state']);
+    DB::table('shops')->where('id', $this->shop->id)->update(['type' => ShopTypeEnum::B2B->value, 'state' => ShopStateEnum::OPEN->value]);
+
+    try {
+        $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+        DB::table('customers')->where('id', $customer->id)->update(['last_invoiced_at' => now(), 'shop_type' => null, 'shop_type_source' => null]);
+
+        $shopTypesPage = function (): array {
+            $props = [];
+            get(route('grp.org.shops.show.crm.customers.shop_types.index', [
+                $this->organisation->slug,
+                $this->shop->slug,
+                'elements' => ['shop_type' => 'gift_shop'],
+            ]))
+                ->assertOk()
+                ->assertInertia(function (AssertableInertia $page) use (&$props) {
+                    $page->component('Org/Shop/CRM/CustomerShopTypes');
+                    $props = $page->toArray()['props'];
+                });
+
+            return $props;
+        };
+
+        $giftShops = fn (array $props): int => collect($props['coverage'])->firstWhere('key', 'gift_shop')['customers'];
+        $staffGiftShops = fn (array $props): int => collect($props['coverage'])->firstWhere('key', 'gift_shop')['source_staff'];
+
+        $before = $shopTypesPage();
+        expect(collect($before['customers']['data'])->pluck('id'))->not->toContain($customer->id);
+
+        UpdateCustomer::make()->action($customer, ['shop_type' => \App\Enums\CRM\Customer\CustomerShopTypeEnum::GIFT_SHOP->value]);
+
+        $after = $shopTypesPage();
+        $row   = collect($after['customers']['data'])->firstWhere('id', $customer->id);
+
+        expect($giftShops($after))->toBe($giftShops($before) + 1)
+            ->and($staffGiftShops($after))->toBe($staffGiftShops($before) + 1)
+            ->and($row)->not->toBeNull()
+            ->and($row['shop_type'])->toBe('gift_shop')
+            ->and(collect($after['shopsCoverage'])->firstWhere('is_current', true)['shop_slug'] ?? null)->toBe($this->shop->slug);
+    } finally {
+        DB::table('shops')->where('id', $this->shop->id)->update(['type' => $originalShop->type, 'state' => $originalShop->state]);
+    }
+});
+
+test('bulk tagging sets the shop type of the selected customers of the shop and rejects customers of other shops', function () {
+    $first  = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $second = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    DB::table('customers')->whereIn('id', [$first->id, $second->id])->update(['shop_type' => null, 'shop_type_source' => null]);
+
+    patch(route('grp.models.shop.customers.shop_type.update', ['shop' => $this->shop->id]), [
+        'customers' => [$first->id, $second->id],
+        'shop_type' => \App\Enums\CRM\Customer\CustomerShopTypeEnum::MARKET_TRADER->value,
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    foreach ([$first, $second] as $customer) {
+        $customer->refresh();
+        expect($customer->shop_type)->toBe(\App\Enums\CRM\Customer\CustomerShopTypeEnum::MARKET_TRADER)
+            ->and($customer->shop_type_source)->toBe(\App\Enums\CRM\Customer\CustomerShopTypeSourceEnum::STAFF);
+    }
+
+    $untouched = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    DB::table('customers')->where('id', $untouched->id)->update(['shop_type' => null, 'shop_type_source' => null]);
+
+    patch(route('grp.models.shop.customers.shop_type.update', ['shop' => $this->shop->id]), [
+        'customers' => [$untouched->id, Customer::max('id') + 1000],
+        'shop_type' => \App\Enums\CRM\Customer\CustomerShopTypeEnum::GIFT_SHOP->value,
+    ])->assertSessionHasErrors('customers.1');
+
+    expect($untouched->refresh()->shop_type)->toBeNull();
+});

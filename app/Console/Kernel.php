@@ -165,6 +165,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('procurement:send_compliance_documents_reminders')->dailyAt('07:30')->timezone('Europe/London')->onOneServer()->withoutOverlapping(60);
         $schedule->command('search:propose-synonyms')->weeklyOn(1, '03:00')->onOneServer();
         $schedule->command('customers:product-suggestions')->weeklyOn(1, '02:00')->timezone('UTC')->onOneServer();
+        $schedule->command('range-advisor:rebuild-sales')->dailyAt('01:30')->timezone('UTC')->onOneServer()->withoutOverlapping(120)->runInBackground();
+        $schedule->command('catalogue:embed-search')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping(120)->runInBackground();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('nightowl:freeze-cold-partitions')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('comms:archive_dispatched_emails')->dailyAt('03:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);

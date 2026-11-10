@@ -197,6 +197,7 @@ use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerCreditLine;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
+use App\Actions\CRM\Customer\UpdateCustomersShopType;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\CRM\CustomerNote\StoreCustomerNote;
 use App\Actions\Ordering\UpcomingTransaction\DeleteUpcomingTransaction;
@@ -1481,6 +1482,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('seo/ai-visibility-run', RunSeoAiVisibility::class)->name('seo.ai_visibility_run.store');
     Route::post('email-chat', [StartCustomerEmailChat::class, 'inShop'])->name('email_chat.store');
     Route::patch('customer-email-template/{customerEmailTemplate:id}', UpdateCustomerEmailTemplate::class)->name('customer_email_template.update');
+    Route::patch('customers/shop-type', UpdateCustomersShopType::class)->name('customers.shop_type.update');
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('social-media/upload', ImportSocialMediaInsights::class)->name('social_media.upload');
     Route::post('social-media/sync', SyncShopFromMeta::class)->name('social_media.sync');

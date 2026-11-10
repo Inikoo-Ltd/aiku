@@ -10,6 +10,8 @@ namespace App\Models\CRM;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Enums\CRM\Customer\CustomerRejectReasonEnum;
+use App\Enums\CRM\Customer\CustomerShopTypeEnum;
+use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
@@ -107,6 +109,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property CustomerStateEnum $state
  * @property numeric $balance
  * @property CustomerTradeStateEnum $trade_state number of invoices
+ * @property CustomerShopTypeEnum|null $shop_type
+ * @property CustomerShopTypeSourceEnum|null $shop_type_source
  * @property bool $is_fulfilment
  * @property bool $is_dropshipping
  * @property Carbon|null $last_submitted_order_at
@@ -258,6 +262,8 @@ class Customer extends Model implements HasMedia, Auditable
         'state'                       => CustomerStateEnum::class,
         'status'                      => CustomerStatusEnum::class,
         'trade_state'                 => CustomerTradeStateEnum::class,
+        'shop_type'                   => CustomerShopTypeEnum::class,
+        'shop_type_source'            => CustomerShopTypeSourceEnum::class,
         'rejected_reason'             => CustomerRejectReasonEnum::class,
         'last_submitted_order_at'     => 'datetime',
         'last_dispatched_delivery_at' => 'datetime',

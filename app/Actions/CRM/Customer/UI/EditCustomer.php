@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
@@ -94,6 +95,14 @@ class EditCustomer extends OrgAction
                     'type'  => 'input',
                     'label' => __('Company'),
                     'value' => $customer->company_name
+                ],
+                'shop_type'                => [
+                    'type'        => 'select',
+                    'label'       => __('Shop type'),
+                    'placeholder' => __('Select shop type'),
+                    'required'    => false,
+                    'value'       => $customer->shop_type?->value,
+                    'options'     => collect(CustomerShopTypeEnum::labels())->map(fn ($label, $value) => ['label' => $label, 'value' => $value])->values()->all(),
                 ],
                 'email'                    => [
                     'type'  => 'input',

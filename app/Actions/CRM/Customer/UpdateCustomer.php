@@ -39,6 +39,8 @@ use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\CRM\Customer\CustomerShopTypeEnum;
+use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -266,6 +268,10 @@ class UpdateCustomer extends OrgAction
             data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
         }
 
+        if (Arr::has($modelData, 'shop_type') && !Arr::has($modelData, 'shop_type_source')) {
+            data_set($modelData, 'shop_type_source', Arr::get($modelData, 'shop_type') === null ? null : CustomerShopTypeSourceEnum::STAFF->value);
+        }
+
         if (Arr::has($modelData, 'tags')) {
             AttachTagsToModel::make()->action($customer, [
                 'tags_id' => Arr::pull($modelData, 'tags')
@@ -428,6 +434,8 @@ class UpdateCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_whatsapp_newsletter' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_review_reminder' => ['sometimes', 'boolean'],
             'state'                                                 => ['sometimes', Rule::enum(CustomerStateEnum::class)],
+            'shop_type'                                             => ['sometimes', 'nullable', Rule::enum(CustomerShopTypeEnum::class)],
+            'shop_type_source'                                      => ['sometimes', 'nullable', Rule::enum(CustomerShopTypeSourceEnum::class)],
             'is_re'                                                 => ['sometimes', 'boolean'],
             'is_credit_customer'                                    => ['sometimes', 'boolean'],
             'accounting_reference'                                  => ['sometimes', 'nullable', 'string', 'max:255'],
