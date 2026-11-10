@@ -4,6 +4,24 @@
         {
             "name": "aiku",
             "url": "https://app.aiku.test"
+        },
+        {
+            "name": "iris-vite",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev.iris"
+            ],
+            "port": 5174
+        },
+        {
+            "name": "retina-vite",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev.retina"
+            ],
+            "port": 5175
         }
     ]
 }
