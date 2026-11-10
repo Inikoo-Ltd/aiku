@@ -22,6 +22,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property ?float $days_of_cover
  * @property int $lead_time_days
  * @property ?string $supplier_code
+ * @property ?int $supplier_id
+ * @property ?string $org_supplier_slug
+ * @property ?string $org_agent_slug
  * @property ?int $on_the_way_po_count
  * @property ?float $recommended_order_quantity
  * @property ?float $stock_value
@@ -48,6 +51,9 @@ class StockCoverOrgStocksResource extends JsonResource
             'days_of_cover'        => $this->days_of_cover !== null ? (int) $this->days_of_cover : null,
             'lead_time_days'       => (int) $this->lead_time_days,
             'supplier_code'        => $this->supplier_code,
+            'supplier_id'          => $this->supplier_id,
+            'org_supplier_slug'    => $this->org_supplier_slug,
+            'org_agent_slug'       => $this->org_agent_slug,
             'on_the_way'           => (int) $this->on_the_way_po_count > 0,
             'recommended_quantity' => $this->recommended_order_quantity !== null ? (int) ceil((float) $this->recommended_order_quantity) : null,
             'stock_value'          => (float) $this->stock_value,

@@ -63,6 +63,8 @@ class IndexOrganisationStockCoverItems extends OrgAction
             });
         });
 
+        $supplierFilter = AllowedFilter::callback('supplier', fn ($query, $value) => $buckets->whereSupplier($query, (string) $value));
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -84,6 +86,8 @@ class IndexOrganisationStockCoverItems extends OrgAction
         return $queryBuilder
             ->defaultSort('days_of_cover')
             ->leftJoin('org_stock_families', 'org_stock_families.id', 'org_stocks.org_stock_family_id')
+            ->leftJoin('org_suppliers', fn ($join) => $join->on('org_suppliers.supplier_id', 'sp.supplier_id')->on('org_suppliers.organisation_id', 'org_stocks.organisation_id'))
+            ->leftJoin('org_agents', 'org_agents.id', 'org_suppliers.org_agent_id')
             ->select([
                 'org_stocks.id',
                 'org_stocks.slug',
@@ -98,11 +102,14 @@ class IndexOrganisationStockCoverItems extends OrgAction
                 'org_stock_stats.recommended_order_quantity',
                 'org_stock_stats.projected_lost_revenue',
                 'sp.supplier_code',
+                'sp.supplier_id',
+                'org_suppliers.slug as org_supplier_slug',
+                'org_agents.slug as org_agent_slug',
             ])
             ->selectRaw($buckets->leadTimeExpression().' as lead_time_days')
             ->selectRaw($buckets->bucketExpression().' as bucket')
             ->allowedSorts(['code', 'name', 'family_code', 'health_rank', 'quantity_available', 'days_of_cover', 'lead_time_days', 'supplier_code', 'stock_value', 'projected_lost_revenue'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $supplierFilter])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -126,6 +133,12 @@ class IndexOrganisationStockCoverItems extends OrgAction
             }
 
             $table
+                ->selectFilter(
+                    'supplier',
+                    [GetOrganisationStockCoverBuckets::NO_SUPPLIER => __('No supplier')] + GetOrganisationStockCoverBuckets::make()->supplierOptions($organisation),
+                    __('Supplier'),
+                    noFilterOptionLabel: __('All suppliers')
+                )
                 ->withGlobalSearch()
                 ->withLabelRecord([__('SKO'), __('SKOs')])
                 ->defaultSort('days_of_cover')

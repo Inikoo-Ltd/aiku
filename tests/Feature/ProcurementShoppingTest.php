@@ -2759,6 +2759,54 @@ test('UI organisation stock cover items index', function () {
     });
 });
 
+test('organisation stock cover items filter by supplier and link to where that supplier is ordered from', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $orgSupplierProduct->update(['state' => OrgSupplierProductStateEnum::ACTIVE, 'is_available' => true]);
+    $supplier = $orgSupplier->supplier;
+
+    $supplied   = orgStockOnSaleAndReceived(createUnlinkedOrgStock($this));
+    $unsupplied = orgStockOnSaleAndReceived(createUnlinkedOrgStock($this));
+    foreach ([$supplied, $unsupplied] as $orgStock) {
+        $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
+    }
+    DB::table('org_stock_has_org_supplier_products')->insert([
+        'stock_has_supplier_product_id' => DB::table('stock_has_supplier_products')->insertGetId(['stock_id' => $supplied->stock_id, 'supplier_product_id' => $orgSupplierProduct->supplier_product_id]),
+        'org_stock_id'                  => $supplied->id,
+        'org_supplier_product_id'       => $orgSupplierProduct->id,
+        'status'                        => true,
+        'local_priority'                => 1,
+        'created_at'                    => now(),
+        'updated_at'                    => now(),
+    ]);
+
+    $index = fn (string $supplierFilter) => $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'elements[cover]' => 'out', 'filter[supplier]' => $supplierFilter, 'perPage' => 500]))->assertOk();
+
+    $index($supplier->slug)->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('data.data', function ($rows) use ($supplied, $unsupplied, $supplier, $orgSupplier) {
+            $rows = collect($rows);
+            $row  = $rows->firstWhere('code', $supplied->code);
+
+            return $rows->pluck('supplier_code')->unique()->values()->all() === [$supplier->code]
+                && !$rows->pluck('code')->contains($unsupplied->code)
+                && $row['supplier_id'] === $supplier->id
+                && $row['org_supplier_slug'] === $orgSupplier->slug
+                && $row['org_agent_slug'] === $orgSupplier->orgAgent?->slug;
+        })
+        ->where('queryBuilderProps.default.filters', fn ($filters) => collect($filters)->firstWhere('key', 'supplier')['value'] === $supplier->slug
+            && collect($filters)->firstWhere('key', 'supplier')['options'][$supplier->slug] === $supplier->code));
+
+    $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'elements[cover]' => 'out', 'filter[supplier]' => 'none', 'filter[global]' => $supplied->code]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('data.data', []));
+
+    $this->get(route('grp.org.procurement.stock_cover.index', [$this->organisation->slug, 'elements[cover]' => 'out', 'filter[supplier]' => 'none', 'filter[global]' => $unsupplied->code]))->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('data.data', fn ($rows) => collect($rows)->pluck('code')->contains($unsupplied->code)
+            && !collect($rows)->pluck('code')->contains($supplied->code)
+            && collect($rows)->pluck('supplier_code')->filter()->isEmpty()));
+
+    $export = $this->get(route('grp.org.procurement.stock_cover.export', [$this->organisation->slug, 'elements[cover]' => 'out', 'filter[supplier]' => $supplier->slug]))->assertOk()->streamedContent();
+    expect($export)->toContain($supplied->code)->not->toContain($unsupplied->code);
+});
+
 test('organisation stock cover export downloads the filtered buckets as csv', function () {
     $orgStock = orgStockOnSaleAndReceived($this->orgStocks[0]);
     $orgStock->update(['state' => OrgStockStateEnum::ACTIVE, 'is_on_demand' => false, 'quantity_available' => 0]);
