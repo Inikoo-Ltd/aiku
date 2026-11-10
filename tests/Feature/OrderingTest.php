@@ -2776,6 +2776,41 @@ test('transaction import prefers the active product when a discontinued one shar
         ->and($order->transactions()->where('model_type', 'Product')->pluck('model_id')->all())->toBe([$this->product->id]);
 });
 
+test('transaction import matches codes in any case and accepts products outside My Products on a manual channel', function () {
+    $order = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $customerSalesChannel = StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        Platform::where('type', PlatformTypeEnum::MANUAL)->first(),
+        []
+    );
+    $order->updateQuietly(['customer_sales_channel_id' => $customerSalesChannel->id]);
+
+    $upload = Upload::create([
+        'group_id'          => $order->group_id,
+        'organisation_id'   => $order->organisation_id,
+        'model'             => 'Transaction',
+        'parent_type'       => $order->getMorphClass(),
+        'parent_id'         => $order->id,
+        'original_filename' => 'test.xlsx',
+        'filename'          => 'test.xlsx',
+        'filesize'          => 0,
+        'number_rows'       => 0,
+        'number_success'    => 0,
+        'number_fails'      => 0,
+    ]);
+
+    $import = new TransactionImport($order->refresh(), $upload);
+    $record = $upload->records()->create([
+        'values' => [],
+        'status' => UploadRecordStatusEnum::PROCESSING,
+    ]);
+
+    $import->storeModel(collect(['code' => mb_strtolower($this->product->code) === $this->product->code ? mb_strtoupper($this->product->code) : mb_strtolower($this->product->code), 'quantity' => 2]), $record);
+
+    expect($record->refresh()->status)->toBe(UploadRecordStatusEnum::COMPLETE->value)
+        ->and($order->transactions()->where('model_type', 'Product')->pluck('model_id')->all())->toBe([$this->product->id]);
+});
+
 test('recalculating basket totals skips orders that are no longer baskets', function () {
     $billingAddress  = new Address(Address::factory()->definition());
     $deliveryAddress = new Address(Address::factory()->definition());

@@ -11,6 +11,7 @@ namespace App\Imports\Ordering;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\Traits\WithCustomerPurchasableProduct;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Imports\WithImport;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Upload;
@@ -65,7 +66,9 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
         ]);
 
         /** @var Product $product */
-        $product = Product::where('shop_id', $this->scope->shop_id)->where('code', $validatedData['code'])
+        $product = Product::where('shop_id', $this->scope->shop_id)
+            ->whereRaw('lower(code) = lower(?)', [$validatedData['code']])
+            ->orderByRaw('code = ? desc', [$validatedData['code']])
             ->orderByRaw("case state when 'active' then 0 when 'discontinuing' then 1 else 2 end")
             ->orderByDesc('id')
             ->first();
@@ -86,7 +89,8 @@ class TransactionImport implements ToCollection, WithHeadingRow, SkipsOnFailure,
             return;
         }
 
-        if ($this->scope->customerSalesChannel && !in_array($product->id, $this->scope->customerSalesChannel->portfolios->pluck('item_id')->toArray())) {
+        $customerSalesChannel = $this->scope->customerSalesChannel;
+        if ($customerSalesChannel && $customerSalesChannel->platform?->type !== PlatformTypeEnum::MANUAL && !in_array($product->id, $customerSalesChannel->portfolios->pluck('item_id')->toArray())) {
             $this->setRecordAsFailed($uploadRecord, [
                 'Product with code ' . $validatedData['code'] . ' is not available for this customer.'
             ]);
