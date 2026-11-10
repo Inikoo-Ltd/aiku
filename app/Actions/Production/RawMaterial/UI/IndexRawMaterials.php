@@ -24,6 +24,7 @@ use App\Models\Production\RawMaterial;
 use App\Models\Production\RecipeStepRawMaterial;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -56,7 +57,20 @@ class IndexRawMaterials extends OrgAction
 
         $this->canEdit = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
 
-        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.view"]);
+        return self::canSeeProductionRawMaterials($request->user(), $this->production);
+    }
+
+    /**
+     * Production manager, R&D, floor supervisors and accounting (HELP-4632: they download the list to check codes, units and costs).
+     */
+    public static function canSeeProductionRawMaterials(User $user, Production $production): bool
+    {
+        return $user->authTo([
+            "org-supervisor.$production->organisation_id",
+            "productions_rd.$production->id.view",
+            "productions_operations.$production->id.orchestrate",
+            "accounting.$production->organisation_id.view",
+        ]);
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
@@ -226,6 +240,17 @@ class IndexRawMaterials extends OrgAction
                         'title' => __('Raw Materials'),
                     ],
                     'actions'   => [
+                        $this->parent instanceof Production ? [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'key'   => 'download',
+                            'label' => __('Download'),
+                            'icon'  => ['fal', 'fa-download'],
+                            'route' => [
+                                'name'       => 'grp.org.productions.show.crafts.raw_materials.export',
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : null,
                         $this->canEdit && $this->parent instanceof Production ? [
                             'type'   => 'buttonGroup',
                             'key'    => 'upload-add',

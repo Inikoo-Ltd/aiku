@@ -19,6 +19,7 @@ import type { Navigation } from "@/types/Tabs";
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import { ctrans } from "@/Composables/useTrans"
 
 
 library.add(faBars, faIndustry);
@@ -60,11 +61,20 @@ const component = computed(() => {
 
 });
 
+const download = (action: { route: { name: string, parameters: object } }) => {
+  const search = new URLSearchParams(window.location.search).get('raw_materials_filter[global]')
+  window.location.href = route(action.route.name, { ...action.route.parameters, ...(search ? { search } : {}) })
+}
+
 </script>
 
 <template>
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
+    <template #button-download="{ action }">
+      <Button @click="download(action)" :style="action.style" :icon="action.icon" :label="action.label"
+        v-tooltip="ctrans('Excel file of the raw materials shown, all of them when nothing is searched')" />
+    </template>
     <template #button-group-upload="{ action }">
       <Button @click="() => (isModalUploadOpen = true)" :style="action.style" :icon="action.icon"
         v-tooltip="action.tooltip" class="rounded-l rounded-r-none border-none" />

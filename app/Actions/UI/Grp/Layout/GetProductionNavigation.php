@@ -39,7 +39,7 @@ class GetProductionNavigation
             ];
         }
 
-        if ($user->hasAnyPermission(
+        $canSeeAllCrafts = $user->hasAnyPermission(
             [
                 'org-supervisor.'.$production->organisation->id,
                 'productions-view.'.$production->organisation->id,
@@ -49,7 +49,9 @@ class GetProductionNavigation
                 "productions_rd.$production->id.view",
                 "productions_procurement.$production->id.view",
             ]
-        )) {
+        );
+
+        if ($canSeeAllCrafts || $user->hasAnyPermission(["accounting.$production->organisation_id.view"])) {
             $navigation["crafts"] = [
                 "root"  => "grp.org.productions.show.crafts.",
                 "label" => __("Crafts"),
@@ -83,7 +85,7 @@ class GetProductionNavigation
                             ],
                         ],
 
-                        [
+                        ...($canSeeAllCrafts ? [[
                             'label'   => __('Artefacts'),
                             'tooltip' => __('manufactured products'),
                             'icon'    => ['fal', 'fa-hamsa'],
@@ -103,16 +105,14 @@ class GetProductionNavigation
                                 'name'       => 'grp.org.productions.show.crafts.development',
                                 'parameters' => [$production->organisation->slug, $production->slug]
                             ],
-                        ],
-
-
-
+                        ]] : []),
                     ]
                 ]
 
             ];
+        }
 
-
+        if ($canSeeAllCrafts) {
             $navigation['operations'] = [
                 'root'  => 'grp.org.productions.show.operations.',
                 'label' => __('Operations'),

@@ -45,7 +45,7 @@ class ShowRawMaterial extends OrgAction
             "productions_operations.{$this->production->id}.orchestrate",
             "productions_rd.{$this->production->id}.view",
             "productions_procurement.{$this->production->id}.view",
-
+            "accounting.{$this->organisation->id}.view",
         ]);
     }
 

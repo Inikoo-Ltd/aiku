@@ -552,3 +552,53 @@ test('an experiment whose SKO sells only through a product exclusive to a custom
     expect(\App\Actions\Production\Artefact\GetArtefactLaunchReadiness::run($experiment->refresh())['ready'])->toBeTrue()
         ->and(LaunchArtefact::make()->action($experiment, $this->guest->getUser())->state)->toBe(ArtefactStateEnum::ACTIVE);
 });
+
+test('raw materials download as numbers, only those matching the search', function () {
+    [, $oil] = branchTestOriginal($this);
+    $oil->update(['unit_cost' => 4.25]);
+
+    $rows = \App\Actions\Production\RawMaterial\ExportRawMaterials::make()->rows($this->production, $oil->code);
+
+    expect($rows)->toHaveCount(1)
+        ->and($rows[0][0])->toBe($oil->code)
+        ->and($rows[0][2])->toBe(RawMaterialUnitEnum::labels()[RawMaterialUnitEnum::KILOGRAM->value])
+        ->and($rows[0][5])->toBe(4.25)
+        ->and($rows[0][7])->toBeGreaterThanOrEqual(1)
+        ->and(\App\Actions\Production\RawMaterial\ExportRawMaterials::make()->rows($this->production, 'NO-SUCH-RAW-MATERIAL'))->toBe([]);
+
+    get(route('grp.org.productions.show.crafts.raw_materials.index', [$this->organisation->slug, $this->production->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.actions.0.key', 'download')
+            ->etc());
+
+    get(route('grp.org.productions.show.crafts.raw_materials.export', [$this->organisation->slug, $this->production->slug, 'search' => $oil->code]))
+        ->assertOk()
+        ->assertDownload('raw-materials-'.$this->production->slug.'-'.now()->toDateString().'.xlsx');
+
+    $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(tap(tempnam(sys_get_temp_dir(), 'rm').'.xlsx', fn (string $path) => file_put_contents($path, \Maatwebsite\Excel\Facades\Excel::raw(
+        new \App\Exports\Production\RawMaterialsExport([['RM-0', 'Zero', null, null, null, 0.0, 0.0, 0, null]], 'GBP'),
+        \Maatwebsite\Excel\Excel::XLSX
+    ))))->getActiveSheet();
+
+    expect($sheet->getCell('F1')->getValue())->toBe('Unit cost GBP')
+        ->and($sheet->getCell('F2')->getValue())->toBe(0.0)
+        ->and($sheet->getCell('H2')->getValue())->toBe(0)
+        ->and($sheet->getCell('C2')->getValue())->toBeNull();
+
+    $accountant = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+    $accountant->givePermissionTo(["accounting.{$this->production->organisation_id}.view"]);
+    $parameters = [$this->organisation->slug, $this->production->slug];
+    $crafts     = \App\Actions\UI\Grp\Layout\GetProductionNavigation::run($this->production, $accountant);
+
+    expect(collect($crafts['crafts']['topMenu']['subSections'])->pluck('label')->all())->toBe([__('Dashboard'), __('Raw materials')])
+        ->and($crafts)->not->toHaveKey('operations');
+
+    actingAs($accountant);
+    get(route('grp.org.productions.show.crafts.dashboard', $parameters))->assertOk();
+    get(route('grp.org.productions.show.crafts.raw_materials.index', $parameters))->assertOk();
+    get(route('grp.org.productions.show.crafts.raw_materials.show', [...$parameters, $oil->slug]))->assertOk();
+    get(route('grp.org.productions.show.crafts.raw_materials.export', $parameters))->assertOk();
+    get(route('grp.org.productions.show.crafts.artefacts.index', $parameters))->assertForbidden();
+
+    actingAs($this->guest->getUser());
+});

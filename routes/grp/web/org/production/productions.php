@@ -76,6 +76,7 @@ use App\Actions\Production\Production\UI\ShowProduction;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Actions\Production\Production\UI\ShowOperationsDashboard;
+use App\Actions\Production\RawMaterial\ExportRawMaterials;
 use App\Actions\Production\RawMaterial\UI\CreateRawMaterial;
 use App\Actions\Production\RawMaterial\UI\EditRawMaterial;
 use App\Actions\Production\RawMaterial\UI\IndexRawMaterials;
@@ -180,6 +181,7 @@ Route::prefix('{production}')
                         Route::get('', ShowCraftsDashboard::class)->name('dashboard');
 
                         Route::get('raw-materials', IndexRawMaterials::class)->name('raw_materials.index');
+                        Route::get('raw-materials/export', ExportRawMaterials::class)->name('raw_materials.export');
                         Route::get('raw-materials/create', CreateRawMaterial::class)->name('raw_materials.create');
                         Route::get('raw-materials/{rawMaterial}', ShowRawMaterial::class)->name('raw_materials.show');
                         Route::get('raw-materials/{rawMaterial}/edit', EditRawMaterial::class)->name('raw_materials.edit');
