@@ -15,32 +15,36 @@ The Laravel, PHP, Vue and Pest rules in the aiku root do not apply here.
 
 Most screens still run on sample data so developers can see each screen before it is wired to the API.
 
-- Sample data lives in `Aiku/Core/SampleData/SampleData.swift`.
+- Each area keeps its sample data and its `@Observable` store in `Features/<Area>/Models/` (Foundation only, no SwiftUI).
 - When a screen is wired to real data, remove the sample data it no longer uses.
+- Wired to the API so far: sign in, sign out, profile and permissions.
 
 ## Backend
 
 - The app talks to aiku only through the staff API, never the database.
-- Debug builds call `http://aiku.test/app/api`, Release builds `https://aiku.io/app/api` (`API_BASE_URL`, read at runtime from `AikuAPIBaseURL` in Info.plist).
+- Debug builds call `http://aiku.test/app/api`, Release builds `https://aiku.io/app/api` (`API_BASE_URL`, read at runtime from `AikuAPIBaseURL` in Info.plist). On a phone, set `Config/Local.xcconfig` to the Mac's LAN address and run `php artisan serve --host=0.0.0.0 --port=8000`, because Valet only listens on 127.0.0.1.
+- The app key goes in the gitignored `Config/Secrets.xcconfig` (copy `Secrets.xcconfig.example`).
+- Sign in uses `POST mobile/login` and keeps the token in the Keychain (`Core/Auth`); `GET /app/api/profile` (wrapped in `data`) gives the profile and job positions; `GET mobile/permissions` gives permissions and roles, cached by `PermissionStore`.
 - Mobile routes sit under `/app/api/mobile` (`routes/api/grp/mobile.php`). They need the `X-Aiku-App-Key` header (one of the backend's `MOBILE_APP_KEYS`) and a Sanctum bearer token with the `mobile` ability; `login` returns the token.
-- App Transport Security blocks plain `http://aiku.test`: `NSAllowsLocalNetworking` does not cover `.test` hosts. Solve this before wiring the API.
+- App Transport Security: `NSAllowsLocalNetworking` covers LAN IP addresses but not `.test` hosts.
 
 ## Structure
 
-- `App`: entry point, sign-in gate (`RootView`), signed-in shell and route-to-screen map (`MainView`).
-- `Core/Navigation`: `AppRouter` (tabs, navigation path, scan sheet) and the `Route` enum.
-- `Core/Theme`: `AikuColor` tokens.
-- `Core/UI`: shared pieces. Screen header and scaffold, tab bar and `ActionButton`, cards and rows, status badge, search, filter chips, section switcher, `BottomSheet`, `ConfirmDialog` (`.confirmDialog`), toasts (`ToastCenter`, `.toastHost`), `InlineAlert` and `OfflineBar`, skeletons.
-- `Core/Models`: warehouse models and formatting.
-- `Features/<Area>`: one folder per area (`Login`, `Dashboard`, `WarehouseMenu`, `Inventory`, `Locations`, `GoodsIn`, `GoodsOut`, `Scan`, `Profile`). `Features/Components` is a Debug-only gallery of the shared components, opened from Profile.
-- `Networking`: `APIClient`, `Endpoint`, `APIError`.
+- `App`: entry point, sign-in gate (`RootView`), signed-in navigation stack (`MainView`).
+- `Core/Auth`: `AuthStore`, `AuthService`, Keychain token store.
+- `Core/Navigation`: `AppRouter` (tabs and path) and one route enum per area in `Routes/`; `ModuleSections` drives the section pills under a module header.
+- `Core/Theme`: the 11 Aiku themes, light and dark `Palette`, `ThemeStore`, `AikuColor` tokens.
+- `Core/UI`: shared pieces. `AppScreen`/`ScreenScaffold` (header, scroll, footer, tab bar, toasts), `MainTabBar`, `ModuleTabs`, `AikuButton`, `StatusChip`, `Card`, `ListRow`, inputs, `.aikuSheet` and `.aikuConfirm`, `ToastCenter`, `InlineAlert`, `EmptyState`, skeletons, `CameraScanScreen`.
+- `Core/Models`: Foundation-only shared types (`Tone`, `Chip`, `AppIcon`, `Session`).
+- `Features/<Area>`: `Login`, `Shell` (Home, My work, Scan, Inbox, Menu, Profile, Appearance), `Inventory`, `Locations`, `GoodsIn`, `GoodsOut`, `Dispatch`, `Fulfilment`, `Clocking`, `System` (sync queue, conflicts, error and empty states; Debug builds open them from Profile › Design states).
+- `Networking`: `APIClient`, `Endpoint`, `APIError`, auth endpoints.
 
 ## Design
 
-- The screens follow the "Aiku Mobile Warehouse" design canvas; its Components page is the reference for shared pieces.
-- Reuse the components in `Core/UI` before building a new one: sheets use `BottomSheet`, hard-to-undo actions use `.confirmDialog`, feedback after an action uses `ToastCenter`, problems inside a page use `InlineAlert`, loading uses skeletons.
-- Colours come only from `AikuColor`. Colour that carries meaning keeps its own: green for done, red for failed or destructive, amber for blocked or waiting.
-- The app is light mode only for now (`UIUserInterfaceStyle: Light`).
+- The screens follow the "Aiku Mobile" design canvas; its Components page is the reference for shared pieces.
+- Reuse the components in `Core/UI` before building a new one: sheets use `.aikuSheet` with `SheetScaffold`, hard-to-undo actions use `.aikuConfirm`, feedback after an action uses `ToastCenter`, problems inside a page use `InlineAlert`, loading uses skeletons.
+- Colours come only from `AikuColor` (or `Tone`), so every theme and dark mode work. Colour that carries meaning keeps its own: green for done, red for failed or destructive, amber for blocked or waiting.
+- Light, dark and system mode are chosen in Profile › Appearance.
 - Touch targets are at least 44 pt; icon-only buttons get an `accessibilityLabel`.
 
 ## Verification

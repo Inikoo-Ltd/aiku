@@ -1,0 +1,77 @@
+import SwiftUI
+
+struct LocationsListView: View {
+    @Environment(AppRouter.self) private var router
+    @Environment(Session.self) private var session
+    @State private var store = LocationsStore.shared
+    @State private var isFiltering = false
+    @State private var isScanning = false
+
+    var body: some View {
+        @Bindable var store = store
+        let locations = store.listedLocations
+        AppScreen(
+            title: "Locations",
+            kicker: "Locations · \(session.warehouseLabel)",
+            actions: [
+                HeaderAction(.filter, label: "Filter", badge: store.listFilter.activeCount > 0 ? store.listFilter.activeCount : nil) {
+                    isFiltering = true
+                }
+            ]
+        ) {
+            ModuleTabs(.locations, current: .locations)
+        } content: {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(LocationsListTab.allCases, id: \.self) { tab in
+                        LocationsListTabPill(
+                            title: "\(tab.title) \(store.count(for: tab).locationsGrouped)",
+                            isSelected: store.listTab == tab
+                        ) {
+                            store.listTab = tab
+                        }
+                        .accessibilityIdentifier("locations.tab.\(tab.rawValue)")
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+            .padding(.horizontal, -16)
+            SearchField(text: $store.listQuery, placeholder: "Location code (starts with)", onScan: { isScanning = true }) {
+                if let match = locations.first, locations.count == 1 {
+                    router.open(LocationsRoute.location(code: match.code))
+                }
+            }
+            if locations.isEmpty {
+                EmptyState(
+                    icon: .locations,
+                    title: "No locations match",
+                    message: "Try another code, tab or filter.",
+                    actionTitle: store.listFilter.activeCount > 0 ? "Clear filters" : nil
+                ) {
+                    store.listFilter = .none
+                }
+            } else {
+                LocationsLocationList(locations: locations) { location in
+                    router.open(LocationsRoute.location(code: location.code))
+                }
+            }
+            HelperText("Scan a location label (Code 128) to open it.")
+        }
+        .aikuSheet(isPresented: $isFiltering) {
+            LocationsFilterSheet(initial: store.listFilter, areas: store.warehouse.areas) { draft in
+                store.resultCount(for: draft)
+            } onApply: { filter in
+                store.listFilter = filter
+                isFiltering = false
+            }
+        }
+        .fullScreenCover(isPresented: $isScanning) {
+            LocationsScanCover(title: "Scan location") {
+                isScanning = false
+            } onScan: {
+                isScanning = false
+                router.open(LocationsRoute.location(code: store.firstScannableCode))
+            }
+        }
+    }
+}

@@ -81,8 +81,9 @@ class LoginMobileApp
         )->delay(now()->addSeconds(5));
 
         $user->load([
-            'employees',
+            'employees.jobPositions',
             'guests',
+            'pseudoJobPositions',
         ]);
 
         return response()->json([

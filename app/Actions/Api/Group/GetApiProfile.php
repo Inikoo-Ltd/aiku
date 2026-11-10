@@ -21,8 +21,9 @@ class GetApiProfile
     {
         $user = $request->user();
         $user->load([
-            'employees',
+            'employees.jobPositions',
             'guests',
+            'pseudoJobPositions',
         ]);
 
         return $user;

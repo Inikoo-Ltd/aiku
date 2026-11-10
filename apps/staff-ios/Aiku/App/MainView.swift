@@ -7,77 +7,28 @@ struct MainView: View {
     var body: some View {
         NavigationStack(path: $router.path) {
             tabRoot
-                .navigationDestination(for: Route.self) { route in
-                    RouteDestination(route: route)
-                }
+                .navigationDestination(for: ShellRoute.self) { ShellDestination(route: $0) }
+                .navigationDestination(for: SystemRoute.self) { SystemDestination(route: $0) }
+                .navigationDestination(for: InventoryRoute.self) { InventoryDestination(route: $0) }
+                .navigationDestination(for: LocationsRoute.self) { LocationsDestination(route: $0) }
+                .navigationDestination(for: GoodsInRoute.self) { GoodsInDestination(route: $0) }
+                .navigationDestination(for: GoodsOutRoute.self) { GoodsOutDestination(route: $0) }
+                .navigationDestination(for: DispatchRoute.self) { DispatchDestination(route: $0) }
+                .navigationDestination(for: FulfilmentRoute.self) { FulfilmentDestination(route: $0) }
+                .navigationDestination(for: ClockingRoute.self) { ClockingDestination(route: $0) }
         }
         .environment(router)
         .environment(toasts)
-        .toastHost(toasts)
-        .fullScreenCover(item: $router.scanContext) { context in
-            ScanCameraView(context: context)
-                .environment(router)
-        }
     }
 
     @ViewBuilder
     private var tabRoot: some View {
         switch router.selectedTab {
-        case .dashboard: DashboardView()
-        case .inventory: InventoryView()
-        case .goodsIn: GoodsInView()
-        case .goodsOut: GoodsOutView()
-        }
-    }
-}
-
-struct RouteDestination: View {
-    let route: Route
-
-    var body: some View {
-        switch route {
-        case .warehouseMenu:
-            WarehouseMenuView()
-        case .locations:
-            LocationsView()
-        case .profile:
-            ProfileView()
-        case .sku(let reference):
-            if let sku = SampleData.sku(reference) {
-                SkuDetailView(sku: sku)
-            } else {
-                PlaceholderView(title: reference)
-            }
-        case .location(let code):
-            if let location = SampleData.location(code) {
-                LocationDetailView(location: location)
-            } else {
-                PlaceholderView(title: code)
-            }
-        case .stockDelivery(let reference):
-            if let delivery = SampleData.stockDelivery(reference) {
-                StockDeliveryDetailView(delivery: delivery)
-            } else {
-                PlaceholderView(title: reference)
-            }
-        case .deliveryNote(let reference):
-            if let note = SampleData.deliveryNote(reference) {
-                DeliveryNoteDetailView(note: note)
-            } else {
-                PlaceholderView(title: reference)
-            }
-        case .scannerDevice(let reference):
-            if let note = SampleData.deliveryNote(reference) {
-                ScannerDevicePickingView(note: note)
-            } else {
-                PlaceholderView(title: reference)
-            }
-        case .placeholder(let title):
-            PlaceholderView(title: title)
-        case .componentGallery:
-            ComponentGalleryView()
-        case .stateDemo(let demo):
-            StateDemoView(demo: demo)
+        case .home: HomeView()
+        case .work: MyWorkView()
+        case .scan: ScanTabView()
+        case .inbox: InboxView()
+        case .menu: MenuView()
         }
     }
 }

@@ -80,6 +80,15 @@ test('get api profile', function () {
     ]);
 });
 
+test('api profile lists the user pseudo job positions', function () {
+    $jobPosition = \App\Models\HumanResources\JobPosition::query()->where('group_id', $this->group->id)->whereNull('organisation_id')->orderBy('id')->firstOrFail();
+    $this->user->pseudoJobPositions()->syncWithoutDetaching([$jobPosition->id => ['group_id' => $this->group->id, 'scopes' => '{}']]);
+
+    $positions = getJson(route('grp.api.profile'))->assertOk()->json('data.job_positions');
+
+    expect($positions)->toContain(['name' => $jobPosition->name, 'code' => $jobPosition->code]);
+});
+
 test('get api profile unauthenticated', function () {
     $this->app['auth']->forgetGuards();
 
@@ -405,6 +414,39 @@ test('mobile logout without a token is unauthorised', function () {
     $this->app['auth']->forgetGuards();
 
     postJson(route('grp.api.mobile.logout'), [], ['X-Aiku-App-Key' => 'mobile-test-key'])->assertUnauthorized();
+});
+
+test('mobile permissions list the signed in user permissions and roles', function () {
+    $user = createMobileAppUser($this->group);
+    setPermissionsTeamId($this->group->id);
+    $permission = \Spatie\Permission\Models\Permission::query()->where('guard_name', 'web')->orderBy('name')->value('name');
+    $user->givePermissionTo($permission);
+    $token = $user->createToken('mobile|iPhone', ['mobile'])->plainTextToken;
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $this->app['auth']->forgetGuards();
+    setPermissionsTeamId(null);
+
+    $response = getJson(route('grp.api.mobile.permissions'), [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$token,
+    ])->assertOk();
+
+    expect($response->json('user_id'))->toBe($user->id)
+        ->and($response->json('permissions'))->toContain($permission)
+        ->and($response->json('roles'))->toBeArray();
+});
+
+test('mobile permissions need a mobile token', function () {
+    $user = createMobileAppUser($this->group);
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $this->app['auth']->forgetGuards();
+
+    getJson(route('grp.api.mobile.permissions'), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertUnauthorized();
+    $this->app['auth']->forgetGuards();
+    getJson(route('grp.api.mobile.permissions'), [
+        'X-Aiku-App-Key' => 'mobile-test-key',
+        'Authorization'  => 'Bearer '.$user->createToken('other', ['read'])->plainTextToken,
+    ])->assertForbidden();
 });
 
 test('an expired mobile token is unauthorised on the api profile', function () {

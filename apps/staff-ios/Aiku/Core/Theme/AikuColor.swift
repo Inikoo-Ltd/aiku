@@ -1,61 +1,89 @@
 import SwiftUI
 
-extension Color {
-    init(hex: UInt32) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xFF) / 255,
-            green: Double((hex >> 8) & 0xFF) / 255,
-            blue: Double(hex & 0xFF) / 255
-        )
+extension RGBA {
+    var color: Color {
+        Color(.sRGB, red: red, green: green, blue: blue, opacity: alpha)
     }
 }
 
+extension Color {
+    init(hex: UInt32, opacity: Double = 1) {
+        self = RGBA(hex, alpha: opacity).color
+    }
+}
+
+extension AppearanceMode {
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .light: .light
+        case .dark: .dark
+        case .system: nil
+        }
+    }
+}
+
+@MainActor
 enum AikuColor {
-    static let indigo = Color(hex: 0x4F46E5)
-    static let indigoDeep = Color(hex: 0x362CDB)
-    static let indigoRing = Color(hex: 0x5E56E2)
-    static let indigoText = Color(hex: 0x3730A3)
-    static let indigoSoft = Color(hex: 0xEEF2FF)
-    static let indigoMuted = Color(hex: 0xE0E7FF)
-    static let lavender = Color(hex: 0xEDECFC)
-    static let navy = Color(hex: 0x282373)
-    static let yellow = Color(hex: 0xFDE047)
-    static let underline = Color(hex: 0xFCD34D)
+    private static var palette: Palette { ThemeStore.shared.palette }
 
-    static let background = Color(hex: 0xF3F4F6)
-    static let surface = Color.white
-    static let surfaceMuted = Color(hex: 0xF9FAFB)
-    static let border = Color(hex: 0xE5E7EB)
-    static let borderStrong = Color(hex: 0xD1D5DB)
-    static let divider = Color(hex: 0xF3F4F6)
+    static var nav: Color { palette.nav.color }
+    static var onNav: Color { palette.onNav.color }
+    static var onNav2: Color { palette.onNav2.color }
+    static var navAct: Color { palette.navAct.color }
+    static var navAccent: Color { palette.navAccent.color }
+    static var navRing: Color { palette.navRing.color }
+    static var primary: Color { palette.primary.color }
+    static var onPrimary: Color { palette.onPrimary.color }
+    static var primaryBd: Color { palette.primaryBd.color }
+    static var scan: Color { palette.scan.color }
+    static var onScan: Color { palette.onScan.color }
+    static var link: Color { palette.link.color }
+    static var ink: Color { palette.ink.color }
+    static var soft: Color { palette.soft.color }
+    static var softBd: Color { palette.softBd.color }
+    static var bg: Color { palette.bg.color }
+    static var surface: Color { palette.surface.color }
+    static var surface2: Color { palette.surface2.color }
+    static var border: Color { palette.border.color }
+    static var borderStrong: Color { palette.borderStrong.color }
+    static var divider: Color { palette.divider.color }
+    static var text: Color { palette.text.color }
+    static var text2: Color { palette.text2.color }
+    static var text3: Color { palette.text3.color }
+    static var text4: Color { palette.text4.color }
+    static var faint: Color { palette.faint.color }
+    static var danger: Color { palette.danger.color }
+    static var dangerSoft: Color { palette.dangerSoft.color }
+    static var dangerBd: Color { palette.dangerBd.color }
+    static var dangerInk: Color { palette.dangerInk.color }
+    static var dangerDot: Color { palette.dangerDot.color }
+    static var success: Color { palette.success.color }
+    static var successSoft: Color { palette.successSoft.color }
+    static var warn: Color { palette.warn.color }
+    static var warnSoft: Color { palette.warnSoft.color }
+    static var warnBd: Color { palette.warnBd.color }
+    static var warnInk: Color { palette.warnInk.color }
+    static var orange: Color { palette.orange.color }
+    static var orangeSoft: Color { palette.orangeSoft.color }
+    static var lime: Color { palette.lime.color }
+    static var limeSoft: Color { palette.limeSoft.color }
+    static var shadow: Color { palette.shadow.color }
 
-    static let textPrimary = Color(hex: 0x111827)
-    static let textBody = Color(hex: 0x374151)
-    static let textSecondary = Color(hex: 0x4B5563)
-    static let textMuted = Color(hex: 0x6B7280)
-    static let textFaint = Color(hex: 0x9CA3AF)
-
-    static let success = Color(hex: 0x15803D)
-    static let successSoft = Color(hex: 0xF0FDF4)
-    static let warning = Color(hex: 0xB45309)
-    static let warningSoft = Color(hex: 0xFFFBEB)
-    static let warningDot = Color(hex: 0xF59E0B)
-    static let critical = Color(hex: 0xC2410C)
-    static let criticalSoft = Color(hex: 0xFFF7ED)
-    static let criticalDot = Color(hex: 0xF97316)
-    static let danger = Color(hex: 0xDC2626)
-    static let dangerSoft = Color(hex: 0xFEF2F2)
-    static let dangerDot = Color(hex: 0xEF4444)
-    static let dangerBorder = Color(hex: 0xFECACA)
-    static let dangerInk = Color(hex: 0x991B1B)
-    static let warningBorder = Color(hex: 0xFDE68A)
-    static let warningInk = Color(hex: 0x92400E)
-    static let lavenderBorder = Color(hex: 0xC1BEF6)
-    static let progress = Color(hex: 0x4D7C0F)
-    static let progressSoft = Color(hex: 0xF7FEE7)
-
-    static let scrim = Color(hex: 0x111827).opacity(0.55)
-    static let toastBackground = Color(hex: 0x1F2937)
+    static let toastBg = Color(hex: 0x1F2937)
     static let toastText = Color(hex: 0xF9FAFB)
+    static let badge = Color(hex: 0xEF4444)
+    static let onBadge = Color.white
+    static let liveDot = Color(hex: 0x22C55E)
+    static let scrim = Color(hex: 0x111827, opacity: 0.55)
+    static var navPill: Color { Color.white.opacity(0.12) }
+}
+
+extension Font {
+    static func aiku(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight)
+    }
+
+    static func aikuWordmark(_ size: CGFloat) -> Font {
+        .system(size: size, weight: .bold, design: .serif)
+    }
 }

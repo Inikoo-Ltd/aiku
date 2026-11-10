@@ -1,1 +1,4 @@
+AIKU_MOBILE_APP_KEY =
+
 #include? "Signing.xcconfig"
+#include? "Secrets.xcconfig"

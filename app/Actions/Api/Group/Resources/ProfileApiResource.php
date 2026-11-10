@@ -33,6 +33,12 @@ class ProfileApiResource extends JsonResource
             'app_theme'    => Arr::get($user->settings, 'app_theme'),
             'employee'     => EmployeeResource::collection($user->employees),
             'guest'        => GuestResource::collection($user->guests),
+            'job_positions' => $user->pseudoJobPositions
+                ->merge($user->employees->flatMap->jobPositions)
+                ->unique('id')
+                ->map(fn ($jobPosition) => ['name' => $jobPosition->name, 'code' => $jobPosition->code])
+                ->values()
+                ->all(),
             'created_at'   => $user->created_at,
             'updated_at'   => $user->updated_at,
 

@@ -16,12 +16,16 @@ struct Endpoint: Sendable {
 
     static let ping = Endpoint(path: "ping")
     static let profile = Endpoint(path: "profile")
+    static let mobilePermissions = Endpoint(path: "mobile/permissions")
 }
 
 enum APIError: LocalizedError, Equatable {
     case invalidResponse
     case unauthorized
     case http(statusCode: Int)
+    case validation(message: String, code: String?)
+    case tooManyAttempts(message: String)
+    case offline
     case unexpectedBody
 
     var errorDescription: String? {
@@ -29,6 +33,9 @@ enum APIError: LocalizedError, Equatable {
         case .invalidResponse: "Invalid server response"
         case .unauthorized: "Not signed in"
         case .http(let statusCode): "Server error (\(statusCode))"
+        case .validation(let message, _): message
+        case .tooManyAttempts(let message): message
+        case .offline: "No connection"
         case .unexpectedBody: "Unexpected server response"
         }
     }
@@ -41,7 +48,7 @@ protocol HTTPTransport: Sendable {
 extension URLSession: HTTPTransport {}
 
 final class APIClient: Sendable {
-    static let shared = APIClient(configuration: .current)
+    static let shared = APIClient(configuration: .current, tokenProvider: { KeychainTokenStore.shared.load() })
 
     private let configuration: AppConfiguration
     private let transport: HTTPTransport
@@ -69,6 +76,9 @@ final class APIClient: Sendable {
         var request = URLRequest(url: components.url!)
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let mobileAppKey = configuration.mobileAppKey {
+            request.setValue(mobileAppKey, forHTTPHeaderField: "X-Aiku-App-Key")
+        }
         if let body = endpoint.body {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -80,14 +90,29 @@ final class APIClient: Sendable {
     }
 
     func send(_ endpoint: Endpoint) async throws -> Data {
-        let (data, response) = try await transport.data(for: makeRequest(for: endpoint))
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await transport.data(for: makeRequest(for: endpoint))
+        } catch let error as URLError {
+            throw APIError.offline.unlessCancelled(error)
+        }
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
         switch httpResponse.statusCode {
-        case 200..<300: return data
-        case 401: throw APIError.unauthorized
-        default: throw APIError.http(statusCode: httpResponse.statusCode)
+        case 200..<300:
+            return data
+        case 401:
+            throw APIError.unauthorized
+        case 422:
+            let body = try? JSONDecoder().decode(APIValidationBody.self, from: data)
+            throw APIError.validation(message: body?.firstError ?? "Check your details and try again.", code: body?.code)
+        case 429:
+            let body = try? JSONDecoder().decode(APIValidationBody.self, from: data)
+            throw APIError.tooManyAttempts(message: body?.firstError ?? "Too many attempts. Try again in a minute.")
+        default:
+            throw APIError.http(statusCode: httpResponse.statusCode)
         }
     }
 
@@ -98,6 +123,11 @@ final class APIClient: Sendable {
         return try decoder.decode(Response.self, from: data)
     }
 
+    func fetchPermissions() async throws -> UserPermissions {
+        let response = try await send(.mobilePermissions, as: MobilePermissionsResponse.self)
+        return UserPermissions(userID: response.userId, permissions: Set(response.permissions), roles: response.roles, fetchedAt: .now)
+    }
+
     func ping() async throws {
         let data = try await send(.ping)
         guard String(decoding: data, as: UTF8.self).contains("pong") else {
@@ -106,6 +136,20 @@ final class APIClient: Sendable {
     }
 }
 
+extension APIError {
+    func unlessCancelled(_ error: URLError) -> Error {
+        error.code == .cancelled ? error : self
+    }
+}
+
 extension EnvironmentValues {
     @Entry var apiClient = APIClient.shared
+}
+
+extension Error {
+    var isCancellation: Bool {
+        if self is CancellationError { return true }
+        if let urlError = self as? URLError, urlError.code == .cancelled { return true }
+        return false
+    }
 }

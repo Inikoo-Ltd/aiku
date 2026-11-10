@@ -7,6 +7,7 @@
  * Copyright 2026
 */
 
+use App\Actions\Api\Group\Auth\GetMobilePermissions;
 use App\Actions\Api\Group\Auth\LoginMobileApp;
 use App\Actions\Api\Group\Auth\LogoutMobileApp;
 use App\Actions\Api\Group\GetMobileWarehouses;
@@ -25,5 +26,6 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
     Route::middleware(['auth:sanctum', 'ability:mobile'])->group(function () {
         Route::post('/logout', LogoutMobileApp::class)->name('logout');
         Route::get('/warehouses', GetMobileWarehouses::class)->name('warehouses');
+        Route::get('/permissions', GetMobilePermissions::class)->name('permissions');
     });
 });

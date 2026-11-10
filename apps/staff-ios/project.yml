@@ -28,9 +28,10 @@ targets:
       properties:
         CFBundleDisplayName: Aiku
         AikuAPIBaseURL: $(API_BASE_URL)
+        AikuMobileAppKey: $(AIKU_MOBILE_APP_KEY)
         UILaunchScreen: {}
-        UIUserInterfaceStyle: Light
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSLocalNetworkUsageDescription: Aiku connects to your organisation's Aiku server on this network.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
     settings:
