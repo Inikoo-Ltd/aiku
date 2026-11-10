@@ -17,6 +17,9 @@ use App\Models\Chat\ChatSession;
 use App\Models\Comms\EmailAddress;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Audit;
@@ -58,6 +61,7 @@ class AnonymiseCustomer extends OrgAction
             $this->anonymiseCustomerClients($customer);
             $this->anonymiseWebUsers($customer);
             $this->anonymiseChats($webUserIds->all());
+            $this->anonymiseShoppingAssistantConversations($customer);
             $this->anonymiseDispatchedEmailRecipients($customer, $webUserIds->all());
             $this->unsubscribeFromAllComms($customer);
             $this->scrubEarlierAudits($customer, $webUserIds->all());
@@ -211,6 +215,23 @@ class AnonymiseCustomer extends OrgAction
         ]);
 
         ChatSession::whereIn('id', $sessionIds)->update(['metadata' => null, 'guest_identifier' => null]);
+    }
+
+    /**
+     * Wipes what the customer wrote and was told by the shopping assistant. Counters, tokens, cost
+     * and the product ids of the events stay for reporting.
+     */
+    private function anonymiseShoppingAssistantConversations(Customer $customer): void
+    {
+        $conversationIds = ShoppingAssistantConversation::where('customer_id', $customer->id)->pluck('id');
+        if ($conversationIds->isEmpty()) {
+            return;
+        }
+
+        ShoppingAssistantMessage::whereIn('shopping_assistant_conversation_id', $conversationIds)
+            ->update(['body' => null, 'tool_calls' => null, 'follow_ups' => null]);
+        ShoppingAssistantEvent::whereIn('shopping_assistant_conversation_id', $conversationIds)
+            ->update(['reason' => null]);
     }
 
     private function anonymiseDispatchedEmailRecipients(Customer $customer, array $webUserIds): void

@@ -212,7 +212,7 @@ test('weekend overtime is paid at 1.5 x band 0, TOIL is owed not paid, refused a
         ->and($payroll['guru_amount'])->toBe(42.25)
         ->and($payroll['weekend_overtime_hours'])->toBe(5.0)
         ->and($payroll['weekend_overtime_amount'])->toBe(95.35)
-        ->and($payroll['weekend_overtime_bands'])->toEqual(['1' => 3.0, '3' => 2.0])
+        ->and($payroll['weekend_overtime_bands'])->toEqual([['band' => '1', 'hours' => 3.0], ['band' => '3', 'hours' => 2.0]])
         ->and($payroll['toil_hours'])->toBe(6.0)
         ->and($payroll['toil_owed_hours'])->toBe(9.0)
         ->and($payroll['total'])->toBe(686.85);
@@ -231,7 +231,8 @@ test('weekend overtime is paid at 1.5 x band 0, TOIL is owed not paid, refused a
                     && $row['not_authorised_overtime']['minutes'] === 60
                     && $row['awaiting_overtime']['minutes'] === 75
                     && $row['toil_taken_hours'] == 2.0
-                    && $row['toil_balance_hours'] == 7.0;
+                    && $row['toil_balance_hours'] == 7.0
+                    && $row['weekend_overtime_bands'] == [['band' => '1', 'hours' => 3.0], ['band' => '3', 'hours' => 2.0]];
             }));
 
     $response = get(route('grp.org.productions.show.artisans.payroll.export', [$this->organisation->slug, $this->production->slug] + $period))->assertOk();

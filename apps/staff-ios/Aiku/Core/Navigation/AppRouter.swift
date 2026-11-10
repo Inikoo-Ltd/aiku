@@ -1,50 +1,38 @@
 import Observation
 import SwiftUI
 
-enum MainTab: Hashable, CaseIterable {
-    case dashboard
-    case inventory
-    case goodsIn
-    case goodsOut
-}
-
-enum Route: Hashable {
-    case warehouseMenu
-    case locations
-    case profile
-    case sku(String)
-    case location(String)
-    case stockDelivery(String)
-    case deliveryNote(String)
-    case scannerDevice(deliveryNote: String)
-    case placeholder(String)
-    case componentGallery
-    case stateDemo(StateDemo)
-}
-
-struct ScanContext: Identifiable, Hashable {
-    let title: String
-    let reference: String?
-
-    var id: String { "\(title)-\(reference ?? "")" }
-
-    static let general = ScanContext(title: "Scan", reference: nil)
+enum MainTab: Hashable, CaseIterable, Sendable {
+    case home
+    case work
+    case scan
+    case inbox
+    case menu
 }
 
 @MainActor
 @Observable
 final class AppRouter {
-    var selectedTab: MainTab = .dashboard
-    var path: [Route] = []
-    var scanContext: ScanContext?
+    var selectedTab: MainTab = .home
+    var path = NavigationPath()
 
     func select(_ tab: MainTab) {
-        path = []
+        path = NavigationPath()
         selectedTab = tab
     }
 
-    func open(_ route: Route) {
+    func open<R: Hashable>(_ route: R) {
         path.append(route)
+    }
+
+    func replace<R: Hashable>(with route: R) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            if !path.isEmpty {
+                path.removeLast()
+            }
+            path.append(route)
+        }
     }
 
     func back() {
@@ -52,7 +40,7 @@ final class AppRouter {
         path.removeLast()
     }
 
-    func scan(_ context: ScanContext = .general) {
-        scanContext = context
+    func backToRoot() {
+        path = NavigationPath()
     }
 }

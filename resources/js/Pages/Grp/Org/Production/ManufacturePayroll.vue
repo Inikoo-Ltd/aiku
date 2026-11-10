@@ -191,7 +191,7 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
             </div>
             <div v-if="key === 'weekend_overtime' && item.weekend_overtime_hours" class="text-right text-xs tabular-nums whitespace-nowrap text-gray-400">
                 {{ ctrans('at :rate/h', { rate: money(item.weekend_overtime_amount / item.weekend_overtime_hours) }) }} ·
-                {{ Object.entries(item.weekend_overtime_bands).map(([band, hours]) => `${ctrans('Band')} ${band} ${(hours as number).toFixed(2)}`).join(', ') }}
+                {{ item.weekend_overtime_bands.map((split: { band: string, hours: number }) => `${ctrans('Band')} ${split.band} ${split.hours.toFixed(2)}`).join(', ') }}
             </div>
         </template>
         <template #cell(work_areas)="{ item }">

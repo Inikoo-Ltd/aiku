@@ -87,11 +87,11 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
     }
 
     /**
-     * @param  array<string, float>  $bands  hours keyed by band code
+     * @param  list<array{band: string, hours: float}>  $bands
      */
     private static function bandSplit(array $bands): string
     {
-        return implode(', ', array_map(fn (string|int $code, float $hours) => 'Band '.$code.' '.number_format($hours, 2, '.', ''), array_keys($bands), $bands));
+        return implode(', ', array_map(fn (array $band) => 'Band '.$band['band'].' '.number_format($band['hours'], 2, '.', ''), $bands));
     }
 
     /**

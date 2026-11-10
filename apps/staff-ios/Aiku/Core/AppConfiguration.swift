@@ -2,11 +2,13 @@ import Foundation
 
 struct AppConfiguration: Sendable {
     let apiBaseURL: URL
+    let mobileAppKey: String?
 
     static let current = AppConfiguration(bundle: .main)
 
-    init(apiBaseURL: URL) {
+    init(apiBaseURL: URL, mobileAppKey: String? = nil) {
         self.apiBaseURL = apiBaseURL
+        self.mobileAppKey = mobileAppKey?.isEmpty == false ? mobileAppKey : nil
     }
 
     init(bundle: Bundle) {
@@ -16,6 +18,6 @@ struct AppConfiguration: Sendable {
         else {
             preconditionFailure("AikuAPIBaseURL is missing from Info.plist")
         }
-        self.init(apiBaseURL: url)
+        self.init(apiBaseURL: url, mobileAppKey: bundle.object(forInfoDictionaryKey: "AikuMobileAppKey") as? String)
     }
 }

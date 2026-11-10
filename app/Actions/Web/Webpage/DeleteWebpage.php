@@ -70,7 +70,7 @@ class DeleteWebpage extends OrgAction
 
             if ($redirect) {
                 DB::table('redirects')->where('to_webpage_id', $webpage->id)->delete();
-                DB::table('redirects')->where('from_path', $webpage->url)->delete();
+                DB::table('redirects')->where('website_id', $webpage->website_id)->where('from_path', $webpage->url)->delete();
 
                 StoreRedirect::make()->action($webpage, [
                     'type' => RedirectTypeEnum::PERMANENT,

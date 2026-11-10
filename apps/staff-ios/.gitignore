@@ -14,5 +14,6 @@ Package.resolved
 Packages/
 Config/Local.xcconfig
 Config/Signing.xcconfig
+Config/Secrets.xcconfig
 Aiku/Resources/Info.plist
 .DS_Store

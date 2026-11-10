@@ -89,6 +89,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\Web\Website\ProcessWebsiteTimeSeriesRecords;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Webpage\DeleteWebpage;
+use App\Actions\Web\Webpage\ReopenWebpage;
 use App\Models\Web\CruxRecord;
 use App\Actions\Web\WebVital\GetWebVitalsReport;
 use App\Actions\Web\Webpage\GetWebpageEngagementMetrics;
@@ -2128,6 +2129,39 @@ test('url of a deleted webpage can be reused', function (Website $website) {
         ['url' => $url.'-2', 'code' => $code.'-2']
     ))->url)->toBe($url.'-2');
 })->depends('launch website');
+
+test('deleting or reopening a webpage leaves the redirects of other websites with the same path alone', function () {
+    [$website, $otherWebsite] = collect(range(1, 2))->map(function () {
+        $shop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), ['type' => ShopTypeEnum::B2B->value]));
+
+        return LaunchWebsite::make()->action(StoreWebsite::make()->action($shop, Website::factory()->definition()));
+    })->all();
+
+    $livePage = function (Website $website, string $url): Webpage {
+        $webpage = StoreWebpage::make()->action($website, array_merge(Webpage::factory()->definition(), ['url' => $url, 'code' => $url]));
+
+        return PublishWebpage::make()->action($webpage, ['comment' => 'live']);
+    };
+
+    $deletedPath  = 'new-arrivals-'.Str::lower(Str::random(6));
+    $reopenedPath = 'sale-'.Str::lower(Str::random(6));
+    $target       = $livePage($website, 'target-'.Str::lower(Str::random(6)));
+    $otherTarget  = $livePage($otherWebsite, 'target-'.Str::lower(Str::random(6)));
+
+    $otherDeletedRedirect  = StoreRedirectFromWebsite::make()->action($otherWebsite, ['from_url' => 'https://'.$otherWebsite->domain.'/'.$deletedPath, 'to_url' => $otherTarget->id]);
+    $otherReopenedRedirect = StoreRedirectFromWebsite::make()->action($otherWebsite, ['from_url' => 'https://'.$otherWebsite->domain.'/'.$reopenedPath, 'to_url' => $otherTarget->id]);
+
+    DeleteWebpage::make()->action($livePage($website, $deletedPath), false, ['redirects' => $target->id]);
+
+    $reopenedPage = $livePage($website, $reopenedPath);
+    UpdateWebpage::make()->action($reopenedPage, ['state_data' => ['state' => WebpageStateEnum::CLOSED->value, 'redirect_webpage_id' => $target->id]]);
+    ReopenWebpage::run($reopenedPage->refresh());
+
+    expect(Redirect::where('website_id', $website->id)->where('from_path', $deletedPath)->value('to_webpage_id'))->toBe($target->id)
+        ->and(Redirect::where('website_id', $website->id)->where('from_path', $reopenedPath)->exists())->toBeFalse()
+        ->and(Redirect::find($otherDeletedRedirect->id)?->to_webpage_id)->toBe($otherTarget->id)
+        ->and(Redirect::find($otherReopenedRedirect->id)?->to_webpage_id)->toBe($otherTarget->id);
+});
 
 test('webpage title can skip the title prefix and suffix', function (Website $website) {
     $webpage = StoreWebpage::make()->action($website->storefront, array_merge(Webpage::factory()->definition(), ['title' => 'Bath bombs']));

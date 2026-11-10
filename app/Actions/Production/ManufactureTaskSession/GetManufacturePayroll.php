@@ -331,7 +331,10 @@ class GetManufacturePayroll
     /**
      * How overtime hours split into bands, for information only.
      *
-     * @return array<string, float> hours keyed by band code
+     * A list of pairs rather than hours keyed by band code: JsonResource re-indexes an array whose keys are all numeric,
+     * which turned bands 0 and 3 into 0 and 1 on the Payroll page.
+     *
+     * @return list<array{band: string, hours: float}>
      */
     private function bandSplit(Collection $lines): array
     {
@@ -339,6 +342,8 @@ class GetManufacturePayroll
             ->map(fn (Collection $bandLines) => round($bandLines->sum('hours'), 2))
             ->filter(fn (float $hours) => $hours > 0)
             ->sortKeys()
+            ->map(fn (float $hours, string|int $band) => ['band' => (string) $band, 'hours' => $hours])
+            ->values()
             ->all();
     }
 

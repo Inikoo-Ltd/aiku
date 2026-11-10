@@ -28,15 +28,22 @@ open Aiku.xcodeproj
 
 ```
 Aiku/
-  App/          entry point and root view
-  Features/     one folder per screen or flow
-  Core/         app-wide configuration and shared types
+  App/          entry point, root (sign in or main) and the navigation stack
+  Core/
+    Theme/      11 Aiku themes, light and dark palette, ThemeStore
+    UI/         shared components (header, tab bar, buttons, rows, sheets, scan screen)
+    Navigation/ AppRouter, one route enum per module, module section tabs
+    Models/     Foundation-only shared types (Tone, Chip, AppIcon, Session)
+    Permissions/ permission cache and refetch
+  Features/     one folder per module; pure logic and sample data in Models/
   Networking/   APIClient, endpoints, errors
   Resources/    assets (Info.plist is generated)
 AikuTests/      unit tests (Swift Testing)
 AikuUITests/    UI tests (XCTest)
 Config/         per-configuration xcconfig files
 ```
+
+The screens follow the Aiku Mobile design canvas and run on in-memory sample data; nothing is connected to the API yet. Debug builds have a Developer card at the bottom of Profile with the permission sync status and a gallery of the error, empty and loading states.
 
 ## Configurations
 
@@ -51,6 +58,12 @@ An iPhone cannot resolve `aiku.test`. To reach your local Laravel server from th
 
 ```bash
 cp Config/Local.xcconfig.example Config/Local.xcconfig
+```
+
+Every mobile API route needs the `X-Aiku-App-Key` header (one of the backend's `MOBILE_APP_KEYS`). Put it in the gitignored secrets file:
+
+```bash
+cp Config/Secrets.xcconfig.example Config/Secrets.xcconfig
 ```
 
 Write `//` as `/$()/` inside xcconfig values, otherwise the rest of the line is treated as a comment.
@@ -101,4 +114,3 @@ Drop `-only-testing:AikuTests` to run the UI tests too.
 static func shop(_ id: Int) -> Endpoint { Endpoint(path: "shops/\(id)") }
 ```
 
-The Home screen's "Check connection" button calls `GET /app/api/ping`, which the backend answers with `pong`.
