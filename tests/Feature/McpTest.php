@@ -2834,6 +2834,92 @@ describe('stock delivery costs tool', function () {
     });
 });
 
+describe('carrier quote tool', function () {
+    beforeEach(function () {
+        App\Actions\Dispatching\CarrierRateCard\ImportCarrierRateCards::run($this->organisation, [
+            'areas' => [
+                'es_provincial' => [['country' => 'ES', 'postcodes' => ['29']]],
+                'es_rest'       => [['country' => 'ES', 'postcodes' => ['28', '08']]],
+                'es_canarias'   => [['country' => 'ES', 'postcodes' => ['350', '380']]],
+            ],
+            'cards' => [
+                [
+                    'carrier' => 'TestFast', 'service' => 'Express', 'valid_from' => '2026-01-01', 'valid_to' => '2026-12-31',
+                    'volumetric_kg_per_m3' => 167, 'max_kg' => 30, 'surcharge_percent' => 10,
+                    'zones' => [
+                        'Provincial' => ['covers' => ['es_provincial'], 'bands' => ['1' => 3, '5' => 4], 'extra_kg' => 0.5],
+                        'Rest'       => ['covers' => ['es_rest'], 'bands' => ['1' => 5, '5' => 6], 'extra_kg' => 1],
+                        'Germany'    => ['covers' => ['DE'], 'bands' => ['1' => 10], 'extra_kg' => 2],
+                    ],
+                ],
+                [
+                    'carrier' => 'TestSlow', 'service' => 'Economy', 'valid_from' => '2026-01-01', 'valid_to' => '2026-12-31',
+                    'volumetric_kg_per_m3' => 250, 'max_kg' => 20,
+                    'zones' => [
+                        'Peninsula' => ['covers' => ['es_provincial', 'es_rest'], 'bands' => ['1' => 4, '5' => 5], 'extra_kg' => 0.25],
+                        'Canarias'  => ['covers' => ['es_canarias'], 'bands' => ['1' => 9], 'extra_kg' => 3, 'volumetric_kg_per_m3' => 333, 'max_kg' => 5],
+                    ],
+                ],
+                [
+                    'carrier' => 'TestOld', 'service' => 'Expired', 'valid_from' => '2025-01-01', 'valid_to' => '2025-12-31',
+                    'volumetric_kg_per_m3' => 167, 'max_kg' => 30,
+                    'zones' => ['All' => ['covers' => ['es_rest', 'DE'], 'bands' => ['1' => 1], 'extra_kg' => 0.1]],
+                ],
+            ],
+        ]);
+        $this->quote = fn (array $arguments) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\CarrierQuoteTool::class, [
+            'organisation' => $this->organisation->slug,
+            'date'         => '2026-06-01',
+            ...$arguments,
+        ]);
+    });
+
+    test('prices a parcel with every valid card, cheapest first, by band, extra kg and surcharge', function () {
+        $quotes = mcpTestCarrierQuotes($this->organisation, 'ES', '28-001', 3);
+        expect(array_column($quotes['quotes'], 'carrier'))->toBe(['TestSlow', 'TestFast'])
+            ->and($quotes['quotes'][0]['total'])->toBe(5.0)
+            ->and($quotes['quotes'][1]['base_price'])->toBe(6.0)
+            ->and($quotes['quotes'][1]['total'])->toBe(6.6);
+
+        $heavy = mcpTestCarrierQuotes($this->organisation, 'ES', '29004', 7.2);
+        expect(collect($heavy['quotes'])->firstWhere('carrier', 'TestFast')['base_price'])->toBe(5.5)
+            ->and(collect($heavy['quotes'])->firstWhere('carrier', 'TestSlow')['zone'])->toBe('Peninsula');
+
+        $canarias = mcpTestCarrierQuotes($this->organisation, 'ES', '38001', 1);
+        expect(array_column($canarias['quotes'], 'zone'))->toBe(['Canarias'])
+            ->and($canarias['not_offered'])->toContain('TestFast Express: does not deliver there');
+
+        $canariasBox = mcpTestCarrierQuotes($this->organisation, 'ES', '38001', 1, [40, 30, 30]);
+        expect($canariasBox['quotes'][0]['chargeable_kg'])->toBe(11.99)
+            ->and(mcpTestCarrierQuotes($this->organisation, 'ES', '35001', 6)['not_offered'])->toContain('TestSlow Economy: over its 5 kg limit to Canarias');
+
+        $bulky = mcpTestCarrierQuotes($this->organisation, 'DE', null, 1, [50, 40, 30]);
+        expect($bulky['quotes'][0]['chargeable_kg'])->toBe(10.02)
+            ->and($bulky['quotes'][0]['base_price'])->toBe(30.0);
+
+        expect(mcpTestCarrierQuotes($this->organisation, 'ES', '28001', 25)['not_offered'])->toContain('TestSlow Economy: over its 20 kg limit to Peninsula');
+    });
+
+    test('the tool quotes, lists the cards, asks for a Spanish postcode and hides rates from staff without access', function () {
+        ($this->quote)(['country' => 'ES', 'postcode' => '08001', 'weight_kg' => 2])->assertOk()->assertSee('TestSlow')->assertSee('TestFast')->assertDontSee('TestOld');
+        ($this->quote)([])->assertOk()->assertSee('rate_cards')->assertSee('TestOld');
+        ($this->quote)(['country' => 'ES', 'weight_kg' => 2])->assertHasErrors(['postcode']);
+
+        $clerk = guestWithoutPositions($this->group)->getUser();
+        $clerk->update(['can_use_mcp' => true]);
+        AikuServer::actingAs($clerk)->tool(App\Mcp\Tools\CarrierQuoteTool::class, [
+            'organisation' => $this->organisation->slug,
+            'country'      => 'DE',
+            'weight_kg'    => 1,
+        ])->assertHasErrors()->assertDontSee('TestFast');
+    });
+});
+
+function mcpTestCarrierQuotes($organisation, string $country, ?string $postcode, float $weightKg, ?array $dimensions = null): array
+{
+    return App\Actions\Dispatching\CarrierRateCard\GetCarrierQuotes::run($organisation, $country, $postcode, $weightKg, $dimensions, '2026-06-01');
+}
+
 describe('customer service tools', function () {
     beforeEach(function () {
         [, $this->product] = createProduct($this->shop);
