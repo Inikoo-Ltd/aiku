@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufacturePayrollAdjustment;
 
+use App\Actions\Production\ManufactureArtisanDay\HydrateManufactureArtisanDays;
 use App\Actions\Production\ManufactureTaskSession\WithManufacturePayrollLock;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\HumanResources\Employee;
@@ -75,7 +76,7 @@ class ChangeArtisanClocking
     }
 
     /**
-     * Payroll pays the clockings of the artisans who worked on the tablet in the eight weeks before (HydrateManufactureArtisanDays::rosterEmployeeIds), so only those are locked.
+     * Payroll pays the clockings of the artisans who worked on the tablet in the eight weeks before (HydrateManufactureArtisanDays::rosterEmployeeIds), so only those are locked: staff of another organisation or hidden from the roster are not.
      */
     private static function artisanSession(Employee $employee, Carbon $date): ?ManufactureTaskSession
     {
@@ -83,8 +84,10 @@ class ChangeArtisanClocking
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
             ->whereNotNull('user_id')
             ->where('ended_at', '>=', Carbon::parse($date->toDateString())->subDay()->subWeeks(8))
+            ->with('production')
             ->latest('id')
-            ->first();
+            ->cursor()
+            ->first(fn (ManufactureTaskSession $session) => HydrateManufactureArtisanDays::isArtisan($session->production, $employee));
     }
 
     protected function canChangeOpenWeek(User $user, Production $production): bool

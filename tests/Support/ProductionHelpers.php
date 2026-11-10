@@ -156,3 +156,20 @@ function ensurePayBandZero(\App\Models\Production\Production $production): void
         ]
     );
 }
+
+/**
+ * A timesheet with its closed clock in and out pairs, as the clocking machine leaves them.
+ *
+ * @param  array<int, array{0: \Illuminate\Support\Carbon, 1: \Illuminate\Support\Carbon}>  $pairs
+ */
+function clockedPairs(Employee $employee, string $date, array $pairs): \App\Models\HumanResources\Timesheet
+{
+    $seconds   = array_sum(array_map(fn (array $pair) => (int) $pair[0]->diffInSeconds($pair[1]), $pairs));
+    $timesheet = clockedTimesheet($employee, $date, 0);
+    $timesheet->update(['working_duration' => $seconds, 'number_time_trackers' => count($pairs)]);
+    foreach ($pairs as [$in, $out]) {
+        \App\Models\HumanResources\TimeTracker::create(['timesheet_id' => $timesheet->id, 'subject_type' => 'Employee', 'subject_id' => $employee->id, 'status' => 'closed', 'starts_at' => $in, 'ends_at' => $out, 'duration' => (int) $in->diffInSeconds($out)]);
+    }
+
+    return $timesheet;
+}

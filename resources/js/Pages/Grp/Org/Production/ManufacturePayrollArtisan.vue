@@ -53,6 +53,9 @@ const money = (amount: number) => `£${amount.toFixed(2)}`
                 {{ useFormatTime(item.date) }}
                 <span v-if="!item.is_clocked" class="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800" v-tooltip="ctrans('No clocking on this day: only clocked time is paid')">{{ ctrans('Not clocked') }}</span>
                 <span v-else-if="item.open_clockings" class="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800" v-tooltip="ctrans('Clocked in and not clocked out: correct the clocking in Timesheets')">{{ ctrans('Not clocked out') }}</span>
+                <span v-if="item.outside_shift_hours" class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800" v-tooltip="ctrans('Clocked :clocked h. Time clocked before or after the shift is paid only when overtime is approved for the day on Daily hours.', { clocked: item.clocked_hours.toFixed(2) })">
+                    {{ ctrans('Outside the shift, not paid :hours h', { hours: item.outside_shift_hours.toFixed(2) }) }}
+                </span>
                 <span v-if="item.tablet_over_clocked_hours" class="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800" v-tooltip="ctrans('More time on the tablet than clocked: only the clocked time is paid, taken off the jobs that ended last')">
                     {{ ctrans('Tablet over clocked :hours h', { hours: item.tablet_over_clocked_hours.toFixed(2) }) }}
                 </span>

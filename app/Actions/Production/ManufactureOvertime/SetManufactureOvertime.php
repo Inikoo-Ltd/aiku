@@ -56,11 +56,11 @@ class SetManufactureOvertime extends OrgAction
                 'days' => __(':name has no working hours set: set them on the employee before deciding overtime', ['name' => $employee->contact_name]),
             ]);
         }
+        $plannedMinutes  = $plannedStart !== null ? (int) $plannedStart->diffInMinutes($plannedEnd) : 0;
         $approvedMinutes = match (true) {
             $decision != ManufactureOvertimeDecisionEnum::APPROVED => null,
-            $day?->clocked_minutes !== null                        => max(0, $day->clocked_minutes - $expectedMinutes),
-            $plannedStart !== null                                 => (int) $plannedStart->diffInMinutes($plannedEnd),
-            default                                                => 0,
+            $day?->clocked_minutes !== null                        => max(0, $day->clocked_minutes - $expectedMinutes, $this->minutesOutsideShift($production, $employee, $date), $plannedMinutes),
+            default                                                => $plannedMinutes,
         };
 
         $this->payrollEditor ??= $user;
@@ -90,6 +90,18 @@ class SetManufactureOvertime extends OrgAction
         });
 
         return $overtime;
+    }
+
+    /**
+     * Where pay is limited to the shift (HELP-4629), approving the day approves all the time clocked outside it: somebody
+     * in early who also left early clocked no more than the shift, yet the early time is paid only when approved.
+     */
+    private function minutesOutsideShift(Production $production, Employee $employee, string $date): int
+    {
+        $clockings = HydrateManufactureArtisanDays::clockings([$employee->id], $date, $date);
+        $paidTime  = HydrateManufactureArtisanDays::make()->paidTime($production, $clockings, collect());
+
+        return (int) ceil((Arr::first($paidTime)['outside'] ?? 0) / 60);
     }
 
     /**

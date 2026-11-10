@@ -146,7 +146,7 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
     </div>
 
     <p class="mx-4 mt-2 text-xs text-gray-500">
-        {{ ctrans('Clocked hours (clocked breaks left out) are paid at the National Living Wage (band 0). The tablet hours are split into bands, and clocked time not on the tablet is band 0. Each band adds what it pays above the National Living Wage, for its hours. Tablet time beyond the clocked time is not paid. Hourly workers are paid their clocked hours at band 0, apart from machine maintenance (band 2) and development, which keep their own rate. Jobs left running after the end of the shift are not counted until their times are checked. Weekend overtime approved as paid is paid at 1.5 × Band 0 instead, with no band or Guru bonus (its band split is shown under it, for information). Overtime approved as time off in lieu is not paid: it is shown under TOIL hours and added to the balance.') }}
+        {{ ctrans('Where the factory pays inside the shift only (set on Daily hours), time clocked before or after the shift is not paid unless overtime is approved for the day, and a late clock in is paid from the rounded clock in time.') }} {{ ctrans('Clocked hours (clocked breaks left out) are paid at the National Living Wage (band 0). The tablet hours are split into bands, and clocked time not on the tablet is band 0. Each band adds what it pays above the National Living Wage, for its hours. Tablet time beyond the clocked time is not paid. Hourly workers are paid their clocked hours at band 0, apart from machine maintenance (band 2) and development, which keep their own rate. Jobs left running after the end of the shift are not counted until their times are checked. Weekend overtime approved as paid is paid at 1.5 × Band 0 instead, with no band or Guru bonus (its band split is shown under it, for information). Overtime approved as time off in lieu is not paid: it is shown under TOIL hours and added to the balance.') }}
     </p>
 
     <div v-if="payroll_changes.length" class="mx-4 mt-3 rounded-lg border px-4 py-3 text-sm" :class="payroll_changes.some(change => change.awaiting_approval) ? 'border-red-300 bg-red-50 text-red-900' : 'border-gray-200 bg-gray-50 text-gray-700'">
@@ -174,6 +174,9 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
                 </span>
                 <span v-if="item.awaiting_overtime" class="cursor-help rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800" v-tooltip="item.awaiting_overtime.days.map((day) => `${day.date}: +${clockMinutes(day.minutes)}`).join('\n')">
                     {{ ctrans('Overtime awaiting decision :time', { time: clockMinutes(item.awaiting_overtime.minutes) }) }}
+                </span>
+                <span v-if="item.outside_shift_hours" class="cursor-help rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800" v-tooltip="ctrans('Clocked :clocked h. Time clocked before or after the shift is paid only when overtime is approved for the day on Daily hours.', { clocked: item.clocked_hours.toFixed(2) })">
+                    {{ ctrans('Outside the shift, not paid :hours h', { hours: item.outside_shift_hours.toFixed(2) }) }}
                 </span>
                 <span v-if="item.tablet_over_clocked_hours" class="cursor-help rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800" v-tooltip="ctrans('More time on the tablet than clocked: only the clocked time is paid. Correct the job times or the clocking on Daily hours.')">
                     {{ ctrans('Tablet over clocked :hours h', { hours: item.tablet_over_clocked_hours.toFixed(2) }) }}

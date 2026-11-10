@@ -8,7 +8,7 @@ category: production
 ---
 
 <aside class="tldr">
-En <b>Factory → Artisans → Daily hours</b>, pulsa <b>Plan overtime</b> (planificar horas extra) para indicar las horas previstas de un día y aprobarlas para uno o varios artesanos, o marca los días que se pasaron del turno y pulsa <b>Overtime for … selected</b>. Elige <b>Paid</b> (pagadas) o <b>Time off in lieu</b> (tiempo libre a cambio). Las horas extra de sábado y domingo aprobadas como pagadas se pagan a 1.5 × Band 0; las de entre semana se pagan como horas normales. El tiempo libre a cambio no se paga: pasa al saldo TOIL del artesano. Las horas extra que nadie ha aprobado ni rechazado aparecen señaladas en Payroll, y los responsables reciben un aviso el lunes por la mañana, antes de que la semana de pago se cierre al final del lunes.
+En <b>Factory → Artisans → Daily hours</b>, pulsa <b>Plan overtime</b> (planificar horas extra) para indicar las horas previstas de un día y aprobarlas para uno o varios artesanos, o marca los días que se pasaron del turno y pulsa <b>Overtime for … selected</b>. Elige <b>Paid</b> (pagadas) o <b>Time off in lieu</b> (tiempo libre a cambio). Las horas extra de sábado y domingo aprobadas como pagadas se pagan a 1.5 × Band 0; las de entre semana se pagan como horas normales. El tiempo libre a cambio no se paga: pasa al saldo TOIL del artesano. Las horas extra que nadie ha aprobado ni rechazado aparecen señaladas en Payroll, y los responsables reciben un aviso el lunes por la mañana, antes de que la semana de pago se cierre al final del lunes. Una fábrica también puede configurarse para pagar solo el tiempo fichado dentro del turno, de modo que entrar antes o salir después solo se paga si se aprueba como hora extra.
 </aside>
 
 ## Qué cuenta como hora extra
@@ -50,6 +50,21 @@ Pulsa **Time off in lieu** en Daily hours para ver lo que se le debe a cada arte
 - **Overtime not authorised** y **Overtime awaiting decision** (pendientes de decisión) junto al nombre del artesano, y como horas en el CSV.
 
 La página Payroll y el CSV no deciden cómo cuenta el TOIL para el salario mínimo: eso le corresponde al contable.
+
+## Fábricas que pagan solo dentro del turno
+
+El responsable de producción o el contable puede configurar una fábrica para que pague solo el tiempo fichado dentro del turno. En **Daily hours**, pulsa la rueda dentada junto a **Every clocked hour is paid**, activa **Pay inside the shift only**, elige el paso de redondeo y el día desde el que se aplica, y pulsa **Save**. El día tiene que estar en una semana que aún no esté cerrada para la nómina: las semanas ya pagadas se quedan como estaban.
+
+A partir de ese día:
+
+- El tiempo fichado antes de que empiece el turno o después de que termine no se paga. **Daily hours** lo muestra debajo del tiempo fichado como **not paid**, y **Payroll** muestra **Outside the shift, not paid** junto al nombre del artesano.
+- Para pagarlo, aprueba las horas extra de ese día como se explica más arriba. Al aprobar el día se paga el tiempo fichado fuera del turno, hasta las horas planificadas si se planificó con antelación. En sábado o domingo sin turno no se paga nada hasta que se aprueben las horas extra.
+- **Do not authorise** significa que el tiempo fuera del turno sigue sin pagarse.
+- Quien ficha tarde cobra desde la hora de entrada, redondeada al paso más cercano contado desde el inicio del turno (5 minutos si no lo cambias): 08:02 se paga desde las 08:00, 08:37 desde las 08:35.
+- El trabajo registrado en la tableta antes o después del turno tampoco se paga.
+- El bonus Guru se paga sobre las horas pagadas.
+
+El pago sigue el horario de trabajo de cada artesano, así que comprueba que es correcto en la ficha del empleado. Cambiar el horario de alguien más adelante no cambia una semana ya cerrada para la nómina. El CSV de Payroll da las horas pagadas y, al final de cada fila, las horas fichadas y las horas fichadas fuera del turno que no se pagan.
 
 ## El aviso del lunes
 

@@ -57,19 +57,22 @@ class GetManufacturePayroll
     /** @var Collection<string, ManufactureOvertime> keyed by employee id|date */
     private Collection $overtimes;
 
+    /** @var array<string, array{paid: int, outside: int, overtime: int, shift: array}> the days a paid time rule limits to the shift, keyed by employee id|date */
+    private array $paidTime = [];
+
     /**
      * @return array<int, array<string, mixed>> one row per artisan, each with its days and breakdown lines
      */
     public function handle(Production $production, Carbon $from, Carbon $to, ?int $userId = null): array
     {
         $this->payBands  = ManufacturePayBand::where('production_id', $production->id)->orderByDesc('effective_from')->get();
-        $this->overtimes = ManufactureOvertime::where('production_id', $production->id)
+        $overtimes = ManufactureOvertime::where('production_id', $production->id)
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->get()
-            ->filter(fn (ManufactureOvertime $overtime) => $overtime->isPaidAtWeekendRate() || $overtime->isToil())
             ->keyBy(fn (ManufactureOvertime $overtime) => $overtime->employee_id.'|'.$overtime->date->toDateString());
+        $this->overtimes = $overtimes->filter(fn (ManufactureOvertime $overtime) => $overtime->isPaidAtWeekendRate() || $overtime->isToil());
 
-        $sessions = ManufactureTaskSession::where('production_id', $production->id)
+        $sessions = HydrateManufactureArtisanDays::artisanSessions($production)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
             ->whereBetween('ended_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
             ->when($userId, fn ($query) => $query->where('user_id', $userId))
@@ -85,6 +88,7 @@ class GetManufacturePayroll
             ->with('user')
             ->get();
         $sessionsByUser     = $sessions->groupBy('user_id');
+        $this->paidTime     = HydrateManufactureArtisanDays::make()->paidTime($production, $clockings, $overtimes);
 
         $artisans = [];
         foreach ($sessionsByUser->keys()->merge($clockedOnly->pluck('user_id'))->unique() as $workerId) {
@@ -183,7 +187,7 @@ class GetManufacturePayroll
 
     public function amountKeys(): array
     {
-        $keys = ['working_hours', 'working_amount', 'tablet_hours', 'not_on_tablet_hours', 'tablet_over_clocked_hours'];
+        $keys = ['working_hours', 'working_amount', 'tablet_hours', 'not_on_tablet_hours', 'tablet_over_clocked_hours', 'clocked_hours', 'outside_shift_hours'];
         foreach (self::BANDS as $key) {
             $keys[] = $key.'_hours';
             $keys[] = $key.'_amount';
@@ -199,11 +203,15 @@ class GetManufacturePayroll
     private function artisan(User $user, ?Employee $employee, array $employeeIds, Collection $sessions, Collection $clockings): array
     {
         $clockedSeconds = [];
+        $paidSeconds    = [];
+        $shifts         = [];
         $openClockings  = [];
-        foreach ($clockings as $timesheet) {
+        foreach ($clockings as $key => $timesheet) {
             if (in_array($timesheet->subject_id, $employeeIds)) {
                 $date                  = $timesheet->date->toDateString();
                 $clockedSeconds[$date] = ($clockedSeconds[$date] ?? 0) + $timesheet->working_duration;
+                $paidSeconds[$date]    = ($paidSeconds[$date] ?? 0) + ($this->paidTime[$key]['paid'] ?? $timesheet->working_duration);
+                $shifts[$date] ??= $this->paidTime[$key]['shift'] ?? [];
                 $openClockings[$date]  = ($openClockings[$date] ?? 0) + $timesheet->number_open_time_trackers;
             }
         }
@@ -217,11 +225,12 @@ class GetManufacturePayroll
             $daySessions = $sessionsByDate->get($date, collect());
             $tabletHours = $daySessions->reject(fn (ManufactureTaskSession $session) => $this->isWaitingForTimesCheck($session))
                 ->mapWithKeys(fn (ManufactureTaskSession $session) => [$session->id => (float) ($session->hours ?? $session->paidHours())]);
-            $clocked     = round(($clockedSeconds[$date] ?? 0) / 3600, 6);
+            $onTheClock  = round(($clockedSeconds[$date] ?? 0) / 3600, 6);
+            $clocked     = round(($paidSeconds[$date] ?? 0) / 3600, 6);
             $tablet      = round($tabletHours->sum(), 6);
             $isHourly    = ($daySessions->first()?->artisan_pay_type ?? $employee?->artisan_pay_type) == ArtisanPayTypeEnum::HOURLY;
             $paidTablet  = $isHourly ? $tabletHours->only($daySessions->filter(fn (ManufactureTaskSession $session) => $this->isFlatRate($session))->pluck('id')->all()) : $tabletHours;
-            $paidHours   = $this->capToClocked($daySessions, $paidTablet, $clocked);
+            $paidHours   = $this->capToClocked($daySessions, $paidTablet, $clocked, max(0, $onTheClock - $clocked), $shifts[$date] ?? []);
 
             $dayLines = collect(
                 $daySessions
@@ -239,7 +248,7 @@ class GetManufacturePayroll
                     ->values()
             );
 
-            $clockedNotPaidOnTablet = max(0, $clocked - $paidTablet->sum());
+            $clockedNotPaidOnTablet = max(0, $clocked - $paidHours->sum());
             if ($clockedNotPaidOnTablet > 0.000001) {
                 $dayLines->push($this->clockedLine($employee, $date, $clockedNotPaidOnTablet, $isHourly));
             }
@@ -249,8 +258,10 @@ class GetManufacturePayroll
             $dayFacts[$date] = [
                 'date'                      => $date,
                 'tablet_hours'              => round($tablet, 2),
-                'not_on_tablet_hours'       => round(max(0, $clocked - $tablet), 2),
-                'tablet_over_clocked_hours' => round(max(0, $tablet - $clocked), 2),
+                'not_on_tablet_hours'       => round(max(0, $clocked - ($isHourly ? $tablet : $paidHours->sum())), 2),
+                'tablet_over_clocked_hours' => round(max(0, $tablet - $onTheClock), 2),
+                'clocked_hours'             => round($onTheClock, 2),
+                'outside_shift_hours'       => round(max(0, $onTheClock - $clocked), 2),
                 'open_clockings'            => $openClockings[$date] ?? 0,
                 'is_clocked'                => isset($clockedSeconds[$date]),
             ];
@@ -304,6 +315,8 @@ class GetManufacturePayroll
             'tablet_hours'              => round(array_sum(array_column($dayFacts, 'tablet_hours')), 2),
             'not_on_tablet_hours'       => round(array_sum(array_column($dayFacts, 'not_on_tablet_hours')), 2),
             'tablet_over_clocked_hours' => round(array_sum(array_column($dayFacts, 'tablet_over_clocked_hours')), 2),
+            'clocked_hours'             => round(array_sum(array_column($dayFacts, 'clocked_hours')), 2),
+            'outside_shift_hours'       => round(array_sum(array_column($dayFacts, 'outside_shift_hours')), 2),
         ];
 
         foreach (self::BANDS as $code => $key) {
@@ -349,7 +362,9 @@ class GetManufacturePayroll
 
     /**
      * Overtime approved as paid on a weekend, or as TOIL, comes off each paid line of the day in proportion: the clocked time
-     * beyond the shift as it was when decided, up to the minutes approved.
+     * beyond the shift as it was when decided, up to the minutes approved. Where a paid time rule limits the day to its
+     * shift, it is the time clocked outside the shift that the approval covers, so somebody in early and out early still
+     * has the early time at the weekend rate or as TOIL.
      *
      * @param  array<int, int>  $employeeIds
      */
@@ -361,7 +376,8 @@ class GetManufacturePayroll
         }
 
         $paidHours     = $dayLines->where('counted', true)->sum('hours');
-        $overtimeHours = min($paidHours, $overtime->coveredMinutes((int) round($clocked * 60)) / 60);
+        $paidTime      = $this->paidTime[$overtime->employee_id.'|'.$date] ?? null;
+        $overtimeHours = min($paidHours, $paidTime ? $paidTime['overtime'] / 3600 : $overtime->coveredMinutes((int) round($clocked * 60)) / 60);
         if ($overtimeHours <= 0.000001) {
             return $dayLines;
         }
@@ -393,16 +409,36 @@ class GetManufacturePayroll
     }
 
     /**
-     * Tablet time beyond the clocked time is taken off the jobs that ended last, which is where a job left running after
-     * clocking out shows.
+     * Where time clocked outside the shift is not paid (HELP-4629), the tablet time worked before the shift started or
+     * after it ended is not paid either, earliest job first, up to that unpaid time. Tablet time still beyond the paid time
+     * is then taken off the jobs that ended last, which is where a job left running after clocking out shows.
      *
      * @param  Collection<int, float>  $tabletHours  keyed by session id
+     * @param  float  $unpaidOutsideShift  hours clocked outside the shift and not paid
+     * @param  array{start: Carbon, end: Carbon, unpaid_break_minutes: int}|array{}  $shift  the shift pay is limited to, empty when it is not or on a day off
      * @return Collection<int, float> the hours paid, keyed by session id
      */
-    private function capToClocked(Collection $sessions, Collection $tabletHours, float $clocked): Collection
+    private function capToClocked(Collection $sessions, Collection $tabletHours, float $clocked, float $unpaidOutsideShift = 0.0, array $shift = []): Collection
     {
         $paidHours = $tabletHours->collect();
-        $excess    = $tabletHours->sum() - $clocked;
+
+        $unpaid = $shift ? $unpaidOutsideShift : 0.0;
+        foreach ($sessions->sortBy('started_at') as $session) {
+            if ($unpaid <= 0.000001) {
+                break;
+            }
+            if (!$paidHours->has($session->id)) {
+                continue;
+            }
+
+            $beforeShift = max(0, $session->started_at->diffInSeconds($session->ended_at->copy()->min($shift['start']), false));
+            $afterShift  = max(0, $session->started_at->copy()->max($shift['end'])->diffInSeconds($session->ended_at, false));
+            $cut         = min($paidHours[$session->id], $unpaid, ($beforeShift + $afterShift) / 3600);
+            $paidHours->put($session->id, $paidHours[$session->id] - $cut);
+            $unpaid -= $cut;
+        }
+
+        $excess = $paidHours->sum() - $clocked;
 
         foreach ($sessions->sortByDesc('ended_at') as $session) {
             if ($excess <= 0.000001) {

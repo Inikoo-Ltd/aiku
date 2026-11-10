@@ -8,7 +8,7 @@ category: production
 ---
 
 <aside class="tldr">
-V <b>Factory → Artisans → Daily hours</b> stlačte <b>Plan overtime</b> (naplánovať nadčas), zadajte plánované časy na deň a schváľte ich pre jedného alebo viacerých remeselníkov, alebo označte dni, ktoré prekročili zmenu, a stlačte <b>Overtime for … selected</b>. Vyberte <b>Paid</b> (platený) alebo <b>Time off in lieu</b> (náhradné voľno). Nadčas cez sobotu a nedeľu schválený ako platený sa vypláca sadzbou 1.5 × Band 0; nadčas cez pracovný týždeň sa platí ako bežné hodiny. Náhradné voľno sa nevypláca: pripíše sa do zostatku TOIL remeselníka. Nadčas, ktorý nikto neschválil ani nezamietol, je označený v Payroll a manažéri dostanú v pondelok ráno pripomienku, keďže mzdový týždeň sa uzamyká na konci pondelka.
+V <b>Factory → Artisans → Daily hours</b> stlačte <b>Plan overtime</b> (naplánovať nadčas), zadajte plánované časy na deň a schváľte ich pre jedného alebo viacerých remeselníkov, alebo označte dni, ktoré prekročili zmenu, a stlačte <b>Overtime for … selected</b>. Vyberte <b>Paid</b> (platený) alebo <b>Time off in lieu</b> (náhradné voľno). Nadčas cez sobotu a nedeľu schválený ako platený sa vypláca sadzbou 1.5 × Band 0; nadčas cez pracovný týždeň sa platí ako bežné hodiny. Náhradné voľno sa nevypláca: pripíše sa do zostatku TOIL remeselníka. Nadčas, ktorý nikto neschválil ani nezamietol, je označený v Payroll a manažéri dostanú v pondelok ráno pripomienku, keďže mzdový týždeň sa uzamyká na konci pondelka. Výrobu možno nastaviť aj tak, že sa platí len čas zaznamenaný v rámci zmeny, takže skorší príchod alebo neskorší odchod sa zaplatí len vtedy, keď sa schváli ako nadčas.
 </aside>
 
 ## Čo sa považuje za nadčas
@@ -50,6 +50,21 @@ Stlačte **Time off in lieu** v Daily hours, aby ste videli, koľko komu patrí,
 - **Overtime not authorised** a **Overtime awaiting decision** vedľa mena remeselníka a ako hodiny v CSV.
 
 Stránka Payroll ani CSV nerozhodujú o tom, ako sa TOIL počíta do minimálnej mzdy: to je vec účtovníka.
+
+## Výroby, ktoré platia len čas v rámci zmeny
+
+Výrobný manažér alebo účtovník môže výrobu nastaviť tak, aby sa platil len čas zaznamenaný v rámci zmeny. V **Daily hours** stlačte ozubené koliesko pri **Every clocked hour is paid**, zapnite **Pay inside the shift only**, vyberte krok zaokrúhľovania a deň, od ktorého nastavenie platí, a stlačte **Save**. Deň musí byť v týždni, ktorý ešte nie je uzamknutý pre mzdy: už vyplatené týždne zostávajú tak, ako boli.
+
+Od toho dňa:
+
+- Čas zaznamenaný pred začiatkom zmeny alebo po jej konci sa neplatí. **Daily hours** ho ukazuje pod zaznamenaným časom ako **not paid** a **Payroll** ukazuje pri mene remeselníka **Outside the shift, not paid**.
+- Ak ho chcete zaplatiť, schváľte nadčas za daný deň tak, ako je opísané vyššie. Schválením dňa sa zaplatí čas zaznamenaný mimo zmeny, najviac do plánovaných časov, ak bol nadčas naplánovaný vopred. V sobotu alebo nedeľu bez zmeny sa neplatí nič, kým sa nadčas neschváli.
+- **Do not authorise** znamená, že čas mimo zmeny zostáva nezaplatený.
+- Kto príde neskoro, je platený od času príchodu zaokrúhleného na najbližší krok počítaný od začiatku zmeny (5 minút, ak ho nezmeníte): príchod o 08:02 sa platí od 08:00, príchod o 08:37 od 08:35.
+- Práca zaznamenaná na tablete pred zmenou alebo po nej sa tiež neplatí.
+- Guru bonus sa platí za zaplatené hodiny.
+
+Mzda sa riadi pracovným časom každého remeselníka, preto skontrolujte, či je u zamestnanca nastavený správne. Neskoršia zmena niekoho pracovného času nezmení týždeň, ktorý je už uzamknutý pre mzdy. CSV z Payroll uvádza zaplatené hodiny a na konci každého riadku zaznamenané hodiny a hodiny zaznamenané mimo zmeny, ktoré sa neplatia.
 
 ## Pondelková pripomienka
 

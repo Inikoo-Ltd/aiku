@@ -10,6 +10,7 @@ namespace App\Actions\Production\ManufactureArtisanDay\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Production\ManufactureArtisanDay\HydrateManufactureArtisanDays;
+use App\Actions\Production\ManufactureArtisanDay\SetManufacturePaidTimeRule;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayShortReasonEnum;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayStatusEnum;
@@ -19,10 +20,12 @@ use App\Models\Production\ManufactureArtisanDay;
 use App\Models\HumanResources\Employee;
 use App\Enums\Production\ManufactureOvertime\ManufactureOvertimeCompensationEnum;
 use App\Models\Production\ManufactureHoursTolerance;
+use App\Models\Production\ManufacturePaidTimeRule;
 use App\Models\Production\ManufactureOvertime;
 use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -161,6 +164,7 @@ class IndexManufactureArtisanDays extends OrgAction
                     ])
                     ->all(),
                 'default_tolerance_minutes' => ManufactureHoursTolerance::DEFAULT_MINUTES,
+                'paid_time'          => $this->paidTime($production, $request->user()),
                 'short_reasons'      => ManufactureArtisanDayShortReasonEnum::labels(),
                 'compensations'      => ManufactureOvertimeCompensationEnum::labels(),
                 'overtime_route'     => [
@@ -176,6 +180,33 @@ class IndexManufactureArtisanDays extends OrgAction
                 'data'               => ManufactureArtisanDayResource::collection($days),
             ]
         )->table($this->tableStructure());
+    }
+
+    /**
+     * Which clocked time is paid today, and every change of it.
+     */
+    private function paidTime(Production $production, User $user): array
+    {
+        $rules = ManufacturePaidTimeRule::of($production->id)->load('setBy');
+        $today = ManufacturePaidTimeRule::limitingOn($rules, now()->setTimezone(ManufacturePayrollAdjustment::timezone($production))->toDateString());
+
+        return [
+            'can_set'           => SetManufacturePaidTimeRule::canSet($user, $production),
+            'route'             => [
+                'name'       => 'grp.org.productions.show.artisans.daily_hours.paid_time',
+                'parameters' => [$production->organisation->slug, $production->slug],
+            ],
+            'inside_shift_only' => (bool) $today,
+            'rounding_minutes'  => $today?->rounding_minutes ?? ManufacturePaidTimeRule::DEFAULT_ROUNDING_MINUTES,
+            'open_from'         => ManufacturePayrollAdjustment::lockedBefore($production)->toDateString(),
+            'rules'             => $rules->map(fn (ManufacturePaidTimeRule $rule) => [
+                'inside_shift_only' => $rule->inside_shift_only,
+                'rounding_minutes'  => $rule->rounding_minutes,
+                'effective_from'    => $rule->effective_from->toDateString(),
+                'set_by'            => $rule->setBy?->contact_name ?: $rule->setBy?->username,
+                'set_at'            => $rule->updated_at,
+            ])->all(),
+        ];
     }
 
     /**

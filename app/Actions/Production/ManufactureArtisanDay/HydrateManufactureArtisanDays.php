@@ -17,8 +17,13 @@ use App\Models\Production\ManufactureArtisanDay;
 use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufactureHoursTolerance;
 use App\Models\Production\ManufactureOvertime;
+use App\Models\Production\ManufacturePaidTimeRule;
+use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
+use App\Enums\HumanResources\TimeTracker\TimeTrackerStatusEnum;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -44,7 +49,7 @@ class HydrateManufactureArtisanDays
         $fromDate = $from->toDateString();
         $toDate   = $to->toDateString();
 
-        $sessions = ManufactureTaskSession::where('production_id', $production->id)
+        $sessions = self::artisanSessions($production)
             ->whereNotNull('employee_id')
             ->whereIn('state', [ManufactureTaskSessionStateEnum::CLOSED, ManufactureTaskSessionStateEnum::OPEN])
             ->whereBetween('started_at', [$from->copy()->startOfDay()->subDay(), $to->copy()->endOfDay()->addDay()])
@@ -100,30 +105,204 @@ class HydrateManufactureArtisanDays
             }
         }
 
-        $tolerances = [];
+        $paidTime     = $this->paidTime($production, $clockings, $overtimes, $existing);
+        $rules        = ManufacturePaidTimeRule::of($production->id);
+        $lockedBefore = ManufacturePayrollAdjustment::lockedBefore($production)->toDateString();
+        $tolerances   = [];
         foreach ($days as $key => $daySessions) {
             [$employeeId, $date] = explode('|', $key);
             $employee            = $employees[$employeeId] ?? $existing[$key]->employee;
             $tolerances[$date] ??= ManufactureHoursTolerance::minutesOn($production->id, $date);
 
-            $this->hydrateDay($production, $employee, $date, $daySessions, $tolerances[$date], $existing[$key] ?? null, $breaksByUser, $clockings[$key] ?? null, $clockTimes[$key] ?? null, $overtimes[$key] ?? null);
+            $this->hydrateDay($production, $employee, $date, $daySessions, $tolerances[$date], $existing[$key] ?? null, $breaksByUser, $clockings[$key] ?? null, $clockTimes[$key] ?? null, $overtimes[$key] ?? null, $paidTime[$key] ?? null, $date < $lockedBefore && ManufacturePaidTimeRule::limitingOn($rules, $date) !== null);
         }
     }
 
     /**
+     * The time paid on each clocked day a paid time rule limits to the shift (HELP-4629): the time clocked between the
+     * shift start and end, a late first clock in counted from the nearest rounding step after the shift start, plus the
+     * time clocked outside the shift up to the overtime approved for the day. A day off pays approved overtime only. Days
+     * with no rule in force, no working hours set or no clockings to read are left out: their clocked time is paid.
+     *
+     * The shift of a day in a week locked for payroll is the one kept on its day row (no working hours then stays no
+     * working hours), so a later change of somebody's working hours never re-prices a paid week; clockings are still read
+     * live, so a correction there shows as a change. Night shifts are not limited.
+     *
+     * @param  Collection<string, Timesheet>  $clockings  keyed by employee id|date
+     * @param  Collection<string, ManufactureOvertime>|null  $overtimes  every decision of the period, keyed by employee id|date
+     * @param  Collection<string, ManufactureArtisanDay>|null  $days  the day rows of the period, keyed by employee id|date
+     * @return array<string, array{paid: int, outside: int, overtime: int, shift: array}> seconds and the shift they were limited to, keyed by employee id|date
+     */
+    public function paidTime(Production $production, Collection $clockings, ?Collection $overtimes = null, ?Collection $days = null): array
+    {
+        $rules   = ManufacturePaidTimeRule::of($production->id);
+        $limited = $clockings->filter(fn (Timesheet $timesheet) => ManufacturePaidTimeRule::limitingOn($rules, $timesheet->date->toDateString()));
+        if ($limited->isEmpty()) {
+            return [];
+        }
+
+        $dates       = $limited->map(fn (Timesheet $timesheet) => $timesheet->date->toDateString());
+        $employeeIds = $limited->pluck('subject_id')->unique()->values()->all();
+        $keyOf       = fn (Model $model) => $model->employee_id.'|'.$model->date->toDateString();
+        $overtimes ??= ManufactureOvertime::where('production_id', $production->id)->whereIn('employee_id', $employeeIds)->whereBetween('date', [$dates->min(), $dates->max()])->get()->keyBy($keyOf);
+        $days      ??= ManufactureArtisanDay::where('production_id', $production->id)->whereIn('employee_id', $employeeIds)->whereBetween('date', [$dates->min(), $dates->max()])->get()->keyBy($keyOf);
+
+        $employees    = Employee::withTrashed()->whereIn('id', $employeeIds)->with('organisation.timezone')->get()->keyBy('id');
+        $lockedBefore = ManufacturePayrollAdjustment::lockedBefore($production)->toDateString();
+        $trackers     = DB::table('time_trackers')
+            ->whereIn('timesheet_id', $limited->pluck('id'))
+            ->whereNull('deleted_at')
+            ->where('status', TimeTrackerStatusEnum::CLOSED->value)
+            ->whereNotNull('starts_at')
+            ->whereNotNull('ends_at')
+            ->orderBy('starts_at')
+            ->get(['timesheet_id', 'starts_at', 'ends_at'])
+            ->groupBy('timesheet_id');
+
+        $paidTime = [];
+        foreach ($limited as $key => $timesheet) {
+            $date     = $timesheet->date->toDateString();
+            $employee = $employees->get($timesheet->subject_id);
+            $day      = $days->get($key);
+            $shift    = match (true) {
+                $day && $date < $lockedBefore => self::keptShift($day),
+                $employee !== null            => $this->shiftToLimitTo($employee, $date),
+                default                       => null,
+            };
+            $pairs = $trackers->get($timesheet->id, collect())->map(fn (object $tracker) => [Carbon::parse($tracker->starts_at), Carbon::parse($tracker->ends_at)])->all();
+            if ($shift === null || !$pairs || ($employee && self::crossesMidnight($shift, $employee))) {
+                continue;
+            }
+
+            $overtime = $overtimes->get($key);
+            $rule     = ManufacturePaidTimeRule::limitingOn($rules, $date);
+
+            $paidTime[$key] = self::paidSeconds($pairs, (int) $timesheet->working_duration, $shift, $rule->rounding_minutes, $overtime?->isApproved() ? (int) $overtime->approved_minutes : 0)
+                + ['shift' => $shift];
+        }
+
+        return $paidTime;
+    }
+
+    /**
+     * @param  array<int, array{0: Carbon, 1: Carbon}>  $pairs  closed clock in and out pairs, earliest first
+     * @param  array{start: Carbon, end: Carbon, unpaid_break_minutes: int}|array{}  $shift  empty on a day off
+     * @return array{paid: int, outside: int, overtime: int} seconds: the time paid, the time clocked outside the shift, and the part of it the approved overtime covers
+     */
+    public static function paidSeconds(array $pairs, int $clockedSeconds, array $shift, int $roundingMinutes, int $approvedOvertimeMinutes): array
+    {
+        if (!$shift) {
+            $overtime = min($clockedSeconds, $approvedOvertimeMinutes * 60);
+
+            return ['paid' => $overtime, 'outside' => $clockedSeconds, 'overtime' => $overtime];
+        }
+
+        $overlap = fn (Carbon $from, Carbon $to) => max(0, (int) $from->copy()->max($shift['start'])->diffInSeconds($to->copy()->min($shift['end']), false));
+
+        $insideAsClocked = array_sum(array_map(fn (array $pair) => $overlap($pair[0], $pair[1]), $pairs));
+        $outside         = max(0, $clockedSeconds - $insideAsClocked);
+
+        $firstIn = $pairs[0][0];
+        if ($firstIn->greaterThan($shift['start'])) {
+            $step        = max(1, $roundingMinutes) * 60;
+            $pairs[0][0] = $shift['start']->copy()->addSeconds((int) (floor($shift['start']->diffInSeconds($firstIn) / $step + 0.5) * $step));
+        }
+        $inside = array_sum(array_map(fn (array $pair) => $overlap($pair[0], $pair[1]), $pairs));
+
+        $overtime = min($outside, $approvedOvertimeMinutes * 60);
+
+        return ['paid' => $inside + $overtime, 'outside' => $outside, 'overtime' => $overtime];
+    }
+
+    /**
+     * The scheduled shift of a day not yet locked: empty for a day off, null when no working hours say when the shift is,
+     * which includes a working day left without its start or end time (it is not a day off, so its clocked time is paid).
+     *
+     * @return array{start: Carbon, end: Carbon, unpaid_break_minutes: int}|array{}|null
+     */
+    private function shiftToLimitTo(Employee $employee, string $date): ?array
+    {
+        $schedule = $this->schedule($employee);
+        $shift    = $schedule ? $employee->scheduledShiftOn($date, $schedule) : null;
+        if ($shift === []) {
+            $timezone = $schedule->timezone?->name ?? $employee->organisation?->timezone?->name ?? config('app.timezone');
+
+            return $schedule->days->firstWhere('day_of_week', Carbon::parse($date, $timezone)->dayOfWeekIso)?->is_working_day ? null : [];
+        }
+
+        return $shift;
+    }
+
+    /**
+     * A night shift: its clockings after midnight sit on the next day's timesheet, so it cannot be limited day by day.
+     *
+     * @param  array{start: Carbon, end: Carbon, unpaid_break_minutes: int}|array{}  $shift
+     */
+    private static function crossesMidnight(array $shift, Employee $employee): bool
+    {
+        // ponytail: night shifts are paid as clocked; pair the timesheets of both days if a factory with nights turns the rule on
+        $timezone = $employee->organisation?->timezone?->name ?? config('app.timezone');
+
+        return $shift && $shift['start']->copy()->setTimezone($timezone)->toDateString() !== $shift['end']->copy()->setTimezone($timezone)->toDateString();
+    }
+
+    /**
+     * The shift as it was kept on the day row: empty for a day off, null when no working hours were set.
+     *
+     * @return array{start: Carbon, end: Carbon, unpaid_break_minutes: int}|array{}|null
+     */
+    private static function keptShift(ManufactureArtisanDay $day): ?array
+    {
+        return match (true) {
+            $day->expected_minutes === null                => null,
+            !$day->shift_start || !$day->shift_end         => [],
+            default                                        => [
+                'start'                => $day->shift_start,
+                'end'                  => $day->shift_end,
+                'unpaid_break_minutes' => max(0, (int) round($day->shift_start->diffInMinutes($day->shift_end)) - $day->expected_minutes),
+            ],
+        };
+    }
+
+    /**
+     * The floor sessions that count for hours and pay: those of the factory's own staff. Staff of another organisation and
+     * staff hidden from the artisan roster (someone from another department who used a tablet once) are not artisans,
+     * so a job they opened on a tablet never brings their clocked hours into the factory's days or payroll.
+     *
+     * @return Builder<ManufactureTaskSession>
+     */
+    public static function artisanSessions(Production $production): Builder
+    {
+        $artisans = Employee::withTrashed()
+            ->where('organisation_id', $production->organisation_id)
+            ->whereNotIn('id', Arr::get($production->data, 'hidden_artisan_ids', []))
+            ->select('id');
+
+        return ManufactureTaskSession::where('production_id', $production->id)
+            ->where(fn (Builder $query) => $query->whereNull('employee_id')->orWhereIn('employee_id', $artisans));
+    }
+
+    /**
+     * The same test as artisanSessions(), for one employee.
+     */
+    public static function isArtisan(Production $production, Employee $employee): bool
+    {
+        return $employee->organisation_id == $production->organisation_id
+            && !in_array($employee->id, Arr::get($production->data, 'hidden_artisan_ids', []));
+    }
+
+    /**
      * The artisans of a period: everyone who closed a session in the production in the eight weeks up to its end, so a
-     * day or a week clocked with no work on the tablet is still checked and paid. Staff hidden from the artisan roster
-     * (someone from another department who used a tablet once) are left out.
+     * day or a week clocked with no work on the tablet is still checked and paid.
      *
      * @return array<int, int>
      */
     public static function rosterEmployeeIds(Production $production, Carbon $from, Carbon $to): array
     {
         // ponytail: an artisan off the tablet for over eight weeks drops out; an artisan flag on the employee if that bites
-        return ManufactureTaskSession::where('production_id', $production->id)
+        return self::artisanSessions($production)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
             ->whereNotNull('employee_id')
-            ->whereNotIn('employee_id', Arr::get($production->data, 'hidden_artisan_ids', []))
             ->whereBetween('ended_at', [$from->copy()->startOfDay()->subWeeks(8), $to->copy()->endOfDay()])
             ->distinct()
             ->pluck('employee_id')
@@ -229,11 +408,17 @@ class HydrateManufactureArtisanDays
      *
      * @param  Collection<int, Collection<int, ManufactureBreak>>  $breaksByUser
      * @param  array{in: Carbon|null, out: Carbon|null}|null  $clockTimes
+     * @param  array{paid: int, outside: int, overtime: int, shift: array}|null  $paidTime  when a paid time rule limits the day to its shift
+     * @param  bool  $keepsShift  a day in a locked pay week under a paid time rule: its shift stays as kept on the row
      */
-    private function hydrateDay(Production $production, Employee $employee, string $date, Collection $sessions, int $tolerance, ?ManufactureArtisanDay $day, Collection $breaksByUser, ?Timesheet $timesheet, ?array $clockTimes, ?ManufactureOvertime $overtime): void
+    private function hydrateDay(Production $production, Employee $employee, string $date, Collection $sessions, int $tolerance, ?ManufactureArtisanDay $day, Collection $breaksByUser, ?Timesheet $timesheet, ?array $clockTimes, ?ManufactureOvertime $overtime, ?array $paidTime, bool $keepsShift = false): void
     {
-        $schedule        = $this->schedule($employee);
-        $shift           = $schedule ? $employee->scheduledShiftOn($date, $schedule) : null;
+        $schedule = $this->schedule($employee);
+        $shift    = match (true) {
+            $keepsShift && $day !== null => self::keptShift($day),
+            $paidTime !== null           => $paidTime['shift'],
+            default                      => $schedule ? $employee->scheduledShiftOn($date, $schedule) : null,
+        };
         $expectedMinutes = self::expectedMinutes($shift);
 
         $isWaitingForTimesCheck = fn (ManufactureTaskSession $session) => $session->job_order_item_task_id !== null
@@ -273,6 +458,8 @@ class HydrateManufactureArtisanDays
             'expected_minutes'       => $expectedMinutes,
             'recorded_minutes'       => $recordedMinutes,
             'clocked_minutes'        => $clockedMinutes,
+            'paid_seconds'           => $paidTime['paid'] ?? null,
+            'paid_overtime_seconds'  => $paidTime['overtime'] ?? null,
             'tablet_over_clocked_minutes' => $this->isDayRunning($employee, $date, $shift ?: []) ? 0 : max(0, $recordedMinutes - ($clockedMinutes ?? 0)),
             'open_clockings'         => $timesheet->number_open_time_trackers ?? 0,
             'clocked_in_at'          => $clockTimes['in'] ?? null,

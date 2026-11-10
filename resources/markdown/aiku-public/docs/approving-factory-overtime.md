@@ -8,7 +8,7 @@ help_routes: grp.org.productions.show.artisans.daily_hours, grp.org.productions.
 ---
 
 <aside class="tldr">
-On <b>Factory → Artisans → Daily hours</b>, press <b>Plan overtime</b> to enter the planned times for a day and approve them for one or several artisans, or tick days that went over the shift and press <b>Overtime for … selected</b>. Choose <b>Paid</b> or <b>Time off in lieu</b>. Saturday and Sunday overtime approved as paid is paid at 1.5 × Band 0; weekday overtime is paid as normal hours. Time off in lieu is not paid: it goes into the artisan's TOIL balance. Overtime nobody has approved or rejected is flagged on Payroll, and managers get a reminder on Monday morning, before the pay week locks at the end of Monday.
+On <b>Factory → Artisans → Daily hours</b>, press <b>Plan overtime</b> to enter the planned times for a day and approve them for one or several artisans, or tick days that went over the shift and press <b>Overtime for … selected</b>. Choose <b>Paid</b> or <b>Time off in lieu</b>. Saturday and Sunday overtime approved as paid is paid at 1.5 × Band 0; weekday overtime is paid as normal hours. Time off in lieu is not paid: it goes into the artisan's TOIL balance. Overtime nobody has approved or rejected is flagged on Payroll, and managers get a reminder on Monday morning, before the pay week locks at the end of Monday. A factory can also be set to pay only the time clocked inside the shift, so an early start or a late finish is paid only when its overtime is approved.
 </aside>
 
 ## What counts as overtime
@@ -50,6 +50,21 @@ Press **Time off in lieu** on Daily hours to see what each artisan is owed and t
 - **Overtime not authorised** and **Overtime awaiting decision** next to the artisan's name, and as hours in the CSV.
 
 The Payroll page and the CSV do not decide how TOIL counts towards the minimum wage: that is for the accountant.
+
+## Factories that pay inside the shift only
+
+The production manager or the accountant can set a factory to pay only the time clocked inside the shift. On **Daily hours**, press the cog next to **Every clocked hour is paid**, turn on **Pay inside the shift only**, choose the rounding step and the day it starts from, and press **Save**. The day must be in a week not yet locked for payroll: weeks already paid stay as they were.
+
+From that day on:
+
+- Time clocked before the shift starts or after it ends is not paid. **Daily hours** shows it under the clocked time as **not paid**, and **Payroll** shows **Outside the shift, not paid** next to the artisan's name.
+- To pay it, approve the overtime for that day as described above. Approving the day pays the time clocked outside the shift, up to the planned times when it was planned ahead. On a Saturday or Sunday with no shift, nothing is paid until the overtime is approved.
+- **Do not authorise** means the time outside the shift stays unpaid.
+- Somebody who clocks in late is paid from the clock in time, rounded to the nearest step counted from the shift start (5 minutes unless you change it): 08:02 is paid from 08:00, 08:37 from 08:35.
+- Work recorded on the tablet before or after the shift is not paid either.
+- The Guru bonus is paid on the paid hours.
+
+Pay follows each artisan's working hours, so check they are right on the employee. Changing somebody's working hours later does not change a week already locked for payroll. The Payroll CSV gives the paid hours, and at the end of each row the clocked hours and the hours clocked outside the shift and not paid.
 
 ## The Monday reminder
 

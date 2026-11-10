@@ -467,12 +467,14 @@ function initials(name: string): string {
 }
 
 const showHiddenArtisans = ref(false)
+const artisanError = ref<string | null>(null)
 
 function toggleArtisan(artisan: { id: number, hidden: boolean }) {
+    artisanError.value = null
     router.post(
         route(artisan.hidden ? "grp.org.productions.show.to_produce.artisans.show" : "grp.org.productions.show.to_produce.artisans.hide", [route().params["organisation"], route().params["production"], artisan.id]),
         {},
-        { preserveScroll: true }
+        { preserveScroll: true, onError: (errors) => artisanError.value = errors.artisan ?? null }
     )
 }
 
@@ -504,10 +506,10 @@ function jobOrderHref(item: { job_order_slug: string }) {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
-    <div v-if="Object.keys(selected).length" class="sticky top-0 z-10 mx-4 mt-4 flex items-center justify-between rounded-lg bg-indigo-600 px-4 py-2 text-white">
+    <div v-if="Object.keys(selected).length" class="sticky top-0 z-10 mx-4 mt-4 flex items-center justify-between rounded-lg bg-[var(--app-accent)] px-4 py-2 text-[var(--app-accent-text)]">
         <span>{{ ctransChoice(":count line selected|:count lines selected", Object.keys(selected).length) }}</span>
         <div class="flex gap-2">
-            <button type="button" class="rounded bg-white px-3 py-1 text-indigo-600" @click="createJobOrders()">
+            <button type="button" class="rounded bg-white px-3 py-1 text-[var(--app-accent)]" @click="createJobOrders()">
                 {{ ctrans("Create job orders") }}
             </button>
         </div>
@@ -523,7 +525,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                 v-for="(lane, laneIndex) in mixLanes"
                 :key="lane.label"
                 class="flex min-w-0 flex-1 flex-col rounded-lg border bg-gray-50 transition dark:bg-gray-800"
-                :class="mixDropTarget(laneIndex) ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200 dark:border-gray-700'"
+                :class="mixDropTarget(laneIndex) ? 'border-[var(--app-accent)] ring-2 ring-[var(--app-accent-muted)]' : 'border-gray-200 dark:border-gray-700'"
                 @dragover="mixDropTarget(laneIndex) ? $event.preventDefault() : null"
                 @drop.prevent="onMixDrop(laneIndex, $event)">
                 <div class="flex items-center gap-2 px-3 py-2 font-medium">
@@ -567,7 +569,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
     <div v-if="artisanWorkload && groupBy === 'maker'" class="mx-4 mt-5 rounded-lg border border-gray-200 px-4 py-3 dark:border-gray-700">
         <div class="mb-2 flex items-center gap-2 text-sm text-gray-500">
             <span>{{ ctrans("Open job orders per artisan") }} <span class="text-gray-400">· {{ ctrans("everyone should have at least two") }}</span></span>
-            <button v-if="artisanWorkload.some(artisan => artisan.hidden)" type="button" class="ml-auto text-xs text-gray-400 hover:text-indigo-600" @click="showHiddenArtisans = !showHiddenArtisans">
+            <button v-if="artisanWorkload.some(artisan => artisan.hidden)" type="button" class="ml-auto text-xs text-gray-400 hover:text-[var(--app-accent)]" @click="showHiddenArtisans = !showHiddenArtisans">
                 {{ artisanWorkload.filter(artisan => artisan.hidden).length }} {{ ctrans("not artisans") }} · {{ showHiddenArtisans ? ctrans("hide") : ctrans("show") }}
             </button>
         </div>
@@ -581,17 +583,18 @@ function jobOrderHref(item: { job_order_slug: string }) {
                 <button type="button" class="opacity-40 hover:opacity-100" :title="ctrans('Not an artisan')" @click="toggleArtisan(artisan)">×</button>
             </span>
         </div>
+        <div v-if="artisanError" class="mt-2 text-xs text-red-600">{{ artisanError }}</div>
         <div v-if="showHiddenArtisans" class="mt-2 flex flex-wrap gap-1.5">
             <span v-for="artisan in artisanWorkload.filter(artisan => artisan.hidden)" :key="artisan.id" class="flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2.5 py-px text-xs text-gray-400">
                 {{ artisan.name }}
-                <button type="button" class="hover:text-indigo-600" :title="ctrans('Is an artisan')" @click="toggleArtisan(artisan)">+</button>
+                <button type="button" class="hover:text-[var(--app-accent)]" :title="ctrans('Is an artisan')" @click="toggleArtisan(artisan)">+</button>
             </span>
         </div>
     </div>
 
     <Teleport to="body">
         <div v-if="pendingFirst" class="fixed inset-0 z-40" @click="pendingItems = []" />
-        <div v-if="pendingFirst" class="fixed z-50 w-80 rounded-lg border border-indigo-300 bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :style="{ left: pickerPosition.x + 'px', top: pickerPosition.y + 'px' }">
+        <div v-if="pendingFirst" class="fixed z-50 w-80 rounded-lg border border-[var(--app-accent-muted)] bg-white p-3 text-xs shadow-xl dark:bg-gray-900" :style="{ left: pickerPosition.x + 'px', top: pickerPosition.y + 'px' }">
             <div v-if="pendingItems.length === 1" class="mb-1.5 font-medium">{{ pendingFirst.stock_code }} <span class="font-normal text-gray-500">{{ pendingFirst.stock_name }}</span></div>
             <div v-else class="mb-1.5 font-medium">{{ ctrans(":count cards", { count: pendingItems.length }) }}</div>
 
@@ -613,7 +616,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             <span v-if="pendingQuantities[item.id] > Math.ceil(Number(item.quantity))" class="text-gray-400">+{{ pendingQuantities[item.id] - Math.ceil(Number(item.quantity)) }} {{ ctrans("for stock") }}</span>
                             <span
                                 v-if="item.batch_size"
-                                class="rounded bg-indigo-50 px-1.5 py-px text-indigo-700"
+                                class="rounded bg-[var(--app-accent-soft)] px-1.5 py-px text-[var(--app-accent-strong)]"
                                 :title="ctrans('Batch of :batch units, packed in :packed', { batch: item.batch_size ?? 0, packed: item.packed_in ?? 1 })">
                                 {{ ctransChoice("makes :count unit|makes :count units", jobUnits(item)) }}
                             </span>
@@ -668,7 +671,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         </div>
                     </div>
 
-                    <button type="submit" class="mt-2 w-full rounded bg-indigo-600 px-3 py-1 font-medium text-white hover:bg-indigo-500">{{ pendingItems.length > 1 ? ctrans("Prepare :count", { count: pendingItems.length }) : ctrans("Prepare") }}</button>
+                    <button type="submit" class="mt-2 w-full rounded bg-[var(--app-accent)] px-3 py-1 font-medium text-[var(--app-accent-text)] hover:bg-[var(--app-accent)]">{{ pendingItems.length > 1 ? ctrans("Prepare :count", { count: pendingItems.length }) : ctrans("Prepare") }}</button>
                 </form>
                 <div class="mt-2 border-t border-gray-100 pt-2">
                     <button v-if="!isDismissing" type="button" class="w-full rounded border border-red-200 px-3 py-1 text-red-700 hover:bg-red-50" @click="isDismissing = true">{{ ctrans("Can't be done") }}</button>
@@ -708,7 +711,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
             <FontAwesomeIcon icon="fal fa-calendar-day" class="text-gray-500" fixed-width aria-hidden="true" />
             {{ ctrans("Day plan") }}
         </Link>
-        <button type="button" class="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700" @click="isCreatingJobOrder = true">
+        <button type="button" class="rounded bg-[var(--app-accent)] px-3 py-1.5 text-sm font-medium text-[var(--app-accent-text)] hover:bg-[var(--app-accent-strong)]" @click="isCreatingJobOrder = true">
             + {{ ctrans("Create job order") }}
         </button>
     </div>
@@ -728,7 +731,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     type="button"
                     class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
                     :class="boardFilters[key].includes(option.value)
-                        ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm'
+                        ? 'border-[var(--app-accent)] bg-[var(--app-accent)] text-[var(--app-accent-text)] shadow-sm'
                         : option.value === 'urgent' ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                     @click="toggleBoardFilter(key, option.value)">
                     <span class="capitalize">{{ key === "source" ? sourceLabels[option.value] : option.value }}</span>
@@ -740,9 +743,9 @@ function jobOrderHref(item: { job_order_slug: string }) {
             <button
                 type="button"
                 class="flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 transition"
-                :class="boardFilters.artisan.length ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
+                :class="boardFilters.artisan.length ? 'border-[var(--app-accent)] bg-[var(--app-accent)] text-[var(--app-accent-text)] shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white'"
                 @click="artisanMenuOpen = !artisanMenuOpen">
-                <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width :class="boardFilters.artisan.length ? 'text-white/70' : 'text-gray-400'" />
+                <FontAwesomeIcon icon="fal fa-user-hard-hat" fixed-width :class="boardFilters.artisan.length ? 'text-[var(--app-accent-text)] opacity-70' : 'text-gray-400'" />
                 <span class="max-w-48 truncate">{{ boardFilters.artisan.length ? boardFilters.artisan.join(", ") : ctrans("Everybody") }}</span>
                 <span class="rounded-full px-1.5 text-xs tabular-nums" :class="boardFilters.artisan.length ? 'bg-white/20' : 'bg-white text-gray-500'">{{ boardFilters.artisan.length || boardFilterOptions.artisan.length }}</span>
             </button>
@@ -765,7 +768,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
         <Link
             :href="route(route().current() as string, { ...route().params, hitchhikers: hitchhikers.showing ? undefined : 1 })"
             preserve-scroll
-            class="hover:text-indigo-600">
+            class="hover:text-[var(--app-accent)]">
             <template v-if="hitchhikers.showing">{{ ctrans("Hiding lines that are too small for a batch") }}</template>
             <template v-else>{{ hitchhikers.count }} {{ ctrans("lines too small for a batch are waiting for company") }} · {{ ctrans("show") }}</template>
         </Link>
@@ -775,7 +778,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
         <Link
             :href="route(route().current() as string, { ...route().params, ignore_pipeline: pipeline.ignoring ? undefined : 1 })"
             preserve-scroll
-            class="hover:text-indigo-600">
+            class="hover:text-[var(--app-accent)]">
             <template v-if="pipeline.ignoring">{{ ctrans("Ignoring stock waiting to be booked in") }} · {{ ctrans("show") }}</template>
             <template v-else>{{ pipeline.count }} {{ ctrans("backlog lines are covered by stock waiting to be booked in") }} · {{ ctrans("ignore") }}</template>
         </Link>
@@ -785,12 +788,12 @@ function jobOrderHref(item: { job_order_slug: string }) {
         <template v-for="(lane, laneIndex) in filteredGroups" :key="lane.label">
         <div
             class="flex min-w-0 flex-1 flex-col rounded-lg border bg-gray-50 transition dark:bg-gray-800"
-            :class="dropTarget(laneIndex) ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200 dark:border-gray-700'"
+            :class="dropTarget(laneIndex) ? 'border-[var(--app-accent)] ring-2 ring-[var(--app-accent-muted)]' : 'border-gray-200 dark:border-gray-700'"
             @dragover="dropTarget(laneIndex) ? $event.preventDefault() : null"
             @drop.prevent="onDrop(laneIndex, $event)">
             <div class="flex items-center gap-2 px-3 py-2 font-medium">
                 <span>{{ lane.label }}</span>
-                <button v-if="selectedLane === laneIndex && selectedCards.length" type="button" class="rounded-full bg-indigo-600 px-2 text-xs font-normal text-white" :title="ctrans('Click to clear selection, drag any selected card to move them all')" @click="selectedCards = []">{{ selectedCards.length }} {{ ctrans("selected") }} ×</button>
+                <button v-if="selectedLane === laneIndex && selectedCards.length" type="button" class="rounded-full bg-[var(--app-accent)] px-2 text-xs font-normal text-[var(--app-accent-text)]" :title="ctrans('Click to clear selection, drag any selected card to move them all')" @click="selectedCards = []">{{ selectedCards.length }} {{ ctrans("selected") }} ×</button>
                 <span class="ml-auto rounded-full bg-white px-2 text-xs text-gray-500 dark:bg-gray-900">{{ lane.items.length }}</span>
             </div>
             <div class="flex max-h-[70vh] flex-col gap-1.5 overflow-y-auto px-2 pb-2">
@@ -800,7 +803,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     class="rounded border bg-white px-2 py-1.5 text-xs transition dark:bg-gray-900"
                     :class="[
                         isDraggable(item, laneIndex) ? 'cursor-grab select-none active:cursor-grabbing' : '',
-                        selectedCards.includes(item.id) ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500 dark:bg-indigo-950' : 'border-gray-200 dark:border-gray-700',
+                        selectedCards.includes(item.id) ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] ring-1 ring-[var(--app-accent)] dark:bg-indigo-950' : 'border-gray-200 dark:border-gray-700',
                     ]"
                     :draggable="isDraggable(item, laneIndex)"
                     @click="isDraggable(item, laneIndex) ? toggleCard(item, laneIndex) : null"
@@ -840,20 +843,20 @@ function jobOrderHref(item: { job_order_slug: string }) {
                         <span class="ml-auto flex items-center gap-1 tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
                             ×{{ useLocaleStore().number(Math.ceil(Number(item.quantity))) }} {{ ctrans("SKO") }}
                             <template v-if="laneIndex === LANE_PREPARING && item.state === 'open'">
-                                <span class="text-indigo-600">→</span>
+                                <span class="text-[var(--app-accent)]">→</span>
                                 <input
                                     type="number"
                                     min="1"
                                     step="1"
                                     :value="Math.ceil(Number(item.quantity_to_produce ?? item.quantity))"
                                     :title="ctrans('Quantity to make, edit to change')"
-                                    class="w-14 rounded border-gray-200 px-1 py-0 text-right text-xs font-semibold tabular-nums text-indigo-700 hover:border-indigo-300 focus:border-indigo-500"
+                                    class="w-14 rounded border-gray-200 px-1 py-0 text-right text-xs font-semibold tabular-nums text-[var(--app-accent-strong)] hover:border-[var(--app-accent-muted)] focus:border-[var(--app-accent)]"
                                     @click.stop
                                     @mousedown.stop
                                     @change="updatePreparingQuantity(item, $event)" />
                             </template>
-                            <span v-else-if="item.job_order_quantity" class="text-indigo-600" :title="ctrans('Making :count units', { count: item.job_order_quantity })">→ {{ useLocaleStore().number(Number(item.job_order_quantity) / (Number(item.packed_in) || 1)) }} {{ ctrans("SKO") }} ({{ ctransChoice(":number unit|:number units", Number(item.job_order_quantity), { number: useLocaleStore().number(Number(item.job_order_quantity)) }) }})</span>
-                            <span v-else-if="item.quantity_to_produce && Number(item.quantity_to_produce) !== Number(item.quantity)" class="text-indigo-600" :title="ctrans('Making :count SKO', { count: item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.quantity_to_produce)) }} {{ ctrans("SKO") }}</span>
+                            <span v-else-if="item.job_order_quantity" class="text-[var(--app-accent)]" :title="ctrans('Making :count units', { count: item.job_order_quantity })">→ {{ useLocaleStore().number(Number(item.job_order_quantity) / (Number(item.packed_in) || 1)) }} {{ ctrans("SKO") }} ({{ ctransChoice(":number unit|:number units", Number(item.job_order_quantity), { number: useLocaleStore().number(Number(item.job_order_quantity)) }) }})</span>
+                            <span v-else-if="item.quantity_to_produce && Number(item.quantity_to_produce) !== Number(item.quantity)" class="text-[var(--app-accent)]" :title="ctrans('Making :count SKO', { count: item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.quantity_to_produce)) }} {{ ctrans("SKO") }}</span>
                         </span>
                     </div>
                     <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>
@@ -894,7 +897,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                 :href="labelUrl(label, item)"
                                 target="_blank"
                                 rel="noopener"
-                                class="flex min-w-0 flex-1 items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-px text-indigo-700 hover:bg-indigo-100"
+                                class="flex min-w-0 flex-1 items-center gap-1 rounded border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-1.5 py-px text-[var(--app-accent-strong)] hover:bg-[var(--app-accent-soft)]"
                                 :title="ctrans('Open label :name', { name: label.name })"
                                 draggable="false"
                                 @click.stop
@@ -904,7 +907,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             </a>
                             <button
                                 type="button"
-                                class="flex shrink-0 items-center gap-1 rounded border border-indigo-200 bg-white px-1.5 py-px text-indigo-700 hover:bg-indigo-50 disabled:cursor-wait disabled:opacity-60"
+                                class="flex shrink-0 items-center gap-1 rounded border border-[var(--app-accent-muted)] bg-white px-1.5 py-px text-[var(--app-accent-strong)] hover:bg-[var(--app-accent-soft)] disabled:cursor-wait disabled:opacity-60"
                                 :title="ctrans('Print label :name', { name: label.name })"
                                 :disabled="printingLabelId === label.id"
                                 @click.stop="printLabel(label, item)"
@@ -932,7 +935,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             <span class="ml-auto shrink-0 tabular-nums text-gray-500">{{ subJob.quantity.toLocaleString() }}</span>
                         </div>
                     </div>
-                    <button v-else-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-indigo-50 hover:text-indigo-700" :title="ctrans('Change artisan')" @click.stop="openReassign(item, $event)">
+                    <button v-else-if="item.job_order_id && isReassignable(item)" type="button" class="flex items-center gap-1 rounded text-gray-600 hover:bg-[var(--app-accent-soft)] hover:text-[var(--app-accent-strong)]" :title="ctrans('Change artisan')" @click.stop="openReassign(item, $event)">
                         <FontAwesomeIcon icon="fal fa-user-hard-hat" class="text-gray-400" fixed-width />
                         {{ item.job_order_artisan ?? ctrans("No artisan") }}
                         <FontAwesomeIcon icon="fal fa-pencil" class="text-[9px] text-gray-300" fixed-width />
@@ -959,7 +962,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                 :key="group.label"
                 type="button"
                 class="rounded-full border px-2.5 py-px text-xs"
-                :class="hiddenGroups.includes(group.label) ? 'border-gray-200 text-gray-400 hover:bg-gray-50' : 'border-indigo-500 bg-indigo-50 text-indigo-700'"
+                :class="hiddenGroups.includes(group.label) ? 'border-gray-200 text-gray-400 hover:bg-gray-50' : 'border-[var(--app-accent)] bg-[var(--app-accent-soft)] text-[var(--app-accent-strong)]'"
                 @click="toggleGroup(group.label)">
                 {{ group.items.length }} {{ group.label }}
             </button>

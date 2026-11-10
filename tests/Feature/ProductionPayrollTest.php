@@ -1882,7 +1882,7 @@ describe('production reward pay bands', function () {
         $response->sendContent();
         $csv = ob_get_clean();
 
-        expect($csv)->toStartWith('"Worker","Pay type","Agency","Clocked hours hours","Clocked hours £","Tablet hours","Not on tablet (Band 0) hours","Band 0 hours"')
+        expect($csv)->toStartWith('"Worker","Pay type","Agency","Paid hours hours","Paid hours £","Tablet hours","Not on tablet (Band 0) hours","Band 0 hours"')
             ->and($csv)->toContain('"Piece rate","No","4.00","50.84","4.00","0.00","1.33","0.00","1.34","0.39","0.00","0.00","1.33","3.05"')
             ->and($csv)->toContain('"54.28"');
 
@@ -2126,6 +2126,177 @@ describe('production reward pay bands', function () {
         expect($day->clocked_minutes)->toBe(180)
             ->and($day->recorded_minutes)->toBe(0)
             ->and($day->status->value)->toBe('under');
+    });
+
+    test('a job opened on a tablet by staff of another organisation or by someone hidden from the roster never brings their clocked hours into factory payroll', function () {
+        $monday = now()->addYears(8)->addWeeks(rand(0, 40))->startOfWeek();
+        $this->travelTo($monday->copy()->addDays(4)->setTime(20, 0));
+        $timezone  = $this->organisation->timezone?->name ?? config('app.timezone');
+        $wednesday = $monday->copy()->addDays(2)->toDateString();
+        $start     = \Illuminate\Support\Carbon::parse($wednesday.' 08:00', $timezone)->utc();
+
+        $otherOrganisation = \App\Models\SysAdmin\Organisation::where('code', 'other')->first()
+            ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action(
+                $this->group,
+                array_merge(\App\Models\SysAdmin\Organisation::factory()->definition(), ['code' => 'other', 'type' => \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP])
+            );
+
+        $workers = [];
+        foreach (['artisan', 'visitor', 'hidden'] as $who) {
+            $employee = employeeOnDayShift($this->organisation);
+            $operator = stepTestSecondOperator($this->group);
+            $employee->update(['user_id' => $operator->id]);
+            timeEditSession($this->payBandJobOrderItemTask, $operator, $start, $start->copy()->addHour(), 10, ['employee_id' => $employee->id, 'hours' => 1, 'band_code' => '0']);
+            clockedTimesheet($employee, $wednesday, 480, 30);
+            $workers[$who] = [$employee, $operator];
+        }
+        $workers['visitor'][0]->update(['organisation_id' => $otherOrganisation->id]);
+        \App\Actions\Production\Artisan\ToggleArtisanInRoster::make()->action($this->production, $workers['hidden'][0], true);
+        $this->production->refresh();
+
+        $payroll = collect(\App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll::run($this->production, $monday, $monday->copy()->endOfWeek()))->keyBy('user_id');
+
+        // the artisan: 8 h clocked, 1 h of it on the tablet, all band 0: 8 h x 12.71 = 101.68
+        expect($payroll->has($workers['visitor'][1]->id))->toBeFalse()
+            ->and($payroll->has($workers['hidden'][1]->id))->toBeFalse()
+            ->and($payroll[$workers['artisan'][1]->id]['working_hours'])->toBe(8.0)
+            ->and($payroll[$workers['artisan'][1]->id]['total'])->toBe(101.68);
+
+        get(route('grp.org.productions.show.artisans.daily_hours', [$this->organisation->slug, $this->production->slug, 'from' => $wednesday, 'to' => $wednesday]))->assertOk();
+        $dayEmployeeIds = \App\Models\Production\ManufactureArtisanDay::where('production_id', $this->production->id)->where('date', $wednesday)->pluck('employee_id');
+        expect($dayEmployeeIds)->toContain($workers['artisan'][0]->id)
+            ->not->toContain($workers['visitor'][0]->id)
+            ->not->toContain($workers['hidden'][0]->id);
+
+        \App\Actions\Production\Artisan\ToggleArtisanInRoster::make()->action($this->production, $workers['hidden'][0], false);
+    });
+
+    test('where the factory pays inside the shift only, time clocked before or after the shift is paid only as approved overtime and a late clock in is rounded', function () {
+        $monday = now()->addYears(9)->addWeeks(rand(0, 40))->startOfWeek(\Illuminate\Support\Carbon::MONDAY);
+        $timezone = $this->organisation->timezone?->name ?? config('app.timezone');
+        $at       = fn (int $weekday, string $time) => \Illuminate\Support\Carbon::parse($monday->copy()->addDays($weekday)->toDateString().' '.$time, $timezone)->utc();
+        $date     = fn (int $weekday) => $monday->copy()->addDays($weekday)->toDateString();
+        $this->travelTo($at(6, '20:00'));
+
+        // shift 08:00-16:00 with a 30 minute unpaid break: 7 h 30 expected, Monday to Friday
+        $employee = employeeOnDayShift($this->organisation);
+        $scheduleDays = \App\Models\HumanResources\WorkScheduleDay::whereIn('work_schedule_id', \App\Models\HumanResources\WorkSchedule::where('schedulable_type', 'Employee')->where('schedulable_id', $employee->id)->pluck('id'));
+        (clone $scheduleDays)->whereIn('day_of_week', [6, 7])->update(['is_working_day' => false]);
+        $operator = stepTestSecondOperator($this->group);
+        $employee->update(['user_id' => $operator->id]);
+        $manager  = $this->guest->getUser();
+
+        $setRule = \App\Actions\Production\ManufactureArtisanDay\SetManufacturePaidTimeRule::make();
+        expect(fn () => $setRule->action($this->production, $manager, ['inside_shift_only' => true, 'rounding_minutes' => 5, 'effective_from' => $monday->copy()->subDay()->toDateString()]))->toThrow(ValidationException::class);
+        $setRule->action($this->production, $manager, ['inside_shift_only' => true, 'rounding_minutes' => 5, 'effective_from' => $date(1)]);
+
+        // Monday, before the rule: in 07:22, out 16:12, half an hour off at 12:00 -> 4 h 38 + 3 h 42 = 8 h 20, all paid
+        clockedPairs($employee, $date(0), [[$at(0, '07:22'), $at(0, '12:00')], [$at(0, '12:30'), $at(0, '16:12')]]);
+        // Tuesday, same clockings under the rule: 08:00-12:00 + 12:30-16:00 = 7 h 30 paid, 50 minutes outside the shift not paid.
+        // On the tablet 07:30-09:00 at band 3: the half hour before the shift is not paid, 1 h stays at band 3
+        clockedPairs($employee, $date(1), [[$at(1, '07:22'), $at(1, '12:00')], [$at(1, '12:30'), $at(1, '16:12')]]);
+        timeEditSession($this->payBandJobOrderItemTask, $operator, $at(1, '07:30'), $at(1, '09:00'), 10, ['employee_id' => $employee->id, 'hours' => 1.5, 'band_code' => '3']);
+        // Wednesday, late: in 08:37:08 is paid from 08:35 -> 3 h 25 + 3 h 30 = 6 h 55
+        clockedPairs($employee, $date(2), [[$at(2, '08:37:08'), $at(2, '12:00')], [$at(2, '12:30'), $at(2, '16:00')]]);
+        // Thursday: in 08:02 is paid from 08:00, out 17:00 -> 7 h 30 inside the shift, 1 h after it
+        clockedPairs($employee, $date(3), [[$at(3, '08:02'), $at(3, '12:00')], [$at(3, '12:30'), $at(3, '17:00')]]);
+        // Friday, in an hour early and out an hour early: 07:00-12:00 + 12:30-15:00 = 7 h 30 clocked, 08:00-15:00 less the half hour = 6 h 30 paid
+        clockedPairs($employee, $date(4), [[$at(4, '07:00'), $at(4, '12:00')], [$at(4, '12:30'), $at(4, '15:00')]]);
+        // Saturday, a day off: 08:00-12:00 is paid only once approved
+        clockedPairs($employee, $date(5), [[$at(5, '08:00'), $at(5, '12:00')]]);
+
+        $payroll = fn () => \App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll::run($this->production->refresh(), $monday, $monday->copy()->addDays(3), $operator->id)[0];
+        $days    = fn () => collect($payroll()['days'])->keyBy('date');
+
+        // 8.33 + 7.50 + 6.92 + 7.50 = 30.25 h paid of 8.33 + 8.33 + 6.88 + 8.47 = 32.01 h clocked; 30.25 x 12.71 = 384.4775
+        $row = $payroll();
+        expect($days()[$date(0)]['working_hours'])->toBe(8.33)
+            ->and($days()[$date(1)]['working_hours'])->toBe(7.5)
+            ->and($days()[$date(1)]['outside_shift_hours'])->toBe(0.83)
+            ->and($days()[$date(1)]['band_3_hours'])->toBe(1.0)
+            ->and($days()[$date(1)]['band_0_hours'])->toBe(6.5)
+            ->and($days()[$date(2)]['working_hours'])->toBe(6.92)
+            ->and($days()[$date(2)]['outside_shift_hours'])->toBe(0.0)
+            ->and($days()[$date(3)]['working_hours'])->toBe(7.5)
+            ->and($days()[$date(3)]['outside_shift_hours'])->toBe(0.97)
+            ->and($row['working_hours'])->toBe(30.25)
+            ->and($row['clocked_hours'])->toBe(32.01)
+            ->and($row['working_amount'])->toBe(384.48)
+            // band 3: 1 h x (15.00 - 12.71)
+            ->and($row['band_3_amount'])->toBe(2.29)
+            ->and($row['total'])->toBe(386.77)
+            ->and(collect($row['lines'])->firstWhere('band', '3')['not_paid_hours'])->toBe(0.5);
+
+        get(route('grp.org.productions.show.artisans.daily_hours', [$this->organisation->slug, $this->production->slug, 'from' => $date(0), 'to' => $date(3)]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('paid_time.inside_shift_only', true)
+                ->where('paid_time.rounding_minutes', 5)
+                ->where('data.data', fn ($rows) => collect($rows)->where('employee_id', $employee->id)->pluck('not_paid_minutes', 'date')->all() == [$date(0) => 0, $date(1) => 50, $date(2) => 0, $date(3) => 58]));
+        $paidSeconds = fn () => \App\Models\Production\ManufactureArtisanDay::where('employee_id', $employee->id)->whereBetween('date', [$date(0), $date(3)])->orderBy('date')->pluck('paid_seconds', 'date')->mapWithKeys(fn ($seconds, $day) => [substr($day, 0, 10) => $seconds])->all();
+        expect($paidSeconds())->toBe([$date(0) => null, $date(1) => 27000, $date(2) => 24900, $date(3) => 27000]);
+
+        // Tuesday's early start is refused and stays unpaid; Thursday's hour after the shift is approved and paid: 7 h 30 + 1 h
+        $setOvertime = \App\Actions\Production\ManufactureOvertime\SetManufactureOvertime::make();
+        $setOvertime->action($this->production, $employee, $date(1), $manager, ['decision' => 'not_approved', 'reason' => 'Not asked to come in early']);
+        $approved = $setOvertime->action($this->production, $employee, $date(3), $manager, ['decision' => 'approved', 'compensation' => 'paid']);
+        expect($approved->approved_minutes)->toBe(60)
+            ->and($days()[$date(1)]['working_hours'])->toBe(7.5)
+            ->and($days()[$date(3)]['working_hours'])->toBe(8.5)
+            ->and($days()[$date(3)]['outside_shift_hours'])->toBe(0.0)
+            // 8.33 + 7.50 + 6.92 + 8.50 = 31.25 h x 12.71 = 397.1875
+            ->and($payroll()['working_hours'])->toBe(31.25)
+            ->and($payroll()['working_amount'])->toBe(397.19);
+
+        // Saturday pays nothing until its overtime is approved, then 4 h at 1.5 x 12.71 = 19.07 (19.065 to the penny): 76.28
+        $saturday = fn () => collect(\App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll::run($this->production->refresh(), $monday, $monday->copy()->addDays(6), $operator->id)[0]['days'])->keyBy('date')[$date(5)];
+        expect($saturday()['working_hours'])->toBe(0.0)
+            ->and($saturday()['weekend_overtime_hours'])->toBe(0.0)
+            ->and($saturday()['outside_shift_hours'])->toBe(4.0)
+            ->and($saturday()['total'])->toBe(0.0);
+        $setOvertime->action($this->production, $employee, $date(5), $manager, ['decision' => 'approved', 'compensation' => 'paid']);
+        expect($saturday()['weekend_overtime_hours'])->toBe(4.0)
+            ->and($saturday()['weekend_overtime_amount'])->toBe(76.28)
+            ->and($saturday()['outside_shift_hours'])->toBe(0.0)
+            ->and($saturday()['total'])->toBe(76.28);
+
+        // Friday's early hour approved as time off in lieu: still 6 h 30 paid, and the hour is owed, not paid, though no more than the shift was clocked
+        $friday = fn () => collect(\App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll::run($this->production->refresh(), $monday, $monday->copy()->addDays(6), $operator->id)[0]['days'])->keyBy('date')[$date(4)];
+        expect($friday()['working_hours'])->toBe(6.5)
+            ->and($friday()['outside_shift_hours'])->toBe(1.0)
+            ->and($friday()['toil_hours'])->toBe(0.0);
+        expect($setOvertime->action($this->production, $employee, $date(4), $manager, ['decision' => 'approved', 'compensation' => 'toil'])->approved_minutes)->toBe(60);
+        expect($friday()['working_hours'])->toBe(6.5)
+            ->and($friday()['toil_hours'])->toBe(1.0)
+            ->and($friday()['toil_owed_hours'])->toBe(1.0)
+            // 6.5 h x 12.71 = 82.615
+            ->and($friday()['total'])->toBe(82.62)
+            ->and(\App\Models\Production\ManufactureOvertime::toilBalances($this->production, $date(6), [$employee->id]))->toBe([$employee->id => 60]);
+
+        // the week is locked on the Tuesday after it: new working hours of 07:00-15:00 do not re-price it
+        $this->travelTo($at(8, '09:00'));
+        (clone $scheduleDays)->update(['start_time' => '07:00:00', 'end_time' => '15:00:00']);
+        get(route('grp.org.productions.show.artisans.daily_hours', [$this->organisation->slug, $this->production->slug, 'from' => $date(0), 'to' => $date(3)]))->assertOk();
+        expect($paidSeconds())->toBe([$date(0) => null, $date(1) => 27000, $date(2) => 24900, $date(3) => 30600])
+            ->and($payroll()['working_hours'])->toBe(31.25);
+
+        // the accountant corrects Wednesday's late clock in to 08:00 in the locked week: paid 7 h 30 on the shift kept on the
+        // day (08:00-16:00), not 6 h 55, so the change is recorded as + 0.58 h, 0.58 x 12.71 = 7.37
+        $wednesday = \App\Models\HumanResources\Timesheet::where('subject_type', 'Employee')->where('subject_id', $employee->id)->where('date', $date(2))->sole();
+        $adjustmentsBefore = \App\Models\Production\ManufacturePayrollAdjustment::where('production_id', $this->production->id)->where('user_id', $operator->id)->count();
+        \App\Actions\Production\ManufacturePayrollAdjustment\ChangeArtisanClocking::run($employee, \Illuminate\Support\Carbon::parse($date(2)), $wednesday, ['working_duration'], $manager, 'Clocking machine was down', function () use ($wednesday, $at) {
+            \App\Models\HumanResources\TimeTracker::where('timesheet_id', $wednesday->id)->orderBy('starts_at')->first()->update(['starts_at' => $at(2, '08:00'), 'duration' => 240 * 60]);
+            $wednesday->update(['working_duration' => 450 * 60]);
+        });
+        $adjustment = \App\Models\Production\ManufacturePayrollAdjustment::where('production_id', $this->production->id)->where('user_id', $operator->id)->latest('id')->first();
+        expect(\App\Models\Production\ManufacturePayrollAdjustment::where('production_id', $this->production->id)->where('user_id', $operator->id)->count())->toBe($adjustmentsBefore + 1)
+            ->and((float) $adjustment->hours_delta)->toBe(0.58)
+            ->and((float) $adjustment->amount_delta)->toBeGreaterThanOrEqual(7.36)->toBeLessThanOrEqual(7.38)
+            ->and($days()[$date(2)]['working_hours'])->toBe(7.5);
+
+        // switched off from the new week on: every clocked hour is paid again, 07:22-16:12 less the half hour = 8 h 20
+        $setRule->action($this->production, $manager, ['inside_shift_only' => false, 'rounding_minutes' => 5, 'effective_from' => $date(7)]);
+        clockedPairs($employee, $date(7), [[$at(7, '07:22'), $at(7, '12:00')], [$at(7, '12:30'), $at(7, '16:12')]]);
+        expect(\App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll::run($this->production->refresh(), $monday->copy()->addWeek(), $monday->copy()->addDays(8), $operator->id)[0]['working_hours'])->toBe(8.33);
     });
 
     /**
@@ -2469,6 +2640,26 @@ test('an employee can be hidden from and restored to the artisan roster', functi
 
     $production = ToggleArtisanInRoster::make()->action($production, $employee, false);
     expect($production->data['hidden_artisan_ids'])->toBe([]);
+
+    // somebody with an hour on the tablet in a week already locked is an artisan: hiding them would change a paid week
+    $session = fn (float $hours) => ManufactureTaskSession::create([
+        'group_id'            => $this->production->group_id,
+        'organisation_id'     => $this->production->organisation_id,
+        'production_id'       => $this->production->id,
+        'manufacture_task_id' => $this->manufactureTask->id,
+        'user_id'             => $this->guest->getUser()->id,
+        'employee_id'         => $employee->id,
+        'state'               => ManufactureTaskSessionStateEnum::CLOSED,
+        'started_at'          => now()->subWeeks(3),
+        'ended_at'            => now()->subWeeks(3)->addMinutes((int) ($hours * 60)),
+        'quantity_made'       => 1,
+        'hours'               => $hours,
+        'activity_type'       => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::PRODUCTION,
+    ]);
+    $session(0.25);
+    expect(ToggleArtisanInRoster::changesLockedWeeks($this->production, $employee))->toBeFalse();
+    $session(0.75);
+    expect(ToggleArtisanInRoster::changesLockedWeeks($this->production, $employee))->toBeTrue();
 });
 
 test('a task that is not piece rate snapshots a zero rate when its session closes', function () {

@@ -49,6 +49,8 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
         $headings[] = 'TOIL balance hours';
         $headings[] = 'Overtime not authorised hours';
         $headings[] = 'Overtime awaiting decision hours';
+        $headings[] = 'Clocked hours';
+        $headings[] = 'Clocked outside the shift, not paid hours';
 
         return $headings;
     }
@@ -81,6 +83,8 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
             $row[] = number_format($artisan['toil_balance_hours'] ?? 0, 2, '.', '');
             $row[] = number_format(($artisan['not_authorised_overtime']['minutes'] ?? 0) / 60, 2, '.', '');
             $row[] = number_format(($artisan['awaiting_overtime']['minutes'] ?? 0) / 60, 2, '.', '');
+            $row[] = number_format($artisan['clocked_hours'] ?? 0, 2, '.', '');
+            $row[] = number_format($artisan['outside_shift_hours'] ?? 0, 2, '.', '');
 
             return $row;
         }, $this->artisans);
@@ -100,7 +104,7 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
     public static function columns(): array
     {
         return [
-            'working' => 'Clocked hours',
+            'working' => 'Paid hours',
             'band_0'  => 'Band 0',
             'band_1'  => 'Band 1',
             'band_2'  => 'Band 2',

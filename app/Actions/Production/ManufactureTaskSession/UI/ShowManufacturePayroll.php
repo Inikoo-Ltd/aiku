@@ -215,7 +215,7 @@ class ShowManufacturePayroll extends OrgAction
     public static function payColumns(): array
     {
         return [
-            'working' => __('Clocked hours'),
+            'working' => __('Paid hours'),
             'band_0'  => __('Band 0'),
             'band_1'  => __('Band 1'),
             'band_2'  => __('Band 2'),

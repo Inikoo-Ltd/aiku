@@ -58,6 +58,7 @@ type ArtisanDay = {
     expected_minutes: number | null
     recorded_minutes: number
     clocked_minutes: number | null
+    not_paid_minutes: number
     tablet_over_clocked_minutes: number
     open_clockings: number
     difference_minutes: number | null
@@ -90,6 +91,14 @@ const props = defineProps<{
     tolerance_minutes: number
     tolerances: { tolerance_minutes: number, effective_from: string, set_by: string | null, set_at: string }[]
     default_tolerance_minutes: number
+    paid_time: {
+        can_set: boolean
+        route: { name: string, parameters: string[] }
+        inside_shift_only: boolean
+        rounding_minutes: number
+        open_from: string
+        rules: { inside_shift_only: boolean, rounding_minutes: number, effective_from: string, set_by: string | null, set_at: string }[]
+    }
     short_reasons: Record<string, string>
     compensations: Record<string, string>
     overtime_route: { name: string, parameters: string[] }
@@ -320,6 +329,35 @@ function saveTolerance() {
         }
     )
 }
+
+const editingPaidTime = ref(false)
+const insideShiftOnly = ref(props.paid_time.inside_shift_only)
+const roundingMinutes = ref<number | null>(props.paid_time.rounding_minutes)
+const paidTimeFrom = ref(toLocalIsoDate(new Date()))
+const paidTimeFromDate = dateModel(paidTimeFrom)
+const paidTimeErrors = ref<Record<string, string>>({})
+
+function openPaidTime() {
+    insideShiftOnly.value = props.paid_time.inside_shift_only
+    roundingMinutes.value = props.paid_time.rounding_minutes
+    paidTimeFrom.value = toLocalIsoDate(new Date())
+    paidTimeErrors.value = {}
+    editingPaidTime.value = true
+}
+
+function savePaidTime() {
+    processing.value = true
+    router.post(
+        route(props.paid_time.route.name, props.paid_time.route.parameters),
+        { inside_shift_only: insideShiftOnly.value, rounding_minutes: roundingMinutes.value, effective_from: paidTimeFrom.value },
+        {
+            preserveScroll: true,
+            onSuccess: () => editingPaidTime.value = false,
+            onError: (formErrors) => paidTimeErrors.value = formErrors,
+            onFinish: () => processing.value = false,
+        }
+    )
+}
 </script>
 
 <template>
@@ -355,6 +393,11 @@ function saveTolerance() {
                 <template #icon><FontAwesomeIcon :icon="['fal', 'umbrella-beach']" fixed-width aria-hidden="true" /></template>
             </Button>
             <div class="ml-auto flex items-center gap-2 pb-2 text-xs text-gray-500">
+                <span>{{ paid_time.inside_shift_only ? ctrans('Paid inside the shift only, late clock in rounded to :minutes min', { minutes: paid_time.rounding_minutes }) : ctrans('Every clocked hour is paid') }}</span>
+                <button v-if="paid_time.can_set" type="button" class="rounded px-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700" v-tooltip="ctrans('Paid time')" :aria-label="ctrans('Paid time')" @click="openPaidTime">
+                    <FontAwesomeIcon :icon="['fal', 'cog']" fixed-width aria-hidden="true" />
+                </button>
+                <span class="text-gray-300">|</span>
                 <span>{{ ctrans('Flagged when more than :minutes min over or under the shift', { minutes: tolerance_minutes }) }}</span>
                 <button v-if="can_set_tolerance" type="button" class="rounded px-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700" v-tooltip="ctrans('Tolerance')" :aria-label="ctrans('Tolerance')" @click="openTolerance">
                     <FontAwesomeIcon :icon="['fal', 'cog']" fixed-width aria-hidden="true" />
@@ -401,6 +444,7 @@ function saveTolerance() {
         <template #cell(clocked_minutes)="{ item }">
             <span v-if="item.clocked_minutes === null" class="text-gray-400">{{ ctrans('Not clocked') }}</span>
             <span v-else class="tabular-nums">{{ clockMinutes(item.clocked_minutes) }}</span>
+            <div v-if="item.not_paid_minutes" class="whitespace-nowrap text-xs text-amber-700" v-tooltip="ctrans('Clocked outside the shift with no overtime approved for it')">{{ ctrans(':time not paid', { time: clockMinutes(item.not_paid_minutes) }) }}</div>
         </template>
 
         <template #cell(recorded_minutes)="{ item }">
@@ -473,6 +517,54 @@ function saveTolerance() {
                     <template #icon><FontAwesomeIcon :icon="['fal', 'times']" class="text-red-500" fixed-width aria-hidden="true" /></template>
                 </Button>
                 <Button type="tertiary" :label="ctrans('Save')" :loading="processing" :disabled="(resolving.status === 'under' && !reason) || (noteRequired && !note.trim()) || (isLockedForPayroll(resolving) && !lockReason.trim())" @click="saveResolve">
+                    <template #icon><FontAwesomeIcon :icon="['fal', 'check']" class="text-green-600" fixed-width aria-hidden="true" /></template>
+                </Button>
+            </div>
+        </div>
+    </Dialog>
+
+    <Dialog :visible="editingPaidTime" modal :closable="!processing" :header="ctrans('Paid time')" :style="{ width: '34rem' }" @update:visible="(visible: boolean) => { if (!visible && !processing) editingPaidTime = false }">
+        <div class="space-y-3 text-sm">
+            <div class="text-xs text-gray-500">{{ ctrans('When on, artisans are paid for the time clocked between the start and the end of their shift. Time clocked before or after it is paid only when overtime is approved for the day. Somebody clocking in late is paid from the clock in time, rounded to the nearest step counted from the shift start. Weeks already locked for payroll stay as paid.') }}</div>
+            <label class="flex items-center gap-2">
+                <ToggleSwitch v-model="insideShiftOnly" />
+                <span>{{ ctrans('Pay inside the shift only') }}</span>
+            </label>
+            <div class="flex flex-wrap items-end gap-3">
+                <label class="flex flex-col gap-1">
+                    <span class="text-xs text-gray-500">{{ ctrans('Round a late clock in to (minutes)') }}</span>
+                    <InputNumber v-model="roundingMinutes" :min="1" :max="60" :disabled="!insideShiftOnly" :invalid="!!paidTimeErrors.rounding_minutes" :pt="{ pcInputText: { root: { class: '!w-24 !text-right' } } }" />
+                </label>
+                <label class="flex flex-col gap-1">
+                    <span class="text-xs text-gray-500">{{ ctrans('From') }}</span>
+                    <DatePicker v-model="paidTimeFromDate" dateFormat="d M yy" :manualInput="false" :minDate="new Date(paid_time.open_from + 'T00:00:00')" showIcon iconDisplay="input" :invalid="!!paidTimeErrors.effective_from" :class="fieldFocusClass" />
+                </label>
+            </div>
+            <div v-for="message in Object.values(paidTimeErrors)" :key="message" class="text-xs text-red-600">{{ message }}</div>
+            <table v-if="paid_time.rules.length" class="w-full text-xs">
+                <thead class="whitespace-nowrap">
+                    <tr class="text-left text-gray-400">
+                        <th class="py-1 font-medium">{{ ctrans('From') }}</th>
+                        <th class="py-1 font-medium">{{ ctrans('Paid') }}</th>
+                        <th class="py-1 text-right font-medium">{{ ctrans('Rounding') }}</th>
+                        <th class="py-1 pl-4 font-medium">{{ ctrans('Set by') }}</th>
+                    </tr>
+                </thead>
+                <tbody class="tabular-nums">
+                    <tr v-for="rule in paid_time.rules" :key="rule.effective_from" class="border-t border-gray-100">
+                        <td class="py-1">{{ useFormatTime(rule.effective_from) }}</td>
+                        <td class="py-1">{{ rule.inside_shift_only ? ctrans('Inside the shift') : ctrans('Every clocked hour') }}</td>
+                        <td class="py-1 text-right">{{ rule.inside_shift_only ? rule.rounding_minutes : '' }}</td>
+                        <td class="py-1 pl-4 text-gray-600">{{ rule.set_by }}, {{ useFormatTime(rule.set_at) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div v-else class="text-xs text-gray-500">{{ ctrans('Not set yet: every clocked hour is paid') }}</div>
+            <div class="flex justify-end gap-2">
+                <Button type="tertiary" :label="ctrans('Cancel')" :disabled="processing" @click="editingPaidTime = false">
+                    <template #icon><FontAwesomeIcon :icon="['fal', 'times']" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button type="tertiary" :label="ctrans('Save')" :loading="processing" :disabled="roundingMinutes === null" @click="savePaidTime">
                     <template #icon><FontAwesomeIcon :icon="['fal', 'check']" class="text-green-600" fixed-width aria-hidden="true" /></template>
                 </Button>
             </div>

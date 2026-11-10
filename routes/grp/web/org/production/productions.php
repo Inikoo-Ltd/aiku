@@ -54,6 +54,7 @@ use App\Actions\Production\MaterialRequest\UI\IndexDayMaterialsCheck;
 use App\Actions\Production\ManufactureTaskSession\ExportManufacturePayroll;
 use App\Actions\Production\ManufactureTaskSession\UI\IndexArtisans;
 use App\Actions\Production\ManufactureArtisanDay\SetManufactureHoursTolerance;
+use App\Actions\Production\ManufactureArtisanDay\SetManufacturePaidTimeRule;
 use App\Actions\Production\ManufactureOvertime\RecordManufactureToilTaken;
 use App\Actions\Production\ManufactureOvertime\SetManufactureOvertime;
 use App\Actions\Production\ManufactureOvertime\SetManufactureToilRatio;
@@ -117,6 +118,7 @@ Route::prefix('{production}')
                         Route::get('performance', IndexArtisans::class)->name('index');
                         Route::get('daily-hours', IndexManufactureArtisanDays::class)->name('daily_hours');
                         Route::post('daily-hours/tolerance', SetManufactureHoursTolerance::class)->name('daily_hours.tolerance');
+                        Route::post('daily-hours/paid-time', SetManufacturePaidTimeRule::class)->name('daily_hours.paid_time');
                         Route::post('daily-hours/overtime', SetManufactureOvertime::class)->name('daily_hours.overtime');
                         Route::post('daily-hours/toil-taken', RecordManufactureToilTaken::class)->name('daily_hours.toil_taken');
                         Route::post('daily-hours/toil-ratio', SetManufactureToilRatio::class)->name('daily_hours.toil_ratio');

@@ -138,7 +138,8 @@ class ManufactureOvertime extends Model implements Auditable
 
     /**
      * TOIL owed to each artisan up to a day: the overtime covered on days approved as TOIL, times the ratio set when it was
-     * approved, less the TOIL taken. Days are read as last worked out on Daily hours or Payroll.
+     * approved, less the TOIL taken. Days are read as last worked out on Daily hours or Payroll, and where a paid time rule limits the
+     * day to its shift the overtime is the time outside the shift the approval covers, as payroll has it.
      *
      * @param  array<int, int>|null  $employeeIds
      * @return array<int, int> minutes keyed by employee id
@@ -153,7 +154,7 @@ class ManufactureOvertime extends Model implements Auditable
             ->where('manufacture_overtimes.date', '<=', $upTo)
             ->when($employeeIds !== null, fn ($query) => $query->whereIn('manufacture_overtimes.employee_id', $employeeIds))
             ->groupBy('manufacture_overtimes.employee_id')
-            ->selectRaw('manufacture_overtimes.employee_id, sum(least(greatest(0, coalesce(manufacture_artisan_days.clocked_minutes, 0) - manufacture_overtimes.expected_minutes), coalesce(manufacture_overtimes.approved_minutes, 0)) * manufacture_overtimes.toil_ratio) as minutes')
+            ->selectRaw('manufacture_overtimes.employee_id, sum(coalesce(round(manufacture_artisan_days.paid_overtime_seconds / 60.0), least(greatest(0, coalesce(manufacture_artisan_days.clocked_minutes, 0) - manufacture_overtimes.expected_minutes), coalesce(manufacture_overtimes.approved_minutes, 0))) * manufacture_overtimes.toil_ratio) as minutes')
             ->pluck('minutes', 'employee_id');
 
         $taken = ManufactureToilTaken::where('production_id', $production->id)

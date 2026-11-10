@@ -56,6 +56,7 @@ class ManufactureArtisanDayResource extends JsonResource
             'expected_minutes'       => $this->expected_minutes,
             'recorded_minutes'       => $this->recorded_minutes,
             'clocked_minutes'        => $this->clocked_minutes,
+            'not_paid_minutes'       => $this->paid_seconds === null ? 0 : max(0, ($this->clocked_minutes ?? 0) - (int) round($this->paid_seconds / 60)),
             'tablet_over_clocked_minutes' => $this->tablet_over_clocked_minutes,
             'open_clockings'         => $this->open_clockings,
             'difference_minutes'     => $this->difference_minutes,
