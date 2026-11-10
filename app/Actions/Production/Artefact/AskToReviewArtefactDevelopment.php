@@ -79,7 +79,9 @@ class AskToReviewArtefactDevelopment
             return $new->count();
         }
 
-        $reviewers = User::whereIn('id', $production->developmentReviewSettings()['reviewer_ids'])->where('status', true)->get()
+        $reviewerIds = $production->developmentReviewSettings()['reviewer_ids'];
+        $reviewers   = User::whereIn('id', $reviewerIds)->where('status', true)->get()
+            ->sortBy(fn (User $user) => array_search($user->id, $reviewerIds))
             ->filter(fn (User $user) => StaffTask::canBeAssigned($user))
             ->values();
         if ($reviewers->isEmpty()) {

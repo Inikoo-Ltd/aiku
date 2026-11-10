@@ -676,13 +676,14 @@ test('a development product with enough runs is put on the review task, and acce
 
     $reviewer = $this->guest->getUser();
     \App\Models\Tasks\StaffTask::where('data->kind', 'artefact_development_review')->where('data->production_id', $this->production->id)->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE]);
-    \App\Actions\Production\Production\SetDevelopmentReviewSettings::make()->action($this->production, [...$this->production->developmentReviewSettings(), 'reviewer_ids' => [$reviewer->id]]);
+    $owner    = createAdminGuest($this->group)->getUser();
+    \App\Actions\Production\Production\SetDevelopmentReviewSettings::make()->action($this->production, [...$this->production->developmentReviewSettings(), 'reviewer_ids' => [$owner->id, $reviewer->id]]);
     \App\Actions\Production\Artefact\AskToReviewArtefactDevelopment::run($this->production->refresh());
     \App\Actions\Production\Artefact\AskToReviewArtefactDevelopment::run($this->production);
 
     $reviewTask = fn () => \App\Actions\Production\Artefact\AskToReviewArtefactDevelopment::openTaskFor($this->production);
     $line       = fn () => collect($reviewTask()?->data['subtasks'] ?? [])->firstWhere('artefact_id', $experiment->id);
-    expect($reviewTask()->assignee_id)->toBe($reviewer->id)
+    expect($reviewTask()->assignee_id)->toBe($owner->id)
         ->and(collect($reviewTask()->data['subtasks'])->where('artefact_id', $experiment->id)->count())->toBe(1)
         ->and($line()['title'])->toContain($experiment->code);
 
