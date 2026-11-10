@@ -60,10 +60,25 @@ const rememberedIn = (slot: string): Request | null => {
 	}
 }
 
+const askForListRememberedAt = (address: URL) => {
+	const slot = slotOf(address)
+	const remembered = slot ? rememberedIn(slot) : null
+
+	if (!remembered?.url || !remembered.params) {
+		return
+	}
+
+	const response = axios.get(remembered.url, { params: remembered.params })
+	response.catch(() => {})
+	pending = { key: listKey(remembered.url, remembered.params), startedAt: performance.now(), response }
+}
+
 /**
  * The inbox list is its own request, and asked for from the page it could only leave once the page
  * was drawn (INI-187). Going to the inbox asks for the list it opened with last time as the visit
- * starts, so both answers travel together. Partial reloads and hover prefetches go nowhere.
+ * starts, so both answers travel together. Partial reloads and hover prefetches go nowhere. Back and
+ * Forward restore the page from history without a visit, so they drop any answer asked for before
+ * and ask for the list of the address they return to.
  */
 export const prefetchInboxListOnVisit = (router: typeof inertiaRouter) => {
 	router.on("before", (event) => {
@@ -73,20 +88,15 @@ export const prefetchInboxListOnVisit = (router: typeof inertiaRouter) => {
 			return
 		}
 
-		const slot = slotOf(visit.url)
-		const remembered = slot ? rememberedIn(slot) : null
-
-		if (!remembered?.url || !remembered.params) {
-			return
-		}
-
-		const response = axios.get(remembered.url, { params: remembered.params })
-		response.catch(() => {})
-		pending = { key: listKey(remembered.url, remembered.params), startedAt: performance.now(), response }
+		askForListRememberedAt(visit.url)
 	})
 
-	window.addEventListener("popstate", () => {
+	window.addEventListener("popstate", (event: PopStateEvent) => {
 		pending = null
+
+		if (event.state) {
+			askForListRememberedAt(new URL(window.location.href))
+		}
 	})
 }
 

@@ -4,11 +4,11 @@ import axios from "axios"
 
 const store = new Map<string, string>()
 const location = { href: "https://app.aiku.test/org/aw/chat/inbox" }
-const listeners: Record<string, () => void> = {}
+const listeners: Record<string, (event: { state: unknown }) => void> = {}
 Object.assign(globalThis, {
 	window: {
 		location,
-		addEventListener: (name: string, handler: () => void) => { listeners[name] = handler },
+		addEventListener: (name: string, handler: (event: { state: unknown }) => void) => { listeners[name] = handler },
 		localStorage: {
 			getItem: (key: string) => store.get(key) ?? null,
 			setItem: (key: string, value: string) => store.set(key, value),
@@ -93,14 +93,35 @@ test("a failed answer reaches whoever takes it, so the inbox can ask again", asy
 	answer = () => Promise.resolve({ data: "list" })
 })
 
-test("Back or Forward drops an answer asked for before", () => {
+test("Back or Forward to a page that is not an inbox drops an answer asked for before", () => {
 	location.href = "https://app.aiku.test/org/aw/chat/inbox"
 	rememberFirstList(url, params)
 
 	visit("/org/aw/chat/inbox")
-	listeners.popstate()
+	location.href = "https://app.aiku.test/org/aw/shops/uk/orders"
+	listeners.popstate({ state: { page: {} } })
 
 	assert.deepEqual(takePrefetchedList(url, params), { response: null, outcome: "fetched" })
+})
+
+test("Back or Forward to the inbox asks for the list that address opened with last time", () => {
+	store.clear()
+	requests.length = 0
+	const shopParams = { ...params, shop_ids: [7] }
+	location.href = "https://app.aiku.test/org/aw/shops/uk/chat/inbox"
+	rememberFirstList(url, shopParams)
+	location.href = "https://app.aiku.test/org/aw/chat/inbox"
+	rememberFirstList(url, params)
+
+	visit("/org/aw/chat/inbox")
+	location.href = "https://app.aiku.test/org/aw/shops/uk/chat/inbox"
+	listeners.popstate({ state: { page: {} } })
+
+	assert.equal(takePrefetchedList(url, shopParams).outcome, "prefetched")
+	assert.deepEqual(requests.map((r) => r.params), [params, shopParams])
+
+	listeners.popstate({ state: null })
+	assert.equal(requests.length, 2, "a change of hash alone asks for nothing")
 })
 
 test("nothing is remembered from a page that is not an inbox", () => {
