@@ -3,6 +3,8 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(\.apiClient) private var apiClient
     @Environment(\.signOut) private var signOut
+    @Environment(AppRouter.self) private var router
+    @Environment(ToastCenter.self) private var toasts
     @AppStorage(ScanSettingsKey.inputMode) private var inputMode = ScanInputMode.automatic
     @AppStorage(ScanSettingsKey.sound) private var playsSound = true
     @AppStorage(ScanSettingsKey.vibrate) private var vibrates = true
@@ -15,6 +17,11 @@ struct ProfileView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     scanInputSection
                     serverSection
+                    #if DEBUG
+                    ActionButton(title: "UI components", systemImage: "square.on.square", kind: .outline) {
+                        router.open(.componentGallery)
+                    }
+                    #endif
                     ActionButton(title: "Log out", kind: .destructiveOutline) { signOut() }
                 }
                 .padding(16)
@@ -82,8 +89,12 @@ struct ProfileView: View {
         do {
             try await apiClient.ping()
             connectionStatus = .online
+            toasts.show(.success, "Connected to the server")
         } catch {
             connectionStatus = .failed(error.localizedDescription)
+            toasts.show(.error, "Couldn’t reach the server. Check your connection.", action: ToastAction(title: "Retry") {
+                Task { await checkConnection() }
+            })
         }
     }
 }
@@ -107,4 +118,5 @@ enum ConnectionStatus: Equatable {
 #Preview {
     ProfileView()
         .environment(AppRouter())
+        .environment(ToastCenter())
 }

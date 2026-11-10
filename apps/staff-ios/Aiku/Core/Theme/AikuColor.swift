@@ -47,6 +47,15 @@ enum AikuColor {
     static let danger = Color(hex: 0xDC2626)
     static let dangerSoft = Color(hex: 0xFEF2F2)
     static let dangerDot = Color(hex: 0xEF4444)
+    static let dangerBorder = Color(hex: 0xFECACA)
+    static let dangerInk = Color(hex: 0x991B1B)
+    static let warningBorder = Color(hex: 0xFDE68A)
+    static let warningInk = Color(hex: 0x92400E)
+    static let lavenderBorder = Color(hex: 0xC1BEF6)
     static let progress = Color(hex: 0x4D7C0F)
     static let progressSoft = Color(hex: 0xF7FEE7)
+
+    static let scrim = Color(hex: 0x111827).opacity(0.55)
+    static let toastBackground = Color(hex: 0x1F2937)
+    static let toastText = Color(hex: 0xF9FAFB)
 }
