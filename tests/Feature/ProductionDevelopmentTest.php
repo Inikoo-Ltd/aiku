@@ -602,3 +602,164 @@ test('raw materials download as numbers, only those matching the search', functi
 
     actingAs($this->guest->getUser());
 });
+
+function developmentSession(\App\Models\Production\JobOrderItemTask $task, \App\Models\HumanResources\Employee $employee, \Illuminate\Support\Carbon $startedAt, int $minutes, float $made, int $userId): ManufactureTaskSession
+{
+    return ManufactureTaskSession::create([
+        'group_id'               => $task->group_id,
+        'organisation_id'        => $task->organisation_id,
+        'production_id'          => $task->production_id,
+        'job_order_item_task_id' => $task->id,
+        'manufacture_task_id'    => $task->manufacture_task_id,
+        'user_id'                => $userId,
+        'employee_id'            => $employee->id,
+        'state'                  => ManufactureTaskSessionStateEnum::CLOSED,
+        'started_at'             => $startedAt,
+        'ended_at'               => $startedAt->copy()->addMinutes($minutes),
+        'quantity_made'          => $made,
+        'activity_type'          => ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT,
+    ]);
+}
+
+test('a development step leaves out first runs, short sessions and outliers and proposes the median per hour', function () {
+    $session  = fn (int $id, int $employee, float $rate, float $hours) => ['id' => $id, 'employee_id' => $employee, 'rate' => $rate, 'hours' => $hours, 'excluded' => null];
+    $settings = Production::DEFAULT_DEVELOPMENT_REVIEW;
+
+    $classified = \App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::make()->classify(collect([
+        $session(1, 1, 100, 1),
+        $session(2, 2, 90, 1),
+        $session(3, 1, 120, 1),
+        $session(4, 2, 125, 1),
+        $session(5, 1, 300, 0.05),
+        $session(6, 1, 130, 1),
+        $session(7, 2, 128, 1),
+        $session(8, 2, 400, 1),
+    ]), $settings)->pluck('excluded', 'id')->all();
+
+    expect($classified)->toBe([1 => 'first_run', 2 => 'first_run', 3 => null, 4 => null, 5 => 'too_short', 6 => null, 7 => null, 8 => 'outlier'])
+        ->and(\App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::quantile(collect([120.0, 125.0, 128.0, 130.0]), 0.5))->toBe(126.5);
+});
+
+function developmentFixture(object $test, string $code, ?int $familyId = null): array
+{
+    $artefact = ($test->experiment)($code);
+    $artefact->update(['is_in_development' => true, 'artefact_family_id' => $familyId, 'recipe_changed_at' => now()->subDays(20)]);
+    $jobOrder = StoreTrialRunJobOrder::make()->action($test->production, ['artefact_id' => $artefact->id, 'quantity' => 100]);
+
+    return [$artefact->refresh(), $jobOrder->jobOrderItems()->first()->tasks()->first()];
+}
+
+test('a development product with enough runs is put on the review task, and accepting saves the targets and ends development', function () {
+    [$experiment, $task] = developmentFixture($this, 'DEVTG');
+    expect($experiment->development_started_at)->not->toBeNull();
+    $anna   = dayPlanOperator($this->organisation);
+    $boris  = dayPlanOperator($this->organisation);
+    $userId = $this->guest->getUser()->id;
+    $start  = now()->subDays(10)->startOfHour();
+
+    foreach ([[$anna, 60], [$boris, 60], [$anna, 80], [$anna, 90], [$boris, 100], [$boris, 110], [$anna, 120]] as $index => [$artisan, $made]) {
+        developmentSession($task, $artisan, $start->copy()->addHours($index * 2), 60, $made, $userId);
+    }
+    $waitingForTimes = developmentSession($task, $boris, $start->copy()->addDay(), 60, 500, $userId);
+    $waitingForTimes->update(['left_open_after_shift_at' => now()->subDays(9)]);
+
+    $proposal = \App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::run($experiment);
+    $step     = $proposal['steps'][0];
+
+    expect($step['sessions_count'])->toBe(5)
+        ->and($step['excluded_count'])->toBe(2)
+        ->and($step['artisans_count'])->toBe(2)
+        ->and($step['hours'])->toEqual(5)
+        ->and($step['proposed_target'])->toEqual(100)
+        ->and($step['is_ready'])->toBeTrue()
+        ->and($proposal['is_overdue'])->toBeTrue();
+
+    $reviewer = $this->guest->getUser();
+    \App\Models\Tasks\StaffTask::where('data->kind', 'artefact_development_review')->where('data->production_id', $this->production->id)->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE]);
+    \App\Actions\Production\Production\SetDevelopmentReviewSettings::make()->action($this->production, [...$this->production->developmentReviewSettings(), 'reviewer_ids' => [$reviewer->id]]);
+    \App\Actions\Production\Artefact\AskToReviewArtefactDevelopment::run($this->production->refresh());
+    \App\Actions\Production\Artefact\AskToReviewArtefactDevelopment::run($this->production);
+
+    $reviewTask = fn () => \App\Actions\Production\Artefact\AskToReviewArtefactDevelopment::openTaskFor($this->production);
+    $line       = fn () => collect($reviewTask()?->data['subtasks'] ?? [])->firstWhere('artefact_id', $experiment->id);
+    expect($reviewTask()->assignee_id)->toBe($reviewer->id)
+        ->and(collect($reviewTask()->data['subtasks'])->where('artefact_id', $experiment->id)->count())->toBe(1)
+        ->and($line()['title'])->toContain($experiment->code);
+
+    $taskId = $reviewTask()->id;
+    \App\Actions\Production\Artefact\DecideArtefactDevelopmentReview::make()->action($experiment, ['decision' => 'accepted', 'targets' => [$step['id'] => 100]]);
+
+    $experiment->refresh();
+    $lineAfter = collect(\App\Models\Tasks\StaffTask::find($taskId)->data['subtasks'])->firstWhere('artefact_id', $experiment->id);
+    expect((float) $experiment->recipeSteps()->first()->standard_rate)->toBe(100.0)
+        ->and($experiment->is_in_development)->toBeFalse()
+        ->and($experiment->data['development_review']['decision'])->toBe('accepted')
+        ->and($lineAfter['status'])->toBe('done');
+});
+
+test('a development step pools the same step of its family, and development goes on while another step has no target', function () {
+    $department = \App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment::make()->action($this->production, ['code' => 'DVD'.rand(1000, 9999), 'name' => 'Development pool']);
+    $family     = \App\Actions\Production\ArtefactFamily\StoreArtefactFamily::make()->action($department, ['code' => 'DVF'.rand(1000, 9999), 'name' => 'Development pool family']);
+    [$first, $firstTask]   = developmentFixture($this, 'DEVPA', $family->id);
+    [$second, $secondTask] = developmentFixture($this, 'DEVPB', $family->id);
+    $artisans = [dayPlanOperator($this->organisation), dayPlanOperator($this->organisation)];
+    $start    = now()->subDays(10)->startOfHour();
+
+    foreach (range(0, 7) as $index) {
+        developmentSession($index % 2 ? $secondTask : $firstTask, $artisans[intdiv($index, 4)], $start->copy()->addHours($index * 2), 60, 100, $this->guest->getUser()->id);
+    }
+
+    $packing = stepTestManufactureTask($this->production, 'DEVPK2', 'Packing');
+    $packing->update(['is_piece_rate' => true]);
+    \App\Actions\Production\Artefact\AttachManufactureTaskToArtefact::make()->action($second, ['manufacture_task_id' => $packing->id, 'position' => 2, 'units_per_artefact' => 1]);
+    $second->refresh()->update(['recipe_changed_at' => now()->subDays(20)]);
+
+    $proposal = \App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::run($first->refresh());
+    expect($proposal['steps'][0]['sessions_count'])->toBe(6)
+        ->and($proposal['steps'][0]['is_ready'])->toBeTrue();
+
+    $secondSteps = \App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::run($second->refresh())['steps'];
+    \App\Actions\Production\Artefact\DecideArtefactDevelopmentReview::make()->action($second, ['decision' => 'accepted', 'targets' => [$secondSteps[0]['id'] => 100]]);
+
+    expect($second->refresh()->is_in_development)->toBeTrue();
+});
+
+test('a development product kept with a reason and one whose recipe changed are not ready again until new runs come in', function () {
+    [$experiment, $task] = developmentFixture($this, 'DEVKP');
+    $artisans = [dayPlanOperator($this->organisation), dayPlanOperator($this->organisation)];
+    $start    = now()->subDays(10)->startOfHour();
+
+    foreach (range(0, 7) as $index) {
+        developmentSession($task, $artisans[$index % 2], $start->copy()->addHours($index * 2), 60, 100, $this->guest->getUser()->id);
+    }
+    expect(\App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::run($experiment)['is_ready'])->toBeTrue();
+
+    expect(fn () => \App\Actions\Production\Artefact\DecideArtefactDevelopmentReview::make()->action($experiment, ['decision' => 'kept']))->toThrow(ValidationException::class);
+
+    \App\Actions\Production\Artefact\DecideArtefactDevelopmentReview::make()->action($experiment, ['decision' => 'kept', 'reason' => 'New mould next week']);
+    $proposal = \App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::run($experiment->refresh());
+    expect($experiment->is_in_development)->toBeTrue()
+        ->and($proposal['is_ready'])->toBeFalse()
+        ->and($proposal['kept']['reason'])->toBe('New mould next week');
+
+    $experiment->update(['data' => \Illuminate\Support\Arr::except($experiment->data, 'development_review')]);
+    \App\Actions\Production\Artefact\AttachManufactureTaskToArtefact::make()->action($experiment, ['manufacture_task_id' => stepTestManufactureTask($this->production, 'DEVPACK', 'Packing')->id, 'position' => 2, 'units_per_artefact' => 1]);
+    $proposal = \App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::run($experiment->refresh());
+
+    expect($experiment->recipe_changed_at->isToday())->toBeTrue()
+        ->and($proposal['steps'][0]['sessions_count'])->toBe(0)
+        ->and($proposal['is_ready'])->toBeFalse();
+});
+
+test('UI paid as development tab', function () {
+    $experiment = ($this->experiment)('DEVUI');
+    $experiment->update(['is_in_development' => true]);
+
+    get(route('grp.org.productions.show.crafts.development', [$this->organisation->slug, $this->production->slug, 'tab' => 'targets']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Production/DevelopmentRoom')
+            ->where('tabs.current', 'targets')
+            ->where('development_review.can_decide', true)
+            ->where('targets.data', fn ($rows) => collect($rows)->contains('code', $experiment->code))
+            ->etc());
+});

@@ -9,6 +9,7 @@
 namespace App\Actions\Production\Artefact\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Production\Artefact\GetArtefactDevelopmentProposal;
 use App\Actions\Production\Production\UI\ShowCraftsDashboard;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
@@ -24,9 +25,14 @@ use App\Models\Production\Artefact;
 use App\Models\Production\JobOrder;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
+use App\Models\Tasks\StaffTask;
 use App\Services\QueryBuilder;
 use Closure;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,11 +46,71 @@ use Spatie\QueryBuilder\AllowedFilter;
  */
 class ShowDevelopmentRoom extends OrgAction
 {
+    private bool $canDecideTargets = false;
+
     public function authorize(ActionRequest $request): bool
     {
-        $this->canEdit = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
+        $this->canEdit          = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
+        $this->canDecideTargets = $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "accounting.{$this->organisation->id}.edit"]);
 
-        return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.view"]);
+        return $this->canDecideTargets || $request->user()->authTo("productions_rd.{$this->production->id}.view");
+    }
+
+    /**
+     * HELP-4636: every product paid as development, what its steps have recorded and whether it is ready for its
+     * targets. Ready products that were run in the last weeks are overdue until somebody decides.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function developmentTargets(Production $production): array
+    {
+        return Artefact::where('production_id', $production->id)
+            ->where('is_in_development', true)
+            ->with(['production', 'artefactFamily'])
+            ->orderBy('code')
+            ->get()
+            ->map(function (Artefact $artefact) {
+                $proposal = GetArtefactDevelopmentProposal::run($artefact);
+
+                return [
+                    'id'                     => $artefact->id,
+                    'slug'                   => $artefact->slug,
+                    'code'                   => $artefact->code,
+                    'name'                   => $artefact->name,
+                    'family'                 => $artefact->artefactFamily?->code,
+                    'development_started_at' => $proposal['development_started_at'],
+                    'recipe_changed_at'      => $proposal['recipe_changed_at'],
+                    'last_run_at'            => $proposal['last_run_at'],
+                    'status'                 => match (true) {
+                        $proposal['is_overdue'] => 'overdue',
+                        $proposal['is_ready']   => 'ready_idle',
+                        (bool) $proposal['kept'] => 'kept',
+                        default                 => 'collecting',
+                    },
+                    'kept'                   => $proposal['kept'],
+                    'steps'                  => array_map(fn (array $step) => Arr::only($step, ['id', 'name', 'target', 'is_piece_rate', 'sessions_count', 'artisans_count', 'hours', 'proposed_target', 'is_ready', 'missing']), $proposal['steps']),
+                ];
+            })
+            ->sortBy(fn (array $row) => [array_search($row['status'], ['overdue', 'ready_idle', 'collecting', 'kept']), $row['code']])
+            ->values()
+            ->all();
+    }
+
+    public function developmentTargetsTableStructure(string $prefix): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            $table->name($prefix)->pageName($prefix.'Page')
+                ->withLabelRecord([__('product'), __('products')])
+                ->withEmptyState(['title' => __('No product is paid as development')])
+                ->column(key: 'status', label: __('Status'), canBeHidden: false)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false)
+                ->column(key: 'family', label: __('Family'), canBeHidden: false)
+                ->column(key: 'development_started_at', label: __('On development since'), canBeHidden: false)
+                ->column(key: 'recipe_changed_at', label: __('Recipe changed'), canBeHidden: false)
+                ->column(key: 'last_run_at', label: __('Last run'), canBeHidden: false)
+                ->column(key: 'steps', label: __('Steps: sessions, artisans, hours, rate'), canBeHidden: false)
+                ->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
+        };
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -55,7 +121,7 @@ class ShowDevelopmentRoom extends OrgAction
         return $production;
     }
 
-    public function artefacts(Production $production, ArtefactStateEnum|string $scope, string $prefix): LengthAwarePaginator
+    public function artefacts(Production $production, ArtefactStateEnum|string $scope, string $prefix): LengthAwarePaginatorContract
     {
         InertiaTable::updateQueryBuilderParameters($prefix);
 
@@ -111,7 +177,7 @@ class ShowDevelopmentRoom extends OrgAction
             ->withQueryString();
     }
 
-    public function trialRuns(Production $production, string $prefix): LengthAwarePaginator
+    public function trialRuns(Production $production, string $prefix): LengthAwarePaginatorContract
     {
         InertiaTable::updateQueryBuilderParameters($prefix);
 
@@ -270,6 +336,11 @@ class ShowDevelopmentRoom extends OrgAction
             DevelopmentRoomTabsEnum::LAUNCHED->value    => fn () => DevelopmentArtefactsResource::collection($this->artefacts($production, DevelopmentRoomTabsEnum::LAUNCHED->value, DevelopmentRoomTabsEnum::LAUNCHED->value)),
             DevelopmentRoomTabsEnum::CANCELLED->value   => fn () => DevelopmentArtefactsResource::collection($this->artefacts($production, ArtefactStateEnum::CANCELLED->value, DevelopmentRoomTabsEnum::CANCELLED->value)),
             DevelopmentRoomTabsEnum::MERGED->value      => fn () => DevelopmentArtefactsResource::collection($this->artefacts($production, ArtefactStateEnum::MERGED->value, DevelopmentRoomTabsEnum::MERGED->value)),
+            DevelopmentRoomTabsEnum::TARGETS->value     => function () use ($production) {
+                $rows = $this->developmentTargets($production);
+
+                return JsonResource::collection(new LengthAwarePaginator($rows, count($rows), max(1, count($rows))));
+            },
         ];
 
         $props = [
@@ -300,6 +371,7 @@ class ShowDevelopmentRoom extends OrgAction
                 'artefact'  => ['name' => 'grp.org.productions.show.crafts.artefacts.show', 'parameters' => $parameters],
                 'job_order' => ['name' => 'grp.org.productions.show.operations.job-orders.show', 'parameters' => $parameters],
             ],
+            'development_review' => $this->developmentReviewProps($production, $request),
             'actions'     => $this->canEdit ? [
                 'trial_run_route'       => ['name' => 'grp.models.production.trial_run.store', 'parameters' => ['production' => $production->id]],
                 'launch_route'          => ['name' => 'grp.models.production.artefacts.launch', 'parameters' => ['production' => $production->id]],
@@ -325,7 +397,36 @@ class ShowDevelopmentRoom extends OrgAction
             $response->table($this->artefactsTableStructure($tab->value));
         }
 
-        return $response->table($this->trialRunsTableStructure(DevelopmentRoomTabsEnum::TRIAL_RUNS->value));
+        return $response->table($this->trialRunsTableStructure(DevelopmentRoomTabsEnum::TRIAL_RUNS->value))
+            ->table($this->developmentTargetsTableStructure(DevelopmentRoomTabsEnum::TARGETS->value));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function developmentReviewProps(Production $production, ActionRequest $request): array
+    {
+        $settings = $production->developmentReviewSettings();
+
+        return [
+            'can_decide'     => $this->canDecideTargets,
+            'review'         => $request->query('review'),
+            'settings'       => $settings,
+            'reviewer_options' => $this->canDecideTargets
+                ? User::permission(["org-supervisor.$production->organisation_id", "accounting.$production->organisation_id.edit"])
+                    ->where('status', true)
+                    ->get()
+                    ->filter(fn (User $user) => StaffTask::canBeAssigned($user))
+                    ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName()])
+                    ->sortBy('name')
+                    ->values()
+                    ->all()
+                : [],
+            'reviewers'      => User::whereIn('id', $settings['reviewer_ids'])->get()->map(fn (User $user) => $user->chatName())->values()->all(),
+            'settings_route' => ['name' => 'grp.models.production.development_review_settings.update', 'parameters' => ['production' => $production->id]],
+            'proposal_route' => ['name' => 'grp.json.artefact.development_proposal', 'parameters' => []],
+            'decide_route'   => ['name' => 'grp.models.artefact.development_review.decide', 'parameters' => []],
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters): array

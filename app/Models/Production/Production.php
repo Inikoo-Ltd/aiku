@@ -105,6 +105,34 @@ class Production extends Model implements Auditable
         return array_map('floatval', $this->settings['mix_batch_sizes_kg'] ?? self::DEFAULT_MIX_BATCH_SIZES_KG);
     }
 
+    public const array DEFAULT_DEVELOPMENT_REVIEW = [
+        'min_sessions'        => 5,
+        'min_artisans'        => 2,
+        'min_hours'           => 4,
+        'min_session_minutes' => 10,
+        'idle_weeks'          => 4,
+        'reviewer_ids'        => [],
+    ];
+
+    /**
+     * When a step of a product in development has enough recorded work to propose its target (HELP-4636).
+     *
+     * @return array{min_sessions: int, min_artisans: int, min_hours: float, min_session_minutes: float, idle_weeks: int, reviewer_ids: array<int, int>}
+     */
+    public function developmentReviewSettings(): array
+    {
+        $settings = array_merge(self::DEFAULT_DEVELOPMENT_REVIEW, $this->settings['development_review'] ?? []);
+
+        return [
+            'min_sessions'        => (int) $settings['min_sessions'],
+            'min_artisans'        => (int) $settings['min_artisans'],
+            'min_hours'           => (float) $settings['min_hours'],
+            'min_session_minutes' => (float) $settings['min_session_minutes'],
+            'idle_weeks'          => (int) $settings['idle_weeks'],
+            'reviewer_ids'        => array_map('intval', $settings['reviewer_ids']),
+        ];
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

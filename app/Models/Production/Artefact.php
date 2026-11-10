@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
@@ -43,6 +44,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $stock_family_id
  * @property ArtefactStateEnum $state
  * @property bool $is_in_development
+ * @property \Illuminate\Support\Carbon|null $development_started_at
+ * @property \Illuminate\Support\Carbon|null $recipe_changed_at
  * @property array<array-key, mixed> $settings
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -93,7 +96,22 @@ class Artefact extends Model implements Auditable, HasMedia
         'settings'               => 'array',
         'state'                  => ArtefactStateEnum::class,
         'is_in_development'      => 'boolean',
+        'development_started_at' => 'datetime',
+        'recipe_changed_at'      => 'datetime',
     ];
+
+    /**
+     * Put on development again: a new start, and whatever was decided the last time no longer holds (HELP-4636).
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Artefact $artefact) {
+            if ($artefact->isDirty('is_in_development') && $artefact->is_in_development) {
+                $artefact->development_started_at = now();
+                $artefact->data = Arr::except($artefact->data ?? [], 'development_review');
+            }
+        });
+    }
 
     protected $attributes = [
         'data'     => '{}',

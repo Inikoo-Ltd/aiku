@@ -634,6 +634,8 @@ use App\Actions\Production\Artefact\LaunchArtefact;
 use App\Actions\Production\Artefact\BranchArtefact;
 use App\Actions\Production\Artefact\MergeArtefactBranch;
 use App\Actions\Production\Artefact\CancelArtefactDevelopment;
+use App\Actions\Production\Artefact\DecideArtefactDevelopmentReview;
+use App\Actions\Production\Production\SetDevelopmentReviewSettings;
 use App\Actions\Production\JobOrder\StoreTrialRunJobOrder;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\Artefact\SetArtefactsShelfLife;
@@ -1884,6 +1886,8 @@ Route::post('/production/{production:id}/break', StartManufactureBreak::class)->
 Route::post('/production/{production:id}/non-productive-session', StartManufactureNonProductiveSession::class)->name('production.non_productive_session.store')->withoutScopedBindings();
 Route::patch('/production/{production:id}/preparation-reasons', UpdateManufacturePreparationReasons::class)->name('production.preparation_reasons.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/mix-batch-sizes', UpdateProductionMixBatchSizes::class)->name('production.mix_batch_sizes.update')->withoutScopedBindings();
+Route::patch('/production/{production:id}/development-review-settings', SetDevelopmentReviewSettings::class)->name('production.development_review_settings.update')->withoutScopedBindings();
+Route::post('/artefact/{artefact:id}/development-review', DecideArtefactDevelopmentReview::class)->name('artefact.development_review.decide')->withoutScopedBindings();
 Route::patch('/manufacture-break/{manufactureBreak:id}/end', EndManufactureBreak::class)->name('manufacture-break.end')->withoutScopedBindings();
 Route::patch('/manufacture-break/{manufactureBreak:id}/correct-end', CorrectManufactureBreakEnd::class)->name('manufacture-break.correct_end')->withoutScopedBindings();
 

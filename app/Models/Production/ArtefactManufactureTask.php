@@ -46,6 +46,16 @@ class ArtefactManufactureTask extends Pivot
     ];
 
     /**
+     * A step added or taken off changes the work, so a product in development starts collecting its timings again (HELP-4636).
+     */
+    protected static function booted(): void
+    {
+        $stamp = fn (ArtefactManufactureTask $step) => Artefact::whereKey($step->artefact_id)->update(['recipe_changed_at' => now()]);
+        static::created($stamp);
+        static::deleted($stamp);
+    }
+
+    /**
      * The same task can be in a recipe more than once, told apart by its label (Mixing – Red, Mixing – Blue).
      */
     public static function stepName(string $taskName, ?string $label): string

@@ -131,6 +131,7 @@ use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Production\ArtefactDepartment\UI\IndexArtefactDepartments;
+use App\Actions\Production\Artefact\GetArtefactDevelopmentProposal;
 use App\Actions\Production\Artefact\UI\IndexArtefacts;
 use App\Actions\Production\ArtefactFamily\UI\IndexArtefactFamilies;
 use App\Actions\Production\ManufactureTask\Json\GetManufactureTasks;
@@ -315,6 +316,7 @@ Route::get('artefacts/{artefact:id}/tags', [IndexTags::class, 'inArtefact'])->na
 Route::get('production/{production:id}/artefact-departments', [IndexArtefactDepartments::class, 'inJson'])->name('production.artefact_departments.index');
 Route::get('production/{production:id}/artefact-families', [IndexArtefactFamilies::class, 'inJson'])->name('production.artefact_families.index');
 Route::get('production/{production:id}/artefacts', [IndexArtefacts::class, 'inJson'])->name('production.artefacts.index');
+Route::get('artefact/{artefact:id}/development-proposal', GetArtefactDevelopmentProposal::class)->name('artefact.development_proposal')->withoutScopedBindings();
 Route::get('production/{production:id}/manufacture-tasks', GetManufactureTasks::class)->name('production.manufacture_tasks.index');
 Route::get('production/{production:id}/raw-materials', GetRawMaterials::class)->name('production.raw_materials.index');
 Route::get('production/job-order/{jobOrder:id}/trial-run-brief', GetTrialRunBrief::class)->name('production.job_order.trial_run_brief');

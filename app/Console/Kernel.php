@@ -1852,6 +1852,15 @@ class Kernel extends ConsoleKernel
                 type: 'command',
                 scheduledAt: now()->format('H:i')
             );
+
+            $this->logSchedule(
+                $schedule->command('production:ask-to-review-development')->dailyAt('07:00')->timezone('Europe/London')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'AskToReviewArtefactDevelopment',
+                ),
+                name: 'AskToReviewArtefactDevelopment',
+                type: 'command',
+                scheduledAt: now()->format('H:i')
+            );
         }
 
         foreach ($schedule->events() as $event) {

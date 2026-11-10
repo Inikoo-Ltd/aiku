@@ -21,6 +21,7 @@ enum DevelopmentRoomTabsEnum: string
     case LAUNCHED    = 'launched';
     case CANCELLED   = 'cancelled';
     case MERGED      = 'merged';
+    case TARGETS     = 'targets';
 
     public function blueprint(): array
     {
@@ -44,6 +45,10 @@ enum DevelopmentRoomTabsEnum: string
             DevelopmentRoomTabsEnum::MERGED => [
                 'title' => __('Merged back'),
                 'icon'  => 'fal fa-code-merge',
+            ],
+            DevelopmentRoomTabsEnum::TARGETS => [
+                'title' => __('Paid as development'),
+                'icon'  => 'fal fa-stopwatch',
             ],
         };
     }

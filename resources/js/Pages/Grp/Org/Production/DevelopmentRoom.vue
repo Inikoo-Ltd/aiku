@@ -16,6 +16,7 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableDevelopmentRoom from "@/Components/Tables/Grp/Org/Production/TableDevelopmentRoom.vue"
+import TableDevelopmentTargets from "@/Components/Tables/Grp/Org/Production/TableDevelopmentTargets.vue"
 import { StatsBoxTS } from "@/types/Components/StatsBox"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
@@ -24,9 +25,9 @@ import { useTabChange, useCurrentTab } from "@/Composables/tab-change"
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faVial, faFlask, faRocketLaunch, faBan, faCodeBranch, faCodeMerge, faCheck, faTimes } from "@fal"
+import { faVial, faFlask, faRocketLaunch, faBan, faCodeBranch, faCodeMerge, faCheck, faTimes, faStopwatch } from "@fal"
 
-library.add(faVial, faFlask, faRocketLaunch, faBan, faCodeBranch, faCodeMerge, faCheck, faTimes)
+library.add(faVial, faFlask, faRocketLaunch, faBan, faCodeBranch, faCodeMerge, faCheck, faTimes, faStopwatch)
 
 const props = defineProps<{
     title: string
@@ -54,6 +55,8 @@ const props = defineProps<{
     launched?: object
     cancelled?: object
     merged?: object
+    targets?: object
+    development_review: InstanceType<typeof TableDevelopmentTargets>["$props"]["review"]
 }>()
 
 const currentTab = useCurrentTab(props.tabs.current)
@@ -199,7 +202,14 @@ onBeforeUnmount(() => {
     </Transition>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" class="mt-4" @update:tab="handleTabUpdate" />
+    <TableDevelopmentTargets
+        v-if="currentTab === 'targets'"
+        :tab="currentTab"
+        :data="(props.targets ?? {}) as { data?: [] }"
+        :artefactRoute="routes.artefact"
+        :review="development_review" />
     <TableDevelopmentRoom
+        v-else
         :key="currentTab"
         :tab="currentTab"
         :data="props[currentTab as 'experiments' | 'trial_runs' | 'launched' | 'cancelled' | 'merged'] ?? {}"
