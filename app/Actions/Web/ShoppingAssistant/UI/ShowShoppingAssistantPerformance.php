@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\ShoppingAssistant\UI;
 
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
@@ -364,6 +365,10 @@ class ShowShoppingAssistantPerformance extends OrgAction
                 'currency'         => $currencyCode,
                 'cost_currency'    => $usdRate === null ? 'USD' : $currencyCode,
                 'attribution_days' => $report->attributionDays(),
+                'budgets'          => $websites
+                    ->filter(fn (Website $website) => data_get($website->settings, 'shopping_assistant.enabled'))
+                    ->map(fn (Website $website) => ['website' => $website->domain, ...GetShoppingAssistantBudget::run($website)])
+                    ->values()->all(),
                 'routes'           => [
                     'page'         => ['name' => $routePrefix.'show', 'parameters' => $routeParameters],
                     'conversation' => ['name' => $routePrefix.'conversations.show', 'parameters' => $routeParameters],

@@ -78,6 +78,7 @@ const props = defineProps<{
     currency: string
     cost_currency?: string
     attribution_days: number
+    budgets: { website: string; monthly: number; spent: number; paused: boolean; resumes_on: string }[]
     routes: { page: RouteRef; conversation: RouteRef }
     overview?: Overview
     conversations?: object
@@ -111,7 +112,7 @@ const pageUrl = (query: Record<string, any>) => route(props.routes.page.name, { 
 
 const visit = (query: Record<string, any>, tab: string) =>
     router.get(pageUrl({ ...query, tab }), {}, {
-        only: ["tabs", "filters", tab],
+        only: ["tabs", "filters", "budgets", tab],
         preserveState: true,
         preserveScroll: true,
         onStart: () => (isLoading.value = true),
@@ -175,6 +176,13 @@ const outcomeLabels: Record<string, string> = {
     added: ctrans("added to basket"),
     ordered: ctrans("ordered"),
 }
+
+const budgetRows = computed(() =>
+    (props.budgets ?? []).map((budget) => {
+        const used = budget.monthly > 0 ? budget.spent / budget.monthly : 1
+        return { ...budget, width: Math.min(100, used * 100), warning: !budget.paused && used >= 0.8 }
+    })
+)
 
 const kpis = computed(() => props.overview?.kpis ?? {})
 const kpi = (key: string): Metric => kpis.value[key] ?? { value: 0, previous: null }
@@ -503,6 +511,36 @@ const conversationsTable = computed(() => props.conversations)
                         </component>
                         <p v-for="line in card.lines" :key="line" class="mt-0.5 truncate text-xs text-gray-500" :title="line">{{ line }}</p>
                     </div>
+                </div>
+                <div v-if="budgetRows.length" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                    <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("AI budget this month") }}</h3>
+                    <table class="w-full text-sm">
+                        <thead class="whitespace-nowrap text-xs text-gray-400">
+                            <tr>
+                                <th v-if="!(budgetRows.length === 1 && filters.website_locked)" class="pb-1 pr-3 text-left font-medium">{{ ctrans("Website") }}</th>
+                                <th class="pb-1 font-medium" />
+                                <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Spent") }}</th>
+                                <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Budget") }}</th>
+                                <th class="pb-1 pl-4 text-left font-medium" />
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="budget in budgetRows" :key="budget.website">
+                                <td v-if="!(budgetRows.length === 1 && filters.website_locked)" class="whitespace-nowrap py-1 pr-3 text-gray-700">{{ budget.website }}</td>
+                                <td class="w-full py-1">
+                                    <div class="h-2 rounded-sm bg-gray-100">
+                                        <div class="h-2 rounded-sm" :class="budget.paused ? 'bg-red-500' : budget.warning ? 'bg-amber-500' : 'bg-[var(--app-accent)]'" :style="{ width: budget.width + '%' }" />
+                                    </div>
+                                </td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-900">{{ money(budget.spent, "USD") }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-500">{{ money(budget.monthly, "USD") }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-xs">
+                                    <span v-if="budget.paused" class="text-red-600">{{ ctrans("Paused until :date", { date: shortDate(budget.resumes_on) }) }}</span>
+                                    <span v-else-if="budget.warning" class="text-amber-700">{{ ctrans("80% used") }}</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
                 <p v-if="showMaturityNote" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
                     {{ ctrans("Conversations after :date can still turn into orders: orders, revenue and conversion for them are not final.", { date: shortDate(overview.mature_until) }) }}

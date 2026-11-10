@@ -24,10 +24,11 @@ The change reaches the website within about ten minutes. Each website has its ow
 
 The range advisor is an assistant that suggests which products a retailer should stock. It only shows to customers who are logged in on the website of a wholesale shop. Visitors who are not logged in do not see it.
 
-In **AI shopping assistant** there are two fields:
+In **AI shopping assistant** there are three fields:
 
 - **AI shopping assistant** turns it on for this website.
 - **Assistant name** is the name customers see, up to 30 characters. Left empty, customers see "our range advisor".
+- **Monthly AI budget** is the most the website may spend on answers in a calendar month, in US dollars. Left empty, it is US$30. The small "i" next to it shows what has been spent this month.
 
 Before you turn it on for a shop for the first time, ask the help desk to prepare that shop's catalogue for it. The advisor finds products by meaning, not only by the words in the name, and that needs a one-off preparation of the shop's products.
 
@@ -56,6 +57,8 @@ It is built to keep to these rules:
 ### Limits and what is recorded
 
 Each customer can ask 6 questions a minute, 40 an hour and 120 a day. An answer takes a few seconds, and the page waits for it. Every answer is paid AI usage, so turn the advisor on where you want customers to use it.
+
+When the AI cost of the month reaches the **Monthly AI budget**, the advisor pauses on that website until the first day of the next month: the **Ask** button is no longer offered and new questions are not accepted. An answer already on its way still arrives. Raise the budget and the advisor is back within a minute or two. Several customers asking at the same moment can take the spend slightly over the budget.
 
 Every conversation is kept, with the products the advisor showed, the ones the customer clicked and the ones they added to the basket within 24 hours of seeing them.
 
@@ -98,6 +101,7 @@ At the top you choose the dates and can narrow the figures by language, by where
 - Under both, the **strict** figure counts only the lines the customer added to the basket straight from the assistant. It is the lowest the true number can be.
 - **Conversion** is the share of conversations followed by such an order. It leaves out conversations of the last 7 days, because they can still turn into orders. An amber note says from which day the figures are not final yet.
 - **AI cost**, in total, per conversation and as a share of the revenue.
+- **AI budget this month** shows, for each website with the advisor on, what has been spent against its monthly budget. The bar turns amber from 80% and red with **Paused until** and the date when the budget is used up.
 
 **Funnel** follows the conversations step by step: products shown, clicked, added to basket and ordered, each with its share of the step before and of all conversations. **Ordered** can be higher than **Added to basket**, as it also counts products that reached the basket another way. The chart next to it shows the same steps by day, or by week for a long period.
 

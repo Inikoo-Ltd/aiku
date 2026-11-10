@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\UI\WithFavicon;
@@ -198,6 +199,12 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, 'settings.shopping_assistant.name', Arr::pull($modelData, 'shopping_assistant_name'));
         }
 
+        $budgetChanged = Arr::has($modelData, 'shopping_assistant_monthly_budget');
+        if ($budgetChanged) {
+            $budget = Arr::pull($modelData, 'shopping_assistant_monthly_budget');
+            data_set($modelData, 'settings.shopping_assistant.monthly_budget', is_numeric($budget) ? (float) $budget : null);
+        }
+
         // Handle LLMs.txt file upload
         if (Arr::has($modelData, 'llms_txt') && $modelData['llms_txt'] instanceof \Illuminate\Http\UploadedFile) {
             $file = Arr::pull($modelData, 'llms_txt');
@@ -206,6 +213,10 @@ class UpdateWebsite extends OrgAction
         data_forget($modelData, 'llms_txt');
 
         $website = $this->update($website, $modelData, ['data', 'settings']);
+
+        if ($budgetChanged) {
+            GetShoppingAssistantBudget::forget($website);
+        }
 
         $changes = Arr::except($website->getChanges(), ['updated_at', 'last_fetched_at']);
 
@@ -314,6 +325,7 @@ class UpdateWebsite extends OrgAction
             'show_price'                                 => ['sometimes', 'nullable', 'boolean'],
             'shopping_assistant_enabled'                 => ['sometimes', 'boolean'],
             'shopping_assistant_name'                    => ['sometimes', 'nullable', 'string', 'max:30'],
+            'shopping_assistant_monthly_budget'          => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100000'],
             'search_keep_exploring'                      => ['sometimes', 'boolean'],
             'hreflang_group'                             => ['sometimes', 'nullable', 'string', 'max:64'],
             'hreflang_code'                              => ['sometimes', 'nullable', 'string', 'regex:/^[a-z]{2,3}(-[A-Z]{2})?$/'],

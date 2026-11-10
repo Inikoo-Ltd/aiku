@@ -129,7 +129,7 @@ class HandleRetinaInertiaRequests extends Middleware
                     'google' => [
                         'client_id' => config('services.google.client_id'),
                     ],
-                    'shopping_assistant' => $website && $webUser ? GetShoppingAssistantSettings::run($website, $webUser->customer) : null,
+                    'shopping_assistant' => $website && $webUser ? GetShoppingAssistantSettings::run($website, $webUser->customer, true) : null,
                 ]),
                 'use_chat'    => $website->settings['enable_chat'] ?? false,
                 'outboxes' => $outBoxes

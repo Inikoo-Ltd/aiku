@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantMessage;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
@@ -818,4 +819,104 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
 
     $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [...$websiteParameters, $ordered->ulid]))->assertOk();
     $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [...$websiteParameters, $elsewhere->ulid]))->assertNotFound();
+});
+
+function shoppingAssistantSpend(Website $website, float $cost, ?string $createdAt = null, ShoppingAssistantEntryPointEnum $entryPoint = ShoppingAssistantEntryPointEnum::SEARCH): void
+{
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($website->shop), $entryPoint);
+    $conversation->update(['website_id' => $website->id]);
+    $message = $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Here you go.', 'cost' => $cost]);
+    if ($createdAt) {
+        DB::table('shopping_assistant_messages')->where('id', $message->id)->update(['created_at' => $createdAt]);
+    }
+}
+
+function shoppingAssistantBudget(Website $website): array
+{
+    GetShoppingAssistantBudget::forget($website);
+
+    return GetShoppingAssistantBudget::run($website);
+}
+
+test('the assistant budget is the config default unless the website sets one, and a budget of 0 pauses new questions at once', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    config(['services.shopping_assistant.monthly_budget' => 1000]);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => null]);
+    expect(shoppingAssistantBudget($website))->toMatchArray(['monthly' => 1000.0, 'paused' => false, 'resumes_on' => now()->startOfMonth()->addMonth()->toDateString()]);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 500]);
+    expect(shoppingAssistantBudget($website)['monthly'])->toBe(500.0);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 0]);
+    expect(shoppingAssistantBudget($website))->toMatchArray(['monthly' => 0.0, 'paused' => true])
+        ->and(GetShoppingAssistantSettings::run($website->refresh(), $customer, true))->toBeNull()
+        ->and(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava']);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 1000]);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer, true))->toBe(['name' => 'Ava']);
+
+    $settings = $website->settings;
+    DB::table('websites')->where('id', $website->id)->update(['settings' => json_encode(data_set($settings, 'shopping_assistant.monthly_budget', 0))]);
+    expect(data_get($website->settings, 'shopping_assistant.monthly_budget'))->toEqual(1000)
+        ->and(GetShoppingAssistantBudget::run($website)['paused'])->toBeFalse()
+        ->and(shoppingAssistantBudget($website)['paused'])->toBeTrue();
+
+    UpdateWebsite::make()->action($website->refresh(), ['shopping_assistant_monthly_budget' => null]);
+    expect(GetShoppingAssistantBudget::run($website)['monthly'])->toBe(1000.0);
+});
+
+test('a spent budget stops new questions and the Ask button, while an answer under way, clicks and this month\'s command line costs still count', function () {
+    Queue::fake();
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $product  = shoppingAssistantProduct($this->product);
+    $message  = shoppingAssistantShown($customer, [$product->id]);
+    $base     = 'http://'.$website->domain.'/json/';
+
+    $before = shoppingAssistantBudget($website)['spent'];
+    shoppingAssistantSpend($website, 0.40, now()->startOfMonth()->subDay()->toDateTimeString());
+    shoppingAssistantSpend($website, 0.25, null, ShoppingAssistantEntryPointEnum::COMMAND);
+    $spent = shoppingAssistantBudget($website)['spent'];
+    expect($spent)->toEqualWithDelta($before + 0.25, 0.000001);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => $spent + 0.01]);
+    $this->actingAs($webUser, 'retina')->getJson($base.'ecom-customer-data')->assertOk()->assertJsonPath('shopping_assistant.name', 'Ava');
+    $this->actingAs($webUser, 'retina')->postJson($base.'shopping-assistant/ask', ['message' => 'Candles'])->assertStatus(202);
+
+    foreach ([$spent, $spent - 0.01] as $budget) {
+        UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => $budget]);
+        $this->actingAs($webUser, 'retina')->getJson($base.'ecom-customer-data')->assertOk()->assertJsonPath('shopping_assistant', null);
+        $this->actingAs($webUser, 'retina')->postJson($base.'shopping-assistant/ask', ['message' => 'Mugs'])->assertNotFound();
+        $this->actingAs($webUser, 'retina')->getJson($base.'shopping-assistant/'.$message->conversation->ulid)->assertOk();
+    }
+
+    $this->actingAs($webUser, 'retina')->postJson($base.'shopping-assistant/'.$message->conversation->ulid.'/events', ['type' => 'clicked', 'product_id' => $product->id, 'message_id' => $message->id])->assertNoContent();
+    expect($message->conversation->events()->where('type', ShoppingAssistantEventTypeEnum::CLICKED)->count())->toBe(1);
+    AnswerShoppingAssistantMessage::assertPushed(1);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => null]);
+});
+
+test('the AI assistant report sends this month\'s budget of each website with the assistant on, and nothing when it is off', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website = shoppingAssistantStorefront($this);
+    UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 12.5]);
+    $spent = shoppingAssistantBudget($website)['spent'];
+    $url   = route('grp.org.shops.show.web.analytics.shopping_assistant.show', [$this->organisation->slug, $this->shop->slug, $website->slug]);
+
+    $this->withoutVite();
+    $this->get($url)->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('budgets', 1)
+            ->where('budgets.0.website', $website->domain)
+            ->where('budgets.0.monthly', fn ($monthly) => (float) $monthly === 12.5)
+            ->where('budgets.0.spent', fn ($amount) => abs((float) $amount - $spent) < 0.000001)
+            ->where('budgets.0.paused', $spent >= 12.5)
+            ->where('budgets.0.resumes_on', now()->startOfMonth()->addMonth()->toDateString()));
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => false, 'shopping_assistant_monthly_budget' => null]);
+    $this->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->has('budgets', 0));
 });

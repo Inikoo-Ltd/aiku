@@ -200,7 +200,9 @@ const send = async (text: string) => {
         isPending.value = false
         errorMessage.value = status === 429
             ? ctrans("You have asked a lot in a short time. Please try again in a minute.")
-            : ctrans("Something went wrong. Please try again.")
+            : status === 404
+                ? ctrans("The range advisor is not available on this website.")
+                : ctrans("Something went wrong. Please try again.")
     }
 }
 
@@ -288,7 +290,7 @@ const goToLogin = () => {
 
 <template>
     <div class="assistant-page px-4 py-8">
-        <template v-if="assistant">
+        <template v-if="assistant || messages.length || isPending">
             <div class="flex items-start justify-between gap-4">
                 <h1 class="text-2xl font-bold">{{ assistantName }}</h1>
                 <Button

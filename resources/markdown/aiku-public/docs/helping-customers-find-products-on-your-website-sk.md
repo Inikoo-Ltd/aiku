@@ -24,10 +24,11 @@ Zmena sa na webe prejaví približne do desiatich minút. Každý web má vlastn
 
 Poradca pre sortiment je asistent, ktorý navrhuje, aké produkty by mal predajca naskladniť. Zobrazuje sa len zákazníkom, ktorí sú prihlásení na webe veľkoobchodného obchodu. Návštevníci, ktorí nie sú prihlásení, ho nevidia.
 
-V sekcii **AI shopping assistant** sú dve polia:
+V sekcii **AI shopping assistant** sú tri polia:
 
 - **AI shopping assistant** ho zapína pre tento web.
 - **Assistant name** (názov asistenta) je meno, ktoré zákazníci vidia, najviac 30 znakov. Ak ostane prázdne, zákazníci vidia „our range advisor" (náš poradca pre sortiment).
+- **Monthly AI budget** (mesačný rozpočet na AI) je najviac, koľko môže web minúť na odpovede v kalendárnom mesiaci, v amerických dolároch. Ak ostane prázdny, je to US$30. Malé „i" vedľa neho ukazuje, koľko sa tento mesiac minulo.
 
 Skôr než ho prvýkrát zapnete pre obchod, požiadajte help desk, aby preň pripravil katalóg obchodu. Poradca nachádza produkty podľa významu, nielen podľa slov v názve, a to si vyžaduje jednorazovú prípravu produktov obchodu.
 
@@ -56,6 +57,8 @@ Je postavený tak, aby dodržiaval tieto pravidlá:
 ### Limity a čo sa zaznamenáva
 
 Každý zákazník sa môže opýtať 6 otázok za minútu, 40 za hodinu a 120 za deň. Odpoveď trvá niekoľko sekúnd a stránka na ňu čaká. Každá odpoveď je platené použitie AI, preto poradcu zapnite tam, kde chcete, aby ho zákazníci používali.
+
+Keď náklady na AI za mesiac dosiahnu **Monthly AI budget**, poradca sa na tomto webe pozastaví do prvého dňa nasledujúceho mesiaca: tlačidlo **Ask** sa už neponúka a nové otázky sa neprijímajú. Odpoveď, ktorá je už na ceste, ešte dorazí. Zvýšte rozpočet a poradca sa vráti do minúty či dvoch. Ak sa v tej istej chvíli pýta viac zákazníkov, výdavky môžu rozpočet mierne prekročiť.
 
 Každá konverzácia sa uchováva, spolu s produktmi, ktoré poradca zobrazil, tými, na ktoré zákazník klikol, a tými, ktoré pridal do košíka do 24 hodín od ich zobrazenia.
 
@@ -98,6 +101,7 @@ Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa t
 - Pod oboma údajmi číslo **strict** (prísne) počíta len riadky, ktoré zákazník pridal do košíka priamo od asistenta. Je to najnižšie, čím môže skutočné číslo byť.
 - **Conversion** (konverzia) je podiel konverzácií, po ktorých nasledovala takáto objednávka. Vynecháva konverzácie za posledných 7 dní, pretože sa z nich ešte môžu stať objednávky. Oranžová poznámka hovorí, od ktorého dňa čísla ešte nie sú konečné.
 - **AI cost** (náklady na AI), celkovo, na konverziu a ako podiel na tržbách.
+- **AI budget this month** (rozpočet na AI tento mesiac) ukazuje pri každom webe so zapnutým poradcom, koľko sa minulo z jeho mesačného rozpočtu. Pruh sa od 80% zafarbí na oranžovo a keď je rozpočet vyčerpaný, na červeno s **Paused until** (pozastavené do) a dátumom.
 
 **Funnel** (lievik) sleduje konverzácie krok za krokom: produkty zobrazené, rozkliknuté, pridané do košíka a objednané, každý s podielom na predchádzajúcom kroku a na všetkých konverzáciách. **Ordered** (objednané) môže byť vyššie ako **Added to basket** (pridané do košíka), pretože počíta aj produkty, ktoré sa do košíka dostali inou cestou. Graf vedľa neho ukazuje rovnaké kroky po dňoch, alebo po týždňoch pri dlhom období.
 

@@ -58,7 +58,7 @@ class AskIrisShoppingAssistant extends IrisAction
 
         $customerId = $this->signedInCustomerId();
         $customer   = $customerId ? Customer::find($customerId) : null;
-        abort_unless($customer && GetShoppingAssistantSettings::run($this->website, $customer), 404);
+        abort_unless($customer && GetShoppingAssistantSettings::run($this->website, $customer, true), 404);
 
         $conversation = null;
         if ($ulid = Arr::get($this->validatedData, 'conversation')) {

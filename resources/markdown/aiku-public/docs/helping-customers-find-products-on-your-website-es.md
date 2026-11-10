@@ -24,10 +24,11 @@ El cambio llega a la web en unos diez minutos. Cada web tiene sus propios interr
 
 El asesor de gama es un asistente que sugiere qué productos debería tener en stock un minorista. Solo se muestra a los clientes que han iniciado sesión en la web de una tienda mayorista. Los visitantes que no han iniciado sesión no lo ven.
 
-En **AI shopping assistant** hay dos campos:
+En **AI shopping assistant** hay tres campos:
 
 - **AI shopping assistant** lo activa para esta web.
 - **Assistant name** (nombre del asistente) es el nombre que ven los clientes, de hasta 30 caracteres. Si se deja vacío, los clientes ven "our range advisor" (nuestro asesor de gama).
+- **Monthly AI budget** (presupuesto mensual de IA) es lo máximo que la web puede gastar en respuestas en un mes natural, en dólares estadounidenses. Si se deja vacío, son US$30. La pequeña "i" junto al campo muestra lo gastado este mes.
 
 Antes de activarlo por primera vez en una tienda, pide al help desk que prepare el catálogo de esa tienda para ello. El asesor encuentra productos por su significado, no solo por las palabras del nombre, y eso requiere una preparación única de los productos de la tienda.
 
@@ -56,6 +57,8 @@ Está hecho para cumplir estas reglas:
 ### Límites y qué se registra
 
 Cada cliente puede hacer 6 preguntas por minuto, 40 por hora y 120 al día. Una respuesta tarda unos segundos y la página espera. Cada respuesta es uso de IA de pago, así que activa el asesor donde quieras que los clientes lo usen.
+
+Cuando el coste de IA del mes llega al **Monthly AI budget**, el asesor se pausa en esa web hasta el primer día del mes siguiente: el botón **Ask** deja de ofrecerse y no se aceptan preguntas nuevas. Una respuesta que ya está en camino llega igualmente. Sube el presupuesto y el asesor vuelve en uno o dos minutos. Si varios clientes preguntan en el mismo momento, el gasto puede superar el presupuesto ligeramente.
 
 Cada conversación se guarda, con los productos que mostró el asesor, los que el cliente pulsó y los que añadió a la cesta dentro de las 24 horas siguientes a verlos.
 
@@ -98,6 +101,7 @@ Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se ab
 - Bajo ambas, la cifra **strict** (estricta) cuenta solo las líneas que el cliente añadió a la cesta directamente desde el asistente. Es lo mínimo que puede ser la cifra real.
 - **Conversion** (conversión) es la proporción de conversaciones seguidas de un pedido así. Deja fuera las conversaciones de los últimos 7 días, porque todavía pueden convertirse en pedidos. Una nota ámbar indica desde qué día las cifras aún no son definitivas.
 - **AI cost** (coste de IA), en total, por conversación y como proporción de los ingresos.
+- **AI budget this month** (presupuesto de IA de este mes) muestra, por cada web con el asesor activado, lo gastado frente a su presupuesto mensual. La barra se vuelve ámbar a partir del 80% y roja con **Paused until** (en pausa hasta) y la fecha cuando se agota el presupuesto.
 
 **Funnel** (embudo) sigue las conversaciones paso a paso: productos mostrados, pulsados, añadidos a la cesta y pedidos, cada uno con su proporción respecto al paso anterior y respecto a todas las conversaciones. **Ordered** (pedidos) puede ser mayor que **Added to basket** (añadidos a la cesta), porque también cuenta productos que llegaron a la cesta de otra forma. El gráfico de al lado muestra los mismos pasos por día, o por semana en un periodo largo.
 

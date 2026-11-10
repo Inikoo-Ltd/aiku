@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website\UI;
 
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -251,6 +252,23 @@ class EditWebsite extends OrgAction
                         'information' => __('Name the assistant shows to customers'),
                         'label'       => __('Assistant name'),
                         'value'       => data_get($website->settings, 'shopping_assistant.name'),
+                        'required'    => false,
+                    ],
+                    'shopping_assistant_monthly_budget' => [
+                        'type'        => 'input_number',
+                        'information' => __('New questions stop for the rest of the month when the AI cost reaches this amount. Left empty: :default. Spent this month: :spent.', [
+                            'default' => 'US$'.number_format((float) config('services.shopping_assistant.monthly_budget'), 2),
+                            'spent'   => 'US$'.number_format(GetShoppingAssistantBudget::run($website)['spent'], 2),
+                        ]),
+                        'label'       => __('Monthly AI budget'),
+                        'bind'        => [
+                            'mode'              => 'currency',
+                            'currency'          => 'USD',
+                            'min'               => 0,
+                            'minFractionDigits' => 2,
+                            'maxFractionDigits' => 2,
+                        ],
+                        'value'       => is_numeric($budget = data_get($website->settings, 'shopping_assistant.monthly_budget')) ? (float) $budget : null,
                         'required'    => false,
                     ],
                 ]
