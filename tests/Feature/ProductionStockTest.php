@@ -1244,6 +1244,34 @@ test('the ai assistant sets up artefacts, raw materials, tasks and recipes only 
     \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::latest('id')->first(), $user);
     expect($artefact->manufactureTasks()->pluck('code')->all())->toBe(['PROD']);
 
+    $mixTask = ManufactureTask::where('production_id', $this->production->id)->where('code', 'POUR'.$suffix)->firstOrFail();
+    $mixTask->update(['is_recorded_in_kg' => true]);
+    $mix = fn (array $mixBatch) => $recipe([['task' => 'POUR'.$suffix, 'units_per_artefact' => 0.1, 'target_per_hour' => null, ...$mixBatch]]);
+    $recipe([['task' => 'PROD', 'units_per_artefact' => 1, 'target_per_hour' => null, 'mix_batch_kg' => 50]])->assertHasErrors(['PROD is counted in pieces']);
+    $mix(['mix_batch_kg' => 10.5])->assertHasErrors(['10.5 kg is not one of the mix batch sizes']);
+    \App\Actions\Production\Production\UpdateProductionMixBatchSizes::make()->action($this->production, ['sizes' => [10.5, 50]]);
+    $mix(['mix_batch_kg' => 10.5])->assertOk()->assertSee('"mix_batch_kg":10.5');
+    $mixStep = fn () => $artefact->recipeSteps()->where('manufacture_task_id', $mixTask->id)->first();
+    expect((float) $mixStep()->mix_batch_kg)->toBe(10.5);
+    $mix([])->assertOk();
+    expect((float) $mixStep()->mix_batch_kg)->toBe(10.5);
+    $mix(['mix_batch_kg' => 50])->assertOk();
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run(\App\Models\SysAdmin\McpChange::latest('id')->first(), $user);
+    expect((float) $mixStep()->mix_batch_kg)->toBe(10.5);
+    \App\Actions\Production\Production\UpdateProductionMixBatchSizes::make()->action($this->production, ['sizes' => [50]]);
+    $setRecipe = fn (float $kg) => \App\Actions\Production\Artefact\SetArtefactsRecipe::make()->action($this->production, ['artefacts' => [$artefact->id], 'steps' => [['manufacture_task_id' => $mixTask->id, 'position' => 1, 'units_per_artefact' => 0.1, 'mix_batch_kg' => $kg]]]);
+    $setRecipe(10.5);
+    $mix(['mix_batch_kg' => 10.5])->assertHasErrors(['10.5 kg is not one of the mix batch sizes']);
+    $mix(['mix_batch_kg' => 50])->assertOk();
+    $beforeThisDeploy = \App\Models\SysAdmin\McpChange::latest('id')->first();
+    $beforeThisDeploy->update(['after' => ['artefacts' => array_map(fn (array $steps) => array_map(fn (array $step) => \Illuminate\Support\Arr::except($step, 'mix_batch_kg'), $steps), $beforeThisDeploy->after['artefacts'])]]);
+    \App\Actions\SysAdmin\McpChange\RevertMcpChange::run($beforeThisDeploy->refresh(), $user);
+    expect((float) $mixStep()->mix_batch_kg)->toBe(10.5);
+    $mix(['mix_batch_kg' => null])->assertOk();
+    expect($mixStep()->mix_batch_kg)->toBeNull();
+    $mixTask->update(['is_recorded_in_kg' => false]);
+    $recipe([['task' => 'PROD', 'units_per_artefact' => 1, 'target_per_hour' => null]])->assertOk();
+
     $department = StoreArtefactDepartment::make()->action($this->production, ['code' => 'AID'.$suffix, 'name' => 'AI department']);
     $family     = StoreArtefactFamily::make()->action($department, ['code' => 'AIF'.$suffix, 'name' => 'AI family']);
     $artefact->update(['artefact_family_id' => $family->id]);

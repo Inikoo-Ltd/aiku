@@ -47,6 +47,7 @@ class SetArtefactsRecipe extends OrgAction
      *         units_per_artefact: float|int|string,
  *         standard_rate?: float|int|string|null,
      *         effective_from?: string|null,
+     *         mix_batch_kg?: float|null,
      *         raw_materials?: array<int, array{raw_material_id: int, quantity_per_unit: float|int|string}>,
      *         artefact_raw_materials?: array<int, array{
      *             artefact_id: int,
@@ -86,7 +87,7 @@ class SetArtefactsRecipe extends OrgAction
                 'position'           => $step['position'],
                 'units_per_artefact' => $step['units_per_artefact'],
                 'label'              => AttachManufactureTaskToArtefact::cleanLabel($step['label'] ?? null),
-            ] + (array_key_exists('blocks_later_steps', $step) ? ['blocks_later_steps' => $step['blocks_later_steps']] : []);
+            ] + array_intersect_key($step, array_flip(['blocks_later_steps', 'mix_batch_kg']));
 
             $recipeStep = $previousByKey->get($stepKeys[$index]);
             if ($recipeStep) {
@@ -157,6 +158,7 @@ class SetArtefactsRecipe extends OrgAction
             'steps.*.standard_rate'                                              => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'steps.*.effective_from'                                             => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'steps.*.blocks_later_steps'                                         => ['sometimes', 'boolean'],
+            'steps.*.mix_batch_kg'                                               => ['sometimes', 'nullable', $this->asAction ? 'numeric' : Rule::in($this->production->mixBatchSizesKg())],
             'steps.*.label'                                                      => ['sometimes', 'nullable', 'string', 'max:64'],
             'steps.*.waits_for'                                                  => ['sometimes', 'nullable', 'array'],
             'steps.*.waits_for.*'                                                => ['integer', 'min:0'],

@@ -34,7 +34,7 @@ use Laravel\Mcp\Server\Tool;
  * Writes through SetArtefactsRecipe, the "change many artefacts at once" action of the artefacts
  * page, so open job orders pick up the new steps exactly as they do from the UI.
  */
-#[Description('Shows or replaces the recipe of artefacts: the production steps (manufacture tasks) in order, how many units of each step one artefact counts as, the target per hour of the step, and the raw materials each step uses per artefact, with their cost. Pick the artefacts by code (artefacts), by whole families (families, by code or slug; discontinued artefacts are left out) or both, and leave some out with except; up to 200 per call. Without steps it shows the recipes and the materials cost of each artefact. With steps every listed artefact gets exactly those steps: steps it has that are not in the list are removed with their raw materials, so pass the whole recipe, not only additions. units_per_artefact is how much of the step one artefact counts as (e.g. 0.1667 when packing is counted in boxes of six tins). An artefact is one unit (one bottle, one tin), never its SKO: the SKO already says how many units it packs, so a recipe is per unit and a pack of ten is not 10 per artefact. When similar artefacts share the steps but differ in an ingredient (e.g. each flavour has its own oil), give the shared raw materials in raw_materials and, for the artefacts that differ, their complete list for that step in artefact_raw_materials. Open job orders that are not received yet pick up the new steps. A target applies from today, unless target_from gives an earlier day of a pay week not yet locked for payroll: the sessions worked on that step since then are paid again against it, so that is refused with the sessions and artisans to show the user until they accept recalculate_sessions. Locked pay weeks are settled and refused: if someone was underpaid in one, the accountant corrects it. Create missing tasks or raw materials first with production-records-tool. Risky changes (dropping raw materials, whole families, unusually large numbers) are refused with warnings until called again with accept naming them, which only the user may agree to. Show the user the steps per artefact and write only after they confirmed in their own words, passing their request text. Only for users enrolled to set up production through their assistant.')]
+#[Description('Shows or replaces the recipe of artefacts: the production steps (manufacture tasks) in order, how many units of each step one artefact counts as, the target per hour of the step, the weight of one mix (mix_batch_kg) on steps recorded in kg, and the raw materials each step uses per artefact, with their cost. Pick the artefacts by code (artefacts), by whole families (families, by code or slug; discontinued artefacts are left out) or both, and leave some out with except; up to 200 per call. Without steps it shows the recipes and the materials cost of each artefact. With steps every listed artefact gets exactly those steps: steps it has that are not in the list are removed with their raw materials, so pass the whole recipe, not only additions. units_per_artefact is how much of the step one artefact counts as (e.g. 0.1667 when packing is counted in boxes of six tins). An artefact is one unit (one bottle, one tin), never its SKO: the SKO already says how many units it packs, so a recipe is per unit and a pack of ten is not 10 per artefact. When similar artefacts share the steps but differ in an ingredient (e.g. each flavour has its own oil), give the shared raw materials in raw_materials and, for the artefacts that differ, their complete list for that step in artefact_raw_materials. Open job orders that are not received yet pick up the new steps. A target applies from today, unless target_from gives an earlier day of a pay week not yet locked for payroll: the sessions worked on that step since then are paid again against it, so that is refused with the sessions and artisans to show the user until they accept recalculate_sessions. Locked pay weeks are settled and refused: if someone was underpaid in one, the accountant corrects it. Create missing tasks or raw materials first with production-records-tool. Risky changes (dropping raw materials, whole families, unusually large numbers) are refused with warnings until called again with accept naming them, which only the user may agree to. Show the user the steps per artefact and write only after they confirmed in their own words, passing their request text. Only for users enrolled to set up production through their assistant.')]
 class ProductionRecipeTool extends Tool
 {
     use WithMcpPermissions;
@@ -60,6 +60,7 @@ class ProductionRecipeTool extends Tool
             'steps.*.units_per_artefact'            => ['required', 'numeric', 'gt:0'],
             'steps.*.target_per_hour'               => ['present', 'nullable', 'numeric', 'gt:0'],
             'steps.*.target_from'                   => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+            'steps.*.mix_batch_kg'                  => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'steps.*.raw_materials'                 => ['sometimes', 'array'],
             'steps.*.raw_materials.*.code'          => ['required', 'string'],
             'steps.*.raw_materials.*.quantity'      => ['required', 'numeric', 'gt:0'],
@@ -284,6 +285,17 @@ class ProductionRecipeTool extends Tool
             throw ValidationException::withMessages(['steps' => 'Not found in '.$production->code.': '.implode(', ', $unknown).'. Create them with production-records-tool first.']);
         }
 
+        $withMixBatch = $steps->filter(fn (array $step) => isset($step['mix_batch_kg']));
+        $notKg        = $withMixBatch->reject(fn (array $step) => $tasks[strtolower($step['task'])]->is_recorded_in_kg)->pluck('task');
+        if ($notKg->isNotEmpty()) {
+            throw ValidationException::withMessages(['steps' => 'A mix batch weight only goes on a step recorded in kg (a mix); '.$notKg->unique()->implode(', ').' is counted in pieces.']);
+        }
+        $sizes      = $production->mixBatchSizesKg();
+        $otherSizes = $withMixBatch->pluck('mix_batch_kg')->map(fn ($kg) => (float) $kg)->reject(fn (float $kg) => in_array($kg, $sizes))->unique();
+        if ($otherSizes->isNotEmpty()) {
+            throw ValidationException::withMessages(['steps' => $otherSizes->implode(', ').' kg is not one of the mix batch sizes of '.$production->code.' ('.implode(', ', $sizes).' kg). Add it to the list on the products page (select products, Mix batch size, edit the sizes) and try again.']);
+        }
+
         $lines = fn (array $list) => collect($list)->map(fn (array $rawMaterial) => [
             'raw_material_id'   => $rawMaterials[strtolower($rawMaterial['code'])]->id,
             'quantity_per_unit' => $rawMaterial['quantity'],
@@ -297,6 +309,7 @@ class ProductionRecipeTool extends Tool
             'units_per_artefact'     => $step['units_per_artefact'],
             'standard_rate'          => $step['target_per_hour'],
             'effective_from'         => $step['target_from'] ?? null,
+            ...(array_key_exists('mix_batch_kg', $step) ? ['mix_batch_kg' => $step['mix_batch_kg'] === null ? null : (float) $step['mix_batch_kg']] : []),
             'raw_materials'          => $lines($step['raw_materials'] ?? []),
             'artefact_raw_materials' => collect($step['artefact_raw_materials'] ?? [])->map(fn (array $override) => [
                 'artefact_id'   => $artefactIds[strtolower($override['artefact'])],
@@ -335,6 +348,7 @@ class ProductionRecipeTool extends Tool
                         'waits_for'          => $task->pivot->waits_for === null ? null : $artefact->manufactureTasks->filter(fn (ManufactureTask $awaited) => in_array($awaited->pivot->id, $task->pivot->waits_for))->map(fn (ManufactureTask $awaited) => $awaited->pivot->position)->values()->all(),
                         'units_per_artefact' => (float) $task->pivot->units_per_artefact,
                         'target_per_hour'    => $task->pivot->standard_rate === null ? null : (float) $task->pivot->standard_rate,
+                        ...($task->is_recorded_in_kg ? ['mix_batch_kg' => $task->pivot->mix_batch_kg === null ? null : (float) $task->pivot->mix_batch_kg] : []),
                         'raw_materials'      => $rawMaterials->all(),
                     ];
                 });
@@ -369,6 +383,7 @@ class ProductionRecipeTool extends Tool
                 'units_per_artefact' => $schema->number()->description('How much of this step one artefact counts as (1 for one tin, 0.1667 when counted in boxes of six). Always send it, copy the current value when not changing it')->required(),
                 'target_per_hour'    => $schema->number()->description('Units of this step one person should do per hour; null when there is no target. Always send it, copy the current value when not changing it')->required(),
                 'target_from'        => $schema->string()->description('Day (Y-m-d, today or earlier, not in a pay week locked for payroll) the target applies from, from the start of that day: sessions already worked on the step since then are paid again against it. Omit for from today (a step that had no target: from the start of this pay week). Sending it with an unchanged target dates that target back'),
+                'mix_batch_kg'       => $schema->number()->description('Only for a step recorded in kg (a mix): the weight of one mix in kg; the step is then recorded in whole mixes and what one mix makes beyond the order becomes extra pieces. Must be one of the production\'s mix batch sizes. null clears it; omit to keep the current weight'),
                 'raw_materials'      => $schema->array()->items($schema->object([
                     'code'     => $schema->string()->description('Raw material code')->required(),
                     'quantity' => $schema->number()->description('Quantity used per artefact, in the raw material unit')->required(),

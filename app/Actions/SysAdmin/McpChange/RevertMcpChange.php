@@ -99,6 +99,9 @@ class RevertMcpChange
 
         $target  = Arr::get($mcpChange->data, 'target', []);
         $current = GetMcpChangeSnapshot::run($mcpChange->type, $target);
+        if ($mcpChange->type === McpChangeTypeEnum::PRODUCTION_RECIPE && !collect($mcpChange->after['artefacts'] ?? [])->flatten(1)->contains(fn ($step) => array_key_exists('mix_batch_kg', $step))) {
+            $current['artefacts'] = array_map(fn (array $steps) => array_map(fn (array $step) => Arr::except($step, 'mix_batch_kg'), $steps), $current['artefacts']);
+        }
 
         if ($current != $mcpChange->after) {
             throw ValidationException::withMessages(['message' => __('This was changed again after the AI change, so it cannot be reverted automatically. Look at it and fix it by hand.')]);

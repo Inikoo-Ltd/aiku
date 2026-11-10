@@ -225,6 +225,7 @@ class GetMcpChangeSnapshot
                     ->map(fn (array $step) => $step['position'].' '.($taskCodes[$step['manufacture_task_id']] ?? '#'.$step['manufacture_task_id'])
                         .' x'.(float) $step['units_per_artefact']
                         .($step['standard_rate'] !== null ? ' @'.(float) $step['standard_rate'].'/h' : '')
+                        .(isset($step['mix_batch_kg']) ? ' mix '.(float) $step['mix_batch_kg'].'kg' : '')
                         .collect($step['raw_materials'])->map(fn (array $rawMaterial) => ' +'.($materialCodes[$rawMaterial['raw_material_id']] ?? '#'.$rawMaterial['raw_material_id']).' '.(float) $rawMaterial['quantity_per_unit'])->implode(''))
                     ->implode('; ') ?: 'no steps'))
                 ->implode(' | ');
@@ -449,7 +450,7 @@ class GetMcpChangeSnapshot
             ->whereIn('artefact_id', $target['artefact_ids'])
             ->orderBy('position')
             ->orderBy('id')
-            ->get(['id', 'artefact_id', 'manufacture_task_id', 'position', 'units_per_artefact', 'standard_rate', 'label', 'waits_for']);
+            ->get(['id', 'artefact_id', 'manufacture_task_id', 'position', 'units_per_artefact', 'standard_rate', 'mix_batch_kg', 'label', 'waits_for']);
 
         $rawMaterials = DB::table('recipe_step_raw_materials')
             ->whereIn('artefact_manufacture_task_id', $steps->pluck('id'))
@@ -471,6 +472,7 @@ class GetMcpChangeSnapshot
                         'position'            => $step->position,
                         'units_per_artefact'  => $step->units_per_artefact,
                         'standard_rate'       => $step->standard_rate,
+                        'mix_batch_kg'        => $step->mix_batch_kg === null ? null : (float) $step->mix_batch_kg,
                         'raw_materials'       => collect($rawMaterials->get($step->id, []))->map(fn ($rawMaterial) => [
                             'raw_material_id'   => $rawMaterial->raw_material_id,
                             'quantity_per_unit' => $rawMaterial->quantity_per_unit,
