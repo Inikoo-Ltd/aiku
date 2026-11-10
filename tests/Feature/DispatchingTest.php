@@ -2318,6 +2318,54 @@ test('delivery note finalise and dispatch combined and pick as employee', functi
         ->and($masterShop->orderingStats->refresh()->last_order_dispatched_at)->not->toBeNull();
 });
 
+test('a staging test order is dispatched with a test tracking on a shipper without carrier api', function () {
+    $order        = freshSubmittedOrder($this);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $this->warehouse->id]);
+    $deliveryNote->deliveryNoteItems()->delete();
+
+    $orgStock = makeOrgStock($this);
+    StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $order->transactions()->first()->id,
+        'quantity_required' => 3,
+    ]);
+    foreach ([1, 5] as $quantity) {
+        StoreLocationOrgStock::make()->action(
+            orgStock: $orgStock,
+            location: StoreLocation::make()->action($this->warehouse, Location::factory()->definition()),
+            modelData: ['quantity' => $quantity, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+            strict: false
+        );
+    }
+    StoreShipper::make()->action($this->organisation, ['code' => 'TS'.Str::random(4), 'name' => 'Test manual', 'trade_as' => 'tm']);
+
+    $dispatchTestOrder = fn () => \App\Actions\Dispatching\DeliveryNote\DispatchTestOrder::run($order->refresh(), $this->user, 'TEST-PRE88');
+
+    expect($dispatchTestOrder)->toThrow(\RuntimeException::class, 'Only dropshipping');
+    $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::UNPAID]);
+    expect($dispatchTestOrder)->toThrow(\RuntimeException::class, 'not paid')
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED);
+
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    $order = $dispatchTestOrder();
+
+    expect($order->state)->toBe(OrderStateEnum::DISPATCHED)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and((float)$deliveryNote->deliveryNoteItems()->first()->quantity_picked)->toBe(3.0)
+        ->and($deliveryNote->shipments()->count())->toBe(1)
+        ->and($deliveryNote->shipments()->first()->shipper->api_shipper)->toBeNull()
+        ->and($order->tracking_number)->toBe('TEST-PRE88');
+
+    app()->detectEnvironment(fn () => 'production');
+    try {
+        expect($dispatchTestOrder)->toThrow(\RuntimeException::class, 'only dispatched outside production');
+    } finally {
+        app()->detectEnvironment(fn () => 'testing');
+    }
+});
+
 test('a shipping update the sales channel keeps refusing is noted on the order and given to customer services', function () {
     $order = freshSubmittedOrder($this);
     $order->update(['shipping_notes' => 'Leave at the back door']);
