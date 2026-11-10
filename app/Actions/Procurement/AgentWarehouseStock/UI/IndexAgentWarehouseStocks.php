@@ -20,6 +20,7 @@ use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\PurchaseOrderTransactionResource;
 use App\InertiaTable\InertiaTable;
+use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionQuantityQueryStateEnum;
 use App\Models\Procurement\AgentWarehouseStock;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SupplyChain\Agent;
@@ -58,7 +59,8 @@ class IndexAgentWarehouseStocks extends OrgAction
             ->join('organisations', 'organisations.id', 'agent_warehouse_stocks.organisation_id')
             ->join('supplier_products', 'supplier_products.id', 'agent_warehouse_stocks.supplier_product_id')
             ->leftJoin('suppliers', 'suppliers.id', 'supplier_products.supplier_id')
-            ->leftJoin('purchase_orders', 'purchase_orders.id', 'agent_warehouse_stocks.purchase_order_id');
+            ->leftJoin('purchase_orders', 'purchase_orders.id', 'agent_warehouse_stocks.purchase_order_id')
+            ->leftJoin('purchase_order_transactions as order_lines', 'order_lines.id', 'agent_warehouse_stocks.purchase_order_transaction_id');
 
         $stateFilter = AllowedFilter::callback('state', fn ($query, $value) => $query->where('agent_warehouse_stocks.state', $value));
         $organisationFilter = AllowedFilter::callback('organisation', fn ($query, $value) => $query->where('organisations.slug', $value));
@@ -80,6 +82,10 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'purchase_orders.slug as purchase_order_slug',
                 'purchase_orders.state as purchase_order_state',
                 'agent_warehouse_stocks.agent_goods_receipt_id',
+                'order_lines.quantity_ordered as line_quantity_ordered',
+                'order_lines.quantity_query_state as line_quantity_query_state',
+                'order_lines.quantity_query_quantity as line_quantity_query_quantity',
+                'order_lines.quantity_query_previous_quantity as line_quantity_query_previous_quantity',
                 DB::raw($this->productImageIdSql().' as image_id'),
                 DB::raw('exists(select 1 from agent_goods_receipt_items where agent_goods_receipt_items.agent_warehouse_stock_id = agent_warehouse_stocks.id and agent_goods_receipt_items.checked_at is null) as is_unchecked'),
             ])
@@ -105,10 +111,32 @@ class IndexAgentWarehouseStocks extends OrgAction
                 'purchase_order_state'     => $stock->purchase_order_state,
                 'image_id'                 => $stock->image_id,
                 'is_unchecked'             => (bool) $stock->is_unchecked,
+                'quantity_request'         => $this->quantityRequest($stock),
                 'is_from_goods_receipt'    => $stock->agent_goods_receipt_id !== null,
                 'purchase_order_transaction_id' => $stock->purchase_order_transaction_id,
                 'purchase_order_warning'   => $this->purchaseOrderWarning($stock),
             ])));
+    }
+
+    /**
+     * The change of ordered units the agent asked for on the purchase order line, waiting for an answer or accepted, so
+     * the units held can be read against what was ordered first.
+     *
+     * @return array{state: string, ordered: float, previous: float, requested: float}|null
+     */
+    private function quantityRequest(AgentWarehouseStock $stock): ?array
+    {
+        if (!in_array($stock->line_quantity_query_state, [PurchaseOrderTransactionQuantityQueryStateEnum::PENDING->value, PurchaseOrderTransactionQuantityQueryStateEnum::ACCEPTED->value], true)
+            || $stock->line_quantity_query_quantity === null) {
+            return null;
+        }
+
+        return [
+            'state'     => $stock->line_quantity_query_state,
+            'ordered'   => (float) $stock->line_quantity_ordered,
+            'previous'  => (float) $stock->line_quantity_query_previous_quantity,
+            'requested' => (float) $stock->line_quantity_query_quantity,
+        ];
     }
 
     /**

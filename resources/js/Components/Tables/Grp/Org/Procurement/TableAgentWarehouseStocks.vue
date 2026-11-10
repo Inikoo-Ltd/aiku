@@ -236,7 +236,25 @@ function unpack(stock: any) {
 					</div>
 				</div>
 			</template>
-			<template #cell(quantity)="{ item: stock }"><span class="tabular-nums">{{ locale.number(stock.quantity) }}</span></template>
+			<template #cell(quantity)="{ item: stock }">
+				<div class="space-y-1">
+					<span class="tabular-nums">{{ locale.number(stock.quantity) }}</span>
+					<span
+						v-if="stock.quantity_request?.state === 'pending'"
+						v-tooltip="ctrans('Units ordered on the purchase order, and the new quantity asked for, waiting for an answer')"
+						class="block w-fit cursor-help whitespace-nowrap rounded border border-amber-300 bg-amber-50 px-1.5 text-xs text-amber-700"
+					>
+						{{ ctrans("Ordered :ordered · new request :requested", { ordered: locale.number(stock.quantity_request.previous), requested: locale.number(stock.quantity_request.requested) }) }}
+					</span>
+					<span
+						v-else-if="stock.quantity_request?.state === 'accepted'"
+						v-tooltip="ctrans('The units ordered were changed on request and the change was accepted')"
+						class="block w-fit cursor-help whitespace-nowrap rounded bg-gray-100 px-1.5 text-xs text-gray-600"
+					>
+						{{ ctrans("Ordered :previous → :requested", { previous: locale.number(stock.quantity_request.previous), requested: locale.number(stock.quantity_request.requested) }) }}
+					</span>
+				</div>
+			</template>
 			<template #cell(containers)="{ item: stock }">
 				<div v-if="stock.agent_warehouse?.containers?.length" class="flex flex-wrap gap-1">
 					<span v-for="container in stock.agent_warehouse.containers" :key="container.id" class="inline-flex items-center gap-1 whitespace-nowrap text-xs">
