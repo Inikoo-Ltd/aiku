@@ -2297,6 +2297,9 @@ test('the cached layout survives a deploy that leaves the menu alone', function 
     Cache::tags('grp-first-load-props:'.$user->id)->put($cacheKey, ['layout' => ['cached_before_deploy' => true]], 3600);
 
     AppDeployment::create(['commit_hash' => 'ini230ini230', 'semantic_version' => 'v9.230.0']);
+    Route::get('ini230-route-added-by-a-deploy', fn () => 'ok')->name('ini230.route_added_by_a_deploy');
+    app('router')->getRoutes()->refreshNameLookups();
+    Closure::bind(fn () => GetFirstLoadProps::$menuVersions = [], null, GetFirstLoadProps::class)();
 
     expect(GetFirstLoadProps::make()->cacheKey($user, $user->language))->toBe($cacheKey)
         ->and(data_get(GetFirstLoadProps::make()->handle($user), 'layout.cached_before_deploy'))->toBeTrue()
