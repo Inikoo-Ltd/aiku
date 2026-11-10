@@ -907,7 +907,7 @@ test('on demand buyer org stock excluded from partner shopping', function () {
     expect($outStockIds)->toContain($sellerOrgStock->stock_id);
 });
 
-test('seasonal SKO is only suggested from a partner inside the ordering months of its tag', function () {
+test('seasonal SKO is only suggested from a partner when an order placed today would arrive in the season of its tag', function () {
     $seller = $this->orgPartner->partner;
     $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
     [, $sellerProduct] = createProduct($sellerShop);
@@ -934,29 +934,29 @@ test('seasonal SKO is only suggested from a partner inside the ordering months o
     $isSuggested = fn (): bool => collect(SuggestPartnerShoppingList::make()->action($this->orgPartner, 100000)['lines'])
         ->contains('org_stock_id', $sellerOrgStock->id);
 
-    Carbon::setTestNow('2026-11-10');
+    $leadDays = GetPartnerLeadTime::run($this->orgPartner)['days'];
+    Carbon::setTestNow(Carbon::parse('2027-01-15')->subDays($leadDays));
 
     try {
         expect($isSuggested())->toBeTrue();
 
-        $this->patch(route('grp.trade_units.tags.update', [$tag->id]), ['order_from_month' => 13])->assertSessionHasErrors('order_from_month');
-        $this->patch(route('grp.trade_units.tags.update', [$tag->id]), ['order_from_month' => 7, 'order_to_month' => 9])->assertSessionHasNoErrors();
+        $this->patch(route('grp.trade_units.tags.update', [$tag->id]), ['arrive_from_month' => 13])->assertSessionHasErrors('arrive_from_month');
+        $this->patch(route('grp.trade_units.tags.update', [$tag->id]), ['arrive_from_month' => 2, 'arrive_to_month' => 10])->assertSessionHasNoErrors();
         $this->withoutVite()->get(route('grp.trade_units.tags.edit', [$tag->slug]))->assertOk();
-        expect($tag->refresh()->order_from_month)->toBe(7)
-            ->and($tag->order_to_month)->toBe(9)
+        expect($tag->refresh()->arrive_from_month)->toBe(2)
+            ->and($tag->arrive_to_month)->toBe(10)
             ->and($isSuggested())->toBeFalse()
-            ->and(collect(GetPartnerStockCoverBuckets::make()->leftOut($this->orgPartner, 30))->sum('out_of_season'))->toBeGreaterThanOrEqual(1);
+            ->and(collect(GetPartnerStockCoverBuckets::make()->leftOut($this->orgPartner, $leadDays))->sum('out_of_season'))->toBeGreaterThanOrEqual(1);
 
-        $tag->update(['order_from_month' => 10, 'order_to_month' => 2]);
+        $tag->update(['arrive_from_month' => 1, 'arrive_to_month' => 1]);
         expect($isSuggested())->toBeTrue();
 
-        Carbon::setTestNow('2026-03-10');
+        $tag->update(['arrive_from_month' => 11, 'arrive_to_month' => 2]);
+        expect($isSuggested())->toBeTrue();
+
+        Carbon::setTestNow(Carbon::parse('2027-03-15')->subDays($leadDays));
         expect($isSuggested())->toBeFalse();
 
-        Carbon::setTestNow('2026-01-10');
-        expect($isSuggested())->toBeTrue();
-
-        $tag->update(['order_from_month' => 7, 'order_to_month' => 9]);
         $result = StorePartnerShoppingListItems::make()->action($this->orgPartner, [
             ['org_stock_id' => $sellerOrgStock->id, 'quantity' => 5],
         ]);

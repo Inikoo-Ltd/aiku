@@ -42,8 +42,8 @@ use App\Models\Traits\HasSearch;
  * @property int|null $image_id
  * @property array<array-key, mixed>|null $web_image
  * @property array<array-key, mixed> $label
- * @property int|null $order_from_month
- * @property int|null $order_to_month
+ * @property int|null $arrive_from_month
+ * @property int|null $arrive_to_month
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
  * @property-read array $translatable_columns_from
  * @property-read \App\Models\Helpers\Media|null $image
@@ -112,16 +112,19 @@ class Tag extends Model implements HasMedia
     }
 
     /**
-     * SQL that is true for a stock whose trade units (or their families) carry seasonal tags, none of
-     * which is in its ordering window this month. A window may wrap the year end (November to February).
+     * SQL that is true for a stock whose trade units (or their families) carry seasonal tags, when
+     * an order placed today would arrive outside the arrival months of every one of them.
+     * A season may wrap the year end (November to February).
+     *
+     * @param  int|string  $leadDays  days from ordering to arrival: a number, or SQL for the row's own lead time
      */
-    public static function outOfOrderingSeasonSql(string $stockIdColumn): string
+    public static function outOfOrderingSeasonSql(string $stockIdColumn, int|string $leadDays): string
     {
-        $month = (int) now()->month;
+        $month = "extract(month from date '".now()->toDateString()."' + ($leadDays)::int)";
 
         return "coalesce((select bool_and(not case
-                when season_tags.order_from_month <= season_tags.order_to_month then $month between season_tags.order_from_month and season_tags.order_to_month
-                else $month >= season_tags.order_from_month or $month <= season_tags.order_to_month end)
+                when season_tags.arrive_from_month <= season_tags.arrive_to_month then $month between season_tags.arrive_from_month and season_tags.arrive_to_month
+                else $month >= season_tags.arrive_from_month or $month <= season_tags.arrive_to_month end)
             from model_has_trade_units season_units
             join trade_units season_trade_units on season_trade_units.id = season_units.trade_unit_id
             join model_has_tags season_links on (season_links.model_type = 'TradeUnit' and season_links.model_id = season_trade_units.id)
@@ -129,8 +132,8 @@ class Tag extends Model implements HasMedia
             join tags season_tags on season_tags.id = season_links.tag_id
             where season_units.model_type = 'Stock'
                 and season_units.model_id = $stockIdColumn
-                and season_tags.order_from_month is not null
-                and season_tags.order_to_month is not null), false)";
+                and season_tags.arrive_from_month is not null
+                and season_tags.arrive_to_month is not null), false)";
     }
 
     public function shop(): BelongsTo

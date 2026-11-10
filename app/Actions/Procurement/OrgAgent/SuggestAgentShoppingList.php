@@ -173,7 +173,7 @@ class SuggestAgentShoppingList extends OrgAction
             ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
             ->whereIn('osp.id', $ids)
             ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
-            ->whereRaw('not '.Tag::outOfOrderingSeasonSql('os.stock_id'))
+            ->whereRaw('not '.Tag::outOfOrderingSeasonSql('os.stock_id', GetAgentStockCoverBuckets::leadTimeExpression(GetAgentLeadTimes::run($orgAgent)['agent']['days'])))
             ->whereRaw('not '.GetAgentStockCoverBuckets::onOpenPurchaseOrderExpression())
             ->whereRaw('coalesce(s.on_the_way_po_count, 0) = 0')
             ->whereNotExists(function ($query) {

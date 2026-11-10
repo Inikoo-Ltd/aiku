@@ -146,24 +146,24 @@ class EditTag extends OrgAction
                 ->map(fn (int $month) => ['value' => $month, 'label' => Carbon::create(2000, $month)->translatedFormat('F')])
                 ->all();
             $blueprint[] = [
-                'label'  => __('Ordering season'),
-                'title'  => __('Ordering season'),
+                'label'  => __('Season'),
+                'title'  => __('Season'),
                 'icon'   => 'fa-light fa-calendar-alt',
                 'fields' => [
-                    'order_from_month' => [
+                    'arrive_from_month' => [
                         'type'        => 'select',
-                        'label'       => __('Order from'),
-                        'information' => __('For seasonal products, Christmas for example. Outside these months the products with this tag are not suggested for ordering; they can still be ordered by hand. Leave both empty for a tag that is not seasonal.'),
+                        'label'       => __('Goods arrive from'),
+                        'information' => __('For seasonal products, Christmas for example: the months the goods should arrive in. A product with this tag is only suggested for ordering when, with its delivery time, an order placed today would arrive in these months; it can still be ordered by hand. Leave both empty for a tag that is not seasonal.'),
                         'required'    => false,
                         'options'     => $monthOptions,
-                        'value'       => $tag->order_from_month,
+                        'value'       => $tag->arrive_from_month,
                     ],
-                    'order_to_month' => [
+                    'arrive_to_month' => [
                         'type'     => 'select',
-                        'label'    => __('Order until the end of'),
+                        'label'    => __('Goods arrive until the end of'),
                         'required' => false,
                         'options'  => $monthOptions,
-                        'value'    => $tag->order_to_month,
+                        'value'    => $tag->arrive_to_month,
                     ],
                 ],
             ];

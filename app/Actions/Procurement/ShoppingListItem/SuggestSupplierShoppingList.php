@@ -14,6 +14,7 @@ use App\Actions\Procurement\OrgSupplier\GetSupplierStockCoverBuckets;
 use App\Enums\Catalogue\HealthRankEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Actions\Procurement\OrgSupplier\GetSupplierLeadTime;
 use App\Models\Helpers\Tag;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\SysAdmin\Organisation;
@@ -65,7 +66,7 @@ class SuggestSupplierShoppingList extends OrgAction
                     and sli.deleted_at is null)")
             ->where('sp.cost', '>', 0)
             ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
-            ->whereRaw('not '.Tag::outOfOrderingSeasonSql('os.stock_id'))
+            ->whereRaw('not '.Tag::outOfOrderingSeasonSql('os.stock_id', 'coalesce(os.measured_lead_time_days, os.estimated_lead_time_days, sp.measured_lead_time_days, sp.estimated_lead_time_days, '.(int) GetSupplierLeadTime::run($orgSupplier)['days'].')'))
             ->where(fn ($query) => $query->whereNull('os.id')->orWhere('os.state', OrgStockStateEnum::ACTIVE->value))
             ->select([
                 'p.id',
