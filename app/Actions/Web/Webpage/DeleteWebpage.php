@@ -14,11 +14,13 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateRedirects;
 use App\Actions\Web\Website\HydrateRedirect;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -69,8 +71,8 @@ class DeleteWebpage extends OrgAction
             $this->detachAssociatedModels($webpage);
 
             if ($redirect) {
-                DB::table('redirects')->where('to_webpage_id', $webpage->id)->delete();
                 DB::table('redirects')->where('website_id', $webpage->website_id)->where('from_path', $webpage->url)->delete();
+                $this->repointRedirectsToDeletedWebpage($webpage, (int) $redirect);
 
                 StoreRedirect::make()->action($webpage, [
                     'type' => RedirectTypeEnum::PERMANENT,
@@ -142,6 +144,21 @@ class DeleteWebpage extends OrgAction
                 'webpage'      => $webpage->slug
             ]
         );
+    }
+
+    private function repointRedirectsToDeletedWebpage(Webpage $webpage, int $toWebpageId): void
+    {
+        $toWebpage = Webpage::find($toWebpageId);
+
+        Redirect::where('to_webpage_id', $webpage->id)->get()->each(function (Redirect $redirect) use ($toWebpage) {
+            if (strtolower($redirect->from_path) == strtolower($toWebpage->url)) {
+                $redirect->delete();
+
+                return;
+            }
+
+            UpdateRedirect::make()->action($redirect, ['to_webpage_id' => $toWebpage->id]);
+        });
     }
 
     private function detachAssociatedModels(Webpage $webpage): void

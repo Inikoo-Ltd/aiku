@@ -2163,6 +2163,23 @@ test('deleting or reopening a webpage leaves the redirects of other websites wit
         ->and(Redirect::find($otherReopenedRedirect->id)?->to_webpage_id)->toBe($otherTarget->id);
 });
 
+test('deleting a webpage with a redirect points the redirects that led to it at the new target', function (Website $website) {
+    $livePage = function (string $url) use ($website): Webpage {
+        $webpage = StoreWebpage::make()->action($website, array_merge(Webpage::factory()->definition(), ['url' => $url, 'code' => $url]));
+
+        return PublishWebpage::make()->action($webpage, ['comment' => 'live']);
+    };
+
+    $deletedPage   = $livePage('old-family-'.Str::lower(Str::random(6)));
+    $target        = $livePage('new-family-'.Str::lower(Str::random(6)));
+    $olderRedirect = StoreRedirectFromWebsite::make()->action($website, ['from_url' => 'https://'.$website->domain.'/older-family-'.Str::lower(Str::random(6)), 'to_url' => $deletedPage->id]);
+
+    DeleteWebpage::make()->action($deletedPage, false, ['redirects' => $target->id]);
+
+    expect(Redirect::find($olderRedirect->id)?->to_webpage_id)->toBe($target->id)
+        ->and(Redirect::where('website_id', $website->id)->where('from_path', $deletedPage->url)->value('to_webpage_id'))->toBe($target->id);
+})->depends('launch website');
+
 test('webpage title can skip the title prefix and suffix', function (Website $website) {
     $webpage = StoreWebpage::make()->action($website->storefront, array_merge(Webpage::factory()->definition(), ['title' => 'Bath bombs']));
     $webpage = UpdateWebpage::make()->action($webpage, [
