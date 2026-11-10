@@ -260,6 +260,7 @@ const visitSearchPage = () => {
         <Button
             v-if="assistant"
             :label="askLabel"
+            :title="askLabel"
             size="xs"
             class="iris-search-ask absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full"
             @click="askAssistant"
@@ -320,6 +321,13 @@ const visitSearchPage = () => {
 
 .iris-search-box .iris-search-input-ask {
     padding-right: 11rem;
+}
+
+.iris-search-box .iris-search-ask > span {
+    max-width: 8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 @container (max-width: 26rem) {

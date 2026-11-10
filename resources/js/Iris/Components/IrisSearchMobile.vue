@@ -342,7 +342,7 @@ const askAssistant = () => {
                     />
                     <FontAwesomeIcon icon="far fa-search" class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fixed-width aria-hidden="true" />
                 </div>
-                <Button v-if="assistant" :label="askLabel" size="xs" class="shrink-0 rounded-full" @click="askAssistant">
+                <Button v-if="assistant" :label="askLabel" :title="askLabel" size="xs" class="iris-search-ask-mobile shrink-0 rounded-full" @click="askAssistant">
                     <template #icon>
                         <FontAwesomeIcon icon="far fa-sparkles" fixed-width aria-hidden="true" />
                     </template>
@@ -395,6 +395,13 @@ const askAssistant = () => {
 </template>
 
 <style scoped>
+.iris-search-ask-mobile :deep(span) {
+    max-width: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .dragHintArrowUp {
     animation: dragHintArrowUp 700ms ease-in-out infinite;
 }
