@@ -22,6 +22,7 @@ use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -117,7 +118,7 @@ class CloseMetaChatSession
      *
      * @noinspection PhpUnusedParameterInspection
      */
-    public function asController(string $organisation, MetaChatSession $metaChatSession): RedirectResponse
+    public function asController(string $organisation, MetaChatSession $metaChatSession): RedirectResponse|JsonResponse
     {
         $agent = $this->getCurrentAgent($metaChatSession);
 
@@ -139,6 +140,10 @@ class CloseMetaChatSession
             throw ValidationException::withMessages([
                 'message' => $e->getMessage(),
             ]);
+        }
+
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true]);
         }
 
         return back()->setStatusCode(303);

@@ -10,6 +10,7 @@
 
 namespace App\Http\Resources\Fulfilment;
 
+use App\Actions\Catalogue\Variant\GetVariantProductSizeLabel;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\Ordering\Transaction\SyncBasketLinesWithProductStock;
@@ -32,6 +33,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string|null $asset_code
  * @property string|null $asset_name
  * @property string|null $asset_type
+ * @property string|null $variant_option_label
+ * @property string|null $product_code
+ * @property string|null $product_unit
  * @property numeric-string|int|float|null $price
  * @property string|null $product_slug
  * @property int|null $product_image_id
@@ -72,6 +76,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'asset_code'          => $transaction->asset_code,
             'asset_name'          => $transaction->asset_name,
             'asset_type'          => $transaction->asset_type,
+            'size_label'          => GetVariantProductSizeLabel::make()->forBasketLine($transaction->variant_option_label, $transaction->product_code, $transaction->product_unit, $transaction->units),
             'units'               => $transaction->units,
             'price'               => $transaction->price,
             'product_slug'        => $transaction->product_slug,

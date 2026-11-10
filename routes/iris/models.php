@@ -13,6 +13,7 @@ use App\Actions\Iris\Appointment\RescheduleIrisAppointment;
 use App\Actions\Iris\Appointment\StoreIrisAppointment;
 use App\Actions\Iris\Reviews\StoreIrisOrderReview;
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
+use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
 use App\Actions\Iris\Basket\UpdateEcomBasketTransaction;
 use App\Actions\Iris\CRM\DeleteIrisBackInStockReminder;
 use App\Actions\Iris\CRM\DeleteIrisPortfolioFavourites;
@@ -65,6 +66,7 @@ Route::delete('un-favourite/{product:id}', DeleteIrisPortfolioFavourites::class)
 Route::patch('customer/update', UpdateIrisCustomer::class)->name('customer.update');
 
 Route::post('{product:id}/store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store')->withoutScopedBindings()->whereNumber('product');
+Route::post('store-transactions', StoreEcomBasketTransactions::class)->name('transactions.store');
 Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::class)->name('transaction.update')->withoutScopedBindings()->withTrashed()->whereNumber('transaction');
 
 Route::post('remind-back-in-stock/{product:id}', StoreIrisBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings()->whereNumber('product');

@@ -1,8 +1,8 @@
 ---
 title: Odpovedanie na e-maily v Chate
 summary: Pošta do schránky obchodu príde ako konverzácia vedľa webového chatu a WhatsAppu, aj s celým vláknom, a vaša odpoveď odchádza z tej istej adresy s vaším podpisom a prílohami. Skutoční zákazníci, ktorých Gmail označil ako spam, sa dostanú dnu tiež, ich súbory sa pre bezpečnosť zadržia.
-date: 2026-10-01
-source_date: 2026-10-01
+date: 2026-11-10
+source_date: 2026-11-10
 tags: crm, chat, email
 category: help-desk
 series: Chat
@@ -20,6 +20,10 @@ Schránka obchodu musí byť raz pripojená - pozrite si <a href="/docs/connecti
 ## Čítanie a odpovedanie
 
 E-mail sa pripojí do <b>Waiting</b> (čaká) ako ktorákoľvek konverzácia a <b>Assign to me</b> (prideliť mne) ho urobí vaším - zvyšok nájdete v <a href="/docs/customer-chat-sk">Rozhovor so zákazníkmi v Chate</a>. Prichádza s ním celé vlákno. Vaša odpoveď sa odošle zo schránky obchodu v tom istom vlákne, a keď zákazník odpovie, vráti sa späť do tej istej konverzácie, nie do novej.
+
+## Spracovanie viacerých e-mailov naraz
+
+Zaškrtnite políčko na začiatku každého e-mailu alebo <b>Vybrať všetko</b> nad zoznamom a nad ním sa zobrazia akcie: <b>Označiť ako prečítané</b>, <b>Označiť ako neprečítané</b> a <b>Zatvoriť</b> pre e-maily, ktoré nepotrebujú odpoveď, napríklad poďakovanie. Zatvorený e-mail sa vráti do <b>Čaká</b>, ak zákazník znova napíše. Prečítané a neprečítané je spoločné pre celý tím, rovnako ako keď e-mail otvoríte. <b>Vybrať všetko</b> zaškrtne e-maily načítané v zozname, preto najprv posuňte zoznam nadol, aby sa načítali ďalšie. V priečinkoch <b>Spam</b> a <b>Ignorované</b> sú akcie <b>Nie je spam</b> (alebo <b>Neignorované</b>) a <b>Presunúť do koša</b>. E-mail, ktorý sa nepodarilo zmeniť, zostane zaškrtnutý a zoznam ukáže, koľko ich je.
 
 ## Písanie nového e-mailu
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
+import { basketSizeSuffix } from '@/Composables/useBasketSizeSuffix'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { debounce, get, set } from 'lodash-es'
 import { faChevronRight, faChevronDown, faTrashAlt, faPlusCircle, faGift, faImage, faTimes, faBadgePercent, faTruck, faStickyNote, faExclamationCircle, faWallet } from "@fal"
@@ -592,7 +593,7 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
                                                     {{ product.units }}x
                                                 </span>
 
-                                                {{ product.name }}
+                                                {{ product.name }}{{ basketSizeSuffix(product.name, product.size_label) }}
                                             </LinkIris>
 
                                             <div class="text-xxs text-gray-400 truncate">

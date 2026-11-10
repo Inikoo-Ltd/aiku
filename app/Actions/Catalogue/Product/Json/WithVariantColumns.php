@@ -18,6 +18,11 @@ trait WithVariantColumns
         return DB::raw("(SELECT COALESCE(NULLIF(variants.option_translations->>(variants.data->'variants'->0->>'label'), ''), variants.data->'variants'->0->>'label') FROM variants WHERE variants.id = products.variant_id) as variant_axis_label");
     }
 
+    public function getVariantOptionLabelColumn(): Expression
+    {
+        return DB::raw("(SELECT variants.data->'products'->(products.id::text)->>(variants.data->'variants'->0->>'label') FROM variants WHERE variants.id = products.variant_id) as variant_option_label");
+    }
+
     public function getVariantTitleColumn(): Expression
     {
         return DB::raw("(SELECT COALESCE(NULLIF(variants.label, ''), leaders.name) FROM variants LEFT JOIN products AS leaders ON leaders.id = variants.leader_id WHERE variants.id = products.variant_id) as variant_title");

@@ -28,7 +28,7 @@ import Checkbox from "primevue/checkbox"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faTimes } from "@far"
-import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faBullhorn, faInbox, faReply, faList, faComments, faMoon, faChartLine, faSortAmountDown, faSortAmountDownAlt } from "@fal"
+import { faCog, faStar, faAngleLeft, faAngleRight, faAngleDown, faFilter, faStoreAlt, faGlobe, faPlus, faEnvelope, faArchive, faPhone, faBell, faUser, faTruck, faUsers, faBullhorn, faInbox, faEnvelopeOpen, faReply, faList, faComments, faMoon, faChartLine, faSortAmountDown, faSortAmountDownAlt } from "@fal"
 import { faBan, faRotateLeft, faTrash, faCheck, faPen, faTrashArrowUp, faAnglesUp, faAngleUp, faEquals, faChevronRight, faStar as faStarSolid, faCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { formatChatTime, formatChatAge } from "@/Composables/chatTime"
@@ -1041,7 +1041,7 @@ const onSpamFromThread = () => {
 }
 
 const markSpam = async (c: Contact, spam: boolean) => {
-    if (isSpamming.value[c.ulid]) return
+    if (isSpamming.value[c.ulid]) return false
     openMenuUlid.value = null
     isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
     try {
@@ -1054,8 +1054,10 @@ const markSpam = async (c: Contact, spam: boolean) => {
             messages.value = []
         }
         fetchInboxNotifications()
+        return true
     } catch (e: any) {
         errorPerContact.value[c.ulid] = e?.response?.data?.message ?? "Failed to update spam"
+        return false
     } finally {
         isSpamming.value = { ...isSpamming.value, [c.ulid]: false }
     }
@@ -1064,7 +1066,7 @@ const markSpam = async (c: Contact, spam: boolean) => {
 // Same shape as marking spam, without reporting anybody: the sender is never blocked, and the
 // conversation keeps its status so taking the mark off puts it back where it was.
 const markRubbish = async (c: Contact, rubbish: boolean, reason?: string) => {
-    if (isSpamming.value[c.ulid]) return
+    if (isSpamming.value[c.ulid]) return false
     openMenuUlid.value = null
     isSpamming.value = { ...isSpamming.value, [c.ulid]: true }
     try {
@@ -1080,8 +1082,10 @@ const markRubbish = async (c: Contact, rubbish: boolean, reason?: string) => {
             messages.value = []
         }
         fetchInboxNotifications()
+        return true
     } catch (e: any) {
         errorPerContact.value[c.ulid] = e?.response?.data?.message ?? "Failed to mark as rubbish"
+        return false
     } finally {
         isSpamming.value = { ...isSpamming.value, [c.ulid]: false }
     }
@@ -1900,13 +1904,16 @@ const trashChat = async (c: Contact) => {
     }
 }
 
-// Several at once only where nobody is waiting for an answer: clearing the Spam and Ignored bins.
-const canBulkSelect = computed(() => (spamView.value || rubbishView.value) && !isReadOnly.value)
+// Several at once: the Spam and Ignored bins are cleared (trash or put back), every other list is
+// worked through (read, unread, close). Close, not Ignore, is the archive: a customer writing
+// back reopens a closed email, while a reply to an ignored one stays ignored.
+const isBinView = computed(() => spamView.value || rubbishView.value)
+const canBulkSelect = computed(() => !trashView.value && !isReadOnly.value)
 const bulkSelected = ref<Record<string, boolean>>({})
-const isBulkTrashing = ref(false)
+const isBulkRunning = ref(false)
 const bulkError = ref("")
 
-const isBulkSelectable = (c: Contact) => canBulkSelect.value && (spamView.value ? !!c.is_spam : !!c.is_rubbish)
+const isBulkSelectable = (c: Contact) => canBulkSelect.value && (spamView.value ? !!c.is_spam : rubbishView.value ? !!c.is_rubbish : true)
 const bulkSelectableContacts = computed(() => filteredContacts.value.filter(isBulkSelectable))
 const bulkSelectedContacts = computed(() => bulkSelectableContacts.value.filter((c) => bulkSelected.value[c.ulid]))
 const allBulkSelected = computed(() => bulkSelectableContacts.value.length > 0 && bulkSelectedContacts.value.length === bulkSelectableContacts.value.length)
@@ -1919,31 +1926,40 @@ const toggleAllBulkSelected = () => {
     bulkSelected.value = allBulkSelected.value ? {} : Object.fromEntries(bulkSelectableContacts.value.map((c) => [c.ulid, true]))
 }
 
-watch([spamView, rubbishView, selectedShopIds, canBulkSelect], () => {
+watch([spamView, rubbishView, selectedShopIds, canBulkSelect, activeInboxView, searchQuery], () => {
     bulkSelected.value = {}
     bulkError.value = ""
 })
 
-const runBulk = async (action: (c: Contact) => Promise<unknown>) => {
-    if (isBulkTrashing.value) return
-    isBulkTrashing.value = true
+const runBulk = async (action: (c: Contact) => Promise<boolean>) => {
+    if (isBulkRunning.value) return
+    isBulkRunning.value = true
     bulkError.value = ""
 
-    for (const c of bulkSelectedContacts.value) {
-        await action(c)
+    const failed: Record<string, boolean> = {}
+    for (const c of [...bulkSelectedContacts.value]) {
+        if (!(await action(c))) {
+            failed[c.ulid] = true
+        }
     }
 
-    const failed = bulkSelectedContacts.value.length
-    bulkSelected.value = Object.fromEntries(bulkSelectedContacts.value.map((c) => [c.ulid, true]))
-    bulkError.value = failed ? ctrans(":count could not be updated", { count: String(failed) }) : ""
-    isBulkTrashing.value = false
+    const failedCount = Object.keys(failed).length
+    bulkSelected.value = failed
+    bulkError.value = failedCount ? ctrans(":count could not be updated", { count: String(failedCount) }) : ""
+    isBulkRunning.value = false
     fetchInboxNotifications()
+    reloadContactsSoon()
+}
+
+const updateListedContact = (ulid: string, changes: Partial<Contact>) => {
+    const found = contacts.value.find((x) => x.ulid === ulid)
+    if (found) Object.assign(found, changes)
 }
 
 const trashBulkSelected = () => runBulk(async (c) => {
-    if (await patchSession(c, sessionRoute("trash", c), "delete")) {
-        removeFromList(c.ulid)
-    }
+    if (!(await patchSession(c, sessionRoute("trash", c), "delete"))) return false
+    removeFromList(c.ulid)
+    return true
 })
 
 const restoreBulkSelected = () => {
@@ -1951,6 +1967,30 @@ const restoreBulkSelected = () => {
 
     return runBulk((c) => fromSpam ? markSpam(c, false) : markRubbish(c, false))
 }
+
+const readBulkSelected = () => runBulk(async (c) => {
+    if (!c.unread) return true
+    if (!(await patchSession(c, sessionRoute("read", c), "patch"))) return false
+    updateListedContact(c.ulid, { unread: 0 })
+    return true
+})
+
+const unreadBulkSelected = () => runBulk(async (c) => {
+    if (!(await patchSession(c, sessionRoute("unread", c), "patch"))) return false
+    updateListedContact(c.ulid, { unread: Math.max(Number(c.unread) || 0, 1) })
+    if (selectedSession.value?.ulid === c.ulid) {
+        selectedSession.value = null
+        messages.value = []
+    }
+    return true
+})
+
+const closeBulkSelected = () => runBulk(async (c) => {
+    if (c.status === "closed") return true
+    if (!(await patchSession(c, sessionRoute("close", c), "patch"))) return false
+    updateListedContact(c.ulid, { status: "closed" })
+    return true
+})
 
 const LABEL_COLOURS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280"]
 
@@ -4094,12 +4134,22 @@ onUnmounted(() => {
                         <Checkbox :model-value="allBulkSelected" binary :aria-label="ctrans('Select all')" @update:model-value="toggleAllBulkSelected" />
                         <span class="whitespace-nowrap">{{ bulkSelectedContacts.length ? ctrans(":count selected", { count: String(bulkSelectedContacts.length) }) : ctrans("Select all") }}</span>
                         <span v-if="bulkError" class="truncate text-red-600">{{ bulkError }}</span>
-                        <template v-if="bulkSelectedContacts.length">
-                            <Button class="ml-auto" type="tertiary" size="xs" :icon="faRotateLeft"
-                                :label="spamView ? ctrans('Not spam') : ctrans('Not ignored')" :disabled="isBulkTrashing" @click="restoreBulkSelected" />
-                            <Button type="tertiary" size="xs" :icon="faTrash"
-                                :label="ctrans('Move to trash')" :loading="isBulkTrashing" @click="trashBulkSelected" />
-                        </template>
+                        <div v-if="bulkSelectedContacts.length" class="ml-auto flex flex-wrap items-center justify-end gap-1">
+                            <template v-if="isBinView">
+                                <Button type="tertiary" size="xs" :icon="faRotateLeft"
+                                    :label="spamView ? ctrans('Not spam') : ctrans('Not ignored')" :disabled="isBulkRunning" @click="restoreBulkSelected" />
+                                <Button type="tertiary" size="xs" :icon="faTrash"
+                                    :label="ctrans('Move to trash')" :loading="isBulkRunning" @click="trashBulkSelected" />
+                            </template>
+                            <template v-else>
+                                <Button type="tertiary" size="xs" :icon="faEnvelopeOpen"
+                                    :label="ctrans('Mark as read')" :disabled="isBulkRunning" @click="readBulkSelected" />
+                                <Button type="tertiary" size="xs" :icon="faEnvelope"
+                                    :label="ctrans('Mark as unread')" :disabled="isBulkRunning" @click="unreadBulkSelected" />
+                                <Button type="tertiary" size="xs" :icon="faCheck"
+                                    :label="ctrans('Close')" :loading="isBulkRunning" @click="closeBulkSelected" />
+                            </template>
+                        </div>
                     </div>
                     <ChatInboxRow v-for="c in filteredContacts" :key="c.ulid" :c="c" :is-selected="selectedSession?.ulid === c.ulid" />
 

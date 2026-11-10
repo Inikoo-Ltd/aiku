@@ -1,7 +1,7 @@
 ---
 title: Looking after customers
 summary: Find your way around a shop's customer list, add a new customer, read a customer's page, and understand the states, logins and prospects that sit around it.
-date: 2026-09-29
+date: 2026-11-10
 tags: crm, customers
 category: crm
 help_routes: grp.org.shops.show.crm.customers, grp.org.shops.show.crm.prospects, grp.org.shops.show.crm.customers.show.web_users
@@ -110,6 +110,20 @@ Press **Create Web User** from the list to add one; opening a web user shows the
 ## Addresses
 
 A customer keeps a contact address (used for correspondence and tax purposes) and can have delivery addresses used on their orders, both captured as full address forms — country, postcode, and the rest — on the customer's own record and when creating or editing the customer.
+
+## Shop types
+
+Each customer of a wholesale shop can have a **Shop type**: Crystal / new age shop, Gift shop, Spa / wellness, Garden centre, Online seller / dropshipper, Market trader or Other. It lets us compare a customer with similar shops, for example to see what shops like theirs buy.
+
+To set it on one customer, open the customer, press **Edit**, pick a value in the **Shop type** field of the **Contact** section (below **Company**) and press the save icon next to the field.
+
+To tag many customers at once, go to **CRM → Customers → Shop types** (the tab shows for wholesale shops):
+
+1. Read **Coverage of this shop**: one row per shop type in use, a row **No shop type yet** and the total **Active customers (24 months)**, with the columns **Customers**, **% of active**, **Told us**, **Set by staff** and **Inferred**. Click a number to filter the list below to that shop type. **All shops** shows, for every wholesale shop you can see, how many active customers have a shop type; click a shop code to open that shop's own page.
+2. The list shows the active customers, those invoiced in the last 24 months, with **Ref**, **Name**, **Country**, **Last invoice**, **Invoices**, **Sales**, **Shop type** and **Set by**. Search it, sort it, or filter it by shop type with the tick boxes above it.
+3. Tick the customers, choose a value in the **Shop type** box above the list (or **Clear shop type**) and press **Apply to selected**. You can tag up to 200 customers at a time. The list and both tables update straight away.
+
+**Set by** says who gave the shop type; anything set in the back office shows **Set by staff**. **Inferred** means aiku worked it out from the name of the business, so correct it if it is wrong. You need permission to edit the shop's customers to tag them; without it you can see the page but not the tick boxes.
 
 ## Prospects: people who are not customers yet
 

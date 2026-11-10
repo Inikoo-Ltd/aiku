@@ -26450,5 +26450,20 @@
     "This order had nothing left and was cancelled.": "Diese Bestellung hatte nichts mehr und wurde storniert.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Diese Bestellung hat nichts mehr, aber es wurde eine Anzahlung geleistet: hole sie zurück, bevor du die Bestellung stornierst.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "der Agent hat :quantity Einheiten von :code zu :supplier (:reference) verschoben, der Lieferant kann sie nicht herstellen.",
-    "Open the chat in :shop": "Chat in :shop öffnen"
+    "Open the chat in :shop": "Chat in :shop öffnen",
+    "Quantity of :size": "Menge für :size",
+    ":price per litre": ":price pro Liter",
+    "Price not available": "Preis nicht verfügbar",
+    ":quantity+ containers: :percentage off": ":quantity+ Gebinde: :percentage Rabatt",
+    "Price excl. VAT": "Preis ohne MwSt.",
+    "Line total": "Zeilensumme",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "Mengenrabatte zählen die Gebinde einer Größe; verschiedene Größen werden nicht zusammengerechnet.",
+    "Your discount: :label": "Ihr Rabatt: :label",
+    "Total excl. VAT": "Summe ohne MwSt.",
+    "Update basket": "Warenkorb aktualisieren",
+    "Add selected items to basket": "Ausgewählte Artikel in den Warenkorb legen",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "Die Größe ist die Füllmenge je Gebinde. Die Menge ist die Anzahl der Gebinde.",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "Rabatte, die von der gesamten Bestellung abhängen, werden angewendet, sobald die Artikel im Warenkorb liegen.",
+    ":size sample": "Probe :size"
 }

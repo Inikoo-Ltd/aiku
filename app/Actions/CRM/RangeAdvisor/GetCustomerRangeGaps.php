@@ -25,11 +25,15 @@ class GetCustomerRangeGaps
     use WithRecommendableProducts;
 
     /**
-     * @return array{segment: ?array{level: string, shop_type: ?string, country_code: ?string, region: ?string, customers: int}, missing: Collection, forgotten: Collection}
+     * @return array{segment: ?array{level: string, shop_type: ?string, country_code: ?string, area: ?string, region: ?string, customers: int}, missing: Collection, forgotten: Collection}
      */
     public function handle(Customer $customer, int $limit = 24): array
     {
         $shop = $customer->shop;
+        $area = DB::table('addresses')
+            ->where('addresses.id', $customer->address_id)
+            ->selectRaw(RebuildRangeAdvisorSales::AREA_SQL.' as area')
+            ->first()?->area;
 
         $bestSellers = GetSegmentBestSellers::make()->handle(
             $shop,
@@ -37,6 +41,7 @@ class GetCustomerRangeGaps
             data_get($customer->location, 0),
             [
                 'customer'            => $customer,
+                'area'                => $area,
                 'limit'               => $limit,
                 'exclude_product_ids' => DB::table('customer_product_purchases')->where('customer_id', $customer->id)->pluck('product_id')->all(),
             ]

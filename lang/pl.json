@@ -25715,5 +25715,20 @@
     "The supplier can not make it: give it to another supplier of the agent": "Dostawca nie może tego wyprodukować: przekaż to innemu dostawcy agenta",
     "This order had nothing left and was cancelled.": "W tym zamówieniu nic nie zostało i zostało anulowane.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "W tym zamówieniu nic nie zostało, ale wpłacono zaliczkę: odzyskaj ją przed anulowaniem zamówienia.",
-    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agent przeniósł :quantity szt. :code do :supplier (:reference), dostawca nie może ich wyprodukować."
+    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agent przeniósł :quantity szt. :code do :supplier (:reference), dostawca nie może ich wyprodukować.",
+    "Quantity of :size": "Ilość w rozmiarze :size",
+    ":price per litre": ":price za litr",
+    "Price not available": "Cena niedostępna",
+    ":quantity+ containers: :percentage off": ":quantity+ opakowań: rabat :percentage",
+    "Price excl. VAT": "Cena bez VAT",
+    "Line total": "Razem za pozycję",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "Rabaty ilościowe liczą opakowania jednego rozmiaru; różne rozmiary nie są sumowane.",
+    "Your discount: :label": "Twój rabat: :label",
+    "Total excl. VAT": "Razem bez VAT",
+    "Update basket": "Zaktualizuj koszyk",
+    "Add selected items to basket": "Dodaj wybrane pozycje do koszyka",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "Rozmiar to zawartość jednego opakowania. Ilość to liczba opakowań.",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "Rabaty zależne od całego zamówienia są naliczane, gdy pozycje są w koszyku.",
+    ":size sample": "Próbka :size"
 }

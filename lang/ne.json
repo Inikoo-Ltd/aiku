@@ -23229,5 +23229,20 @@
     "The supplier can not make it: give it to another supplier of the agent": "आपूर्तिकर्ताले बनाउन सक्दैन: एजेन्टको अर्को आपूर्तिकर्तालाई दिनुहोस्",
     "This order had nothing left and was cancelled.": "यो अर्डरमा केही बाँकी थिएन र रद्द गरियो।",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "यो अर्डरमा केही बाँकी छैन तर यसमा धरौटी तिरिएको छ: अर्डर रद्द गर्नु अघि फिर्ता लिनुहोस्।",
-    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "एजेन्टले :code का :quantity एकाइ :supplier (:reference) मा सार्यो, आपूर्तिकर्ताले बनाउन सक्दैन।"
+    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "एजेन्टले :code का :quantity एकाइ :supplier (:reference) मा सार्यो, आपूर्तिकर्ताले बनाउन सक्दैन।",
+    "Quantity of :size": ":size को मात्रा",
+    ":price per litre": "प्रति लिटर :price",
+    "Price not available": "मूल्य उपलब्ध छैन",
+    ":quantity+ containers: :percentage off": ":quantity+ कन्टेनर: :percentage छुट",
+    "Price excl. VAT": "भ्याट बिनाको मूल्य",
+    "Line total": "लाइनको जम्मा",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "परिमाण छुटले एउटै साइजका कन्टेनर गन्छ; फरक साइजहरू जोडिँदैनन्।",
+    "Your discount: :label": "तपाईंको छुट: :label",
+    "Total excl. VAT": "भ्याट बिनाको जम्मा",
+    "Update basket": "बास्केट अपडेट गर्नुहोस्",
+    "Add selected items to basket": "छानिएका वस्तुहरू बास्केटमा थप्नुहोस्",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "साइज भनेको प्रत्येक कन्टेनरमा भएको मात्रा हो। मात्रा भनेको कन्टेनरहरूको संख्या हो।",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "सम्पूर्ण अर्डरमा निर्भर छुटहरू वस्तुहरू बास्केटमा भएपछि लागू हुन्छन्।",
+    ":size sample": ":size नमुना"
 }

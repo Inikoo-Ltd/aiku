@@ -1,7 +1,7 @@
 ---
 title: Answering emails in Chat
 summary: Mail to the shop's mailbox arrives as a conversation next to the website chat and WhatsApp, with the whole thread, and your answer goes out from the same address with your signature and attachments, and tells you when Gmail has sent it or why it could not. Real customers that Gmail put in spam come in too, with their files held back for safety.
-date: 2026-10-01
+date: 2026-11-10
 tags: crm, chat, email
 category: help-desk
 series: Chat
@@ -19,6 +19,10 @@ The shop's mailbox has to be connected once - see <a href="/docs/connecting-an-e
 ## Reading and answering
 
 An email joins <b>Waiting</b> like any conversation, and <b>Assign to me</b> makes it yours - see <a href="/docs/customer-chat">Talking to customers in Chat</a> for the rest. The whole thread comes with it. Your answer is sent from the shop's mailbox in the same thread, and when the customer replies it lands back in the same conversation, not a new one.
+
+## Working through many emails at once
+
+Tick the box at the start of each email, or <b>Select all</b> at the top of the list, and the actions appear above it: <b>Mark as read</b>, <b>Mark as unread</b> and <b>Close</b> for emails that need no answer, such as a thank-you. A closed email comes back to <b>Waiting</b> if the customer writes again. Read and unread are shared by the team, as when you open an email. <b>Select all</b> ticks the emails loaded in the list, so scroll down first to take in more. In <b>Spam</b> and <b>Ignored</b> the actions are <b>Not spam</b> (or <b>Not ignored</b>) and <b>Move to trash</b>. An email that could not be changed stays ticked, and the list says how many.
 
 ## Writing a new email
 

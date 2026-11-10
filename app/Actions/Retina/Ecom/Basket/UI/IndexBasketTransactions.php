@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Catalogue\Product\Json\WithVariantColumns;
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\Media;
@@ -22,6 +23,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexBasketTransactions extends OrgAction
 {
+    use WithVariantColumns;
+
     public function handle(Order $order, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -68,6 +71,8 @@ class IndexBasketTransactions extends OrgAction
                 'products.id as product_id',
                 'products.price as price',
                 'products.units as units',
+                'products.unit as product_unit',
+                'products.code as product_code',
                 'products.slug as product_slug',
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
@@ -81,6 +86,7 @@ class IndexBasketTransactions extends OrgAction
                 'webpages.id as webpage_id',
                 'webpages.canonical_url as webpage_canonical_url',
             ])
+            ->addSelect($this->getVariantOptionLabelColumn())
             ->selectRaw("'{$order->currency->code}'  as currency_code")
             ->selectRaw("'{$order->shop->type->value}'  as shop_type")
             ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered', 'price'])

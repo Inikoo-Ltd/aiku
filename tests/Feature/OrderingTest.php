@@ -5777,9 +5777,13 @@ test('range advisor segments need five buyers and the gap analysis lists what si
     $orderOf($customer, [$own]);
     $orderOf($customer, [$forgotten], now()->subMonths(13));
 
+    $segmentCustomers = $buyers->concat([$customer]);
+    DB::table('addresses')->whereIn('id', $segmentCustomers->pluck('address_id'))->update(['postal_code' => '28013', 'country_code' => 'SE']);
+    DB::table('customers')->whereIn('id', $segmentCustomers->pluck('id'))->update(['location' => json_encode(['SE', 'Sweden', 'Stockholm'])]);
+
     \App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::run($this->shop);
 
-    $country     = data_get($customer->location, 0);
+    $country     = 'SE';
     $bestSellers = \App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country);
     $popularRow  = $bestSellers['items']->firstWhere('id', $popular->id);
 
@@ -5788,6 +5792,12 @@ test('range advisor segments need five buyers and the gap analysis lists what si
         ->and($popularRow->segment_repeat_customers)->toBe(2)
         ->and($popularRow->segment_reorder_rate)->toBe(0.4)
         ->and($popularRow->segment_revenue)->toBeGreaterThan(0)
+        ->and($popularRow->segment_level)->toBe('type_country')
+        ->and($bestSellers['items']->pluck('id')->duplicates()->all())->toBe([])
+        ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', 'NO')['segment'])->toMatchArray(['level' => 'type_group', 'region' => 'nordics', 'customers' => 6])
+        ->and(\App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales::regionOf('US'))->toBe('na')
+        ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country, ['area' => '28'])['segment'])->toMatchArray(['level' => 'type_area', 'area' => '28', 'customers' => 6])
+        ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, 'gift_shop', $country, ['area' => '99'])['segment']['level'])->toBe('type_country')
         ->and($bestSellers['items']->pluck('id')->all())->not->toContain($rare->id)
         ->and($bestSellers['items']->pluck('id')->all())->not->toContain($own->id)
         ->and(\App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers::run($this->shop, null, $country)['segment']['level'])->toBe('country')
@@ -5800,7 +5810,7 @@ test('range advisor segments need five buyers and the gap analysis lists what si
 
     $gaps = \App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps::run($customer->fresh());
 
-    expect($gaps['segment']['level'])->toBe('type_country')
+    expect($gaps['segment']['level'])->toBe('type_area')
         ->and($gaps['missing']->pluck('id')->all())->toContain($popular->id)
         ->and($gaps['missing']->pluck('id')->all())->not->toContain($own->id)
         ->and($gaps['forgotten']->pluck('id')->all())->toBe([$forgotten->id])
@@ -7368,4 +7378,201 @@ test('searching the organisation orders by the number from a bank transfer finds
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('data.data', fn ($rows) => collect($rows)->contains('id', $order->id))
             ->etc());
+});
+
+function makeMultiAddProduct(Shop $shop, float $price = 2): Product
+{
+    [, $bulk] = createProduct($shop);
+    $product  = StoreProduct::make()->action($bulk->family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $bulk->tradeUnits->first()->id, 'quantity' => 1]], 'price' => 2]
+    ));
+    DB::table('products')->where('id', $product->id)->update(['price' => $price, 'status' => ProductStatusEnum::FOR_SALE->value, 'available_quantity' => 100]);
+
+    return $product->fresh();
+}
+
+test('several products are added to the basket in one call with the same totals as adding them one by one', function () {
+    $first  = makeMultiAddProduct($this->shop, 2);
+    $second = makeMultiAddProduct($this->shop, 2);
+
+    $result = \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make()->handle($this->customer->fresh(), [
+        ['product_id' => $first->id, 'quantity' => 2],
+        ['product_id' => $second->id, 'quantity' => 4],
+    ]);
+
+    expect($result['added'])->toBe(2)
+        ->and($result['failed'])->toBe(0)
+        ->and(collect($result['lines'])->pluck('status')->all())->toBe(['added', 'added'])
+        ->and(collect($result['lines'])->pluck('quantity_ordered')->all())->toBe([2, 4]);
+
+    $basket = $this->customer->fresh()->orderInBasket;
+    $lines  = fn ($order) => $order->transactions()->where('model_type', 'Product')->whereIn('model_id', [$first->id, $second->id])->get();
+    expect($lines($basket))->toHaveCount(2);
+
+    $oneByOneCustomer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    StoreEcomBasketTransaction::make()->handle($oneByOneCustomer->fresh(), $first, ['quantity' => 2]);
+    StoreEcomBasketTransaction::make()->handle($oneByOneCustomer->fresh(), $second, ['quantity' => 4]);
+    $oneByOneBasket = $oneByOneCustomer->fresh()->orderInBasket;
+
+    expect($lines($basket)->sum('net_amount'))->toEqual($lines($oneByOneBasket)->sum('net_amount'))
+        ->and((float) $lines($basket)->sum('net_amount'))->toBe(12.0);
+});
+
+test('a product that cannot be bought fails on its own row while the others are added', function (string $problem) {
+    $good = makeMultiAddProduct($this->shop, 2);
+    $bad  = makeMultiAddProduct($this->shop, 2);
+
+    if ($problem === 'zero price') {
+        DB::table('products')->where('id', $bad->id)->update(['price' => 0]);
+    } else {
+        DB::table('products')->where('id', $bad->id)->update(['status' => ProductStatusEnum::NOT_FOR_SALE->value]);
+    }
+
+    $result = \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make()->handle($this->customer->fresh(), [
+        ['product_id' => $good->id, 'quantity' => 1],
+        ['product_id' => $bad->id, 'quantity' => 3],
+    ]);
+
+    expect($result['added'])->toBe(1)
+        ->and($result['failed'])->toBe(1)
+        ->and($result['lines'][0]['status'])->toBe('added')
+        ->and($result['lines'][1]['status'])->toBe('failed')
+        ->and($result['lines'][1]['message'])->toBe(__('This product is not available for purchase.'))
+        ->and($result['lines'][1]['transaction_id'])->toBeNull();
+
+    $basket = $this->customer->fresh()->orderInBasket;
+    expect($basket->transactions()->where('model_type', 'Product')->whereIn('model_id', [$good->id, $bad->id])->pluck('model_id')->all())->toBe([$good->id])
+        ->and(Transaction::where('model_type', 'Product')->where('model_id', $bad->id)->count())->toBe(0);
+})->with(['zero price', 'not for sale']);
+
+test('calling the multi add again sets the quantity of an existing line and removes it at zero', function () {
+    $product = makeMultiAddProduct($this->shop, 2);
+    $action  = \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make();
+
+    $action->handle($this->customer->fresh(), [['product_id' => $product->id, 'quantity' => 2]]);
+    $updated = $action->handle($this->customer->fresh(), [['product_id' => $product->id, 'quantity' => 5]]);
+
+    expect($updated['lines'][0]['status'])->toBe('updated')
+        ->and($updated['lines'][0]['quantity_ordered'])->toBe(5);
+
+    $removed = $action->handle($this->customer->fresh(), [['product_id' => $product->id, 'quantity' => 0]]);
+    expect($removed['lines'][0]['status'])->toBe('removed')
+        ->and($removed['lines'][0]['transaction_id'])->toBeNull();
+
+    $unchanged = $action->handle($this->customer->fresh(), [['product_id' => $product->id, 'quantity' => 0]]);
+    expect($unchanged['lines'][0]['status'])->toBe('unchanged')
+        ->and($this->customer->fresh()->orderInBasket->transactions()->where('model_id', $product->id)->count())->toBe(0);
+});
+
+test('a product of another shop fails in the multi add', function () {
+    $good      = makeMultiAddProduct($this->shop, 2);
+    $other     = makeMultiAddProduct($this->shop, 2);
+    $otherShop = $this->shop->replicate(['ulid'])->fill(['code' => 'mul'.$other->id, 'slug' => 'mul-'.$other->id]);
+    $otherShop->saveQuietly();
+    DB::table('products')->where('id', $other->id)->update(['shop_id' => $otherShop->id]);
+
+    $result = \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make()->handle($this->customer->fresh(), [
+        ['product_id' => $other->id, 'quantity' => 1],
+        ['product_id' => $good->id, 'quantity' => 1],
+    ]);
+
+    expect($result['lines'][0]['status'])->toBe('failed')
+        ->and($result['lines'][1]['status'])->toBe('added')
+        ->and(Transaction::where('model_type', 'Product')->where('model_id', $other->id)->count())->toBe(0);
+});
+
+test('the multi add gives a line the step discount of its own quantity', function () {
+    $product = makeMultiAddProduct($this->shop, 2);
+    \App\Actions\Discounts\Offer\StoreProductStepDiscount::make()->action($product, [
+        'steps'    => [
+            ['min_quantity' => 1, 'percentage_off' => 0.05],
+            ['min_quantity' => 5, 'percentage_off' => 0.25],
+        ],
+        'duration' => 'permanent',
+        'start_at' => now(),
+    ]);
+
+    $result = \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make()->handle($this->customer->fresh(), [['product_id' => $product->id, 'quantity' => 5]]);
+
+    $line = $this->customer->fresh()->orderInBasket->transactions()->where('model_type', 'Product')->where('model_id', $product->id)->first();
+    expect((float) $line->gross_amount)->toBe(10.0)
+        ->and((float) $line->net_amount)->toBe(7.5)
+        ->and($result['lines'][0]['gross_amount'])->toBe((float) $line->gross_amount)
+        ->and($result['lines'][0]['net_amount'])->toBe((float) $line->net_amount)
+        ->and($result['lines'][0])->toHaveKey('offer_label');
+});
+
+test('basket lines carry the size of their variant option and nothing for a product outside a variant', function () {
+    $basket   = StoreOrder::make()->action($this->customer, Order::factory()->definition());
+    $products = collect(['50ml', '5L', null])->map(function (?string $option) {
+        $product   = makeMultiAddProduct($this->shop, 2);
+        $assetCode = $product->code;
+        DB::table('products')->where('id', $product->id)->update(['code' => 'AROMA-'.$product->id.($option ? '-'.$option : '')]);
+
+        return [$product->fresh(), $option, $assetCode];
+    });
+
+    $masterVariantId = DB::table('master_variants')->insertGetId([
+        'group_id'   => $this->shop->group_id,
+        'code'       => $mvCode = 'AROMA-MV-'.Str::random(6),
+        'slug'       => strtolower($mvCode),
+        'data'       => json_encode(['products' => []]),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+    $variantId = DB::table('variants')->insertGetId([
+        'master_variant_id' => $masterVariantId,
+        'group_id'        => $this->shop->group_id,
+        'organisation_id' => $this->shop->organisation_id,
+        'shop_id'         => $this->shop->id,
+        'code'            => $vCode = 'AROMA-VAR-'.Str::random(6),
+        'slug'            => strtolower($vCode),
+        'data'            => json_encode([
+            'variants' => [['label' => 'Quantity']],
+            'products' => $products->filter(fn ($row) => $row[1])->mapWithKeys(fn ($row) => [$row[0]->id => ['Quantity' => $row[1]]])->all(),
+        ]),
+        'created_at'      => now(),
+        'updated_at'      => now(),
+    ]);
+    $products->filter(fn ($row) => $row[1])->each(fn ($row) => DB::table('products')->where('id', $row[0]->id)->update(['variant_id' => $variantId]));
+
+    foreach ($products as [$product]) {
+        StoreTransaction::make()->action($basket, $product->currentHistoricProduct, ['quantity_ordered' => 1]);
+    }
+
+    $fakeRoute = new \Illuminate\Routing\Route('GET', '/fake-retina-basket', []);
+    $fakeRoute->name('retina.ecom.basket.show');
+    app('request')->setRouteResolver(fn () => $fakeRoute);
+
+    $rows = collect(RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($basket->fresh()))->resolve())->keyBy('asset_code');
+    $byCode = fn (int $index) => $rows[$products[$index][2]]['size_label'];
+
+    expect($byCode(0))->toBe('50ml')
+        ->and($byCode(1))->toBe('5L')
+        ->and($byCode(2))->toBeNull();
+
+    $fetchBasket = \App\Actions\Iris\Basket\FetchIrisEcomBasket::make();
+    (fn () => $this->shop = $basket->shop)->call($fetchBasket);
+    $sideBasket = collect($fetchBasket->jsonResponse($basket->fresh())['products'])->keyBy('code');
+
+    expect($sideBasket[$products[0][0]->code]['size_label'])->toBe('50ml')
+        ->and($sideBasket[$products[1][0]->code]['size_label'])->toBe('5L')
+        ->and($sideBasket[$products[2][0]->code]['size_label'])->toBeNull();
+});
+
+test('a line that breaks without a validation error fails on its own row while the others are added', function () {
+    $good   = makeMultiAddProduct($this->shop, 2);
+    $broken = makeMultiAddProduct($this->shop, 2);
+    DB::table('products')->where('id', $broken->id)->update(['current_historic_asset_id' => null]);
+
+    $result = \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make()->handle($this->customer->fresh(), [
+        ['product_id' => $broken->id, 'quantity' => 1],
+        ['product_id' => $good->id, 'quantity' => 1],
+    ]);
+
+    expect($result['lines'][0]['status'])->toBe('failed')
+        ->and($result['lines'][0]['message'])->toBe(__('This product is not available for purchase.'))
+        ->and($result['lines'][1]['status'])->toBe('added')
+        ->and(Transaction::where('model_type', 'Product')->where('model_id', $broken->id)->count())->toBe(0);
 });

@@ -1803,3 +1803,68 @@ describe('chat spike alert', function () {
         \Illuminate\Support\Facades\Http::assertNothingSent();
     });
 });
+
+test('agents tick several inbox conversations and mark them read or close them, without opening them', function () {
+    $agentUser = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    ChatAgent::create(['user_id' => $agentUser->id, 'max_concurrent_chats' => 5, 'language_id' => 68, 'is_online' => true, 'is_available' => true, 'current_chat_count' => 0]);
+    makeChatWorker($agentUser, $this->shop);
+    $outsider = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+
+    $session = ChatSession::create([
+        'ulid'             => (string) Str::ulid(),
+        'status'           => ChatSessionStatusEnum::WAITING,
+        'guest_identifier' => 'guest_'.Str::random(5),
+        'language_id'      => 68,
+        'priority'         => ChatPriorityEnum::NORMAL,
+        'shop_id'          => $this->shop->id,
+        'ai_model_version' => 'default',
+    ]);
+    $question = ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Thank you, all arrived',
+        'is_read'         => false,
+    ]);
+
+    $channel         = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $whatsappSession = MetaChatSession::create([
+        'ulid'            => (string) Str::ulid(),
+        'meta_channel_id' => $channel->id,
+        'shop_id'         => $this->shop->id,
+        'phone_number'    => '+4219'.random_int(10000000, 99999999),
+        'status'          => ChatSessionStatusEnum::ACTIVE,
+        'language_id'     => 68,
+        'priority'        => ChatPriorityEnum::NORMAL,
+    ]);
+    $whatsappQuestion = $whatsappSession->messages()->create([
+        'meta_channel_id' => $channel->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'     => ChatSenderTypeEnum::GUEST->value,
+        'message_text'    => 'Thanks!',
+        'is_read'         => false,
+    ]);
+
+    Event::fake([\App\Events\BroadcastChatListEvent::class, \App\Events\BroadcastMessagesRead::class, \App\Events\BroadcastMetaChatListEvent::class, \App\Events\BroadcastRealtimeChat::class]);
+    Bus::fake([\App\Actions\Chat\Whatsapp\SendWhatsappReadReceipt::class]);
+
+    actingAs($outsider);
+    $this->patchJson(route('grp.org.chat.agents.sessions.read', [$this->organisation->slug, $session->ulid]))->assertForbidden();
+    $this->patchJson(route('grp.org.chat.agents.whatsapp.sessions.read', [$this->organisation->slug, $whatsappSession->ulid]))->assertForbidden();
+    expect($question->refresh()->is_read)->toBeFalse()
+        ->and($whatsappQuestion->refresh()->is_read)->toBeFalse();
+
+    actingAs($agentUser);
+    $this->patchJson(route('grp.org.chat.agents.sessions.read', [$this->organisation->slug, $session->ulid]))->assertOk();
+    $this->patchJson(route('grp.org.chat.agents.whatsapp.sessions.read', [$this->organisation->slug, $whatsappSession->ulid]))->assertOk();
+
+    expect($question->refresh()->is_read)->toBeTrue()
+        ->and($whatsappQuestion->refresh()->is_read)->toBeTrue();
+    Event::assertDispatched(\App\Events\BroadcastChatListEvent::class);
+
+    $this->patchJson(route('grp.org.chat.agents.sessions.close', [$this->organisation->slug, $session->ulid]))
+        ->assertOk()
+        ->assertJsonPath('success', true);
+
+    expect($session->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED);
+});

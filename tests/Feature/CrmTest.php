@@ -4172,3 +4172,99 @@ test('bulk tagging sets the shop type of the selected customers of the shop and 
 
     expect($untouched->refresh()->shop_type)->toBeNull();
 });
+
+test('inferring the shop type saves a confident answer as inferred, records the attempt and never sends the contact name or email', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    DB::table('customers')->where('id', $customer->id)->update([
+        'shop_type'        => null,
+        'shop_type_source' => null,
+        'company_name'     => 'Moonstone Crystals Ltd',
+        'contact_website'  => 'https://www.moonstone-crystals.test/about?ref=1',
+        'data'             => '{}',
+    ]);
+    $customer->refresh();
+
+    config(['services.openrouter.api_key' => 'test']);
+    Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => "```json\n{\"shop_type\":\"crystal_new_age\",\"confidence\":0.93}\n```"]]]])]);
+
+    $result = \App\Actions\CRM\Customer\InferCustomerShopType::run($customer);
+
+    $customer->refresh();
+    expect($result)->toBe(['shop_type' => 'crystal_new_age', 'confidence' => 0.93, 'saved' => true, 'reason' => 'inferred'])
+        ->and($customer->shop_type)->toBe(\App\Enums\CRM\Customer\CustomerShopTypeEnum::CRYSTAL_NEW_AGE)
+        ->and($customer->shop_type_source)->toBe(\App\Enums\CRM\Customer\CustomerShopTypeSourceEnum::INFERRED)
+        ->and($customer->data['shop_type_inference']['result'])->toBe('crystal_new_age')
+        ->and($customer->data['shop_type_inference']['confidence'])->toBe(0.93)
+        ->and($customer->data['shop_type_inference']['model'])->toBe(\App\Actions\CRM\Customer\InferCustomerShopType::MODEL);
+
+    Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($customer) {
+        $body = collect($request->data()['messages'] ?? [])->pluck('content')->implode("\n");
+
+        return str_contains($body, 'Moonstone Crystals Ltd')
+            && str_contains($body, 'www.moonstone-crystals.test')
+            && !str_contains($body, 'ref=1')
+            && !str_contains($body, $customer->contact_name)
+            && !str_contains($body, $customer->email);
+    });
+
+    expect(\App\Actions\CRM\Customer\InferCustomerShopType::run($customer->fresh())['reason'])->toBe('already_set');
+});
+
+test('inferring the shop type saves nothing for unknown, low confidence or invented answers and records only real answers', function () {
+    $newCustomer = function (string $companyName): Customer {
+        $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+        DB::table('customers')->where('id', $customer->id)->update(['shop_type' => null, 'shop_type_source' => null, 'company_name' => $companyName, 'data' => '{}']);
+
+        return $customer->refresh();
+    };
+    $unknown       = $newCustomer('JK Trading');
+    $lowConfidence = $newCustomer('The Willow Tree');
+    $invented      = $newCustomer('Petals and Pots');
+
+    config(['services.openrouter.api_key' => 'test']);
+    $aiReply = fn (string $content) => ['choices' => [['message' => ['content' => $content]]]];
+    Http::fake(['*' => Http::sequence()
+        ->push($aiReply('{"shop_type":"unknown","confidence":0.4}'))
+        ->push($aiReply('{"shop_type":"gift_shop","confidence":0.55}'))
+        ->push($aiReply('{"shop_type":"florist","confidence":0.95}'))]);
+
+    expect(\App\Actions\CRM\Customer\InferCustomerShopType::run($unknown)['reason'])->toBe('unknown')
+        ->and(\App\Actions\CRM\Customer\InferCustomerShopType::run($lowConfidence))->toBe(['shop_type' => 'gift_shop', 'confidence' => 0.55, 'saved' => false, 'reason' => 'low_confidence'])
+        ->and(\App\Actions\CRM\Customer\InferCustomerShopType::run($invented)['reason'])->toBe('no_reply');
+
+    foreach ([$unknown, $lowConfidence, $invented] as $customer) {
+        expect($customer->refresh()->shop_type)->toBeNull();
+    }
+
+    expect($unknown->data['shop_type_inference']['result'])->toBe('unknown')
+        ->and($lowConfidence->data['shop_type_inference']['result'])->toBe('gift_shop')
+        ->and($lowConfidence->data['shop_type_inference']['confidence'])->toBe(0.55)
+        ->and($invented->data)->not->toHaveKey('shop_type_inference');
+});
+
+test('inferring the shop type does not ask about customers staff already typed or customers with nothing to go on', function () {
+    $staffTyped = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    UpdateCustomer::make()->action($staffTyped, ['shop_type' => \App\Enums\CRM\Customer\CustomerShopTypeEnum::SPA_WELLNESS->value]);
+
+    $nothingToGoOn = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    DB::table('customers')->where('id', $nothingToGoOn->id)->update([
+        'shop_type'        => null,
+        'shop_type_source' => null,
+        'company_name'     => $nothingToGoOn->contact_name,
+        'contact_website'  => null,
+        'data'             => '{}',
+    ]);
+    DB::table('poll_replies')->where('customer_id', $nothingToGoOn->id)->delete();
+
+    config(['services.openrouter.api_key' => 'test']);
+    Http::fake();
+
+    expect(\App\Actions\CRM\Customer\InferCustomerShopType::run($staffTyped->refresh())['reason'])->toBe('already_set')
+        ->and(\App\Actions\CRM\Customer\InferCustomerShopType::run($nothingToGoOn->refresh())['reason'])->toBe('no_evidence');
+
+    Http::assertNothingSent();
+    expect($staffTyped->refresh()->shop_type)->toBe(\App\Enums\CRM\Customer\CustomerShopTypeEnum::SPA_WELLNESS)
+        ->and($staffTyped->shop_type_source)->toBe(\App\Enums\CRM\Customer\CustomerShopTypeSourceEnum::STAFF)
+        ->and($nothingToGoOn->refresh()->shop_type)->toBeNull()
+        ->and($nothingToGoOn->data['shop_type_inference']['result'])->toBe('no_evidence');
+});

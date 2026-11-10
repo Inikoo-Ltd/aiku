@@ -22488,5 +22488,20 @@
     "The supplier can not make it: give it to another supplier of the agent": "सप्लायर इसे नहीं बना सकता: इसे एजेंट के दूसरे सप्लायर को दें",
     "This order had nothing left and was cancelled.": "इस ऑर्डर में कुछ नहीं बचा था और इसे रद्द कर दिया गया।",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "इस ऑर्डर में कुछ नहीं बचा है पर इस पर जमा राशि दी गई थी: ऑर्डर रद्द करने से पहले उसे वापस लें।",
-    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "एजेंट ने :code की :quantity यूनिट :supplier (:reference) को भेजीं, सप्लायर उन्हें नहीं बना सकता।"
+    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "एजेंट ने :code की :quantity यूनिट :supplier (:reference) को भेजीं, सप्लायर उन्हें नहीं बना सकता।",
+    "Quantity of :size": ":size की मात्रा",
+    ":price per litre": "प्रति लीटर :price",
+    "Price not available": "कीमत उपलब्ध नहीं",
+    ":quantity+ containers: :percentage off": ":quantity+ कंटेनर: :percentage की छूट",
+    "Price excl. VAT": "वैट के बिना कीमत",
+    "Line total": "पंक्ति का कुल",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "मात्रा छूट एक ही आकार के कंटेनरों को गिनती है; अलग-अलग आकारों को जोड़ा नहीं जाता।",
+    "Your discount: :label": "आपकी छूट: :label",
+    "Total excl. VAT": "वैट के बिना कुल",
+    "Update basket": "बास्केट अपडेट करें",
+    "Add selected items to basket": "चुने हुए आइटम बास्केट में जोड़ें",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "आकार प्रत्येक कंटेनर में मौजूद मात्रा है। मात्रा कंटेनरों की संख्या है।",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "पूरे ऑर्डर पर निर्भर छूट तब लागू होती हैं जब आइटम बास्केट में होते हैं।",
+    ":size sample": ":size नमूना"
 }

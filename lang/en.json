@@ -26511,5 +26511,20 @@
     "Tell the buyer why this item is cancelled": "Tell the buyer why this item is cancelled",
     "Write the reason: the buyer reads it in the notification": "Write the reason: the buyer reads it in the notification",
     "Filled circle": "Filled circle",
-    "Open the chat in :shop": "Open the chat in :shop"
+    "Open the chat in :shop": "Open the chat in :shop",
+    "Quantity of :size": "Quantity of :size",
+    ":price per litre": ":price per litre",
+    "Price not available": "Price not available",
+    ":quantity+ containers: :percentage off": ":quantity+ containers: :percentage off",
+    "Price excl. VAT": "Price excl. VAT",
+    "Line total": "Line total",
+    "Volume discounts count the containers of one size; different sizes are not added together.": "Volume discounts count the containers of one size; different sizes are not added together.",
+    "Your discount: :label": "Your discount: :label",
+    "Total excl. VAT": "Total excl. VAT",
+    "Update basket": "Update basket",
+    "Add selected items to basket": "Add selected items to basket",
+    ":quantity × :size": ":quantity × :size",
+    "Size is the amount in each container. Quantity is the number of containers.": "Size is the amount in each container. Quantity is the number of containers.",
+    "Discounts that depend on the whole order are applied when the items are in the basket.": "Discounts that depend on the whole order are applied when the items are in the basket.",
+    ":size sample": ":size sample"
 }

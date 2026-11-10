@@ -37,6 +37,12 @@ export default {
 					label: "Showroom Appointment",
 					props_data: {},
 				},
+				{
+					key: ["variant_sizes_table"],
+					type: "switch",
+					label: "Order all sizes in one table",
+					props_data: {},
+				},
 			],
 		},
 		{

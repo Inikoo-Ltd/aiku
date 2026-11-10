@@ -18,6 +18,7 @@ use App\Actions\Chat\ChatSession\GetChatSessionSlackSettings;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsRubbish;
 use App\Actions\Chat\ChatSession\MoveChatSessionToCouriers;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsSpam;
+use App\Actions\Chat\ChatSession\MarkChatSessionAsRead;
 use App\Actions\Chat\ChatSession\MarkChatSessionAsUnread;
 use App\Actions\Chat\ChatSession\RedactChatMessage;
 use App\Actions\Chat\ChatSession\ReleaseChatSession;
@@ -96,6 +97,8 @@ Route::name('agents.')->prefix('agents')->group(function () {
         ->name('whatsapp.sessions.priority');
     Route::patch('/whatsapp/{metaChatSession:ulid}/highlight', ToggleMetaChatSessionHighlight::class)
         ->name('whatsapp.sessions.highlight');
+    Route::patch('/whatsapp/{metaChatSession:ulid}/read', [MarkChatSessionAsRead::class, 'inWhatsapp'])
+        ->name('whatsapp.sessions.read');
     Route::patch('/whatsapp/{metaChatSession:ulid}/unread', [MarkChatSessionAsUnread::class, 'inWhatsapp'])
         ->name('whatsapp.sessions.unread');
     Route::patch('/whatsapp/{metaChatSession:ulid}/wait-for-customer', [WaitForCustomerReply::class, 'inWhatsapp'])
@@ -138,6 +141,7 @@ Route::name('agents.')->prefix('agents')->group(function () {
     Route::patch('/labels/{chatLabel}', UpdateChatLabel::class)->name('labels.update')->withoutScopedBindings();
     Route::delete('/labels/{chatLabel}', DeleteChatLabel::class)->name('labels.delete')->withoutScopedBindings();
     Route::patch('/sessions/{chatSession:ulid}/labels/{chatLabel}', ToggleChatSessionLabel::class)->name('sessions.label')->withoutScopedBindings();
+    Route::patch('/sessions/{chatSession:ulid}/read', MarkChatSessionAsRead::class)->name('sessions.read');
     Route::patch('/sessions/{chatSession:ulid}/unread', MarkChatSessionAsUnread::class)->name('sessions.unread');
     Route::patch('/sessions/{chatSession:ulid}/wait-for-customer', WaitForCustomerReply::class)->name('sessions.wait_for_customer');
     Route::delete('/sessions/{chatSession:ulid}/trash', TrashChatSession::class)->name('sessions.trash');

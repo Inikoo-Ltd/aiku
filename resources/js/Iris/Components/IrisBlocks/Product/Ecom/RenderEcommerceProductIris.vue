@@ -2,7 +2,7 @@
 import { faCube, faLink } from "@fal"
 import { faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, inject, onMounted, computed, watch, type Ref } from "vue"
+import { ref, inject, provide, onMounted, computed, watch, type Ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
@@ -203,6 +203,10 @@ const patchCustomerData = (productId: number, patch: Record<string, boolean>) =>
     },
   }
 }
+
+provide("variantCustomerData", customerData)
+provide("patchVariantCustomerData", patchCustomerData)
+provide("refreshVariantCustomerData", () => fetchAllOrderingData())
 
 const submitCustomerFlag = ({
   product,

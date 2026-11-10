@@ -8,6 +8,8 @@
 
 namespace App\Actions\Iris\Basket;
 
+use App\Actions\Catalogue\Product\Json\WithVariantColumns;
+use App\Actions\Catalogue\Variant\GetVariantProductSizeLabel;
 use App\Actions\Traits\HasBasketDetails;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Order\GetVoucherData;
@@ -22,6 +24,7 @@ class FetchIrisEcomBasket extends IrisAction
 {
     use \App\Actions\Traits\WithLineTaxCategories;
     use HasBasketDetails;
+    use WithVariantColumns;
 
     public function handle(ActionRequest $request): Order|null
     {
@@ -163,6 +166,7 @@ class FetchIrisEcomBasket extends IrisAction
                 'products.id as product_id',
                 'products.name',
                 'products.units',
+                'products.unit',
                 'products.code',
                 'products.available_quantity',
                 'products.web_images',
@@ -170,7 +174,8 @@ class FetchIrisEcomBasket extends IrisAction
                 'products.department_id',
                 'products.sub_department_id',
                 'products.family_id',
-                'webpages.url as canonical_url'
+                'webpages.url as canonical_url',
+                $this->getVariantOptionLabelColumn()
             )
             ->where('transactions.model_type', 'Product')
             ->leftjoin('assets', 'transactions.asset_id', '=', 'assets.id')
@@ -200,6 +205,7 @@ class FetchIrisEcomBasket extends IrisAction
                 'product_offers_data'  => json_decode($productData->product_offers_data, true),
                 'name'                 => $productData->name,
                 'code'                 => $productData->code,
+                'size_label'           => GetVariantProductSizeLabel::make()->forBasketLine($productData->variant_option_label, $productData->code, $productData->unit, $productData->units),
                 'units'                => (int)$productData->units,
                 'web_image_thumbnail'  => $webImageThumbnail,
                 'department_id'        => $productData->department_id,

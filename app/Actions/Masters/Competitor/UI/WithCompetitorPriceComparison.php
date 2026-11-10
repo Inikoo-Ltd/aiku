@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\Competitor\UI;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices;
 use App\Models\Helpers\Currency;
 use App\Models\Masters\Competitor;
 use App\Models\SysAdmin\Group;
@@ -21,11 +22,13 @@ use App\Models\SysAdmin\Group;
  * currency.
  * Built as SQL over competitors, competitor_products, master_assets and master_asset_competitor_products (whose
  * competitor_units, when set, says how many units their pack holds for that match) so lists can sort and rank by it.
+ * Their pack counts as many units as ours when GetConfirmedCompetitorPrices::comparedUnits says the packs are the same;
+ * same_pack is then our units, otherwise null.
  */
 trait WithCompetitorPriceComparison
 {
     /**
-     * @return array{ours: string, theirs: string, difference: string, currency: string}
+     * @return array{ours: string, theirs: string, difference: string, currency: string, same_pack: string}
      */
     protected function competitorPriceSql(Group $group): array
     {
@@ -48,16 +51,22 @@ trait WithCompetitorPriceComparison
         };
         $local      = $ourPriceIn($code);
         $inGroup    = $ourPriceIn("'{$groupCurrency->code}'");
-        $units = 'GREATEST(COALESCE(master_asset_competitor_products.competitor_units, competitor_products.units), 1)';
+        $stated     = 'GREATEST(COALESCE(master_asset_competitor_products.competitor_units, competitor_products.units), 1)';
+        $ourUnits   = 'GREATEST(master_assets.units, 1)';
+        $packRatio  = "(CASE WHEN $local > 0 THEN competitor_products.price / $local WHEN $inGroup > 0 THEN competitor_products.price * ($rate) / $inGroup END)";
+        $believable = 'BETWEEN '.GetConfirmedCompetitorPrices::BELIEVABLE_FROM.' AND '.GetConfirmedCompetitorPrices::BELIEVABLE_TO;
+        $samePack   = "($stated <> $ourUnits AND $packRatio $believable AND $packRatio * $ourUnits / $stated NOT $believable)";
+        $units      = "(CASE WHEN $samePack THEN $ourUnits ELSE $stated END)";
 
-        $ours   = "(CASE WHEN $local > 0 THEN $local ELSE $inGroup END / GREATEST(master_assets.units, 1))";
+        $ours   = "(CASE WHEN $local > 0 THEN $local ELSE $inGroup END / $ourUnits)";
         $theirs = "(CASE WHEN $local > 0 THEN competitor_products.price ELSE competitor_products.price * ($rate) END / $units)";
 
         return [
             'ours'       => "round($ours, 2)",
             'theirs'     => "round($theirs, 2)",
-            'difference' => "CASE WHEN $ours > 0 AND $theirs IS NOT NULL THEN round(100 * ($theirs / $ours - 1)) END",
+            'difference' => "round(100 * ($packRatio * $ourUnits / $units - 1))",
             'currency'   => "CASE WHEN $local > 0 THEN $code ELSE '{$groupCurrency->code}' END",
+            'same_pack'  => "CASE WHEN $samePack THEN $ourUnits END",
         ];
     }
 }

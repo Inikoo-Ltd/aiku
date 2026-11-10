@@ -61,6 +61,8 @@ Until the first competitor is added, the dashboard explains what to do instead.
 
 After every read the AI compares each of their products with yours. A match it is sure of is **confirmed by itself** (marked *auto*); the others wait under **Prices to review**. Each row shows your product, your price per unit, their product with a link, their price per unit, and the difference: red when they are cheaper, green when they are dearer. Both prices are in their currency, yours taken from your price in that currency (an AW class price in euros for a competitor in euros); only when you have no price in their currency are both converted to the group currency.
 
+**Units in their pack** under their product is what their price is divided by. Packs are not always counted the same way on both sides: your box of 12 packets may be held as 1 unit while theirs is entered as 12, or their box of 12 may be read as 1. When that would put their price per unit under 40% or over 250% of yours while pack against pack the two prices are close, aiku takes the packs to be the same and compares them pack against pack; the row then says *Compared pack against pack*. A difference that is still very large after that is a real gap or a wrong match: open their link and check.
+
 Click the **tick** when it is the right match and the **cross** when it is not. Rejected matches are not shown again. The buckets at the top switch between **To review**, **Confirmed**, **Rejected** and **All**; the **Confirmed** bucket doubles as the price comparison, sortable by difference.
 
 A match marked *Similar, not the same item* is kept as a hint and not counted in the price comparison until you click the **tick** on it: the tick says it is the same item, and from then on it counts.

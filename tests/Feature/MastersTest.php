@@ -5316,6 +5316,44 @@ describe('competitor prices, HELP-3605', function () {
             ->and(\App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], group()->currency)->get($this->competitorMasterAsset->id)[0]['difference_pct'])->toBe(0);
     });
 
+    test('packs counted differently on each side are compared pack against pack, in the list and in the price tips alike', function () {
+        $currency = group()->currency;
+        $product  = $this->competitor->products()->create(['code' => 'BOX-12', 'name' => 'Golden Buddha Incense 15 grams', 'price' => 7.8, 'fetched_at' => now()]);
+        $match    = \App\Models\Masters\MasterAssetCompetitorProduct::create([
+            'master_shop_id'        => $this->competitorMasterAsset->master_shop_id,
+            'master_asset_id'       => $this->competitorMasterAsset->id,
+            'competitor_product_id' => $product->id,
+            'is_same_item'          => true,
+            'status'                => \App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED,
+        ]);
+        $compare = function (float $ourUnits, ?float $theirUnits, float $theirPrice) use ($currency, $product, $match) {
+            $this->competitorMasterAsset->update(['units' => $ourUnits, 'master_prices' => [$currency->code => ['value' => 7.35, 'independent' => false]]]);
+            $product->update(['price' => $theirPrice]);
+            $match->update(['competitor_units' => $theirUnits]);
+
+            $row = null;
+            get(route('grp.masters.competitors.prices.confirmed'))->assertOk()->assertInertia(function (AssertableInertia $page) use (&$row) {
+                $page->where('data.data', function ($rows) use (&$row) {
+                    $row = collect($rows->toArray())->firstWhere('code', $this->competitorMasterAsset->code);
+
+                    return true;
+                })->etc();
+            });
+
+            return [
+                \App\Actions\Masters\Competitor\GetConfirmedCompetitorPrices::run([$this->competitorMasterAsset->id], $currency)->get($this->competitorMasterAsset->id)[0]['difference_pct'],
+                $row['difference'],
+                $row['compared_as_units'],
+            ];
+        };
+
+        expect($compare(1, 12, 7.8))->toEqual([6, 6, 1])
+            ->and($compare(12, null, 7.8))->toEqual([6, 6, 12])
+            ->and($compare(12, 12, 7.8))->toEqual([6, 6, null])
+            ->and($compare(12, null, 0.7))->toEqual([14, 14, null])
+            ->and($compare(1, 12, 0.7))->toEqual([-99, -99, null]);
+    });
+
     test('a different volume or weight in the name is never the same item', function () {
         $differs = fn (string $ours, string $theirs) => \App\Actions\Masters\Competitor\MatchCompetitorProducts::sizeDiffers($ours, $theirs);
         expect($differs('10ml Rose Absolute Essential Oil White Label', 'Rose Absolute Essential Oil 5ml'))->toBeTrue()

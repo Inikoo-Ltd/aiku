@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Catalogue\Variant\GetVariantProductSizeLabel;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Actions\Traits\HasBucketImages;
@@ -90,6 +91,8 @@ class ProductOfVariantResource extends JsonResource
         }
 
 
+        $sizeLabel = GetVariantProductSizeLabel::run($this->getVariantOptionLabel($product), $product->code, $product->unit, $product->units);
+
         return [
             'slug'              => $product->slug,
             'code'              => $product->code,
@@ -141,9 +144,24 @@ class ProductOfVariantResource extends JsonResource
             'variant_axis_label'         => $product->variant_axis_label,
             'variant_title'              => $product->variant_title,
             'variant_position'           => $product->index_under_variant,
+            'size_label'                 => $sizeLabel['label'],
+            'size_litres'                => $sizeLabel['litres'],
+            'is_sample'                  => $sizeLabel['is_sample'],
+            'size_resolved'              => $sizeLabel['resolved'],
 
 
         ];
+    }
+
+    private function getVariantOptionLabel(Product $product): ?string
+    {
+        if (array_key_exists('variant_option_label', $product->getAttributes())) {
+            return $product->getAttributes()['variant_option_label'];
+        }
+
+        $variant = $product->variant;
+
+        return $variant ? data_get($variant->data, 'products.'.$product->id.'.'.data_get($variant->data, 'variants.0.label')) : null;
     }
 
     /**
