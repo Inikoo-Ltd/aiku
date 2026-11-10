@@ -1786,6 +1786,23 @@ test('delivery note finalise and dispatch', function () {
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::DISPATCHED);
 });
 
+test('a delivery note with nothing picked cannot be finalised into a zero invoice', function () {
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $item->update(['quantity_picked' => 0]);
+    $order = $deliveryNote->orders->first();
+
+    $shipper = StoreShipper::make()->action($this->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
+    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
+
+    expect($deliveryNote->refresh()->hasNothingPicked())->toBeTrue()
+        ->and(fn () => \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote->refresh(), $this->user))
+        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class)
+        ->and(fn () => \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh()))
+        ->toThrow(ValidationException::class)
+        ->and($deliveryNote->refresh()->state)->not->toBe(DeliveryNoteStateEnum::FINALISED)
+        ->and($order->invoices()->exists())->toBeFalse();
+});
+
 test('printing the label of a packed replacement dispatches it', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);

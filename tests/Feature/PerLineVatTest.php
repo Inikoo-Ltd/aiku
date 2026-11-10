@@ -452,7 +452,7 @@ test('invoicing re-syncs stale line tax categories to the order', function () {
 
     createWarehouse();
     SubmitOrder::make()->action($order->refresh());
-    SendOrderToWarehouse::make()->action($order, []);
+    SendOrderToWarehouse::make()->action($order, [])->deliveryNoteItems()->update(['quantity_picked' => DB::raw('quantity_required')]);
 
     $order->refresh();
     $order->updateQuietly(['tax_category_id' => $this->vat0->id]);
@@ -472,7 +472,7 @@ test('the tax faire charged survives invoicing and later recalculations', functi
 
     createWarehouse();
     SubmitOrder::make()->action($order->refresh());
-    SendOrderToWarehouse::make()->action($order, []);
+    SendOrderToWarehouse::make()->action($order, [])->deliveryNoteItems()->update(['quantity_picked' => DB::raw('quantity_required')]);
 
     $order->refresh()->update(['data->marketplace_tax_amount' => 7.5]);
     CalculateOrderTotalAmounts::run($order->refresh());
@@ -703,7 +703,7 @@ test('a tax number validity change re-rates open orders and skips invoiced ones'
     StoreTransaction::make()->action($invoicedOrder, $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
     createWarehouse();
     SubmitOrder::make()->action($invoicedOrder->refresh());
-    SendOrderToWarehouse::make()->action($invoicedOrder, []);
+    SendOrderToWarehouse::make()->action($invoicedOrder, [])->deliveryNoteItems()->update(['quantity_picked' => DB::raw('quantity_required')]);
     GenerateInvoiceFromOrder::make()->handle($invoicedOrder->refresh());
 
     $resetOrderIds = [];

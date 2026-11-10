@@ -40,6 +40,7 @@ use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -449,6 +450,28 @@ class DeliveryNote extends Model implements Auditable
         }
 
         return $this->unprintedLeaflets()->exists();
+    }
+
+    /**
+     * HELP-4622. A note where every line was marked not picked was packed, dispatched and
+     * invoiced at zero (or for its shipping alone), while the payment went back to the
+     * customer's balance. Notes handled in Aurora never record picks here.
+     */
+    public function hasNothingPicked(?SupportCollection $quantitiesPicked = null): bool
+    {
+        if ($this->type !== DeliveryNoteTypeEnum::ORDER || $this->source_id) {
+            return false;
+        }
+
+        $quantitiesPicked ??= $this->deliveryNoteItems()->pluck('quantity_picked');
+
+        return $quantitiesPicked->isNotEmpty()
+            && $quantitiesPicked->every(fn ($quantityPicked) => (float) $quantityPicked <= 0);
+    }
+
+    public static function nothingPickedMessage(): string
+    {
+        return __('Nothing was picked in this delivery note. Pick the items, or ask customer services to cancel the order so the payment goes back to the customer.');
     }
 
     public function warehouse(): BelongsTo

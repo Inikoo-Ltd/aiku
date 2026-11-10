@@ -583,7 +583,7 @@ class ShowDeliveryNote extends OrgAction
         $startPickingLabel    = __('Start picking');
         $generateInvoiceLabel = __('Generate Invoice');
 
-        return $this->disableActionsBlockedByInserts($deliveryNote, match ($deliveryNote->state) {
+        return $this->disableBlockedActions($deliveryNote, match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
 
                 [
@@ -756,19 +756,27 @@ class ShowDeliveryNote extends OrgAction
      *
      * @return array<int, mixed>
      */
-    private function disableActionsBlockedByInserts(DeliveryNote $deliveryNote, array $actions): array
+    private function disableBlockedActions(DeliveryNote $deliveryNote, array $actions): array
     {
-        if (!$deliveryNote->hasUnprintedLeaflets()) {
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            $blocked = [
+                'grp.models.delivery_note.state.packing',
+                'grp.models.delivery_note.state.packed',
+                'grp.models.delivery_note.state.dispatched',
+                'grp.models.delivery_note.state.finalise_and_dispatch',
+            ];
+            $reason = __('Print every insert before continuing');
+        } elseif ($deliveryNote->hasNothingPicked()) {
+            $blocked = [
+                'grp.models.delivery_note.state.packing',
+                'grp.models.delivery_note.state.finalised',
+                'grp.models.delivery_note.state.finalise_and_dispatch',
+                'grp.models.order.generate_invoice',
+            ];
+            $reason = DeliveryNote::nothingPickedMessage();
+        } else {
             return $actions;
         }
-
-        $blocked = [
-            'grp.models.delivery_note.state.packing',
-            'grp.models.delivery_note.state.packed',
-            'grp.models.delivery_note.state.dispatched',
-            'grp.models.delivery_note.state.finalise_and_dispatch',
-        ];
-        $reason = __('Print every insert before continuing');
 
         return array_map(function ($action) use ($blocked, $reason) {
             if (!is_array($action) || !in_array(Arr::get($action, 'route.name'), $blocked, true)) {

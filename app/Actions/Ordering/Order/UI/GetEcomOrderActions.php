@@ -40,7 +40,7 @@ class GetEcomOrderActions
         if ($order->state == OrderStateEnum::PACKED) {
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteStateEnum::CANCELLED)->first();
-            if ($deliveryNote) {
+            if ($deliveryNote && !$deliveryNote->hasNothingPicked()) {
                 $isReadyToInvoice = $order->is_shipping_by_external
                     ? $deliveryNote->shipments()->count() > 0
                     : count($deliveryNote->parcels ?? []) > 0;

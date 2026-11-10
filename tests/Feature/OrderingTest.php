@@ -1114,6 +1114,7 @@ test('update order state to Finalised ', function (Order $order) {
         'tracking'           => 'abc',
         'combined_label_url' => 'https://www.google.com',
     ]);
+    $deliveryNote->deliveryNoteItems()->update(['quantity_picked' => DB::raw('quantity_required')]);
 
     $order = FinaliseOrder::make()->action($order);
     $order->refresh();
@@ -5316,6 +5317,13 @@ test('a packed order shipped by us offers the invoice button once the packer rec
     expect($hasInvoice($order->fresh()))->toBeFalse();
 
     $deliveryNote->update(['parcels' => [['weight' => 11.01, 'dimensions' => [39, 39, 57]]]]);
+
+    /** HELP-4622: a note where nothing was picked would be invoiced at zero */
+    expect($hasInvoice($order->fresh()))->toBeFalse()
+        ->and(fn () => FinaliseOrder::make()->action($order->fresh()))->toThrow(ValidationException::class)
+        ->and($order->invoices()->exists())->toBeFalse();
+
+    $deliveryNote->deliveryNoteItems()->update(['quantity_picked' => DB::raw('quantity_required')]);
 
     expect($hasInvoice($order->fresh()))->toBeTrue();
 

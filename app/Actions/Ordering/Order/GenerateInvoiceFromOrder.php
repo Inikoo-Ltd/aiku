@@ -88,6 +88,14 @@ class GenerateInvoiceFromOrder extends OrgAction
             $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->where('state', '!=', DeliveryNoteItemStateEnum::CANCELLED)->first();
 
             $transactions = $this->loadTransactions($order, $deliveryNote);
+
+            $quantitiesPicked = collect($this->loadedLines)->flatMap(fn (array $line) => $line['parts'])->pluck('quantity_picked');
+            if ($deliveryNote?->hasNothingPicked($quantitiesPicked)) {
+                throw ValidationException::withMessages([
+                    'picking' => DeliveryNote::nothingPickedMessage(),
+                ]);
+            }
+
             $this->checkTaxCategories($transactions);
 
             if ($deliveryNote) {

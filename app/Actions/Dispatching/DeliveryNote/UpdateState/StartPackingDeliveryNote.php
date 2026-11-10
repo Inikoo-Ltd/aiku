@@ -58,6 +58,10 @@ class StartPackingDeliveryNote extends OrgAction
             abort(422, __('Cannot start packing: every insert must be printed first'));
         }
 
+        if ($deliveryNote->hasNothingPicked()) {
+            abort(422, DeliveryNote::nothingPickedMessage());
+        }
+
         data_set($modelData, 'packing_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKING->value);
         data_set($modelData, 'packer_user_id', $user->id);
