@@ -53,10 +53,14 @@ class GetMobileWarehouses
             'move_stock'          => $user->authTo(WarehousePermissionsEnum::getStockEditPermissionNames($warehouse->organisation)),
             'view_goods_in'       => $user->authTo(["incoming.$warehouseId.view", "supervisor-incoming.$warehouseId"]),
             'book_in'             => $user->authTo(["incoming.$warehouseId.edit", "supervisor-incoming.$warehouseId", "procurement.$organisationId.edit"]),
+            'supervise_goods_in'  => $user->authTo(["supervisor-incoming.$warehouseId", "procurement.$organisationId.edit"]),
+            'edit_procurement'    => $user->authTo("procurement.$organisationId.edit"),
+            'place_stock_deliveries' => $user->authTo(["procurement.$organisationId.edit", "accounting.$organisationId.edit", "org-supervisor.$organisationId.accounting"]),
             'view_goods_out'      => $user->authTo(["dispatching.$warehouseId.view", "fulfilment.$warehouseId.view", "supervisor-dispatching.$warehouseId"]),
             'pick_and_pack'       => $user->authTo(["dispatching.$warehouseId.edit", "supervisor-dispatching.$warehouseId"]),
             'supervise_goods_out' => $user->authTo("supervisor-dispatching.$warehouseId"),
             'view_fulfilment'     => $user->authTo(["fulfilment.$warehouseId.view", "supervisor-fulfilment.$warehouseId"]),
+            'edit_fulfilment'     => $user->authTo(["fulfilment.$warehouseId.edit", "supervisor-fulfilment.$warehouseId"]),
         ];
     }
 
