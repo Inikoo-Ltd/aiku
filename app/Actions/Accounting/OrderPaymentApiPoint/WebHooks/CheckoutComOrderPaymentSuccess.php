@@ -13,6 +13,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Retina\Dropshipping\Orders\SettleRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
@@ -20,6 +21,7 @@ use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
@@ -192,6 +194,24 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
             Sentry::captureMessage(
                 'Captured checkout.com payment recorded on cancelled order '.$order->id.' — refund may be needed'
             );
+        }
+
+        /** An order already submitted to be paid by bank, or submitted by a racing pay-by-bank
+         * while this payment was being stored, is paid now and must go to the warehouse (HELP-4633). */
+        $order->refresh();
+        if ($order->state == OrderStateEnum::SUBMITTED && $order->pay_status == OrderPayStatusEnum::PAID) {
+            try {
+                DB::transaction(function () use ($order) {
+                    $lockedOrder = Order::lockForUpdate()->find($order->id);
+
+                    if ($lockedOrder->state == OrderStateEnum::SUBMITTED) {
+                        SendOrderToWarehouse::make()->action($lockedOrder, []);
+                    }
+                });
+                $order->refresh();
+            } catch (\Throwable $e) {
+                Sentry::captureException($e);
+            }
         }
 
         return [

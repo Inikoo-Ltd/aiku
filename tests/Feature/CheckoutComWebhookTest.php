@@ -1153,6 +1153,42 @@ test('a staff payment link is bound to the order and its capture pays a submitte
         ->and($order->payments()->where('reference', 'pay_test_link_captured')->count())->toBe(1);
 });
 
+test('a card payment on a submitted order paid by bank sends it to the warehouse', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1);
+    createWarehouse();
+
+    $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
+    list($order, $orderPaymentApiPoint) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
+
+    $order = App\Actions\Ordering\Order\UpdateState\SubmitOrder::make()->action($order);
+    expect($order->state)->toBe(OrderStateEnum::SUBMITTED);
+
+    $orderAmountInCents = (int)round((float)$order->total_amount * 100);
+
+    ProcessCheckoutComPaymentGatewayLog::partialMock()
+        ->shouldReceive('getCheckOutPayment')
+        ->andReturn([
+            'id'     => 'pay_test_submitted_then_card',
+            'status' => 'Captured',
+            'amount' => $orderAmountInCents,
+            'source' => ['type' => 'card'],
+        ]);
+
+    $paymentGatewayLog = $this->group->paymentGatewayLogs()->create([
+        'payload' => fakeCheckoutComWebhookPayload('payment_captured', 'evt_test_submitted_then_card', 'pay_test_submitted_then_card', $orderPaymentApiPoint, $orderAmountInCents),
+        'gateway' => 'checkout-com',
+    ]);
+
+    PreProcessCheckoutComPaymentGatewayLog::run($paymentGatewayLog);
+
+    $order->refresh();
+
+    expect($paymentGatewayLog->refresh()->status)->toBe(PaymentGatewayLogStatusEnum::OK)
+        ->and($order->pay_status->value)->toBe('paid')
+        ->and($order->state)->toBe(OrderStateEnum::IN_WAREHOUSE)
+        ->and($order->deliveryNotes()->count())->toBe(1);
+});
+
 test('a payment link is refused when the order owes nothing', function () {
     $paymentAccountShop = createCheckoutPaymentAccountShop($this->organisation, $this->shop);
     list($order) = createOrderWithCheckoutApiPoint($this->customer, $this->product, $paymentAccountShop);
