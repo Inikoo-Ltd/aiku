@@ -39,6 +39,7 @@ import { Navigation, Thumbs } from 'swiper/modules'
 // import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import { activeSpecialOfferPercentageOff } from "@/Composables/stepDiscountAgainstOffer"
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
@@ -160,6 +161,14 @@ const _popoverProfit = ref(null)
 const bestOffer = computed(() => {
   return getBestOffer(props.product?.offers_data)
 })
+
+const specialOfferPercentageOff = computed<number>(() =>
+    activeSpecialOfferPercentageOff(
+        bestOffer.value,
+        props.product?.offers_data,
+        Boolean(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)
+    )
+)
 
 const _desktopAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
 const _mobileAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
@@ -424,7 +433,7 @@ onMounted(async () => {
                 <StepDiscountOffer
                     v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
                     class="mt-3"
-                    :stepDiscount="product.step_discount"
+                    :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff"
                     :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
                     :originalPrice="product.price"
                     :unit="product.unit"
@@ -732,7 +741,7 @@ onMounted(async () => {
         <StepDiscountOffer
             v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
             class="mt-4"
-            :stepDiscount="product.step_discount"
+            :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff"
             :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
             :originalPrice="product.price"
             :unit="product.unit"

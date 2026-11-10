@@ -6,6 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFire } from "@fas"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { popularStepMinQuantity, stepsBeatingSpecialOffer } from "@/Composables/stepDiscountAgainstOffer"
 
 library.add(faFire)
 
@@ -31,6 +32,7 @@ const props = defineProps<{
     units?: number
     quantity?: number
     isSubmitting?: boolean
+    specialOfferPercentageOff?: number
 }>()
 
 const emits = defineEmits<{
@@ -39,7 +41,19 @@ const emits = defineEmits<{
 
 const locale = inject("locale", aikuLocaleStructure)
 
-const steps = computed<StepDiscountStep[]>(() => props.stepDiscount?.steps ?? [])
+const allSteps = computed<StepDiscountStep[]>(() => props.stepDiscount?.steps ?? [])
+
+const isSpecialOfferRunning = computed<boolean>(() => (props.specialOfferPercentageOff ?? 0) > 0)
+
+const steps = computed<StepDiscountStep[]>(() =>
+    stepsBeatingSpecialOffer(allSteps.value, props.specialOfferPercentageOff ?? 0)
+)
+
+const headerLabel = computed<string>(() =>
+    isSpecialOfferRunning.value
+        ? ctrans("Even better in bulk")
+        : props.stepDiscount.label || ctrans("Buy more, save more")
+)
 
 const unitsPerOuter = computed<number>(() =>
     Number(props.units ?? props.stepDiscount?.units ?? 1) || 1
@@ -49,14 +63,7 @@ const innerUnitLabel = computed<string>(() => props.unit ?? props.stepDiscount?.
 
 const isPackedProduct = computed<boolean>(() => unitsPerOuter.value > 1)
 
-const popularMinQuantity = computed<number | null>(() => {
-    if (!steps.value.length) return null
-
-    const flagged = steps.value.find((step) => step.is_popular)
-    if (flagged) return flagged.min_quantity
-
-    return steps.value[Math.floor(steps.value.length / 2)].min_quantity
-})
+const popularMinQuantity = computed<number | null>(() => popularStepMinQuantity(allSteps.value, steps.value))
 
 const activeMinQuantity = ref<number | null>(null)
 
@@ -121,7 +128,7 @@ const onSelectStep = (step: StepDiscountStep) => {
     <div v-if="steps.length" class="step-discount w-full">
         <div class="step-discount-header flex items-center gap-3 mb-4">
             <span class="header-line" />
-            <span class="header-text">{{ stepDiscount.label || ctrans("Buy more, save more") }}</span>
+            <span class="header-text">{{ headerLabel }}</span>
             <span class="header-line" />
         </div>
 

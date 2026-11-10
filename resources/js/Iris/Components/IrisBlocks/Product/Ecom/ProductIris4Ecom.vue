@@ -61,6 +61,7 @@ import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLa
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import { activeSpecialOfferPercentageOff } from "@/Composables/stepDiscountAgainstOffer"
 import { getOfferTextColorClass } from "@/Composables/offerColors"
 import { Popover } from "primevue"
 import ProductDescriptionUseTab from "@/Iris/Components/BlocksUtils/ProductDescription/ProductDescriptionUseTab.vue"
@@ -292,6 +293,10 @@ const isMemberPriceActive = computed<boolean>(() => {
 
     return trigger != null && Number(trigger) <= familyQuantityOrdered.value
 })
+
+const specialOfferPercentageOff = computed<number>(() =>
+    activeSpecialOfferPercentageOff(bestOffer.value, offersData.value, isMemberPriceActive.value)
+)
 
 const isPurchasable = computed(() => Boolean(product.value?.stock && !product.value?.is_coming_soon))
 
@@ -579,7 +584,7 @@ onMounted(async () => {
                 <StepDiscountOffer
                     class="mt-3"
                     v-if="layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
-                    :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
+                    :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff" :currencyCode="product.currency_code ?? currency?.code"
                     :originalPrice="product.price" :unit="product.unit" :units="product.units"
                     :quantity="orderedQuantity" :isSubmitting="isDesktopStepSyncing"
                     @selectQuantity="onSelectStepQuantityDesktop" />
@@ -829,7 +834,7 @@ onMounted(async () => {
 
             <StepDiscountOffer
                 v-if="layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
-                :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
+                :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff" :currencyCode="product.currency_code ?? currency?.code"
                 :originalPrice="product.price" :unit="product.unit" :units="product.units"
                 :quantity="orderedQuantity" :isSubmitting="isMobileStepSyncing"
                 @selectQuantity="onSelectStepQuantityMobile" />
