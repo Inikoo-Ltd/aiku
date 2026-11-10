@@ -1525,7 +1525,7 @@ test('an agent\'s Excel balance sheet comes into the ledger as opening lines plu
     $balance     = $spreadsheet->getActiveSheet()->setTitle('Balance');
     $balance->setCellValue('D4', 3360);
     $balance->fromArray([
-        ['2025-12-01', 1000, null, 'Notes / Exchange rate', null, null, null, null, null, null],
+        [null, 1000, null, 'Notes / Exchange rate', null, null, null, null, null, null],
         ['2025-12-05', null, 400, 'payment to shop', null, null, null, null, 'OLD', '12'],
         ['2026-02-01', 5000, null, 'Notes / Exchange rate', null, null, null, 'TT-5000', null, null],
         ['2026-02-03', null, 1200, 'payment to shop', null, null, null, null, $this->orgStocks[0]->code, $orderNumber],
