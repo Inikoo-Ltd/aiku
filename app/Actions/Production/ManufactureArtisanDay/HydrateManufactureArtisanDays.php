@@ -16,11 +16,13 @@ use App\Models\HumanResources\WorkSchedule;
 use App\Models\Production\ManufactureArtisanDay;
 use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufactureHoursTolerance;
+use App\Models\Production\ManufactureOvertime;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\Production;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class HydrateManufactureArtisanDays
@@ -62,16 +64,27 @@ class HydrateManufactureArtisanDays
                 return $date >= $fromDate && $date <= $toDate;
             });
 
+        $overtimes = ManufactureOvertime::where('production_id', $production->id)
+            ->whereBetween('date', [$fromDate, $toDate])
+            ->get()
+            ->keyBy(fn (ManufactureOvertime $overtime) => $overtime->employee_id.'|'.$overtime->date->toDateString());
+
         $employees = $sessions->pluck('employee')->keyBy('id');
         $employees = $employees->union(
-            Employee::whereIn('id', array_diff(self::rosterEmployeeIds($production, $from, $to), $employees->keys()->all()))
+            Employee::whereIn('id', array_diff([...self::rosterEmployeeIds($production, $from, $to), ...$overtimes->pluck('employee_id')->all()], $employees->keys()->all()))
                 ->with('organisation.timezone')
                 ->get()
                 ->keyBy('id')
         );
-        $clockings = self::clockings($employees->keys()->all(), $fromDate, $toDate);
+        $clockings  = self::clockings($employees->keys()->all(), $fromDate, $toDate);
+        $clockTimes = self::clockTimes($clockings);
         foreach ($clockings as $key => $timesheet) {
             if (!$days->has($key) && $timesheet->number_time_trackers > 0) {
+                $days->put($key, collect());
+            }
+        }
+        foreach ($overtimes->keys() as $key) {
+            if (!$days->has($key)) {
                 $days->put($key, collect());
             }
         }
@@ -93,7 +106,7 @@ class HydrateManufactureArtisanDays
             $employee            = $employees[$employeeId] ?? $existing[$key]->employee;
             $tolerances[$date] ??= ManufactureHoursTolerance::minutesOn($production->id, $date);
 
-            $this->hydrateDay($production, $employee, $date, $daySessions, $tolerances[$date], $existing[$key] ?? null, $breaksByUser, $clockings[$key] ?? null);
+            $this->hydrateDay($production, $employee, $date, $daySessions, $tolerances[$date], $existing[$key] ?? null, $breaksByUser, $clockings[$key] ?? null, $clockTimes[$key] ?? null, $overtimes[$key] ?? null);
         }
     }
 
@@ -128,8 +141,54 @@ class HydrateManufactureArtisanDays
         return Timesheet::where('subject_type', 'Employee')
             ->whereIn('subject_id', $employeeIds)
             ->whereBetween('date', [$fromDate, $toDate])
-            ->get(['subject_id', 'date', 'working_duration', 'breaks_duration', 'number_time_trackers', 'number_open_time_trackers'])
+            ->get(['id', 'subject_id', 'date', 'working_duration', 'breaks_duration', 'number_time_trackers', 'number_open_time_trackers'])
             ->keyBy(fn (Timesheet $timesheet) => $timesheet->subject_id.'|'.$timesheet->date->toDateString());
+    }
+
+    /**
+     * The first clock in and the last clock out of each timesheet.
+     *
+     * @param  Collection<string, Timesheet>  $clockings
+     * @return array<string, array{in: Carbon|null, out: Carbon|null}> keyed by employee id|date
+     */
+    public static function clockTimes(Collection $clockings): array
+    {
+        if ($clockings->isEmpty()) {
+            return [];
+        }
+
+        $times = DB::table('time_trackers')
+            ->whereIn('timesheet_id', $clockings->pluck('id'))
+            ->whereNull('deleted_at')
+            ->groupBy('timesheet_id')
+            ->selectRaw('timesheet_id, min(starts_at) as clocked_in_at, max(ends_at) as clocked_out_at')
+            ->get()
+            ->keyBy('timesheet_id');
+
+        $clockTimes = [];
+        foreach ($clockings as $key => $timesheet) {
+            $row              = $times->get($timesheet->id);
+            $clockTimes[$key] = [
+                'in'  => $row?->clocked_in_at ? Carbon::parse($row->clocked_in_at) : null,
+                'out' => $row?->clocked_out_at ? Carbon::parse($row->clocked_out_at) : null,
+            ];
+        }
+
+        return $clockTimes;
+    }
+
+    /**
+     * The shift length less the day's unpaid break; 0 on a day off, null with no work schedule.
+     *
+     * @param  array{start: Carbon, end: Carbon, unpaid_break_minutes: int}|array{}|null  $shift
+     */
+    public static function expectedMinutes(?array $shift): ?int
+    {
+        return match (true) {
+            $shift === null => null,
+            $shift === []   => 0,
+            default         => max(0, (int) round($shift['start']->diffInMinutes($shift['end']) - $shift['unpaid_break_minutes'])),
+        };
     }
 
     private function schedule(Employee $employee): ?WorkSchedule
@@ -169,16 +228,13 @@ class HydrateManufactureArtisanDays
      * is flagged on its own once the day is over.
      *
      * @param  Collection<int, Collection<int, ManufactureBreak>>  $breaksByUser
+     * @param  array{in: Carbon|null, out: Carbon|null}|null  $clockTimes
      */
-    private function hydrateDay(Production $production, Employee $employee, string $date, Collection $sessions, int $tolerance, ?ManufactureArtisanDay $day, Collection $breaksByUser, ?Timesheet $timesheet): void
+    private function hydrateDay(Production $production, Employee $employee, string $date, Collection $sessions, int $tolerance, ?ManufactureArtisanDay $day, Collection $breaksByUser, ?Timesheet $timesheet, ?array $clockTimes, ?ManufactureOvertime $overtime): void
     {
         $schedule        = $this->schedule($employee);
         $shift           = $schedule ? $employee->scheduledShiftOn($date, $schedule) : null;
-        $expectedMinutes = match (true) {
-            $shift === null => null,
-            $shift === []   => 0,
-            default         => max(0, (int) round($shift['start']->diffInMinutes($shift['end']) - $shift['unpaid_break_minutes'])),
-        };
+        $expectedMinutes = self::expectedMinutes($shift);
 
         $isWaitingForTimesCheck = fn (ManufactureTaskSession $session) => $session->job_order_item_task_id !== null
             && $session->left_open_after_shift_at !== null
@@ -219,10 +275,14 @@ class HydrateManufactureArtisanDays
             'clocked_minutes'        => $clockedMinutes,
             'tablet_over_clocked_minutes' => $this->isDayRunning($employee, $date, $shift ?: []) ? 0 : max(0, $recordedMinutes - ($clockedMinutes ?? 0)),
             'open_clockings'         => $timesheet->number_open_time_trackers ?? 0,
+            'clocked_in_at'          => $clockTimes['in'] ?? null,
+            'clocked_out_at'         => $clockTimes['out'] ?? null,
+            'manufacture_overtime_id' => $overtime?->id,
             'tolerance_minutes'      => $tolerance,
             'unchecked_running_jobs' => $runningJobs,
             'status'                 => $status,
         ]);
+        $day->setRelation('overtime', $overtime);
         $day->is_warning_open = $day->needsAction();
         $day->save();
     }

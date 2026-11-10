@@ -14,6 +14,7 @@ use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTy
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Models\HumanResources\Timesheet;
+use App\Models\Production\ManufactureOvertime;
 use App\Models\Production\ManufacturePayBand;
 use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\ManufactureTaskSession;
@@ -32,6 +33,11 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * jobs that ended last, and the day is flagged. Hourly artisans are paid their clocked hours at band 0, apart from machine
  * maintenance and development, which keep their own rate; their other tablet time is shown for information only. Hours are rounded once, on the breakdown lines, so the bands add up exactly to the
  * clocked hours.
+ *
+ * Overtime a manager approved (HELP-4597), the clocked time beyond the shift as it was when decided, up to the minutes
+ * approved (more clocked than approved is paid as normal hours and flagged): on a Saturday or Sunday approved as paid it is
+ * paid at 1.5 x band 0 (the rate rounded to the penny) with no band or Guru bonus; approved as time off in lieu it is not
+ * paid and is owed as TOIL. Those hours are taken off the day's lines in proportion, so their band split is still shown.
  */
 class GetManufacturePayroll
 {
@@ -48,12 +54,20 @@ class GetManufacturePayroll
 
     private Collection $payBands;
 
+    /** @var Collection<string, ManufactureOvertime> keyed by employee id|date */
+    private Collection $overtimes;
+
     /**
      * @return array<int, array<string, mixed>> one row per artisan, each with its days and breakdown lines
      */
     public function handle(Production $production, Carbon $from, Carbon $to, ?int $userId = null): array
     {
-        $this->payBands = ManufacturePayBand::where('production_id', $production->id)->orderByDesc('effective_from')->get();
+        $this->payBands  = ManufacturePayBand::where('production_id', $production->id)->orderByDesc('effective_from')->get();
+        $this->overtimes = ManufactureOvertime::where('production_id', $production->id)
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->get()
+            ->filter(fn (ManufactureOvertime $overtime) => $overtime->isPaidAtWeekendRate() || $overtime->isToil())
+            ->keyBy(fn (ManufactureOvertime $overtime) => $overtime->employee_id.'|'.$overtime->date->toDateString());
 
         $sessions = ManufactureTaskSession::where('production_id', $production->id)
             ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
@@ -146,6 +160,8 @@ class GetManufacturePayroll
             'is_agency_worker'  => (bool) $employee?->is_agency_worker,
             'is_guru'           => false,
             'excluded_sessions' => 0,
+            'weekend_overtime_bands' => [],
+            'toil_bands'        => [],
             'days'              => [],
             'lines'             => [],
         ];
@@ -173,7 +189,7 @@ class GetManufacturePayroll
             $keys[] = $key.'_amount';
         }
 
-        return [...$keys, 'guru_hours', 'guru_amount', 'adjustment_hours', 'adjustment_amount', 'total'];
+        return [...$keys, 'guru_hours', 'guru_amount', 'weekend_overtime_hours', 'weekend_overtime_amount', 'toil_hours', 'toil_owed_hours', 'adjustment_hours', 'adjustment_amount', 'total'];
     }
 
     /**
@@ -207,7 +223,7 @@ class GetManufacturePayroll
             $paidTablet  = $isHourly ? $tabletHours->only($daySessions->filter(fn (ManufactureTaskSession $session) => $this->isFlatRate($session))->pluck('id')->all()) : $tabletHours;
             $paidHours   = $this->capToClocked($daySessions, $paidTablet, $clocked);
 
-            $lines = $lines->merge(
+            $dayLines = collect(
                 $daySessions
                     ->groupBy(fn (ManufactureTaskSession $session) => implode('|', [
                         $session->jobOrderItemTask?->job_order_item_id ?? 'job-order-'.$session->job_order_id,
@@ -225,8 +241,10 @@ class GetManufacturePayroll
 
             $clockedNotPaidOnTablet = max(0, $clocked - $paidTablet->sum());
             if ($clockedNotPaidOnTablet > 0.000001) {
-                $lines->push($this->clockedLine($employee, $date, $clockedNotPaidOnTablet, $isHourly));
+                $dayLines->push($this->clockedLine($employee, $date, $clockedNotPaidOnTablet, $isHourly));
             }
+
+            $lines = $lines->merge($this->withOvertime($dayLines, $employeeIds, $date, $clocked));
 
             $dayFacts[$date] = [
                 'date'                      => $date,
@@ -238,7 +256,7 @@ class GetManufacturePayroll
             ];
         }
 
-        $counted = $this->allocateHours($lines->where('counted', true));
+        $counted = $lines->where('counted', true)->groupBy('pay')->flatMap(fn (Collection $payLines) => $this->allocateHours($payLines))->values();
 
         $row = array_merge([
             'user_id'           => $user->id,
@@ -274,8 +292,12 @@ class GetManufacturePayroll
     /**
      * @param  array<string, array<string, mixed>>  $dayFacts
      */
-    private function summary(Collection $countedLines, array $dayFacts): array
+    private function summary(Collection $paidLines, array $dayFacts): array
     {
+        $countedLines = $paidLines->where('pay', 'normal');
+        $weekendLines = $paidLines->where('pay', 'weekend_overtime');
+        $toilLines    = $paidLines->where('pay', 'toil');
+
         $summary = [
             'working_hours'             => round($countedLines->sum('hours'), 2),
             'working_amount'            => round($countedLines->sum(fn (array $line) => $line['hours'] * $line['nlw']), 2),
@@ -293,9 +315,76 @@ class GetManufacturePayroll
         $guruLines              = $countedLines->where('guru_rate', '>', 0);
         $summary['guru_hours']  = round($guruLines->sum('hours'), 2);
         $summary['guru_amount'] = round($guruLines->sum(fn (array $line) => $line['hours'] * $line['guru_rate']), 2);
-        $summary['total']       = round($summary['working_amount'] + array_sum(array_map(fn (string $key) => $summary[$key.'_amount'], self::BANDS)) + $summary['guru_amount'], 2);
+
+        $summary['weekend_overtime_hours']  = round($weekendLines->sum('hours'), 2);
+        $summary['weekend_overtime_amount'] = round($weekendLines->sum(fn (array $line) => $line['hours'] * $line['band_rate']), 2);
+        $summary['weekend_overtime_bands']  = $this->bandSplit($weekendLines);
+        $summary['toil_hours']              = round($toilLines->sum('hours'), 2);
+        $summary['toil_owed_hours']         = round($toilLines->sum(fn (array $line) => $line['hours'] * $line['toil_ratio']), 2);
+        $summary['toil_bands']              = $this->bandSplit($toilLines);
+
+        $summary['total'] = round($summary['working_amount'] + array_sum(array_map(fn (string $key) => $summary[$key.'_amount'], self::BANDS)) + $summary['guru_amount'] + $summary['weekend_overtime_amount'], 2);
 
         return $summary;
+    }
+
+    /**
+     * How overtime hours split into bands, for information only.
+     *
+     * @return array<string, float> hours keyed by band code
+     */
+    private function bandSplit(Collection $lines): array
+    {
+        return $lines->groupBy('band')
+            ->map(fn (Collection $bandLines) => round($bandLines->sum('hours'), 2))
+            ->filter(fn (float $hours) => $hours > 0)
+            ->sortKeys()
+            ->all();
+    }
+
+    /**
+     * Overtime approved as paid on a weekend, or as TOIL, comes off each paid line of the day in proportion: the clocked time
+     * beyond the shift as it was when decided, up to the minutes approved.
+     *
+     * @param  array<int, int>  $employeeIds
+     */
+    private function withOvertime(Collection $dayLines, array $employeeIds, string $date, float $clocked): Collection
+    {
+        $overtime = collect($employeeIds)->map(fn (int $employeeId) => $this->overtimes->get($employeeId.'|'.$date))->filter()->first();
+        if (!$overtime) {
+            return $dayLines;
+        }
+
+        $paidHours     = $dayLines->where('counted', true)->sum('hours');
+        $overtimeHours = min($paidHours, $overtime->coveredMinutes((int) round($clocked * 60)) / 60);
+        if ($overtimeHours <= 0.000001) {
+            return $dayLines;
+        }
+
+        $share = $overtimeHours / $paidHours;
+        $pay   = $overtime->isToil() ? 'toil' : 'weekend_overtime';
+        $rate  = $overtime->isToil() ? 0.0 : $this->weekendOvertimeRate(Carbon::parse($date)->endOfDay());
+
+        return $dayLines->flatMap(fn (array $line) => !$line['counted'] ? [$line] : [
+            array_merge($line, ['hours' => $line['hours'] * (1 - $share)]),
+            array_merge($line, [
+                'hours'          => $line['hours'] * $share,
+                'not_paid_hours' => 0.0,
+                'band_rate'      => $rate,
+                'above_nlw'      => 0.0,
+                'guru_rate'      => 0.0,
+                'pay'            => $pay,
+                'toil_ratio'     => $overtime->isToil() ? (float) $overtime->toil_ratio : 0.0,
+            ]),
+        ])->filter(fn (array $line) => !$line['counted'] || $line['hours'] > 0.000001)->values();
+    }
+
+    /**
+     * 1.5 x band 0 rounded to the penny: 1.5 x 12.71 = 19.065 is paid at 19.07.
+     */
+    private function weekendOvertimeRate(Carbon $at): float
+    {
+        return round(ManufactureOvertime::WEEKEND_MULTIPLIER * $this->rate('0', $at) + 1e-9, 2);
     }
 
     /**
@@ -357,6 +446,8 @@ class GetManufacturePayroll
             'is_tablet_info'      => $isHourly && !$excluded,
             'is_clocked_line'     => false,
             'counted'             => !$excluded && !$isHourly,
+            'pay'                 => 'normal',
+            'toil_ratio'          => 0.0,
         ];
     }
 
@@ -386,6 +477,8 @@ class GetManufacturePayroll
             'is_tablet_info'      => false,
             'is_clocked_line'     => true,
             'counted'             => true,
+            'pay'                 => 'normal',
+            'toil_ratio'          => 0.0,
         ];
     }
 

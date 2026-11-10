@@ -8,6 +8,7 @@
 
 namespace App\Actions\Production\ManufactureTaskSession;
 
+use App\Actions\Production\ManufactureTaskSession\UI\ShowManufacturePayroll;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Actions\OrgAction;
 use App\Exports\Production\ManufacturePayrollExport;
@@ -36,7 +37,7 @@ class ExportManufacturePayroll extends OrgAction
 
         $filename = sprintf('payroll-%s-%s-%s.csv', $production->slug, $from->toDateString(), $to->toDateString());
 
-        return Excel::download(new ManufacturePayrollSummaryExport(GetManufacturePayroll::run($production, $from, $to)), $filename, ExcelWriter::CSV);
+        return Excel::download(new ManufacturePayrollSummaryExport(ShowManufacturePayroll::withOvertimeFacts($production, $from, $to, GetManufacturePayroll::run($production, $from, $to))), $filename, ExcelWriter::CSV);
     }
 
     public function rules(): array

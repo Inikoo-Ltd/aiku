@@ -119,7 +119,7 @@ trait WithManufacturePayrollLock
         $rows = GetManufacturePayroll::make()->handle($production, $from, $to, $workerId);
 
         return [
-            'working_hours' => (float) array_sum(array_column($rows, 'working_hours')),
+            'working_hours' => (float) array_sum(array_map(fn (array $row) => $row['working_hours'] + $row['weekend_overtime_hours'] + $row['toil_hours'], $rows)),
             'total'         => (float) array_sum(array_column($rows, 'total')),
         ];
     }

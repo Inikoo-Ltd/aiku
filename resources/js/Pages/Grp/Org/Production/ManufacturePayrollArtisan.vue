@@ -28,7 +28,7 @@ defineProps<{
     data: object
 }>()
 
-const payKeys = ["working", "band_0", "band_1", "band_2", "band_3", "band_d", "band_dg", "guru"]
+const payKeys = ["working", "band_0", "band_1", "band_2", "band_3", "band_d", "band_dg", "guru", "weekend_overtime"]
 const tabletKeys = ["tablet_hours", "not_on_tablet_hours"]
 const money = (amount: number) => `£${amount.toFixed(2)}`
 </script>
@@ -96,6 +96,8 @@ const money = (amount: number) => `£${amount.toFixed(2)}`
         </template>
         <template #cell(step)="{ item }">
             {{ item.step }}
+            <span v-if="item.pay === 'weekend_overtime'" class="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Weekend overtime: 1.5 × Band 0') }}</span>
+            <span v-if="item.pay === 'toil'" class="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Time off in lieu: not paid') }}</span>
             <span v-if="item.is_tablet_info" class="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">{{ ctrans('Hourly: tablet time for information') }}</span>
             <span v-if="item.not_paid_hours" class="ml-1 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">{{ ctrans(':hours h over the clocked time not paid', { hours: item.not_paid_hours.toFixed(2) }) }}</span>
             <span v-if="item.excluded" class="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">{{ ctrans('Left running after shift: not counted until checked') }}</span>

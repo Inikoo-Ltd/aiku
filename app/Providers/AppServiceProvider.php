@@ -479,6 +479,8 @@ class AppServiceProvider extends ServiceProvider
                 'ManufactureBreak'                 => 'App\Models\Production\ManufactureBreak',
                 'ManufactureArtisanDay'            => 'App\Models\Production\ManufactureArtisanDay',
                 'ManufacturePayrollAdjustment'     => 'App\Models\Production\ManufacturePayrollAdjustment',
+                'ManufactureOvertime'              => 'App\Models\Production\ManufactureOvertime',
+                'ManufactureToilTaken'             => 'App\Models\Production\ManufactureToilTaken',
                 'Artefact'                         => 'App\Models\Production\Artefact',
                 'ArtefactDepartment'                   => 'App\Models\Production\ArtefactDepartment',
                 'ArtefactFamily'                   => 'App\Models\Production\ArtefactFamily',

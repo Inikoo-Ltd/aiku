@@ -10,6 +10,8 @@ namespace App\Http\Resources\Production;
 
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayResolutionEnum;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayShortReasonEnum;
+use App\Enums\Production\ManufactureOvertime\ManufactureOvertimeCompensationEnum;
+use App\Enums\Production\ManufactureOvertime\ManufactureOvertimeDecisionEnum;
 use App\Models\Production\ManufactureArtisanDay;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,10 +26,29 @@ class ManufactureArtisanDayResource extends JsonResource
     public function toArray($request): array
     {
         $timezone = $this->employee?->organisation?->timezone?->name ?? config('app.timezone');
+        $overtime = $this->overtime;
 
         return [
             'id'                     => $this->id,
+            'employee_id'            => $this->employee_id,
             'date'                   => $this->date->toDateString(),
+            'is_weekend'             => $this->date->isWeekend(),
+            'clocked_in_at'          => $this->clocked_in_at?->copy()->setTimezone($timezone)->format('H:i'),
+            'clocked_out_at'         => $this->clocked_out_at?->copy()->setTimezone($timezone)->format('H:i'),
+            'overtime'               => $overtime ? [
+                'planned_start'      => $overtime->planned_start?->copy()->setTimezone($timezone)->format('H:i'),
+                'planned_end'        => $overtime->planned_end?->copy()->setTimezone($timezone)->format('H:i'),
+                'decision'           => $overtime->decision->value,
+                'decision_label'     => ManufactureOvertimeDecisionEnum::labels()[$overtime->decision->value],
+                'compensation'       => $overtime->compensation?->value,
+                'compensation_label' => $overtime->compensation ? ManufactureOvertimeCompensationEnum::labels()[$overtime->compensation->value] : null,
+                'reason'             => $overtime->reason,
+                'decided_by'         => $overtime->decidedBy?->contact_name ?: $overtime->decidedBy?->username,
+                'decided_at'         => $overtime->decided_at,
+            ] : null,
+            'is_outside_planned'     => $this->isOutsidePlanned(),
+            'is_overtime_decided'    => $this->isOvertimeDecided(),
+            'is_overtime_awaiting'   => $this->isOvertimeAwaitingDecision(),
             'user_id'                => $this->user_id,
             'worker'                 => $this->worker,
             'shift_start'            => $this->shift_start?->copy()->setTimezone($timezone)->format('H:i'),

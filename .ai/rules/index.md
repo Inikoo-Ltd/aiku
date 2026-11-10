@@ -23,6 +23,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | lang/** | .ai/rules/lang.md |
 | app/Actions/Comms/Mailshot/** | .ai/rules/mailshot.md |
 | app/Actions/Production/ManufactureArtisanDay/**, app/Actions/Production/ManufactureTaskSession/GetManufacturePayroll.php | .ai/rules/manufacture-artisan-day.md |
+| app/Actions/Production/ManufactureOvertime/** | .ai/rules/manufacture-overtime.md |
 | app/Actions/Ordering/**, resources/js/Pages/Grp/Org/Ordering/** | .ai/rules/ordering.md |
 | app/Actions/Inventory/OrgStock/** | .ai/rules/org-stock.md |
 | routes/grp/web/org/** | .ai/rules/org.md |

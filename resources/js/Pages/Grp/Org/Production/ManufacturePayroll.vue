@@ -52,7 +52,8 @@ const props = defineProps<{
     data: object
 }>()
 
-const payKeys = ["working", "band_0", "band_1", "band_2", "band_3", "band_d", "band_dg", "guru", "adjustment"]
+const payKeys = ["working", "band_0", "band_1", "band_2", "band_3", "band_d", "band_dg", "guru", "weekend_overtime", "adjustment"]
+const toilKeys = ["toil_hours", "toil_balance_hours"]
 
 const fromIsoDate = (iso: string): Date => {
     const [year, month, day] = iso.split("-").map(Number)
@@ -145,7 +146,7 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
     </div>
 
     <p class="mx-4 mt-2 text-xs text-gray-500">
-        {{ ctrans('Clocked hours (clocked breaks left out) are paid at the National Living Wage (band 0). The tablet hours are split into bands, and clocked time not on the tablet is band 0. Each band adds what it pays above the National Living Wage, for its hours. Tablet time beyond the clocked time is not paid. Hourly workers are paid their clocked hours at band 0, apart from machine maintenance (band 2) and development, which keep their own rate. Jobs left running after the end of the shift are not counted until their times are checked.') }}
+        {{ ctrans('Clocked hours (clocked breaks left out) are paid at the National Living Wage (band 0). The tablet hours are split into bands, and clocked time not on the tablet is band 0. Each band adds what it pays above the National Living Wage, for its hours. Tablet time beyond the clocked time is not paid. Hourly workers are paid their clocked hours at band 0, apart from machine maintenance (band 2) and development, which keep their own rate. Jobs left running after the end of the shift are not counted until their times are checked. Weekend overtime approved as paid is paid at 1.5 × Band 0 instead, with no band or Guru bonus (its band split is shown under it, for information). Overtime approved as time off in lieu is not paid: it is shown under TOIL hours and added to the balance.') }}
     </p>
 
     <div v-if="payroll_changes.length" class="mx-4 mt-3 rounded-lg border px-4 py-3 text-sm" :class="payroll_changes.some(change => change.awaiting_approval) ? 'border-red-300 bg-red-50 text-red-900' : 'border-gray-200 bg-gray-50 text-gray-700'">
@@ -171,6 +172,9 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
                 <span v-if="item.not_authorised_overtime" class="cursor-help rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800" v-tooltip="item.not_authorised_overtime.days.map((day) => `${day.date}: +${clockMinutes(day.minutes)}${day.note ? ' · ' + day.note : ''}${day.by ? ' (' + day.by + ')' : ''}`).join('\n')">
                     {{ ctrans('Overtime not authorised :time', { time: clockMinutes(item.not_authorised_overtime.minutes) }) }}
                 </span>
+                <span v-if="item.awaiting_overtime" class="cursor-help rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800" v-tooltip="item.awaiting_overtime.days.map((day) => `${day.date}: +${clockMinutes(day.minutes)}`).join('\n')">
+                    {{ ctrans('Overtime awaiting decision :time', { time: clockMinutes(item.awaiting_overtime.minutes) }) }}
+                </span>
                 <span v-if="item.tablet_over_clocked_hours" class="cursor-help rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800" v-tooltip="ctrans('More time on the tablet than clocked: only the clocked time is paid. Correct the job times or the clocking on Daily hours.')">
                     {{ ctrans('Tablet over clocked :hours h', { hours: item.tablet_over_clocked_hours.toFixed(2) }) }}
                 </span>
@@ -184,6 +188,10 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
             <div class="grid grid-cols-[3.5rem_4.5rem] justify-end gap-2 tabular-nums whitespace-nowrap">
                 <span class="text-right text-gray-400">{{ item[`${key}_hours`].toFixed(2) }}</span>
                 <span class="text-right">{{ money(item[`${key}_amount`]) }}</span>
+            </div>
+            <div v-if="key === 'weekend_overtime' && item.weekend_overtime_hours" class="text-right text-xs tabular-nums whitespace-nowrap text-gray-400">
+                {{ ctrans('at :rate/h', { rate: money(item.weekend_overtime_amount / item.weekend_overtime_hours) }) }} ·
+                {{ Object.entries(item.weekend_overtime_bands).map(([band, hours]) => `${ctrans('Band')} ${band} ${(hours as number).toFixed(2)}`).join(', ') }}
             </div>
         </template>
         <template #cell(work_areas)="{ item }">
@@ -201,6 +209,12 @@ const clockMinutes = (minutes: number) => `${Math.floor(minutes / 60)}:${String(
         </template>
         <template v-for="key in ['tablet_hours', 'not_on_tablet_hours']" :key="`footer-${key}`" #[`footerRows-cell(${key})`]="{ item }">
             <span class="tabular-nums font-semibold text-gray-700">{{ item[key].toFixed(2) }}</span>
+        </template>
+        <template v-for="key in toilKeys" :key="key" #[`cell(${key})`]="{ item }">
+            <span class="tabular-nums text-gray-500">{{ item[key].toFixed(2) }}</span>
+        </template>
+        <template v-for="key in toilKeys" :key="`footer-${key}`" #[`footerRows-cell(${key})`]="{ item }">
+            <span class="tabular-nums font-semibold text-gray-700">{{ item[key]?.toFixed(2) ?? '' }}</span>
         </template>
         <template #footerRows-cell(artisan_pay_type)><span /></template>
         <template #footerRows-cell(is_agency_worker)><span /></template>

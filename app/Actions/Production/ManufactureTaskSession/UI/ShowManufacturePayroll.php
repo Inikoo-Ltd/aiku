@@ -13,8 +13,10 @@ use App\Actions\Production\Artisan\GetArtisanWorkAreas;
 use App\Actions\Production\ManufactureArtisanDay\HydrateManufactureArtisanDays;
 use App\Actions\Production\Production\UI\ShowArtisansDashboard;
 use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayResolutionEnum;
-use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayStatusEnum;
+use App\Enums\Production\ManufactureOvertime\ManufactureOvertimeDecisionEnum;
 use App\Models\Production\ManufactureArtisanDay;
+use App\Models\Production\ManufactureOvertime;
+use App\Models\Production\ManufactureToilTaken;
 use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\Production;
 use App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll;
@@ -45,7 +47,7 @@ class ShowManufacturePayroll extends OrgAction
         $workAreas = GetArtisanWorkAreas::run($production);
         $artisans  = array_map(fn (array $artisan) => Arr::except($artisan, ['lines', 'days']) + [
             'work_areas' => implode(', ', array_column($workAreas->get($artisan['employee_id'], []), 'name')),
-        ], GetManufacturePayroll::run($production, $from, $to));
+        ], self::withOvertimeFacts($production, $from, $to, GetManufacturePayroll::run($production, $from, $to)));
 
         if (!$workAreaId) {
             return $artisans;
@@ -95,7 +97,6 @@ class ShowManufacturePayroll extends OrgAction
     {
         $routeParameters = Arr::only($request->route()->originalParameters(), ['organisation', 'production']);
         $period          = ['from' => $this->from->toDateString(), 'to' => $this->to->toDateString()];
-        $notAuthorised   = $this->notAuthorisedOvertime($this->production, $this->from, $this->to);
 
         return Inertia::render(
             'Org/Production/ManufacturePayroll',
@@ -124,7 +125,6 @@ class ShowManufacturePayroll extends OrgAction
                 'payroll_changes'      => $this->payrollChanges($this->production, $this->from, $this->to, $request->user()),
                 'data'                 => JsonResource::collection(new LengthAwarePaginator(
                     array_map(fn (array $artisan) => $artisan + [
-                        'not_authorised_overtime' => $notAuthorised[$artisan['user_id']] ?? null,
                         'route'                   => [
                             'name'       => 'grp.org.productions.show.artisans.payroll.show',
                             'parameters' => $routeParameters + ['user' => $artisan['user_id']] + $period,
@@ -159,33 +159,57 @@ class ShowManufacturePayroll extends OrgAction
     }
 
     /**
-     * Overtime a supervisor did not authorise stays paid; it is listed here for the accountant and HR to deal with.
+     * Overtime a manager did not authorise stays paid and is listed for the accountant and HR, with the reason; overtime
+     * nobody has decided on yet is flagged too. Each artisan also gets the TOIL taken in the period and the TOIL still owed
+     * at its end.
      *
-     * @return array<int, array{minutes: int, days: array<int, array{date: string, minutes: int, note: string|null, by: string|null}>}>
+     * @param  array<int, array<string, mixed>>  $artisans  from GetManufacturePayroll
+     * @return array<int, array<string, mixed>>
      */
-    private function notAuthorisedOvertime(Production $production, Carbon $from, Carbon $to): array
+    public static function withOvertimeFacts(Production $production, Carbon $from, Carbon $to, array $artisans): array
     {
         HydrateManufactureArtisanDays::run($production, $from, $to);
 
-        return ManufactureArtisanDay::where('production_id', $production->id)
+        $days = ManufactureArtisanDay::where('production_id', $production->id)
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
-            ->where('status', ManufactureArtisanDayStatusEnum::OVER)
-            ->where('resolution', ManufactureArtisanDayResolutionEnum::NOT_APPROVED)
-            ->whereColumn('resolved_minutes', 'clocked_minutes')
-            ->with('resolvedBy')
+            ->with(['resolvedBy', 'overtime.decidedBy'])
             ->orderBy('date')
-            ->get()
-            ->groupBy('user_id')
-            ->map(fn (Collection $days) => [
-                'minutes' => $days->sum(fn (ManufactureArtisanDay $day) => $day->clocked_minutes - $day->expected_minutes),
-                'days'    => $days->map(fn (ManufactureArtisanDay $day) => [
-                    'date'    => $day->date->toDateString(),
-                    'minutes' => $day->clocked_minutes - $day->expected_minutes,
-                    'note'    => $day->resolution_note,
-                    'by'      => $day->resolvedBy?->contact_name ?: $day->resolvedBy?->username,
-                ])->values()->all(),
-            ])
-            ->all();
+            ->get();
+
+        $minutesOver = fn (ManufactureArtisanDay $day) => max(0, ($day->clocked_minutes ?? 0) - ($day->expected_minutes ?? 0));
+        $flagged     = fn (Collection $days, Closure $note) => $days->groupBy('user_id')->map(fn (Collection $userDays) => [
+            'minutes' => $userDays->sum($minutesOver),
+            'days'    => $userDays->map(fn (ManufactureArtisanDay $day) => ['date' => $day->date->toDateString(), 'minutes' => $minutesOver($day)] + $note($day))->values()->all(),
+        ]);
+
+        $notAuthorised = $flagged(
+            $days->filter(fn (ManufactureArtisanDay $day) => $day->overtime
+                ? $day->overtime->decision == ManufactureOvertimeDecisionEnum::NOT_APPROVED && $day->isOvertimeDecided() && $minutesOver($day) > 0
+                : $day->resolution == ManufactureArtisanDayResolutionEnum::NOT_APPROVED && $day->isResolved()),
+            fn (ManufactureArtisanDay $day) => $day->overtime
+                ? ['note' => $day->overtime->reason, 'by' => $day->overtime->decidedBy?->contact_name ?: $day->overtime->decidedBy?->username]
+                : ['note' => $day->resolution_note, 'by' => $day->resolvedBy?->contact_name ?: $day->resolvedBy?->username]
+        );
+        $awaiting = $flagged(
+            $days->filter(fn (ManufactureArtisanDay $day) => $day->isOvertimeAwaitingDecision()),
+            fn (ManufactureArtisanDay $day) => ['note' => null, 'by' => null]
+        );
+
+        $employeeIds = array_values(array_filter(array_column($artisans, 'employee_id')));
+        $balances    = ManufactureOvertime::toilBalances($production, $to->toDateString(), $employeeIds);
+        $taken       = ManufactureToilTaken::where('production_id', $production->id)
+            ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->whereIn('employee_id', $employeeIds)
+            ->groupBy('employee_id')
+            ->selectRaw('employee_id, sum(minutes) as minutes')
+            ->pluck('minutes', 'employee_id');
+
+        return array_map(fn (array $artisan) => $artisan + [
+            'not_authorised_overtime' => $notAuthorised[$artisan['user_id']] ?? null,
+            'awaiting_overtime'       => $awaiting[$artisan['user_id']] ?? null,
+            'toil_taken_hours'        => round(((int) ($taken[$artisan['employee_id']] ?? 0)) / 60, 2),
+            'toil_balance_hours'      => round(($balances[$artisan['employee_id']] ?? 0) / 60, 2),
+        ], $artisans);
     }
 
     public static function payColumns(): array
@@ -199,6 +223,7 @@ class ShowManufacturePayroll extends OrgAction
             'band_d'  => __('Development'),
             'band_dg' => __('Guru Dev'),
             'guru'       => __('Guru bonus'),
+            'weekend_overtime' => __('Weekend overtime'),
             'adjustment' => __('Adjustments to earlier weeks'),
         ];
     }
@@ -223,6 +248,8 @@ class ShowManufacturePayroll extends OrgAction
             }
 
             $table->column(key: 'total', label: __('Total'), canBeHidden: false, type: 'number');
+            $table->column(key: 'toil_hours', label: __('TOIL hours (not paid)'), canBeHidden: false, align: 'right');
+            $table->column(key: 'toil_balance_hours', label: __('TOIL balance'), canBeHidden: false, align: 'right');
         };
     }
 

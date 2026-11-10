@@ -36,9 +36,19 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
                 $headings[] = 'Tablet hours';
                 $headings[] = 'Not on tablet (Band 0) hours';
             }
+            if ($key == 'weekend_overtime') {
+                $headings[] = 'Weekend overtime rate £ (1.5 x Band 0)';
+                $headings[] = 'Weekend overtime band split (information)';
+            }
         }
         $headings[] = 'Total £';
         $headings[] = 'Changed after lock, not approved';
+        $headings[] = 'TOIL hours (not paid)';
+        $headings[] = 'TOIL hours owed';
+        $headings[] = 'TOIL taken hours';
+        $headings[] = 'TOIL balance hours';
+        $headings[] = 'Overtime not authorised hours';
+        $headings[] = 'Overtime awaiting decision hours';
 
         return $headings;
     }
@@ -58,12 +68,30 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
                     $row[] = number_format($artisan['tablet_hours'], 2, '.', '');
                     $row[] = number_format($artisan['not_on_tablet_hours'], 2, '.', '');
                 }
+                if ($key == 'weekend_overtime') {
+                    $row[] = $artisan['weekend_overtime_hours'] > 0 ? number_format($artisan['weekend_overtime_amount'] / $artisan['weekend_overtime_hours'], 2, '.', '') : '';
+                    $row[] = self::bandSplit($artisan['weekend_overtime_bands'] ?? []);
+                }
             }
             $row[] = number_format($artisan['total'], 2, '.', '');
             $row[] = ($artisan['unapproved_changes'] ?? 0) ? 'Yes' : '';
+            $row[] = number_format($artisan['toil_hours'], 2, '.', '');
+            $row[] = number_format($artisan['toil_owed_hours'], 2, '.', '');
+            $row[] = number_format($artisan['toil_taken_hours'] ?? 0, 2, '.', '');
+            $row[] = number_format($artisan['toil_balance_hours'] ?? 0, 2, '.', '');
+            $row[] = number_format(($artisan['not_authorised_overtime']['minutes'] ?? 0) / 60, 2, '.', '');
+            $row[] = number_format(($artisan['awaiting_overtime']['minutes'] ?? 0) / 60, 2, '.', '');
 
             return $row;
         }, $this->artisans);
+    }
+
+    /**
+     * @param  array<string, float>  $bands  hours keyed by band code
+     */
+    private static function bandSplit(array $bands): string
+    {
+        return implode(', ', array_map(fn (string|int $code, float $hours) => 'Band '.$code.' '.number_format($hours, 2, '.', ''), array_keys($bands), $bands));
     }
 
     /**
@@ -80,6 +108,7 @@ class ManufacturePayrollSummaryExport extends StringValueBinder implements FromA
             'band_d'  => 'Development (D)',
             'band_dg' => 'Guru Dev (DG)',
             'guru'       => 'Guru Bonus',
+            'weekend_overtime' => 'Weekend overtime',
             'adjustment' => 'Adjustments to earlier weeks',
         ];
     }

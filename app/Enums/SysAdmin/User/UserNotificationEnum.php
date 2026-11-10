@@ -36,6 +36,7 @@ enum UserNotificationEnum: string
     case PRODUCT_DEVELOPMENT_DIGEST = 'product_development_digest';
     case GOOGLE_ADS_CLICK_CAPTURE_DROP = 'google_ads_click_capture_drop';
     case MANUFACTURE_PAYROLL_CHANGED = 'manufacture_payroll_changed';
+    case MANUFACTURE_OVERTIME_REMINDER = 'manufacture_overtime_reminder';
 
     public const array PRODUCT_DEVELOPMENT_EVENTS = [
         self::PRODUCT_DEVELOPMENT_TASK,
@@ -87,6 +88,7 @@ enum UserNotificationEnum: string
             self::PRODUCT_DEVELOPMENT_DIGEST    => __('The daily summary of the product developments I own'),
             self::GOOGLE_ADS_CLICK_CAPTURE_DROP => __('Aiku recorded fewer than 85% of yesterday\'s Google Ads clicks of a shop I market'),
             self::MANUFACTURE_PAYROLL_CHANGED   => __('The production manager changes a week already locked for payroll'),
+            self::MANUFACTURE_OVERTIME_REMINDER => __('On Monday, the overtime of last week nobody has approved or rejected yet, before payroll locks'),
             self::PURCHASE_ORDER_MINIMUM_POKE   => __('Another organisation asks me to add to my draft to reach a supplier minimum (email and Slack come grouped every 15 minutes)'),
         };
     }
@@ -105,7 +107,7 @@ enum UserNotificationEnum: string
             return [];
         }
 
-        if ($this === self::GOOGLE_ADS_CLICK_CAPTURE_DROP || $this === self::MANUFACTURE_PAYROLL_CHANGED || in_array($this, self::PROCUREMENT_EVENTS, true)) {
+        if ($this === self::GOOGLE_ADS_CLICK_CAPTURE_DROP || $this === self::MANUFACTURE_PAYROLL_CHANGED || $this === self::MANUFACTURE_OVERTIME_REMINDER || in_array($this, self::PROCUREMENT_EVENTS, true)) {
             return ['email'];
         }
 
@@ -147,6 +149,7 @@ enum UserNotificationEnum: string
             self::PRODUCT_DEVELOPMENT_DIGEST    => 'fal fa-list',
             self::GOOGLE_ADS_CLICK_CAPTURE_DROP => 'fal fa-chart-line-down',
             self::MANUFACTURE_PAYROLL_CHANGED   => 'fal fa-lock',
+            self::MANUFACTURE_OVERTIME_REMINDER => 'fal fa-user-clock',
         };
     }
 

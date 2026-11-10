@@ -16,7 +16,10 @@ use App\Enums\Production\ManufactureArtisanDay\ManufactureArtisanDayStatusEnum;
 use App\Http\Resources\Production\ManufactureArtisanDayResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Production\ManufactureArtisanDay;
+use App\Models\HumanResources\Employee;
+use App\Enums\Production\ManufactureOvertime\ManufactureOvertimeCompensationEnum;
 use App\Models\Production\ManufactureHoursTolerance;
+use App\Models\Production\ManufactureOvertime;
 use App\Models\Production\ManufacturePayrollAdjustment;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -78,7 +81,7 @@ class IndexManufactureArtisanDays extends OrgAction
             ->when(Arr::get($filters, 'open_only'), fn ($query) => $query->where('is_warning_open', true))
             ->leftJoin('users', 'users.id', '=', 'manufacture_artisan_days.user_id')
             ->leftJoin('users as resolvers', 'resolvers.id', '=', 'manufacture_artisan_days.resolved_by_user_id')
-            ->with('employee.organisation.timezone')
+            ->with(['employee.organisation.timezone', 'overtime.decidedBy'])
             ->select('manufacture_artisan_days.*')
             ->selectRaw("coalesce(nullif(users.contact_name, ''), users.username) as worker")
             ->selectRaw("coalesce(nullif(resolvers.contact_name, ''), resolvers.username) as resolved_by")
@@ -102,6 +105,8 @@ class IndexManufactureArtisanDays extends OrgAction
                 ->column(key: 'date', label: __('Day'), canBeHidden: false, sortable: true)
                 ->column(key: 'worker', label: __('Artisan'), canBeHidden: false, sortable: true)
                 ->column(key: 'shift', label: __('Shift'), canBeHidden: false)
+                ->column(key: 'clocked_times', label: __('Clocked in–out'), canBeHidden: false)
+                ->column(key: 'planned', label: __('Planned overtime'), canBeHidden: false)
                 ->column(key: 'expected_minutes', label: __('Expected'), canBeHidden: false, align: 'right')
                 ->column(key: 'clocked_minutes', label: __('Clocked'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'recorded_minutes', label: __('Tablet'), canBeHidden: false, sortable: true, align: 'right')
@@ -157,6 +162,12 @@ class IndexManufactureArtisanDays extends OrgAction
                     ->all(),
                 'default_tolerance_minutes' => ManufactureHoursTolerance::DEFAULT_MINUTES,
                 'short_reasons'      => ManufactureArtisanDayShortReasonEnum::labels(),
+                'compensations'      => ManufactureOvertimeCompensationEnum::labels(),
+                'overtime_route'     => [
+                    'name'       => 'grp.org.productions.show.artisans.daily_hours.overtime',
+                    'parameters' => [$production->organisation->slug, $production->slug],
+                ],
+                'toil'               => $this->toil($production),
                 'statuses'           => ManufactureArtisanDayStatusEnum::labels(),
                 'performance_route'  => [
                     'name'       => 'grp.org.productions.show.artisans.index',
@@ -165,6 +176,37 @@ class IndexManufactureArtisanDays extends OrgAction
                 'data'               => ManufactureArtisanDayResource::collection($days),
             ]
         )->table($this->tableStructure());
+    }
+
+    /**
+     * The artisans to plan overtime for, with the TOIL each is owed today.
+     */
+    private function toil(Production $production): array
+    {
+        $employeeIds = HydrateManufactureArtisanDays::rosterEmployeeIds($production, now()->subWeeks(8), now());
+        $balances    = ManufactureOvertime::toilBalances($production, now()->toDateString());
+
+        return [
+            'ratio'          => ManufactureOvertime::toilRatio($production),
+            'can_set_ratio'  => ShowArtisansDashboard::canSeeArtisanPay(request()->user(), $production),
+            'ratio_route'    => [
+                'name'       => 'grp.org.productions.show.artisans.daily_hours.toil_ratio',
+                'parameters' => [$production->organisation->slug, $production->slug],
+            ],
+            'taken_route'    => [
+                'name'       => 'grp.org.productions.show.artisans.daily_hours.toil_taken',
+                'parameters' => [$production->organisation->slug, $production->slug],
+            ],
+            'artisans'       => Employee::whereIn('id', array_unique([...$employeeIds, ...array_keys($balances)]))
+                ->orderBy('contact_name')
+                ->get(['id', 'contact_name'])
+                ->map(fn (Employee $employee) => [
+                    'id'            => $employee->id,
+                    'name'          => $employee->contact_name,
+                    'balance_hours' => round(($balances[$employee->id] ?? 0) / 60, 2),
+                ])
+                ->all(),
+        ];
     }
 
     public function getBreadcrumbs(array $routeParameters): array
