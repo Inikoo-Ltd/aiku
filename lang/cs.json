@@ -474,6 +474,7 @@
     ":count more": "Dalších: :count",
     ":count more are not sorted by topic yet.": ":count další zatím nejsou seřazeny podle tématu.",
     ":count more chats": "Dalších chatů: :count",
+    ":count more reserved for orders": "další rezervované pro objednávky: :count",
     ":count more to upload|:count more to upload": "Zbývá nahrát: :count|Zbývá nahrát: :count",
     ":count more waiting": ":count více čekání",
     ":count moved to :family": ":count přesunuto do :family",

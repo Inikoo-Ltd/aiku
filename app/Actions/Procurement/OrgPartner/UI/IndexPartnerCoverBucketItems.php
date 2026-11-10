@@ -160,6 +160,7 @@ class IndexPartnerCoverBucketItems extends OrgAction
                 'org_stock_id'             => $buyerOrgStock?->id,
                 'supplier_product_id'      => null,
                 'stock_in_locations'       => $buyerOrgStock?->quantity_in_locations === null ? null : trimDecimalZeros($buyerOrgStock->quantity_in_locations),
+                'stock_available'          => $buyerOrgStock?->quantity_available === null ? null : trimDecimalZeros(max(0, $buyerOrgStock->quantity_available)),
                 'stock_cover'              => $buyerOrgStock ? GetOrgStockBuyingSignals::run($buyerOrgStock, null, $leadTimeDays) : null,
                 'quarterly_usage'          => $buyerOrgStock ? ($quarterlyUsage->get($buyerOrgStock->id) ?? collect()) : collect(),
                 'stock_deliveries'         => $buyerOrgStock ? $stockDeliveries->get($buyerOrgStock->id) : null,

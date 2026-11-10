@@ -1,8 +1,8 @@
 ---
 title: Pirkšana no partnera
 summary: Pircēja rokasgrāmata - sāc no iepirkumu paneļa, aizpildi sarakstu ar roku, no partnera kataloga vai ar automātisku aizpildi, un saņem preci, kad tā pienāk.
-date: 2026-10-09
-source_date: 2026-10-09
+date: 2026-11-10
+source_date: 2026-11-10
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -47,6 +47,7 @@ Kamēr pārlūko, tavs iepirkumu saraksts brauc līdzi kā kvīts, piestiprināt
 - **Instruction box** (instrukcijas lauks) ir neobligāts un pieņem vienkāršu valodu: *"prioritāri ēteriskās eļļas, izlaid visu, kā ir vairāk par 8 nedēļām"*, *"fokusējies uz svecēm, nekā sezonāla"*. Mākslīgais intelekts izlasa tavu instrukciju kopā ar to pašu izlietojuma datu un attiecīgi pārveido priekšlikumu — bet rezultāts pirms parādīšanas tiek pārbaudīts pret realitāti: daudzumi ir ierobežoti ar to, kas partnerim tiešām ir, un kopsumma tiek piespiedu kārtā ievietota tavā budžetā. Ja instrukciju nevar izpildīt, tu saņem standarta priekšlikumu.
 - **Nekas netiek pievienots pats no sevis.** Priekšlikums ir atzīmētu rindu kopa, ko vari noņemt no atzīmes, mainīt daudzumu vai izveidot no jauna ar citu budžetu vai instrukciju; tikai **Add items to shopping list** (Pievienot iepirkumu sarakstam) kaut ko apstiprina.
 - **Dažas vienības atsakās.** SKO ar ieslēgtu **Do not auto order** (Nepasūtīt automātiski) (SKO rediģēšanas ekrānā, sadaļā Stock Data) priekšlikumā nekad neparādās — vienībām, ko Procurement vēlas turēt manuālā kontrolē. To joprojām vari pasūtīt ar roku no Browse vai preču saraksta; tikai automātiskais ceļš to izlaiž. SKO, kas atzīmēti kā **On Demand** (Pēc pieprasījuma), no partneru iepirkšanās ir izslēgti pavisam.
+- **Sezonas preces gaida savu sezonu.** Preces birkai (Trade Units → Tags) var būt **Ordering season**: pirmais un pēdējais mēnesis, kurā tās preces pasūta, piemēram, no jūlija līdz septembrim Ziemassvētkiem. Ārpus šiem mēnešiem SKO, kuru tirdzniecības vienībai vai tās saimei ir šī birka, priekšlikumos neparādās, ne šeit, ne ieteikumos aģentiem un piegādātājiem. Tos joprojām vari pievienot ar roku. Birka bez iestatītiem mēnešiem nav sezonas birka.
 
 Automātisko aizpildi var atvērt arī jau iezīmētu: **+ fill** (+ aizpildīt) uz riska kartītes panelī atver to tikai tam grozam, ar jau izveidotu priekšlikumu. Tie paši noteikumi — tu pielāgo, noņem atzīmi un apstiprini; nekas netiek pievienots pats no sevis.
 

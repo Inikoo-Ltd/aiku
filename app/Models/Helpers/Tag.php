@@ -42,6 +42,8 @@ use App\Models\Traits\HasSearch;
  * @property int|null $image_id
  * @property array<array-key, mixed>|null $web_image
  * @property array<array-key, mixed> $label
+ * @property int|null $order_from_month
+ * @property int|null $order_to_month
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
  * @property-read array $translatable_columns_from
  * @property-read \App\Models\Helpers\Media|null $image
@@ -107,6 +109,28 @@ class Tag extends Model implements HasMedia
             })
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate();
+    }
+
+    /**
+     * SQL that is true for a stock whose trade units (or their families) carry seasonal tags, none of
+     * which is in its ordering window this month. A window may wrap the year end (November to February).
+     */
+    public static function outOfOrderingSeasonSql(string $stockIdColumn): string
+    {
+        $month = (int) now()->month;
+
+        return "coalesce((select bool_and(not case
+                when season_tags.order_from_month <= season_tags.order_to_month then $month between season_tags.order_from_month and season_tags.order_to_month
+                else $month >= season_tags.order_from_month or $month <= season_tags.order_to_month end)
+            from model_has_trade_units season_units
+            join trade_units season_trade_units on season_trade_units.id = season_units.trade_unit_id
+            join model_has_tags season_links on (season_links.model_type = 'TradeUnit' and season_links.model_id = season_trade_units.id)
+                or (season_links.model_type = 'TradeUnitFamily' and season_links.model_id = season_trade_units.trade_unit_family_id)
+            join tags season_tags on season_tags.id = season_links.tag_id
+            where season_units.model_type = 'Stock'
+                and season_units.model_id = $stockIdColumn
+                and season_tags.order_from_month is not null
+                and season_tags.order_to_month is not null), false)";
     }
 
     public function shop(): BelongsTo

@@ -722,6 +722,7 @@ test('purchase order products and items tabs show stock and quarterly usage of e
     $currentQuarter = now()->year.'Q'.now()->quarter;
 
     expect($row['stock_in_locations'])->toBe('17')
+        ->and($row['stock_available'])->toBe(trimDecimalZeros(max(0, $orgStock->fresh()->quantity_available)))
         ->and($row['quarterly_usage'])->toHaveCount(8)
         ->and(collect($row['quarterly_usage'])->last()['period'])->toBe($currentQuarter)
         ->and((float) collect($row['quarterly_usage'])->last()['sales'])->toBe(6.0)
@@ -774,6 +775,7 @@ test('purchase order products and items tabs show stock and quarterly usage of e
     $item  = collect($items)->firstWhere('code', $supplierProduct->code);
 
     expect($item['stock_in_locations'])->toBe('17')
+        ->and($item['stock_available'])->toBe(trimDecimalZeros(max(0, $orgStock->fresh()->quantity_available)))
         ->and((float) collect($item['quarterly_usage'])->last()['sales'])->toBe(6.0)
         ->and(collect($item['quarterly_usage'])->last()['days_out_of_stock'])->toBe(2)
         ->and(collect($item['stock_deliveries']['coming'])->pluck('reference'))->toContain($comingStockDelivery->reference)

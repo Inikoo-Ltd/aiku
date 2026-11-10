@@ -1,7 +1,7 @@
 ---
 title: Buying from a partner
 summary: The buyer's guide - start from the shopping dashboard, fill the list by hand, from the partner's catalogue or with auto-fill, and receive the goods when they arrive.
-date: 2026-10-09
+date: 2026-11-10
 tags: procurement, intercompany, shopping-list
 category: procurement
 help_routes: grp.org.procurement.org_partners.show.browse, grp.org.procurement.org_partners.show.shopping_list
@@ -47,6 +47,7 @@ Auto-fill exists so replenishment doesn't depend on someone remembering every it
 - The **instruction box** is optional and takes plain language: *"prioritise essential oils, skip anything we hold over 8 weeks of"*, *"focus on candles, nothing seasonal"*. An AI reads your instruction together with the same usage data and reshapes the proposal accordingly — but its output is checked against reality before you see it: quantities are capped at what the partner actually has, and the total is forced back inside your budget. If the instruction can't be followed, you get the standard proposal instead.
 - **Nothing is added by itself.** The proposal is a set of ticked lines you can untick, re-quantify or regenerate with a different budget or instruction; only **Add items to shopping list** commits anything.
 - **Some items opt out.** A SKO with **Do not auto order** switched on (in the SKO's edit screen, under Stock Data) never appears in a proposal — for items procurement wants to keep under manual control. You can still order it by hand from Browse or the stock list; only the automatic path skips it. SKOs marked **On Demand** are left out of partner shopping entirely.
+- **Seasonal products wait for their season.** A product tag (Trade Units → Tags) can carry an **Ordering season**: the first and the last month its products are ordered in, for example July to September for Christmas. Outside those months the SKOs whose trade unit, or its family, has that tag are left out of proposals, here and in the suggestions for agents and suppliers. You can still add them by hand. A tag with no months set is not seasonal.
 
 Auto-fill can also be opened already scoped: **+ fill** on a risk tile on the dashboard opens it for that bucket alone, with the proposal already generated. Same rules — you adjust, untick and confirm; nothing is added by itself.
 

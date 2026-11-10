@@ -15,6 +15,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -141,6 +142,31 @@ class EditTag extends OrgAction
         ];
 
         if ($isProductProperty) {
+            $monthOptions = collect(range(1, 12))
+                ->map(fn (int $month) => ['value' => $month, 'label' => Carbon::create(2000, $month)->translatedFormat('F')])
+                ->all();
+            $blueprint[] = [
+                'label'  => __('Ordering season'),
+                'title'  => __('Ordering season'),
+                'icon'   => 'fa-light fa-calendar-alt',
+                'fields' => [
+                    'order_from_month' => [
+                        'type'        => 'select',
+                        'label'       => __('Order from'),
+                        'information' => __('For seasonal products, Christmas for example. Outside these months the products with this tag are not suggested for ordering; they can still be ordered by hand. Leave both empty for a tag that is not seasonal.'),
+                        'required'    => false,
+                        'options'     => $monthOptions,
+                        'value'       => $tag->order_from_month,
+                    ],
+                    'order_to_month' => [
+                        'type'     => 'select',
+                        'label'    => __('Order until the end of'),
+                        'required' => false,
+                        'options'  => $monthOptions,
+                        'value'    => $tag->order_to_month,
+                    ],
+                ],
+            ];
             $blueprint[] = [
                 'label'  => __('Media'),
                 'title'  => __('Media'),

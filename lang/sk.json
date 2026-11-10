@@ -446,6 +446,7 @@
     ":count more": "Ďalšie: :count",
     ":count more are not sorted by topic yet.": "Podľa témy zatiaľ nie je roztriedených ďalších: :count.",
     ":count more chats": "Ďalšie čety: :count",
+    ":count more reserved for orders": "ďalšie rezervované pre objednávky: :count",
     ":count more waiting": "Čaká ďalších: :count",
     ":count moved to :family": "Presunuté do :family: :count",
     ":count need a decision": "Vyžaduje rozhodnutie: :count",

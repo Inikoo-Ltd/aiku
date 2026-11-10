@@ -28,6 +28,7 @@ use App\Models\Procurement\OrgSupplier;
 use App\Models\SupplyChain\SupplierProduct;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -158,7 +159,8 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
      * orders not on a delivery yet), draft purchase orders and partner shopping list lines — rounded up to the
      * supplier's pack size. A SKO that would run out within three lead times (the stock cover
      * buckets' danger edge) with what is held and coming orders at least a month of sales, the
-     * same floor a rescue order uses.
+     * same floor a rescue order uses, unless it needs nothing yet and that month would take it past
+     * its overstock edge.
      */
     private function recommendedOrderQuantity(OrgStock $orgStock, ?float $dailyUsage, ?float $sigma): ?float
     {
@@ -198,7 +200,10 @@ class OrgStockHydrateOutOfStockForecast implements ShouldBeUnique
 
         $need = $dailyUsage * ($leadTimeDays + $reviewDays) + $safety - $heldAndComing;
 
-        if ($heldAndComing / $dailyUsage <= 3 * $leadTimeDays) {
+        $coverDays     = $heldAndComing / $dailyUsage;
+        $overstockDays = (int) (Arr::get($orgStock->stock?->stockFamily?->data ?? [], 'stock_cover.overstock_days') ?: GetOrganisationStockCoverBuckets::EXCESS_DAYS);
+
+        if ($coverDays <= 3 * $leadTimeDays && ($need > 0 || $coverDays + GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS <= $overstockDays)) {
             $need = max($need, $dailyUsage * GetPartnerStockCoverBuckets::MINIMUM_COVER_DAYS);
         }
 

@@ -1,8 +1,8 @@
 ---
 title: Kupowanie od partnera
 summary: Przewodnik dla kupującego - zacznij od pulpitu zakupów, uzupełnij listę ręcznie, z katalogu partnera albo za pomocą auto-fill, i odbierz towar, gdy dotrze.
-date: 2026-10-09
-source_date: 2026-10-09
+date: 2026-11-10
+source_date: 2026-11-10
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -47,6 +47,7 @@ Auto-fill (automatyczne uzupełnienie) istnieje po to, żeby uzupełnianie zapas
 - **Instruction box** (pole instrukcji) jest opcjonalne i przyjmuje zwykły język: *"prioritise essential oils, skip anything we hold over 8 weeks of"* ("traktuj priorytetowo olejki eteryczne, pomiń wszystko, czego mamy zapas na ponad 8 tygodni"), *"focus on candles, nothing seasonal"* ("skup się na świecach, nic sezonowego"). AI czyta Twoją instrukcję razem z tymi samymi danymi o zużyciu i odpowiednio przekształca propozycję - ale jej wynik jest sprawdzany wobec rzeczywistości, zanim go zobaczysz: ilości są ograniczone do tego, co partner faktycznie ma, a suma jest wymuszona z powrotem w granicach Twojego budżetu. Jeśli instrukcji nie da się zrealizować, dostajesz standardową propozycję.
 - **Nic nie dodaje się samo.** Propozycja to zestaw zaznaczonych pozycji, które możesz odznaczyć, zmienić ilość albo wygenerować ponownie z innym budżetem lub instrukcją; dopiero **Add items to shopping list** (Dodaj pozycje do listy zakupowej) coś zatwierdza.
 - **Niektóre pozycje się wyłączają.** SKO z włączonym **Do not auto order** (Nie zamawiaj automatycznie) (na ekranie edycji SKO, w sekcji Stock Data) nigdy nie pojawia się w propozycji - dla pozycji, które dział zakupów chce mieć pod ręczną kontrolą. Nadal można ją zamówić ręcznie z Browse albo z listy stanów; tylko ścieżka automatyczna ją pomija. SKO oznaczone jako **On Demand** (Na zamówienie) są całkowicie pominięte w zakupach partnerskich.
+- **Produkty sezonowe czekają na swój sezon.** Tag produktu (Trade Units → Tags) może mieć **Ordering season**: pierwszy i ostatni miesiąc, w którym zamawia się jego produkty, na przykład od lipca do września dla Bożego Narodzenia. Poza tymi miesiącami SKO, których jednostka handlowa lub jej rodzina ma ten tag, nie pojawiają się w propozycjach, tutaj ani w sugestiach dla agentów i dostawców. Nadal można je dodać ręcznie. Tag bez ustawionych miesięcy nie jest sezonowy.
 
 Auto-fill można też otworzyć od razu zawężone: **+ fill** na kafelku ryzyka na pulpicie otwiera je tylko dla tego kubełka, z już wygenerowaną propozycją. Te same zasady - dostosowujesz, odznaczasz i zatwierdzasz; nic nie dodaje się samo.
 

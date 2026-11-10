@@ -56,6 +56,7 @@
     ":count kept, restored when back in stock": ":count conservé(s), rétabli(s) dès le retour en stock",
     ":count label|:count labels": ":count étiquette|:count étiquettes",
     ":count line selected|:count lines selected": ":count ligne sélectionnée|:count lignes sélectionnées",
+    ":count more reserved for orders": ":count de plus réservés aux commandes",
     ":count open ticket raised from this chat.|:count open tickets raised from this chat.": ":count ticket ouvert créé depuis cette conversation.|:count tickets ouverts créés depuis cette conversation.",
     ":count other|:count others": ":count autre|:count autres",
     ":count products added to your basket": ":count produits ajoutés à votre panier",

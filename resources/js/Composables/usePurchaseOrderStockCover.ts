@@ -9,7 +9,11 @@ export function usePurchaseOrderStockCover(getItem: () => any, getIsPartner: () 
 	const dailyUsage = computed(() => Number(cover.value?.daily_usage) || 0)
 	const leadDays = computed(() => Number(cover.value?.lead_time_days) || 14)
 	const overstockDays = computed(() => Number(cover.value?.overstock_days) || 120)
-	const stock = computed(() => Math.max(0, Number(getItem().stock_in_locations) || 0))
+	const shelfStock = computed(() => Math.max(0, Number(getItem().stock_in_locations) || 0))
+	const stock = computed(() =>
+		getItem().stock_available == null ? shelfStock.value : Math.min(shelfStock.value, Math.max(0, Number(getItem().stock_available) || 0))
+	)
+	const reserved = computed(() => shelfStock.value - stock.value)
 
 	const comingDeliveries = computed<any[]>(() => getItem().stock_deliveries?.coming ?? [])
 	const otherOrders = computed<any[]>(() => getItem().other_open_purchase_orders ?? [])
@@ -114,6 +118,7 @@ export function usePurchaseOrderStockCover(getItem: () => any, getIsPartner: () 
 		leadDays,
 		overstockDays,
 		stock,
+		reserved,
 		comingDeliveries,
 		otherOrders,
 		incoming,

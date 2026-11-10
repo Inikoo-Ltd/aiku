@@ -17,6 +17,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Helpers\Tag;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -208,7 +209,7 @@ class GetPartnerStockCoverBuckets
                 'lines' => (int) $defaultCounts->sum('order_lines'),
                 'cost'  => round((float) $defaultCounts->sum('order_cost') * $exchange, 2),
             ],
-            'buckets' => collect($this->orderBuckets($orgPartner))->map(fn (string $bucket) => [
+            'buckets' => collect(self::DEFAULT_ORDER_BUCKETS)->map(fn (string $bucket) => [
                 'bucket'      => $bucket,
                 'label'       => $bucket === 'out' ? __(self::BUCKETS['out']['label']) : $this->bucketLabel($bucket, $leadTime['days']),
                 'tone'        => self::BUCKETS[$bucket]['tone'],
@@ -236,7 +237,7 @@ class GetPartnerStockCoverBuckets
     {
         $leftOut = $this->leftOut($orgPartner, GetPartnerLeadTime::run($orgPartner)['days']);
 
-        return collect($this->orderBuckets($orgPartner))->mapWithKeys(fn (string $bucket) => [$bucket => (object) ($leftOut[$bucket] ?? [])])->all();
+        return collect(self::DEFAULT_ORDER_BUCKETS)->mapWithKeys(fn (string $bucket) => [$bucket => (object) ($leftOut[$bucket] ?? [])])->all();
     }
 
     /**
@@ -300,7 +301,8 @@ class GetPartnerStockCoverBuckets
             when p.id is null then 'not_stocked'
             when $onDraft then 'on_draft'
             when {$this->alreadyComingExpression($orgPartner)} then 'coming'
-            when coalesce(os.is_excluded_from_auto_ordering, false) then 'excluded'$spareReasons
+            when coalesce(os.is_excluded_from_auto_ordering, false) then 'excluded'
+            when ".Tag::outOfOrderingSeasonSql('os.stock_id')." then 'out_of_season'$spareReasons
             when os.health_rank in ('A', 'B') then 'rescuable'
             when {$this->orgSkoPrice($orgPartner)} <= 0 then 'no_price'
             when {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} < ".self::MINIMUM_LINE_VALUE." then 'too_small'
@@ -318,7 +320,7 @@ class GetPartnerStockCoverBuckets
             ->where('os.organisation_id', $orgPartner->organisation_id)
             ->where('os.state', OrgStockStateEnum::ACTIVE->value)
             ->whereRaw('coalesce(os.is_on_demand, false) = false')
-            ->whereRaw("$expression in ('".implode("', '", $this->orderBuckets($orgPartner))."')")
+            ->whereRaw("$expression in ('".implode("', '", self::DEFAULT_ORDER_BUCKETS)."')")
             ->when($orgPartner->partner->is_manufacturing_hub, fn ($query) => $query->whereNotNull('p.id')->whereRaw('not '.PartnerSkoPrice::offLimitsToPartnerSql('p.id', $orgPartner)))
             ->selectRaw("$expression as bucket, $reason as reason, count(*) as total")
             ->groupByRaw('1, 2')
@@ -380,7 +382,7 @@ class GetPartnerStockCoverBuckets
     public function rescueLines(OrgPartner $orgPartner, array $buckets = self::DEFAULT_ORDER_BUCKETS, bool $worstOnly = true): array
     {
         $leadDays = GetPartnerLeadTime::run($orgPartner)['days'];
-        $buckets  = array_values(array_intersect($this->orderBuckets($orgPartner), $buckets));
+        $buckets  = array_values(array_intersect(self::DEFAULT_ORDER_BUCKETS, $buckets));
         if (!$buckets) {
             return [];
         }
@@ -400,20 +402,6 @@ class GetPartnerStockCoverBuckets
                 'cost'         => round((int) $row->quantity * (float) $row->partner_sko_price * $toOurMoney, 2),
             ])
             ->all();
-    }
-
-    /**
-     * What an order can pick from: out, doomed and critical. Ordering from the manufacturing hub is
-     * normal ordering with a long lead time, so it may also take danger (out within 3 lead times),
-     * which would otherwise wait a whole delivery for the next order.
-     *
-     * @return array<int, string>
-     */
-    public function orderBuckets(OrgPartner $orgPartner): array
-    {
-        return $orgPartner->partner->is_manufacturing_hub
-            ? [...self::DEFAULT_ORDER_BUCKETS, 'w3']
-            : self::DEFAULT_ORDER_BUCKETS;
     }
 
     private function inRescueOrder(): string
@@ -599,8 +587,9 @@ class GetPartnerStockCoverBuckets
             ->when(!$orgPartner->partner->is_manufacturing_hub, fn ($query) => $query->whereRaw("$spare >= 1"))
             ->whereRaw('not '.$this->alreadyComingExpression($orgPartner))
             ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
+            ->whereRaw('not '.Tag::outOfOrderingSeasonSql('os.stock_id'))
             ->whereRaw('coalesce(s.predicted_daily_usage, 0) > 0')
-            ->whereRaw("$expression in ('".implode("', '", $this->orderBuckets($orgPartner))."')")
+            ->whereRaw("$expression in ('".implode("', '", self::DEFAULT_ORDER_BUCKETS)."')")
             ->whereRaw("(os.health_rank in ('A', 'B') or {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} >= ".self::MINIMUM_LINE_VALUE.')');
 
         return [$query, $expression, $spare];

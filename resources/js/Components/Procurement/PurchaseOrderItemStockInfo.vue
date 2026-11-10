@@ -37,7 +37,7 @@ const props = defineProps<{
 const locale = useLocaleStore()
 const routeParams = route().params
 
-const { pack, cover, dailyUsage, leadDays, overstockDays, stock, comingDeliveries, otherOrders, incoming, coverDays, hasHistory, cartonSkos, suggestion, weeksLabel } =
+const { pack, cover, dailyUsage, leadDays, overstockDays, stock, reserved, comingDeliveries, otherOrders, incoming, coverDays, hasHistory, cartonSkos, suggestion, weeksLabel } =
 	usePurchaseOrderStockCover(
 		() => props.item,
 		() => props.isPartner
@@ -370,6 +370,7 @@ function purchaseOrderRoute(slug: string) {
 			<span v-tooltip="stockTooltip" class="cursor-help">
 				<span v-if="isOrderClosed" class="text-gray-500">{{ ctrans("Stock today") }}: </span>
 				<span v-tooltip="inCartons ? formatSkos(stock) : undefined" class="font-semibold text-gray-800">{{ formatSales(stock) }}</span> {{ inCartons ? ctrans("cartons in stock") : ctrans("in stock") }}
+				<template v-if="reserved > 0">({{ ctrans(":count more reserved for orders", { count: formatSales(reserved) }) }})</template>
 				<template v-if="incoming > 0">
 					+ <span v-tooltip="inCartons ? formatSkos(incoming) : undefined" class="font-semibold text-gray-800">{{ formatSales(incoming) }}</span> {{ ctrans("coming") }}
 				</template>

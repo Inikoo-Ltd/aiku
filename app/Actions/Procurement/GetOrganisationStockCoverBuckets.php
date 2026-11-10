@@ -44,6 +44,8 @@ class GetOrganisationStockCoverBuckets
         'dead'   => ['label' => 'Dead stock', 'tone' => 'red-light'],
     ];
 
+    public const NO_SUPPLIER = 'none';
+
     public const SOURCES = [
         'hub'      => 'Manufacturing hub',
         'agent'    => 'Agents',
@@ -119,6 +121,8 @@ class GetOrganisationStockCoverBuckets
             ->select([
                 'sup.measured_lead_time_days',
                 'sup.estimated_lead_time_days',
+                'suppliers.id as supplier_id',
+                'suppliers.slug as supplier_slug',
                 'suppliers.code as supplier_code',
                 'suppliers.agent_id as supplier_agent_id',
             ])
@@ -329,11 +333,34 @@ class GetOrganisationStockCoverBuckets
     }
 
     /**
+     * Keeps the SKOs whose primary supplier is the one with this slug, or with "none" those without a supplier.
+     */
+    public function whereSupplier(Builder|EloquentBuilder $query, ?string $supplier): Builder|EloquentBuilder
+    {
+        return $query->when($supplier, fn ($query) => $supplier === self::NO_SUPPLIER
+            ? $query->whereNull('sp.supplier_id')
+            : $query->where('sp.supplier_slug', $supplier));
+    }
+
+    /**
+     * @return array<string, string> supplier slug => code, of every supplier answering for an SKO of the organisation
+     */
+    public function supplierOptions(Organisation $organisation): array
+    {
+        return $this->scope(DB::table('org_stocks'), $organisation)
+            ->whereNotNull('sp.supplier_id')
+            ->distinct()
+            ->orderBy('sp.supplier_code')
+            ->pluck('sp.supplier_code', 'sp.supplier_slug')
+            ->all();
+    }
+
+    /**
      * @param array<int, string> $buckets
      */
-    public function exportQuery(Organisation $organisation, array $buckets): Builder
+    public function exportQuery(Organisation $organisation, array $buckets, ?string $supplier = null): Builder
     {
-        return $this->whereBuckets($this->scope(DB::table('org_stocks'), $organisation), $buckets)
+        return $this->whereSupplier($this->whereBuckets($this->scope(DB::table('org_stocks'), $organisation), $buckets), $supplier)
             ->leftJoin('org_stock_families', 'org_stock_families.id', 'org_stocks.org_stock_family_id')
             ->select([
                 'org_stocks.code',

@@ -24,12 +24,12 @@ class ExportOrganisationStockCoverItems extends OrgAction
     /**
      * @param array<int, string> $buckets
      */
-    public function handle(Organisation $organisation, array $buckets): StreamedResponse
+    public function handle(Organisation $organisation, array $buckets, ?string $supplier = null): StreamedResponse
     {
         $stockCover = GetOrganisationStockCoverBuckets::make();
 
         return $this->streamCsv(
-            $stockCover->exportQuery($organisation, $buckets),
+            $stockCover->exportQuery($organisation, $buckets, $supplier),
             [
                 __('Code'),
                 __('Name'),
@@ -65,6 +65,7 @@ class ExportOrganisationStockCoverItems extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('cover', array_values(array_filter(explode(',', (string) $request->input('elements.cover', 'out')))));
+        $this->set('supplier', $request->input('filter.supplier'));
     }
 
     public function rules(): array
@@ -72,6 +73,7 @@ class ExportOrganisationStockCoverItems extends OrgAction
         return [
             'cover'   => ['required', 'array'],
             'cover.*' => ['string', Rule::in(array_keys(GetOrganisationStockCoverBuckets::BUCKETS))],
+            'supplier' => ['sometimes', 'nullable', 'string'],
         ];
     }
 
@@ -79,6 +81,6 @@ class ExportOrganisationStockCoverItems extends OrgAction
     {
         $this->initialisation($organisation, $request);
 
-        return $this->handle($organisation, $this->validatedData['cover']);
+        return $this->handle($organisation, $this->validatedData['cover'], $this->validatedData['supplier'] ?? null);
     }
 }

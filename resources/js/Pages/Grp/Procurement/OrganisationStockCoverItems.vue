@@ -31,6 +31,9 @@ type StockCoverOrgStock = {
     lead_time_days: number
     on_the_way: boolean
     supplier_code: string | null
+    supplier_id?: number | null
+    org_supplier_slug?: string | null
+    org_agent_slug?: string | null
     recommended_quantity: number | null
     stock_value: number
     projected_lost_revenue: number | null
@@ -80,6 +83,20 @@ const organisationStockLevelRoute = (orgStock: StockCoverOrgStock) => route("grp
     _query: { elements: { cover: orgStock.bucket } },
 })
 
+const shoppingCover = (orgStock: StockCoverOrgStock) => orgStock.bucket === "excess" ? "ok" : orgStock.bucket
+
+const supplierShoppingRoute = (orgStock: StockCoverOrgStock) => orgStock.org_agent_slug
+    ? route("grp.org.procurement.org_agents.show.shopping.items.index", {
+        organisation: organisationOf(orgStock),
+        orgAgent: orgStock.org_agent_slug,
+        _query: { cover: shoppingCover(orgStock), supplier: orgStock.supplier_id },
+    })
+    : route("grp.org.procurement.org_suppliers.show.shopping.items.index", {
+        organisation: organisationOf(orgStock),
+        orgSupplier: orgStock.org_supplier_slug,
+        _query: { cover: shoppingCover(orgStock) },
+    })
+
 const downloadHref = () => props.exportRoute ? route(props.exportRoute.name, props.exportRoute.parameters) + window.location.search : null
 </script>
 
@@ -124,8 +141,9 @@ const downloadHref = () => props.exportRoute ? route(props.exportRoute.name, pro
         </template>
 
         <template #cell(supplier_code)="{ item: orgStock }">
-            {{ orgStock.supplier_code ?? "—" }}
-            <span v-if="orgStock.on_the_way" class="ml-1 text-xs text-indigo-600">{{ ctrans("on the way") }}</span>
+            <Link v-if="orgStock.org_supplier_slug" :href="supplierShoppingRoute(orgStock)" class="primaryLink whitespace-nowrap" v-tooltip="ctrans('Order from this supplier')">{{ orgStock.supplier_code }}</Link>
+            <span v-else class="whitespace-nowrap">{{ orgStock.supplier_code ?? "—" }}</span>
+            <span v-if="orgStock.on_the_way" class="ml-1 whitespace-nowrap text-xs text-[var(--app-accent)]">{{ ctrans("on the way") }}</span>
         </template>
 
         <template #cell(recommended_quantity)="{ item: orgStock }">

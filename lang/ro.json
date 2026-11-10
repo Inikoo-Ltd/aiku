@@ -92,6 +92,7 @@
     ":count lines": "Linii: :count",
     ":count lines not pre-picked": ":count linii care nu sunt pre-pregătite",
     ":count messages, last on :date": ":count mesaje, ultimul pe :date",
+    ":count more reserved for orders": "încă :count rezervate pentru comenzi",
     ":count more waiting": "încă :count în așteptare",
     ":count moved to :family": "Mutate în :family: :count",
     ":count open ticket raised from this chat.|:count open tickets raised from this chat.": ":count tichet deschis creat din această conversație.|:count tichete deschise create din această conversație.|:count de tichete deschise create din această conversație.",

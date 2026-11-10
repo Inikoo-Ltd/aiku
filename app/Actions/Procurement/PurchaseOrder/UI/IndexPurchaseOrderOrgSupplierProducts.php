@@ -362,6 +362,7 @@ class IndexPurchaseOrderOrgSupplierProducts extends OrgAction
 
             $row->image_sources      = $tradeUnit?->imageSources(240, 240);
             $row->stock_in_locations = $orgStock?->quantity_in_locations;
+            $row->stock_available    = $orgStock?->quantity_available;
             $row->quarterly_usage    = $quarterlyUsage->get($row->org_stock_id) ?? collect();
             $row->stock_cover        = GetOrgStockBuyingSignals::run($orgStock, $supplierProducts->get($row->supplier_product_id ?? null), $partnerLeadTimeDays, $fallbackLeadTimeDays);
             $row->stock_deliveries   = $stockDeliveries->get($row->org_stock_id);

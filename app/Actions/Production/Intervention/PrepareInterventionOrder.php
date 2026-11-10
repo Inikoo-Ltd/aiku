@@ -88,7 +88,7 @@ class PrepareInterventionOrder extends OrgAction
         return [
             'budget'     => ['sometimes', 'nullable', 'numeric', 'gt:0'],
             'buckets'    => ['sometimes', 'array', 'min:1'],
-            'buckets.*'  => ['string', Rule::in(['out', 'w1', 'w2', 'w3'])],
+            'buckets.*'  => ['string', Rule::in(GetPartnerStockCoverBuckets::DEFAULT_ORDER_BUCKETS)],
             'worst_only' => ['sometimes', 'boolean'],
         ];
     }

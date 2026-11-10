@@ -21,7 +21,7 @@ interface RescueItem {
 	code: string
 	name: string
 	rank: string | null
-	bucket: "out" | "w1" | "w2" | "w3"
+	bucket: "out" | "w1" | "w2"
 	our_stock: number
 	spare: number | null
 	their_stock: number
@@ -39,7 +39,7 @@ const props = defineProps<{
 	can_create_purchase_orders?: boolean
 	orgPartner: { id: number; name: string; is_hub: boolean }
 	rescueBuckets: {
-		bucket: "out" | "w1" | "w2" | "w3"
+		bucket: "out" | "w1" | "w2"
 		label: string
 		count: number
 		cost: number
@@ -71,13 +71,11 @@ const bucketLabel = {
 	out: ctrans("Out of stock"),
 	w1: ctrans("Doomed"),
 	w2: ctrans("Critical"),
-	w3: ctrans("Danger"),
 }
 const bucketClass = {
 	out: "bg-red-100 text-red-800",
 	w1: "bg-rose-50 text-rose-700",
 	w2: "bg-orange-50 text-orange-700",
-	w3: "bg-amber-50 text-amber-700",
 }
 </script>
 

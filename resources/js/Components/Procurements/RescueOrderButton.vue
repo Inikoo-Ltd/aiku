@@ -19,7 +19,7 @@ import { faLifeRing, faCheckSquare, faSquare, faQuestionCircle, faClipboardList,
 library.add(faLifeRing, faCheckSquare, faSquare, faQuestionCircle, faClipboardList, faChartBar)
 
 interface RescueBucket {
-	bucket: "out" | "w1" | "w2" | "w3"
+	bucket: "out" | "w1" | "w2"
 	label: string
 	count: number
 	cost: number
@@ -81,14 +81,12 @@ const bucketShortLabel: Record<string, string> = {
 	out: ctrans("Out of stock"),
 	w1: ctrans("Doomed"),
 	w2: ctrans("Critical"),
-	w3: ctrans("Danger"),
 }
 
 const bucketDot: Record<string, string> = {
 	out: "bg-red-700",
 	w1: "bg-red-500",
 	w2: "bg-orange-500",
-	w3: "bg-amber-400",
 }
 
 const availableBuckets = computed(() => props.buckets.filter((bucket) => bucket.count > 0))
@@ -170,6 +168,7 @@ watch(showWhy, (isShown) => isShown && loadLeftOut(), { immediate: true })
 const leftOutLabels = computed<Record<string, string>>(() => ({
 	not_selling: ctrans("Not selling any more"),
 	excluded: ctrans("Set never to order automatically"),
+	out_of_season: ctrans("Seasonal, not the time of year to order them"),
 	not_stocked: ctrans(":partner does not stock them", { partner: props.partnerName }),
 	on_draft: props.isHub
 		? ctrans("Already on the ongoing PO")
