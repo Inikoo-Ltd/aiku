@@ -5416,6 +5416,100 @@ test('UI Whatsapp Campaign review step', function () {
     });
 });
 
+test('Whatsapp campaign workshop previews the template banner and links to the templates', function () {
+    $media = \App\Models\Helpers\Media::create([
+        'group_id'              => $this->group->id,
+        'model_type'            => 'MetaMessageTemplate',
+        'model_id'              => 0,
+        'collection_name'       => 'header',
+        'ulid'                  => (string) \Illuminate\Support\Str::ulid(),
+        'name'                  => 'banner',
+        'file_name'             => 'banner.png',
+        'mime_type'             => 'image/png',
+        'disk'                  => 'public',
+        'conversions_disk'      => 'public',
+        'size'                  => 10,
+        'manipulations'         => [],
+        'custom_properties'     => [],
+        'generated_conversions' => [],
+        'responsive_images'     => [],
+    ]);
+
+    $template = \App\Models\Chat\MetaMessageTemplate::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'meta_channel_id' => \App\Models\Chat\MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp'])->id,
+        'template_id'     => 'banner'.$this->shop->id,
+        'name'            => 'banner_template',
+        'status'          => 'APPROVED',
+        'category'        => 'MARKETING',
+        'header_media_id' => $media->id,
+        'data'            => ['components' => [['type' => 'HEADER', 'format' => 'IMAGE']]],
+    ]);
+
+    $campaign = WhatsappCampaign::create([
+        'group_id'        => $this->group->id,
+        'organisation_id' => $this->organisation->id,
+        'shop_id'         => $this->shop->id,
+        'name'            => 'Banner Campaign',
+        'meta_message_template_id' => $template->id,
+        'type'            => WhatsappCampaignTypeEnum::NEWSLETTER,
+        'state'           => WhatsappCampaignStateEnum::IN_PROCESS,
+    ]);
+
+    $shopParameters = [$this->organisation->slug, $this->shop->slug];
+
+    $this->get(route('grp.org.shops.show.marketing.whatsapp_campaigns.workshop', [...$shopParameters, $campaign->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('templates', fn ($templates) => collect($templates)->firstWhere('label', 'banner_template')['mediaPreview'] === $template->headerImageUrl()));
+
+    expect($template->headerImageUrl())->toStartWith('http');
+
+    $this->get(route('grp.org.shops.show.marketing.whatsapp_campaigns.show', [...$shopParameters, $campaign->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('template.mediaPreview', $template->headerImageUrl()));
+
+    $templatesUrl = route('grp.org.shops.show.chat.whatsapp_templates.index', $shopParameters);
+
+    $this->get(route('grp.org.shops.show.marketing.whatsapp_campaigns.index', $shopParameters))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pageHead.subNavigation', fn ($tabs) => collect($tabs)->pluck('route.name')->all() === [
+                'grp.org.shops.show.marketing.whatsapp_campaigns.index',
+                'grp.org.shops.show.marketing.whatsapp_campaigns.subscribers.index',
+                'grp.org.shops.show.chat.whatsapp_templates.index',
+            ]));
+
+    $this->get($templatesUrl)
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Chat/WhatsappTemplates')
+            ->has('pageHead.subNavigation', 3));
+
+    $tabsFor = fn (string $url) => collect($this->get($url)->assertOk()->inertiaProps('pageHead.subNavigation'))->pluck('route.name')->all();
+
+    $originalRoles = $this->user->getRoleNames()->all();
+
+    actingAsUserWithOnlyPermissions($this->user, ["marketing.{$this->shop->id}.view"]);
+    expect($tabsFor(route('grp.org.shops.show.marketing.whatsapp_campaigns.index', $shopParameters)))
+        ->not->toContain('grp.org.shops.show.chat.whatsapp_templates.index');
+
+    actingAsUserWithOnlyPermissions($this->user, ["chat-m.{$this->shop->id}"]);
+    expect($tabsFor($templatesUrl))->toBe(['grp.org.shops.show.chat.whatsapp_templates.index']);
+
+    $this->user->syncPermissions([]);
+    actingAsUserWithRoles($this->user, $originalRoles);
+});
+
+test('Whatsapp campaign sends run on their own queue lane, apart from email', function () {
+    $lane = (new \App\Actions\Comms\WhatsappCampaign\SendWhatsappDeliveryChannel())->jobQueue;
+
+    expect($lane)->toBe('whatsapp-send')
+        ->and((new \App\Actions\Comms\WhatsappCampaign\ProcessSendWhatsappCampaign())->jobQueue)->toBe($lane)
+        ->and(config("horizon.defaults.$lane.queue"))->toBe([$lane])
+        ->and(config("horizon.environments.production.$lane.maxProcesses"))->toBeGreaterThan(0)
+        ->and(config("horizon.environments.local.$lane.maxProcesses"))->toBeGreaterThan(0)
+        ->and(config('horizon.environments.staging.redis.queue'))->toContain($lane);
+});
+
 test('Store Whatsapp Campaign redirects into the workshop with defaults', function () {
     $response = $this->post(
         route('grp.org.shops.show.marketing.whatsapp_campaigns.store', [$this->organisation->slug, $this->shop->slug])

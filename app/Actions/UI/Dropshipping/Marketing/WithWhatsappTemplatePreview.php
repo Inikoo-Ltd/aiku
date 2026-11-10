@@ -19,7 +19,7 @@ trait WithWhatsappTemplatePreview
      * compares them across a template swap, and reads them from the same path the send path
      * fills them from.
      *
-     * @return array{value: int, label: string, language: string, header: array|null, body: string|null, footer: string|null, buttons: array, mergeTags: array<int, string>}
+     * @return array{value: int, label: string, language: string, header: array|null, body: string|null, footer: string|null, buttons: array, mergeTags: array<int, string>, mediaPreview: string|null}
      */
     protected function whatsappTemplatePreview(MetaMessageTemplate $template): array
     {
@@ -44,6 +44,7 @@ trait WithWhatsappTemplatePreview
             'footer'   => Arr::get($componentOf('FOOTER'), 'text'),
             'buttons'  => Arr::get($componentOf('BUTTONS'), 'buttons', []),
             'mergeTags' => Arr::get($template->data, 'merge_tags.body', []),
+            'mediaPreview' => $template->headerImageUrl(),
         ];
     }
 }

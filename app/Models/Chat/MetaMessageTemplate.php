@@ -9,6 +9,7 @@ namespace App\Models\Chat;
 
 use App\Models\Catalogue\Shop;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -61,6 +62,19 @@ class MetaMessageTemplate extends Model implements HasMedia
     public function headerMedia(): BelongsTo
     {
         return $this->belongsTo(Media::class, 'header_media_id');
+    }
+
+    /**
+     * The address a browser can load the header image from. The media disk is not web
+     * served, so it goes through the image proxy; a video or document header has none.
+     */
+    public function headerImageUrl(): ?string
+    {
+        if (!str_starts_with((string) $this->headerMedia?->mime_type, 'image/')) {
+            return null;
+        }
+
+        return Arr::get($this->imageSources(0, 0, 'headerMedia'), 'original');
     }
 
     public function shop(): BelongsTo

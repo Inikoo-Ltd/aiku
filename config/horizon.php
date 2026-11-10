@@ -526,6 +526,20 @@ return [
             'balanceMaxShift' => 1,
             'balanceCooldown' => 3,
         ],
+        'whatsapp-send'             => [
+            'connection'      => 'redis',
+            'queue'           => ['whatsapp-send'],
+            'balance'         => 'auto',
+            'maxProcesses'    => 2,
+            'maxTime'         => 0,
+            'maxJobs'         => 0,
+            'memory'          => 1280,
+            'tries'           => 1,
+            'timeout'         => 3600,
+            'nice'            => 0,
+            'balanceMaxShift' => 1,
+            'balanceCooldown' => 3,
+        ],
         'ses-low'                  => [
             'connection'      => 'redis',
             'queue'           => ['ses-low'],
@@ -637,6 +651,9 @@ return [
             'ses-send'                  => [
                 'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
             ],
+            'whatsapp-send'             => [
+                'maxProcesses' => env('HORIZON_WHATSAPP_SEND_WORKERS', 2),
+            ],
             'ses-low'                  => [
                 'maxProcesses' => env('HORIZON_SES_LOW_WORKERS', 1),
             ],
@@ -660,7 +677,7 @@ return [
         'staging'    => array_map(fn () => ['maxProcesses' => 0], $supervisorDefaults) + [
             'redis' => [
                 'connection'      => 'redis',
-                'queue'           => ['urgent', 'default', 'common', 'price_change_control', 'price_change', 'hydrators-slave', 'sales', 'sales_slave', 'stock-control', 'search', 'ds', 'shopify', 'shopify-bulk', 'ebay-upload', 'ebay', 'tiktok', 'woo', 'shopify-slave', 'ses-send', 'ses', 'ses-analytics', 'ses-low', 'hydrators-slave-low-priority', 'translate', 'translate-model', 'translate-chat', 'sales_slave_historic', 'low-priority'],
+                'queue'           => ['urgent', 'default', 'common', 'price_change_control', 'price_change', 'hydrators-slave', 'sales', 'sales_slave', 'stock-control', 'search', 'ds', 'shopify', 'shopify-bulk', 'ebay-upload', 'ebay', 'tiktok', 'woo', 'shopify-slave', 'ses-send', 'whatsapp-send', 'ses', 'ses-analytics', 'ses-low', 'hydrators-slave-low-priority', 'translate', 'translate-model', 'translate-chat', 'sales_slave_historic', 'low-priority'],
                 'balance'         => false,
                 'maxProcesses'    => env('HORIZON_STAGING_WORKERS', 4),
                 'maxTime'         => 0,
@@ -770,6 +787,9 @@ return [
             ],
             'ses-send'                  => [
                 'maxProcesses' => env('HORIZON_SES_SEND_WORKERS', 2),
+            ],
+            'whatsapp-send'             => [
+                'maxProcesses' => env('HORIZON_WHATSAPP_SEND_WORKERS', 2),
             ],
             'ses-low'                  => [
                 'maxProcesses' => env('HORIZON_SES_LOW_WORKERS', 1),

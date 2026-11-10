@@ -45,7 +45,7 @@ class SendWhatsappDeliveryChannel
 
     public const COEXISTENCE_MESSAGES_PER_SECOND = 20;
 
-    public string $jobQueue = 'ses-send';
+    public string $jobQueue = 'whatsapp-send';
 
     public function handle(int $whatsappDeliveryChannelId, bool $runOnlyInReady = true): void
     {

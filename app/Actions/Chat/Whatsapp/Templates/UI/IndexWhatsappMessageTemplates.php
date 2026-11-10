@@ -9,6 +9,7 @@ namespace App\Actions\Chat\Whatsapp\Templates\UI;
 
 use App\Actions\Chat\Whatsapp\Templates\GetWhatsappTemplateTags;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithWhatsappCampaignsSubNavigation;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Http\Resources\Chat\MetaMessageTemplatesResource;
 use App\InertiaTable\InertiaTable;
@@ -26,6 +27,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWhatsappMessageTemplates extends OrgAction
 {
+    use WithWhatsappCampaignsSubNavigation;
+
     public function inOrganisationScope(Organisation $organisation, $prefix = null): LengthAwarePaginator
     {
         return $this->handle($organisation, $prefix);
@@ -163,6 +166,7 @@ class IndexWhatsappMessageTemplates extends OrgAction
                         'icon'  => ['fab', 'fa-whatsapp'],
                         'title' => __('WhatsApp Templates'),
                     ],
+                    'subNavigation' => $this->getSubNavigation($request),
                     'actions' => $actions,
                 ],
                 'data'        => MetaMessageTemplatesResource::collection($templates),
