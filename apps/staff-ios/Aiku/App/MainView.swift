@@ -76,6 +76,8 @@ struct RouteDestination: View {
             PlaceholderView(title: title)
         case .componentGallery:
             ComponentGalleryView()
+        case .stateDemo(let demo):
+            StateDemoView(demo: demo)
         }
     }
 }

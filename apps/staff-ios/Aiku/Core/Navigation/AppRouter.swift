@@ -19,6 +19,7 @@ enum Route: Hashable {
     case scannerDevice(deliveryNote: String)
     case placeholder(String)
     case componentGallery
+    case stateDemo(StateDemo)
 }
 
 struct ScanContext: Identifiable, Hashable {

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ComponentGalleryView: View {
     @Environment(ToastCenter.self) private var toasts
+    @Environment(AppRouter.self) private var router
 
     @State private var isTransferSheetPresented = false
     @State private var transferLocation = "B-01-04"
@@ -19,6 +20,7 @@ struct ComponentGalleryView: View {
                     toastSection
                     alertSection
                     loadingSection
+                    statesSection
                 }
                 .padding(16)
                 .padding(.bottom, 80)
@@ -119,6 +121,33 @@ struct ComponentGalleryView: View {
                     isSaving = false
                 }
             }
+        }
+    }
+
+    private var statesSection: some View {
+        gallerySection("States & errors") {
+            VStack(spacing: 0) {
+                ForEach(StateDemo.allCases) { demo in
+                    Button {
+                        router.open(.stateDemo(demo))
+                    } label: {
+                        HStack {
+                            Text(demo.title)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(AikuColor.textPrimary)
+                            Spacer()
+                            ChevronIcon()
+                        }
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 48)
+                    }
+                    .accessibilityIdentifier("state.\(demo.rawValue)")
+                    if demo != StateDemo.allCases.last {
+                        RowDivider()
+                    }
+                }
+            }
+            .card()
         }
     }
 
