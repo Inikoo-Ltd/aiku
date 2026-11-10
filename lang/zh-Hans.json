@@ -25703,5 +25703,11 @@
     ":size sample": ":size 样品",
     "Date not set yet": "尚未设置日期",
     "Date not set yet: set the arrival date": "尚未设置日期：请设置到货日期",
-    "Cancel reason: :reason": "取消原因：:reason"
+    "Cancel reason: :reason": "取消原因：:reason",
+    "AI shopping assistant": "AI 购物助手",
+    "Logged in customers of a B2B shop can ask the assistant for product ideas": "B2B 店铺的已登录客户可向助手询问产品建议",
+    "Name the assistant shows to customers": "向客户显示的助手名称",
+    "Assistant name": "助手名称",
+    "Shows related searches, families and products under the search results": "在搜索结果下方显示相关搜索、产品系列和产品",
+    "Keep exploring suggestions on the search page": "搜索页面“继续探索”推荐"
 }
