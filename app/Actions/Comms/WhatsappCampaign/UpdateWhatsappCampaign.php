@@ -45,6 +45,11 @@ class UpdateWhatsappCampaign extends OrgAction
 
         $campaign = $this->update($campaign, $modelData, ['data']);
 
+        if ($templateChanged && $this->preselectSubscribers($campaign)) {
+            /* The store restarts the fill and re-evaluates readiness itself. */
+            return $campaign->refresh();
+        }
+
         if ($templateChanged) {
             $this->restartRecipientFill($campaign, discardSnapshots: true);
         }
@@ -52,6 +57,38 @@ class UpdateWhatsappCampaign extends OrgAction
         $this->syncReadyState($campaign);
 
         return $campaign;
+    }
+
+    /**
+     * A campaign that gets a template before anybody was picked starts out addressed to the
+     * shop's WhatsApp subscribers, the audience that opted in to marketing. Going through the
+     * audience query means only subscribers the template's merge tags can be filled in for are
+     * stored, so a template asking for something most subscribers lack selects fewer of them,
+     * and one no subscriber can satisfy selects none.
+     *
+     * Only an empty campaign is touched: a selection the user already made is theirs, and a
+     * template swap that needs it redone is confirmed and reselected from the workshop.
+     *
+     * @throws \Throwable
+     */
+    protected function preselectSubscribers(WhatsappCampaign $campaign): bool
+    {
+        if (!$campaign->meta_message_template_id || $campaign->recipients()->exists()) {
+            return false;
+        }
+
+        /* The template the audience is filtered by is read through the relation, which may
+           still hold the one loaded before the update. */
+        $campaign->unsetRelation('metaMessageTemplate');
+
+        StoreWhatsappCampaignRecipients::make()->handle(
+            $campaign,
+            GetWhatsappRecipientsQuery::DEFAULT_CHANNELS,
+            [],
+            null
+        );
+
+        return true;
     }
 
     public function rules(): array
