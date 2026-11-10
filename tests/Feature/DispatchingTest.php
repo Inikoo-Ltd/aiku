@@ -2480,6 +2480,25 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
     'bare code as customer note'  => ['Elzanowo 10B', null, ' byd21n '],
 ]);
 
+test('packeta sends the customer email when the delivery note has none', function (?string $noteEmail, string $expectedEmail) {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->customer->update(['email' => 'dropshipper@example.com']);
+    $deliveryNote->update(['email' => $noteEmail, 'is_cash_on_delivery' => false, 'parcels' => [['weight' => 1, 'dimensions' => [10, 10, 10]]]]);
+
+    config(['app.sandbox.shipper_packeta_access_token' => json_encode(['api_password' => 'test'])]);
+    $client = fakePacketaSoapClient(false);
+    $action = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+    $action->shouldReceive('getAddressIdByCountryCode')->andReturn(1);
+
+    $action->handle($deliveryNote->refresh(), new \App\Models\Dispatching\Shipper());
+
+    expect($client->packetAttributes['email'])->toBe($expectedEmail);
+})->with([
+    'client without email' => [null, 'dropshipper@example.com'],
+    'client with email'    => ['client@example.com', 'client@example.com'],
+]);
+
 test('packeta reads the InPost parcel locker code from a Polish address', function (string $countryCode, float $weight, array $lines, ?string $expected, array $notes = []) {
     expect(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::make()->getParcelLockerCode($countryCode, $weight, $lines, $notes))->toBe($expected);
 })->with([
@@ -8122,7 +8141,7 @@ test('a partner shipment makes one customs invoice per split from packed quantit
         ]))->toThrow(\Illuminate\Validation\ValidationException::class);
 });
 
-test('flags a SKO whose weighed parcels disagree with its weight, and clears it once the weight is corrected', function () {
+test('flags a SKO whose weighed parcels disagree with its weight, ignoring shared boxes and needing three parcels, and clears it once the weight is corrected', function () {
     $orgStock = makeOrgStock($this);
     DB::table('stocks')->where('id', $orgStock->stock_id)->update(['gross_weight' => 1000]);
     $transaction = $this->order->transactions()->first();
@@ -8149,23 +8168,31 @@ test('flags a SKO whose weighed parcels disagree with its weight, and clears it 
     $makeParcel(1.0);
 
     FlagOrgStocksWithWrongWeight::run($this->organisation);
+    expect($orgStock->refresh()->has_wrong_weight)->toBeFalse()
+        ->and($orgStock->measured_weight)->toBeNull();
+
+    $makeParcel(3.05);
+    $makeParcel(20.0);
+    $makeParcel(20.0);
+
+    FlagOrgStocksWithWrongWeight::run($this->organisation);
     $orgStock->refresh();
 
     expect($orgStock->has_wrong_weight)->toBeTrue()
-        ->and($orgStock->measured_weight)->toBe(3050)
-        ->and($orgStock->measured_weight_parcels)->toBe(2);
+        ->and($orgStock->measured_weight)->toBe(3000)
+        ->and($orgStock->measured_weight_parcels)->toBe(3);
 
     actingAs($this->adminGuest->getUser());
     $this->get(route('grp.org.warehouses.show.inventory.org_stocks.wrong_weights.index', [$this->organisation->slug, $this->warehouse->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Org/Inventory/OrgStocksWithWrongWeight')
-            ->where('orgStocks.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['code'] == $orgStock->code && $row['difference'] == 2050)));
+            ->where('orgStocks.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['code'] == $orgStock->code && $row['difference'] == 2000)));
 
     DB::table('stocks')->where('id', $orgStock->stock_id)->update(['gross_weight' => 3000]);
     FlagOrgStocksWithWrongWeight::run($this->organisation);
 
     expect($orgStock->refresh()->has_wrong_weight)->toBeFalse()
-        ->and($orgStock->measured_weight)->toBe(3050);
+        ->and($orgStock->measured_weight)->toBe(3000);
 });
 
 test('dispatch hub dropshipping and marketplace rows count picked and packing delivery notes', function () {
