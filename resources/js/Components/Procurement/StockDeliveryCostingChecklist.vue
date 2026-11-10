@@ -72,6 +72,7 @@ const props = defineProps<{
         extra_types: { label: string, value: string }[]
         shipping_basis: { basis: string, missing_count: number, missing_codes: string[] }
         agent_invoice_missing: boolean
+        agent_invoice_waiting: string | null
         storeCostRoute: routeType
         deposits: {
             applied: { id: number, amount: number, reference: string | null, deleteRoute: routeType | null }[]
@@ -331,7 +332,7 @@ const removeExtra = (row: CostRow) => {
             </span>
             <span v-else-if="isInvoiceSection && !costing.is_partner && costing.agent_invoice_missing" class="flex items-center gap-1 text-sm text-orange-500">
                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" fixed-width aria-hidden="true" />
-                {{ ctrans("Agent invoice not received") }}
+                {{ costing.agent_invoice_waiting ?? ctrans("Agent invoice not received") }}
             </span>
             <span v-if="costing.is_partner" class="text-sm text-gray-500">{{ ctrans("Automatic, from the partner's order prices") }}</span>
         </div>
