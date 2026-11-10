@@ -201,6 +201,8 @@ class Website extends Model implements Auditable, HasMedia
         'google_tag_gateway_path',
         'webpage.show_price',
         'hreflang',
+        'shopping_assistant.enabled',
+        'shopping_assistant.name',
     ];
 
     protected static function booted(): void

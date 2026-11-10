@@ -2,7 +2,7 @@ export const clearIrisSession = (layout: any) => {
     const hasStorage = typeof window !== "undefined" && !!window.localStorage
 
     const snapshot = {
-        iris: layout?.iris ? { is_logged_in: layout.iris.is_logged_in, customer: layout.iris.customer } : null,
+        iris: layout?.iris ? { is_logged_in: layout.iris.is_logged_in, customer: layout.iris.customer, shopping_assistant: layout.iris.shopping_assistant } : null,
         user: "user" in layout ? layout.user : undefined,
         iris_variables: "iris_variables" in layout ? layout.iris_variables : undefined,
         offer_data: "offer_data" in layout ? layout.offer_data : undefined,
@@ -13,6 +13,7 @@ export const clearIrisSession = (layout: any) => {
     if (layout?.iris) {
         layout.iris.is_logged_in = false
         layout.iris.customer = null
+        layout.iris.shopping_assistant = null
     }
 
     if ("user" in layout) {
@@ -39,6 +40,7 @@ export const clearIrisSession = (layout: any) => {
             iris_variables: null,
             offer_data: null,
             offer_meters: null,
+            shopping_assistant: null,
         }))
     }
 
@@ -48,6 +50,7 @@ export const clearIrisSession = (layout: any) => {
         if (layout?.iris && snapshot.iris) {
             layout.iris.is_logged_in = snapshot.iris.is_logged_in
             layout.iris.customer = snapshot.iris.customer
+            layout.iris.shopping_assistant = snapshot.iris.shopping_assistant
         }
 
         if (snapshot.user !== undefined) {

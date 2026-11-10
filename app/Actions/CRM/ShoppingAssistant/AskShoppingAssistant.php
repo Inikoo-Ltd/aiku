@@ -50,7 +50,7 @@ use Throwable;
  * assistant's with the names and ids of the products shown with it) and the new customer message.
  * Earlier tool results are not replayed. The customer's contact name and email are never sent.
  *
- * ponytail: no streaming, the turn is one blocking request; stream when it is reachable from the website.
+ * ponytail: no streaming; on the storefront the turn runs in a queued job and the page polls for the stored answer.
  * ponytail: replay capped at 12 messages; summarise older turns if conversations grow long.
  * ponytail: the reply language is the shop's and is named in the prompt but not checked; add a
  * language check on the reply if the model drifts.
@@ -82,16 +82,29 @@ class AskShoppingAssistant
      */
     public function handle(ShoppingAssistantConversation $conversation, string $message): array
     {
-        $startedAt = hrtime(true);
-        $message   = mb_substr(trim($message), 0, self::MAX_MESSAGE);
-        $customer  = $conversation->customer;
-        $model     = $this->modelFor($conversation, $message);
+        return $this->answer($conversation, $this->storeCustomerMessage($conversation, $message));
+    }
 
+    public function storeCustomerMessage(ShoppingAssistantConversation $conversation, string $message): ShoppingAssistantMessage
+    {
         $customerMessage = $conversation->messages()->create([
             'role' => ShoppingAssistantMessageRoleEnum::CUSTOMER,
-            'body' => $message,
+            'body' => mb_substr(trim($message), 0, self::MAX_MESSAGE),
         ]);
         $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
+
+        return $customerMessage;
+    }
+
+    /**
+     * @return array{message: ShoppingAssistantMessage, reply: string, groups: array<string, Collection<int, Product>>, follow_ups: array<int, string>}
+     */
+    public function answer(ShoppingAssistantConversation $conversation, ShoppingAssistantMessage $customerMessage): array
+    {
+        $startedAt = hrtime(true);
+        $message   = (string) $customerMessage->body;
+        $customer  = $conversation->customer;
+        $model     = $this->modelFor($conversation, $message);
 
         $turn = $this->runModel($conversation, $customer, $customerMessage, $message, $model);
 

@@ -16,6 +16,11 @@ import { FreeMode } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/free-mode'
 import { ProductResource } from '@/types/Iris/Products'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { useShoppingAssistant } from '@/Iris/Composables/useShoppingAssistant'
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { faSparkles } from '@far'
+library.add(faSparkles)
 
 interface InternalCatalogueItem {
     id: number
@@ -93,6 +98,10 @@ const searchQuery = computed(() => {
 })
 
 const products = ref<ProductResource[]>([])
+
+const { assistant, askLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
+const showAssistantBanner = computed(() => !!assistant.value && !!searchQuery.value.trim()
+    && (looksLikeANeed(searchQuery.value) || (!isInternalLoading.value && !products.value.length)))
 const searchLogUlid = ref<string | null>(null)
 
 // keepalive fetch survives the navigation the click triggers
@@ -462,6 +471,11 @@ const isMobileFilterOpen = ref(false)
                             {{ ctrans('Results for') }}
                             <strong class="text-[var(--theme-color-0)]">{{ searchQuery }}</strong>
                             <span v-if="!isInternalLoading"> ({{ totalResults }})</span>
+                        </div>
+
+                        <div v-if="showAssistantBanner" class="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-gray-200 bg-white px-4 py-3 text-sm">
+                            <span class="min-w-0 flex-1">{{ offerLabel }}</span>
+                            <Button :label="askLabel" icon="far fa-sparkles" size="sm" @click="openAssistant(searchQuery)" />
                         </div>
 
                         <!-- Your orders: only present for a signed in customer -->

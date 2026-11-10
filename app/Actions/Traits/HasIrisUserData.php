@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\CRM\TrafficSource\MergeTrafficSourceTouchHistories;
 use App\Actions\CRM\TrafficSource\ParseGoogleAdsClick;
 use App\Actions\CRM\TrafficSource\SyncCustomerGoogleAdsClick;
@@ -100,6 +101,7 @@ trait HasIrisUserData
             'traffic_source_cookies' => CaptureTrafficSource::run(),
             'offer_meters'           => $offerMeters,
             'offer_data'             => $offerData, // this is used in the top bar
+            'shopping_assistant'     => GetShoppingAssistantSettings::run($this->website, $this->customer),
         ];
     }
 

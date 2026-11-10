@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeMount, defineAsyncComponent, nextTick, inject } from "vue"
-import { notify } from "@kyvg/vue3-notification"
 import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
 import axios from "axios"
 import { debounce } from "lodash-es"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch } from "@far"
+import { faSearch, faSparkles } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Popover from "primevue/popover"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
-library.add(faSearch)
+import { useShoppingAssistant } from "@/Iris/Composables/useShoppingAssistant"
+library.add(faSearch, faSparkles)
 
 const SearchResultCatalogue = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogue.vue"))
 const SearchFeatured = defineAsyncComponent(() => import("@/Iris/Components/SearchFeatured.vue"))
@@ -27,6 +28,13 @@ const props = defineProps<{
 const layout = inject('layout', retinaLayoutStructure)
 
 const inputValue = ref('')
+
+const { assistant, askLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
+
+const askAssistant = () => {
+    closePopover()
+    openAssistant(inputValue.value)
+}
 
 onBeforeMount(() => {
     const params = new URLSearchParams(window.location.search)
@@ -222,24 +230,19 @@ watch(showDropdown, (open) => {
 })
 
 const visitSearchPage = () => {
-    if (inputValue.value) {
-        if (route().current()?.startsWith('iris.')) {
-            router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
-        } else {
-            window.location.href = `/search?q=${encodeURIComponent(inputValue.value)}`
-        }
+    if (!inputValue.value) {
+        return
+    }
+    if (route().current()?.startsWith('iris.')) {
+        router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
     } else {
-        notify({
-            title: ctrans("Something went wrong"),
-            text: ctrans("The query must be filled"),
-            type: "error",
-        })
+        window.location.href = `/search?q=${encodeURIComponent(inputValue.value)}`
     }
 }
 </script>
 
 <template>
-    <div class="w-full relative group">
+    <div class="iris-search-box w-full relative group">
         <input
             ref="inputRef"
             :value="inputValue"
@@ -248,11 +251,23 @@ const visitSearchPage = () => {
             @mouseup="onMouseUp"
             @blur="onBlur"
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
+            :class="assistant ? 'iris-search-input-ask' : ''"
             :id="id || 'inputIrisSearch'"
             :placeholder="fieldValueSearch?.placeholder ?? ctrans('Search')"
             @keydown.enter="() => visitSearchPage()"
         />
         <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+        <Button
+            v-if="assistant"
+            :label="askLabel"
+            size="xs"
+            class="iris-search-ask absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full"
+            @click="askAssistant"
+        >
+            <template #icon>
+                <FontAwesomeIcon icon="far fa-sparkles" fixed-width aria-hidden="true" />
+            </template>
+        </Button>
 
         <!-- Catalogue results in a centered popover with an arrow to the input -->
         <Popover
@@ -271,20 +286,52 @@ const visitSearchPage = () => {
                     :is-loading="isFeaturedLoading"
                 />
             </div>
-            <div v-else class="h-[70vh] max-h-[550px] overflow-hidden">
-                <SearchResultCatalogue
-                    v-model:open="showDropdown"
-                    :results="internalResults"
-                    :is-loading="isInternalLoading"
-                    :query="inputValue"
-                    :search-log-ulid="searchLogUlid"
-                />
-            </div>
+            <template v-else>
+                <button
+                    v-if="assistant && looksLikeANeed(inputValue)"
+                    type="button"
+                    class="flex w-full items-center gap-3 border-b border-gray-200 px-4 pb-3 pt-4 text-left text-sm hover:bg-gray-50"
+                    @click="askAssistant"
+                >
+                    <FontAwesomeIcon icon="far fa-sparkles" class="text-[var(--theme-color-0)]" fixed-width aria-hidden="true" />
+                    <span class="min-w-0 flex-1 truncate">
+                        <span class="font-semibold">{{ offerLabel }}</span>
+                        <span class="text-gray-500"> &ldquo;{{ inputValue.trim() }}&rdquo;</span>
+                    </span>
+                </button>
+                <div class="h-[70vh] max-h-[550px] overflow-hidden">
+                    <SearchResultCatalogue
+                        v-model:open="showDropdown"
+                        :results="internalResults"
+                        :is-loading="isInternalLoading"
+                        :query="inputValue"
+                        :search-log-ulid="searchLogUlid"
+                    />
+                </div>
+            </template>
         </Popover>
     </div>
 </template>
 
 <style lang="scss">
+.iris-search-box {
+    container-type: inline-size;
+}
+
+.iris-search-box .iris-search-input-ask {
+    padding-right: 11rem;
+}
+
+@container (max-width: 26rem) {
+    .iris-search-box .iris-search-ask > span {
+        display: none;
+    }
+
+    .iris-search-box .iris-search-input-ask {
+        padding-right: 3rem;
+    }
+}
+
 /* Search popover: full-width panel pinned to the viewport */
 .iris-search-popover.p-popover {
     max-width: none !important;

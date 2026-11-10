@@ -12,7 +12,14 @@ use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\Catalogue\Product\StoreProductWebpage;
+use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantMessage;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
+use App\Actions\CRM\ShoppingAssistant\RecordShoppingAssistantBasketAdd;
+use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTools;
 use App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -20,13 +27,21 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
+use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
+use App\Models\CRM\WebUser;
+use App\Models\Web\Website;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
 
@@ -277,4 +292,240 @@ test('the shopping assistant reply may repeat the customer\'s own figures and si
         ->and($assistant->onlyGivenNumbers('It costs 10 pounds.', $customer, $names))->toBeFalse()
         ->and($assistant->onlyGivenNumbers('Over 120 shops buy it.', $customer, $names))->toBeFalse()
         ->and($assistant->onlyGivenNumbers('Save 10% on the 190g size.', $customer, $names))->toBeFalse();
+});
+
+function shoppingAssistantStorefront(object $test, bool $enabled = true): Website
+{
+    $website = createWebsite($test->shop);
+    $website->update(['status' => true]);
+    UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => $enabled, 'shopping_assistant_name' => 'Ava']);
+
+    DetectWebsiteFromDomain::mock()
+        ->shouldReceive('parseDomain')
+        ->andReturn($website->domain);
+
+    return $website->refresh();
+}
+
+function shoppingAssistantWebUser(Customer $customer): WebUser
+{
+    $id = uniqid();
+
+    return StoreWebUser::make()->action($customer, ['username' => 'sa-'.$id, 'email' => 'sa-'.$id.'@example.com', 'password' => 'test'], sendRegistrationEmail: false);
+}
+
+function shoppingAssistantLiveProduct(Product $seed): Product
+{
+    $product = shoppingAssistantProduct($seed);
+    ($product->webpage ?: StoreProductWebpage::make()->action($product))->update(['state' => WebpageStateEnum::LIVE]);
+
+    return $product->refresh();
+}
+
+function shoppingAssistantShown(Customer $customer, array $productIds): ShoppingAssistantMessage
+{
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
+    AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'Ideas please');
+    $message = $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Here you go.']);
+    foreach (array_values($productIds) as $index => $productId) {
+        $conversation->events()->create([
+            'shopping_assistant_message_id' => $message->id,
+            'type'                          => ShoppingAssistantEventTypeEnum::SHOWN,
+            'product_id'                    => $productId,
+            'group'                         => 'must_haves',
+            'position'                      => $index + 1,
+            'reason_code'                   => 'used_to_order',
+            'reason'                        => 'You used to order this',
+        ]);
+    }
+
+    return $message;
+}
+
+test('the storefront assistant is on only for an enabled B2B website and a customer of its shop, and names itself', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+
+    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava'])
+        ->and(GetShoppingAssistantSettings::run($website, null))->toBeNull();
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => false]);
+
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBeNull()
+        ->and(data_get($website->settings, 'shopping_assistant.name'))->toBe('Ava');
+});
+
+test('asking from the storefront stores the message, queues the answer and refuses a second question while one is pending', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $url      = 'http://'.$website->domain.'/json/shopping-assistant/ask';
+    Queue::fake();
+
+    $response = $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'Candles for a gift shop'])->assertStatus(202);
+
+    $conversation = ShoppingAssistantConversation::where('ulid', $response->json('conversation'))->first();
+    expect($response->json())->toBe(['conversation' => $conversation->ulid, 'message_id' => $response->json('message_id'), 'pending' => true])
+        ->and($conversation->customer_id)->toBe($customer->id)
+        ->and($conversation->web_user_id)->toBe($webUser->id)
+        ->and($conversation->entry_point)->toBe(ShoppingAssistantEntryPointEnum::SEARCH)
+        ->and($conversation->messages()->pluck('body')->all())->toBe(['Candles for a gift shop']);
+    AnswerShoppingAssistantMessage::assertPushed(1);
+
+    $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'And mugs?', 'conversation' => $conversation->ulid])
+        ->assertStatus(409)
+        ->assertExactJson(['pending' => true]);
+    expect($conversation->messages()->count())->toBe(1);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => false]);
+    $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'Hello'])->assertNotFound();
+});
+
+test('another customer cannot ask in, read or click in a conversation that is not theirs', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $owner    = shoppingAssistantCustomer($this->shop);
+    $other    = shoppingAssistantWebUser(shoppingAssistantCustomer($this->shop));
+    $product  = shoppingAssistantProduct($this->product);
+    $message  = shoppingAssistantShown($owner, [$product->id]);
+    $ulid     = $message->conversation->ulid;
+    $base     = 'http://'.$website->domain.'/json/shopping-assistant/';
+    Queue::fake();
+
+    $this->actingAs($other, 'retina')->postJson($base.'ask', ['message' => 'Hi', 'conversation' => $ulid])->assertNotFound();
+    $this->actingAs($other, 'retina')->getJson($base.$ulid)->assertNotFound();
+    $this->actingAs($other, 'retina')->postJson($base.$ulid.'/events', ['type' => 'clicked', 'product_id' => $product->id, 'message_id' => $message->id])->assertNotFound();
+
+    expect($message->conversation->events()->where('type', ShoppingAssistantEventTypeEnum::CLICKED)->exists())->toBeFalse();
+    AnswerShoppingAssistantMessage::assertNotPushed();
+});
+
+test('the answer job stores the assistant reply and the conversation returns it with search cards and the reason, after the given message', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $kept     = shoppingAssistantLiveProduct($this->product);
+    shoppingAssistantStoppedOrdering($customer, $kept);
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('products_they_stopped_ordering', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'Worth bringing back.', 'must_haves' => [$kept->id], 'follow_ups' => ['Anything new?']]))]);
+
+    $conversation    = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH, ['web_user_id' => $webUser->id]);
+    $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'What should I restock?');
+
+    expect($conversation->isPending())->toBeTrue();
+
+    AnswerShoppingAssistantMessage::run($customerMessage);
+    AnswerShoppingAssistantMessage::run($customerMessage);
+
+    $url      = 'http://'.$website->domain.'/json/shopping-assistant/'.$conversation->ulid;
+    $response = $this->actingAs($webUser, 'retina')->getJson($url)->assertOk();
+    $messages = $response->json('messages');
+    $card     = $messages[1]['groups']['must_haves'][0];
+
+    expect($response->json('conversation'))->toBe($conversation->ulid)
+        ->and($response->json('status'))->toBe('open')
+        ->and($response->json('pending'))->toBeFalse()
+        ->and(array_keys($response->json()))->toBe(['conversation', 'status', 'pending', 'messages'])
+        ->and($messages)->toHaveCount(2)
+        ->and(array_keys($messages[0]))->toBe(['id', 'role', 'body', 'created_at'])
+        ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'groups'])
+        ->and($messages[1]['role'])->toBe('assistant')
+        ->and($messages[1]['body'])->toBe('Worth bringing back.')
+        ->and($messages[1]['follow_ups'])->toBe(['Anything new?'])
+        ->and($messages[1]['groups']['add_ons'])->toBe([])
+        ->and($card['id'])->toBe($kept->id)
+        ->and($card['code'])->toBe($kept->code)
+        ->and($card['assistant_reason'])->toBe(GetShoppingAssistantTools::make()->reasonText('used_to_order', $customer, $conversation->language_code))
+        ->and($card['assistant_message_id'])->toBe($messages[1]['id']);
+
+    $after = $this->actingAs($webUser, 'retina')->getJson($url.'?after='.$customerMessage->id)->assertOk()->json('messages');
+
+    expect(collect($after)->pluck('id')->all())->toBe([$messages[1]['id']]);
+});
+
+test('a failed answer stores the fallback so the conversation is not left pending', function () {
+    $customer        = shoppingAssistantCustomer($this->shop);
+    $conversation    = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
+    $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'Hello');
+
+    AskShoppingAssistant::mock()->shouldReceive('answer')->andThrow(new RuntimeException('boom'));
+
+    AnswerShoppingAssistantMessage::run($customerMessage);
+
+    $reply = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->first();
+
+    expect($reply->body)->toBe(__('Sorry, I could not find an answer just now. Please try again.', [], $conversation->language_code))
+        ->and($reply->flags)->toBe(['model_unavailable'])
+        ->and($conversation->fresh()->isPending())->toBeFalse();
+});
+
+test('a click on a shown card is stored once and a product that was not shown is refused', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $shown    = shoppingAssistantProduct($this->product);
+    $notShown = shoppingAssistantProduct($this->product);
+    $message  = shoppingAssistantShown($customer, [$shown->id]);
+    $url      = 'http://'.$website->domain.'/json/shopping-assistant/'.$message->conversation->ulid.'/events';
+
+    $this->actingAs($webUser, 'retina')->postJson($url, ['type' => 'clicked', 'product_id' => $shown->id, 'message_id' => $message->id])->assertNoContent();
+    $this->actingAs($webUser, 'retina')->postJson($url, ['type' => 'clicked', 'product_id' => $shown->id, 'message_id' => $message->id])->assertNoContent();
+    $this->actingAs($webUser, 'retina')->postJson($url, ['type' => 'clicked', 'product_id' => $notShown->id, 'message_id' => $message->id])->assertStatus(422);
+    $this->actingAs($webUser, 'retina')->postJson($url, ['type' => 'added', 'product_id' => $shown->id, 'message_id' => $message->id])->assertStatus(422);
+
+    $clicks = $message->conversation->events()->where('type', ShoppingAssistantEventTypeEnum::CLICKED)->get();
+
+    expect($clicks->map(fn ($event) => [$event->product_id, $event->shopping_assistant_message_id, $event->group, $event->position, $event->reason_code])->all())
+        ->toBe([[$shown->id, $message->id, 'must_haves', 1, 'used_to_order']]);
+});
+
+test('a basket add of a product the assistant showed is recorded once, and nothing for a product it did not show', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $shown    = shoppingAssistantProduct($this->product);
+    $notShown = shoppingAssistantProduct($this->product);
+    $message  = shoppingAssistantShown($customer, [$shown->id]);
+
+    RecordShoppingAssistantBasketAdd::run($customer, $shown, null, 3);
+    RecordShoppingAssistantBasketAdd::run($customer, $shown, null, 5);
+    RecordShoppingAssistantBasketAdd::run($customer, $notShown, null, 1);
+    RecordShoppingAssistantBasketAdd::run(shoppingAssistantCustomer($this->shop), $shown, null, 1);
+
+    $added = ShoppingAssistantEvent::where('type', ShoppingAssistantEventTypeEnum::ADDED)->whereIn('product_id', [$shown->id, $notShown->id])->get();
+
+    expect($added->map(fn ($event) => [$event->shopping_assistant_conversation_id, $event->shopping_assistant_message_id, $event->product_id, $event->group, $event->position, $event->reason_code, (float) $event->quantity])->all())
+        ->toBe([[$message->shopping_assistant_conversation_id, $message->id, $shown->id, 'must_haves', 1, 'used_to_order', 3.0]]);
+});
+
+test('the storefront assistant rate limit keeps a bucket per customer', function () {
+    $website = shoppingAssistantStorefront($this);
+    $first   = shoppingAssistantWebUser(shoppingAssistantCustomer($this->shop));
+    $second  = shoppingAssistantWebUser(shoppingAssistantCustomer($this->shop));
+    $url     = 'http://'.$website->domain.'/json/shopping-assistant/ask';
+    Queue::fake();
+
+    foreach (range(1, 6) as $ignored) {
+        $this->actingAs($first, 'retina')->postJson($url, ['message' => 'Ideas'])->assertStatus(202);
+    }
+    $this->actingAs($first, 'retina')->postJson($url, ['message' => 'Ideas'])->assertStatus(429);
+    $this->actingAs($second, 'retina')->postJson($url, ['message' => 'Ideas'])->assertStatus(202);
+});
+
+test('adding a shown product to the basket from the storefront records it, and nothing is recorded with the assistant switched off', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $product  = shoppingAssistantProduct($this->product);
+    $later    = shoppingAssistantProduct($this->product);
+    shoppingAssistantShown($customer, [$product->id, $later->id]);
+    $addUrl = fn (Product $added) => 'http://'.$website->domain.'/models/'.$added->id.'/store-transaction';
+
+    $transactionId = $this->actingAs($webUser, 'retina')->postJson($addUrl($product), ['quantity' => 2])->assertOk()->json('transaction_id');
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => false]);
+    $this->actingAs($webUser, 'retina')->postJson($addUrl($later), ['quantity' => 1])->assertOk();
+
+    $added = ShoppingAssistantEvent::where('type', ShoppingAssistantEventTypeEnum::ADDED)->whereIn('product_id', [$product->id, $later->id])->get();
+
+    expect($added->map(fn ($event) => [$event->product_id, $event->transaction_id, (float) $event->quantity])->all())->toBe([[$product->id, $transactionId, 2.0]]);
 });

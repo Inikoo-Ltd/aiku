@@ -255,6 +255,20 @@ class RouteServiceProvider extends ServiceProvider
             ];
         });
 
+        /*
+         * Every storefront assistant question spends AI credit. Keyed on the customer, so web users
+         * of one customer share a bucket; without a user the key is the IP, never one shared guest bucket.
+         */
+        RateLimiter::for('shopping-assistant', function (Request $request) {
+            $key = $request->user('retina')?->customer_id ?? 'ip:'.$request->ip();
+
+            return [
+                Limit::perMinute(6)->by('shopping-assistant-minute:'.$key),
+                Limit::perHour(40)->by('shopping-assistant-hour:'.$key),
+                Limit::perDay(120)->by('shopping-assistant-day:'.$key),
+            ];
+        });
+
         RateLimiter::for('iris-feeds', function (Request $request) {
             return [
                 Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()),

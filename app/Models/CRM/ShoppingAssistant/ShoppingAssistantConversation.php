@@ -10,6 +10,7 @@ namespace App\Models\CRM\ShoppingAssistant;
 
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\CRM\Customer;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
@@ -52,6 +53,8 @@ class ShoppingAssistantConversation extends Model
 {
     use InShop;
 
+    public const int PENDING_SECONDS = 150;
+
     protected $guarded = [];
 
     protected function casts(): array
@@ -78,5 +81,15 @@ class ShoppingAssistantConversation extends Model
     public function events(): HasMany
     {
         return $this->hasMany(ShoppingAssistantEvent::class);
+    }
+
+    /**
+     * Waiting for an answer: the latest message is the customer's and is younger than the answer job's timeout.
+     */
+    public function isPending(): bool
+    {
+        $latest = $this->messages()->latest('id')->first(['role', 'created_at']);
+
+        return $latest?->role === ShoppingAssistantMessageRoleEnum::CUSTOMER && $latest->created_at->gt(now()->subSeconds(self::PENDING_SECONDS));
     }
 }

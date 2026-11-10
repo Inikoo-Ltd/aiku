@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, inject, watch, onBeforeMount, onMounted, onBeforeUnmount, defineAsyncComponent, nextTick } from "vue"
-import { notify } from "@kyvg/vue3-notification"
-import { ctrans as trans } from "@/Composables/useTrans"
+import { ctrans } from "@/Composables/useTrans"
 import { router, usePage } from "@inertiajs/vue3"
 import { useSidePanel, websiteThemeVariables } from "@/Iris/Composables/useSidePanel"
 import { useFloatingButtonsDrag } from "@/Iris/Composables/useFloatingButtonsDrag"
 import axios from "axios"
 import { debounce } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch, faChevronUp, faChevronDown } from "@far"
+import { faSearch, faChevronUp, faChevronDown, faSparkles } from "@far"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 import { useIrisSearchMobile } from "@/Iris/Composables/useIrisSearchMobile"
 import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
-library.add(faSearch, faTimes, faChevronUp, faChevronDown)
+import { useShoppingAssistant } from "@/Iris/Composables/useShoppingAssistant"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+library.add(faSearch, faTimes, faChevronUp, faChevronDown, faSparkles)
 
 const SearchResultCatalogueMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogueMobile.vue"))
 const SearchFeaturedMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchFeaturedMobile.vue"))
@@ -240,20 +241,22 @@ watch(showDropdown, (open) => {
 })
 
 const visitSearchPage = () => {
-    if (inputValue.value) {
-        closeOverlay()
-        if (route().current()?.startsWith('iris.')) {
-            router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
-        } else {
-            window.location.href = `/search?q=${encodeURIComponent(inputValue.value)}`
-        }
-    } else {
-        notify({
-            title: trans("Something went wrong"),
-            text: trans("The query must be filled"),
-            type: "error",
-        })
+    if (!inputValue.value) {
+        return
     }
+    closeOverlay()
+    if (route().current()?.startsWith('iris.')) {
+        router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
+    } else {
+        window.location.href = `/search?q=${encodeURIComponent(inputValue.value)}`
+    }
+}
+
+const { assistant, askLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
+
+const askAssistant = () => {
+    closeOverlay()
+    openAssistant(inputValue.value)
 }
 </script>
 
@@ -301,7 +304,7 @@ const visitSearchPage = () => {
             <button
                 type="button"
                 xid="id || 'inputIrisSearchMobile'"
-                :aria-label="trans('Search')"
+                :aria-label="ctrans('Search')"
                 class="side-action-button rounded-full shadow-lg touch-none"
                 style="width: 3rem; height: 3rem;"
                 @pointerdown="(event) => { showDragHint(); floatingButtonsDrag.onPointerDown(event) }"
@@ -328,7 +331,7 @@ const visitSearchPage = () => {
                         @mouseup="onInputMouseUp"
                         @blur="onInputBlur"
                         class="h-11 w-full rounded-full border border-[#d1d5db] focus:border-transparent focus:ring-2 focus:ring-gray-700 pl-10"
-                        :placeholder="trans('Search')"
+                        :placeholder="ctrans('Search')"
                         autocapitalize="none"
                         autocorrect="off"
                         autocomplete="off"
@@ -339,15 +342,33 @@ const visitSearchPage = () => {
                     />
                     <FontAwesomeIcon icon="far fa-search" class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fixed-width aria-hidden="true" />
                 </div>
+                <Button v-if="assistant" :label="askLabel" size="xs" class="shrink-0 rounded-full" @click="askAssistant">
+                    <template #icon>
+                        <FontAwesomeIcon icon="far fa-sparkles" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
                 <button
                     type="button"
                     class="shrink-0 w-11 h-11 flex items-center justify-center text-gray-500"
-                    :aria-label="trans('Close')"
+                    :aria-label="ctrans('Close')"
                     @click="closeOverlay"
                 >
                     <FontAwesomeIcon icon="fal fa-times" fixed-width aria-hidden="true" />
                 </button>
             </div>
+
+            <button
+                v-if="assistant && looksLikeANeed(inputValue)"
+                type="button"
+                class="shrink-0 flex items-center gap-3 border-b border-gray-200 px-4 py-3 text-left text-sm"
+                @click="askAssistant"
+            >
+                <FontAwesomeIcon icon="far fa-sparkles" class="text-[var(--theme-color-0)]" fixed-width aria-hidden="true" />
+                <span class="min-w-0 flex-1">
+                    <span class="font-semibold">{{ offerLabel }}</span>
+                    <span class="line-clamp-2 text-gray-500">&ldquo;{{ inputValue.trim() }}&rdquo;</span>
+                </span>
+            </button>
 
             <div class="flex-1 min-h-0">
                 <SearchResultCatalogueMobile
@@ -365,7 +386,7 @@ const visitSearchPage = () => {
                     :is-loading="isFeaturedLoading"
                 />
                 <div v-else class="h-full flex items-center justify-center text-gray-400 text-sm px-8 text-center">
-                    {{ trans('Start typing to search the catalogue') }}
+                    {{ ctrans('Start typing to search the catalogue') }}
                 </div>
             </div>
         </div>

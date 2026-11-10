@@ -39,6 +39,9 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       if (storageIris.offer_meters) {
         layout.offer_meters = storageIris.offer_meters
       }
+      if (storageIris.shopping_assistant && !window.location.pathname.startsWith("/app")) {
+        layout.iris.shopping_assistant = storageIris.shopping_assistant
+      }
     }
   }
 
@@ -72,9 +75,11 @@ export const initialiseIrisVarnish = async (layoutStore) => {
           is_logged_in: false,
           iris_variables: null,
           offer_data: null,
-          offer_meters: null
+          offer_meters: null,
+          shopping_assistant: null
         }))
         layout.iris.is_logged_in = false
+        layout.iris.shopping_assistant = null
       }
       // console.error('Error fetching first hit:', error)
     } finally {
@@ -108,7 +113,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       is_logged_in: false,
       iris_variables: varnish?.variables ?? null,
       offer_data: null,
-      offer_meters: varnish?.offer_meters ?? null
+      offer_meters: varnish?.offer_meters ?? null,
+      shopping_assistant: null
     }))
 
     layout.is_blocked = varnish.is_blocked
@@ -120,6 +126,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
     layout.iris.is_logged_in = false
     layout.iris.customer = null
+    layout.iris.shopping_assistant = null
     return
   }
 
@@ -141,12 +148,17 @@ export const initialiseIrisVarnish = async (layoutStore) => {
       layout.offer_meters = varnish.offer_meters
     }
 
+    if (!isAppRoute || "shopping_assistant" in varnish) {
+      layout.iris.shopping_assistant = varnish.shopping_assistant ?? null
+    }
+
     localStorage.setItem("iris", JSON.stringify({
       ...storageIris,
       is_logged_in: true,
       iris_variables: varnish.variables,
       offer_data: varnish.offer_data ?? null,
-      offer_meters: varnish.offer_meters ?? null
+      offer_meters: varnish.offer_meters ?? null,
+      shopping_assistant: layout.iris.shopping_assistant ?? null
     }))
 
     layout.user = varnish.auth?.user || null

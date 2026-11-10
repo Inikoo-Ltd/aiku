@@ -12,8 +12,10 @@ use App\Actions\Fulfilment\FulfilmentCustomer\IndexFulfilmentCustomerFromWebhook
 use Illuminate\Support\Facades\Route;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use App\Actions\Web\Website\SearchOnWebsite;
+use App\Actions\Iris\ShoppingAssistant\ShowIrisShoppingAssistant;
 
 Route::get('/search', SearchOnWebsite::class)->name('search');
+Route::get('/assistant', ShowIrisShoppingAssistant::class)->name('shopping_assistant');
 Route::post('login', RetinaLogin::class)->name('login.store');
 Route::post('logout', RetinaLogout::class)->name('logout');
 Route::get('webhooks/{fulfilmentCustomer:webhook_access_key}', IndexFulfilmentCustomerFromWebhook::class)->name('fulfilment-customer.webhook.show');

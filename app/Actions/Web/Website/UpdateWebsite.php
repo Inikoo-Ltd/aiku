@@ -186,6 +186,14 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, 'settings.webpage.show_price', Arr::pull($modelData, 'show_price', false));
         }
 
+        if (Arr::has($modelData, 'shopping_assistant_enabled')) {
+            data_set($modelData, 'settings.shopping_assistant.enabled', (bool)Arr::pull($modelData, 'shopping_assistant_enabled'));
+        }
+
+        if (Arr::has($modelData, 'shopping_assistant_name')) {
+            data_set($modelData, 'settings.shopping_assistant.name', Arr::pull($modelData, 'shopping_assistant_name'));
+        }
+
         // Handle LLMs.txt file upload
         if (Arr::has($modelData, 'llms_txt') && $modelData['llms_txt'] instanceof \Illuminate\Http\UploadedFile) {
             $file = Arr::pull($modelData, 'llms_txt');
@@ -300,6 +308,8 @@ class UpdateWebsite extends OrgAction
             'webpage_title_prefix'                       => ['sometimes', 'nullable', 'string'],
             'webpage_title_suffix'                       => ['sometimes', 'nullable', 'string'],
             'show_price'                                 => ['sometimes', 'nullable', 'boolean'],
+            'shopping_assistant_enabled'                 => ['sometimes', 'boolean'],
+            'shopping_assistant_name'                    => ['sometimes', 'nullable', 'string', 'max:30'],
             'hreflang_group'                             => ['sometimes', 'nullable', 'string', 'max:64'],
             'hreflang_code'                              => ['sometimes', 'nullable', 'string', 'regex:/^[a-z]{2,3}(-[A-Z]{2})?$/'],
             'hreflang_x_default'                         => ['sometimes', 'boolean'],

@@ -8,6 +8,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\Retina\UI\GetRetinaFirstLoadProps;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Models\CRM\WebUser;
@@ -128,6 +129,7 @@ class HandleRetinaInertiaRequests extends Middleware
                     'google' => [
                         'client_id' => config('services.google.client_id'),
                     ],
+                    'shopping_assistant' => $website && $webUser ? GetShoppingAssistantSettings::run($website, $webUser->customer) : null,
                 ]),
                 'use_chat'    => $website->settings['enable_chat'] ?? false,
                 'outboxes' => $outBoxes

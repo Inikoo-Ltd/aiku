@@ -237,6 +237,25 @@ class EditWebsite extends OrgAction
                 ]
             ];
             $blueprints[] = [
+                'label'  => __('AI shopping assistant'),
+                'icon'   => 'fa-light fa-robot',
+                'fields' => [
+                    'shopping_assistant_enabled' => [
+                        'type'        => 'toggle',
+                        'information' => __('Logged in customers of a B2B shop can ask the assistant for product ideas'),
+                        'label'       => __('AI shopping assistant'),
+                        'value'       => (bool)data_get($website->settings, 'shopping_assistant.enabled', false),
+                    ],
+                    'shopping_assistant_name'    => [
+                        'type'        => 'input',
+                        'information' => __('Name the assistant shows to customers'),
+                        'label'       => __('Assistant name'),
+                        'value'       => data_get($website->settings, 'shopping_assistant.name'),
+                        'required'    => false,
+                    ],
+                ]
+            ];
+            $blueprints[] = [
                 'label'  => __('Sound Player'),
                 'icon'   => 'fal fa-music',
                 'fields' => [
