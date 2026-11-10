@@ -423,7 +423,7 @@ class DeliveryNote extends Model implements Auditable
                     ->where('part.state', '!=', DeliveryNoteItemStateEnum::CANCELLED->value)
                     ->where('part.is_handled', true)
                     ->where('part.quantity_required', '>', 0)
-                    ->whereRaw('(delivery_note_items.quantity_required - coalesce(delivery_note_items.quantity_not_picked, 0)) * part.quantity_required - part.quantity_picked * delivery_note_items.quantity_required > 0.0001 * part.quantity_required * delivery_note_items.quantity_required');
+                    ->whereRaw('(delivery_note_items.quantity_required - coalesce(delivery_note_items.quantity_not_picked, 0)) * part.quantity_required - greatest(part.quantity_required - coalesce(part.quantity_not_picked, 0), 0) * delivery_note_items.quantity_required > 0.0001 * part.quantity_required * delivery_note_items.quantity_required');
             });
     }
 

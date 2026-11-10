@@ -6855,6 +6855,31 @@ test('a set sold only complete marks its parts never picked as not picked in one
         ->and($deliveryNote->refresh()->hasIncompleteSets())->toBeFalse();
 });
 
+test('a set sold only complete keeps its picked parts while another part waits for the warehouse (HELP-4639)', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
+    $waitingPart = StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => makeOrgStock($this)->id,
+        'transaction_id'    => $item->transaction_id,
+        'quantity_required' => 10,
+    ]);
+    SetAsWaitingWarehouse::make()->action($waitingPart->refresh(), $this->user, ['quantity' => 10]);
+    $item->transaction->model->update(['is_indivisible' => true]);
+    $pickedBefore = (float)$item->refresh()->quantity_picked;
+
+    expect($waitingPart->refresh()->is_handled)->toBeTrue()
+        ->and($deliveryNote->refresh()->hasIncompleteSets())->toBeFalse();
+
+    \App\Actions\Dispatching\DeliveryNote\PutBackIncompleteSetParts::make()->action($deliveryNote, $this->user);
+
+    expect((float)$item->refresh()->quantity_picked)->toBe($pickedBefore)
+        ->and((float)$item->quantity_not_picked)->toBe(0.0);
+});
+
 test('a set sold only complete waiting on a part not found goes back to picking with that part to look for again (HELP-3548)', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
     $notFoundPart = StoreDeliveryNoteItem::make()->action($deliveryNote, [

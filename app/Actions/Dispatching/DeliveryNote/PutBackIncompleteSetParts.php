@@ -76,7 +76,7 @@ class PutBackIncompleteSetParts extends OrgAction
             ->where('is_handled', true)
             ->where('quantity_required', '>', 0)
             ->get()
-            ->min(fn (DeliveryNoteItem $part) => $part->quantity_picked / $part->quantity_required);
+            ->min(fn (DeliveryNoteItem $part) => max(0, $part->quantity_required - $part->quantity_not_picked) / $part->quantity_required);
     }
 
     /**

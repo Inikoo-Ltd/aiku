@@ -7,6 +7,7 @@ export interface IndivisibleSetRow {
     org_stock_code: string
     quantity_required: number | string
     quantity_picked: number | string | null
+    quantity_not_picked?: number | string | null
     indivisible_set?: {
         transaction_id: number
         sets_ordered: number
@@ -33,7 +34,7 @@ const findIncompleteSet = (parts: IndivisibleSetRow[]): IncompleteIndivisibleSet
         return null
     }
 
-    const setsPickedPerPart = handledParts.map((part) => Number(part.quantity_picked ?? 0) / Number(part.quantity_required) * setsOrdered)
+    const setsPickedPerPart = handledParts.map((part) => Math.max(0, Number(part.quantity_required) - Number(part.quantity_not_picked ?? 0)) / Number(part.quantity_required) * setsOrdered)
     const completeSets = Math.floor(Math.min(...setsPickedPerPart) + tolerance)
 
     if (completeSets >= setsOrdered) {
