@@ -58,7 +58,6 @@ type AuditData = {
 }
 
 const props = defineProps<{
-    suggestions: { pending: number, route: routeType }
     title: string
     pageHead: PageHeadingTypes
     website: { domain: string }
@@ -215,12 +214,6 @@ const finishReasonText = computed(() => reasonText(props.audit.latest?.finish_re
                 routeName="grp.org.shops.show.seo.site_audit.export"
                 :routeParameters="[routeParams.organisation, routeParams.shop]"
                 :tooltip="ctrans('Download the latest audit as an Excel file: its numbers, the issue types, and every page with every issue found on it')" />
-            <Link :href="route(suggestions.route.name, suggestions.route.parameters)">
-                <Button
-                    type="tertiary"
-                    icon="fal fa-magic"
-                    :label="suggestions.pending ? ctrans(':count suggested fixes', { count: locale.number(suggestions.pending) }) : ctrans('Suggested fixes')" />
-            </Link>
             <Button
                 v-if="canRunAudit"
                 type="secondary"

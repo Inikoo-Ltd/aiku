@@ -13,7 +13,6 @@ use App\Actions\Traits\Dashboards\WithPerformanceDateResolution;
 use App\Actions\Web\Crawl\UI\IndexSiteAuditIssuePages;
 use App\Actions\Web\SearchConsole\UI\IndexSearchConsoleQueries;
 use App\Actions\Web\Seo\UI\IndexSeoBacklinks;
-use App\Actions\Web\Seo\UI\IndexSeoContentSuggestions;
 use App\Actions\Web\Seo\UI\IndexSeoRankings;
 use App\Actions\Web\Seo\UI\IndexSeoReferringDomains;
 use App\Actions\Web\Seo\UI\IndexSeoTrackedKeywords;
@@ -55,7 +54,7 @@ class ExportSeoTable extends OrgAction
 
     public const int MAX_ROWS = 20000;
 
-    public const array TABLES = ['research', 'rankings', 'tracked_keywords', 'top_pages', 'conversions', 'missing_pages', 'referring_domains', 'backlinks', 'keyword_gap', 'search_queries', 'search_opportunities', 'site_audit_issue_pages', 'content_suggestions'];
+    public const array TABLES = ['research', 'rankings', 'tracked_keywords', 'top_pages', 'conversions', 'missing_pages', 'referring_domains', 'backlinks', 'keyword_gap', 'search_queries', 'search_opportunities', 'site_audit_issue_pages'];
 
     private const int PAGE_SIZE = 2000;
 
@@ -83,7 +82,6 @@ class ExportSeoTable extends OrgAction
             'search_queries'    => $this->searchQueries($website, $request, false),
             'search_opportunities' => $this->searchQueries($website, $request, true),
             'site_audit_issue_pages' => $this->siteAuditIssuePages($website, $request),
-            'content_suggestions' => $this->contentSuggestions($website),
         };
 
         return Excel::download(new SeoTableExport($headings, $rows), $fileName);
@@ -541,26 +539,6 @@ class ExportSeoTable extends OrgAction
                 $row->title,
                 $row->is_in_sitemap ? 'yes' : 'no',
                 SiteAuditPagesSheet::detailsText($row->details ?? []),
-            ])->all(),
-        ];
-    }
-
-    private function contentSuggestions(Website $website): array
-    {
-        $rows = $this->allRows('', fn () => IndexSeoContentSuggestions::make()->handle($website));
-
-        return [
-            ['Webpage', 'Field', 'Current value', 'Suggestion', 'Why', 'State', 'Written', 'Decided', 'Decided by'],
-            $rows->map(fn ($row) => [
-                $row->webpage_code,
-                $row->field,
-                $row->current_value,
-                $row->suggestion,
-                $row->reason,
-                $row->state->value,
-                self::date($row->created_at),
-                self::date($row->decided_at),
-                $row->decided_by,
             ])->all(),
         ];
     }

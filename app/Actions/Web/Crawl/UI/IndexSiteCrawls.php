@@ -13,14 +13,12 @@ use App\Actions\UI\Websites\WebsitesDashboard;
 use App\Actions\Web\Crawl\AuditWebsite;
 use App\Enums\Web\Crawl\CrawlScheduleFrequencyEnum;
 use App\Enums\Web\Crawl\CrawlTypeEnum;
-use App\Enums\Web\Seo\SeoContentSuggestionStateEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Http\Resources\Web\SiteCrawlsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Crawl;
 use App\Models\Web\CrawlSchedule;
-use App\Models\Web\SeoContentSuggestion;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
@@ -159,13 +157,6 @@ class IndexSiteCrawls extends OrgAction
                     ] : [],
                 ],
                 'website'     => $website ? ['id' => $website->id, 'domain' => $website->domain, 'slug' => $website->slug] : null,
-                'suggestions' => $website?->shop ? [
-                    'pending' => SeoContentSuggestion::where('website_id', $website->id)->whereNot('reason', SeoContentSuggestion::REASON_SEO_REVIEW)->where('state', SeoContentSuggestionStateEnum::PENDING)->count(),
-                    'route'   => [
-                        'name'       => 'grp.org.shops.show.seo.site_audit.suggestions',
-                        'parameters' => [$website->shop->organisation->slug, $website->shop->slug],
-                    ],
-                ] : null,
                 'newCrawl'    => [
                     'websites' => $this->startableWebsites($request->user()),
                     'defaults' => [
