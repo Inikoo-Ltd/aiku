@@ -8,7 +8,7 @@
 import { computed, ref } from "vue"
 import { Link, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faDolly, faBoxCheck, faBoxes, faBoxOpen, faExclamationTriangle, faTruckContainer, faInfoCircle } from "@fal"
+import { faDolly, faBoxCheck, faBoxes, faBoxOpen, faExclamationTriangle, faTruckContainer, faInfoCircle, faLink } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ConfirmDialog from "primevue/confirmdialog"
 import { useConfirm } from "primevue/useconfirm"
@@ -16,8 +16,10 @@ import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
+import PingIcon from "@/Components/Utils/PingIcon.vue"
 import PurchaseOrderLineAddToContainerDialog from "@/Components/Procurement/PurchaseOrderLineAddToContainerDialog.vue"
 import AgentWarehouseStockPackDialog from "@/Components/Procurement/AgentWarehouseStockPackDialog.vue"
+import AgentWarehouseStockLinkPurchaseOrderDialog from "@/Components/Procurement/AgentWarehouseStockLinkPurchaseOrderDialog.vue"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
@@ -96,6 +98,15 @@ function openPackDialog(stocks: any[]) {
 function onPacked() {
 	_table.value?.clearSelection()
 	selectedRows.value = {}
+}
+
+const isLinkableToPurchaseOrder = (stock: any) => !!props.canPack && stock.purchase_order_warning?.kind === "guessed"
+const linkDialogStock = ref<any | null>(null)
+const isLinkDialogVisible = ref(false)
+
+function openLinkDialog(stock: any) {
+	linkDialogStock.value = stock
+	isLinkDialogVisible.value = true
 }
 
 const confirm = useConfirm()
@@ -186,26 +197,44 @@ function unpack(stock: any) {
 				<span v-else>{{ stock.supplier_code }}</span>
 			</template>
 			<template #cell(purchase_order_reference)="{ item: stock }">
-				<div v-if="stock.purchase_order_warning?.kind === 'guessed'" class="max-w-xs space-y-1">
-					<p class="text-xs italic text-gray-500">
-						{{ ctrans("No purchase order linked: this line was imported from the stock spreadsheet, which names \":order\", not found in aiku.", { order: stock.purchase_order_warning.sheet_order }) }}
-					</p>
-					<div v-tooltip="stock.purchase_order_warning.tooltip" class="cursor-help rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-800">
-						<div class="flex items-center gap-1">
-							<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
-							{{ ctrans("Guessed, may be wrong") }}
+				<div class="space-y-1">
+					<div v-if="stock.purchase_order_warning?.kind === 'guessed'" class="max-w-xs space-y-1">
+						<p class="text-xs italic text-gray-500">
+							{{ ctrans("No purchase order linked: this line was imported from the stock spreadsheet, which names \":order\", not found in aiku.", { order: stock.purchase_order_warning.sheet_order }) }}
+						</p>
+						<div v-tooltip="stock.purchase_order_warning.tooltip" class="cursor-help rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+							<div class="flex items-center gap-1">
+								<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
+								{{ ctrans("Guessed, may be wrong") }}
+							</div>
+							<Link v-if="stock.purchase_order_slug" :href="purchaseOrderRoute(stock.purchase_order_slug)" class="secondaryLink whitespace-nowrap font-semibold">{{ stock.purchase_order_reference }}</Link>
+							<p class="text-amber-700">{{ ctrans("The newest order with this product, picked automatically. Check it is the right one before relying on it.") }}</p>
 						</div>
-						<Link v-if="stock.purchase_order_slug" :href="purchaseOrderRoute(stock.purchase_order_slug)" class="secondaryLink whitespace-nowrap font-semibold">{{ stock.purchase_order_reference }}</Link>
-						<p class="text-amber-700">{{ ctrans("The newest order with this product, picked automatically. Check it is the right one before relying on it.") }}</p>
+					</div>
+					<span v-else class="inline-flex items-center gap-1 whitespace-nowrap">
+						<Link v-if="stock.purchase_order_slug" :href="purchaseOrderRoute(stock.purchase_order_slug)" class="secondaryLink whitespace-nowrap">{{ stock.purchase_order_reference }}</Link>
+						<span v-if="stock.purchase_order_warning" v-tooltip="stock.purchase_order_warning.tooltip" class="inline-flex cursor-help items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 text-xs text-amber-700">
+							<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
+							{{ stock.purchase_order_warning.label }}
+						</span>
+					</span>
+					<div v-if="isLinkableToPurchaseOrder(stock)" class="relative w-full !mt-2">
+						<Button
+							:label="ctrans('Link to correct PO')"
+							:tooltip="ctrans('Click to choose the purchase order these units belong to')"
+							type="dashed"
+							full
+							key="2"
+							size="xs"
+							@click="openLinkDialog(stock)"
+						>
+							<template #icon>
+								<FontAwesomeIcon :icon="faLink" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+							</template>
+						</Button>
+						<PingIcon class="!absolute right-0 top-0 text-[7px] text-amber-500" aria-hidden="true" />
 					</div>
 				</div>
-				<span v-else class="inline-flex items-center gap-1 whitespace-nowrap">
-					<Link v-if="stock.purchase_order_slug" :href="purchaseOrderRoute(stock.purchase_order_slug)" class="secondaryLink whitespace-nowrap">{{ stock.purchase_order_reference }}</Link>
-					<span v-if="stock.purchase_order_warning" v-tooltip="stock.purchase_order_warning.tooltip" class="inline-flex cursor-help items-center gap-1 rounded border border-amber-300 bg-amber-50 px-1.5 text-xs text-amber-700">
-						<FontAwesomeIcon :icon="faExclamationTriangle" class="text-amber-500" fixed-width aria-hidden="true" />
-						{{ stock.purchase_order_warning.label }}
-					</span>
-				</span>
 			</template>
 			<template #cell(quantity)="{ item: stock }"><span class="tabular-nums">{{ locale.number(stock.quantity) }}</span></template>
 			<template #cell(containers)="{ item: stock }">
@@ -269,6 +298,13 @@ function unpack(stock: any) {
 				<p v-if="unpackErrors[stock.id]" class="mt-1 text-xs text-red-500">{{ unpackErrors[stock.id] }}</p>
 			</template>
 		</Table>
+
+		<AgentWarehouseStockLinkPurchaseOrderDialog
+			v-if="linkDialogStock"
+			v-model:visible="isLinkDialogVisible"
+			:stock="linkDialogStock"
+			:organisation="organisation"
+		/>
 
 		<ConfirmDialog group="agent-warehouse-stocks" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
 			<template #container="{ message, acceptCallback, rejectCallback }">

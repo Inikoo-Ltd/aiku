@@ -44,6 +44,8 @@ use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentReceivedProducts;
 use App\Actions\Procurement\AgentWarehouseStock\PackAgentWarehouseStock;
 use App\Actions\Procurement\AgentWarehouseStock\PackAgentWarehouseStocks;
 use App\Actions\Procurement\AgentWarehouseStock\UnpackAgentWarehouseStock;
+use App\Actions\Procurement\AgentWarehouseStock\LinkAgentWarehouseStockToPurchaseOrderTransaction;
+use App\Actions\Procurement\AgentWarehouseStock\UI\GetAgentWarehouseStockPurchaseOrderLines;
 use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentWarehouseStocks;
 use App\Actions\Procurement\OrgSupplier\UI\EditOrgSupplier;
 use App\Actions\Procurement\OrgSupplier\UI\IndexOrgSuppliers;
@@ -180,6 +182,8 @@ Route::get('warehouse', IndexAgentWarehouseStocks::class)->name('warehouse.index
 Route::patch('warehouse/pack', PackAgentWarehouseStocks::class)->name('warehouse.pack_many');
 Route::patch('warehouse/{agentWarehouseStock:id}/pack', PackAgentWarehouseStock::class)->name('warehouse.pack')->withoutScopedBindings();
 Route::patch('warehouse/{agentWarehouseStock:id}/unpack', UnpackAgentWarehouseStock::class)->name('warehouse.unpack')->withoutScopedBindings();
+Route::get('warehouse/{agentWarehouseStock:id}/purchase-order-lines', GetAgentWarehouseStockPurchaseOrderLines::class)->name('warehouse.purchase_order_lines')->withoutScopedBindings();
+Route::patch('warehouse/{agentWarehouseStock:id}/link-purchase-order', LinkAgentWarehouseStockToPurchaseOrderTransaction::class)->name('warehouse.link_purchase_order')->withoutScopedBindings();
 Route::get('warehouse/in-production', IndexAgentProductsInProduction::class)->name('warehouse.in_production');
 Route::get('warehouse/in-production/to-receive', GetAgentProductsInProductionToReceive::class)->name('warehouse.in_production.to_receive');
 Route::post('warehouse/in-production/receive', StoreAgentGoodsReceipt::class)->name('warehouse.in_production.receive');
