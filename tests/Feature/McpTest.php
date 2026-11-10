@@ -2243,7 +2243,7 @@ describe('competitor match review tool', function () {
         $this->newMatch = fn (float $price, array $attributes = []) => \App\Models\Masters\MasterAssetCompetitorProduct::create($attributes + [
             'master_shop_id'        => $masterShop->id,
             'master_asset_id'       => $this->matchMasterAsset->id,
-            'competitor_product_id' => $competitor->products()->create(['code' => 'R-'.uniqid(), 'name' => 'Golden incense 15 grams', 'url' => 'https://rival.example.com/p/'.uniqid(), 'price' => $price, 'data' => ['description' => '12 boxes of 15 g'], 'fetched_at' => now()])->id,
+            'competitor_product_id' => $competitor->products()->create(['code' => 'R-'.uniqid(), 'name' => 'Golden incense 15 grams', 'url' => 'https://rival.example.com/p/'.uniqid(), 'price' => $price, 'data' => ['description' => '12 boxes of 15 g'], 'fetched_at' => now(), 'page_text' => 'Golden incense 15 grams. Sold per box of 12.', 'page_read_at' => now()->subMinute()])->id,
             'is_same_item'          => true,
             'status'                => \App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED,
         ]);
@@ -2274,6 +2274,7 @@ describe('competitor match review tool', function () {
             ->and($queued[0]['comparison']['difference_pct'])->toBe(6)
             ->and($queued[0]['ours']['unit'])->toBe('Box')
             ->and($queued[0]['theirs']['description'])->toBe('12 boxes of 15 g')
+            ->and($queued[0]['theirs']['page'])->toBe('Golden incense 15 grams. Sold per box of 12.')
             ->and($queued[1]['stage'])->toBe(2);
 
         AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, [
@@ -2337,6 +2338,47 @@ describe('competitor match review tool', function () {
             ->and($confirmed->check_note)->toBe('Another scent.')
             ->and($rejected->refresh()->status)->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::REJECTED)
             ->and($rejected->units_verified)->toBeFalse();
+    });
+
+    test('a match waits until our browser has read its listing, and one left as cannot tell comes back when the page is read', function () {
+        Illuminate\Support\Facades\Queue::fake();
+        $unread = ($this->newMatch)(7.8);
+        $unread->competitorProduct->update(['page_text' => null, 'page_read_at' => null]);
+        $unread->update(['checked_at' => now()->subHour(), 'check_note' => 'The stored text gives no pack size.']);
+
+        expect(($this->queued)())->toBeEmpty();
+        \App\Actions\Masters\Competitor\ReadCompetitorListings::assertPushed(fn ($action, array $arguments) => in_array($unread->competitor_product_id, $arguments[1]));
+
+        Illuminate\Support\Facades\Process::fake(['*' => Illuminate\Support\Facades\Process::result(json_encode(['cookies' => [], 'pages' => [[
+            'url'     => $unread->competitorProduct->url,
+            'status'  => 200,
+            'blocked' => false,
+            'text'    => str_repeat("Menu\n", 200).'Golden incense 15 grams'."\n".'Case of 12 boxes, 15 g each',
+        ]]]))]);
+        expect(\App\Actions\Masters\Competitor\ReadCompetitorListings::run($unread->competitorProduct->competitor, [$unread->competitor_product_id]))->toBe(1);
+
+        $queued = ($this->queued)();
+        expect($queued->pluck('match_id')->all())->toBe([$unread->id])
+            ->and($queued[0]['theirs']['page'])->toContain('Case of 12 boxes')
+            ->and(mb_strlen($queued[0]['theirs']['page']))->toBeLessThan(600);
+
+        AikuServer::actingAs($this->user)->tool(CompetitorMatchReviewTool::class, ['match_id' => $unread->id, 'decision' => 'cannot_tell', 'note' => 'Still unclear.'])->assertOk();
+        expect(($this->queued)())->toBeEmpty();
+
+        Illuminate\Support\Facades\Process::fake(['*' => Illuminate\Support\Facades\Process::result(json_encode(['pages' => [['url' => 'x', 'status' => 403, 'blocked' => false, 'text' => 'Forbidden']]]))]);
+        $blocked = ($this->newMatch)(7.8);
+        $blocked->competitorProduct->update(['page_text' => null, 'page_read_at' => null]);
+        expect(\App\Actions\Masters\Competitor\ReadCompetitorListings::run($blocked->competitorProduct->competitor, [$blocked->competitor_product_id]))->toBe(0)
+            ->and($blocked->competitorProduct->refresh()->page_read_at)->not->toBeNull()
+            ->and($blocked->competitorProduct->page_text)->toBeNull()
+            ->and(($this->queued)()->pluck('match_id')->all())->toBe([$blocked->id]);
+
+        Illuminate\Support\Facades\Queue::fake();
+        $byHand = ($this->newMatch)(7.8);
+        $byHand->competitorProduct->update(['page_text' => null, 'page_read_at' => null]);
+        $byHand->competitorProduct->competitor->update(['prices_by_hand' => true]);
+        expect(($this->queued)()->pluck('match_id')->all())->toContain($byHand->id);
+        \App\Actions\Masters\Competitor\ReadCompetitorListings::assertNotPushed();
     });
 
     test('units a person typed are kept: the match is neither rejected nor recounted, and it says so in the queue', function () {

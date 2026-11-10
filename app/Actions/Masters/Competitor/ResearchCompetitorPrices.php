@@ -269,7 +269,7 @@ class ResearchCompetitorPrices
     /**
      * @param  array<int, string>  $urls
      */
-    private function browse(Competitor $competitor, array $urls): array
+    public function browse(Competitor $competitor, array $urls): array
     {
         $logsIn = $competitor->login_url && $competitor->username;
 

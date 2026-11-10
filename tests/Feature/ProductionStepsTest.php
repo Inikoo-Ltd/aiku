@@ -2032,13 +2032,22 @@ test('maintenance shows only for job orders of flagged products, needs one of th
     $soapJobOrder  = $jobOrderFor($soap);
     $plainJobOrder = $jobOrderFor($plain);
 
+    $artisan = dayPlanOperator($this->organisation);
+    $user->employees()->syncWithoutDetaching([$artisan->id => ['group_id' => $this->group->id, 'organisation_id' => $this->organisation->id]]);
+    $artisan         = \App\Actions\SysAdmin\User\GetUserCurrentEmployee::run($user, $this->organisation->id);
+    $plannedJobOrder = StoreJobOrder::make()->action($this->production, ['employee_id' => $artisan->id]);
+    $steamer->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+    StoreJobOrderItem::make()->action($plannedJobOrder, ['artefact_id' => $steamer->id, 'quantity' => 10]);
+    expect($plannedJobOrder->refresh()->state)->toBe(JobOrderStateEnum::IN_PROCESS);
+
     get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('non_productive.activities', function ($activities) use ($soapJobOrder, $plainJobOrder) {
+            ->where('non_productive.activities', function ($activities) use ($soapJobOrder, $plainJobOrder, $plannedJobOrder) {
                 $maintenance = collect($activities)->firstWhere('value', 'maintenance');
 
                 return $maintenance
                     && collect($maintenance['job_orders'])->contains('id', $soapJobOrder->id)
+                    && collect($maintenance['job_orders'])->contains('id', $plannedJobOrder->id)
                     && !collect($maintenance['job_orders'])->contains('id', $plainJobOrder->id)
                     && collect($activities)->firstWhere('value', 'cleaning')['job_orders'] === null;
             })

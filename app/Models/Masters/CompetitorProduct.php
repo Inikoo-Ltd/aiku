@@ -25,6 +25,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $rrp
  * @property string|null $was_price the price before their current discount, when the shop shows one
  * @property string $units units in the pack
+ * @property string|null $page_text the part of their listing page about the product, read for the AI check on the matches
+ * @property \Illuminate\Support\Carbon|null $page_read_at when the listing page was last asked for, also when it could not be opened
  * @property int|null $minimum_order
  * @property array $data description, material, size_cm, weight_g and tariff_code when the feed has them
  * @property \Illuminate\Support\Carbon $fetched_at

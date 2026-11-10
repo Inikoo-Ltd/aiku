@@ -8,9 +8,11 @@
 
 namespace App\Mcp\Tools;
 
+use App\Actions\Masters\Competitor\ReadCompetitorListings;
 use App\Actions\Masters\Competitor\UI\WithCompetitorPriceComparison;
 use App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum;
 use App\Enums\SysAdmin\Authorisation\GroupPermissionsEnum;
+use App\Models\Masters\Competitor;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterAssetCompetitorProduct;
 use App\Models\SysAdmin\Group;
@@ -36,7 +38,7 @@ use Laravel\Mcp\Server\Tool;
  * turns down stay out of the staff Rejected bucket and are listed under Rejected by AI, where a tick
  * brings one back.
  */
-#[Description('Checks the matches between our products and competitor products, so the price comparison can be trusted. Needs masters edit permission to save. WITHOUT match_id it returns the next matches to check (limit, default 20) and how many remain per stage: 1 confirmed matches whose price gap is out of range or was only inferred pack against pack, 2 the other confirmed matches, 3 matches suggested as the same item, 4 matches suggested as similar. Each has ours (code, name, unit: what we count as one unit, units: how many units our pack counts, trade_units: what is physically in our pack, weight_g, size, family, description, image, pack_price), theirs (competitor, sells_to, name, url, image, pack_price, units_read: the count read from their name, units_on_match, weight_g, description, minimum_order), comparison (per unit, in "currency"; difference_pct below 0 means they are cheaper; compared_pack_against_pack true means the counts did not fit and the packs were assumed equal) and staff (reviewed, units_set_by_staff). WITH match_id it saves your verdict: decision same_item, different_item or cannot_tell, a note, and units with same_item. HOW TO JUDGE: open their url when you can and read the listing; also use both descriptions, weights and images. same_item means the same kind, brand, design, size and material: a different brand, scent, colour, size or a look-alike is different_item; a product page that is gone or shows another product is different_item. UNITS is how many of OUR units their pack holds, never their own count. Ours unit "Box", units 1, a box of 12 packets; theirs a box of 12 of the same packets: units 1, not 12. Ours units 12 (12 packets); theirs a box of 12 packets: 12; theirs one packet: 1. Ours one stick, units 1; theirs a bundle of 5: 5. Ours a box of 12 counted as 1 and theirs a single packet: 0.083. When they sell by weight and we sell by count, use the weights only if both are stated. After you save, the answer shows the comparison your units give: if their price per unit is still under 40% or over 250% of ours, read both listings again, because a real gap that large is rare and a wrong count or a different size is common; keep your verdict only when the listing proves it, and say what proves it in the note. Never guess: cannot_tell with what is missing is a good answer. The note is one or two plain sentences for our pricing staff saying what you read ("Their listing says 12 boxes of 15 g, the same box we sell as one unit"), in English, with no competitor criticism. A match a person already decided is not changed: your verdict is kept as a note for them. Saving is immediate and shown to staff on the match; there is no confirmation step.')]
+#[Description('Checks the matches between our products and competitor products, so the price comparison can be trusted. Needs masters edit permission to save. WITHOUT match_id it returns the next matches to check (limit, default 20) and how many remain per stage: 1 confirmed matches whose price gap is out of range or was only inferred pack against pack, 2 the other confirmed matches, 3 matches suggested as the same item, 4 matches suggested as similar. Each has ours (code, name, unit: what we count as one unit, units: how many units our pack counts, trade_units: what is physically in our pack, weight_g, size, family, description, image, pack_price), theirs (competitor, sells_to, name, url, image, pack_price, units_read: the count read from their name, units_on_match, weight_g, description, minimum_order, page: the text of their listing page as our own browser read it, missing when the page could not be opened), comparison (per unit, in "currency"; difference_pct below 0 means they are cheaper; compared_pack_against_pack true means the counts did not fit and the packs were assumed equal) and staff (reviewed, units_set_by_staff). WITH match_id it saves your verdict: decision same_item, different_item or cannot_tell, a note, and units with same_item. Only matches whose listing page has been read are returned; listings_being_read says how many more are being read in the background right now and will be returned by a later call, so an empty list with listings_being_read above 0 means come back later, not that the work is done. HOW TO JUDGE: read theirs.page first, it is their listing as shown to a trade customer: the title, the pack or case size, the weight or volume, the options. Then both descriptions, weights and images. Websites usually turn assistants away, so do not rely on opening their url yourself. same_item means the same kind, brand, design, size and material: a different brand, scent, colour, size or a look-alike is different_item; a product page that is gone or shows another product is different_item. UNITS is how many of OUR units their pack holds, never their own count. Ours unit "Box", units 1, a box of 12 packets; theirs a box of 12 of the same packets: units 1, not 12. Ours units 12 (12 packets); theirs a box of 12 packets: 12; theirs one packet: 1. Ours one stick, units 1; theirs a bundle of 5: 5. Ours a box of 12 counted as 1 and theirs a single packet: 0.083. When they sell by weight and we sell by count, use the weights only if both are stated. After you save, the answer shows the comparison your units give: if their price per unit is still under 40% or over 250% of ours, read both listings again, because a real gap that large is rare and a wrong count or a different size is common; keep your verdict only when the listing proves it, and say what proves it in the note. Never guess: cannot_tell with what is missing is a good answer. A count taken from their other listings, or worked back from the price, is a guess: units are verified only when this listing or its stored description states them. The note is one or two plain sentences for our pricing staff saying what you read ("Their listing says 12 boxes of 15 g, the same box we sell as one unit"), in English, with no competitor criticism. A match a person already decided is not changed: your verdict is kept as a note for them. Saving is immediate and shown to staff on the match; there is no confirmation step.')]
 class CompetitorMatchReviewTool extends Tool
 {
     use WithCompetitorPriceComparison;
@@ -141,7 +143,8 @@ class CompetitorMatchReviewTool extends Tool
      */
     private function queue(Group $group, int $limit): array
     {
-        $rows         = $this->rows($this->unchecked($group)->orderBy('stage')->orderBy('master_asset_competitor_products.id')->limit($limit), $group);
+        $rows         = $this->rows($this->unchecked($group)->where(fn (QueryBuilder $query) => $query->whereNotNull('competitor_products.page_read_at')->orWhereNull('competitor_products.url')->orWhere('competitors.prices_by_hand', true))->orderBy('stage')->orderBy('master_asset_competitor_products.id')->limit($limit), $group);
+        $beingRead    = $this->readNextListings($group, $limit);
         $masterAssets = MasterAsset::whereIn('id', $rows->pluck('master_asset_id'))->with(['tradeUnits:id,code,name', 'masterFamily:id,name'])->get()->keyBy('id');
         $staffUnits   = $this->unitsSetByStaff($rows);
 
@@ -152,7 +155,8 @@ class CompetitorMatchReviewTool extends Tool
             ->pluck('number', 'stage');
 
         return [
-            'remaining' => collect([1, 2, 3, 4])->mapWithKeys(fn (int $stage) => ["stage_$stage" => (int) ($remaining[$stage] ?? 0)])->all(),
+            'listings_being_read' => $beingRead,
+            'remaining'           => collect([1, 2, 3, 4])->mapWithKeys(fn (int $stage) => ["stage_$stage" => (int) ($remaining[$stage] ?? 0)])->all(),
             'matches'   => $rows->map(function (object $row) use ($masterAssets, $staffUnits) {
                 /** @var MasterAsset $masterAsset */
                 $masterAsset = $masterAssets[$row->master_asset_id];
@@ -186,6 +190,7 @@ class CompetitorMatchReviewTool extends Tool
                         'pack_price'     => (float) $row->competitor_price,
                         'units_read'     => (float) $row->units_read,
                         'units_on_match' => $row->competitor_units === null ? null : (float) $row->competitor_units,
+                        'page'           => $row->page_text,
                         'weight_g'       => $data['weight_g'] ?? null,
                         'description'    => isset($data['description']) ? mb_substr(trim(strip_tags((string) $data['description'])), 0, 600) : null,
                         'minimum_order'  => $row->minimum_order,
@@ -195,6 +200,30 @@ class CompetitorMatchReviewTool extends Tool
                 ];
             })->all(),
         ];
+    }
+
+    /**
+     * Has the listings of the next unread matches read in the background, so they are ready on a later call:
+     * the pages are opened by our own browser, a few minutes for a batch. A competitor whose prices are
+     * checked by hand is never visited, so its matches are judged on what staff recorded.
+     */
+    private function readNextListings(Group $group, int $limit): int
+    {
+        $next = $this->unchecked($group)
+            ->whereNull('competitor_products.page_read_at')
+            ->whereNotNull('competitor_products.url')
+            ->where('competitors.prices_by_hand', false)
+            ->selectRaw('competitor_products.id, competitor_products.competitor_id, '.$this->stageSql($group).' as stage')
+            ->orderBy('stage')
+            ->orderBy('master_asset_competitor_products.id')
+            ->limit(2 * $limit)
+            ->get();
+
+        foreach ($next->groupBy('competitor_id') as $competitorId => $products) {
+            ReadCompetitorListings::dispatch(Competitor::find($competitorId), $products->pluck('id')->unique()->values()->all());
+        }
+
+        return $next->count();
     }
 
     /**
@@ -223,7 +252,9 @@ class CompetitorMatchReviewTool extends Tool
     private function unchecked(Group $group): QueryBuilder
     {
         return $this->base($group)
-            ->whereNull('master_asset_competitor_products.checked_at')
+            ->where(fn (QueryBuilder $query) => $query->whereNull('master_asset_competitor_products.checked_at')
+                ->orWhere(fn (QueryBuilder $query) => $query->where('master_asset_competitor_products.units_verified', false)
+                    ->where(fn (QueryBuilder $query) => $query->whereNull('competitor_products.page_read_at')->orWhereColumn('competitor_products.page_read_at', '>', 'master_asset_competitor_products.checked_at'))))
             ->where('master_asset_competitor_products.status', '!=', MasterAssetCompetitorProductStatusEnum::REJECTED->value)
             ->whereNotNull('competitor_products.price');
     }
@@ -262,6 +293,7 @@ class CompetitorMatchReviewTool extends Tool
                 'competitor_products.price as competitor_price',
                 'competitor_products.units as units_read',
                 'competitor_products.data as competitor_data',
+                'competitor_products.page_text',
                 'competitor_products.minimum_order',
             ])
             ->selectRaw($this->stageSql($group)." as stage, {$sql['ours']} as our_unit_price, {$sql['theirs']} as competitor_unit_price, {$sql['difference']} as difference, {$sql['currency']} as currency_code, {$sql['same_pack']} as compared_as_units")
