@@ -124,6 +124,7 @@
     ":count lines not pre-picked": "Wiersze bez wstępnej kompletacji: :count",
     ":count lines without cost excluded": ":count linii bez kosztów wyłączono",
     ":count messages, last on :date": "Wiadomości: :count, ostatnia :date",
+    ":count more reserved for orders": "dodatkowo zarezerwowane na zamówienia: :count",
     ":count more waiting": "Czeka jeszcze: :count",
     ":count moved to :family": "Przeniesiono do :family: :count",
     ":count need action": ":count wymaga działania",

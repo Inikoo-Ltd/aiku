@@ -447,6 +447,7 @@
     ":count more": "另外 :count 个",
     ":count more are not sorted by topic yet.": "另有 :count 个尚未按主题分类。",
     ":count more chats": "另外 :count 个聊天",
+    ":count more reserved for orders": "另有 :count 已为订单预留",
     ":count more waiting": "另有 :count 个等待中",
     ":count moved to :family": "已将 :count 个移至 :family",
     ":count need a decision": ":count 个需要决定",
