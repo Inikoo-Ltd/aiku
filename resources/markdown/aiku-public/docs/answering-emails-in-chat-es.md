@@ -1,8 +1,8 @@
 ---
 title: Responder correos en Chat
 summary: El correo al buzón de la tienda llega como una conversación junto al chat de la web y WhatsApp, con todo el hilo, y tu respuesta sale desde la misma dirección con tu firma y tus adjuntos. Los clientes reales que Gmail pone en spam también llegan, con sus archivos retenidos por seguridad.
-date: 2026-10-01
-source_date: 2026-10-01
+date: 2026-11-10
+source_date: 2026-11-10
 tags: crm, chat, email
 category: help-desk
 series: Chat
@@ -20,6 +20,10 @@ El buzón de la tienda tiene que conectarse una vez - consulta <a href="/docs/co
 ## Leer y responder
 
 Un correo se suma a <b>Waiting</b> (Esperando) como cualquier conversación, y <b>Assign to me</b> (Asignarme) la hace tuya - consulta <a href="/docs/customer-chat-es">Hablar con clientes en Chat</a> para el resto. Todo el hilo llega con él. Tu respuesta se envía desde el buzón de la tienda en el mismo hilo, y cuando el cliente responde, vuelve a la misma conversación, no a una nueva.
+
+## Trabajar muchos correos a la vez
+
+Marca la casilla al principio de cada correo, o <b>Seleccionar todo</b> arriba de la lista, y aparecen las acciones encima: <b>Marcar como leída</b>, <b>Marcar como no leída</b> y <b>Cerrar</b> para los correos que no necesitan respuesta, como un agradecimiento. Un correo cerrado vuelve a <b>En espera</b> si el cliente escribe de nuevo. Leído y no leído es compartido por el equipo, igual que al abrir un correo. <b>Seleccionar todo</b> marca los correos cargados en la lista, así que baja primero para cargar más. En <b>Spam</b> e <b>Ignorada</b> las acciones son <b>No es spam</b> (o <b>No ignorar</b>) y <b>Mover a la papelera</b>. Un correo que no se pudo cambiar queda marcado, y la lista dice cuántos.
 
 ## Escribir un correo nuevo
 

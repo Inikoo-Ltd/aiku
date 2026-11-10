@@ -137,7 +137,7 @@ class CloseChatSession
         return $this->buildSessionResponse($chatSession);
     }
 
-    public function asController(ActionRequest $request, ?string $organisation, ChatSession $chatSession): RedirectResponse
+    public function asController(ActionRequest $request, ?string $organisation, ChatSession $chatSession): RedirectResponse|JsonResponse
     {
         $agent = $this->getCurrentAgent($chatSession);
         if (!$agent) {
@@ -152,6 +152,10 @@ class CloseChatSession
             throw ValidationException::withMessages([
                 'message' => $e->getMessage(),
             ]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true]);
         }
 
         return back()->setStatusCode(303);
