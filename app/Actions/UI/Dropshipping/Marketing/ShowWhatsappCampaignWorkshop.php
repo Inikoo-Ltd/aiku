@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\WithMarketingEditAuthorisation;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\MetaMessageTemplate;
 use App\Models\Comms\WhatsappCampaign;
+use App\Models\Comms\WhatsappSubscriber;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -100,6 +101,7 @@ class ShowWhatsappCampaignWorkshop extends OrgAction
                         'shop'         => $shop->slug,
                     ],
                 ] : null,
+                'subscribersCount' => WhatsappSubscriber::where('shop_id', $shop->id)->count(),
                 'templates'    => $this->getTemplates($shop),
                 'mergeTags'    => GetWhatsappTemplateTags::run($shop),
                 'businessName' => $shop->name,

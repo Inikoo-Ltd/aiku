@@ -38,6 +38,7 @@ const props = defineProps<{
     recipientsRoute: routeType
     clearRecipientsRoute: routeType
     createTemplateRoute: routeType | null
+    subscribersCount: number
     templates: TemplateOption[]
     mergeTags: { value: string }[]
     businessName: string
@@ -63,13 +64,15 @@ const pageHeadData = computed(() =>
     savedName.value ? { ...props.pageHead, title: savedName.value } : props.pageHead
 )
 
-const persist = async (payload: Record<string, unknown>) => {
-    if (!props.isEditable) return
+const persist = async (payload: Record<string, unknown>): Promise<any> => {
+    if (!props.isEditable) return null
 
     saveError.value = null
 
     try {
-        await axios.patch(route(props.updateRoute.name, props.updateRoute.parameters), payload)
+        const { data } = await axios.patch(route(props.updateRoute.name, props.updateRoute.parameters), payload)
+
+        return data
     } catch (error: any) {
         saveError.value =
             error?.response?.data?.message ?? ctrans("Could not save the campaign, please try again.")
@@ -105,26 +108,44 @@ const isSavingTemplate = ref(false)
 const pendingTemplateId = ref<number | null>(null)
 const isConfirmingReset = ref(false)
 const isResettingRecipients = ref(false)
+const noSubscriberFits = ref(false)
 
 /* The multiselect keeps its own copy of the value, so a declined change has to be undone by
    remounting it rather than by leaving templateId alone. */
 const selectKey = ref(0)
 
-/* The recipients are rows of their own now, so clearing them is a second call rather than a
-   field on the campaign. Template first: a failed clear leaves a stale count next to the new
+/* The audience a template starts with: the shop's WhatsApp subscribers, narrowed server side
+   to the ones whose details can fill every merge tag of the template. */
+const SUBSCRIBER_CHANNELS = { subscriber: true, contacted: false, customers: false }
+
+/* The recipients are rows of their own now, so reselecting them is a second call rather than a
+   field on the campaign. Template first: a failed reselect leaves a stale count next to the new
    template, which the picker corrects, where the reverse would drop an audience the user
-   never agreed to lose. */
+   never agreed to lose.
+
+   A campaign with nobody picked yet has its subscribers selected by the template save itself,
+   so the count is read back from that response. */
 const applyTemplate = async (value: number | null, resetRecipients = false) => {
     templateId.value = value
     isSavingTemplate.value = true
 
-    await persist({ meta_message_template_id: value })
+    const saved = await persist({ meta_message_template_id: value })
 
     isSavingTemplate.value = false
 
     if (saveError.value) return
 
     savedTemplateId.value = value
+
+    const hadRecipients = recipientsCount.value > 0
+
+    if (typeof saved?.recipients_count === "number") {
+        recipientsCount.value = saved.recipients_count
+    }
+
+    /* Only a template save that tried to preselect can say nobody fits: a count of zero after
+       the user cleared the picker by hand says nothing about the template. */
+    noSubscriberFits.value = !resetRecipients && !hadRecipients && recipientsCount.value === 0
 
     if (!resetRecipients) return
 
@@ -133,15 +154,16 @@ const applyTemplate = async (value: number | null, resetRecipients = false) => {
     try {
         const { data } = await axios.post(
             route(props.clearRecipientsRoute.name, props.clearRecipientsRoute.parameters),
-            { phone_keys: [] }
+            { select_all: true, channels: SUBSCRIBER_CHANNELS, customer_filters: [] }
         )
 
-        /* Read back rather than assume zero: the clear spares contacts a send has already
-           claimed, and those still count. */
+        /* Read back rather than assume: only subscribers the new template can be filled in for
+           are kept, and contacts a send has already claimed still count. */
         recipientsCount.value = data?.recipients_count ?? 0
+        noSubscriberFits.value = recipientsCount.value === 0
     } catch (error: any) {
         saveError.value =
-            error?.response?.data?.message ?? ctrans("Could not clear the recipients, please try again.")
+            error?.response?.data?.message ?? ctrans("Could not select the recipients, please try again.")
     } finally {
         isResettingRecipients.value = false
     }
@@ -223,7 +245,7 @@ const confirmTemplateChange = async () => {
 
             <div class="p-4 max-w-md">
                 <label class="block text-sm font-medium text-gray-700">{{ ctrans("Campaign name") }}</label>
-                <p class="text-xs text-gray-500 mb-2">{{ ctrans("The name is only used internally") }}</p>
+                <p class="text-sm text-gray-500 mb-2">{{ ctrans("The name is only used internally") }}</p>
                 <PureInput v-model="name" :disabled="!isEditable" @blur="onNameBlur" />
             </div>
         </section>
@@ -265,9 +287,9 @@ const confirmTemplateChange = async () => {
                             searchable
                             :classes="{ dropdown: 'multiselect-dropdown !z-[1000]' }"
                             :placeholder="ctrans('Select a template')" />
-                        <p v-if="!templates.length" class="text-xs text-gray-500 mt-2">
-                            {{ ctrans("No approved templates yet. Create one and wait for Meta to approve it.") }}
-                        </p>
+                        <Message v-if="!templates.length" severity="warn" :closable="false" class="mt-2">
+                            {{ ctrans("This shop has no approved Marketing template yet, so this campaign cannot choose recipients or be sent. Create a template in the Marketing category and wait for Meta to approve it, then come back and select it here.") }}
+                        </Message>
 
                         <ButtonWithLink
                             v-if="createTemplateRoute"
@@ -304,7 +326,7 @@ const confirmTemplateChange = async () => {
                         <div class="text-sm font-medium text-gray-700">
                             {{ ctrans(":count contacts selected", { count: recipientsCount }) }}
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">
+                        <p class="text-sm text-gray-500 mt-1">
                             {{ ctrans("Choose which contacts receive this campaign.") }}
                         </p>
                     </div>
@@ -321,11 +343,14 @@ const confirmTemplateChange = async () => {
                         class="shrink-0" />
                 </div>
 
-                <p v-if="isEditable && !savedTemplateId" class="mt-2 text-xs text-gray-500">
-                    {{ ctrans("A template's merge tags decide who can be reached, so recipients are chosen after it.") }}
+                <p v-if="isEditable && !savedTemplateId" class="mt-2 text-sm text-gray-500">
+                    {{ ctrans("This shop has :count WhatsApp subscribers. Choose a template first: the subscribers whose details can fill in the template are then selected automatically, and you can adjust the selection with Edit.", { count: subscribersCount }) }}
+                </p>
+                <p v-else-if="isEditable && noSubscriberFits && recipientsCount === 0 && subscribersCount > 0" class="mt-2 text-sm text-amber-600">
+                    {{ ctrans("None of the :count subscribers can be sent this template, because they are missing the information its merge tags need. Choose a template with fewer merge tags, or pick other contacts with Edit.", { count: subscribersCount }) }}
                 </p>
 
-                <div class="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                <div class="mt-3 flex items-center gap-2 text-sm text-gray-500">
                     <FontAwesomeIcon :icon="faUsers" class="text-gray-400" fixed-width />
                     {{ ctrans("Number of recipients") }}: {{ recipientsCount }}
                 </div>
@@ -345,12 +370,12 @@ const confirmTemplateChange = async () => {
                 {{ ctrans("This template needs different information") }}
             </h3>
             <p class="mt-2 text-sm text-gray-500">
-                {{ ctrans("Your :count selected contacts were chosen for the current template's merge tags. This template needs different ones, so the selection will be cleared and you will need to choose recipients again.", { count: recipientsCount }) }}
+                {{ ctrans("Your :count selected contacts were chosen for the current template's merge tags. This template needs different ones, so the selection will be replaced by the subscribers who can be sent the new template. You can adjust it afterwards with Edit.", { count: recipientsCount }) }}
             </p>
             <div class="mt-6 flex justify-end gap-2">
                 <Button :label="ctrans('Cancel')" type="tertiary" @click="cancelTemplateChange" />
                 <Button
-                    :label="ctrans('Change template and clear recipients')"
+                    :label="ctrans('Change template and reselect recipients')"
                     type="primary"
                     :loading="isResettingRecipients"
                     @click="confirmTemplateChange" />
