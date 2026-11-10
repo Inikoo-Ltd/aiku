@@ -20,7 +20,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * the SKOs whose system weight (stocks.gross_weight, what every delivery note estimate multiplies)
  * is far from it. Only dispatched delivery notes holding a single SKO count, so the parcel weight
  * belongs to that SKO alone, less the box. A parcel whose weight equals the estimate was filled in
- * by UpdateDeliveryNoteStatePacked, not weighed, and is left out.
+ * by UpdateDeliveryNoteStatePacked, not weighed, and is left out. HELP-4593: so is a parcel shared
+ * with another delivery note of the same customer (identical parcels within a day): the box carried
+ * that note too, so its weight is not this SKO's. Three parcels at least, so one bad weighing cannot
+ * move the median.
  * The comparison is against the current system weight, so correcting the weight clears the flag
  * on the next run.
  */
@@ -32,7 +35,8 @@ class FlagOrgStocksWithWrongWeight
 
     private const int BOX_WEIGHT = 150;
     private const int DAYS = 180;
-    private const int MIN_PARCELS = 2;
+    private const int MIN_PARCELS = 3;
+    private const int SHARED_BOX_DAYS = 1;
     private const int MIN_DIFFERENCE = 300;
     private const float MIN_RELATIVE_DIFFERENCE = 0.25;
 
@@ -52,6 +56,14 @@ class FlagOrgStocksWithWrongWeight
                     AND dn.dispatched_at > now() - make_interval(days => :days)
                     AND dn.estimated_weight > 0
                     AND jsonb_typeof(dn.parcels::jsonb) = 'array'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM delivery_notes shared
+                        WHERE shared.customer_id = dn.customer_id
+                            AND shared.id <> dn.id
+                            AND shared.state = 'dispatched'
+                            AND shared.dispatched_at BETWEEN dn.dispatched_at - make_interval(days => :shared_box_days) AND dn.dispatched_at + make_interval(days => :shared_box_days)
+                            AND shared.parcels::jsonb = dn.parcels::jsonb
+                    )
             ), single_sko AS (
                 SELECT min(dni.org_stock_id) AS org_stock_id, (weighed.parcels_weight - :box_weight) / sum(dni.quantity_dispatched) AS weight_per_sko
                 FROM weighed
@@ -70,6 +82,7 @@ class FlagOrgStocksWithWrongWeight
                 'days'            => self::DAYS,
                 'box_weight'      => self::BOX_WEIGHT,
                 'min_parcels'     => self::MIN_PARCELS,
+                'shared_box_days' => self::SHARED_BOX_DAYS,
             ]
         );
 

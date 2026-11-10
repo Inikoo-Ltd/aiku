@@ -51,7 +51,7 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent] focus:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)] focus:!border-[var(--app-accent)]"
 const quietLinkClass = "inline-flex items-center gap-1 text-gray-500 underline decoration-gray-300 hover:text-gray-800"
 const dialogPt = { header: { class: "!px-4 !py-2.5 border-b border-gray-200" }, content: { class: "!p-4" }, footer: { class: "!px-4 !pb-4" } }
 const chooseFilePt = { pcChooseButton: { root: { class: "!border !border-gray-300 !bg-white !text-gray-700 hover:!bg-gray-50" } } }
@@ -241,7 +241,7 @@ const undoPayment = () => {
 							<InputNumber :modelValue="form.amount" @update:modelValue="onAmountTyped" @input="(event: InputNumberInputEvent) => onAmountTyped(typedValue(event))" v-bind="locale.currencyInputOptions(payments.currency_code)" :min="0" :max="payments.left" class="mt-1 w-full" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-full' } } }" />
 						</label>
 						<label v-if="canPayByPercent" class="w-28 shrink-0">
-							<span class="text-gray-600" v-tooltip="ctrans('Percentage of the total to pay (:total): the order cost plus the supplier\'s estimated expenses, not of what is left to pay', { total: String(money(payments.total)) })">
+							<span class="text-gray-600" v-tooltip="ctrans('Percentage of the total to pay (:total): the price of the products, without extra costs, shipping or duties, not of what is left to pay', { total: String(money(payments.total)) })">
 								{{ ctrans("% of total") }}
 								<FontAwesomeIcon icon="fal fa-info-circle" class="text-gray-400" aria-hidden="true" />
 							</span>
@@ -252,7 +252,7 @@ const undoPayment = () => {
 						<span v-if="orgMoney(form.amount)">{{ orgMoney(form.amount) }} ·</span>
 						<button
 							type="button"
-							class="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-[--app-accent]"
+							class="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-[var(--app-accent)]"
 							v-tooltip="ctrans('Click to fill in the amount left to pay')"
 							@click="onAmountTyped(payments.left)"
 						>

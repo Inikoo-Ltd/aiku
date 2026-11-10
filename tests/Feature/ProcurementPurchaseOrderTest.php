@@ -4413,7 +4413,7 @@ test('a paid order owes the balance again once a quantity change raises its tota
         'group_id'        => $order->group_id,
         'organisation_id' => $order->organisation_id,
         'currency_id'     => $order->currency_id,
-        'amount'          => (float) $order->cost_total,
+        'amount'          => (float) $order->cost_items,
         'date'            => now()->toDateString(),
         'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::CASH,
     ]);

@@ -14465,7 +14465,7 @@
     "Percentage of recipients that will randomly receive one of the versions.": "Porcentaje de destinatarios que recibirán al azar una de las versiones.",
     "Percentage of recipients that will receive the highest performing version.": "Porcentaje de destinatarios que recibirán la versión con mejor rendimiento.",
     "Percentage of the ticked lines to refund": "Porcentaje de las líneas marcadas que se reembolsa",
-    "Percentage of the total to pay (:total): the order cost plus the supplier's estimated expenses, not of what is left to pay": "Porcentaje del total a pagar (:total): el coste de la orden más los gastos estimados del proveedor, no de lo que queda por pagar",
+    "Percentage of the total to pay (:total): the price of the products, without extra costs, shipping or duties, not of what is left to pay": "Porcentaje del total a pagar (:total): el precio de los productos, sin costes adicionales, envío ni aranceles, no de lo que queda por pagar",
     "Percentage of total SKOs": "Porcentaje del total de SKO",
     "Percentage of total stock value": "Porcentaje del valor total del stock",
     "Percentage off": "Porcentaje de descuento",

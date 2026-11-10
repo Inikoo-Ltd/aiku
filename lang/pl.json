@@ -18648,7 +18648,7 @@
     "Marked paid :date, no deposit recorded": "Oznaczono jako zapłacone :date, bez zarejestrowanej zaliczki",
     "Pay balance": "Zapłać resztę",
     "Pay deposit": "Zapłać zaliczkę",
-    "Percentage of the total to pay (:total): the order cost plus the supplier's estimated expenses, not of what is left to pay": "Procent całkowitej kwoty do zapłaty (:total): koszt zamówienia plus szacowane wydatki dostawcy, a nie kwoty pozostałej do zapłaty",
+    "Percentage of the total to pay (:total): the price of the products, without extra costs, shipping or duties, not of what is left to pay": "Procent całkowitej kwoty do zapłaty (:total): cena produktów bez kosztów dodatkowych, transportu i cła, a nie kwoty pozostałej do zapłaty",
     "Reason for the past date (kept in the order's history)": "Powód wcześniejszej daty (zapisany w historii zamówienia)",
     "The QC is not approved yet. Why is the balance paid now? (kept in the order's history)": "QC nie jest jeszcze zatwierdzone. Dlaczego płatność końcowa jest dokonywana teraz? (zapisane w historii zamówienia)",
     "Undo payment": "Cofnij płatność",
