@@ -1,8 +1,8 @@
 ---
 title: Cuidar de los clientes
 summary: Encuentra tu camino por la lista de clientes de una tienda, añade un cliente nuevo, lee la página de un cliente y entiende los estados, logins y prospectos que la rodean.
-date: 2026-09-29
-source_date: 2026-09-29
+date: 2026-11-10
+source_date: 2026-11-10
 tags: crm, customers
 category: crm
 ---
@@ -110,6 +110,20 @@ Pulsa **Create Web User** desde la lista para añadir uno; al abrir un web user 
 ## Direcciones
 
 Un cliente mantiene una dirección de contacto (usada para correspondencia y a efectos fiscales) y puede tener direcciones de entrega usadas en sus pedidos, ambas capturadas como formularios de dirección completos — país, código postal y el resto — en el propio registro del cliente y al crear o editar el cliente.
+
+## Shop types (tipos de tienda)
+
+Cada cliente de una tienda mayorista puede tener un **Shop type**: Crystal / new age shop, Gift shop, Spa / wellness, Garden centre, Online seller / dropshipper, Market trader u Other. Sirve para comparar a un cliente con tiendas parecidas, por ejemplo para ver qué compran las tiendas como la suya.
+
+Para ponerlo a un solo cliente, abre el cliente, pulsa **Edit**, elige un valor en el campo **Shop type** de la sección **Contact** (debajo de **Company**) y pulsa el icono de guardar junto al campo.
+
+Para marcar muchos clientes a la vez, ve a **CRM → Customers → Shop types** (la pestaña aparece en las tiendas mayoristas):
+
+1. Lee **Coverage of this shop**: una fila por cada tipo de tienda en uso, una fila **No shop type yet** y el total **Active customers (24 months)**, con las columnas **Customers**, **% of active**, **Told us**, **Set by staff** e **Inferred**. Haz clic en un número para filtrar la lista de abajo por ese tipo. **All shops** muestra, de cada tienda mayorista que puedes ver, cuántos clientes activos tienen un tipo de tienda; haz clic en el código de una tienda para abrir su propia página.
+2. La lista muestra los clientes activos, los facturados en los últimos 24 meses, con **Ref**, **Name**, **Country**, **Last invoice**, **Invoices**, **Sales**, **Shop type** y **Set by**. Puedes buscar, ordenar o filtrar por tipo de tienda con las casillas de encima.
+3. Marca los clientes, elige un valor en el cuadro **Shop type** sobre la lista (o **Clear shop type**) y pulsa **Apply to selected**. Puedes marcar hasta 200 clientes cada vez. La lista y las dos tablas se actualizan al instante.
+
+**Set by** indica quién dio el tipo de tienda; todo lo puesto en el back office muestra **Set by staff**. **Inferred** significa que aiku lo dedujo del nombre del negocio, así que corrígelo si está mal. Necesitas permiso para editar los clientes de la tienda para marcarlos; sin él ves la página pero no las casillas.
 
 ## Prospects: personas que todavía no son clientes
 

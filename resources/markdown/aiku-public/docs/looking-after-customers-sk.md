@@ -1,8 +1,8 @@
 ---
 title: Starostlivosť o zákazníkov
 summary: Zorientujte sa v zozname zákazníkov obchodu, pridajte nového zákazníka, prečítajte si stránku zákazníka a pochopte stavy, prihlásenia a prospektov, ktoré ju obklopujú.
-date: 2026-09-29
-source_date: 2026-09-29
+date: 2026-11-10
+source_date: 2026-11-10
 tags: crm, customers
 category: crm
 ---
@@ -110,6 +110,20 @@ Nové pridáte stlačením **Create Web User** v zozname; otvorením web usera s
 ## Adresy
 
 Zákazník si drží kontaktnú adresu (používanú na korešpondenciu a daňové účely) a môže mať doručovacie adresy používané na jeho objednávkach, obe zachytené ako kompletné formuláre adries — krajina, PSČ a ostatné — vo vlastnom zázname zákazníka aj pri vytváraní či úprave zákazníka.
+
+## Shop types (typy obchodu)
+
+Každý zákazník veľkoobchodného obchodu môže mať **Shop type**: Crystal / new age shop, Gift shop, Spa / wellness, Garden centre, Online seller / dropshipper, Market trader alebo Other. Umožňuje porovnať zákazníka s podobnými obchodmi, napríklad zistiť, čo nakupujú obchody ako ten jeho.
+
+Ak ho chcete nastaviť jednému zákazníkovi, otvorte zákazníka, stlačte **Edit**, vyberte hodnotu v poli **Shop type** v sekcii **Contact** (pod **Company**) a stlačte ikonu uloženia vedľa poľa.
+
+Ak chcete označiť viacerých zákazníkov naraz, prejdite na **CRM → Customers → Shop types** (záložka sa zobrazuje pri veľkoobchodných obchodoch):
+
+1. Prečítajte si **Coverage of this shop**: jeden riadok pre každý použitý typ obchodu, riadok **No shop type yet** a súčet **Active customers (24 months)** so stĺpcami **Customers**, **% of active**, **Told us**, **Set by staff** a **Inferred**. Kliknutím na číslo filtrujete zoznam nižšie na daný typ obchodu. **All shops** ukazuje pri každom veľkoobchodnom obchode, ktorý vidíte, koľko aktívnych zákazníkov má typ obchodu; kliknutím na kód obchodu otvoríte jeho vlastnú stránku.
+2. Zoznam zobrazuje aktívnych zákazníkov, teda tých, ktorým sa fakturovalo za posledných 24 mesiacov, so stĺpcami **Ref**, **Name**, **Country**, **Last invoice**, **Invoices**, **Sales**, **Shop type** a **Set by**. Môžete v ňom vyhľadávať, zoraďovať ho alebo ho filtrovať podľa typu obchodu zaškrtávacími políčkami nad ním.
+3. Zaškrtnite zákazníkov, vyberte hodnotu v poli **Shop type** nad zoznamom (alebo **Clear shop type**) a stlačte **Apply to selected**. Naraz môžete označiť najviac 200 zákazníkov. Zoznam aj obe tabuľky sa aktualizujú okamžite.
+
+**Set by** hovorí, kto typ obchodu určil; všetko nastavené v back office ukazuje **Set by staff**. **Inferred** znamená, že aiku ho odvodilo z názvu firmy, takže ho opravte, ak je nesprávny. Na označovanie potrebujete oprávnenie upravovať zákazníkov obchodu; bez neho stránku vidíte, ale zaškrtávacie políčka nie.
 
 ## Prospekti: ľudia, ktorí ešte nie sú zákazníkmi
 
