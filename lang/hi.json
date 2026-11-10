@@ -22503,5 +22503,6 @@
     ":quantity × :size": ":quantity × :size",
     "Size is the amount in each container. Quantity is the number of containers.": "आकार प्रत्येक कंटेनर में मौजूद मात्रा है। मात्रा कंटेनरों की संख्या है।",
     "Discounts that depend on the whole order are applied when the items are in the basket.": "पूरे ऑर्डर पर निर्भर छूट तब लागू होती हैं जब आइटम बास्केट में होते हैं।",
-    ":size sample": ":size नमूना"
+    ":size sample": ":size नमूना",
+    "Cancel reason: :reason": "रद्द करने का कारण: :reason"
 }

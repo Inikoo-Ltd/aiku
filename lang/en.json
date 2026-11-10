@@ -26526,5 +26526,7 @@
     ":quantity × :size": ":quantity × :size",
     "Size is the amount in each container. Quantity is the number of containers.": "Size is the amount in each container. Quantity is the number of containers.",
     "Discounts that depend on the whole order are applied when the items are in the basket.": "Discounts that depend on the whole order are applied when the items are in the basket.",
-    ":size sample": ":size sample"
+    ":size sample": ":size sample",
+    "Date not set yet": "Date not set yet",
+    "Date not set yet: set the arrival date": "Date not set yet: set the arrival date"
 }

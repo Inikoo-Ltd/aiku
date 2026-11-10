@@ -138,8 +138,10 @@ class GetFirstLoadProps
     }
 
     /**
-     * ponytail: a deploy that leaves the menu builders, the language file and the route names alone
-     * keeps every cached menu. A menu change made from a file outside MENU_SOURCES shows after
+     * ponytail: a deploy that leaves the menu builders and the language file alone keeps every cached menu.
+     * Route names are left out on purpose: most deploys add a route, and hashing them reset every user's
+     * menu on 6 of 13 deploys (INI-230, 10 Nov 2026). A menu link to a renamed route changes a MENU_SOURCES
+     * file anyway. A menu change made from a file outside MENU_SOURCES shows after
      * `php artisan ui:recache-user-props`; add that file to MENU_SOURCES if it happens again.
      */
     public static function menuVersion(Language $language): string
@@ -147,7 +149,6 @@ class GetFirstLoadProps
         return self::$menuVersions[$language->code] ??= md5(implode('|', [
             ...array_map('md5_file', collect(self::MENU_SOURCES)->flatMap(fn (string $pattern) => glob(app_path($pattern)))->sort()->all()),
             is_file(lang_path($language->code.'.json')) ? md5_file(lang_path($language->code.'.json')) : '',
-            md5(implode(',', array_keys(app('router')->getRoutes()->getRoutesByName()))),
         ]));
     }
 

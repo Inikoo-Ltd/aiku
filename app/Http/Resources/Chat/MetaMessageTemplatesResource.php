@@ -65,7 +65,7 @@ class MetaMessageTemplatesResource extends JsonResource
                 'type' => Arr::get($button, 'type'),
                 'text' => Arr::get($button, 'text'),
             ], $buttons),
-            'media_preview'  => $this->headerMedia?->getUrl(),
+            'media_preview'  => $this->headerImageUrl(),
         ];
     }
 }

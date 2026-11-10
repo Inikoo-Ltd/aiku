@@ -27,6 +27,7 @@ type TemplateOption = {
     footer: string | null
     buttons: { type?: string; text?: string }[]
     mergeTags: string[]
+    mediaPreview?: string | null
 }
 
 const props = defineProps<{
@@ -310,6 +311,7 @@ const confirmTemplateChange = async () => {
                         :buttons="selectedTemplate?.buttons ?? []"
                         :businessName="businessName"
                         :mergeTags="selectedTemplate?.mergeTags ?? []"
+                        :mediaPreview="selectedTemplate?.mediaPreview"
                         :placeholder="ctrans('Select a template to preview it here…')" />
                 </div>
             </div>

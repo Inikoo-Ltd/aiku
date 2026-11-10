@@ -894,6 +894,10 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                     </span>
                     {{ item.name }}
                 </div>
+                <div v-if="item.cancellation?.reason" class="flex w-fit items-start gap-1 text-xs text-red-700">
+                    <FontAwesomeIcon :icon="faMinusCircle" fixed-width class="mt-0.5" aria-hidden="true" />
+                    {{ ctrans('Cancel reason: :reason', { reason: item.cancellation.reason }) }}
+                </div>
                 <div v-if="item.moved_from || item.moved_to?.length" class="space-y-0.5 text-xs">
                     <component
                         :is="item.moved_from.slug ? Link : 'span'"

@@ -9681,5 +9681,6 @@
     "This order had nothing left and was cancelled.": "Den här ordern hade inget kvar och har avbrutits.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Den här ordern har inget kvar men en handpenning har betalats: få tillbaka den innan du avbryter ordern.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agenten flyttade :quantity enheter av :code till :supplier (:reference), leverantören kan inte tillverka dem.",
-    "Loading…": "Laddar…"
+    "Loading…": "Laddar…",
+    "Cancel reason: :reason": "Orsak till avbokning: :reason"
 }

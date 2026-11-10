@@ -237,7 +237,7 @@ class GetAgentMoneyRequestLines
                     'agent_payment_id'         => $entry->id,
                     'type'                     => $entry->type,
                     'type_label'               => $labels[$entry->type] ?? $entry->type,
-                    'date'                     => substr((string) $entry->date, 0, 10),
+                    'date'                     => $entry->date ? substr((string) $entry->date, 0, 10) : null,
                     'amount'                   => $amount,
                     'requested'                => $requested,
                     'due'                      => max(0, round($amount - $requested, 2)),

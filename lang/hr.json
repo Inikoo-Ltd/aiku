@@ -8844,5 +8844,6 @@
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "U ovoj narudžbi nije ništa ostalo, ali je plaćen predujam: vratite ga prije otkazivanja narudžbe.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "agent je premjestio :quantity jedinica :code dobavljaču :supplier (:reference), dobavljač ih ne može proizvesti.",
     "Units per carton": "Jedinica po kartonu",
-    "Loading…": "Učitavanje…"
+    "Loading…": "Učitavanje…",
+    "Cancel reason: :reason": "Razlog otkazivanja: :reason"
 }

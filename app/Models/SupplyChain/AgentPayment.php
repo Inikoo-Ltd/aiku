@@ -45,7 +45,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property bool $needs_review
  * @property string|null $review_reason
  * @property array<string, mixed> $data
- * @property \Illuminate\Support\Carbon $date
+ * @property \Illuminate\Support\Carbon|null $date
  * @property string $amount
  * @property int $currency_id
  * @property string|null $reference
@@ -136,7 +136,7 @@ class AgentPayment extends Model implements Auditable
             return null;
         }
 
-        return $this->date->copy()->addDays(self::MONEY_REQUEST_TRANSFER_DAYS);
+        return $this->date?->copy()->addDays(self::MONEY_REQUEST_TRANSFER_DAYS);
     }
 
     /**

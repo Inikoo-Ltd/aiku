@@ -25,7 +25,7 @@ class ProcessSendWhatsappCampaign
 {
     use AsAction;
 
-    public string $jobQueue = 'ses';
+    public string $jobQueue = 'whatsapp-send';
 
     /**
      * @param  array<int, array<string, mixed>>  $recipientRows

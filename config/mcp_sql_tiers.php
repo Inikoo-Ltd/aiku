@@ -24,7 +24,7 @@ return [
         'mit_saved_cards', 'fcm_tokens', 'user_push_subscriptions', 'user_failed_log_ins', 'web_user_failed_logins',
         'allegro_users', 'amazon_users', 'ebay_users', 'magento_users', 'shopify_users', 'tiktok_users', 'wix_users', 'woo_commerce_users',
         'shopify_user_has_fulfilments', 'tiktok_user_has_*', 'wc_user_has_products',
-        'shipper_accounts', 'staff_messages', 'staff_message_*', 'email_archive_messages',
+        'shipper_accounts', 'carrier_rate_cards', 'staff_messages', 'staff_message_*', 'email_archive_messages',
         'telescope_*', 'migrations', 'pg_stat_statements*',
     ],
 

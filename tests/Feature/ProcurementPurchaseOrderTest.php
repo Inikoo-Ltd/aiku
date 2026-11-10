@@ -4133,7 +4133,8 @@ test('the agent cancels the line the supplier can not make, the buyer is told an
 
     expect($lostLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
         ->and($keptLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
-        ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+        ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and(IndexPurchaseOrderTransactions::run($order)->getCollection()->firstWhere('id', $lostLine->id)->cancellation['reason'])->toBe('Factory stopped making it');
     \Illuminate\Support\Facades\Notification::assertSentTo(
         $admin,
         \App\Notifications\PurchaseOrderStageChangedByAgentNotification::class,

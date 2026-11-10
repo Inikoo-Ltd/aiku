@@ -25428,5 +25428,8 @@
     "Spa \/ wellness": "Spa \/ bem-estar",
     "Told us": "O cliente informou-nos",
     "With shop type": "Com tipo de loja",
-    ":size sample": "Amostra de :size"
+    ":size sample": "Amostra de :size",
+    "Date not set yet": "Data ainda não definida",
+    "Date not set yet: set the arrival date": "Data ainda não definida: defina a data de chegada",
+    "Cancel reason: :reason": "Motivo do cancelamento: :reason"
 }

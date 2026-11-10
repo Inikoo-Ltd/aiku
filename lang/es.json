@@ -26487,5 +26487,8 @@
     "Spa \/ wellness": "Spa \/ bienestar",
     "Told us": "Nos lo dijo el cliente",
     "With shop type": "Con tipo de tienda",
-    ":size sample": "Muestra de :size"
+    ":size sample": "Muestra de :size",
+    "Date not set yet": "Fecha aún sin indicar",
+    "Date not set yet: set the arrival date": "Fecha aún sin indicar: indique la fecha de llegada",
+    "Cancel reason: :reason": "Motivo de cancelación: :reason"
 }

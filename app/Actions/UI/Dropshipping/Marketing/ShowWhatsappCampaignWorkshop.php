@@ -137,6 +137,7 @@ class ShowWhatsappCampaignWorkshop extends OrgAction
             ->where('status', 'APPROVED')
             ->where('category', 'MARKETING')
             ->orderBy('name')
+            ->with('headerMedia')
             ->get()
             ->map(fn (MetaMessageTemplate $template) => $this->whatsappTemplatePreview($template))
             ->all();

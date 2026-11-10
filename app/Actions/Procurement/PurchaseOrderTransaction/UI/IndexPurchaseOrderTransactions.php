@@ -198,6 +198,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     'by'        => $cancellations->get($transaction->id)?->user_name,
                     'at'        => $cancellations->get($transaction->id)?->created_at,
                     'in_aurora' => !$cancellations->has($transaction->id) && $transaction->source_id !== null,
+                    'reason'    => Arr::get($transaction->data, 'cancellation_reason'),
                 ] : null)
                 ->setAttribute('move_trail', $moveTrail($transaction))
         );

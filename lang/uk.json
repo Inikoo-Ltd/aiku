@@ -6915,5 +6915,6 @@
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "агент перемістив :quantity од. :code до :supplier (:reference), постачальник не може їх виготовити.",
     "Units per carton": "Одиниць у коробці",
     "Loading…": "Завантаження…",
-    "units": "од."
+    "units": "од.",
+    "Cancel reason: :reason": "Причина скасування: :reason"
 }

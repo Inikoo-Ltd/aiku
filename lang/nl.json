@@ -9648,5 +9648,6 @@
     "This order had nothing left and was cancelled.": "Deze bestelling had niets meer en is geannuleerd.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Deze bestelling heeft niets meer maar er is een aanbetaling gedaan: haal die terug voordat je de bestelling annuleert.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "de agent heeft :quantity eenheden van :code verplaatst naar :supplier (:reference), de leverancier kan ze niet maken.",
-    "Units per carton": "Eenheden per doos"
+    "Units per carton": "Eenheden per doos",
+    "Cancel reason: :reason": "Reden van annulering: :reason"
 }

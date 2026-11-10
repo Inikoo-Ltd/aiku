@@ -52,7 +52,7 @@ interface Option {
 
 interface EntryRow {
 	id: number
-	date: string
+	date: string | null
 	client_code: string
 	type_label: string
 	money_in: number | null
@@ -181,7 +181,7 @@ const typeOptions = computed(() =>
 const canSave = computed(
 	() =>
 		!!entry.value.organisation_id &&
-		!!entry.value.date &&
+		(!!entry.value.date || (!!editing.value && !editing.value.date)) &&
 		!!entry.value.amount &&
 		(!selectedType.value?.needs_order || !!entry.value.purchase_order_id || !!editing.value?.imported) &&
 		(!!editing.value || !selectedType.value?.needs_receipt || !!entry.value.receipt)
@@ -202,7 +202,7 @@ const openEdit = (row: EntryRow) => {
 		...emptyEntry(),
 		organisation_id: row.organisation_id,
 		type: row.type,
-		date: new Date(`${row.date}T00:00:00`),
+		date: row.date ? new Date(`${row.date}T00:00:00`) : null,
 		amount: row.money_in ?? row.money_out,
 		purchase_order_id: row.purchase_order_id,
 		stock_delivery_id: row.stock_delivery_id,
@@ -221,7 +221,7 @@ const saveEdit = () => {
 	router.patch(
 		route(row.update_route.name, row.update_route.parameters),
 		{
-			date: toIsoDate(entry.value.date as Date),
+			date: entry.value.date ? toIsoDate(entry.value.date) : null,
 			type: entry.value.type,
 			purchase_order_id: entry.value.purchase_order_id,
 			stock_delivery_id: entry.value.stock_delivery_id,
@@ -277,7 +277,7 @@ const confirmRemove = (row: EntryRow) =>
 		message: ctrans("Remove the :type of :amount from :date?", {
 			type: row.type_label,
 			amount: money(row.currency_code, row.money_in ?? row.money_out ?? 0),
-			date: useFormatTime(row.date),
+			date: row.date ? useFormatTime(row.date) : ctrans("Date not set yet"),
 		}),
 		rejectLabel: ctrans("Cancel"),
 		acceptLabel: ctrans("Remove"),
@@ -335,7 +335,8 @@ const confirmRemove = (row: EntryRow) =>
 
 	<Table :resource="data" class="mt-5">
 		<template #cell(date)="{ item }">
-			<span class="whitespace-nowrap">{{ useFormatTime(item.date) }}</span>
+			<span v-if="item.date" class="whitespace-nowrap">{{ useFormatTime(item.date) }}</span>
+			<span v-else class="whitespace-nowrap text-amber-700">{{ ctrans("Date not set yet") }}</span>
 		</template>
 
 		<template #cell(client_code)="{ item }">
@@ -415,7 +416,7 @@ const confirmRemove = (row: EntryRow) =>
 			</label>
 			<div class="grid grid-cols-2 gap-3">
 				<label class="block text-sm">
-					<span class="text-gray-600">{{ ctrans("Date") }} <span class="text-red-500">*</span></span>
+					<span class="text-gray-600">{{ ctrans("Date") }} <span v-if="!editing || editing.date" class="text-red-500">*</span></span>
 					<DatePicker v-model="entry.date" dateFormat="dd/mm/yy" :maxDate="new Date()" :manualInput="false" showIcon iconDisplay="input" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
 				</label>
 				<label class="block text-sm">

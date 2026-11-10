@@ -22,22 +22,25 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The agent corrects a line of a client's ledger (its date, type, order or container) and so takes it off the
- * list of lines to review. The amount stays as recorded: a wrong amount is removed and recorded again.
+ * list of lines to review. A line of goods still to arrive can be corrected with no date: it stays on the list until
+ * its arrival date is set. The amount stays as recorded: a wrong amount is removed and recorded again.
  */
 class UpdateAgentLedgerEntry extends OrgAction
 {
     private AgentPayment $agentPayment;
 
     /**
-     * @param  array{date: string, type: string, purchase_order_id?: int|null, stock_delivery_id?: int|null, reference?: string|null, notes?: string|null}  $modelData
+     * @param  array{date?: string|null, type: string, purchase_order_id?: int|null, stock_delivery_id?: int|null, reference?: string|null, notes?: string|null}  $modelData
      */
     public function handle(AgentPayment $agentPayment, array $modelData): AgentPayment
     {
         $purchaseOrder   = ($purchaseOrderId = Arr::get($modelData, 'purchase_order_id')) ? PurchaseOrder::findOrFail($purchaseOrderId) : null;
         $formerContainer = $agentPayment->stock_delivery_id;
 
+        $date = Arr::get($modelData, 'date');
+
         $agentPayment->update([
-            'date'              => $modelData['date'],
+            'date'              => $date,
             'type'              => AgentPaymentTypeEnum::from($modelData['type']),
             'purchase_order_id' => $purchaseOrder?->id,
             'supplier_id'       => $purchaseOrder?->supplier_id,
@@ -45,8 +48,8 @@ class UpdateAgentLedgerEntry extends OrgAction
             'org_stock_id'      => $modelData['type'] === AgentPaymentTypeEnum::PACKAGING->value && Arr::get($modelData, 'stock_delivery_id') ? Arr::get($modelData, 'org_stock_id') : null,
             'reference'         => Arr::get($modelData, 'reference'),
             'notes'             => Arr::get($modelData, 'notes'),
-            'needs_review'      => false,
-            'review_reason'     => null,
+            'needs_review'      => !$date,
+            'review_reason'     => $date ? null : ImportAgentLedgerExcel::DATE_NOT_SET,
         ]);
 
         StockDelivery::whereIn('id', array_filter(array_unique([$formerContainer, $agentPayment->stock_delivery_id])))
@@ -61,7 +64,7 @@ class UpdateAgentLedgerEntry extends OrgAction
         $supplierPayments = implode(',', array_map(fn (AgentPaymentTypeEnum $type) => $type->value, array_filter(AgentPaymentTypeEnum::cases(), fn (AgentPaymentTypeEnum $type) => $type->isSupplierPayment())));
 
         return [
-            'date'              => ['required', 'date', 'before_or_equal:today'],
+            'date'              => [Rule::requiredIf($this->agentPayment->date !== null), 'nullable', 'date', 'before_or_equal:today'],
             'type'              => ['required', Rule::enum(AgentPaymentTypeEnum::class)],
             'purchase_order_id' => Arr::get($this->agentPayment->data ?? [], 'source') === ImportAgentLedgerExcel::SOURCE
                 ? ['nullable', 'integer']

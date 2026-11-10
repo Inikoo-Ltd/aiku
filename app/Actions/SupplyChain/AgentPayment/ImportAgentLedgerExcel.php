@@ -19,6 +19,7 @@ use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Laravel\Nightwatch\Facades\Nightwatch;
@@ -31,8 +32,10 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  * Brings an agent's Excel balance sheet for one client into the agent's ledger. Everything dated before the
  * cut-off becomes two opening lines (all money received, all money paid out), so the wallet totals equal the
  * Excel's; every row from the cut-off becomes its own line. A supplier payment is tied to the one order its
- * order number and product code point to; rows the agent has to look at again (no date, a future date, no single
- * order, an unclear expense) come in flagged for review. It only reads the file unless told to apply.
+ * order number and product code point to; rows the agent has to look at again (no single order, an unclear expense)
+ * come in flagged for review. The sheet dates a row on the day the goods reached the warehouse, so a row with no date
+ * or a future date is goods still to arrive: it comes in with no date, flagged until the agent sets it. It only reads
+ * the file unless told to apply, and replaces a client's earlier import only when asked and nothing of it was touched.
  */
 class ImportAgentLedgerExcel
 {
@@ -40,13 +43,16 @@ class ImportAgentLedgerExcel
 
     public const string SOURCE = 'excel_import';
 
+    public const string DATE_NOT_SET = 'Date not set yet: set the arrival date';
+
     public string $commandSignature = 'agent_ledger:import-excel
         {agent : slug of the agent}
         {client : slug of the client organisation}
         {file : path to the balance sheet (.xlsx)}
         {--from=2026-01-01 : rows before this date become the opening lines}
         {--order-reference=AWChina-#-SK : the client\'s agent order reference, # standing for the order number in the sheet}
-        {--apply : write the lines; without it nothing is saved}';
+        {--apply : write the lines; without it nothing is saved}
+        {--replace : remove the client\'s earlier import first (refused if any of its lines was edited, removed or asked for)}';
 
     public string $commandDescription = 'Import an agent\'s Excel balance sheet for a client into the agent ledger (dry run unless --apply)';
 
@@ -55,15 +61,26 @@ class ImportAgentLedgerExcel
      *
      * @throws Exception
      */
-    public function handle(Agent $agent, Organisation $client, string $path, Carbon $from, string $orderReference, bool $apply = false): array
+    public function handle(Agent $agent, Organisation $client, string $path, Carbon $from, string $orderReference, bool $apply = false, bool $replace = false): array
     {
-        if ($apply && AgentPayment::where('agent_id', $agent->id)->where('organisation_id', $client->id)->where('data->source', self::SOURCE)->exists()) {
-            throw new Exception("$client->code's balance sheet is already imported into this agent's ledger");
+        $imported = AgentPayment::withTrashed()->where('agent_id', $agent->id)->where('organisation_id', $client->id)->where('data->source', self::SOURCE)->whereNull('data->replaced_at');
+        if ($apply && $imported->clone()->exists()) {
+            if (!$replace) {
+                throw new Exception("$client->code's balance sheet is already imported into this agent's ledger: --replace imports it again");
+            }
+            $touched = $imported->clone()->where(fn ($query) => $query->whereNotNull('deleted_at')
+                ->orWhereColumn('updated_at', '>', 'created_at')
+                ->orWhereExists(fn ($items) => $items->from('deposit_request_items')->whereColumn('deposit_request_items.agent_payment_id', 'agent_payments.id')))
+                ->count();
+            if ($touched) {
+                throw new Exception("$touched line(s) of $client->code's earlier import were edited, removed or asked for in a money request since: not replacing it");
+            }
         }
 
         $spreadsheet = IOFactory::load($path);
         $balance     = $spreadsheet->getSheetByName('Balance') ?? $spreadsheet->getSheet(0);
-        $transfers   = $this->transfersInClientCurrency($spreadsheet->getSheetByName('Fund'));
+        $fund        = Arr::first($spreadsheet->getAllSheets(), fn (Worksheet $sheet) => str_ends_with(strtolower(trim($sheet->getTitle())), 'fund'));
+        $transfers   = $this->transfersInClientCurrency($fund);
         $today       = Carbon::today();
 
         $opening  = ['received' => 0.0, 'paid' => 0.0];
@@ -80,17 +97,12 @@ class ImportAgentLedgerExcel
             $rows++;
 
             $dateInExcel = $this->date($this->cell($balance, "A$row", false));
-            $reason      = null;
-            if (!$dateInExcel) {
-                $reason = 'No date in the Excel';
-            } elseif ($dateInExcel->gt($today)) {
-                $reason = 'Future date in the Excel';
-            } else {
-                $lastDate = $dateInExcel;
-            }
-            $date = $reason ? ($lastDate ?? $from->copy()->subDay()) : $dateInExcel;
+            $date        = $dateInExcel?->lte($today) ? $dateInExcel : null;
+            $reason      = $date ? null : self::DATE_NOT_SET;
+            $lastDate    = $date ?? $lastDate;
+            $matchingOn  = $date ?? $lastDate ?? $from->copy()->subDay();
 
-            if ($date->lt($from)) {
+            if ($date?->lt($from)) {
                 $opening['received'] += $moneyIn;
                 $opening['paid']     += $moneyOut;
                 continue;
@@ -102,7 +114,7 @@ class ImportAgentLedgerExcel
 
             $line = [
                 'row'               => $row,
-                'date'              => $date->toDateString(),
+                'date'              => $date?->toDateString(),
                 'amount'            => $moneyIn ?: $moneyOut,
                 'type'              => null,
                 'purchase_order_id' => null,
@@ -115,15 +127,19 @@ class ImportAgentLedgerExcel
                 'data'              => array_filter(['source' => self::SOURCE, 'row' => $row, 'description' => $description, 'code' => $code, 'po' => $orderNumber, 'date_in_excel' => $dateInExcel?->toDateString()]),
             ];
 
+            $chargeType = $this->expenseType($description);
+
             if ($moneyIn) {
                 $line['type']            = AgentPaymentTypeEnum::TRANSFER_RECEIVED;
-                $line['original_amount'] = $this->sentByClient($transfers, $moneyIn, $date);
-            } elseif ($this->amount($this->cell($balance, "F$row"))) {
+                $line['original_amount'] = $this->sentByClient($transfers, $moneyIn, $matchingOn);
+            } elseif ($this->isOverhead($description)) {
+                $line['type'] = AgentPaymentTypeEnum::OTHER_EXPENSE;
+            } elseif ($chargeType === AgentPaymentTypeEnum::OTHER_EXPENSE && $this->amount($this->cell($balance, "F$row"))) {
                 $line['type'] = AgentPaymentTypeEnum::PACKAGING;
-            } elseif (str_contains(strtolower($description), 'shop')) {
+            } elseif ($chargeType === AgentPaymentTypeEnum::OTHER_EXPENSE && str_contains(strtolower($description), 'shop')) {
                 $line['type']   = AgentPaymentTypeEnum::SUPPLIER_PAYMENT;
                 $purchaseOrder  = $this->purchaseOrder($agent, $client, $orderReference, $orderNumber, $code);
-                if (!$purchaseOrder && ($purchaseOrder = $this->recentPurchaseOrderWithCode($agent, $client, $code, $date))) {
+                if (!$purchaseOrder && ($purchaseOrder = $this->recentPurchaseOrderWithCode($agent, $client, $code, $matchingOn))) {
                     $line['data']['linked_by'] = 'code';
                 }
                 $line['purchase_order_id'] = $purchaseOrder?->id;
@@ -132,11 +148,14 @@ class ImportAgentLedgerExcel
                     $line['review_reason'] ??= 'Not tied to one order';
                 }
             } else {
-                $line['type'] = $this->expenseType($description);
+                $line['type'] = $chargeType;
                 if ($line['type'] === AgentPaymentTypeEnum::OTHER_EXPENSE) {
                     $line['review_reason'] ??= 'Expense type unclear';
                 } else {
-                    $line['stock_delivery_id'] = $this->container($agent, $client, $description);
+                    [$line['stock_delivery_id'], $candidates] = $this->container($agent, $client, $description);
+                    if ($candidates > 1) {
+                        $line['data']['container_candidates'] = $candidates;
+                    }
                 }
             }
 
@@ -153,7 +172,7 @@ class ImportAgentLedgerExcel
         $paid     = round(array_sum(array_map(fn (array $line) => $line['type']->isMoneyIn() ? 0 : $line['amount'], $lines)), 2);
 
         if ($apply) {
-            $this->apply($agent, $client, $lines);
+            $this->apply($agent, $client, $lines, $imported);
         }
 
         return [
@@ -163,17 +182,22 @@ class ImportAgentLedgerExcel
             'received'      => $received,
             'paid'          => $paid,
             'balance'       => round($received - $paid, 2),
-            'excel_balance' => $this->amount($this->cell($balance, 'I1')) ?: null,
+            'excel_balance' => ($this->amount($this->cell($balance, 'D4')) ?: $this->amount($this->cell($balance, 'I1'))) ?: null,
             'applied'       => $apply,
         ];
     }
 
     /**
      * @param  list<array<string, mixed>>  $lines
+     * @param  Builder<AgentPayment>  $imported
      */
-    private function apply(Agent $agent, Organisation $client, array $lines): void
+    private function apply(Agent $agent, Organisation $client, array $lines, Builder $imported): void
     {
-        DB::transaction(function () use ($agent, $client, $lines) {
+        $containers = $imported->clone()->whereNotNull('stock_delivery_id')->distinct()->pluck('stock_delivery_id')->all();
+
+        DB::transaction(function () use ($agent, $client, $lines, $imported) {
+            $imported->clone()->whereNull('deleted_at')->update(['deleted_at' => now(), 'data->replaced_at' => now()->toDateTimeString()]);
+
             foreach ($lines as $line) {
                 AgentPayment::create([
                     'group_id'             => $agent->group_id,
@@ -197,7 +221,7 @@ class ImportAgentLedgerExcel
             }
         });
 
-        StockDelivery::whereIn('id', array_filter(array_unique(array_column($lines, 'stock_delivery_id'))))
+        StockDelivery::whereIn('id', array_filter(array_unique(array_merge($containers, array_column($lines, 'stock_delivery_id')))))
             ->get()
             ->each(fn (StockDelivery $stockDelivery) => SyncAgentInvoiceChargesFromLedger::run($stockDelivery));
     }
@@ -230,11 +254,24 @@ class ImportAgentLedgerExcel
         $description = strtolower($description);
 
         return match (true) {
+            (bool) preg_match('/\binspection/', $description) => AgentPaymentTypeEnum::INSPECTION,
+            (bool) preg_match('/\b(mou?ld|logo)/', $description) => AgentPaymentTypeEnum::MOULD_OR_LOGO,
             str_contains($description, 'container value') => AgentPaymentTypeEnum::AGENT_FEE,
             str_contains($description, 'loading')         => AgentPaymentTypeEnum::CONTAINER_LOADING,
             str_contains($description, 'inland')          => AgentPaymentTypeEnum::INLAND_CHARGE,
             default                                       => AgentPaymentTypeEnum::OTHER_EXPENSE,
         };
+    }
+
+    /**
+     * The agent's own running costs charged to the client (power, the car, wages, rent, internet, tax, phone): an
+     * Other expense whatever columns the row fills, and nothing to review. "CAR" after a product code is that
+     * product's carton ("AWPSP CAR"), so only a row that starts with it, or names the car's rental or insurance, is
+     * the car.
+     */
+    private function isOverhead(string $description): bool
+    {
+        return (bool) preg_match('/^\s*car\b|\bcar\s+(rental|insurance|repair|fuel|petrol)|\belectricity\b|\belectric\s+(charges?|bills?|fees?)\b|\b(wages?|salary|salaries|rent|internet|tax|phone|telephone)\b/i', $description);
     }
 
     private function purchaseOrder(Agent $agent, Organisation $client, string $orderReference, string $orderNumber, string $code): ?PurchaseOrder
@@ -247,7 +284,12 @@ class ImportAgentLedgerExcel
 
         $purchaseOrders = PurchaseOrder::where('organisation_id', $client->id)
             ->where('agent_id', $agent->id)
-            ->where(fn ($query) => $query->whereIn(DB::raw('lower(reference)'), $references)->orWhereIn(DB::raw('lower(agent_order_reference)'), $references))
+            ->where(function ($query) use ($references) {
+                $query->whereIn(DB::raw('lower(reference)'), $references)->orWhereIn(DB::raw('lower(agent_order_reference)'), $references);
+                foreach ($references as $reference) {
+                    $query->orWhere(DB::raw('lower(reference)'), 'like', addcslashes($reference, '%_\\').' %');
+                }
+            })
             ->whereHas('purchaseOrderTransactions.orgStock', fn ($query) => $query->where('code', 'ILIKE', addcslashes($code, '%_\\').'%'))
             ->limit(2)
             ->get(['id', 'supplier_id']);
@@ -277,20 +319,33 @@ class ImportAgentLedgerExcel
         return $purchaseOrders->count() === 1 ? $purchaseOrders->first() : null;
     }
 
-    private function container(Agent $agent, Organisation $client, string $description): ?int
+    /**
+     * The container the description's trailing number names, with how many deliveries carry that number. Extra
+     * deliveries share the number (AWChina-86-FGDB, 8 lines, next to AWChina-86-VAL260152, 141): a delivery with at
+     * least twice the lines of any other is the container itself. Two of a similar size (an old container that reused
+     * the number) are left for the agent to choose.
+     *
+     * @return array{0: int|null, 1: int}
+     */
+    private function container(Agent $agent, Organisation $client, string $description): array
     {
         if (!preg_match('/(\d+)\s*$/', $description, $matches)) {
-            return null;
+            return [null, 0];
         }
 
-        $containers = StockDelivery::where('organisation_id', $client->id)
+        $candidates = StockDelivery::where('organisation_id', $client->id)
             ->where('agent_id', $agent->id)
             ->where('state', '!=', StockDeliveryStateEnum::CANCELLED)
-            ->where('reference', '~*', '^awchina-0*'.(int) $matches[1].'(-|$)')
-            ->limit(2)
-            ->pluck('id');
+            ->where('reference', '~*', '^awchina-0*'.(int) $matches[1].'([-_ ]|$)')
+            ->orderByDesc('number_stock_delivery_items')
+            ->get(['id', 'number_stock_delivery_items']);
 
-        return $containers->count() === 1 ? $containers->first() : null;
+        $main = $candidates->first();
+        if (!$main || ($candidates->count() > 1 && $main->number_stock_delivery_items < 2 * $candidates->get(1)->number_stock_delivery_items)) {
+            return [null, $candidates->count()];
+        }
+
+        return [$main->id, $candidates->count()];
     }
 
     /**
@@ -380,7 +435,7 @@ class ImportAgentLedgerExcel
         $apply  = (bool) $command->option('apply');
 
         try {
-            $result = $this->handle($agent, $client, $command->argument('file'), Carbon::parse($command->option('from')), $command->option('order-reference'), $apply);
+            $result = $this->handle($agent, $client, $command->argument('file'), Carbon::parse($command->option('from')), $command->option('order-reference'), $apply, (bool) $command->option('replace'));
         } catch (Exception $exception) {
             $command->error($exception->getMessage());
 
@@ -394,7 +449,9 @@ class ImportAgentLedgerExcel
         $command->line('Before '.$command->option('from').': received '.number_format($result['opening']['received'], 2).', paid '.number_format($result['opening']['paid'], 2).' (two opening lines)');
         $command->table(['Type', 'Lines', 'Amount'], $lines->groupBy(fn (array $line) => $line['type']->value)
             ->map(fn ($group, $type) => [$type, $group->count(), number_format($group->sum('amount'), 2)])->values()->all());
-        $command->line('Tied to an order: '.$lines->whereNotNull('purchase_order_id')->count().', to a container: '.$lines->whereNotNull('stock_delivery_id')->count().', transfers with the amount the client sent: '.$lines->whereNotNull('original_amount')->count());
+        $command->line('Tied to an order: '.$lines->whereNotNull('purchase_order_id')->count().', to a container: '.$lines->whereNotNull('stock_delivery_id')->count()
+            .' ('.$lines->whereNotNull('stock_delivery_id')->filter(fn (array $line) => isset($line['data']['container_candidates']))->count().' picked as the biggest of several deliveries with its number, '
+            .$lines->whereNull('stock_delivery_id')->filter(fn (array $line) => isset($line['data']['container_candidates']))->count().' left unlinked between similar ones)'.', transfers with the amount the client sent: '.$lines->whereNotNull('original_amount')->count());
         $command->line('Received '.number_format($result['received'], 2).', paid out '.number_format($result['paid'], 2).', balance '.number_format($result['balance'], 2)
             .($result['excel_balance'] !== null ? ' (Excel says '.number_format($result['excel_balance'], 2).')' : ''));
         $command->line('For the agent to review: '.$review->count());

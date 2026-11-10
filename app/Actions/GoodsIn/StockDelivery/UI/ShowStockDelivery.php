@@ -917,7 +917,7 @@ class ShowStockDelivery extends OrgAction
                 'methods'             => PurchaseOrderPaymentMethodEnum::options(),
                 'payments'            => $stockDelivery->agentPayments()->with('bankStatement:id,ulid')->orderBy('date')->get()->map(fn (AgentPayment $payment) => [
                     'id'             => $payment->id,
-                    'date'           => $payment->date->toDateString(),
+                    'date'           => $payment->date?->toDateString(),
                     'amount'         => (float) $payment->amount,
                     'reference'      => $payment->reference,
                     'notes'          => $payment->notes,

@@ -92,12 +92,12 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'best_sellers_for_similar_shops',
-                'Best sellers among shops like this customer (same kind of shop, nearby first). Use it when the customer asks what sells well, wants ideas, or is starting or refreshing their range. Returns products with id, name, family and why.',
+                'Best sellers among the shops closest to this customer: the same kind of shop when we know theirs, otherwise every shop, nearby first. Each product\'s why says exactly which shops it is about. Use it when the customer asks what sells well, wants ideas, or is starting or refreshing their range. Returns products with id, name, family and why.',
                 ['limit' => $limit]
             ),
             $this->tool(
                 'missing_from_range',
-                'Products that sell well in shops like this customer but that this customer has never ordered. Use it when the customer asks what they are missing or how to widen their range. Returns products with id, name, family and why.',
+                'Products that sell well in the shops closest to this customer (the same kind of shop when we know theirs, otherwise every shop) but that this customer has never ordered. Each product\'s why says exactly which shops it is about. Use it when the customer asks what they are missing or how to widen their range. Returns products with id, name, family and why.',
                 ['limit' => $limit]
             ),
             $this->tool(
@@ -292,7 +292,7 @@ class GetShoppingAssistantTools
                 'id'     => $product->id,
                 'name'   => $product->name,
                 'family' => $product->family?->name,
-                'why'    => $reasonCode,
+                'why'    => $this->reasonText($reasonCode, $customer, 'en'),
             ];
             if ($withLastOrdered) {
                 $item['last_ordered'] = $product->customer_last_ordered_at?->format('Y-m');
