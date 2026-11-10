@@ -79,7 +79,7 @@ class IndexCustomerBalances extends OrgAction
                 'customers.reference as reference',
                 'customers.balance as balance',
                 'shops.slug as shop_slug',
-                'shops.type as shop_type',
+                'shops.type as parent_shop_type',
                 'shops.code as shop_code',
                 'fulfilments.slug as fulfilment_slug',
                 'shops.name as shop_name',

@@ -1254,12 +1254,14 @@ describe('production reward pay bands', function () {
             'position'            => 1,
             'standard_rate'       => 152,
         ]);
+        $step = $this->artefact->recipeSteps()->where('manufacture_task_id', $this->manufactureTask->id)->whereNull('label')->firstOrFail();
         AttachManufactureTaskToArtefact::make()->action($this->artefact, [
             'manufacture_task_id' => $this->manufactureTask->id,
             'position'            => 2,
         ]);
 
-        expect((float) $this->artefact->manufactureTasks()->first()->pivot->standard_rate)->toBe(152.0);
+        expect((float) $step->refresh()->standard_rate)->toBe(152.0)
+            ->and($step->position)->toBe(2);
     });
 
     function timeEditSession(\App\Models\Production\JobOrderItemTask $task, \App\Models\SysAdmin\User $user, \Illuminate\Support\Carbon $startedAt, \Illuminate\Support\Carbon $endedAt, float $quantityMade, array $extra = []): ManufactureTaskSession

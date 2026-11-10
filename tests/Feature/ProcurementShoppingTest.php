@@ -1822,7 +1822,7 @@ test('agent switched to goods receipts still ships every line of orders created 
     $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
     [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
 
-    $confirmedLine = function (Carbon\Carbon $createdAt) use ($orgSupplier, $orgSupplierProduct) {
+    $confirmedLine = function (Carbon $createdAt) use ($orgSupplier, $orgSupplierProduct) {
         $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
         $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
         $purchaseOrder->updateQuietly([

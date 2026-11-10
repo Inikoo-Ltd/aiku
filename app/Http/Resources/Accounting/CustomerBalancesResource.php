@@ -17,7 +17,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $code
  * @property mixed $balance
  * @property mixed $shop_slug
- * @property mixed $shop_type
+ * @property mixed $parent_shop_type
  * @property mixed $fulfilment_slug
  * @property mixed $organisation_name
  * @property mixed $organisation_slug
@@ -38,7 +38,7 @@ class CustomerBalancesResource extends JsonResource
             'reference'                  => $this->reference,
             'balance'                    => $this->balance,
             'shop_slug'                  => $this->shop_slug,
-            'shop_type'                  => $this->shop_type,
+            'shop_type'                  => $this->parent_shop_type,
             'shop_code'                  => $this->shop_code,
             'fulfilment_slug'            => $this->fulfilment_slug,
             'organisation_name'          => $this->organisation_name,
