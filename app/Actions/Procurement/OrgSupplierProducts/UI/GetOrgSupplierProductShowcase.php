@@ -13,11 +13,13 @@ namespace App\Actions\Procurement\OrgSupplierProducts\UI;
 use App\Actions\Goods\Stock\UI\GetStockBarcodes;
 use App\Actions\Inventory\OrgStock\UI\GetOrgStockBarcodes;
 use App\Actions\Procurement\AgentLabel\GetAgentOrgStocks;
+use App\Actions\Procurement\OrgSupplierProducts\ResolveOrgStockForSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\GetSupplierProductBarcodes;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductInfo;
 use App\Actions\SupplyChain\SupplierProduct\UploadImagesToSupplierProduct;
 use App\Actions\SupplyChain\SupplierProduct\UI\WithSupplierProductShowcase;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\Goods\Stock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\SupplyChain\Agent;
@@ -141,9 +143,11 @@ class GetOrgSupplierProductShowcase
             ? $viewingOrganisation->agent
             : null;
 
+        $stockIds = $this->getLabelStockIds($orgSupplierProduct);
+
         $orgStocks = $agent
-            ? $this->getAgentOrgStocks($orgSupplierProduct, $agent)
-            : $this->getOwnOrgStocks($orgSupplierProduct);
+            ? $this->getAgentOrgStocks($stockIds, $agent)
+            : $this->getOwnOrgStocks($orgSupplierProduct, $stockIds);
 
         $canEditCarton = $this->canEditCarton($orgSupplierProduct);
 
@@ -155,7 +159,7 @@ class GetOrgSupplierProductShowcase
                 'organisation_id'     => $orgStock->organisation_id,
                 'organisation_code'   => $orgStock->organisation->code,
                 'barcodes'            => GetOrgStockBarcodes::run($orgStock, $orgSupplierProduct->supplierProduct->units_per_carton),
-                'carton_barcode_update_route' => $canEditCarton && $orgStock->stock_id ? [
+                'carton_barcode_update_route' => $canEditCarton && $orgSupplierProduct->supplierProduct->stocks->contains('id', $orgStock->stock_id) ? [
                     'name'       => 'grp.models.org.org_supplier_product.carton_barcode.update',
                     'parameters' => [
                         'organisation'       => $viewingOrganisation->id,
@@ -183,7 +187,7 @@ class GetOrgSupplierProductShowcase
             ->values()
             ->all();
 
-        $masterStock = $orgSupplierProduct->supplierProduct->stocks->first();
+        $masterStock = $stockIds ? Stock::whereIn('id', $stockIds)->orderBy('id')->first() : null;
 
         $selectedLabelOrgStock = collect($labelOrgStocks)->firstWhere('organisation_id', $orgSupplierProduct->organisation_id)
             ?? $labelOrgStocks[0]
@@ -203,11 +207,32 @@ class GetOrgSupplierProductShowcase
     }
 
     /**
+     * A second supplier's product of a stock is often not linked to that stock yet, so its barcodes
+     * and labels come from the stocks of its trade unit, as ResolveOrgStockForSupplierProduct does
+     * when it is ordered.
+     *
+     * @return array<int, int>
+     */
+    private function getLabelStockIds(OrgSupplierProduct $orgSupplierProduct): array
+    {
+        $stockIds = $orgSupplierProduct->supplierProduct->stocks->pluck('id');
+
+        if ($stockIds->isEmpty()) {
+            $stockIds = ResolveOrgStockForSupplierProduct::make()->stockIdsFromTradeUnits($orgSupplierProduct->supplierProduct);
+        }
+
+        return $stockIds->map(fn ($stockId) => (int) $stockId)->unique()->values()->all();
+    }
+
+    /**
+     * @param  array<int, int>  $stockIds
      * @return Collection<int, OrgStock>
      */
-    private function getAgentOrgStocks(OrgSupplierProduct $orgSupplierProduct, Agent $agent): Collection
+    private function getAgentOrgStocks(array $stockIds, Agent $agent): Collection
     {
-        $stockIds = $orgSupplierProduct->supplierProduct->stocks->pluck('id')->all();
+        if (!$stockIds) {
+            return collect();
+        }
 
         return GetAgentOrgStocks::run($agent, stockIds: $stockIds)
             ->whereIn('org_stocks.stock_id', $stockIds)
@@ -218,9 +243,10 @@ class GetOrgSupplierProductShowcase
     /**
      * The SKOs linked to this supplier product, or else this organisation's SKOs of the same master stock.
      *
+     * @param  array<int, int>  $stockIds
      * @return Collection<int, OrgStock>
      */
-    private function getOwnOrgStocks(OrgSupplierProduct $orgSupplierProduct): Collection
+    private function getOwnOrgStocks(OrgSupplierProduct $orgSupplierProduct, array $stockIds): Collection
     {
         $linkedOrgStocks = OrgStock::query()
             ->whereHas('orgSupplierProducts', fn ($query) => $query->where('org_supplier_products.id', $orgSupplierProduct->id))
@@ -231,7 +257,7 @@ class GetOrgSupplierProductShowcase
             ? $linkedOrgStocks
             : OrgStock::query()
                 ->where('organisation_id', $orgSupplierProduct->organisation_id)
-                ->whereIn('stock_id', $orgSupplierProduct->supplierProduct->stocks->pluck('id'))
+                ->whereIn('stock_id', $stockIds)
                 ->with('organisation.warehouses')
                 ->get();
 

@@ -80,7 +80,7 @@ class ResolveOrgStockForSupplierProduct
         return $query->orderBy('org_stocks.id')->first();
     }
 
-    private function stockIdsFromTradeUnits(SupplierProduct $supplierProduct): Collection
+    public function stockIdsFromTradeUnits(SupplierProduct $supplierProduct): Collection
     {
         return DB::table('model_has_trade_units')
             ->where('model_type', 'Stock')
