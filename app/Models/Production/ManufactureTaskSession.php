@@ -81,6 +81,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $moved_into_session_id
  * @property int|null $moved_seconds
  * @property \Illuminate\Support\Carbon|null $shift_end_resolved_at
+ * @property \Illuminate\Support\Carbon|null $shift_end_acknowledged_at
+ * @property int|null $shift_end_acknowledged_by
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Employee|null $employee
@@ -155,6 +157,7 @@ class ManufactureTaskSession extends Model implements Auditable
         'time_edited_at'           => 'datetime',
         'left_open_after_shift_at' => 'datetime',
         'shift_end_resolved_at'    => 'datetime',
+        'shift_end_acknowledged_at' => 'datetime',
         'tier_thresholds'          => 'array',
     ];
 

@@ -118,6 +118,8 @@ Hourly artisans have no break buttons. They take breaks by clocking out with the
 
 **For supervisors and managers.** The **Performance** tab has a **Breaks** table: for each artisan and day, the number of breaks, the minutes planned, the minutes actually taken and the minutes over the plan. Tick **Breaks over plan only** and press **Apply** to see only the breaks that ran over. A red box at the top lists breaks running over right now and breaks still open after the shift ended. For a break left open after the shift, press **Set end**, enter the time the artisan really came back and save; the hours and pay of the jobs the break overlaps are worked out again, and the end first recorded is kept. Clockings are not changed there: they are corrected in Human Resources. The Production Manager sets the allowance with the cog next to the **Breaks** heading.
 
+An amber box lists jobs paused or left running at the end of the shift that nobody has checked yet, for the dates chosen at the top. A job like this is not paid until its real times are set with **Edit times**. If the times cannot or need not be set, press **Seen** to take it off the list: Aiku records who pressed it and when, and the job stays unpaid. Jobs in a week locked for payroll only show to those who can still change that week.
+
 ## Changing a week already paid
 
 The accountant pays the artisans on Tuesday, so a pay week (Monday to Sunday) can be corrected until the end of the Monday after it. From Tuesday 00:00 it is **Locked for payroll**: for example, the week of 26 October to 1 November can be changed until 2 November at 23:59. The current week can always be changed.

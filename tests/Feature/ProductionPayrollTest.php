@@ -1608,6 +1608,40 @@ describe('production reward pay bands', function () {
             ->and($making->left_open_after_shift_at->equalTo($shiftEnd))->toBeTrue();
     });
 
+    test('a job left running past the shift shows on performance for its period only and a supervisor marks it as seen without changing pay', function () {
+        $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(12, 0));
+        $employee = employeeOnDayShift($this->organisation);
+        [$shiftStart, $shiftEnd] = array_map(fn ($moment) => $moment->setTimezone(config('app.timezone')), $employee->shiftWindowOn(now()));
+        $making = ManufactureTaskSession::create([
+            'group_id'                 => $this->production->group_id,
+            'organisation_id'          => $this->production->organisation_id,
+            'production_id'            => $this->production->id,
+            'employee_id'              => $employee->id,
+            'user_id'                  => stepTestSecondOperator($this->group)->id,
+            'job_order_item_task_id'   => $this->payBandJobOrderItemTask->id,
+            'manufacture_task_id'      => $this->payBandJobOrderItemTask->manufacture_task_id,
+            'activity_type'            => \App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionActivityTypeEnum::PRODUCTION,
+            'state'                    => ManufactureTaskSessionStateEnum::OPEN,
+            'started_at'               => $shiftStart->copy()->addHour(),
+            'left_open_after_shift_at' => $shiftEnd,
+        ]);
+        $this->travelTo($shiftEnd->copy()->addHour());
+        $leftOpen = fn (string $from, string $to) => collect(get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'from' => $from, 'to' => $to]))
+            ->assertOk()->original->getData()['page']['props']['left_open'])->firstWhere('id', $making->id);
+
+        $day = $shiftEnd->toDateString();
+        expect($leftOpen($day, $day)['acknowledge_route']['name'])->toBe('grp.models.manufacture-task-session.acknowledge_shift_end')
+            ->and($leftOpen($shiftEnd->copy()->addDay()->toDateString(), $shiftEnd->copy()->addDay()->toDateString()))->toBeNull();
+
+        \Pest\Laravel\patch(route('grp.models.manufacture-task-session.acknowledge_shift_end', $making->id))->assertRedirect();
+
+        $making->refresh();
+        expect($making->shift_end_acknowledged_by)->toBe($this->guest->getUser()->id)
+            ->and($making->shift_end_acknowledged_at)->not->toBeNull()
+            ->and($making->shift_end_resolved_at)->toBeNull()
+            ->and($leftOpen($day, $day))->toBeNull();
+    });
+
     test('a job paused over the end of the shift closes at the pause or carries on, as the operator answers', function () {
         $this->travelTo(now()->startOfWeek()->addDays(2)->setTime(12, 0));
         $employee = employeeOnDayShift($this->organisation);

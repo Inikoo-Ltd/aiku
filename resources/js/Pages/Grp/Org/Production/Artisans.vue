@@ -154,7 +154,7 @@ type Props = {
     under_target: boolean
     time_edited: boolean
     time_edit_reasons: { value: string, label: string }[]
-    left_open: { id: number, worker: string, task_name: string, job_order_reference: string | null, started_at: string, left_open_after_shift_at: string, paused_at: string | null, ended_at: string | null, status: 'paused' | 'running' | 'closed' }[]
+    left_open: { id: number, worker: string, task_name: string, job_order_reference: string | null, started_at: string, left_open_after_shift_at: string, paused_at: string | null, ended_at: string | null, acknowledge_route: null | { name: string, parameters: object }, status: 'paused' | 'running' | 'closed' }[]
     daily_hours_warnings: { count: number, route: { name: string, parameters: Record<string, string | number> } }
     payroll_lock: { locked_before: string, period_locked: boolean, can_change: boolean, reminder: string | null }
     payroll_changes: PayrollChange[]
@@ -356,6 +356,17 @@ function approvePayrollChange(change: PayrollChange) {
     if (!change.approve_route) return
     processing.value = true
     router.patch(route(change.approve_route.name, change.approve_route.parameters), {}, { preserveScroll: true, onFinish: () => processing.value = false })
+}
+const acknowledgeError = ref<string | null>(null)
+function acknowledgeLeftOpen(open: Props['left_open'][number]) {
+    if (!open.acknowledge_route) return
+    processing.value = true
+    acknowledgeError.value = null
+    router.patch(route(open.acknowledge_route.name, open.acknowledge_route.parameters), {}, {
+        preserveScroll: true,
+        onError: (errors) => acknowledgeError.value = Object.values(errors).join(' '),
+        onFinish: () => processing.value = false,
+    })
 }
 function signedMoney(amount: number) {
     return (amount > 0 ? "+" : "") + money(amount)
@@ -856,7 +867,8 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                 {{ ctrans('Paused or left running at the end of the shift, not checked yet') }}
             </div>
             <div class="mt-1 text-xs text-amber-800">{{ ctrans('When the operator clocks back in the tablet asks if they finished before the end of the shift. If it is not answered, or the job ran on without a clock-out, set the real times here with Edit times.') }}</div>
-            <div v-for="open in left_open" :key="open.id" class="mt-1 flex flex-wrap gap-x-3 tabular-nums">
+            <div v-if="acknowledgeError" class="mt-1 text-xs text-red-700">{{ acknowledgeError }}</div>
+            <div v-for="open in left_open" :key="open.id" class="mt-1 flex flex-wrap items-center gap-x-3 tabular-nums">
                 <span class="font-medium">{{ open.worker }}</span>
                 <span>{{ open.task_name }}<template v-if="open.job_order_reference"> · {{ open.job_order_reference }}</template></span>
                 <span>{{ ctrans('started :time', { time: clockTime(open.started_at) }) }}</span>
@@ -864,6 +876,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                 <span v-if="open.status === 'paused'">{{ ctrans('paused since :time', { time: clockTime(open.paused_at) }) }}</span>
                 <span v-else-if="open.status === 'closed'">{{ ctrans('closed :time', { time: clockTime(open.ended_at) }) }}</span>
                 <span v-else>{{ ctrans('still running') }}</span>
+                <Button v-if="open.acknowledge_route" v-tooltip="ctrans('Hides this warning. The job stays out of pay until its times are set with Edit times.')" type="tertiary" size="xs" :icon="['fal', 'times']" :label="ctrans('Seen')" :disabled="processing" @click="acknowledgeLeftOpen(open)" />
             </div>
         </div>
 

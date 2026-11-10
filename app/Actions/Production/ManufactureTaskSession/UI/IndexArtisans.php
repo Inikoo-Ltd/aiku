@@ -301,7 +301,7 @@ class IndexArtisans extends OrgAction
                     'value' => $reason->value,
                     'label' => ManufactureTaskSessionTimeEditReasonEnum::labels()[$reason->value],
                 ], ManufactureTaskSessionTimeEditReasonEnum::supervisorReasons()),
-                'left_open'           => $this->leftOpenSessions($production),
+                'left_open'           => $this->leftOpenSessions($production, $from, $to),
                 'daily_hours_warnings' => $this->dailyHoursWarnings($production, $from, $to),
                 'payroll_lock'         => $this->payrollLock($production, $from),
                 'payroll_changes'      => $this->payrollChanges($production, $from, $to, $request->user()),
@@ -525,6 +525,7 @@ class IndexArtisans extends OrgAction
                 ->whereNotNull('job_order_item_task_id')
                 ->whereNotNull('left_open_after_shift_at')
                 ->whereNull('shift_end_resolved_at')
+                ->whereNull('shift_end_acknowledged_at')
                 ->where('started_at', '<', $this->lockedBefore->copy()->addWeek())
                 ->count();
 
@@ -589,16 +590,19 @@ class IndexArtisans extends OrgAction
     }
 
     /**
-     * Production sessions paused or still running when the operator's shift ended, flagged by production:stop_sessions_after_shift,
-     * until the operator says they finished before the end of the shift, carries on after a clock-out over it, or a supervisor sets the times.
+     * Production sessions paused or still running when the operator's shift ended in the period, flagged by production:stop_sessions_after_shift,
+     * until the operator says they finished before the end of the shift, carries on after a clock-out over it, a supervisor sets the times
+     * or marks it as seen. Shifts in a week locked for payroll only show to those who can still change that week.
      */
-    private function leftOpenSessions(Production $production): array
+    private function leftOpenSessions(Production $production, Carbon $from, Carbon $to): array
     {
         return ManufactureTaskSession::where('production_id', $production->id)
             ->whereIn('state', [ManufactureTaskSessionStateEnum::OPEN, ManufactureTaskSessionStateEnum::CLOSED])
             ->whereNotNull('job_order_item_task_id')
-            ->whereNotNull('left_open_after_shift_at')
+            ->whereBetween('left_open_after_shift_at', [$from, $to])
             ->whereNull('shift_end_resolved_at')
+            ->whereNull('shift_end_acknowledged_at')
+            ->when(!$this->canChangeLockedWeek, fn ($query) => $query->where('left_open_after_shift_at', '>=', $this->lockedBefore))
             ->with(['user', 'manufactureTask', 'jobOrder', 'jobOrderItemTask.jobOrder'])
             ->orderBy('started_at')
             ->get()
@@ -614,6 +618,10 @@ class IndexArtisans extends OrgAction
                     'left_open_after_shift_at' => $session->left_open_after_shift_at,
                     'paused_at'                => $pause?->started_at,
                     'ended_at'                 => $session->ended_at,
+                    'acknowledge_route'        => $this->canEdit || $this->canChangeLockedWeek ? [
+                        'name'       => 'grp.models.manufacture-task-session.acknowledge_shift_end',
+                        'parameters' => ['manufactureTaskSession' => $session->id],
+                    ] : null,
                     'status'                   => match (true) {
                         $session->state == ManufactureTaskSessionStateEnum::CLOSED => 'closed',
                         $pause && !$pause->ended_at => 'paused',
