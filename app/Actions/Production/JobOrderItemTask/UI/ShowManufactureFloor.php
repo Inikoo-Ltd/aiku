@@ -235,7 +235,7 @@ class ShowManufactureFloor extends OrgAction
             ->selectRaw('count(*) as sessions, coalesce(sum(quantity_made),0) as quantity_made, coalesce(sum(quantity_made * task_work_cost),0) as earned')
             ->first();
 
-        $myJobOrderIds = $openTasks->pluck('job_order_id')
+        $myJobOrderIds = $openTasksByJobOrderItem->flatten(1)->pluck('job_order_id')
             ->merge(JobOrderItemTask::whereIn(
                 'id',
                 ManufactureTaskSession::where('user_id', $user->id)
@@ -244,11 +244,7 @@ class ShowManufactureFloor extends OrgAction
                     ->select('job_order_item_task_id')
             )->pluck('job_order_id'))
             ->unique();
-        $jobOrderOptions      = $this->nonProductiveJobOrderOptions($production);
-        $maintenanceJobOrders = array_values(array_map(
-            fn (array $jobOrder) => Arr::except($jobOrder, 'needs_machine_maintenance'),
-            array_filter($jobOrderOptions, fn (array $jobOrder) => $jobOrder['needs_machine_maintenance'] && $myJobOrderIds->contains($jobOrder['id']))
-        ));
+        $maintenanceJobOrders = $this->nonProductiveJobOrderOptions($production, $myJobOrderIds);
 
         return Inertia::render(
             'Org/Production/ManufactureFloor',
@@ -307,7 +303,7 @@ class ShowManufactureFloor extends OrgAction
                         'label'      => ManufactureTaskSessionActivityTypeEnum::labels()[$activity->value],
                         'job_orders' => $activity == ManufactureTaskSessionActivityTypeEnum::MAINTENANCE ? $maintenanceJobOrders : null,
                     ], ManufactureTaskSessionActivityTypeEnum::floorActivities()), fn (array $activity) => $activity['job_orders'] !== [])),
-                    'job_orders' => array_map(fn (array $jobOrder) => Arr::except($jobOrder, 'needs_machine_maintenance'), $jobOrderOptions),
+                    'job_orders' => $this->nonProductiveJobOrderOptions($production),
                 ],
                 'open_session' => $openSession?->isNonProductive() ? self::serializeNonProductiveSession($openSession) : ($openSession ? [
                     'id'         => $openSession->id,
@@ -401,10 +397,11 @@ class ShowManufactureFloor extends OrgAction
 
     /**
      * Job orders on the floor, plus any worked in the last week, so a clean-down after the batch is finished or received can still be booked to it.
+     * Given the artisan's own job orders, returns those of them making a product whose machine needs cleaning, whatever their state.
      *
      * @return array<int, array{id: int, label: string}>
      */
-    protected function nonProductiveJobOrderOptions(Production $production): array
+    protected function nonProductiveJobOrderOptions(Production $production, ?Collection $maintainedAmong = null): array
     {
         $workedRecently = JobOrderItemTask::whereIn(
             'id',
@@ -415,17 +412,18 @@ class ShowManufactureFloor extends OrgAction
         )->select('job_order_id');
 
         return JobOrder::where('production_id', $production->id)
-            ->where(fn ($query) => $query->where('state', JobOrderStateEnum::CONFIRMED)->orWhereIn('id', $workedRecently))
+            ->when(
+                $maintainedAmong !== null,
+                fn ($query) => $query->whereIn('id', $maintainedAmong)->whereHas('jobOrderItems.artefact', fn ($query) => $query->needsMachineMaintenance()),
+                fn ($query) => $query->where(fn ($query) => $query->where('state', JobOrderStateEnum::CONFIRMED)->orWhereIn('id', $workedRecently))->limit(100)
+            )
             ->with('jobOrderItems.artefact')
-            ->withExists(['jobOrderItems as needs_machine_maintenance' => fn ($query) => $query->whereHas('artefact', fn ($query) => $query->needsMachineMaintenance())])
             ->orderByDesc('date')
             ->orderByDesc('id')
-            ->limit(100)
             ->get()
             ->map(fn (JobOrder $jobOrder) => [
-                'id'                        => $jobOrder->id,
-                'label'                     => trim($jobOrder->reference.' · '.$jobOrder->jobOrderItems->pluck('artefact.code')->filter()->unique()->implode(', '), ' ·'),
-                'needs_machine_maintenance' => (bool) $jobOrder->needs_machine_maintenance,
+                'id'    => $jobOrder->id,
+                'label' => trim($jobOrder->reference.' · '.$jobOrder->jobOrderItems->pluck('artefact.code')->filter()->unique()->implode(', '), ' ·'),
             ])
             ->all();
     }
