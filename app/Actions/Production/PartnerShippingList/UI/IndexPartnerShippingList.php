@@ -19,6 +19,7 @@ use App\Actions\Production\PartnerShippingList\GetMixJobOrders;
 use App\Actions\Production\Production\UI\ShowProduction;
 use App\Enums\HumanResources\Employee\EmployeeStateEnum;
 use App\Enums\Production\Artefact\ArtefactLabelStateEnum;
+use App\Enums\Production\Artefact\ArtefactStateEnum;
 use App\Enums\Production\JobOrder\JobOrderStateEnum;
 use App\Models\HumanResources\Employee;
 use App\Actions\Production\JobOrder\StoreManualJobOrder;
@@ -74,7 +75,12 @@ class IndexPartnerShippingList extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('stocks.code', $value)
                     ->orWhereStartWith('stocks.name', $value)
-                    ->orWhereStartWith('organisations.code', $value);
+                    ->orWhereStartWith('organisations.code', $value)
+                    ->orWhereStartWith('products.code', $value)
+                    ->orWhereStartWith('orders.reference', $value)
+                    ->orWhereStartWith('customers.name', $value)
+                    ->orWhereStartWith('shops.name', $value)
+                    ->orWhereStartWith('shops.code', $value);
             });
         });
 
@@ -84,11 +90,26 @@ class IndexPartnerShippingList extends OrgAction
                 $join->on('org_stocks.stock_id', 'stocks.id')
                     ->where('org_stocks.organisation_id', $seller->id);
             })
-            ->leftJoin('artefacts', function ($join) {
-                $join->on('artefacts.org_stock_id', 'org_stocks.id')
-                    ->where('artefacts.production_id', $this->production->id)
-                    ->whereNull('artefacts.deleted_at');
+            ->leftJoin('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
+            ->leftJoin('orders', 'orders.id', 'transactions.order_id')
+            ->leftJoin('customers', 'customers.id', 'orders.customer_id')
+            ->leftJoin('shops', 'shops.id', 'orders.shop_id')
+            ->leftJoin('products', function ($join) {
+                $join->on('products.id', 'transactions.model_id')->where('transactions.model_type', 'Product');
             })
+            ->leftJoin('artefacts as fill_artefacts', function ($join) {
+                $join->where('fill_artefacts.production_id', $this->production->id)
+                    ->whereNull('fill_artefacts.org_stock_id')
+                    ->whereNull('fill_artefacts.deleted_at')
+                    ->whereIn('fill_artefacts.state', ArtefactStateEnum::launched())
+                    ->whereRaw("lower(products.code) = lower(org_stocks.code || '-' || (fill_artefacts.settings->>'fills_size'))");
+            })
+            ->leftJoin('artefacts as bulk_artefacts', function ($join) {
+                $join->on('bulk_artefacts.org_stock_id', 'org_stocks.id')
+                    ->where('bulk_artefacts.production_id', $this->production->id)
+                    ->whereNull('bulk_artefacts.deleted_at');
+            })
+            ->leftJoin('artefacts', 'artefacts.id', DB::raw('coalesce(fill_artefacts.id, bulk_artefacts.id)'))
             ->leftJoin('artefact_departments', 'artefacts.artefact_department_id', 'artefact_departments.id')
             ->leftJoin('employees', 'employees.id', DB::raw("coalesce(
                 (select employee_id from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id order by position limit 1),
@@ -98,9 +119,6 @@ class IndexPartnerShippingList extends OrgAction
                 $join->on('organisations.id', 'partner_shopping_list_items.organisation_id')
                     ->whereNotNull('partner_shopping_list_items.partner_organisation_id');
             })
-            ->leftJoin('transactions', 'transactions.id', 'partner_shopping_list_items.transaction_id')
-            ->leftJoin('orders', 'orders.id', 'transactions.order_id')
-            ->leftJoin('customers', 'customers.id', 'orders.customer_id')
             ->leftJoinSub(
                 DB::table('partner_shopping_list_items')
                     ->where('state', ShoppingListItemStateEnum::OPEN)
@@ -183,8 +201,9 @@ class IndexPartnerShippingList extends OrgAction
                 DB::raw(PartnerShoppingListItem::promisedNotStagedSql((string) $seller->id, 'stocks.id').' as stock_promised'),
                 DB::raw('coalesce(open_demand.quantity, 0) as open_demand_quantity'),
                 DB::raw('coalesce(customer_demand.lines, 0) as customer_demand_lines'),
-                'stocks.code as stock_code',
+                DB::raw('coalesce(case when fill_artefacts.id is not null then products.code end, stocks.code) as stock_code'),
                 'stocks.name as stock_name',
+                DB::raw('fill_artefacts.id is not null as is_fill'),
                 'artefact_departments.name as family',
                 'artefacts.artefact_department_id',
                 'employees.contact_name as maker',
@@ -192,6 +211,7 @@ class IndexPartnerShippingList extends OrgAction
                 DB::raw("employees.id is not null and not exists(select 1 from artisan_assignments where artisanable_type = 'Artefact' and artisanable_id = artefacts.id) as maker_is_auto"),
                 'organisations.code as buyer_code',
                 'customers.name as customer_name',
+                'shops.name as shop_name',
                 'orders.reference as order_reference',
                 ...$this->jobOrderColumns(),
             ])
@@ -229,7 +249,7 @@ class IndexPartnerShippingList extends OrgAction
                 ->all()
             : [];
         $item->order_quantum  = BatchedUnitsForDemand::make()->quantumInSkos($item->packed_in, $item->batch_size);
-        $item->is_hitchhiker  = !$item->job_order_id
+        $item->is_hitchhiker  = empty($item->is_fill) && !$item->job_order_id
             && $item->order_quantum > 1
             && (float) $item->open_demand_quantity < $item->order_quantum
             && !$item->customer_demand_lines;
@@ -543,7 +563,7 @@ class IndexPartnerShippingList extends OrgAction
         $surplus = GetProductionSurplusInPipeline::run($backlogItems->pluck('org_stock_id')->filter()->unique()->values()->all());
 
         $backlogItems->sortBy(fn ($item) => [$item->created_at, $item->id])->each(function ($item) use (&$surplus) {
-            $row = $surplus[$item->org_stock_id] ?? null;
+            $row = empty($item->is_fill) ? $surplus[$item->org_stock_id] ?? null : null;
             if (!$row) {
                 return;
             }

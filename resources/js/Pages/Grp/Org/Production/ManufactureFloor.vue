@@ -21,8 +21,8 @@ import { mixBatchesLabel } from '@/Composables/mixBatches'
 import { packsLabel } from '@/Composables/packs'
 import { PageHeadingTypes } from '@/types/PageHeading'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIndustry, faLink } from "@fal"
-library.add(faIndustry, faLink)
+import { faIndustry, faLink, faPrint } from "@fal"
+library.add(faIndustry, faLink, faPrint)
 
 interface NonProductiveActivity {
     value: string
@@ -77,6 +77,7 @@ interface FloorTask {
     artefact_family_id: number | null
     artefact_image: object | null
     job_order_reference: string
+    packing_slips_url: string | null
     continued_from: string | null
     continued_in: string | null
     artisan: string | null
@@ -596,6 +597,10 @@ function startTask(task: FloorTask) {
                 <Image v-if="selectedTask.artefact_image" :src="selectedTask.artefact_image" class="mx-auto mt-3 aspect-square w-40 overflow-hidden rounded-xl shadow" />
                 <div class="text-5xl font-bold mt-3">{{ selectedTask.artefact_code }}</div>
                 <div class="text-3xl font-semibold text-gray-800 mt-1">{{ selectedTask.artefact_name }}</div>
+                <a v-if="selectedTask.packing_slips_url" :href="selectedTask.packing_slips_url" target="_blank" class="mx-auto mt-3 inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-3 text-xl font-semibold text-gray-700">
+                    <FontAwesomeIcon icon="fal fa-print" fixed-width aria-hidden="true" />
+                    {{ ctrans('Print packing slips') }}
+                </a>
                 <div class="text-5xl font-semibold tabular-nums my-6">
                     {{ packsLabel(selectedTask.quantity_made, selectedTask.pack_size) }} <span class="text-gray-400 text-3xl">/ {{ packsLabel(selectedTask.quantity_required, selectedTask.pack_size) }}<template v-if="selectedTask.unit"> {{ selectedTask.unit }}</template></span>
                     <div v-if="mixBatches(selectedTask)" class="mt-1 text-3xl text-[var(--app-accent-strong)]">{{ mixBatches(selectedTask) }}</div>

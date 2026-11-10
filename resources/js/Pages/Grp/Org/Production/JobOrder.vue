@@ -151,6 +151,7 @@ const props = defineProps<{
     add_item_route: null | { name: string, parameters: object }
     confirm_route: null | { name: string, parameters: object }
     pdf_route: { name: string, parameters: object }
+    packing_slips_route: null | { name: string, parameters: object }
     receive_route: null | { name: string, parameters: object }
     is_trial_run: boolean
     trial_run_brief_route: null | { name: string, parameters: object }
@@ -161,6 +162,11 @@ const artisanChoices = computed(() => [{ id: null, name: ctrans('Anyone') }, ...
 
 function printJobList() {
     window.open(route(props.pdf_route.name, props.pdf_route.parameters as Record<string, string>), '_blank')
+}
+
+function printPackingSlips() {
+    if (!props.packing_slips_route) return
+    window.open(route(props.packing_slips_route.name, props.packing_slips_route.parameters as Record<string, string>), '_blank')
 }
 
 function setArtisan(value: string) {
@@ -471,6 +477,9 @@ function receiveIntoStock() {
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 <Button type="tertiary" :label="ctrans('Print job list')" class="whitespace-nowrap" @click="printJobList">
+                    <template #icon><FontAwesomeIcon icon="fal fa-print" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button v-if="packing_slips_route" type="tertiary" :label="ctrans('Print packing slips')" class="whitespace-nowrap" @click="printPackingSlips">
                     <template #icon><FontAwesomeIcon icon="fal fa-print" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" /></template>
                 </Button>
                 <Button

@@ -23,6 +23,7 @@ use App\Models\Production\JobOrder;
 use App\Actions\Production\JobOrderItem\DeleteJobOrderItem;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Models\Production\JobOrderItem;
+use Illuminate\Support\Arr;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
@@ -106,7 +107,7 @@ class ShowJobOrder extends OrgAction
                     'id'                 => $item->id,
                     'artefact_id'        => $item->artefact_id,
                     'artefact_code'      => $item->artefact->code,
-                    'artefact_name'      => $item->artefact->name,
+                    'artefact_name'      => $item->displayName(),
                     'quantity'           => (int)$subJobs->sum('quantity'),
                     'demand_skos'        => data_get($item->data, 'demand_skos'),
                     'carry_over'         => JobOrderItem::carryOver($subJobs),
@@ -208,6 +209,10 @@ class ShowJobOrder extends OrgAction
                     'name'       => 'grp.org.productions.show.operations.job-orders.pdf',
                     'parameters' => $request->route()->originalParameters(),
                 ],
+                'packing_slips_route' => $allItems->contains(fn (JobOrderItem $item) => Arr::has($item->data, 'fill')) ? [
+                    'name'       => 'grp.org.productions.show.operations.job-orders.packing_slips',
+                    'parameters' => $request->route()->originalParameters(),
+                ] : null,
                 'artefact_options' => $this->canEdit ? $artefactOptions : [],
                 'add_item_route'   => $this->canEdit ? [
                     'name'       => 'grp.models.job-order.item.store',

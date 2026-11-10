@@ -117,7 +117,7 @@ const props = defineProps<{
     pipeline?: { count: number, ignoring: boolean }
     canCreateJobOrder?: boolean
     manualJobOrder?: { reasons: string[], artefacts: { id: number, code: string, name: string, packed_in: number | null, stock_available: number | null, gross_weight: number | null, on_board: number }[] } | null
-    groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null, published_labels?: PublishedLabel[] }[] }[] | null
+    groups: { label: string, items: { id: number, quantity: number, state: string, stock_code: string, stock_name: string, family: string | null, maker: string | null, buyer_code: string | null, customer_name: string | null, shop_name?: string | null, order_reference: string | null, job_order_reference: string | null, job_order_slug: string | null, priority: string, needed_by: string | null, published_labels?: PublishedLabel[] }[] }[] | null
 }>()
 
 const selected = reactive<Record<number, number>>({})
@@ -155,7 +155,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, is_fill?: boolean, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function artisansOf(item: BoardItem): string[] {
     if (item.current_steps?.length) return [...new Set(item.current_steps.flatMap(step => step.artisans.map(artisan => artisan ?? "")))]
@@ -420,6 +420,10 @@ const sourceLabels: Record<string, string> = { own: ctrans("Own customers"), par
 
 function sourceOf(item: { buyer_code?: string | null }): string {
     return item.buyer_code ? "partners" : "own"
+}
+
+function requesterWithOrder(item: { shop_name?: string | null, customer_name?: string | null, order_reference?: string | null }): string | null {
+    return [item.order_reference, item.shop_name, item.customer_name].filter(Boolean).join(" · ") || null
 }
 
 function requesterOf(item: { buyer_code: string | null, customer_name: string | null }): string {
@@ -841,7 +845,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                             {{ ctrans("SKO") }}
                         </span>
                         <span class="ml-auto flex items-center gap-1 tabular-nums" :class="item.priority === 'urgent' ? 'text-red-600 font-semibold' : ''">
-                            ×{{ useLocaleStore().number(Math.ceil(Number(item.quantity))) }} {{ ctrans("SKO") }}
+                            ×{{ useLocaleStore().number(Math.ceil(Number(item.quantity))) }} {{ item.is_fill ? ctrans("bottles") : ctrans("SKO") }}
                             <template v-if="laneIndex === LANE_PREPARING && item.state === 'open'">
                                 <span class="text-[var(--app-accent)]">→</span>
                                 <input
@@ -861,7 +865,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                     </div>
                     <div class="truncate text-gray-600" :title="item.stock_name">{{ item.stock_name }}</div>
                     <div class="flex items-center gap-1 text-gray-400">
-                        <span>{{ item.buyer_code ?? item.customer_name ?? item.notes }}</span>
+                        <span>{{ item.buyer_code ?? requesterWithOrder(item) ?? item.notes }}</span>
                         <span v-if="item.family">· {{ item.family }}</span>
                         <span v-if="laneIndex === LANE_ASSIGNED && isReassignable(item)" class="ml-auto rounded bg-emerald-50 px-1 text-[10px] font-semibold uppercase text-emerald-700">{{ ctrans("Queued") }}</span>
                         <span v-if="item.job_order_hold_reason" v-tooltip="item.job_order_hold_reason" class="rounded bg-yellow-100 px-1 text-[10px] font-semibold uppercase text-yellow-800" :class="laneIndex === LANE_ASSIGNED && isReassignable(item) ? '' : 'ml-auto'">{{ ctrans("On hold") }}</span>
@@ -981,7 +985,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                 <input v-if="item.id in selected" v-model.number="selected[item.id]" type="number" step="0.001" :max="item.quantity" min="0.001" class="w-24 rounded border-gray-300" />
                             </div>
                         </td>
-                        <td v-if="groupBy !== 'buyer_code'" class="w-40 px-2 py-1.5">{{ item.buyer_code ?? item.customer_name }}</td>
+                        <td v-if="groupBy !== 'buyer_code'" class="w-40 px-2 py-1.5">{{ item.buyer_code ?? requesterWithOrder(item) }}</td>
                         <td class="w-32 px-2 py-1.5">{{ item.stock_code }}</td>
                         <td class="px-2 py-1.5">{{ item.stock_name }}</td>
                         <td v-if="groupBy !== 'family'" class="w-40 px-2 py-1.5 text-gray-500">{{ item.family }}</td>
@@ -1000,7 +1004,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
     <Table v-else-if="!mixes" :resource="data" class="mt-5">
         <template #cell(buyer_code)="{ item }">
             <span v-if="item.buyer_code">{{ item.buyer_code }}</span>
-            <span v-else>{{ item.customer_name }} <span class="text-gray-500">{{ item.order_reference }}</span></span>
+            <span v-else>{{ [item.shop_name, item.customer_name].filter(Boolean).join(" · ") }} <span class="whitespace-nowrap text-gray-500">{{ item.order_reference }}</span></span>
         </template>
         <template #cell(stock_code)="{ item }">
             <div class="whitespace-nowrap">{{ item.stock_code }} <span v-if="item.poked_at" class="ml-1 rounded bg-red-100 px-1 text-xs text-red-700" :title="ctrans(':who poked :at: the buyer urgently needs this', { who: item.poked_by ?? item.buyer_code ?? '', at: useFormatTime(item.poked_at, { formatTime: 'dd MMM HH:mm' }) })"><FontAwesomeIcon icon="fal fa-bells" fixed-width aria-hidden="true" /> {{ ctrans("Poked") }}</span> <span v-if="item.family" class="ml-1 rounded-full bg-gray-100 border border-gray-200 px-2 py-0.5 text-xs text-gray-600">{{ item.family }}</span></div>

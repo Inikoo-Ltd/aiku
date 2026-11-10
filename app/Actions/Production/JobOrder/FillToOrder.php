@@ -20,6 +20,7 @@ use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Procurement\PartnerShoppingListItem;
 use App\Models\Production\Artefact;
+use App\Models\Production\JobOrder;
 use App\Models\Production\JobOrderItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -62,6 +63,48 @@ class FillToOrder
             ->with('transaction.model')
             ->get()
             ->filter(fn (PartnerShoppingListItem $item) => $this->artefactFor($item->transaction?->model) !== null)
+            ->values();
+    }
+
+    /** The order a fill line is filled for, read through its To Produce line so carried and split lines find it too */
+    public function orderFor(JobOrderItem $item): ?Order
+    {
+        $lineId = Arr::get($item->data, 'fill.to_produce_id');
+
+        return $lineId ? PartnerShoppingListItem::find($lineId)?->transaction?->order : null;
+    }
+
+    /** "EZC-20219 Eazycolours · Michelle Ash": the label to print depends on the shop (HELP-4638) */
+    public function orderLabel(?Order $order): ?string
+    {
+        return $order ? $order->reference.' '.$order->shop->name.' · '.$order->customer?->name : null;
+    }
+
+    /**
+     * One packing slip per order the job fills, so the bottles wait with their order (HELP-4638).
+     *
+     * @return Collection<int, array{order: Order, lines: Collection<int, array{code: string, name: string, quantity: float}>}>
+     */
+    public function slips(JobOrder $jobOrder): Collection
+    {
+        return $jobOrder->jobOrderItems()->orderBy('id')->get()
+            ->map(function (JobOrderItem $item) {
+                $transaction = PartnerShoppingListItem::find(Arr::get($item->data, 'fill.to_produce_id'))?->transaction;
+
+                return $transaction?->order ? ['transaction' => $transaction, 'quantity' => (float) $item->quantity] : null;
+            })
+            ->filter()
+            ->groupBy(fn (array $row) => $row['transaction']->order_id)
+            ->map(fn (Collection $rows) => [
+                'order' => $rows->first()['transaction']->order,
+                'lines' => $rows->groupBy(fn (array $row) => $row['transaction']->id)
+                    ->map(fn (Collection $sameLine) => [
+                        'code'     => $sameLine->first()['transaction']->model?->code ?? '',
+                        'name'     => $sameLine->first()['transaction']->model?->name ?? '',
+                        'quantity' => $sameLine->sum('quantity'),
+                    ])
+                    ->values(),
+            ])
             ->values();
     }
 
@@ -148,14 +191,21 @@ class FillToOrder
         $order       = $line?->transaction?->order;
         $transaction = $line?->transaction;
         if ($transaction && !PartnerShoppingListItem::where('transaction_id', $transaction->id)->where('state', ShoppingListItemStateEnum::OPEN)->exists()) {
-            $lineIds = PartnerShoppingListItem::where('transaction_id', $transaction->id)->pluck('id')->all();
-            $filled  = (int) JobOrderItem::whereIn('data->fill->to_produce_id', $lineIds)->sum('quantity_received');
-            if ($filled < (float) $transaction->quantity_ordered) {
-                $order->update(['private_warehouse_note' => collect([
-                    $order->private_warehouse_note,
-                    __('only :filled of :ordered :product filled', ['filled' => $filled, 'ordered' => (float) $transaction->quantity_ordered, 'product' => $transaction->model?->code]),
-                ])->filter()->implode(' — ')]);
-            }
+            $lineIds     = PartnerShoppingListItem::where('transaction_id', $transaction->id)->pluck('id')->all();
+            $filledItems = JobOrderItem::whereIn('data->fill->to_produce_id', $lineIds)->where('quantity_received', '>', 0)->with('jobOrder')->get();
+            $filled      = (int) $filledItems->sum('quantity_received');
+            $product     = $transaction->model?->code;
+            $order->update(['private_warehouse_note' => collect([
+                $order->private_warehouse_note,
+                $filled > 0 ? __(':product ×:filled filled on :job_orders, take them from the waiting area', [
+                    'product'    => $product,
+                    'filled'     => $filled,
+                    'job_orders' => $filledItems->pluck('jobOrder.reference')->unique()->implode(', '),
+                ]) : null,
+                $filled < (float) $transaction->quantity_ordered
+                    ? __('only :filled of :ordered :product filled', ['filled' => $filled, 'ordered' => (float) $transaction->quantity_ordered, 'product' => $product])
+                    : null,
+            ])->filter()->implode(' — ')]);
         }
 
         if ($order

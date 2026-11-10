@@ -48,6 +48,7 @@ use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Actions\Production\JobOrder\UI\IndexJobOrders;
 use App\Actions\Production\JobOrder\UI\ShowJobOrder;
 use App\Actions\Production\JobOrder\PdfJobOrder;
+use App\Actions\Production\JobOrder\PdfFillPackingSlips;
 use App\Actions\Production\JobOrderItemTask\UI\ShowManufactureFloor;
 use App\Actions\Production\JobOrder\UI\IndexJobOrderPlan;
 use App\Actions\Production\MaterialRequest\UI\IndexDayMaterialsCheck;
@@ -105,6 +106,7 @@ Route::prefix('{production}')
                         Route::get('job-orders', IndexJobOrders::class)->name('job-orders.index');
                         Route::get('job-orders/{jobOrder}', ShowJobOrder::class)->name('job-orders.show');
                         Route::get('job-orders/{jobOrder}/pdf', PdfJobOrder::class)->name('job-orders.pdf');
+                        Route::get('job-orders/{jobOrder}/packing-slips', PdfFillPackingSlips::class)->name('job-orders.packing_slips');
                         Route::post('partner-orders/{orgPartner:id}', StorePartnerOrderFromBay::class)->name('partner_orders.store')->withoutScopedBindings();
                         Route::get('manufacture-tasks', IndexManufactureTasks::class)->name('manufacture_tasks.index');
                         Route::get('manufacture-tasks/create', CreateManufactureTask::class)->name('manufacture_tasks.create');

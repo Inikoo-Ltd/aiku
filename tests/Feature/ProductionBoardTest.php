@@ -1848,7 +1848,8 @@ test('a bottle filled to order puts a fill line on To Produce, holds the whole o
     expect($lines[0]->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
         ->and($jobOrder->refresh()->state)->toBe(\App\Enums\Production\JobOrder\JobOrderStateEnum::RECEIVED)
         ->and($order->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::IN_WAREHOUSE)
-        ->and((string) $order->private_warehouse_note)->not->toContain($product->code);
+        ->and((string) $order->private_warehouse_note)->not->toContain('waiting for filling')
+        ->and((string) $order->private_warehouse_note)->toContain($product->code.' ×3 filled on '.$item->jobOrder->reference.', '.$jobOrder->reference);
 
     $filledSession = \App\Models\Production\ManufactureTaskSession::where('job_order_item_task_id', $carried->tasks()->first()->id)->latest('id')->first();
     expect(fn () => \App\Actions\Production\ManufactureTaskSession\VoidManufactureTaskSession::make()->action($filledSession, $this->guest->getUser()))
@@ -1898,6 +1899,58 @@ test('a fill line follows its order line: quantity changes, removal and cancelli
     \App\Actions\Production\JobOrder\FillToOrder::make()->dismissForCancelledOrder($order->refresh());
     expect($rest->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
         ->and($rest->dismiss_reason)->toBe('order cancelled');
+});
+
+test('a fill line shows on the board as the bottles for its order and shop, and the job prints a packing slip per order', function () {
+    [, , $shop] = createShop();
+    createWarehouse();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $product->update(['code' => $orgStock->code.'-100ml']);
+
+    $bulk = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'BULK-'.uniqid(), 'name' => 'Bulk oil']);
+    $bulk->update(['org_stock_id' => $orgStock->id, 'recommended_batch_size' => 50]);
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-100ML-'.uniqid(), 'name' => 'Fill 100ml']);
+    $fill->update(['settings' => ['fills_size' => '100ml'], 'org_stock_id' => null, 'recommended_batch_size' => 50]);
+    $fill->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'SLIP-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->refresh()->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 3]));
+    [$line] = \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
+
+    $routeParameters = [$this->organisation->slug, $this->production->slug];
+    $cardOf          = fn (array $query = []) => collect(get(route('grp.org.productions.show.to_produce.index', [...$routeParameters, ...$query]))->assertOk()->viewData('page')['props']['groups'])
+        ->flatMap(fn ($lane) => $lane['items'])
+        ->first(fn ($item) => data_get($item, 'id') === $line->id);
+
+    $card = $cardOf();
+    expect(data_get($card, 'artefact_id'))->toBe($fill->id)
+        ->and(data_get($card, 'stock_code'))->toBe($product->code)
+        ->and((bool) data_get($card, 'is_fill'))->toBeTrue()
+        ->and(data_get($card, 'is_hitchhiker'))->toBeFalse()
+        ->and(data_get($card, 'order_reference'))->toBe($order->reference)
+        ->and(data_get($card, 'shop_name'))->toBe($shop->name)
+        ->and(data_get($card, 'customer_name'))->toBe($customer->name)
+        ->and($cardOf(['filter' => ['global' => $order->reference]]))->not->toBeNull();
+
+    $jobOrder = \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [$line->id])['job_orders'][0];
+    expect($jobOrder->jobOrderItems()->first()->displayName())->toContain($order->reference)->toContain($shop->name);
+
+    $slips = \App\Actions\Production\JobOrder\FillToOrder::make()->slips($jobOrder);
+    expect($slips)->toHaveCount(1)
+        ->and($slips[0]['order']->id)->toBe($order->id)
+        ->and($slips[0]['lines']->all())->toBe([['code' => $product->code, 'name' => $product->name, 'quantity' => 3.0]]);
+
+    get(route('grp.org.productions.show.operations.job-orders.packing_slips', [...$routeParameters, $jobOrder->slug]))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
 });
 
 test('job orders from to-produce refuse ids beyond the integer range', function () {

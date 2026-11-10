@@ -46,7 +46,7 @@ class StoreJobOrdersGroupedByArtisan
             foreach ($artisanLines as $line) {
                 StoreJobOrderItem::make()->action($jobOrder, [
                     'artefact_id' => $line['artefact']->id,
-                    'quantity'    => BatchedUnitsForDemand::run(
+                    'quantity'    => isset($line['fill']) ? (int) ceil((float) $line['quantity']) : BatchedUnitsForDemand::run(
                         (float) $line['quantity'],
                         $line['artefact']->orgStock?->packed_in,
                         $line['artefact']->recommended_batch_size

@@ -2,6 +2,7 @@
 
 namespace App\Models\Production;
 
+use App\Actions\Production\JobOrder\FillToOrder;
 use App\Enums\Production\JobOrderItem\JobOrderItemStateEnum;
 use App\Enums\Production\JobOrderItem\JobOrderItemStatusEnum;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
@@ -288,7 +289,9 @@ class JobOrderItem extends Model
             return $this->artefact->name;
         }
 
-        return $this->artefact->name.' – '.trim($fill['oil'].' '.($fill['oil_name'] ?? '')).($fill['order'] ? ', '.__('order :reference', ['reference' => $fill['order']]) : '');
+        $for = FillToOrder::make()->orderLabel(FillToOrder::make()->orderFor($this)) ?? ($fill['order'] ? __('order :reference', ['reference' => $fill['order']]) : null);
+
+        return $this->artefact->name.' – '.trim($fill['oil'].' '.($fill['oil_name'] ?? '')).($for ? ', '.$for : '');
     }
 
     public function isFinished(): bool
