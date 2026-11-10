@@ -1,156 +1,112 @@
 package io.aiku.droid.ui.goodsin
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
-import io.aiku.droid.ui.components.AppHeader
+import io.aiku.droid.data.api.Ability
 import io.aiku.droid.ui.components.AppScreen
-import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.CardShape
+import io.aiku.droid.ui.components.ControlShape
+import io.aiku.droid.ui.components.ModuleHeader
 import io.aiku.droid.ui.components.RequireAbility
-import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.WarehouseSection
 import io.aiku.droid.ui.components.fakeData
-import io.aiku.droid.ui.navigation.AppTab
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
-import io.aiku.droid.ui.navigation.StockDeliveryDetailRoute
-import io.aiku.droid.ui.theme.AikuDroidTheme
+import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-private enum class GoodsInBacklogStage(@StringRes val title: Int, @StringRes val actionLabel: Int?) {
-    Received(R.string.goodsin_backlog_received, R.string.goodsin_action_check),
-    Checked(R.string.goodsin_backlog_checked, R.string.goodsin_action_place),
-    Dispatched(R.string.goodsin_backlog_dispatched, null),
-}
-
-private data class GoodsInBacklogDelivery(val reference: String, val summary: String)
-
-private data class GoodsInBacklogGroup(val stage: GoodsInBacklogStage, val deliveries: List<GoodsInBacklogDelivery>)
-
-private val goodsInBacklogSample = listOf(
-    GoodsInBacklogGroup(
-        stage = GoodsInBacklogStage.Received,
-        deliveries = listOf(
-            GoodsInBacklogDelivery("SD-1093", "6 items · Goods-in bay 2 · 08:40"),
-            GoodsInBacklogDelivery("SD-1088", "3 items · Goods-in bay 1 · yesterday"),
-        ),
-    ),
-    GoodsInBacklogGroup(
-        stage = GoodsInBacklogStage.Checked,
-        deliveries = listOf(GoodsInBacklogDelivery("SD-1091", "14 items · put away to Area A, B")),
-    ),
-    GoodsInBacklogGroup(
-        stage = GoodsInBacklogStage.Dispatched,
-        deliveries = listOf(
-            GoodsInBacklogDelivery("SD-1096", "22 items · expected 11 Nov"),
-            GoodsInBacklogDelivery("SD-1097", "8 items · expected 12 Nov"),
-            GoodsInBacklogDelivery("SD-1099", "40 items · expected 14 Nov"),
-        ),
-    ),
-)
+private data class StateCount(val label: String, val value: Int, val container: Color, val content: Color)
 
 @Composable
 fun GoodsInBacklogScreen() {
-    val colors = LocalAikuColors.current
-    val can = LocalWarehouse.current.can
     val navigator = LocalAppNavigator.current
-    val title = stringResource(R.string.goodsin_title)
+    val can = LocalWarehouse.current.can
+    val sources = GoodsInSamples.hubSources.filter { !it.isFulfilment || can.viewFulfilment }
 
-    RequireAbility(isAllowed = can.viewGoodsIn, title = title, activeTab = AppTab.GoodsIn) {
+    RequireAbility(ability = Ability.ViewGoodsIn, title = stringResource(R.string.module_goods_in), activeTab = MainTab.Menu) {
         AppScreen(
-            header = { AppHeader(title = title, below = { GoodsInSectionTabs(active = GoodsInSection.Backlog) }) },
-            activeTab = AppTab.GoodsIn,
-            spacing = 14.dp,
+            header = { ModuleHeader(section = WarehouseSection.GoodsInBacklog, title = stringResource(R.string.goodsin_hub_title)) },
+            activeTab = MainTab.Menu,
+            showBar = true,
         ) {
-            Text(
-                text = stringResource(R.string.goodsin_backlog_intro),
-                fontSize = 13.sp,
-                color = colors.textTertiary,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
-            goodsInBacklogSample.forEach { group ->
-                GoodsInBacklogSection(
-                    group = group,
-                    showActions = can.bookIn,
-                    onOpen = { reference -> navigator.open(StockDeliveryDetailRoute(reference)) },
-                )
+            sources.forEach { source ->
+                SourceCard(source = source, onOpen = { navigator.switchSection(source.route) })
             }
+            HelperNote(text = stringResource(R.string.goodsin_hub_note))
         }
     }
 }
 
 @Composable
-private fun GoodsInBacklogSection(group: GoodsInBacklogGroup, showActions: Boolean, onOpen: (String) -> Unit) {
+private fun SourceCard(source: SourceCounts, onOpen: () -> Unit) {
     val colors = LocalAikuColors.current
-    val dotColor = when (group.stage) {
-        GoodsInBacklogStage.Received -> colors.success
-        GoodsInBacklogStage.Checked -> colors.primary
-        GoodsInBacklogStage.Dispatched -> colors.faint
-    }
-    val actionLabel = group.stage.actionLabel?.takeIf { showActions }?.let { stringResource(it) }
+    val counts = listOf(
+        StateCount(label = stringResource(R.string.goodsin_state_arriving), value = source.arriving, container = colors.background, content = colors.textSecondary),
+        StateCount(label = stringResource(R.string.sd_state_received), value = source.received, container = colors.soft, content = colors.link),
+        StateCount(label = stringResource(R.string.sd_state_checked), value = source.checked, container = colors.soft, content = colors.link),
+        StateCount(label = stringResource(R.string.sd_state_booking_in), value = source.bookingIn, container = colors.soft, content = colors.link),
+        StateCount(label = stringResource(R.string.goodsin_booked_in_7d), value = source.bookedInWeek, container = colors.successSoft, content = colors.success),
+    )
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fakeData()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .clip(CircleShape)
-                    .background(dotColor),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = stringResource(group.stage.title),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = colors.text,
-                modifier = Modifier.weight(1f),
-            )
-            Text(text = group.deliveries.size.toString(), fontSize = 13.sp, color = colors.textTertiary)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .fakeData()
+            .clip(CardShape)
+            .background(colors.surface)
+            .border(width = 1.dp, color = colors.border, shape = CardShape)
+            .clickable(role = Role.Button, onClick = onOpen)
+            .padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(text = stringResource(source.source), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.text, modifier = Modifier.weight(1f))
+            Icon(painter = painterResource(R.drawable.ic_ui_chevron_right), contentDescription = null, tint = colors.faint, modifier = Modifier.size(20.dp))
         }
-        ListGroup {
-            group.deliveries.forEachIndexed { index, delivery ->
-                if (index > 0) {
-                    RowDivider()
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+            counts.forEach { count ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(ControlShape)
+                        .background(count.container)
+                        .padding(horizontal = 2.dp, vertical = 8.dp),
+                ) {
+                    Text(text = count.value.toString(), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = count.content)
+                    Text(
+                        text = count.label,
+                        fontSize = 10.sp,
+                        lineHeight = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.textTertiary,
+                        textAlign = TextAlign.Center,
+                    )
                 }
-                GoodsQueueRow(
-                    title = delivery.reference,
-                    subtitle = delivery.summary,
-                    actionLabel = actionLabel,
-                    onClick = { onOpen(delivery.reference) },
-                )
             }
         }
-    }
-}
-
-@Preview(widthDp = 390, heightDp = 1000)
-@Composable
-private fun GoodsInBacklogScreenPreview() {
-    AikuDroidTheme {
-        GoodsInBacklogScreen()
     }
 }

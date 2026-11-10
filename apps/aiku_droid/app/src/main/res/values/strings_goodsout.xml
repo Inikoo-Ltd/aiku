@@ -1,80 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="goodsout_title">Goods out</string>
-    <string name="goodsout_tab_backlog">Backlog</string>
-    <string name="goodsout_tab_delivery_notes">Delivery notes</string>
-    <string name="goodsout_tab_shippers">Shippers</string>
-    <string name="goodsout_tab_fulfilment_returns">Fulfilment returns</string>
+    <string name="goodsout_backlog_title">Dispatching backlog</string>
+    <string name="goodsout_backlog_delivery_notes">Delivery notes</string>
+    <string name="goodsout_backlog_sessions">Sessions</string>
+    <string name="goodsout_backlog_pickers">Pickers</string>
+    <string name="goodsout_backlog_packers">Packers</string>
+    <string name="goodsout_backlog_total">Total</string>
+    <string name="goodsout_backlog_pickers_now">Pickers now</string>
+    <string name="goodsout_backlog_note">Same as the web Dispatching backlog: one row per sales channel, counts by state. Tap a channel to open its delivery notes.</string>
 
-    <string name="goodsout_state_unassigned">Unassigned</string>
-    <string name="goodsout_state_queued">In Queue</string>
-    <string name="goodsout_state_handling">Handling</string>
-    <string name="goodsout_state_handling_blocked">Handling Blocked</string>
-    <string name="goodsout_state_packed">Packed</string>
-    <string name="goodsout_state_finalised">Finalised</string>
-    <string name="goodsout_state_finalised_waiting">Finalised · waiting for dispatch</string>
-    <string name="goodsout_state_dispatched">Dispatched</string>
-
-    <string name="goodsout_my_queue">My queue</string>
-    <string name="goodsout_action_continue">Continue</string>
-    <string name="goodsout_action_start">Start</string>
-
-    <string name="goodsout_search_placeholder">Reference or customer</string>
-    <string name="goodsout_filter_with_count" translatable="false">%1$s %2$d</string>
-    <string name="goodsout_oldest_first">Oldest first</string>
-    <string name="goodsout_items_weight">Items · weight</string>
-    <string name="goodsout_start_picking">Start picking</string>
-    <string name="goodsout_list_footer">Showing %1$d of %2$d · Packed, Finalised and Dispatched in filters</string>
-    <string name="goodsout_no_results">No delivery notes match your search.</string>
-
-    <string name="goodsout_delivery_note">Delivery Note</string>
-    <string name="goodsout_picker">Picker</string>
-    <string name="goodsout_picker_you">%1$s (you)</string>
-    <string name="goodsout_change_picker">Change picker</string>
-    <string name="goodsout_remove_picker">Remove picker</string>
-    <string name="goodsout_picked">Picked</string>
-    <plurals name="goodsout_picked_of_items">
-        <item quantity="one">%1$d of %2$d item</item>
-        <item quantity="other">%1$d of %2$d items</item>
+    <string name="goodsout_search_and_filter">Search and filter</string>
+    <string name="goodsout_state_count">%1$s %2$d</string>
+    <string name="goodsout_delivery_notes_note">The reference is the order reference. Select several To do notes to put them in a picking session.</string>
+    <plurals name="goodsout_create_session_from_selected">
+        <item quantity="one">Create picking session from %d selected</item>
+        <item quantity="other">Create picking session from %d selected</item>
     </plurals>
 
-    <string name="goodsout_scan_to_pick">Scan location, then item</string>
-    <string name="goodsout_scanner_ready">Scanner device ready · just scan here</string>
-    <string name="goodsout_guided_picking">Guided picking</string>
-    <string name="goodsout_use_camera">Use camera</string>
-
-    <string name="goodsout_items">Items</string>
-    <string name="goodsout_pick_route">Pick route by location</string>
-    <string name="goodsout_pick_from">Pick from %1$s · %2$d in location</string>
-    <string name="goodsout_out_of_stock">Out of stock · not dispatched</string>
-    <string name="goodsout_quantity_of" translatable="false">%1$d / %2$d</string>
-    <string name="goodsout_decrease_picked">Decrease picked quantity</string>
-    <string name="goodsout_increase_picked">Increase picked quantity</string>
-    <string name="goodsout_scan">Scan</string>
-    <string name="goodsout_go_to_packing">Go to packing</string>
-
-    <string name="goodsout_packing_kicker">Delivery Note · Packing</string>
-    <string name="goodsout_parcels">Parcels</string>
-    <plurals name="goodsout_items_picked">
-        <item quantity="one">%d item picked</item>
-        <item quantity="other">%d items picked</item>
+    <string name="goodsout_filter_title">Filter delivery notes</string>
+    <string name="goodsout_filter_state">State</string>
+    <string name="goodsout_filter_picker">Picker</string>
+    <string name="goodsout_filter_picker_me">Me</string>
+    <string name="goodsout_filter_picker_none">No picker</string>
+    <string name="goodsout_filter_picker_others">Other pickers</string>
+    <string name="goodsout_filter_channel">Channel</string>
+    <string name="goodsout_filter_shipper">Shipper</string>
+    <string name="goodsout_filter_shipper_collection">Collection</string>
+    <string name="goodsout_filter_date">Date</string>
+    <string name="goodsout_filter_date_today">Today</string>
+    <string name="goodsout_filter_date_yesterday">Yesterday</string>
+    <string name="goodsout_filter_date_last_7_days">Last 7 days</string>
+    <string name="goodsout_filter_date_overdue">Overdue</string>
+    <string name="goodsout_filter_sort">Sort by</string>
+    <string name="goodsout_filter_sort_oldest">Date (oldest first)</string>
+    <string name="goodsout_filter_sort_newest">Date (newest first)</string>
+    <string name="goodsout_filter_sort_items">Items</string>
+    <string name="goodsout_filter_sort_weight">Weight</string>
+    <string name="goodsout_filter_sort_customer">Customer</string>
+    <plurals name="goodsout_show_delivery_notes">
+        <item quantity="one">Show %d delivery note</item>
+        <item quantity="other">Show %d delivery notes</item>
     </plurals>
-    <string name="goodsout_parcel">Parcel %1$d</string>
-    <plurals name="goodsout_parcel_items">
-        <item quantity="one">%d item</item>
-        <item quantity="other">%d items</item>
-    </plurals>
-    <string name="goodsout_weight_kg">Weight (kg)</string>
-    <string name="goodsout_box_size">Box size</string>
-    <string name="goodsout_enter_weight">Enter weight</string>
-    <string name="goodsout_add_parcel">+ Add parcel</string>
-    <string name="goodsout_shipper">Shipper</string>
+
+    <string name="goodsout_channel_wholesale">Wholesale</string>
+    <string name="goodsout_channel_dropshipping">Dropshipping</string>
+    <string name="goodsout_channel_b2c">B2C</string>
+    <string name="goodsout_channel_marketplaces">Marketplaces</string>
+    <string name="goodsout_channel_partners">Partners</string>
+
+    <string name="goodsout_kicker_delivery_note">Delivery note · %1$s</string>
+    <string name="goodsout_kicker_collection">Delivery note · %1$s · Collection</string>
+    <string name="goodsout_kicker_reference_state">Delivery note %1$s · %2$s</string>
+    <string name="goodsout_delivery_note_reference">Delivery note %1$s</string>
+
+    <string name="goodsout_quick_packing_list">Packing list</string>
+    <string name="goodsout_quick_task">Task</string>
+    <string name="goodsout_quick_ask_crm">Ask CRM</string>
+    <string name="goodsout_note_shipping_label">Shipping label (from customer)</string>
+    <string name="goodsout_note_customer">Customer instructions</string>
+    <string name="goodsout_note_warehouse">Warehouse note (private)</string>
+    <string name="goodsout_timeline_created">Created</string>
+    <string name="goodsout_timeline_in_session">In picking session</string>
+    <string name="goodsout_card_order">Order</string>
+    <string name="goodsout_card_shipping">Shipping</string>
+    <string name="goodsout_card_delivery_note">Delivery note</string>
+    <string name="goodsout_edit_delivery_address">Edit delivery address</string>
+    <string name="goodsout_items_by_location">Items by location</string>
+    <string name="goodsout_line_picked">Picked</string>
+    <string name="goodsout_line_packed">Packed</string>
     <string name="goodsout_change">Change</string>
-    <plurals name="goodsout_set_as_packed">
-        <item quantity="one">Set as packed · %d parcel</item>
-        <item quantity="other">Set as packed · %d parcels</item>
+    <string name="goodsout_edit">Edit</string>
+    <string name="goodsout_role_picker">Picker</string>
+    <string name="goodsout_role_packer">Packer</string>
+    <string name="goodsout_picking_into">Picking into</string>
+    <string name="goodsout_picked_bay">Picked bay</string>
+    <string name="goodsout_undo">Undo</string>
+    <string name="goodsout_close">Close</string>
+    <string name="goodsout_progress_of">%1$d / %2$d</string>
+    <string name="goodsout_times_quantity">×%1$d</string>
+
+    <string name="goodsout_start_picking">Start picking</string>
+    <string name="goodsout_start_picking_hint">Makes you the picker and starts picking</string>
+
+    <string name="goodsout_picker_title">Change picker</string>
+    <string name="goodsout_picker_subtitle">Delivery note %1$s · picker now: %2$s</string>
+    <string name="goodsout_picker_search">Search pickers</string>
+    <string name="goodsout_picker_packer">Packer</string>
+    <string name="goodsout_packer_same_as_picker">Same as picker</string>
+    <string name="goodsout_packer_same_as_picker_hint">Change it later from the delivery note</string>
+    <string name="goodsout_picker_assign">Assign %1$s</string>
+    <string name="goodsout_picker_assigned">%1$s assigned to %2$s</string>
+    <string name="goodsout_picker_remove">Remove picker</string>
+    <string name="goodsout_picker_removed">Picker removed from %1$s</string>
+
+    <string name="goodsout_trolley_title">Select trolley to start picking</string>
+    <string name="goodsout_trolley_available">Available trolleys</string>
+    <string name="goodsout_trolley_unavailable">Unavailable trolleys</string>
+    <string name="goodsout_trolley_note">Only when this warehouse uses trolleys. Otherwise Start picking begins straight away.</string>
+    <string name="goodsout_trolley_start">Start picking with %1$s</string>
+
+    <string name="goodsout_scan_to_pick">Scan to pick</string>
+    <string name="goodsout_scan_take_from">Take it from this location</string>
+    <string name="goodsout_picking_note">Scan to pick shows only when the organisation allows it. Tap a line for Pick all, another location, Not picked or Set as waiting.</string>
+    <plurals name="goodsout_lines_to_handle">
+        <item quantity="one">%d line still to handle</item>
+        <item quantity="other">%d lines still to handle</item>
+    </plurals>
+    <string name="goodsout_lines_to_handle_hint">Pick it, mark it not picked or set it as waiting. Then Set as picked appears.</string>
+    <string name="goodsout_preview">Preview</string>
+
+    <plurals name="goodsout_line_title">
+        <item quantity="one">%1$s · %2$d of %3$d picked</item>
+        <item quantity="other">%1$s · %2$d of %3$d picked</item>
+    </plurals>
+    <plurals name="goodsout_pick_all">
+        <item quantity="one">Pick all %d</item>
+        <item quantity="other">Pick all %d</item>
+    </plurals>
+    <string name="goodsout_line_picked_all_toast">Picked %2$d × %1$s</string>
+    <string name="goodsout_pick_other_location">Pick from another location</string>
+    <string name="goodsout_not_picked_reason">Not picked · reason</string>
+    <plurals name="goodsout_mark_not_picked">
+        <item quantity="one">Mark %d as not picked</item>
+        <item quantity="other">Mark %d as not picked</item>
+    </plurals>
+    <string name="goodsout_line_not_picked_toast">%1$s set as not picked · %2$s</string>
+    <string name="goodsout_cant_finish_line">Can’t finish this line now?</string>
+    <string name="goodsout_set_as_waiting">Set as waiting</string>
+    <string name="goodsout_pass_to_cs">Pass to CS</string>
+
+    <string name="goodsout_pick_location_title">Location list for %1$s</string>
+    <plurals name="goodsout_pick_location_subtitle">
+        <item quantity="one">%1$s · %2$d still to pick</item>
+        <item quantity="other">%1$s · %2$d still to pick</item>
+    </plurals>
+    <string name="goodsout_pick_location_hint">Pick the rest from any location that has stock.</string>
+    <string name="goodsout_pick_location_note">A location with no stock can’t be chosen. To change which location is the picking location, use Change picking location (needs stock edit rights).</string>
+    <string name="goodsout_pick_from">Pick from %1$s</string>
+    <string name="goodsout_pick_from_toast">%1$s picked from %2$s</string>
+    <string name="goodsout_change_picking_location">Change picking location</string>
+
+    <string name="goodsout_set_picking_location_title">Picking location · %1$s</string>
+    <string name="goodsout_set_picking_location_subtitle">%1$s · one per channel</string>
+    <string name="goodsout_set_picking_location_hint">Pickers are sent to the active picking location of the order’s channel.</string>
+    <string name="goodsout_set_picking_location_note">Same as Stocks management on the web. Only users who can edit stock can change it.</string>
+    <string name="goodsout_save_picking_locations">Save picking locations</string>
+    <string name="goodsout_picking_locations_saved">Picking locations saved for %1$s</string>
+
+    <plurals name="goodsout_scan_kicker">
+        <item quantity="one">Delivery note %1$s · %2$d / %3$d picked</item>
+        <item quantity="other">Delivery note %1$s · %2$d / %3$d picked</item>
+    </plurals>
+    <string name="goodsout_scan_listening">Listening · camera or Bluetooth scanner</string>
+    <string name="goodsout_scanned">Scanned</string>
+    <string name="goodsout_scan_plus_one">+1</string>
+    <string name="goodsout_scan_could_not_pick">Could not pick</string>
+    <string name="goodsout_scan_bluetooth_note">A Bluetooth scanner types the code and Enter; the screen captures it without tapping a field, like the web. No on-screen keyboard is needed.</string>
+    <string name="goodsout_scan_picked_chip">Picked %1$d</string>
+    <plurals name="goodsout_left_on_item">
+        <item quantity="one">%d left on this item</item>
+        <item quantity="other">%d left on this item</item>
+    </plurals>
+    <string name="goodsout_pick_amount">Pick %1$d</string>
+    <string name="goodsout_scan_panel_hint">Keep scanning to count one by one · the panel updates in place</string>
+    <string name="goodsout_scan_line_done_toast">%1$s · line picked</string>
+    <plurals name="goodsout_scan_picked_toast">
+        <item quantity="one">Picked %1$d × %2$s</item>
+        <item quantity="other">Picked %1$d × %2$s</item>
     </plurals>
 
-    <string name="goodsout_todays_collections">Today’s collections</string>
-    <string name="goodsout_parcels_ready">Parcels ready</string>
-    <string name="goodsout_shippers_note">Read-only on mobile: shippers are set up in the web app. Staff use this to see where each parcel goes and when it is collected.</string>
+    <string name="goodsout_fast_picking_kicker">Fast picking · swipe</string>
+    <string name="goodsout_fast_picking_tip">Swipe to show the action buttons · swipe all the way to do it at once · right = Picked, left = Partial / Not picked</string>
+    <string name="goodsout_fast_to_pick">To pick</string>
+    <string name="goodsout_fast_picked_of">Picked %1$d of %2$d</string>
+    <string name="goodsout_fast_not_picked_status">Not picked · Out of stock</string>
+    <string name="goodsout_fast_picked_action">Picked ×%1$d</string>
+    <string name="goodsout_fast_partial">Partial</string>
+    <string name="goodsout_fast_not_picked">Not picked</string>
+    <string name="goodsout_fast_picked_toast">%1$s picked ×%2$d</string>
+    <string name="goodsout_fast_not_picked_toast">%1$s not picked · out of stock</string>
+    <string name="goodsout_more_for">More for %1$s</string>
+    <string name="goodsout_fast_picking_caption">Sorted by pick route · scanner still works: scan = +1</string>
+    <string name="goodsout_fast_all_handled">All handled · Go to packing</string>
+    <plurals name="goodsout_items_left">
+        <item quantity="one">%d item left</item>
+        <item quantity="other">%d items left</item>
+    </plurals>
+
+    <string name="goodsout_set_as_picked">Set as picked</string>
+    <string name="goodsout_every_line_handled">every line handled</string>
+    <string name="goodsout_all_picked_note">Set as picked only appears once every line is picked, not picked or waiting. Dropshipping notes skip packing, so they show Set as packed here instead.</string>
+
+    <string name="goodsout_bay_title">Select picked bay</string>
+    <string name="goodsout_bay_subtitle">Delivery note %1$s · leave the picked goods here for packing</string>
+    <string name="goodsout_bay_note">Only when the warehouse uses picked bays. With waiting lines, this is where the goods stay until the missing products arrive.</string>
+    <string name="goodsout_bay_set_as_picked">Set as picked · %1$s</string>
+    <string name="goodsout_bay_use">Use %1$s</string>
+    <string name="goodsout_bay_changed_toast">Picked goods of %1$s moved to the new bay</string>
+    <string name="goodsout_bay_waiting_for_packing">Picked goods are waiting here for packing</string>
+    <string name="goodsout_picked_note">Undo set as picked (back to picking) is in the ⋯ menu.</string>
+    <string name="goodsout_start_packing">Start packing</string>
+
+    <string name="goodsout_packer_must_add">Packer must add</string>
+    <string name="goodsout_scan_to_pack">Scan to pack</string>
+    <string name="goodsout_scan_put_in_box">Put it in this box</string>
+    <string name="goodsout_lines">Lines</string>
+    <string name="goodsout_parcels">Parcels</string>
+    <string name="goodsout_parcels_count">Parcels (%1$d)</string>
+    <string name="goodsout_parcel_units">kg · L × W × H</string>
+    <string name="goodsout_parcel_name">Parcel %1$d</string>
+    <string name="goodsout_parcel_dimensions">%1$s × %2$s × %3$s cm</string>
+    <string name="goodsout_dimensions_missing">dimensions missing</string>
+    <string name="goodsout_parcel_kg">kg</string>
+    <string name="goodsout_parcel_length">L</string>
+    <string name="goodsout_parcel_width">W</string>
+    <string name="goodsout_parcel_height">H</string>
+    <string name="goodsout_add_parcel">+ Add another parcel</string>
+    <string name="goodsout_packing_note">Enter length, width and height of every parcel, they are needed to set as packed. Weight starts from the estimated weight of the items.</string>
+    <string name="goodsout_set_as_packed">Set as packed</string>
+
+    <string name="goodsout_pack_queue_kicker">Goods out · Picked, ready to pack</string>
+    <string name="goodsout_pack_queue_title">Packing queue</string>
+    <string name="goodsout_pack_queue_tip">Swipe to show the action buttons · swipe all the way to do it at once · right = Packed, left = Other box / Waiting</string>
+    <string name="goodsout_pack_queue_ready">Picked · ready to pack</string>
+    <string name="goodsout_pack_queue_packed_status">Packed · %1$s · %2$s</string>
+    <string name="goodsout_pack_queue_waiting_status">Waiting · needs a supervisor</string>
+    <string name="goodsout_pack_queue_packed_action">Packed\n%1$s</string>
+    <string name="goodsout_pack_queue_other_box">Other box</string>
+    <string name="goodsout_pack_queue_waiting">Waiting</string>
+    <string name="goodsout_pack_queue_packed_toast">%1$s set as packed · %2$s</string>
+    <string name="goodsout_pack_queue_waiting_toast">%1$s set as handling blocked</string>
+    <string name="goodsout_pack_queue_suggested">Suggested:</string>
+    <string name="goodsout_pack_queue_open">Open %1$s to pack</string>
+    <string name="goodsout_pack_queue_caption">Box and weight are suggested from the items · weigh to correct</string>
+    <string name="goodsout_pack_queue_swipe_hint">Swipe a delivery note to pack it</string>
+    <plurals name="goodsout_create_shipments">
+        <item quantity="one">Create shipments · %d packed</item>
+        <item quantity="other">Create shipments · %d packed</item>
+    </plurals>
+
+    <string name="goodsout_add_shipment">Add shipment</string>
+    <string name="goodsout_delivery_address">Delivery address</string>
+    <string name="goodsout_api_shippers">API powered shippers</string>
+    <string name="goodsout_other_shippers">Other shippers</string>
+    <string name="goodsout_choose_other_shipper">Choose other shipper</string>
+    <string name="goodsout_choose_other_shipper_hint">Every shipper of this warehouse · tracking number typed by hand</string>
+    <string name="goodsout_add_shipment_note">If shipping rules lock a shipper, it is pre-selected and changing it asks “Override the locked shipper?”. If the customer chose the shipper, customer services must change it.</string>
+    <string name="goodsout_add_shipment_create_label">Add shipment · create label</string>
+
+    <string name="goodsout_select_shipping">Select shipping</string>
+    <string name="goodsout_tracking_number">Tracking number</string>
+    <string name="goodsout_manual_shipment_note">A shipper without API needs the tracking number. An API shipper creates the label and tracking number itself.</string>
+
+    <string name="goodsout_shipments">Shipments</string>
+    <string name="goodsout_label_queued">Label queued for printing</string>
+    <string name="goodsout_delete">Delete</string>
+    <string name="goodsout_shipment_deleted">Shipment deleted</string>
+    <string name="goodsout_add_another_shipment">Add another shipment</string>
+    <string name="goodsout_print">Print</string>
+    <string name="goodsout_printed">Printed</string>
+    <string name="goodsout_shipments_note">While any insert is unprinted, Finalise is blocked: “Print every insert before continuing”. If the carrier refuses, the label error shows its answer.</string>
+    <string name="goodsout_print_every_insert">Print every insert before continuing</string>
+    <string name="goodsout_finalise">Finalise</string>
+    <string name="goodsout_finalise_and_dispatch">Finalise and Dispatch</string>
+
+    <string name="goodsout_print_title">Print %1$s</string>
+    <plurals name="goodsout_print_subtitle">
+        <item quantity="one">Delivery note PDF · %d page</item>
+        <item quantity="other">Delivery note PDF · %d pages</item>
+    </plurals>
+    <string name="goodsout_printer">Printer</string>
+    <string name="goodsout_copies">Copies</string>
+    <string name="goodsout_open_pdf">Open PDF</string>
+    <string name="goodsout_print_pdf_opened">Delivery note %1$s PDF opened</string>
+    <plurals name="goodsout_print_sent">
+        <item quantity="one">%1$d copy of %2$s sent to %3$s</item>
+        <item quantity="other">%1$d copies of %2$s sent to %3$s</item>
+    </plurals>
+
+    <string name="goodsout_ready_to_dispatch">Ready to dispatch</string>
+    <string name="goodsout_dispatch_note">Dispatch when the parcel leaves the warehouse.</string>
+    <string name="goodsout_generate_invoice">Generate invoice</string>
+    <string name="goodsout_invoice_generated">Invoice for %1$s generated</string>
+    <string name="goodsout_dispatch">Dispatch</string>
+
+    <string name="goodsout_dispatched_title">%1$s dispatched</string>
+    <string name="goodsout_next_delivery_note">Next delivery note</string>
+    <string name="goodsout_back_to_backlog">Back to the backlog</string>
+
+    <string name="goodsout_collection">Collection</string>
+    <string name="goodsout_collection_hint">The customer collects it from the warehouse. No shipping, no shipment.</string>
+    <string name="goodsout_collection_note">Collection is set on the order. On a replacement delivery note it can be switched on the delivery note itself. Finalise for collection leaves it ready for the customer.</string>
+    <string name="goodsout_finalise_for_collection">Finalise for collection</string>
+    <string name="goodsout_ready_to_collect">Ready for the customer to collect</string>
+    <string name="goodsout_collected_note">When the customer picks it up, set it as collected. That is the collection version of Dispatch.</string>
+    <string name="goodsout_set_as_collected">Set as collected</string>
 </resources>

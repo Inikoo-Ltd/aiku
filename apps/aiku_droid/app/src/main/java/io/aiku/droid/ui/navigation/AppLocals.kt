@@ -10,13 +10,14 @@ import io.aiku.droid.ui.theme.Appearance
 interface AppNavigator {
     fun open(route: Any)
     fun switchSection(route: Any)
-    fun openTab(tab: AppTab)
+    fun openTab(tab: MainTab)
     fun back()
     fun showWarehouseSwitcher()
+    fun showReportProblem()
     fun signOut()
 }
 
-enum class AppTab { Dashboard, Inventory, GoodsIn, GoodsOut }
+enum class MainTab { Home, MyWork, Scan, Inbox, Menu }
 
 interface AppearanceController {
     val appearance: Appearance
@@ -26,9 +27,10 @@ interface AppearanceController {
 object PreviewNavigator : AppNavigator {
     override fun open(route: Any) = Unit
     override fun switchSection(route: Any) = Unit
-    override fun openTab(tab: AppTab) = Unit
+    override fun openTab(tab: MainTab) = Unit
     override fun back() = Unit
     override fun showWarehouseSwitcher() = Unit
+    override fun showReportProblem() = Unit
     override fun signOut() = Unit
 }
 
@@ -45,11 +47,24 @@ val PreviewWarehouse = WarehouseAccess(
         moveStock = true,
         viewGoodsIn = true,
         bookIn = true,
+        superviseGoodsIn = true,
+        editProcurement = true,
+        placeStockDeliveries = true,
         viewGoodsOut = true,
         pickAndPack = true,
         superviseGoodsOut = true,
         viewFulfilment = true,
+        editFulfilment = true,
     ),
+)
+
+val NoWarehouseAccess = WarehouseAccess(
+    id = 0,
+    slug = "",
+    code = "",
+    name = "",
+    organisation = OrganisationSummary(id = 0, slug = "", name = ""),
+    can = WarehouseAbilities(),
 )
 
 val PreviewStaff = StaffSession(token = "", userId = 1, username = "alex.morgan", displayName = "Alex Morgan")

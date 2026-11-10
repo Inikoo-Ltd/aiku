@@ -78,6 +78,10 @@ data class AikuColors(
     val lime: Color,
     val limeSoft: Color,
     val shadow: Color,
+    val toast: Color,
+    val onToast: Color,
+    val toastAction: Color,
+    val scrim: Color,
     val tagline: Color,
     val isDark: Boolean,
 )
@@ -90,6 +94,10 @@ private fun mix(first: Color, second: Color, firstWeight: Float) = Color(
 
 private val White = Color(0xFFFFFFFF)
 private val Black = Color(0xFF000000)
+private val ToastBackground = Color(0xFF1F2937)
+private val ToastText = Color(0xFFF9FAFB)
+private val ToastAction = Color(0xFFFDE047)
+private val Scrim = Color(0x8C111827)
 
 fun aikuColors(theme: AikuTheme, isDark: Boolean): AikuColors {
     val nav = Color(theme.nav)
@@ -145,6 +153,10 @@ private fun lightColors(theme: AikuTheme, nav: Color, navActive: Color, primary:
         lime = Color(0xFF4D7C0F),
         limeSoft = Color(0xFFF7FEE7),
         shadow = Color(0x14111827),
+        toast = ToastBackground,
+        onToast = ToastText,
+        toastAction = ToastAction,
+        scrim = Scrim,
         tagline = Color(0xFF4B4458),
         isDark = false,
     )
@@ -198,6 +210,10 @@ private fun darkColors(theme: AikuTheme, nav: Color, navActive: Color, navAccent
         lime = Color(0xFFC5E1A5),
         limeSoft = Color(0x24C5E1A5),
         shadow = Color(0x80000000),
+        toast = ToastBackground,
+        onToast = ToastText,
+        toastAction = ToastAction,
+        scrim = Scrim,
         tagline = Color(0xFFBDC1C6),
         isDark = true,
     )

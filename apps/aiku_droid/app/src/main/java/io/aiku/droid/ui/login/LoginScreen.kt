@@ -65,7 +65,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -73,7 +76,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -189,7 +191,7 @@ private fun LoginCard(
             LoginStep.Credentials -> CredentialsStep(state, actions)
             LoginStep.OneTimePassword -> OneTimePasswordStep(state, actions)
             LoginStep.PasswordReset -> PasswordResetStep(state, actions)
-            LoginStep.PasswordResetSent -> PasswordResetSentStep(actions)
+            LoginStep.PasswordResetSent -> PasswordResetSentStep(state, actions)
         }
     }
 }
@@ -358,13 +360,7 @@ private fun PasswordResetStep(state: LoginUiState, actions: LoginActions) {
 
     LaunchedEffect(Unit) { emailFocus.requestFocus() }
 
-    BackLink(onClick = actions::backToCredentials)
-
-    StepHeading(
-        iconResource = null,
-        title = stringResource(R.string.reset_title),
-        description = stringResource(R.string.reset_description),
-    )
+    ResetHeading()
 
     LabelledField(label = stringResource(R.string.reset_email_label), isEnabled = isEnabled, error = state.resetEmailError) {
         AikuInput(
@@ -374,6 +370,7 @@ private fun PasswordResetStep(state: LoginUiState, actions: LoginActions) {
             isError = state.resetEmailError != null,
             isEnabled = isEnabled,
             keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.None,
                 autoCorrectEnabled = false,
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Send,
@@ -384,33 +381,30 @@ private fun PasswordResetStep(state: LoginUiState, actions: LoginActions) {
             }),
             modifier = Modifier
                 .focusRequester(emailFocus)
-                .semantics { contentType = ContentType.EmailAddress },
+                .semantics { contentType = ContentType.Username + ContentType.EmailAddress },
         )
     }
 
-    PrimaryButton(
-        text = stringResource(if (state.isSubmitting) R.string.reset_sending else R.string.reset_send),
-        isLoading = state.isSubmitting,
-        onClick = {
-            keyboard?.hide()
-            actions.sendPasswordResetLink()
-        },
-    )
-
-    ResetNote()
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        PrimaryButton(
+            text = stringResource(if (state.isSubmitting) R.string.reset_sending else R.string.reset_send),
+            isLoading = state.isSubmitting,
+            onClick = {
+                keyboard?.hide()
+                actions.sendPasswordResetLink()
+            },
+        )
+        if (isEnabled) {
+            RememberedItLink(onClick = actions::backToCredentials)
+        }
+    }
 }
 
 @Composable
-private fun PasswordResetSentStep(actions: LoginActions) {
+private fun PasswordResetSentStep(state: LoginUiState, actions: LoginActions) {
     val colors = LocalAikuColors.current
 
-    BackLink(onClick = actions::backToCredentials)
-
-    StepHeading(
-        iconResource = null,
-        title = stringResource(R.string.reset_title),
-        description = stringResource(R.string.reset_description),
-    )
+    ResetHeading()
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -421,27 +415,72 @@ private fun PasswordResetSentStep(actions: LoginActions) {
             .semantics { liveRegion = LiveRegionMode.Polite },
     ) {
         Icon(
-            painter = painterResource(R.drawable.ic_circle_check),
+            painter = painterResource(R.drawable.ic_feedback_check),
             contentDescription = null,
             tint = colors.success,
             modifier = Modifier.size(20.dp),
         )
-        Text(text = stringResource(R.string.reset_sent_description), fontSize = 13.sp, lineHeight = 18.sp, color = colors.success)
+        Text(
+            text = resetSentMessage(state.resetEmail.trim()),
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Normal,
+            color = colors.textSecondary,
+        )
     }
 
-    TertiaryButton(text = stringResource(R.string.back_to_sign_in), onClick = actions::backToCredentials)
-
-    ResetNote()
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        PrimaryButton(text = stringResource(R.string.back_to_sign_in), isLoading = false, onClick = actions::backToCredentials)
+        RememberedItLink(onClick = actions::backToCredentials)
+    }
 }
 
 @Composable
-private fun ResetNote() {
+private fun ResetHeading() {
+    val colors = LocalAikuColors.current
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = stringResource(R.string.reset_title),
+            fontSize = 20.sp,
+            lineHeight = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.text,
+        )
+        Text(
+            text = stringResource(R.string.reset_description),
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Normal,
+            color = colors.textTertiary,
+        )
+    }
+}
+
+@Composable
+private fun resetSentMessage(account: String): AnnotatedString {
+    val message = stringResource(R.string.reset_sent_description, account)
+    val start = message.indexOf(account)
+
+    return buildAnnotatedString {
+        append(message)
+        if (account.isNotEmpty() && start >= 0) {
+            addStyle(SpanStyle(fontWeight = FontWeight.Bold), start, start + account.length)
+        }
+    }
+}
+
+@Composable
+private fun RememberedItLink(onClick: () -> Unit) {
     Text(
-        text = stringResource(R.string.reset_no_email),
+        text = stringResource(R.string.reset_remembered),
         fontSize = 13.sp,
+        fontStyle = FontStyle.Italic,
         color = LocalAikuColors.current.textTertiary,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .heightIn(min = 32.dp)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 7.dp),
     )
 }
 
@@ -462,29 +501,6 @@ private fun StepHeading(iconResource: Int?, title: String, description: String) 
             Text(text = title, fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold, color = colors.text)
             Text(text = description, fontSize = 13.sp, lineHeight = 18.sp, color = colors.textTertiary)
         }
-    }
-}
-
-@Composable
-private fun BackLink(onClick: () -> Unit) {
-    val colors = LocalAikuColors.current
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .heightIn(min = 44.dp)
-            .clip(ControlShape)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(end = 8.dp),
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_chevron_left),
-            contentDescription = null,
-            tint = colors.textTertiary,
-            modifier = Modifier.size(20.dp),
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(text = stringResource(R.string.back_to_sign_in), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = colors.textTertiary)
     }
 }
 
@@ -788,6 +804,25 @@ private fun OneTimePasswordPreview() {
     AikuDroidTheme {
         LoginScreen(
             state = LoginUiState(step = LoginStep.OneTimePassword, username = "alex.morgan", password = "secret"),
+            actions = PreviewLoginActions,
+        )
+    }
+}
+
+@Preview(showSystemUi = true)
+@Composable
+private fun PasswordResetPreview() {
+    AikuDroidTheme {
+        LoginScreen(state = LoginUiState(step = LoginStep.PasswordReset), actions = PreviewLoginActions)
+    }
+}
+
+@Preview(showSystemUi = true)
+@Composable
+private fun PasswordResetSentPreview() {
+    AikuDroidTheme {
+        LoginScreen(
+            state = LoginUiState(step = LoginStep.PasswordResetSent, resetEmail = "alex.morgan"),
             actions = PreviewLoginActions,
         )
     }

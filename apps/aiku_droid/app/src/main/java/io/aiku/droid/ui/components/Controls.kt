@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,7 +50,7 @@ import io.aiku.droid.R
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-enum class ButtonStyle { Primary, Soft, Outline, Danger }
+enum class ButtonStyle { Primary, Soft, Outline, Danger, Scan }
 
 @Composable
 fun AikuButton(
@@ -70,6 +71,7 @@ fun AikuButton(
         style == ButtonStyle.Primary -> Triple(if (isPressed) colors.primaryPressed else colors.primary, colors.onPrimary, colors.primaryBorder)
         style == ButtonStyle.Soft -> Triple(colors.soft, colors.link, colors.softBorder)
         style == ButtonStyle.Outline -> Triple(Color.Transparent, colors.textSecondary, colors.borderStrong)
+        style == ButtonStyle.Scan -> Triple(colors.scan, colors.onScan, Color.Transparent)
         else -> Triple(colors.surface, colors.danger, colors.dangerBorder)
     }
 
@@ -163,12 +165,12 @@ fun FilterChips(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier
-                    .heightIn(min = 36.dp)
+                    .heightIn(min = 34.dp)
                     .clip(pill)
                     .background(if (isSelected) colors.primary else colors.surface)
                     .then(if (isSelected) Modifier else Modifier.border(1.dp, colors.borderStrong, pill))
                     .clickable(role = Role.Tab) { onSelect(index) }
-                    .padding(horizontal = 14.dp),
+                    .padding(horizontal = 12.dp),
             ) {
                 option.dotColor?.let { Box(modifier = Modifier.size(8.dp).clip(pill).background(it)) }
                 Text(
@@ -190,14 +192,14 @@ fun SegmentedControl(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalAikuColors.current
-    val inner = RoundedCornerShape(6.dp)
+    val track = RoundedCornerShape(10.dp)
+    val inner = RoundedCornerShape(7.dp)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(ControlShape)
-            .background(colors.background)
-            .border(1.dp, colors.border, ControlShape)
+            .clip(track)
+            .background(colors.border)
             .padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -207,17 +209,17 @@ fun SegmentedControl(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .weight(1f)
-                    .height(44.dp)
+                    .height(36.dp)
                     .clip(inner)
                     .background(if (isSelected) colors.surface else Color.Transparent)
-                    .then(if (isSelected) Modifier.border(1.dp, colors.borderStrong, inner) else Modifier)
                     .clickable(role = Role.RadioButton) { onSelect(index) },
             ) {
                 Text(
                     text = option,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (isSelected) colors.text else colors.textTertiary,
+                    color = if (isSelected) colors.link else colors.textTertiary,
+                    maxLines = 1,
                 )
             }
         }
@@ -230,6 +232,9 @@ fun AikuBottomSheet(
     title: String,
     onDismiss: () -> Unit,
     subtitle: String? = null,
+    @DrawableRes icon: Int? = null,
+    context: String? = null,
+    headerAction: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = LocalAikuColors.current
@@ -237,18 +242,41 @@ fun AikuBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         containerColor = colors.surface,
         contentColor = colors.text,
+        scrimColor = colors.scrim,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp, bottom = 2.dp)
+                    .size(width = 40.dp, height = 4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(colors.borderStrong),
+            )
+        },
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(text = title, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = colors.text)
-                if (subtitle != null) {
-                    Text(text = subtitle, fontSize = 13.sp, color = colors.textTertiary)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (icon != null) {
+                    Icon(painter = painterResource(icon), contentDescription = null, tint = colors.link, modifier = Modifier.size(22.dp))
                 }
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.text)
+                    if (subtitle != null) {
+                        Text(text = subtitle, fontSize = 14.sp, color = colors.textTertiary)
+                    }
+                }
+                if (context != null) {
+                    Text(text = context, fontSize = 13.sp, color = colors.textTertiary, maxLines = 1)
+                }
+                headerAction?.invoke()
             }
             content()
         }

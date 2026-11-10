@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -73,10 +74,35 @@ class WarehousesViewModelTest {
     }
 
     @Test
-    fun `an expired token signs the user out`() {
-        viewModelReturning(WarehousesResult.SessionExpired)
+    fun `an expired token asks the user to sign in again before signing them out`() {
+        val viewModel = viewModelReturning(WarehousesResult.SessionExpired)
+
+        assertEquals(WarehousesUiState.SessionExpired, viewModel.state.value)
+        assertNotNull(sessions.session.value)
+
+        viewModel.signInAgain()
 
         assertNull(sessions.session.value)
+    }
+
+    @Test
+    fun `signing in again after an expired session loads the warehouses of the new login`() {
+        val api = FakeWarehouseApi(WarehousesResult.SessionExpired)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection)
+
+        viewModel.signInAgain()
+        assertEquals(WarehousesUiState.Loading, viewModel.state.value)
+
+        api.result = WarehousesResult.Loaded(listOf(warehouse(7, "Main")))
+        sessions.start(StaffSession(token = "8|new", userId = 42, username = "picker", displayName = "Ana"), rememberOnDevice = true)
+
+        assertEquals("Main", (viewModel.state.value as WarehousesUiState.Ready).selected.name)
+    }
+
+    @Test
+    fun `no connection gets the offline state and a server failure keeps its status code`() {
+        assertEquals(WarehousesUiState.Offline, viewModelReturning(WarehousesResult.Unreachable).state.value)
+        assertEquals(WarehousesUiState.ServerError(502), viewModelReturning(WarehousesResult.ServerError(502)).state.value)
     }
 
     private fun viewModelReturning(result: WarehousesResult) =
@@ -91,7 +117,7 @@ class WarehousesViewModelTest {
         can = WarehouseAbilities(viewGoodsOut = true, pickAndPack = true),
     )
 
-    private class FakeWarehouseApi(private val result: WarehousesResult) : WarehouseApi {
+    private class FakeWarehouseApi(var result: WarehousesResult) : WarehouseApi {
         override suspend fun warehouses(token: String) = result
     }
 

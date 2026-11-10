@@ -1,0 +1,170 @@
+<resources>
+    <string name="fulfilment_state_confirmed">Confirmed</string>
+    <string name="fulfilment_state_received">Received</string>
+    <string name="fulfilment_state_booking_in">Booking in</string>
+    <string name="fulfilment_state_booked_in">Booked in</string>
+    <string name="fulfilment_state_not_received">Not received</string>
+    <string name="fulfilment_state_picking">Picking</string>
+    <string name="fulfilment_state_picked">Picked</string>
+    <string name="fulfilment_state_dispatched">Dispatched</string>
+    <string name="fulfilment_state_to_pick">To pick</string>
+    <string name="fulfilment_state_storing">Storing</string>
+    <string name="fulfilment_state_receiving">Receiving</string>
+    <string name="fulfilment_state_returning">Returning</string>
+    <string name="fulfilment_state_returned">Returned</string>
+    <string name="fulfilment_state_incidents">Incidents</string>
+    <string name="fulfilment_state_damaged">Damaged</string>
+    <string name="fulfilment_state_lost">Lost</string>
+    <string name="fulfilment_state_other">Other</string>
+    <string name="fulfilment_state_active">Active</string>
+    <string name="fulfilment_state_discontinuing">Discontinuing</string>
+    <string name="fulfilment_state_in_process">In process</string>
+
+    <string name="fulfilment_type_pallet">Pallet</string>
+    <string name="fulfilment_type_box">Box</string>
+    <string name="fulfilment_type_oversize">Oversize</string>
+    <string name="fulfilment_return_type_pallets">Pallets</string>
+    <string name="fulfilment_return_type_stored_items">Stored items</string>
+    <string name="fulfilment_return_type_dropshipping">Dropshipping</string>
+    <string name="fulfilment_audit_scope_customer">Customer</string>
+
+    <string name="fulfilment_filter_all">All</string>
+    <string name="fulfilment_filter_with_count">%1$s %2$d</string>
+    <string name="fulfilment_pallets">Pallets</string>
+    <string name="fulfilment_stored_items">Stored items</string>
+    <string name="fulfilment_not_received">Not received</string>
+    <string name="fulfilment_not_received_toast">%1$s set as not received</string>
+    <string name="fulfilment_no_location_yet">no location yet</string>
+    <plurals name="fulfilment_pallet_count">
+        <item quantity="one">%1$d pallet</item>
+        <item quantity="other">%1$d pallets</item>
+    </plurals>
+
+    <string name="fulfilment_deliveries_other_states">Other states</string>
+    <string name="fulfilment_deliveries_footnote">Fulfilment customers’ goods arrive as pallets, boxes or oversize items. References are per customer (customer code + number).</string>
+
+    <string name="fulfilment_delivery_kicker">Fulfilment delivery</string>
+    <plurals name="fulfilment_delivery_received_count">
+        <item quantity="one">%1$d received</item>
+        <item quantity="other">%1$d received</item>
+    </plurals>
+    <string name="fulfilment_delivery_footnote">Received comes from Receive on a confirmed delivery. Booking in starts with Start booking in. If nothing arrived, set the delivery as not received.</string>
+    <string name="fulfilment_delivery_start_booking_in">Start booking in</string>
+    <string name="fulfilment_delivery_waiting_to_book_in">Waiting to be booked in</string>
+
+    <string name="fulfilment_book_in_scan_title">Scan pallet, then location</string>
+    <string name="fulfilment_book_in_at">Book in at %1$s</string>
+    <string name="fulfilment_book_in_booked_toast">%1$s booked in at %2$s</string>
+    <plurals name="fulfilment_book_in_progress">
+        <item quantity="one">%1$d of %2$d booked in</item>
+        <item quantity="other">%1$d of %2$d booked in</item>
+    </plurals>
+    <string name="fulfilment_book_in_footnote">The location is optional when booking in and can be set later. A booked-in or not-received pallet can be undone.</string>
+    <string name="fulfilment_book_in_set_booked_in_after_last">Set as booked in · after the last pallet</string>
+    <string name="fulfilment_book_in_set_booked_in">Set as booked in</string>
+
+    <string name="fulfilment_booked_in_title">%1$s booked in</string>
+    <plurals name="fulfilment_booked_in_body">
+        <item quantity="one">%1$d pallet is now Storing.</item>
+        <item quantity="other">%1$d pallets are now Storing.</item>
+    </plurals>
+    <string name="fulfilment_booked_in_view_pallets">View stored pallets</string>
+    <string name="fulfilment_booked_in_next_delivery">Next delivery</string>
+
+    <string name="fulfilment_pallets_footnote">Fulfilment customers’ pallets, boxes and oversize items in this warehouse. Only shown with fulfilment permission.</string>
+
+    <string name="fulfilment_pallet_state">State</string>
+    <string name="fulfilment_pallet_type">Type</string>
+    <string name="fulfilment_pallet_location">Location</string>
+    <string name="fulfilment_pallet_customer_reference">Customer ref</string>
+    <string name="fulfilment_pallet_actions">Actions</string>
+    <string name="fulfilment_pallet_move">Move to another location</string>
+    <string name="fulfilment_pallet_move_hint">Scan the new location</string>
+    <string name="fulfilment_pallet_move_toast">Scan the new location for %1$s</string>
+    <string name="fulfilment_pallet_audit">Stored item audit</string>
+    <string name="fulfilment_pallet_audit_hint">Count the items on this pallet</string>
+    <string name="fulfilment_pallet_incident">Set as damaged or lost</string>
+    <string name="fulfilment_pallet_incident_hint">Report an incident</string>
+
+    <string name="fulfilment_incident_title">Report incident</string>
+    <string name="fulfilment_incident_damaged_hint">The pallet or its goods are damaged</string>
+    <string name="fulfilment_incident_lost_hint">The pallet is not where it should be</string>
+    <string name="fulfilment_incident_note">What happened</string>
+    <string name="fulfilment_incident_footnote">Saved as the incident report with your name and the date. The pallet’s location is cleared until someone sets it back to storing.</string>
+    <string name="fulfilment_incident_set_damaged">Set as damaged</string>
+    <string name="fulfilment_incident_set_lost">Set as lost</string>
+    <string name="fulfilment_incident_damaged_toast">%1$s set as damaged</string>
+    <string name="fulfilment_incident_lost_toast">%1$s set as lost</string>
+
+    <string name="fulfilment_incidents_footnote">An incident clears the pallet’s location. Set back to storing when it is resolved.</string>
+    <string name="fulfilment_incidents_set_storing">Set %1$s back to storing</string>
+    <string name="fulfilment_incidents_storing_toast">%1$s set back to storing</string>
+
+    <string name="fulfilment_stored_items_footnote">Stored items are the customer’s own SKOs, counted per pallet. The barcode is usually the manufacturer’s EAN.</string>
+
+    <string name="fulfilment_audit_kicker">Stored item audit</string>
+    <string name="fulfilment_audit_scan_title">Scan to count</string>
+    <string name="fulfilment_audit_scan_instruction">Scan each item on pallet %1$s</string>
+    <string name="fulfilment_audit_no_change">No change</string>
+    <string name="fulfilment_audit_subtraction">Subtraction −%1$d</string>
+    <string name="fulfilment_audit_addition">Addition +%1$d</string>
+    <string name="fulfilment_audit_expected">Expected %1$d</string>
+    <string name="fulfilment_audit_expected_not_counted">Expected %1$d · not counted yet</string>
+    <string name="fulfilment_audit_add_item">Add an item not on the list</string>
+    <string name="fulfilment_audit_add_item_hint">Scan it to add (addition)</string>
+    <string name="fulfilment_audit_footnote">An audit covers one pallet or the whole customer. Completing it applies the counted quantities.</string>
+    <string name="fulfilment_audit_complete">Complete audit</string>
+    <string name="fulfilment_audit_completed_toast">Audit %1$s completed</string>
+
+    <string name="fulfilment_returns_footnote">Each return is one type: whole pallets (wholesale), stored items, or dropshipping orders from the customer’s shop. Returns can also be picked in a fulfilment picking session.</string>
+
+    <string name="fulfilment_return_kicker">Fulfilment return</string>
+    <string name="fulfilment_return_scan_title">Scan to pick</string>
+    <string name="fulfilment_return_scan_pallet">Scan the pallet label</string>
+    <string name="fulfilment_return_scan_pallet_items">Scan the pallet, then each item</string>
+    <string name="fulfilment_return_was_in">%1$s · was in %2$s</string>
+    <string name="fulfilment_return_pick_footnote">Picking a whole pallet also returns its stored items. A pallet that can’t be picked is set as Not picked with a state and a note.</string>
+    <string name="fulfilment_return_not_picked">Not picked</string>
+    <string name="fulfilment_return_pick_pallet">Pick %1$s</string>
+    <string name="fulfilment_return_picked_toast">%1$s picked</string>
+    <plurals name="fulfilment_return_pallets_progress">
+        <item quantity="one">%1$d of %2$d pallet picked</item>
+        <item quantity="other">%1$d of %2$d pallets picked</item>
+    </plurals>
+    <string name="fulfilment_return_from_pallet">From %1$s</string>
+    <plurals name="fulfilment_return_only_on_pallet">
+        <item quantity="one">only %1$d on this pallet</item>
+        <item quantity="other">only %1$d on this pallet</item>
+    </plurals>
+    <string name="fulfilment_return_items_footnote">If a pallet has too few, pick the rest from another pallet holding the same item.</string>
+    <string name="fulfilment_return_pick_from_other">Pick %1$s from another pallet</string>
+    <string name="fulfilment_return_pick_from_other_toast">Scan another pallet holding %1$s</string>
+    <plurals name="fulfilment_return_items_progress">
+        <item quantity="one">%1$d of %2$d item picked</item>
+        <item quantity="other">%1$d of %2$d items picked</item>
+    </plurals>
+    <string name="fulfilment_return_all_picked">All picked</string>
+    <plurals name="fulfilment_return_picked_pallets">
+        <item quantity="one">%1$d pallet: %2$s</item>
+        <item quantity="other">%1$d pallets: %2$s</item>
+    </plurals>
+    <string name="fulfilment_return_how_it_leaves">How does it leave?</string>
+    <string name="fulfilment_return_shipment">Shipment</string>
+    <string name="fulfilment_return_shipment_hint">Choose a shipper and print labels</string>
+    <string name="fulfilment_return_collects">Customer collects</string>
+    <string name="fulfilment_return_collects_hint">No shipment needed</string>
+    <string name="fulfilment_return_picked_footnote">Picked is set by itself when every item is picked.</string>
+    <string name="fulfilment_return_create_shipment">Create shipment</string>
+    <string name="fulfilment_return_dispatch">Dispatch</string>
+    <string name="fulfilment_return_ready_to_dispatch">Ready to dispatch</string>
+    <string name="fulfilment_return_label_printed">Label printed</string>
+    <string name="fulfilment_return_tracking">Tracking %1$s · %2$s</string>
+    <string name="fulfilment_return_shipment_footnote">Shippers are the same as for delivery notes and are set up in the web app.</string>
+    <string name="fulfilment_return_dispatched_title">%1$s dispatched</string>
+    <plurals name="fulfilment_return_dispatched_body">
+        <item quantity="one">%1$d pallet is now Returned.</item>
+        <item quantity="other">%1$d pallets are now Returned.</item>
+    </plurals>
+    <string name="fulfilment_return_dispatched_footnote">For dropshipping returns from Shopify or TikTok, dispatching also sends the fulfilment back to the customer’s shop.</string>
+    <string name="fulfilment_return_next">Next return</string>
+</resources>

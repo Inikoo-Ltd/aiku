@@ -16,14 +16,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
-import io.aiku.droid.ui.navigation.AppTab
-import io.aiku.droid.ui.navigation.LocalAppNavigator
+import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.data.api.Ability
+import io.aiku.droid.data.api.allows
+import io.aiku.droid.ui.navigation.LocalWarehouse
+import io.aiku.droid.ui.states.NoAccessScreen
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 @Composable
@@ -48,30 +50,32 @@ fun MessagePanel(
 
 @Composable
 fun RequireAbility(
+    ability: Ability,
+    title: String,
+    activeTab: MainTab? = null,
+    content: @Composable () -> Unit,
+) {
+    RequireAbility(
+        isAllowed = LocalWarehouse.current.can.allows(ability),
+        title = title,
+        activeTab = activeTab,
+        missingPermission = ability.permission,
+        content = content,
+    )
+}
+
+@Composable
+fun RequireAbility(
     isAllowed: Boolean,
     title: String,
-    activeTab: AppTab? = null,
+    activeTab: MainTab? = null,
+    missingPermission: String? = null,
     content: @Composable () -> Unit,
 ) {
     if (isAllowed) {
         content()
-        return
-    }
-    val navigator = LocalAppNavigator.current
-
-    AppScreen(header = { AppHeader(title = title) }, activeTab = activeTab) {
-        MessagePanel(
-            title = stringResource(R.string.no_access_title),
-            body = stringResource(R.string.no_access_body),
-            tone = Tone.Warn,
-        ) {
-            AikuButton(
-                text = stringResource(R.string.no_access_back),
-                onClick = { navigator.openTab(AppTab.Dashboard) },
-                style = ButtonStyle.Outline,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+    } else {
+        NoAccessScreen(moduleName = title, missingPermission = missingPermission, activeTab = activeTab)
     }
 }
 

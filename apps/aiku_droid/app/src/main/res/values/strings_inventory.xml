@@ -1,60 +1,188 @@
 <resources>
-    <string name="inventory_title">Inventory</string>
-    <string name="inventory_kicker">Inventory · %1$s</string>
-    <string name="inventory_section_families">SKUs Families</string>
-    <string name="inventory_section_skus">SKUs</string>
+    <string name="inventory_pair">%1$s · %2$s</string>
+    <string name="inventory_all">All</string>
+    <string name="inventory_skos_heading">SKOs</string>
+
+    <string name="inventory_dashboard_title">Inventory dashboard</string>
+    <string name="inventory_manage_barcodes">Manage barcodes</string>
+    <string name="inventory_tile_urgent_audit">Urgent audit · low stock</string>
+    <string name="inventory_tile_to_replenish">To replenish · wholesale (dropshipping %1$d)</string>
+    <string name="inventory_tile_replenishments">Replenishments</string>
+    <string name="inventory_tile_low_stock_audits">Low stock audits</string>
+    <string name="inventory_tile_below_minimum">Below minimum stock</string>
+    <string name="inventory_tile_negative_stocks">Negative stocks</string>
+    <string name="inventory_tile_wrong_weights">Wrong weights</string>
+    <string name="inventory_tile_without_product">SKOs without product</string>
+    <string name="inventory_stock_value_line">Stock value %1$s</string>
+    <plurals name="inventory_location_utilisation">
+        <item quantity="one">Location utilisation %1$d%% · %2$,d of %3$,d location used</item>
+        <item quantity="other">Location utilisation %1$d%% · %2$,d of %3$,d locations used</item>
+    </plurals>
+    <string name="inventory_history_today">Stock history · today</string>
+
+    <string name="inventory_chip_with_count">%1$s %2$,d</string>
+    <string name="inventory_chip_current">Current</string>
+    <string name="inventory_chip_discontinued">Discontinued</string>
+    <string name="inventory_chip_abnormalities">Abnormalities</string>
+    <string name="inventory_skos_search">Code, name or supplier product code</string>
+    <string name="inventory_skos_footnote">Stock is in SKOs (stock keeping outers). Quantity status: excess, ideal, low, critical, out of stock, error.</string>
+    <plurals name="inventory_location_count">
+        <item quantity="one">%1$d location</item>
+        <item quantity="other">%1$d locations</item>
+    </plurals>
 
     <string name="inventory_status_excess">Excess</string>
     <string name="inventory_status_ideal">Ideal</string>
     <string name="inventory_status_low">Low</string>
     <string name="inventory_status_critical">Critical</string>
     <string name="inventory_status_out_of_stock">Out of stock</string>
-    <string name="inventory_filter_all">All</string>
-    <string name="inventory_filter_with_count">%1$s %2$s</string>
+    <string name="inventory_status_error">Error</string>
 
-    <string name="inventory_skus_search">Reference or name</string>
-    <string name="inventory_skus_sorted">Sorted by reference</string>
-    <string name="inventory_skus_columns">Stock · unit value</string>
-    <string name="inventory_showing">Showing %1$s of %2$s · scroll for more</string>
+    <string name="inventory_state_active">Active</string>
+    <string name="inventory_state_in_process">In process</string>
+    <string name="inventory_state_discontinuing">Discontinuing</string>
+    <string name="inventory_state_discontinued">Discontinued</string>
+    <string name="inventory_state_suspended">Suspended</string>
+    <string name="inventory_state_abnormality">Abnormality</string>
 
-    <string name="inventory_dashboard_title">Dashboard</string>
-    <string name="inventory_dashboard_skus">SKUs</string>
-    <string name="inventory_dashboard_in_families">in %1$s families</string>
-    <string name="inventory_dashboard_stock_value">Stock value</string>
-    <string name="inventory_dashboard_at_unit_value">at unit value</string>
-    <string name="inventory_dashboard_stock_status">Stock status</string>
-    <string name="inventory_dashboard_movements_today">Stock movements today</string>
-    <string name="inventory_dashboard_movement_in">In</string>
-    <string name="inventory_dashboard_movement_out">Out</string>
-    <string name="inventory_dashboard_movement_transfers">Transfers</string>
-    <string name="inventory_dashboard_movement_adjustments">Adjust.</string>
-    <string name="inventory_dashboard_needs_attention">Needs attention</string>
+    <string name="inventory_abnormalities_title">Abnormalities</string>
+    <string name="inventory_abnormalities_kicker">SKOs · Abnormalities</string>
+    <string name="inventory_abnormalities_footnote">SKOs in the Abnormality state. Negative stocks are listed from the inventory dashboard.</string>
 
-    <string name="inventory_families_search">Family code or name</string>
-    <string name="inventory_families_sorted">Sorted by code</string>
-    <string name="inventory_families_columns">SKUs · stock value</string>
+    <string name="inventory_families_search">Code or name</string>
+    <plurals name="inventory_sko_count">
+        <item quantity="one">%1$,d SKO</item>
+        <item quantity="other">%1$,d SKOs</item>
+    </plurals>
+    <plurals name="inventory_cover_weeks">
+        <item quantity="one">cover %1$d week</item>
+        <item quantity="other">cover %1$d weeks</item>
+    </plurals>
+    <string name="inventory_family_subtitle">%1$s · stock value %2$s · %3$s</string>
+    <string name="inventory_family_kicker">Stock family · %1$s</string>
+    <string name="inventory_stat_skos">SKOs</string>
+    <string name="inventory_stat_stock_value">Stock value</string>
+    <string name="inventory_stat_cover">Cover</string>
+    <string name="inventory_cover_weeks_short">%1$d wk</string>
 
-    <string name="inventory_family_kicker">SKU family</string>
-    <string name="inventory_family_skus">SKUs</string>
-    <string name="inventory_family_units">Units</string>
-    <string name="inventory_family_stock_value">Stock value</string>
+    <string name="inventory_sko_kicker">SKO · %1$s</string>
+    <string name="inventory_on_demand">On demand</string>
+    <string name="inventory_sko_card_title">SKO</string>
+    <plurals name="inventory_packed_in">
+        <item quantity="one">Packed in: %1$d unit per SKO</item>
+        <item quantity="other">Packed in: %1$d units per SKO</item>
+    </plurals>
+    <string name="inventory_barcodes">SKO barcode %1$s · unit EAN %2$s</string>
+    <string name="inventory_picker_note">Note to pickers: %1$s</string>
+    <string name="inventory_stat_in_locations">In locations</string>
+    <string name="inventory_stat_reserved">Reserved</string>
+    <string name="inventory_stat_to_be_picked">To be picked</string>
+    <plurals name="inventory_cover_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="inventory_locations_heading">Locations</string>
+    <string name="inventory_location_picking">Picking</string>
+    <string name="inventory_location_storing">Storing</string>
+    <string name="inventory_channel_wholesale">Wholesale</string>
+    <string name="inventory_channel_dropshipping">Dropshipping</string>
+    <string name="inventory_min_max">min %1$d · max %2$d</string>
+    <string name="inventory_replenish">replenish %1$d</string>
+    <string name="inventory_audited_on">audited %1$s</string>
+    <string name="inventory_never_audited">never audited</string>
+    <string name="inventory_stock_actions">Stock actions</string>
+    <string name="inventory_action_audit">Audit stock</string>
+    <string name="inventory_action_move">Move stock</string>
+    <string name="inventory_action_consume">Internal consumption</string>
+    <string name="inventory_action_add_location">Add location</string>
+    <string name="inventory_action_remove_locations">Remove locations</string>
 
-    <string name="inventory_sku_kicker">SKU</string>
-    <string name="inventory_sku_tab_overview">Overview</string>
-    <string name="inventory_sku_tab_stock_history">Stock history</string>
-    <string name="inventory_sku_tab_supplier_product">Supplier product</string>
-    <string name="inventory_sku_tab_products">Products</string>
-    <string name="inventory_sku_tab_images">Images</string>
-    <string name="inventory_sku_more_actions">More actions</string>
-    <string name="inventory_sku_image">Image</string>
-    <string name="inventory_sku_family">Family %1$s</string>
-    <string name="inventory_sku_unit_value">Unit value %1$s</string>
-    <string name="inventory_sku_stock">Stock</string>
-    <string name="inventory_sku_locations">Locations</string>
-    <string name="inventory_sku_stock_value">Stock value</string>
-    <string name="inventory_sku_picking">Picking</string>
-    <string name="inventory_sku_stock_history">Stock history</string>
-    <string name="inventory_sku_view_all">View all</string>
-    <string name="inventory_sku_adjustment">Adjustment</string>
-    <string name="inventory_sku_transfer">Location transfer</string>
+    <string name="inventory_in_location">%1$d in location</string>
+    <string name="inventory_quantity">Quantity</string>
+    <string name="inventory_reason">Reason</string>
+    <string name="inventory_note">Note</string>
+    <string name="inventory_type">Type</string>
+
+    <string name="inventory_audit_title">Audit stock · %1$s</string>
+    <string name="inventory_audit_subtitle">%1$s · count each location</string>
+    <string name="inventory_audit_was_counted">was %1$d · counted %2$d</string>
+    <string name="inventory_audit_no_change">no change</string>
+    <string name="inventory_delta_decrease">−%1$d</string>
+    <string name="inventory_delta_increase">+%1$d</string>
+    <string name="inventory_audit_reason_decrease">Reason for %1$s (decrease)</string>
+    <string name="inventory_audit_reason_increase">Reason for %1$s (increase)</string>
+    <string name="inventory_reason_count_shortage">Count shortage</string>
+    <string name="inventory_reason_damaged">Damaged stock</string>
+    <string name="inventory_reason_lost">Lost / missing</string>
+    <string name="inventory_reason_expired">Expired</string>
+    <string name="inventory_reason_picking_error">Picking error</string>
+    <string name="inventory_reason_count_gain">Count gain (stock found)</string>
+    <string name="inventory_reason_recount">Recount correction</string>
+    <string name="inventory_reason_returned">Returned to saleable stock</string>
+    <string name="inventory_reason_supplier_over">Supplier over</string>
+    <string name="inventory_audit_save">Save audit</string>
+    <string name="inventory_audit_saved">Audit saved · %1$s</string>
+
+    <string name="inventory_move_title">Move stock · %1$s</string>
+    <string name="inventory_move_subtitle">Between two of its locations</string>
+    <string name="inventory_move_from">From %1$s</string>
+    <string name="inventory_move_to">To %1$s</string>
+    <string name="inventory_reason_warehouse_transfer">Warehouse transfer</string>
+    <string name="inventory_reason_wrong_bin">Wrong bin location</string>
+    <string name="inventory_move_confirm">Move %1$d</string>
+    <plurals name="inventory_moved">
+        <item quantity="one">Moved %1$d from %2$s to %3$s</item>
+        <item quantity="other">Moved %1$d from %2$s to %3$s</item>
+    </plurals>
+
+    <string name="inventory_consume_title">Internal consumption · %1$s</string>
+    <string name="inventory_consume_subtitle">Stock used inside the company (showroom, samples…)</string>
+    <string name="inventory_consume_confirm">Record consumption</string>
+    <string name="inventory_consumed">Consumption recorded</string>
+
+    <string name="inventory_add_title">Add location · %1$s</string>
+    <string name="inventory_add_subtitle">Scan or search a location</string>
+    <string name="inventory_add_search">Location code</string>
+    <string name="inventory_add_picking_hint">Its other picking location becomes storing</string>
+    <string name="inventory_add_confirm">Add %1$s</string>
+    <string name="inventory_added">%1$s added</string>
+
+    <string name="inventory_remove_title">Remove locations · %1$s</string>
+    <string name="inventory_remove_subtitle">Choose the locations to remove</string>
+    <string name="inventory_remove_warning">Any stock left in a removed location will be removed and marked as lost.</string>
+    <plurals name="inventory_remove_confirm">
+        <item quantity="one">Remove %1$d location</item>
+        <item quantity="other">Remove %1$d locations</item>
+    </plurals>
+    <plurals name="inventory_removed">
+        <item quantity="one">%1$d location removed</item>
+        <item quantity="other">%1$d locations removed</item>
+    </plurals>
+
+    <string name="inventory_filter_title">Filter SKOs</string>
+    <string name="inventory_filter_sko_state">SKO state</string>
+    <string name="inventory_filter_stock_status">Stock status</string>
+    <string name="inventory_filter_family">SKO family</string>
+    <string name="inventory_filter_area">Area</string>
+    <string name="inventory_filter_location_type">Location type</string>
+    <string name="inventory_filter_sort">Sort by</string>
+    <string name="inventory_sort_reference">Reference</string>
+    <string name="inventory_sort_name">Name</string>
+    <string name="inventory_sort_stock">Stock (low first)</string>
+    <string name="inventory_sort_stock_value">Stock value</string>
+    <string name="inventory_sort_family">Family</string>
+    <plurals name="inventory_filter_show">
+        <item quantity="one">Show %1$,d SKO</item>
+        <item quantity="other">Show %1$,d SKOs</item>
+    </plurals>
+
+    <string name="inventory_history_in">In</string>
+    <string name="inventory_history_out">Out</string>
+    <string name="inventory_history_audit">Audit</string>
+    <string name="inventory_movement_purchase">Purchase</string>
+    <string name="inventory_movement_picked">Picked</string>
+    <string name="inventory_movement_audit">Audit</string>
+    <string name="inventory_movement_transfer">Location transfer</string>
+    <string name="inventory_movement_consumption">Consumption</string>
+    <string name="inventory_movement_chip">%1$s %2$s</string>
 </resources>

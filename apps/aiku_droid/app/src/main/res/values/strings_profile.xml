@@ -1,38 +1,37 @@
 <resources>
     <string name="profile_title">Profile</string>
     <string name="profile_kicker">Account</string>
-    <string name="profile_warehouse">Warehouse</string>
+    <string name="profile_org_warehouse">Organisation &amp; warehouse</string>
     <string name="profile_change">Change</string>
-    <string name="profile_change_warehouse">Change warehouse</string>
+    <string name="profile_change_warehouse">Change organisation or warehouse</string>
 
-    <string name="profile_abilities">What you can do here</string>
-    <string name="profile_ability_view_locations">See areas and locations</string>
-    <string name="profile_ability_edit_locations">Edit locations</string>
-    <string name="profile_ability_view_inventory">See inventory and SKUs</string>
-    <string name="profile_ability_move_stock">Transfer, adjust and audit stock</string>
-    <string name="profile_ability_view_goods_in">See goods in</string>
-    <string name="profile_ability_book_in">Receive, check and book in deliveries</string>
-    <string name="profile_ability_view_goods_out">See goods out</string>
-    <string name="profile_ability_pick_and_pack">Pick and pack orders</string>
-    <string name="profile_ability_supervise_goods_out">Assign pickers and packers, supervise the backlog</string>
-    <string name="profile_ability_view_fulfilment">See fulfilment items</string>
-    <string name="profile_abilities_none">Nothing here yet. Ask your supervisor for a role in this warehouse.</string>
 
     <string name="profile_scanning">Scanning</string>
     <string name="profile_scan_automatic">Automatic</string>
     <string name="profile_scan_automatic_caption">Scanner device if connected, otherwise camera</string>
-    <string name="profile_scan_device">Scanner device</string>
+    <string name="profile_scan_device">Bluetooth scanner</string>
     <string name="profile_scan_camera">Camera</string>
     <string name="profile_scan_sound">Sound on scan</string>
     <string name="profile_scan_vibrate">Vibrate on scan</string>
+
+    <string name="profile_work">Work</string>
+    <string name="profile_clocking">Clocking</string>
+    <string name="profile_clocking_history">Timesheets</string>
+    <string name="profile_clocked_in">Clocked in</string>
+    <string name="profile_clocking_this_week">This week %1$s</string>
 
     <string name="profile_app">App</string>
     <string name="profile_appearance">Appearance</string>
     <string name="profile_appearance_caption">Theme &amp; dark mode</string>
     <string name="profile_language">Language</string>
+    <string name="profile_offline_sync">Offline &amp; sync</string>
+    <plurals name="profile_sync_waiting">
+        <item quantity="one">%1$d waiting</item>
+        <item quantity="other">%1$d waiting</item>
+    </plurals>
     <string name="profile_notifications">Notifications</string>
     <string name="profile_version">Version</string>
-    <string name="profile_sign_out">Sign out</string>
+    <string name="profile_sign_out">Log out</string>
 
     <string name="profile_appearance_kicker">My profile · Personal settings</string>
     <string name="profile_mode">Mode</string>
@@ -50,4 +49,15 @@
     <string name="profile_org_colour">Colour per organisation</string>
     <string name="profile_org_colour_caption">Different bar colour for each organisation</string>
     <string name="profile_saved_note">Saved to your profile — matches Appearance in the Aiku web app.</string>
+
+    <plurals name="profile_switcher_warehouse_count">
+        <item quantity="one">%1$d warehouse</item>
+        <item quantity="other">%1$d warehouses</item>
+    </plurals>
+    <string name="profile_switcher_note">Only organisations and warehouses you have permission for are listed. Every screen, list and scan follows your choice.</string>
+    <string name="profile_switcher_keep">Keep %1$s</string>
+    <string name="profile_switcher_switch_to">Switch to %1$s</string>
+
+    <string name="profile_language_intro">Changes the app language for you only. Product names, customer names and notes stay as they are in Aiku.</string>
+    <string name="profile_language_use">Use %1$s</string>
 </resources>

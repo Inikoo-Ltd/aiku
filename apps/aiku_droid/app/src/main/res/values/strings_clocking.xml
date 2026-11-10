@@ -1,0 +1,116 @@
+<resources>
+    <string name="clocking_title">Clocking</string>
+    <string name="clocking_no_value" translatable="false">—</string>
+
+    <string name="clocking_tab_clock_in_out">Clock in / out</string>
+    <string name="clocking_tab_timesheets">Timesheets</string>
+    <string name="clocking_tab_leave">Leave</string>
+    <string name="clocking_tab_adjustment">Clocking adjustment</string>
+    <string name="clocking_tab_overtime">Overtime</string>
+    <string name="clocking_tab_calendar">Calendar</string>
+
+    <string name="clocking_no_methods_title">No clocking method</string>
+    <string name="clocking_no_methods_body">No clocking method is currently enabled for your organisation. Please contact HR.</string>
+
+    <string name="clocking_status_clocked_in">Clocked in</string>
+    <string name="clocking_status_clocked_out">Clocked out</string>
+    <string name="clocking_status_since">Since: %1$s</string>
+    <string name="clocking_status_last_clock_out">Last clock out %1$s</string>
+    <string name="clocking_status_date">Date</string>
+    <string name="clocking_details">Clocking details (%1$d)</string>
+    <string name="clocking_details_show">Show clocking details</string>
+    <string name="clocking_details_hide">Hide clocking details</string>
+    <string name="clocking_first_clock_in">First clock in</string>
+    <string name="clocking_last_clock_out">Last clock out</string>
+    <string name="clocking_working">Working</string>
+    <string name="clocking_breaks">Breaks</string>
+    <string name="clocking_clockings">Clockings</string>
+    <string name="clocking_clock_in">Clock in</string>
+    <string name="clocking_clock_out">Clock out</string>
+    <string name="clocking_session_duration">Duration %1$s</string>
+    <string name="clocking_session_ongoing">Ongoing</string>
+
+    <string name="clocking_method_qr_code">QR Code</string>
+    <string name="clocking_method_pin">PIN</string>
+    <string name="clocking_method_barcode">Barcode</string>
+    <string name="clocking_method_camera_qr">Camera QR</string>
+
+    <string name="clocking_location_found">Location found</string>
+    <string name="clocking_location_detecting">Detecting your location…</string>
+    <string name="clocking_location_coordinates">%1$s — view on map</string>
+    <string name="clocking_location_detect_first">Detect your location before you scan</string>
+    <string name="clocking_location_update">Update location</string>
+    <string name="clocking_location_detect">Detect my location</string>
+    <string name="clocking_open_camera">Open camera</string>
+    <string name="clocking_open_camera_helper">Scan the QR code on the clocking machine. The machine decides where you clocked.</string>
+
+    <string name="clocking_pin_helper">Enter this PIN on the clocking machine to clock in or out</string>
+    <string name="clocking_barcode_helper">Show this barcode to the scanner to clock in or out</string>
+    <string name="clocking_barcode_description">Your clocking barcode</string>
+    <string name="clocking_camera_qr_helper">Show this QR code to the camera to clock in or out</string>
+    <string name="clocking_camera_qr_description">Your clocking QR code</string>
+
+    <string name="clocking_working_hours_title">Select Working Hours</string>
+    <string name="clocking_working_hours_subtitle">Choose your work schedule for this clocking</string>
+    <string name="clocking_working_hours_default">Default Schedule</string>
+    <string name="clocking_working_hours_default_body">Your regular working hours · %1$s</string>
+    <string name="clocking_working_hours_shift">Shift Schedule</string>
+    <string name="clocking_working_hours_shift_body">Select a specific shift</string>
+    <string name="clocking_working_hours_choose_shift">Choose a shift</string>
+    <string name="clocking_working_hours_confirm">Confirm</string>
+
+    <string name="clocking_scan_title">Scan QR Code</string>
+    <string name="clocking_scan_close_camera">Close camera</string>
+    <string name="clocking_scan_simulate">Simulate a scan of the clocking machine</string>
+    <string name="clocking_scan_hint">Align QR code inside the frame</string>
+    <string name="clocking_scan_visiting">Hey, you’re in the wrong office — but we don’t mind!</string>
+    <string name="clocking_scan_working_hours">Working hours: %1$s</string>
+    <string name="clocking_scan_note">Note</string>
+    <string name="clocking_scan_note_placeholder">Add a note (optional)</string>
+    <string name="clocking_scan_close">Close</string>
+    <string name="clocking_scan_save_note">Save note</string>
+    <string name="clocking_scan_auto_close">Closes by itself in a few seconds</string>
+    <string name="clocking_scan_note_saved">Note saved</string>
+
+    <string name="clocking_timesheets_previous_week">Previous week</string>
+    <string name="clocking_timesheets_next_week">Next week</string>
+    <string name="clocking_timesheets_working_time">Working time</string>
+    <string name="clocking_timesheets_target">Target %1$s</string>
+    <string name="clocking_timesheets_chart">Hours per day</string>
+    <string name="clocking_timesheets_days">Days</string>
+    <string name="clocking_timesheets_note">Tap a day for its time trackers and clockings. To correct a clocking, request a clocking adjustment.</string>
+
+    <string name="clocking_day_kicker">Timesheet</string>
+    <string name="clocking_day_trackers">Time trackers</string>
+    <string name="clocking_day_closed">Closed</string>
+    <string name="clocking_day_workplace">Workplace</string>
+    <string name="clocking_day_shift">Shift</string>
+    <string name="clocking_day_request_adjustment">Request clocking adjustment</string>
+    <string name="clocking_day_back_to_history">Back to history</string>
+
+    <string name="clocking_adjustment_title">Clocking adjustment · %1$s</string>
+    <string name="clocking_adjustment_subtitle">Your manager checks it and corrects the timesheet in Aiku</string>
+    <string name="clocking_adjustment_missing">Missing clocking</string>
+    <string name="clocking_adjustment_time">Time you left</string>
+    <string name="clocking_adjustment_shift_ended">Your shift ended %1$s</string>
+    <string name="clocking_adjustment_reason">Reason</string>
+    <string name="clocking_adjustment_request">Request adjustment</string>
+    <string name="clocking_adjustment_requested">Clocking adjustment requested</string>
+
+    <string name="clocking_error_kicker_qr">Clocking · QR Code</string>
+    <string name="clocking_error_kicker_pin">Clocking · PIN</string>
+    <string name="clocking_error_qr_title">Failed Scan QR</string>
+    <string name="clocking_error_qr_body">The code you scanned was not accepted. The message below comes from Aiku.</string>
+    <string name="clocking_error_message">Message</string>
+    <string name="clocking_error_scanned">Scanned</string>
+    <string name="clocking_error_open_camera_again">Open camera again</string>
+    <string name="clocking_error_back_to_clocking">Back to clocking</string>
+    <string name="clocking_error_location_title">Location blocked</string>
+    <string name="clocking_error_location_body">Please enable location permission in your phone settings. You can still open the camera and scan the machine.</string>
+    <string name="clocking_error_open_camera_anyway">Open camera anyway</string>
+    <string name="clocking_error_try_again">Try again</string>
+    <string name="clocking_error_no_pin_title">No PIN yet</string>
+    <string name="clocking_error_no_pin_body">No PIN has been generated for you yet. Please contact HR.</string>
+    <string name="clocking_error_offline_title">No connection</string>
+    <string name="clocking_error_offline_body">Aiku checks the machine’s QR code when you scan, so clocking needs a connection. Nothing was saved.</string>
+</resources>

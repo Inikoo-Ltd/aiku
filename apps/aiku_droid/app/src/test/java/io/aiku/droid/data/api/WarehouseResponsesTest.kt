@@ -12,7 +12,7 @@ class WarehouseResponsesTest {
         val body = """
             {"data":[{"id":7,"slug":"wh1","code":"WH1","name":"Main Warehouse","organisation":{"id":3,"slug":"aw","name":"AW"},
             "can":{"view_locations":true,"edit_locations":false,"view_inventory":false,"move_stock":false,"view_goods_in":false,
-            "book_in":false,"view_goods_out":true,"pick_and_pack":true,"supervise_goods_out":false,"view_fulfilment":false}}]}
+            "book_in":false,"supervise_goods_in":true,"edit_procurement":false,"place_stock_deliveries":true,"view_goods_out":true,"pick_and_pack":true,"supervise_goods_out":false,"view_fulfilment":false,"edit_fulfilment":true}}]}
         """.trimIndent()
 
         val warehouse = (WarehouseResponses.parse(200, body) as WarehousesResult.Loaded).warehouses.single()
@@ -23,6 +23,10 @@ class WarehouseResponsesTest {
         assertTrue(warehouse.can.pickAndPack)
         assertFalse(warehouse.can.viewInventory)
         assertFalse(warehouse.can.superviseGoodsOut)
+        assertTrue(warehouse.can.editFulfilment)
+        assertTrue(warehouse.can.superviseGoodsIn)
+        assertFalse(warehouse.can.editProcurement)
+        assertTrue(warehouse.can.placeStockDeliveries)
     }
 
     @Test
@@ -34,6 +38,10 @@ class WarehouseResponsesTest {
         assertTrue(can.viewGoodsOut)
         assertFalse(can.pickAndPack)
         assertFalse(can.viewFulfilment)
+        assertFalse(can.editFulfilment)
+        assertFalse(can.superviseGoodsIn)
+        assertFalse(can.editProcurement)
+        assertFalse(can.placeStockDeliveries)
     }
 
     @Test

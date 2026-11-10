@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_greeting_morning">Good morning, %1$s</string>
+    <string name="home_greeting_afternoon">Good afternoon, %1$s</string>
+    <string name="home_greeting_evening">Good evening, %1$s</string>
+    <string name="home_profile_description">Your profile and settings</string>
+    <string name="home_clocking">Clocking</string>
+    <string name="home_shortcuts">Shortcuts</string>
+    <string name="home_your_modules">Your modules</string>
+    <string name="home_module_warehouse">Warehouse</string>
+    <string name="home_module_warehouse_dashboard">Warehouse dashboard</string>
+    <string name="home_staff_note">Warehouse appears here when your account has access to it.</string>
+    <string name="home_profile_settings">Profile &amp; settings</string>
+
+    <string name="mywork_kicker">%1$s · assigned to you</string>
+    <string name="mywork_filter_all">All %1$d</string>
+    <string name="mywork_filter_warehouse">Warehouse %1$d</string>
+    <string name="mywork_filter_tasks">Tasks %1$d</string>
+    <string name="mywork_module_warehouse">Warehouse</string>
+    <string name="mywork_module_tasks">Tasks</string>
+    <string name="mywork_note">Everything assigned to you, from every module you can open. Oldest and blocked first.</string>
+
+    <plurals name="inbox_unread">
+        <item quantity="one">%1$d unread</item>
+        <item quantity="other">%1$d unread</item>
+    </plurals>
+    <string name="inbox_mark_all_read">Mark all as read</string>
+    <string name="inbox_today">Today</string>
+    <string name="inbox_earlier">Earlier</string>
+    <string name="inbox_unread_dot">Unread</string>
+
+    <string name="menu_kicker">Everything you can open in Aiku</string>
+    <string name="menu_search_label">Search SKOs, locations or delivery notes</string>
+    <string name="menu_search_placeholder">Search SKO, location, delivery note</string>
+    <string name="menu_change">Change</string>
+    <string name="menu_dashboard_subtitle">Backlogs, deliveries, stock movements</string>
+    <string name="menu_fulfilment_tag">Fulfilment</string>
+    <string name="menu_all_staff">All staff</string>
+    <string name="menu_clocking">Clocking</string>
+    <string name="menu_timesheets">Timesheets</string>
+    <string name="menu_appearance">Appearance</string>
+    <string name="menu_appearance_subtitle">Theme colour · light or dark</string>
+    <string name="menu_log_out">Log out</string>
+
+    <string name="search_title">Search</string>
+    <string name="search_scope_all">All</string>
+    <string name="search_group">%1$s · %2$d</string>
+    <string name="search_recent">Recent searches</string>
+
+    <string name="dashboard_clocking">Clocking</string>
+    <string name="dashboard_tap_to_change">%1$s · tap to change</string>
+    <string name="dashboard_view">View</string>
+    <string name="dashboard_dispatching_backlog">Dispatching backlog</string>
+    <string name="dashboard_dispatched_today">Dispatched today</string>
+    <string name="dashboard_incoming_hub">Incoming hub</string>
+    <string name="dashboard_stock_history_today">Stock history · today</string>
+    <string name="dashboard_all">All</string>
+    <string name="dashboard_my_work_note">Your assigned work is in My work.</string>
+
+    <string name="scan_result_title">Result</string>
+    <string name="scan_result_kicker">Scan</string>
+    <string name="scan_result_scanned_prefix">Scanned </string>
+    <string name="scan_result_scanned_location_suffix"> · it’s a location</string>
+    <string name="scan_result_open_location">Open location</string>
+    <string name="scan_result_audit_location">Audit location</string>
+    <string name="scan_result_move_skos">Move SKOs</string>
+    <string name="scan_result_what_opens">What a scan can open</string>
+    <string name="scan_result_opens_sko">SKO barcode → SKO detail</string>
+    <string name="scan_result_opens_location">Location label → Location detail</string>
+    <string name="scan_result_opens_delivery_note">Delivery note → Delivery note detail</string>
+    <string name="scan_result_opens_stock_delivery">Stock delivery → Stock delivery detail</string>
+
+    <string name="sync_title">Offline &amp; sync</string>
+    <string name="sync_kicker">Profile</string>
+    <string name="sync_view">View</string>
+    <string name="sync_waiting">Waiting to upload</string>
+    <string name="sync_oldest_first">oldest first</string>
+    <string name="sync_last_sync">Last sync</string>
+    <string name="sync_synced">Synced</string>
+    <string name="sync_explanation">Line-level work is saved on the phone while offline: pick, not picked, pack, check, place, audit, move. On reconnect each action is checked against the version it started from: if nothing changed in Aiku it uploads by itself, otherwise it waits for you in Resolve conflicts. Clocking and state changes need a connection.</string>
+    <string name="sync_conflicts_title">Resolve conflicts</string>
+    <string name="sync_resolve_all">Resolve everything at once</string>
+    <string name="sync_keep_all_mine">Keep all mine</string>
+    <string name="sync_keep_all_aiku">Keep all Aiku</string>
+    <string name="sync_kept_all_mine">Kept all of yours</string>
+    <string name="sync_kept_all_aiku">Kept all of Aiku’s</string>
+    <string name="sync_conflicts_explanation">Like resolving a merge: open a record to choose line by line, or keep all of one side. Nothing you discard is lost: it stays in the sync history.</string>
+    <string name="sync_use_mine_for_all">Use mine for all</string>
+    <string name="sync_use_aiku_for_all">Use Aiku for all</string>
+    <string name="sync_lines_differ">Lines that differ</string>
+    <string name="sync_yours">Yours</string>
+    <string name="sync_now_in_aiku">Now in Aiku</string>
+    <string name="sync_mine">Mine</string>
+    <string name="sync_aiku">Aiku</string>
+    <string name="sync_both">Both</string>
+    <string name="sync_same_on_both">Same on both sides</string>
+    <string name="sync_no_conflict">No conflict</string>
+    <string name="sync_conflict_explanation">Each differing line offers Mine or Aiku; quantities can also take Both (added up, never above what the line needs). Your choice is shown filled.</string>
+    <string name="sync_apply">Apply · %1$s</string>
+    <plurals name="sync_apply_mine">
+        <item quantity="one">%1$d mine</item>
+        <item quantity="other">%1$d mine</item>
+    </plurals>
+    <plurals name="sync_apply_both">
+        <item quantity="one">%1$d both</item>
+        <item quantity="other">%1$d both</item>
+    </plurals>
+    <plurals name="sync_apply_aiku">
+        <item quantity="one">%1$d Aiku</item>
+        <item quantity="other">%1$d Aiku</item>
+    </plurals>
+    <string name="sync_online_only_title">Finalise needs a connection</string>
+    <string name="sync_online_only_body">Shipments, labels, finalise, dispatch, cancel and Mark as received talk to carriers, printers or customers, so they only work online. Your picking and packing are saved and upload when you’re back.</string>
+    <string name="sync_online_only_note">The main button comes back as soon as the phone is online and the queue has synced.</string>
+</resources>

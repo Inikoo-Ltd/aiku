@@ -1,58 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="goodsin_title">Goods in</string>
-    <string name="goodsin_tab_backlog">Backlog</string>
-    <string name="goodsin_tab_stock_deliveries">Stock deliveries</string>
-    <string name="goodsin_tab_fulfilment_deliveries">Fulfilment deliveries</string>
+    <string name="goodsin_state_arriving">Arriving</string>
+    <string name="goodsin_booked_in_7d">Booked in 7d</string>
+    <string name="goodsin_not_received">Not received</string>
 
-    <string name="goodsin_backlog_intro">Work waiting at goods-in, in the order it needs doing.</string>
-    <string name="goodsin_backlog_received">Received · to check</string>
-    <string name="goodsin_backlog_checked">Checked · to place</string>
-    <string name="goodsin_backlog_dispatched">Dispatched · on the way</string>
-    <string name="goodsin_action_check">Check</string>
-    <string name="goodsin_action_place">Place</string>
+    <string name="goodsin_hub_title">Incoming hub</string>
+    <string name="goodsin_source_agents">Agents</string>
+    <string name="goodsin_source_partners">Partners</string>
+    <string name="goodsin_hub_note">Arriving means dispatched by the supplier.</string>
 
-    <string name="goodsin_search_placeholder">Reference</string>
-    <string name="goodsin_filter_open">Open</string>
-    <string name="goodsin_filter_with_count" translatable="false">%1$s %2$d</string>
-    <string name="goodsin_sorted_by_reference">Sorted by reference</string>
-    <string name="goodsin_flow_hint">Flow: Dispatched → Received → Checked → Placed</string>
-    <string name="goodsin_state_dispatched">Dispatched</string>
-    <string name="goodsin_state_received">Received</string>
-    <string name="goodsin_state_checked">Checked</string>
-    <string name="goodsin_state_placed">Placed</string>
-    <string name="goodsin_check_items">Check items</string>
-    <string name="goodsin_place_in_locations">Place in locations</string>
-    <string name="goodsin_list_footer">Placed and cancelled deliveries are in “All”</string>
-    <string name="goodsin_no_results">No stock deliveries match your search.</string>
+    <string name="goodsin_search_filter">Search and filter</string>
+    <string name="goodsin_chip_with_count">%1$s %2$d</string>
+    <string name="goodsin_filter_all">All</string>
+    <string name="goodsin_other_states">Other states</string>
 
-    <string name="goodsin_supplier_delivery">Supplier delivery</string>
-    <string name="goodsin_more_actions">More actions</string>
-    <string name="goodsin_tab_attachments">Attachments</string>
-    <string name="goodsin_tab_history">History</string>
-    <string name="goodsin_tab_data">Data</string>
-    <string name="goodsin_supplier">Supplier</string>
-    <string name="goodsin_received_at">Received</string>
+    <string name="goodsin_filter_title">Filter stock deliveries</string>
+    <string name="goodsin_filter_state">State</string>
+    <string name="goodsin_filter_source">Source</string>
+    <string name="goodsin_source_suppliers">Suppliers</string>
+    <string name="goodsin_source_production">Production</string>
+    <string name="goodsin_filter_dispatched">Dispatched</string>
+    <string name="goodsin_filter_today">Today</string>
+    <string name="goodsin_filter_this_week">This week</string>
+    <string name="goodsin_filter_older">Older</string>
+    <string name="goodsin_filter_sort">Sort by</string>
+    <string name="goodsin_sort_dispatched_date">Dispatched date</string>
+    <string name="goodsin_sort_reference">Reference</string>
+    <string name="goodsin_sort_supplier">Supplier</string>
+    <string name="goodsin_sort_items">Items</string>
+    <plurals name="goodsin_filter_show">
+        <item quantity="one">Show %d stock delivery</item>
+        <item quantity="other">Show %d stock deliveries</item>
+    </plurals>
 
-    <string name="goodsin_scan_to_receive">Scan items to receive</string>
-    <string name="goodsin_scanner_ready">Scanner device ready · just scan, each scan adds 1</string>
-    <string name="goodsin_use_camera">Use camera</string>
-    <string name="goodsin_type_code">Type code</string>
-
+    <string name="goodsin_kicker_stock_delivery">Stock delivery · %1$s</string>
+    <string name="goodsin_orderer">Orderer</string>
+    <string name="goodsin_purchase_orders">Purchase orders %1$s</string>
+    <string name="goodsin_estimated_receiving">Estimated receiving %1$s</string>
+    <string name="goodsin_delivery">Delivery</string>
+    <string name="goodsin_field_type">Type</string>
+    <string name="goodsin_field_container_size">Container size</string>
+    <string name="goodsin_field_incoterm">Incoterm</string>
+    <string name="goodsin_field_port_export">Port of export</string>
+    <string name="goodsin_field_port_import">Port of import</string>
+    <string name="goodsin_field_container_number">Container number</string>
+    <string name="goodsin_field_shipper_reference">Shipper reference</string>
+    <string name="goodsin_field_tracking_number">Tracking number</string>
+    <string name="goodsin_field_shipping_agent">Shipping agent</string>
     <string name="goodsin_items">Items</string>
-    <plurals name="goodsin_items_checked">
+    <string name="goodsin_field_new_skos">New SKOs</string>
+    <string name="goodsin_field_weight">Weight</string>
+    <string name="goodsin_field_volume">Volume</string>
+    <string name="goodsin_field_received_checked">Received / checked</string>
+    <string name="goodsin_field_placed">Placed</string>
+    <string name="goodsin_field_under">Under delivered</string>
+    <string name="goodsin_field_over">Over delivered</string>
+    <string name="goodsin_field_unit_mismatch">Possible unit mismatch</string>
+
+    <string name="goodsin_arriving_note">Mark it as received when it arrives at goods in. Checking starts after that. Needs goods-in edit rights.</string>
+    <string name="goodsin_procurement_only">With procurement edit rights only</string>
+    <string name="goodsin_unmark_dispatched">Unmark as dispatched</string>
+    <string name="goodsin_unmark_dispatched_body">Back to the state before dispatch</string>
+    <string name="goodsin_mark_received">Mark as received</string>
+    <string name="goodsin_toast_marked_received">%1$s marked as received</string>
+    <string name="goodsin_toast_unmarked_dispatched">%1$s unmarked as dispatched</string>
+
+    <string name="goodsin_tab_pending">Pending items</string>
+    <string name="goodsin_tab_done">Done items</string>
+    <string name="goodsin_tab_checklist">Checklist</string>
+    <string name="goodsin_scan_to_check">Scan to check</string>
+    <string name="goodsin_scan_to_check_body">Each scan adds 1 to the checked quantity</string>
+    <plurals name="goodsin_item_checked_progress">
+        <item quantity="one">%1$s · %2$d of %3$d checked</item>
+        <item quantity="other">%1$s · %2$d of %3$d checked</item>
+    </plurals>
+    <plurals name="goodsin_checked_count">
         <item quantity="one">%1$d of %2$d checked</item>
         <item quantity="other">%1$d of %2$d checked</item>
     </plurals>
-    <string name="goodsin_short_by">Short by %1$d</string>
-    <string name="goodsin_expected">%1$s · expected %2$d</string>
-    <string name="goodsin_quantity_of" translatable="false">%1$s / %2$d</string>
-    <string name="goodsin_quantity_missing" translatable="false">—</string>
-    <string name="goodsin_of_total" translatable="false">/ %1$d</string>
-    <string name="goodsin_minus" translatable="false">−</string>
-    <string name="goodsin_plus" translatable="false">+</string>
-    <string name="goodsin_decrease_received">Decrease received quantity</string>
-    <string name="goodsin_increase_received">Increase received quantity</string>
+    <string name="goodsin_item_delivered">%1$s · delivered %2$d</string>
+    <string name="goodsin_item_checked_as_zero">%1$s · checked as 0</string>
+    <string name="goodsin_chip_checked_under">Checked · under</string>
+    <string name="goodsin_chip_checked_over">Checked · over</string>
+    <string name="goodsin_checking_note">Tap an item to set its checked quantity or check all. Checking an item as 0 marks it Not received. Checked items can be placed straight away from Booking in.</string>
+    <string name="goodsin_supervisor">Goods-in supervisor</string>
+    <string name="goodsin_unmark_received">Unmark as received</string>
+    <string name="goodsin_unmark_received_body">Back to dispatched · needs incoming supervisor rights</string>
+    <string name="goodsin_cancel_delivery">Cancel stock delivery</string>
+    <string name="goodsin_cancel_delivery_body">Only while nothing is placed</string>
+    <string name="goodsin_place_checked">Place checked items</string>
+    <string name="goodsin_toast_unmarked_received">%1$s is back to dispatched</string>
+    <string name="goodsin_toast_cancelled">%1$s cancelled</string>
 
-    <string name="goodsin_scan">Scan</string>
-    <string name="goodsin_confirm_next">Confirm item · next</string>
+    <string name="goodsin_close_scanner">Close scanner</string>
+    <string name="goodsin_torch_on">Turn torch on</string>
+    <string name="goodsin_torch_off">Turn torch off</string>
+    <string name="goodsin_camera">Camera</string>
+    <string name="goodsin_bluetooth_scanner">Bluetooth scanner</string>
+    <string name="goodsin_camera_context">Goods in · Checking</string>
+    <string name="goodsin_point_at_barcode">Point at the item barcode</string>
+    <string name="goodsin_simulate_scan">Scan the item in view</string>
+    <string name="goodsin_scan_feedback">+1 · %1$d of %2$d</string>
+    <string name="goodsin_camera_checked">checked</string>
+    <string name="goodsin_type_code">Type code</string>
+    <string name="goodsin_set_checked_quantity">Set checked quantity</string>
+    <string name="goodsin_done_back">Done · back to items</string>
+
+    <string name="goodsin_sheet_checked_title">%1$s · checked quantity</string>
+    <string name="goodsin_stepper_checked">Checked</string>
+    <string name="goodsin_difference">Difference</string>
+    <plurals name="goodsin_difference_under">
+        <item quantity="one">%1$d under the delivered quantity</item>
+        <item quantity="other">%1$d under the delivered quantity</item>
+    </plurals>
+    <plurals name="goodsin_difference_over">
+        <item quantity="one">%1$d over the delivered quantity</item>
+        <item quantity="other">%1$d over the delivered quantity</item>
+    </plurals>
+    <string name="goodsin_difference_none">Matches the delivered quantity</string>
+    <string name="goodsin_chip_under">Under −%1$d</string>
+    <string name="goodsin_chip_over">Over +%1$d</string>
+    <string name="goodsin_chip_not_received_by">Not received −%1$d</string>
+    <string name="goodsin_chip_matches">Matches</string>
+    <string name="goodsin_sheet_checked_note">Count in units or in SKOs (outers), as set for the item. Purchasing resolves differences: recount, unit error, supplier claim or surplus accepted.</string>
+    <plurals name="goodsin_save_checked">
+        <item quantity="one">Save %1$d checked</item>
+        <item quantity="other">Save %1$d checked</item>
+    </plurals>
+    <string name="goodsin_check_all">Check all %1$d</string>
+    <string name="goodsin_check_as_zero">Check as 0 · not received</string>
+    <plurals name="goodsin_toast_checked">
+        <item quantity="one">%1$s · %2$d checked</item>
+        <item quantity="other">%1$s · %2$d checked</item>
+    </plurals>
+    <string name="goodsin_toast_not_received">%1$s set as not received</string>
+
+    <string name="goodsin_checks">Goods-in checks</string>
+    <string name="goodsin_check_passed">Passed</string>
+    <string name="goodsin_check_failed">Failed</string>
+    <string name="goodsin_check_to_do">To do</string>
+    <string name="goodsin_check_pass_or_fail">Pass or fail</string>
+    <string name="goodsin_check_done_by">%1$s · just now</string>
+    <string name="goodsin_under_over">Under / over delivered</string>
+    <string name="goodsin_read_only">read-only</string>
+    <string name="goodsin_checklist_note">A failed check needs a note. Purchasing follows up the differences.</string>
+    <string name="goodsin_fail">Fail</string>
+    <string name="goodsin_pass">Pass</string>
+    <string name="goodsin_checks_done">All goods-in checks done</string>
+    <string name="goodsin_toast_check_passed">Check passed</string>
+    <string name="goodsin_toast_check_failed">Check failed · add a note</string>
+
+    <plurals name="goodsin_placed_count">
+        <item quantity="one">%1$d of %2$d placed</item>
+        <item quantity="other">%1$d of %2$d placed</item>
+    </plurals>
+    <string name="goodsin_chip_placed">Placed</string>
+    <string name="goodsin_item_in_location">%1$s · in %2$s</string>
+    <string name="goodsin_item_picking_location">%1$s · picking location %2$s</string>
+    <string name="goodsin_no_picking_location">No picking location yet</string>
+    <string name="goodsin_booking_in_note">No delivery-level action while booking in: place each checked item. You can only place what was checked. When every item is placed the delivery becomes Booked in by itself.</string>
+    <string name="goodsin_place_item">Place %1$s</string>
+
+    <string name="goodsin_kicker_booking_in">%1$s · Booking in</string>
+    <plurals name="goodsin_item_checked_quantity">
+        <item quantity="one">%1$s · %2$d checked</item>
+        <item quantity="other">%1$s · %2$d checked</item>
+    </plurals>
+    <string name="goodsin_where_does_it_go">Where does it go?</string>
+    <string name="goodsin_another_location">Another location</string>
+    <string name="goodsin_another_location_body">Scan it, or search the location code</string>
+    <string name="goodsin_quantity">Quantity</string>
+    <string name="goodsin_up_to">up to %1$d</string>
+    <string name="goodsin_picking_location">Picking location</string>
+    <string name="goodsin_change">Change</string>
+    <string name="goodsin_place_note">Place part here and the rest in another location by lowering the quantity.</string>
+    <string name="goodsin_place_all">Place all</string>
+    <string name="goodsin_place_in">Place %1$d in %2$s</string>
+    <string name="goodsin_toast_placed">%1$d of %2$s placed in %3$s</string>
+
+    <string name="goodsin_scan_location">Scan location</string>
+    <string name="goodsin_scan_location_body">or search the location code</string>
+    <string name="goodsin_set_as_picking">Set as picking location</string>
+    <string name="goodsin_set_as_picking_body">This SKO has no picking location yet</string>
+    <string name="goodsin_set_as_picking_note">Ticked by default when this would be the SKO’s only location.</string>
+
+    <string name="goodsin_placed_quantity">%1$d in %2$s</string>
+    <string name="goodsin_booked_in_note">All items placed, so the delivery is Booked in by itself.</string>
+    <string name="goodsin_procurement_accounting_only">With procurement or accounting edit rights only</string>
+    <string name="goodsin_place_delivery">Place</string>
+    <string name="goodsin_place_delivery_body">Place this stock delivery, this is its final state · starts costing</string>
+    <string name="goodsin_next_delivery">Next stock delivery</string>
+    <string name="goodsin_toast_delivery_placed">%1$s placed · costing starts</string>
+
+    <string name="goodsin_return_returning">Returning to locations</string>
+    <string name="goodsin_return_returned">Returned</string>
+    <string name="goodsin_returns_note">Customer returns arriving at goods in. Each item goes back to a location, or is set as damaged or not returned.</string>
+
+    <string name="goodsin_kicker_return">Return · %1$s</string>
+    <string name="goodsin_return_step_received">Received</string>
+    <string name="goodsin_return_step_returning">Returning</string>
+    <string name="goodsin_return_step_returned">Returned</string>
+    <string name="goodsin_return_step_done">Done</string>
+    <plurals name="goodsin_returned_to">
+        <item quantity="one">%1$d back in %2$s</item>
+        <item quantity="other">%1$d back in %2$s</item>
+    </plurals>
+    <string name="goodsin_to_process">%1$s · %2$d to process</string>
+    <string name="goodsin_to_location">To location</string>
+    <string name="goodsin_damaged">Damaged</string>
+    <string name="goodsin_not_returned">Not returned</string>
+    <string name="goodsin_return_actions_note">Item actions for %1$s. When every item is processed, set the return as returned.</string>
+    <string name="goodsin_set_returned">Set as returned</string>
+    <string name="goodsin_return_processed_note">Every item is processed.</string>
+    <string name="goodsin_toast_returned">%1$s set as returned</string>
 </resources>

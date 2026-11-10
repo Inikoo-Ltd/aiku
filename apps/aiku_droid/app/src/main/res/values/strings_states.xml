@@ -1,0 +1,92 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="states_try_again">Try again</string>
+    <string name="states_back_to_dashboard">Back to Home</string>
+    <string name="states_scan_header">Scan</string>
+    <string name="states_type_code">Type the code</string>
+
+    <string name="states_loading_warehouses">Loading your warehouses…</string>
+
+    <string name="states_offline_title">You’re offline</string>
+    <string name="states_offline_body">No internet connection. Scans and counts are saved on this phone and will sync automatically when you’re back online.</string>
+    <string name="states_offline_waiting">Waiting to sync</string>
+    <plurals name="states_offline_actions">
+        <item quantity="one">%d action</item>
+        <item quantity="other">%d actions</item>
+    </plurals>
+    <string name="states_offline_view_queue">View queue</string>
+    <string name="states_offline_keep_working">Keep working offline</string>
+
+    <string name="states_session_title">Session expired</string>
+    <string name="states_session_body">For security you were signed out after a long time without activity. Sign in again to continue. Nothing you saved is lost.</string>
+    <string name="states_session_sign_in">Sign in again</string>
+
+    <string name="states_no_access_kicker">Access</string>
+    <string name="states_no_access_title">You don’t have access</string>
+    <string name="states_no_access_body">Your account can’t open %1$s in %2$s. Ask your warehouse manager to add the permission in Aiku.</string>
+    <string name="states_no_access_body_without_warehouse">Your account can’t open %1$s. Ask your warehouse manager to add the permission in Aiku.</string>
+    <string name="states_no_access_missing">Missing permission: %1$s</string>
+    <string name="states_change_warehouse">Change warehouse</string>
+
+    <string name="states_not_found_kicker">Result</string>
+    <string name="states_not_found_title">Nothing found for this barcode</string>
+    <string name="states_not_found_body">%1$s isn’t linked to a SKO, location, delivery note or stock delivery in this warehouse.</string>
+    <string name="states_not_found_hint">Check the label isn’t damaged, or that you’re in the right warehouse.</string>
+    <string name="states_scan_again">Scan again</string>
+    <string name="states_report_unknown_barcode">Report unknown barcode</string>
+
+    <string name="states_server_title">Something went wrong</string>
+    <string name="states_server_body">Aiku didn’t respond. Your last action was not saved. Try again in a moment.</string>
+    <string name="states_server_error_code">Error %1$d ·</string>
+    <string name="states_report_problem">Report problem</string>
+
+    <string name="states_camera_title">Camera access is off</string>
+    <string name="states_camera_body">Aiku needs the camera to scan barcodes. Turn it on in your phone settings, or use a scanner device instead.</string>
+    <string name="states_camera_open_settings">Open settings</string>
+    <string name="states_camera_use_scanner">Use scanner device</string>
+
+    <string name="states_search_empty_title">No results for “%1$s”</string>
+    <string name="states_search_empty_body" tools:ignore="TypographyDashes">Try a SKO reference (SKO-00412), a location code (A-03-02) or a shorter word.</string>
+    <string name="states_search_scan_instead">Scan instead</string>
+
+    <string name="states_tasks_empty_title">All caught up</string>
+    <string name="states_tasks_empty_body">No delivery notes are waiting for you. New ones appear here as soon as they are assigned.</string>
+    <string name="states_tasks_pick_from_queue">Back to delivery notes</string>
+
+    <string name="states_conflict_reload_now">Reload now</string>
+    <string name="states_conflict_what_changed">What changed</string>
+    <string name="states_conflict_updated">Updated</string>
+    <string name="states_conflict_back_to_list">Back to list</string>
+    <string name="states_conflict_delivery_note_kicker">Delivery Note</string>
+    <string name="states_conflict_delivery_note_title">This delivery note changed</string>
+    <string name="states_conflict_delivery_note_reload">Reload delivery note</string>
+
+    <string name="states_report_title">Report a problem</string>
+    <string name="states_report_subtitle">Goes to your supervisor or the inventory admin</string>
+    <string name="states_report_unknown_barcode_category">Unknown barcode</string>
+    <string name="states_report_wrong_stock">Wrong stock</string>
+    <string name="states_report_data_problem">Data problem</string>
+    <string name="states_report_app_error">App error</string>
+    <string name="states_report_other">Other</string>
+    <string name="states_report_what_happened">What happened?</string>
+    <string name="states_report_added_automatically">Added automatically</string>
+    <string name="states_report_added_details">Screen, location, last scan, time, app version</string>
+    <string name="states_report_add_photo">Add photo</string>
+    <string name="states_report_send">Send report</string>
+    <string name="states_report_sent">Report sent</string>
+    <string name="states_not_designed_title">Not designed yet</string>
+    <string name="states_not_designed_body">%1$s is not on the design canvas yet. It comes in a later step.</string>
+    <string name="states_action_failed_title">Location transfer</string>
+    <string name="states_previews">Skeleton previews</string>
+    <string name="states_preview_offline">Offline</string>
+    <string name="states_preview_session">Session expired</string>
+    <string name="states_preview_server">Server error</string>
+    <string name="states_preview_loading">Loading</string>
+    <string name="states_preview_no_access">No access</string>
+    <string name="states_preview_not_found">Barcode not found</string>
+    <string name="states_preview_camera">Camera blocked</string>
+    <string name="states_preview_action_failed">Action failed</string>
+    <string name="states_preview_clocking_qr">Clocking · QR not valid</string>
+    <string name="states_preview_clocking_location">Clocking · location blocked</string>
+    <string name="states_preview_clocking_pin">Clocking · no PIN yet</string>
+    <string name="states_preview_clocking_offline">Clocking · no connection</string>
+</resources>

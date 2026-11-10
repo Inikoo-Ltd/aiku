@@ -1,32 +1,24 @@
 package io.aiku.droid.ui.app
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -41,78 +33,217 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.ui.asText
-import io.aiku.droid.ui.components.AikuBottomSheet
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
-import io.aiku.droid.ui.components.ControlShape
-import io.aiku.droid.ui.components.FullScreenLoading
 import io.aiku.droid.ui.components.FullScreenMessage
-import io.aiku.droid.ui.dashboard.DashboardScreen
-import io.aiku.droid.ui.goodsin.GoodsInBacklogScreen
-import io.aiku.droid.ui.goodsin.StockDeliveriesScreen
-import io.aiku.droid.ui.goodsin.StockDeliveryDetailScreen
-import io.aiku.droid.ui.goodsout.DeliveryNoteDetailScreen
-import io.aiku.droid.ui.goodsout.DeliveryNotesScreen
-import io.aiku.droid.ui.goodsout.GoodsOutBacklogScreen
-import io.aiku.droid.ui.goodsout.PackingScreen
-import io.aiku.droid.ui.goodsout.ShippersScreen
-import io.aiku.droid.ui.inventory.InventoryDashboardScreen
-import io.aiku.droid.ui.inventory.SkuDetailScreen
-import io.aiku.droid.ui.inventory.SkuFamiliesScreen
-import io.aiku.droid.ui.inventory.SkuFamilyDetailScreen
-import io.aiku.droid.ui.inventory.SkusScreen
-import io.aiku.droid.ui.locations.LocationDetailScreen
-import io.aiku.droid.ui.locations.LocationsScreen
-import io.aiku.droid.ui.menu.WarehouseMenuScreen
+import io.aiku.droid.ui.components.LocalToasts
+import io.aiku.droid.ui.components.ToastHost
+import io.aiku.droid.ui.components.ToastState
 import io.aiku.droid.ui.navigation.AppNavigator
-import io.aiku.droid.ui.navigation.AppTab
 import io.aiku.droid.ui.navigation.AppearanceController
-import io.aiku.droid.ui.navigation.AppearanceRoute
-import io.aiku.droid.ui.navigation.AreaDetailRoute
-import io.aiku.droid.ui.navigation.AreasRoute
-import io.aiku.droid.ui.navigation.DashboardRoute
-import io.aiku.droid.ui.navigation.DeliveryNoteDetailRoute
-import io.aiku.droid.ui.navigation.DeliveryNotesRoute
-import io.aiku.droid.ui.navigation.GoodsInBacklogRoute
-import io.aiku.droid.ui.navigation.GoodsOutBacklogRoute
-import io.aiku.droid.ui.navigation.InventoryDashboardRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalAppearanceController
 import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
-import io.aiku.droid.ui.navigation.LocationDetailRoute
-import io.aiku.droid.ui.navigation.LocationsRoute
-import io.aiku.droid.ui.navigation.NotificationsRoute
-import io.aiku.droid.ui.navigation.PackingRoute
-import io.aiku.droid.ui.navigation.ProfileRoute
-import io.aiku.droid.ui.navigation.ScanCameraRoute
-import io.aiku.droid.ui.navigation.ScanHardwareRoute
-import io.aiku.droid.ui.navigation.ScanRoute
-import io.aiku.droid.ui.navigation.ScanSettingsRoute
-import io.aiku.droid.ui.navigation.SearchRoute
-import io.aiku.droid.ui.navigation.ShippersRoute
-import io.aiku.droid.ui.navigation.SkuDetailRoute
-import io.aiku.droid.ui.navigation.SkuFamiliesRoute
-import io.aiku.droid.ui.navigation.SkuFamilyDetailRoute
-import io.aiku.droid.ui.navigation.SkusRoute
-import io.aiku.droid.ui.navigation.StockDeliveriesRoute
-import io.aiku.droid.ui.navigation.StockDeliveryDetailRoute
-import io.aiku.droid.ui.navigation.WarehouseMenuRoute
-import io.aiku.droid.ui.navigation.WarehouseOverviewRoute
-import io.aiku.droid.ui.notifications.NotificationsScreen
-import io.aiku.droid.ui.profile.AppearanceScreen
-import io.aiku.droid.ui.profile.ProfileScreen
-import io.aiku.droid.ui.scan.ScanCameraScreen
-import io.aiku.droid.ui.scan.ScanHardwareScreen
-import io.aiku.droid.ui.scan.ScanScreen
-import io.aiku.droid.ui.scan.ScanSettingsScreen
-import io.aiku.droid.ui.search.SearchScreen
+import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.ui.navigation.NoWarehouseAccess
+import io.aiku.droid.ui.states.LoadingScreen
+import io.aiku.droid.ui.states.OfflineScreen
+import io.aiku.droid.ui.states.ReportProblemSheet
+import io.aiku.droid.ui.states.ServerErrorScreen
+import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.theme.Appearance
-import io.aiku.droid.ui.theme.LocalAikuColors
-import io.aiku.droid.ui.warehouse.AreaDetailScreen
-import io.aiku.droid.ui.warehouse.AreasScreen
-import io.aiku.droid.ui.warehouse.WarehouseOverviewScreen
+import io.aiku.droid.ui.clocking.ClockScanQrScreen
+import io.aiku.droid.ui.clocking.ClockingErrorScreen
+import io.aiku.droid.ui.clocking.ClockingScreen
+import io.aiku.droid.ui.clocking.TimesheetDayScreen
+import io.aiku.droid.ui.clocking.TimesheetsScreen
+import io.aiku.droid.ui.dashboard.WarehouseDashboardScreen
+import io.aiku.droid.ui.fulfilment.FulfilmentBookInScreen
+import io.aiku.droid.ui.fulfilment.FulfilmentBookedInScreen
+import io.aiku.droid.ui.fulfilment.FulfilmentDeliveriesScreen
+import io.aiku.droid.ui.fulfilment.FulfilmentDeliveryScreen
+import io.aiku.droid.ui.fulfilment.FulfilmentReturnsScreen
+import io.aiku.droid.ui.fulfilment.PalletIncidentsScreen
+import io.aiku.droid.ui.fulfilment.PalletScreen
+import io.aiku.droid.ui.fulfilment.ReturnDispatchedScreen
+import io.aiku.droid.ui.fulfilment.ReturnPickItemsScreen
+import io.aiku.droid.ui.fulfilment.ReturnPickPalletsScreen
+import io.aiku.droid.ui.fulfilment.ReturnPickedScreen
+import io.aiku.droid.ui.fulfilment.ReturnShipmentScreen
+import io.aiku.droid.ui.fulfilment.StoredItemAuditScreen
+import io.aiku.droid.ui.fulfilment.StoredItemsScreen
+import io.aiku.droid.ui.fulfilment.StoredPalletsScreen
+import io.aiku.droid.ui.goodsin.BookedInScreen
+import io.aiku.droid.ui.goodsin.BookingInScreen
+import io.aiku.droid.ui.goodsin.GoodsInBacklogScreen
+import io.aiku.droid.ui.goodsin.GoodsInReturnScreen
+import io.aiku.droid.ui.goodsin.GoodsInReturnsScreen
+import io.aiku.droid.ui.goodsin.PlaceItemNoPickingLocationScreen
+import io.aiku.droid.ui.goodsin.PlaceItemScreen
+import io.aiku.droid.ui.goodsin.ScanCameraScreen
+import io.aiku.droid.ui.goodsin.StockDeliveriesScreen
+import io.aiku.droid.ui.goodsin.StockDeliveryArrivingScreen
+import io.aiku.droid.ui.goodsin.StockDeliveryCheckingScreen
+import io.aiku.droid.ui.goodsin.StockDeliveryChecklistScreen
+import io.aiku.droid.ui.goodsout.AddShipmentScreen
+import io.aiku.droid.ui.goodsout.DeliveryNoteAllPickedScreen
+import io.aiku.droid.ui.goodsout.DeliveryNoteCollectedScreen
+import io.aiku.droid.ui.goodsout.DeliveryNoteCollectionScreen
+import io.aiku.droid.ui.goodsout.DeliveryNoteDispatchedScreen
+import io.aiku.droid.ui.goodsout.DeliveryNoteFinalisedScreen
+import io.aiku.droid.ui.goodsout.DeliveryNotePackingScreen
+import io.aiku.droid.ui.goodsout.DeliveryNotePickedScreen
+import io.aiku.droid.ui.goodsout.DeliveryNotePickingScreen
+import io.aiku.droid.ui.goodsout.DeliveryNoteToDoScreen
+import io.aiku.droid.ui.goodsout.DeliveryNotesScreen
+import io.aiku.droid.ui.goodsout.FastPickingScreen
+import io.aiku.droid.ui.goodsout.GoodsOutBacklogScreen
+import io.aiku.droid.ui.goodsout.ManualShipmentScreen
+import io.aiku.droid.ui.goodsout.PackingQueueScreen
+import io.aiku.droid.ui.goodsout.ScanToPickScreen
+import io.aiku.droid.ui.goodsout.ShipmentsScreen
+import io.aiku.droid.ui.goodsout.extra.AskCrmScreen
+import io.aiku.droid.ui.goodsout.extra.CustomsFileScreen
+import io.aiku.droid.ui.goodsout.extra.DeliveryNoteCancelledScreen
+import io.aiku.droid.ui.goodsout.extra.DeliveryNoteIncompleteSetScreen
+import io.aiku.droid.ui.goodsout.extra.DeliveryNoteTakeOverScreen
+import io.aiku.droid.ui.goodsout.extra.DeliveryNoteWaitingScreen
+import io.aiku.droid.ui.goodsout.extra.DispatchedEmailsScreen
+import io.aiku.droid.ui.goodsout.extra.ExternalShipmentScreen
+import io.aiku.droid.ui.goodsout.extra.PackByScanScreen
+import io.aiku.droid.ui.goodsout.extra.PickByLocationScreen
+import io.aiku.droid.ui.goodsout.extra.PickedBaysScreen
+import io.aiku.droid.ui.goodsout.extra.PickingSessionScreen
+import io.aiku.droid.ui.goodsout.extra.PickingSessionsScreen
+import io.aiku.droid.ui.goodsout.extra.ShippersScreen
+import io.aiku.droid.ui.goodsout.extra.TariffCodesScreen
+import io.aiku.droid.ui.goodsout.extra.TrolleysScreen
+import io.aiku.droid.ui.home.HomeScreen
+import io.aiku.droid.ui.inbox.InboxScreen
+import io.aiku.droid.ui.inventory.InventoryDashboardScreen
+import io.aiku.droid.ui.inventory.SkuAbnormalitiesScreen
+import io.aiku.droid.ui.inventory.SkuFamiliesScreen
+import io.aiku.droid.ui.inventory.SkuFamilyScreen
+import io.aiku.droid.ui.inventory.SkuScreen
+import io.aiku.droid.ui.inventory.SkusScreen
+import io.aiku.droid.ui.inventory.StockHistoryScreen
+import io.aiku.droid.ui.locations.AreaScreen
+import io.aiku.droid.ui.locations.AreasScreen
+import io.aiku.droid.ui.locations.LocationScreen
+import io.aiku.droid.ui.locations.LocationSkuScreen
+import io.aiku.droid.ui.locations.LocationsScreen
+import io.aiku.droid.ui.locations.WarehouseOverviewScreen
+import io.aiku.droid.ui.menu.MenuScreen
+import io.aiku.droid.ui.mywork.MyWorkScreen
+import io.aiku.droid.ui.navigation.AddShipmentRoute
+import io.aiku.droid.ui.navigation.AppearanceRoute
+import io.aiku.droid.ui.navigation.AreaRoute
+import io.aiku.droid.ui.navigation.AreasRoute
+import io.aiku.droid.ui.navigation.AskCrmRoute
+import io.aiku.droid.ui.navigation.BookedInRoute
+import io.aiku.droid.ui.navigation.BookingInRoute
+import io.aiku.droid.ui.navigation.ClockScanQrRoute
+import io.aiku.droid.ui.navigation.ClockingErrorRoute
+import io.aiku.droid.ui.navigation.ClockingRoute
+import io.aiku.droid.ui.navigation.ConflictRoute
+import io.aiku.droid.ui.navigation.CustomsFileRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteAllPickedRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteCancelledRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteCollectedRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteCollectionRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteDispatchedRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteFinalisedRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteIncompleteSetRoute
+import io.aiku.droid.ui.navigation.DeliveryNotePackingRoute
+import io.aiku.droid.ui.navigation.DeliveryNotePickedRoute
+import io.aiku.droid.ui.navigation.DeliveryNotePickingRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteTakeOverRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteToDoRoute
+import io.aiku.droid.ui.navigation.DeliveryNoteWaitingRoute
+import io.aiku.droid.ui.navigation.DeliveryNotesRoute
+import io.aiku.droid.ui.navigation.DispatchedEmailsRoute
+import io.aiku.droid.ui.navigation.ExternalShipmentRoute
+import io.aiku.droid.ui.navigation.FastPickingRoute
+import io.aiku.droid.ui.navigation.FulfilmentBookInRoute
+import io.aiku.droid.ui.navigation.FulfilmentBookedInRoute
+import io.aiku.droid.ui.navigation.FulfilmentDeliveriesRoute
+import io.aiku.droid.ui.navigation.FulfilmentDeliveryRoute
+import io.aiku.droid.ui.navigation.FulfilmentReturnsRoute
+import io.aiku.droid.ui.navigation.GoodsInBacklogRoute
+import io.aiku.droid.ui.navigation.GoodsInReturnRoute
+import io.aiku.droid.ui.navigation.GoodsInReturnsRoute
+import io.aiku.droid.ui.navigation.GoodsOutBacklogRoute
+import io.aiku.droid.ui.navigation.HomeRoute
+import io.aiku.droid.ui.navigation.InboxRoute
+import io.aiku.droid.ui.navigation.InventoryDashboardRoute
+import io.aiku.droid.ui.navigation.LanguageRoute
+import io.aiku.droid.ui.navigation.LocationRoute
+import io.aiku.droid.ui.navigation.LocationSkuRoute
+import io.aiku.droid.ui.navigation.LocationsRoute
+import io.aiku.droid.ui.navigation.ManualShipmentRoute
+import io.aiku.droid.ui.navigation.MenuRoute
+import io.aiku.droid.ui.navigation.MyWorkRoute
+import io.aiku.droid.ui.navigation.NoTasksRoute
+import io.aiku.droid.ui.navigation.NotDesignedRoute
+import io.aiku.droid.ui.navigation.OnlineOnlyRoute
+import io.aiku.droid.ui.navigation.PackByScanRoute
+import io.aiku.droid.ui.navigation.PackingQueueRoute
+import io.aiku.droid.ui.navigation.PalletIncidentsRoute
+import io.aiku.droid.ui.navigation.PalletRoute
+import io.aiku.droid.ui.navigation.PickByLocationRoute
+import io.aiku.droid.ui.navigation.PickedBaysRoute
+import io.aiku.droid.ui.navigation.PickingSessionRoute
+import io.aiku.droid.ui.navigation.PickingSessionsRoute
+import io.aiku.droid.ui.navigation.PlaceItemNoPickingLocationRoute
+import io.aiku.droid.ui.navigation.PlaceItemRoute
+import io.aiku.droid.ui.navigation.ProfileRoute
+import io.aiku.droid.ui.navigation.ResolveConflictsRoute
+import io.aiku.droid.ui.navigation.ReturnDispatchedRoute
+import io.aiku.droid.ui.navigation.ReturnPickItemsRoute
+import io.aiku.droid.ui.navigation.ReturnPickPalletsRoute
+import io.aiku.droid.ui.navigation.ReturnPickedRoute
+import io.aiku.droid.ui.navigation.ReturnShipmentRoute
+import io.aiku.droid.ui.navigation.ScanCameraRoute
+import io.aiku.droid.ui.navigation.ScanResultRoute
+import io.aiku.droid.ui.navigation.ScanToPickRoute
+import io.aiku.droid.ui.navigation.SearchRoute
+import io.aiku.droid.ui.navigation.ShipmentsRoute
+import io.aiku.droid.ui.navigation.ShippersRoute
+import io.aiku.droid.ui.navigation.SkuAbnormalitiesRoute
+import io.aiku.droid.ui.navigation.SkuFamiliesRoute
+import io.aiku.droid.ui.navigation.SkuFamilyRoute
+import io.aiku.droid.ui.navigation.SkuRoute
+import io.aiku.droid.ui.navigation.SkusRoute
+import io.aiku.droid.ui.navigation.StatePreviewRoute
+import io.aiku.droid.ui.navigation.StockDeliveriesRoute
+import io.aiku.droid.ui.navigation.StockDeliveryArrivingRoute
+import io.aiku.droid.ui.navigation.StockDeliveryCheckingRoute
+import io.aiku.droid.ui.navigation.StockDeliveryChecklistRoute
+import io.aiku.droid.ui.navigation.StockHistoryRoute
+import io.aiku.droid.ui.navigation.StoredItemAuditRoute
+import io.aiku.droid.ui.navigation.StoredItemsRoute
+import io.aiku.droid.ui.navigation.StoredPalletsRoute
+import io.aiku.droid.ui.navigation.SyncQueueRoute
+import io.aiku.droid.ui.navigation.TariffCodesRoute
+import io.aiku.droid.ui.navigation.TimesheetDayRoute
+import io.aiku.droid.ui.navigation.TimesheetsRoute
+import io.aiku.droid.ui.navigation.TrolleysRoute
+import io.aiku.droid.ui.navigation.WarehouseDashboardRoute
+import io.aiku.droid.ui.navigation.WarehouseOverviewRoute
+import io.aiku.droid.ui.profile.AppearanceScreen
+import io.aiku.droid.ui.profile.LanguageScreen
+import io.aiku.droid.ui.profile.ProfileScreen
+import io.aiku.droid.ui.scan.ScanResultScreen
+import io.aiku.droid.ui.search.SearchScreen
+import io.aiku.droid.ui.states.NoTasksScreen
+import io.aiku.droid.ui.states.NotDesignedScreen
+import io.aiku.droid.ui.states.StatePreviewScreen
+import io.aiku.droid.ui.sync.ConflictScreen
+import io.aiku.droid.ui.sync.OnlineOnlyScreen
+import io.aiku.droid.ui.sync.ResolveConflictsScreen
+import io.aiku.droid.ui.sync.SyncQueueScreen
 
 @Composable
 fun SignedInApp(container: AppContainer, session: StaffSession) {
@@ -124,7 +255,10 @@ fun SignedInApp(container: AppContainer, session: StaffSession) {
     val state by warehousesViewModel.state.collectAsStateWithLifecycle()
 
     when (val current = state) {
-        WarehousesUiState.Loading -> FullScreenLoading()
+        WarehousesUiState.Loading -> LoadingScreen()
+        WarehousesUiState.Offline -> OfflineScreen(onRetry = warehousesViewModel::load)
+        is WarehousesUiState.ServerError -> ServerErrorScreen(onRetry = warehousesViewModel::load, statusCode = current.statusCode)
+        WarehousesUiState.SessionExpired -> SessionExpiredScreen(onSignIn = warehousesViewModel::signInAgain)
         is WarehousesUiState.Failed -> FullScreenMessage(
             title = stringResource(R.string.warehouses_failed_title),
             body = current.message.asText(),
@@ -134,12 +268,14 @@ fun SignedInApp(container: AppContainer, session: StaffSession) {
                 AikuButton(text = stringResource(R.string.sign_out), onClick = warehousesViewModel::signOut, style = ButtonStyle.Outline, modifier = Modifier.fillMaxWidth())
             }
         }
-        WarehousesUiState.NoWarehouses -> FullScreenMessage(
-            title = stringResource(R.string.warehouses_none_title),
-            body = stringResource(R.string.warehouses_none_body),
-        ) {
-            AikuButton(text = stringResource(R.string.sign_out), onClick = warehousesViewModel::signOut, style = ButtonStyle.Outline, modifier = Modifier.fillMaxWidth())
-        }
+        WarehousesUiState.NoWarehouses -> WarehouseApp(
+            container = container,
+            session = session,
+            warehouses = emptyList(),
+            selected = null,
+            onSelectWarehouse = warehousesViewModel::select,
+            onSignOut = warehousesViewModel::signOut,
+        )
         is WarehousesUiState.Ready -> WarehouseApp(
             container = container,
             session = session,
@@ -156,14 +292,21 @@ private fun WarehouseApp(
     container: AppContainer,
     session: StaffSession,
     warehouses: List<WarehouseAccess>,
-    selected: WarehouseAccess,
+    selected: WarehouseAccess?,
     onSelectWarehouse: (Long) -> Unit,
     onSignOut: () -> Unit,
 ) {
     val navController = rememberNavController()
+    val toasts = remember { ToastState() }
     var isSwitcherOpen by remember { mutableStateOf(false) }
+    var isReportOpen by remember { mutableStateOf(false) }
     val navigator = remember(navController) {
-        NavControllerNavigator(navController, onShowSwitcher = { isSwitcherOpen = true }, onSignOut = onSignOut)
+        NavControllerNavigator(
+            navController = navController,
+            onShowSwitcher = { isSwitcherOpen = true },
+            onShowReport = { isReportOpen = true },
+            onSignOut = onSignOut,
+        )
     }
     val appearance by container.settings.appearance.collectAsStateWithLifecycle()
     val appearanceController = remember(appearance) {
@@ -175,70 +318,151 @@ private fun WarehouseApp(
 
     CompositionLocalProvider(
         LocalAppNavigator provides navigator,
-        LocalWarehouse provides selected,
+        LocalWarehouse provides (selected ?: NoWarehouseAccess),
         LocalWarehouses provides warehouses,
         LocalStaff provides session,
         LocalAppearanceController provides appearanceController,
+        LocalToasts provides toasts,
     ) {
-        AppNavHost(navController)
-        if (isSwitcherOpen) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            AppNavHost(navController)
+            ToastHost(
+                state = toasts,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 96.dp),
+            )
+        }
+        if (isSwitcherOpen && selected != null) {
             WarehouseSwitcherSheet(
                 warehouses = warehouses,
                 selected = selected,
                 onSwitch = { warehouseId ->
                     isSwitcherOpen = false
                     onSelectWarehouse(warehouseId)
-                    navigator.openTab(AppTab.Dashboard)
                 },
                 onDismiss = { isSwitcherOpen = false },
             )
+        }
+        if (isReportOpen) {
+            ReportProblemSheet(onDismiss = { isReportOpen = false })
         }
     }
 }
 
 @Composable
 private fun AppNavHost(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = DashboardRoute) {
-        composable<DashboardRoute> { DashboardScreen() }
-        composable<WarehouseMenuRoute> { WarehouseMenuScreen() }
-
-        composable<InventoryDashboardRoute> { InventoryDashboardScreen() }
-        composable<SkuFamiliesRoute> { SkuFamiliesScreen() }
-        composable<SkuFamilyDetailRoute> { SkuFamilyDetailScreen(it.toRoute<SkuFamilyDetailRoute>().code) }
-        composable<SkusRoute> { SkusScreen() }
-        composable<SkuDetailRoute> { SkuDetailScreen(it.toRoute<SkuDetailRoute>().code) }
-
-        composable<WarehouseOverviewRoute> { WarehouseOverviewScreen() }
-        composable<AreasRoute> { AreasScreen() }
-        composable<AreaDetailRoute> { AreaDetailScreen(it.toRoute<AreaDetailRoute>().code) }
-        composable<LocationsRoute> { LocationsScreen() }
-        composable<LocationDetailRoute> { LocationDetailScreen(it.toRoute<LocationDetailRoute>().code) }
-
-        composable<GoodsInBacklogRoute> { GoodsInBacklogScreen() }
-        composable<StockDeliveriesRoute> { StockDeliveriesScreen() }
-        composable<StockDeliveryDetailRoute> { StockDeliveryDetailScreen(it.toRoute<StockDeliveryDetailRoute>().reference) }
-
-        composable<GoodsOutBacklogRoute> { GoodsOutBacklogScreen() }
-        composable<DeliveryNotesRoute> { DeliveryNotesScreen() }
-        composable<DeliveryNoteDetailRoute> { DeliveryNoteDetailScreen(it.toRoute<DeliveryNoteDetailRoute>().reference) }
-        composable<PackingRoute> { PackingScreen(it.toRoute<PackingRoute>().reference) }
-        composable<ShippersRoute> { ShippersScreen() }
-
-        composable<ScanRoute> { ScanScreen() }
-        composable<ScanCameraRoute> { ScanCameraScreen() }
-        composable<ScanHardwareRoute> { ScanHardwareScreen() }
-        composable<ScanSettingsRoute> { ScanSettingsScreen() }
-
+    NavHost(
+        navController = navController,
+        startDestination = HomeRoute,
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None },
+    ) {
+        composable<HomeRoute> { HomeScreen() }
+        composable<MyWorkRoute> { MyWorkScreen() }
+        composable<ScanResultRoute> { ScanResultScreen() }
+        composable<InboxRoute> { InboxScreen() }
+        composable<MenuRoute> { MenuScreen() }
         composable<SearchRoute> { SearchScreen() }
-        composable<NotificationsRoute> { NotificationsScreen() }
+        composable<WarehouseDashboardRoute> { WarehouseDashboardScreen() }
         composable<ProfileRoute> { ProfileScreen() }
         composable<AppearanceRoute> { AppearanceScreen() }
+        composable<LanguageRoute> { LanguageScreen() }
+        composable<SyncQueueRoute> { SyncQueueScreen() }
+        composable<ResolveConflictsRoute> { ResolveConflictsScreen() }
+        composable<ConflictRoute> { entry -> entry.toRoute<ConflictRoute>().let { route -> ConflictScreen(route.reference) } }
+        composable<OnlineOnlyRoute> { entry -> entry.toRoute<OnlineOnlyRoute>().let { route -> OnlineOnlyScreen(route.reference) } }
+        composable<NoTasksRoute> { NoTasksScreen() }
+        composable<StatePreviewRoute> { entry -> entry.toRoute<StatePreviewRoute>().let { route -> StatePreviewScreen(route.kind) } }
+        composable<NotDesignedRoute> { entry -> entry.toRoute<NotDesignedRoute>().let { route -> NotDesignedScreen(route.title) } }
+        composable<InventoryDashboardRoute> { InventoryDashboardScreen() }
+        composable<SkuFamiliesRoute> { SkuFamiliesScreen() }
+        composable<SkuFamilyRoute> { entry -> entry.toRoute<SkuFamilyRoute>().let { route -> SkuFamilyScreen(route.code) } }
+        composable<SkusRoute> { SkusScreen() }
+        composable<SkuAbnormalitiesRoute> { SkuAbnormalitiesScreen() }
+        composable<SkuRoute> { entry -> entry.toRoute<SkuRoute>().let { route -> SkuScreen(route.code) } }
+        composable<StockHistoryRoute> { StockHistoryScreen() }
+        composable<WarehouseOverviewRoute> { WarehouseOverviewScreen() }
+        composable<AreasRoute> { AreasScreen() }
+        composable<AreaRoute> { entry -> entry.toRoute<AreaRoute>().let { route -> AreaScreen(route.code) } }
+        composable<LocationsRoute> { LocationsScreen() }
+        composable<LocationRoute> { entry -> entry.toRoute<LocationRoute>().let { route -> LocationScreen(route.code) } }
+        composable<LocationSkuRoute> { entry -> entry.toRoute<LocationSkuRoute>().let { route -> LocationSkuScreen(route.locationCode, route.skuCode) } }
+        composable<GoodsInBacklogRoute> { GoodsInBacklogScreen() }
+        composable<StockDeliveriesRoute> { StockDeliveriesScreen() }
+        composable<StockDeliveryArrivingRoute> { entry -> entry.toRoute<StockDeliveryArrivingRoute>().let { route -> StockDeliveryArrivingScreen(route.reference) } }
+        composable<StockDeliveryCheckingRoute> { entry -> entry.toRoute<StockDeliveryCheckingRoute>().let { route -> StockDeliveryCheckingScreen(route.reference) } }
+        composable<ScanCameraRoute> { ScanCameraScreen() }
+        composable<StockDeliveryChecklistRoute> { entry -> entry.toRoute<StockDeliveryChecklistRoute>().let { route -> StockDeliveryChecklistScreen(route.reference) } }
+        composable<BookingInRoute> { entry -> entry.toRoute<BookingInRoute>().let { route -> BookingInScreen(route.reference) } }
+        composable<PlaceItemRoute> { entry -> entry.toRoute<PlaceItemRoute>().let { route -> PlaceItemScreen(route.reference, route.skuCode) } }
+        composable<PlaceItemNoPickingLocationRoute> { entry -> entry.toRoute<PlaceItemNoPickingLocationRoute>().let { route -> PlaceItemNoPickingLocationScreen(route.reference, route.skuCode) } }
+        composable<BookedInRoute> { entry -> entry.toRoute<BookedInRoute>().let { route -> BookedInScreen(route.reference) } }
+        composable<GoodsInReturnsRoute> { GoodsInReturnsScreen() }
+        composable<GoodsInReturnRoute> { entry -> entry.toRoute<GoodsInReturnRoute>().let { route -> GoodsInReturnScreen(route.reference) } }
+        composable<GoodsOutBacklogRoute> { GoodsOutBacklogScreen() }
+        composable<DeliveryNotesRoute> { DeliveryNotesScreen() }
+        composable<DeliveryNoteToDoRoute> { entry -> entry.toRoute<DeliveryNoteToDoRoute>().let { route -> DeliveryNoteToDoScreen(route.reference) } }
+        composable<DeliveryNotePickingRoute> { entry -> entry.toRoute<DeliveryNotePickingRoute>().let { route -> DeliveryNotePickingScreen(route.reference) } }
+        composable<ScanToPickRoute> { entry -> entry.toRoute<ScanToPickRoute>().let { route -> ScanToPickScreen(route.reference) } }
+        composable<FastPickingRoute> { entry -> entry.toRoute<FastPickingRoute>().let { route -> FastPickingScreen(route.reference) } }
+        composable<DeliveryNoteAllPickedRoute> { entry -> entry.toRoute<DeliveryNoteAllPickedRoute>().let { route -> DeliveryNoteAllPickedScreen(route.reference) } }
+        composable<DeliveryNotePickedRoute> { entry -> entry.toRoute<DeliveryNotePickedRoute>().let { route -> DeliveryNotePickedScreen(route.reference) } }
+        composable<DeliveryNotePackingRoute> { entry -> entry.toRoute<DeliveryNotePackingRoute>().let { route -> DeliveryNotePackingScreen(route.reference) } }
+        composable<PackingQueueRoute> { PackingQueueScreen() }
+        composable<AddShipmentRoute> { entry -> entry.toRoute<AddShipmentRoute>().let { route -> AddShipmentScreen(route.reference) } }
+        composable<ManualShipmentRoute> { entry -> entry.toRoute<ManualShipmentRoute>().let { route -> ManualShipmentScreen(route.reference) } }
+        composable<ShipmentsRoute> { entry -> entry.toRoute<ShipmentsRoute>().let { route -> ShipmentsScreen(route.reference) } }
+        composable<DeliveryNoteCollectionRoute> { entry -> entry.toRoute<DeliveryNoteCollectionRoute>().let { route -> DeliveryNoteCollectionScreen(route.reference) } }
+        composable<DeliveryNoteCollectedRoute> { entry -> entry.toRoute<DeliveryNoteCollectedRoute>().let { route -> DeliveryNoteCollectedScreen(route.reference) } }
+        composable<DeliveryNoteFinalisedRoute> { entry -> entry.toRoute<DeliveryNoteFinalisedRoute>().let { route -> DeliveryNoteFinalisedScreen(route.reference) } }
+        composable<DeliveryNoteDispatchedRoute> { entry -> entry.toRoute<DeliveryNoteDispatchedRoute>().let { route -> DeliveryNoteDispatchedScreen(route.reference) } }
+        composable<DeliveryNoteWaitingRoute> { entry -> entry.toRoute<DeliveryNoteWaitingRoute>().let { route -> DeliveryNoteWaitingScreen(route.reference) } }
+        composable<DeliveryNoteCancelledRoute> { entry -> entry.toRoute<DeliveryNoteCancelledRoute>().let { route -> DeliveryNoteCancelledScreen(route.reference) } }
+        composable<DeliveryNoteIncompleteSetRoute> { entry -> entry.toRoute<DeliveryNoteIncompleteSetRoute>().let { route -> DeliveryNoteIncompleteSetScreen(route.reference) } }
+        composable<DeliveryNoteTakeOverRoute> { entry -> entry.toRoute<DeliveryNoteTakeOverRoute>().let { route -> DeliveryNoteTakeOverScreen(route.reference) } }
+        composable<AskCrmRoute> { entry -> entry.toRoute<AskCrmRoute>().let { route -> AskCrmScreen(route.reference) } }
+        composable<ExternalShipmentRoute> { entry -> entry.toRoute<ExternalShipmentRoute>().let { route -> ExternalShipmentScreen(route.reference) } }
+        composable<TariffCodesRoute> { entry -> entry.toRoute<TariffCodesRoute>().let { route -> TariffCodesScreen(route.reference) } }
+        composable<CustomsFileRoute> { entry -> entry.toRoute<CustomsFileRoute>().let { route -> CustomsFileScreen(route.reference) } }
+        composable<DispatchedEmailsRoute> { entry -> entry.toRoute<DispatchedEmailsRoute>().let { route -> DispatchedEmailsScreen(route.reference) } }
+        composable<ShippersRoute> { ShippersScreen() }
+        composable<PickingSessionsRoute> { PickingSessionsScreen() }
+        composable<PickingSessionRoute> { entry -> entry.toRoute<PickingSessionRoute>().let { route -> PickingSessionScreen(route.reference) } }
+        composable<PickByLocationRoute> { entry -> entry.toRoute<PickByLocationRoute>().let { route -> PickByLocationScreen(route.reference) } }
+        composable<PackByScanRoute> { entry -> entry.toRoute<PackByScanRoute>().let { route -> PackByScanScreen(route.reference) } }
+        composable<TrolleysRoute> { TrolleysScreen() }
+        composable<PickedBaysRoute> { PickedBaysScreen() }
+        composable<FulfilmentDeliveriesRoute> { FulfilmentDeliveriesScreen() }
+        composable<FulfilmentDeliveryRoute> { entry -> entry.toRoute<FulfilmentDeliveryRoute>().let { route -> FulfilmentDeliveryScreen(route.reference) } }
+        composable<FulfilmentBookInRoute> { entry -> entry.toRoute<FulfilmentBookInRoute>().let { route -> FulfilmentBookInScreen(route.reference) } }
+        composable<FulfilmentBookedInRoute> { entry -> entry.toRoute<FulfilmentBookedInRoute>().let { route -> FulfilmentBookedInScreen(route.reference) } }
+        composable<StoredPalletsRoute> { StoredPalletsScreen() }
+        composable<PalletRoute> { entry -> entry.toRoute<PalletRoute>().let { route -> PalletScreen(route.reference) } }
+        composable<PalletIncidentsRoute> { PalletIncidentsScreen() }
+        composable<StoredItemsRoute> { StoredItemsScreen() }
+        composable<StoredItemAuditRoute> { entry -> entry.toRoute<StoredItemAuditRoute>().let { route -> StoredItemAuditScreen(route.reference) } }
+        composable<FulfilmentReturnsRoute> { FulfilmentReturnsScreen() }
+        composable<ReturnPickPalletsRoute> { entry -> entry.toRoute<ReturnPickPalletsRoute>().let { route -> ReturnPickPalletsScreen(route.reference) } }
+        composable<ReturnPickItemsRoute> { entry -> entry.toRoute<ReturnPickItemsRoute>().let { route -> ReturnPickItemsScreen(route.reference) } }
+        composable<ReturnPickedRoute> { entry -> entry.toRoute<ReturnPickedRoute>().let { route -> ReturnPickedScreen(route.reference) } }
+        composable<ReturnShipmentRoute> { entry -> entry.toRoute<ReturnShipmentRoute>().let { route -> ReturnShipmentScreen(route.reference) } }
+        composable<ReturnDispatchedRoute> { entry -> entry.toRoute<ReturnDispatchedRoute>().let { route -> ReturnDispatchedScreen(route.reference) } }
+        composable<ClockingRoute> { ClockingScreen() }
+        composable<ClockScanQrRoute> { ClockScanQrScreen() }
+        composable<TimesheetsRoute> { TimesheetsScreen() }
+        composable<TimesheetDayRoute> { entry -> entry.toRoute<TimesheetDayRoute>().let { route -> TimesheetDayScreen(route.date) } }
+        composable<ClockingErrorRoute> { entry -> entry.toRoute<ClockingErrorRoute>().let { route -> ClockingErrorScreen(route.kind) } }
     }
 }
 
 private class NavControllerNavigator(
     private val navController: NavHostController,
     private val onShowSwitcher: () -> Unit,
+    private val onShowReport: () -> Unit,
     private val onSignOut: () -> Unit,
 ) : AppNavigator {
 
@@ -256,17 +480,21 @@ private class NavControllerNavigator(
         }
     }
 
-    override fun openTab(tab: AppTab) {
+    override fun openTab(tab: MainTab) {
         val route: Any = when (tab) {
-            AppTab.Dashboard -> DashboardRoute
-            AppTab.Inventory -> SkusRoute
-            AppTab.GoodsIn -> StockDeliveriesRoute
-            AppTab.GoodsOut -> DeliveryNotesRoute
+            MainTab.Home -> HomeRoute
+            MainTab.MyWork -> MyWorkRoute
+            MainTab.Scan -> ScanResultRoute
+            MainTab.Inbox -> InboxRoute
+            MainTab.Menu -> MenuRoute
+        }
+        if (route == HomeRoute) {
+            navController.popBackStack(HomeRoute, inclusive = false)
+            return
         }
         navController.navigate(route) {
-            popUpTo<DashboardRoute> { saveState = true }
+            popUpTo(HomeRoute) { inclusive = false }
             launchSingleTop = true
-            restoreState = true
         }
     }
 
@@ -276,56 +504,7 @@ private class NavControllerNavigator(
 
     override fun showWarehouseSwitcher() = onShowSwitcher()
 
+    override fun showReportProblem() = onShowReport()
+
     override fun signOut() = onSignOut()
-}
-
-@Composable
-private fun WarehouseSwitcherSheet(
-    warehouses: List<WarehouseAccess>,
-    selected: WarehouseAccess,
-    onSwitch: (Long) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val colors = LocalAikuColors.current
-    var choice by remember { mutableLongStateOf(selected.id) }
-
-    AikuBottomSheet(title = stringResource(R.string.switcher_title), onDismiss = onDismiss) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            warehouses.forEach { warehouse ->
-                val isChosen = warehouse.id == choice
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 56.dp)
-                        .clip(ControlShape)
-                        .background(if (isChosen) colors.soft else colors.surface)
-                        .border(if (isChosen) 2.dp else 1.dp, if (isChosen) colors.link else colors.border, ControlShape)
-                        .selectable(selected = isChosen, role = Role.RadioButton, onClick = { choice = warehouse.id })
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                ) {
-                    RadioButton(selected = isChosen, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = colors.link))
-                    Column(modifier = Modifier.padding(start = 8.dp)) {
-                        Text(text = warehouse.name, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
-                        Text(
-                            text = when {
-                                warehouse.id == selected.id -> stringResource(R.string.switcher_current, warehouse.code)
-                                warehouse.organisation.id != selected.organisation.id -> "${warehouse.code} · ${warehouse.organisation.name}"
-                                else -> warehouse.code
-                            },
-                            fontSize = 12.sp,
-                            color = colors.textTertiary,
-                        )
-                    }
-                }
-            }
-        }
-        Text(text = stringResource(R.string.switcher_note), fontSize = 12.sp, color = colors.textTertiary)
-        AikuButton(
-            text = stringResource(R.string.switcher_switch),
-            onClick = { onSwitch(choice) },
-            modifier = Modifier.fillMaxWidth(),
-            height = 52.dp,
-        )
-    }
 }

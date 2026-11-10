@@ -1,7 +1,5 @@
 package io.aiku.droid.ui.goodsout
 
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,157 +9,138 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
-import io.aiku.droid.ui.components.AppHeader
+import io.aiku.droid.data.api.Ability
+import io.aiku.droid.ui.components.AikuCard
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ListGroup
+import io.aiku.droid.ui.components.ModuleHeader
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.components.SegmentedControl
+import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.WarehouseSection
 import io.aiku.droid.ui.components.fakeData
-import io.aiku.droid.ui.goodsin.GoodsQueueRow
-import io.aiku.droid.ui.navigation.AppTab
-import io.aiku.droid.ui.navigation.DeliveryNoteDetailRoute
 import io.aiku.droid.ui.navigation.DeliveryNotesRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
-import io.aiku.droid.ui.navigation.LocalWarehouse
-import io.aiku.droid.ui.theme.AikuDroidTheme
+import io.aiku.droid.ui.navigation.MainTab
+import io.aiku.droid.ui.navigation.NotDesignedRoute
+import io.aiku.droid.ui.navigation.PickingSessionRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
 
-private enum class GoodsOutStage(@StringRes val label: Int, @DrawableRes val icon: Int) {
-    Unassigned(R.string.goodsout_state_unassigned, R.drawable.ic_goodsout_queued),
-    Queued(R.string.goodsout_state_queued, R.drawable.ic_goodsout_queued),
-    Handling(R.string.goodsout_state_handling, R.drawable.ic_goodsout_handling),
-    HandlingBlocked(R.string.goodsout_state_handling_blocked, R.drawable.ic_goodsout_handling),
-    Packed(R.string.goodsout_state_packed, R.drawable.ic_goodsout_packed),
-    Finalised(R.string.goodsout_state_finalised_waiting, R.drawable.ic_goodsout_packed),
-}
-
-private data class GoodsOutStageCount(val stage: GoodsOutStage, val count: Int)
-
-private data class GoodsOutQueueSample(val reference: String, val summary: String, val isStarted: Boolean)
-
-private val goodsOutPipelineSample = listOf(
-    GoodsOutStageCount(GoodsOutStage.Unassigned, 12),
-    GoodsOutStageCount(GoodsOutStage.Queued, 36),
-    GoodsOutStageCount(GoodsOutStage.Handling, 16),
-    GoodsOutStageCount(GoodsOutStage.HandlingBlocked, 2),
-    GoodsOutStageCount(GoodsOutStage.Packed, 23),
-    GoodsOutStageCount(GoodsOutStage.Finalised, 9),
-)
-
-private val goodsOutQueueSample = listOf(
-    GoodsOutQueueSample("DN-24817", "Handling · 9 of 14 picked", isStarted = true),
-    GoodsOutQueueSample("DN-24820", "In Queue · 4 items", isStarted = false),
-)
+private data class BacklogTile(val label: String, val count: Int, val background: Color, val content: Color)
 
 @Composable
 fun GoodsOutBacklogScreen() {
-    val colors = LocalAikuColors.current
-    val can = LocalWarehouse.current.can
     val navigator = LocalAppNavigator.current
-    val title = stringResource(R.string.goodsout_title)
+    val segments = listOf(
+        stringResource(R.string.goodsout_backlog_delivery_notes),
+        stringResource(R.string.goodsout_backlog_sessions),
+        stringResource(R.string.goodsout_backlog_pickers),
+        stringResource(R.string.goodsout_backlog_packers),
+    )
 
-    RequireAbility(isAllowed = can.viewGoodsOut, title = title, activeTab = AppTab.GoodsOut) {
+    RequireAbility(ability = Ability.ViewGoodsOut, title = stringResource(R.string.module_goods_out), activeTab = MainTab.Menu) {
         AppScreen(
-            header = { AppHeader(title = title, below = { GoodsOutSectionTabs(active = GoodsOutSection.Backlog) }) },
-            activeTab = AppTab.GoodsOut,
-            spacing = 14.dp,
+            header = {
+                ModuleHeader(
+                    section = WarehouseSection.GoodsOutBacklog,
+                    title = stringResource(R.string.goodsout_backlog_title),
+                )
+            },
+            activeTab = MainTab.Menu,
+            showBar = true,
         ) {
+            SegmentedControl(
+                options = segments,
+                selectedIndex = 0,
+                onSelect = { index -> if (index != 0) navigator.open(NotDesignedRoute(title = segments[index])) },
+            )
+            GoodsOutSamples.backlogChannels.forEach { channel ->
+                BacklogChannelCard(channel = channel, onOpen = { navigator.switchSection(DeliveryNotesRoute) })
+            }
+            GoodsOutHeading(title = stringResource(R.string.goodsout_backlog_pickers_now))
             ListGroup(modifier = Modifier.fakeData()) {
-                goodsOutPipelineSample.forEachIndexed { index, stageCount ->
+                GoodsOutSamples.pickersNow.forEachIndexed { index, picker ->
                     if (index > 0) {
                         RowDivider()
                     }
-                    GoodsOutStageRow(stageCount = stageCount, onClick = { navigator.open(DeliveryNotesRoute) })
-                }
-            }
-            if (can.pickAndPack) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fakeData()) {
-                    Text(
-                        text = stringResource(R.string.goodsout_my_queue),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.text,
-                        modifier = Modifier.padding(horizontal = 4.dp),
+                    IconInfoRow(
+                        icon = R.drawable.ic_ui_person,
+                        title = picker.name,
+                        subtitle = picker.detail,
+                        tone = Tone.Primary,
+                        onClick = picker.sessionReference?.let { reference -> { navigator.open(PickingSessionRoute(reference = reference)) } },
                     )
-                    ListGroup {
-                        goodsOutQueueSample.forEachIndexed { index, note ->
-                            if (index > 0) {
-                                RowDivider()
-                            }
-                            GoodsQueueRow(
-                                title = note.reference,
-                                subtitle = note.summary,
-                                actionLabel = stringResource(if (note.isStarted) R.string.goodsout_action_continue else R.string.goodsout_action_start),
-                                onClick = { navigator.open(DeliveryNoteDetailRoute(note.reference)) },
-                            )
-                        }
-                    }
                 }
             }
+            GoodsOutFootNote(text = stringResource(R.string.goodsout_backlog_note))
         }
     }
 }
 
 @Composable
-private fun GoodsOutStageRow(stageCount: GoodsOutStageCount, onClick: () -> Unit) {
+private fun BacklogChannelCard(channel: SampleBacklogChannel, onOpen: () -> Unit) {
     val colors = LocalAikuColors.current
-    val isBlocked = stageCount.stage == GoodsOutStage.HandlingBlocked
-    val iconTint = when (stageCount.stage) {
-        GoodsOutStage.Queued -> colors.lime
-        GoodsOutStage.HandlingBlocked -> colors.danger
-        else -> colors.textQuaternary
-    }
+    val neutral = colors.background to colors.textSecondary
+    val active = colors.soft to colors.link
+    val waiting = if (channel.waiting > 0) colors.warnSoft to colors.warn else neutral
+    val finalised = colors.successSoft to colors.success
+    val tiles = listOf(
+        BacklogTile(stringResource(R.string.dn_state_to_do), channel.toDo, neutral.first, neutral.second),
+        BacklogTile(stringResource(R.string.dn_state_picking), channel.picking, active.first, active.second),
+        BacklogTile(stringResource(R.string.dn_state_waiting), channel.waiting, waiting.first, waiting.second),
+        BacklogTile(stringResource(R.string.dn_state_picked), channel.picked, active.first, active.second),
+        BacklogTile(stringResource(R.string.dn_state_packing), channel.packing, active.first, active.second),
+        BacklogTile(stringResource(R.string.dn_state_packed), channel.packed, active.first, active.second),
+        BacklogTile(stringResource(R.string.dn_state_finalised), channel.finalised, finalised.first, finalised.second),
+        BacklogTile(stringResource(R.string.goodsout_backlog_total), channel.total, neutral.first, neutral.second),
+    )
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 52.dp)
-            .background(if (isBlocked) colors.dangerSoft else Color.Transparent)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 16.dp),
-    ) {
-        Icon(
-            painter = painterResource(stageCount.stage.icon),
-            contentDescription = null,
-            tint = iconTint,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(
-            text = stringResource(stageCount.stage.label),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (isBlocked) colors.dangerInk else colors.text,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = stageCount.count.toString(),
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isBlocked) colors.danger else colors.text,
-        )
-    }
-}
-
-@Preview(widthDp = 390, heightDp = 1000)
-@Composable
-private fun GoodsOutBacklogScreenPreview() {
-    AikuDroidTheme {
-        GoodsOutBacklogScreen()
+    AikuCard(modifier = Modifier.fakeData(), padding = 14.dp, spacing = 10.dp) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 44.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .clickable(role = Role.Button, onClick = onOpen),
+        ) {
+            Text(text = channel.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.text, modifier = Modifier.weight(1f))
+            Icon(painter = painterResource(R.drawable.ic_ui_chevron_right), contentDescription = null, tint = colors.faint, modifier = Modifier.size(20.dp))
+        }
+        tiles.chunked(4).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                row.forEach { tile ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(tile.background)
+                            .clickable(role = Role.Button, onClick = onOpen)
+                            .padding(horizontal = 2.dp, vertical = 8.dp),
+                    ) {
+                        Text(text = tile.count.toString(), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = tile.content)
+                        Text(text = tile.label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = colors.textTertiary, maxLines = 1)
+                    }
+                }
+            }
+        }
     }
 }

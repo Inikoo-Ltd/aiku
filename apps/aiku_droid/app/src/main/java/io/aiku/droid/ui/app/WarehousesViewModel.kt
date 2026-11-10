@@ -13,11 +13,16 @@ import io.aiku.droid.ui.UiMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 sealed interface WarehousesUiState {
     data object Loading : WarehousesUiState
+    data object Offline : WarehousesUiState
+    data class ServerError(val statusCode: Int) : WarehousesUiState
     data class Failed(val message: UiMessage) : WarehousesUiState
+    data object SessionExpired : WarehousesUiState
     data object NoWarehouses : WarehousesUiState
     data class Ready(val warehouses: List<WarehouseAccess>, val selected: WarehouseAccess) : WarehousesUiState
 }
@@ -33,7 +38,18 @@ class WarehousesViewModel(
     val state: StateFlow<WarehousesUiState> = mutableState.asStateFlow()
 
     init {
-        load()
+        viewModelScope.launch {
+            sessions.session
+                .map { it?.token }
+                .distinctUntilChanged()
+                .collect { token ->
+                    if (token == null) {
+                        mutableState.value = WarehousesUiState.Loading
+                    } else {
+                        load()
+                    }
+                }
+        }
     }
 
     fun load() {
@@ -43,13 +59,10 @@ class WarehousesViewModel(
         viewModelScope.launch {
             mutableState.value = when (val result = warehouseApi.warehouses(token)) {
                 is WarehousesResult.Loaded -> readyState(result.warehouses)
-                WarehousesResult.SessionExpired -> {
-                    sessions.end()
-                    WarehousesUiState.Loading
-                }
+                WarehousesResult.SessionExpired -> WarehousesUiState.SessionExpired
                 WarehousesResult.AppKeyRejected -> WarehousesUiState.Failed(UiMessage.FromResource(R.string.alert_app_key_body))
-                WarehousesResult.Unreachable -> WarehousesUiState.Failed(UiMessage.FromResource(R.string.warehouses_unreachable))
-                is WarehousesResult.ServerError -> WarehousesUiState.Failed(UiMessage.FromResource(R.string.alert_server_body, listOf(result.statusCode)))
+                WarehousesResult.Unreachable -> WarehousesUiState.Offline
+                is WarehousesResult.ServerError -> WarehousesUiState.ServerError(result.statusCode)
             }
         }
     }
@@ -59,6 +72,10 @@ class WarehousesViewModel(
         val chosen = ready.warehouses.firstOrNull { it.id == warehouseId } ?: return
         selection.selectedWarehouseId = chosen.id
         mutableState.value = ready.copy(selected = chosen)
+    }
+
+    fun signInAgain() {
+        sessions.end()
     }
 
     fun signOut() {

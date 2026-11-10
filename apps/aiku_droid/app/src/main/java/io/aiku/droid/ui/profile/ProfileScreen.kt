@@ -24,6 +24,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -31,7 +32,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.BuildConfig
 import io.aiku.droid.R
-import io.aiku.droid.data.api.WarehouseAbilities
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
@@ -50,12 +52,22 @@ import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.states.StatePreview
+import io.aiku.droid.ui.navigation.ClockingErrorRoute
+import io.aiku.droid.ui.navigation.StatePreviewRoute
+import io.aiku.droid.ui.components.ListRow
 import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.navigation.AppearanceRoute
+import io.aiku.droid.ui.navigation.TimesheetsRoute
+import io.aiku.droid.ui.navigation.ClockingRoute
+import io.aiku.droid.ui.navigation.LanguageRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
+import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.LocalWarehouse
-import io.aiku.droid.ui.navigation.NotificationsRoute
+import io.aiku.droid.ui.navigation.LocalWarehouses
+import io.aiku.droid.ui.navigation.NoWarehouseAccess
+import io.aiku.droid.ui.navigation.SyncQueueRoute
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.LocalAikuColors
 
@@ -63,6 +75,8 @@ private object ProfileSample {
     const val ROLE = "Warehouse staff"
     const val LANGUAGE = "English"
     const val NOTIFICATIONS = "On"
+    const val WEEK_TOTAL = "6h 13m"
+    const val SYNC_WAITING = 3
 }
 
 private enum class ProfileScanMode(@StringRes val label: Int, @StringRes val caption: Int?) {
@@ -70,19 +84,6 @@ private enum class ProfileScanMode(@StringRes val label: Int, @StringRes val cap
     ScannerDevice(R.string.profile_scan_device, null),
     Camera(R.string.profile_scan_camera, null),
 }
-
-private fun WarehouseAbilities.grantedAbilityLabels(): List<Int> = listOfNotNull(
-    R.string.profile_ability_view_locations.takeIf { viewLocations },
-    R.string.profile_ability_edit_locations.takeIf { editLocations },
-    R.string.profile_ability_view_inventory.takeIf { viewInventory },
-    R.string.profile_ability_move_stock.takeIf { moveStock },
-    R.string.profile_ability_view_goods_in.takeIf { viewGoodsIn },
-    R.string.profile_ability_book_in.takeIf { bookIn },
-    R.string.profile_ability_view_goods_out.takeIf { viewGoodsOut },
-    R.string.profile_ability_pick_and_pack.takeIf { pickAndPack },
-    R.string.profile_ability_supervise_goods_out.takeIf { superviseGoodsOut },
-    R.string.profile_ability_view_fulfilment.takeIf { viewFulfilment },
-)
 
 private fun initialsOf(displayName: String, username: String): String {
     val words = displayName.split(' ').filter { it.isNotBlank() }
@@ -92,8 +93,10 @@ private fun initialsOf(displayName: String, username: String): String {
 
 @Composable
 fun ProfileScreen() {
+    val colors = LocalAikuColors.current
     val staff = LocalStaff.current
     val warehouse = LocalWarehouse.current
+    val hasWarehouse = LocalWarehouses.current.isNotEmpty()
     val navigator = LocalAppNavigator.current
 
     AppScreen(
@@ -101,22 +104,38 @@ fun ProfileScreen() {
             AppHeader(
                 title = stringResource(R.string.profile_title),
                 kicker = stringResource(R.string.profile_kicker),
-                showMenu = false,
             )
         },
     ) {
         UserCard(displayName = staff.displayName, username = staff.username)
 
-        ProfileSection(title = stringResource(R.string.profile_warehouse)) {
-            WarehouseRow(label = "${warehouse.name} · ${warehouse.code}", onChange = navigator::showWarehouseSwitcher)
-        }
-
-        ProfileSection(title = stringResource(R.string.profile_abilities)) {
-            AbilitiesList(labels = warehouse.can.grantedAbilityLabels())
+        if (hasWarehouse) {
+            ProfileSection(title = stringResource(R.string.profile_org_warehouse)) {
+                WarehouseRow(label = "${warehouse.organisation.name} · ${warehouse.name}", onChange = navigator::showWarehouseSwitcher)
+            }
         }
 
         ProfileSection(title = stringResource(R.string.profile_scanning)) {
             ScanningGroup()
+        }
+
+        ProfileSection(title = stringResource(R.string.profile_work)) {
+            ListGroup {
+                AppRow(
+                    label = stringResource(R.string.profile_clocking),
+                    value = stringResource(R.string.profile_clocked_in),
+                    valueColor = colors.success,
+                    isSampleValue = true,
+                    onClick = { navigator.open(ClockingRoute) },
+                )
+                RowDivider()
+                AppRow(
+                    label = stringResource(R.string.profile_clocking_history),
+                    value = stringResource(R.string.profile_clocking_this_week, ProfileSample.WEEK_TOTAL),
+                    isSampleValue = true,
+                    onClick = { navigator.open(TimesheetsRoute) },
+                )
+            }
         }
 
         ProfileSection(title = stringResource(R.string.profile_app)) {
@@ -127,13 +146,25 @@ fun ProfileScreen() {
                     onClick = { navigator.open(AppearanceRoute) },
                 )
                 RowDivider()
-                AppRow(label = stringResource(R.string.profile_language), value = ProfileSample.LANGUAGE, isSampleValue = true)
+                AppRow(
+                    label = stringResource(R.string.profile_language),
+                    value = ProfileSample.LANGUAGE,
+                    isSampleValue = true,
+                    onClick = { navigator.open(LanguageRoute) },
+                )
+                RowDivider()
+                AppRow(
+                    label = stringResource(R.string.profile_offline_sync),
+                    value = pluralStringResource(R.plurals.profile_sync_waiting, ProfileSample.SYNC_WAITING, ProfileSample.SYNC_WAITING),
+                    isSampleValue = true,
+                    onClick = { navigator.open(SyncQueueRoute) },
+                )
                 RowDivider()
                 AppRow(
                     label = stringResource(R.string.profile_notifications),
                     value = ProfileSample.NOTIFICATIONS,
                     isSampleValue = true,
-                    onClick = { navigator.open(NotificationsRoute) },
+                    onClick = { navigator.openTab(MainTab.Inbox) },
                 )
                 RowDivider()
                 AppRow(label = stringResource(R.string.profile_version), value = BuildConfig.VERSION_NAME)
@@ -144,10 +175,42 @@ fun ProfileScreen() {
             text = stringResource(R.string.profile_sign_out),
             onClick = navigator::signOut,
             style = ButtonStyle.Danger,
-            icon = R.drawable.ic_profile_sign_out,
+            icon = R.drawable.ic_ui_log_out,
             height = 52.dp,
             modifier = Modifier.fillMaxWidth(),
         )
+
+        ProfileSection(title = stringResource(R.string.states_previews)) {
+            SkeletonPreviews()
+        }
+    }
+}
+
+@Composable
+private fun SkeletonPreviews() {
+    val navigator = LocalAppNavigator.current
+    val previews = listOf(
+        R.string.states_preview_offline to StatePreviewRoute(StatePreview.Offline.kind),
+        R.string.states_preview_session to StatePreviewRoute(StatePreview.SessionExpired.kind),
+        R.string.states_preview_server to StatePreviewRoute(StatePreview.ServerError.kind),
+        R.string.states_preview_loading to StatePreviewRoute(StatePreview.Loading.kind),
+        R.string.states_preview_no_access to StatePreviewRoute(StatePreview.NoAccess.kind),
+        R.string.states_preview_not_found to StatePreviewRoute(StatePreview.NotFound.kind),
+        R.string.states_preview_camera to StatePreviewRoute(StatePreview.CameraBlocked.kind),
+        R.string.states_preview_action_failed to StatePreviewRoute(StatePreview.ActionFailed.kind),
+        R.string.states_preview_clocking_qr to ClockingErrorRoute("qr_invalid"),
+        R.string.states_preview_clocking_location to ClockingErrorRoute("location_blocked"),
+        R.string.states_preview_clocking_pin to ClockingErrorRoute("no_pin"),
+        R.string.states_preview_clocking_offline to ClockingErrorRoute("offline"),
+    )
+
+    ListGroup(modifier = Modifier.fakeData()) {
+        previews.forEachIndexed { index, (label, route) ->
+            if (index > 0) {
+                RowDivider()
+            }
+            ListRow(title = stringResource(label), titleSize = 15, onClick = { navigator.open(route) })
+        }
     }
 }
 
@@ -247,36 +310,6 @@ private fun WarehouseRow(label: String, onChange: () -> Unit) {
 }
 
 @Composable
-private fun AbilitiesList(labels: List<Int>) {
-    val colors = LocalAikuColors.current
-
-    ListGroup {
-        if (labels.isEmpty()) {
-            Text(
-                text = stringResource(R.string.profile_abilities_none),
-                fontSize = 14.sp,
-                color = colors.textTertiary,
-                modifier = Modifier.padding(16.dp),
-            )
-        }
-        labels.forEachIndexed { index, label ->
-            if (index > 0) RowDivider()
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            ) {
-                Icon(painter = painterResource(R.drawable.ic_profile_check), contentDescription = null, tint = colors.success, modifier = Modifier.size(16.dp))
-                Text(text = stringResource(label), fontSize = 15.sp, color = colors.text)
-            }
-        }
-    }
-}
-
-@Composable
 private fun ScanningGroup() {
     var mode by rememberSaveable { mutableStateOf(ProfileScanMode.Automatic) }
     var isSoundOn by rememberSaveable { mutableStateOf(true) }
@@ -351,6 +384,7 @@ private fun ScanCheckRow(label: String, isChecked: Boolean, onToggle: (Boolean) 
 private fun AppRow(
     label: String,
     value: String,
+    valueColor: Color? = null,
     isSampleValue: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
@@ -369,17 +403,27 @@ private fun AppRow(
         Text(
             text = value,
             fontSize = 14.sp,
-            color = colors.textTertiary,
+            color = valueColor ?: colors.textTertiary,
             maxLines = 1,
             modifier = if (isSampleValue) Modifier.fakeData(4.dp).padding(horizontal = 6.dp, vertical = 2.dp) else Modifier,
         )
     }
 }
 
-@Preview
+@Preview(heightDp = 1500)
 @Composable
 private fun ProfileScreenPreview() {
     AikuDroidTheme {
         ProfileScreen()
+    }
+}
+
+@Preview(heightDp = 1100)
+@Composable
+private fun ProfileScreenWithoutWarehousePreview() {
+    AikuDroidTheme {
+        CompositionLocalProvider(LocalWarehouses provides emptyList(), LocalWarehouse provides NoWarehouseAccess) {
+            ProfileScreen()
+        }
     }
 }

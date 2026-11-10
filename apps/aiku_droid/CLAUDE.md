@@ -1,6 +1,6 @@
 # aiku_droid
 
-Native Android staff app for aiku. It covers the picker/packer warehouse flow. It uses Kotlin and Jetpack Compose, has one `:app` module, and its package is `io.aiku.droid`.
+Native Android staff app for aiku: warehouse work (inventory, locations, goods in, goods out, fulfilment) and clocking, built so more of aiku can be added later. Not a customer app. It uses Kotlin and Jetpack Compose, has one `:app` module, and its package is `io.aiku.droid`.
 
 The Laravel, PHP, Vue and Pest rules in the aiku root do not apply here.
 
@@ -23,23 +23,42 @@ Most screens are still skeletons built on sample data, so developers can see how
 - `GET /app/api/mobile/warehouses` lists the warehouses the user is authorised in (`authorisedWarehouses`). Each carries a `can` block computed with the same `authTo` permission checks the web uses:
   - `view_locations`, `edit_locations`
   - `view_inventory`, `move_stock`
-  - `view_goods_in`, `book_in`
+  - `view_goods_in`, `book_in`, `supervise_goods_in` (Unmark as received), `edit_procurement` (Unmark as dispatched, cancel a stock delivery), `place_stock_deliveries` (Place)
   - `view_goods_out`, `pick_and_pack`, `supervise_goods_out`
-  - `view_fulfilment`
+  - `view_fulfilment`, `edit_fulfilment`
 
 ## Permissions
 
 - The chosen warehouse (`LocalWarehouse.current`) scopes every screen. Its `can` (`WarehouseAbilities`) decides what the user sees.
-- Wrap each module screen in `RequireAbility(isAllowed = can.…)`.
+- Wrap each module screen in `RequireAbility(ability = Ability.…)`. When access is missing, the no-access screen names the permission (`Ability.permission`). `Ability` and `WarehouseAbilities.allows()` live in `data/api/WarehouseApi.kt`.
 - **Hide** tabs, menu rows, dashboard sections and actions the user cannot use. Never grey them out.
-- Picker/packer roles (Dispatch clerk) get goods out, picking/packing and location viewing, but not the SKU screens: the web does not give them those either.
+- Only the actions allowed for the record's state AND the user's rights appear, exactly as on the web. With none, a short status line (`FooterStatus`) says what is missing.
+- Picker/packer roles (Dispatch clerk) get goods out, picking/packing and location viewing, but not the SKO screens: the web does not give them those either.
+- Clocking & HR is for every signed-in staff member, with no ability check.
+- Staff with no warehouse role get Home's staff variant (clocking, profile) and no Scan slot. For them `LocalWarehouses` is empty and `LocalWarehouse` is `NoWarehouseAccess`, whose abilities are all false. Hide warehouse-only parts when `LocalWarehouses.current.isEmpty()`.
+
+## Navigation
+
+- One fixed bottom bar (`MainBar`, `MainTab`): Home · My work · Scan · Inbox · Menu. It never changes per screen. The Scan slot shows only when the account has a warehouse.
+- Menu (`MenuRoute`) lists every module and section the account can open, filtered by permission, plus Profile, Appearance and Log out.
+- Inside a module, `ModuleHeader(WarehouseSection.X)` draws the header (context line over the title, back to Menu) and the pill section tabs in the web menu order. Fulfilment is not a module: its sections sit inside Goods in, Inventory and Goods out and need `view_fulfilment`.
+- `AppScreen(header, activeTab, showBar, footer, bottomPanel)`: `footer` is the fixed action area above the bar (main action or `FooterStatus`), `bottomPanel` a self-framed panel such as `ScanPanel`.
+- A board titled "Sheet · …" or "Filter …" on the canvas is a bottom sheet (`AikuBottomSheet`, `FilterSheet`), not a route. The opening screen holds its visibility in state.
+- Aiku says SKO (stock keeping outer), never SKU, in everything staff see. Delivery note references are order references (AR24811).
 
 ## Structure
 
-- `ui/components`: the design system's shared pieces. `AppScreen`/`AppHeader`/tab bar, cards, list rows, badges (`Tone`), stats, buttons, search, chips, segmented control, bottom sheet, `fakeData()`, `RequireAbility`.
-- `ui/navigation`: type-safe routes (`AppRoutes.kt`) and the composition locals plus `AppNavigator`.
+- `ui/components`: the design system's shared pieces, following the canvas's component boards C01–C26.
+  - `AppChrome.kt`: `AppScreen`, `AppHeader` (`isSample` outlines a sample title), `SectionTabs`, `MainBar`, icon and avatar buttons, `SearchScanField`, `FooterStatus`.
+  - `WarehouseSections.kt`: `WarehouseModule`, `WarehouseSection` (route, label, fulfilment flag), `ModuleHeader`.
+  - `DeliveryBlocks.kt` (C25): state stepper, note cards, timeline, detail card, platform chip, quick actions.
+  - `Lists.kt` (C26): product photo, item row, scan panel, choice rows. `FilterSheet.kt`, `SwipeRow.kt` (C24).
+  - `Cards.kt`, `Controls.kt` (buttons, chips, bottom sheet C15), `Feedback.kt` (alerts, toasts via `LocalToasts`, dialog, empty states, skeletons), `Inputs.kt` (stepper, checkbox/radio/toggle rows), `FakeData.kt`, `States.kt` (`RequireAbility`).
+- `ui/navigation`: type-safe routes (`AppRoutes.kt`, one per screen board), composition locals, `AppNavigator` (`open`, `switchSection`, `openTab`, `back`, `showWarehouseSwitcher`, `showReportProblem`, `signOut`).
 - `ui/app`: the signed-in shell. Warehouse loading and switching, the route-to-screen map, sign out.
-- One package per area: `dashboard`, `menu`, `warehouse`, `locations`, `inventory`, `goodsin`, `goodsout`, `scan`, `actions`, `profile`, `search`, `notifications`, `login`.
+- Shell packages: `home`, `mywork`, `inbox`, `menu`, `search`, `scan` (scan result), `dashboard` (warehouse dashboard), `profile`, `sync` (offline queue and conflicts), `states` (full-screen and in-context states, the not-designed placeholder, and the outlined skeleton previews reached from Profile).
+- Area packages: `inventory`, `locations`, `goodsin`, `goodsout`, `goodsout/extra` (waiting, sessions, trolleys, bays, More actions), `fulfilment`, `clocking`, `login`. Each area keeps its sample data in `<Area>Samples.kt` and its text in `strings_<area>.xml`.
+- Icons used by the canvas are converted once as `ic_ui_<name>`; reuse them before adding `ic_<area>_<name>`.
 
 ## Local settings
 
@@ -54,11 +73,11 @@ Release builds use `https://app.aiku.io` and none of the development settings.
 
 ## Design
 
-- The screens follow the "Aiku Mobile Warehouse" design canvas.
+- The screens follow the "Aiku Mobile" design canvas (navigation v3). The older "Aiku Mobile Warehouse" canvas is obsolete.
 - Theme tokens for all 11 themes, light and dark, are computed in `ui/theme/Color.kt` the way the canvas mixes them. Appearance (theme and mode) is saved on the device.
 - Type is Inter, with a Bitter wordmark and a Caveat tagline. The fonts are OFL, and their licences ship in `assets/licenses`.
 - The sign-in watercolour backgrounds are rendered from the canvas's own SVG (`login_background`, `login_background_dark`).
-- Icons are the canvas's own SVGs converted to vector drawables, named `ic_<area>_<name>` for area icons.
+- Icons are the canvas's own SVGs converted to vector drawables, named `ic_<area>_<name>` for area icons. The shared icon set (C23) is `ic_fa_<font-awesome name>`, and the feedback icons are `ic_feedback_*`.
 
 ## Versions
 
