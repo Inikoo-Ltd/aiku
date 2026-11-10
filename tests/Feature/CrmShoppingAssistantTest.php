@@ -246,6 +246,26 @@ test('a failed model call keeps the customer message and answers with the fallba
         ->and($events->pluck('reason')->filter()->all())->toBe([]);
 });
 
+test('a follow-up we offered runs on the cheaper model only when one is set, and anything else stays on the main model', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    config(['services.shopping_assistant.model' => 'test/main-model', 'services.shopping_assistant.follow_up_model' => 'test/cheap-model']);
+
+    Http::fake(['*chat/completions' => fn () => Http::response(shoppingAssistantPresent(['reply' => 'Here you go.', 'follow_ups' => ['Show me more candles']]))]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $modelOf      = fn (string $message) => AskShoppingAssistant::run($conversation->fresh(), $message)['message']->model;
+
+    expect($modelOf('I run a gift shop and want ideas'))->toBe('test/main-model')
+        ->and($modelOf(' show me more candles '))->toBe('test/cheap-model')
+        ->and($modelOf('Something completely different'))->toBe('test/main-model');
+
+    config(['services.shopping_assistant.follow_up_model' => null]);
+
+    expect($modelOf('Show me more candles'))->toBe('test/main-model');
+
+    Http::assertSent(fn ($request) => $request['model'] === 'test/cheap-model');
+});
+
 test('the shopping assistant reply may repeat the customer\'s own figures and sizes in product names but no other number', function () {
     $assistant = AskShoppingAssistant::make();
     $customer  = 'about 600 pounds';

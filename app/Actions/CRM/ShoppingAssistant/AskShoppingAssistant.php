@@ -85,7 +85,7 @@ class AskShoppingAssistant
         $startedAt = hrtime(true);
         $message   = mb_substr(trim($message), 0, self::MAX_MESSAGE);
         $customer  = $conversation->customer;
-        $model     = config('services.shopping_assistant.model');
+        $model     = $this->modelFor($conversation, $message);
 
         $customerMessage = $conversation->messages()->create([
             'role' => ShoppingAssistantMessageRoleEnum::CUSTOMER,
@@ -174,6 +174,29 @@ class AskShoppingAssistant
             'groups'     => $groups,
             'follow_ups' => $followUps,
         ];
+    }
+
+    /**
+     * One fixed rule, off unless services.shopping_assistant.follow_up_model is set: a turn that
+     * repeats a follow-up we offered with the previous answer is a simple one and runs on that
+     * cheaper model. Everything else, the first turn included, runs on the main model.
+     *
+     * ponytail: no classifier; ask AskJev about free-typed later turns if this rule saves too little.
+     */
+    private function modelFor(ShoppingAssistantConversation $conversation, string $message): string
+    {
+        $followUpModel = config('services.shopping_assistant.follow_up_model');
+
+        if ($followUpModel) {
+            $offered = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->first()?->follow_ups ?? [];
+            $asked   = mb_strtolower(trim($message));
+
+            if (collect($offered)->contains(fn ($followUp) => is_string($followUp) && mb_strtolower(trim($followUp)) === $asked)) {
+                return $followUpModel;
+            }
+        }
+
+        return config('services.shopping_assistant.model');
     }
 
     /**
