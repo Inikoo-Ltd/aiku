@@ -73,12 +73,12 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faPlus as falPlus } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faPlus as falPlus } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
 library.add(
-	faDownload, faChevronDown, faChevronRight, faBan, faCheckDouble, faBoxOpen, falPlus,
+	faDownload, faChevronDown, faChevronRight, faBan, faCheckDouble, faBoxOpen, faCubes, falPlus,
 	faIdCardAlt,
 	faEnvelope,
 	faPhone,
@@ -214,6 +214,8 @@ const props = defineProps < {
             volume: number | null
             is_weight_partial: boolean
             is_volume_partial: boolean
+            total_skos: number
+            total_units: number
             production_time: string | null
             delivery_time: string | null
 		}
@@ -292,11 +294,22 @@ const shippedLinesTooltip = computed(() => {
 })
 
 const metrics = computed(() => {
-	const { weight, volume, is_weight_partial, is_volume_partial } = props.box_stats.second_block
+	const { weight, volume, is_weight_partial, is_volume_partial, total_skos, total_units } = props.box_stats.second_block
 
 	return [
 		{
+			key: "skos",
+			icon: "fal fa-box",
+			text: ctrans(":count SKOs", { count: locale.number(total_skos ?? 0) }),
+		},
+		{
+			key: "units",
+			icon: "fal fa-cubes",
+			text: ctrans(":count units", { count: locale.number(total_units ?? 0) }),
+		},
+		{
 			key: "weight",
+			icon: "fal fa-weight",
 			isUnknown: weight === null,
 			showMark: weight === null || is_weight_partial,
 			text: weight === null ? ctrans("Unknown weight") : `${locale.number(weight)}Kg`,
@@ -304,6 +317,7 @@ const metrics = computed(() => {
 		},
 		{
 			key: "volume",
+			icon: "fal fa-cube",
 			isUnknown: volume === null,
 			showMark: volume === null || is_volume_partial,
 			text: volume === null ? ctrans("Unknown CBM") : `${locale.number(volume)} m³`,
@@ -1499,9 +1513,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<div class="text-xs text-gray-400">{{ moneyTable.title }}</div>
 				</div>
 				<section class="rounded-lg px-4 py-2">
-					<div class="mb-2 flex items-center gap-x-4 border-b border-gray-300 pb-2 text-gray-500">
+					<div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-gray-300 pb-2 text-gray-500">
 						<span v-for="metric in metrics" :key="metric.key" class="flex items-center gap-x-1.5 whitespace-nowrap" :class="metric.isUnknown ? 'italic text-gray-400' : ''">
-							<FontAwesomeIcon :icon="metric.key === 'weight' ? 'fal fa-weight' : 'fal fa-cube'" fixed-width aria-hidden="true" />
+							<FontAwesomeIcon :icon="metric.icon" fixed-width aria-hidden="true" />
 							{{ metric.text }}
 							<FontAwesomeIcon
 								v-if="metric.showMark"

@@ -1347,6 +1347,8 @@ test('weights of purchase orders and stock deliveries count SKOs, not units', fu
 
     expect($purchaseOrderWeight['gross_weight'])->toBe(5.0)
         ->and($purchaseOrderWeight['net_weight'])->toBe(4.0)
+        ->and($purchaseOrderWeight['units'])->toBe(100.0)
+        ->and($purchaseOrderWeight['skos'])->toBe(10.0)
         ->and($stockDeliveryWeight['gross_weight'])->toBe(5.0)
         ->and($stockDeliveryWeight['net_weight'])->toBe(4.0)
         ->and((float) $stockDelivery->gross_weight)->toBe(5.0)
@@ -1355,6 +1357,8 @@ test('weights of purchase orders and stock deliveries count SKOs, not units', fu
     $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('box_stats.second_block.weight', 5)
+            ->where('box_stats.second_block.total_units', 100)
+            ->where('box_stats.second_block.total_skos', 10)
             ->etc());
 });
 
