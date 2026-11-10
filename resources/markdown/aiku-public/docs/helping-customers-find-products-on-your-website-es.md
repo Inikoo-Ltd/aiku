@@ -27,7 +27,7 @@ El asesor de gama es un asistente que sugiere qué productos debería tener en s
 En **AI shopping assistant** hay tres campos:
 
 - **AI shopping assistant** lo activa para esta web.
-- **Assistant name** (nombre del asistente) es el nombre que ven los clientes, de hasta 30 caracteres. Si se deja vacío, los clientes ven "our range advisor" (nuestro asesor de gama).
+- **Assistant name** (nombre del asistente) es el nombre que ven los clientes, de hasta 30 caracteres. Si se deja vacío, la web usa el nombre definido para todo el grupo, que es "Aura" salvo que alguien lo haya cambiado en **Sysadmin → Settings → AI shopping assistant**. Cámbialo allí para renombrar al asesor en todas las webs que no tengan nombre propio.
 - **Monthly AI budget** (presupuesto mensual de IA) es lo máximo que la web puede gastar en respuestas en un mes natural, en dólares estadounidenses. Si se deja vacío, son US$30. La pequeña "i" junto al campo muestra lo gastado este mes.
 
 Antes de activarlo por primera vez en una tienda, pide al help desk que prepare el catálogo de esa tienda para ello. El asesor encuentra productos por su significado, no solo por las palabras del nombre, y eso requiere una preparación única de los productos de la tienda.

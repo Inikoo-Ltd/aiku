@@ -151,6 +151,20 @@ class EditGroupSettings extends OrgAction
                         ],
                     ],
                     [
+                        'label'  => __('AI shopping assistant'),
+                        'icon'   => 'fa-light fa-robot',
+                        'fields' => [
+                            'shopping_assistant_name' => [
+                                'type'        => 'input',
+                                'label'       => __('Assistant name'),
+                                'information' => __('The name customers see on every website that has not set its own. Left empty: :name', ['name' => config('services.shopping_assistant.name')]),
+                                'value'       => Arr::get($group->settings, 'shopping_assistant.name'),
+                                'placeholder' => config('services.shopping_assistant.name'),
+                                'required'    => false,
+                            ],
+                        ],
+                    ],
+                    [
                         'label'  => __('Printer'),
                         'icon'   => 'fa-light fa-print',
                         'fields' => [

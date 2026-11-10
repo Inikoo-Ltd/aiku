@@ -161,6 +161,7 @@ return [
     'shopping_assistant' => [
         'model'           => env('SHOPPING_ASSISTANT_MODEL', 'anthropic/claude-opus-5.5'),
         'follow_up_model' => env('SHOPPING_ASSISTANT_FOLLOW_UP_MODEL'),
+        'name'            => 'Aura',
         'max_model_calls' => 5,
         'timeout'         => 90,
         'attribution_days' => 7,

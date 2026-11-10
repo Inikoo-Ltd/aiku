@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Website\UI;
 
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -252,6 +253,7 @@ class EditWebsite extends OrgAction
                         'information' => __('Name the assistant shows to customers'),
                         'label'       => __('Assistant name'),
                         'value'       => data_get($website->settings, 'shopping_assistant.name'),
+                        'placeholder' => GetShoppingAssistantSettings::groupName($website->group_id) ?: config('services.shopping_assistant.name'),
                         'required'    => false,
                     ],
                     'shopping_assistant_monthly_budget' => [

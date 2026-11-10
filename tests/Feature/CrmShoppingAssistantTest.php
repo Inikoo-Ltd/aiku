@@ -22,6 +22,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\CRM\ShoppingAssistant\RecordShoppingAssistantBasketAdd;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
+use App\Actions\SysAdmin\Group\UpdateGroupSettings;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTools;
 use App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation;
@@ -919,4 +920,28 @@ test('the AI assistant report sends this month\'s budget of each website with th
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => false, 'shopping_assistant_monthly_budget' => null]);
     $this->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->has('budgets', 0));
+});
+
+test('the assistant is called Aura unless the group sets a name, and a website\'s own name wins', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $group    = $website->group;
+
+    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava']);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_name' => null]);
+    UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => null]);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Aura']);
+
+    UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => 'Sage']);
+    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Sage'])
+        ->and(data_get($group->refresh()->settings, 'shopping_assistant.name'))->toBe('Sage');
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_name' => 'Ava']);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava']);
+
+    UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => '  ']);
+    UpdateWebsite::make()->action($website, ['shopping_assistant_name' => null]);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Aura'])
+        ->and(data_get($group->refresh()->settings, 'shopping_assistant.name'))->toBeNull();
 });

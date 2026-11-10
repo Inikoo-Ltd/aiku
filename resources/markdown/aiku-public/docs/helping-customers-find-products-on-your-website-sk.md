@@ -27,7 +27,7 @@ Poradca pre sortiment je asistent, ktorý navrhuje, aké produkty by mal predajc
 V sekcii **AI shopping assistant** sú tri polia:
 
 - **AI shopping assistant** ho zapína pre tento web.
-- **Assistant name** (názov asistenta) je meno, ktoré zákazníci vidia, najviac 30 znakov. Ak ostane prázdne, zákazníci vidia „our range advisor" (náš poradca pre sortiment).
+- **Assistant name** (názov asistenta) je meno, ktoré zákazníci vidia, najviac 30 znakov. Ak ostane prázdne, web použije názov nastavený pre celú skupinu, ktorým je „Aura", pokiaľ ho niekto nezmenil v **Sysadmin → Settings → AI shopping assistant**. Zmeňte ho tam a poradca sa premenuje na každom webe, ktorý nemá vlastný názov.
 - **Monthly AI budget** (mesačný rozpočet na AI) je najviac, koľko môže web minúť na odpovede v kalendárnom mesiaci, v amerických dolároch. Ak ostane prázdny, je to US$30. Malé „i" vedľa neho ukazuje, koľko sa tento mesiac minulo.
 
 Skôr než ho prvýkrát zapnete pre obchod, požiadajte help desk, aby preň pripravil katalóg obchodu. Poradca nachádza produkty podľa významu, nielen podľa slov v názve, a to si vyžaduje jednorazovú prípravu produktov obchodu.

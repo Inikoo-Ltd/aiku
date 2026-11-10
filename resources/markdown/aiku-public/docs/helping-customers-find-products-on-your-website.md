@@ -27,7 +27,7 @@ The range advisor is an assistant that suggests which products a retailer should
 In **AI shopping assistant** there are three fields:
 
 - **AI shopping assistant** turns it on for this website.
-- **Assistant name** is the name customers see, up to 30 characters. Left empty, customers see "our range advisor".
+- **Assistant name** is the name customers see, up to 30 characters. Left empty, the website uses the name set for the whole group, which is "Aura" unless someone changed it in **Sysadmin → Settings → AI shopping assistant**. Change it there to rename the advisor on every website that has no name of its own.
 - **Monthly AI budget** is the most the website may spend on answers in a calendar month, in US dollars. Left empty, it is US$30. The small "i" next to it shows what has been spent this month.
 
 Before you turn it on for a shop for the first time, ask the help desk to prepare that shop's catalogue for it. The advisor finds products by meaning, not only by the words in the name, and that needs a one-off preparation of the shop's products.

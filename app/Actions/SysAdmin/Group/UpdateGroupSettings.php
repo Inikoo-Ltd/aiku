@@ -8,6 +8,7 @@
 
 namespace App\Actions\SysAdmin\Group;
 
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\OrgAction;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Traits\WithActionUpdate;
@@ -53,6 +54,9 @@ class UpdateGroupSettings extends OrgAction
                 ->all();
             data_set($modelData, 'settings.staff_chat.quick_replies', $quickReplies);
         }
+        if (Arr::has($modelData, 'shopping_assistant_name')) {
+            data_set($modelData, 'settings.shopping_assistant.name', trim((string) Arr::pull($modelData, 'shopping_assistant_name')) ?: null);
+        }
         if (Arr::has($modelData, 'printnode_api_key')) {
             data_set($modelData, 'settings.printnode.apikey', Arr::pull($modelData, 'printnode_api_key'));
         }
@@ -94,7 +98,10 @@ class UpdateGroupSettings extends OrgAction
             data_set($modelData, 'settings.email.provider.user_notification.region', Arr::pull($modelData, 'user_notification_region'));
         }
 
-        return $this->update($group, $modelData, ['settings']);
+        $group = $this->update($group, $modelData, ['settings']);
+        GetShoppingAssistantSettings::forgetGroupName($group->id);
+
+        return $group;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -117,6 +124,7 @@ class UpdateGroupSettings extends OrgAction
                     ->max(12 * 1024)
             ],
             'staff_chat_quick_replies'          => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'shopping_assistant_name'           => ['sometimes', 'nullable', 'string', 'max:30'],
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
