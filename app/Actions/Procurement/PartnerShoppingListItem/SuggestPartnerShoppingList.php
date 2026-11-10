@@ -22,6 +22,7 @@ use App\Exceptions\AICreditException;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Helpers\Tag;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Query\Builder;
@@ -154,6 +155,7 @@ class SuggestPartnerShoppingList extends OrgAction
             ->whereNull('partner_shopping_list_items.id')
             ->when(!$sellerStockIsNoLimit, fn ($query) => $query->where('org_stocks.quantity_available', '>', 0))
             ->whereRaw('coalesce(buyer_org_stocks.is_excluded_from_auto_ordering, false) = false')
+            ->whereRaw('not '.Tag::outOfOrderingSeasonSql('org_stocks.stock_id'))
             ->get()
             ->unique('id')
             ->values();

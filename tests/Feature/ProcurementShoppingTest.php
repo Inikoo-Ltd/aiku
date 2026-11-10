@@ -68,6 +68,9 @@ use App\Actions\Procurement\OrgPartner\UpdatePartnerLeadTimeEstimate;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockStats;
 use App\Models\Inventory\Warehouse;
+use App\Models\Helpers\Tag;
+use App\Enums\Helpers\Tag\TagScopeEnum;
+use Illuminate\Support\Carbon;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
@@ -902,6 +905,71 @@ test('on demand buyer org stock excluded from partner shopping', function () {
 
     $outStockIds = GetPartnerStockCoverBuckets::make()->stockIdsInBucket($this->orgPartner, 'out');
     expect($outStockIds)->toContain($sellerOrgStock->stock_id);
+});
+
+test('seasonal SKO is only suggested from a partner inside the ordering months of its tag', function () {
+    $seller = $this->orgPartner->partner;
+    $sellerShop = $seller->shops()->first() ?? StoreShop::run($seller, Shop::factory()->definition());
+    [, $sellerProduct] = createProduct($sellerShop);
+    $sellerOrgStock = $sellerProduct->orgStocks()->first();
+    $sellerOrgStock->update(['quantity_available' => 50]);
+
+    $buyerOrgStock = createOrgStocks($this->orgPartner->organisation, [$sellerOrgStock->stock])[0];
+    $buyerOrgStock->update(['quantity_available' => 0, 'is_on_demand' => false, 'is_excluded_from_auto_ordering' => false]);
+    $buyerOrgStock->stats->update(['predicted_daily_usage' => 5.5]);
+
+    PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+        ->whereIn('state', ShoppingListItemStateEnum::onPartnerBuyerList())
+        ->delete();
+
+    $tradeUnit = createTradeUnits($seller->group)[0];
+    $attached = $sellerOrgStock->stock->tradeUnits()->syncWithoutDetaching([$tradeUnit->id => ['quantity' => 1]])['attached'];
+    $tag = Tag::create([
+        'group_id' => $seller->group_id,
+        'name'     => 'Season '.Str::random(8),
+        'scope'    => TagScopeEnum::PRODUCT_PROPERTY,
+    ]);
+    $tradeUnit->tags()->attach($tag->id);
+
+    $isSuggested = fn (): bool => collect(SuggestPartnerShoppingList::make()->action($this->orgPartner, 100000)['lines'])
+        ->contains('org_stock_id', $sellerOrgStock->id);
+
+    Carbon::setTestNow('2026-11-10');
+
+    try {
+        expect($isSuggested())->toBeTrue();
+
+        $this->patch(route('grp.trade_units.tags.update', [$tag->id]), ['order_from_month' => 13])->assertSessionHasErrors('order_from_month');
+        $this->patch(route('grp.trade_units.tags.update', [$tag->id]), ['order_from_month' => 7, 'order_to_month' => 9])->assertSessionHasNoErrors();
+        $this->withoutVite()->get(route('grp.trade_units.tags.edit', [$tag->slug]))->assertOk();
+        expect($tag->refresh()->order_from_month)->toBe(7)
+            ->and($tag->order_to_month)->toBe(9)
+            ->and($isSuggested())->toBeFalse()
+            ->and(collect(GetPartnerStockCoverBuckets::make()->leftOut($this->orgPartner, 30))->sum('out_of_season'))->toBeGreaterThanOrEqual(1);
+
+        $tag->update(['order_from_month' => 10, 'order_to_month' => 2]);
+        expect($isSuggested())->toBeTrue();
+
+        Carbon::setTestNow('2026-03-10');
+        expect($isSuggested())->toBeFalse();
+
+        Carbon::setTestNow('2026-01-10');
+        expect($isSuggested())->toBeTrue();
+
+        $tag->update(['order_from_month' => 7, 'order_to_month' => 9]);
+        $result = StorePartnerShoppingListItems::make()->action($this->orgPartner, [
+            ['org_stock_id' => $sellerOrgStock->id, 'quantity' => 5],
+        ]);
+        expect($result['created'])->toBe(1);
+    } finally {
+        Carbon::setTestNow();
+        $tradeUnit->tags()->detach($tag->id);
+        $sellerOrgStock->stock->tradeUnits()->detach($attached);
+        $tag->delete();
+        PartnerShoppingListItem::where('org_partner_id', $this->orgPartner->id)
+            ->where('stock_id', $sellerOrgStock->stock_id)
+            ->delete();
+    }
 });
 
 test('do-not-auto-order buyer org stock excluded from auto-fill but kept in buckets', function () {

@@ -17,6 +17,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Helpers\Tag;
 use App\Models\Procurement\OrgPartner;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -300,7 +301,8 @@ class GetPartnerStockCoverBuckets
             when p.id is null then 'not_stocked'
             when $onDraft then 'on_draft'
             when {$this->alreadyComingExpression($orgPartner)} then 'coming'
-            when coalesce(os.is_excluded_from_auto_ordering, false) then 'excluded'$spareReasons
+            when coalesce(os.is_excluded_from_auto_ordering, false) then 'excluded'
+            when ".Tag::outOfOrderingSeasonSql('os.stock_id')." then 'out_of_season'$spareReasons
             when os.health_rank in ('A', 'B') then 'rescuable'
             when {$this->orgSkoPrice($orgPartner)} <= 0 then 'no_price'
             when {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} < ".self::MINIMUM_LINE_VALUE." then 'too_small'
@@ -585,6 +587,7 @@ class GetPartnerStockCoverBuckets
             ->when(!$orgPartner->partner->is_manufacturing_hub, fn ($query) => $query->whereRaw("$spare >= 1"))
             ->whereRaw('not '.$this->alreadyComingExpression($orgPartner))
             ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
+            ->whereRaw('not '.Tag::outOfOrderingSeasonSql('os.stock_id'))
             ->whereRaw('coalesce(s.predicted_daily_usage, 0) > 0')
             ->whereRaw("$expression in ('".implode("', '", self::DEFAULT_ORDER_BUCKETS)."')")
             ->whereRaw("(os.health_rank in ('A', 'B') or {$this->rescueQuantity($spare, $leadDays, $orgPartner)} * {$this->orgSkoPrice($orgPartner)} >= ".self::MINIMUM_LINE_VALUE.')');

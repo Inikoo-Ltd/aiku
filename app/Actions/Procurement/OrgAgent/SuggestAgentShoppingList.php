@@ -12,6 +12,7 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
+use App\Models\Helpers\Tag;
 use App\Models\Helpers\Currency;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SysAdmin\Organisation;
@@ -172,6 +173,7 @@ class SuggestAgentShoppingList extends OrgAction
             ->leftJoin('org_stock_stats as s', 's.org_stock_id', 'os.id')
             ->whereIn('osp.id', $ids)
             ->whereRaw('coalesce(os.is_excluded_from_auto_ordering, false) = false')
+            ->whereRaw('not '.Tag::outOfOrderingSeasonSql('os.stock_id'))
             ->whereRaw('not '.GetAgentStockCoverBuckets::onOpenPurchaseOrderExpression())
             ->whereRaw('coalesce(s.on_the_way_po_count, 0) = 0')
             ->whereNotExists(function ($query) {

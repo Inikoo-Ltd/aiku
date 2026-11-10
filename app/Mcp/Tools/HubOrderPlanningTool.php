@@ -12,6 +12,7 @@ use App\Actions\Procurement\OrgPartner\GetPartnerLeadTime;
 use App\Actions\Procurement\OrgPartner\GetPartnerOrderCapacity;
 use App\Actions\Procurement\PartnerShoppingListItem\SuggestPartnerShoppingList;
 use App\Enums\SysAdmin\Authorisation\OrganisationPermissionsEnum;
+use App\Models\Helpers\Tag;
 use App\Models\Procurement\OrgPartner;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -26,7 +27,7 @@ use Laravel\Mcp\Server\Tool;
  * shopping list auto-fill uses. Hub products without a recorded shelf life are planned as
  * lasting one year, so an assistant never orders more than sells before it expires.
  */
-#[Description('Planning data to order from the manufacturing hub, one row per SKO the hub sells, most urgent first (fewest days until we run out). Quantities are SKOs. Per SKO: our stock, our sales per quarter and per day, days until out of stock (expected and pessimistic) and the predicted date, the recommended order quantity from our forecast, what the hub has ready now (0 means it has to be made first), lead time, how many of our purchase orders already bring it, the quantity already on our open list, the order step (production makes whole batches: order in multiples of order_step_skos so it is made sooner; an order below one step waits until other demand joins it), shelf life and max_order_before_expiry (never order more than that: it would expire before we sell it; shelf life not recorded yet is assumed to be one year), price per SKO in our currency, ABC rank by revenue (A best), and do_not_auto_order (only order those when the user names them; hub-shopping-list-tool sets it). suggested_quantity already applies forecast, order step and expiry cap. The header has the budget: a list worth more than budget_per_order_cycle is refused except A-rank and out-of-stock SKOs. Use hub-shopping-list-tool to put the agreed lines on the list.')]
+#[Description('Planning data to order from the manufacturing hub, one row per SKO the hub sells, most urgent first (fewest days until we run out). Quantities are SKOs. Per SKO: our stock, our sales per quarter and per day, days until out of stock (expected and pessimistic) and the predicted date, the recommended order quantity from our forecast, what the hub has ready now (0 means it has to be made first), lead time, how many of our purchase orders already bring it, the quantity already on our open list, the order step (production makes whole batches: order in multiples of order_step_skos so it is made sooner; an order below one step waits until other demand joins it), shelf life and max_order_before_expiry (never order more than that: it would expire before we sell it; shelf life not recorded yet is assumed to be one year), price per SKO in our currency, ABC rank by revenue (A best), do_not_auto_order (only order those when the user names them; hub-shopping-list-tool sets it) and out_of_ordering_season (a seasonal SKO, Christmas for example, outside the months it is ordered in: only order it when the user names it). suggested_quantity already applies forecast, order step and expiry cap. The header has the budget: a list worth more than budget_per_order_cycle is refused except A-rank and out-of-stock SKOs. Use hub-shopping-list-tool to put the agreed lines on the list.')]
 class HubOrderPlanningTool extends Tool
 {
     use WithMcpPermissions;
@@ -70,6 +71,7 @@ class HubOrderPlanningTool extends Tool
                 'buyer_stats.predicted_out_of_stock_at as buyer_predicted_out_of_stock_at',
                 'buyer_stats.on_the_way_po_count as buyer_on_the_way_po_count',
                 'buyer_org_stocks.is_excluded_from_auto_ordering as buyer_do_not_auto_order',
+                DB::raw(Tag::outOfOrderingSeasonSql('org_stocks.stock_id').' as out_of_ordering_season'),
                 DB::raw('coalesce(buyer_org_stocks.measured_lead_time_days, buyer_org_stocks.estimated_lead_time_days) as buyer_lead_time_days'),
                 DB::raw('(select shelf_life_days from artefacts where artefacts.org_stock_id = org_stocks.id and artefacts.deleted_at is null and artefacts.shelf_life_days is not null limit 1) as shelf_life_days'),
             ]);
@@ -141,6 +143,7 @@ class HubOrderPlanningTool extends Tool
             'abc_rank'                    => $candidate['health_rank'],
             'never_stocked_by_us'         => $candidate['never_stocked'],
             'do_not_auto_order'           => (bool) $row->buyer_do_not_auto_order,
+            'out_of_ordering_season'      => (bool) $row->out_of_ordering_season,
         ];
     }
 

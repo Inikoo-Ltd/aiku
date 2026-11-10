@@ -206,6 +206,7 @@ const reasonRows = computed(() =>
                     { key: "ordered", icon: faCheck, iconClass: "text-green-600", label: ctrans("already ordered"), count: (leftOut.on_draft ?? 0) + (leftOut.coming ?? 0) },
                     { key: "lasts", icon: faClock, iconClass: "text-gray-400", label: ctrans("will last until it arrives"), count: bucket.count - bucket.order_lines },
                     { key: "blocked", icon: faBan, iconClass: "text-red-500", label: ctrans("blocked, never order"), count: leftOut.excluded ?? 0 },
+                    { key: "season", icon: faClock, iconClass: "text-gray-400", label: ctrans("seasonal, not the time to order"), count: leftOut.out_of_season ?? 0 },
                     { key: "small", icon: faTurtle, iconClass: "text-gray-400", label: ctrans("sell too little"), count: leftOut.too_small ?? 0 },
                     { key: "price", icon: faTag, iconClass: "text-gray-400", label: ctrans("no price at :partner", { partner: props.orgPartner.name }), count: leftOut.no_price ?? 0 },
                     { key: "dead", icon: faPoo, iconClass: "text-amber-800", label: ctrans("dead, not selling"), count: leftOut.not_selling ?? 0 },

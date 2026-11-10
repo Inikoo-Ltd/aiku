@@ -168,6 +168,7 @@ watch(showWhy, (isShown) => isShown && loadLeftOut(), { immediate: true })
 const leftOutLabels = computed<Record<string, string>>(() => ({
 	not_selling: ctrans("Not selling any more"),
 	excluded: ctrans("Set never to order automatically"),
+	out_of_season: ctrans("Seasonal, not the time of year to order them"),
 	not_stocked: ctrans(":partner does not stock them", { partner: props.partnerName }),
 	on_draft: props.isHub
 		? ctrans("Already on the ongoing PO")

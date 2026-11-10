@@ -1,8 +1,8 @@
 ---
 title: Nákup od partnera
 summary: Sprievodca pre nákupcov - začnite na nákupnom paneli, doplňte zoznam ručne, z partnerovho katalógu alebo pomocou automatického dopĺňania, a prevezmite tovar po jeho príchode.
-date: 2026-10-09
-source_date: 2026-10-09
+date: 2026-11-10
+source_date: 2026-11-10
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -47,6 +47,7 @@ Auto-fill existuje preto, aby doplňovanie skladu nezáviselo od toho, či si ni
 - Pole **instruction box** je voliteľné a prijíma bežný jazyk: *"prioritise essential oils, skip anything we hold over 8 weeks of"*, *"focus on candles, nothing seasonal"*. AI číta váš pokyn spolu s rovnakými údajmi o spotrebe a podľa toho návrh prispôsobí — jeho výstup sa však pred zobrazením overí voči realite: množstvá sú obmedzené tým, čo partner skutočne má, a súčet je vrátený späť do vášho rozpočtu. Ak sa pokyn nedá dodržať, dostanete namiesto neho štandardný návrh.
 - **Nič sa nepridáva samo.** Návrh je súbor zaškrtnutých riadkov, ktoré môžete odškrtnúť, prepočítať alebo znovu vygenerovať s iným rozpočtom či pokynom; iba **Add items to shopping list** niečo skutočne uloží.
 - **Niektoré položky sa dajú vynechať.** SKO so zapnutým **Do not auto order** (na obrazovke úprav SKO, v časti Stock Data) sa v návrhu nikdy neobjaví — pre položky, ktoré chce nákup ponechať pod ručnou kontrolou. Stále ju môžete objednať ručne z Browse alebo zo skladového zoznamu; vynecháva ju iba automatická cesta. SKO označené ako **On Demand** sú z partnerského nakupovania vynechané úplne.
+- **Sezónne produkty čakajú na svoju sezónu.** Štítok produktu (Trade Units → Tags) môže mať **Ordering season**: prvý a posledný mesiac, v ktorom sa jeho produkty objednávajú, napríklad júl až september pre Vianoce. Mimo týchto mesiacov sa SKO, ktorých obchodná jednotka alebo jej rodina má tento štítok, v návrhoch neobjavia, tu ani v návrhoch pre agentov a dodávateľov. Stále ich môžete pridať ručne. Štítok bez nastavených mesiacov nie je sezónny.
 
 Auto-fill možno otvoriť aj už zúžený: **+ fill** na rizikovej dlaždici na paneli ho otvorí len pre daný bucket, s návrhom už vygenerovaným. Rovnaké pravidlá — upravíte, odškrtnete a potvrdíte; nič sa nepridáva samo.
 

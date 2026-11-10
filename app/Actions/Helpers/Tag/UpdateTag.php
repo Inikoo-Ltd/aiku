@@ -214,6 +214,8 @@ class UpdateTag extends OrgAction
                 'nullable',
                 File::image()->max(12 * 1024),
             ],
+            'order_from_month' => ['sometimes', 'nullable', 'integer', 'between:1,12'],
+            'order_to_month'   => ['sometimes', 'nullable', 'integer', 'between:1,12'],
         ];
     }
 }

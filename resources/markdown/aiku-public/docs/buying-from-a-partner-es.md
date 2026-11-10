@@ -1,8 +1,8 @@
 ---
 title: Comprar a un socio
 summary: La guía del comprador - empieza por el panel de compras, rellena la lista a mano, desde el catálogo del socio o con auto-fill, y recibe la mercancía cuando llega.
-date: 2026-10-09
-source_date: 2026-10-09
+date: 2026-11-10
+source_date: 2026-11-10
 tags: procurement, intercompany, shopping-list
 category: procurement
 series: Ordering from partners
@@ -47,6 +47,7 @@ Auto-fill existe para que la reposición no dependa de que alguien recuerde cada
 - El **instruction box** es opcional y acepta lenguaje natural: *"prioritise essential oils, skip anything we hold over 8 weeks of"*, *"focus on candles, nothing seasonal"*. Una IA lee tu instrucción junto con los mismos datos de consumo y remodela la propuesta en consecuencia — pero su resultado se contrasta con la realidad antes de que lo veas: las cantidades quedan topadas a lo que el socio realmente tiene, y el total se fuerza de vuelta dentro de tu presupuesto. Si la instrucción no se puede seguir, recibes la propuesta estándar en su lugar.
 - **Nada se añade por sí solo.** La propuesta es un conjunto de líneas marcadas que puedes desmarcar, recalcular o regenerar con otro presupuesto o instrucción; solo **Add items to shopping list** confirma algo.
 - **Algunos artículos quedan fuera.** Un SKO con **Do not auto order** activado (en la pantalla de edición del SKO, bajo Stock Data) nunca aparece en una propuesta — para artículos que procurement quiere mantener bajo control manual. Aun así puedes pedirlo a mano desde Browse o la lista de stock; solo la vía automática lo salta. Los SKOs marcados como **On Demand** quedan excluidos por completo de las compras a socios.
+- **Los productos de temporada esperan a su temporada.** Una etiqueta de producto (Trade Units → Tags) puede llevar una **Ordering season**: el primer y el último mes en que se piden sus productos, por ejemplo de julio a septiembre para Navidad. Fuera de esos meses, los SKOs cuya unidad comercial, o su familia, lleva esa etiqueta quedan fuera de las propuestas, aquí y en las sugerencias para agentes y proveedores. Aun así puedes añadirlos a mano. Una etiqueta sin meses no es de temporada.
 
 Auto-fill también puede abrirse ya acotado: **+ fill** en una casilla de riesgo del panel lo abre solo para ese cubo, con la propuesta ya generada. Mismas reglas — ajustas, desmarcas y confirmas; nada se añade por sí solo.
 
