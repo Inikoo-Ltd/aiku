@@ -11,12 +11,11 @@ library.add(faCalendarCheck, faCheckCircle, faUserSlash, faTimesCircle, faHourgl
 
 defineProps<{
     data: {}
-    tab?: string
 }>()
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data">
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
         </template>
@@ -43,11 +42,24 @@ defineProps<{
                 </Link>
                 <span v-else>{{ item.contact_name }}</span>
                 <span v-if="item.visitor_type"
-                    class="ml-1.5 rounded border border-[--app-accent-muted] bg-[--app-accent-soft] px-1 py-px text-[10px] text-gray-600">
+                    class="ml-1.5 rounded border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] px-1 py-px text-[10px] text-gray-600">
                     {{ item.visitor_type === 'Customer' ? ctrans('Customer') : ctrans('Prospect') }}
                 </span>
                 <div class="text-xs text-gray-500">{{ [item.email, item.phone].filter(Boolean).join(" · ") }}</div>
             </div>
+        </template>
+
+        <template #cell(status)="{ item }">
+            <div v-if="item.status" class="max-w-xs text-sm">
+                <div class="whitespace-nowrap font-medium" :class="item.status.class">
+                    {{ item.status.by
+                        ? ctrans(":state by :name", { state: item.status.label, name: item.status.by })
+                        : item.status.label }}
+                </div>
+                <div v-if="item.status.at" class="text-xs text-gray-500">{{ item.status.at }}</div>
+                <div v-if="item.status.reason" class="text-xs italic text-gray-500">{{ item.status.reason }}</div>
+            </div>
+            <span v-else class="text-gray-400">—</span>
         </template>
 
         <template #cell(actions)="{ item }">

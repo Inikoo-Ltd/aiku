@@ -6,8 +6,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\AppointmentType\UI\WithAppointmentsSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
-use App\Enums\CRM\Appointment\AppointmentStateEnum;
-use App\Enums\UI\CRM\AppointmentsTabsEnum;
+use App\Enums\CRM\Appointment\AppointmentListFilterEnum;
 use App\Http\Resources\CRM\AppointmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -27,9 +26,9 @@ class IndexAppointments extends OrgAction
     use WithCRMAuthorisation;
     use WithAppointmentsSubNavigation;
 
-    public function handle(Shop $shop, AppointmentsTabsEnum $tab): LengthAwarePaginator
+    public function handle(Shop $shop): LengthAwarePaginator
     {
-        $prefix = $tab->value;
+        $now = now();
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -38,63 +37,73 @@ class IndexAppointments extends OrgAction
                     ->orWhereStartWith('appointments.phone', $value);
             });
         });
-        InertiaTable::updateQueryBuilderParameters($prefix);
 
         $queryBuilder = QueryBuilder::for(Appointment::class)
             ->where('appointments.shop_id', $shop->id)
-            ->with(['appointmentType', 'visitor', 'user', 'shop.timezone']);
+            ->with([
+                'appointmentType',
+                'visitor',
+                'user',
+                'createdBy',
+                'shop.timezone',
+                'audits' => fn ($query) => $query->where('event', 'updated')->with('user')->orderBy('id'),
+            ]);
 
-        match ($tab) {
-            AppointmentsTabsEnum::REQUESTED => $queryBuilder
-                ->where('appointments.state', AppointmentStateEnum::REQUESTED)
-                ->where('appointments.ends_at', '>=', now())
-                ->defaultSort('appointments.starts_at'),
-            AppointmentsTabsEnum::UPCOMING => $queryBuilder
-                ->where('appointments.state', AppointmentStateEnum::ACCEPTED)
-                ->where('appointments.ends_at', '>=', now())
-                ->defaultSort('appointments.starts_at'),
-            AppointmentsTabsEnum::PAST => $queryBuilder
-                ->where(fn ($query) => $query
-                    ->whereIn('appointments.state', AppointmentStateEnum::finished())
-                    ->orWhere(fn ($query) => $query
-                        ->whereIn('appointments.state', AppointmentStateEnum::holdingSlot())
-                        ->where('appointments.ends_at', '<', now())))
-                ->defaultSort('-appointments.starts_at'),
-            AppointmentsTabsEnum::CANCELLED => $queryBuilder
-                ->whereIn('appointments.state', AppointmentStateEnum::closed())
-                ->defaultSort('-appointments.starts_at'),
-        };
+        $queryBuilder->whereElementGroup(
+            key: 'state',
+            allowedElements: AppointmentListFilterEnum::values(),
+            engine: function ($query, array $elements) use ($now) {
+                $query->where(function ($query) use ($elements, $now) {
+                    foreach ($elements as $element) {
+                        $query->orWhere(fn ($query) => AppointmentListFilterEnum::from($element)->constrain($query, $now));
+                    }
+                });
+            }
+        );
 
         return $queryBuilder
+            ->defaultSort('-appointments.starts_at')
             ->select('appointments.*')
             ->allowedSorts([
                 AllowedSort::field('when', 'appointments.starts_at'),
                 AllowedSort::field('contact_name', 'appointments.contact_name'),
             ])
             ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withPaginator(null, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Shop $shop, AppointmentsTabsEnum $tab): Closure
+    /**
+     * @return array<string, array{0: string, 1: int}>
+     */
+    public function stateElements(Shop $shop): array
     {
-        return function (InertiaTable $table) use ($shop, $tab) {
-            $table->name($tab->value)->pageName($tab->value.'Page');
+        $now      = now();
+        $elements = [];
+        foreach (AppointmentListFilterEnum::cases() as $filter) {
+            $query = $shop->appointments()->getQuery();
+            $filter->constrain($query, $now);
+            $elements[$filter->value] = [$filter->label(), $query->count()];
+        }
 
+        return $elements;
+    }
+
+    public function tableStructure(Shop $shop): Closure
+    {
+        return function (InertiaTable $table) use ($shop) {
             $table
                 ->withGlobalSearch()
+                ->elementGroup(
+                    key: 'state',
+                    label: __('State'),
+                    elements: $this->stateElements($shop)
+                )
                 ->withEmptyState([
-                    'title'       => match ($tab) {
-                        AppointmentsTabsEnum::REQUESTED => __('No requests waiting'),
-                        AppointmentsTabsEnum::UPCOMING  => __('No upcoming appointments'),
-                        AppointmentsTabsEnum::PAST      => __('No past appointments'),
-                        AppointmentsTabsEnum::CANCELLED => __('No declined or cancelled appointments'),
-                    },
-                    'description' => $tab === AppointmentsTabsEnum::UPCOMING
-                        ? __('Bookings from customers show up here. You can also add one yourself, for example after a phone call.')
-                        : null,
+                    'title'       => __('No appointments'),
+                    'description' => __('Bookings from customers show up here. You can also add one yourself, for example after a phone call.'),
                     'count'       => 0,
-                    'action'      => $this->canEdit && $tab === AppointmentsTabsEnum::UPCOMING ? [
+                    'action'      => $this->canEdit ? [
                         'type'    => 'button',
                         'style'   => 'create',
                         'tooltip' => __('New appointment'),
@@ -110,9 +119,10 @@ class IndexAppointments extends OrgAction
                 ->column(key: 'appointment_type_name', label: __('Type'), canBeHidden: false)
                 ->column(key: 'contact_name', label: __('Visitor'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_visitors', label: __('People'), canBeHidden: true, align: 'right')
-                ->column(key: 'staff_name', label: __('Staff'), canBeHidden: false);
+                ->column(key: 'staff_name', label: __('Staff'), canBeHidden: false)
+                ->column(key: 'status', label: __('Status'), canBeHidden: false);
 
-            if ($this->canEdit && in_array($tab, [AppointmentsTabsEnum::REQUESTED, AppointmentsTabsEnum::UPCOMING], true)) {
+            if ($this->canEdit) {
                 $table->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
             }
         };
@@ -134,14 +144,7 @@ class IndexAppointments extends OrgAction
             ];
         }
 
-        $tabData = [];
-        foreach (AppointmentsTabsEnum::cases() as $tab) {
-            $tabData[$tab->value] = $this->tab === $tab->value
-                ? fn () => AppointmentsResource::collection($appointments)
-                : Inertia::optional(fn () => AppointmentsResource::collection($this->handle($this->shop, $tab)));
-        }
-
-        $response = Inertia::render(
+        return Inertia::render(
             'Org/Shop/CRM/Appointments',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
@@ -156,34 +159,16 @@ class IndexAppointments extends OrgAction
                     'subNavigation' => $this->getAppointmentsSubNavigation($this->shop),
                 ],
                 'canEdit'     => $this->canEdit,
-                'tabs'        => [
-                    'current'    => $this->tab,
-                    'navigation' => AppointmentsTabsEnum::navigation(),
-                ],
-                ...$tabData,
+                'data'        => AppointmentsResource::collection($appointments),
             ]
-        );
-
-        foreach (AppointmentsTabsEnum::cases() as $tab) {
-            $response->table($this->tableStructure($this->shop, $tab));
-        }
-
-        return $response;
+        )->table($this->tableStructure($this->shop));
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-        $hasRequests = $shop->appointments()
-            ->where('state', AppointmentStateEnum::REQUESTED)
-            ->where('ends_at', '>=', now())
-            ->exists();
+        $this->initialisationFromShop($shop, $request);
 
-        $this->initialisationFromShop($shop, $request)->withTab(
-            AppointmentsTabsEnum::values(),
-            $hasRequests ? AppointmentsTabsEnum::REQUESTED->value : AppointmentsTabsEnum::UPCOMING->value
-        );
-
-        return $this->handle($shop, AppointmentsTabsEnum::from($this->tab));
+        return $this->handle($shop);
     }
 
     public function getBreadcrumbs(array $routeParameters): array

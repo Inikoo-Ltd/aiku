@@ -33,9 +33,27 @@ class AppointmentsResource extends JsonResource
             'state_icon'            => $appointment->state->icon(),
             'date_label'            => $startsAt->translatedFormat('l j F Y'),
             'time'                  => $startsAt->format('H:i'),
+            'status'                => $this->status($appointment),
             'can_accept'            => $appointment->state === AppointmentStateEnum::REQUESTED,
             'can_decline'           => $appointment->state->holdsSlot(),
             'can_reschedule'        => $appointment->state->holdsSlot(),
+        ];
+    }
+
+    /**
+     * @return array{label: string, class: string, by: string|null, at: string|null, reason: string|null}
+     */
+    private function status(Appointment $appointment): array
+    {
+        $timezone = $appointment->shop->timezone?->name ?? 'UTC';
+        $change   = $appointment->stateChange();
+
+        return [
+            'label'  => $appointment->state->label(),
+            'class'  => $appointment->state->icon()['class'],
+            'by'     => $change['by'],
+            'at'     => $change['at']?->copy()->setTimezone($timezone)->translatedFormat('j M Y, H:i'),
+            'reason' => in_array($appointment->state, AppointmentStateEnum::closed(), true) ? $appointment->state_reason : null,
         ];
     }
 }

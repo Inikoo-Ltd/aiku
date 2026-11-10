@@ -4,6 +4,7 @@ namespace App\Models\CRM;
 
 use App\Enums\CRM\Appointment\AppointmentSourceEnum;
 use App\Enums\CRM\Appointment\AppointmentStateEnum;
+use App\Models\Helpers\Audit;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
@@ -125,6 +126,45 @@ class Appointment extends Model implements Auditable
     public function canBeChangedByVisitor(): bool
     {
         return $this->state->holdsSlot() && $this->starts_at->isFuture();
+    }
+
+    public static function auditAuthorName(Audit $audit, string $contactName): ?string
+    {
+        return match (true) {
+            $audit->user instanceof User    => $audit->user->chatName(),
+            $audit->user instanceof WebUser => $contactName,
+            default                         => null,
+        };
+    }
+
+    /**
+     * Who put the appointment in its current state and when, read off the audit of that change.
+     * With no such audit the state is the one it was booked in, so it comes from the booking.
+     * A visitor cancelling from their email link is not signed in, so nobody is on that audit.
+     *
+     * @return array{by: string|null, at: \Illuminate\Support\Carbon|null}
+     */
+    public function stateChange(): array
+    {
+        $audits = $this->relationLoaded('audits')
+            ? $this->audits
+            : $this->audits()->where('event', 'updated')->with('user')->orderBy('id')->get();
+
+        $audit = $audits->last(fn (Audit $audit) => ($audit->new_values['state'] ?? null) === $this->state->value);
+
+        if ($audit) {
+            return [
+                'by' => self::auditAuthorName($audit, $this->contact_name)
+                    ?? ($this->state === AppointmentStateEnum::CANCELLED ? $this->contact_name : null),
+                'at' => $audit->created_at,
+            ];
+        }
+
+        return [
+            'by' => $this->createdBy?->chatName()
+                ?? ($this->source === AppointmentSourceEnum::WEBSITE ? $this->contact_name : null),
+            'at' => $this->created_at,
+        ];
     }
 
     public function appointmentType(): BelongsTo
