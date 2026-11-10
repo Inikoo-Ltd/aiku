@@ -59,6 +59,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexPurchaseOrders extends OrgAction
 {
@@ -313,8 +314,10 @@ class IndexPurchaseOrders extends OrgAction
             $query->selectSub($this->shipmentsQuery(), 'shipments');
         }
 
+        $isAgentView = $organisationAgent || $this->viewingAgent;
+
         return $query
-            ->defaultSort('-purchase_orders.date')
+            ->defaultSort($isAgentView ? $this->submittedAtSort('-submitted_at') : '-purchase_orders.date')
             ->with([
                 'agent:id,slug,name',
                 'parent' => function ($morphTo) {
@@ -325,7 +328,7 @@ class IndexPurchaseOrders extends OrgAction
             ])
             ->allowedSorts($parent instanceof OrgSupplierProduct || $parent instanceof SupplierProduct
                 ? ['reference', 'parent_name', 'date', 'quantity_ordered', 'org_net_amount']
-                : ['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
+                : ['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost', ...($isAgentView ? [$this->submittedAtSort('submitted_at')] : [])])
             ->allowedFilters([
                 $globalSearch,
                 ...($organisationAgent || $this->viewingAgent ? [
@@ -333,9 +336,17 @@ class IndexPurchaseOrders extends OrgAction
                     AllowedFilter::callback('supplier', fn ($query, $value) => $this->whereSupplier($query, $value)),
                 ] : []),
             ])
-            ->withBetweenDates(['date'])
+            ->withBetweenDates([$isAgentView ? 'submitted_at' : 'date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
+    }
+
+    /**
+     * Orders that came in before submitted_at was recorded fall back to their creation date, so they keep their place instead of sorting first.
+     */
+    private function submittedAtSort(string $name): AllowedSort
+    {
+        return AllowedSort::callback($name, fn (Builder $query, bool $descending) => $query->orderByRaw('coalesce(purchase_orders.submitted_at, purchase_orders.date) '.($descending ? 'desc' : 'asc')));
     }
 
     /**
@@ -394,7 +405,10 @@ class IndexPurchaseOrders extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            $table->betweenDates(['date']);
+            $organisationAgent = $this->getParentOrganisationAgent($parent);
+            $isAgentView       = $organisationAgent || $this->viewingAgent;
+
+            $table->betweenDates([$isAgentView ? 'submitted_at' : 'date']);
 
             $table
                 ->withModelOperations($modelOperations)
@@ -413,8 +427,6 @@ class IndexPurchaseOrders extends OrgAction
                 ->column(key: 'state', label: __('State'), canBeHidden: false)
                 ->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
 
-            $organisationAgent = $this->getParentOrganisationAgent($parent);
-
             if ($parent instanceof Group || $parent instanceof Organisation || $parent instanceof OrgAgent || $parent instanceof StockDelivery) {
                 $table->column(key: 'parent_name', label: __('Supplier'), canBeHidden: false, sortable: true, searchable: true);
             }
@@ -431,7 +443,7 @@ class IndexPurchaseOrders extends OrgAction
             } else {
                 $table
                     ->column(key: 'number_current_purchase_order_transactions', label: __('Items'), canBeHidden: false, sortable: true, align: 'right')
-                    ->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                    ->column(key: $isAgentView ? 'submitted_at' : 'date', label: $isAgentView ? __('Submitted') : __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'org_total_cost', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             }
 
@@ -443,7 +455,7 @@ class IndexPurchaseOrders extends OrgAction
                 $table->column(key: 'actions', label: '', canBeHidden: false, align: 'right');
             }
 
-            $table->defaultSort('-date');
+            $table->defaultSort($isAgentView ? '-submitted_at' : '-date');
         };
     }
 

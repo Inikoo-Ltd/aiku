@@ -19,6 +19,7 @@ use Illuminate\Support\Arr;
  * @property string $number
  * @property string $slug
  * @property string $date
+ * @property \Illuminate\Support\Carbon|null $submitted_at
  * @property mixed $parent_name
  * @property mixed $reference
  * @property mixed $parent_type
@@ -57,6 +58,7 @@ class PurchaseOrdersResource extends JsonResource
             'number_current_purchase_order_transactions'   => $this->number_current_purchase_order_transactions,
             'quantity_ordered'  => $this->quantity_ordered,
             'date'              => $this->date,
+            'submitted_at'      => $this->submitted_at ?? $this->date,
             'org_currency_code'     => $this->org_currency_code,
             'org_net_amount'    => $this->org_net_amount,
             'org_total_cost'    => $this->org_total_cost,

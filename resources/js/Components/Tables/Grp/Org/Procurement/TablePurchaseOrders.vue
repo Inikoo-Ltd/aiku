@@ -430,6 +430,12 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 			</div>
 		</template>
 
+		<template #cell(submitted_at)="{ item: purchaseOrder }">
+			<div class="text-right">
+				{{ useFormatTime(purchaseOrder.submitted_at, { formatTime: "EEE, do MMM yy" }) }}
+			</div>
+		</template>
+
 		<template #cell(shipments)="{ item: purchaseOrder }">
 			<div v-if="purchaseOrder.shipments?.length" class="flex flex-col gap-0.5">
 				<div v-for="shipment in purchaseOrder.shipments" :key="shipment.reference" class="flex items-center gap-1 whitespace-nowrap">
