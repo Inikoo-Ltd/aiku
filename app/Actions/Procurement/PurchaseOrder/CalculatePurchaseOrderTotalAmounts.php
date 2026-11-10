@@ -35,7 +35,7 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
             'cost_total' => $itemsNet + $extras,
         ]);
 
-        if ($purchaseOrder->wasChanged('cost_total') && $purchaseOrder->depositPayments()->exists()) {
+        if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->depositPayments()->exists()) {
             SyncPurchaseOrderDepositPaid::run($purchaseOrder);
         }
     }

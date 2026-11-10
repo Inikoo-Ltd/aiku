@@ -14466,7 +14466,7 @@
     "Percentage of recipients that will randomly receive one of the versions.": "Percento príjemcov, ktorí náhodne dostanú jednu z verzií.",
     "Percentage of recipients that will receive the highest performing version.": "Percento príjemcov, ktorí dostanú najúspešnejšiu verziu.",
     "Percentage of the ticked lines to refund": "Koľko percent zo zaškrtnutých riadkov vrátiť",
-    "Percentage of the total to pay (:total): the order cost plus the supplier's estimated expenses, not of what is left to pay": "Percento z celkovej sumy na úhradu (:total): náklady objednávky plus odhadované výdavky dodávateľa, nie zo sumy, ktorá ostáva zaplatiť",
+    "Percentage of the total to pay (:total): the price of the products, without extra costs, shipping or duties, not of what is left to pay": "Percento z celkovej sumy na úhradu (:total): cena produktov bez dodatočných nákladov, dopravy a cla, nie zo sumy, ktorá ostáva zaplatiť",
     "Percentage of total SKOs": "Percento z celkového počtu SKO",
     "Percentage of total stock value": "Percento z celkovej hodnoty zásob",
     "Percentage off": "Percentuálna zľava",

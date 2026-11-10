@@ -13179,7 +13179,7 @@
     "Percentage Off": "प्रतिशत छुट",
     "Percentage must be between 0 and 100": "प्रतिशत 0 देखि 100 बीच हुनुपर्छ",
     "Percentage of the ticked lines to refund": "फिर्ता गर्नुपर्ने चिन्ह लगाइएका लाइनहरूको प्रतिशत",
-    "Percentage of the total to pay (:total): the order cost plus the supplier's estimated expenses, not of what is left to pay": "तिर्नुपर्ने कुल रकम (:total) को प्रतिशत: अर्डर लागत र आपूर्तिकर्ताको अनुमानित खर्च, तिर्न बाँकी रकमको होइन",
+    "Percentage of the total to pay (:total): the price of the products, without extra costs, shipping or duties, not of what is left to pay": "तिर्नुपर्ने कुल रकम (:total) को प्रतिशत: उत्पादनहरूको मूल्य, थप लागत, ढुवानी र भन्सार शुल्क बाहेक, तिर्न बाँकी रकमको होइन",
     "Percentage of total SKOs": "जम्मा SKO हरूको प्रतिशत",
     "Percentage of total stock value": "जम्मा स्टक मूल्यको प्रतिशत",
     "Percentage off": "प्रतिशत छुट",

@@ -13264,7 +13264,7 @@
     "Percentage Off": "Diskon Persentase",
     "Percentage must be between 0 and 100": "Persentase harus antara 0 dan 100",
     "Percentage of the ticked lines to refund": "Persentase dari baris yang dicentang untuk dikembalikan dananya",
-    "Percentage of the total to pay (:total): the order cost plus the supplier's estimated expenses, not of what is left to pay": "Persentase dari total yang harus dibayar (:total): biaya pesanan ditambah perkiraan biaya pemasok, bukan dari sisa yang harus dibayar",
+    "Percentage of the total to pay (:total): the price of the products, without extra costs, shipping or duties, not of what is left to pay": "Persentase dari total yang harus dibayar (:total): harga produk, tanpa biaya tambahan, pengiriman, atau bea masuk, bukan dari sisa yang harus dibayar",
     "Percentage of total SKOs": "Persentase dari total SKO",
     "Percentage of total stock value": "Persentase dari total nilai stok",
     "Percentage off": "Diskon persentase",

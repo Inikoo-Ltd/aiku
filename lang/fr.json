@@ -15981,7 +15981,7 @@
     "Marked paid :date, no deposit recorded": "Marqué payé le :date, aucun acompte enregistré",
     "Pay balance": "Payer le solde",
     "Pay deposit": "Payer l'acompte",
-    "Percentage of the total to pay (:total): the order cost plus the supplier's estimated expenses, not of what is left to pay": "Pourcentage du total à payer (:total) : le coût de la commande plus les frais estimés du fournisseur, et non de ce qui reste à payer",
+    "Percentage of the total to pay (:total): the price of the products, without extra costs, shipping or duties, not of what is left to pay": "Pourcentage du total à payer (:total) : le prix des produits, sans frais supplémentaires, transport ni droits de douane, et non de ce qui reste à payer",
     "Reason for the past date (kept in the order's history)": "Motif de la date passée (conservé dans l'historique de la commande)",
     "The QC is not approved yet. Why is the balance paid now? (kept in the order's history)": "Le contrôle qualité n'est pas encore approuvé. Pourquoi le solde est-il payé maintenant ? (conservé dans l'historique de la commande)",
     "Undo payment": "Annuler le paiement",
