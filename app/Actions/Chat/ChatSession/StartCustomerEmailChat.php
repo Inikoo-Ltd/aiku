@@ -60,7 +60,9 @@ class StartCustomerEmailChat extends OrgAction
             'subject' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],
             'email'         => ['sometimes', 'nullable', 'string', $this->addressListRule()],
-            'attachments'   => ['sometimes', 'array', 'max:'.SendChatMessage::MAX_ATTACHMENTS],
+            'cc'            => ['sometimes', 'nullable', 'string', $this->addressListRule()],
+            'bcc'           => ['sometimes', 'nullable', 'string', $this->addressListRule()],
+            'attachments' => ['sometimes', 'array', 'max:'.SendChatMessage::MAX_ATTACHMENTS],
             'attachments.*' => [File::types(SendChatMessage::ATTACHMENT_TYPES)->max(SendChatMessage::MAX_AGENT_FILE_KB)],
         ];
 
@@ -108,6 +110,13 @@ class StartCustomerEmailChat extends OrgAction
     {
         $addresses = self::splitAddresses((string) Arr::get($modelData, 'email'));
         $recipient = array_shift($addresses) ?: $customer?->email;
+
+        $addresses = array_values(array_unique([...$addresses, ...self::splitAddresses((string) Arr::get($modelData, 'cc'))]));
+        $blindCopies = array_values(array_filter(
+            self::splitAddresses((string) Arr::get($modelData, 'bcc')),
+            fn (string $address) => strcasecmp($address, (string) $recipient) !== 0
+                && !in_array(strtolower($address), array_map('strtolower', $addresses), true)
+        ));
 
         $customer ??= Customer::where('shop_id', $shop->id)->where('email', $recipient)->first();
 
@@ -186,6 +195,7 @@ class StartCustomerEmailChat extends OrgAction
             'sender_type'  => ChatSenderTypeEnum::AGENT->value,
             'sender_id'    => $agent->id,
             'attachments'  => Arr::get($modelData, 'attachments', []),
+            'email_bcc'    => $blindCopies,
         ]);
 
         if ($this->isLeftToCustomerService) {

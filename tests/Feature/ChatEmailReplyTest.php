@@ -342,6 +342,73 @@ test('a new email to several addresses goes to the first and copies the rest', f
     ]))->toThrow(\Illuminate\Validation\ValidationException::class);
 });
 
+test('a new email to somebody who is not a customer takes Cc and Bcc: Cc stays on the thread, Bcc only rides on the first mail', function () {
+    fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
+
+    actingAs($this->user);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token'                          => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/gmail/v1/users/me/messages/send' => \Illuminate\Support\Facades\Http::response(['id' => 'sent4615', 'threadId' => 't4615']),
+        'gmail.googleapis.com/*'                               => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $token   = Str::lower(Str::random(8));
+    $session = \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->shop, [
+        'email'   => "claims-$token@courier.example.com",
+        'cc'      => "depot-$token@courier.example.com",
+        'bcc'     => "boss-$token@example.com, someone@shop.test",
+        'subject' => 'Damaged parcel',
+        'message' => 'Please open a claim',
+    ]);
+
+    expect($session->web_user_id)->toBeNull()
+        ->and(Arr::get($session->metadata, 'email_from'))->toBe("claims-$token@courier.example.com")
+        ->and(array_keys(Arr::get($session->metadata, 'email_participants')))->toBe(["depot-$token@courier.example.com"]);
+
+    $first = $session->messages()->first();
+
+    expect(Arr::pluck(Arr::get($first->metadata, 'email_bcc', []), 'address'))->toBe(["boss-$token@example.com"])
+        ->and((new \App\Http\Resources\CRM\Livechat\ChatMessageResource($first))->resolve(request())['metadata'])->not->toHaveKey('email_bcc');
+
+    \Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($token) {
+        if (!str_ends_with($request->url(), 'users/me/messages/send')) {
+            return false;
+        }
+        $raw = base64_decode(strtr($request['raw'], '-_', '+/'));
+
+        return str_contains($raw, "To: claims-$token@courier.example.com")
+            && str_contains($raw, "Cc: depot-$token@courier.example.com")
+            && str_contains($raw, "Bcc: boss-$token@example.com")
+            && !str_contains($raw, 'someone@shop.test');
+    });
+
+    $reply = SendChatMessage::run($session->fresh(), [
+        'message_text' => 'Any news?',
+        'message_type' => ChatMessageTypeEnum::TEXT->value,
+        'sender_type'  => ChatSenderTypeEnum::AGENT->value,
+        'sender_id'    => Arr::get($first->toArray(), 'sender_id'),
+    ]);
+
+    expect(Arr::get($reply->fresh()->metadata, 'email_bcc'))->toBeNull()
+        ->and(Arr::pluck(Arr::get($reply->fresh()->metadata, 'email_cc', []), 'address'))->toBe(["depot-$token@courier.example.com"]);
+
+    expect(fn () => \App\Actions\Chat\ChatSession\StartCustomerEmailChat::make()->action($this->shop, [
+        'email'   => "claims-$token@courier.example.com",
+        'bcc'     => 'not-an-address',
+        'subject' => 'Damaged parcel',
+        'message' => 'Please open a claim',
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+});
+
 test('a new email can go to an address the customer does not have on file, or to somebody saved there and then as a prospect', function () {
     fakeActionJobs(\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class);
 

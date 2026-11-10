@@ -26,7 +26,7 @@ Tick the box at the start of each email, or <b>Select all</b> at the top of the 
 
 ## Writing a new email
 
-<b>New email</b> writes to a customer, or to any address with <b>Send to an email address instead</b>. While you type who it is to, the box offers your saved contacts and, under <b>Emailed recently</b>, the addresses this shop has written to or heard from in the last 90 days, so an address you used this morning is one click away.
+<b>New email</b> writes to <b>A customer</b> or to <b>Any email address</b>: pick one at the top. Use <b>Any email address</b> for couriers, suppliers and anyone else who is not a customer; no customer has to be chosen. Click <b>Cc / Bcc</b> to copy people in: Cc stays copied on every reply in the conversation, Bcc gets a hidden copy of this first email only. While you type who it is to, the box offers your saved contacts and, under <b>Emailed recently</b>, the addresses this shop has written to or heard from in the last 90 days, so an address you used this morning is one click away.
 
 An email you close without sending is kept as a draft: who it is to, the subject and the text. A small dot on <b>New email</b> tells you one is waiting, and opening it brings it back where you left it. Click <b>Discard draft</b> to start again. The draft is kept on the computer you wrote it on.
 

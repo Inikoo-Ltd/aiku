@@ -13,6 +13,7 @@ import ChatMessageEditor from "@/Components/Chat/ChatMessageEditor.vue"
 import PolishMessageButton from "@/Components/Chat/PolishMessageButton.vue"
 import EditorWritingQualityCheck from "@/Components/WritingQuality/EditorWritingQualityCheck.vue"
 import EmailAttachmentPicker from "@/Components/Chat/EmailAttachmentPicker.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { readComposerDraft, useComposerDraft, writeComposerDraft } from "@/Composables/useComposerDraft"
 import { routeType } from "@/types/route"
@@ -55,10 +56,26 @@ const pickedContact = ref<SavedContact | null>(null)
 let savedContactsTimer: ReturnType<typeof setTimeout> | undefined
 const currentOrganisation = String((route().params as Record<string, any>)?.organisation ?? "aw")
 
+const showCopies = ref(false)
+
+const recipientModeOptions = computed(() => [
+    { label: ctrans("A customer"), value: "customer" as const },
+    { label: ctrans("Any email address"), value: "address" as const },
+])
+
+const recipientMode = computed<"customer" | "address">({
+    get: () => (isNotACustomer.value ? "address" : "customer"),
+    set: (mode) => {
+        isNotACustomer.value = mode === "address"
+    },
+})
+
 const messageEditor = ref<InstanceType<typeof ChatMessageEditor> | null>(null)
 
 const form = useForm({
     email: "",
+    cc: "",
+    bcc: "",
     save_as_prospect: false,
     save_as_contact: false,
     contact_name: "",
@@ -96,7 +113,8 @@ const discardDraft = () => {
     clearSubjectDraft()
     clearMessageDraft()
     writeComposerDraft(recipientDraftKey(), "")
-    form.reset("email", "subject", "message", "attachments")
+    form.reset("email", "cc", "bcc", "subject", "message", "attachments")
+    showCopies.value = false
     isDraftRestored.value = false
 }
 
@@ -294,7 +312,8 @@ watch(visible, (isVisible) => {
         pickedContact.value = null
         savedContacts.value = []
         recentAddresses.value = []
-        form.reset("email", "save_as_prospect", "save_as_contact", "contact_name", "company_name")
+        showCopies.value = false
+        form.reset("email", "cc", "bcc", "save_as_prospect", "save_as_contact", "contact_name", "company_name")
         form.clearErrors()
     }
 })
@@ -325,8 +344,16 @@ watch(visible, (isVisible) => {
                 </Select>
             </div>
 
+            <div class="flex flex-col gap-1">
+                <span class="text-xs font-medium text-gray-600">{{ ctrans("Send to") }}</span>
+                <SegmentedToggle v-model="recipientMode" :options="recipientModeOptions" :ariaLabel="ctrans('Send to')" class="self-start" />
+                <p v-if="isNotACustomer" class="text-xs text-gray-500 leading-snug">
+                    {{ ctrans("For couriers, suppliers and anyone else: no customer needed.") }}
+                </p>
+            </div>
+
             <div v-if="!isNotACustomer" class="flex flex-col gap-1">
-                <label class="text-xs font-medium text-gray-600">{{ ctrans("Customer") }}</label>
+                <label class="text-xs font-medium text-gray-600">{{ ctrans("Customer") }} <span class="text-red-500">*</span></label>
                 <PureMultiselectInfiniteScroll :key="currentShopId ?? 0" v-model="customerId" :fetchRoute="fetchRoute"
                     valueProp="id" labelProp="name" labelAdditionalProp="reference"
                     :placeholder="ctrans('Search customer by name, reference or email')"
@@ -402,13 +429,13 @@ watch(visible, (isVisible) => {
                 </ul>
             </div>
 
-            <button type="button" class="self-start text-xs font-medium text-gray-700 hover:underline"
-                @click="isNotACustomer = !isNotACustomer">
-                {{ isNotACustomer ? ctrans("Choose a customer instead") : ctrans("Send to an email address instead") }}
-            </button>
-
             <div v-if="selectedCustomer || isNotACustomer" class="flex flex-col gap-1">
-                <label class="text-xs font-medium text-gray-600">{{ ctrans("To") }}</label>
+                <div class="flex items-center justify-between gap-2">
+                    <label class="text-xs font-medium text-gray-600">{{ ctrans("To") }} <span class="text-red-500">*</span></label>
+                    <button v-if="!showCopies" type="button" class="text-xs font-medium text-gray-700 hover:underline" @click="showCopies = true">
+                        {{ ctrans("Cc / Bcc") }}
+                    </button>
+                </div>
                 <PureInput v-model="form.email" :placeholder="ctrans('Email addresses, separated by commas')" />
                 <p v-if="pickedContact" class="text-xs text-gray-600 leading-snug">
                     {{ ctrans("Saved contact") }}: {{ pickedContact.name }}
@@ -416,6 +443,19 @@ watch(visible, (isVisible) => {
                     <span v-if="pickedContact.note" class="text-gray-400">· {{ pickedContact.note }}</span>
                 </p>
             </div>
+
+            <template v-if="showCopies && (selectedCustomer || isNotACustomer)">
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-medium text-gray-600">{{ ctrans("Cc") }}</label>
+                    <PureInput v-model="form.cc" :placeholder="ctrans('Copied on this email and on every reply')" />
+                    <p v-if="form.errors.cc" class="text-xs text-red-500 leading-snug">{{ form.errors.cc }}</p>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-medium text-gray-600">{{ ctrans("Bcc") }}</label>
+                    <PureInput v-model="form.bcc" :placeholder="ctrans('Hidden copy of this first email only')" />
+                    <p v-if="form.errors.bcc" class="text-xs text-red-500 leading-snug">{{ form.errors.bcc }}</p>
+                </div>
+            </template>
 
             <p v-if="isNotACustomer && existingProspect" class="text-xs text-gray-600 leading-snug">
                 {{ ctrans("Already a prospect") }}: {{ existingProspect.name ?? existingProspect.company_name }}
@@ -438,7 +478,10 @@ watch(visible, (isVisible) => {
                 </template>
             </div>
 
-            <PureInput v-model="form.subject" :placeholder="ctrans('Subject')" />
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-gray-600">{{ ctrans("Subject") }} <span class="text-red-500">*</span></label>
+                <PureInput v-model="form.subject" :placeholder="ctrans('Subject')" />
+            </div>
             <div>
                 <div class="mb-1 flex items-center gap-1">
                     <ChatFormattingToolbar :editor="messageEditor?.editor" allow-underline allow-link />
@@ -455,16 +498,16 @@ watch(visible, (isVisible) => {
             <p v-if="form.errors.subject" class="text-xs text-red-500 leading-snug">{{ form.errors.subject }}</p>
             <p v-if="form.errors.message" class="text-xs text-red-500 leading-snug">{{ form.errors.message }}</p>
 
-            <div class="flex items-center justify-end gap-2 pt-1">
-                <Button type="tertiary" :label="ctrans('Cancel')" @click="visible = false">
+            <div class="flex w-full gap-2 pt-1">
+                <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="visible = false">
                     <template #icon>
                         <FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
-                <Button type="tertiary" :label="form.processing ? ctrans('Sending...') : ctrans('Send')" :loading="form.processing"
+                <Button type="primary" full :label="form.processing ? ctrans('Sending...') : ctrans('Send')" :loading="form.processing"
                     :disabled="!canSend || form.processing" @click="send">
                     <template #icon>
-                        <FontAwesomeIcon icon="fal fa-paper-plane" class="text-green-600" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
             </div>

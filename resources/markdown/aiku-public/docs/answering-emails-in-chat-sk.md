@@ -27,7 +27,7 @@ Zaškrtnite políčko na začiatku každého e-mailu alebo <b>Vybrať všetko</b
 
 ## Písanie nového e-mailu
 
-<b>Nový e-mail</b> píše zákazníkovi alebo na ľubovoľnú adresu cez <b>Poslať na e-mailovú adresu</b>. Kým píšete, komu je určený, okno ponúkne vaše uložené kontakty a pod <b>Nedávno písané</b> adresy, na ktoré tento obchod písal alebo z ktorých dostal e-mail za posledných 90 dní, takže adresa, ktorú ste použili ráno, je na jedno kliknutie.
+<b>Nový e-mail</b> píše <b>A customer</b> (zákazníkovi) alebo na <b>Any email address</b> (ľubovoľnú adresu): vyberte hore. <b>Any email address</b> použite pre prepravcov, dodávateľov a kohokoľvek, kto nie je zákazník; zákazníka netreba vyberať. Kliknite na <b>Cc / Bcc</b>, ak chcete niekoho pridať do kópie: Cc zostáva v kópii pri každej odpovedi v konverzácii, Bcc dostane skrytú kópiu len tohto prvého e-mailu. Kým píšete, komu je určený, okno ponúkne vaše uložené kontakty a pod <b>Nedávno písané</b> adresy, na ktoré tento obchod písal alebo z ktorých dostal e-mail za posledných 90 dní, takže adresa, ktorú ste použili ráno, je na jedno kliknutie.
 
 E-mail, ktorý zatvoríte bez odoslania, sa uloží ako koncept: komu je určený, predmet a text. Malá bodka pri <b>Nový e-mail</b> ukazuje, že na vás čaká, a po otvorení sa vráti tam, kde ste skončili. Kliknite na <b>Zahodiť koncept</b>, ak chcete začať odznova. Koncept sa uchováva na počítači, na ktorom ste ho písali.
 

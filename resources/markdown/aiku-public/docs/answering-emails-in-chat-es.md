@@ -27,7 +27,7 @@ Marca la casilla al principio de cada correo, o <b>Seleccionar todo</b> arriba d
 
 ## Escribir un correo nuevo
 
-<b>Nuevo correo</b> escribe a un cliente, o a cualquier dirección con <b>Enviar a una dirección de correo</b>. Mientras escribes a quién va, la ventana te ofrece tus contactos guardados y, en <b>Escritos recientemente</b>, las direcciones a las que esta tienda ha escrito o de las que ha recibido correo en los últimos 90 días, así que una dirección que usaste esta mañana está a un clic.
+<b>Nuevo correo</b> escribe a <b>A customer</b> (un cliente) o a <b>Any email address</b> (cualquier dirección): elige una arriba. Usa <b>Any email address</b> para transportistas, proveedores y cualquiera que no sea cliente; no hace falta elegir un cliente. Pulsa <b>Cc / Bcc</b> para poner a alguien en copia: Cc sigue en copia en cada respuesta de la conversación, Bcc recibe una copia oculta solo de este primer correo. Mientras escribes a quién va, la ventana te ofrece tus contactos guardados y, en <b>Escritos recientemente</b>, las direcciones a las que esta tienda ha escrito o de las que ha recibido correo en los últimos 90 días, así que una dirección que usaste esta mañana está a un clic.
 
 Un correo que cierras sin enviar se guarda como borrador: a quién va, el asunto y el texto. Un pequeño punto en <b>Nuevo correo</b> te avisa de que hay uno esperando, y al abrirlo vuelve tal como lo dejaste. Pulsa <b>Descartar borrador</b> para empezar de nuevo. El borrador se guarda en el ordenador donde lo escribiste.
 

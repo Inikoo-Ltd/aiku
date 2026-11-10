@@ -150,9 +150,15 @@ class SendChatMessage
         if ($isEmailReply) {
             $copies = SendChatMessageByGmail::copyRecipients($chatSession, $modelData['email_cc_excluded'] ?? []);
 
-            if ($copies) {
+            $blindCopies = SendChatMessageByGmail::blindCopyRecipients($chatSession, $modelData['email_bcc'] ?? []);
+
+            if ($copies || $blindCopies) {
                 $chatMessage->updateQuietly([
-                    'metadata' => array_merge($chatMessage->metadata ?? [], ['email_cc' => $copies]),
+                    'metadata' => array_merge(
+                        $chatMessage->metadata ?? [],
+                        $copies ? ['email_cc' => $copies] : [],
+                        $blindCopies ? ['email_bcc' => $blindCopies] : [],
+                    ),
                 ]);
             }
 

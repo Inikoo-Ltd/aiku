@@ -259,6 +259,27 @@ class SendChatMessageByGmail
     }
 
     /**
+     * Blind copies the agent added to one mail only, such as the first email to a carrier. Not
+     * kept on the conversation, so no later answer copies them in. An address on the mailbox's
+     * own domain is left out for the same reason as on Cc.
+     *
+     * @param  array<int, string>  $addresses
+     * @return array<int, array{address: string, name: ?string}>
+     */
+    public static function blindCopyRecipients(ChatSession $session, array $addresses): array
+    {
+        $mailboxAddress = Arr::get(self::mailboxShop($session)->settings, 'gmail.email');
+
+        return collect($addresses)
+            ->filter(fn ($address) => is_string($address) && filter_var($address, FILTER_VALIDATE_EMAIL))
+            ->reject(fn (string $address) => self::deliversToMailbox($address, $mailboxAddress))
+            ->unique(fn (string $address) => strtolower($address))
+            ->map(fn (string $address) => ['address' => $address, 'name' => null])
+            ->values()
+            ->all();
+    }
+
+    /**
      * Every address on the mailbox's own domain is delivered into the mailbox itself: the shop's
      * older addresses (ahoj@awgifts.sk, szia@awgifts.hu) and the staff ones alike. Copying one in
      * sends the answer straight back to the shop's own Gmail (HELP-3695).
@@ -348,6 +369,15 @@ class SendChatMessageByGmail
 
         if ($copies) {
             $headers[] = 'Cc: '.implode(', ', $copies);
+        }
+
+        $blindCopies = array_map(
+            fn (array $person) => $this->mailbox($person['address'], $person['name']),
+            array_filter(Arr::get($chatMessage->metadata ?? [], 'email_bcc', []), fn (array $person) => self::headerAddress($person['address']))
+        );
+
+        if ($blindCopies) {
+            $headers[] = 'Bcc: '.implode(', ', $blindCopies);
         }
 
         if ($replyToHeader) {
