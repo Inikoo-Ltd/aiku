@@ -1939,5 +1939,6 @@
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "aģents pārvietoja :quantity vienības no :code pie :supplier (:reference), piegādātājs tās nevar izgatavot.",
     "Supplier": "Piegādātājs",
     "Units per carton": "Vienības kastē",
-    "units": "vienības"
+    "units": "vienības",
+    "Cancel reason: :reason": "Atcelšanas iemesls: :reason"
 }

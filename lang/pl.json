@@ -25732,5 +25732,6 @@
     "Discounts that depend on the whole order are applied when the items are in the basket.": "Rabaty zależne od całego zamówienia są naliczane, gdy pozycje są w koszyku.",
     ":size sample": "Próbka :size",
     "Date not set yet": "Data jeszcze nieustawiona",
-    "Date not set yet: set the arrival date": "Data jeszcze nieustawiona: ustaw datę przybycia"
+    "Date not set yet: set the arrival date": "Data jeszcze nieustawiona: ustaw datę przybycia",
+    "Cancel reason: :reason": "Powód anulowania: :reason"
 }

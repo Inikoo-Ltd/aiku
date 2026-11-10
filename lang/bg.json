@@ -9238,5 +9238,6 @@
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "В тази поръчка не остана нищо, но по нея е платен депозит: върнете го, преди да анулирате поръчката.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "агентът премести :quantity броя от :code при :supplier (:reference), доставчикът не може да ги произведе.",
     "Units per carton": "Броя в кашон",
-    "Loading…": "Зареждане…"
+    "Loading…": "Зареждане…",
+    "Cancel reason: :reason": "Причина за отказ: :reason"
 }

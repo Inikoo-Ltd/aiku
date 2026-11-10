@@ -8847,5 +8847,6 @@
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Ebben a rendelésben nem maradt semmi, de előleget fizettek rá: szerezd vissza, mielőtt törlöd a rendelést.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "az ügynök áthelyezett :quantity egységet a(z) :code termékből ide: :supplier (:reference), a beszállító nem tudja legyártani.",
     "Units per carton": "Egység kartononként",
-    "Loading…": "Betöltés…"
+    "Loading…": "Betöltés…",
+    "Cancel reason: :reason": "Lemondás oka: :reason"
 }

@@ -24,11 +24,11 @@ class CancelPurchaseOrderTransaction extends OrgAction
     use WithPurchaseOrderAgentEditAuthorisation;
     use WithActionUpdate;
 
-    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction): PurchaseOrderTransaction
+    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, ?string $reason = null): PurchaseOrderTransaction
     {
         $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
 
-        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction) {
+        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction, $reason) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->first();
             $purchaseOrderTransaction->refresh();
 
@@ -54,6 +54,7 @@ class CancelPurchaseOrderTransaction extends OrgAction
                 'net_amount'     => 0,
                 'grp_net_amount' => 0,
                 'org_net_amount' => 0,
+                'data'           => array_merge($purchaseOrderTransaction->data ?? [], ['cancellation_reason' => $reason ?: null]),
             ]);
 
             CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
@@ -80,8 +81,8 @@ class CancelPurchaseOrderTransaction extends OrgAction
         abort_unless($purchaseOrderTransaction->purchase_order_id === $purchaseOrder->id, 404);
         $this->initialisation($purchaseOrderTransaction->organisation, $request);
 
-        $purchaseOrderTransaction = $this->handle($purchaseOrderTransaction);
         $reason                   = trim((string) ($this->validatedData['reason'] ?? ''));
+        $purchaseOrderTransaction = $this->handle($purchaseOrderTransaction, $reason);
 
         NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => __('the agent cancelled :code: :reason', [
             'code'   => $purchaseOrderTransaction->supplierProduct?->code ?? $purchaseOrderTransaction->orgStock?->code,

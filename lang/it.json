@@ -12791,5 +12791,6 @@
     "The supplier can not make it: give it to another supplier of the agent": "Il fornitore non può produrlo: affidalo a un altro fornitore dell'agente",
     "This order had nothing left and was cancelled.": "Questo ordine non aveva più nulla ed è stato annullato.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Questo ordine non ha più nulla ma è stato pagato un acconto: recuperalo prima di annullare l'ordine.",
-    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "l'agente ha spostato :quantity unità di :code a :supplier (:reference), il fornitore non può produrle."
+    "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "l'agente ha spostato :quantity unità di :code a :supplier (:reference), il fornitore non può produrle.",
+    "Cancel reason: :reason": "Motivo annullamento: :reason"
 }

@@ -26671,5 +26671,6 @@
     "Discounts that depend on the whole order are applied when the items are in the basket.": "Slevy závislé na celé objednávce se uplatní, když jsou položky v košíku.",
     ":size sample": "Vzorek :size",
     "Date not set yet": "Datum zatím není zadáno",
-    "Date not set yet: set the arrival date": "Datum zatím není zadáno: zadejte datum příchodu"
+    "Date not set yet: set the arrival date": "Datum zatím není zadáno: zadejte datum příchodu",
+    "Cancel reason: :reason": "Důvod zrušení: :reason"
 }

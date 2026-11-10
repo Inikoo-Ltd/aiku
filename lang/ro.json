@@ -25687,5 +25687,6 @@
     "Discounts that depend on the whole order are applied when the items are in the basket.": "Reducerile care depind de întreaga comandă se aplică atunci când articolele sunt în coș.",
     ":size sample": "Mostră :size",
     "Date not set yet": "Data nu este încă setată",
-    "Date not set yet: set the arrival date": "Data nu este încă setată: setați data sosirii"
+    "Date not set yet: set the arrival date": "Data nu este încă setată: setați data sosirii",
+    "Cancel reason: :reason": "Motivul anulării: :reason"
 }

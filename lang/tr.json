@@ -16302,5 +16302,6 @@
     "This order had nothing left and was cancelled.": "Bu siparişte hiçbir şey kalmadı ve iptal edildi.",
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Bu siparişte hiçbir şey kalmadı ancak kapora ödendi: siparişi iptal etmeden önce geri alın.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "acente :code ürününden :quantity birimi :supplier (:reference) tedarikçisine taşıdı, tedarikçi bunları üretemiyor.",
-    "units": "birim"
+    "units": "birim",
+    "Cancel reason: :reason": "İptal nedeni: :reason"
 }

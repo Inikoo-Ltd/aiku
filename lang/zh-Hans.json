@@ -25702,5 +25702,6 @@
     "With shop type": "已有店铺类型",
     ":size sample": ":size 样品",
     "Date not set yet": "尚未设置日期",
-    "Date not set yet: set the arrival date": "尚未设置日期：请设置到货日期"
+    "Date not set yet: set the arrival date": "尚未设置日期：请设置到货日期",
+    "Cancel reason: :reason": "取消原因：:reason"
 }

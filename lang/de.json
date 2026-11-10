@@ -26467,5 +26467,6 @@
     "Discounts that depend on the whole order are applied when the items are in the basket.": "Rabatte, die von der gesamten Bestellung abhängen, werden angewendet, sobald die Artikel im Warenkorb liegen.",
     ":size sample": "Probe :size",
     "Date not set yet": "Datum noch nicht festgelegt",
-    "Date not set yet: set the arrival date": "Datum noch nicht festgelegt: Ankunftsdatum festlegen"
+    "Date not set yet: set the arrival date": "Datum noch nicht festgelegt: Ankunftsdatum festlegen",
+    "Cancel reason: :reason": "Stornierungsgrund: :reason"
 }
