@@ -126,6 +126,32 @@ class ApplyAgentInvoiceCosting
     }
 
     /**
+     * What an entered agent invoice still waits for before handle() puts it in the costing (HELP-4594): until then the
+     * costing has no invoice row, which must not read as "invoice not received". Null when there is nothing to wait for.
+     */
+    public static function waitingFor(StockDelivery $stockDelivery): ?string
+    {
+        /** @var AgentInvoice|null $agentInvoice */
+        $agentInvoice = $stockDelivery->agentInvoice()->with('currency')->first();
+
+        if (!$agentInvoice
+            || $agentInvoice->source === StockDeliveryInvoiceSourceEnum::ESTIMATED
+            || $stockDelivery->is_costed
+            || Arr::get($stockDelivery->data ?? [], self::APPLIED_AT)) {
+            return null;
+        }
+
+        $reference = ['reference' => $agentInvoice->reference];
+
+        return match (true) {
+            $agentInvoice->currency_id !== $stockDelivery->currency_id => __('Invoice :reference entered in :currency and the delivery is in :delivery, so it does not go into the costing by itself.', $reference + ['currency' => $agentInvoice->currency?->code, 'delivery' => $stockDelivery->currency?->code]),
+            !ApproveAgentInvoiceCharges::isApproved($agentInvoice)    => __('Invoice :reference entered, it goes into the costing once its charges are approved.', $reference),
+            $stockDelivery->state !== StockDeliveryStateEnum::PLACED   => __('Invoice :reference entered, it goes into the costing once the delivery is placed.', $reference),
+            default                                                    => null,
+        };
+    }
+
+    /**
      * @param  array{quantity: float|int, amount: float|int}  $line
      */
     private function receivedCost(StockDeliveryItem $item, array $line): float

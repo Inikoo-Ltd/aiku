@@ -24,6 +24,7 @@ use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
 use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\SupplyChain\AgentInvoice\StoreAgentInvoice;
 use App\Actions\SupplyChain\AgentInvoice\UpdateAgentInvoiceCharges;
+use App\Actions\SupplyChain\StockDeliveryInvoice\StoreActualStockDeliveryInvoice;
 use App\Models\SysAdmin\User;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
@@ -1077,6 +1078,49 @@ test('a placed agent container is costed from its agent invoice and completes it
         ->and((float) $items->sum('cost_duties'))->toEqualWithDelta(65 / (float) ($stockDelivery->org_exchange ?: 1), 0.02)
         ->and((float) $items[1]->cost_extra)->toBeGreaterThan((float) $items[0]->cost_extra)
         ->and(ApplyAgentInvoiceCosting::run($stockDelivery))->toBeNull();
+});
+
+test('an agent invoice entered by hand on a received container says what it waits for, not that it was not received (HELP-4594)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'AGENT-WAIT-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $this->agent->id]);
+    $stockDelivery = UpdateStockDeliveryStateToReceived::make()->action(DispatchStockDelivery::make()->action($stockDelivery->refresh()));
+
+    expect(ApplyAgentInvoiceCosting::waitingFor($stockDelivery))->toBeNull();
+
+    StoreActualStockDeliveryInvoice::make()->handle($stockDelivery, ['reference' => 'EX/INV/4594', 'date' => '2026-08-25', 'goods_amount' => 100, 'charges' => []]);
+    $stockDelivery = $stockDelivery->fresh();
+
+    expect($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::AGENT_INVOICE)->exists())->toBeFalse()
+        ->and(ApplyAgentInvoiceCosting::waitingFor($stockDelivery))->toBe('Invoice EX/INV/4594 entered, it goes into the costing once the delivery is placed.');
+
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('costing.agent_invoice_missing', true)
+            ->where('costing.agent_invoice_waiting', 'Invoice EX/INV/4594 entered, it goes into the costing once the delivery is placed.'));
+
+    StoreActualStockDeliveryInvoice::make()->handle($stockDelivery, ['reference' => 'EX/INV/4594', 'date' => '2026-08-25', 'goods_amount' => 100, 'charges' => [['description' => 'Sea freight', 'type' => 'freight', 'amount' => 5]]]);
+
+    expect(ApplyAgentInvoiceCosting::waitingFor($stockDelivery->fresh()))->toBe('Invoice EX/INV/4594 entered, it goes into the costing once its charges are approved.');
+
+    ApproveAgentInvoiceCharges::make()->handle($stockDelivery->fresh());
+    $stockDelivery->agentInvoice()->first()->updateQuietly(['currency_id' => Currency::where('id', '!=', $stockDelivery->currency_id)->value('id')]);
+
+    expect(ApplyAgentInvoiceCosting::waitingFor($stockDelivery->fresh()))->toContain('so it does not go into the costing by itself');
+
+    $stockDelivery->agentInvoice()->first()->updateQuietly(['currency_id' => $stockDelivery->currency_id]);
+    foreach ($stockDelivery->items()->get() as $item) {
+        $item = SetStockDeliveryItemCheckedQuantity::make()->action($item->fresh(), ['unit_quantity_checked' => 10]);
+        SetStockDeliveryItemAsPlaced::make()->action($item, ['location_org_stock_id' => createLocationOrgStockFor($this, $item)->id]);
+    }
+    $stockDelivery = StartStockDeliveryCosting::make()->action($stockDelivery->fresh());
+
+    expect($stockDelivery->costs()->where('type', StockDeliveryCostTypeEnum::AGENT_INVOICE)->whereNotNull('received_at')->exists())->toBeTrue()
+        ->and(ApplyAgentInvoiceCosting::waitingFor($stockDelivery))->toBeNull();
+
+    $this->get(route('grp.org.procurement.stock_deliveries.show', [$this->organisation->slug, $stockDelivery->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('costing.agent_invoice_missing', false)
+            ->where('costing.agent_invoice_waiting', null));
 });
 
 test('extra costs split by hand line by line survive finishing the costing (HELP-3566)', function () {

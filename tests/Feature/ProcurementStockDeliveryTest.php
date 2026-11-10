@@ -1434,7 +1434,7 @@ test('payments to an agent carry their method and bank statement, and the agent 
         array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'AGENT-DEP-'.uniqid()]),
         strict: false
     );
-    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED, 'cost_total' => 500]);
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED, 'cost_items' => 500, 'cost_total' => 500]);
     expect($purchaseOrder->isAgentOrder())->toBeTrue();
 
     $this->post(route('grp.models.purchase-order.payment.confirm', $purchaseOrder->id), ['amount' => 500, 'paid_at' => date('Y-m-d'), 'method' => 'bank_transfer', 'bank_statement' => $statement('dep.pdf')])
@@ -3194,7 +3194,7 @@ describe('stock delivery service invoices', function () {
 
 describe('supplier deposits', function () {
     beforeEach(function () {
-        [$orgSupplier] = createAgentOrgSupplierWithProduct($this, createFreshOrgAgent($this));
+        [$orgSupplier, $this->depositOrgSupplierProduct] = createAgentOrgSupplierWithProduct($this, createFreshOrgAgent($this));
 
         $this->depositPurchaseOrder = StorePurchaseOrder::make()->action(
             $orgSupplier,
@@ -3443,8 +3443,18 @@ describe('supplier deposits', function () {
         $confirmRoute  = route('grp.models.purchase-order.payment.confirm', $purchaseOrder->id);
         $payment       = fn (array $overrides = []) => array_merge(['amount' => 300, 'paid_at' => date('Y-m-d'), 'method' => 'bank_transfer', 'reference' => 'SWIFT-123', 'bank_statement' => $statement('deposit.pdf')], $overrides);
 
-        $purchaseOrder->update(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'cost_total' => 1000, 'deposit_amount' => null, 'deposit_paid_at' => null]);
+        $purchaseOrder->update(['state' => PurchaseOrderStateEnum::IN_PROCESS, 'cost_extra' => 100, 'cost_shipping' => 50, 'deposit_amount' => null, 'deposit_paid_at' => null]);
+        StorePurchaseOrderTransaction::make()->action(
+            $purchaseOrder,
+            $this->depositOrgSupplierProduct->supplierProduct->historicSupplierProduct,
+            $this->orgStocks[0],
+            array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10])
+        );
+        $purchaseOrder->refresh();
         $totalToPay = \App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder);
+        expect($totalToPay)->toBe(round((float) $purchaseOrder->cost_items, 2))
+            ->and($totalToPay)->toBeGreaterThan(400.0)
+            ->and(round((float) $purchaseOrder->cost_total, 2))->toBe($totalToPay + 150);
 
         $this->post($confirmRoute, $payment())->assertSessionHasErrors('paid_at');
 

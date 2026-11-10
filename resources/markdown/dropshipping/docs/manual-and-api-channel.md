@@ -96,6 +96,8 @@ Send the token with every request in the header <b>Authorization: Bearer</b> fol
 
 The <b>Overview</b> tab also has <b>Open staging mirror</b>. Staging is a separate copy of the site where you can test without real orders or payments. Log in with the same email and password. Staging is reset regularly with a fresh copy, which erases what you created there. Tokens from the real site do not work on staging: generate a separate token on staging, and a new one after each reset. The staging base address is shown on the <b>Overview</b> tab.
 
+Orders on staging are not picked or sent by the warehouse. To test how the API returns a dispatched order with its tracking, pay a staging order, wait until it shows <b>In Warehouse</b>, then ask us in the chat on our website and give its order number. We mark it dispatched with a test tracking number. Nothing is shipped. Test it before the next reset, which erases it.
+
 ### How API orders are paid
 
 When your system submits an order, we pay it first from your account balance, then from your saved cards. Add a card before you start. Once you have a token, the menu shows <b>Saved Cards</b>. While no card is saved, the API page shows <b>You have no cards saved yet.</b> with an <b>Add card</b> button.

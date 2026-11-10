@@ -2318,6 +2318,54 @@ test('delivery note finalise and dispatch combined and pick as employee', functi
         ->and($masterShop->orderingStats->refresh()->last_order_dispatched_at)->not->toBeNull();
 });
 
+test('a staging test order is dispatched with a test tracking on a shipper without carrier api', function () {
+    $order        = freshSubmittedOrder($this);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $this->warehouse->id]);
+    $deliveryNote->deliveryNoteItems()->delete();
+
+    $orgStock = makeOrgStock($this);
+    StoreDeliveryNoteItem::make()->action($deliveryNote, [
+        'delivery_note_id'  => $deliveryNote->id,
+        'org_stock_id'      => $orgStock->id,
+        'transaction_id'    => $order->transactions()->first()->id,
+        'quantity_required' => 3,
+    ]);
+    foreach ([1, 5] as $quantity) {
+        StoreLocationOrgStock::make()->action(
+            orgStock: $orgStock,
+            location: StoreLocation::make()->action($this->warehouse, Location::factory()->definition()),
+            modelData: ['quantity' => $quantity, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+            strict: false
+        );
+    }
+    StoreShipper::make()->action($this->organisation, ['code' => 'TS'.Str::random(4), 'name' => 'Test manual', 'trade_as' => 'tm']);
+
+    $dispatchTestOrder = fn () => \App\Actions\Dispatching\DeliveryNote\DispatchTestOrder::run($order->refresh(), $this->user, 'TEST-PRE88');
+
+    expect($dispatchTestOrder)->toThrow(\RuntimeException::class, 'Only dropshipping');
+    $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::UNPAID]);
+    expect($dispatchTestOrder)->toThrow(\RuntimeException::class, 'not paid')
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED);
+
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
+    $order = $dispatchTestOrder();
+
+    expect($order->state)->toBe(OrderStateEnum::DISPATCHED)
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and((float)$deliveryNote->deliveryNoteItems()->first()->quantity_picked)->toBe(3.0)
+        ->and($deliveryNote->shipments()->count())->toBe(1)
+        ->and($deliveryNote->shipments()->first()->shipper->api_shipper)->toBeNull()
+        ->and($order->tracking_number)->toBe('TEST-PRE88');
+
+    app()->detectEnvironment(fn () => 'production');
+    try {
+        expect($dispatchTestOrder)->toThrow(\RuntimeException::class, 'only dispatched outside production');
+    } finally {
+        app()->detectEnvironment(fn () => 'testing');
+    }
+});
+
 test('a shipping update the sales channel keeps refusing is noted on the order and given to customer services', function () {
     $order = freshSubmittedOrder($this);
     $order->update(['shipping_notes' => 'Leave at the back door']);
@@ -2478,6 +2526,25 @@ test('packeta sends a Polish parcel locker delivery to the InPost locker the cus
     'locker in the shipping note' => ['Elzanowo 10B', "'Send as InPost:{BYD21N}'"],
     'locker in the customer note' => ['Elzanowo 10B', str_repeat('please dispatch as soon as possible ', 10), 'Paczkomat InPost BYD21N'],
     'bare code as customer note'  => ['Elzanowo 10B', null, ' byd21n '],
+]);
+
+test('packeta sends the customer email when the delivery note has none', function (?string $noteEmail, string $expectedEmail) {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote->customer->update(['email' => 'dropshipper@example.com']);
+    $deliveryNote->update(['email' => $noteEmail, 'is_cash_on_delivery' => false, 'parcels' => [['weight' => 1, 'dimensions' => [10, 10, 10]]]]);
+
+    config(['app.sandbox.shipper_packeta_access_token' => json_encode(['api_password' => 'test'])]);
+    $client = fakePacketaSoapClient(false);
+    $action = \Mockery::mock(\App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping::class)->makePartial();
+    $action->shouldReceive('soapClient')->andReturn($client);
+    $action->shouldReceive('getAddressIdByCountryCode')->andReturn(1);
+
+    $action->handle($deliveryNote->refresh(), new \App\Models\Dispatching\Shipper());
+
+    expect($client->packetAttributes['email'])->toBe($expectedEmail);
+})->with([
+    'client without email' => [null, 'dropshipper@example.com'],
+    'client with email'    => ['client@example.com', 'client@example.com'],
 ]);
 
 test('packeta reads the InPost parcel locker code from a Polish address', function (string $countryCode, float $weight, array $lines, ?string $expected, array $notes = []) {
@@ -8122,7 +8189,7 @@ test('a partner shipment makes one customs invoice per split from packed quantit
         ]))->toThrow(\Illuminate\Validation\ValidationException::class);
 });
 
-test('flags a SKO whose weighed parcels disagree with its weight, and clears it once the weight is corrected', function () {
+test('flags a SKO whose weighed parcels disagree with its weight, ignoring shared boxes and needing three parcels, and clears it once the weight is corrected', function () {
     $orgStock = makeOrgStock($this);
     DB::table('stocks')->where('id', $orgStock->stock_id)->update(['gross_weight' => 1000]);
     $transaction = $this->order->transactions()->first();
@@ -8149,23 +8216,31 @@ test('flags a SKO whose weighed parcels disagree with its weight, and clears it 
     $makeParcel(1.0);
 
     FlagOrgStocksWithWrongWeight::run($this->organisation);
+    expect($orgStock->refresh()->has_wrong_weight)->toBeFalse()
+        ->and($orgStock->measured_weight)->toBeNull();
+
+    $makeParcel(3.05);
+    $makeParcel(20.0);
+    $makeParcel(20.0);
+
+    FlagOrgStocksWithWrongWeight::run($this->organisation);
     $orgStock->refresh();
 
     expect($orgStock->has_wrong_weight)->toBeTrue()
-        ->and($orgStock->measured_weight)->toBe(3050)
-        ->and($orgStock->measured_weight_parcels)->toBe(2);
+        ->and($orgStock->measured_weight)->toBe(3000)
+        ->and($orgStock->measured_weight_parcels)->toBe(3);
 
     actingAs($this->adminGuest->getUser());
     $this->get(route('grp.org.warehouses.show.inventory.org_stocks.wrong_weights.index', [$this->organisation->slug, $this->warehouse->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Org/Inventory/OrgStocksWithWrongWeight')
-            ->where('orgStocks.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['code'] == $orgStock->code && $row['difference'] == 2050)));
+            ->where('orgStocks.data', fn ($rows) => collect($rows)->contains(fn ($row) => $row['code'] == $orgStock->code && $row['difference'] == 2000)));
 
     DB::table('stocks')->where('id', $orgStock->stock_id)->update(['gross_weight' => 3000]);
     FlagOrgStocksWithWrongWeight::run($this->organisation);
 
     expect($orgStock->refresh()->has_wrong_weight)->toBeFalse()
-        ->and($orgStock->measured_weight)->toBe(3050);
+        ->and($orgStock->measured_weight)->toBe(3000);
 });
 
 test('dispatch hub dropshipping and marketplace rows count picked and packing delivery notes', function () {

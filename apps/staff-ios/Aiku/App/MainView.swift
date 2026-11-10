@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainView: View {
     @State private var router = AppRouter()
+    @State private var toasts = ToastCenter()
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -11,6 +12,8 @@ struct MainView: View {
                 }
         }
         .environment(router)
+        .environment(toasts)
+        .toastHost(toasts)
         .fullScreenCover(item: $router.scanContext) { context in
             ScanCameraView(context: context)
                 .environment(router)
@@ -71,6 +74,10 @@ struct RouteDestination: View {
             }
         case .placeholder(let title):
             PlaceholderView(title: title)
+        case .componentGallery:
+            ComponentGalleryView()
+        case .stateDemo(let demo):
+            StateDemoView(demo: demo)
         }
     }
 }

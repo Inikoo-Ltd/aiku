@@ -18501,7 +18501,7 @@
     "Marked paid :date, no deposit recorded": "Marcat ca plătit la :date, fără avans înregistrat",
     "Pay balance": "Plătiți soldul",
     "Pay deposit": "Plătiți avansul",
-    "Percentage of the total to pay (:total): the order cost plus the supplier's estimated expenses, not of what is left to pay": "Procent din totalul de plată (:total): costul comenzii plus cheltuielile estimate ale furnizorului, nu din restul de plată",
+    "Percentage of the total to pay (:total): the price of the products, without extra costs, shipping or duties, not of what is left to pay": "Procent din totalul de plată (:total): prețul produselor, fără costuri suplimentare, transport sau taxe vamale, nu din restul de plată",
     "Reason for the past date (kept in the order's history)": "Motivul datei din trecut (păstrat în istoricul comenzii)",
     "The QC is not approved yet. Why is the balance paid now? (kept in the order's history)": "Controlul de calitate nu este încă aprobat. De ce se plătește soldul acum? (păstrat în istoricul comenzii)",
     "Undo payment": "Anulați plata",

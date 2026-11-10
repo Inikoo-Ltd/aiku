@@ -239,6 +239,7 @@ const props = defineProps<{
 		org_currency_id: number
 		costs_missing: string[]
 		agent_invoice_missing: boolean
+		agent_invoice_waiting: string | null
 		storeCostRoute: routeType
 		distributeExtraCostRoute: routeType | null
 	} | null
@@ -493,7 +494,7 @@ const costBlocks = computed(() => {
 		detail: "",
 		balance: invoiceBalance === null ? "" : money(orgCurrency, invoiceBalance),
 		balanceSub: agentInvoice && agentInvoice.balance_due !== null && agentInvoice.currency !== agentInvoice.org_currency ? money(agentInvoice.currency, agentInvoice.balance_due) : "",
-		status: status(costing.agent_invoice_missing ? (waitingInvoice ?? ctrans("Invoice not received yet")) : (invoiceEstimate ?? null), ctrans("Invoice received")),
+		status: status(costing.agent_invoice_missing ? (costing.agent_invoice_waiting ?? waitingInvoice ?? ctrans("Invoice not received yet")) : (invoiceEstimate ?? null), ctrans("Invoice received")),
 	}
 
 	if (costing.viewed_by_agent) {
@@ -634,7 +635,7 @@ const confirmDispatchStockDelivery = (action: any) => {
 
 	confirm.require({
 		group: "stock-delivery",
-		message: props.costing?.agent_invoice_missing
+		message: props.costing?.agent_invoice_missing && !props.costing?.agent_invoice_waiting
 			? (props.is_container ? ctrans("The agent invoice has not been received yet. Are you sure you want to mark this container as dispatched?") : ctrans("The agent invoice has not been received yet. Are you sure you want to mark this stock delivery as dispatched?"))
 			: (props.is_container ? ctrans("Are you sure you want to mark this container as dispatched?") : ctrans("Are you sure you want to mark this stock delivery as dispatched?")),
 		header: props.is_container ? ctrans("Dispatch Container") : ctrans("Dispatch Stock Delivery"),

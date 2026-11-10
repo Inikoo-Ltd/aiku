@@ -15053,7 +15053,7 @@
     "Percentage Off": "Procento vypnuto",
     "Percentage must be between 0 and 100": "Procento musí být mezi 0 a 100",
     "Percentage of the ticked lines to refund": "Procento zaškrtnutých řádků k vrácení peněz",
-    "Percentage of the total to pay (:total): the order cost plus the supplier's estimated expenses, not of what is left to pay": "Procento z celkové částky k úhradě (:total): náklady objednávky plus odhadované výdaje dodavatele, nikoli z toho, co zbývá zaplatit",
+    "Percentage of the total to pay (:total): the price of the products, without extra costs, shipping or duties, not of what is left to pay": "Procento z celkové částky k úhradě (:total): cena produktů bez dodatečných nákladů, dopravy a cla, nikoli z toho, co zbývá zaplatit",
     "Percentage of total SKOs": "Procento z celkového počtu SKO",
     "Percentage of total stock value": "Procento z celkové hodnoty akcií",
     "Percentage off": "Procentní sleva",

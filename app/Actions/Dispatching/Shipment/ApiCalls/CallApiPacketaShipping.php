@@ -103,7 +103,7 @@ class CallApiPacketaShipping extends OrgAction
             'name'        => Arr::get($parentResource, 'to_first_name'),
             'surname'     => Arr::get($parentResource, 'to_last_name'),
             'company'     => Arr::get($parentResource, 'to_company_name'),
-            'email'       => Arr::get($parentResource, 'to_email'),
+            'email'       => Arr::get($parentResource, 'to_email') ?: Arr::get($parentResource, 'from_email'),
             'phone'       => Arr::get($parentResource, 'to_phone'),
             'addressId'   => $addressId,
             'value'       => $value,

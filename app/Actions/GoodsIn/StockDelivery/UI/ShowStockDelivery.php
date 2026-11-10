@@ -17,6 +17,7 @@ use App\Models\SupplyChain\SupplierInvoice;
 use App\Models\SupplyChain\SupplierPayment;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
+use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
 use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\Procurement\SupplierAgreedTerm\CheckAgainstAgreedTerms;
 use App\Actions\Procurement\SupplierAgreedTerm\UI\GetAgreement;
@@ -1266,6 +1267,7 @@ class ShowStockDelivery extends OrgAction
             'costs_missing'              => $this->viewedByAgent ? [] : $stockDelivery->costsMissing(),
             'shipping_basis'             => DistributeStockDeliveryExtraCost::shippingBasis($stockDelivery),
             'agent_invoice_missing'      => !$agentInvoice?->received_at,
+            'agent_invoice_waiting'      => !$stockDelivery->agent_id || $agentInvoice?->received_at ? null : ApplyAgentInvoiceCosting::waitingFor($stockDelivery),
             'storeCostRoute'             => [
                 'name'       => 'grp.models.stock-delivery.cost.store',
                 'parameters' => ['stockDelivery' => $stockDelivery->id],

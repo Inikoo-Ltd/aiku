@@ -108,16 +108,21 @@ enum ActionButtonStyleKind {
 }
 
 struct ActionButton: View {
+    @Environment(\.isEnabled) private var isEnabled
+
     let title: String
     var systemImage: String?
     var kind: ActionButtonStyleKind = .primary
     var expands = true
+    var isLoading = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                if let systemImage {
+                if isLoading {
+                    ProgressView().tint(foreground)
+                } else if let systemImage {
                     Image(systemName: systemImage).font(.system(size: 18, weight: .semibold))
                 }
                 if !title.isEmpty {
@@ -130,11 +135,15 @@ struct ActionButton: View {
             .frame(width: title.isEmpty ? 52 : nil)
             .background(background, in: RoundedRectangle(cornerRadius: 8))
             .overlay {
-                if kind == .outline || kind == .destructiveOutline {
-                    RoundedRectangle(cornerRadius: 8).stroke(AikuColor.borderStrong)
+                switch kind {
+                case .outline: RoundedRectangle(cornerRadius: 8).stroke(AikuColor.borderStrong)
+                case .destructiveOutline: RoundedRectangle(cornerRadius: 8).stroke(AikuColor.dangerBorder)
+                case .primary, .secondary, .scan: EmptyView()
                 }
             }
+            .opacity(isEnabled || isLoading ? 1 : 0.5)
         }
+        .disabled(isLoading)
         .accessibilityLabel(title.isEmpty ? "Scan barcode" : title)
     }
 
