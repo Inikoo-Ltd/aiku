@@ -106,7 +106,7 @@ class GetGroupNavigation
         }
 
         if ($user->hasGroupAccess()) {
-            $groupNavigation['website'] = $this->getWebsiteNavs($this->canViewGroupSeo($user));
+            $groupNavigation['website'] = $this->getWebsiteNavs($this->canViewGroupSeo($user), $this->canViewGroupShoppingAssistant($user));
         }
 
         if ($user->hasPermissionTo('group-overview')) {
@@ -603,7 +603,7 @@ class GetGroupNavigation
         ];
     }
 
-    private function getWebsiteNavs(bool $canViewGroupSeo): array
+    private function getWebsiteNavs(bool $canViewGroupSeo, bool $canViewGroupShoppingAssistant): array
     {
         return [
             'label'   => __('WebOps'),
@@ -662,6 +662,18 @@ class GetGroupNavigation
                         'root'    => 'grp.websites.google_tag_manager',
                         'route'   => [
                             'name'       => 'grp.websites.google_tag_manager.index',
+                            'parameters' => []
+                        ]
+                    ],
+                    ]),
+                    ...(!$canViewGroupShoppingAssistant ? [] : [
+                    [
+                        'label'   => __('AI Assistant'),
+                        'tooltip' => __('What the AI shopping assistant did for sales on every website'),
+                        'icon'    => ['fal', 'fa-robot'],
+                        'root'    => 'grp.websites.shopping_assistant.',
+                        'route'   => [
+                            'name'       => 'grp.websites.shopping_assistant.show',
                             'parameters' => []
                         ]
                     ],

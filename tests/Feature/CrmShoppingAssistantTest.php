@@ -15,7 +15,9 @@ use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Catalogue\Product\StoreProductWebpage;
 use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantMessage;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\CRM\ShoppingAssistant\RecordShoppingAssistantBasketAdd;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
@@ -36,6 +38,12 @@ use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
 use App\Models\CRM\WebUser;
+use App\Models\Helpers\TaxCategory;
+use App\Models\SysAdmin\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
 use App\Models\Web\Website;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use Illuminate\Http\Client\Request;
@@ -528,4 +536,286 @@ test('adding a shown product to the basket from the storefront records it, and n
     $added = ShoppingAssistantEvent::where('type', ShoppingAssistantEventTypeEnum::ADDED)->whereIn('product_id', [$product->id, $later->id])->get();
 
     expect($added->map(fn ($event) => [$event->product_id, $event->transaction_id, (float) $event->quantity])->all())->toBe([[$product->id, $transactionId, 2.0]]);
+});
+
+function shoppingAssistantReportFilters(Website $website, array $overrides = []): array
+{
+    return array_merge(['website_ids' => [$website->id], 'search_website_ids' => [$website->id], 'language' => null, 'entry_point' => null, 'shop_type' => null, 'country' => null], $overrides);
+}
+
+function shoppingAssistantReport(Website $website, string $from, string $to, array $overrides = []): array
+{
+    return GetShoppingAssistantReport::run(shoppingAssistantReportFilters($website, $overrides), CarbonImmutable::parse($from), CarbonImmutable::parse($to), 'GBP', true);
+}
+
+function shoppingAssistantShownAt(Customer $customer, array $productIds, string $at): ShoppingAssistantConversation
+{
+    Carbon::setTestNow(CarbonImmutable::parse($at));
+    $conversation = shoppingAssistantShown($customer, $productIds)->conversation;
+    Carbon::setTestNow();
+
+    return $conversation;
+}
+
+function shoppingAssistantOrderLine(Customer $customer, Product $product, ?string $submittedAt, float $amount, array $transaction = []): int
+{
+    $shop  = $customer->shop;
+    $state = $transaction['state'] ?? 'submitted';
+    $date  = $submittedAt ?? now()->toDateTimeString();
+
+    $orderId = DB::table('orders')->insertGetId([
+        'group_id'        => $shop->group_id,
+        'organisation_id' => $shop->organisation_id,
+        'shop_id'         => $shop->id,
+        'customer_id'     => $customer->id,
+        'currency_id'     => $shop->currency_id,
+        'tax_category_id' => TaxCategory::firstOrFail()->id,
+        'slug'            => 'sa-'.uniqid(),
+        'state'           => $state,
+        'submitted_at'    => $submittedAt,
+        'net_amount'      => $amount,
+        'org_net_amount'  => $amount,
+        'grp_net_amount'  => $amount,
+        'payment_data'    => '{}',
+        'data'            => '{}',
+        'date'            => $date,
+    ]);
+
+    return DB::table('transactions')->insertGetId(array_merge([
+        'group_id'        => $shop->group_id,
+        'organisation_id' => $shop->organisation_id,
+        'shop_id'         => $shop->id,
+        'customer_id'     => $customer->id,
+        'order_id'        => $orderId,
+        'tax_category_id' => TaxCategory::firstOrFail()->id,
+        'data'            => '{}',
+        'date'            => $date,
+        'model_type'      => 'Product',
+        'model_id'        => $product->id,
+        'family_id'       => $product->family_id,
+        'state'           => $state,
+        'submitted_at'    => $submittedAt,
+        'net_amount'      => $amount,
+        'grp_net_amount'  => $amount,
+        'is_gift'         => false,
+    ], $transaction));
+}
+
+function shoppingAssistantVariantOption(Product $leader, Product $option): void
+{
+    $masterVariantId = DB::table('master_variants')->insertGetId(['group_id' => $leader->group_id, 'code' => 'SAV-'.uniqid(), 'slug' => 'sav-'.uniqid(), 'data' => '{}']);
+    $variantId       = DB::table('variants')->insertGetId([
+        'group_id'          => $leader->group_id,
+        'organisation_id'   => $leader->organisation_id,
+        'shop_id'           => $leader->shop_id,
+        'family_id'         => $leader->family_id,
+        'leader_id'         => $leader->id,
+        'master_variant_id' => $masterVariantId,
+        'code'              => 'SAV-'.uniqid(),
+        'slug'              => 'sav-'.uniqid(),
+        'data'              => '{}',
+    ]);
+    DB::table('products')->where('id', $option->id)->update(['variant_id' => $variantId]);
+}
+
+test('the assistant report counts a line ordered within the attribution window of the first showing, once, and for variant options of the shown leader', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website  = createWebsite($this->shop);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $shown    = shoppingAssistantProduct($this->product);
+    $leader   = shoppingAssistantProduct($this->product);
+    $option   = shoppingAssistantProduct($this->product);
+    shoppingAssistantVariantOption($leader, $option);
+
+    $first  = shoppingAssistantShownAt($customer, [$shown->id, $leader->id], '2024-01-05 10:00:00');
+    $second = shoppingAssistantShownAt($customer, [$shown->id], '2024-01-06 10:00:00');
+
+    $lastSecond = shoppingAssistantOrderLine($customer, $shown, '2024-01-12 09:59:59', 10);
+    shoppingAssistantOrderLine($customer, $shown, '2024-01-13 10:00:00', 20);
+    shoppingAssistantOrderLine($customer, $shown, '2024-01-05 09:00:00', 40);
+    $cancelled = shoppingAssistantOrderLine($customer, $shown, '2024-01-07 10:00:00', 80, ['state' => 'cancelled']);
+    shoppingAssistantOrderLine($customer, $shown, null, 160, ['state' => 'creating']);
+    shoppingAssistantOrderLine($customer, $shown, '2024-01-07 10:00:00', 320, ['deleted_at' => '2024-01-08 10:00:00']);
+    shoppingAssistantOrderLine($customer, $shown, '2024-01-07 10:00:00', 640, ['is_gift' => true]);
+    shoppingAssistantOrderLine(shoppingAssistantCustomer($this->shop), $shown, '2024-01-07 10:00:00', 1280);
+    shoppingAssistantOrderLine($customer, $option, '2024-01-08 10:00:00', 5);
+    shoppingAssistantOrderLine($customer, $shown, '2024-01-06 12:00:00', 1);
+
+    foreach ([$lastSecond, $cancelled] as $transactionId) {
+        $first->events()->create(['type' => ShoppingAssistantEventTypeEnum::ADDED, 'product_id' => $shown->id, 'transaction_id' => $transactionId, 'created_at' => '2024-01-05 10:05:00']);
+    }
+
+    $this->travelTo(CarbonImmutable::parse('2024-03-01 12:00:00'));
+    $report = shoppingAssistantReport($website, '2024-01-01', '2024-01-31');
+
+    expect($report['kpis']['revenue']['value'])->toBe(16.0)
+        ->and($report['kpis']['orders']['value'])->toBe(3)
+        ->and($report['kpis']['strict_orders']['value'])->toBe(1)
+        ->and($report['kpis']['strict_revenue']['value'])->toBe(10.0)
+        ->and($report['kpis']['new_families']['value'])->toBe(0)
+        ->and(collect($report['funnel'])->pluck('value', 'key')->only(['conversations', 'shown', 'added', 'ordered'])->all())->toBe(['conversations' => 2, 'shown' => 2, 'added' => 1, 'ordered' => 2])
+        ->and($report['mature_until'])->toBeNull();
+
+    $weekly = shoppingAssistantReport($website, '2023-12-01', '2024-02-29')['trend'];
+    $this->travelBack();
+
+    $weeks = collect($weekly['points'])->keyBy('date');
+
+    expect($second->id)->not->toBe($first->id)
+        ->and($weekly['granularity'])->toBe('week')
+        ->and($weeks->keys()->first())->toBe('2023-11-27')
+        ->and($weeks->keys()->last())->toBe('2024-02-26')
+        ->and($weeks)->toHaveCount(14)
+        ->and($weeks->keys()->every(fn (string $date) => CarbonImmutable::parse($date)->isMonday()))->toBeTrue()
+        ->and($weeks['2024-01-01']['conversations'])->toBe(2)
+        ->and($weeks['2024-01-01']['ordered'])->toBe(2)
+        ->and($weeks['2024-01-08']['conversations'])->toBe(0)
+        ->and($weeks['2023-12-25']['conversations'])->toBe(0);
+});
+
+test('the assistant report leaves out staff and command line conversations, rates conversion on mature conversations only and compares with the period before', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website   = createWebsite($this->shop);
+    $product   = shoppingAssistantProduct($this->product);
+    $returning = shoppingAssistantCustomer($this->shop);
+    $late      = shoppingAssistantCustomer($this->shop);
+
+    shoppingAssistantShownAt($returning, [$product->id], '2023-05-20 10:00:00');
+    $ordered = shoppingAssistantShownAt($returning, [$product->id], '2023-06-02 10:00:00');
+    $ordered->events()->create(['type' => ShoppingAssistantEventTypeEnum::CLICKED, 'product_id' => $product->id, 'created_at' => '2023-06-02 10:01:00']);
+    $ordered->events()->create(['type' => ShoppingAssistantEventTypeEnum::ADDED, 'product_id' => $product->id, 'created_at' => '2023-06-02 10:02:00']);
+    shoppingAssistantOrderLine($returning, $product, '2023-06-03 10:00:00', 30);
+
+    Carbon::setTestNow(CarbonImmutable::parse('2023-06-03 10:00:00'));
+    AskShoppingAssistant::make()->storeCustomerMessage(StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::PROFILE), 'Hello');
+    Carbon::setTestNow();
+
+    shoppingAssistantShownAt($late, [$product->id], '2023-06-18 10:00:00');
+    shoppingAssistantOrderLine($late, $product, '2023-06-18 11:00:00', 50);
+
+    $staff = shoppingAssistantShownAt(shoppingAssistantCustomer($this->shop), [$product->id], '2023-06-05 10:00:00')->customer;
+    $staff->update(['is_staff' => true]);
+    shoppingAssistantOrderLine($staff, $product, '2023-06-10 10:00:00', 1000);
+    shoppingAssistantOrderLine(shoppingAssistantCustomer($this->shop), $product, '2023-06-10 10:00:00', 100);
+    shoppingAssistantShownAt(shoppingAssistantCustomer($this->shop), [$product->id], '2023-06-05 10:00:00')->update(['entry_point' => ShoppingAssistantEntryPointEnum::COMMAND]);
+
+    $this->travelTo(CarbonImmutable::parse('2023-06-20 12:00:00'));
+    $report = shoppingAssistantReport($website, '2023-06-01', '2023-06-20');
+    $this->travelBack();
+
+    $points = collect($report['trend']['points'])->keyBy('date');
+
+    expect($report['mature_until'])->toBe('2023-06-13')
+        ->and($report['kpis']['conversations'])->toBe(['value' => 3, 'previous' => 1])
+        ->and($report['kpis']['customers']['value'])->toBe(3)
+        ->and($report['kpis']['returning_customers']['value'])->toBe(1)
+        ->and($report['kpis']['conversion_rate'])->toBe(['value' => 0.5, 'previous' => 0.0])
+        ->and($report['kpis']['revenue'])->toBe(['value' => 80.0, 'previous' => 0.0])
+        ->and($report['kpis']['new_families']['value'])->toBe(2)
+        ->and(collect($report['funnel'])->pluck('value', 'key')->all())->toBe(['conversations' => 3, 'shown' => 2, 'clicked' => 1, 'added' => 1, 'ordered' => 2])
+        ->and(collect($report['funnel'])->firstWhere('key', 'shown')['previous'])->toBe(1)
+        ->and($report['drop_off'])->toBe([['questions' => '1', 'conversations' => 3], ['questions' => '2', 'conversations' => 0], ['questions' => '3', 'conversations' => 0], ['questions' => '4+', 'conversations' => 0]])
+        ->and($report['trend']['granularity'])->toBe('day')
+        ->and($points)->toHaveCount(20)
+        ->and($points['2023-06-02']['ordered'])->toBe(1)
+        ->and($points['2023-06-10']['conversations'])->toBe(0)
+        ->and($points['2023-06-13']['complete'])->toBeTrue()
+        ->and($points['2023-06-14']['complete'])->toBeFalse()
+        ->and($report['kpis']['aov_assistant']['value'])->toBe(40.0)
+        ->and($report['kpis']['aov_others']['value'])->toBe(100.0)
+        ->and(collect($report['families'])->firstWhere('id', $product->family_id))->toBe([
+            'id'      => $product->family_id,
+            'code'    => $product->family->code,
+            'name'    => $product->family->name,
+            'shown'   => 2,
+            'clicked' => 1,
+            'added'   => 1,
+            'ordered' => 2,
+            'revenue' => 80.0,
+        ]);
+});
+
+test('the assistant report search block counts submitted searches, rescued zero results and suggestion kinds, and names the filters it cannot apply', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website = createWebsite($this->shop);
+    $log     = fn (array $data) => DB::table('website_search_logs')->insert(array_merge([
+        'ulid'            => (string) Str::ulid(),
+        'group_id'        => $website->group_id,
+        'organisation_id' => $website->organisation_id,
+        'shop_id'         => $website->shop_id,
+        'website_id'      => $website->id,
+        'scope'           => 'catalogue_page',
+        'results_count'   => 0,
+        'created_at'      => '2022-03-05 10:00:00',
+    ], $data));
+
+    $log(['query' => 'Lavender Oil ', 'results_count' => 5, 'clicked_at' => '2022-03-05 10:01:00']);
+    $log(['query' => 'xyzzq', 'suggestion_kind' => 'did_you_mean', 'suggestion_clicked_at' => '2022-03-05 10:01:00']);
+    $log(['query' => 'XYZZQ']);
+    $log(['query' => 'xyzzq', 'scope' => 'dropdown']);
+    $log(['query' => 'xyzzq', 'created_at' => '2022-02-20 10:00:00']);
+
+    $search = shoppingAssistantReport($website, '2022-03-01', '2022-03-10', ['entry_point' => 'chat', 'country' => 'GB'])['search'];
+
+    expect($search['ignored_filters'])->toBe(['entry_point', 'country'])
+        ->and($search['searches'])->toBe(['value' => 3, 'previous' => 1])
+        ->and($search['zero_results']['value'])->toBe(2)
+        ->and($search['suggestion_clicks']['value'])->toBe(1)
+        ->and($search['zero_rescued']['value'])->toBe(1)
+        ->and($search['by_kind'])->toHaveCount(7)
+        ->and(collect($search['by_kind'])->pluck('clicks', 'kind')->all())->toMatchArray(['did_you_mean' => 1, 'family' => 0])
+        ->and($search['top_zero_queries'][0])->toBe(['query' => 'xyzzq', 'searches' => 2, 'rescued' => 1])
+        ->and(collect($search['top_queries'])->firstWhere('query', 'lavender oil'))->toBe(['query' => 'lavender oil', 'searches' => 1, 'clicks' => 1]);
+});
+
+test('the group AI assistant report is only for group-wide viewers, a shop webmaster uses the website one, and a transcript of another website is not found there', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website  = createWebsite($this->shop);
+    $product  = shoppingAssistantProduct($this->product);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $ordered  = shoppingAssistantShownAt($customer, [$product->id], '2021-04-02 10:00:00');
+    shoppingAssistantOrderLine($customer, $product, '2021-04-03 10:00:00', 30);
+    $clicked = shoppingAssistantShownAt(shoppingAssistantCustomer($this->shop), [$product->id], '2021-04-03 10:00:00');
+    $clicked->events()->create(['type' => ShoppingAssistantEventTypeEnum::CLICKED, 'product_id' => $product->id, 'created_at' => '2021-04-03 10:01:00']);
+    $elsewhere = shoppingAssistantShownAt(shoppingAssistantCustomer($this->shop), [$product->id], '2021-04-03 10:00:00');
+    $elsewhere->update(['website_id' => DB::table('websites')->where('id', '!=', $website->id)->value('id') ?? 32000]);
+
+    $websiteParameters = [$this->organisation->slug, $this->shop->slug, $website->slug];
+    $query             = ['from' => '2021-04-01', 'to' => '2021-04-30', 'tab' => 'conversations'];
+
+    $this->withoutVite();
+    $this->get(route('grp.websites.shopping_assistant.show', $query))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Web/ShoppingAssistantPerformance', false)->where('filters.website_locked', false));
+
+    $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'outcome' => 'ordered']))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->all() === [$ordered->ulid])
+            ->where('conversations.data.0.ordered', true)
+            ->where('conversations.data.0.revenue', fn ($revenue) => (float) $revenue === 30.0));
+
+    $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'outcome' => 'clicked']))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->all() === [$clicked->ulid]));
+
+    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$ordered->ulid]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Web/ShoppingAssistantConversation', false)
+            ->where('messages.1.products.0.ordered', true)
+            ->where('messages.1.products.0.revenue', fn ($revenue) => (float) $revenue === 30.0));
+
+    $webmaster = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($webmaster, ["web.{$this->shop->id}.view"]);
+
+    $this->get(route('grp.websites.shopping_assistant.show'))->assertForbidden();
+    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$ordered->ulid]))->assertForbidden();
+
+    $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.show', [...$websiteParameters, ...$query]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('filters.website_locked', true)
+            ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->sort()->values()->all() === collect([$ordered->ulid, $clicked->ulid])->sort()->values()->all()));
+
+    $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.show', [...$websiteParameters, 'from' => '2021-04-01', 'to' => '2021-04-30']))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('overview.kpis.revenue.value', fn ($revenue) => (float) $revenue === 30.0));
+
+    $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [...$websiteParameters, $ordered->ulid]))->assertOk();
+    $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [...$websiteParameters, $elsewhere->ulid]))->assertNotFound();
 });

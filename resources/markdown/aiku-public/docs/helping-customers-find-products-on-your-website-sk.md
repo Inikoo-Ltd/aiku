@@ -8,7 +8,7 @@ category: marketing
 ---
 
 <aside class="tldr">
-Otvorte <b>Website</b> v menu obchodu a kliknite na ikonu posuvníkov medzi <b>Export</b> a <b>Workshop</b>. Dôležité sú tu dve sekcie. <b>AI shopping assistant</b> (AI nákupný asistent) zapína poradcu pre sortiment: prihlásený obchodný zákazník sa môže spýtať, čo jeho obchod potrebuje, a dostane produkty s jednoriadkovým dôvodom ku každému. <b>Search page</b> (stránka vyhľadávania) zapína <b>Keep exploring</b> (Pokračujte v objavovaní): súvisiace vyhľadávania, rodiny, ktoré sa dobre predávajú spolu, najpredávanejšie produkty, novinky a zabudnuté obľúbené produkty zákazníka pod výsledkami vyhľadávania, aj keď vyhľadávanie nič nenájde. Obe sú vypnuté, kým ich nezapnete, pre každý web zvlášť.
+Otvorte <b>Website</b> v menu obchodu a kliknite na ikonu posuvníkov medzi <b>Export</b> a <b>Workshop</b>. Dôležité sú tu dve sekcie. <b>AI shopping assistant</b> (AI nákupný asistent) zapína poradcu pre sortiment: prihlásený obchodný zákazník sa môže spýtať, čo jeho obchod potrebuje, a dostane produkty s jednoriadkovým dôvodom ku každému. <b>Search page</b> (stránka vyhľadávania) zapína <b>Keep exploring</b> (Pokračujte v objavovaní): súvisiace vyhľadávania, rodiny, ktoré sa dobre predávajú spolu, najpredávanejšie produkty, novinky a zabudnuté obľúbené produkty zákazníka pod výsledkami vyhľadávania, aj keď vyhľadávanie nič nenájde. Obe sú vypnuté, kým ich nezapnete, pre každý web zvlášť. Ak chcete vidieť, čo prinášajú, otvorte v menu webu <b>Analytics</b> (analytika) a potom <b>AI Assistant</b> (AI asistent).
 </aside>
 
 ## Zapnutie
@@ -84,3 +84,31 @@ Blok sa načíta po výsledkoch vyhľadávania, takže samotné vyhľadávanie j
 ### Čo sa zaznamenáva
 
 Prvé kliknutie na návrh sa zaznamená pri vyhľadávaní spolu s tým, o aký druh návrhu išlo: did you mean, súvisiace alebo populárne vyhľadávanie, rodina, best sellers, new arrivals alebo forgotten favourites. Vyhľadávania zamestnaneckých účtov sa nezaznamenávajú vôbec, preto ak chcete vidieť vlastné kliknutia, testujte so zákazníckym účtom, ktorý nie je zamestnanecký.
+
+## Sledovanie výkonu
+
+Prejdite na **Website** v menu obchodu, potom na **Analytics** (analytika) v hornom menu a na **AI Assistant** (AI asistent). Stránka hlási jeden web. Ľudia, ktorí spravujú všetky weby skupiny, ju nájdu aj v **WebOps → AI Assistant**, pre všetky weby spolu a s filtrom webu.
+
+Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa toho, odkiaľ sa konverzácia otvorila (vyhľadávacie pole, stránka profilu alebo chatové okno), podľa typu obchodu a podľa krajiny. Každé číslo sa porovnáva s obdobím rovnakej dĺžky bezprostredne predtým, ktoré pomenúva riadok pod filtrami. Konverzácie zamestnaneckých účtov sa vynechávajú.
+
+### Záložka Overview
+
+- **Conversations** (konverzácie), s počtom zákazníkov a koľkí z nich sa vrátili.
+- **Orders after being shown** (objednávky po zobrazení) a **Revenue of the products shown** (tržby z zobrazených produktov): objednávka sa počíta, keď zákazník objednal produkt, ktorý mu asistent zobrazil, do 7 dní od jeho zobrazenia. Sčítajú sa len riadky týchto produktov, nikdy celá objednávka, a každý riadok sa počíta raz. Najpredávanejšie produkty a bývalé obľúbené sa aj tak znovu objednávajú, preto to čítajte ako „objednané po zobrazení", nie ako dôkaz, že objednávku spôsobil asistent.
+- Pod oboma údajmi číslo **strict** (prísne) počíta len riadky, ktoré zákazník pridal do košíka priamo od asistenta. Je to najnižšie, čím môže skutočné číslo byť.
+- **Conversion** (konverzia) je podiel konverzácií, po ktorých nasledovala takáto objednávka. Vynecháva konverzácie za posledných 7 dní, pretože sa z nich ešte môžu stať objednávky. Oranžová poznámka hovorí, od ktorého dňa čísla ešte nie sú konečné.
+- **AI cost** (náklady na AI), celkovo, na konverziu a ako podiel na tržbách.
+
+**Funnel** (lievik) sleduje konverzácie krok za krokom: produkty zobrazené, rozkliknuté, pridané do košíka a objednané, každý s podielom na predchádzajúcom kroku a na všetkých konverzáciách. **Ordered** (objednané) môže byť vyššie ako **Added to basket** (pridané do košíka), pretože počíta aj produkty, ktoré sa do košíka dostali inou cestou. Graf vedľa neho ukazuje rovnaké kroky po dňoch, alebo po týždňoch pri dlhom období.
+
+**Where customers leave** (kde zákazníci odchádzajú) počíta konverzácie podľa počtu položených otázok. **Engagement and value** (zapojenie a hodnota) udáva priemerný čas a počet správ konverzácie, priemernú objednávku zákazníkov, ktorí asistenta použili, v porovnaní s ostatnými zákazníkmi, a rodiny, ktoré zákazník objednal prvýkrát po tom, čo mu ich asistent zobrazil. **Families suggested** (navrhnuté rodiny) uvádza najčastejšie zobrazené rodiny s tým, koľko konverzácií ich rozkliklo, pridalo a objednalo.
+
+**Search on the website** (vyhľadávanie na webe) pokrýva Keep exploring: vyhľadávania za obdobie, tie bez výsledkov, kliknutia na návrh podľa druhu a koľko vyhľadávaní bez výsledkov nasledovalo kliknutie na návrh. Riadi sa len dátumami, webom a jazykom.
+
+Hlavné čísla a kroky lievika sú odkazy: otvoria konverzácie, ktoré za nimi stoja.
+
+### Záložka Conversations
+
+Jeden riadok na konverzáciu: kedy začala, zákazník, odkiaľ sa otvorila, prvá otázka, počet správ, zobrazené, rozkliknuté a pridané produkty, či nasledovala objednávka a na akú sumu, a náklady na AI. Hľadajte podľa zákazníka alebo podľa slov otázky.
+
+Kliknite na prvú otázku a prečítajte si konverzáciu. Pod každou odpoveďou vidíte produkty, ktoré zobrazila, s uvedeným dôvodom, ktoré zákazník rozklikol, pridal a objednal, a ponúknuté ďalšie otázky. Konverzácie sú len pre zamestnancov: otvoriť ich môžu len ľudia, ktorí vidia web v aiku.

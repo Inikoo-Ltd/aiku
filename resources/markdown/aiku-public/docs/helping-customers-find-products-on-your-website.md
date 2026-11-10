@@ -4,11 +4,11 @@ summary: Two switches in the website settings help trade customers find what to 
 date: 2026-11-10
 tags: website, search, shop, crm
 category: marketing
-help_routes: grp.org.shops.show.web.websites.edit
+help_routes: grp.org.shops.show.web.websites.edit, grp.org.shops.show.web.analytics.shopping_assistant, grp.websites.shopping_assistant
 ---
 
 <aside class="tldr">
-Open <b>Website</b> in the shop menu and click the sliders icon between <b>Export</b> and <b>Workshop</b>. Two sections matter here. <b>AI shopping assistant</b> turns on the range advisor: a logged in trade customer can ask what their shop needs and gets products with a one-line reason each. <b>Search page</b> turns on <b>Keep exploring</b>: related searches, families that sell well together, best sellers, new arrivals and the customer's forgotten favourites under the search results, also when a search finds nothing. Both are off until you turn them on, for each website separately.
+Open <b>Website</b> in the shop menu and click the sliders icon between <b>Export</b> and <b>Workshop</b>. Two sections matter here. <b>AI shopping assistant</b> turns on the range advisor: a logged in trade customer can ask what their shop needs and gets products with a one-line reason each. <b>Search page</b> turns on <b>Keep exploring</b>: related searches, families that sell well together, best sellers, new arrivals and the customer's forgotten favourites under the search results, also when a search finds nothing. Both are off until you turn them on, for each website separately. To see what they bring in, open <b>Analytics</b> in the website menu and then <b>AI Assistant</b>.
 </aside>
 
 ## Turning them on
@@ -84,3 +84,32 @@ The block loads after the search results, so the search itself is as fast as bef
 ### What is recorded
 
 The first click on a suggestion is recorded on the search, with what kind of suggestion it was: did you mean, related or popular search, family, best sellers, new arrivals or forgotten favourites. Searches by staff accounts are not recorded at all, so test with a customer account that is not staff if you want to see your own clicks.
+
+## Seeing how it performs
+
+Go to **Website** in the shop menu, then **Analytics** in the top menu and **AI Assistant**. The page reports one website. People who look after every website of the group also find it under **WebOps → AI Assistant**, for all websites together and with a website filter.
+
+At the top you choose the dates and can narrow the figures by language, by where the conversation was opened from (search box, profile page or chat box), by shop type and by country. Every figure is compared with the period of the same length just before, which the line under the filters names. Conversations by staff accounts are left out.
+
+### The Overview tab
+
+- **Conversations**, with the number of customers and how many of them came back.
+- **Orders after being shown** and **Revenue of the products shown**: an order counts when the customer ordered a product the assistant showed them, within 7 days of seeing it. Only the lines of those products are added up, never the whole order, and each line is counted once. Best sellers and past favourites get reordered anyway, so read this as "ordered after being shown", not as proof the assistant caused the order.
+- Under both, the **strict** figure counts only the lines the customer added to the basket straight from the assistant. It is the lowest the true number can be.
+- **Conversion** is the share of conversations followed by such an order. It leaves out conversations of the last 7 days, because they can still turn into orders. An amber note says from which day the figures are not final yet.
+- **AI cost**, in total, per conversation and as a share of the revenue.
+
+**Funnel** follows the conversations step by step: products shown, clicked, added to basket and ordered, each with its share of the step before and of all conversations. **Ordered** can be higher than **Added to basket**, as it also counts products that reached the basket another way. The chart next to it shows the same steps by day, or by week for a long period.
+
+**Where customers leave** counts the conversations by the number of questions asked. **Engagement and value** gives the average time and messages of a conversation, the average order of customers who used the assistant against the other customers, and the families a customer ordered for the first time after the assistant showed them. **Families suggested** lists the families shown most often, with how many conversations clicked, added and ordered them.
+
+**Search on the website** covers Keep exploring: the searches of the period, those with no results, the clicks on a suggestion by kind, and how many searches with no results were followed by a click on a suggestion. It follows the dates, the website and the language only.
+
+The main figures and the funnel steps are links: they open the conversations behind them.
+
+### The Conversations tab
+
+One row per conversation: when it started, the customer, where it was opened from, the first question, the number of messages, the products shown, clicked and added, whether an order followed and for how much, and the AI cost. Search by customer or by the words of a question.
+
+Click the first question to read the conversation. Under each answer you see the products it showed with the reason given, which ones the customer clicked, added and ordered, and the follow-up questions offered. Conversations are for staff only: only people who can see the website in aiku can open them.
+

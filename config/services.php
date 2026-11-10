@@ -163,6 +163,7 @@ return [
         'follow_up_model' => env('SHOPPING_ASSISTANT_FOLLOW_UP_MODEL'),
         'max_model_calls' => 5,
         'timeout'         => 90,
+        'attribution_days' => 7,
     ],
     'product_development_artwork_check' => [
         'model' => env('PRODUCT_DEVELOPMENT_ARTWORK_CHECK_MODEL', 'anthropic/claude-opus-5.5'),

@@ -8,7 +8,7 @@ category: marketing
 ---
 
 <aside class="tldr">
-Abre <b>Website</b> en el menú de la tienda y haz clic en el icono de deslizadores entre <b>Export</b> (exportar) y <b>Workshop</b> (taller). Aquí importan dos secciones. <b>AI shopping assistant</b> (asistente de compra con IA) activa el asesor de gama: un cliente profesional con sesión iniciada puede preguntar qué necesita su tienda y recibe productos con un motivo de una línea cada uno. <b>Search page</b> (página de búsqueda) activa <b>Keep exploring</b> (sigue explorando): búsquedas relacionadas, familias que se venden bien juntas, más vendidos, novedades y los favoritos olvidados del cliente bajo los resultados de la búsqueda, también cuando una búsqueda no encuentra nada. Ambos están desactivados hasta que los actives, para cada web por separado.
+Abre <b>Website</b> en el menú de la tienda y haz clic en el icono de deslizadores entre <b>Export</b> (exportar) y <b>Workshop</b> (taller). Aquí importan dos secciones. <b>AI shopping assistant</b> (asistente de compra con IA) activa el asesor de gama: un cliente profesional con sesión iniciada puede preguntar qué necesita su tienda y recibe productos con un motivo de una línea cada uno. <b>Search page</b> (página de búsqueda) activa <b>Keep exploring</b> (sigue explorando): búsquedas relacionadas, familias que se venden bien juntas, más vendidos, novedades y los favoritos olvidados del cliente bajo los resultados de la búsqueda, también cuando una búsqueda no encuentra nada. Ambos están desactivados hasta que los actives, para cada web por separado. Para ver qué aportan, abre <b>Analytics</b> (analítica) en el menú de la web y después <b>AI Assistant</b> (asistente de IA).
 </aside>
 
 ## Activarlos
@@ -84,3 +84,31 @@ El bloque se carga después de los resultados de la búsqueda, así que la búsq
 ### Qué se registra
 
 El primer clic en una sugerencia se registra en la búsqueda, con el tipo de sugerencia que era: did you mean, búsqueda relacionada o popular, familia, best sellers, new arrivals o forgotten favourites. Las búsquedas de las cuentas de personal no se registran en absoluto, así que prueba con una cuenta de cliente que no sea de personal si quieres ver tus propios clics.
+
+## Ver cómo funciona
+
+Ve a **Website** en el menú de la tienda, luego a **Analytics** en el menú superior y a **AI Assistant**. La página informa de una web. Quienes se ocupan de todas las webs del grupo también la encuentran en **WebOps → AI Assistant**, para todas las webs juntas y con un filtro de web.
+
+Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se abrió la conversación (cuadro de búsqueda, página de perfil o cuadro de chat), por tipo de tienda y por país. Cada cifra se compara con el periodo de la misma duración inmediatamente anterior, que nombra la línea bajo los filtros. Las conversaciones de las cuentas de personal quedan fuera.
+
+### La pestaña Overview
+
+- **Conversations** (conversaciones), con el número de clientes y cuántos de ellos volvieron.
+- **Orders after being shown** (pedidos tras mostrarse) y **Revenue of the products shown** (ingresos de los productos mostrados): un pedido cuenta cuando el cliente pidió un producto que el asistente le mostró, dentro de los 7 días siguientes a verlo. Solo se suman las líneas de esos productos, nunca el pedido entero, y cada línea se cuenta una vez. Los más vendidos y los favoritos de antes se vuelven a pedir de todos modos, así que léelo como "pedido tras mostrarse", no como prueba de que el asistente causó el pedido.
+- Bajo ambas, la cifra **strict** (estricta) cuenta solo las líneas que el cliente añadió a la cesta directamente desde el asistente. Es lo mínimo que puede ser la cifra real.
+- **Conversion** (conversión) es la proporción de conversaciones seguidas de un pedido así. Deja fuera las conversaciones de los últimos 7 días, porque todavía pueden convertirse en pedidos. Una nota ámbar indica desde qué día las cifras aún no son definitivas.
+- **AI cost** (coste de IA), en total, por conversación y como proporción de los ingresos.
+
+**Funnel** (embudo) sigue las conversaciones paso a paso: productos mostrados, pulsados, añadidos a la cesta y pedidos, cada uno con su proporción respecto al paso anterior y respecto a todas las conversaciones. **Ordered** (pedidos) puede ser mayor que **Added to basket** (añadidos a la cesta), porque también cuenta productos que llegaron a la cesta de otra forma. El gráfico de al lado muestra los mismos pasos por día, o por semana en un periodo largo.
+
+**Where customers leave** (dónde se van los clientes) cuenta las conversaciones según el número de preguntas hechas. **Engagement and value** (participación y valor) da el tiempo y los mensajes medios de una conversación, el pedido medio de los clientes que usaron el asistente frente a los demás clientes, y las familias que un cliente pidió por primera vez después de que el asistente se las mostrara. **Families suggested** (familias sugeridas) lista las familias mostradas con más frecuencia, con cuántas conversaciones las pulsaron, las añadieron y las pidieron.
+
+**Search on the website** (búsqueda en la web) cubre Keep exploring: las búsquedas del periodo, las que no tuvieron resultados, los clics en una sugerencia por tipo, y cuántas búsquedas sin resultados fueron seguidas de un clic en una sugerencia. Solo sigue las fechas, la web y el idioma.
+
+Las cifras principales y los pasos del embudo son enlaces: abren las conversaciones que hay detrás.
+
+### La pestaña Conversations
+
+Una fila por conversación: cuándo empezó, el cliente, desde dónde se abrió, la primera pregunta, el número de mensajes, los productos mostrados, pulsados y añadidos, si siguió un pedido y por cuánto, y el coste de IA. Busca por cliente o por las palabras de una pregunta.
+
+Haz clic en la primera pregunta para leer la conversación. Bajo cada respuesta ves los productos que mostró con el motivo dado, cuáles pulsó, añadió y pidió el cliente, y las preguntas de seguimiento que se ofrecieron. Las conversaciones son solo para el personal: solo las personas que pueden ver la web en aiku pueden abrirlas.

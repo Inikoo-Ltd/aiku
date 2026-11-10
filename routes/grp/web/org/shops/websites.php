@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Web\ShoppingAssistant\UI\ShowShoppingAssistantConversation;
+use App\Actions\Web\ShoppingAssistant\UI\ShowShoppingAssistantPerformance;
 use App\Actions\Comms\Mailshot\UI\ShowMailshot;
 use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
@@ -228,4 +230,6 @@ Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
     Route::get('search/query', ShowWebsiteSearchQuery::class)->name('search.query');
     Route::get('search/page', ShowWebsiteSearchPage::class)->name('search.page');
     Route::get('search/customer/{customer}', ShowWebsiteSearchCustomer::class)->name('search.customer');
+    Route::get('ai-assistant', [ShowShoppingAssistantPerformance::class, 'inWebsite'])->name('shopping_assistant.show');
+    Route::get('ai-assistant/conversations/{conversation:ulid}', [ShowShoppingAssistantConversation::class, 'inWebsite'])->name('shopping_assistant.conversations.show')->withoutScopedBindings();
 });

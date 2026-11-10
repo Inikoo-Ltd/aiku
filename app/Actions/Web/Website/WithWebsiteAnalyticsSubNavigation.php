@@ -73,6 +73,17 @@ trait WithWebsiteAnalyticsSubNavigation
                     "tooltip" => __("What customers searched for and did not find"),
                 ],
             ],
+            [
+                "label"    => __("AI Assistant"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.web.analytics.shopping_assistant.show",
+                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-robot"],
+                    "tooltip" => __("What the AI shopping assistant did for sales"),
+                ],
+            ],
 
         ]));
     }

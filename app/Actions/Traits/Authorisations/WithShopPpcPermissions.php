@@ -80,6 +80,15 @@ trait WithShopPpcPermissions
         ]);
     }
 
+    /**
+     * The group-wide AI Assistant report on WebOps: group admins and group webmasters only, as it
+     * shows every shop's customers. Staff of one shop use the report in that website's analytics.
+     */
+    public function canViewGroupShoppingAssistant(User $user): bool
+    {
+        return $this->isGroupAdmin($user) || $user->authTo('group-webmaster.view');
+    }
+
     public function canViewGroupSeo(User $user): bool
     {
         if ($this->isGroupAdmin($user)) {

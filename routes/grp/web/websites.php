@@ -18,6 +18,8 @@ use App\Actions\Web\GoogleTagManager\UI\ShowGoogleTagManager;
 use App\Actions\Web\Seo\ExportSeoPortfolio;
 use App\Actions\Web\Seo\UI\ShowSeoApiUsage;
 use App\Actions\Web\Seo\UI\ShowSeoPortfolio;
+use App\Actions\Web\ShoppingAssistant\UI\ShowShoppingAssistantConversation;
+use App\Actions\Web\ShoppingAssistant\UI\ShowShoppingAssistantPerformance;
 use App\Actions\Web\Webpage\UI\ShowFooterPreview;
 use App\Actions\Web\Webpage\UI\ShowHeaderPreview;
 use App\Actions\Web\Webpage\UI\ShowSidebarPreview;
@@ -34,6 +36,8 @@ Route::get('crawler/{crawl:id}/export', ExportCrawlTab::class)->name('crawler.ex
 Route::get('crawler/{crawl:id}/report', ExportCrawlReport::class)->name('crawler.report');
 Route::get('crawler/{crawl:id}/compare', CompareCrawls::class)->name('crawler.compare');
 Route::get('crawler/{crawl:id}/structure', ShowCrawlStructure::class)->name('crawler.structure');
+Route::get('ai-assistant', ShowShoppingAssistantPerformance::class)->name('shopping_assistant.show');
+Route::get('ai-assistant/conversations/{conversation:ulid}', ShowShoppingAssistantConversation::class)->name('shopping_assistant.conversations.show');
 Route::get('google-tag-manager', ShowGoogleTagManager::class)->name('google_tag_manager.index');
 Route::get('google-tag-manager/connect', ConnectGoogleTagManager::class)->name('google_tag_manager.connect');
 Route::get('{website}/webpages/{webpage}/workshop/preview', [ShowWebpageWorkshopPreview::class, 'inWebsite'])->name('webpage.preview');
