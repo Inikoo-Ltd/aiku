@@ -6,10 +6,12 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faDolly, faBoxCheck, faBoxes, faExclamationTriangle, faTruckContainer, faInfoCircle } from "@fal"
+import { faDolly, faBoxCheck, faBoxes, faBoxOpen, faExclamationTriangle, faTruckContainer, faInfoCircle } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import ConfirmDialog from "primevue/confirmdialog"
+import { useConfirm } from "primevue/useconfirm"
 import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -19,7 +21,7 @@ import AgentWarehouseStockPackDialog from "@/Components/Procurement/AgentWarehou
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 
-library.add(faDolly, faBoxCheck, faBoxes)
+library.add(faDolly, faBoxCheck, faBoxes, faBoxOpen)
 
 const props = defineProps<{
 	data: {}
@@ -94,6 +96,38 @@ function openPackDialog(stocks: any[]) {
 function onPacked() {
 	_table.value?.clearSelection()
 	selectedRows.value = {}
+}
+
+const confirm = useConfirm()
+const isUnpackable = (stock: any) => !!props.canPack && stock.state !== "received"
+const unpackingId = ref<number | null>(null)
+const unpackErrors = ref<Record<number, string>>({})
+
+function confirmUnpack(stock: any) {
+	confirm.require({
+		group: "agent-warehouse-stocks",
+		header: ctrans("Unpack :code", { code: stock.code }),
+		message: ctrans("These :units units go back to received, not packed yet, waiting to be packed again.", { units: locale.number(stock.quantity) }),
+		rejectProps: { label: ctrans("Cancel") },
+		acceptProps: { label: ctrans("Unpack") },
+		accept: () => unpack(stock),
+	})
+}
+
+function unpack(stock: any) {
+	router.patch(
+		route("grp.org.agent.warehouse.unpack", [organisation, stock.id]),
+		{},
+		{
+			preserveScroll: true,
+			onStart: () => {
+				unpackingId.value = stock.id
+				delete unpackErrors.value[stock.id]
+			},
+			onFinish: () => (unpackingId.value = null),
+			onError: (errors: Record<string, string>) => (unpackErrors.value[stock.id] = Object.values(errors ?? {})[0] ?? ctrans("Something went wrong")),
+		}
+	)
 }
 </script>
 
@@ -219,8 +253,46 @@ function onPacked() {
 						<FontAwesomeIcon :icon="faBoxCheck" class="text-green-600" fixed-width aria-hidden="true" />
 					</template>
 				</Button>
+				<Button
+					v-if="isUnpackable(stock)"
+					:label="ctrans('Unpack')"
+					:tooltip="ctrans('Click to put these units back to \'received, not packed yet\'')"
+					type="tertiary"
+					size="xs"
+					:loading="unpackingId === stock.id"
+					@click="confirmUnpack(stock)"
+				>
+					<template #icon>
+						<FontAwesomeIcon :icon="faBoxOpen" class="text-amber-500" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+				<p v-if="unpackErrors[stock.id]" class="mt-1 text-xs text-red-500">{{ unpackErrors[stock.id] }}</p>
 			</template>
 		</Table>
+
+		<ConfirmDialog group="agent-warehouse-stocks" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
+			<template #container="{ message, acceptCallback, rejectCallback }">
+				<div class="rounded-lg bg-white p-5">
+					<div class="flex items-center gap-2 font-semibold text-gray-900">
+						<FontAwesomeIcon :icon="faBoxOpen" class="text-amber-500" fixed-width aria-hidden="true" />
+						{{ message.header }}
+					</div>
+					<p class="mt-3 text-sm text-gray-600">{{ message.message }}</p>
+					<div class="mt-5 flex justify-end gap-2">
+						<Button type="tertiary" :label="message.rejectProps?.label ?? ctrans('Cancel')" @click="rejectCallback">
+							<template #icon>
+								<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+							</template>
+						</Button>
+						<Button type="tertiary" :label="message.acceptProps?.label ?? ctrans('Confirm')" @click="acceptCallback">
+							<template #icon>
+								<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
+							</template>
+						</Button>
+					</div>
+				</div>
+			</template>
+		</ConfirmDialog>
 
 		<PurchaseOrderLineAddToContainerDialog
 			v-if="containerDialogItems.length"
