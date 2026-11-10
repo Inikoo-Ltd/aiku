@@ -128,6 +128,9 @@ class ApplyAgentInvoiceCosting
     /**
      * What an entered agent invoice still waits for before handle() puts it in the costing (HELP-4594): until then the
      * costing has no invoice row, which must not read as "invoice not received". Null when there is nothing to wait for.
+     * A costed delivery, or a placed one whose invoice was never applied (entered while it was costed, then reopened;
+     * or AWChina-142, placed 6 Nov 2026 without it), gets nothing more from handle(): that is said as it is, without
+     * guessing why.
      */
     public static function waitingFor(StockDelivery $stockDelivery): ?string
     {
@@ -136,18 +139,24 @@ class ApplyAgentInvoiceCosting
 
         if (!$agentInvoice
             || $agentInvoice->source === StockDeliveryInvoiceSourceEnum::ESTIMATED
-            || $stockDelivery->is_costed
             || Arr::get($stockDelivery->data ?? [], self::APPLIED_AT)) {
             return null;
         }
 
-        $reference = ['reference' => $agentInvoice->reference];
+        $reference   = ['reference' => $agentInvoice->reference];
+        $notInCosting = __('Invoice :reference is entered but is not in the costing.', $reference);
+
+        $isApproved = ApproveAgentInvoiceCharges::isApproved($agentInvoice);
+        $isPlaced   = $stockDelivery->state === StockDeliveryStateEnum::PLACED;
 
         return match (true) {
             $agentInvoice->currency_id !== $stockDelivery->currency_id => __('Invoice :reference entered in :currency and the delivery is in :delivery, so it does not go into the costing by itself.', $reference + ['currency' => $agentInvoice->currency?->code, 'delivery' => $stockDelivery->currency?->code]),
-            !ApproveAgentInvoiceCharges::isApproved($agentInvoice)    => __('Invoice :reference entered, it goes into the costing once its charges are approved.', $reference),
-            $stockDelivery->state !== StockDeliveryStateEnum::PLACED   => __('Invoice :reference entered, it goes into the costing once the delivery is placed.', $reference),
-            default                                                    => null,
+            $stockDelivery->is_costed,
+            in_array($stockDelivery->state, [StockDeliveryStateEnum::CANCELLED, StockDeliveryStateEnum::NOT_RECEIVED], true) => $notInCosting,
+            !$isApproved && !$isPlaced => __('Invoice :reference entered, it goes into the costing once its charges are approved and the delivery is placed.', $reference),
+            !$isApproved               => __('Invoice :reference entered, it goes into the costing once its charges are approved.', $reference),
+            !$isPlaced                 => __('Invoice :reference entered, it goes into the costing once the delivery is placed.', $reference),
+            default                    => $notInCosting,
         };
     }
 

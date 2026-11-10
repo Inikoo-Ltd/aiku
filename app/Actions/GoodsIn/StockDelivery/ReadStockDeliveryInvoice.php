@@ -17,6 +17,7 @@ use App\Models\GoodsIn\StockDeliveryItem;
 use App\Models\Helpers\Media;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use RuntimeException;
@@ -37,7 +38,11 @@ class ReadStockDeliveryInvoice extends OrgAction
 
     public int $jobTimeout = 600;
 
+    public int $jobTries = 1;
+
     public const string KIND = 'supplier_invoice';
+
+    public const int STALE_AFTER_MINUTES = 20;
 
     private const array KEYS = ['is_invoice', 'issuer', 'invoice_number', 'invoice_date', 'currency', 'references', 'lines', 'charges', 'total'];
 
@@ -78,9 +83,24 @@ class ReadStockDeliveryInvoice extends OrgAction
      */
     public static function reading(StockDelivery $stockDelivery, Media $media): ?array
     {
-        $data = json_decode((string) self::pivot($stockDelivery, $media)->value('data'), true);
+        $data    = json_decode((string) self::pivot($stockDelivery, $media)->value('data'), true);
+        $reading = Arr::get($data ?? [], 'invoice_reading');
 
-        return Arr::get($data ?? [], 'invoice_reading');
+        return self::isStale($reading) ? ['state' => 'failed', 'kind' => $reading['kind'] ?? null, 'error' => __('The reading did not finish: read it again.')] : $reading;
+    }
+
+    /**
+     * A read job killed mid-way (worker timeout or restart) never writes its result and would leave the document on
+     * "Reading…" with no way to read it again (HELP-4594). A job runs once for at most 10 minutes, so a reading still
+     * going 20 minutes after it was queued is over.
+     *
+     * @param  array<string, mixed>|null  $reading
+     */
+    private static function isStale(?array $reading): bool
+    {
+        $queuedAt = Arr::get($reading, 'queued_at');
+
+        return Arr::get($reading, 'state') === 'reading' && $queuedAt && Carbon::parse($queuedAt)->lt(now()->subMinutes(self::STALE_AFTER_MINUTES));
     }
 
     public static function hasAppliedReading(StockDelivery $stockDelivery): bool
@@ -99,7 +119,7 @@ class ReadStockDeliveryInvoice extends OrgAction
     public static function storeReading(StockDelivery $stockDelivery, Media $media, array $reading): void
     {
         $data                    = json_decode((string) self::pivot($stockDelivery, $media)->value('data'), true) ?: [];
-        $data['invoice_reading'] = $reading;
+        $data['invoice_reading'] = $reading['state'] === 'reading' ? $reading + ['queued_at' => now()->toIso8601String()] : $reading;
 
         self::pivot($stockDelivery, $media)->update(['data' => json_encode($data)]);
     }

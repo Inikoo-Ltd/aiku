@@ -39,6 +39,8 @@ class ReadStockDeliveryServiceInvoice extends OrgAction
 
     public int $jobTimeout = 600;
 
+    public int $jobTries = 1;
+
     public const string KIND = 'service_invoice';
 
     private const array KEYS = ['is_invoice', 'issuer', 'invoice_number', 'invoice_date', 'currency', 'references', 'lines', 'net_total', 'vat_total', 'total_payable'];

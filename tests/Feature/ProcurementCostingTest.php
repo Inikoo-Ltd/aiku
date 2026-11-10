@@ -148,6 +148,7 @@ use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyOutcomeEnum;
 use App\Enums\GoodsIn\StockDeliveryClaimStateEnum;
 use App\Enums\SupplyChain\SupplierProduct\SupplierUnitEnum;
 use App\Actions\GoodsIn\StockDelivery\GetStockDeliveryInvoiceCosting;
+use App\Actions\GoodsIn\StockDelivery\ReadStockDeliveryInvoice;
 use App\Models\Tasks\StaffTask;
 use App\Actions\GoodsIn\StockDeliveryItem\ResolveStockDeliveryItemDiscrepancy;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCustomsLine;
@@ -1102,7 +1103,11 @@ test('an agent invoice entered by hand on a received container says what it wait
 
     StoreActualStockDeliveryInvoice::make()->handle($stockDelivery, ['reference' => 'EX/INV/4594', 'date' => '2026-08-25', 'goods_amount' => 100, 'charges' => [['description' => 'Sea freight', 'type' => 'freight', 'amount' => 5]]]);
 
+    expect(ApplyAgentInvoiceCosting::waitingFor($stockDelivery->fresh()))->toBe('Invoice EX/INV/4594 entered, it goes into the costing once its charges are approved and the delivery is placed.');
+
+    $stockDelivery->updateQuietly(['state' => StockDeliveryStateEnum::PLACED]);
     expect(ApplyAgentInvoiceCosting::waitingFor($stockDelivery->fresh()))->toBe('Invoice EX/INV/4594 entered, it goes into the costing once its charges are approved.');
+    $stockDelivery->updateQuietly(['state' => StockDeliveryStateEnum::RECEIVED]);
 
     ApproveAgentInvoiceCharges::make()->handle($stockDelivery->fresh());
     $stockDelivery->agentInvoice()->first()->updateQuietly(['currency_id' => Currency::where('id', '!=', $stockDelivery->currency_id)->value('id')]);
@@ -1123,6 +1128,43 @@ test('an agent invoice entered by hand on a received container says what it wait
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('costing.agent_invoice_missing', false)
             ->where('costing.agent_invoice_waiting', null));
+});
+
+test('an agent invoice that is entered but not in the costing of a costed or reopened container says so (HELP-4594)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'AGENT-COSTED-'.Str::random(6), [10]);
+    $stockDelivery->updateQuietly(['agent_id' => $this->agent->id, 'state' => StockDeliveryStateEnum::PLACED, 'is_costed' => true]);
+
+    StoreActualStockDeliveryInvoice::make()->handle($stockDelivery->refresh(), ['reference' => 'EX/INV/4594C', 'date' => '2026-08-25', 'goods_amount' => 100, 'charges' => [['description' => 'Sea freight', 'type' => 'freight', 'amount' => 5]]]);
+    $message = 'Invoice EX/INV/4594C is entered but is not in the costing.';
+
+    expect(ApplyAgentInvoiceCosting::waitingFor($stockDelivery->fresh()))->toBe($message);
+
+    $stockDelivery->updateQuietly(['is_costed' => false, 'state' => StockDeliveryStateEnum::CANCELLED]);
+
+    expect(ApplyAgentInvoiceCosting::waitingFor($stockDelivery->fresh()))->toBe($message);
+
+    ApproveAgentInvoiceCharges::make()->handle($stockDelivery->fresh());
+    $stockDelivery->updateQuietly(['state' => StockDeliveryStateEnum::PLACED]);
+
+    expect(ApplyAgentInvoiceCosting::waitingFor($stockDelivery->fresh()))->toBe($message);
+});
+
+test('a document reading still going 20 minutes after it was queued is shown as not finished, so it can be read again (HELP-4594)', function () {
+    $stockDelivery = createStockDeliveryWithItems($this, 'STALE-READ-'.Str::random(6), [10]);
+    $path          = tempnam(sys_get_temp_dir(), 'invoice').'.csv';
+    file_put_contents($path, "Invoice,STALE\n");
+    $media = \App\Actions\Helpers\Media\SaveModelAttachment::make()->action($stockDelivery, ['path' => $path, 'originalName' => 'stale-'.Str::random(8).'.csv', 'extension' => 'csv', 'scope' => 'Invoice']);
+    @unlink($path);
+
+    ReadStockDeliveryInvoice::storeReading($stockDelivery, $media, ['state' => 'reading', 'kind' => ReadStockDeliveryInvoice::KIND]);
+
+    $this->travel(19)->minutes();
+    expect(ReadStockDeliveryInvoice::reading($stockDelivery, $media)['state'])->toBe('reading');
+
+    $this->travel(2)->minutes();
+    expect(ReadStockDeliveryInvoice::reading($stockDelivery, $media))->toBe(['state' => 'failed', 'kind' => ReadStockDeliveryInvoice::KIND, 'error' => 'The reading did not finish: read it again.'])
+        ->and(collect(GetStockDeliveryInvoiceCosting::run($stockDelivery))->firstWhere('media_id', $media->id)['reading']['state'])->toBe('failed');
+    $this->travelBack();
 });
 
 test('extra costs split by hand line by line survive finishing the costing (HELP-3566)', function () {
