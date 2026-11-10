@@ -105,7 +105,7 @@ return [
             'delivery_notes', 'delivery_note_*', 'partner_shipment*', 'returns', 'return_*', 'unidentified_returns',
             'portfolios', 'platform_portfolio_logs', 'customer_sales_channels', 'download_portfolio_customer_sales_channel',
             'offer_has_customers', 'purged_orders', 'purges', 'checkout_abandonments', 'shopping_list_items', 'waiting_items',
-            'retina_dashboard_basket_adds', 'favourites', 'back_in_stock_reminder*',
+            'retina_dashboard_basket_adds', 'favourites', 'back_in_stock_reminder*', 'segment_product_sales',
         ],
 
         /*

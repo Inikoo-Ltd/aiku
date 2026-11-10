@@ -2004,9 +2004,12 @@ test('Delete Refund', function (Invoice $refund) {
 })->depends('Store invoice refund');
 
 test('UI index customer balances', function () {
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer->updateQuietly(['balance' => 12.5]);
+
     $response = get(route('grp.org.accounting.balances.index', [$this->organisation->slug]));
 
-    $response->assertInertia(function (AssertableInertia $page) {
+    $response->assertInertia(function (AssertableInertia $page) use ($customer) {
         $page->component('Org/Accounting/CustomerBalances')
             ->has('title')
             ->has('breadcrumbs', 3)
@@ -2016,7 +2019,7 @@ test('UI index customer balances', function () {
                     ->where('title', 'Customer Balances')
                     ->etc()
             )
-            ->has('data');
+            ->where('data.data', fn ($rows) => collect($rows)->firstWhere('id', $customer->id)['shop_type'] === $customer->shop->type->value);
     });
 });
 

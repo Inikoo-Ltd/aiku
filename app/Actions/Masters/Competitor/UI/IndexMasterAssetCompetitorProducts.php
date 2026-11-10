@@ -27,8 +27,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 /**
  * Our products next to what competitors charge, in buckets: to review (the AI suggested the match),
- * confirmed (the price comparison), rejected by staff, or all. Matches the AI itself turned down are
- * never listed.
+ * confirmed (the price comparison), rejected by staff, rejected by the AI check (a tick brings one back),
+ * or all. Matches the cheap matcher turned down when it first paired the products are never listed.
  */
 class IndexMasterAssetCompetitorProducts extends OrgAction
 {
@@ -67,8 +67,10 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
         match ($bucket) {
             'confirmed' => $query->where('master_asset_competitor_products.status', MasterAssetCompetitorProductStatusEnum::CONFIRMED),
             'rejected'  => $query->where('master_asset_competitor_products.status', MasterAssetCompetitorProductStatusEnum::REJECTED)->whereNotNull('master_asset_competitor_products.reviewed_by_user_id'),
+            'rejected_by_ai' => $query->where('master_asset_competitor_products.status', MasterAssetCompetitorProductStatusEnum::REJECTED)->whereNull('master_asset_competitor_products.reviewed_by_user_id')->whereNotNull('master_asset_competitor_products.checked_at'),
             'all'       => $query->where(fn ($query) => $query->where('master_asset_competitor_products.status', '!=', MasterAssetCompetitorProductStatusEnum::REJECTED)
-                ->orWhereNotNull('master_asset_competitor_products.reviewed_by_user_id')),
+                ->orWhereNotNull('master_asset_competitor_products.reviewed_by_user_id')
+                ->orWhereNotNull('master_asset_competitor_products.checked_at')),
             default     => $query->where('master_asset_competitor_products.status', MasterAssetCompetitorProductStatusEnum::SUGGESTED),
         };
 
@@ -84,6 +86,8 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
                 'master_asset_competitor_products.is_same_item',
                 'master_asset_competitor_products.confidence',
                 'master_asset_competitor_products.reviewed_by_user_id',
+                'master_asset_competitor_products.units_verified',
+                'master_asset_competitor_products.check_note',
                 'competitor_products.image_url as competitor_image_url',
                 'master_assets.code',
                 'master_assets.slug',
@@ -192,6 +196,13 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
         return $this->asController($request);
     }
 
+    public function rejectedByAi(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'rejected_by_ai';
+
+        return $this->asController($request);
+    }
+
     public function allMatches(ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
@@ -204,6 +215,7 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
         $title = match ($this->bucket) {
             'confirmed' => __('Confirmed competitor prices'),
             'rejected'  => __('Rejected matches'),
+            'rejected_by_ai' => __('Matches rejected by the AI check'),
             'all'       => __('All competitor matches'),
             default     => __('Prices to review'),
         };
@@ -229,7 +241,7 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
     {
         $counts = MasterAssetCompetitorProduct::join('master_assets', 'master_assets.id', '=', 'master_asset_competitor_products.master_asset_id')
             ->where('master_assets.group_id', $group->id)
-            ->selectRaw("count(*) filter (where master_asset_competitor_products.status = 'suggested') as to_review, count(*) filter (where master_asset_competitor_products.status = 'confirmed') as confirmed, count(*) filter (where master_asset_competitor_products.status = 'rejected' and reviewed_by_user_id is not null) as rejected")
+            ->selectRaw("count(*) filter (where master_asset_competitor_products.status = 'suggested') as to_review, count(*) filter (where master_asset_competitor_products.status = 'confirmed') as confirmed, count(*) filter (where master_asset_competitor_products.status = 'rejected' and reviewed_by_user_id is not null) as rejected, count(*) filter (where master_asset_competitor_products.status = 'rejected' and reviewed_by_user_id is null and checked_at is not null) as rejected_by_ai")
             ->first();
 
         $bucket = fn (string $label, string $route, int $number, ?string $icon = null, ?string $align = null) => array_filter([
@@ -245,7 +257,8 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
             $bucket(__('To review'), 'grp.masters.competitors.prices.index', (int) $counts->to_review),
             $bucket(__('Confirmed'), 'grp.masters.competitors.prices.confirmed', (int) $counts->confirmed),
             $bucket(__('Rejected'), 'grp.masters.competitors.prices.rejected', (int) $counts->rejected),
-            $bucket(__('All'), 'grp.masters.competitors.prices.all', (int) $counts->to_review + (int) $counts->confirmed + (int) $counts->rejected, 'fal fa-bars', 'right'),
+            $bucket(__('Rejected by AI'), 'grp.masters.competitors.prices.rejected_by_ai', (int) $counts->rejected_by_ai),
+            $bucket(__('All'), 'grp.masters.competitors.prices.all', (int) $counts->to_review + (int) $counts->confirmed + (int) $counts->rejected + (int) $counts->rejected_by_ai, 'fal fa-bars', 'right'),
         ];
     }
 }

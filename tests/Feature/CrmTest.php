@@ -1658,11 +1658,11 @@ test('an appointment completed or marked no show before its time stays in the pa
     $noShow     = UpdateAppointment::make()->action($book(), ['state' => AppointmentStateEnum::NO_SHOW->value]);
     $stillAhead = $book();
 
-    $rowIds = function (string $tab) use ($marker): array {
+    $rowIds = function (string $state) use ($marker): array {
         $ids = [];
-        $this->get(route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug, 'tab' => $tab, $tab.'_filter' => ['global' => $marker]]))
-            ->assertInertia(function (AssertableInertia $page) use ($tab, &$ids) {
-                $ids = collect($page->toArray()['props'][$tab]['data'])->pluck('id')->all();
+        $this->get(route('grp.org.shops.show.crm.appointments.index', [$this->organisation->slug, $this->shop->slug, 'elements' => ['state' => $state], 'filter' => ['global' => $marker]]))
+            ->assertInertia(function (AssertableInertia $page) use (&$ids) {
+                $ids = collect($page->toArray()['props']['data']['data'])->pluck('id')->all();
             });
 
         return $ids;
@@ -1745,7 +1745,7 @@ test('UI Index appointments', function (Appointment $appointment) {
                 ->has('breadcrumbs', 3)
                 ->has('pageHead.subNavigation', 6)
                 ->missing('tabs')
-                ->has('tableQueryBuilderProps.default.elementGroups.state.elements.cancelled')
+                ->has('queryBuilderProps.default.elementGroups.state.elements.cancelled')
                 ->where('data.data', fn ($rows) => collect($rows)->contains('id', $appointment->id));
         });
 })->depends('cancel and rebook an appointment');

@@ -49,7 +49,7 @@ class GetConfirmedCompetitorPrices
                 $competitor        = $competitorProduct->competitor;
                 $masterAsset       = $match->masterAsset;
 
-                [$ours, $theirs] = static::unitPrices($masterAsset, $competitor, $competitorProduct->price === null ? null : (float) $competitorProduct->price, (float) ($match->competitor_units ?? $competitorProduct->units), $currency, $exchanges);
+                [$ours, $theirs] = static::unitPrices($masterAsset, $competitor, $competitorProduct->price === null ? null : (float) $competitorProduct->price, (float) ($match->competitor_units ?? $competitorProduct->units), $currency, $exchanges, $match->units_verified);
 
                 if (!$ours || !$theirs) {
                     return null;
@@ -75,22 +75,22 @@ class GetConfirmedCompetitorPrices
      * @param  array<int, float|null>  $exchanges
      * @return array{0: float|null, 1: float|null, 2: Currency}
      */
-    public static function unitPrices(MasterAsset $masterAsset, Competitor $competitor, ?float $price, float $units, Currency $currency, array &$exchanges = []): array
+    public static function unitPrices(MasterAsset $masterAsset, Competitor $competitor, ?float $price, float $units, Currency $currency, array &$exchanges = [], bool $unitsVerified = false): array
     {
         $isConsumer = $competitor->sells_to === CompetitorSellsToEnum::CONSUMER;
         $ourPriceIn = fn (Currency $in): float => (float) data_get($isConsumer ? $masterAsset->master_rrps : $masterAsset->master_prices, $in->code.'.value');
         $local      = $ourPriceIn($competitor->currency);
         $ourUnits   = max((float) $masterAsset->units, 1);
-        $units      = max($units, 1);
+        $units      = $units > 0 ? $units : 1;
 
         if ($local > 0) {
-            $units = static::comparedUnits($local, $ourUnits, (float) $price, $units);
+            $units = $unitsVerified ? $units : static::comparedUnits($local, $ourUnits, (float) $price, $units);
 
             return [$local / $ourUnits, $price === null ? null : $price / $units, $competitor->currency];
         }
 
         $exchanges[$competitor->currency_id] ??= GetCurrencyExchange::run($competitor->currency, $currency);
-        $units = static::comparedUnits($ourPriceIn($currency), $ourUnits, (float) $price * (float) $exchanges[$competitor->currency_id], $units);
+        $units = $unitsVerified ? $units : static::comparedUnits($ourPriceIn($currency), $ourUnits, (float) $price * (float) $exchanges[$competitor->currency_id], $units);
 
         return [
             $ourPriceIn($currency) > 0 ? $ourPriceIn($currency) / $ourUnits : null,
@@ -104,6 +104,7 @@ class GetConfirmedCompetitorPrices
      * packets held as 1 unit against their 12, or their box of 12 read as 1 against our 12), which puts their
      * price per unit a pack size away from ours. When per unit they are outside 40% to 250% of our price while
      * pack against pack they are inside it, the packs are the same and theirs counts as many units as ours.
+     * Units the AI check verified on their listing are taken as they are and never come here.
      */
     public static function comparedUnits(float $ourPackPrice, float $ourUnits, float $theirPackPrice, float $units): float
     {

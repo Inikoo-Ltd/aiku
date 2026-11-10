@@ -108,6 +108,9 @@ const money = (value: number | null, currencyCode: string) => value === null ? "
                 v-tooltip="ctrans('With the units in their pack as entered, their price per unit would be under 40% or over 250% of ours, while pack against pack the prices are close. So their pack is taken to hold what ours holds.')">
                 {{ ctrans("Compared pack against pack, as :n units like ours", { n: item.compared_as_units }) }}
             </div>
+            <div v-if="item.check_note" class="mt-1 text-xs text-gray-500" v-tooltip="ctrans('What the AI check found when it read their listing')">
+                <span class="font-medium">{{ item.units_verified ? ctrans("AI check, units verified:") : ctrans("AI check:") }}</span> {{ item.check_note }}
+            </div>
             <div v-if="unitsError?.id === item.id" class="mt-1 text-xs text-red-600">{{ unitsError.message }}</div>
         </template>
         <template #cell(competitor_unit_price)="{ item }">

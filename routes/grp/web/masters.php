@@ -82,6 +82,7 @@ Route::prefix('competitors')->as('competitors.')->group(function () {
     Route::get('prices', IndexMasterAssetCompetitorProducts::class)->name('prices.index');
     Route::get('prices/confirmed', [IndexMasterAssetCompetitorProducts::class, 'confirmed'])->name('prices.confirmed');
     Route::get('prices/rejected', [IndexMasterAssetCompetitorProducts::class, 'rejected'])->name('prices.rejected');
+    Route::get('prices/rejected-by-ai', [IndexMasterAssetCompetitorProducts::class, 'rejectedByAi'])->name('prices.rejected_by_ai');
     Route::get('prices/all', [IndexMasterAssetCompetitorProducts::class, 'allMatches'])->name('prices.all');
     Route::get('{competitor}', ShowCompetitor::class)->name('show');
     Route::get('{competitor}/edit', EditCompetitor::class)->name('edit');

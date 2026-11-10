@@ -1478,7 +1478,7 @@ test('the rail shows a developments badge with what waits on the person, and not
 
     expect($badge['waiting'])->toBeGreaterThan(0)
         ->and(\App\Actions\Goods\ProductDevelopment\ProductDevelopmentWaitingOn::railBadge(newGuestUser($this)))->toBeNull()
-        ->and(\App\Actions\UI\Grp\GetFirstLoadProps::run($people['agent'])['development_badges'])->toBe($badge);
+        ->and(\App\Actions\UI\Grp\GetFirstLoadProps::make()->badges($people['agent'])['development_badges'])->toBe($badge);
 
     actingAs($people['agent']);
     foreach (['grp.product_developments.index', 'grp.product_developments.waiting_on_me'] as $page) {
