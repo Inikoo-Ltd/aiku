@@ -1721,6 +1721,12 @@ test('an agent invoices a container from its lines, its charges are the ledger l
         ->and(collect($again->charges)->last())->toMatchArray(['type' => 'packing_charge', 'amount' => 1812.4, 'org_stock_id' => null])
         ->and(\App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges::isApproved($again))->toBeFalse();
 
+    $handFee = $ledgerLine(['type' => 'agent_fee', 'amount' => 9, 'notes' => 'Container value fee from the balance sheet']);
+    $again->refresh();
+    expect(AgentPayment::where('stock_delivery_id', $stockDelivery->id)->where('type', AgentPaymentTypeEnum::AGENT_FEE)->pluck('id')->all())->toBe([$handFee->id])
+        ->and(AgentPayment::onlyTrashed()->whereKey($fee->id)->exists())->toBeTrue()
+        ->and((float) $again->total_amount)->toBe(1973.9);
+
     $stockDelivery->updateQuietly(['is_costed' => true]);
     expect(GetAgentContainerInvoiceData::run($agent->organisation, $stockDelivery->refresh())['charge_form'])->toBeNull();
     $addCharge()->assertSessionHasErrors('stock_delivery_id');
