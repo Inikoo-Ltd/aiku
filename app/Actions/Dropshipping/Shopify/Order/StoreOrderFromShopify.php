@@ -13,11 +13,14 @@ use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\Shopify\WithShopifyPortfolioMatching;
 use App\Actions\Dropshipping\WithSanitizedPhone;
 use App\Actions\Ordering\Order\StoreOrder;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Actions\Ordering\Order\Traits\WithPayAndSubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
@@ -26,9 +29,11 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -112,6 +117,10 @@ class StoreOrderFromShopify extends OrgAction
             return;
         }
 
+        if (!$declinedReason && $this->isHeldByAnotherOrder($shopifyUser, $modelData)) {
+            return;
+        }
+
         $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData, $deliveryAddress);
 
         if ($declinedReason) {
@@ -183,6 +192,79 @@ class StoreOrderFromShopify extends OrgAction
 
             $order = $this->payAndSubmitOrder($order);
         }
+    }
+
+    /**
+     * Shopify can hand the same order lines over again under a new fulfilment order id, and each id
+     * used to become its own aiku order, so the dropshipper paid and the end customer got the parcel
+     * twice (PRE-90). An order still waiting for payment whose lines all come again gives way to the
+     * new request, which can add lines or change quantities; an order already paid and not yet
+     * dispatched takes the new id only when the lines and quantities are the same, so nothing is
+     * lost and the dispatch still reaches the live fulfilment order. Anything else is created as before.
+     *
+     * @throws \Throwable
+     */
+    protected function isHeldByAnotherOrder(ShopifyUser $shopifyUser, array $modelData): bool
+    {
+        $shopifyOrderId    = Arr::get($modelData, 'order.id');
+        $incomingQuantities = collect(Arr::get($modelData, 'line_items', []))
+            ->filter(fn ($lineItem) => filled(Arr::get($lineItem, 'id')))
+            ->mapWithKeys(fn ($lineItem) => [$lineItem['id'] => (float) $lineItem['quantity']]);
+
+        if (!$shopifyOrderId || $incomingQuantities->isEmpty()) {
+            return false;
+        }
+
+        $heldBy = Order::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)
+            ->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::DISPATCHED])
+            ->where('data->shopify_data->order->id', $shopifyOrderId)
+            ->whereHas('transactions', fn ($query) => $query->whereIn('platform_transaction_id', $incomingQuantities->keys()))
+            ->latest('id')
+            ->first();
+
+        if (!$heldBy) {
+            return false;
+        }
+
+        $heldQuantities = $heldBy->transactions()
+            ->whereNotNull('platform_transaction_id')
+            ->get(['platform_transaction_id', 'quantity_ordered'])
+            ->groupBy('platform_transaction_id')
+            ->map(fn ($transactions) => (float) $transactions->sum('quantity_ordered'));
+
+        if ($heldQuantities->keys()->diff($incomingQuantities->keys())->isNotEmpty()) {
+            return false;
+        }
+
+        if (in_array($heldBy->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED]) && $heldBy->pay_status !== OrderPayStatusEnum::PAID) {
+            Cache::lock('shopify_superseded_order_'.$heldBy->id, 120)->block(15, function () use ($heldBy, $modelData) {
+                if (!in_array($heldBy->refresh()->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED])) {
+                    return;
+                }
+
+                try {
+                    CancelOrder::run($heldBy, [
+                        'cancellation_reason' => OrderCancellationReasonEnum::DUPLICATE_ORDER,
+                        'cancellation_notes'  => 'Shopify sent these lines again as fulfilment order '.Arr::get($modelData, 'id'),
+                    ]);
+                } catch (ValidationException $e) {
+                    Log::info('Shopify fulfilment order of superseded order '.$heldBy->id.' not closed: '.$e->getMessage());
+                }
+            });
+
+            return false;
+        }
+
+        if ($heldQuantities->sortKeys()->all() != $incomingQuantities->sortKeys()->all()) {
+            return false;
+        }
+
+        $heldBy->update([
+            'platform_order_id' => Arr::get($modelData, 'id'),
+            'data'              => array_merge((array) $heldBy->data, ['shopify_data' => $modelData]),
+        ]);
+
+        return true;
     }
 
     /**

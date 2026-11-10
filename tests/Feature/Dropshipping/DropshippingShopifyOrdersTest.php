@@ -47,6 +47,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Dropshipping\OrderImportRetryStatusEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Listeners\ShopifyAppInstalledListener;
 use App\Models\Catalogue\Shop;
@@ -578,6 +579,51 @@ function shopifyImportedOrder($test, ShopifyUser $shopifyUser, string $fulfilmen
     return Order::where('platform_order_id', $fulfilmentOrderGid)->firstOrFail();
 }
 
+test('shopify sending the lines of an unpaid order again under a new fulfilment order replaces that order, one already paid takes the new id only for the same lines and quantities, and an order with lines left out is kept', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-refulfil');
+    shopifyPortfolioFor($this, $shopifyUser);
+
+    $unpaid = shopifyImportedOrder($this, $shopifyUser, 'gid://shopify/FulfillmentOrder/6300', 'gid://shopify/Order/5300');
+    expect($unpaid->state)->toBe(OrderStateEnum::SUBMITTED)
+        ->and($unpaid->pay_status)->not->toBe(OrderPayStatusEnum::PAID);
+
+    $replacement = shopifyImportedOrder($this, $shopifyUser, 'gid://shopify/FulfillmentOrder/6301', 'gid://shopify/Order/5300');
+
+    expect($unpaid->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and(Arr::get($unpaid->data, 'cancellation.reason'))->toBe('duplicate_order')
+        ->and($replacement->id)->not->toBe($unpaid->id)
+        ->and($replacement->state)->not->toBe(OrderStateEnum::CANCELLED);
+
+    $replacement->update(['state' => OrderStateEnum::IN_WAREHOUSE, 'pay_status' => OrderPayStatusEnum::PAID]);
+    $ordersBefore = $shopifyUser->customerSalesChannel->orders()->count();
+
+    shopifyImportedOrder($this, $shopifyUser, 'gid://shopify/FulfillmentOrder/6302', 'gid://shopify/Order/5300');
+
+    expect($shopifyUser->customerSalesChannel->orders()->count())->toBe($ordersBefore)
+        ->and($replacement->refresh()->platform_order_id)->toBe('gid://shopify/FulfillmentOrder/6302')
+        ->and($replacement->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+
+    $otherOrder = shopifyImportedOrder($this, $shopifyUser, 'gid://shopify/FulfillmentOrder/6303', 'gid://shopify/Order/5303');
+    expect($otherOrder->id)->not->toBe($replacement->id)
+        ->and($replacement->refresh()->platform_order_id)->toBe('gid://shopify/FulfillmentOrder/6302');
+
+    CreateFulfilmentOrderFromShopify::run($shopifyUser, shopifyFulfilmentOrder([['remainingQuantity' => 3]], ['id' => 'gid://shopify/FulfillmentOrder/6305', 'order' => ['id' => 'gid://shopify/Order/5300']]));
+    expect(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6305')->exists())->toBeTrue()
+        ->and($replacement->refresh()->platform_order_id)->toBe('gid://shopify/FulfillmentOrder/6302');
+
+    CreateFulfilmentOrderFromShopify::run($shopifyUser, shopifyFulfilmentOrder([[]], ['id' => 'gid://shopify/FulfillmentOrder/6310', 'order' => ['id' => 'gid://shopify/Order/5310']]));
+    $twoLines = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6310')->firstOrFail();
+    $twoLines->transactions()->firstOrFail()->replicate()->fill(['platform_transaction_id' => 'gid://shopify/FulfillmentOrderLineItem/9002'])->save();
+    CreateFulfilmentOrderFromShopify::run($shopifyUser, shopifyFulfilmentOrder([[]], ['id' => 'gid://shopify/FulfillmentOrder/6311', 'order' => ['id' => 'gid://shopify/Order/5310']]));
+    expect($twoLines->refresh()->state)->not->toBe(OrderStateEnum::CANCELLED)
+        ->and(Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6311')->exists())->toBeTrue();
+
+    $replacement->update(['state' => OrderStateEnum::DISPATCHED]);
+    $afterDispatch = shopifyImportedOrder($this, $shopifyUser, 'gid://shopify/FulfillmentOrder/6304', 'gid://shopify/Order/5300');
+    expect($afterDispatch->id)->not->toBe($replacement->id);
+});
+
 test('a cancellation request notified before shopify lists it is answered by the retry a minute later, once', function () {
     Queue::fake();
     $shopifyUser = shopifyOrderChannel($this, 'orders-cancel-race');
@@ -786,7 +832,7 @@ test('the order poller imports every fulfilment order requested from our locatio
             ]),
             shopifyPolledOrder('gid://shopify/Order/5051', [
                 shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6051', 'IN_PROGRESS', 'ACCEPTED'),
-                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6052', 'OPEN', 'SUBMITTED'),
+                shopifyPolledFulfilmentOrder('gid://shopify/FulfillmentOrder/6052', 'OPEN', 'SUBMITTED', lineItems: [['id' => 'gid://shopify/FulfillmentOrderLineItem/9052']]),
             ]),
             shopifyPolledOrder('gid://shopify/Order/5053', [$tooManyLines]),
         ]),
