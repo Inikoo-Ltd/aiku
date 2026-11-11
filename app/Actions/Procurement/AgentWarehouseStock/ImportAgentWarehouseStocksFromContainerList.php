@@ -103,17 +103,35 @@ class ImportAgentWarehouseStocksFromContainerList
         }
 
         if (!$dryRun) {
-            DB::transaction(function () use ($agent, $organisation, $container, $rows) {
+            $imported = DB::transaction(function () use ($agent, $organisation, $container, $rows) {
                 DB::table('agents')->where('id', $agent->id)->lockForUpdate()->value('id');
                 $receipts = ImportAgentWarehouseStocksFromSheet::make()->goodsReceiptsByProductAndOrder($agent, $organisation);
                 $rows     = array_values(array_filter($rows, fn (array $row) => !$receipts->has("{$row['supplier_product_id']}|{$row['purchase_order_id']}")));
 
                 AgentWarehouseStock::where('agent_id', $agent->id)->where('organisation_id', $organisation->id)->where('notes', $container)->whereNull('purchase_order_transaction_id')->delete();
                 AgentWarehouseStock::insert($rows);
+
+                return $rows;
             });
+
+            $this->markOrdersOfStockInProduction($imported, "China agent container list $container: goods in the agent warehouse");
         }
 
         return ['rows' => $rows, 'unmatched' => $unmatched, 'in_production' => $inProduction, 'warnings' => $warnings];
+    }
+
+    /**
+     * Goods in the agent's warehouse show the supplier took and made the order, as a goods receipt does: each open order
+     * the imported rows belong to is marked as in production, which confirms it when it was still submitted.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    public function markOrdersOfStockInProduction(array $rows, string $reason): void
+    {
+        PurchaseOrder::whereIn('id', collect($rows)->pluck('purchase_order_id')->filter()->unique())
+            ->orderBy('id')
+            ->get()
+            ->each(fn (PurchaseOrder $purchaseOrder) => $this->markInProduction($purchaseOrder, $reason));
     }
 
     public function markInProduction(PurchaseOrder $purchaseOrder, string $reason, ?string $date = null): void
