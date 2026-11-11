@@ -16,7 +16,7 @@ import AutoComplete from "primevue/autocomplete"
 import Checkbox from "primevue/checkbox"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCheck, faTimes, faExclamationTriangle } from "@fal"
+import { faCheck, faTimes, faExclamationTriangle, faPlus } from "@fal"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
@@ -244,7 +244,7 @@ function submit() {
 					:class="fieldFocusClass"
 					fluid
 				/>
-				<label class="flex cursor-pointer items-center gap-2 text-xs text-gray-600">
+				<label class="flex cursor-pointer items-center gap-2 text-xs text-gray-600 w-fit">
 					<Checkbox v-model="onlySuppliersWithProducts" binary size="small" />
 					{{ isMany
 						? ctrans("Only suppliers that sell all :count products", { count: items.length })
@@ -260,10 +260,18 @@ function submit() {
 					:suggestions="referenceSuggestions"
 					dropdown
 					completeOnFocus
+					:emptySearchMessage="ctrans('Create a new purchase order :reference for :supplier', { reference: typedReference, supplier: supplier.code })"
 					:class="fieldFocusClass"
 					fluid
 					@complete="suggestReferences"
-				/>
+				>
+					<template #empty>
+						<div class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700">
+							<FontAwesomeIcon :icon="faPlus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+							<span>{{ ctrans("Create a new purchase order :reference for :supplier", { reference: typedReference, supplier: supplier.code }) }}</span>
+						</div>
+					</template>
+				</AutoComplete>
 				<span class="block text-xs text-gray-500">
 					{{ joinsOpenOrder
 						? ctrans("Added to :reference, an open order of :supplier", { reference: typedReference, supplier: supplier.code })
