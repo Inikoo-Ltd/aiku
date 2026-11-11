@@ -52,7 +52,7 @@ class ShowAgentsPurchaseOrderStates extends OrgAction
 
         return [
             'stages'  => collect(array_keys($labels))
-                ->map(fn (string $stage) => ['key' => $stage, 'label' => $labels[$stage]])
+                ->map(fn (string $stage) => ['key' => $stage, 'label' => $labels[$stage], 'information' => self::stageInformation()[$stage] ?? null])
                 ->values()
                 ->all(),
             'ages'    => collect(self::ageBuckets())
@@ -92,11 +92,21 @@ class ShowAgentsPurchaseOrderStates extends OrgAction
         return [
             'draft'              => __('Draft'),
             'submitted'          => __('Submitted'),
-            'confirmed'          => __('Accepted by agent'),
+            'confirmed'          => __('Confirmed'),
             'in_production'      => __('Being made'),
             'in_agent_warehouse'  => __('Received'),
             'ready_for_container' => __('Packed'),
             'on_the_way'          => __('Container on the way'),
+        ];
+    }
+
+    /**
+     * @return array<string, string> what a column means, for the columns whose name does not say it all
+     */
+    public static function stageInformation(): array
+    {
+        return [
+            'confirmed' => __('The agent has talked with the supplier, and the supplier has agreed to make this order.'),
         ];
     }
 

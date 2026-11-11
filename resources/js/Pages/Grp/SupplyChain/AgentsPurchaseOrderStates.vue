@@ -5,6 +5,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from '@/Composables/capitalize'
 import { ctrans } from '@/Composables/useTrans'
 import { useLocaleStore } from '@/Stores/locale'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPeopleArrows, faClipboardList, faWarehouse } from '@fal'
@@ -33,7 +34,7 @@ const props = defineProps<{
     pageHead: object
     title: string
     currencyCode: string
-    stages: { key: string, label: string }[]
+    stages: { key: string, label: string, information?: string | null }[]
     ages: { key: string, label: string }[]
     agents: { slug: string, code: string, name: string }[]
     clients: { key: string, label: string, name: string }[]
@@ -183,6 +184,7 @@ const groupBorder = (index: number) => index === shownStages.value.length ? 'bor
                                     <FontAwesomeIcon icon="fal fa-warehouse" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />{{ column.label }}
                                 </span>
                                 <template v-else>{{ column.label }}</template>
+                                <InformationIcon v-if="column.information" :information="column.information" class="ml-1" />
                             </th>
                         </tr>
                         <tr class="text-gray-400 border-b border-gray-200">
