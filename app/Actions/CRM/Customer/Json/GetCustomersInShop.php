@@ -36,7 +36,7 @@ class GetCustomersInShop extends OrgAction
                     $query->orWhereRaw(
                         "regexp_replace(customers.phone, '\\D', '', 'g') like ?",
                         [$digits.'%']
-                    );
+                    )->orWhere('customers.marketing_whatsapp_phone', 'like', '+'.$digits.'%');
                 }
             });
 
@@ -58,8 +58,11 @@ class GetCustomersInShop extends OrgAction
 
         $hasPhoneFilter = AllowedFilter::callback('has_phone', function ($query, $value) {
             if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
-                $query->whereNotNull('customers.phone')
-                    ->where('customers.phone', '!=', '');
+                $query->where(function ($query) {
+                    $query->where(function ($query) {
+                        $query->whereNotNull('customers.phone')->where('customers.phone', '!=', '');
+                    })->orWhereNotNull('customers.marketing_whatsapp_phone');
+                });
             }
         });
 

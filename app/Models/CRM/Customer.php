@@ -99,6 +99,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $company_name
  * @property string|null $email
  * @property string|null $phone
+ * @property string|null $marketing_whatsapp_phone
  * @property string|null $identity_document_type
  * @property string|null $identity_document_number
  * @property string|null $contact_website

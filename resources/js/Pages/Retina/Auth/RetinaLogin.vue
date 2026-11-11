@@ -15,7 +15,7 @@ import axios from 'axios'
 import Modal from '@/Components/Utils/Modal.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { getRefRedirect } from '@/Composables/Retina/useGetRedirectUrl'
+import { getRefRedirect, withCurrentHash } from '@/Composables/Retina/useGetRedirectUrl'
 
 defineOptions({ layout: RetinaShowIris })
 
@@ -55,7 +55,7 @@ const submit = async () => {
 
 
         if (response.data) {
-            window.location.href = `${response.data}`
+            window.location.href = withCurrentHash(`${response.data}`)
         } else {
             window.location.href = `/app/dashboard`
         }
@@ -100,7 +100,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
     if(data.status === 200) {
         if (data.data.logged_in) {
 
-            window.location.href = await getRefRedirect()
+            window.location.href = withCurrentHash(await getRefRedirect())
         } else {
             isOpenModalRegistration.value = true
             registerAccount.value = data.data.google_user

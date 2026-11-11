@@ -14,6 +14,7 @@ use App\Models\Chat\MetaChatSession;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -37,7 +38,21 @@ class StoreMetaChatSession
             'customer_id'  => ['nullable', 'exists:customers,id'],
             'phone_number' => ['required_without:customer_id', 'nullable', 'string', 'max:50', 'regex:/^\+[1-9][\d\s\-().]{6,20}$/'],
             'name'         => ['nullable', 'string'],
+            'phone_source' => ['nullable', Rule::in([self::PHONE_SOURCE_MAIN, self::PHONE_SOURCE_MARKETING_WHATSAPP])],
         ];
+    }
+
+    public const PHONE_SOURCE_MAIN = 'main';
+
+    public const PHONE_SOURCE_MARKETING_WHATSAPP = 'marketing_whatsapp';
+
+    public function getCustomerPhone(Customer $customer, ?string $phoneSource): ?string
+    {
+        if ($phoneSource === self::PHONE_SOURCE_MARKETING_WHATSAPP && $customer->marketing_whatsapp_phone) {
+            return $customer->marketing_whatsapp_phone;
+        }
+
+        return $customer->phone ?: $customer->marketing_whatsapp_phone;
     }
 
     /**
@@ -73,7 +88,8 @@ class StoreMetaChatSession
 
         $customer = isset($modelData['customer_id']) ? Customer::findOrFail($modelData['customer_id']) : null;
 
-        $phoneNumber    = $this->normalisePhoneNumber($customer?->phone ?? Arr::get($modelData, 'phone_number'));
+        $customerPhone  = $customer ? $this->getCustomerPhone($customer, Arr::get($modelData, 'phone_source')) : null;
+        $phoneNumber    = $this->normalisePhoneNumber($customerPhone ?? Arr::get($modelData, 'phone_number'));
         $whatsappUserId = Arr::get($modelData, 'whatsapp_user_id');
 
         if (blank($phoneNumber) && blank($whatsappUserId)) {

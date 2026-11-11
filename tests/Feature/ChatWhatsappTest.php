@@ -1295,3 +1295,30 @@ test('typing a different Phone Number ID by hand drops the mode and token an Emb
 
     $this->shop->update(['settings' => $original]);
 });
+
+test('an agent starts a chat on the main phone or the WhatsApp marketing phone of a customer', function () {
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer->update(['phone' => '+447500000301', 'marketing_whatsapp_phone' => '+447500000302']);
+
+    $main = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'customer_id' => $customer->id, 'phone_source' => StoreMetaChatSession::PHONE_SOURCE_MAIN]);
+    $whatsapp = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'customer_id' => $customer->id, 'phone_source' => StoreMetaChatSession::PHONE_SOURCE_MARKETING_WHATSAPP]);
+    $default = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'customer_id' => $customer->id]);
+
+    expect($main->phone_number)->toBe('+447500000301')
+        ->and($whatsapp->phone_number)->toBe('+447500000302')
+        ->and($whatsapp->customer_id)->toBe($customer->id)
+        ->and($whatsapp->id)->not->toBe($main->id)
+        ->and($default->id)->toBe($main->id);
+});
+
+test('an agent can start a chat with a customer who only has a WhatsApp marketing phone', function () {
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer->update(['phone' => null, 'marketing_whatsapp_phone' => '+447500000303']);
+
+    $session = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'customer_id' => $customer->id, 'phone_source' => StoreMetaChatSession::PHONE_SOURCE_MAIN]);
+
+    expect($session->phone_number)->toBe('+447500000303')
+        ->and($session->customer_id)->toBe($customer->id);
+});
