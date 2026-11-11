@@ -30,9 +30,11 @@ const props = withDefaults(
     customerData: any
     buttonStyle?: any
     classContainer?: string
+    holdQuantity?: boolean
   }>(),
   {
-    classContainer: 'flex items-center gap-2 relative' // default string
+    classContainer: 'flex items-center gap-2 relative', // default string
+    holdQuantity: false
   }
 )
 
@@ -100,7 +102,7 @@ const fetchCustomerOrderingProduct = async () => {
                 })
             )
 
-            const heldQuantity = hasStepDiscount.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
+            const heldQuantity = holdsQuantity.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
 
             Object.keys(response.data).forEach(key => {
                 if (props.customerData) {
@@ -273,6 +275,8 @@ const debouncedSync = debounce(() => {
 
 const hasStepDiscount = computed(() => (product.value.step_discount?.steps?.length ?? 0) > 0)
 
+const holdsQuantity = computed(() => props.holdQuantity || hasStepDiscount.value)
+
 const hasUnsavedQuantity = computed(() =>
     Number(customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0) !== Number(customer.value.quantity_ordered ?? 0)
 )
@@ -282,7 +286,7 @@ const selectedQuantity = computed<number>(() =>
 )
 
 const showsSelectionTotal = computed<boolean>(() =>
-    hasStepDiscount.value && hasUnsavedQuantity.value && selectedQuantity.value > 0
+    holdsQuantity.value && hasUnsavedQuantity.value && selectedQuantity.value > 0
 )
 
 const selectionTotal = computed(() =>
@@ -290,7 +294,7 @@ const selectionTotal = computed(() =>
 )
 
 const syncOrHoldQuantity = () => {
-    if (hasStepDiscount.value) {
+    if (holdsQuantity.value) {
         return
     }
 
@@ -406,7 +410,7 @@ const disableDecrement = computed(() => {
 watch(
     () => props.customerData,
     val => {
-        const pendingQuantity = hasStepDiscount.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
+        const pendingQuantity = holdsQuantity.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
         customer.value = { ...val }
 
         if (pendingQuantity !== null) {
@@ -416,7 +420,7 @@ watch(
     { deep: true }
 )
 const shareSelectedQuantity = (quantity: number) => {
-    if (!hasStepDiscount.value || !props.customerData) {
+    if (!holdsQuantity.value || !props.customerData) {
         return
     }
 
@@ -431,7 +435,7 @@ defineExpose({ setQuantity, selectQuantity })
 </script>
 
 <template>
-    <div :class="[props.classContainer, { 'is-step-discount': hasStepDiscount }]">
+    <div :class="[props.classContainer, { 'is-step-discount': holdsQuantity }]">
         <div class="qty-control">
             <button class="qty-btn" :disabled="disableDecrement" @click="decrementQty">
                 <FontAwesomeIcon icon="fas fa-minus" fixed-width />
@@ -457,7 +461,7 @@ defineExpose({ setQuantity, selectQuantity })
 
         <slot name="qty-add-button" :data="{product,customer,onAddToBasket,isLoadingSubmitQuantityProduct}">
              <Button
-                v-if="hasStepDiscount"
+                v-if="holdsQuantity"
                 class="qty-add-btn"
                 icon="fas fa-plus"
                 :label="customer.transaction_id ? ctrans('Update basket') : ctrans('Add to basket')"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { productNameWithPackAndSize } from "@/Composables/useBasketSizeSuffix"
 import { computed, inject } from 'vue'
 import Skeleton from 'primevue/skeleton'
 import Image from '@common/Components/Image.vue'
@@ -144,15 +145,7 @@ const highlightMatch = (text?: string): string => {
 }
 
 
-// Method: from 'Gemstone Obelisk Points' to '[5x] Gemstone Obelisk Points'
-const getProductName = (product: { name: string; units?: number | string | null }): string => {
-    const units = Number(product.units) || 1
-    if (units === 1) {
-        return product.name
-    } else {
-        return `[${units}x] ${product.name}`
-    }
-}
+const getProductName = productNameWithPackAndSize
 
 // Price sent from the backend is for the whole pack of `units`; show the per-unit price.
 // e.g. 12 units for 4.8 -> 0.4 per unit

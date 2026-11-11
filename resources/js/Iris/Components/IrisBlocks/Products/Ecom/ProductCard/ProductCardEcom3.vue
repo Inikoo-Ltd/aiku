@@ -357,11 +357,13 @@ defineExpose({
                     @finish="() => idxSlideLoading = false">
                     <template #default>
                         <h3 class="inline-block leading-4 !text-sm">
-                            <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>
+                            <span v-if="product.units != 1 && !product.variant_sizes?.length" class="text-indigo-900">{{ product.units }}x</span>
                             {{ product.variant_title || product.name }}
                         </h3>
                     </template>
                 </LinkIris>
+
+                <div v-if="product.variant_sizes?.length" class="mb-1 text-xs text-gray-500">{{ ctrans("Sizes: :sizes", { sizes: product.variant_sizes.join(" · ") }) }}</div>
 
                 <div v-if="product.pre_order && !(product.stock > 0) && layout?.iris?.is_logged_in" class="text-xs text-amber-800">
                     <span class="font-semibold">{{ product.pre_order.available_label }}</span> · {{ product.pre_order.dispatch_label }}

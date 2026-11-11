@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { productNameWithPackAndSize } from "@/Composables/useBasketSizeSuffix"
 import { computed, inject } from 'vue'
 import Skeleton from 'primevue/skeleton'
 import Image from '@common/Components/Image.vue'
@@ -89,10 +90,7 @@ const hasMemberPrice = (product: FeaturedProduct): boolean => {
 }
 
 
-const getProductName = (product: { name: string; units?: number | string | null }): string => {
-    const units = Number(product.units) || 1
-    return units === 1 ? product.name : `[${units}x] ${product.name}`
-}
+const getProductName = productNameWithPackAndSize
 
 const formatPrice = (price?: number | string | null): string | null => {
     if (price === null || price === undefined || price === '') return null

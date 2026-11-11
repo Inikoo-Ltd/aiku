@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ProductResource } from '@/types/Iris/Products'
-import { ref, inject, computed, watch } from 'vue'
+import { ref, inject, computed, watch, provide, reactive } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ctrans } from '@/Composables/useTrans'
 import { useLocaleStore } from '@/Stores/locale'
@@ -18,15 +18,24 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import LinkIris from '@/Iris/Components/LinkIris.vue'
 import { getBestOffer } from '@/Composables/useOffers'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
+import VariantSizeOrderingTable from '@/Iris/Components/IrisBlocks/Product/Ecom/VariantSizeOrderingTable.vue'
+import VariantPriceLadder from '@/Iris/Components/IrisBlocks/Product/Ecom/VariantPriceLadder.vue'
+import EcomAddToBasketv2 from '@/Components/Iris/Products/EcomAddToBasketv2.vue'
+import { activeLadderOption, buildPriceLadder, type LadderOption } from '@/Composables/buildPriceLadder'
+import { variantDisplayMode } from '@/Composables/variantDisplayMode'
 
 const props = withDefaults(defineProps<{
     variants: ProductResource[]
     variantAxisLabel?: string
+    variantAxisCount?: number
+    productName?: string
     hasInBasketList?: any
     isLoadingRemindBackInStock?: boolean
     selectedProductId?: number | string | null
 }>(), {
     variantAxisLabel: '',
+    variantAxisCount: 1,
+    productName: '',
     hasInBasketList: () => ({}),
     selectedProductId: null
 })
@@ -46,6 +55,61 @@ const isLoggedIn = computed(() => Boolean(layout?.iris?.is_logged_in))
 const activeProduct = ref<ProductResource | null>(
     props.variants.find((variant: ProductResource) => variant.id === props.selectedProductId) ?? props.variants[0] ?? null
 )
+
+const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder(props.variants as any[]))
+
+const displayMode = computed(() => variantDisplayMode(layout?.iris?.product_variant_setting, {
+    sizesTable: props.variants.length > 1 && props.variantAxisCount === 1,
+    priceLadder: isLoggedIn.value && ladderOptions.value.length > 0,
+}))
+
+const rowLabel = (product: ProductResource): string =>
+    (product.size_resolved && product.size_label) || product.variant_label || product.code
+
+provide('variantCustomerData', computed(() => props.hasInBasketList))
+
+const ladderCustomerData = reactive<Record<number, any>>({})
+
+watch(() => props.variants, (variants: ProductResource[]) => {
+    variants.forEach((variant: ProductResource) => {
+        if (ladderCustomerData[variant.id]) {
+            return
+        }
+
+        const line = props.hasInBasketList?.[variant.id] ?? {}
+        const quantity = Number(line.quantity_ordered ?? 0) || 0
+
+        ladderCustomerData[variant.id] = { transaction_id: line.transaction_id ?? null, quantity_ordered: quantity, quantity_ordered_new: quantity }
+    })
+}, { immediate: true })
+
+const ladderQuantity = computed<number>(() => {
+    const data = activeProduct.value ? ladderCustomerData[activeProduct.value.id] : null
+
+    return Number(data?.quantity_ordered_new ?? data?.quantity_ordered ?? 0) || 0
+})
+
+const _ladderBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
+
+const onSelectLadderOption = (option: LadderOption) => {
+    const target = props.variants.find((variant: ProductResource) => variant.id === option.productId)
+
+    if (!target) {
+        return
+    }
+
+    if (target.id !== activeProduct.value?.id) {
+        ladderCustomerData[target.id] = { ...ladderCustomerData[target.id], quantity_ordered_new: option.minQuantity }
+        onSelectRow(target)
+        return
+    }
+
+    if (activeLadderOption(ladderOptions.value, target.id, ladderQuantity.value)?.key === option.key && ladderQuantity.value > 0) {
+        return
+    }
+
+    _ladderBasket.value?.selectQuantity(option.minQuantity)
+}
 
 const basketQuantity = (product: ProductResource): number =>
     Number(props.hasInBasketList?.[product.id]?.quantity_ordered ?? 0)
@@ -388,7 +452,24 @@ const onCancel = () => {
                 </div>
             </div>
 
-            <div class="min-w-0">
+            <div v-if="displayMode === 'sizes_table'" class="min-w-0">
+                <VariantSizeOrderingTable class="!mt-0" :listProducts="variants" :axisLabel="variantAxisLabel"
+                    :productName="productName" :isLoggedIn="isLoggedIn" />
+            </div>
+
+            <div v-else-if="displayMode === 'price_ladder' && activeProduct" class="min-w-0">
+                <VariantPriceLadder :options="ladderOptions" :productId="activeProduct.id" :quantity="ladderQuantity"
+                    :currencyCode="activeProduct.currency_code ?? layout?.iris?.currency?.code"
+                    @selectOption="onSelectLadderOption" />
+
+                <div class="mt-4">
+                    <EcomAddToBasketv2 v-if="isOrderable(activeProduct)" :key="activeProduct.id" ref="_ladderBasket"
+                        v-model:product="activeProduct" :customerData="ladderCustomerData[activeProduct.id]" holdQuantity />
+                    <div v-else class="text-sm text-red-600">{{ ctrans('Out of stock') }}</div>
+                </div>
+            </div>
+
+            <div v-else class="min-w-0">
                 <p class="mb-3 text-sm text-gray-600">
                     {{ ctrans('Choose how many items you would like in each :axis.', { axis: (variantAxisLabel || ctrans('variant')).toLowerCase() }) }}
                 </p>
@@ -407,7 +488,7 @@ const onCancel = () => {
                         :aria-selected="activeProduct?.id === variant.id"
                         @click="onSelectRow(variant)">
                         <div class="min-w-0">
-                            <div class="variant-row-label text-base font-semibold text-gray-900">{{ variant.variant_label || variant.code }}</div>
+                            <div class="variant-row-label text-base font-semibold text-gray-900">{{ rowLabel(variant) }}</div>
                             <span v-if="isLoggedIn && familyOffer(variant)" class="offer-badge mt-1"
                                 :class="familyOfferBadgeClass(variant)">
                                 <FontAwesomeIcon v-if="isGoldRewardCustomer" :icon="faMedal" fixed-width aria-hidden="true" />
@@ -512,7 +593,7 @@ const onCancel = () => {
         </div>
 
         <div class="mt-5 flex flex-col-reverse gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div v-if="isLoggedIn">
+            <div v-if="isLoggedIn && displayMode === 'default'">
                 <div class="text-lg font-bold text-gray-900 sm:text-2xl">
                     {{ ctrans(':count items selected', { count: String(totalItemsSelected) }) }}
                 </div>
@@ -531,17 +612,17 @@ const onCancel = () => {
                 <button type="button" :disabled="isSaving"
                     class="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium sm:px-6 sm:py-2.5 sm:text-base text-gray-800 transition hover:bg-gray-50 sm:flex-none"
                     @click="onCancel">
-                    {{ ctrans('Cancel') }}
+                    {{ displayMode === 'default' ? ctrans('Cancel') : ctrans('Close') }}
                 </button>
 
-                <button v-if="isLoggedIn" type="button" :disabled="isSaving"
+                <button v-if="isLoggedIn && displayMode === 'default'" type="button" :disabled="isSaving"
                     class="button-primary flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium sm:px-6 sm:py-2.5 sm:text-base transition sm:flex-none"
                     @click="onSave">
                     <LoadingIcon v-if="isSaving" />
                     {{ ctrans('Save Selection') }}
                 </button>
 
-                <LinkIris v-else :href="urlLoginWithRedirect()"
+                <LinkIris v-else-if="!isLoggedIn && displayMode !== 'sizes_table'" :href="urlLoginWithRedirect()"
                     class="button-primary flex flex-1 items-center justify-center rounded-md px-4 py-2 text-sm font-medium sm:px-6 sm:py-2.5 sm:text-base sm:flex-none">
                     {{ ctrans('Login or Register for Wholesale Prices') }}
                 </LinkIris>

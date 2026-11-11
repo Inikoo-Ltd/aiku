@@ -25,6 +25,9 @@ import { getStyles } from "@/Composables/styles"
 import { ulid } from "ulid"
 import LabelComingSoon from "@/Components/Iris/Products/LabelComingSoon.vue"
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
+import VariantPriceLadder from "@/Iris/Components/IrisBlocks/Product/Ecom/VariantPriceLadder.vue"
+import { activeLadderOption, buildPriceLadder, type LadderOption } from "@/Composables/buildPriceLadder"
+import { variantDisplayMode } from "@/Composables/variantDisplayMode"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import "swiper/css"
 import { faImage } from "@far"
@@ -195,6 +198,34 @@ const onSelectStepQuantityMobile = async (quantity: number) => {
     } finally {
         isMobileStepSyncing.value = false
     }
+}
+
+const patchVariantCustomerData = inject<((productId: number, patch: Record<string, any>) => void) | null>("patchVariantCustomerData", null)
+
+const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder((props.listProducts ?? []) as any[]))
+
+const showPriceLadder = computed<boolean>(() => variantDisplayMode(props.fieldValue?.setting, {
+    sizesTable: false,
+    priceLadder: Boolean(layout?.iris?.is_logged_in) && ladderOptions.value.some((option) => option.productId === product.value.id),
+}) === "price_ladder")
+
+const onSelectLadderOption = async (option: LadderOption, selectQuantity: (quantity: number) => Promise<void>) => {
+    if (option.productId !== product.value.id) {
+        const nextProduct = props.listProducts.find((item) => item.id === option.productId)
+
+        if (nextProduct) {
+            patchVariantCustomerData?.(option.productId, { quantity_ordered_new: option.minQuantity })
+            onSelectProduct(nextProduct)
+        }
+
+        return
+    }
+
+    if (activeLadderOption(ladderOptions.value, product.value.id, orderedQuantity.value)?.key === option.key && orderedQuantity.value > 0) {
+        return
+    }
+
+    await selectQuantity(option.minQuantity)
 }
 
 const variantPrevEl = ref<HTMLElement | null>(null)
@@ -421,8 +452,19 @@ onMounted(async () => {
                 </div>
 
                 <!-- Section: Step discount (buy more, save more) -->
+                <VariantPriceLadder
+                    v-if="showPriceLadder"
+                    class="mt-3"
+                    :options="ladderOptions"
+                    :productId="product.id"
+                    :quantity="orderedQuantity"
+                    :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+                    :isSubmitting="isDesktopStepSyncing"
+                    @selectOption="(option) => onSelectLadderOption(option, onSelectStepQuantityDesktop)"
+                />
+
                 <StepDiscountOffer
-                    v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+                    v-else-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
                     class="mt-3"
                     :stepDiscount="product.step_discount"
                     :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
@@ -440,7 +482,7 @@ onMounted(async () => {
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="(product.status !== 'coming-soon' || product.pre_order) && layout?.iris?.is_logged_in" class="w-full">
                         <EcomAddToBasketv2 v-if="product.stock || product.pre_order" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
-                            :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                            :key="keyCustomer" :holdQuantity="showPriceLadder" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
                             <ButtonOutOfStock :product="product" :label="product.status_label" />
@@ -457,7 +499,7 @@ onMounted(async () => {
                 </div>
 
                 
-                <div v-if="listProducts && listProducts.length > 0" class="group bg-white shadow-sm p-0.5 rounded-md mb-4">
+                <div v-if="!showPriceLadder && listProducts && listProducts.length > 0" class="group bg-white shadow-sm p-0.5 rounded-md mb-4">
                     <Swiper :modules="[Navigation]" :navigation="varinatNavigation" :space-between="6"
                         :slides-per-view="3.2" :grab-cursor="true" :breakpoints="{
                             640: { slidesPerView: 4.5 },
@@ -729,8 +771,19 @@ onMounted(async () => {
         </button>
 
         <!-- Section: Step discount (buy more, save more) -->
+        <VariantPriceLadder
+            v-if="showPriceLadder"
+            class="mt-4"
+            :options="ladderOptions"
+            :productId="product.id"
+            :quantity="orderedQuantity"
+            :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
+            :isSubmitting="isMobileStepSyncing"
+            @selectOption="(option) => onSelectLadderOption(option, onSelectStepQuantityMobile)"
+        />
+
         <StepDiscountOffer
-            v-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
+            v-else-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
             class="mt-4"
             :stepDiscount="product.step_discount"
             :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
@@ -750,6 +803,7 @@ onMounted(async () => {
                 ref="_mobileAddToBasket"
                 v-model:product="product"
                 :customerData="customerData"
+                :holdQuantity="showPriceLadder"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
             />
 
@@ -768,7 +822,7 @@ onMounted(async () => {
         </div>
 
         <!-- VARIANTS -->
-        <div v-if="listProducts?.length" class="bg-white shadow-sm p-1 rounded-md my-5">
+        <div v-if="!showPriceLadder && listProducts?.length" class="bg-white shadow-sm p-1 rounded-md my-5">
             <Swiper
                 :modules="[Navigation]"
                 :navigation="varinatNavigation"

@@ -60,6 +60,9 @@ import InformationSideProduct from "@/Components/CMS/Webpage/Product1/Informatio
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
+import VariantPriceLadder from "@/Iris/Components/IrisBlocks/Product/Ecom/VariantPriceLadder.vue"
+import { activeLadderOption, buildPriceLadder, type LadderOption } from "@/Composables/buildPriceLadder"
+import { variantDisplayMode } from "@/Composables/variantDisplayMode"
 import VariantSizeOrderingTable from "@/Iris/Components/IrisBlocks/Product/Ecom/VariantSizeOrderingTable.vue"
 import { getBestOffer } from "@/Composables/useOffers"
 import { getOfferTextColorClass } from "@/Composables/offerColors"
@@ -341,11 +344,37 @@ const variantAxisLabel = computed(() =>
         .join(" / ")
 )
 
-const showSizesTable = computed(() =>
-    Boolean(props.fieldValue?.setting?.variant_sizes_table)
-    && (props.listProducts?.length ?? 0) > 1
-    && (props.fieldValue?.variant?.data?.variants?.length ?? 0) === 1
-)
+const patchVariantCustomerData = inject<((productId: number, patch: Record<string, any>) => void) | null>("patchVariantCustomerData", null)
+
+const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder((props.listProducts ?? []) as any[]))
+
+const displayMode = computed(() => variantDisplayMode(props.fieldValue?.setting, {
+    sizesTable: (props.listProducts?.length ?? 0) > 1 && (props.fieldValue?.variant?.data?.variants?.length ?? 0) === 1,
+    priceLadder: Boolean(layout?.iris?.is_logged_in) && ladderOptions.value.some((option) => option.productId === product.value.id),
+}))
+
+const showPriceLadder = computed<boolean>(() => displayMode.value === "price_ladder")
+
+const onSelectLadderOption = async (option: LadderOption, selectQuantity: (quantity: number) => Promise<void>) => {
+    if (option.productId !== product.value.id) {
+        const nextProduct = props.listProducts.find((item) => item.id === option.productId)
+
+        if (nextProduct) {
+            patchVariantCustomerData?.(option.productId, { quantity_ordered_new: option.minQuantity })
+            onSelectProduct(nextProduct)
+        }
+
+        return
+    }
+
+    if (activeLadderOption(ladderOptions.value, product.value.id, orderedQuantity.value)?.key === option.key && orderedQuantity.value > 0) {
+        return
+    }
+
+    await selectQuantity(option.minQuantity)
+}
+
+const showSizesTable = computed<boolean>(() => displayMode.value === "sizes_table")
 
 const selectedVariantLabel = computed(() =>
     props.listProducts?.find(item => item.code === product.value.code)?.variant_label
@@ -583,9 +612,19 @@ onMounted(async () => {
                     </div>
                 </template>
 
+                <VariantPriceLadder
+                    v-if="showPriceLadder"
+                    class="mt-3"
+                    :options="ladderOptions"
+                    :productId="product.id"
+                    :quantity="orderedQuantity"
+                    :currencyCode="product.currency_code ?? currency?.code"
+                    :isSubmitting="isDesktopStepSyncing"
+                    @selectOption="(option) => onSelectLadderOption(option, onSelectStepQuantityDesktop)" />
+
                 <StepDiscountOffer
                     class="mt-3"
-                    v-if="!showSizesTable && layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
+                    v-else-if="!showSizesTable && layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
                     :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
                     :originalPrice="product.price" :unit="product.unit" :units="product.units"
                     :quantity="orderedQuantity" :isSubmitting="isDesktopStepSyncing"
@@ -595,7 +634,7 @@ onMounted(async () => {
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
                         <EcomAddToBasketv2 v-if="!showSizesTable && (product.stock > 0 || product.pre_order)" ref="_desktopAddToBasket" v-model:product="product"
-                            :customerData="customerData" :key="keyCustomer"
+                            :customerData="customerData" :key="keyCustomer" :holdQuantity="showPriceLadder"
                             :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket" />
                         <ButtonOutOfStock v-else-if="!(product.stock > 0 || product.pre_order)" :product="product" />
                     </div>
@@ -620,7 +659,7 @@ onMounted(async () => {
                 <VariantSizeOrderingTable v-if="showSizesTable" :listProducts="listProducts" :axisLabel="variantAxisLabel"
                     :productName="product.name" :isLoggedIn="Boolean(layout?.iris?.is_logged_in)" />
 
-                <div v-else-if="listProducts && listProducts.length > 0" class="mt-5">
+                <div v-else-if="!showPriceLadder && listProducts && listProducts.length > 0" class="mt-5">
                     <div v-if="selectedVariantLabel" class="mb-1 text-sm">
                         <span v-if="variantAxisLabel" class="font-semibold">{{ variantAxisLabel }}:</span>
                         <span class="ml-1">{{ selectedVariantLabel }}</span>
@@ -837,8 +876,17 @@ onMounted(async () => {
                 </div>
             </template>
 
+            <VariantPriceLadder
+                v-if="showPriceLadder"
+                :options="ladderOptions"
+                :productId="product.id"
+                :quantity="orderedQuantity"
+                :currencyCode="product.currency_code ?? currency?.code"
+                :isSubmitting="isMobileStepSyncing"
+                @selectOption="(option) => onSelectLadderOption(option, onSelectStepQuantityMobile)" />
+
             <StepDiscountOffer
-                v-if="!showSizesTable && layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
+                v-else-if="!showSizesTable && layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
                 :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
                 :originalPrice="product.price" :unit="product.unit" :units="product.units"
                 :quantity="orderedQuantity" :isSubmitting="isMobileStepSyncing"
@@ -859,7 +907,7 @@ onMounted(async () => {
             <template v-if="layout?.iris?.is_logged_in">
                 <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
                 <EcomAddToBasketv2 v-if="!showSizesTable && (product.stock > 0 || product.pre_order)" ref="_mobileAddToBasket" v-model:product="product"
-                    :customerData="customerData" :key="keyCustomer"
+                    :customerData="customerData" :key="keyCustomer" :holdQuantity="showPriceLadder"
                     :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket w-full" />
                 <ButtonOutOfStock v-else-if="!(product.stock > 0 || product.pre_order)" :product="product" />
             </template>
@@ -869,12 +917,12 @@ onMounted(async () => {
                 {{ ctrans("Login or Register for Wholesale Prices") }}
             </LinkIris>
 
-            <div v-if="!showSizesTable && listProducts?.length && selectedVariantLabel" class="text-sm">
+            <div v-if="!showPriceLadder && !showSizesTable && listProducts?.length && selectedVariantLabel" class="text-sm">
                 <span v-if="variantAxisLabel" class="font-semibold">{{ variantAxisLabel }}:</span>
                 <span class="ml-1">{{ selectedVariantLabel }}</span>
             </div>
 
-            <Swiper v-if="!showSizesTable && listProducts?.length" :slides-per-view="2.4" :space-between="12">
+            <Swiper v-if="!showPriceLadder && !showSizesTable && listProducts?.length" :slides-per-view="2.4" :space-between="12">
                 <SwiperSlide v-for="item in listProducts" :key="item.id">
                     <button @click="onSelectProduct(item)" :disabled="item.code === product.code"
                         class="w-full overflow-hidden rounded-xl border">
