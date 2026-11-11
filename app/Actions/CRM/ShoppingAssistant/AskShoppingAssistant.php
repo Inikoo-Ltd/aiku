@@ -55,6 +55,12 @@ use Throwable;
  * assistant's with the names and ids of the products shown with it) and the new customer message.
  * Earlier tool results are not replayed. The customer's contact name and email are never sent.
  *
+ * Prompt caching: every call asks the provider to cache the prompt up to its last block, so the
+ * second and later calls of a turn, and a follow-up within five minutes, pay a tenth for the tools,
+ * the system prompt and the messages they repeat. The first call of a turn pays a quarter more.
+ *
+ * ponytail: one automatic cache point; split the system prompt into a shared part and a customer
+ * part with their own cache points if traffic grows enough for customers to share a cache.
  * ponytail: no streaming; on the storefront the turn runs in a queued job and the page polls for the stored answer.
  * ponytail: replay capped at 12 messages; summarise older turns if conversations grow long.
  * ponytail: the reply language is the shop's and is named in the prompt but not checked; add a
@@ -395,6 +401,7 @@ class AskShoppingAssistant
                     'tools'       => $tools,
                     'tool_choice' => 'auto',
                     'max_tokens'  => 4000,
+                    'cache_control' => ['type' => 'ephemeral'],
                 ]);
         } catch (Throwable $exception) {
             Log::warning('Shopping assistant model call failed: '.$exception->getMessage());

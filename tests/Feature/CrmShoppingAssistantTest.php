@@ -162,7 +162,7 @@ test('a shopping assistant turn runs a data tool, presents its products and logs
             ['shown', $addOn->id, 'add_ons', 1, 'used_to_order', $reasonText, $message->id],
         ]);
 
-    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat/completions') && str_contains($request['messages'][0]['content'], 'Reply in '.$language.'.'));
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat/completions') && str_contains($request['messages'][0]['content'], 'Reply in '.$language.'.') && $request['cache_control'] === ['type' => 'ephemeral']);
     Http::assertNotSent(fn (Request $request) => str_contains($request->body(), 'Zelda') || str_contains($request->body(), 'Quillfeather') || str_contains($request->body(), $email));
 });
 
