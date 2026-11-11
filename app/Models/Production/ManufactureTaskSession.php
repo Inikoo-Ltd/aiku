@@ -202,7 +202,11 @@ class ManufactureTaskSession extends Model implements Auditable
 
     public function activityLabel(): string
     {
-        return ManufactureTaskSessionActivityTypeEnum::labels()[$this->activity_type->value];
+        $label = ManufactureTaskSessionActivityTypeEnum::labels()[$this->activity_type->value];
+
+        return $this->activity_type == ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT && $this->non_productive_reason
+            ? $label.' · '.$this->non_productive_reason
+            : $label;
     }
 
     public function breakSecondsUntil(Carbon $until): int

@@ -90,6 +90,7 @@ class AddManufactureDevelopmentTime extends OrgAction
                 'ended_at'         => $endedAt,
                 'time_edit_reason' => ManufactureTaskSessionTimeEditReasonEnum::OTHER,
                 'time_edit_note'   => $modelData['note'],
+                'non_productive_reason' => $modelData['note'],
                 'time_edited_by'   => $this->payrollEditor?->id,
                 'time_edited_at'   => now(),
             ]);
@@ -169,7 +170,7 @@ class AddManufactureDevelopmentTime extends OrgAction
             'employee_id'           => ['required', 'integer', Rule::exists('employees', 'id')->where('organisation_id', $this->organisation->id)],
             'started_at'            => ['required', 'date'],
             'ended_at'              => ['required', 'date'],
-            'note'                  => ['required', 'string', 'max:1000'],
+            'note'                  => ['required', 'string', 'max:255'],
             'not_paid_confirmed' => ['sometimes', 'boolean'],
             'lock_reason'           => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];

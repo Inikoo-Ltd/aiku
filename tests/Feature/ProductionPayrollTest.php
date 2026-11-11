@@ -2455,32 +2455,90 @@ describe('production reward pay bands', function () {
         ManufactureTaskSession::where('user_id', auth()->id())->where('state', ManufactureTaskSessionStateEnum::OPEN)->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
     });
 
-    test('development on no job order is started on the tablet and paid at the Development rate (HELP-4648)', function () {
+    test('development on no job order is started on the tablet by artisans it is switched on for, with a reason, and paid at the Development rate (HELP-4648)', function () {
         $this->travelTo(now()->addYears(7)->startOfWeek()->addDays(2)->setTime(9, 0));
+        \App\Models\HumanResources\Employee::enableAuditing();
+        $employee = dayPlanOperator($this->organisation);
         $operator = stepTestSecondOperator($this->group);
-        $start    = fn () => \App\Actions\Production\ManufactureTaskSession\StartManufactureNonProductiveSession::make()->action($operator, $this->production, ['activity_type' => 'development']);
+        \Illuminate\Support\Facades\DB::table('user_has_models')->insert(['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id, 'user_id' => $operator->id, 'model_type' => 'Employee', 'model_id' => $employee->id, 'status' => true]);
+        $start   = fn (array $data = ['reason' => 'CAHM order']) => \App\Actions\Production\ManufactureTaskSession\StartManufactureNonProductiveSession::make()->action($operator, $this->production, ['activity_type' => 'development'] + $data);
+        $switch  = fn (array $data) => \App\Actions\Production\Artisan\SetArtisanDevelopmentOnTablet::make()->action($this->production, $employee->refresh(), $data);
+        $manager = auth()->user();
+        $offered = function () use ($operator, $manager) {
+            actingAs($operator);
+            $activities = collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->inertiaProps('non_productive.activities'));
+            actingAs($manager);
 
-        $session = $start();
-        expect($session->job_order_id)->toBeNull()->and($session->job_order_item_task_id)->toBeNull();
+            return $activities;
+        };
+
+        // hidden and refused until the production manager switches it on
+        expect($offered()->pluck('value'))->not->toContain('development')
+            ->and($start)->toThrow(\Illuminate\Validation\ValidationException::class, 'Development is not switched on for you');
+
+        $today = \App\Models\HumanResources\Employee::developmentDay($this->organisation);
+        expect(fn () => $switch(['development_on_tablet' => true, 'development_on_tablet_until' => \Illuminate\Support\Carbon::parse($today)->subDay()->toDateString()]))->toThrow(\Illuminate\Validation\ValidationException::class, 'The last day cannot be in the past');
+        $switch(['development_on_tablet' => true, 'development_on_tablet_until' => $today]);
+        expect($offered()->firstWhere('value', 'development')['needs_reason'])->toBeTrue()
+            ->and(fn () => $start([]))->toThrow(\Illuminate\Validation\ValidationException::class, 'Say what the development work is for');
+
+        $session = $start(['reason' => 'CAHM order', 'job_order_id' => null]);
+        expect($session->job_order_id)->toBeNull()
+            ->and($session->job_order_item_task_id)->toBeNull()
+            ->and($session->employee_id)->toBe($employee->id)
+            ->and($session->activityLabel())->toBe('Development · CAHM order');
 
         $this->travel(2)->hours();
         $session = \App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession::make()->action($session, [])->refresh();
 
         // 2 h x 13.30 = 26.60; over band 0: 2 h x (13.30 - 12.71) = 1.18
         expect($session->activity_type->value)->toBe('development')
+            ->and($session->non_productive_reason)->toBe('CAHM order')
             ->and($session->band_code)->toBe('D')
             ->and((float) $session->hours)->toBe(2.0)
             ->and((float) $session->pay)->toBe(26.6)
             ->and((float) $session->bonus)->toBe(1.18);
 
-        $offered = fn () => collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->inertiaProps('non_productive.activities'))->pluck('value');
-        expect($offered())->toContain('development');
+        // the day after its last day the button hides again by itself
+        $this->travel(1)->days();
+        expect($employee->refresh()->canStartDevelopment())->toBeFalse()
+            ->and($offered()->pluck('value'))->not->toContain('development')
+            ->and($start)->toThrow(\Illuminate\Validation\ValidationException::class, 'Development is not switched on for you');
+
+        $expired = collect(get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'from' => now()->toDateString(), 'to' => now()->toDateString()]))->inertiaProps('development_time.artisans'))->firstWhere('id', $employee->id);
+        expect($expired['on_tablet'])->toBeFalse()->and($expired['until'])->toBeNull();
+
+        // only the production manager switches it, over the route the dialog uses; no last day: on until switched off
+        $switchRoute = route('grp.models.production.artisan.development_on_tablet.update', [$this->production->id, $employee->id]);
+        $accountant  = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+        $accountant->givePermissionTo(["accounting.{$this->production->organisation_id}.view", "accounting.{$this->production->organisation_id}.edit"]);
+        actingAs($accountant);
+        $this->patch($switchRoute, ['development_on_tablet' => true])->assertForbidden();
+        actingAs($manager);
+        expect($employee->refresh()->canStartDevelopment())->toBeFalse();
+        $this->patch($switchRoute, ['development_on_tablet' => true, 'development_on_tablet_until' => null])->assertRedirect();
+        expect($employee->refresh()->canStartDevelopment())->toBeTrue()->and($employee->development_on_tablet_until)->toBeNull();
 
         $developmentBand = \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('code', 'D');
         $developmentBand->update(['effective_to' => now()->subDay()]);
         expect($start)->toThrow(\Illuminate\Validation\ValidationException::class, 'This production has no Development rate')
-            ->and($offered())->not->toContain('development');
+            ->and($offered()->pluck('value'))->not->toContain('development');
         $developmentBand->update(['effective_to' => null]);
+
+        $this->travel(1)->minutes();
+        $switch(['development_on_tablet' => false]);
+        expect($employee->refresh()->canStartDevelopment())->toBeFalse();
+
+        $date = now()->toDateString();
+        $page = get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'from' => $date, 'to' => $date]));
+        $row  = collect($page->inertiaProps('development_time.artisans'))->firstWhere('id', $employee->id);
+        $log  = collect($page->inertiaProps('development_time.history'))->where('artisan', $employee->contact_name)->values();
+        expect($row['on_tablet'])->toBeFalse()
+            ->and($row['switch_route']['name'])->toBe('grp.models.production.artisan.development_on_tablet.update')
+            ->and($log->pluck('on')->all())->toBe([false, true, true])
+            ->and($log[2]['until'])->toBe($today)
+            ->and($log[0]['by'])->toBe($manager->contact_name ?: $manager->username);
+        \App\Models\HumanResources\Employee::disableAuditing();
     });
 
     test('development time added outside the shift is warned about where pay is limited to the shift (HELP-4648)', function () {
@@ -2550,7 +2608,8 @@ describe('production reward pay bands', function () {
             ->and($row['not_on_tablet_hours'])->toBe(5.0)
             ->and($row['band_d_hours'])->toBe(3.0)
             ->and($row['band_d_amount'])->toBe(1.77)
-            ->and($row['total'])->toBe(103.45);
+            ->and($row['total'])->toBe(103.45)
+            ->and(collect($row['lines'])->firstWhere('band', 'D')['step'])->toBe('Development · CAHM order, from the paper record');
 
         expect(fn () => $add('11:00', '13:00'))->toThrow(\Illuminate\Validation\ValidationException::class, 'This overlaps their Development')
             ->and(fn () => $add('13:00', '12:30'))->toThrow(\Illuminate\Validation\ValidationException::class, 'The end must be after the start')

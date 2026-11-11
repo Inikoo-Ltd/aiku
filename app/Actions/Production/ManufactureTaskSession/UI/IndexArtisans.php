@@ -304,7 +304,7 @@ class IndexArtisans extends OrgAction
                 'left_open'           => $this->leftOpenSessions($production, $from, $to),
                 'daily_hours_warnings' => $this->dailyHoursWarnings($production, $from, $to),
                 'payroll_lock'         => $this->payrollLock($production, $from),
-                'development_time'     => $this->developmentTime($production, $from, $to),
+                'development_time'     => $this->developmentTime($production, $from, $to, $request->user()),
                 'payroll_changes'      => $this->payrollChanges($production, $from, $to, $request->user()),
                 'artisan_pay_type'    => $payType,
                 'artisan_pay_types'   => ArtisanPayTypeEnum::labels(),
@@ -497,25 +497,49 @@ class IndexArtisans extends OrgAction
      * Breaks running over right now, and breaks left open after the shift that a supervisor has not set the end of yet.
      */
     /**
-     * Development work kept on paper is added for an artisan of the period by whoever may change its times (HELP-4648).
+     * Development work kept on paper is added for an artisan of the period by whoever may change its times, and the
+     * Production Manager switches Development on the tablet on and off per artisan (HELP-4648).
      *
-     * @return array{route: array{name: string, parameters: array<string, int>}, artisans: array<int, array{id: int, name: string}>}|null
+     * @return array{route: array{name: string, parameters: array<string, int>}, artisans: array<int, array<string, mixed>>, history: array<int, array<string, mixed>>}|null
      */
-    private function developmentTime(Production $production, Carbon $from, Carbon $to): ?array
+    private function developmentTime(Production $production, Carbon $from, Carbon $to, User $user): ?array
     {
         if (!($this->canEdit || $this->canChangeLockedWeek) || !$production->paysDevelopment()) {
             return null;
         }
+
+        $canSwitch = $user->authTo('org-supervisor.'.$production->organisation_id);
+        $artisans  = Employee::whereIn('id', HydrateManufactureArtisanDays::rosterEmployeeIds($production, $from, $to))
+            ->with($canSwitch ? ['organisation.timezone', 'audits' => fn ($query) => $query->where('event', 'updated')->whereRaw("(jsonb_exists(new_values, 'development_on_tablet') or jsonb_exists(new_values, 'development_on_tablet_until'))")->with('user')] : ['organisation.timezone'])
+            ->orderBy('contact_name')
+            ->get();
 
         return [
             'route'    => [
                 'name'       => 'grp.models.production.development_time.store',
                 'parameters' => ['production' => $production->id],
             ],
-            'artisans' => Employee::whereIn('id', HydrateManufactureArtisanDays::rosterEmployeeIds($production, $from, $to))
-                ->orderBy('contact_name')
-                ->get(['id', 'contact_name'])
-                ->map(fn (Employee $employee) => ['id' => $employee->id, 'name' => $employee->contact_name])
+            'artisans' => $artisans->map(fn (Employee $employee) => [
+                'id'           => $employee->id,
+                'name'         => $employee->contact_name,
+                'on_tablet'    => $employee->canStartDevelopment(),
+                'until'        => $employee->canStartDevelopment() ? $employee->development_on_tablet_until?->toDateString() : null,
+                'switch_route' => $canSwitch ? [
+                    'name'       => 'grp.models.production.artisan.development_on_tablet.update',
+                    'parameters' => ['production' => $production->id, 'employee' => $employee->id],
+                ] : null,
+            ])->all(),
+            'history'  => !$canSwitch ? [] : $artisans
+                ->flatMap(fn (Employee $employee) => $employee->audits->map(fn ($audit) => [
+                    'id'         => $audit->id,
+                    'artisan'    => $employee->contact_name,
+                    'changed_at' => $audit->created_at->toIso8601String(),
+                    'by'         => $audit->user?->contact_name ?: $audit->user?->username,
+                    'on'         => array_key_exists('development_on_tablet', $audit->new_values) ? (bool) $audit->new_values['development_on_tablet'] : true,
+                    'until'      => ($until = $audit->new_values['development_on_tablet_until'] ?? null) ? substr((string) $until, 0, 10) : null,
+                ]))
+                ->sortByDesc('id')
+                ->values()
                 ->all(),
         ];
     }

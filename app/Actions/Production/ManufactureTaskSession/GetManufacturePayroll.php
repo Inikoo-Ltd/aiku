@@ -236,7 +236,7 @@ class GetManufacturePayroll
                 $daySessions
                     ->groupBy(fn (ManufactureTaskSession $session) => implode('|', [
                         $session->jobOrderItemTask?->job_order_item_id ?? 'job-order-'.$session->job_order_id,
-                        $session->manufacture_task_id ?? $session->activity_type->value,
+                        $session->manufacture_task_id ?? $session->activityLabel(),
                         $session->band_code ?? '0',
                         $this->rate('0', $session->ended_at),
                         $this->rate($session->band_code ?? '0', $session->ended_at),
