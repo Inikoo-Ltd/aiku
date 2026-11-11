@@ -12,6 +12,8 @@ use Sentry;
 
 class UpdateShippingFaireOrder extends OrgAction
 {
+    public const FUNDED_SHIPPING_RATE_LINE = '/^([A-Za-z]{2})\s+(\d+(?:[.,]\d{1,2})?)\s+(\d+(?:[.,]\d{1,2})?)$/';
+
     public function handle(DeliveryNote $deliveryNote, Command|null $command = null): array
     {
 
@@ -28,6 +30,7 @@ class UpdateShippingFaireOrder extends OrgAction
             && app()->isProduction()
         ) {
             try {
+                $this->setFaireFundedShipping($deliveryNote, $order);
                 $shipments = $this->getFaireShipments($deliveryNote, $order);
 
                 $result = $order->shop->updateShippingFaireOrder($order->external_id, [
@@ -113,6 +116,86 @@ class UpdateShippingFaireOrder extends OrgAction
         }
 
         return $shipments;
+    }
+
+    /**
+     * A Faire order whose shipping Faire funds is charged the shop's rate for the delivery country,
+     * per parcel by its weight band, before the tracking sends it to Faire as maker_cost (HELP-4635).
+     * Typed over whatever was on the order, unless the order is already invoiced or a shipment carries
+     * its own carrier cost, which is then what Faire is sent. Never in the way of the tracking.
+     */
+    public function setFaireFundedShipping(DeliveryNote $deliveryNote, Order $order): void
+    {
+        try {
+            $rate = $this->getFaireFundedShippingRate($order);
+            if (!$rate || $deliveryNote->shipments->sum('cost') > 0 || $order->invoices()->exists()) {
+                return;
+            }
+
+            $orderFaireData = $order->shop->getFaireOrder($order->external_id);
+            if (Arr::get($orderFaireData, 'success') === false) {
+                Sentry::captureMessage('Faire order '.$order->external_id.' not read for its funded shipping: '.json_encode(Arr::get($orderFaireData, 'error')));
+
+                return;
+            }
+
+            $fundedShipping = $this->getFaireFundedShipping($deliveryNote, $order, $orderFaireData);
+            if ($fundedShipping === null || abs($fundedShipping - (float)$order->shipping_amount) < 0.01) {
+                return;
+            }
+
+            UpdateFaireOrder::make()->setFaireShipping($order, $fundedShipping);
+            $order->refresh();
+        } catch (\Throwable $e) {
+            Sentry::captureException($e);
+        }
+    }
+
+    /**
+     * Only INSIDER_FREE_SHIPPING is shipping Faire pays for. Orders the retailer pays through the
+     * shipping zones set up on Faire, and countries the shop has no rate for, are left to staff.
+     * A parcel line packed as several boxes is that many parcels.
+     */
+    public function getFaireFundedShipping(DeliveryNote $deliveryNote, Order $order, array $orderFaireData): ?float
+    {
+        if (Arr::get($orderFaireData, 'free_shipping_reason') != 'INSIDER_FREE_SHIPPING') {
+            return null;
+        }
+
+        $rate    = $this->getFaireFundedShippingRate($order);
+        $parcels = $deliveryNote->parcels;
+        if (!$rate || !is_array($parcels) || !$parcels || !array_is_list($parcels)) {
+            return null;
+        }
+
+        return round(collect($parcels)->sum(
+            fn ($parcel) => max(1, (int)Arr::get($parcel, 'boxes', 1)) * ((float)Arr::get($parcel, 'weight', 0) > 3 ? $rate[1] : $rate[0])
+        ), 2);
+    }
+
+    /**
+     * @return array{0: float, 1: float}|null
+     */
+    public function getFaireFundedShippingRate(Order $order): ?array
+    {
+        return Arr::get(self::parseFundedShippingRates(Arr::get($order->shop->settings, 'faire.funded_shipping_rates')), (string)$order->deliveryAddress?->country_code);
+    }
+
+    /**
+     * One line per country: its code, the price per parcel up to 3 kg and the price per parcel over 3 kg.
+     *
+     * @return array<string, array{0: float, 1: float}>
+     */
+    public static function parseFundedShippingRates(?string $text): array
+    {
+        $rates = [];
+        foreach (preg_split('/\R/', (string)$text) as $line) {
+            if (preg_match(self::FUNDED_SHIPPING_RATE_LINE, trim($line), $matches)) {
+                $rates[strtoupper($matches[1])] = [(float)str_replace(',', '.', $matches[2]), (float)str_replace(',', '.', $matches[3])];
+            }
+        }
+
+        return $rates;
     }
 
     public function getCommandSignature(): string

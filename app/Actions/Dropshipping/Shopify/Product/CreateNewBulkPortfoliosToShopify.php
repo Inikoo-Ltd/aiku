@@ -27,6 +27,13 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
     public string $jobQueue = 'dropshipping-long';
     public int $jobTries = 1;
 
+    public const int BULK_QUEUE_THRESHOLD = 50;
+
+    public static function uploadQueue(int $portfolioCount): string
+    {
+        return $portfolioCount > self::BULK_QUEUE_THRESHOLD ? 'shopify-bulk' : 'shopify';
+    }
+
     public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): int
     {
         return $customerSalesChannel->id;
@@ -52,9 +59,11 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction implements ShouldBeUniq
             'total'     => $portfolios->count(),
         ];
 
+        $queue = self::uploadQueue($portfolios->count());
+
         // ponytail: counters cleaned by TTL; a hard-failed product job leaves the progress bar short of total
         foreach ($portfolios as $portfolio) {
-            StoreNewProductToCurrentShopify::dispatch($portfolio, $bulkProgress);
+            StoreNewProductToCurrentShopify::dispatch($portfolio, $bulkProgress)->onQueue($queue);
         }
     }
 

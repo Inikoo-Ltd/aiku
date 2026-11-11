@@ -231,6 +231,7 @@ const getActionIcon = (icon: any) => {
 
     &:disabled {
         background-color: color-mix(in srgb, var(--theme-color-4) 70%, grey) !important;
+        opacity: 0.5;
     }
 }
 

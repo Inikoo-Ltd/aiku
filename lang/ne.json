@@ -15485,6 +15485,7 @@
     "Saved, but Shopify did not accept the price of :products": "सुरक्षित गरियो, तर Shopify ले :products को मूल्य स्वीकार गरेन",
     "Saved, but Shopify did not accept the price: :reason": "सुरक्षित गरियो, तर Shopify ले मूल्य स्वीकार गरेन: :reason",
     "Saved, but eBay did not accept the change: :reason": "सुरक्षित गरियो, तर eBay ले परिवर्तन स्वीकार गरेन: :reason",
+    "eBay did not accept the change, so nothing was saved: :reason": "eBay ले परिवर्तन स्वीकार गरेन, त्यसैले केही पनि सुरक्षित गरिएन: :reason",
     "Saved.": "सुरक्षित गरियो।",
     "Saved. Leave it empty to keep it": "सुरक्षित गरियो। यसलाई कायम राख्न खाली छोड्नुहोस्",
     "Saves and publishes the email. Drafts are saved automatically.": "इमेल सुरक्षित र प्रकाशित गर्छ। मस्यौदाहरू स्वतः सुरक्षित हुन्छन्।",

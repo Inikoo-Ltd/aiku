@@ -932,6 +932,14 @@ class EditShop extends OrgAction
                                     'type'  => 'toggle',
                                     'label' => __('Do not send first orders to warehouse'),
                                     'value' => Arr::get($shop->settings, 'faire.dont_send_first_orders_automatically_to_warehouse', false)
+                                ],
+                                'faire_funded_shipping_rates'                             => [
+                                    'type'        => 'textarea',
+                                    'label'       => __('Faire-funded shipping rates'),
+                                    'rows'        => 8,
+                                    'placeholder' => 'SK 5.04 6.49',
+                                    'value'       => (string)Arr::get($shop->settings, 'faire.funded_shipping_rates', ''),
+                                    'information' => __('Charged on orders whose shipping Faire pays, per parcel, in :currency: one line per country with its code, the price per parcel up to 3 kg and the price per parcel over 3 kg. Countries not listed are left to be entered by hand.', ['currency' => $shop->currency->code])
                                 ]
                             ],
                         ],

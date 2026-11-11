@@ -14939,6 +14939,7 @@
     "Saved, but Shopify did not accept the price of :products": "सहेजा गया, लेकिन Shopify ने :products की कीमत स्वीकार नहीं की",
     "Saved, but Shopify did not accept the price: :reason": "सहेजा गया, लेकिन Shopify ने कीमत स्वीकार नहीं की: :reason",
     "Saved, but eBay did not accept the change: :reason": "सहेजा गया, लेकिन eBay ने परिवर्तन स्वीकार नहीं किया: :reason",
+    "eBay did not accept the change, so nothing was saved: :reason": "eBay ने परिवर्तन स्वीकार नहीं किया, इसलिए कुछ भी सहेजा नहीं गया: :reason",
     "Saved.": "सहेजा गया।",
     "Saved. Leave it empty to keep it": "सहेजा गया। इसे रखने के लिए खाली छोड़ें",
     "Saves and publishes the email. Drafts are saved automatically.": "ईमेल को सहेजता और प्रकाशित करता है। ड्राफ़्ट स्वचालित रूप से सहेजे जाते हैं।",

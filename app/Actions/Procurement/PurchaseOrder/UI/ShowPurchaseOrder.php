@@ -25,6 +25,7 @@ use App\Http\Resources\Procurement\PurchaseOrderComplianceDocumentsResource;
 use App\Actions\Procurement\ProcurementNote\UI\IndexProcurementNotes;
 use App\Http\Resources\Procurement\ProcurementNoteResource;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateFromCancelled;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
@@ -86,7 +87,7 @@ class ShowPurchaseOrder extends OrgAction
     use WithPurchaseOrderWeightAndVolume;
     use WithAgentOrganisation;
 
-    private const array AGENT_ACTION_KEYS = ['edit_estimated_delivery_date', 'cancel_purchase_order'];
+    private const array AGENT_ACTION_KEYS = ['edit_estimated_delivery_date', 'cancel_purchase_order', 'undo_cancel_purchase_order'];
 
     private bool $agentCanEdit = false;
 
@@ -787,6 +788,7 @@ class ShowPurchaseOrder extends OrgAction
                     ],
                 ],
             ],
+            PurchaseOrderStateEnum::CANCELLED => [$this->undoCancelAction($purchaseOrder)],
             default => []
         };
 
@@ -808,6 +810,33 @@ class ShowPurchaseOrder extends OrgAction
             ...array_filter($actions, $isCancel),
             ...array_filter($actions, fn (array $action) => !$isCancel($action) && ($hasSubmit || !$isEdit($action))),
             ...($hasSubmit ? [] : array_filter($actions, $isEdit)),
+        ];
+    }
+
+    private function undoCancelAction(PurchaseOrder $purchaseOrder): array
+    {
+        $cancellation = UpdatePurchaseOrderStateFromCancelled::cancellation($purchaseOrder);
+        $blocked      = UpdatePurchaseOrderStateFromCancelled::blockedReason($purchaseOrder, $cancellation);
+
+        return [
+            'label'           => __('Undo cancel'),
+            'tooltip'         => __('Bring this purchase order back to the state it had before it was cancelled'),
+            'type'            => 'button',
+            'style'           => 'secondary',
+            'icon'            => 'fal fa-undo',
+            'key'             => 'undo_cancel_purchase_order',
+            'disabled_reason' => $blocked,
+            'restores_state'  => PurchaseOrderStateEnum::labels()[$cancellation['state']] ?? $cancellation['state'],
+            'missing_costs'   => $blocked ? [] : array_keys(array_filter($cancellation['costs'], fn ($value) => $value === null)),
+            'cost_total'      => $cancellation['cost_total'],
+            'cost_gap'        => $cancellation['cost_gap'],
+            'currency_code'   => $purchaseOrder->currency?->code,
+            'duplicates'      => $blocked ? [] : UpdatePurchaseOrderStateFromCancelled::duplicateOrders($purchaseOrder, $cancellation),
+            'route'           => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.purchase-order.undo-cancel',
+                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+            ],
         ];
     }
 

@@ -1,8 +1,8 @@
 ---
 title: Zaznamenávanie postupu objednávky ako agent
 summary: Pre agentov — dátumy, ktoré zaznamenávate na každej objednávke dodávateľovi (zaplatená záloha, začatie výroby, dokončená výroba, navrhovaný dátum pripravenosti, odovzdanie tovaru) a vaše vlastné číslo objednávky, kedy a kde ich zaznamenať, čo namiesto toho zaznamenáva nakupujúca spoločnosť, a prečo sa chýbajúci dátum zobrazuje ako meškanie.
-date: 2026-11-05
-source_date: 2026-11-05
+date: 2026-11-11
+source_date: 2026-11-11
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -86,6 +86,8 @@ Ak tento dodávateľ ešte nepredáva toto SKO, dialóg ukáže kód, názov, je
 Kusy prejdú na objednávku tohto dodávateľa v rovnakom stave, alebo na novú objednávku, ak žiadnu nemá, za cenu, ktorú dohodla nakupujúca spoločnosť. Ak je cena nového dodávateľa iná, nakupujúca spoločnosť dostane otázku na cenu opísanú vyššie a odpovie na ňu na novej objednávke. Nakupujúca spoločnosť dostane o presune upozornenie a oba riadky ukazujú, odkiaľ kusy prišli alebo kam odišli.
 
 Riadok môžete presunúť len dovtedy, kým by ste ho ešte mohli zrušiť: pred začiatkom výroby a skôr, než je na dodávke zásob. Ak na pôvodnej objednávke nič nezostane, zruší sa, pokiaľ na ňu nebola zaplatená záloha: vtedy zostane otvorená, aby sa záloha dala získať späť.
+
+Ak bola objednávka zrušená omylom, alebo ju nakupujúca spoločnosť predsa len chce, otvorte ju a kliknite na **Undo cancel**. Vráti sa do stavu, v akom bola, s jej riadkami, sumami a nákladmi. Uveďte dôvod a potvrďte, že nakupujúca spoločnosť a dodávateľ vedia, že objednávka platí znova. Ak sú rovnaké produkty na objednávke vytvorenej po zrušení, dialóg ju ukáže ako prvú, aby sa neobjednali dvakrát. Objednávku zrušenú preto, že sa jej riadky presunuli k inému dodávateľovi, alebo preto, že zostala prázdna, nemožno vrátiť späť.
 
 ## Dobré návyky
 

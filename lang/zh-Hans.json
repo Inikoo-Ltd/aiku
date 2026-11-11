@@ -17056,6 +17056,7 @@
     "Saved, but Shopify did not accept the price of :products": "已保存，但 Shopify 不接受 :products 的价格",
     "Saved, but Shopify did not accept the price: :reason": "已保存，但 Shopify 不接受该价格：:reason",
     "Saved, but eBay did not accept the change: :reason": "已保存，但 eBay 不接受该更改：:reason",
+    "eBay did not accept the change, so nothing was saved: :reason": "eBay 不接受该更改，因此未保存任何内容：:reason",
     "Saved.": "已保存。",
     "Saved. Leave it empty to keep it": "已保存。留空则保留",
     "Saves": "收藏",
