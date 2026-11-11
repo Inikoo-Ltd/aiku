@@ -56,7 +56,7 @@ interface PurchaseOrderLine {
 const stateLabels: Record<string, string> = {
   in_process: ctrans("Draft"),
   submitted: ctrans("Submitted"),
-  confirmed: ctrans("Accepted"),
+  confirmed: ctrans("Agreed"),
 }
 
 function purchaseOrderDates(purchaseOrder: PurchaseOrderLine): string {

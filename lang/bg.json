@@ -9274,5 +9274,11 @@
     "Popular with shops in your region": "Популярно в магазини във вашия регион",
     "A best seller": "Най-продаван",
     "You used to order this": "Поръчвали сте това преди",
-    "Matches what you asked for": "Отговаря на това, което търсите"
+    "Matches what you asked for": "Отговаря на това, което търсите",
+    "Add all to basket": "Добави всичко в количката",
+    "All in your basket": "Всичко е в количката",
+    "Some products could not be added to your basket.": "Някои продукти не можаха да бъдат добавени в количката.",
+    "Could not add the products. Please try again.": "Продуктите не можаха да бъдат добавени. Моля, опитайте отново.",
+    "This conversation has been cleared and will not be shown to you again.": "Този разговор беше изчистен и повече няма да ви се показва.",
+    "I have added the products to your basket.": "Продуктите бяха добавени в количката."
 }

@@ -16,6 +16,7 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Http\Resources\Web\ShoppingAssistantConversationsResource;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
@@ -96,7 +97,10 @@ class ShowShoppingAssistantConversation extends OrgAction
             fn (ShoppingAssistantEvent $event) => $event->type === $type && $event->product_id === $shown->product_id && $event->shopping_assistant_message_id === $shown->shopping_assistant_message_id
         );
 
-        $messages = $conversation->messages()->orderBy('id')->get()->map(function (ShoppingAssistantMessage $message) use ($events, $done, $productOutcomes, $conversation, $usdRate) {
+        $storedMessages = $conversation->messages()->orderBy('id')->get();
+        $addedCodes     = Product::whereIn('id', $storedMessages->flatMap(fn (ShoppingAssistantMessage $message) => collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['added_product_ids'] ?? []))->unique()->all())->pluck('code', 'id');
+
+        $messages = $storedMessages->map(function (ShoppingAssistantMessage $message) use ($events, $done, $productOutcomes, $conversation, $usdRate, $addedCodes) {
             $base = [
                 'id'         => $message->id,
                 'role'       => $message->role->value,
@@ -111,6 +115,11 @@ class ShowShoppingAssistantConversation extends OrgAction
             return array_merge($base, [
                 'follow_ups' => $message->follow_ups ?? [],
                 'flags'      => $message->flags ?? [],
+                'actions'    => collect($message->tool_calls)->map(fn ($toolCall) => match ($toolCall['name'] ?? null) {
+                    'add_to_basket'      => __('Added to the basket when the customer asked: :products', ['products' => collect($toolCall['added_product_ids'] ?? [])->map(fn ($id) => $addedCodes[$id] ?? null)->filter()->implode(', ') ?: __('nothing new')]),
+                    'clear_conversation' => __('The customer asked to clear this conversation; it is hidden from them and kept here'),
+                    default              => null,
+                })->filter()->values()->all(),
                 'latency_ms' => $message->latency_ms,
                 'cost'       => $message->cost === null ? null : (float) $message->cost * ($usdRate ?? 1),
                 'model'      => $message->model,

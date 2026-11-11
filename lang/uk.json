@@ -6950,5 +6950,11 @@
     "Popular with shops in your region": "Популярне в магазинах у Вашому регіоні",
     "A best seller": "Бестселер",
     "You used to order this": "Ви раніше замовляли це",
-    "Matches what you asked for": "Відповідає Вашому запиту"
+    "Matches what you asked for": "Відповідає Вашому запиту",
+    "Add all to basket": "Додати все до кошика",
+    "All in your basket": "Усе вже в кошику",
+    "Some products could not be added to your basket.": "Деякі товари не вдалося додати до кошика.",
+    "Could not add the products. Please try again.": "Не вдалося додати товари. Будь ласка, спробуйте ще раз.",
+    "This conversation has been cleared and will not be shown to you again.": "Цю розмову очищено, і вона більше не буде вам показуватися.",
+    "I have added the products to your basket.": "Товари додано до кошика."
 }

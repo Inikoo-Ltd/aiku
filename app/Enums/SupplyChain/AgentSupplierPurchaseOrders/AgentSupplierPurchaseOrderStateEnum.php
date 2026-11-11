@@ -26,7 +26,7 @@ enum AgentSupplierPurchaseOrderStateEnum: string
         return [
             'in_process' => __('In process'),
             'submitted'  => __('Submitted'),
-            'confirmed'  => __('Accepted'),
+            'confirmed'  => __('Agreed'),
             'settled'    => __('Settled'),
             'cancelled'  => __('Cancelled'),
             'not_received' => __('Not Received')
@@ -57,7 +57,7 @@ enum AgentSupplierPurchaseOrderStateEnum: string
                 ]
             ],
             'confirmed'  => [
-                'tooltip' => __('Accepted'),
+                'tooltip' => __('Terms agreed with the supplier'),
                 'icon'    => 'fal fa-check-circle',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',

@@ -10,7 +10,7 @@ order: 2
 ---
 
 <aside class="tldr">
-Para agentes de coordinación. La empresa compradora sigue cada pedido en ocho etapas: PO Launch (lanzamiento del pedido), Deposit & Go (depósito y arranque), Making It Happen (manos a la obra), Ready to Roll (listo para salir), Clean Hand Over (entrega limpia), Homeward Bound (rumbo a casa), Counted & Costed (contado y costeado) y Mission Complete (misión cumplida). Las etapas 1 a 5 son tu parte del trabajo. Puede ver por sí sola cuándo se despacha la mercancía y cuándo llega, pero no puede ver qué pasa en el proveedor. Esa parte depende de ti: en cada pedido a un proveedor registras cuándo se pagó el depósito, cuándo empezó la producción, cuándo terminó la producción, la fecha en la que esperas que la mercancía esté lista, y el día en que entregas la mercancía al agente de transporte. Registra cada una el día en que ocurre. La parte del comprador se explica en <a href="/docs/reading-the-po-journey-board-es">cómo leer el panel de PO journey</a>.
+Para agentes de coordinación. La empresa compradora sigue cada pedido en ocho etapas: PO Launch (lanzamiento del pedido), Agreement (acuerdo), Making It Happen (manos a la obra), Ready to Roll (listo para salir), Clean Hand Over (entrega limpia), Homeward Bound (rumbo a casa), Counted & Costed (contado y costeado) y Mission Complete (misión cumplida). Las etapas 1 a 5 son tu parte del trabajo. Puede ver por sí sola cuándo se despacha la mercancía y cuándo llega, pero no puede ver qué pasa en el proveedor. Esa parte depende de ti: en cada pedido a un proveedor registras cuándo se pagó el depósito, cuándo empezó la producción, cuándo terminó la producción, la fecha en la que esperas que la mercancía esté lista, y el día en que entregas la mercancía al agente de transporte. Registra cada una el día en que ocurre. La parte del comprador se explica en <a href="/docs/reading-the-po-journey-board-es">cómo leer el panel de PO journey</a>.
 </aside>
 
 ## Por qué importan tus fechas
@@ -41,7 +41,22 @@ Clean Hand Over es el momento en que termina tu trabajo en un pedido. Su signifi
 
 Un envío despachado siempre completa la etapa. La empresa compradora también puede darle a una etapa su propio nombre para ti, por ejemplo "Sent to forwarder": se muestra en el pedido con ese nombre.
 
-Las etapas van en orden. Registra cada fecha el mismo día en que ocurre. Una fecha de más de un día en el pasado, una etapa registrada antes de la anterior o una fecha que borras te pide un motivo. El motivo queda guardado en el historial del pedido, con tu nombre, para que el comprador vea por qué.
+## Las etapas van en orden
+
+Las etapas van estrictamente en orden, una tras otra:
+
+- **Mientras el pedido está Submitted (enviado)**, solo se puede hacer la etapa 2, Agreement (acuerdo): el depósito está pagado, o el pedido se marca como **No deposit needed** (no hace falta depósito). Cualquiera de las dos acuerda las condiciones y el pedido pasa a **Agreed** (acordado). Hasta entonces todos los botones posteriores están en gris, y al señalarlos dice qué hay que hacer primero.
+- **Desde Agreed**, solo funcionan los botones de la etapa en la que está el pedido, junto con los anteriores. Una etapa posterior sigue en gris hasta que se hace la anterior, y al señalarla nombra la etapa que hay que terminar primero.
+- Los pasos automáticos nunca se bloquean: las recepciones de mercancía, las listas de contenedores, los pagos y los contenedores despachados registran lo que ocurrió, sea cual sea la etapa.
+
+Registra cada fecha el mismo día en que ocurre. Una fecha de más de un día en el pasado, o una fecha que borras, te pide un motivo. El motivo queda guardado en el historial del pedido, con tu nombre, para que el comprador vea por qué.
+
+## Cuando un paso no se da
+
+Un pedido nunca se queda atascado en un paso que no se hace para él: cada etapa tiene un botón de omisión. Una omisión pide un motivo breve, se muestra en la etapa como **Skipped** (omitido) con quién, cuándo y por qué, pasa al historial del pedido y se puede deshacer.
+
+- **QC skipped** (control de calidad omitido) es tuyo: en Ready to Roll, cuando no se hace ningún control de calidad para el pedido, para que puedas registrar **Handed over** (entregado) sin esperar a uno.
+- Las demás omisiones son de la empresa compradora: **Sample skipped** (muestra omitida), **Shipped direct** (enviado directo; la mercancía no pasa por tu almacén), **Compliance skipped** (cumplimiento omitido) y **Handed over without checks** (entregado sin comprobaciones).
 
 ## Qué registra la empresa compradora
 
@@ -49,7 +64,7 @@ Hay fechas que no puedes introducir tú, y es intencionado:
 
 - **Sample approved.** El comprador aprueba la muestra. Solo productos nuevos; los pedidos repetidos no tienen muestra.
 - **Approved ready date.** El comprador aprueba tu fecha propuesta. A partir de ahí queda fijada, y marca los plazos: el control de calidad debe completarse ese día, y la entrega limpia dentro de los siete días siguientes.
-- **QC passed.** El comprador lo confirma, normalmente a partir de tu evidencia de calidad. Aprobar el control de calidad libera el pago del saldo: hasta entonces, pagar el saldo pide un motivo.
+- **QC passed.** El comprador lo confirma, normalmente a partir de tu evidencia de calidad. Aprobar el control de calidad libera el pago del saldo: hasta entonces, pagar el saldo pide un motivo. Cuando no se hace ningún control de calidad, marcas **QC skipped** en su lugar, con el motivo.
 - **Compliance pack complete.**
 
 Tu <a href="/docs/your-clean-handover-score-es">Clean Handover Score</a> se calcula a partir de estas fechas y de la fecha de entrega que registras. La fecha de entrega la registras tú, así que registra el día en que la mercancía llegó realmente al agente de transporte. El comprador ve quién la registró y cuándo, puede contrastarla con el recibo del agente de transporte y puede corregirla; una corrección queda guardada en el historial del pedido con su motivo.
@@ -97,10 +112,10 @@ Si un pedido se canceló por error, o la empresa compradora lo quiere después d
 
 <aside class="wayfinder">
 <b>Dónde pulsar en aiku</b><br>
-Inicia sesión → <b>Purchase Orders</b> → abre el pedido. Cada orden de compra es para uno de tus proveedores. Las etapas están en la parte superior de la página: usa ahí los botones <b>Production started</b>, <b>Production done</b> y, si entregas la mercancía a un agente de transporte, <b>Handed over</b>. El depósito se registra con <b>Pay deposit</b> en el panel de pagos. Después abre <b>Edit</b>: <b>Proposed ready date</b> y <b>Agent's order number</b> están en la sección <b>Clean handover</b>.
+Inicia sesión → <b>Purchase Orders</b> → abre el pedido. Cada orden de compra es para uno de tus proveedores. Las etapas están en la parte superior de la página: usa ahí los botones <b>Production started</b>, <b>Production done</b>, <b>QC skipped</b> y, si entregas la mercancía a un agente de transporte, <b>Handed over</b>. Un botón en gris pertenece a una etapa posterior: señálalo para ver qué va primero. El depósito se registra con <b>Pay deposit</b> en el panel de pagos. Después abre <b>Edit</b>: <b>Proposed ready date</b> y <b>Agent's order number</b> están en la sección <b>Clean handover</b>.
 </aside>
 
 <aside class="wayfinder">
 <b>Permisos que necesitas</b><br>
-Un acceso para tu organización de agente. Solo puedes marcar tus propias etapas, en tus propios pedidos: producción iniciada, producción terminada y entregado en las etapas, el depósito como pago, y tu fecha de listo propuesta y tu número de pedido en la página de edición. La aprobación de la muestra, la fecha de listo aprobada, el control de calidad y el cumplimiento normativo no están abiertos para ti, porque los registra la empresa compradora.
+Un acceso para tu organización de agente. Solo puedes marcar tus propias etapas, en tus propios pedidos: producción iniciada, producción terminada y entregado en las etapas, QC skipped, el depósito como pago, y tu fecha de listo propuesta y tu número de pedido en la página de edición. La aprobación de la muestra, la fecha de listo aprobada, el control de calidad y el cumplimiento normativo no están abiertos para ti, porque los registra la empresa compradora.
 </aside>

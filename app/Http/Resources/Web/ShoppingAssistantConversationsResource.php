@@ -51,6 +51,7 @@ class ShoppingAssistantConversationsResource extends JsonResource
             ShoppingAssistantConversationStatusEnum::OPEN        => __('Open'),
             ShoppingAssistantConversationStatusEnum::HANDED_OVER => __('Handed over'),
             ShoppingAssistantConversationStatusEnum::CLOSED      => __('Closed'),
+            ShoppingAssistantConversationStatusEnum::CLEARED     => __('Cleared by customer'),
         };
     }
 }

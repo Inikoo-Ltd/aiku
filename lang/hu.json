@@ -8883,5 +8883,11 @@
     "Popular with shops in your region": "Népszerű az Ön régiójának üzleteiben",
     "A best seller": "Slágertermék",
     "You used to order this": "Korábban rendelte",
-    "Matches what you asked for": "Megfelel a kérésének"
+    "Matches what you asked for": "Megfelel a kérésének",
+    "Add all to basket": "Mindet a kosárba",
+    "All in your basket": "Minden a kosárban van",
+    "Some products could not be added to your basket.": "Néhány terméket nem sikerült a kosárba tenni.",
+    "Could not add the products. Please try again.": "A termékeket nem sikerült hozzáadni. Kérjük, próbálja újra.",
+    "This conversation has been cleared and will not be shown to you again.": "Ezt a beszélgetést töröltük a nézetéből, és többé nem jelenik meg Önnek.",
+    "I have added the products to your basket.": "A termékek bekerültek a kosárba."
 }

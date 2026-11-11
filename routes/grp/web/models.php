@@ -588,6 +588,7 @@ use App\Actions\Procurement\SupplierAgreedTerm\WithdrawSupplierAgreedTerm;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderJourneyStage;
 use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
+use App\Actions\Procurement\PurchaseOrder\SkipPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrderChase\StorePurchaseOrderChase;
 use App\Actions\SupplyChain\SupplierChangeRequest\DecideSupplierChangeRequest;
 use App\Actions\SupplyChain\SupplierChangeRequest\StoreSupplierChangeRequest;
@@ -2075,6 +2076,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
     Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
     Route::patch('stage', MarkPurchaseOrderStage::class)->name('stage');
+    Route::patch('skip-stage', SkipPurchaseOrderStage::class)->name('skip_stage');
     Route::post('chase', StorePurchaseOrderChase::class)->name('chase.store');
     Route::post('compliance/{tradeUnit:id}', AttachPurchaseOrderComplianceDocument::class)->name('compliance.attach')->withoutScopedBindings();
     Route::post('deposit', StoreAspoDeposit::class)->name('deposit.store');
