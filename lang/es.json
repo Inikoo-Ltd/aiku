@@ -15473,6 +15473,7 @@
     "Purchasing must accept each one with a reason before this is submitted or paid": "Compras debe aceptar cada una con un motivo antes de enviar o pagar",
     "Purchasing sent the approved artwork of :code to the supplier: confirm the factory has received it.": "Compras envió el diseño aprobado de :code al proveedor: confirme que la fábrica lo ha recibido.",
     "Purchasing, :organisation": "Compras, :organisation",
+    "Owner, :group": "Propietario, :group",
     "Purge": "Purga",
     "Purge all cached files. Purging your cache may slow your website temporarily": "Borra todos los archivos en caché. Borrar la caché puede ralentizar temporalmente su sitio web",
     "Purged orders": "Pedidos purgados",

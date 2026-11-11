@@ -34,6 +34,8 @@ class GetSupplierPortalDetails
 
     public const int EXPIRY_WARNING_DAYS = 30;
 
+    public const string OWNER_USERNAME = 'david';
+
     /**
      * @return array<string, mixed>
      */
@@ -42,6 +44,7 @@ class GetSupplierPortalDetails
         return [
             'products'     => $this->productOptions($supplier),
             'terms'        => $this->terms($supplier),
+            'owner'        => $this->owner($supplier),
             'buyers'       => $this->buyers($supplier),
             'submissions'  => $this->submissions($supplier),
             'compliance'   => $this->compliance($supplier),
@@ -95,10 +98,25 @@ class GetSupplierPortalDetails
     }
 
     /**
-     * Who placed the latest purchase order of each organisation with the supplier, by name only: staff emails are
-     * logins and the page is reachable by anyone holding the link.
+     * The owner of AW, so the supplier can always write to the top.
      *
-     * @return array<int, array{organisation: string, name: string|null}>
+     * @return array{name: string|null, email: string|null}|null
+     */
+    private function owner(Supplier $supplier): ?array
+    {
+        $owner = DB::table('users')
+            ->where('group_id', $supplier->group_id)
+            ->where('username', self::OWNER_USERNAME)
+            ->selectRaw('users.contact_name as name, '.$this->emailSql().' as email')
+            ->first();
+
+        return $owner ? ['name' => $owner->name, 'email' => $owner->email] : null;
+    }
+
+    /**
+     * Who placed the latest purchase order of each organisation with the supplier, with the email to write to them.
+     *
+     * @return array<int, array{organisation: string, name: string|null, email: string|null}>
      */
     private function buyers(Supplier $supplier): array
     {
@@ -111,10 +129,18 @@ class GetSupplierPortalDetails
             ->whereNotNull('po.submitted_at')
             ->orderBy('po.organisation_id')
             ->orderByDesc('po.submitted_at')
-            ->selectRaw('distinct on (po.organisation_id) organisations.name as organisation, users.contact_name as name')
+            ->selectRaw('distinct on (po.organisation_id) organisations.name as organisation, users.contact_name as name, '.$this->emailSql().' as email')
             ->get()
-            ->map(fn ($row) => ['organisation' => $row->organisation, 'name' => $row->name])
+            ->map(fn ($row) => ['organisation' => $row->organisation, 'name' => $row->name, 'email' => $row->email])
             ->all();
+    }
+
+    /**
+     * A staff member's work email when HR has one, otherwise the email of their user.
+     */
+    private function emailSql(): string
+    {
+        return "coalesce((select nullif(employees.work_email, '') from user_has_models join employees on employees.id = user_has_models.model_id where user_has_models.user_id = users.id and user_has_models.model_type = 'Employee' and user_has_models.status order by employees.work_email is null limit 1), nullif(users.email, ''))";
     }
 
     /**

@@ -247,6 +247,7 @@ onMounted(() => {
 					:logo="profile?.company_logo"
 					:company="company"
 					:agent="agent"
+					:owner="details?.owner"
 					:buyers="details?.buyers"
 					:summary="summary"
 					:sales="sales"
