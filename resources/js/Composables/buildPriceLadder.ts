@@ -114,6 +114,26 @@ export const activeLadderOption = (options: LadderOption[], productId: number, q
         .sort((a, b) => a.minQuantity - b.minQuantity)
         .pop() ?? null
 
+export const basketLadderOptionKeys = (options: LadderOption[], basketQuantities: Record<number, number>): Set<string> => {
+    const keys = new Set<string>()
+
+    for (const productId of new Set(options.map((option) => option.productId))) {
+        const quantity = Number(basketQuantities[productId]) || 0
+
+        if (quantity <= 0) {
+            continue
+        }
+
+        const option = activeLadderOption(options, productId, quantity)
+
+        if (option) {
+            keys.add(option.key)
+        }
+    }
+
+    return keys
+}
+
 export const sharesAmountWithAnotherOption = (options: LadderOption[], option: LadderOption): boolean =>
     options.some((other) => other.key !== option.key && other.amount === option.amount)
 

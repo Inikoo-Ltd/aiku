@@ -2,9 +2,13 @@
 import { computed, inject } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faShoppingBasket } from "@fas"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import {
     activeLadderOption,
+    basketLadderOptionKeys,
     formatLadderAmount,
     sharesAmountWithAnotherOption,
     type LadderOption
@@ -21,6 +25,8 @@ const props = defineProps<{
 const emits = defineEmits<{
     (e: "selectOption", value: LadderOption): void
 }>()
+
+library.add(faShoppingBasket)
 
 const locale = inject("locale", aikuLocaleStructure)
 const customerDataByProduct = inject<any>("variantCustomerData", null)
@@ -44,6 +50,21 @@ const containersLabel = (option: LadderOption): string =>
 
 const basketQuantity = (option: LadderOption): number =>
     Number(customerDataByProduct?.value?.[option.productId]?.quantity_ordered ?? 0) || 0
+
+const basketOptionKeys = computed<Set<string>>(() =>
+    basketLadderOptionKeys(
+        props.options,
+        Object.fromEntries(props.options.map((option) => [option.productId, basketQuantity(option)]))
+    )
+)
+
+const isInBasket = (option: LadderOption): boolean => basketOptionKeys.value.has(option.key)
+
+const inBasketLabel = (option: LadderOption): string =>
+    ctrans("In your basket: :quantity × :size", {
+        quantity: String(basketQuantity(option)),
+        size: option.containerLabel || formatLadderAmount(option.containerAmount, option.measure)
+    })
 
 const isActive = (option: LadderOption): boolean => activeOption.value?.key === option.key
 
@@ -84,8 +105,9 @@ const onSelect = (option: LadderOption) => {
                             <span v-if="option.isStep || sharesAmountWithAnotherOption(options, option)"> · </span>{{ ctrans("Not enough stock") }}
                         </template>
                     </div>
-                    <div v-if="!option.isStep && basketQuantity(option) > 0" class="ladder-in-basket text-xs font-medium">
-                        {{ ctrans(":quantity in your basket", { quantity: String(basketQuantity(option)) }) }}
+                    <div v-if="isInBasket(option)" class="ladder-in-basket mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold">
+                        <FontAwesomeIcon icon="fas fa-shopping-basket" class="text-[10px]" fixed-width aria-hidden="true" />
+                        {{ inBasketLabel(option) }}
                     </div>
                 </div>
 
@@ -134,7 +156,8 @@ const onSelect = (option: LadderOption) => {
 }
 
 .ladder-in-basket {
-    color: var(--step-discount-color);
+    color: color-mix(in srgb, var(--step-discount-color) 75%, black);
+    background: color-mix(in srgb, var(--step-discount-color) 14%, white);
 }
 
 .radio-loading {

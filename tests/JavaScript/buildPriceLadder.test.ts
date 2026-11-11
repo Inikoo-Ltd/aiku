@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { activeLadderOption, buildPriceLadder, formatLadderAmount, ladderMeasure, sharesAmountWithAnotherOption } from "../../resources/js/Composables/buildPriceLadder.ts"
+import { activeLadderOption, basketLadderOptionKeys, buildPriceLadder, formatLadderAmount, ladderMeasure, sharesAmountWithAnotherOption } from "../../resources/js/Composables/buildPriceLadder.ts"
 
 const halfKilo = { id: 1, price: 46, stock: 20, size_resolved: true, size_kilograms: 0.5, size_label: "500g" }
 const oneKilo = {
@@ -95,7 +95,16 @@ test("the one list is chosen in the product template and replaces the size tiles
 
 	assert.match(read("resources/js/Components/Iris/Products/EcomAddToBasketv2.vue"), /const holdsQuantity = computed\(\(\) => props\.holdQuantity \|\| hasStepDiscount\.value\)/)
 
-	for (const key of ["Size and quantity", "You save :percentage", "Not enough stock", ":quantity in your basket", "Bulk prices count containers of one size; different sizes are not added together."]) {
+	for (const key of ["Size and quantity", "You save :percentage", "Not enough stock", "In your basket: :quantity × :size", "Bulk prices count containers of one size; different sizes are not added together."]) {
 		assert.ok(english[key], `${key} is in lang/en.json`)
 	}
+})
+
+test("the basket badge sits on the bulk price the basket quantity reaches, one per size, none for sizes not in the basket", () => {
+	const options = buildPriceLadder([halfKilo, oneKilo])
+
+	assert.deepEqual([...basketLadderOptionKeys(options, { 1: 1, 2: 10 })].sort(), ["1:1", "2:10"])
+	assert.deepEqual([...basketLadderOptionKeys(options, { 2: 7 })], ["2:5"])
+	assert.deepEqual([...basketLadderOptionKeys(options, { 2: 3 })], ["2:1"])
+	assert.deepEqual([...basketLadderOptionKeys(options, { 1: 0 })], [])
 })
