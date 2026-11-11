@@ -39,7 +39,13 @@ class CreateBlogWebpage extends OrgAction
 
     public function htmlResponse(Webpage|Website $parent, ActionRequest $request): Response
     {
-        $shopType = ($parent instanceof Webpage ? $parent->website : $parent)->shop?->type;
+        $website  = $parent instanceof Webpage ? $parent->website : $parent;
+        $shopType = $website->shop?->type;
+        $siteRoot = 'https://'.$website->domain.'/';
+
+        $urlPrefixPerCategory = collect(WebpageSubTypeEnum::blogCategories($shopType))
+            ->mapWithKeys(fn (WebpageSubTypeEnum $category) => [$category->value => $siteRoot.WebpageSubTypeEnum::blogUrlPrefix($category)])
+            ->all();
 
         $route = [
             'name'       => 'grp.models.shop.blog_webpage.store',
@@ -92,7 +98,11 @@ class CreateBlogWebpage extends OrgAction
                                     'label'     => __('URL'),
                                     'label_no_capitalize' => true,
                                     'leftAddOn' => [
-                                        'label' => 'https://'.($parent instanceof Webpage ? $parent->website->domain : $parent->domain).'/blog/'
+                                        'label'     => $siteRoot.WebpageSubTypeEnum::blogUrlPrefix(null),
+                                        'labelFrom' => [
+                                            'field'   => 'sub_type',
+                                            'options' => $urlPrefixPerCategory,
+                                        ],
                                     ],
                                     'value'     => '',
                                     'required'  => true,

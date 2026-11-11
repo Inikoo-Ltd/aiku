@@ -11,12 +11,12 @@ import { useFreshAfterHistoryRestore } from "@/Composables/useFreshAfterHistoryR
 
 // Utils
 import { capitalize } from "@/Composables/capitalize";
-import { notify } from "@kyvg/vue3-notification";
 import { ctrans } from "@/Composables/useTrans";
 
 // Components
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
+import PublishScheduleButton from "@/Components/Workshop/Blog/PublishScheduleButton.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import ConfirmDialog from 'primevue/confirmdialog';
 import EmailWorkshop from '@/Components/CMS/Website/Outboxes/EmailWorkshop/EmailWorkshop.vue'
@@ -54,6 +54,12 @@ const props = defineProps<{
   webpage_sub_type : string
   updateRoute?: routeType
   mergeTags?: Array<any>
+  publish_schedule?: {
+    scheduled_at: string | null
+    scheduled_by: string | null
+    store_route: routeType
+    delete_route: routeType
+  } | null
 }>();
 
 provide('isInWorkshop', true);
@@ -70,19 +76,25 @@ const isLoadingPublish = ref(false);
 const _emailWorkshop = ref<InstanceType<typeof EmailWorkshop> | null>(null);
 const isPublishingBeefree = ref(false);
 const _editorBlogWorkshop = ref<InstanceType<typeof EditorBlogWorkshop> | null>(null);
+const _publishScheduleButton = ref<InstanceType<typeof PublishScheduleButton> | null>(null);
 const isSavingBlog = ref(false);
+const workshopError = ref<string | null>(null);
+const isJustPublished = ref(false);
+
+const messageFromError = (error: any): string =>
+  error?.response?.data?.message || error?.message || ctrans("Unknown error occurred");
+
+const saveDraftBeforeSchedule = async (): Promise<boolean> =>
+  await _editorBlogWorkshop.value?.saveNow() ?? true;
 
 // Beefree auto save
 const persistBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
   if (!props.webpage.updateRoute?.name) {
-    notify({
-      title: ctrans("Something went wrong"),
-      text: ctrans("No update route is configured for this page"),
-      type: "error"
-    });
+    workshopError.value = ctrans("No update route is configured for this page");
     return;
   }
 
+  workshopError.value = null;
   isSavingBlock.value = true;
   try {
     await axios[props.webpage.updateRoute.method ?? "patch"](
@@ -104,11 +116,7 @@ const persistBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | nu
       }
     );
   } catch (error) {
-    notify({
-      title: ctrans("Failed to save"),
-      text: error?.response?.data?.message || error.message || "Unknown error occurred",
-      type: "error"
-    });
+    workshopError.value = ctrans("Failed to save: :message", { message: messageFromError(error) });
   } finally {
     isSavingBlock.value = false;
   }
@@ -132,14 +140,11 @@ const onBeefreeSave = (payload: any) => {
 
 const persistPublishBeefreeLayout = async (Jsonlayout: any, compiledLayout: string | null = null) => {
   if (!props.webpage.publishRoute?.name) {
-    notify({
-      title: ctrans("Something went wrong"),
-      text: ctrans("No publish route is configured for this page"),
-      type: "error"
-    });
+    workshopError.value = ctrans("No publish route is configured for this page");
     return;
   }
 
+  workshopError.value = null;
   isSavingBlock.value = true;
 
   try {
@@ -161,15 +166,19 @@ const persistPublishBeefreeLayout = async (Jsonlayout: any, compiledLayout: stri
         }
       }
     );
+    showPublished();
   } catch (error) {
-    notify({
-      title: ctrans("Failed to save"),
-      text: error?.response?.data?.message || error.message || "Unknown error occurred",
-      type: "error"
-    });
+    workshopError.value = ctrans("Failed to publish: :message", { message: messageFromError(error) });
   } finally {
     isSavingBlock.value = false;
   }
+};
+
+const showPublished = () => {
+  data.value.is_dirty = false;
+  _publishScheduleButton.value?.clearSchedule();
+  isJustPublished.value = true;
+  setTimeout(() => isJustPublished.value = false, 4000);
 };
 
 // Publish Actions
@@ -179,6 +188,7 @@ const onPublish = async (action: routeType, popover) => {
       throw new Error("Invalid action parameters");
 
     isLoadingPublish.value = true;
+    workshopError.value = null;
 
     const response = await axios[action.method](
       route(action.name, action.parameters),
@@ -189,19 +199,11 @@ const onPublish = async (action: routeType, popover) => {
 
     if (response.status === 200) {
       comment.value = "";
-      notify({
-        title: ctrans("Published!"),
-        text: ctrans("Webpage data has been published successfully"),
-        type: "success"
-      });
+      showPublished();
     }
     popover.close();
   } catch (error) {
-    notify({
-      title: ctrans("Something went wrong"),
-      text: error?.response?.data?.message || error.message || "Unknown error occurred",
-      type: "error"
-    });
+    workshopError.value = ctrans("Failed to publish: :message", { message: messageFromError(error) });
   } finally {
     isLoadingPublish.value = false;
   }
@@ -232,15 +234,21 @@ const openWebsite = () => window.open(props.url, '_blank');
 <template>
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
+    <template #button-schedule-publish>
+      <PublishScheduleButton v-if="publish_schedule" ref="_publishScheduleButton"
+        :publishSchedule="publish_schedule" :saveDraft="saveDraftBeforeSchedule" />
+    </template>
     <template #button-publish="{ action }">
       <Publish :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
         @onPublish="(popover) => beforePublish(action.route, popover)" />
     </template>
-    <template #afterTitle v-if="isSavingBlock || isSavingBlog">
-      <LoadingIcon v-tooltip="ctrans('Saving..')" />
+    <template #afterTitle v-if="isSavingBlock || isSavingBlog || workshopError || isJustPublished">
+      <LoadingIcon v-if="isSavingBlock || isSavingBlog" v-tooltip="ctrans('Saving..')" />
+      <span v-else-if="workshopError" class="text-xs font-normal text-red-600">{{ workshopError }}</span>
+      <span v-else class="text-xs font-normal text-green-600">{{ ctrans("Published") }}</span>
     </template>
     <template #other>
-      <button class="flex items-center gap-1 px-3 py-1 text-sm text-[--app-accent] hover:underline"
+      <button class="flex items-center gap-1 px-3 py-1 text-sm text-[var(--app-accent)] hover:underline"
         v-tooltip="ctrans('Go to website')" @click="openWebsite">
         <FontAwesomeIcon :icon="faExternalLink" size="lg" fixed-width />
         <span>{{ ctrans('Open Site') }}</span>

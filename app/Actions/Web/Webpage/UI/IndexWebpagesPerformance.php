@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Seo\GetSeoAiVisibility;
+use App\Actions\Web\Webpage\Traits\WithWebpageUrlSearch;
 use App\Actions\Web\WebsiteConversionEvent\GetVisitorLandingWebpage;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\InertiaTable\InertiaTable;
@@ -24,6 +25,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWebpagesPerformance extends OrgAction
 {
+    use WithWebpageUrlSearch;
+
     /**
      * Below this many visitors or clicks in both periods a change is shown as a difference, not a
      * percentage: going from 2 to 4 is +100% and means nothing.
@@ -71,6 +74,7 @@ class IndexWebpagesPerformance extends OrgAction
                 $query->whereAnyWordStartWith('webpages.code', $value)
                     ->orWhereAnyWordStartWith('webpages.url', $value)
                     ->orWhereAnyWordStartWith('webpages.title', $value);
+                $this->orWhereCanonicalUrlEndsWithSearchedPath($query, $value);
             });
         });
 
