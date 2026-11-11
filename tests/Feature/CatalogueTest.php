@@ -868,20 +868,28 @@ test('a product can be priced at zero, free gifts are not editable otherwise', f
     expect((float)$product->refresh()->price)->toBe(0.0);
 })->depends('create family');
 
-test('a Wix order with a product missing from the catalogue is skipped and reported once, not on every poll', function (ProductCategory $family) {
+test('a Wix order with a product missing from the catalogue is skipped and raises one ticket, not one per poll', function (ProductCategory $family) {
+    \Illuminate\Support\Facades\Queue::fake();
     $action   = \App\Actions\Catalogue\Shop\External\Wix\StoreOrderFromWix::make();
     $wixOrder = [
         'id'        => 'wix-order-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8)),
         'status'    => 'APPROVED',
         'number'    => '20189',
-        'lineItems' => [['id' => 'line-1', 'physicalProperties' => ['sku' => 'NOT-IN-CATALOGUE-'.\Illuminate\Support\Str::random(6)], 'quantity' => 1]],
+        'lineItems' => [
+            ['id' => 'line-1', 'physicalProperties' => ['sku' => 'NOT-IN-CATALOGUE-'.\Illuminate\Support\Str::random(6)], 'productName' => ['original' => 'JOYOUS'], 'quantity' => 1],
+            ['id' => 'line-2', 'physicalProperties' => ['sku' => ''], 'productName' => ['original' => 'Dark Fairytale'], 'descriptionLines' => [['name' => ['original' => 'Size'], 'plainText' => ['original' => '10ml']]], 'quantity' => 1],
+        ],
     ];
-    $reportKey = $action->skippedOrderReportKey($family->shop, $wixOrder['id']);
+    $tickets = fn () => \App\Models\Helpers\Ticket::where('shop_id', $family->shop_id)->where('data->wix_order_id', $wixOrder['id'])->get();
 
-    expect(\Illuminate\Support\Facades\Cache::has($reportKey))->toBeFalse()
+    expect($tickets())->toHaveCount(0)
         ->and($action->handle($family->shop, $wixOrder))->toBeNull()
-        ->and(\Illuminate\Support\Facades\Cache::has($reportKey))->toBeTrue()
-        ->and($action->handle($family->shop, $wixOrder))->toBeNull();
+        ->and($action->handle($family->shop, $wixOrder))->toBeNull()
+        ->and($tickets())->toHaveCount(1)
+        ->and($tickets()->first()->subject)->toContain($family->shop->code.'-20189')
+        ->and($tickets()->first()->description)->toContain('JOYOUS: SKU NOT-IN-CATALOGUE-')
+        ->and($tickets()->first()->description)->toContain('Dark Fairytale (Size: 10ml) has no SKU in Wix')
+        ->and($tickets()->first()->description)->toContain('Aiku only imports Wix products that have a SKU');
 })->depends('create family');
 
 test('a Wix order keeps the sale price and shipping the buyer paid in Wix', function (ProductCategory $family) {
@@ -987,6 +995,20 @@ test('wix products without variants share the all-zero variant id and still impo
     expect($action->discontinueProductsGoneFromWix($wixShop, $liveVariantKeys))->toBe(1)
         ->and($products[4]->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED)
         ->and($products[0]->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE);
+});
+
+test('wix variants without a sku are listed so they can be fixed in wix', function () {
+    $variant = fn (string $name, ?string $sku, bool $visible = true) => ['product_id' => 'p-'.$name, 'variant_id' => 'v-'.$name, 'sku' => $sku, 'name' => $name, 'visible' => $visible];
+
+    $rows = \App\Actions\Catalogue\Shop\External\Wix\GetWixProducts::make()->getWixVariantsWithoutSku([
+        $variant('GINGERBREAD - 10ml', ''),
+        $variant('Christmas Spice - 10ml', 'FOKG-270-10ml'),
+        $variant('Dark Fairytale - 50ml', null, false),
+        $variant('Aquamarine - 5g', '  '),
+    ]);
+
+    expect(array_column($rows, 'name'))->toBe(['Aquamarine - 5g', 'Dark Fairytale - 50ml', 'GINGERBREAD - 10ml'])
+        ->and($rows[1])->toBe(['name' => 'Dark Fairytale - 50ml', 'visible' => 'no', 'product_id' => 'p-Dark Fairytale - 50ml', 'variant_id' => 'v-Dark Fairytale - 50ml']);
 });
 
 test('stock changes of several variants of one wix product queue a single inventory push', function () {
