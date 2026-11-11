@@ -54,6 +54,7 @@ import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.components.focusHalo
+import io.aiku.droid.ui.components.rememberTabIndication
 import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -277,7 +278,13 @@ internal fun SegmentTabs(
                 modifier = Modifier
                     .weight(1f)
                     .height(segmentHeight + 8.dp)
-                    .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(index) })
+                    .selectable(
+                        selected = isSelected,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = rememberTabIndication(cornerRadius = 8.dp),
+                        role = Role.Tab,
+                        onClick = { onSelect(index) },
+                    )
                     .padding(vertical = 4.dp),
             ) {
                 Box(

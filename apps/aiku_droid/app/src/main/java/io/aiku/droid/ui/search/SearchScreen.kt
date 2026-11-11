@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -162,7 +163,12 @@ private fun SearchHeader(query: String, onQueryChange: (String) -> Unit, scopeIn
                             .clip(pill)
                             .background(if (isActive) colors.navActive else Color.White.copy(alpha = 0.14f))
                             .then(if (isActive) Modifier.border(1.dp, colors.navRing, pill) else Modifier)
-                            .selectable(selected = isActive, role = Role.Tab) { onScope(index) }
+                            .selectable(
+                                selected = isActive,
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = rememberNavFocusIndication(cornerRadius = 17.dp),
+                                role = Role.Tab,
+                            ) { onScope(index) }
                             .padding(horizontal = 12.dp),
                     ) {
                         Text(text = stringResource(scope), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (isActive) colors.navAccent else colors.onNav)

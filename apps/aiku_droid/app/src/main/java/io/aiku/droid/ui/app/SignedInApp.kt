@@ -33,29 +33,6 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.ui.asText
-import io.aiku.droid.ui.components.AikuButton
-import io.aiku.droid.ui.components.ButtonStyle
-import io.aiku.droid.ui.components.FullScreenMessage
-import io.aiku.droid.ui.components.LocalSectionTabsHandoff
-import io.aiku.droid.ui.components.LocalToasts
-import io.aiku.droid.ui.components.SectionTabsHandoff
-import io.aiku.droid.ui.components.ToastHost
-import io.aiku.droid.ui.components.ToastState
-import io.aiku.droid.ui.navigation.AppNavigator
-import io.aiku.droid.ui.navigation.AppearanceController
-import io.aiku.droid.ui.navigation.LocalAppNavigator
-import io.aiku.droid.ui.navigation.LocalAppearanceController
-import io.aiku.droid.ui.navigation.LocalStaff
-import io.aiku.droid.ui.navigation.LocalWarehouse
-import io.aiku.droid.ui.navigation.LocalWarehouses
-import io.aiku.droid.ui.navigation.MainTab
-import io.aiku.droid.ui.navigation.NoWarehouseAccess
-import io.aiku.droid.ui.states.LoadingScreen
-import io.aiku.droid.ui.states.OfflineScreen
-import io.aiku.droid.ui.states.ReportProblemSheet
-import io.aiku.droid.ui.states.ServerErrorScreen
-import io.aiku.droid.ui.states.SessionExpiredScreen
-import io.aiku.droid.ui.theme.Appearance
 import io.aiku.droid.ui.clocking.ClockScanQrScreen
 import io.aiku.droid.ui.clocking.ClockingAdjustmentsScreen
 import io.aiku.droid.ui.clocking.ClockingAdjustmentsViewModel
@@ -75,6 +52,14 @@ import io.aiku.droid.ui.clocking.OvertimeScreen
 import io.aiku.droid.ui.clocking.OvertimeViewModel
 import io.aiku.droid.ui.clocking.TimesheetDayScreen
 import io.aiku.droid.ui.clocking.TimesheetsScreen
+import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.ButtonStyle
+import io.aiku.droid.ui.components.FullScreenMessage
+import io.aiku.droid.ui.components.LocalTabHandoff
+import io.aiku.droid.ui.components.LocalToasts
+import io.aiku.droid.ui.components.TabHandoff
+import io.aiku.droid.ui.components.ToastHost
+import io.aiku.droid.ui.components.ToastState
 import io.aiku.droid.ui.dashboard.WarehouseDashboardScreen
 import io.aiku.droid.ui.fulfilment.FulfilmentBookInScreen
 import io.aiku.droid.ui.fulfilment.FulfilmentBookedInScreen
@@ -154,6 +139,8 @@ import io.aiku.droid.ui.locations.WarehouseOverviewScreen
 import io.aiku.droid.ui.menu.MenuScreen
 import io.aiku.droid.ui.mywork.MyWorkScreen
 import io.aiku.droid.ui.navigation.AddShipmentRoute
+import io.aiku.droid.ui.navigation.AppNavigator
+import io.aiku.droid.ui.navigation.AppearanceController
 import io.aiku.droid.ui.navigation.AppearanceRoute
 import io.aiku.droid.ui.navigation.AreaRoute
 import io.aiku.droid.ui.navigation.AreasRoute
@@ -198,13 +185,20 @@ import io.aiku.droid.ui.navigation.InboxRoute
 import io.aiku.droid.ui.navigation.InventoryDashboardRoute
 import io.aiku.droid.ui.navigation.LanguageRoute
 import io.aiku.droid.ui.navigation.LeaveRoute
+import io.aiku.droid.ui.navigation.LocalAppNavigator
+import io.aiku.droid.ui.navigation.LocalAppearanceController
+import io.aiku.droid.ui.navigation.LocalStaff
+import io.aiku.droid.ui.navigation.LocalWarehouse
+import io.aiku.droid.ui.navigation.LocalWarehouses
 import io.aiku.droid.ui.navigation.LocationRoute
 import io.aiku.droid.ui.navigation.LocationSkuRoute
 import io.aiku.droid.ui.navigation.LocationsRoute
+import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ManualShipmentRoute
 import io.aiku.droid.ui.navigation.MenuRoute
 import io.aiku.droid.ui.navigation.MyWorkRoute
 import io.aiku.droid.ui.navigation.NoTasksRoute
+import io.aiku.droid.ui.navigation.NoWarehouseAccess
 import io.aiku.droid.ui.navigation.NotDesignedRoute
 import io.aiku.droid.ui.navigation.OnlineOnlyRoute
 import io.aiku.droid.ui.navigation.OvertimeRoute
@@ -257,13 +251,19 @@ import io.aiku.droid.ui.profile.LanguageScreen
 import io.aiku.droid.ui.profile.ProfileScreen
 import io.aiku.droid.ui.scan.ScanResultScreen
 import io.aiku.droid.ui.search.SearchScreen
+import io.aiku.droid.ui.states.LoadingScreen
 import io.aiku.droid.ui.states.NoTasksScreen
 import io.aiku.droid.ui.states.NotDesignedScreen
+import io.aiku.droid.ui.states.OfflineScreen
+import io.aiku.droid.ui.states.ReportProblemSheet
+import io.aiku.droid.ui.states.ServerErrorScreen
+import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.states.StatePreviewScreen
 import io.aiku.droid.ui.sync.ConflictScreen
 import io.aiku.droid.ui.sync.OnlineOnlyScreen
 import io.aiku.droid.ui.sync.ResolveConflictsScreen
 import io.aiku.droid.ui.sync.SyncQueueScreen
+import io.aiku.droid.ui.theme.Appearance
 
 @Composable
 fun SignedInApp(container: AppContainer, session: StaffSession) {
@@ -385,7 +385,7 @@ private fun WarehouseApp(
         LocalClockingAdjustments provides adjustmentsViewModel,
         LocalOvertime provides overtimeViewModel,
         LocalClockingCalendar provides calendarViewModel,
-        LocalSectionTabsHandoff provides remember { SectionTabsHandoff() },
+        LocalTabHandoff provides remember { TabHandoff() },
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AppNavHost(navController)

@@ -153,7 +153,7 @@ fun FooterStatus(title: String, modifier: Modifier = Modifier, body: String? = n
 
 data class SectionTabItem(val label: String, val isActive: Boolean, val onClick: () -> Unit)
 
-class SectionTabsHandoff {
+class TabHandoff {
     private var key: String? = null
     private var offset = 0
     private var handedAt = 0L
@@ -164,14 +164,16 @@ class SectionTabsHandoff {
         handedAt = SystemClock.uptimeMillis()
     }
 
-    fun take(key: String): Int {
-        val isFresh = this.key == key && SystemClock.uptimeMillis() - handedAt < TAB_HANDOFF_WINDOW_MS
+    fun take(key: String): Int? {
+        if (this.key != key) {
+            return null
+        }
         this.key = null
-        return if (isFresh) offset else 0
+        return if (SystemClock.uptimeMillis() - handedAt < TAB_HANDOFF_WINDOW_MS) offset else null
     }
 }
 
-val LocalSectionTabsHandoff = staticCompositionLocalOf { SectionTabsHandoff() }
+val LocalTabHandoff = staticCompositionLocalOf { TabHandoff() }
 
 @Composable
 fun AppHeader(
@@ -244,10 +246,10 @@ fun AppHeader(
 fun SectionTabs(tabs: List<SectionTabItem>, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
     val bar = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
-    val handoff = LocalSectionTabsHandoff.current
+    val handoff = LocalTabHandoff.current
     val key = tabs.joinToString("|") { it.label }
-    val startOffset = remember(key) { handoff.take(key) }
-    val scrollState = rememberScrollState(startOffset)
+    val handedOffset = remember(key) { handoff.take(key) }
+    val scrollState = rememberScrollState(handedOffset ?: 0)
 
     Row(
         modifier = modifier
@@ -263,6 +265,8 @@ fun SectionTabs(tabs: List<SectionTabItem>, modifier: Modifier = Modifier) {
                     .width(IntrinsicSize.Max)
                     .selectable(
                         selected = tab.isActive,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = rememberNavFocusIndication(cornerRadius = 8.dp, bottomInset = 5.dp),
                         role = Role.Tab,
                         onClick = {
                             if (!tab.isActive) {
@@ -488,7 +492,13 @@ private fun RowScope.BarTab(item: BarItem, isActive: Boolean, onClick: () -> Uni
             .clip(shape)
             .background(if (isActive) colors.navActive else Color.Transparent)
             .then(if (isActive) Modifier.border(1.dp, colors.navRing, shape) else Modifier)
-            .selectable(selected = isActive, role = Role.Tab, onClick = onClick),
+            .selectable(
+                selected = isActive,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = rememberNavFocusIndication(cornerRadius = 8.dp),
+                role = Role.Tab,
+                onClick = onClick,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
