@@ -17,6 +17,7 @@ import { faLongArrowRight } from '@fal'
 import { faPlus, faMinus } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ctrans } from '@/Composables/useTrans'
+import { stepDiscountTotal } from '@/Composables/stepDiscountTotal'
 
 library.add(faLongArrowRight, faPlus, faMinus)
 
@@ -111,6 +112,7 @@ const fetchCustomerOrderingProduct = async () => {
 
             if (heldQuantity !== null) {
                 customer.value.quantity_ordered_new = heldQuantity
+                shareSelectedQuantity(heldQuantity)
             }
         } else throw new Error("Product ID is required")
 
@@ -275,6 +277,18 @@ const hasUnsavedQuantity = computed(() =>
     Number(customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0) !== Number(customer.value.quantity_ordered ?? 0)
 )
 
+const selectedQuantity = computed<number>(() =>
+    Number(customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0) || 0
+)
+
+const showsSelectionTotal = computed<boolean>(() =>
+    hasStepDiscount.value && hasUnsavedQuantity.value && selectedQuantity.value > 0
+)
+
+const selectionTotal = computed(() =>
+    stepDiscountTotal(Number(product.value.price) || 0, product.value.step_discount?.steps, selectedQuantity.value)
+)
+
 const syncOrHoldQuantity = () => {
     if (hasStepDiscount.value) {
         return
@@ -401,6 +415,18 @@ watch(
     },
     { deep: true }
 )
+const shareSelectedQuantity = (quantity: number) => {
+    if (!hasStepDiscount.value || !props.customerData) {
+        return
+    }
+
+    if (Number(props.customerData.quantity_ordered_new ?? props.customerData.quantity_ordered ?? 0) !== quantity) {
+        props.customerData.quantity_ordered_new = quantity
+    }
+}
+
+watch(selectedQuantity, shareSelectedQuantity)
+
 defineExpose({ setQuantity, selectQuantity })
 </script>
 
@@ -456,7 +482,25 @@ defineExpose({ setQuantity, selectQuantity })
         </slot>
        
 
-        <div v-if="customer.quantity_ordered" class="qty-info">
+        <div v-if="showsSelectionTotal" class="qty-info">
+            <span class="qty-info-label">
+                {{ ctrans('Total for :quantity', { quantity: String(selectedQuantity) }) }}:
+            </span>
+
+            <strong v-if="selectionTotal.net < selectionTotal.gross" class="qty-price qty-price--offer">
+                <span class="qty-price-old">{{ locale.currencyFormat(layout?.iris?.currency?.code, selectionTotal.gross) }}</span>
+                <span class="qty-price-new">{{ locale.currencyFormat(layout?.iris?.currency?.code, selectionTotal.net) }}</span>
+            </strong>
+            <strong v-else class="qty-price">
+                {{ locale.currencyFormat(layout?.iris?.currency?.code, selectionTotal.gross) }}
+            </strong>
+
+            <span v-if="customer.quantity_ordered" class="qty-info-label basis-full text-xs">
+                {{ ctrans('Not saved yet, your basket has :quantity', { quantity: String(Number(customer.quantity_ordered)) }) }}
+            </span>
+        </div>
+
+        <div v-else-if="customer.quantity_ordered" class="qty-info">
             <span class="qty-info-label">
                 {{ ctrans('Current amount in basket') }}:
             </span>
