@@ -76,7 +76,7 @@ const stateClass = (order: PurchaseOrderRow) => (order.open ? "text-amber-700" :
 							<dt class="text-gray-400">{{ ctrans("Sent") }}</dt>
 							<dd class="text-right tabular-nums text-gray-700">{{ day(order.submitted_at) }}</dd>
 							<template v-if="order.confirmed_at">
-								<dt class="text-gray-400">{{ ctrans("Accepted") }}</dt>
+								<dt class="text-gray-400">{{ ctrans("Agreed") }}</dt>
 								<dd class="text-right tabular-nums text-gray-700">{{ day(order.confirmed_at) }}</dd>
 							</template>
 							<template v-if="order.open && order.estimated_received_at">

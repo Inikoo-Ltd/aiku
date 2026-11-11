@@ -1,8 +1,8 @@
 ---
 title: Čítanie prehľadu objednávok (PO Overview)
 summary: Pre nákupcov a manažment — ako sa každá otvorená objednávka (PO) stáva jednou stužkou, čo znamenajú jednotlivé farby a dátumy, odkiaľ pochádzajú termíny, ako označiť fázy, ktoré nikto iný nezaznamenáva, a ako nájsť objednávky, ktoré potrebujú vašu pozornosť.
-date: 2026-11-03
-source_date: 2026-11-03
+date: 2026-11-11
+source_date: 2026-11-11
 tags: procurement, supply-chain, agents
 category: procurement
 series: PO journey
@@ -32,7 +32,7 @@ Tabuľa používa rovnaké fázy ako stránka objednávky plus posledný stĺpec
 | Fáza | Splnené keď |
 |---|---|
 | 1 PO Launch (spustenie objednávky) | Objednávka je odoslaná dodávateľovi alebo agentovi. Toto je nultý deň. Koncept sa nepočíta. |
-| 2 Deposit & Go (záloha a štart) | Dodávateľ má zálohu. |
+| 2 Agreement (dohoda) | Podmienky sú s dodávateľom dohodnuté: záloha je zaplatená, alebo je objednávka označená ako **No deposit needed** (záloha nie je potrebná). Objednávka sa potom zobrazí ako Agreed (dohodnuté). |
 | 3 Making It Happen (výroba prebieha) | Dodávateľ začne tovar vyrábať. Vzorka sa pri nových produktoch schvaľuje pred tým. |
 | 4 Ready to Roll (pripravené na odoslanie) | Tovar je vyrobený a kontrola kvality je schválená. Záverečné kontroly (doplatok, balenie, QC, compliance) sa zobrazujú pod fázou. |
 | 5 Clean Hand Over (CHO) (čisté odovzdanie) | Agent tovar odovzdal ďalej. Čo to znamená, závisí od agenta, pozri nižšie. Odoslaná zásielka ju vždy dokončí. |
@@ -76,7 +76,11 @@ Systém sám vidí, kedy je objednávka odoslaná, kedy tovar odchádza a je pri
 
 Kým nie je na objednávke označená ani jedna z týchto vecí, jej bunky zostávajú prázdne a objednávka sa sleduje len podľa odoslania a príchodu. Len čo je jedna označená, objednávka čaká na ďalšej neoznačenej fáze, takže začnite od prvej a pokračujte ďalej.
 
-Ak chcete označiť fázu, kliknite na jej bunku, skontrolujte dátum a kliknite na <b>Mark done</b>. <b>Clear</b> odstráni dátum zadaný omylom. Fázy idú v poradí: dátum starší ako jeden deň, fáza označená pred predchádzajúcou fázou alebo vymazanie dátumu si vyžiada dôvod, ktorý sa uchová v histórii objednávky spolu s tým, kto zmenu vykonal.
+Ak chcete označiť fázu, kliknite na jej bunku, skontrolujte dátum a kliknite na <b>Mark done</b>. <b>Clear</b> odstráni dátum zadaný omylom. Dátum starší ako jeden deň alebo vymazanie dátumu si vyžiada dôvod, ktorý sa uchová v histórii objednávky spolu s tým, kto zmenu vykonal.
+
+**Fázy idú prísne v poradí.** Kým je objednávka Submitted (odoslaná), dá sa urobiť len Agreement a nič neskoršie sa označiť nedá: nabehnutie kurzorom na neskoršiu bunku povie, že najprv treba dohodnúť podmienky. Od stavu Agreed sa dá označiť len fáza, v ktorej objednávka je; neskoršia bunka povie, ktorú fázu treba dokončiť najskôr. Automatické kroky (príjemky tovaru, zoznamy kontajnerov, platby, expedované a prijaté zásielky) sa nikdy nezdržiavajú.
+
+**Preskočenie kroku.** Aby objednávka nikdy neuviazla, každá fáza má na stránke objednávky tlačidlo preskočenia: **Sample skipped** (vzorka preskočená), **Shipped direct** (odoslané priamo, mimo skladu agenta), **QC skipped** (kontrola kvality preskočená), **Compliance skipped** (compliance preskočené) a **Handed over without checks** (odovzdané bez kontrol). Preskočenie si vyžiada dôvod, zobrazí sa na fáze ako Skipped (preskočené) s tým, kto, kedy a prečo, ide do histórie objednávky a dá sa vrátiť späť. Agenti môžu preskočiť QC na svojich objednávkach; ostatné preskočenia sú pre zamestnancov AW.
 
 ## Filtre a čísla
 
@@ -86,7 +90,7 @@ Každý riadok ukazuje hodnotu objednávky v librách podľa dnešného výmenn�
 
 <aside class="wayfinder">
 <b>Kde kliknúť v aiku</b><br>
-<b>Supply Chain</b> v ľavom menu otvorí tabuľu. <b>PO Overview</b> v hornom menu vás na ňu vráti; <b>Overview</b> vedľa neho obsahuje karty dodávateľského reťazca a nákupné zoznamy. Kliknutím na bunku označíte fázu; dátum starší ako jeden deň, fáza označená pred predchádzajúcou fázou alebo vymazanie dátumu si vyžiada dôvod, ktorý sa uchová v histórii objednávky. Kliknutím na referenciu objednávky ju otvoríte. Podľa agenta, ako sa robí Clean Hand Over, záverečné kontroly zobrazené na Ready to Roll a názov, popis a dni každej fázy: <b>Supply Chain → Agents →</b> agent <b>→ Edit</b>, sekcia <b>PO journey</b>. Pole ponechané prázdne použije štandardné znenie alebo dni.
+<b>Supply Chain</b> v ľavom menu otvorí tabuľu. <b>PO Overview</b> v hornom menu vás na ňu vráti; <b>Overview</b> vedľa neho obsahuje karty dodávateľského reťazca a nákupné zoznamy. Kliknutím na bunku označíte fázu; označiť sa dá len fáza, v ktorej objednávka je, a dátum starší ako jeden deň alebo vymazanie dátumu si vyžiada dôvod, ktorý sa uchová v histórii objednávky. Preskočenia sú na stránke objednávky. Kliknutím na referenciu objednávky ju otvoríte. Podľa agenta, ako sa robí Clean Hand Over, záverečné kontroly zobrazené na Ready to Roll a názov, popis a dni každej fázy: <b>Supply Chain → Agents →</b> agent <b>→ Edit</b>, sekcia <b>PO journey</b>. Pole ponechané prázdne použije štandardné znenie alebo dni.
 </aside>
 
 <aside class="wayfinder">

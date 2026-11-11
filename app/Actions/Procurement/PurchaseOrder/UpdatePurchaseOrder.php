@@ -84,11 +84,25 @@ class UpdatePurchaseOrder extends OrgAction
 
         $purchaseOrder = $this->update($purchaseOrder, $modelData, ['data']);
 
+        if ($this->isDepositWaived($purchaseOrder, $modelData) && MarkPurchaseOrderStage::confirmsOrder($purchaseOrder, now()) && !$purchaseOrder->isWaitingForLineAnswers()) {
+            $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder);
+        }
+
         if ($purchaseOrder->wasChanged(['state', 'delivery_state'])) {
             $this->purchaseOrderHydrate($purchaseOrder);
         }
 
         return $purchaseOrder;
+    }
+
+    /**
+     * "No deposit needed" means the supplier starts without one: the terms are agreed, as when a deposit is paid. It
+     * agrees them when sent again on an order already set to no deposit.
+     */
+    private function isDepositWaived(PurchaseOrder $purchaseOrder, array $modelData): bool
+    {
+        return array_key_exists('deposit_amount', $modelData) && $modelData['deposit_amount'] !== null
+            && (float) $modelData['deposit_amount'] == 0 && $purchaseOrder->deposit_amount !== null;
     }
 
     public function authorize(ActionRequest $request): bool

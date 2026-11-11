@@ -9,7 +9,8 @@ use Lorisleiva\Actions\Concerns\AsObject;
 /**
  * Deposits are payments to the supplier towards the price of the products only: the order's extra costs, shipping,
  * duties and tax, and the supplier's estimated expenses, are not paid to the supplier through the order. The deposit
- * counts as paid, dated by its last payment, once nothing is left to pay.
+ * counts as paid, dated by its last payment, once nothing is left to pay. A payment means the supplier took the order,
+ * so a submitted order is confirmed, as when any stage past submitted is marked.
  */
 class SyncPurchaseOrderDepositPaid
 {
@@ -36,6 +37,11 @@ class SyncPurchaseOrderDepositPaid
             'deposit_paid_by_id' => $firstPayment?->created_by,
             'balance_paid_at'    => $isPaid ? $lastPayment->date->toDateString() : null,
         ]);
+
+        if (MarkPurchaseOrderStage::confirmsOrder($purchaseOrder, $firstPayment?->date) && !$purchaseOrder->isWaitingForLineAnswers()) {
+            $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder);
+            $purchaseOrder->update(['confirmed_at' => $firstPayment->date->min(now())]);
+        }
 
         return $isPaid ? RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder) : $purchaseOrder;
     }

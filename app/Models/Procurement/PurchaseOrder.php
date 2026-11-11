@@ -382,7 +382,17 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
      */
     public function isWaitingForSample(): bool
     {
-        return $this->sample_required && $this->sample_approved_at === null && blank($this->sample_override_reason);
+        return $this->sample_required && $this->sample_approved_at === null && blank($this->sample_override_reason) && !$this->stageSkip('sample');
+    }
+
+    /**
+     * A step or stage a person skipped (PurchaseOrderStageEnum::SKIPS): who, when and why, or null.
+     *
+     * @return array{user_id: ?int, at: string, reason: string}|null
+     */
+    public function stageSkip(string $key): ?array
+    {
+        return Arr::get($this->data, "stage_skips.$key");
     }
 
     /**
