@@ -229,7 +229,13 @@ class Webpage extends Model implements Auditable, HasMedia
     protected array $auditInclude = [
         'code',
         'title',
+        'description',
+        'breadcrumb_label',
         'url',
+        'index_page',
+        'follow_link',
+        'seo_image_id',
+        'seo_image_url',
         'state',
         'ready_at',
         'live_at',

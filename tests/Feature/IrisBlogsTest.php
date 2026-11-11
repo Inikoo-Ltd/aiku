@@ -1,7 +1,10 @@
 <?php
 
 use App\Actions\Iris\Blog\IndexIrisBlogs;
+use App\Actions\Web\Webpage\Json\DiffWebpageSnapshotText;
+use App\Actions\Web\Webpage\Json\GetWebpageSnapshotsComparison;
 use App\Actions\Web\Webpage\UI\IndexBlogWebpages;
+use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Actions\Web\Webpage\ProcessUpdateWebpageUrl;
@@ -18,6 +21,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\getJson;
 
 beforeEach(function () {
     loadDB();
@@ -183,4 +187,134 @@ test('publishing a blog bans the blog dashboard and its category listing so the 
     expect($blog->refresh()->state)->toBe(WebpageStateEnum::LIVE)
         ->and($bannedUrls)->toContain('/blog')
         ->and($bannedUrls)->toContain(WebpageSubTypeEnum::BUSINESS_TIPS->blogCategoryUrl());
+});
+
+function blogArticleLayout(string $title, string $content, string $image, array $extraBlocks = []): array
+{
+    return [
+        'web_blocks' => array_merge([
+            [
+                'id'        => 9001,
+                'name'      => 'Blog',
+                'type'      => 'blog',
+                'show'      => true,
+                'web_block' => [
+                    'layout' => [
+                        'data' => [
+                            'fieldValue' => [
+                                'title'   => $title,
+                                'content' => $content,
+                                'image'   => ['source' => ['original' => $image, 'webp' => $image.'.webp']],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ], $extraBlocks),
+    ];
+}
+
+function publishBlogLayout(Webpage $blog, array $layout, string $comment): Webpage
+{
+    $blog->refresh()->unpublishedSnapshot->updateQuietly(['layout' => $layout, 'checksum' => md5(json_encode($layout))]);
+
+    return PublishWebpage::make()->action($blog->refresh(), ['comment' => $comment], strict: false);
+}
+
+test('text comparison marks only the changed words of an edited paragraph and keeps unchanged paragraphs', function () {
+    $rows = DiffWebpageSnapshotText::run(
+        "Candles for the home\nBuy wholesale scented candles today\nThe end",
+        "Candles for the home\nBuy wholesale soy candles today\nNew closing line\nThe end"
+    );
+
+    expect(array_column($rows, 'type'))->toBe(['equal', 'changed', 'added', 'equal'])
+        ->and(collect($rows[1]['segments'])->where('type', 'removed')->pluck('text')->implode(''))->toBe('scented')
+        ->and(collect($rows[1]['segments'])->where('type', 'added')->pluck('text')->implode(''))->toBe('soy')
+        ->and($rows[2]['segments'])->toBe([['type' => 'added', 'text' => 'New closing line']]);
+});
+
+test('comparing a published blog version with the one before shows the changed fields, images and added blocks', function () {
+    config(['iris.cache.varnish' => false]);
+    Queue::fake();
+
+    $blog = createBlogWebpage($this->website, 'Blog with edit history', ['state' => WebpageStateEnum::IN_PROCESS]);
+
+    publishBlogLayout($blog, blogArticleLayout(
+        '<p>Scented candles</p>',
+        '<p>Our candles burn for <strong>40 hours</strong>.</p><p>Read the <a href="https://example.com/old">guide</a>.</p>',
+        'https://media.test/first.png'
+    ), 'first');
+    $firstSnapshot = $blog->refresh()->liveSnapshot;
+
+    publishBlogLayout($blog, blogArticleLayout(
+        '<p>Scented candles</p>',
+        '<p>Our candles burn for <strong>50 hours</strong>.</p><p>Read the <a href="https://example.com/new">guide</a>.</p><p><img src="https://media.test/inline.png" alt="Candle on a table"></p>',
+        'https://media.test/second.png',
+        [['id' => 9002, 'name' => 'Text', 'type' => 'text', 'show' => true, 'web_block' => ['layout' => ['data' => ['fieldValue' => ['value' => '<p>Free delivery</p>']]]]]]
+    ), 'second');
+    $secondSnapshot = $blog->refresh()->liveSnapshot;
+
+    $comparison = GetWebpageSnapshotsComparison::make()->handle($blog, $secondSnapshot);
+
+    expect($comparison['from']['id'])->toBe($firstSnapshot->id)
+        ->and($comparison['to']['id'])->toBe($secondSnapshot->id)
+        ->and($comparison['to']['comment'])->toBe('second')
+        ->and(array_column($comparison['options'], 'id'))->toContain($firstSnapshot->id, $secondSnapshot->id);
+
+    $blocks = collect($comparison['blocks'])->keyBy('key');
+    $fields = collect($blocks['9001']['fields'])->keyBy('field');
+
+    expect($blocks['9001']['status'])->toBe('changed')
+        ->and($fields->keys()->all())->toEqualCanonicalizing(['content', 'image'])
+        ->and($fields['image']['kind'])->toBe('image')
+        ->and($fields['image']['before'])->toBe('https://media.test/first.png')
+        ->and($fields['image']['after'])->toBe('https://media.test/second.png')
+        ->and($fields['content']['kind'])->toBe('html')
+        ->and($fields['content']['after'])->toContain('guide ⟨https://example.com/new⟩', '[Image: Candle on a table]')
+        ->and(collect($fields['content']['rows'])->firstWhere('type', 'changed')['segments'])->toContain(['type' => 'removed', 'text' => '40'], ['type' => 'added', 'text' => '50'])
+        ->and($blocks['9002']['status'])->toBe('added')
+        ->and($blocks['9002']['fields'][1]['after'])->toBe('Free delivery');
+
+    $firstVersion = GetWebpageSnapshotsComparison::make()->handle($blog, $firstSnapshot);
+
+    expect($firstVersion['from'])->toBeNull()
+        ->and($firstVersion['blocks'][0]['status'])->toBe('added');
+});
+
+test('the snapshots comparison endpoint only compares snapshots of the requested webpage', function () {
+    config(['iris.cache.varnish' => false]);
+    Queue::fake();
+
+    $blog = createBlogWebpage($this->website, 'Blog compared over http', ['state' => WebpageStateEnum::IN_PROCESS]);
+    publishBlogLayout($blog, blogArticleLayout('<p>One</p>', '<p>Body</p>', 'https://media.test/a.png'), 'one');
+    publishBlogLayout($blog, blogArticleLayout('<p>Two</p>', '<p>Body</p>', 'https://media.test/a.png'), 'two');
+
+    $otherBlog = createBlogWebpage($this->website, 'Another blog', ['state' => WebpageStateEnum::IN_PROCESS]);
+    publishBlogLayout($otherBlog, blogArticleLayout('<p>Other</p>', '<p>Body</p>', 'https://media.test/b.png'), 'other');
+
+    actingAs($this->user);
+
+    getJson(route('grp.json.webpage.snapshots_comparison', ['webpage' => $blog->id, 'to' => $blog->refresh()->live_snapshot_id]))
+        ->assertOk()
+        ->assertJsonPath('blocks.0.fields.0.field', 'title')
+        ->assertJsonPath('blocks.0.fields.0.before', 'One')
+        ->assertJsonPath('blocks.0.fields.0.after', 'Two');
+
+    getJson(route('grp.json.webpage.snapshots_comparison', ['webpage' => $blog->id, 'to' => $otherBlog->refresh()->live_snapshot_id]))
+        ->assertUnprocessable();
+});
+
+test('editing the meta description of a blog is recorded in its changelog with the value before and after', function () {
+    Webpage::enableAuditing();
+
+    $blog = createBlogWebpage($this->website, 'Blog with audited seo', ['description' => 'Old meta description']);
+
+    actingAs($this->user);
+    UpdateWebpage::make()->action($blog, ['description' => 'New meta description']);
+
+    $audit = $blog->audits()->latest('id')->first();
+
+    expect($audit->old_values['description'])->toBe('Old meta description')
+        ->and($audit->new_values['description'])->toBe('New meta description')
+        ->and($audit->user_id)->toBe($this->user->id);
 });

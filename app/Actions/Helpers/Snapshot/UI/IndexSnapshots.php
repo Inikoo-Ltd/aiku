@@ -206,6 +206,10 @@ class IndexSnapshots extends OrgAction
             ->column(key: 'comment', label: Str::ucfirst(__('comment')));
             $table->column(key: 'recyclable', label: ['fal', 'fa-recycle']);
 
+            if (class_basename($parent) === 'Webpage') {
+                $table->column(key: 'changes', label: __('Changes'));
+            }
+
             if (
                 class_basename($parent) === 'Website' &&
                 in_array($this->scope, ['header', 'footer', 'menu'], true)

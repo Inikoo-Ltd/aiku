@@ -58,6 +58,8 @@
     <string name="clocking_location_needed">Location needed</string>
     <string name="clocking_location_unavailable">Location unavailable</string>
     <string name="clocking_location_unavailable_body">Turn on location to send it with your scan. You can still scan: Aiku decides whether this machine needs it.</string>
+    <string name="clocking_location_not_found">Couldn’t find your location</string>
+    <string name="clocking_location_not_found_body">Try again, near a window if you can. You can still scan: Aiku decides whether this machine needs it.</string>
     <string name="clocking_location_accuracy">%1$s · accurate to %2$d m</string>
     <string name="clocking_location_detect_first">Detect your location before you scan</string>
     <string name="clocking_location_update">Update location</string>

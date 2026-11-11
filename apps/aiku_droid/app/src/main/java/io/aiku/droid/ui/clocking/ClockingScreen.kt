@@ -466,6 +466,7 @@ private fun ClockingLocationCard(state: ClockingLocationState, onDetect: () -> U
         ClockingLocationState.Detecting -> stringResource(R.string.clocking_location_detecting)
         ClockingLocationState.NeedsPermission -> stringResource(R.string.clocking_location_needed)
         ClockingLocationState.Unavailable -> stringResource(R.string.clocking_location_unavailable)
+        ClockingLocationState.NotFound -> stringResource(R.string.clocking_location_not_found)
     }
     val detail = when (state) {
         is ClockingLocationState.Found -> {
@@ -473,6 +474,7 @@ private fun ClockingLocationCard(state: ClockingLocationState, onDetect: () -> U
             state.accuracyMeters?.let { stringResource(R.string.clocking_location_accuracy, coordinates, it) } ?: coordinates
         }
         ClockingLocationState.Unavailable -> stringResource(R.string.clocking_location_unavailable_body)
+        ClockingLocationState.NotFound -> stringResource(R.string.clocking_location_not_found_body)
         else -> stringResource(R.string.clocking_location_detect_first)
     }
 
