@@ -1817,7 +1817,44 @@ test('UI Index agents', function () {
             ->has('title')
             ->has('pageHead')
             ->has('data')
+            ->where('pageHead.subNavigation.1.route.name', 'grp.supply-chain.agents.purchase_order_states')
             ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI agents purchase order states', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agents.purchase_order_states'));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('SupplyChain/AgentsPurchaseOrderStates')
+            ->has('pageHead.subNavigation', 2)
+            ->has('stages')
+            ->has('ages', 5)
+            ->has('clients')
+            ->has('figures')
+            ->where('listRoute.name', 'grp.supply-chain.agents.purchase_order_states.purchase_orders')
+            ->has('currencyCode')
+            ->has('agents')
+            ->has('breadcrumbs', 3);
+    });
+});
+
+test('UI agents pending purchase orders list', function () {
+    $this->withoutExceptionHandling();
+    $response = $this->get(route('grp.supply-chain.agents.purchase_order_states.purchase_orders', [
+        'filter[stage]'   => 'submitted',
+        'filter[deposit]' => 'no_deposit',
+        'filter[sent]'    => '0_3,3_6',
+        'filter[client]'  => $this->organisation->slug,
+    ]));
+
+    $response->assertInertia(function (AssertableInertia $page) {
+        $page
+            ->component('Procurement/PurchaseOrders')
+            ->has('data')
+            ->has('breadcrumbs', 4);
     });
 });
 
