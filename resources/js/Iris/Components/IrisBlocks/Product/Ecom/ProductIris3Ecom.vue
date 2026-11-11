@@ -60,6 +60,7 @@ import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLa
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import { activeSpecialOfferPercentageOff } from "@/Composables/stepDiscountAgainstOffer"
 import { getOfferTextColorClass } from "@/Composables/offerColors"
 import { Popover } from "primevue"
 import ProductDescriptionUseTab from "@/Iris/Components/BlocksUtils/ProductDescription/ProductDescriptionUseTab.vue"
@@ -262,6 +263,10 @@ const bestOffer = computed(() => getBestOffer(offersData.value))
 
 const isGoldRewardCustomer = computed(() =>
     Boolean(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)
+)
+
+const specialOfferPercentageOff = computed<number>(() =>
+    activeSpecialOfferPercentageOff(bestOffer.value, offersData.value, isGoldRewardCustomer.value)
 )
 
 const isPurchasable = computed(() => Boolean(product.value?.stock && !product.value?.is_coming_soon))
@@ -561,7 +566,7 @@ onMounted(async () => {
                 <StepDiscountOffer
                     class="mt-5"
                     v-if="layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
-                    :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
+                    :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff" :currencyCode="product.currency_code ?? currency?.code"
                     :originalPrice="product.price" :unit="product.unit" :units="product.units"
                     :quantity="orderedQuantity" :isSubmitting="isDesktopStepSyncing"
                     @selectQuantity="onSelectStepQuantityDesktop" />
@@ -570,7 +575,7 @@ onMounted(async () => {
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
                         <EcomAddToBasketv2 v-if="product.stock > 0 || product.pre_order" ref="_desktopAddToBasket" v-model:product="product"
-                            :customerData="customerData" :key="keyCustomer"
+                            :customerData="customerData" :specialOfferPercentageOff="specialOfferPercentageOff" :key="keyCustomer"
                             :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket" />
                         <ButtonOutOfStock v-else :product="product" />
                     </div>
@@ -802,7 +807,7 @@ onMounted(async () => {
 
             <StepDiscountOffer
                 v-if="layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
-                :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
+                :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff" :currencyCode="product.currency_code ?? currency?.code"
                 :originalPrice="product.price" :unit="product.unit" :units="product.units"
                 :quantity="orderedQuantity" :isSubmitting="isMobileStepSyncing"
                 @selectQuantity="onSelectStepQuantityMobile" />
@@ -824,7 +829,7 @@ onMounted(async () => {
             <template v-if="layout?.iris?.is_logged_in">
                 <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
                 <EcomAddToBasketv2 v-if="product.stock > 0 || product.pre_order" ref="_mobileAddToBasket" v-model:product="product"
-                    :customerData="customerData" :key="keyCustomer"
+                    :customerData="customerData" :specialOfferPercentageOff="specialOfferPercentageOff" :key="keyCustomer"
                     :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket w-full" />
                 <ButtonOutOfStock v-else :product="product" />
             </template>

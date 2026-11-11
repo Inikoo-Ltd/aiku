@@ -33,11 +33,13 @@ const props = withDefaults(
     classContainer?: string
     holdQuantity?: boolean
     sizeLabel?: string | null
+    specialOfferPercentageOff?: number
   }>(),
   {
     classContainer: 'flex items-center gap-2 relative', // default string
     holdQuantity: false,
-    sizeLabel: null
+    sizeLabel: null,
+    specialOfferPercentageOff: 0
   }
 )
 
@@ -301,7 +303,7 @@ const showsSelectionTotal = computed<boolean>(() =>
 )
 
 const selectionTotal = computed(() =>
-    stepDiscountTotal(Number(product.value.price) || 0, product.value.step_discount?.steps, selectedQuantity.value)
+    stepDiscountTotal(Number(product.value.price) || 0, product.value.step_discount?.steps, selectedQuantity.value, props.specialOfferPercentageOff)
 )
 
 const syncOrHoldQuantity = () => {

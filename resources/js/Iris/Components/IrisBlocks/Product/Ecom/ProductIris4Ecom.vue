@@ -65,6 +65,7 @@ import { activeLadderOption, buildPriceLadder, type LadderOption } from "@/Compo
 import { variantDisplayMode } from "@/Composables/variantDisplayMode"
 import VariantSizeOrderingTable from "@/Iris/Components/IrisBlocks/Product/Ecom/VariantSizeOrderingTable.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import { activeSpecialOfferPercentageOff } from "@/Composables/stepDiscountAgainstOffer"
 import { getOfferTextColorClass } from "@/Composables/offerColors"
 import { Popover } from "primevue"
 import ProductDescriptionUseTab from "@/Iris/Components/BlocksUtils/ProductDescription/ProductDescriptionUseTab.vue"
@@ -297,6 +298,10 @@ const isMemberPriceActive = computed<boolean>(() => {
     return trigger != null && Number(trigger) <= familyQuantityOrdered.value
 })
 
+const specialOfferPercentageOff = computed<number>(() =>
+    activeSpecialOfferPercentageOff(bestOffer.value, offersData.value, isMemberPriceActive.value)
+)
+
 const isPurchasable = computed(() => Boolean(product.value?.stock && !product.value?.is_coming_soon))
 
 const showDiscount = computed(() =>
@@ -346,7 +351,10 @@ const variantAxisLabel = computed(() =>
 
 const patchVariantCustomerData = inject<((productId: number, patch: Record<string, any>) => void) | null>("patchVariantCustomerData", null)
 
-const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder((props.listProducts ?? []) as any[]))
+const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder(
+    (props.listProducts ?? []) as any[],
+    (item: any) => activeSpecialOfferPercentageOff(getBestOffer(item.offers_data), item.offers_data, isMemberPriceActive.value)
+))
 
 const displayMode = computed(() => variantDisplayMode(props.fieldValue?.setting, {
     sizesTable: (props.listProducts?.length ?? 0) > 1 && (props.fieldValue?.variant?.data?.variants?.length ?? 0) === 1,
@@ -631,7 +639,7 @@ onMounted(async () => {
                 <StepDiscountOffer
                     class="mt-3"
                     v-else-if="!showSizesTable && layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
-                    :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
+                    :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff" :currencyCode="product.currency_code ?? currency?.code"
                     :originalPrice="product.price" :unit="product.unit" :units="product.units"
                     :quantity="orderedQuantity" :isSubmitting="isDesktopStepSyncing"
                     @selectQuantity="onSelectStepQuantityDesktop" />
@@ -640,7 +648,7 @@ onMounted(async () => {
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
                         <EcomAddToBasketv2 v-if="!showSizesTable && (product.stock > 0 || product.pre_order)" ref="_desktopAddToBasket" v-model:product="product"
-                            :customerData="customerData" :key="keyCustomer" :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel"
+                            :customerData="customerData" :specialOfferPercentageOff="specialOfferPercentageOff" :key="keyCustomer" :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel"
                             :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket" />
                         <ButtonOutOfStock v-else-if="!(product.stock > 0 || product.pre_order)" :product="product" />
                     </div>
@@ -893,7 +901,7 @@ onMounted(async () => {
 
             <StepDiscountOffer
                 v-else-if="!showSizesTable && layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
-                :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
+                :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff" :currencyCode="product.currency_code ?? currency?.code"
                 :originalPrice="product.price" :unit="product.unit" :units="product.units"
                 :quantity="orderedQuantity" :isSubmitting="isMobileStepSyncing"
                 @selectQuantity="onSelectStepQuantityMobile" />
@@ -913,7 +921,7 @@ onMounted(async () => {
             <template v-if="layout?.iris?.is_logged_in">
                 <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
                 <EcomAddToBasketv2 v-if="!showSizesTable && (product.stock > 0 || product.pre_order)" ref="_mobileAddToBasket" v-model:product="product"
-                    :customerData="customerData" :key="keyCustomer" :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel"
+                    :customerData="customerData" :specialOfferPercentageOff="specialOfferPercentageOff" :key="keyCustomer" :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel"
                     :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket w-full" />
                 <ButtonOutOfStock v-else-if="!(product.stock > 0 || product.pre_order)" :product="product" />
             </template>
