@@ -12,6 +12,7 @@ import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import SupplierPortalForms from "@/Components/Procurement/SupplierPortalForms.vue"
 import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
+import SupplierPortalProductWebsitesDialog from "@/Components/Procurement/SupplierPortalProductWebsitesDialog.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import type { EditedSubmission, PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import { ctrans } from "@/Composables/useTrans"
@@ -65,6 +66,7 @@ const props = defineProps<{
 	initialFormType?: string
 	initialSearch?: string
 	productsRoute?: string
+	productWebsitesRoute?: string
 	labelsPrint?: {
 		plan_route: routeType
 		pdf_route: routeType
@@ -129,6 +131,8 @@ watch(
 )
 
 const onProductsPage = (event: { page: number }) => fetchProducts(event.page + 1)
+
+const openedProductId = ref<number | null>(null)
 
 const selectedIds = ref<number[]>([])
 const isLabelsDialogOpen = ref(false)
@@ -202,7 +206,8 @@ const edit = (submission: EditedSubmission) => {
 					<div v-else class="h-14 w-14 shrink-0 rounded bg-gray-100" />
 					<div class="min-w-0 flex-1 space-y-0.5">
 						<div class="flex items-baseline justify-between gap-2">
-							<span class="font-semibold text-gray-900">{{ product.code }}</span>
+							<button v-if="productWebsitesRoute" type="button" class="whitespace-nowrap font-semibold text-[var(--app-accent)] hover:underline" @click="openedProductId = product.id">{{ product.code }}</button>
+							<span v-else class="whitespace-nowrap font-semibold text-gray-900">{{ product.code }}</span>
 							<span class="text-sm" :class="statusClass[product.status]">{{ product.status_label }}</span>
 						</div>
 						<div class="text-sm text-gray-600">{{ product.name }}</div>
@@ -246,8 +251,14 @@ const edit = (submission: EditedSubmission) => {
 								</div>
 							</td>
 							<td class="py-1.5">
-								<span class="mr-1.5 whitespace-nowrap font-medium text-gray-800">{{ product.code }}</span>
-								<span class="text-gray-500">{{ product.name }}</span>
+								<button v-if="productWebsitesRoute" type="button" class="group text-left" :title="ctrans('See the websites selling this product')" @click="openedProductId = product.id">
+									<span class="mr-1.5 whitespace-nowrap font-medium text-[var(--app-accent)] group-hover:underline">{{ product.code }}</span>
+									<span class="text-gray-500">{{ product.name }}</span>
+								</button>
+								<template v-else>
+									<span class="mr-1.5 whitespace-nowrap font-medium text-gray-800">{{ product.code }}</span>
+									<span class="text-gray-500">{{ product.name }}</span>
+								</template>
 							</td>
 							<td class="whitespace-nowrap py-1.5" :class="statusClass[product.status]">{{ product.status_label }}</td>
 							<td class="whitespace-nowrap py-1.5 text-right">
@@ -277,6 +288,7 @@ const edit = (submission: EditedSubmission) => {
 					@page="onProductsPage"
 				/>
 			</div>
+			<SupplierPortalProductWebsitesDialog v-if="productWebsitesRoute" v-model="openedProductId" :product-websites-route="productWebsitesRoute" />
 			<SupplierProductLabelsDialog
 				v-if="labelsPrint"
 				v-model:visible="isLabelsDialogOpen"

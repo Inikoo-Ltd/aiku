@@ -63,6 +63,7 @@ const props = defineProps<{
 	feedback?: InstanceType<typeof SalesDashboard>["$props"]["feedback"]
 	labels_print?: InstanceType<typeof SupplierPortalDetails>["$props"]["labelsPrint"]
 	products_route?: string
+	product_websites_route?: string
 	purchase_order_route?: string
 }>()
 
@@ -284,7 +285,7 @@ onMounted(() => {
 					:currency="details?.currency ?? company?.currency ?? null" />
 
 				<template v-else>
-					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" :products-route="products_route" />
+					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" :products-route="products_route" :product-websites-route="product_websites_route" />
 					<div v-else class="skeleton h-40 rounded-lg" />
 				</template>
 

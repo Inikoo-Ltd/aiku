@@ -80,6 +80,11 @@ class ShowSupplierPortalPreview extends OrgAction
         return $products->fromRequest($supplier, null, Validator::make($request->query(), $products->rules())->validate());
     }
 
+    public function productWebsites(Supplier $supplier, int $supplierProductId, ActionRequest $request): JsonResponse
+    {
+        return response()->json(GetSupplierPortalProductWebsites::make()->handle($supplier, $supplierProductId));
+    }
+
     public function purchaseOrder(Supplier $supplier, int $purchaseOrderId, ActionRequest $request): JsonResponse
     {
         return response()->json(ShowSupplierPortalPurchaseOrder::make()->handle($supplier, $purchaseOrderId));
