@@ -551,6 +551,11 @@ test('retina api my products lists each product with its department, sub departm
         ->and($row['description'])->toBe($product->description)
         ->and($row['description_extra'])->toBe($product->description_extra);
 
+    $shown = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId))->assertOk()->json('data');
+    foreach (['description', 'description_extra', 'department_slug', 'department_name', 'sub_department_slug', 'sub_department_name', 'family_slug', 'family_name'] as $field) {
+        expect($shown[$field])->toBe($row[$field]);
+    }
+
     deleteJson(route('retina.api.dropshipping.products.my_product.delete', $portfolioId))->assertOk();
 });
 
