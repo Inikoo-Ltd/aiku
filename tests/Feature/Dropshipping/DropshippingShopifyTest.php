@@ -2903,6 +2903,11 @@ test('the stock push and order lines never move a portfolio onto a variant anoth
     ]);
     BulkUpdateShopifyPortfolio::run($channel->id);
 
+    expect(ShopifyFake::calls('inventorySetQuantities'))->toHaveCount(1, json_encode([
+        'requests' => array_map(fn ($request) => $request['operation'] ?? array_keys($request), ShopifyFake::$requests),
+        'logs'     => \App\Models\Dropshipping\PlatformPortfolioLogs::whereIn('portfolio_id', [$holder->id, $stale->id, $unlinked->id])->get()->toArray(),
+        'location' => $channel->refresh()->user?->shopify_location_id,
+    ]));
     expect(ShopifyFake::calls('inventorySetQuantities')[0]['variables']['input']['quantities'])->toBe([['inventoryItemId' => 'gid://shopify/InventoryItem/9800', 'locationId' => 'gid://shopify/Location/1001', 'quantity' => 7]])
         ->and($stale->refresh()->last_stock_value)->toBe(7)
         ->and($stale->platform_product_variant_id)->toBe('gid://shopify/ProductVariant/9899')
