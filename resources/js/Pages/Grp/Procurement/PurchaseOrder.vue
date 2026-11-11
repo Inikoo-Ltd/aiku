@@ -1819,13 +1819,13 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<template v-if="undoCancelDialogAction.cost_total !== null">
 						{{ ctrans("Its total before cancelling was :total.", { total: locale.currencyFormat(undoCancelDialogAction.currency_code ?? "", undoCancelDialogAction.cost_total) }) }}
 					</template>
-					<template v-if="undoCancelDialogAction.cost_gap !== null">
-						{{ ctrans("Extra costs and tax must add up to :amount.", { amount: locale.currencyFormat(undoCancelDialogAction.currency_code ?? "", undoCancelDialogAction.cost_gap) }) }}
-					</template>
+				</p>
+				<p v-if="undoCancelDialogAction.cost_gap !== null" class="text-sm font-medium text-gray-700">
+					{{ ctrans("Extra costs and tax must add up to :amount.", { amount: locale.currencyFormat(undoCancelDialogAction.currency_code ?? "", undoCancelDialogAction.cost_gap) }) }}
 				</p>
 				<label v-for="field in undoCancelDialogAction.missing_costs" :key="field" class="flex flex-col gap-1 text-sm font-medium text-gray-700">
 					<span>{{ costLabels[field] }} <span class="text-red-500">*</span></span>
-					<InputNumber v-model="undoCancelCosts[field]" mode="currency" :currency="undoCancelDialogAction.currency_code ?? 'USD'" :min="0" :minFractionDigits="2" :maxFractionDigits="2" fluid />
+					<InputNumber v-model="undoCancelCosts[field]" @update:modelValue="() => { delete undoCancelErrors[field]; delete undoCancelErrors.cost_tax }" mode="currency" :currency="undoCancelDialogAction.currency_code ?? 'USD'" :min="0" :minFractionDigits="2" :maxFractionDigits="2" fluid />
 					<span v-if="undoCancelErrors[field]" class="text-xs text-red-600">{{ undoCancelErrors[field] }}</span>
 				</label>
 			</div>
