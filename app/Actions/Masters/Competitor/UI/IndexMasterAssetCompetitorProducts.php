@@ -163,9 +163,9 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
                 $table->column(key: 'master_shop_name', label: __('Master shop'), sortable: true);
             }
             $table
-                ->column(key: 'our_unit_price', label: __('Ours / unit'), align: 'right')
                 ->column(key: 'competitor_name', label: __('Competitor'), sortable: true)
                 ->column(key: 'competitor_product_name', label: __('Their product'))
+                ->column(key: 'our_unit_price', label: __('Ours / unit'), align: 'right')
                 ->column(key: 'competitor_unit_price', label: __('Theirs / unit'), align: 'right')
                 ->column(key: 'difference', label: __('Difference'), align: 'right', sortable: true);
             if ($withReview) {
@@ -234,7 +234,7 @@ class IndexMasterAssetCompetitorProducts extends OrgAction
                 'data'        => MasterAssetCompetitorProductsResource::collection($matches),
                 'can_edit'    => $this->canEdit,
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure(withMasterShop: false));
     }
 
     public function getBucketsSubNavigation(Group $group): array

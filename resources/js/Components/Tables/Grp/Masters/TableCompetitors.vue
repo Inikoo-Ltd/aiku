@@ -56,7 +56,7 @@ const readMethodLabels: Record<string, string> = {
             <FontAwesomeIcon v-else icon="fal fa-circle" class="text-gray-300" v-tooltip="ctrans('Not read yet')" fixed-width />
         </template>
         <template #cell(name)="{ item }">
-            <Link :href="route('grp.masters.competitors.show', { competitor: item.slug })" class="font-medium text-gray-700 hover:underline">
+            <Link :href="route('grp.masters.competitors.show', { competitor: item.slug })" class="primaryLink">
                 {{ item.name }}
             </Link>
             <div>
@@ -67,7 +67,7 @@ const readMethodLabels: Record<string, string> = {
             </div>
         </template>
         <template #cell(master_shop_name)="{ item }">
-            <Link :href="route('grp.masters.master_shops.show', { masterShop: item.master_shop_slug })" class="font-medium text-gray-700 hover:underline whitespace-nowrap">
+            <Link :href="route('grp.masters.master_shops.show', { masterShop: item.master_shop_slug })" class="primaryLink whitespace-nowrap">
                 {{ item.master_shop_name }}
             </Link>
         </template>
