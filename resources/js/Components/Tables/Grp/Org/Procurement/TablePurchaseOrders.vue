@@ -27,6 +27,7 @@ const props = defineProps<{
 	data: { data?: PurchaseOrder[] }
 	tab?: string
 	removablePurchaseOrderIds?: number[]
+	oneRowPerPurchaseOrder?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -107,7 +108,7 @@ function agentOrderGroupRow(agentOrderReference: string, purchaseOrders: Purchas
 
 const tableResource = computed(() => {
 	const purchaseOrders = props.data?.data
-	if (!Array.isArray(purchaseOrders)) {
+	if (!Array.isArray(purchaseOrders) || props.oneRowPerPurchaseOrder) {
 		return props.data
 	}
 
@@ -377,7 +378,7 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 				class="ml-2 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-200">
 				{{ ctrans(":count POs", { count: purchaseOrder.supplier_purchase_orders }) }}
 			</Link>
-			<div v-if="purchaseOrder.agent_name && !isInAgentOrganisation" class="text-xs text-gray-500">
+			<div v-if="purchaseOrder.agent_name && !isInAgentOrganisation && !oneRowPerPurchaseOrder" class="text-xs text-gray-500">
 				{{ ctrans("via agent") }}
 				<Link v-if="AgentRoute(purchaseOrder)" :href="AgentRoute(purchaseOrder)" class="secondaryLink">
 					{{ purchaseOrder.agent_name }}
@@ -388,7 +389,7 @@ function SupplierFilterHref(purchaseOrder: PurchaseOrder) {
 		</template>
 
 		<template #cell(organisation_name)="{ item: purchaseOrder }">
-			<span v-if="isInAgentOrganisation && purchaseOrder.organisation_code" v-tooltip="purchaseOrder.organisation_name" class="uppercase">{{ purchaseOrder.organisation_code }}</span>
+			<span v-if="(isInAgentOrganisation || oneRowPerPurchaseOrder) && purchaseOrder.organisation_code" v-tooltip="purchaseOrder.organisation_name" class="uppercase">{{ purchaseOrder.organisation_code }}</span>
 			<template v-else>{{ purchaseOrder.organisation_name }}</template>
 		</template>
 		<template #cell(state)="{ item: purchaseOrder }">

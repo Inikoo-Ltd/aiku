@@ -205,6 +205,10 @@ class IndexPurchaseOrders extends OrgAction
             Arr::forget($elementGroups, ['attention.elements.in_production', 'attention.elements.past_eta']);
         }
 
+        if ($this->onlyPendingThroughAgents) {
+            return [];
+        }
+
         return $elementGroups;
     }
 
@@ -451,7 +455,7 @@ class IndexPurchaseOrders extends OrgAction
             }
 
             if ($parent instanceof Group || $parent instanceof Supplier || $parent instanceof SupplierProduct || $organisationAgent || $this->viewingAgent) {
-                $table->column(key: 'organisation_name', label: $organisationAgent || $this->viewingAgent ? __('Client') : __('Organisation'), canBeHidden: false, searchable: true);
+                $table->column(key: 'organisation_name', label: $organisationAgent || $this->viewingAgent || $this->onlyPendingThroughAgents ? __('Client') : __('Organisation'), canBeHidden: false, searchable: true);
             }
 
             if ($parent instanceof OrgSupplierProduct || $parent instanceof SupplierProduct) {
@@ -555,6 +559,40 @@ class IndexPurchaseOrders extends OrgAction
         return $this->handle($supplier);
     }
 
+    /**
+     * The agents board opens this list on one cell: its column is the title, and the agent and the board's other
+     * filters (client, deposit, when sent) follow it.
+     *
+     * @return array{0: string, 1: ?array{label: string}}
+     */
+    private function agentsBoardTitle(ActionRequest $request): array
+    {
+        $filters = (array) $request->input('filter', []);
+        $list    = fn (string $key) => array_values(array_filter(Arr::flatten(array_map(fn ($value) => explode(',', (string) $value), Arr::wrap(Arr::get($filters, $key))))));
+
+        $stageLabels = ShowAgentsPurchaseOrderStates::stageLabels();
+        $stages      = $list('stage');
+        $title       = match (true) {
+            count($stages) === 1 => $stageLabels[$stages[0]] ?? __('Pending POs'),
+            $stages && !in_array('draft', $stages) && count($stages) === count($stageLabels) - 1 => __('Pending POs, without drafts'),
+            default => __('Pending POs'),
+        };
+
+        $ageLabels = collect(ShowAgentsPurchaseOrderStates::ageBuckets())->map(fn (array $bucket) => $bucket[0]);
+        $parts     = [
+            ...Agent::whereIn('agents.slug', $list('agent'))->join('organisations', 'organisations.id', 'agents.organisation_id')->pluck('organisations.code')->map(fn (string $code) => ucfirst($code)),
+            ...Organisation::whereIn('slug', $list('client'))->pluck('code')->map(fn (string $code) => strtoupper($code)),
+            ...match (Arr::get($filters, 'deposit')) {
+                'deposit' => [__('Deposit paid')],
+                'no_deposit' => [__('No deposit')],
+                default => [],
+            },
+            ...collect($list('sent'))->map(fn (string $age) => $ageLabels[$age] ?? null)->filter(),
+        ];
+
+        return [$title, $parts ? ['label' => implode(' · ', $parts)] : null];
+    }
+
     public function htmlResponse(LengthAwarePaginator $purchaseOrders, ActionRequest $request): Response
     {
         $title         = __('Purchase Orders');
@@ -569,7 +607,7 @@ class IndexPurchaseOrders extends OrgAction
         $purchaseOrdersImport = null;
 
         if ($this->onlyPendingThroughAgents) {
-            $title = __('Pending POs');
+            [$title, $afterTitle] = $this->agentsBoardTitle($request);
         } elseif ($this->onlyIncoming) {
             $title = __('Incoming POs');
             $icon  = [
@@ -667,6 +705,7 @@ class IndexPurchaseOrders extends OrgAction
                 'data'          => PurchaseOrdersResource::collection($purchaseOrders),
                 'filterOptions' => $this->getFilterOptions($this->parent),
                 'purchase_orders_import' => $purchaseOrdersImport,
+                'oneRowPerPurchaseOrder' => $this->onlyPendingThroughAgents,
             ],
         )->table($this->tableStructure($this->parent));
     }

@@ -1854,6 +1854,10 @@ test('UI agents pending purchase orders list', function () {
         $page
             ->component('Procurement/PurchaseOrders')
             ->has('data')
+            ->where('oneRowPerPurchaseOrder', true)
+            ->where('pageHead.title', __('Submitted'))
+            ->where('pageHead.afterTitle.label', implode(' · ', [strtoupper($this->organisation->code), __('No deposit'), __('0-3m'), __('3-6m')]))
+            ->missing('queryBuilderProps.default.elementGroups.state')
             ->has('breadcrumbs', 4);
     });
 });
