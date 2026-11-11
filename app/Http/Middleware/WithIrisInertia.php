@@ -102,6 +102,7 @@ trait WithIrisInertia
                 ],
                 'show_price' => (bool) Arr::get($website->settings, 'webpage.show_price', false),
                 'search_keep_exploring' => (bool) Arr::get($website->settings, 'search_keep_exploring', false),
+                'product_variant_setting' => Arr::only(Arr::get($website->published_layout, 'product.data.fieldValue.setting') ?? [], ['variant_display', 'variant_sizes_table', 'variant_price_ladder']),
                 'sound_player_style'   => Arr::get($website->settings, 'sound_player_style', 'rainbow'),
                 'locale'               => $locale,
                 'website_i18n'         => [

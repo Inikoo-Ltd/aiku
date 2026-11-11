@@ -25,10 +25,10 @@ test("the add to basket box shows the total of the unsaved quantity", () => {
 	const english = JSON.parse(readFileSync(new URL("../../lang/en.json", import.meta.url), "utf8"))
 
 	assert.match(component, /v-if="showsSelectionTotal"/)
-	assert.match(component, /quantity: String\(Number\(customer\.quantity_ordered\)\)/, "the basket quantity arrives as \"10.000000\" and is shown as 10")
+	assert.match(component, /const basketQuantity = computed<number>\(\(\) => Number\(customer\.value\.quantity_ordered \?\? 0\) \|\| 0\)/, "the basket quantity arrives as \"10.000000\" and is shown as 10")
 	assert.match(component, /stepDiscountTotal\(Number\(product\.value\.price\) \|\| 0, product\.value\.step_discount\?\.steps, selectedQuantity\.value\)/)
 	assert.ok(english["Total for :quantity"])
-	assert.ok(english["Not saved yet, your basket has :quantity"])
+	assert.ok(english["Your basket: :from → :to (not saved yet)"])
 })
 
 test("the bulk offer card follows the quantity typed in the box, not only the saved basket", () => {

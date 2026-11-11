@@ -260,6 +260,12 @@ const variantAxisLabel = computed<string>(() =>
     .join(" / ")
 )
 
+const dialogAxisLabel = computed<string>(() =>
+  listProducts.value.length && listProducts.value.every((item: any) => item.size_resolved)
+    ? ctrans("Size")
+    : variantAxisLabel.value
+)
+
 const getVariantLabel = (entry: number) => {
   if (!entry) return null
 
@@ -322,7 +328,7 @@ const listProducts = computed(() => {
             <template #header>
                 <div class="min-w-0">
                     <div class="text-xs font-semibold uppercase tracking-wider text-primary">
-                        {{ ctrans('Choose :axis & quantities', { axis: variantAxisLabel || ctrans('variant') }) }}
+                        {{ ctrans('Choose :axis & quantities', { axis: dialogAxisLabel || ctrans('variant') }) }}
                     </div>
                     <div class="mt-1 text-xl font-bold leading-tight text-gray-900 md:text-2xl">
                         {{ displayedProduct.name }}
@@ -336,7 +342,9 @@ const listProducts = computed(() => {
 
             <VariantDialogContent v-else-if="listProducts.length"
                 :variants="listProducts"
-                :variantAxisLabel="variantAxisLabel"
+                :variantAxisLabel="dialogAxisLabel"
+                :variantAxisCount="variant?.variant_data?.variants?.length ?? 1"
+                :productName="displayedProduct.name"
                 :hasInBasketList="hasInBasketList"
                 :selectedProductId="selectedVariantProduct?.id ?? (hasSavedVariantOrder(listProducts) ? listProducts[0]?.id : product.id)"
                 :isLoadingRemindBackInStock="isLoadingRemindBackInStock"

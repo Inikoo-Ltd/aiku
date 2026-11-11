@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Transaction\UI;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Catalogue\Product\Json\WithVariantColumns;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithMarginData;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexTransactions extends OrgAction
 {
     use WithMarginData;
+    use WithVariantColumns;
 
     public function handle(Organisation|Shop|Customer|Order|Invoice|Asset $parent, $prefix = null, bool $withMargins = false, bool $withShelfQuantity = false): LengthAwarePaginator
     {
@@ -117,6 +119,8 @@ class IndexTransactions extends OrgAction
                  */
                 DB::raw('CASE WHEN historic_assets.units IS NOT NULL AND historic_assets.units <> products.units THEN products.units END as units_changed_to'),
                 'products.slug as product_slug',
+                'products.unit as product_unit',
+                $this->getVariantOptionLabelColumn(),
                 'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
                 'products.is_on_demand',

@@ -12,6 +12,7 @@ import { Table as TableTS } from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { ctrans } from '@/Composables/useTrans'
+import { basketSizeSuffix } from '@/Composables/useBasketSizeSuffix'
 import { debounce } from 'lodash-es'
 import { computed, inject, ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -97,7 +98,7 @@ const debounceUpdateQuantity = debounce(
             <!-- Column: Asset Name -->
             <template #cell(asset_name)="{ item }">
                 <div>
-                    <div>{{ item.asset_name }}</div>
+                    <div>{{ item.asset_name }}{{ basketSizeSuffix(item.asset_name, item.size_label) }}</div>
 
                     <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
                         <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
@@ -232,7 +233,7 @@ const debounceUpdateQuantity = debounce(
                         </LinkIris>
 
                         <p class="text-sm text-gray-700 line-clamp-2">
-                            {{ item.asset_name }}
+                            {{ item.asset_name }}{{ basketSizeSuffix(item.asset_name, item.size_label) }}
                         </p>
 
                         <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1"
