@@ -41,6 +41,7 @@ const props = defineProps<{
 	supplier: { code: string; name: string }
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
+	owner?: { name: string | null; email: string | null } | null
 	summary?: PortalSummary
 	details?: InstanceType<typeof SupplierPortalDetails>["$props"]["details"]
 	forms?: PortalForms
@@ -254,8 +255,9 @@ onMounted(() => {
 					:logo="profile?.company_logo"
 					:company="company"
 					:agent="agent"
-					:owner="details?.owner"
-					:buyers="details?.buyers"
+					:owner="owner"
+					:buyers="loadedDetails?.buyers"
+					:contacts-loading="!loadedDetails"
 					:summary="summary"
 					:sales="sales"
 					:open-orders="openOrders"

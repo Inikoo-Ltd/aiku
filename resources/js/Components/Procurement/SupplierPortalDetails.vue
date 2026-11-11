@@ -52,8 +52,7 @@ interface Details {
 	currency: string | null
 	products: { id: number; code: string; name: string; price: number }[]
 	terms: { term: string; product: string | null; value_type: string; amount: number | null; currency: string | null; text: string | null; agreed_on: string | null; valid_to: string | null }[]
-	owner: { name: string | null; email: string | null } | null
-	buyers: { organisation: string; name: string | null; email: string | null }[]
+	buyers: { organisations: string[]; name: string | null; email: string | null }[]
 	submissions: (EditedSubmission & { type_label: string; state_label: string; summary: string; sent_at: string | null; created_at: string; editable: boolean })[]
 	compliance: { document_type: string | null; product: string | null; expires_on: string | null; days_left: number | null; expiring: boolean }[]
 }

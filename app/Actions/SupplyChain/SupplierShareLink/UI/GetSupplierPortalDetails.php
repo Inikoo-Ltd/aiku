@@ -37,6 +37,17 @@ class GetSupplierPortalDetails
     public const string OWNER_USERNAME = 'david';
 
     /**
+     * The purchasing staff each organisation puts in front of its suppliers, by organisation slug.
+     *
+     * @var array<string, list<string>>
+     */
+    public const array PURCHASING_CONTACT_USERNAMES = [
+        'aw' => ['kristy'],
+        'es' => ['toni', 'quentin'],
+        'sk' => ['tomas'],
+    ];
+
+    /**
      * @return array<string, mixed>
      */
     public function handle(Supplier $supplier): array
@@ -44,7 +55,6 @@ class GetSupplierPortalDetails
         return [
             'products'     => $this->productOptions($supplier),
             'terms'        => $this->terms($supplier),
-            'owner'        => $this->owner($supplier),
             'buyers'       => $this->buyers($supplier),
             'submissions'  => $this->submissions($supplier),
             'compliance'   => $this->compliance($supplier),
@@ -102,7 +112,7 @@ class GetSupplierPortalDetails
      *
      * @return array{name: string|null, email: string|null}|null
      */
-    private function owner(Supplier $supplier): ?array
+    public function owner(Supplier $supplier): ?array
     {
         $owner = DB::table('users')
             ->where('group_id', $supplier->group_id)
@@ -114,24 +124,54 @@ class GetSupplierPortalDetails
     }
 
     /**
-     * Who placed the latest purchase order of each organisation with the supplier, with the email to write to them.
+     * The purchasing contacts of each organisation buying from the supplier, with the email to write to them: the staff
+     * the organisation names in PURCHASING_CONTACT_USERNAMES, otherwise who placed its latest purchase order. A contact
+     * for several organisations is listed once, with all of them.
      *
-     * @return array<int, array{organisation: string, name: string|null, email: string|null}>
+     * @return list<array{organisations: list<string>, name: string|null, email: string|null}>
      */
     private function buyers(Supplier $supplier): array
     {
-        return DB::table('purchase_orders as po')
+        $latestBuyerPerOrganisation = DB::table('purchase_orders as po')
             ->join('org_suppliers', fn ($join) => $join->on('org_suppliers.id', 'po.parent_id')->where('po.parent_type', 'OrgSupplier'))
             ->join('organisations', 'organisations.id', 'po.organisation_id')
+            ->leftJoin('countries', 'countries.id', 'organisations.country_id')
             ->join('users', 'users.id', 'po.buyer_id')
             ->where('org_suppliers.supplier_id', $supplier->id)
             ->whereNull('po.deleted_at')
             ->whereNotNull('po.submitted_at')
             ->orderBy('po.organisation_id')
             ->orderByDesc('po.submitted_at')
-            ->selectRaw('distinct on (po.organisation_id) organisations.name as organisation, users.contact_name as name, '.$this->emailSql().' as email')
+            ->selectRaw("distinct on (po.organisation_id) users.id as user_id, organisations.slug as organisation_slug, organisations.name || coalesce(' (' || countries.name || ')', '') as organisation, users.contact_name as name, ".$this->emailSql().' as email')
+            ->get();
+
+        $namedContacts = DB::table('users')
+            ->where('group_id', $supplier->group_id)
+            ->where('status', true)
+            ->whereIn('username', collect(self::PURCHASING_CONTACT_USERNAMES)->flatten()->unique()->all())
+            ->selectRaw('users.id as user_id, users.username, users.contact_name as name, '.$this->emailSql().' as email')
             ->get()
-            ->map(fn ($row) => ['organisation' => $row->organisation, 'name' => $row->name, 'email' => $row->email])
+            ->keyBy('username');
+
+        return $latestBuyerPerOrganisation
+            ->flatMap(function ($latestBuyer) use ($namedContacts) {
+                $contacts = collect(self::PURCHASING_CONTACT_USERNAMES[$latestBuyer->organisation_slug] ?? [])
+                    ->map(fn (string $username) => $namedContacts->get($username))
+                    ->filter();
+
+                if ($contacts->isEmpty()) {
+                    return [$latestBuyer];
+                }
+
+                return $contacts->map(fn ($contact) => (object) [...(array) $contact, 'organisation' => $latestBuyer->organisation]);
+            })
+            ->groupBy('user_id')
+            ->map(fn ($rows) => [
+                'organisations' => $rows->pluck('organisation')->all(),
+                'name'          => $rows->first()->name,
+                'email'         => $rows->first()->email,
+            ])
+            ->values()
             ->all();
     }
 

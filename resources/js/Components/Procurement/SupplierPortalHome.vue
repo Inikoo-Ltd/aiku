@@ -56,7 +56,8 @@ const props = defineProps<{
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
 	owner?: { name: string | null; email: string | null } | null
-	buyers?: { organisation: string; name: string | null; email: string | null }[]
+	buyers?: { organisations: string[]; name: string | null; email: string | null }[]
+	contactsLoading?: boolean
 	summary?: PortalSummary
 	sales?: { products: number; selling: number }
 	openOrders: number
@@ -307,14 +308,14 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 			</div>
 
 			<aside class="flex min-w-0 flex-col gap-4 lg:gap-6">
-				<section v-if="owner || agent || buyers?.length" class="rounded-lg border border-gray-200 bg-white shadow-sm">
+				<section v-if="contactsLoading || owner || agent || buyers?.length" class="rounded-lg border border-gray-200 bg-white shadow-sm">
 					<header class="flex items-center gap-2.5 border-b border-gray-100 px-4 py-3">
 						<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md" :style="{ backgroundColor: accent.tint, color: accent.colour }">
 							<FontAwesomeIcon icon="fal fa-users" fixed-width aria-hidden="true" />
 						</span>
 						<h2 class="text-sm font-semibold text-gray-800">{{ ctrans("Your contacts at :group", { group }) }}</h2>
 					</header>
-					<ul class="divide-y divide-gray-100">
+					<ul class="divide-y divide-gray-100" :aria-busy="contactsLoading">
 						<li v-if="owner" class="flex items-center gap-3 px-4 py-3">
 							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold" :style="{ backgroundColor: theme.background, color: theme.text }">{{ initials(owner.name ?? group) }}</span>
 							<div class="min-w-0 text-sm">
@@ -337,11 +338,21 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 								</div>
 							</div>
 						</li>
-						<li v-for="buyer in buyers ?? []" :key="buyer.organisation" class="flex items-center gap-3 px-4 py-3">
-							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">{{ initials(buyer.name ?? buyer.organisation) }}</span>
+						<template v-if="contactsLoading">
+							<li v-for="row in 2" :key="row" class="flex animate-pulse items-center gap-3 px-4 py-3" aria-hidden="true">
+								<span class="h-9 w-9 shrink-0 rounded-full bg-gray-200" />
+								<div class="flex min-w-0 flex-1 flex-col gap-1.5">
+									<span class="h-3.5 w-1/2 rounded bg-gray-200" />
+									<span class="h-3 w-3/4 rounded bg-gray-100" />
+									<span class="h-3 w-2/3 rounded bg-gray-100" />
+								</div>
+							</li>
+						</template>
+						<li v-for="buyer in contactsLoading ? [] : buyers ?? []" :key="buyer.organisations.join()" class="flex items-center gap-3 px-4 py-3">
+							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">{{ initials(buyer.name ?? buyer.organisations[0]) }}</span>
 							<div class="min-w-0 text-sm">
 								<p class="truncate font-semibold text-gray-900">{{ buyer.name }}</p>
-								<p class="truncate text-xs text-gray-500">{{ ctrans("Purchasing, :organisation", { organisation: buyer.organisation }) }}</p>
+								<p class="text-xs text-gray-500">{{ ctrans("Purchasing, :organisation", { organisation: buyer.organisations.join(" · ") }) }}</p>
 								<a v-if="buyer.email" :href="`mailto:${buyer.email}`" class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-gray-700 hover:underline"><FontAwesomeIcon icon="fal fa-envelope" fixed-width class="text-gray-400" aria-hidden="true" /><span class="truncate">{{ buyer.email }}</span></a>
 							</div>
 						</li>
