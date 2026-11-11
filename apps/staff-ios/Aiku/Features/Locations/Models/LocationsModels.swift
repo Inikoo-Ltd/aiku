@@ -131,20 +131,24 @@ struct LocationsLocation: Identifiable, Hashable, Sendable {
     var slots: [LocationsSlot] = []
     var pallets: [LocationsPallet] = []
     var auditedOn: Date?
+    var remote: LocationsRemoteSummary?
 
     var id: String { code }
     var barcode: String { code.lowercased() }
     var areaTitle: String { "Area \(areaCode)" }
 
-    var emptySlotCount: Int { slots.filter(\.isEmpty).count }
-    var stockedSlotCount: Int { slots.count - emptySlotCount }
+    private var usesRemoteSummary: Bool { slots.isEmpty && remote != nil }
+    var slotCount: Int { usesRemoteSummary ? remote?.slotCount ?? 0 : slots.count }
+    var emptySlotCount: Int { usesRemoteSummary ? remote?.emptySlotCount ?? 0 : slots.filter(\.isEmpty).count }
+    var stockedSlotCount: Int { slotCount - emptySlotCount }
+    var palletCount: Int { pallets.isEmpty ? remote?.palletCount ?? 0 : pallets.count }
     var usedWeightKg: Double { slots.map(\.weightKg).reduce(0, +) }
     var usedVolumeM3: Double { slots.map(\.volumeM3).reduce(0, +) }
-    var stockValue: Double { slots.map(\.stockValue).reduce(0, +) }
+    var stockValue: Double { usesRemoteSummary ? remote?.stockValue ?? 0 : slots.map(\.stockValue).reduce(0, +) }
     var totalUnits: Int { slots.map { max($0.quantity, 0) }.reduce(0, +) }
 
     var occupancy: LocationsOccupancy {
-        if stockedSlotCount == 0, pallets.isEmpty {
+        if stockedSlotCount == 0, palletCount == 0 {
             return .empty
         }
         return emptySlotCount > 0 ? .partiallyEmpty : .stocked
@@ -195,14 +199,14 @@ struct LocationsLocation: Identifiable, Hashable, Sendable {
     }
 
     var slotSummary: String {
-        if slots.isEmpty {
-            if pallets.isEmpty {
+        if slotCount == 0 {
+            if palletCount == 0 {
                 return "empty"
             }
-            return pallets.count == 1 ? "1 pallet" : "\(pallets.count) pallets"
+            return palletCount == 1 ? "1 pallet" : "\(palletCount) pallets"
         }
-        let noun = slots.count == 1 ? "slot" : "slots"
-        return "\(slots.count) \(noun), \(emptySlotCount) empty"
+        let noun = slotCount == 1 ? "slot" : "slots"
+        return "\(slotCount) \(noun), \(emptySlotCount) empty"
     }
 
     var shortSubtitle: String {
@@ -261,19 +265,37 @@ struct LocationsLocation: Identifiable, Hashable, Sendable {
     }
 }
 
+struct LocationsRemoteSummary: Hashable, Sendable {
+    var id: Int
+    var slotCount: Int
+    var emptySlotCount: Int
+    var palletCount: Int
+    var stockValue: Double
+}
+
 struct LocationsArea: Identifiable, Hashable, Sendable {
+    var remoteID: Int?
     var code: String
     var name: String
-    var pickingOrder: Int
+    var pickingOrder: Int?
     var locationCount: Int
     var emptyCount: Int
     var valueLabel: String
 
     var id: String { code }
-    var title: String { "Area \(code) · \(name)" }
-    var filterTitle: String { "\(code) · \(name)" }
+    var codeRepeatsName: Bool {
+        code.replacingOccurrences(of: "-", with: " ").caseInsensitiveCompare(name) == .orderedSame
+    }
+    var title: String { codeRepeatsName ? name : "Area \(code) · \(name)" }
+    var filterTitle: String { codeRepeatsName ? name : "\(code) · \(name)" }
     var subtitle: String {
-        "Picking order \(pickingOrder) · \(locationCount.locationsGrouped) locations · \(emptyCount.locationsGrouped) empty · \(valueLabel)"
+        let parts = [
+            pickingOrder.map { "Picking order \($0)" } ?? "No picking order",
+            "\(locationCount.locationsGrouped) locations",
+            "\(emptyCount.locationsGrouped) empty",
+            valueLabel,
+        ]
+        return parts.filter { !$0.isEmpty }.joined(separator: " · ")
     }
 }
 
@@ -288,11 +310,17 @@ struct LocationsWarehouseSummary: Hashable, Sendable {
 
 struct LocationsAutoRemoval: Hashable, Sendable {
     var isOn: Bool
-    var changedBy: String
-    var changedOn: Date
+    var changedBy: String?
+    var changedOn: Date?
+    var canEdit = true
 
     var detail: String {
-        "Changed by \(changedBy) · \(LocationsFormat.shortDate(changedOn))"
+        switch (changedBy, changedOn) {
+        case let (name?, date?): "Changed by \(name) · \(LocationsFormat.shortDate(date))"
+        case let (name?, nil): "Changed by \(name)"
+        case let (nil, date?): "Changed \(LocationsFormat.shortDate(date))"
+        case (nil, nil): "Not changed yet"
+        }
     }
 }
 

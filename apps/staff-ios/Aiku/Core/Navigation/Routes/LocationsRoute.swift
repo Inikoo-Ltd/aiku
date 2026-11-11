@@ -7,4 +7,5 @@ enum LocationsRoute: Hashable, Sendable {
     case locations
     case location(code: String)
     case skoInLocation(sko: String, location: String)
+    case emptySlots(LocationsEmptySlotsKind)
 }

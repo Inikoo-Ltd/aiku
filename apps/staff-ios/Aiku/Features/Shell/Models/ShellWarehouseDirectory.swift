@@ -4,6 +4,7 @@ struct ShellWarehouse: Identifiable, Hashable, Sendable {
     var id: String { code }
     let name: String
     let code: String
+    var remoteID: Int? = nil
 }
 
 struct ShellOrganisation: Identifiable, Hashable, Sendable {
@@ -21,6 +22,7 @@ struct ShellWarehouseChoice: Hashable, Sendable {
     let organisation: String
     let warehouseName: String
     let warehouseCode: String
+    var warehouseID: Int? = nil
 }
 
 enum ShellWarehouseDirectory {
@@ -39,7 +41,30 @@ enum ShellWarehouseDirectory {
     ]
 
     static func choice(organisation: ShellOrganisation, warehouse: ShellWarehouse) -> ShellWarehouseChoice {
-        ShellWarehouseChoice(organisation: organisation.name, warehouseName: warehouse.name, warehouseCode: warehouse.code)
+        ShellWarehouseChoice(organisation: organisation.name, warehouseName: warehouse.name, warehouseCode: warehouse.code, warehouseID: warehouse.remoteID)
+    }
+
+    static func organisations(from warehouses: [MobileWarehouse]) -> [ShellOrganisation] {
+        var order: [Int] = []
+        var grouped: [Int: (name: String, warehouses: [ShellWarehouse])] = [:]
+        for warehouse in warehouses {
+            if grouped[warehouse.organisation.id] == nil {
+                order.append(warehouse.organisation.id)
+                grouped[warehouse.organisation.id] = (warehouse.organisation.name, [])
+            }
+            grouped[warehouse.organisation.id]?.warehouses.append(
+                ShellWarehouse(name: warehouse.name, code: warehouse.code, remoteID: warehouse.id)
+            )
+        }
+        return order.compactMap { id in
+            guard let group = grouped[id] else { return nil }
+            return ShellOrganisation(id: "\(id)", initials: initials(of: group.name), name: group.name, warehouses: group.warehouses)
+        }
+    }
+
+    static func initials(of name: String) -> String {
+        let letters = name.split(separator: " ").prefix(2).compactMap(\.first)
+        return String(letters).uppercased()
     }
 
     static func confirmTitle(selected: ShellWarehouseChoice, current: ShellWarehouseChoice) -> String {
