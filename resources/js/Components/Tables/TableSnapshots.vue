@@ -17,9 +17,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import axios from 'axios'
 import { ref } from 'vue'
 import Button from '../Elements/Buttons/Button.vue'
-import { notify } from '@kyvg/vue3-notification'
-import ListItem from '@tiptap/extension-list-item'
 import { ctrans } from '@/Composables/useTrans'
+import SnapshotComparisonDialog from '@/Components/CMS/Webpage/SnapshotComparisonDialog.vue'
 const locale = useLocaleStore()
 
 
@@ -37,6 +36,7 @@ function snapshotRoute(data: {}) {
 
     switch (route().current()) {
         case 'grp.org.shops.show.web.webpages.show':
+        case 'grp.org.shops.show.web.blogs.show':
             return route(
                 'grp.org.shops.show.web.webpages.snapshot.show',
                 [
@@ -50,6 +50,13 @@ function snapshotRoute(data: {}) {
 }
 const loadingLive = ref<number[]>([])
 const loadingUnpublished = ref<number[]>([])
+const recycleResults = ref<Record<number, { ok: boolean, message: string }>>({})
+
+const recycleErrorMessage = (error, fallback: string) =>
+    error?.response?.data?.message ||
+    Object.values(error?.response?.data?.errors || {})?.[0] ||
+    fallback
+
 const recycleLive = async (id) => {
     try {
         loadingLive.value.push(id)
@@ -60,20 +67,9 @@ const recycleLive = async (id) => {
             })
         )
 
-        notify({
-            title: 'Success',
-            text: 'Successfully set live version.',
-            type: 'success',
-        })
+        recycleResults.value[id] = { ok: true, message: ctrans('Live version set') }
     } catch (error) {
-        notify({
-            title: 'Error',
-            text:
-                error?.response?.data?.message ||
-                Object.values(error?.response?.data?.errors || {})?.[0] ||
-                'Failed to set live snapshot.',
-            type: 'error',
-        })
+        recycleResults.value[id] = { ok: false, message: recycleErrorMessage(error, ctrans('Failed to set live snapshot.')) }
     } finally {
         loadingLive.value = loadingLive.value.filter(i => i !== id)
     }
@@ -89,79 +85,91 @@ const recycleUnpublished = async (id) => {
             })
         )
 
-        notify({
-            title: 'Success',
-            text: 'Snapshot unpublished successfully.',
-            type: 'success',
-        })
+        recycleResults.value[id] = { ok: true, message: ctrans('Unpublished version set') }
     } catch (error) {
-        notify({
-            title: 'Error',
-            text:
-                error?.response?.data?.message ||
-                Object.values(error?.response?.data?.errors || {})?.[0] ||
-                'Failed to unpublish snapshot.',
-            type: 'error',
-        })
+        recycleResults.value[id] = { ok: false, message: recycleErrorMessage(error, ctrans('Failed to unpublish snapshot.')) }
     } finally {
         loadingUnpublished.value = loadingUnpublished.value.filter(i => i !== id)
     }
 }
 
+const comparisonVisible = ref(false)
+const comparedSnapshot = ref<{ id: number, parent_id: number } | null>(null)
+const openComparison = (snapshot: { id: number, parent_id: number }) => {
+    comparedSnapshot.value = snapshot
+    comparisonVisible.value = true
+}
+
 </script>
 
 <template>
-    <Table :resource="data" class="mt-5" :name="tab">
-        <!-- Icon -->
-        <template #cell(state)="{ item: user }">
-            <Icon :data="user.state" />
-        </template>
+    <div>
+        <Table :resource="data" class="mt-5" :name="tab">
+            <!-- Icon -->
+            <template #cell(state)="{ item: user }">
+                <Icon :data="user.state" />
+            </template>
 
-        <!-- Publisher -->
-        <template #cell(publisher)="{ item: user }">
-            <div class="grid grid-cols-[min(25px)_minmax(90px,100%)] items-center">
-                <div class="" :title="user.publisher">
-                    <div class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-gray-200">
-                        <Image :src="user.publisher_avatar" />
+            <!-- Publisher -->
+            <template #cell(publisher)="{ item: user }">
+                <div class="grid grid-cols-[min(25px)_minmax(90px,100%)] items-center">
+                    <div class="" :title="user.publisher">
+                        <div class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-gray-200">
+                            <Image :src="user.publisher_avatar" />
+                        </div>
                     </div>
+                    <div class="">{{ user['publisher'] }}</div>
                 </div>
-                <div class="">{{ user['publisher'] }}</div>
-            </div>
-        </template>
+            </template>
 
-        <!-- Date Published -->
-        <template #cell(published_at)="{ item: user }">
-            <div class="text-gray-500">
-                <Link :href="snapshotRoute(user)" class="primaryLink">
-                    {{ useFormatTime(user['published_at'], { localeCode: locale.language.code, formatTime: 'hm' }) }}
-                </Link>
-                <FontAwesomeIcon v-if="display_apply_button" :icon="faSignal" class="ml-2 text-green-500 cursor-pointer"
-                    @click="doThis(user.id)" fixed-width />
-            </div>
-        </template>
+            <!-- Date Published -->
+            <template #cell(published_at)="{ item: user }">
+                <div class="text-gray-500">
+                    <Link :href="snapshotRoute(user)" class="primaryLink">
+                        {{ useFormatTime(user['published_at'], { localeCode: locale.language.code, formatTime: 'hm' }) }}
+                    </Link>
+                    <FontAwesomeIcon v-if="display_apply_button" :icon="faSignal" class="ml-2 text-green-500 cursor-pointer"
+                        @click="doThis(user.id)" fixed-width />
+                </div>
+            </template>
 
-        <!-- Published Until -->
-        <template #cell(published_until)="{ item: user }">
-            <div class="text-gray-500">{{ useFormatTime(user.published_until, {
-                localeCode: locale.language.code,
-                formatTime: 'hm'
-            }) }}</div>
-        </template>
+            <!-- Published Until -->
+            <template #cell(published_until)="{ item: user }">
+                <div class="text-gray-500">{{ useFormatTime(user.published_until, {
+                    localeCode: locale.language.code,
+                    formatTime: 'hm'
+                }) }}</div>
+            </template>
 
-        <template #cell(recyclable)="{ item }">
-            <slot name="banner-snapshot" :item></slot>
-        </template>
+            <template #cell(recyclable)="{ item }">
+                <slot name="banner-snapshot" :item></slot>
+            </template>
 
-        <template #cell(action)="{ item }">
-            <div v-if="editable" class="flex items-center gap-2">
-                <Button :type="'positive'" :icon="faRecycle"
-                    v-tooltip="ctrans('Recycle the live version to this version')" @click="() => recycleLive(item.id)"
-                    :loading="loadingLive.includes(item.id)" />
+            <template #cell(action)="{ item }">
+                <div v-if="editable" class="flex items-center gap-2">
+                    <Button :type="'positive'" :icon="faRecycle"
+                        v-tooltip="ctrans('Recycle the live version to this version')" @click="() => recycleLive(item.id)"
+                        :loading="loadingLive.includes(item.id)" />
 
-                <Button :type="'primary'" :icon="faRecycle"
-                    v-tooltip="ctrans('Recycle the unpublished version to this version')"
-                    @click="() => recycleUnpublished(item.id)" :loading="loadingUnpublished.includes(item.id)" />
-            </div>
-        </template>
-    </Table>
+                    <Button :type="'primary'" :icon="faRecycle"
+                        v-tooltip="ctrans('Recycle the unpublished version to this version')"
+                        @click="() => recycleUnpublished(item.id)" :loading="loadingUnpublished.includes(item.id)" />
+                </div>
+                <p v-if="recycleResults[item.id]" class="mt-1 text-xs" :class="recycleResults[item.id].ok ? 'text-green-600' : 'text-red-600'">
+                    {{ recycleResults[item.id].message }}
+                </p>
+            </template>
+
+            <template #cell(changes)="{ item }">
+                <Button type="tertiary" size="xs" :label="ctrans('What changed')" @click="() => openComparison(item)" />
+            </template>
+        </Table>
+
+        <SnapshotComparisonDialog
+            v-if="comparedSnapshot"
+            v-model:visible="comparisonVisible"
+            :webpageId="comparedSnapshot.parent_id"
+            :snapshotId="comparedSnapshot.id"
+        />
+    </div>
 </template>
