@@ -153,6 +153,7 @@ function createMobileEmptyLocationLink(Warehouse $warehouse, Location $location)
         strict: false
     );
     OrgStockMovement::where('org_stock_id', $orgStock->id)->update(['date' => now()->subDays(2)]);
+    OrgStock::whereKey($orgStock->id)->update(['picking_location_id' => null, 'picking_dropshipping_location_id' => null]);
 
     return [$location, $orgStock];
 }
@@ -1302,7 +1303,7 @@ test('mobile locations list combines several areas, statuses, scopes and occupan
     [$otherArea, $otherStocked] = createMobileLocationsFixture($warehouse);
     $headers = ['X-Aiku-App-Key' => 'mobile-test-key'];
 
-    $bothAreas = collect(getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'area_ids' => [$area->id, $otherArea->id], 'per_page' => 200]), $headers)
+    $bothAreas = collect(getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'area_ids' => [$area->id, $otherArea->id], 'per_page' => 150]), $headers)
         ->assertOk()
         ->json('data'))->pluck('id');
 

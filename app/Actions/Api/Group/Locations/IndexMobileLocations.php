@@ -148,7 +148,7 @@ class IndexMobileLocations
         $filters = Validator::make($request->query(), [
             'area_id'       => ['sometimes', 'nullable', 'integer', Rule::exists('warehouse_areas', 'id')->where('warehouse_id', $warehouse->id)],
             'area_ids'      => ['sometimes', 'array', 'max:200'],
-            'area_ids.*'    => ['integer', Rule::exists('warehouse_areas', 'id')->where('warehouse_id', $warehouse->id)],
+            'area_ids.*'    => ['bail', 'integer', 'between:1,32767', Rule::exists('warehouse_areas', 'id')->where('warehouse_id', $warehouse->id)],
             'q'             => ['sometimes', 'nullable', 'string', 'max:64'],
             'occupancy'     => ['sometimes', 'nullable', Rule::in(['empty', 'partially_empty'])],
             'occupancies'   => ['sometimes', 'array'],
