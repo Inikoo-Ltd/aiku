@@ -101,11 +101,11 @@ class IndexAgent extends OrgAction
      */
     private function workingUserIdsQuery(array $shopIds): QueryBuilderContract
     {
-        $permissionNames = collect($shopIds)->flatMap(fn ($shopId) => ["chat.{$shopId}"]);
+        $permissionNames = collect($shopIds)->flatMap(fn ($shopId) => ["chat.{$shopId}", "chat-m.{$shopId}"]);
 
         $fulfilmentIds = Fulfilment::whereIn('shop_id', $shopIds)->pluck('id');
         $permissionNames = $permissionNames->merge(
-            $fulfilmentIds->flatMap(fn ($fulfilmentId) => ["fulfilment-chat.{$fulfilmentId}"])
+            $fulfilmentIds->flatMap(fn ($fulfilmentId) => ["fulfilment-chat.{$fulfilmentId}", "fulfilment-chat-m.{$fulfilmentId}"])
         );
 
         return DB::table('model_has_roles')
