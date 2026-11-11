@@ -17645,6 +17645,7 @@
     "Saved, but Shopify did not accept the price of :products": "Uloženo, ale Shopify nepřijal cenu :products",
     "Saved, but Shopify did not accept the price: :reason": "Uloženo, ale Shopify cenu nepřijal: :reason",
     "Saved, but eBay did not accept the change: :reason": "Uloženo, ale eBay změnu nepřijal: :reason",
+    "eBay did not accept the change, so nothing was saved: :reason": "eBay změnu nepřijal, proto se nic neuložilo: :reason",
     "Saved.": "Uloženo.",
     "Saved. Leave it empty to keep it": "Uloženo. Pro zachování ponechte pole prázdné.",
     "Saves": "Uložení",

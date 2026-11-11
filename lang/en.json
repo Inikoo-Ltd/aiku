@@ -17718,6 +17718,7 @@
     "Saved, but Shopify did not accept the price of :products": "Saved, but Shopify did not accept the price of :products",
     "Saved, but Shopify did not accept the price: :reason": "Saved, but Shopify did not accept the price: :reason",
     "Saved, but eBay did not accept the change: :reason": "Saved, but eBay did not accept the change: :reason",
+    "eBay did not accept the change, so nothing was saved: :reason": "eBay did not accept the change, so nothing was saved: :reason",
     "Saved.": "Saved.",
     "Saved. Leave it empty to keep it": "Saved. Leave it empty to keep it",
     "Saves": "Saves",

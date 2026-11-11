@@ -68,13 +68,15 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
             data_set($modelData, 'settings.pricing_opt_out', true);
         }
 
+        $beforeSave = $portfolio->only(['customer_price', 'selling_price', 'margin', 'customer_product_name', 'customer_description', 'platform_handle', 'settings']);
+
         $portfolio = UpdatePortfolio::run($portfolio, $modelData);
 
         if ($isDraft && $portfolio->platform->type === PlatformTypeEnum::EBAY && Arr::get($portfolio->data, 'is_platform_draft')) {
-            $this->updateEbayChannel($portfolio, $setsPrice, publishDraft: false);
+            $this->updateEbayChannel($portfolio, $beforeSave, $setsPrice, publishDraft: false);
         } elseif (! $isDraft) {
             match ($portfolio->platform->type) {
-                PlatformTypeEnum::EBAY => $this->updateEbayChannel($portfolio, $setsPrice),
+                PlatformTypeEnum::EBAY => $this->updateEbayChannel($portfolio, $beforeSave, $setsPrice),
                 PlatformTypeEnum::WOOCOMMERCE => UpdateWooProduct::run($portfolio),
                 PlatformTypeEnum::SHOPIFY => $this->updateShopifyChannel($portfolio),
                 PlatformTypeEnum::WIX => UpdateWixProduct::run($portfolio),
@@ -83,11 +85,20 @@ class UpdateAndUploadRetinaPortfolioToCurrentChannel extends RetinaAction
         }
     }
 
-    public function updateEbayChannel(Portfolio $portfolio, bool $setsPrice = false, bool $publishDraft = true): void
+    /**
+     * When eBay refuses the update the portfolio goes back to what it was, so My Products never shows a price eBay does not have.
+     */
+    public function updateEbayChannel(Portfolio $portfolio, array $beforeSave, bool $setsPrice = false, bool $publishDraft = true): void
     {
-        $ebayError = UpdateEbayOffer::run($portfolio, withTitle: true, withPrice: $setsPrice);
+        if ($ebayError = UpdateEbayOffer::run($portfolio, withTitle: true, withPrice: $setsPrice)) {
+            $portfolio->forceFill($beforeSave)->save();
 
-        if (!$ebayError && $publishDraft && Arr::get($portfolio->data, 'is_platform_draft')) {
+            throw ValidationException::withMessages([
+                'title' => __('eBay did not accept the change, so nothing was saved: :reason', ['reason' => $ebayError])
+            ]);
+        }
+
+        if ($publishDraft && Arr::get($portfolio->data, 'is_platform_draft')) {
             $ebayError = PublishRetinaEbayPortfolio::run($portfolio)->upload_warning;
         }
 
