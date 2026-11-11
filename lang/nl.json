@@ -9698,5 +9698,6 @@
     "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "In de afgelopen 30 dagen zijn 9 van de 10 bestellingen binnen :days dagen na het plaatsen verzonden. Dit is de verzending vanuit ons magazijn, niet de levering bij jou.",
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "De verzending voor je huidige winkelmandje is :amount exclusief belasting. Dit verandert als je producten toevoegt of verwijdert.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "De verzending voor je huidige winkelmandje is gratis. Dit kan veranderen als je producten toevoegt of verwijdert.",
-    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "De verzending voor je huidige winkelmandje moet nog worden bevestigd: de prijs wordt later bepaald, het is niet gratis."
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "De verzending voor je huidige winkelmandje moet nog worden bevestigd: de prijs wordt later bepaald, het is niet gratis.",
+    "More about :name": "Meer over :name"
 }

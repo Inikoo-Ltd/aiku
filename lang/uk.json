@@ -6965,5 +6965,6 @@
     "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "За останні 30 днів 9 із 10 замовлень було відправлено протягом :days днів після оформлення. Ідеться про відправлення з нашого складу, а не про доставку до вас.",
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Доставка для вашого поточного кошика становить :amount без податку. Вона змінюється, коли ви додаєте або вилучаєте товари.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "Доставка для вашого поточного кошика безкоштовна. Це може змінитися, коли ви додаєте або вилучаєте товари.",
-    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Доставку для вашого поточного кошика ще буде підтверджено: ціна визначається пізніше, вона не безкоштовна."
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Доставку для вашого поточного кошика ще буде підтверджено: ціна визначається пізніше, вона не безкоштовна.",
+    "More about :name": "Докладніше про: :name"
 }

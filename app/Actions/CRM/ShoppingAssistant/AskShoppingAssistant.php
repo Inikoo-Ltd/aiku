@@ -47,6 +47,8 @@ use Throwable;
  *   fixed sentence instead of the product fallback.
  * - Dispatch times and shipping cost are never written by the AI: the tool's sentence, built from our
  *   data, is put under the reply after the number rule has been applied to the AI's own words.
+ * - A family the model read about with family_information is linked under the answer by the page,
+ *   from the family ids stored with that tool call; the model never writes a URL.
  * - model_unavailable: an HTTP failure, an empty or unreadable answer, or a content filter stop
  *   gives the fallback with no products. The customer message is stored first, so it is never lost.
  * - model_call_limit: no final answer within services.shopping_assistant.max_model_calls calls.
@@ -241,11 +243,11 @@ class AskShoppingAssistant
      * throws or is killed later keeps what it spent; the assistant message gets the turn's totals only
      * for display, and the conversation is never raised again at the end of the turn.
      *
-     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, names: array<int, string>, basket: array<int, int>, facts: array<int, string>, cleared: bool, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
+     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, names: array<int, string>, basket: array<int, int>, facts: array<int, string>, families: array<int, int>, cleared: bool, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
      */
     private function runModel(ShoppingAssistantConversation $conversation, ?Customer $customer, ShoppingAssistantMessage $customerMessage, string $message, string $model): array
     {
-        $turn = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
+        $turn = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'families' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
 
         if (!$customer) {
             $turn['flags'][] = 'model_unavailable';
@@ -344,7 +346,7 @@ class AskShoppingAssistant
                     'product_ids' => array_column($result['products'], 'id'),
                     'error'       => $result['error'],
                     'ms'          => (int) round((hrtime(true) - $toolStart) / 1e6),
-                ], isset($result['basket']) ? ['added_product_ids' => $result['basket']] : []);
+                ], isset($result['basket']) ? ['added_product_ids' => $result['basket']] : [], isset($result['families']) ? ['family_ids' => $result['families']] : []);
 
                 $messages[] = [
                     'role'         => 'tool',
@@ -618,7 +620,9 @@ Rules:
 - Never state prices, discounts, stock quantities, delivery times or how many shops buy something.
 - When the customer asks how quickly orders are dispatched, call dispatch_times; when they ask what shipping costs, call shipping_cost. The system adds the sentence with the real figure under your reply: write one short lead-in with no figure, and never promise a delivery date.
 - Never mention other customers.
-- Do not invent product claims beyond the product and family names.
+- Do not invent product claims beyond the product and family names and what family_information returns.
+- When the customer asks about a range or a product instead of asking for products (what it is, why it is special, what makes it different, how it is used), find it with search_products, call family_information with its family_id and answer from that description. Show no products in that answer unless they asked to see them: the page links to the family page. You cannot explain or compare prices: say the price is on each product card.
+- When the customer says something is expensive or asks why it costs what it does, say what the description shows they get for it (quality, size, what is included), never that it is the market price or cheaper or dearer than elsewhere, and offer to show lower-priced options of the same kind, which you find with search_products and sort cheapest.
 - Each product comes with a why line. When you say why you suggest something, say no more than its why line says: write "shops like yours" only when the why line says so, and "shops in your area" when that is what it says.
 - What the customer orders is only what is listed above. Do not say what else they stock or sell.
 - If the customer says what kind of shop they run and the shop type is not known yet, call save_shop_type once.
@@ -633,6 +637,7 @@ Rules:
 - A product marked exact_code_match is the one whose code the customer typed: present it first and do not say you could not find it.
 - For Christmas, festive or seasonal requests, call best_sellers_last_christmas as well as search_products, and mix both in your answer.
 - Products marked family_code_match belong to the family whose code the customer typed: present them and do not say you could not find it.
+- When search_products returns matched_families, the customer typed that family's code: that is the range they mean, even when none of its products is listed. Never say you could not tell what they meant; use its family_id with family_information for questions about it, and say so plainly if none of its products can be shown right now.
 - When the customer asks for the cheapest or the most expensive products, call search_products with sort (and an empty query when they mean the whole website), say the products are ordered by price, and still never state a price.
 - Products under out_of_stock in a search_products result can never be presented. Mention one only when it is the product the customer asked for (an exact_code_match, or clearly the item they named): say by its name that it is out of stock right now, never that we do not have it, and offer the closest alternatives. Otherwise ignore them.
 PROMPT;

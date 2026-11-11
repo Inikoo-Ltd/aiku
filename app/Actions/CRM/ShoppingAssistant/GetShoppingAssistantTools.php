@@ -40,8 +40,10 @@ use Throwable;
 /**
  * The tools the shopping assistant model may call, and their executor.
  *
- * What the model sees of a product is only its id, name, family name and a reason code (plus the
- * month it was last ordered, for the customer's own forgotten products). Never codes or names of
+ * What the model sees of a product is only its id, name, family name and id and a reason code (plus
+ * the month it was last ordered, for the customer's own forgotten products). family_information
+ * adds the family's own website description, so a question about a range is answered from our
+ * text, and names that family so the answer can link to its page. Never codes or names of
  * other customers, buyer counts, revenue, segment sizes, prices, discounts or stock figures: the
  * payload is built field by field, never from the model's attributes.
  *
@@ -83,6 +85,8 @@ class GetShoppingAssistantTools
 
     private const int PRICE_SORT_POOL = 40;
 
+    private const int MAX_DESCRIPTION = 1500;
+
     private const float PRICE_SORT_MARGIN = 0.12;
 
     private const array SEGMENT_REASON_CODES = [
@@ -118,7 +122,7 @@ class GetShoppingAssistantTools
         return [
             $this->tool(
                 'search_products',
-                'Search the catalogue for products matching what the customer is looking for. Use it whenever the customer names a product, a product code, a theme, an occasion or a kind of item. Returns products with id, name, family and why; exact_code_match marks the product whose code the customer typed and family_code_match the products of the family whose code they typed. It may also return out_of_stock: products we sell that match but cannot be ordered right now. With sort the matches come ordered by price; with sort and an empty query, the whole catalogue.',
+                'Search the catalogue for products matching what the customer is looking for. Use it whenever the customer names a product, a product code, a theme, an occasion or a kind of item. Returns products with id, name, family and why; exact_code_match marks the product whose code the customer typed and family_code_match the products of the family whose code they typed; matched_families names that family even when none of its products can be shown. It may also return out_of_stock: products we sell that match but cannot be ordered right now. With sort the matches come ordered by price; with sort and an empty query, the whole catalogue.',
                 [
                     'query' => ['type' => 'string', 'description' => 'What the customer is looking for, in their words. May be empty only together with sort.'],
                     'sort'  => ['type' => 'string', 'enum' => self::PRICE_SORTS, 'description' => 'Only when the customer asks for the cheapest or the most expensive: order the matches by price instead of by relevance.'],
@@ -160,6 +164,14 @@ class GetShoppingAssistantTools
                 [
                     'product_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'maxItems' => self::MAX_PER_GROUP * 2, 'description' => 'Ids of shown products to add, when the customer asked for only some of them.'],
                 ]
+            ),
+            $this->tool(
+                'family_information',
+                'What we say about a product family (range) on the website: its description. Use it when the customer asks about a range or a product rather than asking for products: what it is, why it is special, what it is made of, how it is used. Take family_id from a product returned by another tool. The page adds a link to the family page under your reply. Returns no products.',
+                [
+                    'family_id' => ['type' => 'integer', 'description' => 'family_id of a product returned by another tool.'],
+                ],
+                ['family_id']
             ),
             $this->tool(
                 'dispatch_times',
@@ -220,6 +232,7 @@ class GetShoppingAssistantTools
                 'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments, $foundProductIds),
                 'clear_conversation'             => $this->clearConversation($conversation),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
+                'family_information'             => $this->familyInformation($customer, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
                 default                          => $this->error("Unknown tool $name."),
             };
@@ -267,7 +280,7 @@ class GetShoppingAssistantTools
         $limit     = $this->limit($arguments);
         $inStock   = fn (Product $product) => $product->available_quantity > 0;
         $byCode    = $query === '' ? collect() : $this->productsByCode($customer, $query);
-        $byFamily  = $query === '' ? ['products' => collect(), 'exact' => false] : $this->productsByFamilyCode($customer, $query, $limit);
+        $byFamily  = $query === '' ? ['products' => collect(), 'exact' => false, 'families' => []] : $this->productsByFamilyCode($customer, $query, $limit);
         $codeIds   = $byCode->pluck('id')->flip();
         $familyIds = $byFamily['exact'] ? $byFamily['products']->pluck('id')->flip() : collect();
 
@@ -296,6 +309,9 @@ class GetShoppingAssistantTools
             isset($familyIds[$item['id']]) => $item + ['family_code_match' => true],
             default                        => $item,
         }, $result['content']['products']);
+        if ($byFamily['families']) {
+            $result['content']['matched_families'] = $byFamily['families'];
+        }
         if ($outOfStock->isNotEmpty()) {
             $result['names']                   = $outOfStock->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all();
             $result['content']['out_of_stock'] = $outOfStock->map(fn (Product $product) => array_filter(['name' => $product->name, 'family' => $product->family?->name, 'exact_code_match' => isset($codeIds[$product->id])]))->values()->all();
@@ -373,7 +389,7 @@ class GetShoppingAssistantTools
      * family whose code starts with it counts too, but only if it is the only one ("tcan" for TCand);
      * those products lead the results without being marked as an exact match.
      *
-     * @return array{products: Collection<int, Product>, exact: bool}
+     * @return array{products: Collection<int, Product>, exact: bool, families: array<int, array{family_id: int, name: string}>}
      */
     private function productsByFamilyCode(Customer $customer, string $query, int $limit): array
     {
@@ -381,10 +397,11 @@ class GetShoppingAssistantTools
         $normalised = "lower(regexp_replace(product_categories.code, '[^A-Za-z0-9]', '', 'g'))";
         $families   = fn () => ProductCategory::where('product_categories.shop_id', $customer->shop_id)
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
-            ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE);
+            ->where('product_categories.is_in_website', true)
+            ->whereNotIn('product_categories.state', [ProductCategoryStateEnum::DISCONTINUED, ProductCategoryStateEnum::INACTIVE]);
 
         if ($candidates->isEmpty()) {
-            return ['products' => collect(), 'exact' => false];
+            return ['products' => collect(), 'exact' => false, 'families' => []];
         }
 
         $familyIds = $families()->whereIn(DB::raw($normalised), $candidates->all())->limit(3)->pluck('id');
@@ -396,12 +413,13 @@ class GetShoppingAssistantTools
         }
 
         if ($familyIds->isEmpty()) {
-            return ['products' => collect(), 'exact' => false];
+            return ['products' => collect(), 'exact' => false, 'families' => []];
         }
 
         return [
             'products' => $this->recommendableProducts($customer->shop, $customer)->select('products.*')->whereIn('products.family_id', $familyIds)->orderBy('products.code')->limit($limit)->get()->toBase(),
             'exact'    => $exact,
+            'families' => ProductCategory::whereIn('id', $familyIds)->get(['id', 'name'])->map(fn (ProductCategory $family) => ['family_id' => $family->id, 'name' => $family->name])->all(),
         ];
     }
 
@@ -530,6 +548,45 @@ class GetShoppingAssistantTools
     }
 
     /**
+     * Only a family of this shop that is on the website and not discontinued: a family still marked
+     * in process can be live and selling (PrEOUL, 11 Nov 2026). The description is plain text, capped.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, families?: array<int, int>, names?: array<int, string>}
+     */
+    private function familyInformation(Customer $customer, array $arguments): array
+    {
+        $family = is_numeric($arguments['family_id'] ?? null)
+            ? ProductCategory::where('shop_id', $customer->shop_id)
+                ->where('type', ProductCategoryTypeEnum::FAMILY)
+                ->whereNotIn('state', [ProductCategoryStateEnum::DISCONTINUED, ProductCategoryStateEnum::INACTIVE])
+                ->where('is_in_website', true)
+                ->find((int) $arguments['family_id'])
+            : null;
+
+        if (!$family) {
+            return $this->error('family_id must be the family_id of a product returned by another tool.');
+        }
+
+        $description = mb_substr(trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(str_replace('<', ' <', $family->description.' '.$family->description_extra)), ENT_QUOTES | ENT_HTML5, 'UTF-8'))), 0, self::MAX_DESCRIPTION);
+
+        return [
+            'content'  => [
+                'family'      => $family->name,
+                'description' => $description !== '' ? $description : null,
+                'note'        => $description !== ''
+                    ? 'Answer from this description in two or three sentences, in your own words. A link to the family page is added under your reply. Do not explain or justify prices: they are on the product cards.'
+                    : 'We have no description for this family. Say what its name tells and that the family page, linked under your reply, shows the products.',
+            ],
+            'products' => [],
+            'error'    => null,
+            'families' => [$family->id],
+            'names'    => array_values(array_filter([$family->name, $description])),
+        ];
+    }
+
+    /**
      * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
      */
     private function dispatchTimes(Customer $customer, string $locale): array
@@ -611,8 +668,9 @@ class GetShoppingAssistantTools
             $item = [
                 'id'     => $product->id,
                 'name'   => $product->name,
-                'family' => $product->family?->name,
-                'why'    => $this->reasonText($reasonCode, $customer, 'en'),
+                'family'    => $product->family?->name,
+                'family_id' => $product->family_id,
+                'why'       => $this->reasonText($reasonCode, $customer, 'en'),
             ];
             if ($withLastOrdered) {
                 $item['last_ordered'] = $product->customer_last_ordered_at?->format('Y-m');

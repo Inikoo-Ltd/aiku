@@ -26555,5 +26555,6 @@
     "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "En los últimos 30 días, 9 de cada 10 pedidos se enviaron en un plazo de :days días desde que se hicieron. Es la salida de nuestro almacén, no la entrega en su dirección.",
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "El envío de su cesta actual es de :amount sin impuestos. Cambia al añadir o quitar productos.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "El envío de su cesta actual es gratuito. Puede cambiar al añadir o quitar productos.",
-    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "El envío de su cesta actual está por confirmar: el precio se decide más adelante, no es gratuito."
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "El envío de su cesta actual está por confirmar: el precio se decide más adelante, no es gratuito.",
+    "More about :name": "Más sobre :name"
 }

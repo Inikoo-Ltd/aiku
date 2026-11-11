@@ -41,6 +41,7 @@ type Message =
         created_at: string
         follow_ups: string[]
         basket_added?: number[]
+        links?: { label: string, url: string }[]
         groups: { must_haves: Card[], add_ons: Card[] }
     }
 
@@ -382,6 +383,10 @@ const goToLogin = () => {
                         <div class="min-w-0 flex-1">
                             <p class="whitespace-pre-line text-sm">{{ message.body }}</p>
 
+                            <p v-for="link in message.links ?? []" :key="link.url" class="mt-2 text-sm">
+                                <a :href="link.url" class="assistant-link">{{ ctrans("More about :name", { name: link.label }) }}</a>
+                            </p>
+
                             <template v-for="tabs in [groupTabs(message)]" :key="message.id">
                                 <Tabs v-if="tabs.length" :value="tabs[0].key" class="mt-3">
                                     <TabList v-if="tabs.length > 1">
@@ -516,6 +521,11 @@ const goToLogin = () => {
     padding: 0.625rem 0.875rem;
     border-radius: 1rem 1rem 0.25rem 1rem;
     background-color: color-mix(in srgb, var(--theme-color-0) 10%, white);
+}
+
+.assistant-link {
+    color: var(--theme-color-0);
+    text-decoration: underline;
 }
 
 .assistant-grid {

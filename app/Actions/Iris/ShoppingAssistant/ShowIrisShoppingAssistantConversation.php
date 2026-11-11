@@ -8,6 +8,9 @@
 
 namespace App\Actions\Iris\ShoppingAssistant;
 
+use App\Models\Web\Webpage;
+use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Catalogue\ProductCategory;
 use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
@@ -56,11 +59,20 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                 ->get()
         )->resolve())->keyBy('id');
 
+        $familyIds   = $messages->flatMap(fn (ShoppingAssistantMessage $message) => collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['family_ids'] ?? []))->unique();
+        $familyLinks = $familyIds->isEmpty() ? collect() : ProductCategory::whereIn('product_categories.id', $familyIds)
+            ->where('product_categories.shop_id', $conversation->shop_id)
+            ->join('webpages', 'webpages.id', '=', 'product_categories.webpage_id')
+            ->where('webpages.state', WebpageStateEnum::LIVE)
+            ->whereNotNull('webpages.canonical_url')
+            ->get(['product_categories.id', 'product_categories.name', 'webpages.canonical_url'])
+            ->mapWithKeys(fn (ProductCategory $family) => [$family->id => ['label' => $family->name, 'url' => Webpage::canonicalUrlForEnvironment($family->canonical_url, fn () => $conversation->shop->type)]]);
+
         return [
             'conversation' => $conversation->ulid,
             'status'       => $conversation->status->value,
             'pending'      => $conversation->isPending(),
-            'messages'     => $messages->map(function (ShoppingAssistantMessage $message) use ($events, $cards) {
+            'messages'     => $messages->map(function (ShoppingAssistantMessage $message) use ($events, $cards, $familyLinks) {
                 $data = [
                     'id'         => $message->id,
                     'role'       => $message->role->value,
@@ -71,6 +83,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                 if ($message->role === ShoppingAssistantMessageRoleEnum::ASSISTANT) {
                     $data['follow_ups']   = $message->follow_ups ?? [];
                     $data['basket_added'] = collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['added_product_ids'] ?? [])->values()->all();
+                    $data['links']        = collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['family_ids'] ?? [])->unique()->map(fn ($familyId) => $familyLinks->get($familyId))->filter()->values()->all();
                     $data['groups']     = array_fill_keys(AskShoppingAssistant::GROUPS, []);
 
                     foreach ($events->where('shopping_assistant_message_id', $message->id) as $event) {

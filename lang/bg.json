@@ -9290,5 +9290,6 @@
     "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "През последните 30 дни 9 от 10 поръчки бяха изпратени в рамките на :days дни от направата им. Това е изпращане от нашия склад, а не доставка до вас.",
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Доставката за текущата ви количка е :amount без данъци. Променя се, когато добавяте или премахвате продукти.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "Доставката за текущата ви количка е безплатна. Това може да се промени, когато добавяте или премахвате продукти.",
-    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Доставката за текущата ви количка предстои да бъде потвърдена: цената се определя по-късно, не е безплатна."
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Доставката за текущата ви количка предстои да бъде потвърдена: цената се определя по-късно, не е безплатна.",
+    "More about :name": "Повече за: :name"
 }

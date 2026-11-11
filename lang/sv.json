@@ -9733,5 +9733,6 @@
     "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "Under de senaste 30 dagarna skickades 9 av 10 beställningar inom :days dagar efter att de lagts. Det gäller avsändning från vårt lager, inte leverans till dig.",
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Frakten för din nuvarande varukorg är :amount exklusive moms. Den ändras när du lägger till eller tar bort produkter.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "Frakten för din nuvarande varukorg är gratis. Det kan ändras när du lägger till eller tar bort produkter.",
-    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Frakten för din nuvarande varukorg ska bekräftas: priset bestäms senare, den är inte gratis."
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Frakten för din nuvarande varukorg ska bekräftas: priset bestäms senare, den är inte gratis.",
+    "More about :name": "Mer om :name"
 }

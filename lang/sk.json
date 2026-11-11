@@ -26585,5 +26585,6 @@
     "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "Za posledných 30 dní bolo 9 z 10 objednávok odoslaných do :days dní od ich vytvorenia. Ide o odoslanie z nášho skladu, nie o doručenie k vám.",
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Doprava pre váš aktuálny košík je :amount bez dane. Mení sa, keď pridáte alebo odoberiete produkty.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "Doprava pre váš aktuálny košík je zadarmo. Môže sa zmeniť, keď pridáte alebo odoberiete produkty.",
-    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Doprava pre váš aktuálny košík sa ešte potvrdí: cena sa určí neskôr, nie je zadarmo."
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Doprava pre váš aktuálny košík sa ešte potvrdí: cena sa určí neskôr, nie je zadarmo.",
+    "More about :name": "Viac o: :name"
 }

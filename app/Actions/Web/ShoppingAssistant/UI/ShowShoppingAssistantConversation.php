@@ -135,6 +135,7 @@ class ShowShoppingAssistantConversation extends OrgAction
                 'actions'    => collect($message->tool_calls)->map(fn ($toolCall) => match ($toolCall['name'] ?? null) {
                     'add_to_basket'      => __('Added to the basket when the customer asked: :products', ['products' => collect($toolCall['added_product_ids'] ?? [])->map(fn ($id) => $addedCodes[$id] ?? null)->filter()->implode(', ') ?: __('nothing new')]),
                     'clear_conversation' => __('The customer asked to clear this conversation; it is hidden from them and kept here'),
+                    'family_information' => ($toolCall['family_ids'] ?? []) ? __('Answered from the family description, with a link to the family page') : null,
                     default              => null,
                 })->filter()->values()->all(),
                 'latency_ms' => $message->latency_ms,
