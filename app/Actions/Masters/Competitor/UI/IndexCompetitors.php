@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -109,18 +110,19 @@ class IndexCompetitors extends OrgAction
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($group) as $key => $elementGroup) {
-                $table->elementGroup(key: $key, label: $elementGroup['label'], elements: $elementGroup['elements']);
-            }
-
             $table
                 ->withEmptyState([
                     'title'       => __('No competitors yet'),
                     'description' => __('Add the websites of the competitors whose prices you want to know'),
                 ])
                 ->column(key: 'status', label: '', type: 'icon')
-                ->column(key: 'name', label: __('Name'), sortable: true)
-                ->column(key: 'master_shop_name', label: __('Master shop'), sortable: true)
+                ->column(key: 'name', label: __('Name'), sortable: true);
+
+            if (Competitor::where('group_id', $group->id)->distinct()->count('master_shop_id') > 1) {
+                $table->column(key: 'master_shop_name', label: __('Master shop'), sortable: true);
+            }
+
+            $table
                 ->column(key: 'sells_to', label: __('Sells to'))
                 ->column(key: 'read_method', label: __('Prices read from'))
                 ->column(key: 'fetched_at', label: __('Last read'), sortable: true)
@@ -143,7 +145,7 @@ class IndexCompetitors extends OrgAction
         return Inertia::render(
             'Masters/Competitors',
             [
-                'breadcrumbs' => $this->getCompetitorsBreadcrumbs('grp.masters.competitors.index', __('Competitors')),
+                'breadcrumbs' => $this->getCompetitorsBreadcrumbs('grp.masters.competitors.index', __('List')),
                 'title'       => __('Competitors'),
                 'pageHead'    => [
                     'title'         => __('Competitors'),
@@ -159,6 +161,11 @@ class IndexCompetitors extends OrgAction
                     ] : [],
                 ],
                 'data'        => CompetitorsResource::collection($competitors),
+                'masterShopFilter'  => Arr::get($request->input('elements', []), 'master_shop'),
+                'masterShopOptions' => collect($this->getElementGroups($this->group)['master_shop']['elements'])
+                    ->filter(fn (array $element) => $element[1] > 0)
+                    ->map(fn (array $element, string $slug) => ['value' => $slug, 'label' => $element[0], 'count' => $element[1]])
+                    ->values(),
                 'can_edit'    => $this->canEdit,
             ]
         )->table($this->tableStructure($this->group));

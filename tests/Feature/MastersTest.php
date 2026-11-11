@@ -4790,7 +4790,9 @@ describe('competitor prices, HELP-3605', function () {
                 ->where('data.data', fn ($rows) => ($competitor = collect($rows->toArray())->firstWhere('id', $this->competitor->id))
                     && $competitor['master_shop_slug'] === $this->competitorMasterShop->slug
                     && $competitor['read_method'] === 'search'
+                    && $competitor['sells_to_key'] === $this->competitor->sells_to->value
                     && !array_key_exists('password', $competitor) && !array_key_exists('feed_url', $competitor))
+                ->where('queryBuilderProps.default.columns', fn ($columns) => !collect($columns)->pluck('key')->contains('master_shop_name'))
                 ->etc());
 
         get(route('grp.masters.competitors.show', [$this->competitor->slug, 'tab' => 'matches']))
@@ -4832,6 +4834,16 @@ describe('competitor prices, HELP-3605', function () {
             'sells_to'    => 'wholesale',
             'currency_id' => group()->currency_id,
         ]);
+        get(route('grp.masters.competitors.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('queryBuilderProps.default.columns', fn ($columns) => collect($columns)->pluck('key')->contains('master_shop_name'))
+                ->where('masterShopOptions', fn ($options) => collect($options)->pluck('value')->contains($this->competitorMasterShop->slug) && collect($options)->every(fn ($option) => $option['count'] > 0))
+                ->etc());
+        get(route('grp.masters.competitors.index', ['elements' => ['master_shop' => $this->competitorMasterShop->slug]]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('masterShopFilter', $this->competitorMasterShop->slug)
+                ->where('data.data', fn ($rows) => collect($rows->toArray())->every(fn ($row) => $row['master_shop_slug'] === $this->competitorMasterShop->slug))
+                ->etc());
         $countCompetitors = fn (?array $masterShopIds = null) => \App\Models\Masters\Competitor::where('group_id', group()->id)
             ->when($masterShopIds !== null, fn ($query) => $query->whereIn('master_shop_id', $masterShopIds))->count();
 
