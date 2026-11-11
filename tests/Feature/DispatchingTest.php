@@ -2365,15 +2365,38 @@ test('a staging test order is dispatched with a test tracking on a shipper witho
     expect($dispatchTestOrder)->toThrow(\RuntimeException::class, 'not paid')
         ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED);
 
-    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID]);
-    $order = $dispatchTestOrder();
+    $channel = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::MANUAL)->first(),
+        []
+    );
+    $order->update(['pay_status' => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID, 'customer_sales_channel_id' => $channel->id]);
+    \Laravel\Sanctum\Sanctum::actingAs($channel, ['retina', 'retina:read', 'retina:write']);
+
+    \App\Actions\Dispatching\Shipment\StoreShipment::mock()->shouldReceive('action')->andReturnUsing(function () {
+        expect(request()->user())->toBeNull();
+        throw new \RuntimeException('Shipment refused');
+    });
+    \Pest\Laravel\patchJson(route('retina.api.dropshipping.order.dispatch_test', $order))
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'Shipment refused');
+    \App\Actions\Dispatching\Shipment\StoreShipment::clearFake();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED)
+        ->and((float)$deliveryNote->deliveryNoteItems()->first()->quantity_picked)->toBe(0.0)
+        ->and($order->refresh()->state)->toBe(OrderStateEnum::IN_WAREHOUSE);
+
+    \Pest\Laravel\patchJson(route('retina.api.dropshipping.order.dispatch_test', $order))
+        ->assertOk()
+        ->assertJsonPath('data.state', OrderStateEnum::DISPATCHED->value)
+        ->assertJsonPath('data.shipments.0.tracking_number', 'TEST-'.$order->reference);
+    $order = $order->refresh();
 
     expect($order->state)->toBe(OrderStateEnum::DISPATCHED)
         ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
         ->and((float)$deliveryNote->deliveryNoteItems()->first()->quantity_picked)->toBe(3.0)
         ->and($deliveryNote->shipments()->count())->toBe(1)
         ->and($deliveryNote->shipments()->first()->shipper->api_shipper)->toBeNull()
-        ->and($order->tracking_number)->toBe('TEST-PRE88');
+        ->and($order->tracking_number)->toBe('TEST-'.$order->reference);
 
     app()->detectEnvironment(fn () => 'production');
     try {
