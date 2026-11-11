@@ -25733,5 +25733,11 @@
     "Name the assistant shows to customers": "Numele pe care asistentul îl afișează clienților",
     "Assistant name": "Numele asistentului",
     "Shows related searches, families and products under the search results": "Afișează căutări similare, game și produse sub rezultatele căutării",
-    "Keep exploring suggestions on the search page": "Sugestii „Continuați explorarea” pe pagina de căutare"
+    "Keep exploring suggestions on the search page": "Sugestii „Continuați explorarea” pe pagina de căutare",
+    "Add all to basket": "Adaugă tot în coș",
+    "All in your basket": "Totul este în coș",
+    "Some products could not be added to your basket.": "Unele produse nu au putut fi adăugate în coș.",
+    "Could not add the products. Please try again.": "Produsele nu au putut fi adăugate. Vă rugăm să încercați din nou.",
+    "This conversation has been cleared and will not be shown to you again.": "Această conversație a fost ștearsă din afișare și nu vi se va mai arăta.",
+    "I have added the products to your basket.": "Produsele au fost adăugate în coș."
 }

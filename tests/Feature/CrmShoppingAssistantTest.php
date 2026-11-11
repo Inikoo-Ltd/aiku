@@ -439,7 +439,7 @@ test('the answer job stores the assistant reply and the conversation returns it 
         ->and(array_keys($response->json()))->toBe(['conversation', 'status', 'pending', 'messages'])
         ->and($messages)->toHaveCount(2)
         ->and(array_keys($messages[0]))->toBe(['id', 'role', 'body', 'created_at'])
-        ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'groups'])
+        ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'basket_added', 'groups'])
         ->and($messages[1]['role'])->toBe('assistant')
         ->and($messages[1]['body'])->toBe('Worth bringing back.')
         ->and($messages[1]['follow_ups'])->toBe(['Anything new?'])
@@ -1262,5 +1262,80 @@ test('the shopping assistant reply may repeat a percentage or size from a produc
         ->and($assistant->onlyGivenNumbers('Save 10% on the 100% cotton bags.', 'iconic -29', $names))->toBeFalse()
         ->and($assistant->onlyGivenNumbers('The Zodiac Sun tote (40x36cm) in 6oz cotton is a good pick.', 'tote bags', $names))->toBeTrue()
         ->and($assistant->onlyGivenNumbers('It is 40 pounds for 36.', 'tote bags', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('I added the Himalayan Salt Lamp - Apx 1.5-2kg to your basket.', 'salt lamps', 'Himalayan Salt Lamp - Apx 1.5-2kg'))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('It weighs 1.5 kilos and costs 2.', 'salt lamps', 'Himalayan Salt Lamp - Apx 1.5-2kg'))->toBeFalse()
         ->and($assistant->onlyGivenNumbers('These are 100 pounds.', 'iconic -29', $names))->toBeFalse();
+});
+
+test('the assistant adds the products it showed to the basket when asked, one of each, leaving lines already there, and shows up to twelve products per group', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $new      = shoppingAssistantLiveProduct($this->product);
+    $held     = shoppingAssistantLiveProduct($this->product);
+    $notShown = shoppingAssistantLiveProduct($this->product);
+    $many     = collect(range(1, 13))->map(fn () => shoppingAssistantProduct($this->product));
+    $shown    = shoppingAssistantShown($customer, [$new->id, $held->id]);
+    $conversation = $shown->conversation;
+
+    $heldLine = \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make()->handle($customer, [['product_id' => $held->id, 'quantity' => 3]])['lines'][0]['transaction_id'];
+    $many->each(fn (Product $product) => shoppingAssistantStoppedOrdering($customer, $product));
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('add_to_basket', ['product_ids' => [$new->id, $held->id, $notShown->id]])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'I have put 2 of them in your basket.']))
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('products_they_stopped_ordering', ['limit' => 24])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'Here is a wider selection.', 'must_haves' => $many->pluck('id')->all()]))]);
+
+    $turn   = AskShoppingAssistant::run($conversation, 'add them to my basket');
+    $basket = DB::table('transactions')->where('order_id', $customer->refresh()->current_order_in_basket_id)->where('model_type', 'Product')->whereNull('deleted_at')->pluck('quantity_ordered', 'model_id')->map(fn ($quantity) => (int) $quantity)->all();
+    $added  = ShoppingAssistantEvent::where('shopping_assistant_conversation_id', $conversation->id)->where('type', ShoppingAssistantEventTypeEnum::ADDED)->get();
+
+    expect($turn['reply'])->toBe(__('I have added the products to your basket.', [], $conversation->language_code))
+        ->and($turn['message']->flags)->toBe(['reply_replaced_number'])
+        ->and($turn['message']->tool_calls[0]['added_product_ids'])->toBe([$new->id])
+        ->and($basket)->toBe([$held->id => 3, $new->id => 1])
+        ->and($added->pluck('product_id')->all())->toBe([$new->id])
+        ->and($added->first()->shopping_assistant_message_id)->toBe($shown->id)
+        ->and($heldLine)->toBeInt();
+
+    $messages = $this->actingAs($webUser, 'retina')->getJson('http://'.$website->domain.'/json/shopping-assistant/'.$conversation->ulid)->assertOk()->json('messages');
+
+    expect(collect($messages)->last()['basket_added'])->toBe([$new->id]);
+
+    $wider = AskShoppingAssistant::run($conversation->fresh(), 'I need a bigger selection');
+
+    expect($wider['groups']['must_haves'])->toHaveCount(GetShoppingAssistantTools::MAX_PER_GROUP)
+        ->and(GetShoppingAssistantTools::MAX_PER_GROUP)->toBe(12);
+});
+
+test('a customer who asks to delete the conversation gets the fixed cleared answer, cannot open or continue it, and staff still see it', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $product  = shoppingAssistantLiveProduct($this->product);
+    $shown    = shoppingAssistantShown($customer, [$product->id]);
+    $conversation = $shown->conversation;
+    $url      = 'http://'.$website->domain.'/json/shopping-assistant/';
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('clear_conversation', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'All deleted for good.', 'must_haves' => [$product->id], 'follow_ups' => ['Anything else?']]))]);
+
+    $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'delete this conversation');
+    $turn            = AskShoppingAssistant::make()->answer($conversation, $customerMessage);
+    $conversation->refresh();
+
+    expect($turn['reply'])->toBe(__('This conversation has been cleared and will not be shown to you again.', [], $conversation->language_code))
+        ->and($turn['groups']['must_haves'])->toBeEmpty()
+        ->and($turn['follow_ups'])->toBe([])
+        ->and($conversation->status->value)->toBe('cleared')
+        ->and($conversation->messages()->count())->toBe(4)
+        ->and($conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::CUSTOMER)->latest('id')->value('body'))->toBe('delete this conversation')
+        ->and(\App\Http\Resources\Web\ShoppingAssistantConversationsResource::statusLabel($conversation->status))->toBe(__('Cleared by customer'))
+        ->and(json_encode(GetShoppingAssistantTools::make()->definitions()))->not->toContain('"properties":[]');
+
+    $this->actingAs($webUser, 'retina')->getJson($url.$conversation->ulid.'?after='.$customerMessage->id)->assertOk()->assertJsonPath('status', 'cleared');
+    $this->actingAs($webUser, 'retina')->getJson($url.$conversation->ulid)->assertNotFound();
+    $this->actingAs($webUser, 'retina')->postJson($url.'ask', ['message' => 'Still there?', 'conversation' => $conversation->ulid])->assertNotFound();
 });

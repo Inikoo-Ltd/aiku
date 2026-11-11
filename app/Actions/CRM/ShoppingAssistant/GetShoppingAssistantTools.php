@@ -15,7 +15,13 @@ use App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers;
 use App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales;
 use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
+use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
 use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
@@ -38,6 +44,11 @@ use Throwable;
  * also names, apart and without ids, the products asked for that are out of stock, so the customer
  * hears "out of stock" rather than "not found"; they can never be presented.
  * present_products is never executed: AskShoppingAssistant reads its arguments as the final answer.
+ *
+ * add_to_basket puts one of each product in the customer's basket, only products already shown in
+ * this conversation and not yet in the basket, through the storefront's own bulk add, so stock,
+ * visibility and order limits are checked the same way. clear_conversation hides the conversation
+ * from the customer for good; the record stays for staff.
  */
 class GetShoppingAssistantTools
 {
@@ -46,11 +57,13 @@ class GetShoppingAssistantTools
 
     public const string PRESENT_PRODUCTS = 'present_products';
 
-    public const int MAX_LIMIT = 12;
+    public const int MAX_LIMIT = 24;
 
-    public const int DEFAULT_LIMIT = 8;
+    public const int DEFAULT_LIMIT = 12;
 
-    public const int MAX_PER_GROUP = 4;
+    public const int USUAL_PER_GROUP = 8;
+
+    public const int MAX_PER_GROUP = 12;
 
     public const int MAX_FOLLOW_UPS = 3;
 
@@ -120,12 +133,24 @@ class GetShoppingAssistantTools
                 ['shop_type']
             ),
             $this->tool(
+                'add_to_basket',
+                'Put products in the customer\'s basket, one of each, only when the customer asks you to. Without product_ids it adds every product of your previous answer. Only products already shown in this conversation can be added. Returns the names added, already in the basket and those that could not be added. Returns no products.',
+                [
+                    'product_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'maxItems' => self::MAX_PER_GROUP * 2, 'description' => 'Ids of shown products to add, when the customer asked for only some of them.'],
+                ]
+            ),
+            $this->tool(
+                'clear_conversation',
+                'Clear this conversation when the customer asks to delete, clear or forget it. The page then tells them it was cleared. Returns no products.',
+                []
+            ),
+            $this->tool(
                 self::PRESENT_PRODUCTS,
                 'Give your final answer with products. Use only ids returned by the other tools. Call it once, as your last step, whenever you show products.',
                 [
                     'reply'      => ['type' => 'string', 'description' => 'Two or three short sentences for the customer, with no ids, prices, discounts, stock or numbers.'],
-                    'must_haves' => $productIds('Ids of products that fit the request or sell well for similar shops, at most '.self::MAX_PER_GROUP.'.'),
-                    'add_ons'    => $productIds('Ids of complementary or previously ordered products, at most '.self::MAX_PER_GROUP.'.'),
+                    'must_haves' => $productIds('Ids of products that fit the request or sell well for similar shops, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
+                    'add_ons'    => $productIds('Ids of complementary or previously ordered products, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
                     'follow_ups' => [
                         'type'        => 'array',
                         'items'       => ['type' => 'string'],
@@ -158,6 +183,8 @@ class GetShoppingAssistantTools
                 'missing_from_range'             => $this->missingFromRange($customer, $arguments, $conversation->language_code),
                 'products_they_stopped_ordering' => $this->stoppedOrdering($customer, $arguments, $conversation->language_code),
                 'save_shop_type'                 => $this->saveShopType($conversation, $customer, $arguments),
+                'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments),
+                'clear_conversation'             => $this->clearConversation($conversation),
                 default                          => $this->error("Unknown tool $name."),
             };
         } catch (Throwable $exception) {
@@ -327,6 +354,69 @@ class GetShoppingAssistantTools
     }
 
     /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, basket?: array<int, int>}
+     */
+    private function addToBasket(ShoppingAssistantConversation $conversation, Customer $customer, array $arguments): array
+    {
+        $shown = $conversation->events()->where('type', ShoppingAssistantEventTypeEnum::SHOWN)->orderBy('id')->get(['product_id', 'shopping_assistant_message_id']);
+        $ids   = collect(is_array($arguments['product_ids'] ?? null) ? $arguments['product_ids'] : [])->filter(fn ($id) => is_numeric($id))->map(fn ($id) => (int) $id);
+
+        if ($ids->isEmpty()) {
+            $ids = $shown->where('shopping_assistant_message_id', $shown->max('shopping_assistant_message_id'))->pluck('product_id');
+        }
+
+        $ids = $ids->intersect($shown->pluck('product_id'))->unique()->take(self::MAX_PER_GROUP * 2)->values();
+
+        if ($ids->isEmpty()) {
+            return $this->error('No product shown in this conversation matches. Show products first, then add them.');
+        }
+
+        $orderId  = Order::where('customer_id', $customer->id)->where('state', OrderStateEnum::CREATING)->value('id');
+        $inBasket = $orderId
+            ? Transaction::where('order_id', $orderId)->where('model_type', 'Product')->whereIn('model_id', $ids)->where('is_gift', false)->pluck('model_id')
+            : collect();
+        $toAdd    = $ids->diff($inBasket)->values();
+
+        $lines = $toAdd->isEmpty() ? collect() : collect(StoreEcomBasketTransactions::make()->handle($customer, $toAdd->map(fn (int $id) => ['product_id' => $id, 'quantity' => 1])->all())['lines']);
+        $added = $lines->where('status', 'added');
+
+        if ($added->isNotEmpty()) {
+            RecordShoppingAssistantBasketAdd::make()->record($customer, $added->map(fn (array $line) => [
+                'product_id'     => $line['product_id'],
+                'transaction_id' => $line['transaction_id'],
+                'quantity'       => $line['quantity_ordered'],
+            ])->values()->all(), ShoppingAssistantEventTypeEnum::ADDED);
+        }
+
+        $names   = Product::whereIn('id', $ids)->pluck('name', 'id');
+        $namesOf = fn (Collection $productIds) => $productIds->map(fn ($id) => $names[$id] ?? null)->filter()->values()->all();
+
+        return [
+            'content' => [
+                'added'             => $namesOf($added->pluck('product_id')),
+                'already_in_basket' => $namesOf($inBasket),
+                'could_not_add'     => $namesOf($lines->where('status', 'failed')->pluck('product_id')),
+                'note'              => 'One of each was added. Tell the customer what happened in one or two sentences, without counts; they set quantities on the product cards or in the basket.',
+            ],
+            'products' => [],
+            'error'    => null,
+            'basket'   => $added->pluck('product_id')->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, cleared: bool}
+     */
+    private function clearConversation(ShoppingAssistantConversation $conversation): array
+    {
+        $conversation->update(['status' => ShoppingAssistantConversationStatusEnum::CLEARED]);
+
+        return ['content' => ['cleared' => true], 'products' => [], 'error' => null, 'cleared' => true];
+    }
+
+    /**
      * @param  callable(Product): string  $reasonCodeOf
      *
      * @return array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}
@@ -393,7 +483,7 @@ class GetShoppingAssistantTools
      */
     private function tool(string $name, string $description, array $properties, array $required = []): array
     {
-        $parameters = ['type' => 'object', 'properties' => $properties];
+        $parameters = ['type' => 'object', 'properties' => $properties ?: new \stdClass()];
         if ($required) {
             $parameters['required'] = $required;
         }

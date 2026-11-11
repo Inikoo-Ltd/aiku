@@ -26569,5 +26569,11 @@
     "Name the assistant shows to customers": "Meno, ktoré asistent zobrazuje zákazníkom",
     "Assistant name": "Meno asistenta",
     "Shows related searches, families and products under the search results": "Zobrazuje súvisiace vyhľadávania, rodiny a produkty pod výsledkami vyhľadávania",
-    "Keep exploring suggestions on the search page": "Návrhy „Objavujte ďalej“ na stránke vyhľadávania"
+    "Keep exploring suggestions on the search page": "Návrhy „Objavujte ďalej“ na stránke vyhľadávania",
+    "Add all to basket": "Pridať všetko do košíka",
+    "All in your basket": "Všetko je v košíku",
+    "Some products could not be added to your basket.": "Niektoré produkty sa nepodarilo pridať do košíka.",
+    "Could not add the products. Please try again.": "Produkty sa nepodarilo pridať. Skúste to znova.",
+    "This conversation has been cleared and will not be shown to you again.": "Táto konverzácia bola vymazaná zo zobrazenia a už sa vám nezobrazí.",
+    "I have added the products to your basket.": "Produkty boli pridané do košíka."
 }

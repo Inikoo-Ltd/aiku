@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\IrisAction;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
@@ -25,6 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
  * The messages of a conversation, polled by the storefront while an answer is pending. The products
  * of each answer come back as the same cards the search results page shows, with the customer's
  * prices, stock and basket quantity; a product whose webpage went offline since is left out.
+ * A conversation the customer cleared answers the poll that was waiting for it, so the page can
+ * say so, and is not found from then on.
  */
 class ShowIrisShoppingAssistantConversation extends IrisAction
 {
@@ -38,7 +41,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
         $messages = $conversation->messages()
             ->when($after, fn ($query) => $query->where('id', '>', $after))
             ->orderBy('id')
-            ->get(['id', 'role', 'body', 'follow_ups', 'created_at']);
+            ->get(['id', 'role', 'body', 'follow_ups', 'tool_calls', 'created_at']);
 
         $events = ShoppingAssistantEvent::whereIn('shopping_assistant_message_id', $messages->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->pluck('id'))
             ->where('type', ShoppingAssistantEventTypeEnum::SHOWN)
@@ -66,7 +69,8 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                 ];
 
                 if ($message->role === ShoppingAssistantMessageRoleEnum::ASSISTANT) {
-                    $data['follow_ups'] = $message->follow_ups ?? [];
+                    $data['follow_ups']   = $message->follow_ups ?? [];
+                    $data['basket_added'] = collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['added_product_ids'] ?? [])->values()->all();
                     $data['groups']     = array_fill_keys(AskShoppingAssistant::GROUPS, []);
 
                     foreach ($events->where('shopping_assistant_message_id', $message->id) as $event) {
@@ -115,6 +119,8 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
         );
 
         $after = Arr::get($this->validatedData, 'after');
+
+        abort_if($conversation->status === ShoppingAssistantConversationStatusEnum::CLEARED && $after === null, 404);
 
         return $this->handle($conversation, $after === null ? null : (int) $after);
     }

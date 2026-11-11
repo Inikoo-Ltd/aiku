@@ -25778,5 +25778,11 @@
     "Name the assistant shows to customers": "Nazwa, którą asystent wyświetla klientom",
     "Assistant name": "Nazwa asystenta",
     "Shows related searches, families and products under the search results": "Wyświetla powiązane wyszukiwania, rodziny i produkty pod wynikami wyszukiwania",
-    "Keep exploring suggestions on the search page": "Sugestie „Odkrywaj dalej” na stronie wyszukiwania"
+    "Keep exploring suggestions on the search page": "Sugestie „Odkrywaj dalej” na stronie wyszukiwania",
+    "Add all to basket": "Dodaj wszystko do koszyka",
+    "All in your basket": "Wszystko jest w koszyku",
+    "Some products could not be added to your basket.": "Niektórych produktów nie udało się dodać do koszyka.",
+    "Could not add the products. Please try again.": "Nie udało się dodać produktów. Proszę spróbować ponownie.",
+    "This conversation has been cleared and will not be shown to you again.": "Ta rozmowa została wyczyszczona i nie będzie już wyświetlana.",
+    "I have added the products to your basket.": "Produkty zostały dodane do koszyka."
 }

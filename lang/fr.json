@@ -26663,5 +26663,11 @@
     "Popular with shops in your region": "Populaire auprès des boutiques de votre région",
     "A best seller": "Meilleure vente",
     "You used to order this": "Vous commandiez ce produit",
-    "Matches what you asked for": "Correspond à votre demande"
+    "Matches what you asked for": "Correspond à votre demande",
+    "Add all to basket": "Tout ajouter au panier",
+    "All in your basket": "Tout est dans votre panier",
+    "Some products could not be added to your basket.": "Certains produits n'ont pas pu être ajoutés à votre panier.",
+    "Could not add the products. Please try again.": "Impossible d'ajouter les produits. Veuillez réessayer.",
+    "This conversation has been cleared and will not be shown to you again.": "Cette conversation a été effacée et ne vous sera plus affichée.",
+    "I have added the products to your basket.": "Les produits ont été ajoutés à votre panier."
 }

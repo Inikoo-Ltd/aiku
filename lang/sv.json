@@ -9717,5 +9717,11 @@
     "Popular with shops in your region": "Populärt hos butiker i din region",
     "A best seller": "En bästsäljare",
     "You used to order this": "Du brukade beställa den här",
-    "Matches what you asked for": "Matchar det du frågade efter"
+    "Matches what you asked for": "Matchar det du frågade efter",
+    "Add all to basket": "Lägg allt i varukorgen",
+    "All in your basket": "Allt finns i varukorgen",
+    "Some products could not be added to your basket.": "Vissa produkter kunde inte läggas i varukorgen.",
+    "Could not add the products. Please try again.": "Produkterna kunde inte läggas till. Försök igen.",
+    "This conversation has been cleared and will not be shown to you again.": "Den här konversationen har rensats och visas inte för dig igen.",
+    "I have added the products to your basket.": "Produkterna har lagts i varukorgen."
 }
