@@ -2849,7 +2849,17 @@ test('submit agent purchase order estimates its delivery from the supplier produ
         ->and($purchaseOrderTransaction->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SUBMITTED);
 
     CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction->refresh());
-    expect((float) $purchaseOrder->refresh()->cost_total)->toBe(0.0);
+    expect((float) $purchaseOrder->refresh()->cost_total)->toBe(0.0)
+        ->and($purchaseOrder->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
+        ->and($purchaseOrder->data['cancellation']['source'])->toBe(UpdatePurchaseOrderStateToCancelled::SOURCE_EMPTIED);
+
+    $withDeposit = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $depositLine = StorePurchaseOrderTransaction::make()->action($withDeposit, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], PurchaseOrderTransaction::factory()->definition());
+    $withDeposit = UpdatePurchaseOrderStateToSubmitted::make()->action($withDeposit->refresh());
+    $withDeposit->updateQuietly(['deposit_amount' => 100]);
+
+    CancelPurchaseOrderTransaction::make()->action($depositLine->refresh());
+    expect($withDeposit->refresh()->state)->toBe(PurchaseOrderStateEnum::SUBMITTED);
 });
 
 test('change state to submitted purchase order', function ($purchaseOrder) {
