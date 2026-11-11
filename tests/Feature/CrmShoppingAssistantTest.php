@@ -1349,3 +1349,93 @@ test('a customer who asks to delete the conversation gets the fixed cleared answ
     $this->actingAs($webUser, 'retina')->getJson($url.$conversation->ulid)->assertNotFound();
     $this->actingAs($webUser, 'retina')->postJson($url.'ask', ['message' => 'Still there?', 'conversation' => $conversation->ulid])->assertNotFound();
 });
+
+test('the assistant search finds the products of a family by its code or the start of it, and orders matches by price when asked', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $suffix   = Str::lower(Str::random(6));
+    $word     = 'vex'.$suffix;
+    $family   = $this->product->family;
+    $original = $family->code;
+    [$cheap, $mid, $dear] = collect([2, 10, 30])->map(function (int $price) use ($word) {
+        $product = shoppingAssistantProduct($this->product);
+        $product->update(['name' => ucfirst($word).' lamp '.$price, 'price' => $price]);
+
+        return $product;
+    })->all();
+    DB::table('products')->whereIn('id', [$cheap->id, $mid->id, $dear->id])->update(['is_in_website' => true]);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 0 : 1 => 1.0]);
+    Http::fake(['*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()])]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $familyIds    = fn (array $result) => Product::whereIn('id', array_column($result['products'], 'id'))->pluck('family_id')->unique()->values()->all();
+
+    DB::table('product_categories')->where('id', $family->id)->update(['code' => 'Zf'.$suffix]);
+    try {
+        $byCode  = $tools->execute($conversation, 'search_products', ['query' => 'zf'.$suffix]);
+        $byStart = $tools->execute($conversation, 'search_products', ['query' => 'zf'.substr($suffix, 0, 4)]);
+    } finally {
+        DB::table('product_categories')->where('id', $family->id)->update(['code' => $original]);
+    }
+
+    $cheapest = $tools->execute($conversation, 'search_products', ['query' => $word.' lamp', 'sort' => 'cheapest']);
+    $dearest  = $tools->execute($conversation, 'search_products', ['query' => $word.' lamp', 'sort' => 'most_expensive']);
+    $whole    = $tools->execute($conversation, 'search_products', ['query' => '', 'sort' => 'cheapest', 'limit' => 3]);
+    $prices   = Product::whereIn('id', array_column($whole['products'], 'id'))->pluck('price', 'id');
+
+    expect($byCode['content']['products'])->not->toBeEmpty()
+        ->and(collect($byCode['content']['products'])->every(fn (array $item) => ($item['family_code_match'] ?? false) === true))->toBeTrue()
+        ->and($familyIds($byCode))->toBe([$family->id])
+        ->and($byStart['content']['products'])->not->toBeEmpty()
+        ->and(Product::find($byStart['products'][0]['id'])->family_id)->toBe($family->id)
+        ->and(collect($byStart['content']['products'])->contains(fn (array $item) => isset($item['family_code_match'])))->toBeFalse()
+        ->and(array_column($cheapest['products'], 'id'))->toBe([$cheap->id, $mid->id, $dear->id])
+        ->and(array_column($dearest['products'], 'id'))->toBe([$dear->id, $mid->id, $cheap->id])
+        ->and($cheapest['content']['note'])->toContain('lowest first')
+        ->and(json_encode($cheapest['content']))->not->toContain('price":')
+        ->and($whole['products'])->toHaveCount(3)
+        ->and(collect($whole['products'])->map(fn (array $product) => (float) $prices[$product['id']])->all())->toBe(collect($whole['products'])->map(fn (array $product) => (float) $prices[$product['id']])->sort()->values()->all())
+        ->and($tools->execute($conversation, 'search_products', ['query' => ''])['error'])->not->toBeNull();
+});
+
+test('the assistant offers what sold mostly in the run-up to last Christmas, leaving out all-year sellers, thin sales, products launched that year and products out of stock', function () {
+    $season   = \App\Actions\CRM\RangeAdvisor\GetChristmasBestSellers::make()->season();
+    $inSeason = $season[0]->addDays(10)->toDateTimeString();
+    $offSeason = $season[1]->subMonths(8)->toDateTimeString();
+    $seasonal = shoppingAssistantProduct($this->product);
+    $allYear  = shoppingAssistantProduct($this->product);
+    $thin     = shoppingAssistantProduct($this->product);
+    $soldOut  = shoppingAssistantProduct($this->product);
+    $launched = shoppingAssistantProduct($this->product);
+    $buyers   = collect(range(1, 5))->map(fn () => shoppingAssistantCustomer($this->shop));
+    DB::table('products')->whereIn('id', [$seasonal->id, $allYear->id, $thin->id, $soldOut->id])->update(['created_at' => $season[0]->subYears(3)]);
+    DB::table('products')->where('id', $launched->id)->update(['created_at' => $season[0]->addDays(5)]);
+
+    foreach ($buyers as $buyer) {
+        shoppingAssistantOrderLine($buyer, $seasonal, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $launched, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $soldOut, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $allYear, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $allYear, $offSeason, 20);
+    }
+    shoppingAssistantOrderLine($buyers->first(), $seasonal, $offSeason, 20);
+    shoppingAssistantOrderLine($buyers->first(), $thin, $inSeason, 20);
+    $soldOut->update(['available_quantity' => 0]);
+    Illuminate\Support\Facades\Cache::forget('range_advisor:christmas_best_sellers:'.$this->shop->id.':'.$season[1]->year);
+
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $result       = GetShoppingAssistantTools::make()->execute($conversation, 'best_sellers_last_christmas', ['limit' => 24]);
+    $ids          = array_column($result['products'], 'id');
+
+    expect($result['error'])->toBeNull()
+        ->and($ids)->toContain($seasonal->id)
+        ->and($ids)->not->toContain($allYear->id, $thin->id, $soldOut->id, $launched->id)
+        ->and(collect($result['products'])->firstWhere('id', $seasonal->id)['reason_code'])->toBe('sold_last_christmas')
+        ->and(collect($result['content']['products'])->firstWhere('id', $seasonal->id)['why'])->toBe('Sold well last Christmas')
+        ->and(array_keys($result['content']['products'][0]))->toBe(['id', 'name', 'family', 'why']);
+
+    Illuminate\Support\Facades\Cache::forget('range_advisor:christmas_best_sellers:'.$this->shop->id.':'.$season[1]->year);
+});

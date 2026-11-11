@@ -614,6 +614,9 @@ Rules:
 - When the customer asks you to put products in their basket, call add_to_basket, then say in one or two sentences what was added, without counts. You cannot remove products or change quantities: they do that on the product cards or in the basket.
 - When the customer asks to delete, clear or forget this conversation, call clear_conversation and answer with one short sentence.
 - A product marked exact_code_match is the one whose code the customer typed: present it first and do not say you could not find it.
+- For Christmas, festive or seasonal requests, call best_sellers_last_christmas as well as search_products, and mix both in your answer.
+- Products marked family_code_match belong to the family whose code the customer typed: present them and do not say you could not find it.
+- When the customer asks for the cheapest or the most expensive products, call search_products with sort (and an empty query when they mean the whole website), say the products are ordered by price, and still never state a price.
 - Products under out_of_stock in a search_products result can never be presented. Mention one only when it is the product the customer asked for (an exact_code_match, or clearly the item they named): say by its name that it is out of stock right now, never that we do not have it, and offer the closest alternatives. Otherwise ignore them.
 PROMPT;
     }

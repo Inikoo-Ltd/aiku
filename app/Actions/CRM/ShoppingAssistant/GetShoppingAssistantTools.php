@@ -10,12 +10,15 @@ namespace App\Actions\CRM\ShoppingAssistant;
 
 use App\Actions\Catalogue\Search\SearchCatalogueByMeaning;
 use App\Actions\CRM\Customer\UpdateCustomer;
+use App\Actions\CRM\RangeAdvisor\GetChristmasBestSellers;
 use App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps;
 use App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers;
 use App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales;
 use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
@@ -23,6 +26,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -69,6 +73,12 @@ class GetShoppingAssistantTools
 
     public const int MAX_OUT_OF_STOCK = 3;
 
+    public const array PRICE_SORTS = ['cheapest', 'most_expensive'];
+
+    private const int PRICE_SORT_POOL = 40;
+
+    private const float PRICE_SORT_MARGIN = 0.12;
+
     private const array SEGMENT_REASON_CODES = [
         RebuildRangeAdvisorSales::LEVEL_TYPE_AREA    => 'similar_shops_area',
         RebuildRangeAdvisorSales::LEVEL_TYPE_COUNTRY => 'similar_shops_country',
@@ -102,9 +112,10 @@ class GetShoppingAssistantTools
         return [
             $this->tool(
                 'search_products',
-                'Search the catalogue for products matching what the customer is looking for. Use it whenever the customer names a product, a product code, a theme, an occasion or a kind of item. Returns products with id, name, family and why; exact_code_match marks the product whose code the customer typed. It may also return out_of_stock: products we sell that match but cannot be ordered right now.',
+                'Search the catalogue for products matching what the customer is looking for. Use it whenever the customer names a product, a product code, a theme, an occasion or a kind of item. Returns products with id, name, family and why; exact_code_match marks the product whose code the customer typed and family_code_match the products of the family whose code they typed. It may also return out_of_stock: products we sell that match but cannot be ordered right now. With sort the matches come ordered by price; with sort and an empty query, the whole catalogue.',
                 [
-                    'query' => ['type' => 'string', 'description' => 'What the customer is looking for, in their words.'],
+                    'query' => ['type' => 'string', 'description' => 'What the customer is looking for, in their words. May be empty only together with sort.'],
+                    'sort'  => ['type' => 'string', 'enum' => self::PRICE_SORTS, 'description' => 'Only when the customer asks for the cheapest or the most expensive: order the matches by price instead of by relevance.'],
                     'limit' => $limit,
                 ],
                 ['query']
@@ -112,6 +123,11 @@ class GetShoppingAssistantTools
             $this->tool(
                 'best_sellers_for_similar_shops',
                 'Best sellers among the shops closest to this customer: the same kind of shop when we know theirs, otherwise every shop, nearby first. Each product\'s why says exactly which shops it is about. Use it when the customer asks what sells well, wants ideas, or is starting or refreshing their range. Returns products with id, name, family and why.',
+                ['limit' => $limit]
+            ),
+            $this->tool(
+                'best_sellers_last_christmas',
+                'Products that sold mostly in the run-up to last Christmas (September to December) in this shop, whether or not their name says Christmas. These are our sales to retailers, not this customer\'s own sales: say they sold well last Christmas, never that they sold in the customer\'s shop. Use it whenever the customer asks about Christmas, festive or seasonal stock, Christmas gifts, a Christmas stall or fair, or what sells at Christmas. Returns products with id, name, family and why.',
                 ['limit' => $limit]
             ),
             $this->tool(
@@ -181,6 +197,7 @@ class GetShoppingAssistantTools
                 'search_products'                => $this->searchProducts($customer, $arguments, $conversation->language_code),
                 'best_sellers_for_similar_shops' => $this->bestSellers($customer, $arguments, $conversation->language_code),
                 'missing_from_range'             => $this->missingFromRange($customer, $arguments, $conversation->language_code),
+                'best_sellers_last_christmas'    => $this->productsResult($customer, GetChristmasBestSellers::run($customer->shop, $customer, $this->limit($arguments)), fn () => 'sold_last_christmas', $conversation->language_code),
                 'products_they_stopped_ordering' => $this->stoppedOrdering($customer, $arguments, $conversation->language_code),
                 'save_shop_type'                 => $this->saveShopType($conversation, $customer, $arguments),
                 'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments),
@@ -208,6 +225,7 @@ class GetShoppingAssistantTools
             'shops_group'           => __('Popular with shops in your region', [], $locale),
             'best_seller'           => __('A best seller', [], $locale),
             'used_to_order'         => __('You used to order this', [], $locale),
+            'sold_last_christmas'   => __('Sold well last Christmas', [], $locale),
             'matches_request'       => __('Matches what you asked for', [], $locale),
             default                 => null,
         };
@@ -220,29 +238,88 @@ class GetShoppingAssistantTools
      */
     private function searchProducts(Customer $customer, array $arguments, string $locale): array
     {
-        $query = $arguments['query'] ?? null;
+        $query = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        $sort  = in_array($arguments['sort'] ?? null, self::PRICE_SORTS, true) ? $arguments['sort'] : null;
 
-        if (!is_string($query) || trim($query) === '') {
+        if ($query === '' && !$sort) {
             return $this->error('query must be a non-empty string.');
         }
 
-        $limit   = $this->limit($arguments);
-        $byCode  = $this->productsByCode($customer, $query);
-        $codeIds = $byCode->pluck('id')->flip();
+        $limit     = $this->limit($arguments);
+        $inStock   = fn (Product $product) => $product->available_quantity > 0;
+        $byCode    = $query === '' ? collect() : $this->productsByCode($customer, $query);
+        $byFamily  = $query === '' ? ['products' => collect(), 'exact' => false] : $this->productsByFamilyCode($customer, $query, $limit);
+        $codeIds   = $byCode->pluck('id')->flip();
+        $familyIds = $byFamily['exact'] ? $byFamily['products']->pluck('id')->flip() : collect();
+
+        if ($sort) {
+            $matches = $query === ''
+                ? $this->recommendableProducts($customer->shop, $customer)->select('products.*')->orderBy('products.price', $sort === 'cheapest' ? 'asc' : 'desc')->orderBy('products.id')->limit($limit)->get()->toBase()
+                : $this->closeMatches(SearchCatalogueByMeaning::run($customer->shop, $query, $customer, self::PRICE_SORT_POOL))
+                    ->concat($byFamily['products'])->unique('id')
+                    ->sortBy(fn (Product $product) => (float) $product->price, SORT_REGULAR, $sort !== 'cheapest')->values()->take($limit);
+
+            $result = $this->productsResult($customer, $matches, fn () => 'matches_request', $locale);
+
+            $result['content']['note'] = 'Ordered by price, '.($sort === 'cheapest' ? 'lowest' : 'highest').' first. Say so, and never state a price: the cards show them.';
+
+            return $result;
+        }
+
         $nearest = SearchCatalogueByMeaning::run($customer->shop, $query, $customer, $limit + self::MAX_OUT_OF_STOCK, false);
-        $inStock = fn (Product $product) => $product->available_quantity > 0;
 
         $outOfStock = (new EloquentCollection($byCode->concat($nearest->take(self::MAX_OUT_OF_STOCK))->reject($inStock)->unique('id')->take(self::MAX_OUT_OF_STOCK)->all()))->loadMissing('family');
 
-        $result = $this->productsResult($customer, $byCode->concat($nearest)->filter($inStock)->unique('id')->take($limit), fn () => 'matches_request', $locale);
+        $result = $this->productsResult($customer, $byCode->concat($byFamily['products'])->concat($nearest)->filter($inStock)->unique('id')->take($limit), fn () => 'matches_request', $locale);
 
-        $result['content']['products'] = array_map(fn (array $item) => isset($codeIds[$item['id']]) ? $item + ['exact_code_match' => true] : $item, $result['content']['products']);
+        $result['content']['products'] = array_map(fn (array $item) => match (true) {
+            isset($codeIds[$item['id']])   => $item + ['exact_code_match' => true],
+            isset($familyIds[$item['id']]) => $item + ['family_code_match' => true],
+            default                        => $item,
+        }, $result['content']['products']);
         if ($outOfStock->isNotEmpty()) {
             $result['names']                   = $outOfStock->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all();
             $result['content']['out_of_stock'] = $outOfStock->map(fn (Product $product) => array_filter(['name' => $product->name, 'family' => $product->family?->name, 'exact_code_match' => isset($codeIds[$product->id])]))->values()->all();
         }
 
         return $result;
+    }
+
+    /**
+     * For a price ordering only the matches close to the best one are kept, so a narrow request
+     * ("cheapest salt lamps") is not topped up with unrelated cheap products.
+     *
+     * ponytail: a fixed cosine margin over the best match; tune it, or rank by a relevance score,
+     * when the price-ordered answers show unrelated products.
+     *
+     * @param  Collection<int, Product>  $nearest
+     *
+     * @return Collection<int, Product>
+     */
+    private function closeMatches(Collection $nearest): Collection
+    {
+        $best = (float) $nearest->min('distance');
+
+        return $nearest->filter(fn (Product $product) => (float) $product->distance <= $best + self::PRICE_SORT_MARGIN)->values();
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    private function codeCandidates(string $query): Collection
+    {
+        $words      = preg_split('/\s+/', mb_strtolower(trim($query)));
+        $candidates = [implode('', $words)];
+        foreach ($words as $index => $word) {
+            $candidates[] = $word;
+            $candidates[] = $word.($words[$index + 1] ?? '');
+        }
+
+        return collect($candidates)
+            ->map(fn (string $candidate) => preg_replace('/[^a-z0-9]/', '', $candidate))
+            ->filter(fn (string $candidate) => strlen($candidate) >= 3)
+            ->unique()
+            ->values();
     }
 
     /**
@@ -257,18 +334,7 @@ class GetShoppingAssistantTools
      */
     private function productsByCode(Customer $customer, string $query): Collection
     {
-        $words      = preg_split('/\s+/', mb_strtolower(trim($query)));
-        $candidates = [implode('', $words)];
-        foreach ($words as $index => $word) {
-            $candidates[] = $word;
-            $candidates[] = $word.($words[$index + 1] ?? '');
-        }
-
-        $candidates = collect($candidates)
-            ->map(fn (string $candidate) => preg_replace('/[^a-z0-9]/', '', $candidate))
-            ->filter(fn (string $candidate) => strlen($candidate) >= 3 && preg_match('/\d/', $candidate) && preg_match('/[a-z]/', $candidate))
-            ->unique()
-            ->values();
+        $candidates = $this->codeCandidates($query)->filter(fn (string $candidate) => preg_match('/\d/', $candidate) && preg_match('/[a-z]/', $candidate))->values();
 
         if ($candidates->isEmpty()) {
             return collect();
@@ -280,6 +346,44 @@ class GetShoppingAssistantTools
             ->limit(self::MAX_OUT_OF_STOCK)
             ->get()
             ->toBase();
+    }
+
+    /**
+     * A family code typed as the request ("bbskt" for the Bbskt family) gives that family's products
+     * in stock. When nothing matches exactly and the request is one word of four letters or more, a
+     * family whose code starts with it counts too, but only if it is the only one ("tcan" for TCand);
+     * those products lead the results without being marked as an exact match.
+     *
+     * @return array{products: Collection<int, Product>, exact: bool}
+     */
+    private function productsByFamilyCode(Customer $customer, string $query, int $limit): array
+    {
+        $candidates = $this->codeCandidates($query);
+        $normalised = "lower(regexp_replace(product_categories.code, '[^A-Za-z0-9]', '', 'g'))";
+        $families   = fn () => ProductCategory::where('product_categories.shop_id', $customer->shop_id)
+            ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
+            ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE);
+
+        if ($candidates->isEmpty()) {
+            return ['products' => collect(), 'exact' => false];
+        }
+
+        $familyIds = $families()->whereIn(DB::raw($normalised), $candidates->all())->limit(3)->pluck('id');
+        $exact     = $familyIds->isNotEmpty();
+
+        if (!$exact && $candidates->count() === 1 && strlen($candidates->first()) >= 4) {
+            $starting  = $families()->whereRaw("$normalised like ?", [$candidates->first().'%'])->limit(2)->pluck('id');
+            $familyIds = $starting->count() === 1 ? $starting : collect();
+        }
+
+        if ($familyIds->isEmpty()) {
+            return ['products' => collect(), 'exact' => false];
+        }
+
+        return [
+            'products' => $this->recommendableProducts($customer->shop, $customer)->select('products.*')->whereIn('products.family_id', $familyIds)->orderBy('products.code')->limit($limit)->get()->toBase(),
+            'exact'    => $exact,
+        ];
     }
 
     /**
