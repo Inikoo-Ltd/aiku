@@ -6,8 +6,14 @@ import { capitalize } from '@/Composables/capitalize'
 import { ctrans } from '@/Composables/useTrans'
 import { useLocaleStore } from '@/Stores/locale'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faPeopleArrows, faClipboardList } from '@fal'
-library.add(faPeopleArrows, faClipboardList)
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faPeopleArrows, faClipboardList, faWarehouse } from '@fal'
+library.add(faPeopleArrows, faClipboardList, faWarehouse)
+
+const warehouseStages: Record<string, string> = {
+    in_agent_warehouse: ctrans("In the agent's warehouse, not packed yet"),
+    ready_for_container: ctrans("In the agent's warehouse, packed for a container"),
+}
 
 interface Figures {
     number_purchase_orders: number
@@ -47,6 +53,10 @@ const toggleClient = (key: string) => clientFilter.value = clientFilter.value.in
     ? clientFilter.value.filter(client => client !== key)
     : [...clientFilter.value, key]
 
+const excludeDrafts = ref(false)
+const matchesDraft = (row: FigureRow) => !excludeDrafts.value || row.stage !== 'draft'
+const shownStages = computed(() => props.stages.filter(stage => !excludeDrafts.value || stage.key !== 'draft'))
+
 const matchesDeposit = (row: FigureRow) => !depositFilter.value || row.deposit === depositFilter.value
 const matchesAge = (row: FigureRow) => !ageFilter.value.length || ageFilter.value.includes(row.age)
 const toggleAge = (key: string) => ageFilter.value = ageFilter.value.includes(key)
@@ -61,11 +71,11 @@ const sum = (rows: FigureRow[]): Figures => rows.reduce((total, row) => ({
 
 const countPurchaseOrders = (rows: FigureRow[]) => sum(rows).number_purchase_orders
 
-const filtered = computed(() => props.figures.filter(row => matchesClient(row) && matchesDeposit(row) && matchesAge(row)))
+const filtered = computed(() => props.figures.filter(row => matchesClient(row) && matchesDeposit(row) && matchesAge(row) && matchesDraft(row)))
 
 const columns = (agent: string | null) => {
     const rows = filtered.value.filter(row => !agent || row.agent === agent)
-    return [...props.stages.map(stage => sum(rows.filter(row => row.stage === stage.key))), sum(rows)]
+    return [...shownStages.value.map(stage => sum(rows.filter(row => row.stage === stage.key))), sum(rows)]
 }
 
 const depositOptions = computed(() => [
@@ -73,12 +83,12 @@ const depositOptions = computed(() => [
     { key: 'no_deposit', label: ctrans('No deposit') },
 ].map(option => ({
     ...option,
-    count: countPurchaseOrders(props.figures.filter(row => row.deposit === option.key && matchesAge(row) && matchesClient(row))),
+    count: countPurchaseOrders(props.figures.filter(row => row.deposit === option.key && matchesAge(row) && matchesClient(row) && matchesDraft(row))),
 })))
 
 const ageOptions = computed(() => props.ages.map(option => ({
     ...option,
-    count: countPurchaseOrders(props.figures.filter(row => row.age === option.key && matchesDeposit(row) && matchesClient(row))),
+    count: countPurchaseOrders(props.figures.filter(row => row.age === option.key && matchesDeposit(row) && matchesClient(row) && matchesDraft(row))),
 })))
 
 const filters = computed(() => [
@@ -88,7 +98,7 @@ const filters = computed(() => [
         clear: () => depositFilter.value = null,
         isSelected: (key: string) => depositFilter.value === key,
         select: (key: string) => depositFilter.value = key,
-        allCount: countPurchaseOrders(props.figures.filter(row => matchesAge(row) && matchesClient(row))),
+        allCount: countPurchaseOrders(props.figures.filter(row => matchesAge(row) && matchesClient(row) && matchesDraft(row))),
         options: depositOptions.value,
     },
     {
@@ -97,7 +107,7 @@ const filters = computed(() => [
         clear: () => ageFilter.value = [],
         isSelected: (key: string) => ageFilter.value.includes(key),
         select: toggleAge,
-        allCount: countPurchaseOrders(props.figures.filter(row => matchesDeposit(row) && matchesClient(row))),
+        allCount: countPurchaseOrders(props.figures.filter(row => matchesDeposit(row) && matchesClient(row) && matchesDraft(row))),
         options: ageOptions.value,
     },
     {
@@ -106,29 +116,38 @@ const filters = computed(() => [
         clear: () => clientFilter.value = [],
         isSelected: (key: string) => clientFilter.value.includes(key),
         select: toggleClient,
-        allCount: countPurchaseOrders(props.figures.filter(row => matchesDeposit(row) && matchesAge(row))),
+        allCount: countPurchaseOrders(props.figures.filter(row => matchesDeposit(row) && matchesAge(row) && matchesDraft(row))),
         options: props.clients.map(client => ({
             ...client,
-            count: countPurchaseOrders(props.figures.filter(row => row.client === client.key && matchesDeposit(row) && matchesAge(row))),
+            count: countPurchaseOrders(props.figures.filter(row => row.client === client.key && matchesDeposit(row) && matchesAge(row) && matchesDraft(row))),
         })),
+    },
+    {
+        label: ctrans('Drafts'),
+        isAll: !excludeDrafts.value,
+        clear: () => excludeDrafts.value = false,
+        isSelected: (key: string) => key === 'exclude' && excludeDrafts.value,
+        select: () => excludeDrafts.value = true,
+        allCount: null,
+        options: [{ key: 'exclude', label: ctrans('Exclude'), name: undefined, count: null }],
     },
 ])
 
 const listHref = (agent: string | null, stage: string | null) => {
     const query = Object.fromEntries(Object.entries({
         'filter[agent]': agent,
-        'filter[stage]': stage,
+        'filter[stage]': stage ?? (excludeDrafts.value ? shownStages.value.map(shown => shown.key).join(',') : null),
         'filter[deposit]': depositFilter.value,
         'filter[sent]': ageFilter.value.join(','),
         'filter[client]': clientFilter.value.join(','),
     }).filter(([, value]) => value))
     return route(props.listRoute.name, { ...props.listRoute.parameters, ...query })
 }
-const columnStage = (index: number) => props.stages[index]?.key ?? null
+const columnStage = (index: number) => shownStages.value[index]?.key ?? null
 
 const capsuleClass = (selected: boolean) => selected ? 'bg-[var(--app-accent)] text-[var(--app-accent-text)] shadow-sm' : 'text-gray-600 hover:bg-gray-100'
 const figureColours = { purchase_orders: 'text-gray-900', lines: 'text-gray-400', amount: 'text-emerald-800' }
-const groupBorder = (index: number) => index === props.stages.length ? 'border-gray-200' : 'border-gray-100'
+const groupBorder = (index: number) => index === shownStages.value.length ? 'border-gray-200' : 'border-gray-100'
 </script>
 
 <template>
@@ -139,16 +158,16 @@ const groupBorder = (index: number) => index === props.stages.length ? 'border-g
         <div class="rounded-xl ring-1 ring-gray-200 bg-white p-5">
             <div class="flex flex-wrap items-center gap-2">
                 <div v-for="filter in filters" :key="filter.label"
-                     class="flex flex-wrap items-center gap-0.5 rounded-lg border border-gray-200 bg-white px-1.5 py-1 text-xs">
-                    <span class="mx-1.5 font-medium uppercase tracking-wide text-gray-400">{{ filter.label }}</span>
+                     class="flex flex-wrap items-center gap-0.5 rounded-lg border border-gray-200 bg-white px-1 py-1 text-xs">
+                    <span class="mx-1 font-medium uppercase tracking-wide text-gray-400">{{ filter.label }}</span>
                     <button type="button" class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 transition duration-200"
                             :class="capsuleClass(filter.isAll)" @click="filter.clear()">
-                        {{ ctrans('All') }} <span class="tabular-nums opacity-70">{{ locale.number(filter.allCount) }}</span>
+                        {{ ctrans('All') }} <span v-if="filter.allCount !== null" class="tabular-nums opacity-70">{{ locale.number(filter.allCount) }}</span>
                     </button>
                     <button v-for="option in filter.options" :key="option.key" type="button"
                             class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 whitespace-nowrap transition duration-200"
                             :class="capsuleClass(filter.isSelected(option.key))" v-tooltip="option.name" @click="filter.select(option.key)">
-                        {{ option.label }} <span class="tabular-nums opacity-70">{{ locale.number(option.count) }}</span>
+                        {{ option.label }} <span v-if="option.count !== null" class="tabular-nums opacity-70">{{ locale.number(option.count) }}</span>
                     </button>
                 </div>
             </div>
@@ -158,12 +177,17 @@ const groupBorder = (index: number) => index === props.stages.length ? 'border-g
                     <thead class="whitespace-nowrap">
                         <tr class="text-gray-500">
                             <th class="text-left font-normal py-1 pr-2"></th>
-                            <th v-for="(column, index) in [...stages, { key: 'total', label: ctrans('Total') }]" :key="column.key" colspan="3"
-                                class="text-center font-medium py-1 px-2 border-l" :class="groupBorder(index)">{{ column.label }}</th>
+                            <th v-for="(column, index) in [...shownStages, { key: 'total', label: ctrans('Total') }]" :key="column.key" colspan="3"
+                                class="text-center font-medium py-1 px-2 border-l" :class="groupBorder(index)">
+                                <span v-if="warehouseStages[column.key]" v-tooltip="warehouseStages[column.key]">
+                                    <FontAwesomeIcon icon="fal fa-warehouse" class="mr-1 text-gray-400" fixed-width aria-hidden="true" />{{ column.label }}
+                                </span>
+                                <template v-else>{{ column.label }}</template>
+                            </th>
                         </tr>
                         <tr class="text-gray-400 border-b border-gray-200">
                             <th class="text-left font-normal py-1.5 pr-2">{{ ctrans('Agent') }}</th>
-                            <template v-for="(column, index) in [...stages, { key: 'total' }]" :key="column.key">
+                            <template v-for="(column, index) in [...shownStages, { key: 'total' }]" :key="column.key">
                                 <th class="text-right font-normal py-1.5 pl-3 pr-1 border-l" :class="[groupBorder(index), figureColours.purchase_orders]">{{ ctrans('POs') }}</th>
                                 <th class="text-right font-normal py-1.5 px-1" :class="figureColours.lines">{{ ctrans('Lines') }}</th>
                                 <th class="text-right font-normal py-1.5 pl-1 pr-2" :class="figureColours.amount">{{ ctrans('Amount') }}</th>

@@ -94,8 +94,8 @@ class ShowAgentsPurchaseOrderStates extends OrgAction
             'submitted'          => __('Submitted'),
             'confirmed'          => __('Confirmed'),
             'in_production'      => __('Being made'),
-            'in_agent_warehouse'  => __('In agent warehouse'),
-            'ready_for_container' => __('Ready for container'),
+            'in_agent_warehouse'  => __('Received'),
+            'ready_for_container' => __('Packed'),
             'on_the_way'          => __('Container on the way'),
         ];
     }
@@ -125,10 +125,10 @@ class ShowAgentsPurchaseOrderStates extends OrgAction
     public static function ageBuckets(): array
     {
         return [
-            '0_3'     => [__('0-3 months'), "interval '3 months'"],
-            '3_6'     => [__('3-6 months'), "interval '6 months'"],
-            '6_9'     => [__('6-9 months'), "interval '9 months'"],
-            '9_12'    => [__('9-12 months'), "interval '12 months'"],
+            '0_3'     => [__('0-3m'), "interval '3 months'"],
+            '3_6'     => [__('3-6m'), "interval '6 months'"],
+            '6_9'     => [__('6-9m'), "interval '9 months'"],
+            '9_12'    => [__('9-12m'), "interval '12 months'"],
             'over_12' => [__('12+ months'), null],
         ];
     }
