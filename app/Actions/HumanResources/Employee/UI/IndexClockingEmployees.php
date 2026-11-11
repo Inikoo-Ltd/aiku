@@ -395,7 +395,7 @@ class IndexClockingEmployees extends OrgAction
     /**
      * @return array<int, string>
      */
-    protected function getAvailableClockingMethods(?int $organisationId): array
+    public function getAvailableClockingMethods(?int $organisationId): array
     {
         if (!$organisationId) {
             return [];
@@ -437,7 +437,7 @@ class IndexClockingEmployees extends OrgAction
         return $methods;
     }
 
-    protected function getClockingSessions(Timesheet $timesheet, string $timezone): array
+    public function getClockingSessions(Timesheet $timesheet, string $timezone): array
     {
         $timeTrackers = TimeTracker::where('timesheet_id', $timesheet->id)
             ->orderBy('starts_at')
@@ -771,34 +771,12 @@ class IndexClockingEmployees extends OrgAction
                     ? fn () => [
                         'data' => $data['overtime'],
                         'organisation' => $data['organisation'],
-                        'overtimeTypeOptions' => OvertimeType::query()
-                            ->when($organisationId, function ($query, $organisationId) {
-                                $query->where('organisation_id', $organisationId);
-                            })
-                            ->where('is_active', true)
-                            ->orderBy('name')
-                            ->get()
-                            ->map(fn (OvertimeType $overtimeType) => [
-                                'value' => $overtimeType->id,
-                                'label' => $overtimeType->name,
-                            ])
-                            ->values(),
+                        'overtimeTypeOptions' => $this->getOvertimeTypeOptions($organisationId),
                     ]
                     : Inertia::optional(fn () => [
                         'data' => $data['overtime'],
                         'organisation' => $data['organisation'],
-                        'overtimeTypeOptions' => OvertimeType::query()
-                            ->when($organisationId, function ($query, $organisationId) {
-                                $query->where('organisation_id', $organisationId);
-                            })
-                            ->where('is_active', true)
-                            ->orderBy('name')
-                            ->get()
-                            ->map(fn (OvertimeType $overtimeType) => [
-                                'value' => $overtimeType->id,
-                                'label' => $overtimeType->name,
-                            ])
-                            ->values(),
+                        'overtimeTypeOptions' => $this->getOvertimeTypeOptions($organisationId),
                     ]),
                 ClockingEmployeesTabsEnum::CALENDAR->value =>
                 $data['tab'] === ClockingEmployeesTabsEnum::CALENDAR->value
@@ -852,12 +830,34 @@ class IndexClockingEmployees extends OrgAction
         );
     }
 
+    public function getOvertimeTypeOptions(?int $organisationId): Collection
+    {
+        return OvertimeType::query()
+            ->when($organisationId, function ($query, $organisationId) {
+                $query->where('organisation_id', $organisationId);
+            })
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (OvertimeType $overtimeType) => [
+                'value' => $overtimeType->id,
+                'label' => $overtimeType->name,
+            ])
+            ->values();
+    }
+
     protected function getCalendarData(ActionRequest $request): array
     {
-        $year = (int) $request->input('year', now()->year);
-        $month = $request->integer('month') ?: null;
+        return $this->getCalendarDataFor(
+            $this->employee,
+            (int) $request->input('year', now()->year),
+            $request->integer('month') ?: null
+        );
+    }
 
-        if (!$this->employee || !$this->employee->organisation_id) {
+    public function getCalendarDataFor(?Employee $employee, int $year, ?int $month): array
+    {
+        if (!$employee || !$employee->organisation_id) {
             return [
                 'year' => $year,
                 'month' => $month,
@@ -873,13 +873,13 @@ class IndexClockingEmployees extends OrgAction
         }
 
         $activeHolidayYear = \DB::table('holiday_years')
-            ->where('organisation_id', $this->employee->organisation_id)
+            ->where('organisation_id', $employee->organisation_id)
             ->where('is_active', true)
             ->select(['id', 'label', 'start_date', 'end_date'])
             ->first();
 
         $allHolidayYears = \DB::table('holiday_years')
-            ->where('organisation_id', $this->employee->organisation_id)
+            ->where('organisation_id', $employee->organisation_id)
             ->orderBy('start_date', 'desc')
             ->select(['id', 'label', 'start_date', 'end_date', 'is_active'])
             ->get();
@@ -888,7 +888,7 @@ class IndexClockingEmployees extends OrgAction
         $maxDate = $allHolidayYears->max('end_date');
 
         $holidaysQuery = Holiday::query()
-            ->where('organisation_id', $this->employee->organisation_id);
+            ->where('organisation_id', $employee->organisation_id);
 
         $holidaysQuery->where(function ($query) use ($year, $minDate, $maxDate) {
             $query->where('year', $year);
@@ -978,7 +978,7 @@ class IndexClockingEmployees extends OrgAction
         return PeriodEnum::toDateRange($period);
     }
 
-    protected function getStatistics($employee, $statsQuery, $timezone, $from, $to): array
+    public function getStatistics($employee, $statsQuery, $timezone, $from, $to): array
     {
         if (!$statsQuery) {
             return [];

@@ -4,6 +4,8 @@ import android.content.Context
 import android.os.Build
 import io.aiku.droid.data.api.AikuHttpClient
 import io.aiku.droid.data.api.AuthApi
+import io.aiku.droid.data.api.ClockingApi
+import io.aiku.droid.data.api.HrApi
 import io.aiku.droid.data.api.OkHttpMobileApi
 import io.aiku.droid.data.api.WarehouseApi
 import io.aiku.droid.data.session.DeviceSessionRepository
@@ -25,6 +27,10 @@ class AppContainer(context: Context) {
     val authApi: AuthApi = mobileApi
 
     val warehouseApi: WarehouseApi = mobileApi
+
+    val clockingApi: ClockingApi = mobileApi
+
+    val hrApi: HrApi = mobileApi
 
     val sessions: SessionRepository = DeviceSessionRepository(
         preferences = context.getSharedPreferences(SESSION_PREFERENCES, Context.MODE_PRIVATE),

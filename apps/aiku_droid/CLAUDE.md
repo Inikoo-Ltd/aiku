@@ -12,7 +12,7 @@ Most screens are still skeletons built on sample data, so developers can see how
 - Every block that shows sample data carries it.
 - Sample data lives in `private` values in the screen file, or in an area's `*Samples.kt`.
 - When you wire a block to real data, remove its sample data and its `fakeData()` outline together.
-- Never outline real data. Today that is: the signed-in user (`LocalStaff`), the warehouses and their permissions (`LocalWarehouse`, `LocalWarehouses`) and appearance (`LocalAppearanceController`).
+- Never outline real data. Today that is: the signed-in user (`LocalStaff`), the warehouses and their permissions (`LocalWarehouse`, `LocalWarehouses`) and appearance (`LocalAppearanceController`), clocking (`LocalClocking`: status, sessions, methods, code, timesheets, target), and Clocking & HR (`LocalLeave`, `LocalClockingAdjustments`, `LocalOvertime`, `LocalClockingCalendar`).
 - The outline is dashed on purpose, so it is not confused with the solid red border of a field in error.
 
 ## Backend
@@ -41,7 +41,8 @@ Most screens are still skeletons built on sample data, so developers can see how
 
 - One fixed bottom bar (`MainBar`, `MainTab`): Home · My work · Scan · Inbox · Menu. It never changes per screen. The Scan slot shows only when the account has a warehouse.
 - Menu (`MenuRoute`) lists every module and section the account can open, filtered by permission, plus Profile, Appearance and Log out.
-- Inside a module, `ModuleHeader(WarehouseSection.X)` draws the header (context line over the title, back to Menu) and the pill section tabs in the web menu order. Fulfilment is not a module: its sections sit inside Goods in, Inventory and Goods out and need `view_fulfilment`.
+- Inside a module, `ModuleHeader(WarehouseSection.X)` draws the header (context line over the title, back to wherever you came from) and the section tabs in the web menu order. Section tabs are underlined tabs (accent text and bar on the active one) in every module, Clocking included: Louis chose tabs over the canvas pills on 2026-11-11. Fulfilment is not a module: its sections sit inside Goods in, Inventory and Goods out and need `view_fulfilment`.
+- The section tab row never scrolls by itself. Switching section hands the row's scroll position to the next screen (`SectionTabsHandoff` in `AppChrome.kt`), so the row stays exactly where it was when the tab was tapped. Louis rejected the jump to the active tab on 2026-11-11.
 - `AppScreen(header, activeTab, showBar, footer, bottomPanel)`: `footer` is the fixed action area above the bar (main action or `FooterStatus`), `bottomPanel` a self-framed panel such as `ScanPanel`.
 - A board titled "Sheet · …" or "Filter …" on the canvas is a bottom sheet (`AikuBottomSheet`, `FilterSheet`), not a route. The opening screen holds its visibility in state.
 - Aiku says SKO (stock keeping outer), never SKU, in everything staff see. Delivery note references are order references (AR24811).
@@ -78,6 +79,18 @@ Release builds use `https://app.aiku.io` and none of the development settings.
 - Type is Inter, with a Bitter wordmark and a Caveat tagline. The fonts are OFL, and their licences ship in `assets/licenses`.
 - The sign-in watercolour backgrounds are rendered from the canvas's own SVG (`login_background`, `login_background_dark`).
 - Icons are the canvas's own SVGs converted to vector drawables, named `ic_<area>_<name>` for area icons. The shared icon set (C23) is `ic_fa_<font-awesome name>`, and the feedback icons are `ic_feedback_*`.
+
+## Focus state
+
+Every component staff can act on shows a clear focus state in the theme's colours. The canvas draws none, but Louis asked for one on 2026-11-11. Warehouse handhelds have hardware keys, and staff may use a keyboard, so the element that has focus must always be visible.
+
+- `colors.focus` is the focus colour: the theme colour in light mode, the theme's link colour in dark mode (the dark theme colour is too dim on dark surfaces). Never hardcode a focus colour.
+- Tappable things (`clickable`, `selectable`, `toggleable`) get the focus state for free. `AikuDroidTheme` provides `AikuFocusIndication` (`ui/components/Focus.kt`) as `LocalIndication`. It keeps the ripple and, while the component has focus, draws a two-tone ring inside it: 2dp of `colors.focus`, then a 1.5dp line of `colors.background`. The second line keeps the ring visible on any fill, including primary-coloured buttons built by hand.
+- When a component sets its own `indication`, wrap the ripple instead of replacing it: `AikuFocusIndication(ringColor = …, gapColor = colors.background, ripple = ripple(color = …))`. The ring must contrast with the fill: `onPrimary` on primary buttons, `onScan` on scan buttons, otherwise `colors.focus`. Never use `indication = null` on something staff can act on.
+- On nav-coloured areas the ring is `navAccent` with a `nav` line, from `rememberNavFocusIndication()`. `AppHeader` (with its section tabs) and `MainBar` already provide it; anything else drawn on `colors.nav` must provide it too.
+- Text fields hoist a `MutableInteractionSource`, read `collectIsFocusedAsState()` and turn it into `animateFocusProgress(isFocused)`. The border blends towards `colors.focus` with `lerp(idle, colors.focus, progress)`, and `Modifier.focusHalo(progress, …)`, placed before `clip`, adds the soft outer glow the web uses. An error border wins over focus.
+- Focus never pops. Every focus visual (ring, border, glow) eases in over 160 ms and out over 120 ms with `FastOutSlowInEasing`, through `focusAnimationSpec` / `animateFocusProgress`; the ring also grows from half to full width as it fades in. Never switch a focus visual on and off with a plain `if`. Louis found the instant switch jarring on 2026-11-11.
+- Every tab shows the focus state: section tabs, the bottom bar, segmented controls, scope pills, camera mode pills, and any new tab-like control. Tabs on nav-coloured areas take `rememberNavFocusIndication()`. Check a new tab with the keyboard (Tab, or D-pad) on the emulator before calling it done.
 
 ## Versions
 

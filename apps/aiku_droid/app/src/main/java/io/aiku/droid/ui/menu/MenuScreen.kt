@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,7 +29,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
+import io.aiku.droid.ui.clocking.LocalClocking
+import io.aiku.droid.ui.clocking.clockingMenuSubtitle
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.CardShape
@@ -100,6 +104,8 @@ fun MenuScreen() {
     val warehouse = LocalWarehouse.current
     val hasWarehouse = LocalWarehouses.current.isNotEmpty()
     val name = staff.displayName.ifBlank { staff.username }
+    val clockingState by LocalClocking.current.state.collectAsStateWithLifecycle()
+    val isClockedIn = clockingState.status?.isClockedIn == true
 
     AppScreen(
         header = {
@@ -180,11 +186,10 @@ fun MenuScreen() {
                 MenuRow(
                     icon = R.drawable.ic_ui_clock,
                     title = stringResource(R.string.menu_clocking),
-                    subtitle = MenuSamples.CLOCKED_IN,
-                    subtitleColor = colors.success,
-                    isSubtitleSample = true,
-                    iconContainer = colors.successSoft,
-                    iconTint = colors.success,
+                    subtitle = clockingMenuSubtitle(clockingState),
+                    subtitleColor = if (isClockedIn) colors.success else null,
+                    iconContainer = if (isClockedIn) colors.successSoft else null,
+                    iconTint = if (isClockedIn) colors.success else null,
                     onClick = { navigator.open(ClockingRoute) },
                 )
                 RowDivider()
@@ -281,7 +286,6 @@ private fun MenuRow(
     onClick: () -> Unit,
     subtitle: String? = null,
     subtitleColor: Color? = null,
-    isSubtitleSample: Boolean = false,
     badge: SectionBadge? = null,
     isFulfilment: Boolean = false,
     iconContainer: Color? = null,
@@ -308,7 +312,6 @@ private fun MenuRow(
                     text = subtitle,
                     fontSize = 12.sp,
                     color = subtitleColor ?: colors.textTertiary,
-                    modifier = if (isSubtitleSample) Modifier.fakeData(cornerRadius = 4.dp).padding(horizontal = 2.dp) else Modifier,
                 )
             }
         }
@@ -347,5 +350,4 @@ internal object MenuSamples {
     const val LOW_SKOS = "17 low"
     const val RECEIVED_DELIVERIES = "2 received"
     const val UNASSIGNED = "12 unassigned"
-    const val CLOCKED_IN = "Clocked in since 08:02"
 }

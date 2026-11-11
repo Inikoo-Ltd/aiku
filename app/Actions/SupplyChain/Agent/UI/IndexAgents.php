@@ -28,6 +28,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexAgents extends OrgAction
 {
     use WithSupplyChainAuthorisation;
+    use WithAgentsSubNavigation;
     protected function getElementGroups(Group $group): array
     {
         return
@@ -173,6 +174,7 @@ class IndexAgents extends OrgAction
                             'title' => __('Agents')
                         ],
                     'title'  => __("Agents"),
+                    'subNavigation' => $request->route()->getName() == 'grp.supply-chain.agents.index' ? $this->getAgentsSubNavigation() : null,
 
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.supply-chain.agents.index' ? [

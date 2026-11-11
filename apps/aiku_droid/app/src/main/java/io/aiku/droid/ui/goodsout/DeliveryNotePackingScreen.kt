@@ -3,6 +3,8 @@ package io.aiku.droid.ui.goodsout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -49,8 +52,10 @@ import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.StateStepper
+import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.components.deliveryNoteSteps
 import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.focusHalo
 import io.aiku.droid.ui.navigation.AddShipmentRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
@@ -245,6 +250,9 @@ private fun ParcelRow(name: String, parcel: SampleParcel, isEditable: Boolean, o
 private fun ParcelField(value: String, placeholder: String, isMissing: Boolean, isEditable: Boolean, onValueChange: (String) -> Unit) {
     val colors = LocalAikuColors.current
     val shape = RoundedCornerShape(8.dp)
+    val parcelInteraction = remember { MutableInteractionSource() }
+    val isParcelFocused by parcelInteraction.collectIsFocusedAsState()
+    val parcelFocusProgress = animateFocusProgress(isParcelFocused)
 
     BasicTextField(
         value = value,
@@ -254,11 +262,13 @@ private fun ParcelField(value: String, placeholder: String, isMissing: Boolean, 
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         textStyle = TextStyle(fontFamily = Inter, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.text, textAlign = TextAlign.Center),
         cursorBrush = SolidColor(colors.primary),
+        interactionSource = parcelInteraction,
         modifier = Modifier
             .width(56.dp)
             .height(44.dp)
+            .focusHalo(progress = parcelFocusProgress, color = colors.focus, cornerRadius = 8.dp)
             .clip(shape)
-            .border(1.dp, if (isMissing) colors.warn else colors.borderStrong, shape)
+            .border(1.dp, lerp(if (isMissing) colors.warn else colors.borderStrong, colors.focus, parcelFocusProgress), shape)
             .semantics { contentDescription = placeholder },
         decorationBox = { inner ->
             Box(contentAlignment = Alignment.Center) {

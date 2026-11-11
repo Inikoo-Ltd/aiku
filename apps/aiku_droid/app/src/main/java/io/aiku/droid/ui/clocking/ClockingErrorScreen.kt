@@ -1,5 +1,9 @@
 package io.aiku.droid.ui.clocking
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -19,11 +23,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.R
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
@@ -59,6 +66,14 @@ internal enum class ClockingErrorKind(
     ),
     NoPin("no_pin", R.string.clocking_error_kicker_pin, R.drawable.ic_ui_pin, Tone.Neutral, R.string.clocking_error_no_pin_title, R.string.clocking_error_no_pin_body),
     Offline("offline", R.string.clocking_error_kicker_qr, R.drawable.ic_ui_wifi_off, Tone.Warn, R.string.clocking_error_offline_title, R.string.clocking_error_offline_body),
+    CameraBlocked(
+        "camera_blocked",
+        R.string.clocking_error_kicker_qr,
+        R.drawable.ic_ui_camera,
+        Tone.Neutral,
+        R.string.clocking_error_camera_title,
+        R.string.clocking_error_camera_body,
+    ),
     ;
 
     companion object {
@@ -67,12 +82,27 @@ internal enum class ClockingErrorKind(
 }
 
 @Composable
-fun ClockingErrorScreen(kind: String) {
+fun ClockingErrorScreen(kind: String, message: String? = null, scanned: String? = null) {
+    ClockingErrorScreen(error = ClockingErrorKind.fromKey(kind), message = message, scanned = scanned)
+}
+
+@Composable
+internal fun ClockingErrorScreen(error: ClockingErrorKind, message: String?, scanned: String?) {
     val colors = LocalAikuColors.current
     val navigator = LocalAppNavigator.current
-    val error = ClockingErrorKind.fromKey(kind)
+    val clocking = LocalClocking.current
+    val state by clocking.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var showWorkingHours by remember { mutableStateOf(false) }
     val backToClocking = { navigator.switchSection(ClockingRoute) }
+    val openCameraWithoutLocation = {
+        if (state.status?.hasShifts == true) {
+            showWorkingHours = true
+        } else {
+            clocking.prepareScan(ClockingScanSetup())
+            navigator.switchSection(ClockScanQrRoute)
+        }
+    }
 
     AppScreen(
         header = { AppHeader(title = stringResource(R.string.clocking_title), kicker = stringResource(error.kicker)) },
@@ -96,10 +126,20 @@ fun ClockingErrorScreen(kind: String) {
                 modifier = Modifier.widthIn(max = 320.dp),
             )
             if (error == ClockingErrorKind.QrInvalid) {
-                ListGroup(modifier = Modifier.fakeData()) {
-                    ClockingErrorDetailRow(label = stringResource(R.string.clocking_error_message), value = CLOCKING_ERROR_MESSAGE_SAMPLE)
-                    RowDivider()
-                    ClockingErrorDetailRow(label = stringResource(R.string.clocking_error_scanned), value = CLOCKING_ERROR_SCANNED_SAMPLE)
+                if (message == null) {
+                    ListGroup(modifier = Modifier.fakeData()) {
+                        ClockingErrorDetailRow(label = stringResource(R.string.clocking_error_message), value = CLOCKING_ERROR_MESSAGE_SAMPLE)
+                        RowDivider()
+                        ClockingErrorDetailRow(label = stringResource(R.string.clocking_error_scanned), value = CLOCKING_ERROR_SCANNED_SAMPLE)
+                    }
+                } else {
+                    ListGroup {
+                        ClockingErrorDetailRow(label = stringResource(R.string.clocking_error_message), value = message)
+                        if (scanned != null) {
+                            RowDivider()
+                            ClockingErrorDetailRow(label = stringResource(R.string.clocking_error_scanned), value = scanned)
+                        }
+                    }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
@@ -107,15 +147,15 @@ fun ClockingErrorScreen(kind: String) {
                     ClockingErrorKind.QrInvalid -> {
                         ClockingErrorPrimaryButton(
                             text = stringResource(R.string.clocking_error_open_camera_again),
-                            onClick = { navigator.switchSection(ClockScanQrRoute) },
+                            onClick = {
+                                clocking.restartScan()
+                                navigator.switchSection(ClockScanQrRoute)
+                            },
                         )
                         ClockingErrorSecondaryButton(text = stringResource(R.string.clocking_error_back_to_clocking), onClick = backToClocking)
                     }
                     ClockingErrorKind.LocationBlocked -> {
-                        ClockingErrorPrimaryButton(
-                            text = stringResource(R.string.clocking_error_open_camera_anyway),
-                            onClick = { showWorkingHours = true },
-                        )
+                        ClockingErrorPrimaryButton(text = stringResource(R.string.clocking_error_open_camera_anyway), onClick = openCameraWithoutLocation)
                         ClockingErrorSecondaryButton(text = stringResource(R.string.clocking_error_try_again), onClick = backToClocking)
                     }
                     ClockingErrorKind.NoPin -> {
@@ -124,13 +164,35 @@ fun ClockingErrorScreen(kind: String) {
                     ClockingErrorKind.Offline -> {
                         ClockingErrorPrimaryButton(text = stringResource(R.string.clocking_error_try_again), onClick = backToClocking)
                     }
+                    ClockingErrorKind.CameraBlocked -> {
+                        ClockingErrorPrimaryButton(
+                            text = stringResource(R.string.clocking_error_open_settings),
+                            onClick = {
+                                try {
+                                    context.startActivity(
+                                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
+                                    )
+                                } catch (exception: ActivityNotFoundException) {
+                                    context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                                }
+                            },
+                        )
+                        ClockingErrorSecondaryButton(text = stringResource(R.string.clocking_error_back_to_clocking), onClick = backToClocking)
+                    }
                 }
             }
         }
     }
 
     if (showWorkingHours) {
-        WorkingHoursSheet(onDismiss = { showWorkingHours = false })
+        WorkingHoursSheet(
+            onDismiss = { showWorkingHours = false },
+            onConfirm = { workScheduleId ->
+                showWorkingHours = false
+                clocking.prepareScan(ClockingScanSetup(workScheduleId = workScheduleId))
+                navigator.switchSection(ClockScanQrRoute)
+            },
+        )
     }
 }
 
@@ -146,6 +208,8 @@ private fun ClockingErrorDetailRow(label: String, value: String) {
             fontWeight = FontWeight.SemiBold,
             color = colors.text,
             textAlign = TextAlign.End,
+            maxLines = 4,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
     }

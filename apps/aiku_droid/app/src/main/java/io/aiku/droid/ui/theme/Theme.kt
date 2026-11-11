@@ -1,15 +1,18 @@
 package io.aiku.droid.ui.theme
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.TextStyle
+import io.aiku.droid.ui.components.AikuFocusIndication
 
 data class Appearance(
     val theme: AikuTheme = AikuTheme.DeepSea,
@@ -81,7 +84,13 @@ fun AikuDroidTheme(
             colorScheme = colors.toMaterialColorScheme(),
             typography = InterTypography,
         ) {
-            CompositionLocalProvider(LocalTextStyle provides TextStyle(fontFamily = Inter, color = colors.text), content = content)
+            CompositionLocalProvider(
+                LocalTextStyle provides TextStyle(fontFamily = Inter, color = colors.text),
+                LocalIndication provides remember(colors.focus, colors.background) {
+                    AikuFocusIndication(ringColor = colors.focus, gapColor = colors.background, ripple = ripple())
+                },
+                content = content,
+            )
         }
     }
 }

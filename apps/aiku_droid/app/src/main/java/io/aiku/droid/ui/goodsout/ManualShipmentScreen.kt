@@ -2,6 +2,8 @@ package io.aiku.droid.ui.goodsout
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -37,8 +40,10 @@ import io.aiku.droid.ui.components.DeliveryNoteStage
 import io.aiku.droid.ui.components.RequireAbility
 import io.aiku.droid.ui.components.SearchField
 import io.aiku.droid.ui.components.StateStepper
+import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.components.deliveryNoteSteps
 import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.focusHalo
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ShipmentsRoute
@@ -98,19 +103,24 @@ fun ManualShipmentScreen(reference: String) {
                     color = colors.text,
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
+                val trackingInteraction = remember { MutableInteractionSource() }
+                val isTrackingFocused by trackingInteraction.collectIsFocusedAsState()
+                val trackingFocusProgress = animateFocusProgress(isTrackingFocused)
                 BasicTextField(
                     value = trackingNumber,
                     onValueChange = { trackingNumber = it },
                     singleLine = true,
                     textStyle = TextStyle(fontFamily = Inter, fontSize = 16.sp, color = colors.text),
                     cursorBrush = SolidColor(colors.primary),
+                    interactionSource = trackingInteraction,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
                         .fakeData(cornerRadius = 8.dp)
+                        .focusHalo(progress = trackingFocusProgress, color = colors.focus, cornerRadius = 8.dp)
                         .clip(ControlShape)
                         .background(colors.surface)
-                        .border(2.dp, colors.primary, ControlShape)
+                        .border(2.dp, lerp(colors.primary, colors.focus, trackingFocusProgress), ControlShape)
                         .semantics { contentDescription = trackingLabel },
                     decorationBox = { inner ->
                         Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(horizontal = 14.dp)) {

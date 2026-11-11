@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.BuildConfig
 import io.aiku.droid.R
 import io.aiku.droid.ui.components.AikuButton
@@ -52,6 +53,9 @@ import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.RowDivider
+import io.aiku.droid.ui.clocking.LocalClocking
+import io.aiku.droid.ui.clocking.clockingWeekTotal
+import io.aiku.droid.ui.clocking.rememberClockingNow
 import io.aiku.droid.ui.states.StatePreview
 import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.StatePreviewRoute
@@ -75,7 +79,6 @@ private object ProfileSample {
     const val ROLE = "Warehouse staff"
     const val LANGUAGE = "English"
     const val NOTIFICATIONS = "On"
-    const val WEEK_TOTAL = "6h 13m"
     const val SYNC_WAITING = 3
 }
 
@@ -98,6 +101,10 @@ fun ProfileScreen() {
     val warehouse = LocalWarehouse.current
     val hasWarehouse = LocalWarehouses.current.isNotEmpty()
     val navigator = LocalAppNavigator.current
+    val clockingState by LocalClocking.current.state.collectAsStateWithLifecycle()
+    val clockingStatus = clockingState.status
+    val weekTotal = clockingWeekTotal(clockingState, rememberClockingNow())
+    val noValue = stringResource(R.string.clocking_no_value)
 
     AppScreen(
         header = {
@@ -123,16 +130,18 @@ fun ProfileScreen() {
             ListGroup {
                 AppRow(
                     label = stringResource(R.string.profile_clocking),
-                    value = stringResource(R.string.profile_clocked_in),
-                    valueColor = colors.success,
-                    isSampleValue = true,
+                    value = when (clockingStatus?.isClockedIn) {
+                        true -> stringResource(R.string.clocking_status_clocked_in)
+                        false -> stringResource(R.string.clocking_status_clocked_out)
+                        null -> noValue
+                    },
+                    valueColor = if (clockingStatus?.isClockedIn == true) colors.success else null,
                     onClick = { navigator.open(ClockingRoute) },
                 )
                 RowDivider()
                 AppRow(
                     label = stringResource(R.string.profile_clocking_history),
-                    value = stringResource(R.string.profile_clocking_this_week, ProfileSample.WEEK_TOTAL),
-                    isSampleValue = true,
+                    value = weekTotal?.let { stringResource(R.string.profile_clocking_this_week, it) } ?: noValue,
                     onClick = { navigator.open(TimesheetsRoute) },
                 )
             }

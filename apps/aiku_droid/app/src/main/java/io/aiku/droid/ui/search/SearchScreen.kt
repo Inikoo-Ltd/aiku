@@ -1,5 +1,6 @@
 package io.aiku.droid.ui.search
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +55,7 @@ import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.ProductPhoto
 import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.rememberNavFocusIndication
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.ScanCameraRoute
 import io.aiku.droid.ui.states.SearchEmptyState
@@ -116,52 +119,54 @@ private fun SearchHeader(query: String, onQueryChange: (String) -> Unit, scopeIn
     val scopes = listOf(R.string.search_scope_all, R.string.section_skos, R.string.section_locations, R.string.section_delivery_notes)
     val pill = RoundedCornerShape(999.dp)
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.nav)
-            .statusBarsPadding()
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 14.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            HeaderIconButton(icon = R.drawable.ic_ui_back, description = stringResource(R.string.nav_back), onClick = onBack, iconSize = 24.dp)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier
-                    .weight(1f)
-                    .height(46.dp)
-                    .clip(ControlShape)
-                    .background(colors.surface)
-                    .border(3.dp, colors.scan.copy(alpha = 0.6f), ControlShape)
-                    .padding(horizontal = 12.dp),
-            ) {
-                Icon(painter = painterResource(R.drawable.ic_ui_search_alt), contentDescription = null, tint = colors.textQuaternary, modifier = Modifier.size(20.dp))
-                BasicTextField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    singleLine = true,
-                    textStyle = TextStyle(fontFamily = Inter, fontSize = 16.sp, color = colors.text),
-                    cursorBrush = SolidColor(colors.primary),
-                    modifier = Modifier.weight(1f).semantics { contentDescription = label },
-                )
-            }
-        }
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            scopes.forEachIndexed { index, scope ->
-                val isActive = index == scopeIndex
-                Box(
-                    contentAlignment = Alignment.Center,
+    CompositionLocalProvider(LocalIndication provides rememberNavFocusIndication()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(colors.nav)
+                .statusBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 14.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HeaderIconButton(icon = R.drawable.ic_ui_back, description = stringResource(R.string.nav_back), onClick = onBack, iconSize = 24.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier
-                        .height(34.dp)
-                        .clip(pill)
-                        .background(if (isActive) colors.navActive else Color.White.copy(alpha = 0.14f))
-                        .then(if (isActive) Modifier.border(1.dp, colors.navRing, pill) else Modifier)
-                        .selectable(selected = isActive, role = Role.Tab) { onScope(index) }
+                        .weight(1f)
+                        .height(46.dp)
+                        .clip(ControlShape)
+                        .background(colors.surface)
+                        .border(3.dp, colors.scan.copy(alpha = 0.6f), ControlShape)
                         .padding(horizontal = 12.dp),
                 ) {
-                    Text(text = stringResource(scope), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (isActive) colors.navAccent else colors.onNav)
+                    Icon(painter = painterResource(R.drawable.ic_ui_search_alt), contentDescription = null, tint = colors.textQuaternary, modifier = Modifier.size(20.dp))
+                    BasicTextField(
+                        value = query,
+                        onValueChange = onQueryChange,
+                        singleLine = true,
+                        textStyle = TextStyle(fontFamily = Inter, fontSize = 16.sp, color = colors.text),
+                        cursorBrush = SolidColor(colors.primary),
+                        modifier = Modifier.weight(1f).semantics { contentDescription = label },
+                    )
+                }
+            }
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                scopes.forEachIndexed { index, scope ->
+                    val isActive = index == scopeIndex
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .height(34.dp)
+                            .clip(pill)
+                            .background(if (isActive) colors.navActive else Color.White.copy(alpha = 0.14f))
+                            .then(if (isActive) Modifier.border(1.dp, colors.navRing, pill) else Modifier)
+                            .selectable(selected = isActive, role = Role.Tab) { onScope(index) }
+                            .padding(horizontal = 12.dp),
+                    ) {
+                        Text(text = stringResource(scope), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = if (isActive) colors.navAccent else colors.onNav)
+                    }
                 }
             }
         }
