@@ -51,6 +51,8 @@ const stepsBeatingOffer = computed<StepDiscountStep[]>(() =>
     stepsBeatingSpecialOffer(allSteps.value, specialOfferPercentageOff.value)
 )
 
+const specialOfferPercentageOffLabel = computed<string>(() => `${Math.round(specialOfferPercentageOff.value * 100)}%`)
+
 const isCoveredStep = (step: StepDiscountStep): boolean =>
     isStepCoveredBySpecialOffer(step, specialOfferPercentageOff.value)
 
@@ -153,7 +155,6 @@ const onSelectStep = (step: StepDiscountStep) => {
                     'is-active': isActiveStep(step),
                     'is-popular': isPopularStep(step),
                     'is-dimmed': isSubmitting && !isActiveStep(step),
-                    'is-covered': isCoveredStep(step),
                 }"
                 :aria-pressed="isActiveStep(step)"
                 :aria-busy="isSubmitting && isActiveStep(step)"
@@ -176,7 +177,7 @@ const onSelectStep = (step: StepDiscountStep) => {
                             {{ quantityLabel(step) }}
                         </span>
                         <span v-if="isCoveredStep(step)" class="covered-badge">
-                            {{ ctrans("Already in your price") }}
+                            {{ ctrans("You already have this price") }}
                         </span>
                         <span v-else-if="savedAmount(step) > 0" class="save-badge">
                             {{ ctrans("Save :amount", { amount: formatPrice(savedAmount(step)) }) }}
@@ -184,8 +185,10 @@ const onSelectStep = (step: StepDiscountStep) => {
                     </div>
                     <div class="text-sm text-gray-500 mt-0.5">
                         <span v-if="isPackedProduct">{{ innerQuantityLabel(step) }}</span>
-                        <span v-if="isPackedProduct && step.percentage_off > 0 && !isCoveredStep(step)" class="mx-1">·</span>
-                        <template v-if="isCoveredStep(step)" />
+                        <span v-if="isPackedProduct && step.percentage_off > 0" class="mx-1">·</span>
+                        <template v-if="isCoveredStep(step)">
+                            {{ ctrans("You save") }} {{ specialOfferPercentageOffLabel }}
+                        </template>
                         <template v-else-if="step.percentage_off > 0">
                             {{ ctrans("You save") }} {{ step.percentage_off_label }}
                         </template>
@@ -249,20 +252,14 @@ const onSelectStep = (step: StepDiscountStep) => {
     cursor: default;
 }
 
-.step-tier.is-covered:not(.is-active) {
-    opacity: 0.55;
-    background: #f9fafb;
-    border-color: #e5e7eb;
-}
-
 .covered-badge {
     display: inline-flex;
     align-items: center;
-    padding: 2px 8px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #6b7280;
-    background: #f3f4f6;
+    padding: 3px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--step-discount-color);
+    border: 1px solid color-mix(in srgb, var(--step-discount-color) 40%, white);
     border-radius: 9999px;
 }
 

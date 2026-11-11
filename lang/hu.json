@@ -6813,7 +6813,7 @@
     "You need to delete invoice before undispatching a delivery note.": "A szállítólevél visszavonása előtt törölni kell a számlát.",
     "You need to make a rental agreement first to continue this": "Ennek folytatásához először bérleti szerződést kell kötnie",
     "You save": "Megtakarítás",
-    "Already in your price": "Már benne van az árában",
+    "You already have this price": "Ez az ár már az Öné",
     "You turn off the banner": "Kikapcsolod a bannert",
     "You will be able to find it in your Shopify settings under domains section.": "A Shopify beállításaiban a domainek részben találja meg.",
     "You will be notified": "Értesítést kapsz",
