@@ -2108,6 +2108,57 @@ describe('calculate order discounts', function () {
         expect((float)$transaction->net_amount)->toBe(270.0);
     });
 
+    test('CalculateOrderDiscounts: special offer and step discount give the better one, never both', function () {
+        $order       = Order::latest('id')->first();
+        $transaction = Transaction::where('order_id', $order->id)->first();
+
+        expect((float)$transaction->net_amount)->toBe(270.0)
+            ->and((int)$transaction->quantity_ordered)->toBe(3);
+
+        $stepOffer = StoreProductStepDiscount::make()->action(
+            $this->product,
+            [
+                'steps'    => [
+                    ['min_quantity' => 1, 'percentage_off' => 0.10],
+                    ['min_quantity' => 5, 'percentage_off' => 0.25],
+                ],
+                'duration' => 'interval',
+                'start_at' => now(),
+                'end_at'   => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+
+        $specialOffer = StoreProductDiscount::make()->action(
+            $this->product,
+            [
+                'type'                       => 'quantity',
+                'trigger_data_item_quantity' => 1,
+                'percentage_off'             => 0.20,
+                'duration'                   => 'interval',
+                'start_at'                   => now(),
+                'end_at'                     => now()->addDays(14)->toDateTimeString(),
+            ]
+        );
+
+        CalculateOrderDiscounts::run($order->refresh());
+        $transaction->refresh();
+        expect((float)$transaction->gross_amount)->toBe(300.0)
+            ->and((float)$transaction->net_amount)->toBe(240.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($specialOffer->id);
+
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 5]);
+        $transaction->refresh();
+        expect((float)$transaction->gross_amount)->toBe(500.0)
+            ->and((float)$transaction->net_amount)->toBe(375.0)
+            ->and(Arr::get($transaction->offers_data, 'o.o'))->toBe($stepOffer->id);
+
+        SuspendOffer::run($specialOffer);
+        SuspendOffer::run($stepOffer);
+        UpdateTransaction::run($transaction, ['quantity_ordered' => 3]);
+        $transaction->refresh();
+        expect((float)$transaction->net_amount)->toBe(270.0);
+    });
+
     test('SubmitOrder gift offers: buy X of product get different product free', function () {
         $order       = Order::latest('id')->first();
         $transaction = Transaction::where('order_id', $order->id)->first();

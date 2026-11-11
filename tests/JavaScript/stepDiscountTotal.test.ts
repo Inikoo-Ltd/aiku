@@ -26,7 +26,7 @@ test("the add to basket box shows the total of the unsaved quantity", () => {
 
 	assert.match(component, /v-if="showsSelectionTotal"/)
 	assert.match(component, /const basketQuantity = computed<number>\(\(\) => Number\(customer\.value\.quantity_ordered \?\? 0\) \|\| 0\)/, "the basket quantity arrives as \"10.000000\" and is shown as 10")
-	assert.match(component, /stepDiscountTotal\(Number\(product\.value\.price\) \|\| 0, product\.value\.step_discount\?\.steps, selectedQuantity\.value\)/)
+	assert.match(component, /stepDiscountTotal\(Number\(product\.value\.price\) \|\| 0, product\.value\.step_discount\?\.steps, selectedQuantity\.value, props\.specialOfferPercentageOff\)/)
 	assert.ok(english["Total for :quantity"])
 	assert.ok(english["Your basket: :from → :to (not saved yet)"])
 })

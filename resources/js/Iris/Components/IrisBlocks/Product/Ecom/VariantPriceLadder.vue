@@ -101,6 +101,7 @@ const onSelect = (option: LadderOption) => {
                     <div class="text-sm text-gray-500">
                         <template v-if="option.isStep || sharesAmountWithAnotherOption(options, option)">{{ containersLabel(option) }}</template>
                         <template v-if="option.isStep"> · {{ ctrans("You save :percentage", { percentage: percentageLabel(option.percentageOff) }) }}</template>
+                        <template v-else-if="option.isSpecialOffer">{{ sharesAmountWithAnotherOption(options, option) ? " · " : "" }}{{ ctrans("Special offer :percentage off", { percentage: percentageLabel(option.percentageOff) }) }}</template>
                         <template v-if="!option.isAvailable">
                             <span v-if="option.isStep || sharesAmountWithAnotherOption(options, option)"> · </span>{{ ctrans("Not enough stock") }}
                         </template>

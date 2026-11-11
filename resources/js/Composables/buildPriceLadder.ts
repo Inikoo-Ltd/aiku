@@ -27,6 +27,7 @@ export interface LadderOption {
     grossTotal: number
     pricePerMeasure: number
     isStep: boolean
+    isSpecialOffer: boolean
     isAvailable: boolean
 }
 
@@ -67,7 +68,10 @@ const maxOrderable = (product: LadderProduct): number => {
     return product.is_on_demand && !product.is_coming_soon ? Infinity : 0
 }
 
-export const buildPriceLadder = (products: LadderProduct[]): LadderOption[] => {
+export const buildPriceLadder = (
+    products: LadderProduct[],
+    specialOfferPercentageOff: (product: LadderProduct) => number = () => 0
+): LadderOption[] => {
     const measure = ladderMeasure(products)
 
     if (!measure) {
@@ -79,11 +83,12 @@ export const buildPriceLadder = (products: LadderProduct[]): LadderOption[] => {
             const size = containerAmount(product, measure)
             const price = Number(product.price) || 0
             const limit = maxOrderable(product)
+            const offer = Math.min(1, Math.max(0, Number(specialOfferPercentageOff(product)) || 0))
             const steps = (product.step_discount?.steps ?? [])
                 .map((step) => ({ minQuantity: Number(step.min_quantity), percentageOff: Number(step.percentage_off) || 0 }))
-                .filter((step) => step.minQuantity > 1 && step.percentageOff > 0)
+                .filter((step) => step.minQuantity > 1 && step.percentageOff > 0 && step.percentageOff > offer)
 
-            return [{ minQuantity: 1, percentageOff: 0 }, ...steps].map((tier) => {
+            return [{ minQuantity: 1, percentageOff: offer }, ...steps].map((tier) => {
                 const grossTotal = roundMoney(price * tier.minQuantity)
                 const total = roundMoney(grossTotal * (1 - tier.percentageOff))
                 const amount = Math.round(size * tier.minQuantity * 1000000) / 1000000
@@ -101,6 +106,7 @@ export const buildPriceLadder = (products: LadderProduct[]): LadderOption[] => {
                     grossTotal,
                     pricePerMeasure: amount > 0 ? roundMoney(total / amount) : 0,
                     isStep: tier.minQuantity > 1,
+                    isSpecialOffer: tier.minQuantity === 1 && offer > 0,
                     isAvailable: limit >= tier.minQuantity
                 }
             })
