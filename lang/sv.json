@@ -9729,5 +9729,9 @@
     "As you asked, your :shop account has been deleted and your personal details have been erased. You will not receive any more emails from us.": "Som du bad om har ditt :shop-konto raderats och dina personuppgifter har tagits bort. Du kommer inte att få fler e-postmeddelanden från oss.",
     "If you placed orders with us, we keep their invoices because the law requires it.": "Om du har beställt hos oss sparar vi fakturorna eftersom lagen kräver det.",
     "Thank you for having been our customer.": "Tack för att du har varit vår kund.",
-    "Sold well last Christmas": "Sålde bra förra julen"
+    "Sold well last Christmas": "Sålde bra förra julen",
+    "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "Under de senaste 30 dagarna skickades 9 av 10 beställningar inom :days dagar efter att de lagts. Det gäller avsändning från vårt lager, inte leverans till dig.",
+    "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Frakten för din nuvarande varukorg är :amount exklusive moms. Den ändras när du lägger till eller tar bort produkter.",
+    "Shipping for your current basket is free. It can change as you add or remove products.": "Frakten för din nuvarande varukorg är gratis. Det kan ändras när du lägger till eller tar bort produkter.",
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Frakten för din nuvarande varukorg ska bekräftas: priset bestäms senare, den är inte gratis."
 }

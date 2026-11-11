@@ -25790,5 +25790,9 @@
     "As you asked, your :shop account has been deleted and your personal details have been erased. You will not receive any more emails from us.": "Zgodnie z Twoją prośbą Twoje konto w :shop zostało usunięte, a Twoje dane osobowe zostały wymazane. Nie otrzymasz od nas więcej wiadomości e-mail.",
     "If you placed orders with us, we keep their invoices because the law requires it.": "Jeśli składałeś u nas zamówienia, przechowujemy ich faktury, ponieważ wymaga tego prawo.",
     "Thank you for having been our customer.": "Dziękujemy, że byłeś naszym klientem.",
-    "Sold well last Christmas": "Dobrze się sprzedawało w zeszłe święta"
+    "Sold well last Christmas": "Dobrze się sprzedawało w zeszłe święta",
+    "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "W ciągu ostatnich 30 dni 9 na 10 zamówień wysłano w ciągu :days dni od ich złożenia. To wysyłka z naszego magazynu, a nie dostawa do Państwa.",
+    "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Wysyłka dla obecnego koszyka wynosi :amount bez podatku. Zmienia się przy dodawaniu lub usuwaniu produktów.",
+    "Shipping for your current basket is free. It can change as you add or remove products.": "Wysyłka dla obecnego koszyka jest bezpłatna. Może się to zmienić przy dodawaniu lub usuwaniu produktów.",
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Wysyłka dla obecnego koszyka wymaga jeszcze potwierdzenia: cena zostanie ustalona później, nie jest bezpłatna."
 }

@@ -9286,5 +9286,9 @@
     "As you asked, your :shop account has been deleted and your personal details have been erased. You will not receive any more emails from us.": "По ваше искане акаунтът ви в :shop е изтрит, а личните ви данни са заличени. Няма да получавате повече имейли от нас.",
     "If you placed orders with us, we keep their invoices because the law requires it.": "Ако сте правили поръчки при нас, пазим фактурите им, защото законът го изисква.",
     "Thank you for having been our customer.": "Благодарим ви, че бяхте наш клиент.",
-    "Sold well last Christmas": "Продаваше се добре миналата Коледа"
+    "Sold well last Christmas": "Продаваше се добре миналата Коледа",
+    "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "През последните 30 дни 9 от 10 поръчки бяха изпратени в рамките на :days дни от направата им. Това е изпращане от нашия склад, а не доставка до вас.",
+    "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Доставката за текущата ви количка е :amount без данъци. Променя се, когато добавяте или премахвате продукти.",
+    "Shipping for your current basket is free. It can change as you add or remove products.": "Доставката за текущата ви количка е безплатна. Това може да се промени, когато добавяте или премахвате продукти.",
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Доставката за текущата ви количка предстои да бъде потвърдена: цената се определя по-късно, не е безплатна."
 }

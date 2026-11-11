@@ -45,6 +45,8 @@ use Throwable;
  * - A turn that called clear_conversation always answers with the fixed cleared sentence, no products
  *   and no follow-ups; one that added to the basket and lost its reply to a rule above says so with a
  *   fixed sentence instead of the product fallback.
+ * - Dispatch times and shipping cost are never written by the AI: the tool's sentence, built from our
+ *   data, is put under the reply after the number rule has been applied to the AI's own words.
  * - model_unavailable: an HTTP failure, an empty or unreadable answer, or a content filter stop
  *   gives the fallback with no products. The customer message is stored first, so it is never lost.
  * - model_call_limit: no final answer within services.shopping_assistant.max_model_calls calls.
@@ -141,6 +143,10 @@ class AskShoppingAssistant
             $reply = __('I have added the products to your basket.', [], $conversation->language_code);
         }
 
+        if ($turn['facts'] && !$turn['cleared']) {
+            $reply = trim($reply."\n\n".implode("\n", array_unique($turn['facts'])));
+        }
+
         $hasProducts = collect($groups)->contains(fn (Collection $products) => $products->isNotEmpty());
         if ($reply === '') {
             $reply = $hasProducts
@@ -229,11 +235,11 @@ class AskShoppingAssistant
      * throws or is killed later keeps what it spent; the assistant message gets the turn's totals only
      * for display, and the conversation is never raised again at the end of the turn.
      *
-     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, names: array<int, string>, basket: array<int, int>, cleared: bool, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
+     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, names: array<int, string>, basket: array<int, int>, facts: array<int, string>, cleared: bool, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
      */
     private function runModel(ShoppingAssistantConversation $conversation, ?Customer $customer, ShoppingAssistantMessage $customerMessage, string $message, string $model): array
     {
-        $turn = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
+        $turn = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
 
         if (!$customer) {
             $turn['flags'][] = 'model_unavailable';
@@ -314,7 +320,7 @@ class AskShoppingAssistant
 
                 $result = $arguments === null
                     ? ['content' => ['error' => 'The arguments were not a JSON object.'], 'products' => [], 'error' => 'invalid_arguments']
-                    : $tools->execute($conversation, $name, $arguments);
+                    : $tools->execute($conversation, $name, $arguments, array_keys($turn['found']));
 
                 foreach ($result['products'] as $product) {
                     $turn['found'][$product['id']] ??= $product;
@@ -322,6 +328,9 @@ class AskShoppingAssistant
                 $turn['names']   = array_merge($turn['names'], $result['names'] ?? []);
                 $turn['basket']  = array_merge($turn['basket'], $result['basket'] ?? []);
                 $turn['cleared'] = $turn['cleared'] || !empty($result['cleared']);
+                if (isset($result['fact'])) {
+                    $turn['facts'][] = $result['fact'];
+                }
 
                 $turn['tool_calls'][] = array_merge([
                     'name'        => $name,
@@ -600,6 +609,7 @@ Reply in $language.
 Rules:
 - Only recommend products returned by the tools, by their ids, through present_products.
 - Never state prices, discounts, stock quantities, delivery times or how many shops buy something.
+- When the customer asks how quickly orders are dispatched, call dispatch_times; when they ask what shipping costs, call shipping_cost. The system adds the sentence with the real figure under your reply: write one short lead-in with no figure, and never promise a delivery date.
 - Never mention other customers.
 - Do not invent product claims beyond the product and family names.
 - Each product comes with a why line. When you say why you suggest something, say no more than its why line says: write "shops like yours" only when the why line says so, and "shops in your area" when that is what it says.

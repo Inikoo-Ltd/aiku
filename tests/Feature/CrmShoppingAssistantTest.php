@@ -1311,7 +1311,9 @@ test('the assistant adds the products it showed to the basket when asked, one of
 
     $messages = $this->actingAs($webUser, 'retina')->getJson('http://'.$website->domain.'/json/shopping-assistant/'.$conversation->ulid)->assertOk()->json('messages');
 
-    expect(collect($messages)->last()['basket_added'])->toBe([$new->id]);
+    expect(collect($messages)->last()['basket_added'])->toBe([$new->id])
+        ->and(GetShoppingAssistantTools::make()->execute($conversation, 'add_to_basket', ['product_ids' => [$notShown->id]])['error'])->not->toBeNull()
+        ->and(GetShoppingAssistantTools::make()->execute($conversation, 'add_to_basket', ['product_ids' => [$notShown->id]], [$notShown->id])['basket'])->toBe([$notShown->id]);
 
     $wider = AskShoppingAssistant::run($conversation->fresh(), 'I need a bigger selection');
 
@@ -1438,4 +1440,56 @@ test('the assistant offers what sold mostly in the run-up to last Christmas, lea
         ->and(array_keys($result['content']['products'][0]))->toBe(['id', 'name', 'family', 'why']);
 
     Illuminate\Support\Facades\Cache::forget('range_advisor:christmas_best_sellers:'.$this->shop->id.':'.$season[1]->year);
+});
+
+test('dispatch times and shipping cost are answered with a sentence built from our data under the reply, never with a figure written by the AI', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $buyer    = shoppingAssistantCustomer($this->shop);
+    shoppingAssistantStorefront($this);
+    $product  = shoppingAssistantLiveProduct($this->product);
+    collect(range(1, 60))->each(fn () => shoppingAssistantOrderLine($buyer, $product, now()->subDays(4)->toDateTimeString(), 10));
+    DB::table('orders')->where('customer_id', $buyer->id)->update(['state' => 'dispatched', 'dispatched_at' => now()->subDays(4)->addHours(50)]);
+    Illuminate\Support\Facades\Cache::forget('shopping_assistant:dispatch_days:'.$this->shop->id);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $locale       = $conversation->language_code;
+    $dispatch     = $tools->execute($conversation, 'dispatch_times', []);
+    $emptyBasket  = $tools->execute($conversation, 'shipping_cost', []);
+
+    \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make()->handle($customer, [['product_id' => $product->id, 'quantity' => 2]]);
+    $basket = DB::table('orders')->where('customer_id', $customer->id)->where('state', 'creating');
+    $basket->update(['shipping_engine' => 'auto', 'is_shipping_tbc' => false, 'shipping_amount' => 7.5]);
+    $priced = $tools->execute($conversation, 'shipping_cost', []);
+    $basket->update(['shipping_amount' => 0]);
+    $free = $tools->execute($conversation, 'shipping_cost', []);
+    $basket->update(['is_shipping_tbc' => true]);
+    $toBeConfirmed = $tools->execute($conversation, 'shipping_cost', []);
+    $basket->update(['is_shipping_tbc' => false, 'shipping_amount' => 7.5]);
+
+    expect($dispatch['fact'])->toBe(__('Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.', ['days' => 3], $locale))
+        ->and(json_encode($dispatch['content']))->not->toMatch('/\d/')
+        ->and($emptyBasket)->not->toHaveKey('fact')
+        ->and($emptyBasket['content']['available'])->toBeFalse()
+        ->and($priced['fact'])->toContain(Illuminate\Support\Number::currency(7.5, $this->shop->currency->code))
+        ->and(json_encode($priced['content']))->not->toMatch('/\d/')
+        ->and($free['fact'])->toBe(__('Shipping for your current basket is free. It can change as you add or remove products.', [], $locale))
+        ->and($toBeConfirmed['fact'])->toBe(__('Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.', [], $locale));
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('dispatch_times', [])]], 'tool_calls'))
+        ->push(shoppingAssistantModelReply(['content' => 'We send orders out quickly.'], 'stop'))
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('shipping_cost', [])]], 'tool_calls'))
+        ->push(shoppingAssistantModelReply(['content' => 'It will be about £5 and arrive in 2 days.'], 'stop'))]);
+
+    $first  = AskShoppingAssistant::run($conversation, 'How fast do you dispatch?');
+    $second = AskShoppingAssistant::run($conversation->fresh(), 'How much is shipping?');
+
+    expect($first['reply'])->toBe("We send orders out quickly.\n\n".$dispatch['fact'])
+        ->and($first['message']->flags)->toBeNull()
+        ->and($second['reply'])->toBe($priced['fact'])
+        ->and($second['message']->flags)->toBe(['reply_replaced_number'])
+        ->and($second['message']->body)->not->toContain('£5');
+
+    Illuminate\Support\Facades\Cache::forget('shopping_assistant:dispatch_days:'.$this->shop->id);
 });

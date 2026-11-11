@@ -40,6 +40,10 @@ Skôr než ho prvýkrát zapnete pre obchod, požiadajte help desk, aby preň pr
 - Odpoveď zobrazí najviac 8 produktov v každej záložke a najviac 12, keď zákazník požiada o viac alebo o širší výber.
 - **Add all to basket** (Pridať všetko do košíka) pod každou odpoveďou vloží do košíka jeden kus z každého zobrazeného produktu a tie, ktoré tam už sú, nechá tak. Zákazník o to môže požiadať aj slovami („pridaj mi ich do košíka") a poradca urobí to isté, len s produktmi, ktoré v danej konverzácii zobrazil. Množstvá sa menia na kartách produktov alebo v košíku.
 - Zákazník môže poradcu požiadať o vymazanie konverzácie. Tá potom zmizne z jeho obrazovky a už ju nemôže otvoriť. Záznam zostáva v aiku: v záložke **Conversations** má stav **Cleared by customer** (Vymazané zákazníkom) a prepis ukazuje, čo poradca pridal do košíka a že zákazník požiadal o vymazanie.
+- Poradca nájde produkt alebo celú rodinu podľa kódu, aj keď je napísaný voľne („tiba 04", „bbskt"), a povie, keď je žiadaný produkt vypredaný.
+- Na otázku na najlacnejšie alebo najdrahšie produkty ich zobrazí zoradené podľa ceny. Ceny sám nepíše: sú na kartách.
+- Pri otázkach na Vianoce a darčeky pridá produkty, ktoré sa predávali najmä od septembra do Vianoc minulého roka, označené „Sold well last Christmas" (Minulé Vianoce sa dobre predávalo), či už majú Vianoce v názve alebo nie.
+- Na otázku, ako rýchlo sa objednávky odosielajú, odpovie skutočným údajom obchodu za posledných 30 dní. Na otázku na cenu dopravy uvedie dopravu aktuálneho košíka zákazníka, ako ju vypočítal košík. Obe vety píše aiku z údajov, nie AI.
 - Pod odpoveďou sú tlačidlá s ďalšími otázkami, pole na napísanie ďalšej otázky a **Start a new conversation** (Začať novú konverzáciu).
 
 Bežné vyhľadávania podľa slova alebo kódu produktu sa nemenia a nespomaľujú.

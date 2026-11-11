@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Number;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -50,9 +51,14 @@ use Throwable;
  * present_products is never executed: AskShoppingAssistant reads its arguments as the final answer.
  *
  * add_to_basket puts one of each product in the customer's basket, only products already shown in
- * this conversation and not yet in the basket, through the storefront's own bulk add, so stock,
+ * this conversation, or found by a tool in the same turn, and not yet in the basket, through the storefront's own bulk add, so stock,
  * visibility and order limits are checked the same way. clear_conversation hides the conversation
  * from the customer for good; the record stays for staff.
+ *
+ * dispatch_times and shipping_cost never give the model a figure: each returns a `fact`, a sentence
+ * written here from our data in the shop's language, which AskShoppingAssistant puts under the
+ * model's reply. Shipping is read from the customer's own basket, where the system has already
+ * worked it out; nothing is estimated.
  */
 class GetShoppingAssistantTools
 {
@@ -150,10 +156,20 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'add_to_basket',
-                'Put products in the customer\'s basket, one of each, only when the customer asks you to. Without product_ids it adds every product of your previous answer. Only products already shown in this conversation can be added. Returns the names added, already in the basket and those that could not be added. Returns no products.',
+                'Put products in the customer\'s basket, one of each, only when the customer asks you to. Without product_ids it adds every product of your previous answer. Only products shown in this conversation, or returned by a tool in this same turn, can be added: when the customer names a product to add, search for it first, then add it by its id. Returns the names added, already in the basket and those that could not be added. Returns no products.',
                 [
                     'product_ids' => ['type' => 'array', 'items' => ['type' => 'integer'], 'maxItems' => self::MAX_PER_GROUP * 2, 'description' => 'Ids of shown products to add, when the customer asked for only some of them.'],
                 ]
+            ),
+            $this->tool(
+                'dispatch_times',
+                'How quickly this shop dispatches orders, from the last 30 days. Use it when the customer asks how fast orders are sent, dispatched or shipped out. The sentence with the figure is added under your reply by the system; you get no figure. Returns no products.',
+                []
+            ),
+            $this->tool(
+                'shipping_cost',
+                'What shipping costs for the customer\'s current basket. Use it when the customer asks about shipping, postage, carriage or delivery cost. The sentence with the amount is added under your reply by the system; you get no figure. Returns no products.',
+                []
             ),
             $this->tool(
                 'clear_conversation',
@@ -181,10 +197,11 @@ class GetShoppingAssistantTools
 
     /**
      * @param  array<string, mixed>  $arguments
+     * @param  array<int, int>  $foundProductIds  ids the tools returned earlier in this turn
      *
      * @return array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}
      */
-    public function execute(ShoppingAssistantConversation $conversation, string $name, array $arguments): array
+    public function execute(ShoppingAssistantConversation $conversation, string $name, array $arguments, array $foundProductIds = []): array
     {
         $customer = $conversation->customer;
 
@@ -200,8 +217,10 @@ class GetShoppingAssistantTools
                 'best_sellers_last_christmas'    => $this->productsResult($customer, GetChristmasBestSellers::run($customer->shop, $customer, $this->limit($arguments)), fn () => 'sold_last_christmas', $conversation->language_code),
                 'products_they_stopped_ordering' => $this->stoppedOrdering($customer, $arguments, $conversation->language_code),
                 'save_shop_type'                 => $this->saveShopType($conversation, $customer, $arguments),
-                'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments),
+                'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments, $foundProductIds),
                 'clear_conversation'             => $this->clearConversation($conversation),
+                'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
+                'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
                 default                          => $this->error("Unknown tool $name."),
             };
         } catch (Throwable $exception) {
@@ -462,7 +481,7 @@ class GetShoppingAssistantTools
      *
      * @return array{content: array<string, mixed>, products: array{}, error: ?string, basket?: array<int, int>}
      */
-    private function addToBasket(ShoppingAssistantConversation $conversation, Customer $customer, array $arguments): array
+    private function addToBasket(ShoppingAssistantConversation $conversation, Customer $customer, array $arguments, array $foundProductIds = []): array
     {
         $shown = $conversation->events()->where('type', ShoppingAssistantEventTypeEnum::SHOWN)->orderBy('id')->get(['product_id', 'shopping_assistant_message_id']);
         $ids   = collect(is_array($arguments['product_ids'] ?? null) ? $arguments['product_ids'] : [])->filter(fn ($id) => is_numeric($id))->map(fn ($id) => (int) $id);
@@ -471,7 +490,7 @@ class GetShoppingAssistantTools
             $ids = $shown->where('shopping_assistant_message_id', $shown->max('shopping_assistant_message_id'))->pluck('product_id');
         }
 
-        $ids = $ids->intersect($shown->pluck('product_id'))->unique()->take(self::MAX_PER_GROUP * 2)->values();
+        $ids = $ids->intersect($shown->pluck('product_id')->merge($foundProductIds))->unique()->take(self::MAX_PER_GROUP * 2)->values();
 
         if ($ids->isEmpty()) {
             return $this->error('No product shown in this conversation matches. Show products first, then add them.');
@@ -507,6 +526,56 @@ class GetShoppingAssistantTools
             'products' => [],
             'error'    => null,
             'basket'   => $added->pluck('product_id')->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function dispatchTimes(Customer $customer, string $locale): array
+    {
+        $days = GetShoppingAssistantDispatchDays::run($customer->shop);
+
+        if ($days === null) {
+            return ['content' => ['available' => false, 'note' => 'We have no recent dispatch figure for this shop. Say so and suggest asking customer service; do not guess.'], 'products' => [], 'error' => null];
+        }
+
+        return [
+            'content'  => ['available' => true, 'note' => 'A sentence with the real dispatch figure is added under your reply. Write one short lead-in without any figure or delivery promise.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => __('Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.', ['days' => $days], $locale),
+        ];
+    }
+
+    /**
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function shippingCost(Customer $customer, string $locale): array
+    {
+        $order = Order::where('customer_id', $customer->id)->where('state', OrderStateEnum::CREATING)->latest('id')->first();
+        $lines = $order ? Transaction::where('order_id', $order->id)->where('model_type', 'Product')->where('is_gift', false)->exists() : false;
+
+        if (!$lines) {
+            return ['content' => ['available' => false, 'note' => 'The basket is empty. Say that shipping is worked out in the basket once it has products, and offer to help choose some.'], 'products' => [], 'error' => null];
+        }
+
+        $fact = match (true) {
+            (bool) $order->is_shipping_tbc                                       => __('Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.', [], $locale),
+            $order->shipping_engine?->value === 'auto' && (float) $order->shipping_amount > 0 => __('Shipping for your current basket is :amount before tax. It changes as you add or remove products.', ['amount' => Number::currency((float) $order->shipping_amount, $order->currency->code)], $locale),
+            $order->shipping_engine?->value === 'auto'                           => __('Shipping for your current basket is free. It can change as you add or remove products.', [], $locale),
+            default                                                              => null,
+        };
+
+        if ($fact === null) {
+            return ['content' => ['available' => false, 'note' => 'Shipping for this basket is not worked out automatically. Say it is shown in the basket and at checkout; do not guess.'], 'products' => [], 'error' => null];
+        }
+
+        return [
+            'content'  => ['available' => true, 'note' => 'A sentence with the real shipping cost of the current basket is added under your reply. Write one short lead-in without any amount.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => $fact,
         ];
     }
 

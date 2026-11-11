@@ -25745,5 +25745,9 @@
     "As you asked, your :shop account has been deleted and your personal details have been erased. You will not receive any more emails from us.": "Așa cum ați solicitat, contul dvs. :shop a fost șters, iar datele dvs. personale au fost eliminate. Nu veți mai primi e-mailuri de la noi.",
     "If you placed orders with us, we keep their invoices because the law requires it.": "Dacă ați plasat comenzi la noi, păstrăm facturile acestora, deoarece legea o impune.",
     "Thank you for having been our customer.": "Vă mulțumim că ați fost clientul nostru.",
-    "Sold well last Christmas": "S-a vândut bine Crăciunul trecut"
+    "Sold well last Christmas": "S-a vândut bine Crăciunul trecut",
+    "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "În ultimele 30 de zile, 9 din 10 comenzi au fost expediate în cel mult :days zile de la plasare. Este vorba de expedierea din depozitul nostru, nu de livrarea la dumneavoastră.",
+    "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Transportul pentru coșul actual este :amount fără taxe. Se modifică atunci când adăugați sau eliminați produse.",
+    "Shipping for your current basket is free. It can change as you add or remove products.": "Transportul pentru coșul actual este gratuit. Se poate modifica atunci când adăugați sau eliminați produse.",
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Transportul pentru coșul actual urmează să fie confirmat: prețul se stabilește ulterior, nu este gratuit."
 }

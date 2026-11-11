@@ -26723,5 +26723,9 @@
     "As you asked, your :shop account has been deleted and your personal details have been erased. You will not receive any more emails from us.": "Podle vaší žádosti byl váš účet :shop zrušen a vaše osobní údaje byly vymazány. Už od nás nebudete dostávat žádné e-maily.",
     "If you placed orders with us, we keep their invoices because the law requires it.": "Pokud jste u nás objednávali, faktury k objednávkám uchováváme, protože to vyžaduje zákon.",
     "Thank you for having been our customer.": "Děkujeme, že jste byli naším zákazníkem.",
-    "Sold well last Christmas": "Loni o Vánocích se dobře prodávalo"
+    "Sold well last Christmas": "Loni o Vánocích se dobře prodávalo",
+    "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "Za posledních 30 dní bylo 9 z 10 objednávek odesláno do :days dnů od jejich vytvoření. Jde o odeslání z našeho skladu, ne o doručení k vám.",
+    "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Doprava pro váš aktuální košík je :amount bez daně. Mění se, když přidáte nebo odeberete produkty.",
+    "Shipping for your current basket is free. It can change as you add or remove products.": "Doprava pro váš aktuální košík je zdarma. Může se změnit, když přidáte nebo odeberete produkty.",
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Doprava pro váš aktuální košík se ještě potvrdí: cena se určí později, není zdarma."
 }

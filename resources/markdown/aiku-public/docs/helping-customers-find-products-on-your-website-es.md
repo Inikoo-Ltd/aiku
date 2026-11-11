@@ -40,6 +40,10 @@ Antes de activarlo por primera vez en una tienda, pide al help desk que prepare 
 - Una respuesta muestra hasta 8 productos en cada pestaña, y hasta 12 cuando el cliente pide más o una selección más amplia.
 - **Add all to basket** (añadir todo a la cesta), bajo cada respuesta, pone en la cesta una unidad de cada producto mostrado y no toca los que ya están. El cliente también puede pedirlo con palabras ("añádelos a mi cesta") y el asesor hace lo mismo, solo con productos que ha mostrado en esa conversación. Las cantidades se cambian en las tarjetas de producto o en la cesta.
 - Un cliente puede pedir al asesor que borre la conversación. Entonces desaparece de su pantalla y no puede volver a abrirla. El registro se conserva en aiku: en la pestaña **Conversations** su estado es **Cleared by customer** (borrada por el cliente), y la transcripción muestra lo que el asesor añadió a la cesta y que el cliente pidió borrarla.
+- El asesor encuentra un producto o una familia entera por su código, aunque se escriba de forma aproximada ("tiba 04", "bbskt"), y avisa cuando el producto pedido está agotado.
+- Si se le piden los más baratos o los más caros, muestra los productos ordenados por precio. Sigue sin escribir precios: los muestran las tarjetas.
+- En preguntas sobre Navidad y regalos añade los productos que se vendieron sobre todo entre septiembre y Navidad del año pasado, marcados "Sold well last Christmas" (se vendió bien la Navidad pasada), lleven o no Navidad en el nombre.
+- Si se le pregunta cuánto se tarda en enviar los pedidos, responde con la cifra real de la tienda en los últimos 30 días. Si se le pregunta cuánto cuesta el envío, da el envío de la cesta actual del cliente, tal como se calcula en la cesta. Ambas frases las escribe aiku a partir de los datos, no la IA.
 - Bajo la respuesta, botones con preguntas de seguimiento, un cuadro para escribir otra pregunta y **Start a new conversation** (empezar una conversación nueva).
 
 Las búsquedas normales por palabra o por código de producto no cambian y no se ralentizan.

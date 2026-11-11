@@ -8892,5 +8892,9 @@
     "As you asked, your :shop account has been deleted and your personal details have been erased. You will not receive any more emails from us.": "Kao što ste zatražili, vaš :shop račun je izbrisan, a vaši osobni podaci su obrisani. Više nećete primati e-poruke od nas.",
     "If you placed orders with us, we keep their invoices because the law requires it.": "Ako ste kod nas naručivali, čuvamo račune za te narudžbe jer to zakon zahtijeva.",
     "Thank you for having been our customer.": "Hvala vam što ste bili naš kupac.",
-    "Sold well last Christmas": "Dobro se prodavalo prošlog Božića"
+    "Sold well last Christmas": "Dobro se prodavalo prošlog Božića",
+    "Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.": "U posljednjih 30 dana 9 od 10 narudžbi poslano je u roku od :days dana od naručivanja. Riječ je o slanju iz našeg skladišta, a ne o dostavi do vas.",
+    "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Dostava za vašu trenutačnu košaricu iznosi :amount bez poreza. Mijenja se kada dodajete ili uklanjate proizvode.",
+    "Shipping for your current basket is free. It can change as you add or remove products.": "Dostava za vašu trenutačnu košaricu je besplatna. To se može promijeniti kada dodajete ili uklanjate proizvode.",
+    "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Dostava za vašu trenutačnu košaricu još se treba potvrditi: cijena se određuje naknadno, nije besplatna."
 }
