@@ -31,6 +31,8 @@ targets:
         AikuMobileAppKey: $(AIKU_MOBILE_APP_KEY)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSCameraUsageDescription: Aiku uses the camera to scan clocking QR codes and barcodes.
+        NSLocationWhenInUseUsageDescription: Aiku checks you are at your workplace when you clock in with a QR code.
         NSLocalNetworkUsageDescription: Aiku connects to your organisation's Aiku server on this network.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true

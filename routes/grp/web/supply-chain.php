@@ -14,6 +14,7 @@ use App\Actions\SupplyChain\AgentSupplierPurchaseOrder\UI\ShowAgentSupplierPurch
 use App\Actions\SupplyChain\Agent\UI\EditAgent;
 use App\Actions\SupplyChain\Agent\UI\IndexAgents;
 use App\Actions\SupplyChain\Agent\UI\ShowAgent;
+use App\Actions\SupplyChain\Agent\UI\ShowAgentsPurchaseOrderStates;
 use App\Actions\SupplyChain\Supplier\UI\CreateSupplier;
 use App\Actions\SupplyChain\Supplier\UI\EditSupplier;
 use App\Actions\SupplyChain\Supplier\UI\IndexAgentSuppliers;
@@ -65,6 +66,8 @@ Route::prefix("agents")->name("agents.")->group(
     function () {
         Route::get('', IndexAgents::class)->name('index');
         Route::get('create', CreateAgent::class)->name('create');
+        Route::get('purchase-orders', ShowAgentsPurchaseOrderStates::class)->name('purchase_order_states');
+        Route::get('purchase-orders/list', [IndexPurchaseOrders::class, 'inAgentsPurchaseOrderStates'])->name('purchase_order_states.purchase_orders');
         Route::get('{agent}/edit', EditAgent::class)->name('edit');
         Route::get('{agent}', ShowAgent::class)->name('show');
 

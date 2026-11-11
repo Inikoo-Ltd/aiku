@@ -8,6 +8,7 @@ data class OrganisationSummary(
     val id: Long,
     val slug: String,
     val name: String,
+    val code: String = "",
 )
 
 @Serializable

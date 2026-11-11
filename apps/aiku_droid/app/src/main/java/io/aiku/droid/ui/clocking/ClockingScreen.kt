@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,79 +48,127 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.common.BitMatrix
+import com.google.zxing.oned.Code128Writer
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import io.aiku.droid.R
+import io.aiku.droid.data.api.ClockingSession
+import io.aiku.droid.data.api.ClockingStatus
 import io.aiku.droid.ui.components.AikuButton
+import io.aiku.droid.ui.components.AlertTone
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.ControlShape
-import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.InlineAlert
+import io.aiku.droid.ui.components.SkeletonListCard
+import io.aiku.droid.ui.components.SkeletonStatCard
+import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.rememberTabIndication
 import io.aiku.droid.ui.navigation.ClockScanQrRoute
+import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
 import io.aiku.droid.ui.navigation.MainTab
-import io.aiku.droid.ui.navigation.TimesheetsRoute
 import io.aiku.droid.ui.theme.LocalAikuColors
-import kotlinx.coroutines.delay
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Locale
+import kotlin.math.floor
 
-private const val LOCATION_DETECTION_MILLIS = 1500L
+private const val BARCODE_QUIET_ZONE_MODULES = 10
+private const val QR_QUIET_ZONE_MODULES = 2
 private val MethodTabsShape = RoundedCornerShape(12.dp)
 private val MethodTabShape = RoundedCornerShape(8.dp)
-
-private enum class ClockingLocationState { Found, Detecting }
 
 @Composable
 fun ClockingScreen() {
     val navigator = LocalAppNavigator.current
-    var showAdjustment by remember { mutableStateOf(false) }
+    val clocking = LocalClocking.current
+    val state by clocking.state.collectAsStateWithLifecycle()
     var showWorkingHours by remember { mutableStateOf(false) }
-    val methods = ClockingEnabledMethodsSample
+    var cameraCoordinates by remember { mutableStateOf<ClockingCoordinates?>(null) }
+    var selectedMethod by rememberSaveable { mutableStateOf<ClockingMethod?>(null) }
+    val status = state.status
+    val methods = ClockingMethod.fromKeys(status?.methods.orEmpty())
+    val method = selectedMethod?.takeIf { it in methods } ?: methods.firstOrNull()
+    val now = rememberClockingNow()
+    val location = rememberClockingLocation(
+        isActive = method == ClockingMethod.QrCode,
+        onPermissionDenied = { navigator.open(ClockingErrorRoute(kind = ClockingErrorKind.LocationBlocked.key)) },
+    )
+    val openCamera = {
+        if (status?.hasShifts == true) {
+            cameraCoordinates = location.coordinates
+            showWorkingHours = true
+        } else {
+            clocking.prepareScan(ClockingScanSetup(coordinates = location.coordinates))
+            navigator.open(ClockScanQrRoute)
+        }
+    }
+
+    LaunchedEffect(Unit) { clocking.refresh() }
 
     AppScreen(
         header = {
             AppHeader(
                 title = stringResource(R.string.clocking_title),
                 kicker = clockingKicker(LocalStaff.current.displayName),
-                tabs = clockingSectionTabs(active = ClockingSection.ClockInOut, onAdjustment = { showAdjustment = true }),
+                tabs = clockingSectionTabs(active = ClockingSection.ClockInOut),
             )
         },
         activeTab = MainTab.Menu,
         showBar = true,
     ) {
-        if (methods.isEmpty()) {
-            ClockingNoMethodCard()
-        } else {
-            var selectedMethod by rememberSaveable { mutableStateOf(methods.first()) }
-
-            ClockingStatusCard(status = ClockingTodaySample)
-            ClockingMethodTabs(methods = methods, selected = selectedMethod, onSelect = { selectedMethod = it })
-            when (selectedMethod) {
-                ClockingMethod.QrCode -> ClockingQrCodeMethod(
-                    onOpenCamera = {
-                        showWorkingHours = ClockingOrganisationHasShiftsSample
-                        if (!ClockingOrganisationHasShiftsSample) {
-                            navigator.open(ClockScanQrRoute)
-                        }
-                    },
-                )
-                ClockingMethod.Pin -> ClockingPinMethod()
-                ClockingMethod.Barcode -> ClockingBarcodeMethod()
-                ClockingMethod.CameraQr -> ClockingCameraQrMethod()
+        state.statusProblem?.let { problem -> ClockingLoadProblem(problem = problem, onRetry = clocking::refresh) }
+        when {
+            status == null && state.statusProblem == null -> {
+                SkeletonStatCard()
+                SkeletonListCard(rows = 2)
+            }
+            status == null -> Unit
+            method == null -> ClockingNoMethodCard()
+            else -> {
+                ClockingStatusCard(status = status, zone = state.zone, now = now)
+                ClockingMethodTabs(methods = methods, selected = method, onSelect = { selectedMethod = it })
+                when (method) {
+                    ClockingMethod.QrCode -> ClockingQrCodeMethod(location = location, onOpenCamera = openCamera)
+                    ClockingMethod.Pin -> ClockingPinMethod(code = status.code)
+                    ClockingMethod.Barcode -> ClockingBarcodeMethod(code = status.code)
+                    ClockingMethod.CameraQr -> ClockingCameraQrMethod(code = status.code)
+                }
             }
         }
     }
 
     if (showWorkingHours) {
-        WorkingHoursSheet(onDismiss = { showWorkingHours = false })
-    }
-    if (showAdjustment) {
-        ClockingAdjustmentSheet(
-            date = CLOCKING_ADJUSTMENT_DATE_SAMPLE,
-            onDismiss = { showAdjustment = false },
-            onRequested = { navigator.switchSection(TimesheetsRoute) },
+        WorkingHoursSheet(
+            onDismiss = { showWorkingHours = false },
+            onConfirm = { workScheduleId ->
+                showWorkingHours = false
+                clocking.prepareScan(ClockingScanSetup(workScheduleId = workScheduleId, coordinates = cameraCoordinates))
+                navigator.open(ClockScanQrRoute)
+            },
         )
     }
+}
+
+@Composable
+internal fun ClockingLoadProblem(problem: ClockingProblem, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    InlineAlert(
+        title = stringResource(R.string.clocking_load_failed_title),
+        body = stringResource(if (problem == ClockingProblem.Offline) R.string.clocking_load_offline_body else R.string.clocking_load_server_body),
+        tone = AlertTone.Warn,
+        actionLabel = stringResource(R.string.clocking_error_try_again),
+        onAction = onRetry,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -151,17 +200,25 @@ private fun ClockingNoMethodCard() {
 }
 
 @Composable
-private fun ClockingStatusCard(status: ClockingStatusSample) {
+private fun ClockingStatusCard(status: ClockingStatus, zone: ZoneId, now: Instant) {
     val colors = LocalAikuColors.current
     var isOpen by rememberSaveable { mutableStateOf(true) }
-    val statusColor = if (status.isClockedIn) colors.success else colors.danger
-    val statusContainer = if (status.isClockedIn) colors.successSoft else colors.dangerSoft
+    val isClockedIn = status.isClockedIn
+    val statusColor = if (isClockedIn) colors.success else colors.danger
+    val statusContainer = if (isClockedIn) colors.successSoft else colors.dangerSoft
     val toggleLabel = stringResource(if (isOpen) R.string.clocking_details_hide else R.string.clocking_details_show)
     val noValue = stringResource(R.string.clocking_no_value)
+    val today = status.today
+    val lastClockOut = clockingTime(today?.lastClockOut, zone, withSeconds = true)
+    val statusLine = when {
+        isClockedIn -> stringResource(R.string.clocking_status_since, clockingTime(status.since, zone, withSeconds = true) ?: noValue)
+        lastClockOut != null -> stringResource(R.string.clocking_status_last_clock_out, lastClockOut)
+        else -> stringResource(R.string.clocking_status_no_clocking_today)
+    }
+    val date = today?.date ?: LocalDate.now(zone).toString()
 
     Column(
         modifier = Modifier
-            .fakeData(cornerRadius = 16.dp)
             .fillMaxWidth()
             .clip(ClockingPanelShape)
             .background(colors.surface)
@@ -174,7 +231,7 @@ private fun ClockingStatusCard(status: ClockingStatusSample) {
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp).clip(CircleShape).background(statusContainer)) {
                 Icon(
-                    painter = painterResource(if (status.isClockedIn) R.drawable.ic_ui_check else R.drawable.ic_ui_close),
+                    painter = painterResource(if (isClockedIn) R.drawable.ic_ui_check else R.drawable.ic_ui_close),
                     contentDescription = null,
                     tint = statusColor,
                     modifier = Modifier.size(22.dp),
@@ -182,23 +239,16 @@ private fun ClockingStatusCard(status: ClockingStatusSample) {
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = stringResource(if (status.isClockedIn) R.string.clocking_status_clocked_in else R.string.clocking_status_clocked_out),
+                    text = stringResource(if (isClockedIn) R.string.clocking_status_clocked_in else R.string.clocking_status_clocked_out),
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = statusColor,
                 )
-                Text(
-                    text = stringResource(
-                        if (status.isClockedIn) R.string.clocking_status_since else R.string.clocking_status_last_clock_out,
-                        status.statusTime,
-                    ),
-                    fontSize = 13.sp,
-                    color = colors.textTertiary,
-                )
+                Text(text = statusLine, fontSize = 13.sp, color = colors.textTertiary)
             }
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(text = stringResource(R.string.clocking_status_date), fontSize = 11.sp, color = colors.textTertiary)
-                Text(text = status.date, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
+                Text(text = clockingDateLabel(date, CLOCKING_DAY_TITLE_PATTERN), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
             }
         }
         HorizontalDivider(thickness = 1.dp, color = colors.divider)
@@ -233,15 +283,27 @@ private fun ClockingStatusCard(status: ClockingStatusSample) {
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ClockingSummaryTile(label = stringResource(R.string.clocking_first_clock_in), value = status.firstClockIn, modifier = Modifier.weight(1f))
-                        ClockingSummaryTile(label = stringResource(R.string.clocking_last_clock_out), value = status.lastClockOut ?: noValue, modifier = Modifier.weight(1f))
+                        ClockingSummaryTile(
+                            label = stringResource(R.string.clocking_first_clock_in),
+                            value = clockingTime(today?.firstClockIn, zone, withSeconds = true) ?: noValue,
+                            modifier = Modifier.weight(1f),
+                        )
+                        ClockingSummaryTile(label = stringResource(R.string.clocking_last_clock_out), value = lastClockOut ?: noValue, modifier = Modifier.weight(1f))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ClockingSummaryTile(label = stringResource(R.string.clocking_working), value = status.working, modifier = Modifier.weight(1f))
-                        ClockingSummaryTile(label = stringResource(R.string.clocking_breaks), value = status.breaks, modifier = Modifier.weight(1f))
+                        ClockingSummaryTile(
+                            label = stringResource(R.string.clocking_working),
+                            value = durationText(todayWorkingSeconds(status, now)),
+                            modifier = Modifier.weight(1f),
+                        )
+                        ClockingSummaryTile(
+                            label = stringResource(R.string.clocking_breaks),
+                            value = durationText(today?.breaksSeconds ?: 0L),
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
-                status.sessions.forEach { session -> ClockingSessionRow(session = session) }
+                status.sessions.forEach { session -> ClockingSessionRow(session = session, zone = zone) }
             }
         }
     }
@@ -264,30 +326,48 @@ private fun ClockingSummaryTile(label: String, value: String, modifier: Modifier
 }
 
 @Composable
-private fun ClockingSessionRow(session: ClockingSessionSample) {
+private fun ClockingSessionRow(session: ClockingSession, zone: ZoneId) {
     val colors = LocalAikuColors.current
     val noValue = stringResource(R.string.clocking_no_value)
+    val notes = listOfNotNull(session.clockIn?.notes, session.clockOut?.notes).filter { it.isNotBlank() }
+    val duration = session.duration
+    val durationLabel = when {
+        session.isOpen -> stringResource(R.string.clocking_session_ongoing)
+        duration != null -> stringResource(R.string.clocking_session_duration, durationText(duration))
+        else -> noValue
+    }
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clip(ClockingTileShape)
             .border(1.dp, colors.border, ClockingTileShape)
             .padding(horizontal = 12.dp, vertical = 10.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
-            ClockingSessionTime(label = stringResource(R.string.clocking_clock_in), time = session.clockIn, modifier = Modifier.weight(1f))
-            ClockingSessionTime(label = stringResource(R.string.clocking_clock_out), time = session.clockOut ?: noValue, modifier = Modifier.weight(1f))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
+                ClockingSessionTime(
+                    label = stringResource(R.string.clocking_clock_in),
+                    time = clockingTime(session.clockIn?.clockedAt ?: session.startsAt, zone, withSeconds = true) ?: noValue,
+                    modifier = Modifier.weight(1f),
+                )
+                ClockingSessionTime(
+                    label = stringResource(R.string.clocking_clock_out),
+                    time = clockingTime(session.clockOut?.clockedAt ?: session.endsAt, zone, withSeconds = true) ?: noValue,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Text(
+                text = durationLabel,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (session.isOpen) colors.link else colors.success,
+            )
         }
-        Text(
-            text = session.duration?.let { stringResource(R.string.clocking_session_duration, it) }
-                ?: stringResource(R.string.clocking_session_ongoing),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (session.duration == null) colors.link else colors.success,
-        )
+        notes.forEach { note ->
+            Text(text = stringResource(R.string.clocking_session_note, note), fontSize = 12.sp, lineHeight = 17.sp, color = colors.textSecondary)
+        }
     }
 }
 
@@ -308,7 +388,6 @@ private fun ClockingMethodTabs(methods: List<ClockingMethod>, selected: Clocking
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
-            .fakeData(cornerRadius = 12.dp)
             .fillMaxWidth()
             .clip(MethodTabsShape)
             .background(colors.border)
@@ -331,7 +410,13 @@ private fun ClockingMethodTabs(methods: List<ClockingMethod>, selected: Clocking
                     )
                     .clip(MethodTabShape)
                     .background(if (isSelected) colors.surface else Color.Transparent)
-                    .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(method) })
+                    .selectable(
+                        selected = isSelected,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = rememberTabIndication(cornerRadius = 8.dp),
+                        role = Role.Tab,
+                        onClick = { onSelect(method) },
+                    )
                     .padding(horizontal = 4.dp),
             ) {
                 Text(
@@ -348,19 +433,11 @@ private fun ClockingMethodTabs(methods: List<ClockingMethod>, selected: Clocking
 }
 
 @Composable
-private fun ClockingQrCodeMethod(onOpenCamera: () -> Unit) {
+private fun ClockingQrCodeMethod(location: ClockingLocation, onOpenCamera: () -> Unit) {
     val colors = LocalAikuColors.current
-    var location by remember { mutableStateOf(ClockingLocationState.Found) }
-
-    LaunchedEffect(location) {
-        if (location == ClockingLocationState.Detecting) {
-            delay(LOCATION_DETECTION_MILLIS)
-            location = ClockingLocationState.Found
-        }
-    }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        ClockingLocationCard(state = location, onDetect = { location = ClockingLocationState.Detecting })
+        ClockingLocationCard(state = location.state, onDetect = location.detect)
         AikuButton(
             text = stringResource(R.string.clocking_open_camera),
             onClick = onOpenCamera,
@@ -382,13 +459,26 @@ private fun ClockingQrCodeMethod(onOpenCamera: () -> Unit) {
 @Composable
 private fun ClockingLocationCard(state: ClockingLocationState, onDetect: () -> Unit) {
     val colors = LocalAikuColors.current
-    val isFound = state == ClockingLocationState.Found
+    val isFound = state is ClockingLocationState.Found
     val accent = if (isFound) colors.success else colors.textTertiary
+    val title = when (state) {
+        is ClockingLocationState.Found -> stringResource(R.string.clocking_location_found)
+        ClockingLocationState.Detecting -> stringResource(R.string.clocking_location_detecting)
+        ClockingLocationState.NeedsPermission -> stringResource(R.string.clocking_location_needed)
+        ClockingLocationState.Unavailable -> stringResource(R.string.clocking_location_unavailable)
+    }
+    val detail = when (state) {
+        is ClockingLocationState.Found -> {
+            val coordinates = String.format(Locale.ROOT, "%.5f, %.5f", state.coordinates.latitude, state.coordinates.longitude)
+            state.accuracyMeters?.let { stringResource(R.string.clocking_location_accuracy, coordinates, it) } ?: coordinates
+        }
+        ClockingLocationState.Unavailable -> stringResource(R.string.clocking_location_unavailable_body)
+        else -> stringResource(R.string.clocking_location_detect_first)
+    }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier
-            .fakeData()
             .fillMaxWidth()
             .clip(CardShape)
             .background(if (isFound) colors.successSoft else colors.surfaceMuted)
@@ -400,27 +490,15 @@ private fun ClockingLocationCard(state: ClockingLocationState, onDetect: () -> U
                 Icon(painter = painterResource(R.drawable.ic_ui_map_pin), contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = stringResource(if (isFound) R.string.clocking_location_found else R.string.clocking_location_detecting),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.text,
-                )
-                Text(
-                    text = if (isFound) {
-                        stringResource(R.string.clocking_location_coordinates, CLOCKING_LOCATION_SAMPLE)
-                    } else {
-                        stringResource(R.string.clocking_location_detect_first)
-                    },
-                    fontSize = 12.sp,
-                    color = colors.textTertiary,
-                )
+                Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.text)
+                Text(text = detail, fontSize = 12.sp, lineHeight = 17.sp, color = colors.textTertiary)
             }
         }
         AikuButton(
             text = stringResource(if (isFound) R.string.clocking_location_update else R.string.clocking_location_detect),
             onClick = onDetect,
             style = ButtonStyle.Outline,
+            isLoading = state == ClockingLocationState.Detecting,
             modifier = Modifier.fillMaxWidth().clip(ControlShape).background(colors.surface),
         )
     }
@@ -446,78 +524,102 @@ private fun ClockingPersonalCodeCard(helper: String, content: @Composable Column
 }
 
 @Composable
-private fun ClockingPinMethod() {
+private fun ClockingNoCodeCard() {
     val colors = LocalAikuColors.current
 
-    ClockingPersonalCodeCard(helper = stringResource(R.string.clocking_pin_helper)) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(ClockingPanelShape)
+            .background(colors.surface)
+            .border(1.dp, colors.border, ClockingPanelShape)
+            .padding(horizontal = 20.dp, vertical = 28.dp),
+    ) {
+        ClockingIconCircle(icon = R.drawable.ic_ui_pin, tone = Tone.Neutral, size = 52.dp, iconSize = 26.dp)
+        Text(text = stringResource(R.string.clocking_error_no_pin_title), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.text)
         Text(
-            text = CLOCKING_PIN_SAMPLE,
-            fontSize = 44.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 13.sp,
-            color = colors.text,
-            modifier = Modifier.fakeData(cornerRadius = 8.dp).padding(start = 21.dp, end = 8.dp),
+            text = stringResource(R.string.clocking_error_no_pin_body),
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
+            color = colors.textTertiary,
+            textAlign = TextAlign.Center,
         )
     }
 }
 
 @Composable
-private fun ClockingBarcodeMethod() {
+private fun ClockingPinMethod(code: String?) {
     val colors = LocalAikuColors.current
-    val light = rememberClockingLightColors()
-    val description = stringResource(R.string.clocking_barcode_description)
-    val bars = ClockingPersonalCodesSample.barcode
 
-    ClockingPersonalCodeCard(helper = stringResource(R.string.clocking_barcode_helper)) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.fakeData(cornerRadius = 8.dp).padding(4.dp),
-        ) {
-            Canvas(
-                modifier = Modifier
-                    .widthIn(max = 280.dp)
-                    .fillMaxWidth()
-                    .height(96.dp)
-                    .clip(ControlShape)
-                    .background(Color.White)
-                    .border(1.dp, colors.border, ControlShape)
-                    .semantics { contentDescription = description },
-            ) {
-                val gap = 2.dp.toPx()
-                val top = 10.dp.toPx()
-                val barHeight = size.height - 2 * top
-                var left = 14.dp.toPx()
-                bars.forEach { bar ->
-                    val width = bar.widthDp.dp.toPx()
-                    if (bar.isDark) {
-                        drawRect(color = light.text, topLeft = Offset(left, top), size = Size(width, barHeight))
-                    }
-                    left += width + gap
-                }
-            }
-            Text(
-                text = CLOCKING_EMPLOYEE_CODE_SAMPLE,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 2.6.sp,
-                color = colors.textSecondary,
-            )
-        }
+    if (code == null) {
+        ClockingNoCodeCard()
+        return
+    }
+    ClockingPersonalCodeCard(helper = stringResource(R.string.clocking_pin_helper)) {
+        Text(
+            text = code,
+            fontSize = 44.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 13.sp,
+            color = colors.text,
+            maxLines = 1,
+            modifier = Modifier.padding(start = 13.dp),
+        )
     }
 }
 
 @Composable
-private fun ClockingCameraQrMethod() {
+private fun ClockingBarcodeMethod(code: String?) {
+    val colors = LocalAikuColors.current
+    val light = rememberClockingLightColors()
+    val description = stringResource(R.string.clocking_barcode_description)
+    val modules = remember(code) { code?.let { runCatching { Code128Writer().encode(it) }.getOrNull() } }
+
+    if (code == null || modules == null || modules.isEmpty()) {
+        ClockingNoCodeCard()
+        return
+    }
+    ClockingPersonalCodeCard(helper = stringResource(R.string.clocking_barcode_helper)) {
+        Canvas(
+            modifier = Modifier
+                .widthIn(max = 280.dp)
+                .fillMaxWidth()
+                .height(96.dp)
+                .clip(ControlShape)
+                .background(Color.White)
+                .border(1.dp, colors.border, ControlShape)
+                .semantics { contentDescription = description },
+        ) {
+            val moduleWidth = floor(size.width / (modules.size + 2 * BARCODE_QUIET_ZONE_MODULES)).coerceAtLeast(1f)
+            val left = (size.width - moduleWidth * modules.size) / 2
+            val top = 10.dp.toPx()
+            val barHeight = size.height - 2 * top
+            modules.forEachIndexed { index, isDark ->
+                if (isDark) {
+                    drawRect(color = light.text, topLeft = Offset(left + index * moduleWidth, top), size = Size(moduleWidth, barHeight))
+                }
+            }
+        }
+        Text(text = code, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.6.sp, color = colors.textSecondary)
+    }
+}
+
+@Composable
+private fun ClockingCameraQrMethod(code: String?) {
     val colors = LocalAikuColors.current
     val light = rememberClockingLightColors()
     val description = stringResource(R.string.clocking_camera_qr_description)
-    val cells = ClockingPersonalCodesSample.qrCells
+    val matrix = remember(code) { code?.let { qrMatrixOf(it) } }
 
+    if (matrix == null) {
+        ClockingNoCodeCard()
+        return
+    }
     ClockingPersonalCodeCard(helper = stringResource(R.string.clocking_camera_qr_helper)) {
         Canvas(
             modifier = Modifier
-                .fakeData(cornerRadius = 8.dp)
                 .widthIn(max = 200.dp)
                 .fillMaxWidth()
                 .aspectRatio(1f)
@@ -526,17 +628,25 @@ private fun ClockingCameraQrMethod() {
                 .border(1.dp, colors.border, ControlShape)
                 .semantics { contentDescription = description },
         ) {
-            val inset = 12.dp.toPx()
-            val cell = (size.width - 2 * inset) / CLOCKING_QR_MODULES
-            cells.forEachIndexed { index, isDark ->
-                if (isDark) {
-                    drawRect(
-                        color = light.text,
-                        topLeft = Offset(inset + index % CLOCKING_QR_MODULES * cell, inset + index / CLOCKING_QR_MODULES * cell),
-                        size = Size(cell, cell),
-                    )
+            val cell = floor(size.width / matrix.width).coerceAtLeast(1f)
+            val inset = (size.width - cell * matrix.width) / 2
+            for (y in 0 until matrix.height) {
+                for (x in 0 until matrix.width) {
+                    if (matrix[x, y]) {
+                        drawRect(color = light.text, topLeft = Offset(inset + x * cell, inset + y * cell), size = Size(cell, cell))
+                    }
                 }
             }
         }
     }
 }
+
+private fun qrMatrixOf(code: String): BitMatrix? = runCatching {
+    QRCodeWriter().encode(
+        code,
+        BarcodeFormat.QR_CODE,
+        0,
+        0,
+        mapOf(EncodeHintType.MARGIN to QR_QUIET_ZONE_MODULES, EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M),
+    )
+}.getOrNull()

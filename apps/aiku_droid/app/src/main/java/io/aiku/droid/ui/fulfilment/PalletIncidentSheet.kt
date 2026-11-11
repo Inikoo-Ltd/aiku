@@ -2,6 +2,8 @@ package io.aiku.droid.ui.fulfilment
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -34,7 +37,9 @@ import io.aiku.droid.ui.components.ChoiceRow
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ToastKind
+import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.focusHalo
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.PalletIncidentsRoute
 import io.aiku.droid.ui.theme.Inter
@@ -74,6 +79,9 @@ fun PalletIncidentSheet(reference: String, onDismiss: () -> Unit) {
             onClick = { kind = PalletIncidentKind.Lost },
         )
         Text(text = noteLabel, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
+        val noteInteraction = remember { MutableInteractionSource() }
+        val isNoteFocused by noteInteraction.collectIsFocusedAsState()
+        val noteFocusProgress = animateFocusProgress(isNoteFocused)
         BasicTextField(
             value = note,
             onValueChange = { note = it },
@@ -82,13 +90,15 @@ fun PalletIncidentSheet(reference: String, onDismiss: () -> Unit) {
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             minLines = 3,
             maxLines = 6,
+            interactionSource = noteInteraction,
             modifier = Modifier
                 .fakeData(cornerRadius = 8.dp)
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
+                .focusHalo(progress = noteFocusProgress, color = colors.focus, cornerRadius = 8.dp)
                 .clip(ControlShape)
                 .background(colors.surface)
-                .border(1.dp, colors.borderStrong, ControlShape)
+                .border(1.dp, lerp(colors.borderStrong, colors.focus, noteFocusProgress), ControlShape)
                 .padding(horizontal = 12.dp, vertical = 10.dp)
                 .semantics { contentDescription = noteLabel },
         )

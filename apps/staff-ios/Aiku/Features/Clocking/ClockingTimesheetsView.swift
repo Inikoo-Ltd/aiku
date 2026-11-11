@@ -11,7 +11,7 @@ struct ClockingTimesheetsView: View {
     var body: some View {
         let weeks = store.weeks
         let week = weeks[min(weekIndex, weeks.count - 1)]
-        AppScreen(title: "Timesheets", kicker: "Clocking & HR · \(session.profile.organisation)") {
+        AppScreen(title: "Timesheets", kicker: "Clocking & HR · \(store.organisationName ?? session.profile.organisation)") {
             ClockingSectionTabs(current: .timesheets) { isAdjusting = true }
         } content: {
             weekSwitcher(week, count: weeks.count)
@@ -29,13 +29,15 @@ struct ClockingTimesheetsView: View {
                 .padding(.horizontal, 4)
         }
         .aikuSheet(isPresented: $isAdjusting) {
-            ClockingAdjustmentFlow(day: store.adjustmentDay) { didRequest in
+            ClockingAdjustmentFlow { didRequest in
                 isAdjusting = false
                 if didRequest {
                     toasts.show("Adjustment requested · your manager will check it")
                 }
             }
         }
+        .task { if !store.hasLoaded { await store.load() } }
+        .screenRefreshable { await store.load() }
     }
 
     private func weekSwitcher(_ week: ClockingWeek, count: Int) -> some View {

@@ -33,32 +33,33 @@ import io.aiku.droid.R
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.session.StaffSession
 import io.aiku.droid.ui.asText
+import io.aiku.droid.ui.clocking.ClockScanQrScreen
+import io.aiku.droid.ui.clocking.ClockingAdjustmentsScreen
+import io.aiku.droid.ui.clocking.ClockingAdjustmentsViewModel
+import io.aiku.droid.ui.clocking.ClockingCalendarScreen
+import io.aiku.droid.ui.clocking.ClockingCalendarViewModel
+import io.aiku.droid.ui.clocking.ClockingErrorScreen
+import io.aiku.droid.ui.clocking.ClockingScreen
+import io.aiku.droid.ui.clocking.ClockingViewModel
+import io.aiku.droid.ui.clocking.LeaveScreen
+import io.aiku.droid.ui.clocking.LeaveViewModel
+import io.aiku.droid.ui.clocking.LocalClocking
+import io.aiku.droid.ui.clocking.LocalClockingAdjustments
+import io.aiku.droid.ui.clocking.LocalClockingCalendar
+import io.aiku.droid.ui.clocking.LocalLeave
+import io.aiku.droid.ui.clocking.LocalOvertime
+import io.aiku.droid.ui.clocking.OvertimeScreen
+import io.aiku.droid.ui.clocking.OvertimeViewModel
+import io.aiku.droid.ui.clocking.TimesheetDayScreen
+import io.aiku.droid.ui.clocking.TimesheetsScreen
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.FullScreenMessage
+import io.aiku.droid.ui.components.LocalTabHandoff
 import io.aiku.droid.ui.components.LocalToasts
+import io.aiku.droid.ui.components.TabHandoff
 import io.aiku.droid.ui.components.ToastHost
 import io.aiku.droid.ui.components.ToastState
-import io.aiku.droid.ui.navigation.AppNavigator
-import io.aiku.droid.ui.navigation.AppearanceController
-import io.aiku.droid.ui.navigation.LocalAppNavigator
-import io.aiku.droid.ui.navigation.LocalAppearanceController
-import io.aiku.droid.ui.navigation.LocalStaff
-import io.aiku.droid.ui.navigation.LocalWarehouse
-import io.aiku.droid.ui.navigation.LocalWarehouses
-import io.aiku.droid.ui.navigation.MainTab
-import io.aiku.droid.ui.navigation.NoWarehouseAccess
-import io.aiku.droid.ui.states.LoadingScreen
-import io.aiku.droid.ui.states.OfflineScreen
-import io.aiku.droid.ui.states.ReportProblemSheet
-import io.aiku.droid.ui.states.ServerErrorScreen
-import io.aiku.droid.ui.states.SessionExpiredScreen
-import io.aiku.droid.ui.theme.Appearance
-import io.aiku.droid.ui.clocking.ClockScanQrScreen
-import io.aiku.droid.ui.clocking.ClockingErrorScreen
-import io.aiku.droid.ui.clocking.ClockingScreen
-import io.aiku.droid.ui.clocking.TimesheetDayScreen
-import io.aiku.droid.ui.clocking.TimesheetsScreen
 import io.aiku.droid.ui.dashboard.WarehouseDashboardScreen
 import io.aiku.droid.ui.fulfilment.FulfilmentBookInScreen
 import io.aiku.droid.ui.fulfilment.FulfilmentBookedInScreen
@@ -138,6 +139,8 @@ import io.aiku.droid.ui.locations.WarehouseOverviewScreen
 import io.aiku.droid.ui.menu.MenuScreen
 import io.aiku.droid.ui.mywork.MyWorkScreen
 import io.aiku.droid.ui.navigation.AddShipmentRoute
+import io.aiku.droid.ui.navigation.AppNavigator
+import io.aiku.droid.ui.navigation.AppearanceController
 import io.aiku.droid.ui.navigation.AppearanceRoute
 import io.aiku.droid.ui.navigation.AreaRoute
 import io.aiku.droid.ui.navigation.AreasRoute
@@ -145,6 +148,8 @@ import io.aiku.droid.ui.navigation.AskCrmRoute
 import io.aiku.droid.ui.navigation.BookedInRoute
 import io.aiku.droid.ui.navigation.BookingInRoute
 import io.aiku.droid.ui.navigation.ClockScanQrRoute
+import io.aiku.droid.ui.navigation.ClockingAdjustmentsRoute
+import io.aiku.droid.ui.navigation.ClockingCalendarRoute
 import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.ClockingRoute
 import io.aiku.droid.ui.navigation.ConflictRoute
@@ -179,15 +184,24 @@ import io.aiku.droid.ui.navigation.HomeRoute
 import io.aiku.droid.ui.navigation.InboxRoute
 import io.aiku.droid.ui.navigation.InventoryDashboardRoute
 import io.aiku.droid.ui.navigation.LanguageRoute
+import io.aiku.droid.ui.navigation.LeaveRoute
+import io.aiku.droid.ui.navigation.LocalAppNavigator
+import io.aiku.droid.ui.navigation.LocalAppearanceController
+import io.aiku.droid.ui.navigation.LocalStaff
+import io.aiku.droid.ui.navigation.LocalWarehouse
+import io.aiku.droid.ui.navigation.LocalWarehouses
 import io.aiku.droid.ui.navigation.LocationRoute
 import io.aiku.droid.ui.navigation.LocationSkuRoute
 import io.aiku.droid.ui.navigation.LocationsRoute
+import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.ManualShipmentRoute
 import io.aiku.droid.ui.navigation.MenuRoute
 import io.aiku.droid.ui.navigation.MyWorkRoute
 import io.aiku.droid.ui.navigation.NoTasksRoute
+import io.aiku.droid.ui.navigation.NoWarehouseAccess
 import io.aiku.droid.ui.navigation.NotDesignedRoute
 import io.aiku.droid.ui.navigation.OnlineOnlyRoute
+import io.aiku.droid.ui.navigation.OvertimeRoute
 import io.aiku.droid.ui.navigation.PackByScanRoute
 import io.aiku.droid.ui.navigation.PackingQueueRoute
 import io.aiku.droid.ui.navigation.PalletIncidentsRoute
@@ -237,13 +251,19 @@ import io.aiku.droid.ui.profile.LanguageScreen
 import io.aiku.droid.ui.profile.ProfileScreen
 import io.aiku.droid.ui.scan.ScanResultScreen
 import io.aiku.droid.ui.search.SearchScreen
+import io.aiku.droid.ui.states.LoadingScreen
 import io.aiku.droid.ui.states.NoTasksScreen
 import io.aiku.droid.ui.states.NotDesignedScreen
+import io.aiku.droid.ui.states.OfflineScreen
+import io.aiku.droid.ui.states.ReportProblemSheet
+import io.aiku.droid.ui.states.ServerErrorScreen
+import io.aiku.droid.ui.states.SessionExpiredScreen
 import io.aiku.droid.ui.states.StatePreviewScreen
 import io.aiku.droid.ui.sync.ConflictScreen
 import io.aiku.droid.ui.sync.OnlineOnlyScreen
 import io.aiku.droid.ui.sync.ResolveConflictsScreen
 import io.aiku.droid.ui.sync.SyncQueueScreen
+import io.aiku.droid.ui.theme.Appearance
 
 @Composable
 fun SignedInApp(container: AppContainer, session: StaffSession) {
@@ -275,6 +295,7 @@ fun SignedInApp(container: AppContainer, session: StaffSession) {
             selected = null,
             onSelectWarehouse = warehousesViewModel::select,
             onSignOut = warehousesViewModel::signOut,
+            onSignInAgain = warehousesViewModel::signInAgain,
         )
         is WarehousesUiState.Ready -> WarehouseApp(
             container = container,
@@ -283,6 +304,7 @@ fun SignedInApp(container: AppContainer, session: StaffSession) {
             selected = current.selected,
             onSelectWarehouse = warehousesViewModel::select,
             onSignOut = warehousesViewModel::signOut,
+            onSignInAgain = warehousesViewModel::signInAgain,
         )
     }
 }
@@ -295,7 +317,42 @@ private fun WarehouseApp(
     selected: WarehouseAccess?,
     onSelectWarehouse: (Long) -> Unit,
     onSignOut: () -> Unit,
+    onSignInAgain: () -> Unit,
 ) {
+    val clockingViewModel: ClockingViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { ClockingViewModel(container.clockingApi, container.sessions) }
+        },
+    )
+    val leaveViewModel: LeaveViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { LeaveViewModel(container.hrApi, container.sessions) }
+        },
+    )
+    val adjustmentsViewModel: ClockingAdjustmentsViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { ClockingAdjustmentsViewModel(container.hrApi, container.sessions) }
+        },
+    )
+    val overtimeViewModel: OvertimeViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { OvertimeViewModel(container.hrApi, container.sessions) }
+        },
+    )
+    val calendarViewModel: ClockingCalendarViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { ClockingCalendarViewModel(container.hrApi, container.sessions) }
+        },
+    )
+    val isClockingSessionExpired by clockingViewModel.isSessionExpired.collectAsStateWithLifecycle()
+    val isLeaveSessionExpired by leaveViewModel.isSessionExpired.collectAsStateWithLifecycle()
+    val isAdjustmentsSessionExpired by adjustmentsViewModel.isSessionExpired.collectAsStateWithLifecycle()
+    val isOvertimeSessionExpired by overtimeViewModel.isSessionExpired.collectAsStateWithLifecycle()
+    val isCalendarSessionExpired by calendarViewModel.isSessionExpired.collectAsStateWithLifecycle()
+    if (isClockingSessionExpired || isLeaveSessionExpired || isAdjustmentsSessionExpired || isOvertimeSessionExpired || isCalendarSessionExpired) {
+        SessionExpiredScreen(onSignIn = onSignInAgain)
+        return
+    }
     val navController = rememberNavController()
     val toasts = remember { ToastState() }
     var isSwitcherOpen by remember { mutableStateOf(false) }
@@ -323,6 +380,12 @@ private fun WarehouseApp(
         LocalStaff provides session,
         LocalAppearanceController provides appearanceController,
         LocalToasts provides toasts,
+        LocalClocking provides clockingViewModel,
+        LocalLeave provides leaveViewModel,
+        LocalClockingAdjustments provides adjustmentsViewModel,
+        LocalOvertime provides overtimeViewModel,
+        LocalClockingCalendar provides calendarViewModel,
+        LocalTabHandoff provides remember { TabHandoff() },
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             AppNavHost(navController)
@@ -455,7 +518,11 @@ private fun AppNavHost(navController: NavHostController) {
         composable<ClockScanQrRoute> { ClockScanQrScreen() }
         composable<TimesheetsRoute> { TimesheetsScreen() }
         composable<TimesheetDayRoute> { entry -> entry.toRoute<TimesheetDayRoute>().let { route -> TimesheetDayScreen(route.date) } }
-        composable<ClockingErrorRoute> { entry -> entry.toRoute<ClockingErrorRoute>().let { route -> ClockingErrorScreen(route.kind) } }
+        composable<LeaveRoute> { LeaveScreen() }
+        composable<ClockingAdjustmentsRoute> { ClockingAdjustmentsScreen() }
+        composable<OvertimeRoute> { OvertimeScreen() }
+        composable<ClockingCalendarRoute> { ClockingCalendarScreen() }
+        composable<ClockingErrorRoute> { entry -> entry.toRoute<ClockingErrorRoute>().let { route -> ClockingErrorScreen(route.kind, route.message, route.scanned) } }
     }
 }
 

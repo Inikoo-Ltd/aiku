@@ -50,11 +50,10 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalUriHandler
@@ -77,14 +76,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
 import io.aiku.droid.ui.UiMessage
 import io.aiku.droid.ui.asText
-import io.aiku.droid.ui.theme.AikuColors
+import io.aiku.droid.ui.components.AikuFocusIndication
+import io.aiku.droid.ui.components.animateFocusProgress
+import io.aiku.droid.ui.components.focusHalo
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.Bitter
 import io.aiku.droid.ui.theme.Caveat
@@ -589,11 +589,11 @@ private fun AikuInput(
     val colors = LocalAikuColors.current
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val focusProgress = animateFocusProgress(isFocused && isEnabled)
     val borderColor = when {
         !isEnabled -> colors.border
         isError -> colors.danger
-        isFocused -> colors.primary
-        else -> colors.borderStrong
+        else -> lerp(colors.borderStrong, colors.focus, focusProgress)
     }
 
     Row(
@@ -601,7 +601,7 @@ private fun AikuInput(
         modifier = Modifier
             .fillMaxWidth()
             .height(ControlHeight)
-            .focusRing(isVisible = isFocused && isEnabled, colors = colors)
+            .focusHalo(progress = focusProgress, color = colors.focus, cornerRadius = 6.dp)
             .shadow(elevation = 1.dp, shape = ControlShape, ambientColor = colors.shadow, spotColor = colors.shadow)
             .background(if (isEnabled) colors.surface else colors.surfaceMuted, ControlShape)
             .border(1.dp, borderColor, ControlShape)
@@ -631,21 +631,6 @@ private fun AikuInput(
         trailing?.invoke()
     }
 }
-
-private fun Modifier.focusRing(isVisible: Boolean, colors: AikuColors, width: Dp = 3.dp): Modifier =
-    if (!isVisible) {
-        this
-    } else {
-        drawBehind {
-            val ringWidth = width.toPx()
-            drawRoundRect(
-                color = colors.primary.copy(alpha = 0.25f),
-                topLeft = Offset(-ringWidth, -ringWidth),
-                size = Size(size.width + ringWidth * 2, size.height + ringWidth * 2),
-                cornerRadius = CornerRadius(6.dp.toPx() + ringWidth),
-            )
-        }
-    }
 
 @Composable
 private fun PasswordVisibilityToggle(isVisible: Boolean, isEnabled: Boolean, onToggle: () -> Unit) {
@@ -687,7 +672,7 @@ private fun PrimaryButton(text: String, isLoading: Boolean, onClick: () -> Unit)
             .border(1.dp, colors.primaryBorder, ControlShape)
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(color = colors.onPrimary),
+                indication = AikuFocusIndication(ringColor = colors.onPrimary, gapColor = colors.background, ripple = ripple(color = colors.onPrimary)),
                 enabled = !isLoading,
                 role = Role.Button,
                 onClick = onClick,

@@ -17,7 +17,7 @@ struct ClockingDayView: View {
                 stat("\(day.clockingCount)", label: "Clockings")
             }
             ForEach(store.adjustments(for: day.date)) { request in
-                InlineAlert(tone: .info, icon: .bell, title: "Clocking adjustment requested", message: request.summary)
+                InlineAlert(tone: request.tone, icon: .bell, title: "Clocking adjustment · \(request.statusLabel ?? request.status ?? "")", message: request.summary)
             }
             SheetSectionLabel("Time trackers")
             Card {
@@ -53,6 +53,7 @@ struct ClockingDayView: View {
                 }
             }
         }
+        .task { if !store.hasLoaded { await store.load() } }
     }
 
     private func stat(_ value: String, label: String) -> some View {

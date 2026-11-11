@@ -27,11 +27,24 @@ enum PurchaseOrderStateEnum: string
         return [
             'in_process'   => __('In process'),
             'submitted'    => __('Submitted'),
-            'confirmed'    => __('Confirmed'),
+            'confirmed'    => __('Accepted'),
             'settled'      => __('Settled'),
             'cancelled'    => __('Cancelled'),
             'not_received' => __('Not Received'),
         ];
+    }
+
+    /**
+     * The state as the buying organisation reads it: an order through an agent is accepted by the agent.
+     */
+    public function labelFor(bool $throughAgent): string
+    {
+        return $throughAgent && $this === self::CONFIRMED ? __('Accepted by agent') : self::labels()[$this->value];
+    }
+
+    public function iconFor(bool $throughAgent): array
+    {
+        return array_merge(self::stateIcon()[$this->value], ['tooltip' => $this->labelFor($throughAgent)]);
     }
 
     public static function stateIcon(): array
@@ -58,7 +71,7 @@ enum PurchaseOrderStateEnum: string
                 ],
             ],
             'confirmed'    => [
-                'tooltip' => __('Confirmed'),
+                'tooltip' => __('Accepted'),
                 'icon'    => 'fal fa-check-circle',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',

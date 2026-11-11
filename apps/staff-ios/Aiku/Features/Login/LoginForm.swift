@@ -40,6 +40,8 @@ enum LoginFailure: Error, Equatable, Sendable {
             self = code == "otp_required" ? .otpRequired(message: message) : .invalidCredentials(message: message)
         case .tooManyAttempts(let message):
             self = .tooManyAttempts(message: message)
+        case .rejected(let message):
+            self = .server(message: message)
         case .offline:
             self = .offline
         case .unauthorized, .invalidResponse, .http, .unexpectedBody:

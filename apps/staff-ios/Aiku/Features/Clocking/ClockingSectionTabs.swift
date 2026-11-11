@@ -22,7 +22,6 @@ enum ClockingSection: String, CaseIterable {
 
 struct ClockingSectionTabs: View {
     @Environment(AppRouter.self) private var router
-    @Environment(ToastCenter.self) private var toasts
     let current: ClockingSection
     let onAdjust: () -> Void
 
@@ -32,8 +31,10 @@ struct ClockingSectionTabs: View {
             switch section {
             case .clock: router.replace(with: ClockingRoute.clocking)
             case .timesheets: router.replace(with: ClockingRoute.timesheets)
+            case .leave: router.replace(with: ClockingRoute.leave)
             case .adjustment: onAdjust()
-            case .leave, .overtime, .calendar: toasts.show("Coming later", tone: .info)
+            case .overtime: router.replace(with: ClockingRoute.overtime)
+            case .calendar: router.replace(with: ClockingRoute.calendar)
             }
         }
         .accessibilityLabel("Clocking sections")

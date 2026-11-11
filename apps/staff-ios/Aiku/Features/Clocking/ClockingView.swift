@@ -10,10 +10,18 @@ struct ClockingView: View {
     @State private var isAdjusting = false
 
     var body: some View {
-        AppScreen(title: "Clocking", kicker: "\(session.profile.name) · \(session.profile.organisation)") {
+        AppScreen(title: "Clocking", kicker: kicker) {
             ClockingSectionTabs(current: .clock) { isAdjusting = true }
         } content: {
-            if store.enabledMethods.isEmpty {
+            if let error = store.loadError {
+                InlineAlert(tone: .danger, title: "Couldn’t load clocking", message: error) {
+                    LinkButton("Try again", size: 13) { Task { await store.load() } }
+                }
+            }
+            if !store.hasLoaded {
+                SkeletonRow().cardSurface()
+                SkeletonRow().cardSurface()
+            } else if store.enabledMethods.isEmpty {
                 noMethods
             } else {
                 TimelineView(.everyMinute) { _ in
@@ -33,7 +41,7 @@ struct ClockingView: View {
             ClockingWorkplaceSheet(
                 schedule: store.schedule,
                 shifts: store.shifts,
-                standardHours: ClockingSampleData.standardHours,
+                standardHours: store.workingHoursLabel,
                 onConfirm: { schedule in
                     store.schedule = schedule
                     isChoosingWorkplace = false
@@ -43,7 +51,7 @@ struct ClockingView: View {
             )
         }
         .aikuSheet(isPresented: $isAdjusting) {
-            ClockingAdjustmentFlow(day: store.adjustmentDay) { didRequest in
+            ClockingAdjustmentFlow { didRequest in
                 isAdjusting = false
                 if didRequest {
                     toasts.show("Adjustment requested · your manager will check it")
@@ -52,11 +60,17 @@ struct ClockingView: View {
         }
         .fullScreenCover(isPresented: $isScanning) {
             ClockingScanFlow(
-                workingHours: store.workingHoursLabel,
-                onScan: { store.simulateScan() },
+                workingHours: { store.workingHoursLabel },
+                canAddNote: store.canEditNotes,
+                onScan: { code in await store.clock(code: code) },
                 onSaveNote: { event, note in
-                    store.saveNote(note, for: event.id)
-                    toasts.show("Note saved")
+                    Task {
+                        if await store.saveNote(note, for: event) {
+                            toasts.show("Note saved")
+                        } else {
+                            toasts.show("Couldn’t save the note", tone: .danger)
+                        }
+                    }
                 },
                 onClose: { isScanning = false },
                 onFailure: { route in
@@ -66,6 +80,14 @@ struct ClockingView: View {
             )
         }
         .onAppear(perform: handlePendingAction)
+        .task { await store.load() }
+        .screenRefreshable { await store.load() }
+    }
+
+    private var kicker: String {
+        let name = store.employeeName ?? session.profile.name
+        let organisation = store.organisationName ?? session.profile.organisation
+        return "\(name) · \(organisation)"
     }
 
     private var methodBinding: Binding<ClockingMethod> {
@@ -143,8 +165,10 @@ struct ClockingView: View {
         guard store.location != .detecting else { return }
         store.startDetectingLocation()
         Task {
-            try? await Task.sleep(for: .milliseconds(800))
-            if !store.finishDetectingLocation() {
+            do {
+                store.setLocation(try await LocationProvider.shared.currentCoordinate())
+            } catch {
+                store.setLocation(nil)
                 openError(.locationBlocked)
             }
         }
@@ -178,20 +202,15 @@ struct ClockingView: View {
 
 struct ClockingAdjustmentFlow: View {
     @State private var store = ClockingStore.shared
-    let day: ClockingDay
+    var day: ClockingDay?
     let onClose: (Bool) -> Void
 
+    init(day: ClockingDay? = nil, onClose: @escaping (Bool) -> Void) {
+        self.day = day
+        self.onClose = onClose
+    }
+
     var body: some View {
-        ClockingAdjustmentSheet(day: day) { kind, time, reason in
-            switch store.requestAdjustment(date: day.date, kind: kind, time: time, reason: reason) {
-            case .success:
-                onClose(true)
-                return nil
-            case .failure(let error):
-                return error
-            }
-        } onCancel: {
-            onClose(false)
-        }
+        ClockingAdjustmentSheet(store: store, fixedDate: day?.date, onClose: onClose)
     }
 }

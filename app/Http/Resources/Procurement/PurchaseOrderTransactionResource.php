@@ -13,6 +13,7 @@ use App\Actions\Procurement\PurchaseOrder\UI\GetOrgStockBuyingSignals;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionPriceChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\AskPurchaseOrderTransactionQuantityChange;
 use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
+use App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
@@ -176,6 +177,7 @@ class PurchaseOrderTransactionResource extends JsonResource
                 ],
                 'method'     => 'post',
             ] : null,
+            'undoMove'             => $this->undoMove($transaction),
             'cancelRoute'          => $this->isCancellable($transaction) ? [
                 'name'            => 'grp.models.purchase-order.transaction.cancel',
                 'parameters'      => [
@@ -342,6 +344,32 @@ class PurchaseOrderTransactionResource extends JsonResource
         $organisation = $request->route('organisation');
 
         return $organisation instanceof Organisation ? $organisation->id : null;
+    }
+
+    /**
+     * Only on a live line moved here from another supplier and not taken back yet; the reason is shown on the disabled button.
+     *
+     * @return array{route: array{name: string, parameters: array<string, int>, method: string}, blocked_reason: string|null}|null
+     */
+    private function undoMove(PurchaseOrderTransaction $transaction): ?array
+    {
+        $movedFrom = Arr::get($transaction->data, 'moved_from');
+
+        if (!$movedFrom || Arr::get($movedFrom, 'undone_at') || $transaction->state === PurchaseOrderTransactionStateEnum::CANCELLED) {
+            return null;
+        }
+
+        return [
+            'route'          => [
+                'name'       => 'grp.models.purchase-order.transaction.move.undo',
+                'parameters' => [
+                    'purchaseOrder'            => $transaction->purchase_order_id,
+                    'purchaseOrderTransaction' => $transaction->id,
+                ],
+                'method'     => 'post',
+            ],
+            'blocked_reason' => UndoMovePurchaseOrderTransaction::blockedReason($transaction),
+        ];
     }
 
     private function isCancellable(PurchaseOrderTransaction $transaction): bool

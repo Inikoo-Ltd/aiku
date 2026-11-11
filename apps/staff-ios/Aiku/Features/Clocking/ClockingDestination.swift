@@ -7,6 +7,9 @@ struct ClockingDestination: View {
         switch route {
         case .clocking: ClockingView()
         case .timesheets: ClockingTimesheetsView()
+        case .leave: ClockingLeaveView()
+        case .overtime: ClockingOvertimeView()
+        case .calendar: ClockingCalendarView()
         case .day(let date): ClockingDayView(date: date)
         case .qrInvalid: ClockingQrInvalidView()
         case .locationBlocked: ClockingLocationBlockedView()

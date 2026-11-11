@@ -33,6 +33,7 @@ class GetMobileWarehouses
                 'name'         => $warehouse->name,
                 'organisation' => [
                     'id'   => $warehouse->organisation->id,
+                    'code' => $warehouse->organisation->code,
                     'slug' => $warehouse->organisation->slug,
                     'name' => $warehouse->organisation->name,
                 ],

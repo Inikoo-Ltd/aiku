@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +48,7 @@ import io.aiku.droid.ui.components.ProductPhoto
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
 import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.rememberTabIndication
 import io.aiku.droid.ui.navigation.BookedInRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.StockDeliveryCheckingRoute
@@ -214,6 +217,8 @@ internal fun DeliveryViewTabs(active: DeliveryView, reference: String, modifier:
                     .height(44.dp)
                     .selectable(
                         selected = isActive,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = rememberTabIndication(cornerRadius = 9.dp),
                         role = Role.Tab,
                         onClick = { if (!isActive) navigator.switchSection(view.routeFor(reference)) },
                     )
