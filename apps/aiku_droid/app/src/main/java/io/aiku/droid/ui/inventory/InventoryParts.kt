@@ -4,6 +4,8 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,10 +24,13 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -45,6 +50,8 @@ import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.FilterOption
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.animateFocusProgress
+import io.aiku.droid.ui.components.focusHalo
 import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -293,6 +300,9 @@ private fun QuantityStepButton(symbol: String, description: String, isEnabled: B
 @Composable
 internal fun SheetTextField(value: String, onValueChange: (String) -> Unit, label: String, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
+    val fieldInteraction = remember { MutableInteractionSource() }
+    val isFieldFocused by fieldInteraction.collectIsFocusedAsState()
+    val fieldFocusProgress = animateFocusProgress(isFieldFocused)
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(text = label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
@@ -302,6 +312,7 @@ internal fun SheetTextField(value: String, onValueChange: (String) -> Unit, labe
             singleLine = true,
             textStyle = TextStyle(fontFamily = Inter, fontSize = 15.sp, color = colors.text),
             cursorBrush = SolidColor(colors.primary),
+            interactionSource = fieldInteraction,
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },
             decorationBox = { inner ->
                 Box(
@@ -309,9 +320,10 @@ internal fun SheetTextField(value: String, onValueChange: (String) -> Unit, labe
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(46.dp)
+                        .focusHalo(progress = fieldFocusProgress, color = colors.focus, cornerRadius = 8.dp)
                         .clip(ControlShape)
                         .background(colors.surface)
-                        .border(1.dp, colors.borderStrong, ControlShape)
+                        .border(1.dp, lerp(colors.borderStrong, colors.focus, fieldFocusProgress), ControlShape)
                         .padding(horizontal = 12.dp),
                 ) {
                     inner()

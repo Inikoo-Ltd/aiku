@@ -3,6 +3,8 @@ package io.aiku.droid.ui.states
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -44,7 +47,9 @@ import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.LocalToasts
+import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.focusHalo
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -200,6 +205,9 @@ private fun ReportCategoryChip(label: String, isSelected: Boolean, onClick: () -
 private fun ReportDetailsField(value: String, onValueChange: (String) -> Unit) {
     val colors = LocalAikuColors.current
     val shape = RoundedCornerShape(6.dp)
+    val detailsInteraction = remember { MutableInteractionSource() }
+    val isDetailsFocused by detailsInteraction.collectIsFocusedAsState()
+    val detailsFocusProgress = animateFocusProgress(isDetailsFocused)
 
     BasicTextField(
         value = value,
@@ -208,13 +216,15 @@ private fun ReportDetailsField(value: String, onValueChange: (String) -> Unit) {
         cursorBrush = SolidColor(colors.primary),
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         maxLines = 5,
+        interactionSource = detailsInteraction,
         modifier = Modifier
             .fakeData(6.dp)
             .fillMaxWidth()
             .heightIn(min = 48.dp)
+            .focusHalo(progress = detailsFocusProgress, color = colors.focus, cornerRadius = 6.dp)
             .clip(shape)
             .background(colors.surface)
-            .border(1.dp, colors.borderStrong, shape)
+            .border(1.dp, lerp(colors.borderStrong, colors.focus, detailsFocusProgress), shape)
             .padding(horizontal = 12.dp, vertical = 13.dp),
     )
 }

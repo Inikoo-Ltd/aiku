@@ -17,7 +17,6 @@
     <string name="profile_work">Work</string>
     <string name="profile_clocking">Clocking</string>
     <string name="profile_clocking_history">Timesheets</string>
-    <string name="profile_clocked_in">Clocked in</string>
     <string name="profile_clocking_this_week">This week %1$s</string>
 
     <string name="profile_app">App</string>

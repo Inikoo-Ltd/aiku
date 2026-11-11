@@ -96,4 +96,8 @@ import kotlinx.serialization.Serializable
 @Serializable data object ClockScanQrRoute
 @Serializable data object TimesheetsRoute
 @Serializable data class TimesheetDayRoute(val date: String)
-@Serializable data class ClockingErrorRoute(val kind: String)
+@Serializable data object LeaveRoute
+@Serializable data object ClockingAdjustmentsRoute
+@Serializable data object OvertimeRoute
+@Serializable data object ClockingCalendarRoute
+@Serializable data class ClockingErrorRoute(val kind: String, val message: String? = null, val scanned: String? = null)

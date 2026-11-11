@@ -1,6 +1,10 @@
 <resources>
     <string name="clocking_title">Clocking</string>
     <string name="clocking_no_value" translatable="false">—</string>
+    <string name="clocking_duration_hours_minutes">%1$dh %2$02dm</string>
+    <string name="clocking_duration_minutes">%1$dm</string>
+    <string name="clocking_range" translatable="false">%1$s – %2$s</string>
+    <string name="clocking_range_arrow" translatable="false">%1$s → %2$s</string>
 
     <string name="clocking_tab_clock_in_out">Clock in / out</string>
     <string name="clocking_tab_timesheets">Timesheets</string>
@@ -9,6 +13,18 @@
     <string name="clocking_tab_overtime">Overtime</string>
     <string name="clocking_tab_calendar">Calendar</string>
 
+    <string name="clocking_summary_clocked_in_for">Clocked in · %1$s</string>
+    <string name="clocking_summary_since">Since %1$s</string>
+    <string name="clocking_summary_since_at">Since %1$s · %2$s</string>
+    <string name="clocking_summary_last_clock_out">Last clock out %1$s</string>
+    <string name="clocking_summary_clocked_in_since">Clocked in since %1$s</string>
+    <string name="clocking_summary_this_week">This week %1$s</string>
+    <string name="clocking_summary_unavailable">Clocking status unavailable</string>
+
+    <string name="clocking_load_failed_title">Couldn’t load your clocking</string>
+    <string name="clocking_load_offline_body">You’re offline. Connect to the internet and try again.</string>
+    <string name="clocking_load_server_body">Aiku didn’t respond. Try again in a moment.</string>
+
     <string name="clocking_no_methods_title">No clocking method</string>
     <string name="clocking_no_methods_body">No clocking method is currently enabled for your organisation. Please contact HR.</string>
 
@@ -16,6 +32,7 @@
     <string name="clocking_status_clocked_out">Clocked out</string>
     <string name="clocking_status_since">Since: %1$s</string>
     <string name="clocking_status_last_clock_out">Last clock out %1$s</string>
+    <string name="clocking_status_no_clocking_today">No clocking today</string>
     <string name="clocking_status_date">Date</string>
     <string name="clocking_details">Clocking details (%1$d)</string>
     <string name="clocking_details_show">Show clocking details</string>
@@ -29,6 +46,7 @@
     <string name="clocking_clock_out">Clock out</string>
     <string name="clocking_session_duration">Duration %1$s</string>
     <string name="clocking_session_ongoing">Ongoing</string>
+    <string name="clocking_session_note">Note: %1$s</string>
 
     <string name="clocking_method_qr_code">QR Code</string>
     <string name="clocking_method_pin">PIN</string>
@@ -37,7 +55,10 @@
 
     <string name="clocking_location_found">Location found</string>
     <string name="clocking_location_detecting">Detecting your location…</string>
-    <string name="clocking_location_coordinates">%1$s — view on map</string>
+    <string name="clocking_location_needed">Location needed</string>
+    <string name="clocking_location_unavailable">Location unavailable</string>
+    <string name="clocking_location_unavailable_body">Turn on location to send it with your scan. You can still scan: Aiku decides whether this machine needs it.</string>
+    <string name="clocking_location_accuracy">%1$s · accurate to %2$d m</string>
     <string name="clocking_location_detect_first">Detect your location before you scan</string>
     <string name="clocking_location_update">Update location</string>
     <string name="clocking_location_detect">Detect my location</string>
@@ -53,16 +74,18 @@
     <string name="clocking_working_hours_title">Select Working Hours</string>
     <string name="clocking_working_hours_subtitle">Choose your work schedule for this clocking</string>
     <string name="clocking_working_hours_default">Default Schedule</string>
-    <string name="clocking_working_hours_default_body">Your regular working hours · %1$s</string>
+    <string name="clocking_working_hours_default_body">Your regular working hours</string>
     <string name="clocking_working_hours_shift">Shift Schedule</string>
     <string name="clocking_working_hours_shift_body">Select a specific shift</string>
     <string name="clocking_working_hours_choose_shift">Choose a shift</string>
+    <string name="clocking_working_hours_shifts_failed">Couldn’t load the shifts</string>
     <string name="clocking_working_hours_confirm">Confirm</string>
 
     <string name="clocking_scan_title">Scan QR Code</string>
     <string name="clocking_scan_close_camera">Close camera</string>
-    <string name="clocking_scan_simulate">Simulate a scan of the clocking machine</string>
     <string name="clocking_scan_hint">Align QR code inside the frame</string>
+    <string name="clocking_scan_checking">Checking the QR code…</string>
+    <string name="clocking_scan_recorded">Clocking saved</string>
     <string name="clocking_scan_visiting">Hey, you’re in the wrong office — but we don’t mind!</string>
     <string name="clocking_scan_working_hours">Working hours: %1$s</string>
     <string name="clocking_scan_note">Note</string>
@@ -71,31 +94,192 @@
     <string name="clocking_scan_save_note">Save note</string>
     <string name="clocking_scan_auto_close">Closes by itself in a few seconds</string>
     <string name="clocking_scan_note_saved">Note saved</string>
+    <string name="clocking_scan_note_failed">The note was not saved. Try again.</string>
+    <string name="clocking_scan_note_offline">No connection. The note was not saved.</string>
+    <string name="clocking_scan_server_error">Aiku didn’t respond (error %1$d). Nothing was saved.</string>
+    <string name="clocking_scan_refused_fallback">Aiku did not accept this QR code.</string>
 
+    <string name="clocking_timesheets_this_week">This week</string>
+    <string name="clocking_timesheets_last_week">Last week</string>
+    <plurals name="clocking_timesheets_weeks_ago">
+        <item quantity="one">%d week ago</item>
+        <item quantity="other">%d weeks ago</item>
+    </plurals>
     <string name="clocking_timesheets_previous_week">Previous week</string>
     <string name="clocking_timesheets_next_week">Next week</string>
     <string name="clocking_timesheets_working_time">Working time</string>
     <string name="clocking_timesheets_target">Target %1$s</string>
     <string name="clocking_timesheets_chart">Hours per day</string>
     <string name="clocking_timesheets_days">Days</string>
+    <string name="clocking_timesheets_now">now</string>
+    <string name="clocking_timesheets_day_error">Error · no clock out</string>
+    <plurals name="clocking_timesheets_day_open">
+        <item quantity="one">Open · %d clocking</item>
+        <item quantity="other">Open · %d clockings</item>
+    </plurals>
+    <plurals name="clocking_timesheets_day_complete">
+        <item quantity="one">%1$d clocking · break %2$s</item>
+        <item quantity="other">%1$d clockings · break %2$s</item>
+    </plurals>
+    <string name="clocking_timesheets_empty_title">No clockings this week</string>
+    <string name="clocking_timesheets_empty_body">Days you clock in on appear here.</string>
+    <string name="clocking_statistics_on_time">On time</string>
+    <string name="clocking_statistics_late_clock_in">Late clock in</string>
+    <string name="clocking_statistics_early_clock_out">Early clock out</string>
+    <string name="clocking_statistics_no_clock_out">No clock out</string>
+    <string name="clocking_statistics_invalid">Invalid</string>
+    <string name="clocking_statistics_total">Total logs</string>
+    <string name="clocking_correction_pending">Correction pending</string>
+    <string name="clocking_correction_pending_body">HR checks it before it changes your timesheet.</string>
+    <string name="clocking_request_correction">Request correction</string>
     <string name="clocking_timesheets_note">Tap a day for its time trackers and clockings. To correct a clocking, request a clocking adjustment.</string>
 
     <string name="clocking_day_kicker">Timesheet</string>
     <string name="clocking_day_trackers">Time trackers</string>
+    <string name="clocking_day_tracker_in_out">Clock in → clock out</string>
+    <string name="clocking_day_tracker_ongoing">Clock in · ongoing</string>
+    <string name="clocking_day_tracker_no_clock_out">Clock in · no clock out</string>
     <string name="clocking_day_closed">Closed</string>
-    <string name="clocking_day_workplace">Workplace</string>
-    <string name="clocking_day_shift">Shift</string>
-    <string name="clocking_day_request_adjustment">Request clocking adjustment</string>
+    <string name="clocking_day_open">Open</string>
+    <string name="clocking_day_error">Error</string>
+    <string name="clocking_day_in">In</string>
+    <string name="clocking_day_out">Out</string>
+    <string name="clocking_day_event">%1$s · %2$s</string>
+    <string name="clocking_day_clock_in_out">Clock in / out</string>
+    <string name="clocking_day_trackers_open_all">Trackers (open / all)</string>
+    <string name="clocking_count_pair" translatable="false">%1$d / %2$d</string>
+    <string name="clocking_day_places">Where you clocked</string>
+    <string name="clocking_day_empty_title">No clockings on this day</string>
+    <string name="clocking_day_empty_body">There is no timesheet for this day.</string>
     <string name="clocking_day_back_to_history">Back to history</string>
+
+    <string name="clocking_type_clocking_machine">Clocking machine</string>
+    <string name="clocking_type_manual">Manual</string>
+    <string name="clocking_type_self_check">Self check</string>
+    <string name="clocking_type_system">System</string>
 
     <string name="clocking_adjustment_title">Clocking adjustment · %1$s</string>
     <string name="clocking_adjustment_subtitle">Your manager checks it and corrects the timesheet in Aiku</string>
     <string name="clocking_adjustment_missing">Missing clocking</string>
-    <string name="clocking_adjustment_time">Time you left</string>
-    <string name="clocking_adjustment_shift_ended">Your shift ended %1$s</string>
+    <string name="clocking_adjustment_to_correct">Clocking to correct</string>
+    <string name="clocking_adjustment_both">Both</string>
+    <string name="clocking_adjustment_date">Date</string>
+    <string name="clocking_adjustment_time_in">Time you arrived</string>
+    <string name="clocking_adjustment_time_out">Time you left</string>
     <string name="clocking_adjustment_reason">Reason</string>
+    <string name="clocking_adjustment_reason_placeholder">Why is the clocking missing or wrong?</string>
     <string name="clocking_adjustment_request">Request adjustment</string>
     <string name="clocking_adjustment_requested">Clocking adjustment requested</string>
+
+    <string name="clocking_adjustments_intro">For a day with no clockings at all, request the missing check-in, check-out or both here. To correct a day that already has clockings, use Request correction on the Timesheets tab. Requests can go back one month and apply once they are approved.</string>
+    <string name="clocking_adjustments_recorded">Recorded</string>
+    <string name="clocking_adjustments_requested">Requested</string>
+    <string name="clocking_adjustments_no_clockings">No clockings</string>
+    <string name="clocking_adjustments_cancel">Cancel request</string>
+    <string name="clocking_adjustments_cancel_title">Cancel this request?</string>
+    <string name="clocking_adjustments_cancel_body">Your clocking adjustment for %1$s will be withdrawn.</string>
+    <string name="clocking_adjustments_keep">Keep request</string>
+    <string name="clocking_adjustments_cancelled">Request cancelled</string>
+    <string name="clocking_adjustments_empty_title">No clocking adjustments</string>
+    <string name="clocking_adjustments_empty_body">Requests you send for days with missing clockings appear here.</string>
+
+    <string name="clocking_edit">Edit</string>
+    <string name="clocking_rejection_reason">Rejected: %1$s</string>
+    <string name="clocking_load_more_failed">Couldn’t load more</string>
+    <string name="clocking_form_choose">Choose</string>
+    <string name="clocking_form_choose_date">Choose a date</string>
+    <string name="clocking_form_choose_time">Choose a time</string>
+    <string name="clocking_form_choose_type">Choose a type</string>
+    <string name="clocking_form_submit">Submit request</string>
+    <string name="clocking_form_save">Save changes</string>
+    <string name="clocking_form_failed_offline">No connection. Nothing was sent.</string>
+    <string name="clocking_form_failed_server">Aiku didn’t respond. Nothing was sent. Try again in a moment.</string>
+    <string name="clocking_form_refused_fallback">Aiku did not accept this request.</string>
+
+    <string name="clocking_attachments_label">Attachments</string>
+    <string name="clocking_attachments_add">Add files</string>
+    <string name="clocking_attachments_hint">PDF, JPG or PNG · up to 3 files, 5 MB each</string>
+    <string name="clocking_attachments_too_many">You can add up to 3 files.</string>
+    <string name="clocking_attachments_too_big">Each file must be 5 MB or smaller.</string>
+    <string name="clocking_attachments_remove">Remove %1$s</string>
+    <string name="clocking_attachment_open">Open %1$s</string>
+    <string name="clocking_attachment_no_app">No app on this phone can open this file.</string>
+    <string name="clocking_attachment_offline">No connection. The file was not downloaded.</string>
+    <string name="clocking_attachment_failed">The file could not be downloaded. Try again in a moment.</string>
+    <string name="clocking_attachment_refused">You can’t open this file.</string>
+
+    <string name="clocking_leave_annual">Annual Leave</string>
+    <string name="clocking_leave_medical">Medical Leave</string>
+    <string name="clocking_leave_unpaid">Unpaid Leave</string>
+    <plurals name="clocking_leave_submitted">
+        <item quantity="one">%1$s of %2$s day submitted</item>
+        <item quantity="other">%1$s of %2$s days submitted</item>
+    </plurals>
+    <string name="clocking_leave_days_this_month">Days this month</string>
+    <string name="clocking_leave_request">Request leave</string>
+    <string name="clocking_leave_requested">Leave requested</string>
+    <string name="clocking_leave_dates">Dates</string>
+    <string name="clocking_leave_duration">Duration</string>
+    <string name="clocking_leave_full_day">Full Day</string>
+    <string name="clocking_leave_half_day">Half Day</string>
+    <string name="clocking_leave_approval">Approval</string>
+    <string name="clocking_leave_approval_progress">%1$d of %2$d</string>
+    <string name="clocking_leave_empty_title">No leave requests</string>
+    <string name="clocking_leave_empty_body">Leave you request appears here.</string>
+    <string name="clocking_leave_type">Leave type</string>
+    <string name="clocking_leave_no_types">No leave types are set up for your organisation.</string>
+    <plurals name="clocking_leave_max_days">
+        <item quantity="one">Maximum %1$s day per year</item>
+        <item quantity="other">Maximum %1$s days per year</item>
+    </plurals>
+    <string name="clocking_leave_half_day_toggle">Half day</string>
+    <string name="clocking_leave_morning">Morning</string>
+    <string name="clocking_leave_afternoon">Afternoon</string>
+    <string name="clocking_leave_start">Start date</string>
+    <string name="clocking_leave_end">End date</string>
+    <string name="clocking_leave_date">Date</string>
+    <string name="clocking_leave_holidays_hint">Past days and public holidays can’t be chosen.</string>
+    <string name="clocking_leave_reason">Reason</string>
+    <string name="clocking_leave_certificate">Medical certificate</string>
+    <string name="clocking_leave_upload_certificate">Upload medical certificate</string>
+    <string name="clocking_leave_certificate_title">Replace medical certificate</string>
+    <string name="clocking_leave_certificate_subtitle">The files you upload replace the current ones.</string>
+    <string name="clocking_leave_certificate_current">Current files</string>
+    <string name="clocking_leave_certificate_save">Save certificate</string>
+    <string name="clocking_leave_certificate_saved">Medical certificate replaced</string>
+    <string name="clocking_leave_certificate_missing">Choose at least one file.</string>
+
+    <string name="clocking_overtime_request">Request overtime</string>
+    <string name="clocking_overtime_edit_title">Edit overtime request</string>
+    <string name="clocking_overtime_requested">Overtime requested</string>
+    <string name="clocking_overtime_updated">Overtime request updated</string>
+    <string name="clocking_overtime_type">Overtime type</string>
+    <string name="clocking_overtime_no_types">No overtime types are set up for your organisation.</string>
+    <string name="clocking_overtime_date_worked">Date worked</string>
+    <string name="clocking_overtime_start_time">Start time</string>
+    <string name="clocking_overtime_from">From</string>
+    <string name="clocking_overtime_duration">Duration</string>
+    <string name="clocking_overtime_hours">Hours</string>
+    <string name="clocking_overtime_minutes">Minutes</string>
+    <string name="clocking_overtime_recorded">Recorded</string>
+    <string name="clocking_overtime_lieu">Lieu requested</string>
+    <string name="clocking_overtime_reason">Reason</string>
+    <string name="clocking_overtime_reason_placeholder">Why did you work overtime?</string>
+    <string name="clocking_overtime_empty_title">No overtime requests</string>
+    <string name="clocking_overtime_empty_body">Overtime you request appears here.</string>
+
+    <string name="clocking_calendar_previous_month">Previous month</string>
+    <string name="clocking_calendar_next_month">Next month</string>
+    <string name="clocking_calendar_holiday_year">Holiday year %1$s</string>
+    <string name="clocking_calendar_holidays">Public holidays</string>
+    <string name="clocking_calendar_no_holidays">No public holidays this month.</string>
+    <string name="clocking_calendar_legend_holiday">Public holiday</string>
+    <string name="clocking_calendar_legend_approved">Approved</string>
+    <string name="clocking_calendar_legend_pending">Pending</string>
+    <string name="clocking_calendar_legend_half_day">Half day</string>
+    <string name="clocking_calendar_tap_hint">Tap a day to see its holidays and leave.</string>
+    <string name="clocking_calendar_day_empty">No holiday or leave on this day.</string>
+    <string name="clocking_calendar_day_range" translatable="false">%1$s–%2$s</string>
 
     <string name="clocking_error_kicker_qr">Clocking · QR Code</string>
     <string name="clocking_error_kicker_pin">Clocking · PIN</string>
@@ -113,4 +297,7 @@
     <string name="clocking_error_no_pin_body">No PIN has been generated for you yet. Please contact HR.</string>
     <string name="clocking_error_offline_title">No connection</string>
     <string name="clocking_error_offline_body">Aiku checks the machine’s QR code when you scan, so clocking needs a connection. Nothing was saved.</string>
+    <string name="clocking_error_camera_title">Camera access is off</string>
+    <string name="clocking_error_camera_body">Aiku needs the camera to scan the clocking machine’s QR code. Turn it on in your phone settings.</string>
+    <string name="clocking_error_open_settings">Open settings</string>
 </resources>

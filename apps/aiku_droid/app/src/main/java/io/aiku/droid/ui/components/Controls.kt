@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +40,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -74,6 +76,11 @@ fun AikuButton(
         style == ButtonStyle.Scan -> Triple(colors.scan, colors.onScan, Color.Transparent)
         else -> Triple(colors.surface, colors.danger, colors.dangerBorder)
     }
+    val focusRing = when (style) {
+        ButtonStyle.Primary -> colors.onPrimary
+        ButtonStyle.Scan -> colors.onScan
+        else -> colors.focus
+    }
 
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -86,7 +93,7 @@ fun AikuButton(
             .border(1.dp, border, ControlShape)
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(color = content),
+                indication = AikuFocusIndication(ringColor = focusRing, gapColor = colors.background, ripple = ripple(color = content)),
                 enabled = enabled && !isLoading,
                 role = Role.Button,
                 onClick = onClick,
@@ -112,14 +119,18 @@ fun SearchField(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalAikuColors.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    val focusProgress = animateFocusProgress(isFocused)
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .height(48.dp)
+            .focusHalo(progress = focusProgress, color = colors.focus, cornerRadius = 8.dp)
             .clip(ControlShape)
             .background(colors.surface)
-            .border(1.dp, colors.border, ControlShape)
+            .border(1.dp, lerp(colors.border, colors.focus, focusProgress), ControlShape)
             .padding(horizontal = 12.dp),
     ) {
         Icon(painter = painterResource(R.drawable.ic_search), contentDescription = null, tint = colors.textQuaternary, modifier = Modifier.size(20.dp))
@@ -130,6 +141,7 @@ fun SearchField(
             singleLine = true,
             textStyle = TextStyle(fontFamily = Inter, fontSize = 15.sp, color = colors.text),
             cursorBrush = SolidColor(colors.primary),
+            interactionSource = interactionSource,
             modifier = Modifier.weight(1f),
             decorationBox = { inner ->
                 Box(contentAlignment = Alignment.CenterStart) {
