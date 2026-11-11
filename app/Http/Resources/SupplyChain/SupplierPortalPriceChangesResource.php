@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\SupplyChain;
 
+use App\Actions\SupplyChain\SupplierShareLink\UI\IndexSupplierPortalProducts;
 use App\Enums\SupplyChain\SupplierProduct\SupplierProductStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionStateEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
@@ -58,6 +59,7 @@ class SupplierPortalPriceChangesResource extends JsonResource
             'code'         => $this->code,
             'name'         => $this->name,
             'image'        => $imageOwner?->imageSources(160, 160),
+            'image_full'   => $imageOwner?->image ? IndexSupplierPortalProducts::make()->fullResolutionUrls($imageOwner->image, $request->route('token')) : null,
             'status'       => $status,
             'status_label' => ['active' => __('Active'), 'on_hold' => __('On hold'), 'discontinued' => __('Discontinued')][$status],
             'cost'         => (float) $this->cost,

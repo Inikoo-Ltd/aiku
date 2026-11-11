@@ -14,6 +14,8 @@ import SupplierPortalSearch from "@/Components/Procurement/SupplierPortalSearch.
 import SupplierPortalHome, { type PortalSummary } from "@/Components/Procurement/SupplierPortalHome.vue"
 import Image from "@common/Components/Image.vue"
 import { useColorTheme } from "@/Composables/useStockList"
+import { setColorStyleRoot } from "@/Composables/useApp"
+import { useAppAccentVariables } from "@/Composables/useAppAccent"
 import GrpAuth from "@/Layouts/GrpAuth.vue"
 import type { PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import type { Valuation } from "@/Components/Procurement/AgentSalesValuation.vue"
@@ -81,8 +83,12 @@ const verify = () => {
 const openOrders = computed(() => props.open_purchase_orders ?? 0)
 
 const theme = ref(props.profile?.theme ?? 0)
+const themeColours = computed(() => useColorTheme[theme.value] ?? useColorTheme[0])
+watch(themeColours, (colours) => setColorStyleRoot(colours), { immediate: true })
+useAppAccentVariables(() => themeColours.value)
+
 const navigationTheme = computed(() => {
-	const colours = useColorTheme[theme.value] ?? useColorTheme[0]
+	const colours = themeColours.value
 
 	return {
 		background: colours[0],
