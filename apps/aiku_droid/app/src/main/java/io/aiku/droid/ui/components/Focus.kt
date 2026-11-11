@@ -27,6 +27,7 @@ import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.aiku.droid.ui.theme.LocalAikuColors
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlinx.coroutines.launch
@@ -35,6 +36,7 @@ private val FocusRingWidth = 2.dp
 private val FocusGapWidth = 1.5.dp
 private val FocusRingCorner = 10.dp
 private val CompactControlSize = 64.dp
+private val SquareTolerance = 8.dp
 private val SlimControlHeight = 40.dp
 private val FocusHaloWidth = 3.dp
 private const val FOCUS_HALO_ALPHA = 0.25f
@@ -55,26 +57,41 @@ fun animateFocusProgress(isFocused: Boolean): Float {
     return progress
 }
 
-data class AikuFocusIndication(val ringColor: Color, val gapColor: Color, val ripple: IndicationNodeFactory) : IndicationNodeFactory {
+data class AikuFocusIndication(
+    val ringColor: Color,
+    val gapColor: Color,
+    val ripple: IndicationNodeFactory,
+    val cornerRadius: Dp? = null,
+    val bottomInset: Dp = 0.dp,
+) : IndicationNodeFactory {
     override fun create(interactionSource: InteractionSource): DelegatableNode =
-        FocusRingNode(interactionSource, ringColor, gapColor, ripple.create(interactionSource))
+        FocusRingNode(interactionSource, this, ripple.create(interactionSource))
 }
 
 @Composable
-fun rememberNavFocusIndication(): IndicationNodeFactory {
+fun rememberNavFocusIndication(cornerRadius: Dp? = null, bottomInset: Dp = 0.dp): IndicationNodeFactory {
     val colors = LocalAikuColors.current
-    return remember(colors.navAccent, colors.nav) { AikuFocusIndication(ringColor = colors.navAccent, gapColor = colors.nav, ripple = ripple()) }
+    return remember(colors.navAccent, colors.nav, cornerRadius, bottomInset) {
+        AikuFocusIndication(ringColor = colors.navAccent, gapColor = colors.nav, ripple = ripple(), cornerRadius = cornerRadius, bottomInset = bottomInset)
+    }
+}
+
+@Composable
+fun rememberTabIndication(cornerRadius: Dp): IndicationNodeFactory {
+    val colors = LocalAikuColors.current
+    return remember(colors.focus, colors.background, cornerRadius) {
+        AikuFocusIndication(ringColor = colors.focus, gapColor = colors.background, ripple = ripple(), cornerRadius = cornerRadius)
+    }
 }
 
 private class FocusRingNode(
     private val interactionSource: InteractionSource,
-    private val ringColor: Color,
-    private val gapColor: Color,
+    private val style: AikuFocusIndication,
     rippleNode: DelegatableNode,
 ) : DelegatingNode(), DrawModifierNode {
     private val activeFocus = mutableListOf<FocusInteraction.Focus>()
     private val progress = Animatable(0f)
-    private var isFocused = false
+    private var isVisible = false
 
     init {
         delegate(rippleNode)
@@ -87,14 +104,19 @@ private class FocusRingNode(
                     is FocusInteraction.Focus -> activeFocus.add(interaction)
                     is FocusInteraction.Unfocus -> activeFocus.remove(interaction.focus)
                 }
-                val focused = activeFocus.isNotEmpty()
-                if (focused != isFocused) {
-                    isFocused = focused
-                    coroutineScope.launch {
-                        progress.animateTo(if (focused) 1f else 0f, focusAnimationSpec(focused)) { invalidateDraw() }
-                    }
-                }
+                updateVisibility()
             }
+        }
+    }
+
+    private fun updateVisibility() {
+        val visible = activeFocus.isNotEmpty()
+        if (visible == isVisible) {
+            return
+        }
+        isVisible = visible
+        coroutineScope.launch {
+            progress.animateTo(if (visible) 1f else 0f, focusAnimationSpec(visible)) { invalidateDraw() }
         }
     }
 
@@ -107,21 +129,28 @@ private class FocusRingNode(
         val grow = FOCUS_RING_START_SCALE + (1 - FOCUS_RING_START_SCALE) * visibility
         val ring = FocusRingWidth.toPx() * grow
         val gap = FocusGapWidth.toPx() * grow
-        val radius = when {
-            max(size.width, size.height) <= CompactControlSize.toPx() -> min(size.width, size.height) / 2
-            size.height <= SlimControlHeight.toPx() -> size.height / 2
-            else -> FocusRingCorner.toPx()
-        }
-        insetStroke(color = ringColor.copy(alpha = ringColor.alpha * visibility), inset = 0f, width = ring, radius = radius)
-        insetStroke(color = gapColor.copy(alpha = gapColor.alpha * visibility), inset = ring, width = gap, radius = radius)
+        val area = Size(size.width, size.height - style.bottomInset.toPx())
+        val radius = style.cornerRadius?.toPx() ?: fittingRadius(area)
+        insetStroke(area, color = style.ringColor.copy(alpha = style.ringColor.alpha * visibility), inset = 0f, width = ring, radius = radius)
+        insetStroke(area, color = style.gapColor.copy(alpha = style.gapColor.alpha * visibility), inset = ring, width = gap, radius = radius)
     }
 
-    private fun ContentDrawScope.insetStroke(color: Color, inset: Float, width: Float, radius: Float) {
+    private fun ContentDrawScope.fittingRadius(area: Size): Float {
+        val isCompactSquare = max(area.width, area.height) <= CompactControlSize.toPx() &&
+            abs(area.width - area.height) <= SquareTolerance.toPx()
+        return when {
+            isCompactSquare -> min(area.width, area.height) / 2
+            area.height <= SlimControlHeight.toPx() -> area.height / 2
+            else -> FocusRingCorner.toPx()
+        }
+    }
+
+    private fun ContentDrawScope.insetStroke(area: Size, color: Color, inset: Float, width: Float, radius: Float) {
         val center = inset + width / 2
         drawRoundRect(
             color = color,
             topLeft = Offset(center, center),
-            size = Size(size.width - center * 2, size.height - center * 2),
+            size = Size(area.width - center * 2, area.height - center * 2),
             cornerRadius = CornerRadius(max(radius - center, 0f)),
             style = Stroke(width = width),
         )

@@ -224,7 +224,11 @@ fun SegmentedControl(
                     .height(36.dp)
                     .clip(inner)
                     .background(if (isSelected) colors.surface else Color.Transparent)
-                    .clickable(role = Role.RadioButton) { onSelect(index) },
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = rememberTabIndication(cornerRadius = 7.dp),
+                        role = Role.RadioButton,
+                    ) { onSelect(index) },
             ) {
                 Text(
                     text = option,

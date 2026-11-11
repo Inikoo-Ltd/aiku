@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,6 +68,7 @@ import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.ProductPhoto
 import io.aiku.droid.ui.components.ProgressBar
 import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.rememberTabIndication
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.ScanToPickRoute
@@ -195,7 +197,13 @@ private fun CameraModePill(@DrawableRes icon: Int, label: String, isActive: Bool
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .height(44.dp)
-            .selectable(selected = isActive, role = Role.Tab, onClick = onClick)
+            .selectable(
+                selected = isActive,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = rememberTabIndication(cornerRadius = 22.dp),
+                role = Role.Tab,
+                onClick = onClick,
+            )
             .padding(horizontal = 2.dp, vertical = 5.dp)
             .clip(CircleShape)
             .background(if (isActive) colors.scan else Color.Transparent)

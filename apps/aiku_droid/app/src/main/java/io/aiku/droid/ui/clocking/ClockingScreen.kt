@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -68,6 +69,7 @@ import io.aiku.droid.ui.components.InlineAlert
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.SkeletonStatCard
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.rememberTabIndication
 import io.aiku.droid.ui.navigation.ClockScanQrRoute
 import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
@@ -408,7 +410,13 @@ private fun ClockingMethodTabs(methods: List<ClockingMethod>, selected: Clocking
                     )
                     .clip(MethodTabShape)
                     .background(if (isSelected) colors.surface else Color.Transparent)
-                    .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(method) })
+                    .selectable(
+                        selected = isSelected,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = rememberTabIndication(cornerRadius = 8.dp),
+                        role = Role.Tab,
+                        onClick = { onSelect(method) },
+                    )
                     .padding(horizontal = 4.dp),
             ) {
                 Text(
