@@ -198,7 +198,7 @@ enum PurchaseOrderStageEnum: string
     public static function labels(): array
     {
         return [
-            'submitted'     => __('PO Launch'),
+            'submitted'     => __('PO Submitted'),
             'deposit_paid'  => __('Deposit & Go'),
             'in_production' => __('Making It Happen'),
             'in_warehouse'  => __('In warehouse'),
@@ -229,6 +229,7 @@ enum PurchaseOrderStageEnum: string
     public static function captions(): array
     {
         return [
+            'deposit_paid'  => __('Confirmed'),
             'in_production' => __('In production at the supplier'),
             'handed_over'   => __('Available to ship'),
         ];
@@ -285,7 +286,7 @@ enum PurchaseOrderStageEnum: string
     public function steps(): array
     {
         return match ($this) {
-            self::SUBMITTED     => ['confirmed_at'],
+            self::SUBMITTED     => [],
             self::DEPOSIT_PAID  => [],
             self::IN_PRODUCTION => ['sample_approved_at', 'proposed_ready_at', 'approved_ready_at'],
             self::IN_WAREHOUSE  => ['warehouse_arrived_at', 'warehouse_checked_at', 'warehouse_packed_at'],

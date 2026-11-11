@@ -964,6 +964,8 @@ const stageActionKeys: Record<string, string[]> = {
 	received: ["edit_estimated_delivery_date"],
 }
 
+const actionKeysInStageAndPageHead = ["cancel_purchase_order"]
+
 const uncheckedReceiptItems = computed(() => (props.agent_receiving?.lines ?? []).flatMap((line) =>
 	line.items.filter((item) => item.check_route && !item.is_checked)
 ))
@@ -1023,7 +1025,7 @@ function runStageAction(action: Action) {
 }
 
 const pageHeadWithGroupedActions = computed<PageHeadingTypes>(() => {
-	const actionsInStages = Object.values(stageActions.value).flat().map((action) => action.key)
+	const actionsInStages = Object.values(stageActions.value).flat().map((action) => action.key).filter((key) => !actionKeysInStageAndPageHead.includes(key))
 	const actions: Action[] = (props.pageHead.actions ?? []).filter(Boolean).filter((action: Action) => !actionsInStages.includes(action.key))
 	const actionsByKey = Object.fromEntries(actions.map((action) => [action.key, action]))
 	const placedGroupKeys = new Set<string>()

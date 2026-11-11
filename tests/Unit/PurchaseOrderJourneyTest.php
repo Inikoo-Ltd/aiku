@@ -166,7 +166,7 @@ it('lists the stages in the board order with Clean Hand Over before Homeward Bou
     expect($keys)->toBe(['submitted', 'deposit_paid', 'in_production', 'ready', 'handed_over', 'arrived', 'received', 'products_online'])
         ->and(App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum::values())->toBe($keys)
         ->and(App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum::labels())->toMatchArray([
-            'submitted'       => 'PO Launch',
+            'submitted'       => 'PO Submitted',
             'handed_over'     => 'Clean Hand Over',
             'arrived'         => 'Homeward Bound',
             'products_online' => 'Mission Complete',

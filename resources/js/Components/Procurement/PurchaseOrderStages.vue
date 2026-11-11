@@ -344,8 +344,9 @@ function save() {
                 <template v-else-if="stage.date">{{ formatDate(stage.date) }}</template>
                 <template v-else-if="stage.reached">{{ ctrans("Not recorded") }}</template>
                 <template v-else>-</template>
-                <span v-if="stage.by" class="text-xs text-gray-500"> · {{ stage.by }}</span>
+                <span v-if="stage.by && stage.key !== 'submitted'" class="text-xs text-gray-500"> · {{ stage.by }}</span>
             </div>
+            <div v-if="stage.by && stage.key === 'submitted'" class="text-xs text-gray-500">{{ ctrans("Submitted by :name", { name: stage.by }) }}</div>
 
             <div v-if="!stage.reached && stage.expected" class="mt-0.5 w-fit cursor-help text-xs tabular-nums" :class="stage.days_late ? 'text-red-600' : 'text-gray-500'" v-tooltip="stage.expected_note">
                 {{ ctrans("Expected :date", { date: formatDate(stage.expected) as string }) }}
@@ -419,7 +420,7 @@ function save() {
                     </Button>
                     <Button
                         v-if="mark.date && clearLabels[mark.field]"
-                        type="tertiary"
+                        type="negative"
                         size="xs"
                         full
                         :label="ctrans(clearLabels[mark.field].label)"
@@ -427,7 +428,7 @@ function save() {
                         @click="openClear(mark)"
                     >
                         <template #icon>
-                            <FontAwesomeIcon icon="fal fa-undo" class="text-amber-600" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-undo" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
                 </template>

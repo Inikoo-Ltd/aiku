@@ -256,7 +256,7 @@ class ShowPurchaseOrder extends OrgAction
                             'label'   => __('Packing instructions'),
                             'tooltip' => __('One page per product for the packers. Print a single product from the box icon next to its code.'),
                             'target'  => '_blank',
-                            'icon'    => 'fal fa-box-open',
+                            'icon'    => 'fal fa-file-pdf',
                             'key'     => 'packing_instructions',
                             'route'   => [
                                 'name'       => 'grp.org.procurement.purchase_orders.packing_instructions',

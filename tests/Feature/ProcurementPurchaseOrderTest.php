@@ -1127,7 +1127,7 @@ test('purchase order stages go in order and ask a reason to skip, backdate or cl
     $this->patch($route, ['field' => 'production_started_at', 'date' => $today])->assertSessionHasErrors('reason');
     expect($purchaseOrder->refresh()->production_started_at)->toBeNull()
         ->and(collect(GetPurchaseOrderStages::make()->forUi($purchaseOrder, ['production_started_at']))->firstWhere('key', 'in_production')['marks'][0])
-        ->toMatchArray(['label' => __('Confirm and Start Production'), 'confirms_order' => true]);
+        ->toMatchArray(['label' => __('Supplier start production'), 'confirms_order' => true]);
 
     $this->patch($route, ['field' => 'deposit_paid_at', 'date' => $today])->assertSessionHasErrors('field');
     $purchaseOrder->refresh()->updateQuietly(['deposit_paid_at' => now()]);

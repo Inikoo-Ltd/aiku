@@ -294,7 +294,11 @@ class GetPurchaseOrderStages
                 ->keys()
                 ->map(fn (string $field) => [
                     'field'   => $field,
-                    'label'   => $confirmsOrder && $field === 'production_started_at' && $purchaseOrder->{$field} === null ? __('Confirm and Start Production') : $fieldLabels[$field],
+                    'label'   => match (true) {
+                        $field !== 'production_started_at' || $purchaseOrder->{$field} !== null => $fieldLabels[$field],
+                        $confirmsOrder                                                       => __('Supplier start production'),
+                        default                                                              => __('Set production start date'),
+                    },
                     'confirms_order' => $confirmsOrder && $purchaseOrder->{$field} === null,
                     'date'    => $purchaseOrder->{$field},
                     'skipped' => $this->skippedBy($purchaseOrder, $field, $stages),
