@@ -122,7 +122,7 @@ const stateClass: Record<string, string> = {
 									<dt class="text-gray-400">{{ ctrans("Proposed price") }}</dt>
 									<dd class="text-right font-semibold tabular-nums text-gray-900">{{ price(row.price_change.proposed_price) }}</dd>
 									<template v-if="row.price_change.effective_from">
-										<dt class="text-gray-400">{{ ctrans("From") }}</dt>
+										<dt class="text-gray-400">{{ ctrans("Since") }}</dt>
 										<dd class="text-right tabular-nums text-gray-700">{{ day(row.price_change.effective_from) }}</dd>
 									</template>
 									<template v-if="row.price_change.effective_until">
