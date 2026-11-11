@@ -336,7 +336,7 @@ onBeforeUnmount(() => {
                         <!-- Slide: Image -->
                         <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"
                             class="relative w-full h-full">
-                            <Image :src="renderImage(component)" :srcset="renderImageSrcset(component)" sizes="100vw" alt="Wowsbar" :imgAttributes="slideImgAttributes(index)" />
+                            <Image :src="renderImage(component)" :srcset="renderImageSrcset(component)" sizes="100vw" :alt="component?.layout?.centralStage?.title || ''" :imgAttributes="slideImgAttributes(index)" />
                         </div>
                         <div v-else-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'video'"
                             class="relative w-full h-full overflow-hidden">

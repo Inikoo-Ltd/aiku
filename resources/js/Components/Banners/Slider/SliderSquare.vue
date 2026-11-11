@@ -267,7 +267,7 @@ onMounted(() => {
                         class="relative w-full h-full">
                         <Image :src="get(component, ['image', props.view || 'desktop', 'source'], null) ?? get(component, ['image', 'desktop', 'source'], null)"
                             :srcset="get(component, ['image', props.view || 'desktop', 'srcset'], undefined) ?? get(component, ['image', 'desktop', 'srcset'], undefined)"
-                            alt="Wowsbar"
+                            :alt="component?.layout?.centralStage?.title || ''"
                             :imgAttributes="index === 0 ? { loading: 'eager', fetchpriority: 'high', decoding: 'async' } : { loading: 'lazy', decoding: 'async' }" />
                     </div>
                     <!-- Video -->
