@@ -448,6 +448,11 @@ class UpdateFaireOrder extends OrgAction
             return;
         }
 
+        $this->setFaireShipping($order, $faireShipping);
+    }
+
+    public function setFaireShipping(Order $order, float $faireShipping): void
+    {
         $orderTax = (float)$order->tax_amount;
         UpdateOrderShippingEngineAsManual::run($order, ['shipping_amount' => $faireShipping]);
         $order->refresh();
