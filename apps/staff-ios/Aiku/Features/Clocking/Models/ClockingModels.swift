@@ -35,14 +35,18 @@ struct ClockingEvent: Identifiable, Hashable, Sendable {
     let viaMobileApp: Bool
     let place: String
     var note: String?
+    var clockingID: Int?
+    var isLate = false
 
-    init(time: Int, kind: ClockingEventKind, viaMobileApp: Bool = true, place: String = "Main Warehouse", note: String? = nil) {
+    init(time: Int, kind: ClockingEventKind, viaMobileApp: Bool = true, place: String = "Main Warehouse", note: String? = nil, clockingID: Int? = nil, isLate: Bool = false) {
         self.id = UUID()
         self.time = time
         self.kind = kind
         self.viaMobileApp = viaMobileApp
         self.place = place
         self.note = note
+        self.clockingID = clockingID
+        self.isLate = isLate
     }
 
     var detail: String {
@@ -81,6 +85,7 @@ struct ClockingDay: Identifiable, Hashable, Sendable {
     var workplace = "Main Warehouse · WH1"
     var note: String?
     var isToday = false
+    var timesheetID: Int?
 
     var id: String { date }
     var title: String { "\(weekday) \(dayOfMonth) \(monthYear)" }
@@ -183,6 +188,7 @@ enum ClockingLocationState: Hashable, Sendable {
 enum ClockingScanOutcome: Hashable, Sendable {
     case success(ClockingEvent)
     case rejected
+    case locationNeeded
     case offline
 }
 
@@ -194,8 +200,18 @@ struct ClockingRejection: Hashable, Sendable {
 struct ClockingShift: Identifiable, Hashable, Sendable {
     let name: String
     let hours: String
+    var scheduleID: Int?
 
     var id: String { name }
+}
+
+struct ClockingCoordinate: Hashable, Sendable {
+    let latitude: Double
+    let longitude: Double
+
+    var label: String {
+        String(format: "%.4f, %.4f", latitude, longitude)
+    }
 }
 
 enum ClockingSchedule: Hashable, Sendable {
@@ -203,34 +219,54 @@ enum ClockingSchedule: Hashable, Sendable {
     case shift(String)
 }
 
-struct ClockingAdjustmentRequest: Identifiable, Hashable, Sendable {
-    let id: UUID
-    let date: String
-    let kind: ClockingEventKind
-    let time: Int
-    let reason: String
+enum ClockingAdjustmentStatus: String, Sendable {
+    case pending
+    case approved
+    case rejected
+    case cancelled
 
-    init(date: String, kind: ClockingEventKind, time: Int, reason: String) {
-        self.id = UUID()
-        self.date = date
-        self.kind = kind
-        self.time = time
-        self.reason = reason
+    var tone: Tone {
+        switch self {
+        case .pending: .warn
+        case .approved: .success
+        case .rejected: .danger
+        case .cancelled: .neutral
+        }
+    }
+}
+
+extension ClockingAdjustmentResponse {
+    var summary: String {
+        var parts: [String] = []
+        if let start = requestedStartTimeLocal { parts.append("Check-in \(start)") }
+        if let end = requestedEndTimeLocal { parts.append("Check-out \(end)") }
+        if let reason, !reason.isEmpty { parts.append(reason) }
+        return parts.joined(separator: " · ")
     }
 
-    var summary: String {
-        "\(kind == .clockIn ? "Clock in" : "Clock out") \(ClockingFormat.shortTime(time)) · \(reason)"
+    var tone: Tone {
+        status.flatMap(ClockingAdjustmentStatus.init(rawValue:))?.tone ?? .neutral
     }
 }
 
 enum ClockingAdjustmentError: Error, Hashable, Sendable {
-    case invalidTime
+    case missingTime
+    case endBeforeStart
+    case futureDate
+    case tooOld
     case missingReason
+    case pendingExists
+    case server(String)
 
     var message: String {
         switch self {
-        case .invalidTime: "Use the 24-hour format, e.g. 16:30"
-        case .missingReason: "Add a reason for your manager"
+        case .missingTime: "Fill in check-in, check-out, or both."
+        case .endBeforeStart: "The check-out time must be after the check-in time."
+        case .futureDate: "The date cannot be in the future."
+        case .tooOld: "Requests can only go back one month."
+        case .missingReason: "Please explain what happened"
+        case .pendingExists: "You already have a pending adjustment request for this date."
+        case .server(let message): message
         }
     }
 }

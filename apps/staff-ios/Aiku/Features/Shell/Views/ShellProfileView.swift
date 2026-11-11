@@ -77,7 +77,7 @@ struct ShellProfileView: View {
         }
         .shellWarehouseSheet(isPresented: $isChoosingWarehouse)
         .task { await authStore.refreshProfile() }
-        .refreshable { await authStore.refreshProfile() }
+        .screenRefreshable { await authStore.refreshProfile() }
     }
 
     private var userCard: some View {

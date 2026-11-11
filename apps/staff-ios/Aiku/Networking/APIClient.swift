@@ -25,6 +25,7 @@ enum APIError: LocalizedError, Equatable {
     case http(statusCode: Int)
     case validation(message: String, code: String?)
     case tooManyAttempts(message: String)
+    case rejected(message: String)
     case offline
     case unexpectedBody
 
@@ -35,6 +36,7 @@ enum APIError: LocalizedError, Equatable {
         case .http(let statusCode): "Server error (\(statusCode))"
         case .validation(let message, _): message
         case .tooManyAttempts(let message): message
+        case .rejected(let message): message
         case .offline: "No connection"
         case .unexpectedBody: "Unexpected server response"
         }
@@ -112,6 +114,11 @@ final class APIClient: Sendable {
             let body = try? JSONDecoder().decode(APIValidationBody.self, from: data)
             throw APIError.tooManyAttempts(message: body?.firstError ?? "Too many attempts. Try again in a minute.")
         default:
+            if (400..<500).contains(httpResponse.statusCode),
+               let message = (try? JSONDecoder().decode(APIValidationBody.self, from: data))?.message,
+               !message.isEmpty {
+                throw APIError.rejected(message: message)
+            }
             throw APIError.http(statusCode: httpResponse.statusCode)
         }
     }

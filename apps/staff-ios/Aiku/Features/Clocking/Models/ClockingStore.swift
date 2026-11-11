@@ -4,46 +4,47 @@ import Observation
 @MainActor
 @Observable
 final class ClockingStore {
-    static let shared = ClockingStore()
-    static let scanScript: [ClockingScanOutcomeKind] = [.success, .rejected, .success, .offline]
+    static let shared = ClockingStore(service: .live(.shared))
+    static let historyDays = 28
 
     private(set) var today: ClockingDay
-    let pastWeeks: [ClockingWeek]
-    var enabledMethods: [ClockingMethod]
+    private(set) var pastDays: [ClockingDay] = []
+    private(set) var enabledMethods: [ClockingMethod] = []
     var selectedMethod: ClockingMethod?
-    var pin: String?
-    var employeeCode: String?
-    var location: ClockingLocationState = .found
-    let coordinates = ClockingSampleData.coordinates
-    var hasActiveShifts = true
+    private(set) var pin: String?
+    private(set) var employeeCode: String?
+    private(set) var employeeName: String?
+    private(set) var organisationName: String?
+    private(set) var canEditNotes = false
+    private(set) var hasActiveShifts = false
+    private(set) var shifts: [ClockingShift] = []
     var schedule: ClockingSchedule = .standard
-    let shifts = ClockingSampleData.shifts
-    let rejection = ClockingSampleData.rejection
-    private(set) var adjustmentRequests: [ClockingAdjustmentRequest] = []
+    private(set) var location: ClockingLocationState = .needed
+    private(set) var coordinate: ClockingCoordinate?
+    private(set) var rejection = ClockingRejection(message: "", scanned: "")
+    private(set) var workingHoursLabel = "—"
+    private(set) var adjustmentRequests: [ClockingAdjustmentResponse] = []
+    private(set) var isLoading = false
+    private(set) var hasLoaded = false
+    private(set) var loadError: String?
     var pendingAction: ClockingPendingAction?
     var openedErrorFromClocking = false
     var isShowingDetails = true
-    private(set) var scanAttempts = 0
-    private(set) var locationAttempts = 0
-    @ObservationIgnored private let clock: @Sendable () -> Int
+    private(set) var timeZone: TimeZone = .current
 
-    init(
-        today: ClockingDay = ClockingSampleData.today,
-        pastWeeks: [ClockingWeek] = ClockingSampleData.pastWeeks,
-        enabledMethods: [ClockingMethod] = ClockingMethod.allCases,
-        pin: String? = ClockingSampleData.pin,
-        employeeCode: String? = ClockingSampleData.employeeCode,
-        clock: @escaping @Sendable () -> Int = { ClockingFormat.secondsSinceMidnight() }
-    ) {
-        self.today = today
-        self.pastWeeks = pastWeeks
-        self.enabledMethods = enabledMethods
-        self.pin = pin
-        self.employeeCode = employeeCode
+    @ObservationIgnored private let service: ClockingService
+    @ObservationIgnored private let clock: @Sendable () -> Date
+
+    init(service: ClockingService, clock: @escaping @Sendable () -> Date = { .now }) {
+        self.service = service
         self.clock = clock
+        today = ClockingMapper.day(date: ClockingMapper.dayString(clock(), in: .current), sessions: [], in: .current, isToday: true)
     }
 
-    var now: Int { max(clock(), today.events.map(\.time).max() ?? 0) }
+    var now: Int {
+        let seconds = ClockingMapper.secondsSinceMidnight(ISO8601DateFormatter().string(from: clock()), in: timeZone) ?? 0
+        return max(seconds, today.events.map(\.time).max() ?? 0)
+    }
 
     var isClockedIn: Bool { today.isClockedIn }
 
@@ -54,13 +55,14 @@ final class ClockingStore {
         return enabledMethods.first
     }
 
-    var workingToday: Int { today.working(now: now) }
+    var coordinates: String { coordinate?.label ?? "" }
 
-    var thisWeek: ClockingWeek {
-        ClockingWeek(label: ClockingSampleData.thisWeekLabel, range: ClockingSampleData.thisWeekRange, days: today.events.isEmpty ? [] : [today])
+    var weeks: [ClockingWeek] {
+        let days = today.events.isEmpty ? pastDays : [today] + pastDays
+        let weeks = ClockingMapper.weeks(from: days, today: today.date)
+        if weeks.first?.label == "This week" { return weeks }
+        return [ClockingWeek(label: "This week", range: ClockingMapper.weekRange(start: ClockingMapper.weekStart(of: today.date) ?? today.date), days: [])] + weeks
     }
-
-    var weeks: [ClockingWeek] { [thisWeek] + pastWeeks }
 
     var statusSince: String {
         if isClockedIn, let last = today.trackers.last {
@@ -72,87 +74,153 @@ final class ClockingStore {
         return "Not clocked in today"
     }
 
-    var workingHoursLabel: String {
-        switch schedule {
-        case .standard: ClockingSampleData.standardHours
-        case .shift(let name): shifts.first { $0.name == name }?.hours ?? ClockingSampleData.standardHours
-        }
+    var adjustmentDay: ClockingDay {
+        pastDays.first { $0.status == .error } ?? today
     }
 
-    var adjustmentDay: ClockingDay {
-        weeks.flatMap(\.days).first { $0.status == .error } ?? today
-    }
+    var todayDate: String { ClockingMapper.dayString(clock(), in: timeZone) }
+
+    var earliestAdjustmentDate: String { ClockingMapper.monthBefore(todayDate) ?? todayDate }
 
     func day(for date: String) -> ClockingDay {
-        weeks.flatMap(\.days).first { $0.date == date } ?? adjustmentDay
+        if date == today.date { return today }
+        return pastDays.first { $0.date == date } ?? adjustmentDay
     }
 
-    func adjustments(for date: String) -> [ClockingAdjustmentRequest] {
+    func recordedDay(on date: String) -> ClockingDay? {
+        if date == today.date, today.timesheetID != nil || !today.events.isEmpty { return today }
+        return pastDays.first { $0.date == date }
+    }
+
+    func adjustments(for date: String) -> [ClockingAdjustmentResponse] {
         adjustmentRequests.filter { $0.date == date }
     }
 
     func code(for method: ClockingMethod) -> String? {
         switch method {
-        case .qrCode: "machine"
+        case .qrCode: nil
         case .pin: pin
         case .barcode, .cameraQr: employeeCode
         }
     }
 
-    func simulateScan() -> ClockingScanOutcome {
-        let kind = Self.scanScript[scanAttempts % Self.scanScript.count]
-        scanAttempts += 1
-        switch kind {
-        case .success: return .success(recordClocking())
-        case .rejected: return .rejected
-        case .offline: return .offline
+    func load() async {
+        guard !isLoading else { return }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let status = try await service.status()
+            apply(status)
+            let to = today.date
+            let from = ClockingMapper.parseDay(to).map { ClockingMapper.dayString($0.addingTimeInterval(-Double(Self.historyDays - 1) * 86_400), in: TimeZone(identifier: "UTC")!) } ?? to
+            let history = try await service.timesheets(from, to)
+            today.timesheetID = history.timesheets.first { $0.date == today.date }?.id
+            pastDays = history.timesheets
+                .filter { $0.date != today.date }
+                .map { ClockingMapper.day(date: $0.date, sessions: $0.sessions ?? [], in: timeZone, isToday: false, timesheetID: $0.id) }
+                .sorted { $0.date > $1.date }
+            adjustmentRequests = (try? await service.adjustments()) ?? adjustmentRequests
+            if hasActiveShifts {
+                shifts = ((try? await service.shifts()) ?? [])
+                    .filter { $0.isActive ?? true }
+                    .map { ClockingShift(name: $0.name, hours: $0.type?.capitalized ?? "", scheduleID: $0.id) }
+            }
+            loadError = nil
+            hasLoaded = true
+        } catch where error.isCancellation {
+            return
+        } catch {
+            loadError = error.localizedDescription
         }
     }
 
-    @discardableResult
-    func recordClocking(place: String = "Main Warehouse") -> ClockingEvent {
-        let lastTime = today.events.map(\.time).max() ?? -1
-        let event = ClockingEvent(
-            time: max(clock(), lastTime + 1),
-            kind: isClockedIn ? .clockOut : .clockIn,
-            viaMobileApp: true,
-            place: place
-        )
-        today.events.append(event)
-        return event
+    func apply(_ status: ClockingStatusResponse) {
+        timeZone = ClockingMapper.timeZone(status.timezone)
+        let todayDate = status.today?.date ?? ClockingMapper.dayString(clock(), in: timeZone)
+        today = ClockingMapper.day(date: todayDate, sessions: status.sessions, in: timeZone, isToday: true)
+        enabledMethods = status.methods.compactMap(ClockingMapper.method)
+        pin = status.code
+        employeeCode = status.code
+        employeeName = status.employee?.name
+        organisationName = status.employee?.organisation?.name
+        canEditNotes = status.canEditNotes
+        hasActiveShifts = status.hasShifts
     }
 
-    func saveNote(_ note: String, for eventID: UUID) {
-        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let index = today.events.firstIndex(where: { $0.id == eventID }) else { return }
-        today.events[index].note = trimmed
+    func setLocation(_ coordinate: ClockingCoordinate?) {
+        self.coordinate = coordinate
+        location = coordinate == nil ? .needed : .found
     }
 
     func startDetectingLocation() {
         location = .detecting
     }
 
-    @discardableResult
-    func finishDetectingLocation() -> Bool {
-        locationAttempts += 1
-        let isGranted = locationAttempts > 1
-        location = isGranted ? .found : .needed
-        return isGranted
+    func clock(code: String) async -> ClockingScanOutcome {
+        let scheduleID: Int? = if case .shift(let name) = schedule { shifts.first { $0.name == name }?.scheduleID } else { nil }
+        let request = ClockingQrRequest(qrCode: code, latitude: coordinate?.latitude, longitude: coordinate?.longitude, workScheduleId: scheduleID)
+        do {
+            let response = try await service.clockByQr(request)
+            if let start = ClockingMapper.shortTime(response.workingHours?.start), let end = ClockingMapper.shortTime(response.workingHours?.end) {
+                workingHoursLabel = "\(start) - \(end)"
+            }
+            let kind: ClockingEventKind = response.clocking?.type == "clock_out" ? .clockOut : .clockIn
+            let time = ClockingMapper.secondsSinceMidnight(response.clocking?.clockedAt, in: timeZone) ?? now
+            let event = ClockingEvent(time: time, kind: kind, viaMobileApp: true, place: response.machine?.name ?? "Clocking machine", clockingID: response.clocking?.id, isLate: response.clocking?.isLate ?? false)
+            await load()
+            return .success(event)
+        } catch APIError.offline {
+            return .offline
+        } catch {
+            let message = error.localizedDescription
+            rejection = ClockingRejection(message: message, scanned: code)
+            if message.localizedCaseInsensitiveContains("location") {
+                setLocation(nil)
+                return .locationNeeded
+            }
+            return .rejected
+        }
     }
 
-    @discardableResult
-    func requestAdjustment(date: String, kind: ClockingEventKind, time: String, reason: String) -> Result<ClockingAdjustmentRequest, ClockingAdjustmentError> {
-        guard let seconds = ClockingFormat.parseTime(time) else { return .failure(.invalidTime) }
-        let trimmedReason = reason.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedReason.isEmpty else { return .failure(.missingReason) }
-        let request = ClockingAdjustmentRequest(date: date, kind: kind, time: seconds, reason: trimmedReason)
-        adjustmentRequests.append(request)
-        return .success(request)
+    func saveNote(_ note: String, for event: ClockingEvent) async -> Bool {
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let clockingID = event.clockingID else { return false }
+        do {
+            try await service.updateNotes(clockingID, trimmed)
+            await load()
+            return true
+        } catch {
+            return false
+        }
     }
-}
 
-enum ClockingScanOutcomeKind: Hashable, Sendable {
-    case success
-    case rejected
-    case offline
+    func validateAdjustment(date: String, start: String?, end: String?, reason: String) -> ClockingAdjustmentError? {
+        if date > todayDate { return .futureDate }
+        if date < earliestAdjustmentDate { return .tooOld }
+        if start == nil, end == nil { return .missingTime }
+        if let start, let end, end <= start { return .endBeforeStart }
+        if reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return .missingReason }
+        if adjustments(for: date).contains(where: { $0.status == ClockingAdjustmentStatus.pending.rawValue }) { return .pendingExists }
+        return nil
+    }
+
+    func requestAdjustment(date: String, start: String?, end: String?, reason: String) async -> Result<ClockingAdjustmentResponse, ClockingAdjustmentError> {
+        if let error = validateAdjustment(date: date, start: start, end: end, reason: reason) {
+            return .failure(error)
+        }
+        let body = ClockingAdjustmentRequestBody(
+            date: date,
+            timesheetId: recordedDay(on: date)?.timesheetID,
+            requestedStartAt: start,
+            requestedEndAt: end,
+            reason: reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
+        do {
+            let created = try await service.requestAdjustment(body)
+            adjustmentRequests.insert(created, at: 0)
+            return .success(created)
+        } catch {
+            return .failure(.server(error.localizedDescription))
+        }
+    }
 }
