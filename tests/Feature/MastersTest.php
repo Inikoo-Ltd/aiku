@@ -4775,6 +4775,7 @@ describe('competitor prices, HELP-3605', function () {
         get(route('grp.masters.competitors.prices.index'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page->component('Masters/CompetitorPrices')
+                ->where('queryBuilderProps.default.columns', fn ($columns) => !collect($columns)->pluck('key')->contains('master_shop_name'))
                 ->where('data.data', fn ($rows) => $row($this->competitorMasterAsset->code)($rows->toArray())['competitor_unit_price'] == 8
                     && $row($this->competitorMasterAsset->code)($rows->toArray())['difference'] === -20
                     && $row($this->competitorMasterAsset->code)($rows->toArray())['master_shop_slug'] === $this->competitorMasterShop->slug)
