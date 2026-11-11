@@ -154,6 +154,31 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 			</p>
 		</section>
 
+		<article class="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+			<header class="flex items-center gap-3 border-b border-gray-100 bg-white px-5 py-3 sm:px-6">
+				<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold" :style="{ backgroundColor: theme.background, color: theme.text }">
+					{{ initials(group) }}
+				</div>
+				<div class="min-w-0 flex-1">
+					<p class="truncate text-sm font-semibold text-gray-800">{{ ctrans("A message from :group", { group }) }}</p>
+					<p class="truncate text-xs text-gray-500">{{ ctrans("We are pleased to be your distribution partner in Europe.") }}</p>
+				</div>
+				<FontAwesomeIcon icon="fal fa-envelope-open-text" class="hidden text-xl sm:block" :style="{ color: accent.colour }" aria-hidden="true" />
+			</header>
+			<div class="px-5 py-5 sm:px-6" :style="{ backgroundColor: theme.soft }">
+				<div class="flex max-w-3xl flex-col gap-3 text-sm leading-relaxed text-gray-700">
+					<p class="font-semibold text-gray-900">{{ ctrans("Dear :supplier,", { supplier: supplier.name }) }}</p>
+					<p>{{ ctrans("Thank you for trading with :group.", { group }) }}</p>
+					<p>{{ welcome[0] }}</p>
+					<p class="border-l-2 pl-3 font-medium text-gray-900" :style="{ borderColor: theme.background }">{{ welcome[1] }}</p>
+				</div>
+				<footer class="mt-5 text-sm">
+					<p class="text-gray-500">{{ ctrans("With warm regards,") }}</p>
+					<p class="mt-1 font-serif text-base italic text-gray-900">{{ ctrans("The :group team", { group }) }}</p>
+				</footer>
+			</div>
+		</article>
+
 		<section class="grid gap-4 md:grid-cols-3">
 			<SupplierPortalStatCard
 				:label="summary?.country ? ctrans('Ranking by sales in :country', { country: summary.country.name }) : ctrans('Ranking by sales')"
@@ -272,31 +297,6 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 						{{ ctrans(":count more open orders", { count: String(hiddenRibbons) }) }}
 					</button>
 				</section>
-
-				<article class="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-					<header class="flex items-center gap-3 border-b border-gray-100 bg-white px-5 py-3 sm:px-6">
-						<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold" :style="{ backgroundColor: theme.background, color: theme.text }">
-							{{ initials(group) }}
-						</div>
-						<div class="min-w-0 flex-1">
-							<p class="truncate text-sm font-semibold text-gray-800">{{ ctrans("A message from :group", { group }) }}</p>
-							<p class="truncate text-xs text-gray-500">{{ ctrans("We are pleased to be your distribution partner in Europe.") }}</p>
-						</div>
-						<FontAwesomeIcon icon="fal fa-envelope-open-text" class="hidden text-xl sm:block" :style="{ color: accent.colour }" aria-hidden="true" />
-					</header>
-					<div class="px-5 py-5 sm:px-6" :style="{ backgroundColor: theme.soft }">
-						<div class="flex max-w-3xl flex-col gap-3 text-sm leading-relaxed text-gray-700">
-							<p class="font-semibold text-gray-900">{{ ctrans("Dear :supplier,", { supplier: supplier.name }) }}</p>
-							<p>{{ ctrans("Thank you for trading with :group.", { group }) }}</p>
-							<p>{{ welcome[0] }}</p>
-							<p class="border-l-2 pl-3 font-medium text-gray-900" :style="{ borderColor: theme.background }">{{ welcome[1] }}</p>
-						</div>
-						<footer class="mt-5 text-sm">
-							<p class="text-gray-500">{{ ctrans("With warm regards,") }}</p>
-							<p class="mt-1 font-serif text-base italic text-gray-900">{{ ctrans("The :group team", { group }) }}</p>
-						</footer>
-					</div>
-				</article>
 			</div>
 
 			<aside class="flex min-w-0 flex-col gap-4 lg:gap-6">

@@ -54,7 +54,7 @@ class SendSupplierPortalLink
             $contact->update(['last_link_sent_at' => now(), 'number_links_sent' => $contact->number_links_sent + 1]);
 
             Notification::route('mail', $contact->email)->notify(
-                (new SupplierPortalLinkNotification($result['url'], $contact->supplier->name, $contact->supplier->group->name, self::DAYS))->locale($locale)
+                (new SupplierPortalLinkNotification($result['url'], $contact->supplier->officialName(), $contact->supplier->group->name, self::DAYS))->locale($locale)
             );
         }
 

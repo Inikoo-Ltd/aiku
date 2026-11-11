@@ -34,8 +34,8 @@ class ShowSupplierPortalPreview extends OrgAction
         $blocked = fn (string $path) => route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, $path]);
 
         return Inertia::render('SupplyChain/SupplierShare', [
-            'title'    => $supplier->name,
-            'supplier' => ['code' => $supplier->code, 'name' => $supplier->name],
+            'title'    => $supplier->officialName(),
+            'supplier' => ['code' => $supplier->code, 'name' => $supplier->officialName()],
             'group'    => $supplier->group->name,
             'language' => ShowSupplierPortalLogin::language($request),
             'preview'  => true,
@@ -51,7 +51,7 @@ class ShowSupplierPortalPreview extends OrgAction
                 'phone'        => null,
                 'theme'        => 0,
                 'avatar'       => null,
-                'display_name' => $supplier->contact_name ?? $supplier->name,
+                'display_name' => $supplier->contact_name ?? $supplier->officialName(),
                 'company_logo' => $supplier->imageSources(160, 160),
             ],
             'forms'    => ShowSupplierShare::make()->forms(

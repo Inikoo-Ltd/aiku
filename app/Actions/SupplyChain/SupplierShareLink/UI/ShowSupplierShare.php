@@ -45,7 +45,7 @@ class ShowSupplierShare
         $supplier->loadMissing(['address', 'currency']);
 
         return [
-            'name'            => $supplier->name,
+            'name'            => $supplier->officialName(),
             'contact_name'    => $supplier->contact_name,
             'email'           => $supplier->email,
             'phone'           => $supplier->phone,
@@ -177,8 +177,8 @@ class ShowSupplierShare
         $link     = SupplierShareLink::findLiveByToken($token);
         $supplier = $link->supplier;
         $page     = [
-            'title'    => $supplier->name,
-            'supplier' => ['code' => $supplier->code, 'name' => $supplier->name],
+            'title'    => $supplier->officialName(),
+            'supplier' => ['code' => $supplier->code, 'name' => $supplier->officialName()],
             'group'    => $link->group->name,
             'language' => ShowSupplierPortalLogin::language($request),
             'routes'   => [

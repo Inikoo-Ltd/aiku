@@ -219,6 +219,14 @@ class Supplier extends Model implements HasMedia, Auditable
         return $this->name !== self::nameFromContact($this->company_name, $this->contact_name) ? $this->name : null;
     }
 
+    /**
+     * The name the supplier knows itself by: the nickname is for our staff only, so anything the supplier reads uses this.
+     */
+    public function officialName(): string
+    {
+        return self::nameFromContact($this->company_name, $this->contact_name) ?: $this->name;
+    }
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
