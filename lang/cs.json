@@ -24892,6 +24892,8 @@
     "confirmed": "potvrzeno",
     "confirmed by :name": "potvrzeno uživatelem :name",
     "confirmed, being made": "potvrzeno, provádí se",
+    "confirmed by :name on :time": "potvrzeno uživatelem :name dne :time",
+    "added on :time": "přidáno dne :time",
     "connected": "připojený",
     "content": "obsah",
     "conversation": "konverzace",

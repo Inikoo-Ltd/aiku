@@ -25013,6 +25013,8 @@
     "confirmed": "confirmed",
     "confirmed by :name": "confirmed by :name",
     "confirmed, being made": "confirmed, being made",
+    "confirmed by :name on :time": "confirmed by :name on :time",
+    "added on :time": "added on :time",
     "connected": "connected",
     "content": "content",
     "conversation": "conversation",

@@ -23893,6 +23893,8 @@
     "confirm": "bestätigen",
     "confirmed": "bestätigt",
     "confirmed by :name": "bestätigt von :name",
+    "confirmed by :name on :time": "bestätigt von :name am :time",
+    "added on :time": "hinzugefügt am :time",
     "confirmed, being made": "bestätigt, wird gerade gemacht",
     "connected": "verbunden",
     "content": "Inhalt",

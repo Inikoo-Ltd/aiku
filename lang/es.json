@@ -23979,6 +23979,8 @@
     "confirmed": "confirmado",
     "confirmed by :name": "confirmado por :name",
     "confirmed, being made": "confirmado, en fabricación",
+    "confirmed by :name on :time": "confirmado por :name el :time",
+    "added on :time": "añadido el :time",
     "connected": "conectado",
     "content": "contenido",
     "conversation": "conversación",

@@ -21840,6 +21840,8 @@
     "confirmed": "पुष्टि गरिएको",
     "confirmed by :name": ":name ले पुष्टि गरेको",
     "confirmed, being made": "पुष्टि भयो, बन्दै छ",
+    "confirmed by :name on :time": ":name ले :time मा पुष्टि गरेको",
+    "added on :time": ":time मा थपिएको",
     "connected": "जोडिएको",
     "content": "सामग्री",
     "conversation": "कुराकानी",

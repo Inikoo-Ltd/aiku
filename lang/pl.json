@@ -18656,6 +18656,8 @@
     "Undo payment": "Cofnij płatność",
     "Why is this payment taken back? (kept in the order's history)": "Dlaczego ta płatność jest cofana? (zapisane w historii zamówienia)",
     "confirmed by :name": "potwierdził(a): :name",
+    "confirmed by :name on :time": "potwierdził(a): :name, :time",
+    "added on :time": "dodano: :time",
     "deposit paid": "zaliczka wpłacona",
     ":days d out": "Brak: :days d",
     ":percent% of these sales went to one customer (:customer). Ordering for this demand is risky if they stop buying.": "Jeden klient (:customer) odpowiada za :percent% tej sprzedaży. Zamawianie pod taki popyt jest ryzykowne, jeśli przestanie kupować.",

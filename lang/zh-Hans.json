@@ -24046,6 +24046,8 @@
     "confirmed": "已确认",
     "confirmed by :name": "由 :name 确认",
     "confirmed, being made": "已确认，正在生产",
+    "confirmed by :name on :time": "由 :name 于 :time 确认",
+    "added on :time": "添加于 :time",
     "connected": "已连接",
     "content": "内容",
     "conversation": "对话",

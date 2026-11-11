@@ -21116,6 +21116,8 @@
     "confirm": "पुष्टि करें",
     "confirmed by :name": ":name द्वारा पुष्ट",
     "confirmed, being made": "पुष्ट, बन रहा है",
+    "confirmed by :name on :time": ":name द्वारा :time को पुष्ट",
+    "added on :time": ":time को जोड़ा गया",
     "connected": "जुड़ा हुआ",
     "content": "सामग्री",
     "conversation": "बातचीत",

@@ -23985,6 +23985,8 @@
     "confirmed": "potvrdené",
     "confirmed by :name": "potvrdil(a) :name",
     "confirmed, being made": "potvrdené, vyrába sa",
+    "confirmed by :name on :time": "potvrdil(a) :name dňa :time",
+    "added on :time": "pridané dňa :time",
     "connected": "pripojené",
     "content": "obsah",
     "conversation": "konverzácia",

@@ -21970,6 +21970,8 @@
     "confirmed": "dikonfirmasi",
     "confirmed by :name": "dikonfirmasi oleh :name",
     "confirmed, being made": "dikonfirmasi, sedang dibuat",
+    "confirmed by :name on :time": "dikonfirmasi oleh :name pada :time",
+    "added on :time": "ditambahkan pada :time",
     "connected": "terhubung",
     "content": "konten",
     "conversation": "percakapan",
