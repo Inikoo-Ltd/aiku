@@ -38,6 +38,8 @@ use App\Models\GoodsIn\StockDelivery;
 use App\Models\Inventory\OrgStock;
 use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\Agent;
+use App\Actions\SupplyChain\Agent\UI\IndexAgents;
+use App\Actions\SupplyChain\Agent\UI\ShowAgentsPurchaseOrderStates;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -74,6 +76,8 @@ class IndexPurchaseOrders extends OrgAction
 
     private bool $onlyIncoming = false;
 
+    private bool $onlyPendingThroughAgents = false;
+
     private ?Agent $viewingAgent = null;
 
     public function viewedFrom(Organisation $organisation): static
@@ -85,6 +89,10 @@ class IndexPurchaseOrders extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+        if ($this->onlyPendingThroughAgents) {
+            return $request->user()->authTo(['supply-chain.view', 'compliance.view']);
+        }
+
         if ($this->parent instanceof Group) {
             return $request->user()->authTo("group-overview");
         }
@@ -269,6 +277,10 @@ class IndexPurchaseOrders extends OrgAction
             $query->where(fn (Builder $query) => GetAgentIncomingPurchaseOrdersCount::whereIncoming($query));
         }
 
+        if ($this->onlyPendingThroughAgents) {
+            $query->where(fn (Builder $query) => ShowAgentsPurchaseOrderStates::wherePending($query));
+        }
+
         foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $query->whereElementGroup(
                 key: $key,
@@ -331,6 +343,13 @@ class IndexPurchaseOrders extends OrgAction
                 : ['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost', ...($isAgentView ? [$this->submittedAtSort('submitted_at')] : [])])
             ->allowedFilters([
                 $globalSearch,
+                ...($this->onlyPendingThroughAgents ? [
+                    AllowedFilter::callback('agent', fn ($query, $value) => $query->whereIn('purchase_orders.agent_id', Agent::where('slug', $value)->select('id'))),
+                    AllowedFilter::callback('stage', fn ($query, $value) => $query->whereIn(DB::raw(ShowAgentsPurchaseOrderStates::stageSql()), (array) $value)),
+                    AllowedFilter::callback('deposit', fn ($query, $value) => $value === 'deposit' ? $query->whereNotNull('purchase_orders.deposit_paid_at') : $query->whereNull('purchase_orders.deposit_paid_at')),
+                    AllowedFilter::callback('client', fn ($query, $value) => $query->whereIn('purchase_orders.organisation_id', Organisation::whereIn('slug', (array) $value)->select('id'))),
+                    AllowedFilter::callback('sent', fn ($query, $value) => $query->whereIn(DB::raw(ShowAgentsPurchaseOrderStates::ageSql()), (array) $value)),
+                ] : []),
                 ...($organisationAgent || $this->viewingAgent ? [
                     AllowedFilter::callback('organisation', fn ($query, $value) => $this->whereOrganisation($query, $value)),
                     AllowedFilter::callback('supplier', fn ($query, $value) => $this->whereSupplier($query, $value)),
@@ -474,6 +493,13 @@ class IndexPurchaseOrders extends OrgAction
         return $this->asController($organisation, $request);
     }
 
+    public function inAgentsPurchaseOrderStates(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->onlyPendingThroughAgents = true;
+
+        return $this->inGroup($request);
+    }
+
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
@@ -542,7 +568,9 @@ class IndexPurchaseOrders extends OrgAction
         $actions       = [];
         $purchaseOrdersImport = null;
 
-        if ($this->onlyIncoming) {
+        if ($this->onlyPendingThroughAgents) {
+            $title = __('Pending POs');
+        } elseif ($this->onlyIncoming) {
             $title = __('Incoming POs');
             $icon  = [
                 'icon'  => ['fal', 'fa-paper-plane'],
@@ -844,6 +872,22 @@ class IndexPurchaseOrders extends OrgAction
                             'route' => [
                                 'name'       => 'grp.supply-chain.suppliers.purchase_orders.index',
                                 'parameters' => $routeParameters,
+                            ],
+                        ],
+                    ],
+                ],
+            ),
+            'grp.supply-chain.agents.purchase_order_states.purchase_orders' => array_merge(
+                IndexAgents::make()->getBreadcrumbs('grp.supply-chain.agents.index', []),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'label' => __('Purchase orders'),
+                            'icon'  => 'fal fa-clipboard-list',
+                            'route' => [
+                                'name'       => 'grp.supply-chain.agents.purchase_order_states',
+                                'parameters' => [],
                             ],
                         ],
                     ],
