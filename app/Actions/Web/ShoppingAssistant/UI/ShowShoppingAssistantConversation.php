@@ -40,10 +40,16 @@ class ShowShoppingAssistantConversation extends OrgAction
 
     private ?Website $website = null;
 
+    private bool $inShopMenu = false;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
+        }
+
+        if ($this->inShopMenu) {
+            return $request->user()->authTo(["websites-view.{$this->organisation->id}", "web.{$this->shop->id}.view", 'group-webmaster.view']);
         }
 
         return $this->website ? $this->authorizeWebsiteRoute($request) : $this->canViewGroupShoppingAssistant($request->user());
@@ -63,6 +69,17 @@ class ShowShoppingAssistantConversation extends OrgAction
         $this->website = $website;
         $this->initialisationFromShop($shop, $request);
         abort_unless($conversation->website_id === $website->id, 404);
+
+        return $this->handle($conversation);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ShoppingAssistantConversation $conversation, ActionRequest $request): ShoppingAssistantConversation
+    {
+        abort_unless($shop->website, 404);
+        $this->website    = $shop->website;
+        $this->inShopMenu = true;
+        $this->initialisationFromShop($shop, $request);
+        abort_unless($conversation->website_id === $this->website->id, 404);
 
         return $this->handle($conversation);
     }
@@ -192,7 +209,9 @@ class ShowShoppingAssistantConversation extends OrgAction
         $performance = ShowShoppingAssistantPerformance::make();
         $listParameters = collect($routeParameters)->except('conversation')->all();
 
-        if ($this->website) {
+        if ($this->inShopMenu) {
+            $performance->forShopMenu($this->website);
+        } elseif ($this->website) {
             $performance->forWebsite($this->website);
         }
 

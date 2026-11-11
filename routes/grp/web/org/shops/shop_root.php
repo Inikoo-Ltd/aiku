@@ -21,6 +21,8 @@ use App\Actions\Web\Seo\UI\ShowSeoAiVisibility;
 use App\Actions\Web\Seo\UI\ShowSeoBacklinks;
 use App\Actions\Web\Seo\UI\ShowSeoCompetitors;
 use App\Actions\Web\Seo\UI\ShowSeoKeywords;
+use App\Actions\Web\ShoppingAssistant\UI\ShowShoppingAssistantConversation;
+use App\Actions\Web\ShoppingAssistant\UI\ShowShoppingAssistantPerformance;
 use App\Actions\Web\Website\UI\ShowSeoDashboard;
 use App\Actions\Web\Website\UI\RedirectToSeoDashboardTab;
 use App\Actions\Web\WebsiteVisitor\UI\IndexWebsiteVisitors;
@@ -114,6 +116,13 @@ Route::prefix('{shop}')->name('show.')
         Route::prefix("web")
             ->name("web.")
             ->group(__DIR__ . "/websites.php");
+
+        Route::prefix("ai-salesman")
+            ->name("ai_salesman.")
+            ->group(function () {
+                Route::get('', [ShowShoppingAssistantPerformance::class, 'inShop'])->name('show');
+                Route::get('conversations/{conversation:ulid}', [ShowShoppingAssistantConversation::class, 'inShop'])->name('conversations.show')->withoutScopedBindings();
+            });
 
         Route::prefix("seo")
             ->name("seo.")
