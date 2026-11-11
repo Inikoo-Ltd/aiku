@@ -47,10 +47,17 @@ const extractLinks = (value: string, labelledLinks: boolean): [string, Extracted
         })
     }
 
-    const text = value.replace(URL_PATTERN, (match) => {
+    const text = value.replace(URL_PATTERN, (match: string, offset: number, source: string) => {
+        const lineBefore = (source.slice(0, offset).split("\n").pop() ?? "").replace(URL_PATTERN, "")
         let url = match.replace(TRAILING_PUNCTUATION, "")
-        while (match.length > url.length && match[url.length] === ")" && url.split("(").length > url.split(")").length) {
-            url += ")"
+        while (match.length > url.length) {
+            const next = match[url.length]
+            const isOwnBracket = next === ")" && url.split("(").length > url.split(")").length
+            const isUnopenedMarker = "*_~".includes(next) && !new RegExp(`(?:^|[^\\w*_~])\\${next}(?=\\S)`).test(lineBefore)
+            if (!isOwnBracket && !isUnopenedMarker) {
+                break
+            }
+            url += next
         }
         links.push({ url, label: url })
         return `\u0000${links.length - 1}\u0000${match.slice(url.length)}`

@@ -655,7 +655,10 @@ test('formatting an agent picks reaches the customer as html beside the readable
         ->and($markupToHtml('*visit www.shop.test/p*'))->toBe('<strong>visit <a href="https://www.shop.test/p" target="_blank" rel="noopener noreferrer">www.shop.test/p</a></strong>')
         ->and($markupToHtml('https://shop.test/"onclick=1'))->toBe('<a href="https://shop.test/" target="_blank" rel="noopener noreferrer">https://shop.test/</a>&quot;onclick=1')
         ->and($markupToHtml('Try *[ABC-01](https://shop.test/abc_01?a=1&b=2)*, or [A<b>](https://shop.test/x).'))->toBe('Try <strong><a href="https://shop.test/abc_01?a=1&amp;b=2" target="_blank" rel="noopener noreferrer">ABC-01</a></strong>, or <a href="https://shop.test/x" target="_blank" rel="noopener noreferrer">A&lt;b&gt;</a>.')
-        ->and($markupToHtml('[x](javascript:alert(1))'))->toBe('[x](javascript:alert(1))');
+        ->and($markupToHtml('[x](javascript:alert(1))'))->toBe('[x](javascript:alert(1))')
+        ->and($markupToHtml("Pay here:\nhttps://pay.checkout.com/link/pl_WMgxYICK-AN_\nThanks"))->toBe("Pay here:<br />\n<a href=\"https://pay.checkout.com/link/pl_WMgxYICK-AN_\" target=\"_blank\" rel=\"noopener noreferrer\">https://pay.checkout.com/link/pl_WMgxYICK-AN_</a><br />\nThanks")
+        ->and($markupToHtml('Ref ABC_01: https://pay.checkout.com/link/pl_A_ or https://pay.checkout.com/link/pl_B_'))->toBe('Ref ABC_01: <a href="https://pay.checkout.com/link/pl_A_" target="_blank" rel="noopener noreferrer">https://pay.checkout.com/link/pl_A_</a> or <a href="https://pay.checkout.com/link/pl_B_" target="_blank" rel="noopener noreferrer">https://pay.checkout.com/link/pl_B_</a>')
+        ->and($markupToHtml('_see https://shop.test/p_'))->toBe('<em>see <a href="https://shop.test/p" target="_blank" rel="noopener noreferrer">https://shop.test/p</a></em>');
 
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
