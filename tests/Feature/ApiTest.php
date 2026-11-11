@@ -13,7 +13,36 @@ namespace Tests\Feature;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
+use App\Actions\HumanResources\AttendanceAdjustment\StoreAttendanceAdjustment;
+use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
+use App\Actions\HumanResources\ClockingMachine\StoreClockingMachineQRCode;
+use App\Actions\HumanResources\EmployeeContract\StoreEmployeeContract;
+use App\Actions\HumanResources\Holiday\StoreHoliday;
+use App\Actions\HumanResources\Leave\StoreLeaveType;
+use App\Actions\HumanResources\Overtime\StoreOvertimeType;
+use App\Actions\HumanResources\WorkSchedule\StoreWorkSchedule;
+use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\SysAdmin\User\SetUserAuthorisedModels;
+use App\Actions\SysAdmin\User\StoreUserFromEmployee;
+use App\Enums\HumanResources\Attendance\AttendanceAdjustmentStatusEnum;
+use App\Enums\HumanResources\ClockingMachine\ClockingMachineTypeEnum;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Enums\HumanResources\Holiday\HolidayTypeEnum;
+use App\Enums\HumanResources\Leave\LeaveCategoryEnum;
+use App\Enums\HumanResources\Overtime\OvertimeCategoryEnum;
+use App\Enums\HumanResources\Overtime\OvertimeCompensationTypeEnum;
+use App\Enums\HumanResources\Workplace\WorkplaceTypeEnum;
+use App\Models\HumanResources\AttendanceAdjustment;
+use App\Models\HumanResources\ClockingMachineQRCode;
+use App\Models\HumanResources\Employee;
+use App\Models\HumanResources\Holiday;
+use App\Models\HumanResources\Leave;
+use App\Models\HumanResources\LeaveType;
+use App\Models\HumanResources\OvertimeRequest;
+use App\Models\HumanResources\OvertimeType;
+use App\Models\HumanResources\RestrictedPeriod;
+use App\Models\HumanResources\Timesheet;
+use App\Models\SysAdmin\Organisation;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Chat\ChatAiAccountUsageSample;
@@ -21,15 +50,22 @@ use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Sanctum\Sanctum;
 use PragmaRX\Google2FAQRCode\Google2FA;
 
+use function Pest\Laravel\deleteJson;
+use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\patchJson;
+use function Pest\Laravel\post;
 use function Pest\Laravel\postJson;
 
 function createMobileAppUser(Group $group, array $attributes = []): User
@@ -509,6 +545,7 @@ test('mobile warehouses list what a dispatch clerk may do in each warehouse', fu
         ->assertJsonPath('data.0.id', $warehouse->id)
         ->assertJsonPath('data.0.code', $warehouse->code)
         ->assertJsonPath('data.0.organisation.id', $warehouse->organisation_id)
+        ->assertJsonPath('data.0.organisation.code', $warehouse->organisation->code)
         ->assertJsonPath('data.0.can.view_goods_out', true)
         ->assertJsonPath('data.0.can.pick_and_pack', true)
         ->assertJsonPath('data.0.can.supervise_goods_out', false)
@@ -592,4 +629,551 @@ test('mobile warehouses need a mobile token and the app key', function () {
 
     Sanctum::actingAs($user, ['other']);
     getJson(route('grp.api.mobile.warehouses'), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
+});
+
+/**
+ * @return array{0: Employee, 1: User}
+ */
+function createClockingEmployeeUser(Organisation $organisation): array
+{
+    $employee = Employee::factory()->create([
+        'organisation_id' => $organisation->id,
+        'group_id'        => $organisation->group_id,
+        'state'           => EmployeeStateEnum::WORKING,
+        'email'           => 'mobile-clock-'.uniqid().'@example.com',
+        'worker_number'   => 'MC'.uniqid(),
+    ]);
+    $employee->update(['pin' => $organisation->id.':MB'.$employee->id]);
+
+    $user = StoreUserFromEmployee::make()->handle($employee, [
+        'username' => 'mobile-clock-'.$employee->id,
+        'password' => 'secret123',
+    ]);
+
+    return [$employee->fresh(), $user];
+}
+
+function createMobileClockingQrCode(Organisation $organisation): ClockingMachineQRCode
+{
+    $workplace = StoreWorkplace::make()->action($organisation, [
+        'name' => 'Mobile clocking workplace '.uniqid(),
+        'type' => WorkplaceTypeEnum::HQ,
+    ]);
+
+    $clockingMachine = StoreClockingMachine::make()->action($workplace, [
+        'name' => 'Mobile clocking QR machine '.uniqid(),
+        'type' => ClockingMachineTypeEnum::QR_CODE->value,
+    ]);
+    $clockingMachine->update(['config' => ['qr' => ['enable' => true]]]);
+
+    return StoreClockingMachineQRCode::make()->handle($clockingMachine, ['label' => 'Entrance']);
+}
+
+test('mobile clocking shows a clocked out employee with the methods of their organisation and their code', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$employee, $user] = createClockingEmployeeUser($this->organisation);
+    createMobileClockingQrCode($this->organisation);
+    Sanctum::actingAs($user, ['mobile']);
+
+    getJson(route('grp.api.mobile.clocking.show'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.employee.id', $employee->id)
+        ->assertJsonPath('data.employee.organisation.code', $this->organisation->code)
+        ->assertJsonPath('data.status', 'clocked_out')
+        ->assertJsonPath('data.since', null)
+        ->assertJsonPath('data.code', substr($employee->pin, strlen((string) $this->organisation->id) + 1))
+        ->assertJsonPath('data.sessions', [])
+        ->assertJsonPath('data.can_edit_notes', false)
+        ->assertJson(['data' => ['methods' => ['qr_code']]]);
+});
+
+test('scanning a clocking machine QR code from the app clocks the employee in and shows it in the status and timesheets', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [, $user] = createClockingEmployeeUser($this->organisation);
+    $qrCode   = createMobileClockingQrCode($this->organisation);
+    $headers  = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    Sanctum::actingAs($user, ['mobile']);
+
+    $clockingId = postJson(route('grp.api.mobile.clocking.qr'), ['qr_code' => $qrCode->hash], $headers)
+        ->assertOk()
+        ->assertJsonPath('success', true)
+        ->json('clocking.id');
+
+    getJson(route('grp.api.mobile.clocking.show'), $headers)
+        ->assertOk()
+        ->assertJsonPath('data.status', 'clocked_in')
+        ->assertJsonCount(1, 'data.sessions')
+        ->assertJsonPath('data.sessions.0.clock_in.id', $clockingId);
+
+    expect(getJson(route('grp.api.mobile.clocking.show'), $headers)->json('data.since'))->not->toBeNull();
+
+    getJson(route('grp.api.mobile.clocking.timesheets'), $headers)
+        ->assertOk()
+        ->assertJsonCount(1, 'data.timesheets')
+        ->assertJsonPath('data.timesheets.0.sessions.0.clock_in.id', $clockingId);
+
+    patchJson(route('grp.api.mobile.clocking.notes', $clockingId), ['notes' => 'Came in through the side gate'], $headers)->assertForbidden();
+});
+
+test('only staff who may edit clockings on the web can note their own clocking from the app', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [, $user] = createClockingEmployeeUser($this->organisation);
+    $qrCode   = createMobileClockingQrCode($this->organisation);
+    $headers  = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    actingAsUserWithOnlyPermissions($user, ["human-resources.{$this->organisation->id}.edit"]);
+    Sanctum::actingAs($user->refresh(), ['mobile']);
+
+    $clockingId = postJson(route('grp.api.mobile.clocking.qr'), ['qr_code' => $qrCode->hash], $headers)->json('clocking.id');
+
+    getJson(route('grp.api.mobile.clocking.show'), $headers)->assertJsonPath('data.can_edit_notes', true);
+
+    patchJson(route('grp.api.mobile.clocking.notes', $clockingId), ['notes' => 'Came in through the side gate'], $headers)
+        ->assertOk()
+        ->assertJsonPath('data.notes', 'Came in through the side gate');
+});
+
+test('the app timesheets give the target of the week from the employee\'s own work schedule', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$employee, $user] = createClockingEmployeeUser($this->organisation);
+    $workingDay        = ['s' => '08:00', 'e' => '16:00', 'ub' => 30];
+    StoreWorkSchedule::make()->action($employee, [
+        'name'          => 'Four day week',
+        'type'          => 'default',
+        'working_hours' => ['data' => [1 => $workingDay, 2 => $workingDay, 3 => $workingDay, 4 => $workingDay]],
+    ]);
+    $monday = Carbon::create(2040, 1, 2)->startOfWeek();
+    Sanctum::actingAs($user, ['mobile']);
+
+    getJson(route('grp.api.mobile.clocking.timesheets', ['from' => $monday->toDateString(), 'to' => $monday->copy()->addDays(6)->toDateString()]), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.target_seconds', 4 * (8 * 60 - 30) * 60);
+});
+
+test('the app gets the reason when a clocking QR code is refused', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [, $user] = createClockingEmployeeUser($this->organisation);
+    Sanctum::actingAs($user, ['mobile']);
+
+    postJson(route('grp.api.mobile.clocking.qr'), ['qr_code' => 'not-a-clocking-qr'], ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertStatus(400)
+        ->assertJsonPath('success', false)
+        ->assertJsonPath('message', __('Invalid QR Code.'));
+});
+
+test('staff can not change the notes of someone else\'s clocking from the app', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [, $owner] = createClockingEmployeeUser($this->organisation);
+    [, $other] = createClockingEmployeeUser($this->organisation);
+    $qrCode    = createMobileClockingQrCode($this->organisation);
+    $headers   = ['X-Aiku-App-Key' => 'mobile-test-key'];
+
+    Sanctum::actingAs($owner, ['mobile']);
+    $clockingId = postJson(route('grp.api.mobile.clocking.qr'), ['qr_code' => $qrCode->hash], $headers)->json('clocking.id');
+
+    Sanctum::actingAs($other, ['mobile']);
+    patchJson(route('grp.api.mobile.clocking.notes', $clockingId), ['notes' => 'Not mine'], $headers)->assertForbidden();
+});
+
+test('a user without an employee record is clocked out in the app with no clocking methods', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    Sanctum::actingAs(createMobileAppUser($this->group), ['mobile']);
+
+    getJson(route('grp.api.mobile.clocking.show'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.employee', null)
+        ->assertJsonPath('data.status', 'clocked_out')
+        ->assertJsonPath('data.methods', []);
+});
+
+/**
+ * @return array{0: Employee, 1: User}
+ */
+function createMobileLeaveEmployeeUser(Organisation $organisation): array
+{
+    [$employee, $user] = createClockingEmployeeUser($organisation);
+    StoreEmployeeContract::make()->action($employee, ['start_date' => now()->subMonth()->toDateString(), 'annual_leave_days' => 20]);
+
+    return [$employee, $user];
+}
+
+function createMobileMedicalLeaveType(Organisation $organisation): LeaveType
+{
+    return StoreLeaveType::make()->action($organisation, [
+        'code'     => 'MB'.rand(10000, 99999),
+        'name'     => 'Mobile medical leave '.uniqid(),
+        'category' => LeaveCategoryEnum::MEDICAL,
+    ]);
+}
+
+function nextFreeMobileLeaveDay(Organisation $organisation): Carbon
+{
+    $day = now()->addDays(10)->startOfDay();
+
+    while ($day->isWeekend()
+        || Holiday::where('organisation_id', $organisation->id)->whereDate('from', '<=', $day)->whereDate('to', '>=', $day)->exists()
+        || RestrictedPeriod::where('organisation_id', $organisation->id)->where('is_active', true)->whereDate('start_date', '<=', $day)->whereDate('end_date', '>=', $day)->exists()) {
+        $day->addDay();
+    }
+
+    return $day;
+}
+
+function requestMobileLeave(LeaveType $leaveType, Carbon $day, array $overrides = []): TestResponse
+{
+    return post(route('grp.api.mobile.clocking.leaves.store'), array_merge([
+        'type'       => $leaveType->code,
+        'start_date' => $day->toDateString(),
+        'end_date'   => $day->toDateString(),
+        'reason'     => 'Dentist appointment',
+    ], $overrides), ['X-Aiku-App-Key' => 'mobile-test-key']);
+}
+
+function createMobileOvertimeType(Organisation $organisation): OvertimeType
+{
+    return StoreOvertimeType::make()->action($organisation, [
+        'code'              => 'MO'.rand(10000, 99999),
+        'name'              => 'Mobile overtime '.uniqid(),
+        'category'          => OvertimeCategoryEnum::OVERTIME,
+        'compensation_type' => OvertimeCompensationTypeEnum::PAID,
+    ]);
+}
+
+function mobileOvertimeRequestBody(OvertimeType $overtimeType, int $durationMinutes): array
+{
+    $startsAt = now()->subDay()->setTime(18, 0);
+
+    return [
+        'overtime_type_id'           => $overtimeType->id,
+        'requested_date'             => $startsAt->toDateString(),
+        'requested_start_at'         => $startsAt->toIso8601String(),
+        'requested_end_at'           => $startsAt->copy()->addMinutes($durationMinutes)->toIso8601String(),
+        'requested_duration_minutes' => $durationMinutes,
+        'reason'                     => 'Stock take',
+    ];
+}
+
+test('mobile timesheets carry the statistics, where each clocking was made and a pending correction of the day', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$employee, $user] = createClockingEmployeeUser($this->organisation);
+    $qrCode            = createMobileClockingQrCode($this->organisation);
+    $headers           = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    Sanctum::actingAs($user, ['mobile']);
+
+    postJson(route('grp.api.mobile.clocking.qr'), ['qr_code' => $qrCode->hash], $headers)->assertOk();
+    $timesheet = Timesheet::where('subject_type', 'Employee')->where('subject_id', $employee->id)->firstOrFail();
+
+    getJson(route('grp.api.mobile.clocking.timesheets'), $headers)
+        ->assertOk()
+        ->assertJsonPath('data.statistics.total', 1)
+        ->assertJsonPath('data.statistics.no_clock_out', 1)
+        ->assertJsonPath('data.timesheets.0.id', $timesheet->id)
+        ->assertJsonPath('data.timesheets.0.clock_in_count', 1)
+        ->assertJsonPath('data.timesheets.0.number_open_time_trackers', 1)
+        ->assertJsonPath('data.timesheets.0.has_pending_adjustment', false)
+        ->assertJsonPath('data.timesheets.0.sessions.0.clock_in.clocking_machine.id', $qrCode->clocking_machine_id)
+        ->assertJsonPath('data.timesheets.0.sessions.0.clock_in.workplace.id', $qrCode->clockingMachine->workplace_id);
+
+    post(route('grp.api.mobile.clocking.adjustments.store'), [
+        'timesheet_id'     => $timesheet->id,
+        'date'             => $timesheet->date->toDateString(),
+        'requested_end_at' => '23:59',
+        'reason'           => 'Forgot to clock out',
+    ], $headers)->assertCreated()->assertJsonPath('data.timesheet_id', $timesheet->id);
+
+    getJson(route('grp.api.mobile.clocking.timesheets'), $headers)->assertJsonPath('data.timesheets.0.has_pending_adjustment', true);
+
+    getJson(route('grp.api.mobile.clocking.timesheets', ['from' => '2026-11-10', 'to' => '2026-11-01']), $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('to');
+});
+
+test('staff can not ask from the app to correct someone else\'s timesheet', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$owner, $ownerUser] = createClockingEmployeeUser($this->organisation);
+    [, $other]           = createClockingEmployeeUser($this->organisation);
+    $qrCode              = createMobileClockingQrCode($this->organisation);
+    $headers             = ['X-Aiku-App-Key' => 'mobile-test-key'];
+
+    Sanctum::actingAs($ownerUser, ['mobile']);
+    postJson(route('grp.api.mobile.clocking.qr'), ['qr_code' => $qrCode->hash], $headers)->assertOk();
+    $timesheet = Timesheet::where('subject_type', 'Employee')->where('subject_id', $owner->id)->firstOrFail();
+
+    Sanctum::actingAs($other, ['mobile']);
+    post(route('grp.api.mobile.clocking.adjustments.store'), [
+        'timesheet_id'     => $timesheet->id,
+        'date'             => $timesheet->date->toDateString(),
+        'requested_end_at' => '23:59',
+        'reason'           => 'Not my day',
+    ], $headers)->assertUnprocessable()->assertJsonValidationErrors('date');
+
+    expect(AttendanceAdjustment::where('timesheet_id', $timesheet->id)->exists())->toBeFalse();
+});
+
+test('staff request a leave with a medical certificate from the app and see it with their balance and leave types', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    Storage::fake('media');
+    [$employee, $user] = createMobileLeaveEmployeeUser($this->organisation);
+    $leaveType         = createMobileMedicalLeaveType($this->organisation);
+    $day               = nextFreeMobileLeaveDay($this->organisation);
+    $headers           = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    Sanctum::actingAs($user, ['mobile']);
+
+    $leave = requestMobileLeave($leaveType, $day, ['attachments' => [UploadedFile::fake()->image('certificate.jpg')]])
+        ->assertCreated()
+        ->assertJsonPath('data.employee_id', $employee->id)
+        ->assertJsonPath('data.type', $leaveType->code)
+        ->assertJsonPath('data.type_label', $leaveType->name)
+        ->assertJsonPath('data.start_date', $day->toDateString())
+        ->assertJsonPath('data.status', 'pending')
+        ->assertJsonPath('data.attachments.0.name', 'certificate.jpg')
+        ->json('data');
+
+    $leavesTab = getJson(route('grp.api.mobile.clocking.leaves.index'), $headers)
+        ->assertOk()
+        ->assertJsonCount(1, 'data.leaves')
+        ->assertJsonPath('data.leaves.0.id', $leave['id'])
+        ->assertJsonPath('data.pagination.total', 1)
+        ->assertJsonPath('data.balance.annual_days', 20)
+        ->assertJsonPath('data.annual_remaining_after_submission', 20)
+        ->json('data');
+
+    expect(collect($leavesTab['type_options'])->firstWhere('code', $leaveType->code))
+        ->toMatchArray(['label' => $leaveType->name, 'category' => 'medical']);
+
+    get($leave['attachments'][0]['url'], $headers)->assertOk();
+});
+
+test('a leave request from the app needs a reason', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$employee, $user] = createMobileLeaveEmployeeUser($this->organisation);
+    Sanctum::actingAs($user, ['mobile']);
+
+    requestMobileLeave(createMobileMedicalLeaveType($this->organisation), nextFreeMobileLeaveDay($this->organisation), ['reason' => ''])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('reason');
+
+    expect(Leave::where('employee_id', $employee->id)->exists())->toBeFalse();
+});
+
+test('staff replace the medical certificate of their own pending leave from the app but not someone else\'s', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    Storage::fake('media');
+    [, $owner] = createMobileLeaveEmployeeUser($this->organisation);
+    [, $other] = createMobileLeaveEmployeeUser($this->organisation);
+    $headers   = ['X-Aiku-App-Key' => 'mobile-test-key'];
+
+    Sanctum::actingAs($owner, ['mobile']);
+    $leave = requestMobileLeave(createMobileMedicalLeaveType($this->organisation), nextFreeMobileLeaveDay($this->organisation), ['attachments' => [UploadedFile::fake()->image('first.jpg')]])
+        ->assertCreated()
+        ->json('data');
+
+    Sanctum::actingAs($other, ['mobile']);
+    post(route('grp.api.mobile.clocking.leaves.update', $leave['id']), ['attachments' => [UploadedFile::fake()->image('not-mine.jpg')]], $headers)->assertForbidden();
+    get($leave['attachments'][0]['url'], $headers)->assertForbidden();
+
+    Sanctum::actingAs($owner, ['mobile']);
+    post(route('grp.api.mobile.clocking.leaves.update', $leave['id']), ['attachments' => [UploadedFile::fake()->image('second.jpg')]], $headers)
+        ->assertOk()
+        ->assertJsonCount(1, 'data.attachments')
+        ->assertJsonPath('data.attachments.0.name', 'second.jpg');
+});
+
+test('staff request a clocking adjustment for a day with no clockings, see it listed and cancel it from the app', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$employee, $user] = createClockingEmployeeUser($this->organisation);
+    $timezone          = $this->organisation->timezone?->name ?? config('app.timezone');
+    $yesterday         = now($timezone)->subDay()->toDateString();
+    $headers           = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    Sanctum::actingAs($user, ['mobile']);
+
+    $adjustmentId = post(route('grp.api.mobile.clocking.adjustments.store'), [
+        'date'               => $yesterday,
+        'requested_start_at' => '09:00',
+        'requested_end_at'   => '17:30',
+        'reason'             => 'Phone battery was flat',
+    ], $headers)
+        ->assertCreated()
+        ->assertJsonPath('data.employee_id', $employee->id)
+        ->assertJsonPath('data.date', $yesterday)
+        ->assertJsonPath('data.requested_start_time_local', '09:00')
+        ->assertJsonPath('data.requested_end_time_local', '17:30')
+        ->assertJsonPath('data.status', AttendanceAdjustmentStatusEnum::PENDING->value)
+        ->json('data.id');
+
+    getJson(route('grp.api.mobile.clocking.adjustments.index'), $headers)
+        ->assertOk()
+        ->assertJsonCount(1, 'data.adjustments')
+        ->assertJsonPath('data.adjustments.0.id', $adjustmentId)
+        ->assertJsonPath('data.adjustments.0.status_label', __('Pending'))
+        ->assertJsonPath('data.adjustments.0.requested_start_time_local', '09:00');
+
+    deleteJson(route('grp.api.mobile.clocking.adjustments.cancel', $adjustmentId), [], $headers)
+        ->assertOk()
+        ->assertJsonPath('data.cancelled', true);
+
+    expect(AttendanceAdjustment::find($adjustmentId))->toBeNull();
+});
+
+test('a clocking adjustment from the app needs the check out after the check in', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$employee, $user] = createClockingEmployeeUser($this->organisation);
+    Sanctum::actingAs($user, ['mobile']);
+
+    post(route('grp.api.mobile.clocking.adjustments.store'), [
+        'date'               => now()->subDay()->toDateString(),
+        'requested_start_at' => '17:00',
+        'requested_end_at'   => '09:00',
+        'reason'             => 'Swapped times',
+    ], ['X-Aiku-App-Key' => 'mobile-test-key'])->assertUnprocessable()->assertJsonValidationErrors('requested_end_at');
+
+    expect(AttendanceAdjustment::where('employee_id', $employee->id)->exists())->toBeFalse();
+});
+
+test('staff can not cancel someone else\'s clocking adjustment, or one already decided, from the app', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$owner, $ownerUser] = createClockingEmployeeUser($this->organisation);
+    [, $other]           = createClockingEmployeeUser($this->organisation);
+    $headers             = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    $adjustment          = StoreAttendanceAdjustment::make()->action($owner, [
+        'date'               => now()->subDays(2)->toDateString(),
+        'requested_start_at' => '08:00',
+        'requested_end_at'   => '16:00',
+        'reason'             => 'Missed the clock',
+    ]);
+
+    Sanctum::actingAs($other, ['mobile']);
+    deleteJson(route('grp.api.mobile.clocking.adjustments.cancel', $adjustment->id), [], $headers)->assertForbidden();
+    expect(AttendanceAdjustment::find($adjustment->id))->not->toBeNull();
+
+    $adjustment->update(['status' => AttendanceAdjustmentStatusEnum::APPROVED]);
+    Sanctum::actingAs($ownerUser, ['mobile']);
+    deleteJson(route('grp.api.mobile.clocking.adjustments.cancel', $adjustment->id), [], $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('status');
+});
+
+test('staff request overtime from the app, see it listed with the overtime types and change it while pending', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$employee, $user] = createClockingEmployeeUser($this->organisation);
+    $overtimeType      = createMobileOvertimeType($this->organisation);
+    $headers           = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    Sanctum::actingAs($user, ['mobile']);
+
+    $overtimeRequestId = postJson(route('grp.api.mobile.clocking.overtime_requests.store'), mobileOvertimeRequestBody($overtimeType, 90), $headers)
+        ->assertCreated()
+        ->assertJsonPath('data.overtime_type_id', $overtimeType->id)
+        ->assertJsonPath('data.overtime_type_name', $overtimeType->name)
+        ->assertJsonPath('data.requested_duration_minutes', 90)
+        ->assertJsonPath('data.recorded_duration_minutes', null)
+        ->assertJsonPath('data.status', 'pending')
+        ->assertJsonPath('data.status_label', __('Pending'))
+        ->json('data.id');
+
+    $overtimeTab = getJson(route('grp.api.mobile.clocking.overtime_requests.index'), $headers)
+        ->assertOk()
+        ->assertJsonCount(1, 'data.overtime_requests')
+        ->assertJsonPath('data.overtime_requests.0.id', $overtimeRequestId)
+        ->json('data');
+
+    expect(collect($overtimeTab['type_options'])->firstWhere('value', $overtimeType->id))->toBe(['value' => $overtimeType->id, 'label' => $overtimeType->name]);
+
+    patchJson(route('grp.api.mobile.clocking.overtime_requests.update', $overtimeRequestId), mobileOvertimeRequestBody($overtimeType, 120), $headers)
+        ->assertOk()
+        ->assertJsonPath('data.requested_duration_minutes', 120);
+
+    expect(OvertimeRequest::find($overtimeRequestId))
+        ->employee_id->toBe($employee->id)
+        ->requested_duration_minutes->toBe(120);
+});
+
+test('staff can not change someone else\'s overtime request from the app', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [, $owner]    = createClockingEmployeeUser($this->organisation);
+    [, $other]    = createClockingEmployeeUser($this->organisation);
+    $overtimeType = createMobileOvertimeType($this->organisation);
+    $headers      = ['X-Aiku-App-Key' => 'mobile-test-key'];
+
+    Sanctum::actingAs($owner, ['mobile']);
+    $overtimeRequestId = postJson(route('grp.api.mobile.clocking.overtime_requests.store'), mobileOvertimeRequestBody($overtimeType, 60), $headers)->json('data.id');
+
+    Sanctum::actingAs($other, ['mobile']);
+    patchJson(route('grp.api.mobile.clocking.overtime_requests.update', $overtimeRequestId), mobileOvertimeRequestBody($overtimeType, 600), $headers)->assertForbidden();
+});
+
+test('an overtime request from the app needs a duration', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$employee, $user] = createClockingEmployeeUser($this->organisation);
+    Sanctum::actingAs($user, ['mobile']);
+
+    postJson(route('grp.api.mobile.clocking.overtime_requests.store'), mobileOvertimeRequestBody(createMobileOvertimeType($this->organisation), 0), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('requested_duration_minutes');
+
+    expect(OvertimeRequest::where('employee_id', $employee->id)->exists())->toBeFalse();
+});
+
+test('the app calendar lists the organisation holidays of the month asked for', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [, $user] = createClockingEmployeeUser($this->organisation);
+    $headers  = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    $month    = Carbon::create(2040, rand(1, 11), 1);
+    $label    = 'Mobile holiday '.uniqid();
+    StoreHoliday::make()->action($this->organisation, [
+        'type'  => HolidayTypeEnum::PUBLIC,
+        'from'  => $month->copy()->day(10)->toDateString(),
+        'to'    => $month->copy()->day(11)->toDateString(),
+        'label' => $label,
+    ]);
+    StoreHoliday::make()->action($this->organisation, [
+        'type'  => HolidayTypeEnum::PUBLIC,
+        'from'  => $month->copy()->addMonth()->day(5)->toDateString(),
+        'to'    => $month->copy()->addMonth()->day(5)->toDateString(),
+        'label' => $label.' next month',
+    ]);
+    Sanctum::actingAs($user, ['mobile']);
+
+    $calendar = getJson(route('grp.api.mobile.clocking.calendar', ['month' => $month->format('Y-m')]), $headers)
+        ->assertOk()
+        ->assertJsonPath('data.month', $month->format('Y-m'))
+        ->json('data');
+
+    $holidayLabels = collect($calendar['holidays'])->pluck('label', 'date');
+    expect($holidayLabels->get($month->copy()->day(10)->toDateString()))->toContain($label)
+        ->and($holidayLabels->get($month->copy()->day(11)->toDateString()))->toContain($label)
+        ->and(collect($calendar['holidays'])->pluck('date')->every(fn (string $date) => str_starts_with($date, $month->format('Y-m'))))->toBeTrue()
+        ->and(collect($calendar['holiday_ranges'])->firstWhere('label', $label))->toBe([
+            'from'  => $month->copy()->day(10)->toDateString(),
+            'to'    => $month->copy()->day(11)->toDateString(),
+            'label' => $label,
+        ])
+        ->and(collect($calendar['holiday_ranges'])->firstWhere('label', $label.' next month'))->toBeNull();
+
+    expect($calendar['leaves'])->toBe([]);
+
+    getJson(route('grp.api.mobile.clocking.calendar', ['month' => '2040-13']), $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('month');
+});
+
+test('the app calendar shows the employee\'s own leave of the month', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [, $user]  = createMobileLeaveEmployeeUser($this->organisation);
+    $leaveType = createMobileMedicalLeaveType($this->organisation);
+    $headers   = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    $day       = nextFreeMobileLeaveDay($this->organisation);
+    Sanctum::actingAs($user, ['mobile']);
+    $leaveId = requestMobileLeave($leaveType, $day)->assertCreated()->json('data.id');
+
+    $calendar = getJson(route('grp.api.mobile.clocking.calendar', ['month' => $day->format('Y-m')]), $headers)
+        ->assertOk()
+        ->assertJsonCount(1, 'data.leaves')
+        ->assertJsonPath('data.leaves.0.id', $leaveId)
+        ->assertJsonPath('data.leaves.0.type', $leaveType->code)
+        ->assertJsonPath('data.leaves.0.start_date', $day->toDateString())
+        ->assertJsonPath('data.leaves.0.status', 'pending');
+
+    expect($calendar->json('data.leaves.0.leave_type_value'))->toEqual(1);
+
+    getJson(route('grp.api.mobile.clocking.calendar', ['month' => $day->copy()->addMonths(2)->format('Y-m')]), $headers)
+        ->assertJsonPath('data.leaves', []);
 });
