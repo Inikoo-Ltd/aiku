@@ -26,16 +26,19 @@ use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use App\Models\SysAdmin\User;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The supplier of an order through an agent can not make a product: the agent gives all or part of the line to another
- * supplier of the same agent. The line lands on that supplier's open order in the same state, or on a new one, at the
+ * supplier of the same agent. The line lands on that supplier's open order of the same agent order in the same state, or
+ * on a new one named after the source order with the new supplier's code, at the
  * price the buyer agreed; a different supplier price is asked to the buyer with the usual price question.
  */
 class MovePurchaseOrderTransactionToSupplier extends OrgAction
@@ -43,7 +46,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
     use WithPurchaseOrderAgentEditAuthorisation;
 
     /**
-     * @param array{org_supplier_id: int, quantity: float|string, code?: string|null, name?: string|null, cost?: float|string|null, units_per_carton?: float|string|null} $modelData
+     * @param array{org_supplier_id: int, quantity: float|string, reference?: string|null, code?: string|null, name?: string|null, cost?: float|string|null, units_per_carton?: float|string|null} $modelData
      *
      * @return array{source: PurchaseOrderTransaction, moved: PurchaseOrderTransaction, source_cancelled: bool, source_empty: bool, deposit_paid: bool}
      */
@@ -76,12 +79,15 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             }
 
             $agreedUnitCost      = (float) ($purchaseOrderTransaction->unit_cost ?? $supplierProduct->cost);
-            $targetPurchaseOrder = $this->openPurchaseOrderOf($orgSupplier, $sourcePurchaseOrder);
+            $typedReference      = trim((string) Arr::get($modelData, 'reference'));
+            $targetPurchaseOrder = $typedReference !== ''
+                ? $this->purchaseOrderNamed($orgSupplier, $sourcePurchaseOrder, $typedReference)
+                : $this->openPurchaseOrderOf($orgSupplier, $sourcePurchaseOrder);
             $isNewPurchaseOrder  = $targetPurchaseOrder === null;
 
             if ($isNewPurchaseOrder) {
                 $targetPurchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, [
-                    'reference'   => $this->referenceForMovedLines($sourcePurchaseOrder, $orgSupplier),
+                    'reference'   => $typedReference !== '' ? $typedReference : $this->referenceForMovedLines($sourcePurchaseOrder, $orgSupplier),
                     'buyer_id'    => $sourcePurchaseOrder->buyer_id,
                     'currency_id' => $sourcePurchaseOrder->currency_id,
                 ], strict: false);
@@ -217,41 +223,143 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
     }
 
     /**
-     * The supplier's order in the same state that can still take lines: same currency, not in production, nothing on a delivery.
+     * The active, available supplier products of these suppliers for these SKOs, oldest first, each with the org_stock_id it
+     * is for: read only, the joined org_stock_id is not a column of the product.
+     *
+     * @param array<int> $orgSupplierIds
+     * @param array<int> $orgStockIds
+     *
+     * @return Collection<int, OrgSupplierProduct>
      */
-    private function openPurchaseOrderOf(OrgSupplier $orgSupplier, PurchaseOrder $sourcePurchaseOrder): ?PurchaseOrder
+    public static function orgSupplierProductsOfStocks(array $orgSupplierIds, array $orgStockIds): Collection
     {
-        return $orgSupplier->purchaseOrders()
+        return OrgSupplierProduct::query()
+            ->select('org_supplier_products.*', 'org_stock_has_org_supplier_products.org_stock_id')
+            ->join('org_stock_has_org_supplier_products', 'org_stock_has_org_supplier_products.org_supplier_product_id', '=', 'org_supplier_products.id')
+            ->whereIn('org_supplier_products.org_supplier_id', $orgSupplierIds)
+            ->whereIn('org_stock_has_org_supplier_products.org_stock_id', $orgStockIds)
+            ->where('org_supplier_products.state', OrgSupplierProductStateEnum::ACTIVE)
+            ->where('org_supplier_products.is_available', true)
+            ->with('supplierProduct')
+            ->orderBy('org_supplier_products.id')
+            ->get();
+    }
+
+    /**
+     * The supplier's order of the same agent order that can still take lines: one an earlier move from the source order
+     * created, or on legacy split orders the supplier's order with the same agent order number. An unrelated open order
+     * of that supplier (another container, PPD-AWIndo-132-SK for a line of SET-AWIndo-134-SK) never takes the line.
+     */
+    public function openPurchaseOrderOf(OrgSupplier $orgSupplier, PurchaseOrder $sourcePurchaseOrder, ?Collection $purchaseOrdersTakingMovedLines = null): ?PurchaseOrder
+    {
+        $movedLinesReference = mb_strtolower($this->baseReferenceForMovedLines($sourcePurchaseOrder).'-'.$orgSupplier->supplier->code);
+        $agentOrderReference = $sourcePurchaseOrder->agent_order_reference ? mb_strtolower($sourcePurchaseOrder->agent_order_reference) : null;
+
+        return ($purchaseOrdersTakingMovedLines ?? $this->purchaseOrdersTakingMovedLines($orgSupplier, $sourcePurchaseOrder))
+            ->first(function (PurchaseOrder $purchaseOrder) use ($movedLinesReference, $agentOrderReference) {
+                $reference = mb_strtolower($purchaseOrder->reference);
+
+                return $reference === $movedLinesReference
+                    || preg_match('/^'.preg_quote($movedLinesReference, '/').'-\d+$/', $reference) === 1
+                    || ($agentOrderReference !== null && mb_strtolower((string) $purchaseOrder->agent_order_reference) === $agentOrderReference);
+            });
+    }
+
+    /**
+     * @return Collection<int, PurchaseOrder>
+     */
+    public function purchaseOrdersTakingMovedLines(OrgSupplier $orgSupplier, PurchaseOrder $sourcePurchaseOrder): Collection
+    {
+        return $this->purchaseOrdersTakingMovedLinesQuery($sourcePurchaseOrder)->where('parent_id', $orgSupplier->id)->get()->toBase();
+    }
+
+    /**
+     * Supplier orders in the same state that can still take lines: same agent and currency, not in production,
+     * nothing on a delivery. Any of them takes the line when the user types its reference.
+     *
+     * @return EloquentBuilder<PurchaseOrder>
+     */
+    public function purchaseOrdersTakingMovedLinesQuery(PurchaseOrder $sourcePurchaseOrder): EloquentBuilder
+    {
+        return PurchaseOrder::query()
+            ->where('organisation_id', $sourcePurchaseOrder->organisation_id)
+            ->where('parent_type', 'OrgSupplier')
             ->where('state', $sourcePurchaseOrder->state)
             ->where('agent_id', $sourcePurchaseOrder->agent_id)
             ->where('currency_id', $sourcePurchaseOrder->currency_id)
-            ->get()
-            ->filter(fn (PurchaseOrder $purchaseOrder) => !$purchaseOrder->hasProductionStarted()
-                && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->doesntExist())
-            ->sortBy('id')
+            ->whereNull('production_started_at')
+            ->whereNull('sample_approved_at')
+            ->whereNull('produced_at')
+            ->whereDoesntHave('stockDeliveries', fn (EloquentBuilder $deliveries) => $deliveries->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED))
+            ->orderBy('id');
+    }
+
+    /**
+     * The order the user named: one of the supplier's orders that can take the line, or null for a new order with that
+     * reference. A reference any other order of the organisation already has is refused.
+     */
+    private function purchaseOrderNamed(OrgSupplier $orgSupplier, PurchaseOrder $sourcePurchaseOrder, string $reference): ?PurchaseOrder
+    {
+        $lowerReference = mb_strtolower($reference);
+        $openOrder      = $this->purchaseOrdersTakingMovedLinesQuery($sourcePurchaseOrder)
+            ->where('parent_id', $orgSupplier->id)
+            ->whereRaw('lower(reference) = ?', [$lowerReference])
             ->first();
+
+        if ($openOrder) {
+            return $openOrder;
+        }
+
+        if (PurchaseOrder::where('organisation_id', $sourcePurchaseOrder->organisation_id)->whereRaw('lower(reference) = ?', [$lowerReference])->exists()) {
+            throw ValidationException::withMessages(['reference' => __(':reference is already used by an order that can not take this line: type another name', ['reference' => $reference])]);
+        }
+
+        return null;
     }
 
     /**
      * The source reference with the new supplier's code, the way buyers split agent orders by hand (AWChina-94-SK-KEL):
      * a line already moved once swaps the previous supplier's code instead of stacking codes.
+     *
+     * @param Collection<int, string>|null $takenReferences lower case references starting with the source's, to name many suppliers with one query
      */
-    public function referenceForMovedLines(PurchaseOrder $sourcePurchaseOrder, OrgSupplier $orgSupplier): string
+    public function referenceForMovedLines(PurchaseOrder $sourcePurchaseOrder, OrgSupplier $orgSupplier, ?Collection $takenReferences = null): string
     {
-        $supplierCode     = $orgSupplier->supplier->code;
-        $sourceParentCode = (string) $sourcePurchaseOrder->parent_code;
-        $baseReference    = $sourceParentCode !== ''
-            ? preg_replace('/-'.preg_quote($sourceParentCode, '/').'$/i', '', $sourcePurchaseOrder->reference)
-            : $sourcePurchaseOrder->reference;
+        $supplierCode    = $orgSupplier->supplier->code;
+        $baseReference   = $this->baseReferenceForMovedLines($sourcePurchaseOrder);
+        $takenReferences = ($takenReferences ?? $this->takenReferencesForMovedLines($sourcePurchaseOrder))->flip();
 
         $reference = $baseReference.'-'.$supplierCode;
         $copy      = 1;
-        while (PurchaseOrder::where('organisation_id', $sourcePurchaseOrder->organisation_id)->whereRaw('lower(reference) = ?', [mb_strtolower($reference)])->exists()) {
+        while ($takenReferences->has(mb_strtolower($reference))) {
             $copy++;
             $reference = $baseReference.'-'.$supplierCode.'-'.$copy;
         }
 
         return $reference;
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function takenReferencesForMovedLines(PurchaseOrder $sourcePurchaseOrder): Collection
+    {
+        $prefix = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], mb_strtolower($this->baseReferenceForMovedLines($sourcePurchaseOrder))).'-%';
+
+        return PurchaseOrder::where('organisation_id', $sourcePurchaseOrder->organisation_id)
+            ->whereRaw('lower(reference) like ?', [$prefix])
+            ->pluck('reference')
+            ->map(fn (string $reference) => mb_strtolower($reference))
+            ->values();
+    }
+
+    private function baseReferenceForMovedLines(PurchaseOrder $sourcePurchaseOrder): string
+    {
+        $sourceParentCode = (string) $sourcePurchaseOrder->parent_code;
+
+        return $sourceParentCode !== ''
+            ? preg_replace('/-'.preg_quote($sourceParentCode, '/').'$/i', '', $sourcePurchaseOrder->reference)
+            : $sourcePurchaseOrder->reference;
     }
 
     /**
@@ -274,6 +382,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
         return [
             'org_supplier_id'  => ['required', 'integer'],
             'quantity'         => ['required', 'numeric', 'gt:0'],
+            'reference'        => ['sometimes', 'nullable', 'string', 'max:64'],
             'code'             => ['sometimes', 'nullable', 'string', 'max:64'],
             'name'             => ['sometimes', 'nullable', 'string', 'max:255'],
             'cost'             => ['sometimes', 'nullable', 'numeric', 'min:0'],
@@ -295,26 +404,40 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
         $this->initialisation($purchaseOrderTransaction->organisation, $request);
 
         $result = $this->handle($purchaseOrderTransaction, $this->validatedData, $request->user());
-        $moved  = $result['moved'];
-        $code   = $moved->supplierProduct?->code ?? $moved->orgStock?->code;
-
-        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $request->user(), fn () => implode(' ', array_filter([
-            __('the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.', [
-                'quantity'  => trimDecimalZeros($moved->quantity_ordered),
-                'code'      => $code,
-                'supplier'  => $moved->purchaseOrder->parent_name,
-                'reference' => $moved->purchaseOrder->reference,
-            ]),
-            $moved->price_query_state ? __('New supplier price :new, was :old: answer it on :reference.', [
-                'new'       => trimDecimalZeros($moved->price_query_unit_cost).' '.$moved->purchaseOrder->currency?->code,
-                'old'       => trimDecimalZeros($moved->price_query_previous_unit_cost).' '.$moved->purchaseOrder->currency?->code,
-                'reference' => $moved->purchaseOrder->reference,
-            ]) : null,
-            $result['source_cancelled'] ? __('This order had nothing left and was cancelled.') : null,
-            $result['source_empty'] && $result['deposit_paid']
-                ? __('This order has nothing left but a deposit was paid on it: recover it before cancelling the order.') : null,
-        ])));
+        self::notifyBuyer($purchaseOrder, $request->user(), [$result]);
 
         return back();
+    }
+
+    /**
+     * One message to the buyer for lines moved together to the same supplier order.
+     *
+     * @param array<int, array{source: PurchaseOrderTransaction, moved: PurchaseOrderTransaction, source_cancelled: bool, source_empty: bool, deposit_paid: bool}> $results
+     */
+    public static function notifyBuyer(PurchaseOrder $purchaseOrder, User $user, array $results): void
+    {
+        $lastResult  = end($results);
+        $targetOrder = $lastResult['moved']->purchaseOrder;
+        $currency    = $targetOrder->currency?->code;
+
+        NotifyBuyerOfAgentStageChange::run($purchaseOrder, $user, fn () => implode(' ', array_filter([
+            __('the agent moved :lines to :supplier (:reference), the supplier can not make them.', [
+                'lines'     => collect($results)->map(fn (array $result) => __(':quantity units of :code', [
+                    'quantity' => trimDecimalZeros($result['moved']->quantity_ordered),
+                    'code'     => $result['moved']->supplierProduct?->code ?? $result['moved']->orgStock?->code,
+                ]))->implode(', '),
+                'supplier'  => $targetOrder->parent_name,
+                'reference' => $targetOrder->reference,
+            ]),
+            ...collect($results)->filter(fn (array $result) => $result['moved']->price_query_state)->map(fn (array $result) => __('New supplier price of :code :new, was :old: answer it on :reference.', [
+                'code'      => $result['moved']->supplierProduct?->code ?? $result['moved']->orgStock?->code,
+                'new'       => trimDecimalZeros($result['moved']->price_query_unit_cost).' '.$currency,
+                'old'       => trimDecimalZeros($result['moved']->price_query_previous_unit_cost).' '.$currency,
+                'reference' => $targetOrder->reference,
+            ]))->values()->all(),
+            $lastResult['source_cancelled'] ? __('This order had nothing left and was cancelled.') : null,
+            $lastResult['source_empty'] && $lastResult['deposit_paid']
+                ? __('This order has nothing left but a deposit was paid on it: recover it before cancelling the order.') : null,
+        ])));
     }
 }

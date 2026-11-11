@@ -436,12 +436,18 @@ function packTooltip(item: any) {
 
 const _table = ref<InstanceType<typeof Table> | null>(null)
 const containerDialogItems = ref<any[]>([])
-const moveDialogItem = ref<any>(null)
+const moveDialogItems = ref<any[]>([])
 const isMoveDialogVisible = ref(false)
 
-function openMoveDialog(item: any) {
-    moveDialogItem.value = item
+function openMoveDialog(items: any[]) {
+    moveDialogItems.value = items
     isMoveDialogVisible.value = true
+}
+
+function onMoved() {
+    _table.value?.clearSelection()
+    selectedRows.value = {}
+    router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
 }
 const isContainerDialogVisible = ref(false)
 const selectedRows = ref<Record<string, boolean>>({})
@@ -449,10 +455,13 @@ const selectedRows = ref<Record<string, boolean>>({})
 const tableRows = computed<any[]>(() => (props.data as any)?.data ?? [])
 const canAddToContainer = (item: any) => !!item.agent_warehouse?.containers_route
 const canPack = (item: any) => !!item.agent_warehouse?.pack_route && !isAllInContainers(item)
-const isSelectable = (item: any) => canAddToContainer(item) || canPack(item)
+const canMove = (item: any) => canCancelItems.value && !!item.moveRoute
+const isSelectable = (item: any) => canAddToContainer(item) || canPack(item) || canMove(item)
 const hasSelectableRows = computed(() => tableRows.value.some(isSelectable))
 const rowsSelectedForContainer = computed(() => tableRows.value.filter((item) => selectedRows.value[item.id] && canAddToContainer(item)))
 const rowsSelectedForPacking = computed(() => tableRows.value.filter((item) => selectedRows.value[item.id] && canPack(item)))
+const rowsSelectedForMove = computed(() => tableRows.value.filter((item) => selectedRows.value[item.id] && canMove(item)))
+const hasMovableRows = computed(() => tableRows.value.some(canMove))
 const isPackingSelected = ref(false)
 
 function packSelected() {
@@ -758,7 +767,7 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                             type="button"
                             class="px-3 py-1.5 text-sm border-b-2 -mb-px transition"
                             :class="item.key === currentLevel
-                                ? 'border-[--app-accent] text-[--app-accent] font-medium'
+                                ? 'border-[var(--app-accent)] text-[var(--app-accent)] font-medium'
                                 : 'border-transparent text-gray-500 hover:text-gray-700'"
                             @click="currentLevel = item.key"
                         >
@@ -767,7 +776,22 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                         </button>
                     </template>
                 </div>
-                <div v-if="rowsSelectedForPacking.length || rowsSelectedForContainer.length" class="mb-1.5 flex items-center gap-2">
+                <div v-if="rowsSelectedForPacking.length || rowsSelectedForContainer.length || hasMovableRows" class="mb-1.5 flex items-center gap-2">
+                    <Button
+                        v-if="hasMovableRows"
+                        :label="ctransChoice('Move :count item|Move :count items', rowsSelectedForMove.length)"
+                        :tooltip="rowsSelectedForMove.length
+                            ? ctrans('The supplier can not make them: give the selected products to another supplier of the agent')
+                            : ctrans('Tick the products to give to another supplier of the agent')"
+                        type="tertiary"
+                        size="xs"
+                        :disabled="!rowsSelectedForMove.length"
+                        @click="openMoveDialog(rowsSelectedForMove)"
+                    >
+                        <template #icon>
+                            <FontAwesomeIcon :icon="faExchange" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
                     <Button
                         v-if="rowsSelectedForPacking.length"
                         :label="ctransChoice('Mark :count item packed|Mark :count items packed', rowsSelectedForPacking.length)"
@@ -1137,12 +1161,12 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
                 <Button
                     v-if="canCancelItems && item.moveRoute"
-                    :label="ctrans('Move')"
+                    :label="ctrans('Move supplier')"
                     :tooltip="ctrans('The supplier can not make it: give it to another supplier of the agent')"
                     :icon="faExchange"
                     type="tertiary"
                     size="xs"
-                    @click="openMoveDialog(item)"
+                    @click="openMoveDialog([item])"
                 />
 
                 <Button
@@ -1286,10 +1310,10 @@ function orgStockRoute(item: { org_stock_id?: number }) {
     />
 
     <PurchaseOrderLineMoveDialog
-        v-if="moveDialogItem"
+        v-if="moveDialogItems.length"
         v-model:visible="isMoveDialogVisible"
-        :item="moveDialogItem"
-        @moved="router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })"
+        :items="moveDialogItems"
+        @moved="onMoved"
     />
 
     <ProductImageViewerDialog v-if="viewedImages.length" v-model:visible="isImageViewerVisible" :images="viewedImages" />
