@@ -9,7 +9,10 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
+use App\Actions\Comms\Email\SendAccountErasedEmail;
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatMessageTranslation;
@@ -26,6 +29,7 @@ use App\Models\Helpers\Audit;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +41,7 @@ use OwenIt\Auditing\Events\AuditCustom;
 
 class AnonymiseCustomer extends OrgAction
 {
-    public string $commandSignature = 'customer:anonymise {slug} {--reason=} {--keep-company-name}';
+    public string $commandSignature = 'customer:anonymise {slug} {--reason=} {--keep-company-name} {--fraud-note=}';
 
     public const string ERASED = '[erased]';
 
@@ -47,11 +51,21 @@ class AnonymiseCustomer extends OrgAction
 
     private Customer $customer;
 
-    public function handle(Customer $customer, string $reason, bool $keepCompanyName = false): Customer
+    public const string HELD_AUDIT_EVENT = 'erasure_held';
+
+    public const string HELD_DELETED_CAUSE = 'erasure_held';
+
+    public function handle(Customer $customer, string $reason, bool $keepCompanyName = false, ?string $fraudNote = null): Customer
     {
-        if (static::isAnonymised($customer)) {
+        if (static::isAnonymised($customer) || static::isErasureHeld($customer)) {
             return $customer;
         }
+
+        if ($holdReasons = static::erasureHoldReasons($customer, $fraudNote)) {
+            return $this->holdErasure($customer, $reason, $holdReasons, $fraudNote);
+        }
+
+        SendAccountErasedEmail::run($customer);
 
         $webUserIds = $customer->webUsers()->withTrashed()->pluck('id');
 
@@ -80,6 +94,70 @@ class AnonymiseCustomer extends OrgAction
     public static function isAnonymised(Customer $customer): bool
     {
         return $customer->trashed() && Arr::get($customer->data, 'deleted.cause') === self::DELETED_CAUSE;
+    }
+
+    public static function isErasureHeld(Customer $customer): bool
+    {
+        return $customer->trashed() && Arr::get($customer->data, 'deleted.cause') === self::HELD_DELETED_CAUSE;
+    }
+
+    /**
+     * Erasure gives way to fraud prevention and to money still owed (GDPR art. 17(3)(e)): such a
+     * customer is closed but their identity is kept, so it can be checked or claimed later (HELP-4652).
+     *
+     * @return array<int, string>
+     */
+    public static function erasureHoldReasons(Customer $customer, ?string $fraudNote = null): array
+    {
+        $holdReasons = [];
+        if (filled($fraudNote)) {
+            $holdReasons[] = 'suspected_fraud';
+        }
+        if ((float)$customer->balance < 0 || static::unpaidInvoicesQuery($customer)->exists()) {
+            $holdReasons[] = 'owes_money';
+        }
+
+        return $holdReasons;
+    }
+
+    public static function unpaidInvoicesQuery(Customer $customer): HasMany
+    {
+        return $customer->invoices()
+            ->where('type', InvoiceTypeEnum::INVOICE)
+            ->where('pay_status', InvoicePayStatusEnum::UNPAID)
+            ->where('in_process', false)
+            ->whereColumn('total_amount', '>', 'payment_amount')
+            ->where('date', '>=', now()->subYear());
+    }
+
+    /** @param array<int, string> $holdReasons */
+    private function holdErasure(Customer $customer, string $reason, array $holdReasons, ?string $fraudNote): Customer
+    {
+        DB::transaction(function () use ($customer) {
+            $customer->webUsers()->get()->each(fn (WebUser $webUser) => $webUser->delete());
+            $this->unsubscribeFromAllComms($customer);
+            $customer->forceFill([
+                'data' => array_merge((array)$customer->data, ['deleted' => ['cause' => self::HELD_DELETED_CAUSE, 'at' => now()->toIso8601String()]]),
+            ])->saveQuietly();
+            $customer->delete();
+        });
+
+        $customer->auditEvent     = self::HELD_AUDIT_EVENT;
+        $customer->isCustomEvent  = true;
+        $customer->auditCustomOld = [];
+        $customer->auditCustomNew = [
+            'reason'          => $reason,
+            'hold_reasons'    => $holdReasons,
+            'fraud_note'      => $fraudNote,
+            'balance'         => $customer->balance,
+            'unpaid_invoices' => static::unpaidInvoicesQuery($customer)->count(),
+            'held_at'         => now()->toIso8601String(),
+        ];
+        Event::dispatch(new AuditCustom($customer));
+
+        ShopHydrateCustomers::dispatch($customer->shop);
+
+        return $customer;
     }
 
     private function anonymiseCustomerRecord(Customer $customer, bool $keepCompanyName): void
@@ -334,6 +412,7 @@ class AnonymiseCustomer extends OrgAction
             'reason'            => ['required', 'string', 'max:1000'],
             'reference'         => ['required', 'string', 'in:'.static::confirmationText($this->customer)],
             'keep_company_name' => ['sometimes', 'boolean'],
+            'fraud_note'        => ['sometimes', 'nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -342,7 +421,7 @@ class AnonymiseCustomer extends OrgAction
         $this->customer = $customer;
         $this->initialisationFromShop($customer->shop, $request);
 
-        return $this->handle($customer, $this->validatedData['reason'], (bool)Arr::get($this->validatedData, 'keep_company_name', false));
+        return $this->handle($customer, $this->validatedData['reason'], (bool)Arr::get($this->validatedData, 'keep_company_name', false), Arr::get($this->validatedData, 'fraud_note'));
     }
 
     public function htmlResponse(Customer $customer): RedirectResponse
@@ -353,7 +432,7 @@ class AnonymiseCustomer extends OrgAction
         ]);
     }
 
-    public function action(Customer $customer, string $reason, bool $keepCompanyName = false): Customer
+    public function action(Customer $customer, string $reason, bool $keepCompanyName = false, ?string $fraudNote = null): Customer
     {
         $this->asAction = true;
         $this->customer = $customer;
@@ -363,7 +442,7 @@ class AnonymiseCustomer extends OrgAction
             'keep_company_name' => $keepCompanyName,
         ]);
 
-        return $this->handle($customer, $reason, $keepCompanyName);
+        return $this->handle($customer, $reason, $keepCompanyName, $fraudNote);
     }
 
     public function asCommand(Command $command): int
@@ -376,8 +455,8 @@ class AnonymiseCustomer extends OrgAction
 
             return 1;
         }
-        if (static::isAnonymised($customer)) {
-            $command->info('Customer '.$customer->reference.' is already anonymised');
+        if (static::isAnonymised($customer) || static::isErasureHeld($customer)) {
+            $command->info('Customer '.$customer->reference.' is already anonymised or closed');
 
             return 0;
         }
@@ -388,9 +467,9 @@ class AnonymiseCustomer extends OrgAction
             return 1;
         }
 
-        $this->handle($customer, $reason, (bool)$command->option('keep-company-name'));
+        $this->handle($customer, $reason, (bool)$command->option('keep-company-name'), $command->option('fraud-note'));
 
-        $command->info('Customer '.$customer->reference.' anonymised and soft deleted');
+        $command->info('Customer '.$customer->reference.(static::isErasureHeld($customer) ? ' closed, identity kept (suspected fraud or money owed)' : ' anonymised and soft deleted'));
 
         return 0;
     }

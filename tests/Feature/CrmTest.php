@@ -45,6 +45,8 @@ use App\Actions\CRM\CustomerNote\UpdateCustomerNote;
 use App\Actions\CRM\Favourite\StoreFavourite;
 use App\Actions\CRM\Favourite\UnFavourite;
 use App\Actions\CRM\Favourite\UpdateFavourite;
+use App\Actions\Comms\Email\SendAccountErasedEmail;
+use App\Actions\Comms\Ses\SendSesEmail;
 use App\Actions\Comms\Email\SendAppointmentEmail;
 use App\Actions\Comms\Email\SendNewAppointmentEmailToShop;
 use App\Actions\CRM\Appointment\AcceptAppointment;
@@ -94,6 +96,7 @@ use App\Actions\Ordering\Order\ResetCustomerOrdersTaxCategory;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\SysAdmin\GetSectionRoute;
 use App\Actions\Web\Website\StoreWebsite;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
@@ -124,6 +127,7 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Accounting\Invoice;
 use App\Models\Helpers\Audit;
+use App\Models\Comms\EmailAddress;
 use App\Models\SysAdmin\User;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerNote;
@@ -3676,7 +3680,15 @@ describe('anonymise customer (GDPR erasure)', function () {
         ]);
         $this->erasureOrder   = StoreOrder::make()->action($this->erasureCustomer, []);
         $this->erasureInvoice = StoreInvoice::make()->action($this->erasureCustomer, Invoice::factory()->definition());
+        $this->erasureInvoice->update(['pay_status' => InvoicePayStatusEnum::PAID, 'payment_amount' => $this->erasureInvoice->total_amount]);
         $this->erasureAddressId = $this->erasureCustomer->address_id;
+
+        $this->emailedTo = [];
+        SendAccountErasedEmail::mock()->shouldReceive('handle')->andReturnUsing(function (Customer $customer) {
+            $this->emailedTo[] = $customer->email;
+
+            return null;
+        });
 
         $this->erasureCustomer = AnonymiseCustomer::make()->action($this->erasureCustomer, 'Erasure request by email', false);
         $this->erasureCustomer->refresh();
@@ -3777,6 +3789,75 @@ describe('anonymise customer (GDPR erasure)', function () {
         expect($customer->trashed())->toBeTrue()
             ->and(Audit::where('auditable_type', 'Customer')->where('auditable_id', $this->erasureCustomer->id)->count())->toBe($auditsBefore);
     });
+
+    test('the customer is emailed at the address being erased, before it is erased', function () {
+        expect($this->emailedTo)->toBe([$this->erasureEmail]);
+    });
+
+    test('every shop has an active account erased outbox', function () {
+        $outbox = $this->shop->outboxes()->where('code', OutboxCodeEnum::ACCOUNT_ERASED)->first();
+
+        expect($outbox)->not->toBeNull()
+            ->and($outbox->state)->toBe(OutboxStateEnum::ACTIVE)
+            ->and((new SendAccountErasedEmail())->generateBodyHtml($this->erasureCustomer))->toContain($this->shop->name);
+    });
+
+    test('a suspected fraud is closed with the identity kept and no email', function () {
+        $email    = 'fraud.'.uniqid().'@example.com';
+        $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), ['email' => $email]));
+        $webUser  = StoreWebUser::make()->action($customer, ['email' => $email, 'username' => 'fraud-'.uniqid(), 'password' => 'password']);
+        $this->emailedTo = [];
+
+        AnonymiseCustomer::make()->action($customer, 'Asked to delete', false, 'Chargeback on two orders');
+        $customer = Customer::withTrashed()->find($customer->id);
+
+        $audit = Audit::where('auditable_type', 'Customer')->where('auditable_id', $customer->id)->where('event', AnonymiseCustomer::HELD_AUDIT_EVENT)->first();
+
+        expect($this->emailedTo)->toBe([])
+            ->and($customer->trashed())->toBeTrue()
+            ->and(AnonymiseCustomer::isErasureHeld($customer))->toBeTrue()
+            ->and(AnonymiseCustomer::isAnonymised($customer))->toBeFalse()
+            ->and($customer->email)->toBe($email)
+            ->and(WebUser::withTrashed()->find($webUser->id)->trashed())->toBeTrue()
+            ->and(WebUser::withTrashed()->find($webUser->id)->email)->toBe($email)
+            ->and($audit->new_values['fraud_note'])->toBe('Chargeback on two orders')
+            ->and($audit->new_values['hold_reasons'])->toBe(['suspected_fraud']);
+    });
+
+    test('a customer who owes money is closed with the identity kept', function () {
+        $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), ['email' => 'owes.'.uniqid().'@example.com']));
+        StoreInvoice::make()->action($customer, Invoice::factory()->definition());
+        $this->emailedTo = [];
+
+        expect(AnonymiseCustomer::erasureHoldReasons($customer))->toBe(['owes_money']);
+
+        AnonymiseCustomer::make()->action($customer, 'Asked to delete');
+        $customer = Customer::withTrashed()->find($customer->id);
+
+        expect($this->emailedTo)->toBe([])
+            ->and(AnonymiseCustomer::isErasureHeld($customer))->toBeTrue()
+            ->and($customer->email)->not->toBeNull();
+    });
+});
+
+test('erasing a customer sends the account erased email, then erases the address it went to', function () {
+    $email    = 'goodbye.'.uniqid().'@example.com';
+    $customer = StoreCustomer::make()->action($this->shop, array_merge(Customer::factory()->definition(), ['email' => $email]));
+    $sent     = [];
+    SendSesEmail::mock()->shouldReceive('handle')->andReturnUsing(function (...$args) use (&$sent) {
+        $sent[] = $args;
+
+        return $args['dispatchedEmail'] ?? $args[2];
+    });
+
+    AnonymiseCustomer::make()->action($customer, 'Erasure request');
+
+    $dispatchedEmail = Customer::withTrashed()->find($customer->id)->dispatchedEmails()->first();
+
+    expect($sent)->toHaveCount(1)
+        ->and($dispatchedEmail->outbox->code)->toBe(OutboxCodeEnum::ACCOUNT_ERASED)
+        ->and($dispatchedEmail->emailAddress->email)->not->toBe($email)
+        ->and(EmailAddress::where('email', $email)->exists())->toBeFalse();
 });
 
 describe('who can erase a customer', function () {
