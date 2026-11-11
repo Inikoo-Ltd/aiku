@@ -188,6 +188,7 @@ trait WithIrisProductsInWebpage
             $this->getStepDiscountColumn(),
             $this->getVariantAxisLabelColumn(),
             $this->getVariantTitleColumn(),
+            $this->getVariantSizeOptionsColumn(),
             ...$additionalColumns
         ];
 

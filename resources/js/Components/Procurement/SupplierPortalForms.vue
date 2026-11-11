@@ -14,9 +14,9 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faExclamationTriangle, faPaperPlane, faSave, faTimes } from "@fal"
+import { faCalendarPlus, faExclamationTriangle, faPaperPlane, faSave, faTimes } from "@fal"
 
-library.add(faExclamationTriangle, faPaperPlane, faSave, faTimes)
+library.add(faCalendarPlus, faExclamationTriangle, faPaperPlane, faSave, faTimes)
 
 export interface PortalForms {
 	submit: Record<string, string>
@@ -158,6 +158,22 @@ watch(type, () => {
 const productOptions = computed(() => props.products.map((product) => ({ value: product.id, label: `${product.code} · ${product.name}` })))
 const locale = useLocaleStore()
 const currentPrice = computed(() => props.products.find((product) => product.id === form.supplier_product_id)?.price ?? null)
+const oneYearAfter = (date: Date) => new Date(date.getFullYear() + 1, date.getMonth(), date.getDate())
+const isSameDay = (first: Date, second: Date) => first.toDateString() === second.toDateString()
+
+watch(
+	() => form.effective_from,
+	(since, previousSince) => {
+		if (!since) {
+			return
+		}
+		const untilFollowedSince = !form.effective_until || (previousSince && isSameDay(form.effective_until, oneYearAfter(previousSince)))
+		if (untilFollowedSince) {
+			form.effective_until = oneYearAfter(since)
+		}
+	}
+)
+
 const typedNumber = (value: string | number | undefined) => (typeof value === "number" ? value : null)
 
 const INFLATION_PERCENT = 6
@@ -322,8 +338,14 @@ const caption = "font-medium text-gray-700"
 						{{ ctrans("Price higher than inflation") }}
 					</span>
 				</label>
-				<label :class="label"><span :class="caption">{{ ctrans("From") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Until") }} <span class="font-normal text-gray-400">({{ ctrans("optional") }})</span></span><DatePicker v-model="form.effective_until" dateFormat="dd M yy" :minDate="form.effective_from ?? undefined" showIcon showClear /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Since") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
+				<div :class="label">
+					<label for="price-change-until" :class="caption">{{ ctrans("Until") }}</label>
+					<DatePicker v-model="form.effective_until" inputId="price-change-until" dateFormat="dd M yy" :minDate="form.effective_from ?? undefined" showIcon showClear />
+					<Button type="tertiary" size="xxs" class="self-start" :label="ctrans('1 year from now')" @click="form.effective_until = oneYearAfter(new Date())">
+						<template #icon><FontAwesomeIcon icon="fal fa-calendar-plus" fixed-width aria-hidden="true" /></template>
+					</Button>
+				</div>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Why") }} <span class="text-red-500">*</span></span><Textarea v-model="form.reason" rows="2" autoResize /></label>
 			</template>
 

@@ -26,6 +26,7 @@ export interface DepositPayment {
 	method: string
 	reference: string | null
 	paid_by: string | null
+	created_at: string | null
 	bank_statement: { ulid: string; caption: string | null } | null
 	undo_route: routeType
 }
@@ -59,6 +60,15 @@ const chooseFilePt = { pcChooseButton: { root: { class: "!border !border-gray-30
 const money = (amount: number) => locale.currencyFormat(props.payments.currency_code ?? "", amount)
 const orgMoney = (amount: number | null) => (props.orgRate && props.orgCurrencyCode && amount ? locale.currencyFormat(props.orgCurrencyCode, amount * props.orgRate) : null)
 const formatDate = (date: string) => useFormatTime(date, { formatTime: "d MMM yyyy" })
+const formatDateTime = (date: string) => useFormatTime(date, { formatTime: "d MMM yyyy HH:mm" })
+
+const paymentAddedTooltip = (payment: DepositPayment) => {
+	if (!payment.created_at) {
+		return payment.paid_by ? ctrans("confirmed by :name", { name: payment.paid_by }) : undefined
+	}
+	const time = formatDateTime(payment.created_at)
+	return payment.paid_by ? ctrans("confirmed by :name on :time", { name: payment.paid_by, time }) : ctrans("added on :time", { time })
+}
 
 const isFullyPaid = computed(() => props.payments.left <= 0)
 const isMarkedPaidWithoutDeposits = computed(() => !!props.payments.paid_at && !props.payments.deposits.length)
@@ -189,7 +199,7 @@ const undoPayment = () => {
 		<ul v-if="payments.deposits.length" class="space-y-1.5">
 			<li v-for="(payment, index) in payments.deposits" :key="payment.id" class="rounded border border-gray-200 bg-white px-2 py-1.5">
 				<div class="flex items-baseline justify-between gap-2">
-					<span class="text-gray-600" v-tooltip="payment.paid_by ? ctrans('confirmed by :name', { name: payment.paid_by }) : undefined">
+					<span class="text-gray-600" v-tooltip="paymentAddedTooltip(payment)">
 						{{ paymentLabel(index) }} · {{ formatDate(payment.date) }}
 					</span>
 					<span class="tabular-nums font-medium text-gray-700">{{ money(payment.amount) }}</span>

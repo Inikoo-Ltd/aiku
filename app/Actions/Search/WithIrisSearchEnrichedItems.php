@@ -7,6 +7,7 @@
 
 namespace App\Actions\Search;
 
+use App\Actions\Catalogue\Variant\GetVariantProductSizeLabel;
 use App\Actions\Ordering\PreOrder\GetProductPreOrder;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Traits\HasPriceMetrics;
@@ -39,7 +40,7 @@ trait WithIrisSearchEnrichedItems
 
         $models = $modelClass::query()
             ->whereIn('id', $ids)
-            ->with(['webpage' => fn ($query) => $query->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE), 'image'])
+            ->with(['webpage' => fn ($query) => $query->where('website_id', $this->website->id)->where('state', WebpageStateEnum::LIVE), 'image', ...($modelClass === Product::class ? ['variant'] : [])])
             ->get()
             ->keyBy('id');
 
@@ -47,7 +48,7 @@ trait WithIrisSearchEnrichedItems
             ? $models->where('is_variant_leader', true)->pluck('variant_id')->filter()->unique()->all()
             : [];
         $variantOptions   = $leaderVariantIds
-            ? Product::whereIn('variant_id', $leaderVariantIds)->where('is_for_sale', true)->with('image')->orderBy('code')->get()->groupBy('variant_id')
+            ? Product::whereIn('variant_id', $leaderVariantIds)->where('is_for_sale', true)->with(['image', 'variant'])->orderBy('code')->get()->groupBy('variant_id')
             : collect();
 
         $enriched = [];
@@ -129,6 +130,7 @@ trait WithIrisSearchEnrichedItems
 
         if ($model instanceof Product) {
             $item['is_golden_product'] = (bool)$model->is_golden_product;
+            $item['size_label']        = GetVariantProductSizeLabel::make()->forProduct($model);
             $item['is_pre_order']      = GetProductPreOrder::make()->type($model) !== null;
         }
 

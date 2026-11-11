@@ -18,6 +18,7 @@ import { faPlus, faMinus } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { ctrans } from '@/Composables/useTrans'
 import { stepDiscountTotal } from '@/Composables/stepDiscountTotal'
+import { heldQuantityChange } from '@/Composables/sizeBasketAction'
 
 library.add(faLongArrowRight, faPlus, faMinus)
 
@@ -30,9 +31,13 @@ const props = withDefaults(
     customerData: any
     buttonStyle?: any
     classContainer?: string
+    holdQuantity?: boolean
+    sizeLabel?: string | null
   }>(),
   {
-    classContainer: 'flex items-center gap-2 relative' // default string
+    classContainer: 'flex items-center gap-2 relative', // default string
+    holdQuantity: false,
+    sizeLabel: null
   }
 )
 
@@ -100,7 +105,7 @@ const fetchCustomerOrderingProduct = async () => {
                 })
             )
 
-            const heldQuantity = hasStepDiscount.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
+            const heldQuantity = holdsQuantity.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
 
             Object.keys(response.data).forEach(key => {
                 if (props.customerData) {
@@ -273,6 +278,8 @@ const debouncedSync = debounce(() => {
 
 const hasStepDiscount = computed(() => (product.value.step_discount?.steps?.length ?? 0) > 0)
 
+const holdsQuantity = computed(() => props.holdQuantity || hasStepDiscount.value)
+
 const hasUnsavedQuantity = computed(() =>
     Number(customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0) !== Number(customer.value.quantity_ordered ?? 0)
 )
@@ -281,8 +288,16 @@ const selectedQuantity = computed<number>(() =>
     Number(customer.value.quantity_ordered_new ?? customer.value.quantity_ordered ?? 0) || 0
 )
 
+const basketQuantity = computed<number>(() => Number(customer.value.quantity_ordered ?? 0) || 0)
+
+const heldChange = computed(() =>
+    heldQuantityChange(basketQuantity.value, selectedQuantity.value, props.sizeLabel ?? (product.value.size_resolved ? product.value.size_label : null))
+)
+
+const heldButtonLabel = computed<string>(() => ctrans(heldChange.value.label.text, heldChange.value.label.replacements))
+
 const showsSelectionTotal = computed<boolean>(() =>
-    hasStepDiscount.value && hasUnsavedQuantity.value && selectedQuantity.value > 0
+    holdsQuantity.value && hasUnsavedQuantity.value && selectedQuantity.value > 0
 )
 
 const selectionTotal = computed(() =>
@@ -290,7 +305,7 @@ const selectionTotal = computed(() =>
 )
 
 const syncOrHoldQuantity = () => {
-    if (hasStepDiscount.value) {
+    if (holdsQuantity.value) {
         return
     }
 
@@ -406,7 +421,7 @@ const disableDecrement = computed(() => {
 watch(
     () => props.customerData,
     val => {
-        const pendingQuantity = hasStepDiscount.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
+        const pendingQuantity = holdsQuantity.value && hasUnsavedQuantity.value ? customer.value.quantity_ordered_new : null
         customer.value = { ...val }
 
         if (pendingQuantity !== null) {
@@ -416,7 +431,7 @@ watch(
     { deep: true }
 )
 const shareSelectedQuantity = (quantity: number) => {
-    if (!hasStepDiscount.value || !props.customerData) {
+    if (!holdsQuantity.value || !props.customerData) {
         return
     }
 
@@ -431,7 +446,8 @@ defineExpose({ setQuantity, selectQuantity })
 </script>
 
 <template>
-    <div :class="[props.classContainer, { 'is-step-discount': hasStepDiscount }]">
+    <div :class="[props.classContainer, { 'is-step-discount': holdsQuantity }]">
+        <span v-if="holdsQuantity && basketQuantity > 0" class="qty-control-label">{{ ctrans('Total in basket') }}</span>
         <div class="qty-control">
             <button class="qty-btn" :disabled="disableDecrement" @click="decrementQty">
                 <FontAwesomeIcon icon="fas fa-minus" fixed-width />
@@ -457,10 +473,10 @@ defineExpose({ setQuantity, selectQuantity })
 
         <slot name="qty-add-button" :data="{product,customer,onAddToBasket,isLoadingSubmitQuantityProduct}">
              <Button
-                v-if="hasStepDiscount"
+                v-if="holdsQuantity"
                 class="qty-add-btn"
-                icon="fas fa-plus"
-                :label="customer.transaction_id ? ctrans('Update basket') : ctrans('Add to basket')"
+                :icon="['decrease', 'remove'].includes(heldChange.direction) ? 'fas fa-minus' : 'fas fa-plus'"
+                :label="heldButtonLabel"
                 type="primary"
                 :injectStyle="buttonStyle"
                 size="lg"
@@ -495,8 +511,9 @@ defineExpose({ setQuantity, selectQuantity })
                 {{ locale.currencyFormat(layout?.iris?.currency?.code, selectionTotal.gross) }}
             </strong>
 
-            <span v-if="customer.quantity_ordered" class="qty-info-label basis-full text-xs">
-                {{ ctrans('Not saved yet, your basket has :quantity', { quantity: String(Number(customer.quantity_ordered)) }) }}
+            <span v-if="basketQuantity > 0" class="basis-full text-xs"
+                :class="heldChange.direction === 'decrease' ? 'font-medium text-amber-600' : 'qty-info-label'">
+                {{ ctrans('Your basket: :from → :to (not saved yet)', { from: String(basketQuantity), to: String(selectedQuantity) }) }}
             </span>
         </div>
 
@@ -544,6 +561,10 @@ input[type='number'] {
 
 .qty-control {
   @apply flex items-center border border-gray-200 rounded-lg overflow-hidden min-w-28 max-w-36;
+}
+
+.qty-control-label {
+  @apply basis-full -mb-2 text-[11px] uppercase tracking-wide text-gray-500;
 }
 
 .qty-btn {

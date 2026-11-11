@@ -23,6 +23,7 @@ use App\Actions\SupplyChain\SupplierPortalContact\SendSupplierPortalLink;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\UI\DownloadSupplierPortalImage;
 use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalLabelsPlan;
+use App\Actions\SupplyChain\SupplierShareLink\UI\GetSupplierPortalProductWebsites;
 use App\Actions\SupplyChain\SupplierShareLink\UI\IndexSupplierPortalProducts;
 use App\Actions\SupplyChain\SupplierShareLink\UI\PdfSupplierPortalLabels;
 use App\Actions\SupplyChain\SupplierShareLink\UI\SearchSupplierPortal;
@@ -49,6 +50,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::post('profile', UpdateSupplierPortalProfile::class)->middleware('throttle:supplier-portal-submit')->name('profile.update');
         Route::get('search', SearchSupplierPortal::class)->name('search');
         Route::get('products', IndexSupplierPortalProducts::class)->name('products');
+        Route::get('products/{supplierProduct}/websites', GetSupplierPortalProductWebsites::class)->whereNumber('supplierProduct')->name('product_websites');
         Route::get('purchase-orders/{purchaseOrder}', ShowSupplierPortalPurchaseOrder::class)->whereNumber('purchaseOrder')->name('purchase_order');
         Route::get('images/{media:ulid}', DownloadSupplierPortalImage::class)->name('image');
         Route::get('labels', PdfSupplierPortalLabels::class)->middleware('throttle:supplier-portal-labels')->name('labels');

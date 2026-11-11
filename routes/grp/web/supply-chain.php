@@ -138,6 +138,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
             Route::get('portal-preview', ShowSupplierPortalPreview::class)->middleware('supplier-portal-locale')->name('.portal_preview');
             Route::get('portal-preview/search', [ShowSupplierPortalPreview::class, 'search'])->name('.portal_preview.search');
             Route::get('portal-preview/products', [ShowSupplierPortalPreview::class, 'products'])->name('.portal_preview.products');
+            Route::get('portal-preview/products/{supplierProductId}/websites', [ShowSupplierPortalPreview::class, 'productWebsites'])->whereNumber('supplierProductId')->name('.portal_preview.product_websites');
             Route::get('portal-preview/purchase-orders/{purchaseOrderId}', [ShowSupplierPortalPreview::class, 'purchaseOrder'])->whereNumber('purchaseOrderId')->name('.portal_preview.purchase_order');
             Route::post('portal-preview/{path}', [ShowSupplierPortalPreview::class, 'blocked'])->where('path', '.*')->name('.portal_preview.blocked');
         });

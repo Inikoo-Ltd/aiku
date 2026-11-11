@@ -1145,6 +1145,7 @@ class ShowPurchaseOrder extends OrgAction
                     'method'         => PurchaseOrderPaymentMethodEnum::labels()[$payment->method->value] ?? $payment->method->value,
                     'reference'      => $payment->reference,
                     'paid_by'        => $payment->createdBy?->contact_name ?: $payment->createdBy?->username,
+                    'created_at'     => $payment->created_at,
                     'bank_statement' => $payment->bankStatement ? ['ulid' => $payment->bankStatement->ulid, 'caption' => $payment->bankStatement->file_name] : null,
                     'undo_route'     => [
                         'name'       => 'grp.models.purchase-order.payment.undo',

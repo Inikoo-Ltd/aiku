@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Traits;
 
+use App\Actions\Catalogue\Variant\GetVariantProductSizeLabel;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use Illuminate\Support\Arr;
 
@@ -34,6 +35,7 @@ trait HasProductOfferPrices
             'variant'                    => $this->variant_id,
             'variant_axis_label'         => $this->variant_axis_label,
             'variant_title'              => $this->variant_title,
+            'variant_sizes'              => GetVariantProductSizeLabel::make()->variantSizes($this->variant_size_options),
             'product_offers_data'        => $productOffersData,
             'discounted_price'           => round($this->price * $bestPercentageOffOfferFactor, 2),
             'discounted_price_per_unit'  => $pricePerUnitDiscounted,

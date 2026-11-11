@@ -29,6 +29,25 @@ export default {
 					label: "Show information",
 					props_data: {},
 				},
+				{
+					key: ["variant_display"],
+					label: "Product sizes",
+					type: "select",
+					props_data: {
+						placeholder: "Default",
+						by: "value",
+						options: [
+							{
+								label: "Default: size tiles and bulk offer",
+								value: "default",
+							},
+							{
+								label: "Sizes and bulk prices in one list",
+								value: "price_ladder",
+							},
+						],
+					},
+				},
 			],
 		},
 		{

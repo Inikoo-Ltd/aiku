@@ -146,6 +146,7 @@ class ProductOfVariantResource extends JsonResource
             'variant_position'           => $product->index_under_variant,
             'size_label'                 => $sizeLabel['label'],
             'size_litres'                => $sizeLabel['litres'],
+            'size_kilograms'             => $sizeLabel['kilograms'],
             'is_sample'                  => $sizeLabel['is_sample'],
             'size_resolved'              => $sizeLabel['resolved'],
 
