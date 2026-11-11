@@ -11,6 +11,8 @@ const STORAGE_KEY = "inbox-first-list"
 const FRESH_MS = 10_000
 const INBOX_PATH = /^\/org\/([^/]+)\/(?:shops\/([^/]+)\/)?chat\/(inbox|supervision)(\/[0-9A-HJKMNP-TV-Z]{26})?$/
 const CHANNELS = ["whatsapp", "website"]
+const HOME_SLOT = `${STORAGE_KEY}:home`
+const PLAIN_INBOX_SLOT = new RegExp(`^${STORAGE_KEY}:[^:]+:inbox$`)
 
 type Request = { url: string, params: Record<string, unknown> }
 
@@ -21,9 +23,14 @@ export const listKey = (url: string, params: Record<string, unknown>): string =>
 /**
  * Each inbox address opens on its own list: the organisation, inbox or supervision, the shop it
  * was opened from, a conversation's own address (its shop, channel and status pick the list) and
- * the channel a notification link asks for.
+ * the channel a notification link asks for. /chat/inbox redirects to the organisation's inbox, so
+ * it opens on the list an organisation's inbox opened with last.
  */
 const slotOf = (address: URL): string | null => {
+	if (address.pathname === "/chat/inbox") {
+		return HOME_SLOT
+	}
+
 	const match = address.pathname.match(INBOX_PATH)
 
 	if (!match) {
@@ -47,6 +54,10 @@ export const rememberFirstList = (url: string, params: Record<string, unknown>, 
 
 	try {
 		window.localStorage.setItem(slot, JSON.stringify({ url, params }))
+
+		if (PLAIN_INBOX_SLOT.test(slot)) {
+			window.localStorage.setItem(HOME_SLOT, JSON.stringify({ url, params }))
+		}
 	} catch {
 		return
 	}
@@ -78,7 +89,8 @@ const askForListRememberedAt = (address: URL) => {
  * was drawn (INI-187). Going to the inbox asks for the list it opened with last time as the visit
  * starts, so both answers travel together. Partial reloads and hover prefetches go nowhere. Back and
  * Forward restore the page from history without a visit, so they drop any answer asked for before
- * and ask for the list of the address they return to.
+ * and ask for the list of the page they return to: its address as history keeps it, since the
+ * inbox writes the open conversation into the address bar.
  */
 export const prefetchInboxListOnVisit = (router: typeof inertiaRouter) => {
 	router.on("before", (event) => {
@@ -94,8 +106,8 @@ export const prefetchInboxListOnVisit = (router: typeof inertiaRouter) => {
 	window.addEventListener("popstate", (event: PopStateEvent) => {
 		pending = null
 
-		if (event.state) {
-			askForListRememberedAt(new URL(window.location.href))
+		if (event.state?.page) {
+			askForListRememberedAt(new URL(event.state.page.url ?? window.location.href, window.location.href))
 		}
 	})
 }
