@@ -102,7 +102,7 @@ export const useLocaleStore = defineStore("locale", () => {
 			currency: currencyCode.toUpperCase(),
 			locale: localeForCurrency(currencyCode.toUpperCase()),
 			currencyDisplay: "narrowSymbol",
-			minFractionDigits: 2,
+			minFractionDigits: WHOLE_NUMBER_PRACTICE_CURRENCIES.includes(currencyCode.toUpperCase()) ? 0 : 2,
 			maxFractionDigits: 4,
 		}
 	}

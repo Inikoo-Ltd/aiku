@@ -87,6 +87,7 @@ const fieldLabels: Record<string, string> = {
 	packaging: ctrans("Packaging"),
 	document_type: ctrans("Document"),
 	effective_from: ctrans("From"),
+	effective_until: ctrans("Until"),
 	reason: ctrans("Why"),
 	permission_confirmed: ctrans("Permission to share confirmed"),
 	designation: ctrans("Designation"),

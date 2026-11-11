@@ -104,12 +104,14 @@ class IndexSupplierPortalPriceChanges
                 'supplier_products.state',
                 'supplier_products.is_available',
                 'supplier_products.cost',
+                'supplier_products.image_id',
                 'price_change.id as price_change_id',
                 'price_change.state as price_change_state',
                 'price_change.data as price_change_data',
                 'price_change.feedback as price_change_feedback',
                 'price_change.submitted_at as price_change_submitted_at',
             ])
+            ->with(['image', 'tradeUnits.image'])
             ->allowedSorts(['code', 'name', 'cost', 'price_change_submitted_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
@@ -132,6 +134,7 @@ class IndexSupplierPortalPriceChanges
                 ->column(key: 'cost', label: __('Current price'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'proposed_price', label: __('Proposed price'), canBeHidden: false, align: 'right')
                 ->column(key: 'effective_from', label: __('From'))
+                ->column(key: 'effective_until', label: __('Until'))
                 ->column(key: 'price_change_submitted_at', label: __('Sent'), sortable: true)
                 ->column(key: 'price_change_state', label: __('Proposal'), canBeHidden: false)
                 ->column(key: 'feedback', label: __('Our reply'))

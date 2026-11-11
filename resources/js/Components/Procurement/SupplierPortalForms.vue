@@ -14,9 +14,9 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperPlane, faSave, faTimes } from "@fal"
+import { faExclamationTriangle, faPaperPlane, faSave, faTimes } from "@fal"
 
-library.add(faPaperPlane, faSave, faTimes)
+library.add(faExclamationTriangle, faPaperPlane, faSave, faTimes)
 
 export interface PortalForms {
 	submit: Record<string, string>
@@ -107,6 +107,7 @@ const blank = () => ({
 	document_type: null as string | null,
 	expires_on: null as Date | null,
 	effective_from: null as Date | null,
+	effective_until: null as Date | null,
 	reason: "",
 	designation: null as string | null,
 	mobile: "",
@@ -135,7 +136,7 @@ watch(
 					(form as Record<string, any>)[field] = editing.data?.[key] ?? companyNow.value[field]
 				}
 			}
-			for (const field of ["expires_on", "effective_from"] as const) {
+			for (const field of ["expires_on", "effective_from", "effective_until"] as const) {
 				if (typeof form[field] === "string") {
 					form[field] = new Date(form[field] as unknown as string)
 				}
@@ -157,6 +158,13 @@ watch(type, () => {
 const productOptions = computed(() => props.products.map((product) => ({ value: product.id, label: `${product.code} · ${product.name}` })))
 const locale = useLocaleStore()
 const currentPrice = computed(() => props.products.find((product) => product.id === form.supplier_product_id)?.price ?? null)
+const typedNumber = (value: string | number | undefined) => (typeof value === "number" ? value : null)
+
+const INFLATION_PERCENT = 6
+const priceIncreasePercent = computed(() =>
+	currentPrice.value && form.proposed_price !== null ? Math.round(((form.proposed_price - currentPrice.value) / currentPrice.value) * 1000) / 10 : null
+)
+const isAboveInflation = computed(() => priceIncreasePercent.value !== null && priceIncreasePercent.value > INFLATION_PERCENT)
 const fieldsFor: Record<string, string[]> = {
 	company_details: ["company_phone", "company_website", "company_address", "note"],
 	contact: ["designation", "name", "email", "mobile", "whatsapp", "wechat", "note"],
@@ -164,7 +172,7 @@ const fieldsFor: Record<string, string[]> = {
 	referral: ["company_name", "country", "contact_website", "contact_name", "email", "phone", "products_of_interest", "note", "permission_confirmed"],
 	product_proposal: ["name", "description", "proposed_price", "currency", "unit_basis", "moq", "lead_time_days", "materials", "dimensions", "packaging", "draft", "files"],
 	compliance_document: ["document_type", "supplier_product_id", "expires_on", "note", "files"],
-	price_change: ["supplier_product_id", "proposed_price", "effective_from", "reason"],
+	price_change: ["supplier_product_id", "proposed_price", "effective_from", "effective_until", "reason"],
 }
 
 const isoDate = (date: Date | null) => (date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : null)
@@ -227,8 +235,8 @@ const caption = "font-medium text-gray-700"
 		<form class="grid gap-3 md:grid-cols-2" @submit.prevent="send(false)">
 			<template v-if="type === 'referral'">
 				<p class="text-xs text-gray-500 md:col-span-2">{{ ctrans("Small shops that cannot reach your minimum order can buy your products from us. Tell us who they are and we will contact them.") }}</p>
-				<label :class="label"><span :class="caption">{{ ctrans("Business name") }} *</span><InputText v-model="form.company_name" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Country") }} *</span><InputText v-model="form.country" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Business name") }} <span class="text-red-500">*</span></span><InputText v-model="form.company_name" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Country") }} <span class="text-red-500">*</span></span><InputText v-model="form.country" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Contact person") }}</span><InputText v-model="form.contact_name" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Website") }}</span><InputText v-model="form.contact_website" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Email") }}</span><InputText v-model="form.email" type="email" /></label>
@@ -239,19 +247,19 @@ const caption = "font-medium text-gray-700"
 			</template>
 
 			<template v-else-if="type === 'photos'">
-				<label :class="label"><span :class="caption">{{ ctrans("Product") }} *</span><Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Product") }} <span class="text-red-500">*</span></span><Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Kind of picture") }}</span><Select v-model="form.picture_kind" :options="pictureKinds" optionLabel="label" optionValue="value" /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Note") }}</span><Textarea v-model="form.note" rows="2" autoResize /></label>
 			</template>
 
 			<template v-else-if="type === 'product_proposal'">
-				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Product name") }} *</span><InputText v-model="form.name" /></label>
-				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Description") }} *</span><Textarea v-model="form.description" rows="3" autoResize /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Proposed price") }} *</span><InputNumber v-model="form.proposed_price" v-bind="locale.unitCostInputOptions(form.currency)" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Currency") }} *</span><InputText v-model="form.currency" maxlength="3" class="uppercase" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Price is per") }} *</span><InputText v-model="form.unit_basis" :placeholder="ctrans('e.g. piece, pack of 6')" /></label>
+				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Product name") }} <span class="text-red-500">*</span></span><InputText v-model="form.name" /></label>
+				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Description") }} <span class="text-red-500">*</span></span><Textarea v-model="form.description" rows="3" autoResize /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Proposed price") }} <span class="text-red-500">*</span></span><InputNumber v-model="form.proposed_price" v-bind="locale.unitCostInputOptions(form.currency)" @input="(event) => (form.proposed_price = typedNumber(event.value))" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Currency") }} <span class="text-red-500">*</span></span><InputText v-model="form.currency" maxlength="3" class="uppercase" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Price is per") }} <span class="text-red-500">*</span></span><InputText v-model="form.unit_basis" :placeholder="ctrans('e.g. piece, pack of 6')" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Minimum order") }}</span><InputText v-model="form.moq" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Lead time, days") }}</span><InputNumber v-model="form.lead_time_days" :min="0" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Lead time, days") }}</span><InputNumber v-model="form.lead_time_days" :min="0" @input="(event) => (form.lead_time_days = typedNumber(event.value))" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Dimensions") }}</span><InputText v-model="form.dimensions" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Materials") }}</span><Textarea v-model="form.materials" rows="2" autoResize /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Packaging") }}</span><Textarea v-model="form.packaging" rows="2" autoResize /></label>
@@ -285,9 +293,9 @@ const caption = "font-medium text-gray-700"
 						</li>
 					</ul>
 				</div>
-				<label :class="label"><span :class="caption">{{ ctrans("Designation") }} *</span><Select v-model="form.designation" :options="forms.designations" optionLabel="label" optionValue="value" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Full name") }} *</span><InputText v-model="form.name" /></label>
-				<label :class="label"><span :class="caption">{{ ctrans("Email") }} *</span><InputText v-model="form.email" type="email" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Designation") }} <span class="text-red-500">*</span></span><Select v-model="form.designation" :options="forms.designations" optionLabel="label" optionValue="value" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Full name") }} <span class="text-red-500">*</span></span><InputText v-model="form.name" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Email") }} <span class="text-red-500">*</span></span><InputText v-model="form.email" type="email" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Mobile number") }}</span><InputText v-model="form.mobile" /></label>
 				<label :class="label"><span :class="caption">WhatsApp</span><InputText v-model="form.whatsapp" /></label>
 				<label :class="label"><span :class="caption">WeChat</span><InputText v-model="form.wechat" /></label>
@@ -295,7 +303,7 @@ const caption = "font-medium text-gray-700"
 			</template>
 
 			<template v-else-if="type === 'compliance_document'">
-				<label :class="label"><span :class="caption">{{ ctrans("Document") }} *</span><Select v-model="form.document_type" :options="forms.document_types" optionLabel="label" optionValue="value" /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Document") }} <span class="text-red-500">*</span></span><Select v-model="form.document_type" :options="forms.document_types" optionLabel="label" optionValue="value" /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Product, if it is about one") }}</span><Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter showClear /></label>
 				<label :class="label"><span :class="caption">{{ ctrans("Expires on") }}</span><DatePicker v-model="form.expires_on" dateFormat="dd M yy" showIcon /></label>
 				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Note") }}</span><Textarea v-model="form.note" rows="2" autoResize /></label>
@@ -303,13 +311,20 @@ const caption = "font-medium text-gray-700"
 
 			<template v-else-if="type === 'price_change'">
 				<label :class="label">
-					<span :class="caption">{{ ctrans("Product") }} *</span>
-					<Select v-model="form.supplier_product_id" :options="productOptions" optionLabel="label" optionValue="value" filter :disabled="!!editing || lockedType === 'price_change'" />
-					<span v-if="currentPrice !== null" class="text-xs text-gray-500">{{ ctrans("Current price per unit: :price", { price: locale.currencyFormatUnitCost(currency, currentPrice) }) }}</span>
+					<span :class="caption">{{ ctrans("Current price per unit, in :currency", { currency: currency ?? "" }) }}</span>
+					<InputNumber :modelValue="currentPrice" v-bind="locale.unitCostInputOptions(currency)" disabled />
 				</label>
-				<label :class="label"><span :class="caption">{{ ctrans("New price per unit, in :currency", { currency: currency ?? "" }) }} *</span><InputNumber v-model="form.proposed_price" v-bind="locale.unitCostInputOptions(currency)" /></label>
+				<label :class="label">
+					<span :class="caption">{{ ctrans("New price per unit, in :currency", { currency: currency ?? "" }) }} <span class="text-red-500">*</span></span>
+					<InputNumber v-model="form.proposed_price" v-bind="locale.unitCostInputOptions(currency)" @input="(event) => (form.proposed_price = typedNumber(event.value))" />
+					<span v-if="isAboveInflation" class="flex items-center gap-1.5 text-xs font-medium text-amber-700">
+						<FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />
+						{{ ctrans("Price higher than inflation") }}
+					</span>
+				</label>
 				<label :class="label"><span :class="caption">{{ ctrans("From") }}</span><DatePicker v-model="form.effective_from" dateFormat="dd M yy" showIcon /></label>
-				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Why") }} *</span><Textarea v-model="form.reason" rows="2" autoResize /></label>
+				<label :class="label"><span :class="caption">{{ ctrans("Until") }} <span class="font-normal text-gray-400">({{ ctrans("optional") }})</span></span><DatePicker v-model="form.effective_until" dateFormat="dd M yy" :minDate="form.effective_from ?? undefined" showIcon showClear /></label>
+				<label :class="[label, 'md:col-span-2']"><span :class="caption">{{ ctrans("Why") }} <span class="text-red-500">*</span></span><Textarea v-model="form.reason" rows="2" autoResize /></label>
 			</template>
 
 			<div v-if="fieldsFor[type].includes('files')" class="flex flex-col gap-1 text-sm md:col-span-2">
@@ -323,7 +338,15 @@ const caption = "font-medium text-gray-700"
 				<p v-for="(error, field) in form.errors" :key="field">{{ error }}</p>
 			</div>
 
-			<div class="flex justify-end gap-2 md:col-span-2">
+			<div v-if="lockedType" class="flex w-full gap-2 md:col-span-2">
+				<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="emit('done')">
+					<template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+				</Button>
+				<Button type="primary" full :label="ctrans('Send to :group', { group: String(usePage().props.group ?? '') })" :loading="form.processing" @click="send(false)">
+					<template #icon><FontAwesomeIcon icon="fal fa-paper-plane" fixed-width aria-hidden="true" /></template>
+				</Button>
+			</div>
+			<div v-else class="flex justify-end gap-2 md:col-span-2">
 				<Button v-if="type === 'product_proposal' && (!editing || editing.state === 'draft')" type="tertiary" size="xs" :label="ctrans('Save draft')" :loading="form.processing" @click="send(true)">
 					<template #icon><FontAwesomeIcon icon="fal fa-save" fixed-width aria-hidden="true" /></template>
 				</Button>

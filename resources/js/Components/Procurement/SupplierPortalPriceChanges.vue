@@ -8,20 +8,23 @@ import Table from "@/Components/Table/Table.vue"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierPortalForms from "@/Components/Procurement/SupplierPortalForms.vue"
+import Image from "@common/Components/Image.vue"
+import type { Image as ImageProxy } from "@/types/Image"
 import type { EditedSubmission, PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPen, faTag } from "@fal"
+import { faImage, faPen, faTag } from "@fal"
 
-library.add(faPen, faTag)
+library.add(faImage, faPen, faTag)
 
 interface PriceChange extends EditedSubmission {
 	state_label: string
 	proposed_price: number
 	effective_from: string | null
+	effective_until: string | null
 	reason: string | null
 	submitted_at: string | null
 	editable: boolean
@@ -31,6 +34,7 @@ interface ProductRow {
 	id: number
 	code: string
 	name: string
+	image: ImageProxy | null
 	status: "active" | "on_hold" | "discontinued"
 	status_label: string
 	cost: number
@@ -112,6 +116,10 @@ const stateClass: Record<string, string> = {
 										<dt class="text-gray-400">{{ ctrans("From") }}</dt>
 										<dd class="text-right tabular-nums text-gray-700">{{ day(row.price_change.effective_from) }}</dd>
 									</template>
+									<template v-if="row.price_change.effective_until">
+										<dt class="text-gray-400">{{ ctrans("Until") }}</dt>
+										<dd class="text-right tabular-nums text-gray-700">{{ day(row.price_change.effective_until) }}</dd>
+									</template>
 									<dt class="text-gray-400">{{ ctrans("Proposal") }}</dt>
 									<dd class="text-right" :class="stateClass[row.price_change.state]">{{ row.price_change.state_label }}</dd>
 								</dl>
@@ -140,6 +148,9 @@ const stateClass: Record<string, string> = {
 				<template #cell(effective_from)="{ item }: { item: ProductRow }">
 					<span v-if="item.price_change?.effective_from" class="whitespace-nowrap">{{ day(item.price_change.effective_from) }}</span>
 				</template>
+				<template #cell(effective_until)="{ item }: { item: ProductRow }">
+					<span v-if="item.price_change?.effective_until" class="whitespace-nowrap">{{ day(item.price_change.effective_until) }}</span>
+				</template>
 				<template #cell(price_change_submitted_at)="{ item }: { item: ProductRow }">
 					<span v-if="item.price_change" class="whitespace-nowrap">{{ day(item.price_change.submitted_at) }}</span>
 				</template>
@@ -158,6 +169,16 @@ const stateClass: Record<string, string> = {
 		</div>
 
 		<Dialog v-model:visible="isOpen" modal :header="selected ? `${ctrans('Change price')} · ${selected.code}` : ''" class="w-[calc(100vw-2rem)] max-w-2xl">
+			<div v-if="selected" class="mb-4 flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+				<div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-md border border-gray-200 bg-white">
+					<Image v-if="selected.image" :src="selected.image" class="h-full w-full object-contain" :alt="selected.code" />
+					<FontAwesomeIcon v-else icon="fal fa-image" class="text-3xl text-gray-300" aria-hidden="true" />
+				</div>
+				<div class="min-w-0">
+					<p class="whitespace-nowrap text-base font-semibold text-gray-900">{{ selected.code }}</p>
+					<p class="text-sm text-gray-600">{{ selected.name }}</p>
+				</div>
+			</div>
 			<SupplierPortalForms
 				v-if="selected"
 				:key="selected.id"

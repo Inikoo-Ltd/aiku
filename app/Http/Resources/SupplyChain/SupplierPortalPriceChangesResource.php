@@ -36,6 +36,7 @@ class SupplierPortalPriceChangesResource extends JsonResource
                 'state_label'    => SupplierSubmissionStateEnum::labels()[$state->value],
                 'proposed_price' => (float) ($data['proposed_price'] ?? 0),
                 'effective_from' => $data['effective_from'] ?? null,
+                'effective_until' => $data['effective_until'] ?? null,
                 'reason'         => $data['reason'] ?? null,
                 'feedback'       => $this->price_change_feedback,
                 'submitted_at'   => $this->price_change_submitted_at,
@@ -50,10 +51,13 @@ class SupplierPortalPriceChangesResource extends JsonResource
             default => 'active',
         };
 
+        $imageOwner = $this->image_id ? $this->resource : $this->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+
         return [
             'id'           => $this->id,
             'code'         => $this->code,
             'name'         => $this->name,
+            'image'        => $imageOwner?->imageSources(160, 160),
             'status'       => $status,
             'status_label' => ['active' => __('Active'), 'on_hold' => __('On hold'), 'discontinued' => __('Discontinued')][$status],
             'cost'         => (float) $this->cost,
