@@ -26669,5 +26669,9 @@
     "Some products could not be added to your basket.": "Certains produits n'ont pas pu être ajoutés à votre panier.",
     "Could not add the products. Please try again.": "Impossible d'ajouter les produits. Veuillez réessayer.",
     "This conversation has been cleared and will not be shown to you again.": "Cette conversation a été effacée et ne vous sera plus affichée.",
-    "I have added the products to your basket.": "Les produits ont été ajoutés à votre panier."
+    "I have added the products to your basket.": "Les produits ont été ajoutés à votre panier.",
+    "Your :shop account has been deleted": "Votre compte :shop a été supprimé",
+    "As you asked, your :shop account has been deleted and your personal details have been erased. You will not receive any more emails from us.": "Comme vous l'avez demandé, votre compte :shop a été supprimé et vos données personnelles ont été effacées. Vous ne recevrez plus d'e-mails de notre part.",
+    "If you placed orders with us, we keep their invoices because the law requires it.": "Si vous avez passé des commandes chez nous, nous conservons leurs factures, comme la loi l'exige.",
+    "Thank you for having been our customer.": "Merci d'avoir été notre client."
 }

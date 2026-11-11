@@ -49,6 +49,7 @@ enum OutboxCodeEnum: string
     case OOS_IN_ORDER_NOTIFICATION = 'oos_in_order_notification';
     case ORDER_CONFIRMATION = 'order_confirmation';
     case CHANNEL_ORDER_ON_HOLD = 'channel_order_on_hold';
+    case ACCOUNT_ERASED = 'account_erased';
     case ORDER_PAYMENT_REMINDER = 'order_payment_reminder';
     case APPOINTMENT_REQUESTED = 'appointment_requested';
     case APPOINTMENT_ACCEPTED = 'appointment_accepted';
@@ -113,6 +114,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ACCOUNT_ERASED,
             OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::APPOINTMENT_REQUESTED,
             OutboxCodeEnum::APPOINTMENT_ACCEPTED,
@@ -212,6 +214,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => 'Channel order on hold',
+            OutboxCodeEnum::ACCOUNT_ERASED => 'Account erased',
             OutboxCodeEnum::ORDER_PAYMENT_REMINDER => 'Order payment reminder',
             OutboxCodeEnum::APPOINTMENT_REQUESTED => 'Appointment requested',
             OutboxCodeEnum::APPOINTMENT_ACCEPTED => 'Appointment accepted',
@@ -289,6 +292,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION => 'Out of stock in order notification',
             OutboxCodeEnum::ORDER_CONFIRMATION => 'Order confirmation',
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD => 'Channel order on hold',
+            OutboxCodeEnum::ACCOUNT_ERASED => 'Account erased',
             OutboxCodeEnum::ORDER_PAYMENT_REMINDER => 'Order payment reminder',
             OutboxCodeEnum::APPOINTMENT_REQUESTED => 'Appointment requested',
             OutboxCodeEnum::APPOINTMENT_ACCEPTED => 'Appointment accepted',
@@ -366,6 +370,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
             OutboxCodeEnum::INVOICE_DATE_CHANGED,
+            OutboxCodeEnum::ACCOUNT_ERASED,
             OutboxCodeEnum::WEB_USER_REGISTRATION
             => ['Fulfilment', 'Shop'],
 
@@ -407,7 +412,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
             OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_USER,
             OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
-            OutboxCodeEnum::INVOICE_DATE_CHANGED
+            OutboxCodeEnum::INVOICE_DATE_CHANGED,
+            OutboxCodeEnum::ACCOUNT_ERASED
             => ['b2b', 'b2c', 'dropshipping', 'fulfilment'],
 
             OutboxCodeEnum::REGISTRATION,
@@ -496,7 +502,8 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::APPOINTMENT_RESCHEDULED,
             OutboxCodeEnum::APPOINTMENT_CANCELLED,
             OutboxCodeEnum::APPOINTMENT_REMINDER,
-            OutboxCodeEnum::NEW_APPOINTMENT
+            OutboxCodeEnum::NEW_APPOINTMENT,
+            OutboxCodeEnum::ACCOUNT_ERASED
             => OutboxStateEnum::ACTIVE,
             default => OutboxStateEnum::IN_PROCESS
         };
@@ -522,6 +529,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::NEW_REVIEW,
             OutboxCodeEnum::PRICE_CHANGE,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ACCOUNT_ERASED,
             OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::NEW_APPOINTMENT,
             OutboxCodeEnum::PRE_ORDER_UPDATE,
@@ -556,6 +564,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ACCOUNT_ERASED,
             OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::APPOINTMENT_REQUESTED,
             OutboxCodeEnum::APPOINTMENT_ACCEPTED,
@@ -634,6 +643,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::DELIVERY_CONFIRMATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ACCOUNT_ERASED,
             OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::APPOINTMENT_REQUESTED,
             OutboxCodeEnum::APPOINTMENT_ACCEPTED,
@@ -713,6 +723,7 @@ enum OutboxCodeEnum: string
             OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION,
             OutboxCodeEnum::ORDER_CONFIRMATION,
             OutboxCodeEnum::CHANNEL_ORDER_ON_HOLD,
+            OutboxCodeEnum::ACCOUNT_ERASED,
             OutboxCodeEnum::ORDER_PAYMENT_REMINDER,
             OutboxCodeEnum::APPOINTMENT_REQUESTED,
             OutboxCodeEnum::APPOINTMENT_ACCEPTED,
