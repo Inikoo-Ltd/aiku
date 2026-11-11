@@ -2721,3 +2721,29 @@ test('a change in available quantity is broadcast to the organisation staff scre
         $product->orgStocks()->detach();
     }
 });
+
+test('faire days to dispatch is changed only by organisation admins, between 1 and 21 days', function () {
+    $faireShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), [
+        'type'   => ShopTypeEnum::EXTERNAL->value,
+        'engine' => \App\Enums\Catalogue\Shop\ShopEngineEnum::FAIRE->value,
+    ]));
+    $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $faireShop->group_id, 'status' => true]);
+
+    $daysField = fn () => collect(
+        get(route('grp.org.shops.show.settings.edit', [$faireShop->organisation->slug, $faireShop->slug]))->assertOk()->viewData('page')['props']['formData']['blueprint']
+    )->keyBy('label')->get('Faire Settings')['fields']['faire_order_from_days'];
+
+    actingAsUserWithOnlyPermissions($user, ['shop-admin.'.$faireShop->id]);
+    expect($daysField())->toMatchArray(['value' => 6])->and($daysField()['bind']['disabled'])->toBeTrue();
+    patch(route('grp.models.org.shop.update', [$faireShop->organisation_id, $faireShop->id]), ['faire_order_from_days' => 14])->assertSessionHasErrors('faire_order_from_days');
+    expect(\Illuminate\Support\Arr::get($faireShop->refresh()->settings, 'faire.order_from_days'))->toBeNull();
+
+    actingAsUserWithOnlyPermissions($user, ['org-admin.'.$faireShop->organisation_id]);
+    expect($daysField()['bind']['disabled'])->toBeFalse();
+    foreach ([0, -3, 22] as $invalidDays) {
+        patch(route('grp.models.org.shop.update', [$faireShop->organisation_id, $faireShop->id]), ['faire_order_from_days' => $invalidDays])->assertSessionHasErrors('faire_order_from_days');
+    }
+    patch(route('grp.models.org.shop.update', [$faireShop->organisation_id, $faireShop->id]), ['faire_order_from_days' => 14])->assertSessionHasNoErrors();
+    expect(\Illuminate\Support\Arr::get($faireShop->refresh()->settings, 'faire.order_from_days'))->toBe(14)
+        ->and(\App\Actions\Catalogue\Shop\External\Faire\AcceptFaireOrder::make()->getExpectedShipDate($faireShop, null)->toDateString())->toBe(now()->addDays(14)->toDateString());
+});

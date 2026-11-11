@@ -919,9 +919,17 @@ class EditShop extends OrgAction
                                     'warningBody'  => __('Error Message').": ".$shop->external_shop_connection_error
                                 ],
                                 'faire_order_from_days'                                   => [
-                                    'type'  => 'input',
-                                    'label' => __('Faire Order From Days'),
-                                    'value' => Arr::get($shop->settings, 'faire.order_from_days', '6')
+                                    'type'        => 'input_number',
+                                    'label'       => __('Days to dispatch'),
+                                    'value'       => (int) Arr::get($shop->settings, 'faire.order_from_days', 6),
+                                    'bind'        => [
+                                        'min'               => 1,
+                                        'max'               => 21,
+                                        'maxFractionDigits' => 0,
+                                        'suffix'            => ' '.__('days'),
+                                        'disabled'          => !$request->user()->authTo('org-admin.'.$shop->organisation_id),
+                                    ],
+                                    'information' => __('Days from accepting a Faire order to the dispatch date we promise on Faire. Default 6. Only organisation admins can change it.'),
                                 ],
                                 'faire_is_shipping_by_external'                           => [
                                     'type'  => 'toggle',

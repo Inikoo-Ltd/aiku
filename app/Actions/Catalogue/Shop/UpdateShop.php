@@ -60,6 +60,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Validation\Validator;
 use App\Models\Ordering\SalesChannel;
 use Closure;
 use App\Actions\Web\Webpage\BreakWebpageCache;
@@ -94,6 +95,13 @@ class UpdateShop extends OrgAction
         }
 
         return $request->user()->authTo(['org-admin.' . $this->organisation->id, 'shop-admin.' . $this->shop->id]);
+    }
+
+    public function afterValidator(Validator $validator, ActionRequest $request): void
+    {
+        if (!$this->asAction && $request->has('faire_order_from_days') && !$request->user()->authTo('org-admin.' . $this->organisation->id)) {
+            $validator->errors()->add('faire_order_from_days', __('Only organisation admins can change the days to dispatch.'));
+        }
     }
 
     public function handle(Shop $shop, array $modelData): Shop
@@ -1089,7 +1097,7 @@ class UpdateShop extends OrgAction
             'ebay_warehouse_state'                                    => ['sometimes', 'string'],
             'ebay_warehouse_country'                                  => ['sometimes', 'string'],
             'faire_access_token'                                      => ['sometimes', 'string'],
-            'faire_order_from_days'                                   => ['sometimes', 'string'],
+            'faire_order_from_days'                                   => ['sometimes', 'integer', 'min:1', 'max:21'],
             'faire_is_shipping_by_external'                           => ['sometimes', 'boolean'],
             'faire_dont_send_first_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
             'faire_funded_shipping_rates'                             => [
