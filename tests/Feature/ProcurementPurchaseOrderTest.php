@@ -4333,9 +4333,9 @@ test('the agent moves a line the supplier can not make to another supplier of th
     $agreedUnitCost = (float) $line->unit_cost;
 
     actingAs(agentOrganisationAdmin($orgAgent->agent->organisation, 'agent-move-'.Str::lower(Str::random(6))));
-    $options = $this->getJson(route('grp.models.purchase-order.transaction.move.suppliers', [$order->id, $line->id]))->assertOk()->json();
+    $options = $this->getJson(route('grp.models.purchase-order.transaction.move.suppliers', [$order->id, 'transactions' => [$line->id]]))->assertOk()->json();
     expect(collect($options)->pluck('org_supplier_id')->all())->toContain($toSupplier->id)->not->toContain($fromSupplier->id)->not->toContain($otherAgentSupplier->id)
-        ->and(collect($options)->firstWhere('org_supplier_id', $toSupplier->id)['product'])->toBeNull();
+        ->and(collect($options)->firstWhere('org_supplier_id', $toSupplier->id)['products'][$line->id])->toBeNull();
 
     $moveRoute = route('grp.models.purchase-order.transaction.move', [$order->id, $line->id]);
     $this->post($moveRoute, ['org_supplier_id' => $otherAgentSupplier->id, 'quantity' => 30, 'code' => 'X', 'cost' => 1, 'units_per_carton' => 10])->assertSessionHasErrors('org_supplier_id');
@@ -4383,7 +4383,7 @@ test('moving part of a line puts it on the other supplier open order at the same
     $line      = $order->purchaseOrderTransactions()->firstOrFail();
     $unitCost  = (float) $line->unit_cost;
 
-    $result = MovePurchaseOrderTransactionToSupplier::make()->action($line, ['org_supplier_id' => $toSupplier->id, 'quantity' => 10]);
+    $result = MovePurchaseOrderTransactionToSupplier::make()->action($line, ['org_supplier_id' => $toSupplier->id, 'quantity' => 10, 'reference' => $openOrder->reference]);
 
     expect($result['moved']->purchase_order_id)->toBe($openOrder->id)
         ->and($result['moved']->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)

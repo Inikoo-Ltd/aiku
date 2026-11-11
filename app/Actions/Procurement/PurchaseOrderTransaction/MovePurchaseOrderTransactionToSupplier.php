@@ -123,7 +123,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
             $isWholeLine = $quantity >= (float) $purchaseOrderTransaction->quantity_ordered;
             $source      = $isWholeLine
-                ? CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction)
+                ? CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction, cancelEmptyOrder: false)
                 : UpdatePurchaseOrderTransaction::make()->action($purchaseOrderTransaction, ['quantity_ordered' => round((float) $purchaseOrderTransaction->quantity_ordered - $quantity, 3)]);
 
             $movedAt = now()->toIso8601String();
