@@ -44,7 +44,7 @@ class GetSupplierPortalDetails
     public const array PURCHASING_CONTACT_USERNAMES = [
         'aw' => ['kristy'],
         'es' => ['toni', 'quentin'],
-        'sk' => ['tomas'],
+        'sk' => ['tomas', 'juraj'],
     ];
 
     /**
@@ -128,7 +128,7 @@ class GetSupplierPortalDetails
      * the organisation names in PURCHASING_CONTACT_USERNAMES, otherwise who placed its latest purchase order. A contact
      * for several organisations is listed once, with all of them.
      *
-     * @return list<array{organisations: list<string>, name: string|null, email: string|null}>
+     * @return list<array{organisations: list<string>, country_code: string|null, name: string|null, email: string|null}>
      */
     private function buyers(Supplier $supplier): array
     {
@@ -142,7 +142,7 @@ class GetSupplierPortalDetails
             ->whereNotNull('po.submitted_at')
             ->orderBy('po.organisation_id')
             ->orderByDesc('po.submitted_at')
-            ->selectRaw("distinct on (po.organisation_id) users.id as user_id, organisations.slug as organisation_slug, organisations.name || coalesce(' (' || countries.name || ')', '') as organisation, users.contact_name as name, ".$this->emailSql().' as email')
+            ->selectRaw("distinct on (po.organisation_id) users.id as user_id, organisations.slug as organisation_slug, countries.code as country_code, organisations.name || coalesce(' (' || countries.name || ')', '') as organisation, users.contact_name as name, ".$this->emailSql().' as email')
             ->get();
 
         $namedContacts = DB::table('users')
@@ -163,11 +163,12 @@ class GetSupplierPortalDetails
                     return [$latestBuyer];
                 }
 
-                return $contacts->map(fn ($contact) => (object) [...(array) $contact, 'organisation' => $latestBuyer->organisation]);
+                return $contacts->map(fn ($contact) => (object) [...(array) $contact, 'organisation' => $latestBuyer->organisation, 'country_code' => $latestBuyer->country_code]);
             })
             ->groupBy('user_id')
             ->map(fn ($rows) => [
                 'organisations' => $rows->pluck('organisation')->all(),
+                'country_code'  => $rows->first()->country_code,
                 'name'          => $rows->first()->name,
                 'email'         => $rows->first()->email,
             ])

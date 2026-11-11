@@ -56,7 +56,7 @@ const props = defineProps<{
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
 	owner?: { name: string | null; email: string | null } | null
-	buyers?: { organisations: string[]; name: string | null; email: string | null }[]
+	buyers?: { organisations: string[]; country_code: string | null; name: string | null; email: string | null }[]
 	contactsLoading?: boolean
 	summary?: PortalSummary
 	sales?: { products: number; selling: number }
@@ -348,8 +348,9 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 								</div>
 							</li>
 						</template>
-						<li v-for="buyer in contactsLoading ? [] : buyers ?? []" :key="buyer.organisations.join()" class="flex items-center gap-3 px-4 py-3">
-							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">{{ initials(buyer.name ?? buyer.organisations[0]) }}</span>
+						<li v-for="buyer in contactsLoading ? [] : buyers ?? []" :key="`${buyer.email ?? buyer.name}-${buyer.organisations.join()}`" class="flex items-center gap-3 px-4 py-3">
+							<img v-if="buyer.country_code" :src="`/flags/${buyer.country_code.toLowerCase()}.png`" :alt="buyer.country_code" class="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-gray-200" />
+							<span v-else class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">{{ initials(buyer.name ?? buyer.organisations[0]) }}</span>
 							<div class="min-w-0 text-sm">
 								<p class="truncate font-semibold text-gray-900">{{ buyer.name }}</p>
 								<p class="text-xs text-gray-500">{{ ctrans("Purchasing, :organisation", { organisation: buyer.organisations.join(" · ") }) }}</p>
