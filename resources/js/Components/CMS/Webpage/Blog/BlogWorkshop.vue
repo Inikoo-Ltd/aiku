@@ -8,6 +8,7 @@ import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { getStyles } from "@/Composables/styles"
 import { ctrans } from "@/Composables/useTrans"
+import { useHtmlWithScripts } from "@/Composables/useHtmlWithScripts"
 
 library.add(faCube, faLink, faImage)
 
@@ -25,6 +26,8 @@ const emits = defineEmits<{
 }>()
 
 const titleTextarea = ref<HTMLTextAreaElement | null>(null)
+const scriptContainer = ref<HTMLElement | null>(null)
+const { htmlWithoutScripts: scriptHtml } = useHtmlWithScripts(computed(() => props.modelValue?.script), scriptContainer)
 
 const autoResize = (event: Event) => {
   const target = event.target as HTMLTextAreaElement
@@ -103,6 +106,7 @@ const displayDate = computed(() => {
 
     </div>
 
+    <div v-if="modelValue?.script" ref="scriptContainer" class="w-full" v-html="scriptHtml" />
   </article>
 </template>
 
