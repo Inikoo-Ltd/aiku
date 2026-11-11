@@ -219,6 +219,14 @@ class Production extends Model implements Auditable
         return once(fn () => $this->payBands()->exists());
     }
 
+    /**
+     * Development work on no job order (HELP-4648) is offered only where a Development rate is in force to pay it.
+     */
+    public function paysDevelopment(): bool
+    {
+        return ManufacturePayBand::effectiveAt($this->id, now())->where('code', 'D')->exists();
+    }
+
     public function artefactFamilies(): HasMany
     {
         return $this->hasMany(ArtefactFamily::class);

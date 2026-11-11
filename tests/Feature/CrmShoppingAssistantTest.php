@@ -821,6 +821,16 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
 
     $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [...$websiteParameters, $ordered->ulid]))->assertOk();
     $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [...$websiteParameters, $elsewhere->ulid]))->assertNotFound();
+
+    $shopParameters = [$this->organisation->slug, $this->shop->slug];
+    $this->get(route('grp.org.shops.show.ai_salesman.show', [...$shopParameters, ...$query]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('filters.website_locked', true)
+            ->where('routes.conversation.name', 'grp.org.shops.show.ai_salesman.conversations.show')
+            ->missing('pageHead.subNavigation')
+            ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->sort()->values()->all() === collect([$ordered->ulid, $clicked->ulid])->sort()->values()->all()));
+    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $ordered->ulid]))->assertOk();
+    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $elsewhere->ulid]))->assertNotFound();
 });
 
 function shoppingAssistantSpend(Website $website, float $cost, ?string $createdAt = null, ShoppingAssistantEntryPointEnum $entryPoint = ShoppingAssistantEntryPointEnum::SEARCH): void

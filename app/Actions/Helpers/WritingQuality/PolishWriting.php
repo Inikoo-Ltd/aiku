@@ -48,7 +48,7 @@ class PolishWriting
      */
     private const array JEV_THRESHOLDS = ['same_meaning' => 0.7, 'same_language' => 0.7, 'same_voice' => 0.5];
 
-    private const string PROTECTED_PATTERN = '/\[image:[A-Za-z0-9-]{1,64}\]|\[\[[^\]]*\]\]|\{\{[^}]*\}\}|\{[A-Za-z_][A-Za-z0-9_.]*\}|https?:\/\/[^\s<>]*[^\s<>.,;:!?)\]*_~`\'"]|www\.[^\s<>]*[^\s<>.,;:!?)\]*_~`\'"]|[A-Za-z0-9][\w.+-]*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/u';
+    private const string PROTECTED_PATTERN = '/\[image:[A-Za-z0-9-]{1,64}\]|\[\[[^\]]*\]\]|\{\{[^}]*\}\}|\{[A-Za-z_][A-Za-z0-9_.]*\}|https?:\/\/[^\s<>]*[^\s<>.,;:!?)\]`\'"]|www\.[^\s<>]*[^\s<>.,;:!?)\]`\'"]|[A-Za-z0-9][\w.+-]*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/u';
 
     /**
      * @return array{status: 'polished'|'unchanged'|'kept', text: string}

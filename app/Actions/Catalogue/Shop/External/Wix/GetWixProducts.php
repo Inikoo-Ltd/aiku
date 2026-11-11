@@ -28,7 +28,7 @@ class GetWixProducts extends OrgAction
 
     public const float MIN_LIVE_RATIO = 0.75;
 
-    public string $commandSignature = 'wix:products {shop} {--sku= : Import only the Wix variants with this SKU} {--dry-run : With --sku, show what would be imported without saving}';
+    public string $commandSignature = 'wix:products {shop} {--sku= : Import only the Wix variants with this SKU} {--dry-run : With --sku, show what would be imported without saving} {--missing-sku : List the Wix products with no SKU, which are never imported, and change nothing}';
 
     public $jobQueue = 'long-running';
 
@@ -113,6 +113,49 @@ class GetWixProducts extends OrgAction
                 $command?->info(($existing ? 'Updated' : 'Created')." #$product->id $product->code ($product->slug)");
             }
         }
+    }
+
+    /**
+     * A variant without a SKU is never imported, so any Wix order for it is not imported either.
+     *
+     * @return array<int, array{name: string, visible: string, product_id: string, variant_id: string}>
+     */
+    public function listWixVariantsWithoutSku(Shop $shop, ?Command $command = null): array
+    {
+        $wixUser = WixUser::where('external_shop_id', $shop->id)->first();
+
+        if (!$wixUser) {
+            $command?->error("Shop $shop->slug is not connected to Wix");
+
+            return [];
+        }
+
+        $rows = $this->getWixVariantsWithoutSku($this->getAllWixVariants($wixUser)['variants']);
+
+        $command?->table(['Wix product', 'Visible in store', 'Wix product id', 'Wix variant id'], $rows);
+        $command?->info(count($rows).' Wix variants have no SKU');
+
+        return $rows;
+    }
+
+    /**
+     * @param array<int, array{product_id: string, variant_id: string, sku: ?string, name: string, visible: bool}> $wixVariants
+     *
+     * @return array<int, array{name: string, visible: string, product_id: string, variant_id: string}>
+     */
+    public function getWixVariantsWithoutSku(array $wixVariants): array
+    {
+        return collect($wixVariants)
+            ->filter(fn (array $wixVariant) => !trim((string) $wixVariant['sku']))
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(fn (array $wixVariant) => [
+                'name'       => $wixVariant['name'],
+                'visible'    => $wixVariant['visible'] ? 'yes' : 'no',
+                'product_id' => $wixVariant['product_id'],
+                'variant_id' => $wixVariant['variant_id'],
+            ])
+            ->values()
+            ->all();
     }
 
     /**
@@ -279,6 +322,12 @@ class GetWixProducts extends OrgAction
             ->where('engine', ShopEngineEnum::WIX)
             ->where('slug', $command->argument('shop'))
             ->firstOrFail();
+
+        if ($command->option('missing-sku')) {
+            $this->listWixVariantsWithoutSku($shop, $command);
+
+            return;
+        }
 
         $this->handle($shop, $command, $command->option('sku'), (bool) $command->option('dry-run'));
     }

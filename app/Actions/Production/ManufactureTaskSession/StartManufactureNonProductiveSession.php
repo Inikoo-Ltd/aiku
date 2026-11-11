@@ -80,7 +80,13 @@ class StartManufactureNonProductiveSession extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($validator->errors()->isNotEmpty() || $this->get('activity_type') != ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value) {
+        if ($validator->errors()->isNotEmpty()) {
+            return;
+        }
+        if ($this->get('activity_type') == ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT->value && !$this->production->paysDevelopment()) {
+            $validator->errors()->add('activity_type', __('This production has no Development rate'));
+        }
+        if ($this->get('activity_type') != ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value) {
             return;
         }
 

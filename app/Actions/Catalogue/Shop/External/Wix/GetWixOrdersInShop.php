@@ -45,6 +45,7 @@ class GetWixOrdersInShop extends OrgAction
             } catch (Throwable $e) {
                 $command?->error('Wix order '.Arr::get($wixOrder, 'number').' failed: '.$e->getMessage());
                 \Sentry::captureException($e);
+                StoreOrderFromWix::make()->reportSkippedOrder($shop, $wixOrder, [__('The import failed: :error', ['error' => $e->getMessage()])]);
             }
         }
 

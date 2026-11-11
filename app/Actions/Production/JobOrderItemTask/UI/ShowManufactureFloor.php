@@ -302,7 +302,8 @@ class ShowManufactureFloor extends OrgAction
                         'value'      => $activity->value,
                         'label'      => ManufactureTaskSessionActivityTypeEnum::labels()[$activity->value],
                         'job_orders' => $activity == ManufactureTaskSessionActivityTypeEnum::MAINTENANCE ? $maintenanceJobOrders : null,
-                    ], ManufactureTaskSessionActivityTypeEnum::floorActivities()), fn (array $activity) => $activity['job_orders'] !== [])),
+                    ], ManufactureTaskSessionActivityTypeEnum::floorActivities()), fn (array $activity) => $activity['job_orders'] !== []
+                        && ($activity['value'] != ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT->value || $production->paysDevelopment()))),
                     'job_orders' => $this->nonProductiveJobOrderOptions($production),
                 ],
                 'open_session' => $openSession?->isNonProductive() ? self::serializeNonProductiveSession($openSession) : ($openSession ? [

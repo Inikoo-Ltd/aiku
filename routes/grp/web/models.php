@@ -676,6 +676,7 @@ use App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession;
 use App\Actions\Production\ManufactureTaskSession\ContinueManufactureTaskSessionAfterShift;
 use App\Actions\Production\ManufactureBreak\StartManufactureBreak;
 use App\Actions\Production\ManufactureTaskSession\StartManufactureNonProductiveSession;
+use App\Actions\Production\ManufactureTaskSession\AddManufactureDevelopmentTime;
 use App\Actions\Production\Production\UpdateManufacturePreparationReasons;
 use App\Actions\Production\Production\UpdateProductionMixBatchSizes;
 use App\Actions\Production\ManufactureBreak\EndManufactureBreak;
@@ -1892,6 +1893,7 @@ Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/close', Clos
 Route::patch('/manufacture-task-session/{manufactureTaskSession:id}/continue-after-shift', ContinueManufactureTaskSessionAfterShift::class)->name('manufacture-task-session.continue_after_shift')->withoutScopedBindings();
 Route::post('/production/{production:id}/break', StartManufactureBreak::class)->name('production.break.store')->withoutScopedBindings();
 Route::post('/production/{production:id}/non-productive-session', StartManufactureNonProductiveSession::class)->name('production.non_productive_session.store')->withoutScopedBindings();
+Route::post('/production/{production:id}/development-time', AddManufactureDevelopmentTime::class)->name('production.development_time.store')->withoutScopedBindings();
 Route::patch('/production/{production:id}/preparation-reasons', UpdateManufacturePreparationReasons::class)->name('production.preparation_reasons.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/mix-batch-sizes', UpdateProductionMixBatchSizes::class)->name('production.mix_batch_sizes.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/development-review-settings', SetDevelopmentReviewSettings::class)->name('production.development_review_settings.update')->withoutScopedBindings();

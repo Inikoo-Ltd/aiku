@@ -304,6 +304,7 @@ class IndexArtisans extends OrgAction
                 'left_open'           => $this->leftOpenSessions($production, $from, $to),
                 'daily_hours_warnings' => $this->dailyHoursWarnings($production, $from, $to),
                 'payroll_lock'         => $this->payrollLock($production, $from),
+                'development_time'     => $this->developmentTime($production, $from, $to),
                 'payroll_changes'      => $this->payrollChanges($production, $from, $to, $request->user()),
                 'artisan_pay_type'    => $payType,
                 'artisan_pay_types'   => ArtisanPayTypeEnum::labels(),
@@ -495,6 +496,30 @@ class IndexArtisans extends OrgAction
     /**
      * Breaks running over right now, and breaks left open after the shift that a supervisor has not set the end of yet.
      */
+    /**
+     * Development work kept on paper is added for an artisan of the period by whoever may change its times (HELP-4648).
+     *
+     * @return array{route: array{name: string, parameters: array<string, int>}, artisans: array<int, array{id: int, name: string}>}|null
+     */
+    private function developmentTime(Production $production, Carbon $from, Carbon $to): ?array
+    {
+        if (!($this->canEdit || $this->canChangeLockedWeek) || !$production->paysDevelopment()) {
+            return null;
+        }
+
+        return [
+            'route'    => [
+                'name'       => 'grp.models.production.development_time.store',
+                'parameters' => ['production' => $production->id],
+            ],
+            'artisans' => Employee::whereIn('id', HydrateManufactureArtisanDays::rosterEmployeeIds($production, $from, $to))
+                ->orderBy('contact_name')
+                ->get(['id', 'contact_name'])
+                ->map(fn (Employee $employee) => ['id' => $employee->id, 'name' => $employee->contact_name])
+                ->all(),
+        ];
+    }
+
     /**
      * Supervisors change the open pay weeks; a week locked for payroll only the accountant and the production manager.
      */

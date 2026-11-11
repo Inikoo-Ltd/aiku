@@ -571,6 +571,19 @@ class GetShopNavigation
                 }
             }
 
+            if ($shop->website && $shop->type === ShopTypeEnum::B2B && $user->hasAnyPermission(["websites-view.{$shop->organisation_id}", "web.$shop->id.view", "group-webmaster.view"])) {
+                $navigation["ai_salesman"] = [
+                    "root"    => "grp.org.shops.show.ai_salesman.",
+                    "icon"    => ["fal", "fa-robot"],
+                    "label"   => __("AI Salesman"),
+                    "route"   => [
+                        "name"       => "grp.org.shops.show.ai_salesman.show",
+                        "parameters" => [$shop->organisation->slug, $shop->slug],
+                    ],
+                    "topMenu" => [],
+                ];
+            }
+
             if ($shop->website && $this->canViewSeo($user, $shop)) {
                 $navigation["seo"] = [
                     "root"    => "grp.org.shops.show.seo.",
