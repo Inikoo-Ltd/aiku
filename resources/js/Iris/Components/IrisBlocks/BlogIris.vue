@@ -20,6 +20,7 @@ import Image from "@common/Components/Image.vue"
 //import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
 import { blogTitleInlineHtml, buildBlogTableOfContents, htmlToPlainText } from "@/Iris/Composables/useBlogTableOfContents"
+import { useHtmlWithScripts } from "@/Composables/useHtmlWithScripts"
 
 library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin, faXTwitter, faWhatsapp)
 
@@ -33,6 +34,7 @@ const props = defineProps<{
       alt?: string
     }
     content: string
+    script?: string
   }
   screenType?: "mobile" | "tablet" | "desktop"
   indexBlock?: number
@@ -51,6 +53,8 @@ const displayDate = computed(() => {
 })
 
 const contentRef = ref<HTMLElement | null>(null)
+const scriptContainer = ref<HTMLElement | null>(null)
+const { htmlWithoutScripts: scriptHtml } = useHtmlWithScripts(computed(() => props.fieldValue?.script), scriptContainer)
 const currentHeadingId = ref<string | null>(null)
 const pageUrl = ref("")
 
@@ -177,6 +181,8 @@ const screenType = inject("screenType", "desktop")
       <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(fieldValue.properties, screenType)}">
         <div class="prose prose-blue max-w-none scroll-smooth mb-10 break-words" ref="contentRef" v-html="contentHtml" />
       </div>
+
+      <div v-if="fieldValue?.script" ref="scriptContainer" class="mb-10 w-full" v-html="scriptHtml" />
 
 
       <!-- Share Buttons Section -->
