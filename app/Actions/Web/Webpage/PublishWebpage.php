@@ -100,6 +100,11 @@ class PublishWebpage extends OrgAction
             'is_dirty'           => false,
         ];
 
+        if ($webpage->publish_scheduled_at) {
+            $updateData['publish_scheduled_at']         = null;
+            $updateData['publish_scheduled_by_user_id'] = null;
+        }
+
         if ($webpage->state == WebpageStateEnum::IN_PROCESS || $webpage->state == WebpageStateEnum::READY) {
             $updateData['live_at'] = now();
         }

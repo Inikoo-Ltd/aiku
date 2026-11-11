@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage\UI;
 use App\Actions\Iris\Blog\IndexIrisBlogs;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Webpage\Traits\WithWebpageUrlSearch;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
@@ -37,6 +38,7 @@ use Spatie\QueryBuilder\AllowedSort;
 class IndexBlogWebpages extends OrgAction
 {
     use WithWebAuthorisation;
+    use WithWebpageUrlSearch;
 
     private Group|Organisation|Website|Fulfilment|Webpage $parent;
 
@@ -83,6 +85,7 @@ class IndexBlogWebpages extends OrgAction
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('webpages.code', $value)
                     ->orWhereStartWith('webpages.url', $value);
+                $this->orWhereCanonicalUrlEndsWithSearchedPath($query, $value);
             });
         });
 

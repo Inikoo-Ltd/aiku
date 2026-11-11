@@ -28,6 +28,7 @@ use App\Actions\Catalogue\Shop\External\Shopify\RetryShippingShopifyOrders;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
+use App\Actions\Web\Webpage\RunScheduledWebpagePublishes;
 use App\Actions\Comms\WhatsappCampaign\RunWhatsappCampaignScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotAbTestVariants;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
@@ -431,6 +432,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunMailshotScheduled',
                 ),
                 name: 'RunMailshotScheduled',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunScheduledWebpagePublishes::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunScheduledWebpagePublishes',
+                ),
+                name: 'RunScheduledWebpagePublishes',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

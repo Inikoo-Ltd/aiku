@@ -277,6 +277,14 @@ enum WebpageSubTypeEnum: string
     }
 
     /**
+     * Path in front of a blog's own url in its canonical url, ending with a slash, e.g. "product-guides/".
+     */
+    public static function blogUrlPrefix(?self $blogCategory): string
+    {
+        return ($blogCategory ? str_replace('_', '-', $blogCategory->value) : 'blog').'/';
+    }
+
+    /**
      * Sub types no longer backed by an enum case but still stored on existing webpages,
      * mapped to the blog category they are read as.
      *

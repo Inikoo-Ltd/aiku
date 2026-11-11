@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Http\Resources\Web\BlogWebpageWorkshopResource;
+use App\Http\Resources\Web\WebpagePublishScheduleResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
@@ -66,7 +67,16 @@ class ShowBlogWebpageWorkshop extends OrgAction
             })
             ->get();
         }
-        // dd($webBlockTypes);
+        $canBeScheduled = $webpage->canBeScheduledForPublishing();
+
+        $scheduleAction = $canBeScheduled ? [
+            [
+                'type'  => 'button',
+                'key'   => 'schedule_publish',
+                'label' => __('Schedule'),
+            ],
+        ] : [];
+
         return Inertia::render(
             'Org/Web/BlogWorkshop',
             [
@@ -97,6 +107,7 @@ class ShowBlogWebpageWorkshop extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
                         ],
+                        ...$scheduleAction,
                         [
                             'type'  => 'button',
                             'style' => 'save',
@@ -114,7 +125,19 @@ class ShowBlogWebpageWorkshop extends OrgAction
                 'webpage'       => BlogWebpageWorkshopResource::make($webpage)->getArray(),
                 'webBlockTypes' => WebBlockTypesResource::collection($webBlockTypes),
                 'webpage_sub_type' => $webpage->sub_type,
-
+                'publish_schedule' => $canBeScheduled ? [
+                    ...WebpagePublishScheduleResource::make($webpage)->resolve(),
+                    'store_route'  => [
+                        'name'       => 'grp.models.webpage.publish_schedule.store',
+                        'parameters' => ['webpage' => $webpage->id],
+                        'method'     => 'post',
+                    ],
+                    'delete_route' => [
+                        'name'       => 'grp.models.webpage.publish_schedule.delete',
+                        'parameters' => ['webpage' => $webpage->id],
+                        'method'     => 'delete',
+                    ],
+                ] : null,
             ]
         );
     }

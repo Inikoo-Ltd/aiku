@@ -104,7 +104,7 @@ class EditWebpage extends OrgAction
                 'type'      => 'inputWithAddOn',
                 'label'     => __('URL'),
                 'leftAddOn' => [
-                    'label' => $isBlog ? 'https://'.$webpage->website->domain.'/blog' : 'https://'.$webpage->website->domain.'/'
+                    'label' => 'https://'.$webpage->website->domain.'/'.($isBlog ? WebpageSubTypeEnum::blogUrlPrefix($webpage->getBlogCategory()) : '')
                 ],
                 'value'     => $webpage->url,
                 'required'  => true,
