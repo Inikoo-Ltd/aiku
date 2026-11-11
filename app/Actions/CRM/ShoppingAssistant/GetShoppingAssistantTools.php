@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps;
 use App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers;
 use App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales;
+use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
 use App\Models\Catalogue\Product;
@@ -33,12 +34,15 @@ use Throwable;
  * other customers, buyer counts, revenue, segment sizes, prices, discounts or stock figures: the
  * payload is built field by field, never from the model's attributes.
  *
- * Every product a tool returns is live, in stock, priced and visible to the customer.
+ * Every product a tool returns is live, in stock, priced and visible to the customer. search_products
+ * also names, apart and without ids, the products asked for that are out of stock, so the customer
+ * hears "out of stock" rather than "not found"; they can never be presented.
  * present_products is never executed: AskShoppingAssistant reads its arguments as the final answer.
  */
 class GetShoppingAssistantTools
 {
     use AsAction;
+    use WithRecommendableProducts;
 
     public const string PRESENT_PRODUCTS = 'present_products';
 
@@ -49,6 +53,8 @@ class GetShoppingAssistantTools
     public const int MAX_PER_GROUP = 4;
 
     public const int MAX_FOLLOW_UPS = 3;
+
+    public const int MAX_OUT_OF_STOCK = 3;
 
     private const array SEGMENT_REASON_CODES = [
         RebuildRangeAdvisorSales::LEVEL_TYPE_AREA    => 'similar_shops_area',
@@ -83,7 +89,7 @@ class GetShoppingAssistantTools
         return [
             $this->tool(
                 'search_products',
-                'Search the catalogue for products matching what the customer is looking for. Use it whenever the customer names a product, a theme, an occasion or a kind of item. Returns products with id, name, family and why.',
+                'Search the catalogue for products matching what the customer is looking for. Use it whenever the customer names a product, a product code, a theme, an occasion or a kind of item. Returns products with id, name, family and why; exact_code_match marks the product whose code the customer typed. It may also return out_of_stock: products we sell that match but cannot be ordered right now.',
                 [
                     'query' => ['type' => 'string', 'description' => 'What the customer is looking for, in their words.'],
                     'limit' => $limit,
@@ -193,9 +199,60 @@ class GetShoppingAssistantTools
             return $this->error('query must be a non-empty string.');
         }
 
-        $products = SearchCatalogueByMeaning::run($customer->shop, $query, $customer, $this->limit($arguments));
+        $limit   = $this->limit($arguments);
+        $byCode  = $this->productsByCode($customer, $query);
+        $codeIds = $byCode->pluck('id')->flip();
+        $nearest = SearchCatalogueByMeaning::run($customer->shop, $query, $customer, $limit + self::MAX_OUT_OF_STOCK, false);
+        $inStock = fn (Product $product) => $product->available_quantity > 0;
 
-        return $this->productsResult($customer, $products, fn () => 'matches_request', $locale);
+        $outOfStock = (new EloquentCollection($byCode->concat($nearest->take(self::MAX_OUT_OF_STOCK))->reject($inStock)->unique('id')->take(self::MAX_OUT_OF_STOCK)->all()))->loadMissing('family');
+
+        $result = $this->productsResult($customer, $byCode->concat($nearest)->filter($inStock)->unique('id')->take($limit), fn () => 'matches_request', $locale);
+
+        $result['content']['products'] = array_map(fn (array $item) => isset($codeIds[$item['id']]) ? $item + ['exact_code_match' => true] : $item, $result['content']['products']);
+        if ($outOfStock->isNotEmpty()) {
+            $result['names']                   = $outOfStock->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all();
+            $result['content']['out_of_stock'] = $outOfStock->map(fn (Product $product) => array_filter(['name' => $product->name, 'family' => $product->family?->name, 'exact_code_match' => isset($codeIds[$product->id])]))->values()->all();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Customers type product codes loosely ("tiba 04" for TibA-04, "iconic -29" for Iconic-29), and
+     * the meaning search knows nothing of codes: codes are compared with everything but letters and
+     * digits removed, against the whole query, each word and each pair of neighbouring words.
+     *
+     * ponytail: no index on the normalised code, one scan of the shop's products per search; add an
+     * expression index if searches slow down.
+     *
+     * @return Collection<int, Product>
+     */
+    private function productsByCode(Customer $customer, string $query): Collection
+    {
+        $words      = preg_split('/\s+/', mb_strtolower(trim($query)));
+        $candidates = [implode('', $words)];
+        foreach ($words as $index => $word) {
+            $candidates[] = $word;
+            $candidates[] = $word.($words[$index + 1] ?? '');
+        }
+
+        $candidates = collect($candidates)
+            ->map(fn (string $candidate) => preg_replace('/[^a-z0-9]/', '', $candidate))
+            ->filter(fn (string $candidate) => strlen($candidate) >= 3 && preg_match('/\d/', $candidate) && preg_match('/[a-z]/', $candidate))
+            ->unique()
+            ->values();
+
+        if ($candidates->isEmpty()) {
+            return collect();
+        }
+
+        return $this->recommendableProducts($customer->shop, $customer, false)
+            ->select('products.*')
+            ->whereIn(DB::raw("lower(regexp_replace(products.code, '[^A-Za-z0-9]', '', 'g'))"), $candidates->all())
+            ->limit(self::MAX_OUT_OF_STOCK)
+            ->get()
+            ->toBase();
     }
 
     /**
