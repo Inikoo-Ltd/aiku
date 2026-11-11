@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {
     activeSpecialOfferPercentageOff,
+    isStepCoveredBySpecialOffer,
     popularStepMinQuantity,
     stepsBeatingSpecialOffer,
 } from "../../resources/js/Composables/stepDiscountAgainstOffer.ts"
@@ -35,6 +36,11 @@ test("hides a step whose discount equals the special offer", () => {
 
 test("drops the popular badge when its step is hidden by the special offer", () => {
     assert.equal(popularStepMinQuantity(steps, stepsBeatingSpecialOffer(steps, 0.2)), null)
+})
+
+test("marks the steps a member price already covers so they show greyed, not hidden (HELP-4657)", () => {
+    assert.deepEqual(steps.map((step) => isStepCoveredBySpecialOffer(step, 0.15)), [true, true, true, false])
+    assert.deepEqual(steps.map((step) => isStepCoveredBySpecialOffer(step, 0)), [false, false, false, false])
 })
 
 test("counts the shown special offer percentage", () => {

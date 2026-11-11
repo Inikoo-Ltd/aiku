@@ -6,7 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFire } from "@fas"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { popularStepMinQuantity, stepsBeatingSpecialOffer } from "@/Composables/stepDiscountAgainstOffer"
+import { isStepCoveredBySpecialOffer, popularStepMinQuantity, stepsBeatingSpecialOffer } from "@/Composables/stepDiscountAgainstOffer"
 
 library.add(faFire)
 
@@ -45,9 +45,14 @@ const allSteps = computed<StepDiscountStep[]>(() => props.stepDiscount?.steps ??
 
 const isSpecialOfferRunning = computed<boolean>(() => (props.specialOfferPercentageOff ?? 0) > 0)
 
-const steps = computed<StepDiscountStep[]>(() =>
-    stepsBeatingSpecialOffer(allSteps.value, props.specialOfferPercentageOff ?? 0)
+const specialOfferPercentageOff = computed<number>(() => props.specialOfferPercentageOff ?? 0)
+
+const stepsBeatingOffer = computed<StepDiscountStep[]>(() =>
+    stepsBeatingSpecialOffer(allSteps.value, specialOfferPercentageOff.value)
 )
+
+const isCoveredStep = (step: StepDiscountStep): boolean =>
+    isStepCoveredBySpecialOffer(step, specialOfferPercentageOff.value)
 
 const headerLabel = computed<string>(() =>
     isSpecialOfferRunning.value
@@ -63,12 +68,12 @@ const innerUnitLabel = computed<string>(() => props.unit ?? props.stepDiscount?.
 
 const isPackedProduct = computed<boolean>(() => unitsPerOuter.value > 1)
 
-const popularMinQuantity = computed<number | null>(() => popularStepMinQuantity(allSteps.value, steps.value))
+const popularMinQuantity = computed<number | null>(() => popularStepMinQuantity(allSteps.value, stepsBeatingOffer.value))
 
 const activeMinQuantity = ref<number | null>(null)
 
 const reachedMinQuantity = (quantity: number): number | null => {
-    const reached = steps.value.filter((step) => quantity >= step.min_quantity)
+    const reached = allSteps.value.filter((step) => quantity >= step.min_quantity)
 
     return reached.length ? reached[reached.length - 1].min_quantity : null
 }
@@ -82,6 +87,12 @@ watch(
 const formatPrice = (value: number) => locale.currencyFormat(props.currencyCode ?? null, value)
 
 const basePrice = computed<number>(() => Number(props.originalPrice ?? 0) || 0)
+
+const priceForCustomer = (step: StepDiscountStep): number =>
+    isCoveredStep(step) && basePrice.value ? basePrice.value * (1 - specialOfferPercentageOff.value) : step.price
+
+const pricePerUnitForCustomer = (step: StepDiscountStep): number =>
+    isCoveredStep(step) && basePrice.value ? priceForCustomer(step) / unitsPerOuter.value : step.price_per_unit
 
 const savedAmount = (step: StepDiscountStep): number => {
     if (!basePrice.value || basePrice.value <= step.price) {
@@ -125,7 +136,7 @@ const onSelectStep = (step: StepDiscountStep) => {
 </script>
 
 <template>
-    <div v-if="steps.length" class="step-discount w-full">
+    <div v-if="stepsBeatingOffer.length" class="step-discount w-full">
         <div class="step-discount-header flex items-center gap-3 mb-4">
             <span class="header-line" />
             <span class="header-text">{{ headerLabel }}</span>
@@ -134,7 +145,7 @@ const onSelectStep = (step: StepDiscountStep) => {
 
         <div class="flex flex-col gap-3">
             <button
-                v-for="step in steps"
+                v-for="step in allSteps"
                 :key="step.min_quantity"
                 type="button"
                 class="step-tier relative flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left"
@@ -142,6 +153,7 @@ const onSelectStep = (step: StepDiscountStep) => {
                     'is-active': isActiveStep(step),
                     'is-popular': isPopularStep(step),
                     'is-dimmed': isSubmitting && !isActiveStep(step),
+                    'is-covered': isCoveredStep(step),
                 }"
                 :aria-pressed="isActiveStep(step)"
                 :aria-busy="isSubmitting && isActiveStep(step)"
@@ -163,14 +175,18 @@ const onSelectStep = (step: StepDiscountStep) => {
                         <span class="text-base font-bold text-gray-900">
                             {{ quantityLabel(step) }}
                         </span>
-                        <span v-if="savedAmount(step) > 0" class="save-badge">
+                        <span v-if="isCoveredStep(step)" class="covered-badge">
+                            {{ ctrans("Already in your price") }}
+                        </span>
+                        <span v-else-if="savedAmount(step) > 0" class="save-badge">
                             {{ ctrans("Save :amount", { amount: formatPrice(savedAmount(step)) }) }}
                         </span>
                     </div>
                     <div class="text-sm text-gray-500 mt-0.5">
                         <span v-if="isPackedProduct">{{ innerQuantityLabel(step) }}</span>
-                        <span v-if="isPackedProduct && step.percentage_off > 0" class="mx-1">·</span>
-                        <template v-if="step.percentage_off > 0">
+                        <span v-if="isPackedProduct && step.percentage_off > 0 && !isCoveredStep(step)" class="mx-1">·</span>
+                        <template v-if="isCoveredStep(step)" />
+                        <template v-else-if="step.percentage_off > 0">
                             {{ ctrans("You save") }} {{ step.percentage_off_label }}
                         </template>
                         <template v-else-if="!isPackedProduct">
@@ -181,16 +197,16 @@ const onSelectStep = (step: StepDiscountStep) => {
 
                 <div class="text-right shrink-0">
                     <div class="text-base font-bold text-gray-900">
-                        {{ formatPrice(step.price) }}
+                        {{ formatPrice(priceForCustomer(step)) }}
                     </div>
                     <div
-                        v-if="basePrice && basePrice > step.price"
+                        v-if="basePrice && basePrice > priceForCustomer(step)"
                         class="text-sm text-gray-400 line-through"
                     >
                         {{ formatPrice(basePrice) }}
                     </div>
                     <div v-if="isPackedProduct" class="text-xs text-gray-400">
-                        {{ formatPrice(step.price_per_unit) }}/{{ innerUnitLabel }}
+                        {{ formatPrice(pricePerUnitForCustomer(step)) }}/{{ innerUnitLabel }}
                     </div>
                 </div>
             </button>
@@ -231,6 +247,23 @@ const onSelectStep = (step: StepDiscountStep) => {
 
 .step-tier:disabled {
     cursor: default;
+}
+
+.step-tier.is-covered:not(.is-active) {
+    opacity: 0.55;
+    background: #f9fafb;
+    border-color: #e5e7eb;
+}
+
+.covered-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    background: #f3f4f6;
+    border-radius: 9999px;
 }
 
 .step-tier.is-dimmed {

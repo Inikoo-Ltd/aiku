@@ -30,6 +30,10 @@ export function stepsBeatingSpecialOffer<T extends StepDiscountStepLike>(steps: 
     return steps.filter((step) => Number(step.percentage_off) > specialOfferPercentageOff)
 }
 
+export function isStepCoveredBySpecialOffer(step: StepDiscountStepLike, specialOfferPercentageOff: number): boolean {
+    return specialOfferPercentageOff > 0 && Number(step.percentage_off) <= specialOfferPercentageOff
+}
+
 export function popularStepMinQuantity(allSteps: StepDiscountStepLike[], visibleSteps: StepDiscountStepLike[]): number | null {
     if (!visibleSteps.length) {
         return null
