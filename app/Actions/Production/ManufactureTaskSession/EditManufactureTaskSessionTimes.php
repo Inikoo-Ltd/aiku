@@ -51,14 +51,7 @@ class EditManufactureTaskSessionTimes extends OrgAction
                 $this->refuse('ended_at', __('The end cannot be in the future'));
             }
 
-            $overlapping = ManufactureTaskSession::where('user_id', $session->user_id)
-                ->whereKeyNot($session->id)
-                ->whereIn('state', [ManufactureTaskSessionStateEnum::OPEN, ManufactureTaskSessionStateEnum::CLOSED])
-                ->where('started_at', '<', $endedAt)
-                ->where(fn ($query) => $query->whereNull('ended_at')->orWhere('ended_at', '>', $startedAt))
-                ->with(['manufactureTask', 'jobOrder'])
-                ->orderBy('started_at')
-                ->first();
+            $overlapping = ManufactureTaskSession::overlapping($session->user_id, $startedAt, $endedAt, $session->id);
             if ($overlapping) {
                 $this->refuse('started_at', __('This overlaps their :what from :from to :to', [
                     'what' => $overlapping->manufactureTask?->name ?? $overlapping->activityLabel(),

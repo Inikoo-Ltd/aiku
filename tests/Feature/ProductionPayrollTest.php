@@ -2455,6 +2455,135 @@ describe('production reward pay bands', function () {
         ManufactureTaskSession::where('user_id', auth()->id())->where('state', ManufactureTaskSessionStateEnum::OPEN)->update(['state' => ManufactureTaskSessionStateEnum::VOIDED]);
     });
 
+    test('development on no job order is started on the tablet and paid at the Development rate (HELP-4648)', function () {
+        $this->travelTo(now()->addYears(7)->startOfWeek()->addDays(2)->setTime(9, 0));
+        $operator = stepTestSecondOperator($this->group);
+        $start    = fn () => \App\Actions\Production\ManufactureTaskSession\StartManufactureNonProductiveSession::make()->action($operator, $this->production, ['activity_type' => 'development']);
+
+        $session = $start();
+        expect($session->job_order_id)->toBeNull()->and($session->job_order_item_task_id)->toBeNull();
+
+        $this->travel(2)->hours();
+        $session = \App\Actions\Production\ManufactureTaskSession\CloseManufactureTaskSession::make()->action($session, [])->refresh();
+
+        // 2 h x 13.30 = 26.60; over band 0: 2 h x (13.30 - 12.71) = 1.18
+        expect($session->activity_type->value)->toBe('development')
+            ->and($session->band_code)->toBe('D')
+            ->and((float) $session->hours)->toBe(2.0)
+            ->and((float) $session->pay)->toBe(26.6)
+            ->and((float) $session->bonus)->toBe(1.18);
+
+        $offered = fn () => collect(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->inertiaProps('non_productive.activities'))->pluck('value');
+        expect($offered())->toContain('development');
+
+        $developmentBand = \App\Models\Production\ManufacturePayBand::where('production_id', $this->production->id)->where('code', 'D');
+        $developmentBand->update(['effective_to' => now()->subDay()]);
+        expect($start)->toThrow(\Illuminate\Validation\ValidationException::class, 'This production has no Development rate')
+            ->and($offered())->not->toContain('development');
+        $developmentBand->update(['effective_to' => null]);
+    });
+
+    test('development time added outside the shift is warned about where pay is limited to the shift (HELP-4648)', function () {
+        $monday   = now()->addYears(8)->addWeeks(rand(1, 40))->startOfWeek();
+        $timezone = $this->organisation->timezone?->name ?? config('app.timezone');
+        $at       = fn (string $time) => \Illuminate\Support\Carbon::parse($monday->toDateString().' '.$time, $timezone)->utc();
+        $this->travelTo($monday->copy()->addDays(3)->setTime(20, 0));
+        $employee   = employeeOnDayShift($this->organisation);
+        $worker     = stepTestSecondOperator($this->group);
+        $supervisor = stepTestSecondOperator($this->group);
+        \Illuminate\Support\Facades\DB::table('user_has_models')->insert(['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id, 'user_id' => $worker->id, 'model_type' => 'Employee', 'model_id' => $employee->id, 'status' => true]);
+        \App\Actions\Production\ManufactureArtisanDay\SetManufacturePaidTimeRule::make()->action($this->production, $this->guest->getUser(), ['inside_shift_only' => true, 'rounding_minutes' => 5, 'effective_from' => $monday->toDateString()]);
+        // shift 08:00-16:00, clocked 06:30-16:00: the hour and a half before the shift is not paid
+        clockedPairs($employee, $monday->toDateString(), [[$at('06:30'), $at('16:00')]]);
+        $add = fn (string $from, string $to, array $extra = []) => \App\Actions\Production\ManufactureTaskSession\AddManufactureDevelopmentTime::make()->action($this->production, [
+            'employee_id' => $employee->id,
+            'started_at'  => $at($from)->toIso8601String(),
+            'ended_at'    => $at($to)->toIso8601String(),
+            'note'        => 'CAHM order',
+        ] + $extra, $supervisor);
+
+        expect(fn () => $add('06:30', '07:30'))->toThrow(\Illuminate\Validation\ValidationException::class, 'shift of 08:00 to 16:00');
+        expect($add('09:00', '11:00')->band_code)->toBe('D')
+            ->and($add('06:30', '07:30', ['not_paid_confirmed' => true])->band_code)->toBe('D');
+
+        // 8 h paid inside the shift x 12.71 = 101.68; only the 2 h of development inside the shift are paid: 2 x 0.59 = 1.18
+        $row = collect(\App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll::run($this->production->refresh(), $monday, $monday->copy()->addDay()))->firstWhere('user_id', $worker->id);
+        expect($row['working_hours'])->toBe(8.0)
+            ->and($row['band_d_hours'])->toBe(2.0)
+            ->and($row['total'])->toBe(102.86);
+    });
+
+    test('a supervisor adds development time kept on paper, and clocked time paid as not on tablet becomes Development (HELP-4648)', function () {
+        $monday = now()->addYears(7)->addWeeks(rand(1, 40))->startOfWeek();
+        $this->travelTo($monday->copy()->addDays(3)->setTime(20, 0));
+        $employee   = employeeOnDayShift($this->organisation);
+        $worker     = stepTestSecondOperator($this->group);
+        $supervisor = stepTestSecondOperator($this->group);
+        \Illuminate\Support\Facades\DB::table('user_has_models')->insert(['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id, 'user_id' => $worker->id, 'model_type' => 'Employee', 'model_id' => $employee->id, 'status' => true]);
+        $date = $monday->toDateString();
+        clockedTimesheet($employee, $date, 480, 30);
+        $add  = fn (string $from, string $to, array $extra = [], $editor = null) => \App\Actions\Production\ManufactureTaskSession\AddManufactureDevelopmentTime::make()->action($this->production, [
+            'employee_id' => $employee->id,
+            'started_at'  => "$date $from",
+            'ended_at'    => "$date $to",
+            'note'        => 'CAHM order, from the paper record',
+        ] + $extra, $editor ?? $supervisor);
+
+        $session = $add('09:00', '12:00')->refresh();
+
+        // 3 h x 13.30 = 39.90
+        expect($session->activity_type->value)->toBe('development')
+            ->and($session->state)->toBe(ManufactureTaskSessionStateEnum::CLOSED)
+            ->and($session->user_id)->toBe($worker->id)
+            ->and($session->employee_id)->toBe($employee->id)
+            ->and($session->job_order_item_task_id)->toBeNull()
+            ->and($session->band_code)->toBe('D')
+            ->and((float) $session->hours)->toBe(3.0)
+            ->and((float) $session->pay)->toBe(39.9)
+            ->and($session->time_edited_by)->toBe($supervisor->id)
+            ->and($session->time_edit_note)->toBe('CAHM order, from the paper record');
+
+        // 8 h clocked x 12.71 = 101.68; the 3 h of development add 3 x 0.59 = 1.77; the other 5 h stay not on tablet at band 0
+        $row = collect(\App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll::run($this->production, $monday, $monday->copy()->addDay()))->firstWhere('user_id', $worker->id);
+        expect($row['working_hours'])->toBe(8.0)
+            ->and($row['band_0_hours'])->toBe(5.0)
+            ->and($row['not_on_tablet_hours'])->toBe(5.0)
+            ->and($row['band_d_hours'])->toBe(3.0)
+            ->and($row['band_d_amount'])->toBe(1.77)
+            ->and($row['total'])->toBe(103.45);
+
+        expect(fn () => $add('11:00', '13:00'))->toThrow(\Illuminate\Validation\ValidationException::class, 'This overlaps their Development')
+            ->and(fn () => $add('13:00', '12:30'))->toThrow(\Illuminate\Validation\ValidationException::class, 'The end must be after the start')
+            ->and(fn () => $add('13:00', '14:00', [], $worker))->toThrow(\Illuminate\Validation\ValidationException::class, 'You cannot add time for yourself')
+            ->and(fn () => $add('12:00', '18:00'))->toThrow(\Illuminate\Validation\ValidationException::class, 'goes over it, and the time over it is not paid');
+
+        // 3 h + 6 h on the tablet against 8 h clocked: saved once confirmed, and the hour over the clocked time is not paid
+        $add('12:00', '18:00', ['not_paid_confirmed' => true]);
+        $row = collect(\App\Actions\Production\ManufactureTaskSession\GetManufacturePayroll::run($this->production, $monday, $monday->copy()->addDay()))->firstWhere('user_id', $worker->id);
+        expect($row['working_hours'])->toBe(8.0)
+            ->and($row['band_d_hours'])->toBe(8.0)
+            ->and($row['tablet_over_clocked_hours'])->toBe(1.0)
+            ->and($row['total'])->toBe(106.4);
+
+        // a day of last week is locked for payroll: only with a reason, and recorded for the next pay run
+        $accountant = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+        $accountant->givePermissionTo(["accounting.{$this->production->organisation_id}.view", "accounting.{$this->production->organisation_id}.edit"]);
+        $lastWeek = ['employee_id' => $employee->id, 'started_at' => $monday->copy()->subWeek()->setTime(9, 0), 'ended_at' => $monday->copy()->subWeek()->setTime(11, 0), 'note' => 'CAHM order', 'not_paid_confirmed' => true];
+        $addLate  = fn (array $extra, $editor) => \App\Actions\Production\ManufactureTaskSession\AddManufactureDevelopmentTime::make()->action($this->production, $lastWeek + $extra, $editor);
+        expect(fn () => $addLate([], $accountant))->toThrow(\Illuminate\Validation\ValidationException::class, 'Give the reason');
+        $late       = $addLate(['lock_reason' => 'Paper record handed in late'], $accountant);
+        $adjustment = \App\Models\Production\ManufacturePayrollAdjustment::where('model_type', 'ManufactureTaskSession')->where('model_id', $late->id)->sole();
+        expect($adjustment->change)->toBe('development_time')
+            ->and($adjustment->user_id)->toBe($worker->id)
+            ->and($adjustment->reason)->toBe('Paper record handed in late')
+            ->and($adjustment->after['band_code'])->toBe('D');
+
+        get(route('grp.org.productions.show.artisans.index', [$this->organisation->slug, $this->production->slug, 'from' => $date, 'to' => $date]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('development_time.route.name', 'grp.models.production.development_time.store')
+                ->where('development_time.artisans', fn ($artisans) => collect($artisans)->contains('id', $employee->id)));
+    });
+
 });
 
 describe('reward sheet import', function () {
