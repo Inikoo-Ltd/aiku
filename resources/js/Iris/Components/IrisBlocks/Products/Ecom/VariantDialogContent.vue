@@ -464,7 +464,8 @@ const onCancel = () => {
 
                 <div class="mt-4">
                     <EcomAddToBasketv2 v-if="isOrderable(activeProduct)" :key="activeProduct.id" ref="_ladderBasket"
-                        v-model:product="activeProduct" :customerData="ladderCustomerData[activeProduct.id]" holdQuantity />
+                        v-model:product="activeProduct" :customerData="ladderCustomerData[activeProduct.id]" holdQuantity
+                        :sizeLabel="activeProduct.size_resolved ? activeProduct.size_label : null" />
                     <div v-else class="text-sm text-red-600">{{ ctrans('Out of stock') }}</div>
                 </div>
             </div>

@@ -204,6 +204,12 @@ const patchVariantCustomerData = inject<((productId: number, patch: Record<strin
 
 const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder((props.listProducts ?? []) as any[]))
 
+const currentSizeLabel = computed<string | null>(() => {
+    const listed = (props.listProducts ?? []).find((item: any) => item.id === product.value.id) as any
+
+    return listed?.size_resolved ? listed.size_label : null
+})
+
 const showPriceLadder = computed<boolean>(() => variantDisplayMode(props.fieldValue?.setting, {
     sizesTable: false,
     priceLadder: Boolean(layout?.iris?.is_logged_in) && ladderOptions.value.some((option) => option.productId === product.value.id),
@@ -482,7 +488,7 @@ onMounted(async () => {
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="(product.status !== 'coming-soon' || product.pre_order) && layout?.iris?.is_logged_in" class="w-full">
                         <EcomAddToBasketv2 v-if="product.stock || product.pre_order" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
-                            :key="keyCustomer" :holdQuantity="showPriceLadder" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
+                            :key="keyCustomer" :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
                             <ButtonOutOfStock :product="product" :label="product.status_label" />
@@ -803,7 +809,7 @@ onMounted(async () => {
                 ref="_mobileAddToBasket"
                 v-model:product="product"
                 :customerData="customerData"
-                :holdQuantity="showPriceLadder"
+                :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
             />
 

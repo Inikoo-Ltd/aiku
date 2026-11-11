@@ -54,3 +54,40 @@ export const pendingChangeLabel = (change: SizeQuantityChange): string => {
 
     return `${difference > 0 ? "+" : "−"}${Math.abs(difference)} × ${change.size}`
 }
+
+export type HeldQuantityDirection = "none" | "add" | "increase" | "decrease" | "remove"
+
+export const heldQuantityChange = (basket: number, selected: number, size?: string | null): { direction: HeldQuantityDirection, label: TranslatableText } => {
+    const quantity = String(selected)
+
+    if (selected === basket) {
+        return { direction: "none", label: text(basket > 0 ? "Update basket" : "Add to basket") }
+    }
+
+    if (basket <= 0) {
+        return {
+            direction: "add",
+            label: size ? text("Add :quantity × :size to basket", { quantity, size }) : text("Add :quantity to basket", { quantity })
+        }
+    }
+
+    if (selected <= 0) {
+        return { direction: "remove", label: size ? text("Remove :size from basket", { size }) : text("Remove from basket") }
+    }
+
+    if (selected > basket) {
+        const more = String(selected - basket)
+
+        return {
+            direction: "increase",
+            label: size
+                ? text("Add :more more (:quantity × :size in basket)", { more, quantity, size })
+                : text("Add :more more (:quantity in basket)", { more, quantity })
+        }
+    }
+
+    return {
+        direction: "decrease",
+        label: size ? text("Reduce basket to :quantity × :size", { quantity, size }) : text("Reduce basket to :quantity", { quantity })
+    }
+}

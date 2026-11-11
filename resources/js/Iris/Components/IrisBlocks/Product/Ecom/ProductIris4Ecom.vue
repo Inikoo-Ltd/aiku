@@ -353,6 +353,12 @@ const displayMode = computed(() => variantDisplayMode(props.fieldValue?.setting,
     priceLadder: Boolean(layout?.iris?.is_logged_in) && ladderOptions.value.some((option) => option.productId === product.value.id),
 }))
 
+const currentSizeLabel = computed<string | null>(() => {
+    const listed = (props.listProducts ?? []).find((item: any) => item.id === product.value.id) as any
+
+    return listed?.size_resolved ? listed.size_label : null
+})
+
 const showPriceLadder = computed<boolean>(() => displayMode.value === "price_ladder")
 
 const onSelectLadderOption = async (option: LadderOption, selectQuantity: (quantity: number) => Promise<void>) => {
@@ -634,7 +640,7 @@ onMounted(async () => {
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
                         <EcomAddToBasketv2 v-if="!showSizesTable && (product.stock > 0 || product.pre_order)" ref="_desktopAddToBasket" v-model:product="product"
-                            :customerData="customerData" :key="keyCustomer" :holdQuantity="showPriceLadder"
+                            :customerData="customerData" :key="keyCustomer" :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel"
                             :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket" />
                         <ButtonOutOfStock v-else-if="!(product.stock > 0 || product.pre_order)" :product="product" />
                     </div>
@@ -907,7 +913,7 @@ onMounted(async () => {
             <template v-if="layout?.iris?.is_logged_in">
                 <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
                 <EcomAddToBasketv2 v-if="!showSizesTable && (product.stock > 0 || product.pre_order)" ref="_mobileAddToBasket" v-model:product="product"
-                    :customerData="customerData" :key="keyCustomer" :holdQuantity="showPriceLadder"
+                    :customerData="customerData" :key="keyCustomer" :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel"
                     :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" class="button-basket w-full" />
                 <ButtonOutOfStock v-else-if="!(product.stock > 0 || product.pre_order)" :product="product" />
             </template>
