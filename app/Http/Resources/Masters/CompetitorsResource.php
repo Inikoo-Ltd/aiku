@@ -29,6 +29,7 @@ class CompetitorsResource extends JsonResource
             'master_shop_slug'  => $this->master_shop_slug,
             'master_shop_name'  => $this->master_shop_name,
             'sells_to'          => CompetitorSellsToEnum::labels()[$this->sells_to->value],
+            'sells_to_key'      => $this->sells_to->value,
             'currency_code'     => $this->currency_code,
             'has_login'         => (bool) $this->has_login,
             'has_search'        => (bool) $this->has_search,

@@ -34,7 +34,7 @@ class CreateCompetitor extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => array_merge(
-                    $this->getCompetitorsBreadcrumbs('grp.masters.competitors.index', __('Competitors')),
+                    $this->getCompetitorsBreadcrumbs('grp.masters.competitors.index', __('List')),
                     [['type' => 'creatingModel', 'creatingModel' => ['label' => __('New competitor')]]]
                 ),
                 'title'       => __('New competitor'),
