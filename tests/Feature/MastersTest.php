@@ -4793,7 +4793,6 @@ describe('competitor prices, HELP-3605', function () {
                     && $competitor['read_method'] === 'search'
                     && $competitor['sells_to_key'] === $this->competitor->sells_to->value
                     && !array_key_exists('password', $competitor) && !array_key_exists('feed_url', $competitor))
-                ->where('queryBuilderProps.default.columns', fn ($columns) => !collect($columns)->pluck('key')->contains('master_shop_name'))
                 ->etc());
 
         get(route('grp.masters.competitors.show', [$this->competitor->slug, 'tab' => 'matches']))

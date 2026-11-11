@@ -70,7 +70,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
                 ? $this->restore($sourceTransaction, $sourcePurchaseOrder, $quantity)
                 : UpdatePurchaseOrderTransaction::make()->action($sourceTransaction, ['quantity_ordered' => round((float) $sourceTransaction->quantity_ordered + $quantity, 3)]);
 
-            $movedTransaction = CancelPurchaseOrderTransaction::make()->action($movedTransaction);
+            $movedTransaction = CancelPurchaseOrderTransaction::make()->action($movedTransaction, cancelEmptyOrder: false);
 
             $undone = ['undone_by' => $user?->id, 'undone_at' => now()->toIso8601String()];
             $movedTransaction->update(['data' => array_merge($movedTransaction->data ?? [], [
