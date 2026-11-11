@@ -1,7 +1,7 @@
 ---
 title: Raising a purchase order and receiving the goods
 summary: Buy from an ordinary supplier - raise the purchase order, get it confirmed, then turn the delivery into stock you can sell.
-date: 2026-10-12
+date: 2026-11-11
 tags: procurement, purchase orders, stock deliveries, suppliers, supplier claims, customs
 category: procurement
 help_routes: grp.org.procurement.org_suppliers, grp.org.procurement.purchase_orders, grp.org.procurement.stock_deliveries
@@ -57,6 +57,8 @@ A purchase order moves through a short, deliberate chain:
 - **Confirmed** - the supplier has accepted the order. You can set or change the **Delivery date** (the estimated arrival), and press **New Delivery** to create the stock delivery that will receive the goods. Until a delivery exists for it, you can also **Undo Confirm** to send it back to Submitted.
 
 From here the order settles on its own as its stock deliveries progress - there's nothing further to click on the purchase order itself. It ends up **Settled** once everything has arrived, or **Not Received**/**Cancelled** if it didn't work out.
+
+A cancelled order can be brought back with **Undo cancel** on its page. The order and its lines go back to Submitted or Confirmed, whichever they were, with their amounts and the extra, shipping, duties and tax costs they had. You give a reason and confirm the supplier, agent or partner knows the order is back on; who did it, when and why show in the order's **History**. If the same products are already on an order raised after the cancellation, the dialog lists those orders so nothing is bought twice. **Undo cancel** is greyed out, with the reason on hover, when the order was cancelled because its lines were moved to another supplier or because it was left empty, when a product on it is discontinued or no longer available, or when it has a stock delivery that is not cancelled. For orders cancelled before **Undo cancel** existed, the extra and tax costs were not kept: the dialog shows the old total and asks for them, and the two must add up to what the order had. An old order with no record of what it had before cancelling can not be brought back.
 
 ## The stock delivery: recording what arrived
 

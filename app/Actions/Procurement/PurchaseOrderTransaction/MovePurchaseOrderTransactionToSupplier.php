@@ -264,7 +264,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             return false;
         }
 
-        UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder);
+        UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder, source: UpdatePurchaseOrderStateToCancelled::SOURCE_MOVED);
 
         return true;
     }

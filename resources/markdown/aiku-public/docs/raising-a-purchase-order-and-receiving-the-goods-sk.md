@@ -1,8 +1,8 @@
 ---
 title: Vystavenie objednávky a prevzatie tovaru
 summary: Nákup od bežného dodávateľa - vystavte objednávku, nechajte si ju potvrdiť, potom premeňte dodávku na tovar, ktorý môžete predávať.
-date: 2026-10-12
-source_date: 2026-10-12
+date: 2026-11-11
+source_date: 2026-11-11
 tags: procurement, purchase orders, stock deliveries, suppliers, supplier claims, customs
 category: procurement
 ---
@@ -57,6 +57,8 @@ Objednávka prechádza krátkym, premysleným reťazcom:
 - **Confirmed** - dodávateľ objednávku prijal. Môžete nastaviť alebo zmeniť **Delivery date** (odhadovaný dátum príchodu) a stlačiť **New Delivery**, čím vytvoríte stock delivery, ktorá tovar prevezme. Kým pre ňu neexistuje žiadna dodávka, môžete tiež **Undo Confirm** a vrátiť ju späť do Submitted.
 
 Odtiaľto sa objednávka usadí sama, ako postupujú jej dodávky - na samotnej objednávke už nie je čo klikať. Nakoniec skončí v stave **Settled**, keď všetko dorazí, alebo **Not Received**/**Cancelled**, ak to nevyšlo.
+
+Zrušenú objednávku možno vrátiť späť tlačidlom **Undo cancel** na jej stránke. Objednávka a jej riadky sa vrátia do stavu Submitted alebo Confirmed, podľa toho, v akom boli, s ich sumami a doplnkovými nákladmi, nákladmi na dopravu, clom a daňou, ktoré mali. Uvediete dôvod a potvrdíte, že dodávateľ, agent alebo partner vie, že objednávka platí znova; kto to urobil, kedy a prečo, sa zobrazí v **History** objednávky. Ak sú rovnaké produkty už na objednávke vytvorenej po zrušení, dialóg tieto objednávky vypíše, aby sa nenakúpilo dvakrát. **Undo cancel** je sivé, s dôvodom po nabehnutí kurzorom, keď bola objednávka zrušená preto, že sa jej riadky presunuli k inému dodávateľovi alebo preto, že zostala prázdna, keď je produkt na nej vyradený alebo už nie je dostupný, alebo keď má stock delivery, ktorá nie je zrušená. Pri objednávkach zrušených skôr, ako existovalo **Undo cancel**, sa doplnkové náklady a daň neuložili: dialóg ukáže starý súčet a vypýta si ich, pričom spolu musia dať toľko, koľko objednávka mala. Staršiu objednávku bez záznamu o tom, čo mala pred zrušením, nemožno vrátiť späť.
 
 ## Stock delivery: zaznamenanie toho, čo dorazilo
 

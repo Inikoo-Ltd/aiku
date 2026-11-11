@@ -46,6 +46,8 @@ beforeAll(function () {
 
 beforeEach(function () {
     $this->organisation = createOrganisation();
+    $this->organisation->update(['timezone_id' => \App\Models\Helpers\Timezone::where('name', 'Europe/London')->value('id')]);
+    $this->organisation->refresh();
     $this->group        = group();
     setPermissionsTeamId($this->group->id);
     $this->guest = createAdminGuest($this->group);

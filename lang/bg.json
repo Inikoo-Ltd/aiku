@@ -8103,6 +8103,7 @@
     "Push current stock levels of these products to this channel only": "Изпрати текущите наличности на тези продукти само към този канал",
     "Saved, but Shopify did not accept the price: :reason": "Запазено, но Shopify не прие цената: :reason",
     "Saved, but eBay did not accept the change: :reason": "Запазено, но eBay не прие промяната: :reason",
+    "eBay did not accept the change, so nothing was saved: :reason": "eBay не прие промяната, затова нищо не беше запазено: :reason",
     "This adjustment takes the price to zero or below.": "Тази корекция довежда цената до нула или по-ниска.",
     "The data feed for :name is not available yet, please try again later.": "Потокът от данни за :name още не е наличен. Моля, опитайте отново по-късно.",
     "New support ticket": "Нов тикет за поддръжка",

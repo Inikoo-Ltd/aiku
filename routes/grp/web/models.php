@@ -593,6 +593,7 @@ use App\Actions\SupplyChain\SupplierChangeRequest\DecideSupplierChangeRequest;
 use App\Actions\SupplyChain\SupplierChangeRequest\StoreSupplierChangeRequest;
 use App\Actions\Procurement\PurchaseOrder\AttachPurchaseOrderComplianceDocument;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateFromCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
 use App\Actions\Procurement\PurchaseOrder\SetPurchaseOrderReadyToSend;
@@ -2082,6 +2083,7 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::patch('confirm', UpdatePurchaseOrderStateToConfirmed::class)->name('confirm');
     Route::patch('undo-confirm', RevertPurchaseOrderToSubmitted::class)->name('undo-confirm');
     Route::patch('cancel', UpdatePurchaseOrderStateToCancelled::class)->name('cancel');
+    Route::patch('undo-cancel', UpdatePurchaseOrderStateFromCancelled::class)->name('undo-cancel');
     Route::post('stock-delivery', StoreStockDeliveryFromPurchaseOrder::class)->name('stock-delivery.store');
     Route::post('transactions/upload', ImportPurchaseOrderTransactions::class)->name('transaction.upload');
     Route::post('transactions/{orgSupplierProduct:id}/store', StorePurchaseOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();

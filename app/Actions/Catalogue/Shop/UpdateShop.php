@@ -9,6 +9,8 @@
 namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\CRM\Appointment\Zoom\ZoomClient;
+use App\Actions\Catalogue\Shop\External\Faire\UpdateShippingFaireOrder;
+use App\Models\Helpers\Country;
 use Illuminate\Support\Facades\Crypt;
 use Throwable;
 use App\Actions\CRM\Appointment\Widget\EnableShopAppointmentWidget;
@@ -410,6 +412,7 @@ class UpdateShop extends OrgAction
                     'faire_order_from_days' => 'settings.faire.order_from_days',
                     'faire_is_shipping_by_external' => 'settings.faire.is_shipping_by_external',
                     'faire_dont_send_first_orders_automatically_to_warehouse' => 'settings.faire.dont_send_first_orders_automatically_to_warehouse',
+                    'faire_funded_shipping_rates' => 'settings.faire.funded_shipping_rates',
                     'wix_access_token' => 'settings.wix.access_token',
                     'wix_order_from_days' => 'settings.wix.order_from_days',
                     'shopify_order_from_days' => 'settings.shopify.order_from_days',
@@ -476,6 +479,7 @@ class UpdateShop extends OrgAction
         data_forget($modelData, 'faire_order_from_days');
         data_forget($modelData, 'faire_is_shipping_by_external');
         data_forget($modelData, 'faire_dont_send_first_orders_automatically_to_warehouse');
+        data_forget($modelData, 'faire_funded_shipping_rates');
         data_forget($modelData, 'is_shipping_by_external');
         data_forget($modelData, 'wix_access_token');
         data_forget($modelData, 'wix_order_from_days');
@@ -1088,6 +1092,25 @@ class UpdateShop extends OrgAction
             'faire_order_from_days'                                   => ['sometimes', 'string'],
             'faire_is_shipping_by_external'                           => ['sometimes', 'boolean'],
             'faire_dont_send_first_orders_automatically_to_warehouse' => ['sometimes', 'boolean'],
+            'faire_funded_shipping_rates'                             => [
+                'sometimes',
+                'nullable',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    foreach (preg_split('/\R/', (string)$value) as $line) {
+                        if (trim($line) !== '' && !preg_match(UpdateShippingFaireOrder::FUNDED_SHIPPING_RATE_LINE, trim($line))) {
+                            $fail(__('Each line needs a country code and two prices, like SK 5.04 6.49. This line is not: :line', ['line' => trim($line)]));
+
+                            return;
+                        }
+                    }
+                    $countryCodes = array_keys(UpdateShippingFaireOrder::parseFundedShippingRates((string)$value));
+                    $unknown      = array_diff($countryCodes, Country::whereIn('code', $countryCodes)->pluck('code')->all());
+                    if ($unknown) {
+                        $fail(__('These are not country codes: :codes', ['codes' => implode(', ', $unknown)]));
+                    }
+                },
+            ],
             'wix_access_token'                                        => ['sometimes', 'string'],
             'wix_order_from_days'                                     => ['sometimes', 'string'],
             'shopify_order_from_days'                                 => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],

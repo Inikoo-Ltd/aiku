@@ -1,7 +1,7 @@
 ---
 title: Recording order progress as an agent
 summary: For agents — the dates you record on each order to a supplier (deposit paid, production started, production done, proposed ready date, handed over) and your own order number, when and where to record them, what the buying company records instead, and why a missing date shows as a delay.
-date: 2026-11-05
+date: 2026-11-11
 tags: procurement, agents, supply-chain
 category: procurement
 help_routes: grp.org.procurement.purchase_orders
@@ -86,6 +86,8 @@ If that supplier does not sell this SKO yet, the dialog shows the code, name, un
 The units go onto that supplier's order in the same state, or onto a new order if it has none, at the price the buying company agreed. If the new supplier's cost is different, the buying company gets the price question described above and answers it on the new order. The buying company is told about the move, and both lines show where the units came from or went.
 
 You can move a line only while you could still cancel it: before production starts and before it is on a stock delivery. If nothing is left on the original order, it is cancelled, unless a deposit was paid on it: then it stays open so the deposit can be recovered.
+
+If an order was cancelled by mistake, or the buying company wants it after all, open it and click **Undo cancel**. It goes back to the state it had, with its lines, amounts and costs. Give a reason and confirm the buying company and the supplier know the order is back on. If the same products are on an order raised after the cancellation, the dialog lists it first so they are not ordered twice. An order cancelled because its lines were moved to another supplier, or because it was left empty, cannot be brought back.
 
 ## Good habits
 

@@ -1512,11 +1512,23 @@ test('a draft whose price eBay refuses is not published by Save & Publish', func
         '/sell/inventory/v1/offer'    => ebayOfferRoutes(),
     ]);
 
-    expect(fn () => UpdateAndUploadRetinaPortfolioToCurrentChannel::make()->handle($portfolio->refresh(), ['customer_price' => '0.10']))
-        ->toThrow(ValidationException::class);
+    $priceBefore = $portfolio->refresh()->customer_price;
+
+    expect(fn () => UpdateAndUploadRetinaPortfolioToCurrentChannel::make()->handle($portfolio, ['customer_price' => '0.10']))
+        ->toThrow(ValidationException::class, 'Price is too low');
 
     Http::assertNotSent(fn (Request $request) => str_ends_with($request->url(), '/publish'));
-    expect($portfolio->refresh()->platform_product_variant_id)->toBeNull();
+    expect($portfolio->refresh()->platform_product_variant_id)->toBeNull()
+        ->and($portfolio->customer_price)->toEqual($priceBefore);
+
+    fakeEbay($this, [
+        '/bulk_update_price_quantity' => ['responses' => [['statusCode' => 400, 'errors' => [['errorId' => 25002, 'message' => 'Price is too low']]]]],
+        '/sell/inventory/v1/offer'    => ebayOfferRoutes(),
+    ]);
+
+    expect(fn () => UpdateAndUploadRetinaPortfolioToCurrentChannel::make()->handle($portfolio, ['customer_price' => '0.10'], true))
+        ->toThrow(ValidationException::class);
+    expect($portfolio->refresh()->customer_price)->toEqual($priceBefore);
 });
 
 test('publishing a draft eBay refuses explains the seller registration problem', function () {

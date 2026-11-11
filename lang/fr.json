@@ -11047,6 +11047,7 @@
     "Push current stock levels of these products to this channel only": "Envoyer les niveaux de stock actuels de ces produits vers ce canal uniquement",
     "Saved, but Shopify did not accept the price: :reason": "Enregistré, mais Shopify n'a pas accepté le prix : :reason",
     "Saved, but eBay did not accept the change: :reason": "Enregistré, mais eBay n'a pas accepté la modification : :reason",
+    "eBay did not accept the change, so nothing was saved: :reason": "eBay n'a pas accepté la modification, rien n'a donc été enregistré : :reason",
     "This adjustment takes the price to zero or below.": "Cet ajustement ramène le prix à zéro ou en dessous.",
     "The data feed for :name is not available yet, please try again later.": "Le flux de données de :name n'est pas encore disponible, veuillez réessayer plus tard.",
     "New support ticket": "Nouveau ticket d'assistance",

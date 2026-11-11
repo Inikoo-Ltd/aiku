@@ -1,8 +1,8 @@
 ---
 title: Registrar el progreso de un pedido como agente
 summary: Para agentes — las fechas que registras en cada pedido a un proveedor (depósito pagado, producción iniciada, producción terminada, fecha de listo propuesta, entregado) y tu propio número de pedido, cuándo y dónde registrarlas, qué registra en su lugar la empresa compradora, y por qué una fecha que falta aparece como un retraso.
-date: 2026-11-05
-source_date: 2026-11-05
+date: 2026-11-11
+source_date: 2026-11-11
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -86,6 +86,8 @@ Si ese proveedor aún no vende este SKO, el diálogo muestra el código, el nomb
 Las unidades van al pedido de ese proveedor en el mismo estado, o a un pedido nuevo si no tiene ninguno, al precio que acordó la empresa compradora. Si el coste del nuevo proveedor es distinto, la empresa compradora recibe la pregunta de precio descrita arriba y la responde en el nuevo pedido. La empresa compradora recibe un aviso del cambio, y las dos líneas muestran de dónde vinieron o adónde fueron las unidades.
 
 Solo puedes mover una línea mientras aún podrías cancelarla: antes de que empiece la producción y antes de que esté en una entrega de stock. Si en el pedido original no queda nada, se cancela, salvo que se haya pagado un depósito: entonces queda abierto para poder recuperarlo.
+
+Si un pedido se canceló por error, o la empresa compradora lo quiere después de todo, ábrelo y pulsa **Undo cancel**. Vuelve al estado que tenía, con sus líneas, importes y costes. Indica un motivo y confirma que la empresa compradora y el proveedor saben que el pedido sigue adelante. Si los mismos productos están en un pedido creado después de la cancelación, el diálogo lo muestra primero para que no se pidan dos veces. Un pedido cancelado porque sus líneas se movieron a otro proveedor, o porque quedó vacío, no se puede recuperar.
 
 ## Buenos hábitos
 

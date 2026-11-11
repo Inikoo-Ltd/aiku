@@ -8585,6 +8585,7 @@
     "Push current stock levels of these products to this channel only": "Skicka aktuella lagernivåer för de här produkterna endast till den här kanalen",
     "Saved, but Shopify did not accept the price: :reason": "Sparat, men Shopify godtog inte priset: :reason",
     "Saved, but eBay did not accept the change: :reason": "Sparat, men eBay godtog inte ändringen: :reason",
+    "eBay did not accept the change, so nothing was saved: :reason": "eBay godtog inte ändringen, så inget sparades: :reason",
     "This adjustment takes the price to zero or below.": "Den här justeringen sätter priset till noll eller lägre.",
     "The data feed for :name is not available yet, please try again later.": "Datafeeden för :name är inte tillgänglig ännu, försök igen senare.",
     "New support ticket": "Nytt supportärende",

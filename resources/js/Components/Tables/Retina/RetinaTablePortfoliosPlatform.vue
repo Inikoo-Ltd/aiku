@@ -502,7 +502,7 @@ const submitUpdateAndUploadProduct = (sel, state: "draft" | "publish") => {
 			onError: (errors) => {
 				notify({
 					title: ctrans("Something went wrong"),
-					text: ctrans("Try again or contact administrator"),
+					text: Object.values(errors)[0] || ctrans("Try again or contact administrator"),
 					type: "error",
 				})
 			},

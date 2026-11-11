@@ -42,6 +42,7 @@ import Textarea from "primevue/textarea"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
+import InputNumber from "primevue/inputnumber"
 import Select from "primevue/select"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import AspoDepositsChecklist from "@/Components/Procurement/AspoDepositsChecklist.vue"
@@ -73,7 +74,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faPlus as falPlus } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faPlus as falPlus } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
@@ -667,13 +668,54 @@ const isCancelConfirmed = computed(() => ["yes", cancelConfirmationWord.value].i
 
 const confirmCancelPurchaseOrder = (action: any) => {
 	cancelConfirmationText.value = ""
+	cancelReason.value = ""
 	cancelError.value = ""
 	cancelDialogAction.value = action
 }
 
+const undoCancelDialogAction = ref<any>(null)
+const undoCancelLoading = ref(false)
+const undoCancelReason = ref("")
+const undoCancelConfirmationText = ref("")
+const undoCancelCosts = ref<Record<string, number | null>>({})
+const undoCancelErrors = ref<Record<string, string>>({})
+const costLabels: Record<string, string> = {
+	cost_extra: ctrans("Extra costs"),
+	cost_shipping: ctrans("Shipping"),
+	cost_duties: ctrans("Duties"),
+	cost_tax: ctrans("Tax"),
+}
+const isUndoCancelReady = computed(() =>
+	["yes", cancelConfirmationWord.value].includes(undoCancelConfirmationText.value.trim().toLowerCase())
+	&& !!undoCancelReason.value.trim()
+	&& (undoCancelDialogAction.value?.missing_costs ?? []).every((field: string) => undoCancelCosts.value[field] !== null && undoCancelCosts.value[field] !== undefined)
+)
+
+const confirmUndoCancelPurchaseOrder = (action: any) => {
+	undoCancelReason.value = ""
+	undoCancelConfirmationText.value = ""
+	undoCancelErrors.value = {}
+	undoCancelCosts.value = Object.fromEntries((action.missing_costs ?? []).map((field: string) => [field, null]))
+	undoCancelDialogAction.value = action
+}
+
+const undoCancelPurchaseOrder = () => {
+	const action = undoCancelDialogAction.value
+	router.patch(route(action.route.name, action.route.parameters), { counterparty_informed: "yes", reason: undoCancelReason.value.trim(), ...undoCancelCosts.value }, {
+		onStart: () => { undoCancelLoading.value = true },
+		onFinish: () => { undoCancelLoading.value = false },
+		onSuccess: () => { undoCancelDialogAction.value = null },
+		onError: (errors) => {
+			undoCancelErrors.value = Object.keys(errors).length ? errors : { form: ctrans("Failed to undo the cancel") }
+		},
+	})
+}
+
+const cancelReason = ref("")
+
 const cancelPurchaseOrder = () => {
 	const action = cancelDialogAction.value
-	router.patch(route(action.route.name, action.route.parameters), { counterparty_informed: "yes" }, {
+	router.patch(route(action.route.name, action.route.parameters), { counterparty_informed: "yes", reason: cancelReason.value.trim() || null }, {
 		onStart: () => { cancelLoading.value = true },
 		onFinish: () => { cancelLoading.value = false },
 		onSuccess: () => { cancelDialogAction.value = null },
@@ -1211,6 +1253,24 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			/>
 		</template>
 
+		<template #button-undo-cancel-purchase-order="{ action }">
+			<span v-if="action.disabled_reason" v-tooltip="action.disabled_reason" class="inline-flex cursor-not-allowed items-center gap-2">
+				<Button :label="action.label" type="tertiary" disabled class="pointer-events-none">
+					<template #icon><FontAwesomeIcon :icon="faUndo" fixed-width /></template>
+				</Button>
+			</span>
+			<Button
+				v-else
+				:label="action.label"
+				type="tertiary"
+				:tooltip="action.tooltip"
+				:loading="undoCancelLoading"
+				@click="() => confirmUndoCancelPurchaseOrder(action)"
+			>
+				<template #icon><FontAwesomeIcon :icon="faUndo" class="text-amber-500" fixed-width /></template>
+			</Button>
+		</template>
+
 		<template #button-cancel-purchase-order="{ action }">
 			<Button
 				:style="action.style"
@@ -1698,7 +1758,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<p class="text-sm">{{ ctrans("It is your responsibility to inform the supplier, agent or partner that you no longer want this order. If they are not told, they may still produce and send it.") }}</p>
 				</div>
 			</div>
-			<p class="text-sm text-gray-700">{{ ctrans("All item amounts will be set to zero. This cannot be undone.") }}</p>
+			<p class="text-sm text-gray-700">{{ ctrans("All item amounts will be set to zero. They are kept, so the order can be brought back with Undo cancel.") }}</p>
+			<label for="purchase-order-cancel-reason" class="flex flex-col gap-1 text-sm font-medium text-gray-700">
+				<span>{{ ctrans("Reason") }} ({{ ctrans("optional") }})</span>
+				<Textarea id="purchase-order-cancel-reason" v-model="cancelReason" rows="2" maxlength="500" autoResize fluid />
+			</label>
 			<label for="purchase-order-cancel-confirmation" class="text-sm font-medium text-gray-700">
 				{{ ctrans("Have you already informed them? Type :word to cancel this order.", { word: cancelConfirmationWord }) }}
 			</label>
@@ -1721,6 +1785,71 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:loading="cancelLoading"
 				@click="cancelPurchaseOrder"
 			/>
+		</template>
+	</Dialog>
+
+	<Dialog
+		:visible="!!undoCancelDialogAction"
+		modal
+		:header="ctrans('Undo cancel')"
+		:style="{ width: '34rem', maxWidth: 'calc(100vw - 2rem)' }"
+		:draggable="false"
+		@update:visible="(visible) => { if (!visible) undoCancelDialogAction = null }"
+	>
+		<div v-if="undoCancelDialogAction" class="flex flex-col gap-4">
+			<p class="text-sm text-gray-700">
+				{{ ctrans("The order and its items go back to :state, with their amounts and costs as they were before cancelling.", { state: undoCancelDialogAction.restores_state }) }}
+			</p>
+			<div v-if="undoCancelDialogAction.duplicates?.length" class="flex items-start gap-3 rounded-md border border-amber-400 bg-amber-50 p-3 text-amber-900">
+				<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5 text-xl text-amber-500" fixed-width />
+				<div class="flex flex-col gap-1 text-sm">
+					<p class="font-semibold">{{ ctrans("These products are already on purchase orders made after the cancellation") }}</p>
+					<ul>
+						<li v-for="duplicate in undoCancelDialogAction.duplicates" :key="duplicate.id" class="whitespace-nowrap">
+							<span class="font-mono">{{ duplicate.reference }}</span>
+							<span class="text-xs"> ({{ duplicate.state }})</span>
+						</li>
+					</ul>
+					<p>{{ ctrans("Bringing this order back may order them twice.") }}</p>
+				</div>
+			</div>
+			<div v-if="undoCancelDialogAction.missing_costs?.length" class="flex flex-col gap-2">
+				<p class="text-sm text-gray-700">
+					{{ ctrans("This order was cancelled before its costs were kept. Enter them again.") }}
+					<template v-if="undoCancelDialogAction.cost_total !== null">
+						{{ ctrans("Its total before cancelling was :total.", { total: locale.currencyFormat(undoCancelDialogAction.currency_code ?? "", undoCancelDialogAction.cost_total) }) }}
+					</template>
+				</p>
+				<p v-if="undoCancelDialogAction.cost_gap !== null" class="text-sm font-medium text-gray-700">
+					{{ ctrans("Extra costs and tax must add up to :amount.", { amount: locale.currencyFormat(undoCancelDialogAction.currency_code ?? "", undoCancelDialogAction.cost_gap) }) }}
+				</p>
+				<label v-for="field in undoCancelDialogAction.missing_costs" :key="field" class="flex flex-col gap-1 text-sm font-medium text-gray-700">
+					<span>{{ costLabels[field] }} <span class="text-red-500">*</span></span>
+					<InputNumber v-model="undoCancelCosts[field]" @update:modelValue="() => { delete undoCancelErrors[field]; delete undoCancelErrors.cost_tax }" mode="currency" :currency="undoCancelDialogAction.currency_code ?? 'USD'" :min="0" :minFractionDigits="2" :maxFractionDigits="2" fluid />
+					<span v-if="undoCancelErrors[field]" class="text-xs text-red-600">{{ undoCancelErrors[field] }}</span>
+				</label>
+			</div>
+			<label for="purchase-order-undo-cancel-reason" class="flex flex-col gap-1 text-sm font-medium text-gray-700">
+				<span>{{ ctrans("Reason") }} <span class="text-red-500">*</span></span>
+				<Textarea id="purchase-order-undo-cancel-reason" v-model="undoCancelReason" rows="2" maxlength="500" autoResize fluid />
+				<span v-if="undoCancelErrors.reason" class="text-xs text-red-600">{{ undoCancelErrors.reason }}</span>
+			</label>
+			<label for="purchase-order-undo-cancel-confirmation" class="flex flex-col gap-1 text-sm font-medium text-gray-700">
+				<span>{{ ctrans("Have you told the supplier, agent or partner that this order is back on? Type :word to confirm.", { word: cancelConfirmationWord }) }} <span class="text-red-500">*</span></span>
+				<InputText id="purchase-order-undo-cancel-confirmation" v-model="undoCancelConfirmationText" autocomplete="off" fluid />
+			</label>
+			<p v-if="undoCancelErrors.form || undoCancelErrors.counterparty_informed" class="text-xs text-red-600">{{ undoCancelErrors.form || undoCancelErrors.counterparty_informed }}</p>
+		</div>
+
+		<template #footer>
+			<div class="flex w-full gap-2">
+				<Button :label="ctrans('Close')" type="tertiary" class="shrink-0" @click="undoCancelDialogAction = null">
+					<template #icon><FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width /></template>
+				</Button>
+				<Button :label="ctrans('Undo cancel')" type="primary" full :disabled="!isUndoCancelReady" :loading="undoCancelLoading" @click="undoCancelPurchaseOrder">
+					<template #icon><FontAwesomeIcon :icon="faCheck" fixed-width /></template>
+				</Button>
+			</div>
 		</template>
 	</Dialog>
 
