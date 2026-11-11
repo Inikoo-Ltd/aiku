@@ -38,8 +38,8 @@ use Throwable;
  *   when it is no longer live, in stock, priced and visible to the customer.
  * - reply_replaced_number: prices, discounts and stock never come from the AI. The reply may only
  *   contain numbers (digits with an optional decimal part) that the customer wrote in this
- *   conversation, or a size written exactly as in the name of a product found or shown in it
- *   ("190g", "50mm"); otherwise the whole reply becomes the fixed fallback. A currency sign on its own is allowed:
+ *   conversation, or a size or percentage written exactly as in the name of a product found or shown
+ *   in it, or of its family ("190g", "50mm", "100% Cotton"); otherwise the whole reply becomes the fixed fallback. A currency sign on its own is allowed:
  *   "£600" after the customer wrote "600 pounds" is an echo, and a price is caught by its number.
  *   Follow-ups breaking the same rule are all dropped.
  * - model_unavailable: an HTTP failure, an empty or unreadable answer, or a content filter stop
@@ -110,7 +110,7 @@ class AskShoppingAssistant
 
         $flags          = $turn['flags'];
         $knownProductIds = $conversation->events()->where('type', ShoppingAssistantEventTypeEnum::SHOWN)->pluck('product_id')->merge(array_keys($turn['found']))->unique();
-        $productNames    = Product::whereIn('id', $knownProductIds)->pluck('name')->implode("\n");
+        $productNames    = Product::whereIn('id', $knownProductIds)->with('family:id,name')->get()->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->merge($turn['names'])->filter()->unique()->implode("\n");
         $customerText    = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::CUSTOMER)->pluck('body')->implode("\n");
         $groups         = ['must_haves' => collect(), 'add_ons' => collect()];
         $reply          = '';
@@ -218,11 +218,11 @@ class AskShoppingAssistant
      * throws or is killed later keeps what it spent; the assistant message gets the turn's totals only
      * for display, and the conversation is never raised again at the end of the turn.
      *
-     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
+     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, names: array<int, string>, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
      */
     private function runModel(ShoppingAssistantConversation $conversation, ?Customer $customer, ShoppingAssistantMessage $customerMessage, string $message, string $model): array
     {
-        $turn = ['answer' => null, 'found' => [], 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
+        $turn = ['answer' => null, 'found' => [], 'names' => [], 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
 
         if (!$customer) {
             $turn['flags'][] = 'model_unavailable';
@@ -308,6 +308,7 @@ class AskShoppingAssistant
                 foreach ($result['products'] as $product) {
                     $turn['found'][$product['id']] ??= $product;
                 }
+                $turn['names'] = array_merge($turn['names'], $result['names'] ?? []);
 
                 $turn['tool_calls'][] = [
                     'name'        => $name,
@@ -485,13 +486,13 @@ class AskShoppingAssistant
     }
 
     /**
-     * A size written as in a product's name ("190g", "50mm", "10 ml") is taken out of the text first;
+     * A size or percentage written as in a product or family name ("190g", "50mm", "10 ml", "41x31cm", "100%") is taken out of the text first;
      * every number left must be one the customer wrote, so "£10" or "120 shops" never passes on the
      * strength of "10 ml" or "120g" in a name.
      */
     public function onlyGivenNumbers(string $text, string $customerText, string $productNames = ''): bool
     {
-        preg_match_all('/\d+(?:[.,]\d+)?\s?\p{L}+/u', $productNames, $sizes);
+        preg_match_all('/\d+(?:[.,]\d+)?(?:\s?x\s?\d+(?:[.,]\d+)?)*\s?(?:\p{L}+|%)/iu', $productNames, $sizes);
         foreach (array_unique($sizes[0]) as $size) {
             $text = preg_replace('/(?<![\d.,£€$])'.preg_quote($size, '/').'(?![\p{L}\d])/iu', ' ', $text);
         }
@@ -593,6 +594,8 @@ Rules:
 - Keep the reply to two or three short sentences.
 - In present_products, put products that fit the request or sell well for similar shops in must_haves, and complementary or previously ordered ones in add_ons.
 - Do not paste tool results or product ids into the reply text.
+- A product marked exact_code_match is the one whose code the customer typed: present it first and do not say you could not find it.
+- Products under out_of_stock in a search_products result can never be presented. Mention one only when it is the product the customer asked for (an exact_code_match, or clearly the item they named): say by its name that it is out of stock right now, never that we do not have it, and offer the closest alternatives. Otherwise ignore them.
 PROMPT;
     }
 

@@ -1214,3 +1214,53 @@ test('the assistant report counts what Keep exploring offered, was seen and clic
             'budget'     => ['value' => 0, 'previous' => 1],
         ]);
 });
+
+test('the assistant search finds a product by its code typed loosely, and names an out of stock one apart without offering it', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $suffix   = Str::lower(Str::random(5));
+    $word     = 'zorb'.$suffix;
+    $inStock  = shoppingAssistantProduct($this->product);
+    $soldOut  = shoppingAssistantProduct($this->product);
+    $inStock->update(['code' => 'Zq'.$suffix.'A-04']);
+    $soldOut->update(['code' => 'Zq'.$suffix.'-29', 'name' => ucfirst($word).' Tote Bag (41x31cm)', 'available_quantity' => 0]);
+    DB::table('products')->whereIn('id', [$inStock->id, $soldOut->id])->update(['is_in_website' => true]);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 0 : 1 => 1.0]);
+    Http::fake([
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('search_products', ['query' => $word.' bag'])]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'The '.$soldOut->name.' is out of stock right now, but this one is close.', 'must_haves' => [$inStock->id, $soldOut->id]])),
+        '*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $found        = $tools->execute($conversation, 'search_products', ['query' => 'zq'.$suffix.'a 04']);
+    $missing      = $tools->execute($conversation, 'search_products', ['query' => 'do you have zq'.$suffix.' -29']);
+    $byName       = $tools->execute($conversation, 'search_products', ['query' => $word.' bag']);
+    $turn         = AskShoppingAssistant::run($conversation, $word.' bag');
+
+    expect($found['error'])->toBeNull()
+        ->and($found['content']['products'][0])->toMatchArray(['id' => $inStock->id, 'exact_code_match' => true])
+        ->and($found['products'][0]['id'])->toBe($inStock->id)
+        ->and(collect($missing['products'])->pluck('id')->all())->not->toContain($soldOut->id)
+        ->and($missing['content']['out_of_stock'][0])->toBe(['name' => $soldOut->name, 'family' => $soldOut->family->name, 'exact_code_match' => true])
+        ->and($missing['content']['out_of_stock'][0])->not->toHaveKey('id')
+        ->and($byName['content']['out_of_stock'][0])->toBe(['name' => $soldOut->name, 'family' => $soldOut->family->name])
+        ->and(collect($byName['products'])->pluck('id')->all())->toContain($inStock->id)->not->toContain($soldOut->id)
+        ->and($turn['reply'])->toBe('The '.$soldOut->name.' is out of stock right now, but this one is close.')
+        ->and($turn['message']->flags)->toBe(['dropped_unknown_product'])
+        ->and($turn['groups']['must_haves']->pluck('id')->all())->toBe([$inStock->id]);
+});
+
+test('the shopping assistant reply may repeat a percentage or size from a product or family name, and the code the customer typed', function () {
+    $assistant = AskShoppingAssistant::make();
+    $names     = "Iconic Classic Tote Bag - Zodiac Sun - Black 6oz (40x36cm)\nNomad Sari 100% Indian Cotton Tote Bags";
+
+    expect($assistant->onlyGivenNumbers('I couldn\'t find an exact match for "iconic -29", but here are the Iconic tote bags from the Nomad Sari 100% Indian Cotton Tote Bags range.', 'iconic -29', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Save 10% on the 100% cotton bags.', 'iconic -29', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('The Zodiac Sun tote (40x36cm) in 6oz cotton is a good pick.', 'tote bags', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('It is 40 pounds for 36.', 'tote bags', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('These are 100 pounds.', 'iconic -29', $names))->toBeFalse();
+});
