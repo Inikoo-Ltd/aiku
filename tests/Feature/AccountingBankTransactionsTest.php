@@ -16,6 +16,7 @@ use App\Enums\Accounting\BankConnection\BankConnectionStateEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Models\Accounting\BankTransaction;
+use App\Models\Helpers\Currency;
 use Illuminate\Support\Facades\Http;
 
 uses()->group('base');
@@ -57,7 +58,20 @@ test('wise display amounts are parsed strictly', function () {
 
 test('wise activities become the lines they moved on our balances', function () {
     $parser = SyncWiseBankConnection::make();
-    $activity = fn (string $type, string $primary, string $secondary) => ['type' => $type, 'primaryAmount' => $primary, 'secondaryAmount' => $secondary];
+    $activity = fn (string $type, string $primary, string $secondary, string $title = '') => ['type' => $type, 'title' => $title, 'primaryAmount' => $primary, 'secondaryAmount' => $secondary];
+
+    expect($parser->legs($activity('INTERBALANCE', '50,000 GBP', '', 'To <strong>Savings</strong>')))
+        ->toBe([
+            ''    => [BankTransactionDirectionEnum::OUT, 50000.0, 'GBP', null],
+            '#in' => [BankTransactionDirectionEnum::IN, 50000.0, 'GBP', 'jar'],
+        ])
+        ->and($parser->legs($activity('INTERBALANCE', '10,000 GBP', '', 'To <strong>GBP</strong>')))
+        ->toBe([
+            ''    => [BankTransactionDirectionEnum::OUT, 10000.0, 'GBP', 'jar'],
+            '#in' => [BankTransactionDirectionEnum::IN, 10000.0, 'GBP', null],
+        ])
+        ->and($parser->legs($activity('INTERBALANCE', '10,000 GBP', '', 'From <strong>Savings</strong>')))
+        ->toBe('balance move not understood: From Savings');
 
     expect($parser->legs($activity('TRANSFER', '834,739.27 INR', '8,000 EUR')))
         ->toBe(['' => [BankTransactionDirectionEnum::OUT, 8000.0, 'EUR']])
@@ -131,6 +145,49 @@ test('a wise connection mirrors every activity once, with transfer references', 
     expect(SyncBankConnection::run($bankConnection->refresh()))->toBe(['synced' => 1, 'skipped' => 1, 'skipped_examples' => ['a4: unknown currency: XYZ']])
         ->and($lines['a3']->refresh()->status)->toBe(BankTransactionStatusEnum::BOOKED)
         ->and(BankTransaction::where('bank_connection_id', $bankConnection->id)->count())->toBe(3);
+});
+
+test('a full sync re-derives lines stored by an older parser, a jar move becoming two lines', function () {
+    $jarMove = array_merge(
+        wiseActivity('j1', 'INTERBALANCE', '50,000 GBP', 'Savings'),
+        ['title' => 'To <strong>Savings</strong>', 'resource' => ['type' => 'BALANCE_TRANSACTION', 'id' => 'j1']]
+    );
+
+    Http::fake([
+        'api.wise.com/v2/profiles'                 => Http::response([['id' => 555, 'type' => 'BUSINESS']]),
+        'api.wise.com/v1/profiles/555/activities*' => Http::response(['cursor' => null, 'activities' => [$jarMove]]),
+    ]);
+
+    $bankConnection = StoreBankConnection::run($this->organisation, [
+        'provider'    => BankConnectionProviderEnum::WISE,
+        'name'        => 'Wise jars',
+        'credentials' => 'jar-token',
+    ]);
+
+    BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'j1',
+        'provider_type'           => 'INTERBALANCE',
+        'direction'               => BankTransactionDirectionEnum::OUT,
+        'amount'                  => -50000,
+        'currency_id'             => Currency::where('code', 'GBP')->value('id'),
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'booked_at'               => now(),
+        'data'                    => ['activity' => $jarMove],
+    ]);
+
+    expect(SyncBankConnection::run($bankConnection, true)['synced'])->toBe(1)
+        ->and(SyncBankConnection::run($bankConnection->refresh(), true)['synced'])->toBe(0);
+
+    $lines = BankTransaction::where('bank_connection_id', $bankConnection->id)->get()->keyBy('provider_transaction_id');
+
+    expect($lines)->toHaveCount(2)
+        ->and((float)$lines['j1']->amount)->toBe(-50000.0)
+        ->and($lines['j1']->account_reference)->toBeNull()
+        ->and((float)$lines['j1#in']->amount)->toBe(50000.0)
+        ->and($lines['j1#in']->account_reference)->toBe('jar');
 });
 
 test('the scheduled sync leaves connections that were never backfilled alone', function () {

@@ -15,6 +15,7 @@ use App\Models\Accounting\BankTransaction;
 use App\Models\Helpers\Currency;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -32,6 +33,10 @@ class SyncWiseBankConnection
     use WithWiseApi;
 
     private const string CONVERSION_CREDIT_SUFFIX = '#in';
+
+    private const string JAR = 'jar';
+
+    private const int PARSER_VERSION = 2;
 
     /** @var array<string, int|null> */
     private array $currencyIds = [];
@@ -88,7 +93,7 @@ class SyncWiseBankConnection
     private function upsertActivity(BankConnection $bankConnection, array $activity, $existing): bool|string
     {
         $stored = $existing->get($activity['id']);
-        if ($stored && ($stored->data['activity']['updatedOn'] ?? null) === $activity['updatedOn']) {
+        if ($stored && ($stored->data['activity']['updatedOn'] ?? null) === $activity['updatedOn'] && ($stored->data['parser_version'] ?? null) === self::PARSER_VERSION) {
             return false;
         }
 
@@ -110,7 +115,22 @@ class SyncWiseBankConnection
             $transfer = $this->fetchTransfer($bankConnection, $activity['resource']['id']);
         }
 
-        foreach ($legs as $suffix => [$direction, $value]) {
+        DB::transaction(fn () => $this->writeLegs($bankConnection, $activity, $legs, $currencyIds, $transfer));
+
+        return true;
+    }
+
+    private function writeLegs(BankConnection $bankConnection, array $activity, array $legs, array $currencyIds, ?array $transfer): void
+    {
+        BankTransaction::where('bank_connection_id', $bankConnection->id)
+            ->whereIn('provider_transaction_id', array_map(
+                fn ($suffix) => $activity['id'].$suffix,
+                array_diff(['', self::CONVERSION_CREDIT_SUFFIX], array_keys($legs))
+            ))
+            ->delete();
+
+        foreach ($legs as $suffix => $leg) {
+            [$direction, $value] = $leg;
             BankTransaction::updateOrCreate(
                 [
                     'bank_connection_id'      => $bankConnection->id,
@@ -123,6 +143,7 @@ class SyncWiseBankConnection
                     'direction'           => $direction,
                     'amount'              => $direction === BankTransactionDirectionEnum::OUT ? -$value : $value,
                     'currency_id'         => $currencyIds[$suffix],
+                    'account_reference'   => $leg[3] ?? null,
                     'status'              => match ($activity['status'] ?? null) {
                         'COMPLETED' => BankTransactionStatusEnum::BOOKED,
                         'CANCELLED' => BankTransactionStatusEnum::CANCELLED,
@@ -133,16 +154,17 @@ class SyncWiseBankConnection
                     'description'         => $this->plainText($activity['description'] ?? null),
                     'booked_at'           => Carbon::parse($activity['createdOn']),
                     'provider_updated_at' => Carbon::parse($activity['updatedOn']),
-                    'data'                => array_filter(['activity' => $activity, 'transfer' => $transfer]),
+                    'data'                => array_filter(['activity' => $activity, 'transfer' => $transfer, 'parser_version' => self::PARSER_VERSION]),
                 ]
             );
         }
-
-        return true;
     }
 
     /**
-     * @return array<string, array{0: BankTransactionDirectionEnum, 1: float, 2: string}>|string keyed by provider id suffix
+     * A move between a balance and its savings jar ("To Savings", or "To GBP" back out of it) is same-currency and carries no
+     * secondaryAmount; it is two lines like a conversion, the jar side marked with account_reference "jar".
+     *
+     * @return array<string, array{0: BankTransactionDirectionEnum, 1: float, 2: string, 3?: string|null}>|string keyed by provider id suffix
      */
     public function legs(array $activity): array|string
     {
@@ -161,10 +183,23 @@ class SyncWiseBankConnection
 
         [$incoming, $primaryValue, $primaryCurrency] = $primary;
 
-        if (($activity['type'] ?? null) === 'INTERBALANCE' && $secondary) {
+        if (($activity['type'] ?? null) === 'INTERBALANCE') {
+            if ($secondary) {
+                return [
+                    ''                             => [BankTransactionDirectionEnum::OUT, $secondary[1], $secondary[2]],
+                    self::CONVERSION_CREDIT_SUFFIX => [BankTransactionDirectionEnum::IN, $primaryValue, $primaryCurrency],
+                ];
+            }
+
+            $title = (string)$this->plainText($activity['title'] ?? null);
+            if (!str_starts_with($title, 'To ') || $incoming) {
+                return 'balance move not understood: '.$title;
+            }
+            $intoJar = $title !== 'To '.$primaryCurrency;
+
             return [
-                ''                             => [BankTransactionDirectionEnum::OUT, $secondary[1], $secondary[2]],
-                self::CONVERSION_CREDIT_SUFFIX => [BankTransactionDirectionEnum::IN, $primaryValue, $primaryCurrency],
+                ''                             => [BankTransactionDirectionEnum::OUT, $primaryValue, $primaryCurrency, $intoJar ? null : self::JAR],
+                self::CONVERSION_CREDIT_SUFFIX => [BankTransactionDirectionEnum::IN, $primaryValue, $primaryCurrency, $intoJar ? self::JAR : null],
             ];
         }
 
