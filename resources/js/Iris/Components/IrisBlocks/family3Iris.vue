@@ -106,7 +106,7 @@ const cleanedDescription = computed(() => {
           <!-- TITLE -->
           <div class="space-y-2">
             <h1 class="product-title">
-              {{ fieldValue?.family?.name }}
+              {{ fieldValue?.family?.description_title || fieldValue?.family?.name }}
             </h1>
           </div>
 

@@ -433,6 +433,23 @@ test('crawl page passes robots.txt and flags content only rendered by javascript
     ]);
 });
 
+test('crawlable content passes when the page shows the description without the h1 the iris blocks drop', function () {
+    $this->family->updateQuietly(['description' => '<h1 class="description_title">Wholesale Backflow Burners&nbsp;</h1><p>Incense burners have a calming effect.</p>']);
+
+    Http::fake([
+        '*/robots.txt' => Http::response("User-agent: *\nDisallow: /basket"),
+        '*'            => Http::response(
+            '<html><body><h1>Backflow Burner</h1><!----><div><p>Incense burners have a calming effect.</p></div></body></html>',
+            200,
+            ['Content-Type' => 'text/html; charset=UTF-8']
+        ),
+    ]);
+
+    CheckFamilyWebpage::run($this->webpage->fresh());
+
+    expect(pageScoreChecks(GetFamilyPageScore::run($this->family->fresh()))['crawlable_content'])->toBeTrue();
+});
+
 test('crawl page ignores robots.txt groups of other bots whose name is part of ours', function () {
     Http::fake([
         '*/robots.txt' => Http::response("User-agent: *\nDisallow: /basket\n\nUser-agent: SemrushBot\nUser-agent: SiteAuditBot\nDisallow: /\n\nUser-agent:\nDisallow: /"),

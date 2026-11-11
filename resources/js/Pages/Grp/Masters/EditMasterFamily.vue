@@ -417,9 +417,9 @@ const save = () => {
                     <p v-if="changedFields.length" class="mt-3 text-xs text-gray-500">{{ ctrans("The checklist updates after saving.") }}</p>
                 </div>
 
-                <Button type="tertiary" full :label="ctrans('Save')" :loading="form.processing" :disabled="!changedFields.length" @click="save">
+                <Button type="primary" full :label="ctrans('Save')" :loading="form.processing" :disabled="!changedFields.length" @click="save">
                     <template #icon>
-                        <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
             </aside>

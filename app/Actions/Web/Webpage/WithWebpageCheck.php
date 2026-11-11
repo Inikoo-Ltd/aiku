@@ -428,13 +428,15 @@ trait WithWebpageCheck
 
     /**
      * Crawlers that do not run JavaScript only read what the server sends, so the description must
-     * be in the HTML itself, outside scripts, rather than rendered from the page props.
+     * be in the HTML itself, outside scripts, rather than rendered from the page props. The Iris
+     * description blocks drop every <h1> of the description, since the page has its own, so those
+     * are left out of the match too.
      * ponytail: matches the first 80 characters of the description, ignoring whitespace and tags.
      */
     private function isContentInHtml(string $html, ?string $description): bool
     {
         $text            = fn (string $value) => mb_strtolower(preg_replace('/\s+/u', '', html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5)));
-        $descriptionText = mb_substr($text((string)$description), 0, 80);
+        $descriptionText = mb_substr($text((string)preg_replace('/<h1\b[^>]*>.*?<\/h1>/is', '', (string)$description)), 0, 80);
 
         return $descriptionText !== '' && str_contains($text(preg_replace('/<(script|style|template)\b.*?<\/\1>/is', '', $html)), $descriptionText);
     }

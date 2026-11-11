@@ -8,8 +8,8 @@ import { faImage } from "@far"
 import { getBestOffer } from '@/Composables/useOffers'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import axios from "axios"
-import { notify } from "@kyvg/vue3-notification"
 import { debounce } from 'lodash-es'
+import { ctrans } from "@/Composables/useTrans"
 
 interface FamilyImage {
   original: string
@@ -18,6 +18,7 @@ interface FamilyImage {
 
 interface FamilyData {
   name?: string
+  description_title?: string | null
   description?: string
   description_image?: Record<string, FamilyImage>
 }
@@ -39,6 +40,12 @@ const props = defineProps<{
 }>()
 
 const layout = inject<Record<string, any>>("layout", {})
+
+const familyTitle = computed(
+  () => props.modelValue?.family?.description_title || props.modelValue?.family?.name
+)
+
+const saveError = ref<string | null>(null)
 
 const cleanedDescription = computed(() => {
   const html = props.modelValue?.family?.description || ""
@@ -166,7 +173,7 @@ onUnmounted(() => {
 
 watch(
   () => [
-    props.modelValue?.family?.name,
+    familyTitle.value,
     props.modelValue?.family?.description,
     props.modelValue?.family?.description_image,
   ],
@@ -183,13 +190,10 @@ const saveDescription = debounce(async (key: string, value: string) => {
       productCategory: props.modelValue.family.id,
     })
     await axios.patch(url, { [key]: value })
+    saveError.value = null
   } catch (error: any) {
     console.error('Save failed:', error)
-    notify({
-      title: 'Failed to Save',
-      text: error?.response?.data?.message || 'Please check your input and try again.',
-      type: 'error',
-    })
+    saveError.value = error?.response?.data?.message || ctrans('Failed to save, please check your input and try again.')
   }
 }, 1500)
 
@@ -306,7 +310,7 @@ const contentClass = computed(() =>
                 'font-bold break-words',
                 titleState === 'truncated' ? 'title--truncated' : ''
               ]">
-                {{ modelValue.family?.name }}
+                {{ familyTitle }}
               </h1>
             </div>
 
@@ -327,7 +331,8 @@ const contentClass = computed(() =>
     ? { maxHeight: `${maxDescriptionHeight - 110}px` }
     : {}">
            <!--  <div v-html="cleanedDescription"></div> -->
-            <EditorV2 
+            <p v-if="saveError" class="text-xs text-red-600">{{ saveError }}</p>
+            <EditorV2
               :model-value="props.modelValue?.family?.description" 
               @update:model-value="(e) => saveDescription('description', e)"
               :toggle="['bold', 'italic', 'underline', 'fontSize', 'bulletList','customLink', 'undo', 'redo', 'highlight', 'color', 'clear']"

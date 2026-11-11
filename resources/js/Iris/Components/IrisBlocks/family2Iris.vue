@@ -28,6 +28,7 @@ interface FamilyTag {
 
 interface FamilyData {
 	name?: string
+	description_title?: string | null
 	description?: string
 	description_image?: Record<string, FamilyImage>
 	offers_data: object
@@ -51,6 +52,10 @@ const props = defineProps<{
 }>()
 
 const layout = inject<Record<string, any>>("layout", {})
+
+const familyTitle = computed(
+	() => props.fieldValue?.family?.description_title || props.fieldValue?.family?.name
+)
 
 const cleanedDescription = computed(() => {
 	const html = props.fieldValue?.family?.description || ""
@@ -270,7 +275,7 @@ onUnmounted(() => {
 
 watch(
 	() => [
-		props.fieldValue?.family?.name,
+		familyTitle.value,
 		props.fieldValue?.family?.description,
 		props.fieldValue?.family?.description_image,
 		layout?.user?.gr_data?.customer_is_gr,
@@ -290,7 +295,7 @@ const contentClass = computed(() =>
 </script>
 
 <template>
-	<section :id="`family-2`" component="family-2-iris">
+	<section :id="`family-2`" component="family-2-iris">		
 		<div
 			class="mx-auto w-full max-w-[1700px] bg-white px-4 py-4 sm:px-8 lg:px-14 2xl:max-w-[1800px] 2xl:px-14"
 			:style="{
@@ -357,7 +362,7 @@ const contentClass = computed(() =>
 							<h1
 								ref="titleTextRef"
 								class="title break-words font-bold tracking-tight text-left">
-								{{ fieldValue.family?.name }}
+								{{ familyTitle }}
 							</h1>
 						</div>
 					</div>
@@ -379,7 +384,7 @@ const contentClass = computed(() =>
 							<div
 								:style="{ fontSize: titleFontSize }"
 								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
-								{{ fieldValue.family?.name }}
+								{{ familyTitle }}
 							</div>
 						</div>
 						<div
@@ -418,7 +423,7 @@ const contentClass = computed(() =>
 							<div
 								:style="{ fontSize: titleFontSize }"
 								class="title break-words font-bold tracking-tight text-[#1d2430] text-left">
-								{{ fieldValue.family?.name }}
+								{{ familyTitle }}
 							</div>
 						</div>
 						<div
