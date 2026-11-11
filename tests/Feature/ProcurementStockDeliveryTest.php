@@ -729,7 +729,7 @@ test('UI index purchase orders for supplier shows supplier-specific columns and 
             ->where('queryBuilderProps.default.elementGroups.state.elements', [
                 'in_process'   => [__('In process'), 11],
                 'submitted'    => [__('Submitted'), 12],
-                'confirmed'    => [__('Confirmed'), 13],
+                'confirmed'    => [__('Accepted'), 13],
                 'settled'      => [__('Settled'), 14],
                 'cancelled'    => [__('Cancelled'), 15],
                 'not_received' => [__('Not Received'), 16],

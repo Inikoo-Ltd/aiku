@@ -92,7 +92,7 @@ class ShowAgentsPurchaseOrderStates extends OrgAction
         return [
             'draft'              => __('Draft'),
             'submitted'          => __('Submitted'),
-            'confirmed'          => __('Confirmed'),
+            'confirmed'          => __('Accepted by agent'),
             'in_production'      => __('Being made'),
             'in_agent_warehouse'  => __('Received'),
             'ready_for_container' => __('Packed'),

@@ -4640,3 +4640,10 @@ test('a purchase order cancelled before its costs were kept asks for the costs t
 
     expect(UpdatePurchaseOrderStateFromCancelled::blockedReason($unaudited->refresh()))->toBe('This order was cancelled before aiku kept what cancelling removes, so it can not be brought back');
 });
+
+test('accepted purchase orders through an agent read accepted by agent', function () {
+    expect(PurchaseOrderStateEnum::CONFIRMED->labelFor(true))->toBe(__('Accepted by agent'))
+        ->and(PurchaseOrderStateEnum::CONFIRMED->labelFor(false))->toBe(__('Accepted'))
+        ->and(PurchaseOrderStateEnum::CONFIRMED->iconFor(true)['tooltip'])->toBe(__('Accepted by agent'))
+        ->and(PurchaseOrderStateEnum::SUBMITTED->labelFor(true))->toBe(__('Submitted'));
+});

@@ -141,7 +141,7 @@ const facts = computed(() => {
 		{ label: ctrans("Ordered by"), value: order.organisation_name },
 		...(order.agent_name ? [{ label: ctrans("Agent"), value: order.agent_name }] : []),
 		{ label: ctrans("Sent"), value: day(order.submitted_at) },
-		...(order.confirmed_at ? [{ label: ctrans("Confirmed"), value: day(order.confirmed_at) }] : []),
+		...(order.confirmed_at ? [{ label: ctrans("Accepted"), value: day(order.confirmed_at) }] : []),
 		...(order.estimated_received_at ? [{ label: ctrans("Expected"), value: day(order.estimated_received_at) }] : []),
 		...(order.settled_at ? [{ label: ctrans("Received"), value: day(order.settled_at) }] : []),
 		...order.terms,
