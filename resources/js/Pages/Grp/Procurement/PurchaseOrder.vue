@@ -74,7 +74,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faPlus as falPlus } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faExternalLink, faPlus as falPlus } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
@@ -1337,7 +1337,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<a v-if="action.key === 'packing_instructions'" :href="route(action.route.name, action.route.parameters)" target="_blank">
 						<Button type="tertiary" size="xs" full :label="action.label" :tooltip="action.tooltip">
 							<template #icon>
-								<FontAwesomeIcon :icon="action.icon" class="text-gray-500" fixed-width aria-hidden="true" />
+								<FontAwesomeIcon :icon="action.icon" class="text-red-500" fixed-width aria-hidden="true" />
+							</template>
+							<template #iconRight>
+								<FontAwesomeIcon :icon="faExternalLink" class="text-gray-400" fixed-width aria-hidden="true" />
 							</template>
 						</Button>
 					</a>

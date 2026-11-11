@@ -319,25 +319,25 @@ function save() {
     <div class="border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
         {{ ctrans(phaseLabels[group.phase] ?? group.phase) }}
     </div>
-    <div class="grid flex-1 gap-px bg-gray-200" :class="groupGridClass(group.stages.length)">
+    <div class="grid flex-1 auto-rows-[auto_1fr] gap-px bg-gray-200" :class="groupGridClass(group.stages.length)">
         <div
             v-for="stage in group.stages"
             :key="stage.key"
-            class="p-3 text-sm"
-            :class="[
-                stage.current ? '' : '',
-                stage.unpaid ? 'bg-amber-50' : stage.reached && !stage.not_required ? 'bg-green-50' : 'bg-white',
-            ]"
+            class="row-span-2 grid grid-rows-subgrid gap-0 p-3 text-sm"
+            :class="stage.unpaid ? 'bg-amber-50' : stage.reached && !stage.not_required ? 'bg-green-50' : 'bg-white'"
         >
-            <div class="flex items-center gap-2 font-medium" :class="stage.reached ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
-                <FontAwesomeIcon v-if="stage.not_required" icon="fal fa-minus-circle" class="text-gray-400" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else-if="stage.unpaid" icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else-if="stage.reached" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
-                <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
-                {{ stage.label }}
+            <div class="min-h-9">
+                <div class="flex items-center gap-2 font-medium" :class="stage.reached ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
+                    <FontAwesomeIcon v-if="stage.not_required" icon="fal fa-minus-circle" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else-if="stage.unpaid" icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else-if="stage.reached" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
+                    <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
+                    {{ stage.label }}
+                </div>
+                <div v-if="stage.caption" class="text-xs text-gray-400 italic">{{ stage.caption }}</div>
             </div>
-            <div v-if="stage.caption" class="text-xs text-gray-400 italic">{{ stage.caption }}</div>
 
+            <div>
             <div class="mt-1 tabular-nums" :class="stage.date ? 'text-gray-700' : 'text-gray-400'">
                 <template v-if="stage.not_required">{{ ctrans("Not required") }}</template>
                 <template v-else-if="stage.unpaid"><span class="text-amber-700">{{ ctrans("Not paid") }}</span></template>
@@ -485,6 +485,7 @@ function save() {
             </div>
 
             <slot :name="`stage-${stage.key}`" :stage="stage" />
+            </div>
         </div>
     </div>
     </section>
