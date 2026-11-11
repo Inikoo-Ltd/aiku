@@ -888,7 +888,7 @@ test('a Wix order with a product missing from the catalogue is skipped and raise
         ->and($tickets())->toHaveCount(1)
         ->and($tickets()->first()->subject)->toContain($family->shop->code.'-20189')
         ->and($tickets()->first()->description)->toContain('JOYOUS: SKU NOT-IN-CATALOGUE-')
-        ->and($tickets()->first()->description)->toContain('Dark Fairytale (Size: 10ml) has no SKU in Wix')
+        ->and($tickets()->first()->description)->toContain('Dark Fairytale (10ml) has no SKU in Wix')
         ->and($tickets()->first()->description)->toContain('Aiku only imports Wix products that have a SKU');
 })->depends('create family');
 
@@ -931,6 +931,46 @@ test('a Wix order keeps the sale price and shipping the buyer paid in Wix', func
 
     expect((float) $order->refresh()->net_amount)->toBe(27.5)
         ->and((float) $order->tax_amount)->not->toBe(10.5);
+})->depends('create family');
+
+test('a Wix order already fulfilled in Wix comes in invoiced and dispatched on its Wix date, without a delivery note', function (ProductCategory $family) {
+    \Illuminate\Support\Facades\Http::fake();
+    $product = StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 53]
+    ));
+
+    $order = \App\Actions\Catalogue\Shop\External\Wix\StoreOrderFromWix::make()->handle($family->shop, [
+        'id'                => 'wix-order-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8)),
+        'status'            => 'APPROVED',
+        'fulfillmentStatus' => 'FULFILLED',
+        'number'            => '20211',
+        'createdDate'       => '2026-11-02T12:39:26Z',
+        'buyerInfo'         => ['email' => 'wix-buyer-'.\Illuminate\Support\Str::random(6).'@example.com'],
+        'billingInfo'       => ['contactDetails' => ['firstName' => 'Wix', 'lastName' => 'Buyer'], 'address' => ['country' => 'GB', 'city' => 'Chesterfield', 'postalCode' => 'S41 9QJ', 'addressLine' => 'Broombank Road']],
+        'priceSummary'      => ['subtotal' => ['amount' => '45.05'], 'shipping' => ['amount' => '0'], 'tax' => ['amount' => '9.02']],
+        'lineItems'         => [[
+            'id'                   => 'line-1',
+            'quantity'             => 1,
+            'physicalProperties'   => ['sku' => $product->code],
+            'price'                => ['amount' => '45.05'],
+            'priceBeforeDiscounts' => ['amount' => '53.00'],
+            'totalPriceBeforeTax'  => ['amount' => '45.05'],
+            'totalPriceAfterTax'   => ['amount' => '54.06'],
+        ]],
+    ], '2026-11-04 13:34:40');
+
+    $invoice = $order->invoices()->where('type', \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE)->sole();
+
+    expect($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED)
+        ->and($order->dispatched_at->toDateTimeString())->toBe('2026-11-04 13:34:40')
+        ->and($order->deliveryNotes()->count())->toBe(0)
+        ->and((float) $order->transactions()->where('model_type', 'Product')->sole()->quantity_dispatched)->toBe(1.0)
+        ->and($invoice->date->toDateString())->toBe('2026-11-04')
+        ->and((float) $invoice->net_amount)->toBe(45.05)
+        ->and((float) $invoice->tax_amount)->toBe(9.02)
+        ->and((float) $invoice->total_amount)->toBe(54.07);
+    \Illuminate\Support\Facades\Http::assertNothingSent();
 })->depends('create family');
 
 test('a free Wix variant syncs onto an existing product without an rrp', function (ProductCategory $family) {

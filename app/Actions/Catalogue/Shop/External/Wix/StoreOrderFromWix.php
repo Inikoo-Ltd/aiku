@@ -2,25 +2,32 @@
 
 namespace App\Actions\Catalogue\Shop\External\Wix;
 
+use App\Actions\Accounting\Invoice\UpdateInvoiceDate;
 use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsManual;
+use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
+use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrder\FillToOrder;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
 use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\Helpers\Ticket\TicketModuleEnum;
 use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Ticket;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
+use App\Models\Procurement\PartnerShoppingListItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -28,9 +35,12 @@ use Illuminate\Support\Facades\DB;
 class StoreOrderFromWix extends OrgAction
 {
     /**
+     * With $fulfilledAt the order was already sent from Wix: it comes in invoiced and dispatched on that date,
+     * without a delivery note, bottles to fill or a fulfilment sent back to Wix. Its stock is adjusted by hand.
+     *
      * @throws \Throwable
      */
-    public function handle(Shop $shop, array $wixOrder): ?Order
+    public function handle(Shop $shop, array $wixOrder, ?string $fulfilledAt = null): ?Order
     {
         $externalId = Arr::get($wixOrder, 'id');
 
@@ -57,7 +67,7 @@ class StoreOrderFromWix extends OrgAction
             return null;
         }
 
-        return DB::transaction(function () use ($shop, $wixOrder, $externalId, $result) {
+        return DB::transaction(function () use ($shop, $wixOrder, $externalId, $result, $fulfilledAt) {
             $customer = StoreCustomerFromWix::run($shop, $wixOrder);
             $address  = StoreCustomerFromWix::make()->getFormattedAddress($wixOrder);
 
@@ -108,6 +118,10 @@ class StoreOrderFromWix extends OrgAction
                 $order = UpdateOrderShippingEngineAsManual::run($order, ['shipping_amount' => $shippingAmount]);
             }
 
+            if ($fulfilledAt) {
+                return $this->closeOrderFulfilledInWix($order, $fulfilledAt);
+            }
+
             if ($warehouse = $shop->organisation->warehouses()->first()) {
                 SendOrderToWarehouse::make()->action($order, [
                     'warehouse_id' => $warehouse->id
@@ -116,6 +130,21 @@ class StoreOrderFromWix extends OrgAction
 
             return $order;
         });
+    }
+
+    public function closeOrderFulfilledInWix(Order $order, string $fulfilledAt): Order
+    {
+        FillToOrder::make()->pendingLines($order)->each(fn (PartnerShoppingListItem $line) => $line->update([
+            'state'          => ShoppingListItemStateEnum::DISMISSED,
+            'dismiss_reason' => 'fulfilled in Wix',
+            'dismissed_at'   => now(),
+        ]));
+
+        $order = FinaliseOrder::make()->action($order->refresh(), true);
+
+        UpdateInvoiceDate::run($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->firstOrFail(), ['date' => $fulfilledAt]);
+
+        return DispatchOrder::make()->action($order, null, $fulfilledAt, repair: true);
     }
 
     /**
@@ -198,12 +227,12 @@ class StoreOrderFromWix extends OrgAction
     }
 
     /**
-     * The options the buyer chose (size, colour), as Wix shows them on the order, e.g. "(Size: 10ml)".
+     * The options the buyer chose (size, colour), as Wix shows them on the order, e.g. "(10ml)".
      */
     public function getLineOptions(array $lineItem): string
     {
         $options = collect(Arr::get($lineItem, 'descriptionLines', []))
-            ->map(fn (array $line) => trim(Arr::get($line, 'name.original', '').': '.(Arr::get($line, 'plainText.original') ?? Arr::get($line, 'colorInfo.original', '')), ': '))
+            ->map(fn (array $line) => Arr::get($line, 'plainText.original') ?? Arr::get($line, 'colorInfo.original'))
             ->filter()
             ->implode(', ');
 
