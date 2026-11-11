@@ -214,7 +214,7 @@ class DeleteEmptyPurchaseOrders extends OrgAction
                 }
 
                 if (in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
-                    UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder);
+                    UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder, source: UpdatePurchaseOrderStateToCancelled::SOURCE_EMPTIED);
 
                     return 1;
                 }

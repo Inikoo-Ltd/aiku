@@ -8,20 +8,23 @@ import Table from "@/Components/Table/Table.vue"
 import PillFilterBar from "@/Components/Utils/PillFilterBar.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SupplierPortalForms from "@/Components/Procurement/SupplierPortalForms.vue"
+import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
+import type { Image as ImageProxy } from "@/types/Image"
 import type { EditedSubmission, PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPen, faTag } from "@fal"
+import { faImage, faPen, faTag } from "@fal"
 
-library.add(faPen, faTag)
+library.add(faImage, faPen, faTag)
 
 interface PriceChange extends EditedSubmission {
 	state_label: string
 	proposed_price: number
 	effective_from: string | null
+	effective_until: string | null
 	reason: string | null
 	submitted_at: string | null
 	editable: boolean
@@ -31,6 +34,8 @@ interface ProductRow {
 	id: number
 	code: string
 	name: string
+	image: ImageProxy | null
+	image_full: { original_url: string; download_url: string } | null
 	status: "active" | "on_hold" | "discontinued"
 	status_label: string
 	cost: number
@@ -96,21 +101,33 @@ const stateClass: Record<string, string> = {
 				<template v-if="isPhone" #table>
 					<ul class="divide-y divide-gray-100 border-t border-gray-100">
 						<li v-for="row in data.data ?? []" :key="row.id" class="space-y-1.5 px-4 py-3">
-							<div class="flex items-baseline justify-between gap-3">
-								<span class="text-base font-semibold text-gray-900">{{ row.code }}</span>
-								<span class="text-base tabular-nums text-gray-900">{{ price(row.cost) }}</span>
-							</div>
-							<div class="flex items-baseline justify-between gap-3 text-sm">
-								<span class="text-gray-500">{{ row.name }}</span>
-								<span :class="statusClass[row.status]">{{ row.status_label }}</span>
+							<div class="flex items-center gap-3">
+								<ZoomableImage v-if="row.image" :src="row.image" :full="row.image_full" :alt="row.code" class="h-14 w-14 shrink-0 bg-white" />
+								<div v-else class="flex h-14 w-14 shrink-0 items-center justify-center rounded border border-gray-200 bg-white">
+									<FontAwesomeIcon icon="fal fa-image" class="text-xl text-gray-300" aria-hidden="true" />
+								</div>
+								<div class="min-w-0 flex-1 space-y-0.5">
+									<div class="flex items-baseline justify-between gap-3">
+										<span class="whitespace-nowrap text-base font-semibold text-gray-900">{{ row.code }}</span>
+										<span class="text-base tabular-nums text-gray-900">{{ price(row.cost) }}</span>
+									</div>
+									<div class="flex items-baseline justify-between gap-3 text-sm">
+										<span class="text-gray-500">{{ row.name }}</span>
+										<span :class="statusClass[row.status]">{{ row.status_label }}</span>
+									</div>
+								</div>
 							</div>
 							<template v-if="row.price_change">
 								<dl class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-sm">
 									<dt class="text-gray-400">{{ ctrans("Proposed price") }}</dt>
 									<dd class="text-right font-semibold tabular-nums text-gray-900">{{ price(row.price_change.proposed_price) }}</dd>
 									<template v-if="row.price_change.effective_from">
-										<dt class="text-gray-400">{{ ctrans("From") }}</dt>
+										<dt class="text-gray-400">{{ ctrans("Since") }}</dt>
 										<dd class="text-right tabular-nums text-gray-700">{{ day(row.price_change.effective_from) }}</dd>
+									</template>
+									<template v-if="row.price_change.effective_until">
+										<dt class="text-gray-400">{{ ctrans("Until") }}</dt>
+										<dd class="text-right tabular-nums text-gray-700">{{ day(row.price_change.effective_until) }}</dd>
 									</template>
 									<dt class="text-gray-400">{{ ctrans("Proposal") }}</dt>
 									<dd class="text-right" :class="stateClass[row.price_change.state]">{{ row.price_change.state_label }}</dd>
@@ -125,8 +142,16 @@ const stateClass: Record<string, string> = {
 				</template>
 
 				<template #cell(code)="{ item }: { item: ProductRow }">
-					<span class="whitespace-nowrap font-medium text-gray-900">{{ item.code }}</span>
-					<div class="text-xs text-gray-500">{{ item.name }}</div>
+					<div class="flex items-center gap-3">
+						<ZoomableImage v-if="item.image" :src="item.image" :full="item.image_full" :alt="item.code" class="h-12 w-12 shrink-0 bg-white" />
+						<div v-else class="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-gray-200 bg-white">
+							<FontAwesomeIcon icon="fal fa-image" class="text-lg text-gray-300" aria-hidden="true" />
+						</div>
+						<div class="min-w-0">
+							<span class="whitespace-nowrap font-medium text-gray-900">{{ item.code }}</span>
+							<div class="text-xs text-gray-500">{{ item.name }}</div>
+						</div>
+					</div>
 				</template>
 				<template #cell(status)="{ item }: { item: ProductRow }">
 					<span class="whitespace-nowrap" :class="statusClass[item.status]">{{ item.status_label }}</span>
@@ -139,6 +164,9 @@ const stateClass: Record<string, string> = {
 				</template>
 				<template #cell(effective_from)="{ item }: { item: ProductRow }">
 					<span v-if="item.price_change?.effective_from" class="whitespace-nowrap">{{ day(item.price_change.effective_from) }}</span>
+				</template>
+				<template #cell(effective_until)="{ item }: { item: ProductRow }">
+					<span v-if="item.price_change?.effective_until" class="whitespace-nowrap">{{ day(item.price_change.effective_until) }}</span>
 				</template>
 				<template #cell(price_change_submitted_at)="{ item }: { item: ProductRow }">
 					<span v-if="item.price_change" class="whitespace-nowrap">{{ day(item.price_change.submitted_at) }}</span>
@@ -158,6 +186,16 @@ const stateClass: Record<string, string> = {
 		</div>
 
 		<Dialog v-model:visible="isOpen" modal :header="selected ? `${ctrans('Change price')} · ${selected.code}` : ''" class="w-[calc(100vw-2rem)] max-w-2xl">
+			<div v-if="selected" class="mb-4 flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+				<ZoomableImage v-if="selected.image" :src="selected.image" :full="selected.image_full" :alt="selected.code" class="h-24 w-24 shrink-0 bg-white" />
+				<div v-else class="flex h-24 w-24 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white">
+					<FontAwesomeIcon icon="fal fa-image" class="text-3xl text-gray-300" aria-hidden="true" />
+				</div>
+				<div class="min-w-0">
+					<p class="whitespace-nowrap text-base font-semibold text-gray-900">{{ selected.code }}</p>
+					<p class="text-sm text-gray-600">{{ selected.name }}</p>
+				</div>
+			</div>
 			<SupplierPortalForms
 				v-if="selected"
 				:key="selected.id"

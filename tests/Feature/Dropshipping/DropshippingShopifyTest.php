@@ -207,7 +207,9 @@ test('bulk portfolio upload dispatches one job per portfolio', function (Portfol
         ['portfolios' => [$portfolio->id]]
     );
 
-    StoreNewProductToCurrentShopify::assertPushed();
+    StoreNewProductToCurrentShopify::assertPushedOn('shopify');
+    expect(CreateNewBulkPortfoliosToShopify::uploadQueue(CreateNewBulkPortfoliosToShopify::BULK_QUEUE_THRESHOLD))->toBe('shopify')
+        ->and(CreateNewBulkPortfoliosToShopify::uploadQueue(CreateNewBulkPortfoliosToShopify::BULK_QUEUE_THRESHOLD + 1))->toBe('shopify-bulk');
 })->depends('add product to customer portfolio');
 
 test('a shopify store is only reported missing when shopify says it does not exist, not when it throttles the check', function () {

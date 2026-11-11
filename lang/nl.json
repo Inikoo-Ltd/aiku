@@ -8685,6 +8685,7 @@
     "Push current stock levels of these products to this channel only": "Stuur de huidige voorraadniveaus van deze producten alleen naar dit kanaal",
     "Saved, but Shopify did not accept the price: :reason": "Opgeslagen, maar Shopify heeft de prijs niet geaccepteerd: :reason",
     "Saved, but eBay did not accept the change: :reason": "Opgeslagen, maar eBay heeft de wijziging niet geaccepteerd: :reason",
+    "eBay did not accept the change, so nothing was saved: :reason": "eBay heeft de wijziging niet geaccepteerd, dus er is niets opgeslagen: :reason",
     "This adjustment takes the price to zero or below.": "Met deze aanpassing wordt de prijs nul of lager.",
     "The data feed for :name is not available yet, please try again later.": "De datafeed voor :name is nog niet beschikbaar, probeer het later opnieuw.",
     "New support ticket": "Nieuw supportticket",

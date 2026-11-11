@@ -14,6 +14,8 @@ import SupplierPortalSearch from "@/Components/Procurement/SupplierPortalSearch.
 import SupplierPortalHome, { type PortalSummary } from "@/Components/Procurement/SupplierPortalHome.vue"
 import Image from "@common/Components/Image.vue"
 import { useColorTheme } from "@/Composables/useStockList"
+import { setColorStyleRoot } from "@/Composables/useApp"
+import { useAppAccentVariables } from "@/Composables/useAppAccent"
 import GrpAuth from "@/Layouts/GrpAuth.vue"
 import type { PortalForms } from "@/Components/Procurement/SupplierPortalForms.vue"
 import type { Valuation } from "@/Components/Procurement/AgentSalesValuation.vue"
@@ -61,6 +63,7 @@ const props = defineProps<{
 	feedback?: InstanceType<typeof SalesDashboard>["$props"]["feedback"]
 	labels_print?: InstanceType<typeof SupplierPortalDetails>["$props"]["labelsPrint"]
 	products_route?: string
+	product_websites_route?: string
 	purchase_order_route?: string
 }>()
 
@@ -81,8 +84,12 @@ const verify = () => {
 const openOrders = computed(() => props.open_purchase_orders ?? 0)
 
 const theme = ref(props.profile?.theme ?? 0)
+const themeColours = computed(() => useColorTheme[theme.value] ?? useColorTheme[0])
+watch(themeColours, (colours) => setColorStyleRoot(colours), { immediate: true })
+useAppAccentVariables(() => themeColours.value)
+
 const navigationTheme = computed(() => {
-	const colours = useColorTheme[theme.value] ?? useColorTheme[0]
+	const colours = themeColours.value
 
 	return {
 		background: colours[0],
@@ -247,6 +254,7 @@ onMounted(() => {
 					:logo="profile?.company_logo"
 					:company="company"
 					:agent="agent"
+					:owner="details?.owner"
 					:buyers="details?.buyers"
 					:summary="summary"
 					:sales="sales"
@@ -277,7 +285,7 @@ onMounted(() => {
 					:currency="details?.currency ?? company?.currency ?? null" />
 
 				<template v-else>
-					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" :products-route="products_route" />
+					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" :products-route="products_route" :product-websites-route="product_websites_route" />
 					<div v-else class="skeleton h-40 rounded-lg" />
 				</template>
 

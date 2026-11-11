@@ -55,7 +55,8 @@ const props = defineProps<{
 	logo?: ImageProxy | null
 	company?: Person & { name: string; location: string | null; currency: string | null }
 	agent?: (Person & { name: string }) | null
-	buyers?: { organisation: string; name: string | null }[]
+	owner?: { name: string | null; email: string | null } | null
+	buyers?: { organisation: string; name: string | null; email: string | null }[]
 	summary?: PortalSummary
 	sales?: { products: number; selling: number }
 	openOrders: number
@@ -72,6 +73,12 @@ const emit = defineEmits<{
 const locale = useLocaleStore()
 
 const SHOWN_ORDERS = 5
+
+const greetingName = computed(() => {
+	const contactName = props.company?.contact_name?.trim()
+
+	return contactName && contactName !== props.supplier.name ? `${contactName} - ${props.supplier.name}` : props.supplier.name
+})
 
 const money = (amount: number, currency: string | null) =>
 	currency ? new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 }).format(Math.round(amount)) : Math.round(amount).toString()
@@ -153,6 +160,31 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 				{{ ctrans("At your prices, UK, Spain and Slovakia together, :from to :to. Updated :date.", { from: useFormatTime(summary.from), to: useFormatTime(summary.to), date: useFormatTime(summary.as_of) }) }}
 			</p>
 		</section>
+
+		<article class="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+			<header class="flex items-center gap-3 border-b border-gray-100 bg-white px-5 py-3 sm:px-6">
+				<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold" :style="{ backgroundColor: theme.background, color: theme.text }">
+					{{ initials(group) }}
+				</div>
+				<div class="min-w-0 flex-1">
+					<p class="truncate text-sm font-semibold text-gray-800">{{ ctrans("A message from :group", { group }) }}</p>
+					<p class="truncate text-xs text-gray-500">{{ ctrans("We are pleased to be your distribution partner in Europe.") }}</p>
+				</div>
+				<FontAwesomeIcon icon="fal fa-envelope-open-text" class="hidden text-xl sm:block" :style="{ color: accent.colour }" aria-hidden="true" />
+			</header>
+			<div class="px-5 py-5 sm:px-6" :style="{ backgroundColor: theme.soft }">
+				<div class="flex max-w-3xl flex-col gap-3 text-sm leading-relaxed text-gray-700">
+					<p class="font-semibold text-gray-900">{{ ctrans("Dear :supplier,", { supplier: greetingName }) }}</p>
+					<p>{{ ctrans("Thank you for trading with :group.", { group }) }}</p>
+					<p>{{ welcome[0] }}</p>
+					<p class="border-l-2 pl-3 font-medium text-gray-900" :style="{ borderColor: theme.background }">{{ welcome[1] }}</p>
+				</div>
+				<footer class="mt-5 text-sm">
+					<p class="text-gray-500">{{ ctrans("With warm regards,") }}</p>
+					<p class="mt-1 font-serif text-base italic text-gray-900">{{ ctrans("The :group team", { group }) }}</p>
+				</footer>
+			</div>
+		</article>
 
 		<section class="grid gap-4 md:grid-cols-3">
 			<SupplierPortalStatCard
@@ -272,35 +304,10 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 						{{ ctrans(":count more open orders", { count: String(hiddenRibbons) }) }}
 					</button>
 				</section>
-
-				<article class="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
-					<header class="flex items-center gap-3 border-b border-gray-100 bg-white px-5 py-3 sm:px-6">
-						<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold" :style="{ backgroundColor: theme.background, color: theme.text }">
-							{{ initials(group) }}
-						</div>
-						<div class="min-w-0 flex-1">
-							<p class="truncate text-sm font-semibold text-gray-800">{{ ctrans("A message from :group", { group }) }}</p>
-							<p class="truncate text-xs text-gray-500">{{ ctrans("We are pleased to be your distribution partner in Europe.") }}</p>
-						</div>
-						<FontAwesomeIcon icon="fal fa-envelope-open-text" class="hidden text-xl sm:block" :style="{ color: accent.colour }" aria-hidden="true" />
-					</header>
-					<div class="px-5 py-5 sm:px-6" :style="{ backgroundColor: theme.soft }">
-						<div class="flex max-w-3xl flex-col gap-3 text-sm leading-relaxed text-gray-700">
-							<p class="font-semibold text-gray-900">{{ ctrans("Dear :supplier,", { supplier: supplier.name }) }}</p>
-							<p>{{ ctrans("Thank you for trading with :group.", { group }) }}</p>
-							<p>{{ welcome[0] }}</p>
-							<p class="border-l-2 pl-3 font-medium text-gray-900" :style="{ borderColor: theme.background }">{{ welcome[1] }}</p>
-						</div>
-						<footer class="mt-5 text-sm">
-							<p class="text-gray-500">{{ ctrans("With warm regards,") }}</p>
-							<p class="mt-1 font-serif text-base italic text-gray-900">{{ ctrans("The :group team", { group }) }}</p>
-						</footer>
-					</div>
-				</article>
 			</div>
 
 			<aside class="flex min-w-0 flex-col gap-4 lg:gap-6">
-				<section v-if="agent || buyers?.length" class="rounded-lg border border-gray-200 bg-white shadow-sm">
+				<section v-if="owner || agent || buyers?.length" class="rounded-lg border border-gray-200 bg-white shadow-sm">
 					<header class="flex items-center gap-2.5 border-b border-gray-100 px-4 py-3">
 						<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md" :style="{ backgroundColor: accent.tint, color: accent.colour }">
 							<FontAwesomeIcon icon="fal fa-users" fixed-width aria-hidden="true" />
@@ -308,6 +315,14 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 						<h2 class="text-sm font-semibold text-gray-800">{{ ctrans("Your contacts at :group", { group }) }}</h2>
 					</header>
 					<ul class="divide-y divide-gray-100">
+						<li v-if="owner" class="flex items-center gap-3 px-4 py-3">
+							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold" :style="{ backgroundColor: theme.background, color: theme.text }">{{ initials(owner.name ?? group) }}</span>
+							<div class="min-w-0 text-sm">
+								<p class="truncate font-semibold text-gray-900">{{ owner.name }}</p>
+								<p class="truncate text-xs text-gray-500">{{ ctrans("Owner, :group", { group }) }}</p>
+								<a v-if="owner.email" :href="`mailto:${owner.email}`" class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-gray-700 hover:underline"><FontAwesomeIcon icon="fal fa-envelope" fixed-width class="text-gray-400" aria-hidden="true" /><span class="truncate">{{ owner.email }}</span></a>
+							</div>
+						</li>
 						<li v-if="agent" class="flex gap-3 p-4">
 							<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" :style="{ backgroundColor: accent.tint, color: accent.colour }">
 								<FontAwesomeIcon icon="fal fa-user-tie" fixed-width aria-hidden="true" />
@@ -327,6 +342,7 @@ const productionGap = (production: NonNullable<PortalSummary["production"]>, ave
 							<div class="min-w-0 text-sm">
 								<p class="truncate font-semibold text-gray-900">{{ buyer.name }}</p>
 								<p class="truncate text-xs text-gray-500">{{ ctrans("Purchasing, :organisation", { organisation: buyer.organisation }) }}</p>
+								<a v-if="buyer.email" :href="`mailto:${buyer.email}`" class="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-gray-700 hover:underline"><FontAwesomeIcon icon="fal fa-envelope" fixed-width class="text-gray-400" aria-hidden="true" /><span class="truncate">{{ buyer.email }}</span></a>
 							</div>
 						</li>
 					</ul>

@@ -186,11 +186,12 @@ defineExpose({
                     <component :is="product.url ? LinkIris : 'div'" :href="product.url" :id="product?.url?.id"
                         :type="product.url ? typeOfLink : undefined"
                         class="hover:text-gray-500 font-semibold l text-sm mb-1 block">
-                        <span v-if="product.units != 1">
+                        <span v-if="product.units != 1 && !product.variant_sizes?.length">
                             {{ product.units }}x
                         </span>
                         {{ product.variant_title || product.name }}
                     </component>
+                    <div v-if="product.variant_sizes?.length" class="mb-1 text-xs text-gray-500">{{ ctrans("Sizes: :sizes", { sizes: product.variant_sizes.join(" · ") }) }}</div>
 
                     <!-- CODE + RRP -->
                     <div

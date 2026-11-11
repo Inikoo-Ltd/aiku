@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Actions\Catalogue\Variant\GetVariantProductSizeLabel;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
@@ -140,6 +141,7 @@ class TransactionsResource extends JsonResource
             'price'                          => $this->price,
             'asset_code'                     => $this->asset_code,
             'asset_name'                     => $this->asset_name,
+            'size_label'                     => GetVariantProductSizeLabel::make()->forBasketLine($this->variant_option_label, $this->asset_code, $this->product_unit, $this->product_units),
             'asset_type'                     => $this->asset_type,
             'units'                          => trimDecimalZeros($this->product_units),
             'image'                          => $this->product_image_id ? ImageResource::make($media)->getArray() : null,

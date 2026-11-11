@@ -663,6 +663,50 @@ test('the shipping faire reimburses is copied onto an order with none and never 
     $invoice->delete();
 });
 
+/** HELP-4635: an order whose shipping Faire funds is charged the shop's rate per parcel before the tracking goes to Faire. */
+test('faire funded shipping replaces the shipping typed on the order and keeps the tax faire stated', function () {
+    $order = StoreOrder::make()->action($this->customer, []);
+    StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);
+    UpdateOrderShippingEngineAsManual::run($order->refresh(), ['shipping_amount' => 9.30]);
+
+    $shopSettings = [...($order->shop->settings ?? []), 'faire' => ['funded_shipping_rates' => "SK 5.04 6.49"]];
+    $deliveryNote          = new DeliveryNote();
+    $deliveryNote->parcels = [['weight' => 2.5, 'dimensions' => [30, 20, 20]], ['weight' => 7, 'dimensions' => [40, 30, 30]]];
+    $deliveryNote->setRelation('shipments', collect());
+    $setFundedShipping     = function (string $countryCode = 'SK') use ($order, $shopSettings, $deliveryNote) {
+        $order->refresh()->external_id = 'bo_test4635';
+        $order->shop->settings         = $shopSettings;
+        $order->setRelation('deliveryAddress', new Address(['country_code' => $countryCode]));
+        UpdateShippingFaireOrder::make()->setFaireFundedShipping($deliveryNote, $order);
+
+        return $order->refresh();
+    };
+
+    $orderTax = (float)$order->refresh()->tax_amount;
+    Http::fake(['*faire.com/*' => Http::sequence()
+        ->push(['free_shipping_reason' => null])
+        ->push(['message' => 'Too many requests'], 429)
+        ->push(['free_shipping_reason' => 'INSIDER_FREE_SHIPPING'])
+        ->push(['free_shipping_reason' => 'INSIDER_FREE_SHIPPING'])]);
+
+    expect((float)$setFundedShipping('CH')->shipping_amount)->toBe(9.30);
+    Http::assertSentCount(0);
+
+    expect((float)$setFundedShipping()->shipping_amount)->toBe(9.30)
+        ->and((float)$setFundedShipping()->shipping_amount)->toBe(9.30);
+
+    $order = $setFundedShipping();
+    expect((float)$order->shipping_amount)->toBe(11.53)
+        ->and((float)$order->tax_amount)->toBe($orderTax)
+        ->and($order->transactions()->where('model_type', 'ShippingZone')->count())->toBe(1)
+        ->and((float)$setFundedShipping()->shipping_amount)->toBe(11.53);
+
+    $deliveryNote->setRelation('shipments', collect([new Shipment(['cost' => 90])]));
+    $deliveryNote->parcels = [['weight' => 1, 'dimensions' => [30, 20, 20]]];
+    expect((float)$setFundedShipping()->shipping_amount)->toBe(11.53);
+    Http::assertSentCount(4);
+});
+
 test('manual shipping on a non-faire order does not touch faire', function () {
     $order = StoreOrder::make()->action($this->customer, []);
     StoreTransaction::make()->action($order->refresh(), $this->standardProduct->historicAsset, ['quantity_ordered' => 1]);

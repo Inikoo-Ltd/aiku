@@ -17,6 +17,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useLocaleStore } from "@/Stores/locale"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { getBestOffer } from "@/Composables/useOffers"
+import { pendingChangeLabel, pendingChanges, sizeBasketButtonLabel, type SizeQuantityChange } from "@/Composables/sizeBasketAction"
 
 library.add(faCheck, faCircle)
 
@@ -337,9 +338,19 @@ const changedProducts = computed<SizeProduct[]>(() =>
     props.listProducts.filter((product) => selectedQuantity(product) !== basketQuantity(product))
 )
 
-const allChangedAreInBasket = computed<boolean>(() =>
-    changedProducts.value.length > 0 && changedProducts.value.every((product) => basketQuantity(product) > 0)
+const quantityChanges = computed<SizeQuantityChange[]>(() =>
+    props.listProducts
+        .filter((product) => rowCanChange(product))
+        .map((product) => ({ size: sizeOf(product), selected: selectedQuantity(product), basket: basketQuantity(product) }))
 )
+
+const buttonLabel = computed<string>(() => {
+    const label = sizeBasketButtonLabel(quantityChanges.value)
+
+    return ctrans(label.text, label.replacements)
+})
+
+const pendingSummary = computed<string>(() => pendingChanges(quantityChanges.value).map(pendingChangeLabel).join(" · "))
 
 const grossTotal = computed<number>(() =>
     roundMoney(props.listProducts.reduce((total, product) => total + (rowCanChange(product) ? selectedQuantity(product) * price(product) : 0), 0))
@@ -588,8 +599,12 @@ const onSave = async () => {
                     <template #icon>
                         <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
                     </template>
-                    <template #label>{{ allChangedAreInBasket ? ctrans("Update basket") : ctrans("Add selected items to basket") }}</template>
+                    <template #label>{{ buttonLabel }}</template>
                 </Button>
+
+                <div v-if="pendingSummary && !isSaving" class="text-xs text-amber-600">
+                    {{ ctrans("Not in your basket yet: :changes", { changes: pendingSummary }) }}
+                </div>
 
                 <div v-if="requestError" class="text-xs text-red-600">{{ requestError }}</div>
 

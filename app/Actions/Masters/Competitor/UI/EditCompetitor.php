@@ -34,7 +34,7 @@ class EditCompetitor extends OrgAction
             'EditModel',
             [
                 'breadcrumbs' => array_merge(
-                    $this->getCompetitorsBreadcrumbs('grp.masters.competitors.index', __('Competitors')),
+                    $this->getCompetitorsBreadcrumbs('grp.masters.competitors.index', __('List')),
                     [['type' => 'simple', 'simple' => ['label' => $competitor->name]]]
                 ),
                 'title'       => __('Edit competitor').': '.$competitor->name,

@@ -45,7 +45,7 @@ class ShowSupplierShare
         $supplier->loadMissing(['address', 'currency']);
 
         return [
-            'name'            => $supplier->name,
+            'name'            => $supplier->officialName(),
             'contact_name'    => $supplier->contact_name,
             'email'           => $supplier->email,
             'phone'           => $supplier->phone,
@@ -129,6 +129,9 @@ class ShowSupplierShare
             'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
             'labels_print'         => $this->labelsPrint($token),
             'products_route'       => $token === null ? route('grp.supply-chain.suppliers.portal_preview.products', $supplier) : route('grp.supplier_share.products', $token),
+            'product_websites_route' => $token === null
+                ? route('grp.supply-chain.suppliers.portal_preview.product_websites', [$supplier, 'supplierProductId' => 0])
+                : route('grp.supplier_share.product_websites', ['token' => $token, 'supplierProduct' => 0]),
             'purchase_order_route' => $token === null
                 ? route('grp.supply-chain.suppliers.portal_preview.purchase_order', [$supplier, 'purchaseOrderId' => 0])
                 : route('grp.supplier_share.purchase_order', ['token' => $token, 'purchaseOrder' => 0]),
@@ -177,8 +180,8 @@ class ShowSupplierShare
         $link     = SupplierShareLink::findLiveByToken($token);
         $supplier = $link->supplier;
         $page     = [
-            'title'    => $supplier->name,
-            'supplier' => ['code' => $supplier->code, 'name' => $supplier->name],
+            'title'    => $supplier->officialName(),
+            'supplier' => ['code' => $supplier->code, 'name' => $supplier->officialName()],
             'group'    => $link->group->name,
             'language' => ShowSupplierPortalLogin::language($request),
             'routes'   => [

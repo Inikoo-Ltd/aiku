@@ -131,7 +131,7 @@ class IndexSupplierPortalProducts
      *
      * @return array{original_url: string, download_url: string}
      */
-    private function fullResolutionUrls(Media $media, ?string $token): array
+    public function fullResolutionUrls(Media $media, ?string $token): array
     {
         if ($token === null) {
             return $media->fullResolutionUrls();

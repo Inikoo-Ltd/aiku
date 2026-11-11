@@ -53,7 +53,7 @@ class ShowCompetitor extends OrgAction
             [
                 'title'       => __('Competitor').': '.$competitor->name,
                 'breadcrumbs' => array_merge(
-                    $this->getCompetitorsBreadcrumbs('grp.masters.competitors.index', __('Competitors')),
+                    $this->getCompetitorsBreadcrumbs('grp.masters.competitors.index', __('List')),
                     [['type' => 'simple', 'simple' => ['label' => $competitor->name]]]
                 ),
                 'pageHead'    => [

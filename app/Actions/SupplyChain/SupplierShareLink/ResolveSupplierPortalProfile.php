@@ -70,7 +70,7 @@ class ResolveSupplierPortalProfile
             'phone'        => $profile->phone,
             'theme'        => (int) $profile->theme,
             'avatar'       => $profile->imageSources(160, 160),
-            'display_name' => $profile->name ?? $profile->portalContact?->name ?? $supplier->contact_name ?? $supplier->name,
+            'display_name' => $profile->name ?? $profile->portalContact?->name ?? $supplier->contact_name ?? $supplier->officialName(),
             'company_logo' => $supplier->imageSources(160, 160),
         ];
     }

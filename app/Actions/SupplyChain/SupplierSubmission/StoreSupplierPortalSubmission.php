@@ -191,6 +191,7 @@ class StoreSupplierPortalSubmission
                     }],
                 'proposed_price'      => ['required', 'numeric', 'min:0'],
                 'effective_from'      => ['nullable', 'date'],
+                'effective_until'     => ['nullable', 'date', request()->filled('effective_from') ? 'after_or_equal:effective_from' : 'after_or_equal:today'],
                 'reason'              => ['required', 'string', 'max:2000'],
             ],
             SupplierSubmissionTypeEnum::CONTACT => [

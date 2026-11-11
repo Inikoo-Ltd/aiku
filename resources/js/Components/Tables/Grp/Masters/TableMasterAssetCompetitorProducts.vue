@@ -72,7 +72,7 @@ const money = (value: number | null, currencyCode: string) => value === null ? "
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item }">
-            <Link :href="route('grp.masters.master_shops.show.master_products.show', { masterShop: item.master_shop_slug, masterProduct: item.slug })" class="font-medium text-gray-700 hover:underline whitespace-nowrap">
+            <Link :href="route('grp.masters.master_shops.show.master_products.show', { masterShop: item.master_shop_slug, masterProduct: item.slug })" class="primaryLink whitespace-nowrap">
                 {{ item.code }}
             </Link>
             <div class="text-xs text-gray-500">{{ item.name }}</div>
@@ -84,13 +84,13 @@ const money = (value: number | null, currencyCode: string) => value === null ? "
             <span class="tabular-nums">{{ money(item.our_unit_price, item.currency_code) }}</span>
         </template>
         <template #cell(competitor_name)="{ item }">
-            <Link :href="route('grp.masters.competitors.show', { competitor: item.competitor_slug })" class="font-medium text-gray-700 hover:underline whitespace-nowrap">
+            <Link :href="route('grp.masters.competitors.show', { competitor: item.competitor_slug })" class="primaryLink whitespace-nowrap">
                 {{ item.competitor_name }}
             </Link>
         </template>
         <template #cell(competitor_product_name)="{ item }">
             <img v-if="item.competitor_image_url" :src="item.competitor_image_url" alt="" loading="lazy" class="float-left mr-2 h-10 w-10 rounded object-cover" />
-            <a :href="item.competitor_product_url" target="_blank" rel="noopener noreferrer" class="font-medium text-gray-700 hover:underline">
+            <a :href="item.competitor_product_url" target="_blank" rel="noopener noreferrer" class="primaryLink">
                 {{ item.competitor_product_name }}
                 <FontAwesomeIcon icon="fal fa-external-link" class="text-xs" fixed-width />
             </a>
@@ -101,7 +101,7 @@ const money = (value: number | null, currencyCode: string) => value === null ? "
             </div>
             <div class="mt-1 flex items-center gap-x-1 text-xs text-gray-500">
                 <span class="whitespace-nowrap" v-tooltip="ctrans('How many units the price is for. The price per unit divides by this.')">{{ ctrans("Units in their pack") }}</span>
-                <InputNumber :modelValue="item.competitor_units" :min="1" :maxFractionDigits="3" size="small" inputClass="!w-16 !py-0.5 text-right"
+                <InputNumber :modelValue="item.competitor_units" :min="1" :maxFractionDigits="3" size="small" inputClass="!w-10 !h-6 !px-1.5 !py-0 !text-xs !rounded text-right"
                     :disabled="!canEdit || savingUnits === item.id" @input="unitsDraft[item.id] = $event.value" @blur="saveUnits(item)" />
             </div>
             <div v-if="item.compared_as_units !== null" class="mt-1 text-xs text-amber-600"
