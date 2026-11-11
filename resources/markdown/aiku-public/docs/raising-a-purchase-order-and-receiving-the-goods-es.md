@@ -1,8 +1,8 @@
 ---
 title: Cursar una orden de compra y recibir la mercancía
 summary: Compra a un proveedor ordinario - cursa la orden de compra, consigue que se confirme, y luego convierte la entrega en stock que puedas vender.
-date: 2026-10-12
-source_date: 2026-10-12
+date: 2026-11-11
+source_date: 2026-11-11
 tags: procurement, purchase orders, stock deliveries, suppliers, supplier claims, customs
 category: procurement
 ---
@@ -57,6 +57,8 @@ Una orden de compra pasa por una cadena corta y deliberada:
 - **Confirmed** - el proveedor ha aceptado la orden. Puedes fijar o cambiar la **Delivery date** (la llegada estimada), y pulsar **New Delivery** para crear la entrega de stock que recibirá la mercancía. Mientras no exista una entrega para ella, también puedes hacer **Undo Confirm** para devolverla a Submitted.
 
 A partir de aquí la orden se asienta sola según avanzan sus entregas de stock - no queda nada más que pulsar en la propia orden de compra. Termina **Settled** cuando todo ha llegado, o **Not Received**/**Cancelled** si la cosa no salió bien.
+
+Una orden cancelada se puede recuperar con **Undo cancel** en su página. La orden y sus líneas vuelven a Submitted o Confirmed, según estuvieran, con sus importes y los costes extra, de envío, aranceles e impuestos que tenían. Indicas un motivo y confirmas que el proveedor, agente o socio sabe que la orden sigue adelante; quién lo hizo, cuándo y por qué aparece en el **History** de la orden. Si los mismos productos ya están en una orden creada después de la cancelación, el diálogo enumera esas órdenes para no comprar dos veces. **Undo cancel** aparece en gris, con el motivo al pasar el cursor, cuando la orden se canceló porque sus líneas se movieron a otro proveedor o porque quedó vacía, cuando un producto de la orden está discontinuado o ya no está disponible, o cuando tiene una entrega de stock que no está cancelada. En las órdenes canceladas antes de que existiera **Undo cancel** no se guardaron los costes extra ni los impuestos: el diálogo muestra el total antiguo y te los pide, y entre los dos deben sumar lo que tenía la orden. Una orden antigua sin registro de lo que tenía antes de cancelarse no se puede recuperar.
 
 ## La entrega de stock: registrar lo que llegó
 

@@ -68,6 +68,7 @@ use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderData;
@@ -76,6 +77,7 @@ use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToInProcess;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateFromCancelled;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderTransactionQuantity;
 use App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
@@ -4347,7 +4349,8 @@ test('the agent moves a line the supplier can not make to another supplier of th
         ->and((float) $moved->unit_cost)->toBe($agreedUnitCost)
         ->and($moved->price_query_state)->toBe(PurchaseOrderTransactionPriceQueryStateEnum::PENDING)
         ->and((float) $moved->price_query_unit_cost)->toBe($agreedUnitCost + 20)
-        ->and($moved->data['moved_from']['reference'])->toBe($order->reference);
+        ->and($moved->data['moved_from']['reference'])->toBe($order->reference)
+        ->and(UpdatePurchaseOrderStateFromCancelled::blockedReason($order))->toBe('This order was cancelled because its items were moved to another supplier');
     \Illuminate\Support\Facades\Notification::assertSentTo(
         $buyer,
         \App\Notifications\PurchaseOrderStageChangedByAgentNotification::class,
@@ -4472,6 +4475,7 @@ test('deleting empty purchase orders deletes the drafts, cancels the ones alread
         ->and(PurchaseOrder::withTrashed()->find($draft->id)->trashed())->toBeTrue()
         ->and($sent->refresh()->trashed())->toBeFalse()
         ->and($sent->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
+        ->and(UpdatePurchaseOrderStateFromCancelled::blockedReason($sent))->toBe('This order was cancelled because it was left with nothing to order')
         ->and($withDeposit->refresh()->trashed())->toBeFalse()
         ->and($withDeposit->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS)
         ->and($withItems->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
@@ -4494,4 +4498,135 @@ test('clean hand over is recorded on its own, dated by the last ready to roll ch
 
     expect($order->handed_over_at?->toDateString())->toBe(now()->subDay()->toDateString())
         ->and(\App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady::wasRecordedAutomatically($order))->toBeTrue();
+});
+
+function cancellableAgentOrder(object $test): array
+{
+    $orgAgent = createFreshOrgAgent($test);
+    [$order]  = createAgentPurchaseOrders($test, $orgAgent, 1);
+    $line     = $order->purchaseOrderTransactions()->firstOrFail();
+    $line->update(['unit_cost' => 12.5, 'net_amount' => round(12.5 * (float) $line->quantity_ordered, 2)]);
+    $order = UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh())->refresh();
+    $order->update(['cost_extra' => 7, 'cost_shipping' => 30, 'cost_duties' => 4.5, 'cost_tax' => 2]);
+    CalculatePurchaseOrderTotalAmounts::run($order);
+
+    return [$orgAgent, $order->refresh(), $line->refresh()];
+}
+
+test('the agent undoes cancelling a purchase order and its state, lines and costs come back', function () {
+    PurchaseOrder::enableAuditing();
+    [$orgAgent, $order, $line] = cancellableAgentOrder($this);
+    $line->update(['org_net_amount' => 1.23, 'grp_net_amount' => 4.56, 'unit_cost' => null]);
+    $before  = $order->only(['cost_items', 'cost_total', 'cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax']);
+    $lineBefore = $line->refresh()->only(['net_amount', 'grp_net_amount', 'org_net_amount']);
+
+    $this->patch(route('grp.models.purchase-order.cancel', $order->id), ['counterparty_informed' => 'yes', 'reason' => 'Buyer changed plan'])->assertSessionHasNoErrors();
+    $order->refresh();
+    expect(Audit::where('auditable_type', 'PurchaseOrder')->where('auditable_id', $order->id)->where('event', 'stage_override')->latest('id')->value('new_values'))
+        ->toBe(['state' => 'cancelled', 'reason' => 'Buyer changed plan']);
+    expect($order->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
+        ->and((float) $order->cost_total)->toBe(0.0)
+        ->and($order->data['cancellation']['state'])->toBe('submitted')
+        ->and($order->data['cancellation']['costs']['cost_shipping'])->toEqual(30)
+        ->and($order->data['cancellation']['reason'])->toBe('Buyer changed plan')
+        ->and(collect($order->data['cancellation']['transactions'])->map(fn (array $snapshot) => [$snapshot['id'], $snapshot['state'], $snapshot['org_net_amount']])->all())->toBe([[$line->id, 'submitted', 1.23]])
+        ->and(collect(ShowPurchaseOrder::make()->getAgentActions($order))->pluck('key'))->toContain('undo_cancel_purchase_order');
+
+    $stranger = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($stranger, ["procurement.{$this->organisation->id}.view"]);
+    $this->patch(route('grp.models.purchase-order.undo-cancel', $order->id), ['counterparty_informed' => 'yes', 'reason' => 'x'])->assertForbidden();
+
+    $agentUser = agentOrganisationAdmin($orgAgent->agent->organisation, 'agent-undo-'.Str::lower(Str::random(6)));
+    actingAs($agentUser);
+    $this->patch(route('grp.models.purchase-order.undo-cancel', $order->id), ['counterparty_informed' => 'yes'])->assertSessionHasErrors('reason');
+    $this->patch(route('grp.models.purchase-order.undo-cancel', $order->id), ['counterparty_informed' => 'yes', 'reason' => 'Supplier can make it after all'])->assertSessionHasNoErrors();
+
+    $order->refresh();
+    expect($order->state)->toBe(PurchaseOrderStateEnum::SUBMITTED)
+        ->and($order->cancelled_at)->toBeNull()
+        ->and($order->data)->not->toHaveKey('cancellation')
+        ->and($order->only(array_keys($before)))->toEqual($before)
+        ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SUBMITTED)
+        ->and($line->only(['net_amount', 'grp_net_amount', 'org_net_amount']))->toEqual($lineBefore)
+        ->and(Audit::where('auditable_type', 'PurchaseOrder')->where('auditable_id', $order->id)->where('event', 'stage_override')->latest('id')->value('new_values'))
+        ->toBe(['state' => 'submitted', 'reason' => 'Supplier can make it after all']);
+    expect(Audit::where('auditable_type', 'PurchaseOrder')->where('auditable_id', $order->id)->where('event', 'stage_override')->latest('id')->value('user_id'))->toBe($agentUser->id);
+
+    PurchaseOrder::disableAuditing();
+    actingAs($this->adminGuest->getUser());
+});
+
+test('a purchase order cancelled because it was emptied or its lines moved can not be undone', function () {
+    [, $order] = cancellableAgentOrder($this);
+    UpdatePurchaseOrderStateToCancelled::make()->handle($order, source: UpdatePurchaseOrderStateToCancelled::SOURCE_EMPTIED);
+
+    expect(UpdatePurchaseOrderStateFromCancelled::blockedReason($order->refresh()))->toBe('This order was cancelled because it was left with nothing to order')
+        ->and(fn () => UpdatePurchaseOrderStateFromCancelled::make()->action($order))->toThrow(HttpException::class);
+});
+
+test('undoing the cancel of a confirmed order brings back only the lines that were live, as confirmed', function () {
+    [, $order, $line] = cancellableAgentOrder($this);
+    $dropped = StorePurchaseOrderTransaction::make()->action($order, $line->historicSupplierProduct, $this->orgStocks[1], PurchaseOrderTransaction::factory()->definition());
+    $order   = UpdatePurchaseOrderStateToConfirmed::make()->handle($order->refresh());
+    $dropped->update(['unit_cost' => 3, 'state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+    \App\Actions\Procurement\PurchaseOrderTransaction\CancelPurchaseOrderTransaction::make()->action($dropped->refresh());
+
+    UpdatePurchaseOrderStateToCancelled::make()->action($order->refresh());
+    UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh());
+
+    expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($dropped->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
+        ->and((float) $dropped->net_amount)->toBe(0.0);
+});
+
+test('undoing a cancel warns about later purchase orders with the same supplier product', function () {
+    [, $order, $line] = cancellableAgentOrder($this);
+    UpdatePurchaseOrderStateToCancelled::make()->action($order);
+    $order->refresh();
+
+    $later = StorePurchaseOrder::make()->action($order->parent, []);
+    StorePurchaseOrderTransaction::make()->action($later, $line->historicSupplierProduct, $this->orgStocks[0], PurchaseOrderTransaction::factory()->definition());
+
+    $action = collect(ShowPurchaseOrder::make()->getActions($order, false))->firstWhere('key', 'undo_cancel_purchase_order');
+    expect($action['disabled_reason'])->toBeNull()
+        ->and(collect($action['duplicates'])->pluck('id')->all())->toBe([$later->id]);
+});
+
+test('a purchase order cancelled before its costs were kept asks for the costs the cancel audit lost', function () {
+    [, $order, $line] = cancellableAgentOrder($this);
+    UpdatePurchaseOrderStateToCancelled::make()->action($order);
+    $order->refresh();
+    $order->updateQuietly(['data' => Arr::except($order->data, 'cancellation')]);
+    (new Audit())->forceFill([
+        'tags'           => [],
+        'auditable_type' => 'PurchaseOrder',
+        'auditable_id'   => $order->id,
+        'event'          => 'updated',
+        'group_id'       => $order->group_id,
+        'old_values'     => ['state' => 'submitted', 'cost_items' => '125.00', 'cost_total' => '168.50', 'cost_shipping' => '30.00', 'cost_duties' => '4.50'],
+        'new_values'     => ['state' => 'cancelled', 'cost_items' => 0, 'cost_total' => 0, 'cost_shipping' => 0, 'cost_duties' => 0],
+    ])->save();
+
+    $action = collect(ShowPurchaseOrder::make()->getActions($order, false))->firstWhere('key', 'undo_cancel_purchase_order');
+    expect($action['missing_costs'])->toBe(['cost_extra', 'cost_tax'])
+        ->and($action['cost_total'])->toBe(168.5)
+        ->and($action['cost_gap'])->toBe(9.0)
+        ->and(fn () => UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh()))->toThrow(\Illuminate\Validation\ValidationException::class)
+        ->and(fn () => UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh(), ['cost_extra' => 7, 'cost_tax' => 5]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh(), ['cost_extra' => 7, 'cost_tax' => 2]);
+
+    expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::SUBMITTED)
+        ->and((float) $order->cost_shipping)->toBe(30.0)
+        ->and((float) $order->cost_extra)->toBe(7.0)
+        ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SUBMITTED)
+        ->and((float) $line->net_amount)->toBe(125.0);
+
+    [, $unaudited] = cancellableAgentOrder($this);
+    UpdatePurchaseOrderStateToCancelled::make()->action($unaudited);
+    $unaudited->refresh()->updateQuietly(['data' => Arr::except($unaudited->data, 'cancellation')]);
+    Audit::where('auditable_type', 'PurchaseOrder')->where('auditable_id', $unaudited->id)->delete();
+
+    expect(UpdatePurchaseOrderStateFromCancelled::blockedReason($unaudited->refresh()))->toBe('This order was cancelled before aiku kept what cancelling removes, so it can not be brought back');
 });

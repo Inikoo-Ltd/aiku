@@ -1,8 +1,8 @@
 ---
 title: Mencatat kemajuan pesanan sebagai agen
 summary: Untuk agen — tanggal yang Anda catat pada setiap pesanan ke pemasok (deposit paid, production started, production done, proposed ready date, handed over) dan nomor pesanan Anda sendiri, kapan dan di mana mencatatnya, apa yang dicatat oleh perusahaan pembeli sebagai gantinya, dan mengapa tanggal yang hilang tampak sebagai keterlambatan.
-date: 2026-11-05
-source_date: 2026-11-05
+date: 2026-11-11
+source_date: 2026-11-11
 tags: procurement, agents, supply-chain
 category: procurement
 series: PO journey
@@ -86,6 +86,8 @@ Jika pemasok itu belum menjual SKO ini, dialog menampilkan kode, nama, biaya per
 Unit-unit itu masuk ke pesanan pemasok tersebut dengan status yang sama, atau ke pesanan baru jika belum ada, dengan harga yang disepakati perusahaan pembeli. Jika biaya pemasok baru berbeda, perusahaan pembeli mendapat pertanyaan harga seperti dijelaskan di atas dan menjawabnya di pesanan baru. Perusahaan pembeli mendapat pemberitahuan tentang pemindahan ini, dan kedua baris menunjukkan dari mana unit itu berasal atau ke mana dipindahkan.
 
 Anda hanya dapat memindahkan baris selama baris itu masih bisa dibatalkan: sebelum produksi dimulai dan sebelum masuk ke pengiriman stok. Jika di pesanan asal tidak tersisa apa pun, pesanan itu dibatalkan, kecuali sudah dibayar deposit: maka pesanan tetap terbuka agar deposit dapat ditarik kembali.
+
+Jika pesanan dibatalkan karena kesalahan, atau perusahaan pembeli ternyata tetap menginginkannya, buka pesanan itu lalu klik **Undo cancel**. Pesanan kembali ke status sebelumnya, lengkap dengan baris, jumlah, dan biayanya. Berikan alasan dan konfirmasikan bahwa perusahaan pembeli dan pemasok tahu pesanan itu berjalan kembali. Jika produk yang sama ada di pesanan yang dibuat setelah pembatalan, dialog menampilkannya lebih dulu agar tidak dipesan dua kali. Pesanan yang dibatalkan karena barisnya dipindahkan ke pemasok lain, atau karena menjadi kosong, tidak dapat dikembalikan.
 
 ## Kebiasaan baik
 
