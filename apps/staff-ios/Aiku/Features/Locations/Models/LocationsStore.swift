@@ -72,6 +72,19 @@ final class LocationsStore {
         LocationsListRequest(tab: listTab, query: listQuery.trimmingCharacters(in: .whitespacesAndNewlines), filter: listFilter)
     }
 
+    func beginRemoteLoad() {
+        guard source == .sample else { return }
+        warehouse = LocationsWarehouse(
+            areas: [],
+            locations: [],
+            summary: LocationsWarehouseSummary(areaCount: 0, locationCount: 0, emptyCount: 0, utilisationPercent: 0, toRemoveNow: 0, removedLastWeek: 0),
+            autoRemoval: LocationsAutoRemoval(isOn: false, changedBy: nil, changedOn: nil, canEdit: false)
+        )
+        source = .remote
+        listCodes = []
+        isLoadingList = true
+    }
+
     func loadRemote(for userID: Int, warehouse chosen: MobileWarehouse?, apiClient: APIClient) async {
         let key = LocationsLoadKey(userID: userID, warehouseID: chosen?.id)
         guard loadedKey != key else { return }
@@ -80,10 +93,12 @@ final class LocationsStore {
         do {
             guard let chosen else {
                 loadError = "Your account has no warehouse in Aiku."
+                isLoadingList = false
                 return
             }
             guard chosen.can.viewLocations else {
                 loadError = "You don’t have access to locations in \(chosen.name)."
+                isLoadingList = false
                 return
             }
             async let overview = apiClient.fetchLocationsOverview(warehouseID: chosen.id)
@@ -104,6 +119,7 @@ final class LocationsStore {
         } catch {
             loadedKey = nil
             loadError = error.localizedDescription
+            isLoadingList = false
         }
     }
 

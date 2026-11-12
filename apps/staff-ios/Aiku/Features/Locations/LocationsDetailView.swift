@@ -81,9 +81,14 @@ struct LocationsDetailView: View {
                     ListRow("Pallets", subtitle: "None in this location", icon: .pallet, iconTone: .neutral)
                 } else {
                     ForEach(location.pallets) { pallet in
-                        ListRow(pallet.reference, subtitle: "\(pallet.customer) · Pallet · \(pallet.state)", icon: .pallet, iconTone: .neutral, showsChevron: true) {
-                            router.open(FulfilmentRoute.pallet(reference: pallet.reference))
-                        }
+                        ListRow(
+                            pallet.reference,
+                            subtitle: [pallet.customer, "Pallet", pallet.state].filter { !$0.isEmpty }.joined(separator: " · "),
+                            icon: .pallet,
+                            iconTone: .neutral,
+                            showsChevron: !store.isRemote,
+                            action: store.isRemote ? nil : { router.open(FulfilmentRoute.pallet(reference: pallet.reference)) }
+                        )
                         .accessibilityIdentifier("locations.pallet.\(pallet.reference)")
                         RowDivider()
                     }
@@ -91,9 +96,14 @@ struct LocationsDetailView: View {
                 if location.pallets.isEmpty {
                     RowDivider()
                 }
-                ListRow("Stock movements", subtitle: "History of this location", icon: .history, iconTone: .neutral) {
-                    router.open(InventoryRoute.stockHistory)
+                ListRow("Stock movements", subtitle: "History of this location", icon: .history, iconTone: .neutral, showsChevron: true) {
+                    if store.isRemote {
+                        router.open(LocationsRoute.movements(code: location.code))
+                    } else {
+                        router.open(InventoryRoute.stockHistory)
+                    }
                 }
+                .accessibilityIdentifier("locations.movements")
             }
             HelperText("Status is operational or broken. Moving and removing need location edit rights. SKOs are added to a location from the SKO page.")
         }

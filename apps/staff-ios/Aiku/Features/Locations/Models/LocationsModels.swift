@@ -333,6 +333,10 @@ enum LocationsFormat {
         value.formatted(.number.precision(.fractionLength(0...1)).locale(locale))
     }
 
+    static func dateTime(_ date: Date) -> String {
+        date.formatted(.dateTime.day().month(.abbreviated).hour().minute().locale(locale))
+    }
+
     static func shortDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = locale

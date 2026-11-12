@@ -31,10 +31,11 @@ struct LocationsAPITests {
         "mobile/warehouses/1/empty-locations-removal": #"{"data":{"enabled":true,"can_edit":true,"last_change":{"by":"andi","at":"2026-11-11T08:00:00+00:00"},"to_remove":661,"removed_last_7_days":12,"max_per_run":200}}"#,
         "mobile/warehouses/1/areas": #"{"data":[{"id":3,"code":"A","name":"Picking","picking_position":1.5,"number_locations":40,"number_locations_broken":0,"number_empty_locations":10,"stock_value":1000}]}"#,
         "mobile/warehouses/1/locations": #"{"data":["# + locationJSON + #"}],"meta":{"current_page":1,"last_page":1,"per_page":100,"total":1}}"#,
-        "mobile/locations/7": #"{"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":false},"org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"30","notes":null,"location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
+        "mobile/locations/7": #"{"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":false},"pallets":[{"id":48449,"slug":"p-49","reference":"451621-awf-p0049","customer_reference":"wax melts","customer_name":"UK Asia Direct LTD","state":"storing","state_label":"Storing","status":"storing","status_label":"Storing","type":"pallet"}],"org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"30","notes":null,"location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
         "mobile/locations/7/audit": #"{"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":false},"org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"25","notes":null,"location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
         "mobile/locations/7/move-some": #"{"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":false},"org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"20","notes":null,"location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
         "mobile/location-org-stocks/11": #"{"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":false},"org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"30","notes":"Top shelf","location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
+        "mobile/locations/7/stock-movements": #"{"data":[{"id":9,"date":"2026-11-12T06:47:10.580996Z","type":"location-transfer","type_label":"Location Transfer","flow":"out","audited_quantity":"","quantity":"-48","running_quantity":"0","reason":null,"reason_label":null,"note":null,"org_stock_name":"Basil Essential Oil","org_stock_slug":"eo-13","parent_type":null,"parent_reference":null,"org_stock_code":"EO-13","user_name":null},{"id":8,"date":"2026-11-12T05:45:41Z","type":"audit","type_label":"Audit","flow":"audit","audited_quantity":"46","quantity":"-2","running_quantity":"46","reason":"count_short","reason_label":"Count Shortage","note":"iOS audit test","org_stock_name":"Basil Essential Oil","org_stock_slug":"eo-13","parent_type":null,"parent_reference":null,"org_stock_code":"EO-13","user_name":"Andi"}],"meta":{"current_page":1,"last_page":3,"per_page":50,"total":120}}"#,
         "mobile/locations/7/remove-org-stocks": #"{"removed":1,"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":true},"org_stocks":[]}}"#,
     ]
 
@@ -602,4 +603,80 @@ struct LocationsAPITests {
 
         #expect(store.pillTitle(for: .empty) == "Empty 1")
     }
+
+    @Test func locationDetailShowsItsPalletsFromTheServer() async throws {
+        let store = await detailedStore()
+        let pallet = try #require(store.warehouse.location(code: "A-03-02")?.pallets.first)
+
+        #expect(pallet == LocationsPallet(reference: "451621-awf-p0049", customer: "UK Asia Direct LTD", state: "Storing"))
+    }
+
+    @Test func movementsFeedReadsTheWebHistoryNewestFirst() async throws {
+        let feed = LocationsMovementsFeed(locationID: 7)
+
+        await feed.reload(apiClient: client())
+
+        #expect(feed.loadError == nil)
+        #expect(feed.total == 120)
+        #expect(feed.hasMorePages)
+        let transfer = try #require(feed.movements.first)
+        let audit = try #require(feed.movements.last)
+        #expect(transfer.skoReference == "EO-13")
+        #expect(transfer.quantityLabel == "−48")
+        #expect(transfer.detail.contains("Location Transfer"))
+        #expect(transfer.detail.contains("System"))
+        #expect(audit.quantityLabel == "−2")
+        #expect(audit.detail.contains("Count Shortage"))
+        #expect(audit.detail.contains("Andi"))
+        #expect(audit.detail.contains("iOS audit test"))
+    }
+
+    @Test func movementsRequestPagesThroughTheLocation() {
+        let request = client().makeRequest(for: .mobileLocationStockMovements(id: 7, page: 2, perPage: 50))
+        let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+
+        #expect(request.url?.path == "/app/api/mobile/locations/7/stock-movements")
+        #expect(items.contains(URLQueryItem(name: "page", value: "2")))
+    }
+
+    @Test func signedInStoreShowsNoSampleLocationsWhileLoading() async {
+        let store = LocationsStore()
+
+        store.beginRemoteLoad()
+
+        #expect(store.isRemote)
+        #expect(store.listedLocations.isEmpty)
+        #expect(store.isLoadingList)
+        #expect(store.pillTitle(for: .all) == "All")
+
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+
+        #expect(store.listedLocations.map(\.code) == ["A-03-02"])
+        #expect(!store.isLoadingList)
+    }
+
+    @Test func loadingStopsWhenTheUserHasNoLocationAccess() async {
+        let store = LocationsStore()
+        store.beginRemoteLoad()
+
+        await store.loadRemote(for: 291, warehouse: await warehouse(4), apiClient: client())
+
+        #expect(!store.isLoadingList)
+        #expect(store.loadError != nil)
+        #expect(store.listedLocations.isEmpty)
+    }
+
+    @Test func movementsWithoutARunningQuantityStillLoad() throws {
+        let json = #"{"data":[{"id":1,"date":"2025-08-07T12:04:37.004000Z","type":"disassociate","type_label":"Disassociate","flow":"audit","audited_quantity":"0","quantity":"0","running_quantity":"","reason":null,"reason_label":null,"note":null,"org_stock_name":"Rosemary & Thyme Bath Bomb","org_stock_slug":"dsebb-05","parent_type":null,"parent_reference":null,"org_stock_code":"DSEBB-05","user_name":null}],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":1}}"#
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let page = try decoder.decode(MobileLocationMovementsPage.self, from: Data(json.utf8))
+        let movement = LocationsMovement(remote: try #require(page.data.first))
+
+        #expect(movement.runningQuantity == nil)
+        #expect(movement.quantityLabel == "")
+        #expect(movement.detail.hasPrefix("Disassociate · 7 Aug at "))
+        #expect(movement.detail.hasSuffix(" · System"))
+    }
 }
+
