@@ -57,7 +57,14 @@ struct LocationsAuditSheet: View {
             AikuTextField("Note (optional)", text: $note, placeholder: "Broken in box")
         } footer: {
             AikuButton(missingReasons > 0 ? "Choose a reason for each difference" : "Save audit") {
-                onSave(slots.map { LocationsAuditCount(skoReference: $0.skoReference, counted: counted[$0.skoReference] ?? $0.quantity) })
+                onSave(slots.map {
+                    LocationsAuditCount(
+                        skoReference: $0.skoReference,
+                        counted: counted[$0.skoReference] ?? $0.quantity,
+                        reason: reasons[$0.skoReference],
+                        note: note.trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
+                })
             }
             .disabled(missingReasons > 0)
             .accessibilityIdentifier("locations.audit.save")

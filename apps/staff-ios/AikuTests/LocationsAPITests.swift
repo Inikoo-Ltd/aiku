@@ -31,7 +31,11 @@ struct LocationsAPITests {
         "mobile/warehouses/1/empty-locations-removal": #"{"data":{"enabled":true,"can_edit":true,"last_change":{"by":"andi","at":"2026-11-11T08:00:00+00:00"},"to_remove":661,"removed_last_7_days":12,"max_per_run":200}}"#,
         "mobile/warehouses/1/areas": #"{"data":[{"id":3,"code":"A","name":"Picking","picking_position":1.5,"number_locations":40,"number_locations_broken":0,"number_empty_locations":10,"stock_value":1000}]}"#,
         "mobile/warehouses/1/locations": #"{"data":["# + locationJSON + #"}],"meta":{"current_page":1,"last_page":1,"per_page":100,"total":1}}"#,
-        "mobile/locations/7": #"{"data":"# + locationJSON + #","org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"30","notes":null,"location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
+        "mobile/locations/7": #"{"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":false},"org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"30","notes":null,"location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
+        "mobile/locations/7/audit": #"{"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":false},"org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"25","notes":null,"location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
+        "mobile/locations/7/move-some": #"{"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":false},"org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"20","notes":null,"location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
+        "mobile/location-org-stocks/11": #"{"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":false},"org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"30","notes":"Top shelf","location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
+        "mobile/locations/7/remove-org-stocks": #"{"removed":1,"data":"# + locationJSON + #","can":{"edit_stocks":true,"edit_locations":true},"org_stocks":[]}}"#,
     ]
 
     private func warehouse(_ id: Int) async -> MobileWarehouse? {
@@ -389,7 +393,7 @@ struct LocationsAPITests {
         store.warehouse.locations.append(LocationsLocation(remote: MobileLocation(
             id: 99, code: "Z-99", status: "operational", area: nil, allowStocks: true, allowFulfilment: false, allowDropshipping: false,
             isGoodsOut: false, keepEmptyOrgStocks: false, maxWeight: nil, maxVolume: nil, numberOrgStockSlots: 0, numberEmptyStockSlots: 0,
-            numberPallets: 0, stockValue: 0, auditedAt: nil, orgStocks: nil
+            numberPallets: 0, stockValue: 0, auditedAt: nil, orgStocks: nil, can: nil
         )))
 
         #expect(store.listedLocations.map(\.code) == ["A-03-02"])
@@ -451,5 +455,151 @@ struct LocationsAPITests {
         store.warehouse.locations = []
 
         #expect(await store.locationMatching(scannedCode: "A-03", apiClient: client()) == nil)
+    }
+
+    private func detailedStore() async -> LocationsStore {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        await store.loadLocation(code: "A-03-02", apiClient: client())
+        return store
+    }
+
+    @Test func detailKeepsTheServerIdsOfEachSkoAndTheUserRights() async {
+        let store = await detailedStore()
+        let slot = store.warehouse.location(code: "A-03-02")?.slot("SKO-00733")
+
+        #expect(slot?.remoteOrgStockID == 5)
+        #expect(slot?.remoteLinkID == 11)
+        #expect(store.canEditStocks(in: "A-03-02"))
+        #expect(!store.canEditLocations(in: "A-03-02"))
+    }
+
+    @Test func auditSendsEachCountWithTheWebReason() throws {
+        let request = client().makeRequest(for: .mobileLocationAudit(id: 7, counts: [
+            MobileLocationAuditCount(locationOrgStockId: 11, quantity: 25, reason: LocationsAuditReason.countShortage.remoteValue, note: "Broken box"),
+        ]))
+        let body = try JSONSerialization.jsonObject(with: try #require(request.httpBody)) as? [String: [[String: Any]]]
+        let count = try #require(body?["counts"]?.first)
+
+        #expect(request.httpMethod == "POST")
+        #expect(request.url?.path == "/app/api/mobile/locations/7/audit")
+        #expect(count["location_org_stock_id"] as? Int == 11)
+        #expect(count["quantity"] as? Int == 25)
+        #expect(count["reason"] as? String == "count_short")
+        #expect(count["note"] as? String == "Broken box")
+    }
+
+    @Test func remoteAuditUsesRecountWhenNothingChangedAndShowsTheNewCount() async throws {
+        let store = await detailedStore()
+
+        let differences = try await store.auditRemotely(location: "A-03-02", counts: [
+            LocationsAuditCount(skoReference: "SKO-00733", counted: 25, reason: .countShortage),
+        ], apiClient: client())
+
+        #expect(differences == 1)
+        #expect(store.warehouse.location(code: "A-03-02")?.slot("SKO-00733")?.quantity == 25)
+    }
+
+    @Test func moveSomeSendsTheOrgStocksAndTheTransferReason() throws {
+        let request = client().makeRequest(for: .mobileLocationMoveSome(id: 7, targetID: 9, orgStocks: [
+            MobileMovedOrgStock(orgStockId: 5, quantity: 10, removeAfterMove: false),
+        ]))
+        let data = try #require(request.httpBody)
+        let body = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let moved = try #require((body["org_stocks"] as? [[String: Any]])?.first)
+
+        #expect(request.url?.path == "/app/api/mobile/locations/7/move-some")
+        #expect(body["location_id"] as? Int == 9)
+        #expect(body["reason"] as? String == "transfer")
+        #expect(moved["org_stock_id"] as? Int == 5)
+        #expect(moved["quantity"] as? Int == 10)
+        #expect(moved["remove_after_move"] as? Bool == false)
+    }
+
+    @Test func moveAllSendsTheTargetAndWhetherToRemove() throws {
+        let request = client().makeRequest(for: .mobileLocationMoveAll(id: 7, targetID: 9, removeAfterMove: true))
+        let data = try #require(request.httpBody)
+        let body = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(request.url?.path == "/app/api/mobile/locations/7/move-all")
+        #expect(body["location_id"] as? Int == 9)
+        #expect(body["remove_after_move"] as? Bool == true)
+        #expect(body["reason"] as? String == "transfer")
+    }
+
+    @Test func remoteMoveFindsTheTargetOnTheServerAndRefreshesTheSource() async throws {
+        let store = await detailedStore()
+
+        let moved = try await store.moveRemotely(from: "A-03-02", to: "a-03-02", quantities: ["SKO-00733": 10], removeFromSource: false, movesEverything: false, apiClient: client())
+
+        #expect(moved == 10)
+        #expect(store.warehouse.location(code: "A-03-02")?.slot("SKO-00733")?.quantity == 20)
+    }
+
+    @Test func remoteMoveToAnUnknownLocationFails() async {
+        let store = await detailedStore()
+
+        await #expect(throws: LocationsActionError.targetNotFound("Z-99")) {
+            try await store.moveRemotely(from: "A-03-02", to: "Z-99", quantities: ["SKO-00733": 1], removeFromSource: false, movesEverything: false, apiClient: client())
+        }
+    }
+
+    @Test func remoteRemoveSendsOrgStockIdsAndEmptiesTheLocation() async throws {
+        let request = client().makeRequest(for: .mobileLocationRemoveOrgStocks(id: 7, orgStockIDs: [5]))
+        let data = try #require(request.httpBody)
+        let body = try #require(try JSONSerialization.jsonObject(with: data) as? [String: [Int]])
+        let store = await detailedStore()
+
+        let removed = try await store.removeRemotely(skos: ["SKO-00733"], from: "A-03-02", apiClient: client())
+
+        #expect(body["org_stock_ids"] == [5])
+        #expect(removed == 1)
+        #expect(store.warehouse.location(code: "A-03-02")?.slots.isEmpty == true)
+        #expect(store.canEditLocations(in: "A-03-02"))
+    }
+
+    @Test func settingsSendOnlyWhatTheWebUpdateTakes() {
+        let slot = LocationsSlot(skoReference: "SKO-1", name: "", quantity: 3, type: .storing, roles: [.dropshipping], unitWeightKg: 0, unitVolumeM3: 0, unitValue: 0)
+        let picking = LocationsRemoteUpdate.body(from: slot, to: LocationsSlotSettings(type: .picking, roles: [.wholesale, .dropshipping], minStock: 12, maxStock: 48, replenishment: 9, note: "Top shelf"))
+        let storing = LocationsRemoteUpdate.body(from: slot, to: LocationsSlotSettings(type: .storing, roles: [], minStock: 12, maxStock: 48, replenishment: 9, note: ""))
+
+        #expect(picking == MobileLocationOrgStockUpdate(type: "picking", minStock: 12, maxStock: 48, replenishmentStock: nil, notes: "Top shelf", setAsPriorityWholesale: true, setAsPriorityDropshipping: nil))
+        #expect(storing == MobileLocationOrgStockUpdate(type: "storing", minStock: nil, maxStock: nil, replenishmentStock: 9, notes: "", setAsPriorityWholesale: nil, setAsPriorityDropshipping: nil))
+    }
+
+    @Test func remoteSettingsUpdateShowsTheSavedNote() async throws {
+        let store = await detailedStore()
+        let slot = try #require(store.warehouse.location(code: "A-03-02")?.slot("SKO-00733"))
+        var settings = slot.settings
+        settings.note = "Top shelf"
+
+        try await store.updateRemotely(sko: "SKO-00733", in: "A-03-02", settings: settings, apiClient: client())
+
+        #expect(store.warehouse.location(code: "A-03-02")?.slot("SKO-00733")?.note == "Top shelf")
+    }
+
+    @Test func sampleDataKeepsEveryActionAvailable() {
+        let store = LocationsStore()
+
+        #expect(store.canEditStocks(in: "anything"))
+        #expect(store.canEditLocations(in: "anything"))
+    }
+
+    @Test func onlyTheActiveTabShowsItsCount() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+
+        #expect(store.pillTitle(for: .all) == "All 1")
+        #expect(store.pillTitle(for: .empty) == "Empty")
+        #expect(store.pillTitle(for: .partiallyEmpty) == "Partially empty")
+
+        store.listTab = .empty
+
+        #expect(store.pillTitle(for: .all) == "All")
+        #expect(store.pillTitle(for: .empty) == "Empty")
+
+        await store.reloadList(apiClient: client())
+
+        #expect(store.pillTitle(for: .empty) == "Empty 1")
     }
 }

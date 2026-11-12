@@ -112,7 +112,6 @@ class StorePurchaseOrder extends OrgAction
             'state'          => ['sometimes', 'required', Rule::enum(PurchaseOrderStateEnum::class)],
             'delivery_state' => ['sometimes', 'required', Rule::enum(PurchaseOrderDeliveryStateEnum::class)],
             'cost_items'     => ['sometimes', 'required', 'numeric', 'min:0'],
-            'cost_shipping'  => ['sometimes', 'required', 'numeric', 'min:0'],
             'cost_total'     => ['sometimes', 'required', 'numeric', 'min:0'],
             'date'           => ['sometimes', 'required'],
             'currency_id'    => ['sometimes', 'required'],

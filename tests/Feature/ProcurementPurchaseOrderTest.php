@@ -4583,17 +4583,16 @@ function cancellableAgentOrder(object $test): array
     $line     = $order->purchaseOrderTransactions()->firstOrFail();
     $line->update(['unit_cost' => 12.5, 'net_amount' => round(12.5 * (float) $line->quantity_ordered, 2)]);
     $order = UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh())->refresh();
-    $order->update(['cost_extra' => 7, 'cost_shipping' => 30, 'cost_duties' => 4.5, 'cost_tax' => 2]);
     CalculatePurchaseOrderTotalAmounts::run($order);
 
     return [$orgAgent, $order->refresh(), $line->refresh()];
 }
 
-test('the agent undoes cancelling a purchase order and its state, lines and costs come back', function () {
+test('the agent undoes cancelling a purchase order and its state, lines and amounts come back', function () {
     PurchaseOrder::enableAuditing();
     [$orgAgent, $order, $line] = cancellableAgentOrder($this);
     $line->update(['org_net_amount' => 1.23, 'grp_net_amount' => 4.56, 'unit_cost' => null]);
-    $before  = $order->only(['cost_items', 'cost_total', 'cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax']);
+    $before  = $order->only(['cost_items', 'cost_total']);
     $lineBefore = $line->refresh()->only(['net_amount', 'grp_net_amount', 'org_net_amount']);
 
     $this->patch(route('grp.models.purchase-order.cancel', $order->id), ['counterparty_informed' => 'yes', 'reason' => 'Buyer changed plan'])->assertSessionHasNoErrors();
@@ -4603,7 +4602,7 @@ test('the agent undoes cancelling a purchase order and its state, lines and cost
     expect($order->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
         ->and((float) $order->cost_total)->toBe(0.0)
         ->and($order->data['cancellation']['state'])->toBe('submitted')
-        ->and($order->data['cancellation']['costs']['cost_shipping'])->toEqual(30)
+        ->and($order->data['cancellation'])->not->toHaveKey('costs')
         ->and($order->data['cancellation']['reason'])->toBe('Buyer changed plan')
         ->and(collect($order->data['cancellation']['transactions'])->map(fn (array $snapshot) => [$snapshot['id'], $snapshot['state'], $snapshot['org_net_amount']])->all())->toBe([[$line->id, 'submitted', 1.23]])
         ->and(collect(ShowPurchaseOrder::make()->getAgentActions($order))->pluck('key'))->toContain('undo_cancel_purchase_order');
@@ -4669,7 +4668,7 @@ test('undoing a cancel warns about later purchase orders with the same supplier 
         ->and(collect($action['duplicates'])->pluck('id')->all())->toBe([$later->id]);
 });
 
-test('a purchase order cancelled before its costs were kept asks for the costs the cancel audit lost', function () {
+test('a purchase order cancelled before aiku kept what cancelling removes comes back from its cancel audit with its total equal to its items', function () {
     [, $order, $line] = cancellableAgentOrder($this);
     UpdatePurchaseOrderStateToCancelled::make()->action($order);
     $order->refresh();
@@ -4685,17 +4684,14 @@ test('a purchase order cancelled before its costs were kept asks for the costs t
     ])->save();
 
     $action = collect(ShowPurchaseOrder::make()->getActions($order, false))->firstWhere('key', 'undo_cancel_purchase_order');
-    expect($action['missing_costs'])->toBe(['cost_extra', 'cost_tax'])
-        ->and($action['cost_total'])->toBe(168.5)
-        ->and($action['cost_gap'])->toBe(9.0)
-        ->and(fn () => UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh()))->toThrow(\Illuminate\Validation\ValidationException::class)
-        ->and(fn () => UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh(), ['cost_extra' => 7, 'cost_tax' => 5]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($action['disabled_reason'])->toBeNull()
+        ->and($action)->not->toHaveKeys(['missing_costs', 'cost_total', 'cost_gap']);
 
-    UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh(), ['cost_extra' => 7, 'cost_tax' => 2]);
+    UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh());
 
     expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::SUBMITTED)
-        ->and((float) $order->cost_shipping)->toBe(30.0)
-        ->and((float) $order->cost_extra)->toBe(7.0)
+        ->and((float) $order->cost_items)->toBe(125.0)
+        ->and((float) $order->cost_total)->toBe(125.0)
         ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SUBMITTED)
         ->and((float) $line->net_amount)->toBe(125.0);
 

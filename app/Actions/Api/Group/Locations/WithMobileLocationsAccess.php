@@ -38,6 +38,16 @@ trait WithMobileLocationsAccess
     }
 
     /**
+     * The location edit rights the web Location page checks before moving or removing its SKOs
+     * (WithWarehouseEditAuthorisation).
+     */
+    public static function canEditLocations(User $user, Warehouse $warehouse): bool
+    {
+        return $warehouse->group_id === $user->group_id
+            && $user->authTo(["supervisor-locations.$warehouse->id", "locations.$warehouse->id.edit"]);
+    }
+
+    /**
      * The web table actions read their search, sort and paging from the request, under the
      * names the web tables use (filter[global], sort, perPage, page).
      *

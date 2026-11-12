@@ -19,21 +19,17 @@ use RuntimeException;
 
 class CalculatePurchaseOrderTotalAmounts extends OrgAction
 {
+    /**
+     * A purchase order carries only what is ordered from the supplier, so its total is its items. Freight, duty
+     * and every other landed cost live on the stock delivery, where they are costed.
+     */
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        $itemsNet = $purchaseOrder->purchaseOrderTransactions()
-            ->with('supplierProduct.currency')
-            ->get()
-            ->sum(fn (PurchaseOrderTransaction $transaction) => $this->netAmountInOrderCurrency($purchaseOrder, $transaction));
-
-        $extras = (float) $purchaseOrder->cost_extra
-            + (float) $purchaseOrder->cost_shipping
-            + (float) $purchaseOrder->cost_duties
-            + (float) $purchaseOrder->cost_tax;
+        $itemsNet = $this->itemsNet($purchaseOrder);
 
         $purchaseOrder->update([
             'cost_items' => $itemsNet,
-            'cost_total' => $itemsNet + $extras,
+            'cost_total' => $itemsNet,
         ]);
 
         if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->depositPayments()->exists()) {
@@ -41,6 +37,14 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
         }
 
         PurchaseOrderHydrateState::run($purchaseOrder);
+    }
+
+    public function itemsNet(PurchaseOrder $purchaseOrder): float
+    {
+        return (float) $purchaseOrder->purchaseOrderTransactions()
+            ->with('supplierProduct.currency')
+            ->get()
+            ->sum(fn (PurchaseOrderTransaction $transaction) => $this->netAmountInOrderCurrency($purchaseOrder, $transaction));
     }
 
     private function netAmountInOrderCurrency(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $transaction): float

@@ -100,7 +100,9 @@ extension LocationsSlot {
             note: remote.notes ?? "",
             unitWeightKg: 0,
             unitVolumeM3: 0,
-            unitValue: quantity > 0 ? value / Double(quantity) : 0
+            unitValue: quantity > 0 ? value / Double(quantity) : 0,
+            remoteOrgStockID: remote.id,
+            remoteLinkID: remote.locationOrgStockId
         )
     }
 }

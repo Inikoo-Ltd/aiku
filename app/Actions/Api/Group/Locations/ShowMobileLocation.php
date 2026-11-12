@@ -58,12 +58,25 @@ class ShowMobileLocation
         ]);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function forUser(Location $location, User $user): array
+    {
+        return array_merge($this->handle($location), [
+            'can' => [
+                'edit_stocks'    => self::canEditStocks($user, $location->warehouse),
+                'edit_locations' => self::canEditLocations($user, $location->warehouse),
+            ],
+        ]);
+    }
+
     public function asController(Location $location, ActionRequest $request): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
         $this->ensureCanViewLocations($user, $location->warehouse);
 
-        return response()->json(['data' => $this->handle($location)]);
+        return response()->json(['data' => $this->forUser($location, $user)]);
     }
 }
