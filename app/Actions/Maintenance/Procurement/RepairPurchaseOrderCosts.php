@@ -239,7 +239,7 @@ class RepairPurchaseOrderCosts
         if ($file === false) {
             throw new RuntimeException("Can not write $path, nothing was repaired");
         }
-        fputcsv($file, ['id', 'organisation', 'reference', 'state', 'currency', 'items_before', 'extra_before', 'shipping_before', 'duties_before', 'tax_before', 'total_before', 'items_after', 'total_after', 'left_alone']);
+        fputcsv($file, ['id', 'organisation', 'reference', 'state', 'currency', 'items_before', 'extra_before', 'shipping_before', 'duties_before', 'tax_before', 'total_before', 'items_after', 'total_after', 'left_alone'], escape: '');
 
         foreach ($changes as $change) {
             fputcsv($file, [
@@ -247,7 +247,7 @@ class RepairPurchaseOrderCosts
                 $change['before']['cost_items'], $change['before']['cost_extra'], $change['before']['cost_shipping'], $change['before']['cost_duties'], $change['before']['cost_tax'], $change['before']['cost_total'],
                 $change['after']['cost_items'], $change['after']['cost_total'],
                 $change['left_alone'],
-            ]);
+            ], escape: '');
         }
 
         fclose($file);
