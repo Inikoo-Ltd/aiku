@@ -20,9 +20,9 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import { Navigation } from "@/types/Tabs"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot } from "@fal"
+import { faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle } from "@fal"
 
-library.add(faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot)
+library.add(faComments, faShoppingCart, faMoneyBillWave, faPercentage, faCoins, faUndo, faTimes, faRobot, faUserHeadset, faExclamationTriangle)
 
 type Metric = { value: number; previous: number | null }
 type Option = { value: string | number; label: string }
@@ -51,6 +51,22 @@ type Overview = {
     }
     assistant_reach?: { available?: Metric; offered?: Metric; asked?: Metric }
     refusals?: { rate_limit?: Metric; budget?: Metric }
+    general?: {
+        questions: Metric
+        answered: Metric
+        by_source: { key: string; label: string; answers: number; general: string }[]
+        offers: Metric
+        by_reason: { reason: string; label: string; offered: number; handed_over: number }[]
+        hand_overs: Metric
+        by_route: { route: string; label: string; hand_overs: number }[]
+        rate_per_question: { value: number | null; previous: number | null }
+        rate_per_conversation: { value: number | null; previous: number | null }
+        first_reply: Record<"in_hours" | "after_hours", { hand_overs: number; replied: number; median_minutes: number | null }>
+        outcomes: { hand_overs: number; replied: number; closed: number; ordered: number; ordered_base: number }
+        wrong_answers: Metric
+        ai_cost: Metric
+        gaps: { question: string; count: number; languages: string[]; last_asked_at: string; conversation: string }[]
+    }
 }
 
 type FilterKey = "website" | "language" | "entry_point" | "shop_type" | "country"
@@ -70,6 +86,7 @@ const props = defineProps<{
         shop_type: string | null
         country: string | null
         outcome: string | null
+        general: string | null
         website_locked: boolean
         options?: {
             websites?: Option[]
@@ -140,7 +157,10 @@ const visit = (query: Record<string, any>, tab: string) =>
         onFinish: () => (isLoading.value = false),
     })
 
-const keepOutcome = () => (currentTab.value === "conversations" && props.filters.outcome ? { outcome: props.filters.outcome } : {})
+const keepOutcome = () => {
+    if (currentTab.value !== "conversations") return {}
+    return { ...(props.filters.outcome ? { outcome: props.filters.outcome } : {}), ...(props.filters.general ? { general: props.filters.general } : {}) }
+}
 
 const setFilter = (key: string, value: string | number | null) => visit(filterQuery({ ...keepOutcome(), [key]: value }), currentTab.value)
 
@@ -149,7 +169,8 @@ const handleTabUpdate = (tab: string) => {
     visit(filterQuery(), tab)
 }
 
-const conversationsUrl = (outcome?: string) => pageUrl({ ...filterQuery(), tab: "conversations", ...(outcome ? { outcome } : {}) })
+const conversationsUrl = (outcome?: string, general?: string) =>
+    pageUrl({ ...filterQuery(), tab: "conversations", ...(outcome ? { outcome } : {}), ...(general ? { general } : {}) })
 
 const hasActiveFilters = computed(
     () => urlQuery.value.has("from") || urlQuery.value.has("to") || filterKeys.some((key) => !(key === "website" && props.filters.website_locked) && props.filters[key] !== null && props.filters[key] !== undefined)
@@ -196,6 +217,35 @@ const outcomeLabels: Record<string, string> = {
     clicked: ctrans("clicked a product"),
     added: ctrans("added to basket"),
     ordered: ctrans("ordered"),
+}
+
+const transcriptUrl = (ulid: string) => route(props.routes.conversation.name, { ...props.routes.conversation.parameters, conversation: ulid })
+
+const generalLabels: Record<string, string> = {
+    questions: ctrans("general questions"),
+    answered: ctrans("answered by the assistant"),
+    offered: ctrans("a person was offered"),
+    handed_over: ctrans("passed to a person"),
+    wrong: ctrans("an answer marked wrong"),
+    gap: ctrans("the assistant could not answer"),
+    in_hours: ctrans("passed to a person in chat hours"),
+    after_hours: ctrans("passed to a person outside chat hours"),
+    replied: ctrans("a person replied after passing"),
+    closed: ctrans("chat closed after passing"),
+    ordered: ctrans("ordered after passing to a person"),
+}
+
+const generalFilterLabel = (value: string | null): string => {
+    if (!value) return ""
+    if (generalLabels[value]) return generalLabels[value]
+    const [prefix, suffix] = value.split(":")
+    const plain = (suffix ?? value).replace(/_/g, " ")
+    const general = props.overview?.general
+    if (prefix === "source" || prefix === "kind") return general?.by_source.find((row) => row.general === value)?.label ?? plain
+    if (prefix === "reason") return ctrans("passed to a person: :reason", { reason: general?.by_reason.find((row) => row.reason === suffix)?.label ?? plain })
+    if (prefix === "offer") return ctrans("offered a person: :reason", { reason: general?.by_reason.find((row) => row.reason === suffix)?.label ?? plain })
+    if (prefix === "route") return ctrans("passed to a person by :route", { route: general?.by_route.find((row) => row.route === suffix)?.label ?? plain })
+    return value
 }
 
 const budgetRows = computed(() =>
@@ -311,6 +361,53 @@ const kpiCards = computed(() => {
                 ...(share && share.value !== null && share.value !== undefined ? [ctrans(":share of revenue", { share: percent(share.value) })] : []),
             ],
         },
+    ]
+})
+
+const general = computed(() => props.overview?.general)
+const hasGeneral = computed(() => !!general.value && (general.value.questions.value > 0 || general.value.hand_overs.value > 0))
+
+const waitLabel = (minutes: number | null | undefined) => {
+    if (minutes === null || minutes === undefined) return "–"
+    const rounded = Math.round(minutes)
+    if (rounded < 90) return ctrans(":minutes min", { minutes: rounded })
+    return ctrans(":hours h :minutes min", { hours: Math.floor(rounded / 60), minutes: rounded % 60 })
+}
+
+const generalCards = computed(() => {
+    const data = general.value
+    if (!data) return []
+    const rate = (metric: { value: number | null; previous: number | null }): Metric => ({ value: metric.value as number, previous: metric.value === null ? null : metric.previous })
+    const perConversation = data.rate_per_conversation.value
+    return [
+        { key: "questions", label: ctrans("General questions"), icon: faComments, metric: data.questions, kind: "count" as const, better: "none" as const, href: conversationsUrl(undefined, "questions"), lines: [] as string[] },
+        { key: "answered", label: ctrans("Answered by the assistant"), icon: faRobot, metric: data.answered, kind: "count" as const, better: "up" as const, href: conversationsUrl(undefined, "answered"), lines: [] as string[] },
+        { key: "hand_overs", label: ctrans("Passed to a person"), icon: faUserHeadset, metric: data.hand_overs, kind: "count" as const, better: "none" as const, href: conversationsUrl(undefined, "handed_over"), lines: [] as string[] },
+        {
+            key: "rate",
+            label: ctrans("Hand-over rate"),
+            icon: faPercentage,
+            metric: rate(data.rate_per_question),
+            kind: "rate" as const,
+            better: "none" as const,
+            href: conversationsUrl(undefined, "handed_over"),
+            lines: [
+                ctrans("per question"),
+                ...(perConversation === null ? [] : [ctrans(":share of conversations", { share: percent(perConversation) })]),
+            ],
+        },
+        {
+            key: "ai_cost",
+            label: ctrans("AI cost of these answers"),
+            icon: faCoins,
+            metric: data.ai_cost,
+            kind: "money" as const,
+            currency: costCurrency.value,
+            better: "none" as const,
+            href: null as string | null,
+            lines: [] as string[],
+        },
+        { key: "wrong", label: ctrans("Answers marked wrong"), icon: faExclamationTriangle, metric: data.wrong_answers, kind: "count" as const, better: "down" as const, href: conversationsUrl(undefined, "wrong"), lines: [] as string[] },
     ]
 })
 
@@ -651,6 +748,192 @@ const conversationsTable = computed(() => props.conversations)
                         </tbody>
                     </table>
                 </div>
+                <div v-if="general && hasGeneral" class="mt-3">
+                    <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("General questions and passing to a person") }}</h3>
+                    <div class="grid grid-cols-2 gap-3 lg:grid-cols-6">
+                        <div v-for="card in generalCards" :key="card.key" class="min-w-0 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500">
+                                <FontAwesomeIcon :icon="card.icon" class="text-gray-400" fixed-width aria-hidden="true" />
+                                <span class="truncate" :title="card.label">{{ card.label }}</span>
+                            </div>
+                            <component :is="card.href ? Link : 'div'" :href="card.href ?? undefined" class="mt-1 block text-2xl font-semibold" :class="card.href ? 'hover:underline decoration-gray-300 underline-offset-4' : ''">
+                                <template v-if="card.kind === 'rate'">
+                                    <div class="tabular-nums text-gray-900">{{ percent(card.metric.value) }}</div>
+                                    <div v-if="change(card.metric, 'none', true)" class="text-xs font-normal tabular-nums" :class="change(card.metric, 'none', true)?.cls">
+                                        {{ change(card.metric, "none", true)?.text }}
+                                    </div>
+                                </template>
+                                <GoogleAdsMetric
+                                    v-else
+                                    :value="card.metric.value ?? 0"
+                                    :kind="card.kind"
+                                    :currency="card.currency"
+                                    :previous="comparable(card.metric)"
+                                    :better="card.better"
+                                    strong
+                                    class="[&>div:first-child]:text-2xl [&>div:first-child]:text-gray-900" />
+                            </component>
+                            <p v-for="line in card.lines" :key="line" class="mt-0.5 truncate text-xs text-gray-500" :title="line">{{ line }}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+                        <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+                            <h4 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("Answered from") }}</h4>
+                            <table v-if="general.by_source.length" class="w-full text-sm">
+                                <thead class="whitespace-nowrap text-xs text-gray-400">
+                                    <tr>
+                                        <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Source") }}</th>
+                                        <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Answers") }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="row in general.by_source" :key="row.key">
+                                        <td class="py-1 pr-3 text-gray-700">{{ row.label }}</td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums">
+                                            <Link :href="conversationsUrl(undefined, row.general)" class="primaryLink">{{ locale.number(row.answers) }}</Link>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p v-else class="py-2 text-xs text-gray-400">{{ ctrans("The assistant answered none itself in this period") }}</p>
+                        </div>
+
+                        <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+                            <h4 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("Why a person was offered") }}</h4>
+                            <table class="w-full text-sm">
+                                <thead class="whitespace-nowrap text-xs text-gray-400">
+                                    <tr>
+                                        <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Reason") }}</th>
+                                        <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Offered") }}</th>
+                                        <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Passed to a person") }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="row in general.by_reason" :key="row.reason">
+                                        <td class="py-1 pr-3 text-gray-700">{{ row.label }}</td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums">
+                                            <Link v-if="row.offered" :href="conversationsUrl(undefined, 'offer:' + row.reason)" class="primaryLink">{{ locale.number(row.offered) }}</Link>
+                                            <span v-else class="text-gray-400">0</span>
+                                        </td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums">
+                                            <Link v-if="row.handed_over" :href="conversationsUrl(undefined, 'reason:' + row.reason)" class="primaryLink">{{ locale.number(row.handed_over) }}</Link>
+                                            <span v-else class="text-gray-400">0</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+                            <h4 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("How it reached the team") }}</h4>
+                            <table class="w-full text-sm">
+                                <thead class="whitespace-nowrap text-xs text-gray-400">
+                                    <tr>
+                                        <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Route") }}</th>
+                                        <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Hand-overs") }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="row in general.by_route" :key="row.route">
+                                        <td class="py-1 pr-3 text-gray-700">{{ row.label }}</td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums">
+                                            <Link v-if="row.hand_overs" :href="conversationsUrl(undefined, 'route:' + row.route)" class="primaryLink">{{ locale.number(row.hand_overs) }}</Link>
+                                            <span v-else class="text-gray-400">0</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+                            <h4 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("First reply from a person") }}</h4>
+                            <table class="w-full text-sm">
+                                <thead class="whitespace-nowrap text-xs text-gray-400">
+                                    <tr>
+                                        <th class="pb-1 pr-3 text-left font-medium" />
+                                        <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Hand-overs") }}</th>
+                                        <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Replied") }}</th>
+                                        <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Median wait") }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="hours in (['in_hours', 'after_hours'] as const)" :key="hours">
+                                        <td class="whitespace-nowrap py-1 pr-3 text-gray-700">{{ hours === "in_hours" ? ctrans("In chat hours") : ctrans("Outside chat hours") }}</td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums">
+                                            <Link v-if="general.first_reply[hours].hand_overs" :href="conversationsUrl(undefined, hours)" class="primaryLink">{{ locale.number(general.first_reply[hours].hand_overs) }}</Link>
+                                            <span v-else class="text-gray-400">0</span>
+                                        </td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-700">{{ locale.number(general.first_reply[hours].replied) }}</td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-900">{{ waitLabel(general.first_reply[hours].median_minutes) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="mt-2 text-xs text-gray-500">{{ ctrans("Outside chat hours the wait includes the night.") }}</p>
+                        </div>
+
+                        <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+                            <h4 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("After passing to a person") }}</h4>
+                            <table class="w-full text-sm">
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr>
+                                        <td class="py-1 pr-3 text-gray-700">{{ ctrans("A person replied") }}</td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums">
+                                            <Link v-if="general.outcomes.replied" :href="conversationsUrl(undefined, 'replied')" class="primaryLink">{{ locale.number(general.outcomes.replied) }}</Link>
+                                            <span v-else class="text-gray-400">0</span>
+                                            <span class="text-xs text-gray-400"> {{ ctrans("of :count", { count: locale.number(general.outcomes.hand_overs) }) }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-1 pr-3 text-gray-700">{{ ctrans("Chat closed") }}</td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums">
+                                            <Link v-if="general.outcomes.closed" :href="conversationsUrl(undefined, 'closed')" class="primaryLink">{{ locale.number(general.outcomes.closed) }}</Link>
+                                            <span v-else class="text-gray-400">0</span>
+                                            <span class="text-xs text-gray-400"> {{ ctrans("of :count", { count: locale.number(general.outcomes.hand_overs) }) }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-1 pr-3 text-gray-700">{{ ctrans("Ordered within :days days", { days: attribution_days }) }}</td>
+                                        <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums">
+                                            <Link v-if="general.outcomes.ordered" :href="conversationsUrl(undefined, 'ordered')" class="primaryLink">{{ locale.number(general.outcomes.ordered) }}</Link>
+                                            <span v-else class="text-gray-400">0</span>
+                                            <span class="text-xs text-gray-400"> {{ ctrans("of :count old enough to judge", { count: locale.number(general.outcomes.ordered_base) }) }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                        <h4 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("Questions the assistant could not answer") }}</h4>
+                        <table v-if="general.gaps.length" class="w-full text-sm">
+                            <thead class="whitespace-nowrap text-xs text-gray-400">
+                                <tr>
+                                    <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Question") }}</th>
+                                    <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Times asked") }}</th>
+                                    <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("Languages") }}</th>
+                                    <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Last asked") }}</th>
+                                    <th class="pb-1 pl-4 text-left font-medium" />
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="gap in general.gaps" :key="gap.question">
+                                    <td class="break-words py-1 pr-3 text-gray-700">{{ gap.question }}</td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-900">{{ locale.number(gap.count) }}</td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-xs uppercase text-gray-500">{{ gap.languages.join(", ") }}</td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-right text-xs tabular-nums text-gray-500">{{ shortDate(gap.last_asked_at) }}</td>
+                                    <td class="whitespace-nowrap py-1 pl-4 text-xs">
+                                        <Link :href="transcriptUrl(gap.conversation)" class="primaryLink">{{ ctrans("Open") }}</Link>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p v-else class="py-2 text-xs text-gray-400">{{ ctrans("No unanswered questions in this period") }}</p>
+                        <p class="mt-2 text-xs text-gray-500">{{ ctrans("Add what answers these as notes in the shop's chat settings, and the assistant will answer them next time.") }}</p>
+                    </div>
+                </div>
+                <p v-else-if="general" class="mt-3 text-xs text-gray-500">{{ ctrans("No general questions in this period") }}</p>
                 <div v-if="assistantReach.length" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
                     <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("From the search box to a question") }}</h3>
                     <table class="w-full text-sm">
@@ -929,10 +1212,18 @@ const conversationsTable = computed(() => props.conversations)
     </div>
 
     <div v-else-if="currentTab === 'conversations'">
-        <div v-if="filters.outcome" class="px-4 pt-3">
-            <span class="inline-flex items-center gap-1.5 rounded-full border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] py-0.5 pl-3 pr-1 text-xs text-gray-700">
+        <div v-if="filters.outcome || filters.general" class="flex flex-wrap gap-2 px-4 pt-3">
+            <span v-if="filters.outcome" class="inline-flex items-center gap-1.5 rounded-full border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] py-0.5 pl-3 pr-1 text-xs text-gray-700">
                 {{ ctrans("Only conversations: :outcome", { outcome: outcomeLabels[filters.outcome] ?? filters.outcome }) }}
                 <Button type="tertiary" size="xxs" :tooltip="ctrans('Clear')" @click="setFilter('outcome', null)">
+                    <template #icon>
+                        <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </span>
+            <span v-if="filters.general" class="inline-flex items-center gap-1.5 rounded-full border border-[var(--app-accent-muted)] bg-[var(--app-accent-soft)] py-0.5 pl-3 pr-1 text-xs text-gray-700">
+                {{ ctrans("Only conversations: :outcome", { outcome: generalFilterLabel(filters.general) }) }}
+                <Button type="tertiary" size="xxs" :tooltip="ctrans('Clear')" @click="setFilter('general', null)">
                     <template #icon>
                         <FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
                     </template>

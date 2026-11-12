@@ -162,6 +162,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
             'shop_type'     => $pick('shop_type', CustomerShopTypeEnum::values()),
             'country'       => $pick('country', array_column($options['countries'], 'value')),
             'outcome'       => $pick('outcome', self::OUTCOMES),
+            'general'       => GetShoppingAssistantReport::make()->validGeneralFilter($request->query('general')),
             'website_ids'   => $websiteIds,
             'search_website_ids' => $language
                 ? DB::table('websites')->join('shops', 'shops.id', '=', 'websites.shop_id')->join('languages', 'languages.id', '=', 'shops.language_id')
@@ -256,6 +257,10 @@ class ShowShoppingAssistantPerformance extends OrgAction
 
         $eventCount = fn (string $type) => "(select count(*) from shopping_assistant_events events where events.shopping_assistant_conversation_id = shopping_assistant_conversations.id and events.type = '$type') as $type";
 
+        if ($generalCondition = $report->generalFilterCondition($filters['general'])) {
+            $query->whereRaw($generalCondition);
+        }
+
         if ($filters['outcome'] === 'ordered') {
             [$orderedSql, $orderedBindings] = $report->attributionSql(
                 $report->conversationsQuery($filters, $filters['from']->startOfDay(), $filters['to']->endOfDay()),
@@ -284,6 +289,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
             ->selectRaw($eventCount('shown'))
             ->selectRaw($eventCount('clicked'))
             ->selectRaw($eventCount('added'))
+            ->selectRaw('exists (select 1 from shopping_assistant_hand_overs where shopping_assistant_hand_overs.shopping_assistant_conversation_id = shopping_assistant_conversations.id) as handed_over')
             ->defaultSort('-created_at')
             ->allowedSorts([
                 AllowedSort::field('created_at', 'shopping_assistant_conversations.created_at'),
@@ -338,6 +344,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                 ->column(key: 'clicked', label: __('Clicked'), canBeHidden: false, align: 'right')
                 ->column(key: 'added', label: __('Added'), canBeHidden: false, align: 'right')
                 ->column(key: 'ordered', label: __('Ordered'), canBeHidden: false)
+                ->column(key: 'handed_over', label: __('Handed over'), canBeHidden: false)
                 ->column(key: 'cost', label: __('AI cost'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'status_label', label: __('Status'), canBeHidden: false)
                 ->defaultSort('-created_at');
@@ -432,6 +439,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                     'shop_type'      => $filters['shop_type'],
                     'country'        => $filters['country'],
                     'outcome'        => $filters['outcome'],
+                    'general'        => $filters['general'],
                     'website_locked' => $filters['website_locked'],
                     'options'        => $filters['options'],
                 ],

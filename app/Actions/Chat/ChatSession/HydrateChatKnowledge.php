@@ -16,8 +16,10 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\Web\Webpage;
+use App\Actions\Helpers\AI\EmbedTexts;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -25,8 +27,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * Copies what a shop already says into its knowledge base, so the AI answers from short, current
  * entries instead of fetching whole pages: each section of the returns, delivery and terms pages,
  * what the shop's settings say (delivery prices per zone, blocked countries, offers, payment
- * methods) and, for dropshipping, the /docs guides. Run every night and on demand; entries staff
+ * methods) and, for dropshipping, the /docs guides. Run every hour and on demand; entries staff
  * wrote are never touched.
+ *
+ * Every entry of the shop is embedded, so the AI shopping assistant finds the ones that answer a
+ * question by meaning (SearchShopKnowledge). The copied entries are deleted and created again on
+ * every run, so an entry whose text did not change keeps the embedding it had (found by a hash of
+ * its title and body) and is never embedded twice. The embeddings API is never called inside the
+ * transaction: embedMissing runs after it, also for staff notes, verified facts and learned rules,
+ * and leaves what it cannot embed for the next run.
  */
 class HydrateChatKnowledge
 {
@@ -38,6 +47,10 @@ class HydrateChatKnowledge
 
     private const int MAX_BODY = 1500;
 
+    private const int EMBED_CHUNK = 50;
+
+    private const int MAX_EMBEDDED_TEXT = 2000;
+
     public function handle(Shop $shop): int
     {
         $now     = now();
@@ -48,7 +61,13 @@ class HydrateChatKnowledge
         ];
 
         DB::transaction(function () use ($shop, $entries, $now) {
-            ChatKnowledgeEntry::where('shop_id', $shop->id)->whereIn('source_type', ['webpage', 'shop_settings', 'docs'])->delete();
+            $copied = ChatKnowledgeEntry::where('shop_id', $shop->id)->whereIn('source_type', ['webpage', 'shop_settings', 'docs']);
+
+            $kept = (clone $copied)->whereNotNull('embedding')->get(['title', 'body', 'embedding'])
+                ->mapWithKeys(fn (ChatKnowledgeEntry $entry) => [$this->textHash($entry->title, $entry->body) => $entry->embedding])
+                ->all();
+
+            $copied->delete();
 
             foreach ($entries as $entry) {
                 ChatKnowledgeEntry::create($entry + [
@@ -56,11 +75,55 @@ class HydrateChatKnowledge
                     'organisation_id' => $shop->organisation_id,
                     'shop_id'         => $shop->id,
                     'hydrated_at'     => $now,
+                    'embedding'       => $kept[$this->textHash($entry['title'], $entry['body'])] ?? null,
                 ]);
             }
         });
 
+        $this->embedMissing($shop);
+
         return count($entries);
+    }
+
+    /**
+     * Embeds every entry that applies to the shop (its own, its organisation's and the group's) and
+     * has no embedding yet, in chunks of 50 texts. When the embeddings call fails or there is no key
+     * the entries stay without one and the next run tries again; it never throws.
+     *
+     * @return int how many entries got an embedding
+     */
+    public function embedMissing(Shop $shop): int
+    {
+        $embedded = 0;
+
+        try {
+            ChatKnowledgeEntry::forShop($shop)->whereNull('embedding')->select(['chat_knowledge_entries.id', 'chat_knowledge_entries.title', 'chat_knowledge_entries.body'])->orderBy('chat_knowledge_entries.id')->get()
+                ->chunk(self::EMBED_CHUNK)
+                ->each(function ($entries) use (&$embedded) {
+                    $entries = $entries->values();
+                    $vectors = EmbedTexts::run($entries->map(fn (ChatKnowledgeEntry $entry) => mb_substr($entry->title."\n".$entry->body, 0, self::MAX_EMBEDDED_TEXT))->all(), true);
+
+                    if ($vectors === null) {
+                        return;
+                    }
+
+                    foreach ($entries as $index => $entry) {
+                        if (isset($vectors[$index])) {
+                            $entry->update(['embedding' => $vectors[$index]]);
+                            $embedded++;
+                        }
+                    }
+                });
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        return $embedded;
+    }
+
+    private function textHash(string $title, string $body): string
+    {
+        return sha1($title."\n".$body);
     }
 
     /**

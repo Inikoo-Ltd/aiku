@@ -11,14 +11,17 @@ namespace App\Actions\CRM\ShoppingAssistant;
 use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
 use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -51,6 +54,30 @@ use Throwable;
  *   data, is put under the reply after the number rule has been applied to the AI's own words.
  * - A family the model read about with family_information is linked under the answer by the page,
  *   from the family ids stored with that tool call; the model never writes a URL.
+ * - shop_answer: a general question about buying from the shop is answered only from the texts
+ *   shop_information returned in this turn, never from the model's own knowledge. The answer must
+ *   cite at least one of them in sources (ids the tool returned in this turn; any other id is
+ *   ignored). A declared shop_answer with no valid source, and any turn that called shop_information
+ *   and cited nothing, are not shown: flag shop_answer_without_source, and the customer is offered a
+ *   person instead. That holds for a mixed turn too ("do you take PayPal, and how fast do you
+ *   dispatch?"): the model's words go, while the products the tools found and the sentences our code
+ *   wrote stay.
+ * - Offers: answer_kind offer_person (declared by the model, or forced by the rule above or by the
+ *   number rule below) always gets a fixed sentence in the conversation's language, never the
+ *   model's own words, which may hold a guess; a declared offer whose reply came back empty is still
+ *   an offer. A declared offer drops the products, a forced one keeps them; follow-ups and tool facts
+ *   are kept. The reason (not_sure, order_question, asked_for_person) is the declared offer_reason
+ *   when valid, else not_sure, and is stored as hand_over_offer whether or not the website can
+ *   offer a person: the sentence says so when it cannot, and the storefront decides about the button.
+ * - With cited sources, the reply may also contain a number that the cited texts contain; any other
+ *   number replaces the answer with the offer (flag reply_replaced_number). Follow-ups never get that
+ *   allowance.
+ * - answer_kind is stored on the assistant message with source_kind and a snapshot of the cited
+ *   sources (without their text, because knowledge entries are deleted and created again every
+ *   hour): shop_answer, offer_person, else family_description when family_information was used, tool
+ *   when a dispatch, shipping, price or restock sentence was added, else what the model declared
+ *   (products, question or off_topic), else products when products are shown, else other. A turn with
+ *   no answer or a cleared one is other.
  * - model_unavailable: an HTTP failure, an empty or unreadable answer, or a content filter stop
  *   gives the fallback with no products. The customer message is stored first, so it is never lost.
  * - model_call_limit: no final answer within services.shopping_assistant.max_model_calls calls.
@@ -154,19 +181,46 @@ class AskShoppingAssistant
         $groups         = ['must_haves' => collect(), 'add_ons' => collect()];
         $reply          = '';
         $followUps      = [];
+        $answered       = false;
+        $cited          = $turn['answer'] !== null ? $this->citedSources($turn['answer'], $turn['sources']) : [];
+        $numberReplaced = false;
+        $declaredKind   = ShoppingAssistantAnswerKindEnum::tryFrom((string) ($turn['answer']['answer_kind'] ?? ''));
 
         if ($turn['answer'] !== null) {
             $reply = trim((string) ($turn['answer']['reply'] ?? ''));
-            if ($reply === '') {
+            if ($reply === '' && $declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON) {
+                $answered  = true;
+                $followUps = $this->followUps($turn['answer']['follow_ups'] ?? [], $customerText, $productNames);
+            } elseif ($reply === '') {
                 $flags[] = 'model_unavailable';
             } else {
+                $answered  = true;
                 $groups    = $this->presentedGroups($conversation, $customer, $turn['answer'], $turn['found'], $flags);
                 $followUps = $this->followUps($turn['answer']['follow_ups'] ?? [], $customerText, $productNames);
                 $shown     = $this->numbers($message) ? array_map(fn (Collection $products) => $products->count(), $groups) : [];
-                if (!$this->onlyGivenNumbers($reply, $customerText, $productNames, $shown ? [...array_values($shown), array_sum($shown)] : [])) {
-                    $flags[] = 'reply_replaced_number';
-                    $reply   = '';
+                $replyText = $cited ? $customerText."\n".implode("\n", array_column($cited, 'body')) : $customerText;
+                if (!$this->onlyGivenNumbers($reply, $replyText, $productNames, $shown ? [...array_values($shown), array_sum($shown)] : [])) {
+                    $flags[]        = 'reply_replaced_number';
+                    $reply          = '';
+                    $numberReplaced = $cited !== [];
                 }
+            }
+        }
+
+        $askedShopInfo = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'shop_information');
+        $unsourced     = !$cited && ($declaredKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER || $askedShopInfo);
+        $offerReason   = null;
+
+        if ($answered && !$turn['cleared']) {
+            if ($unsourced) {
+                $flags[]     = 'shop_answer_without_source';
+                $offerReason = ShoppingAssistantHandOverReasonEnum::NOT_SURE;
+            } elseif ($numberReplaced) {
+                $offerReason = ShoppingAssistantHandOverReasonEnum::NOT_SURE;
+            }
+
+            if ($declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON) {
+                $offerReason = ShoppingAssistantHandOverReasonEnum::tryFrom((string) ($turn['answer']['offer_reason'] ?? '')) ?? ShoppingAssistantHandOverReasonEnum::NOT_SURE;
             }
         }
 
@@ -174,6 +228,11 @@ class AskShoppingAssistant
             $reply     = __('This conversation has been cleared and will not be shown to you again.', [], $conversation->language_code);
             $groups    = ['must_haves' => collect(), 'add_ons' => collect()];
             $followUps = [];
+        } elseif ($offerReason) {
+            $reply = $this->offerSentence($conversation, $customer, $offerReason);
+            if ($declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON) {
+                $groups = ['must_haves' => collect(), 'add_ons' => collect()];
+            }
         } elseif ($reply === '' && $turn['basket']) {
             $reply = __('I have added the products to your basket.', [], $conversation->language_code);
         }
@@ -183,6 +242,18 @@ class AskShoppingAssistant
         }
 
         $hasProducts = collect($groups)->contains(fn (Collection $products) => $products->isNotEmpty());
+        $answerKind  = match (true) {
+            $turn['cleared'] || !$answered       => ShoppingAssistantAnswerKindEnum::OTHER,
+            $offerReason !== null                => ShoppingAssistantAnswerKindEnum::OFFER_PERSON,
+            $cited !== []                        => ShoppingAssistantAnswerKindEnum::SHOP_ANSWER,
+            (bool) $turn['families']             => ShoppingAssistantAnswerKindEnum::FAMILY_DESCRIPTION,
+            (bool) $turn['facts']                => ShoppingAssistantAnswerKindEnum::TOOL,
+            in_array($declaredKind, [ShoppingAssistantAnswerKindEnum::PRODUCTS, ShoppingAssistantAnswerKindEnum::QUESTION, ShoppingAssistantAnswerKindEnum::OFF_TOPIC], true) => $declaredKind,
+            $hasProducts                         => ShoppingAssistantAnswerKindEnum::PRODUCTS,
+            default                              => ShoppingAssistantAnswerKindEnum::OTHER,
+        };
+        $citedSources = $answerKind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER ? array_map(fn (array $source) => Arr::except($source, 'body'), $cited) : [];
+
         if ($reply === '') {
             $reply = $hasProducts
                 ? __('Here are some ideas for your shop.', [], $conversation->language_code)
@@ -191,7 +262,7 @@ class AskShoppingAssistant
 
         $latency = (int) round((hrtime(true) - $startedAt) / 1e6);
 
-        $assistantMessage = DB::transaction(function () use ($conversation, $reply, $turn, $followUps, $flags, $model, $latency, $groups) {
+        $assistantMessage = DB::transaction(function () use ($conversation, $reply, $turn, $followUps, $flags, $model, $latency, $groups, $answerKind, $citedSources, $offerReason) {
             $assistantMessage = $conversation->messages()->create([
                 'role'              => ShoppingAssistantMessageRoleEnum::ASSISTANT,
                 'body'              => $reply,
@@ -204,6 +275,10 @@ class AskShoppingAssistant
                 'completion_tokens' => $turn['completion_tokens'],
                 'cost'              => $turn['cost'],
                 'latency_ms'        => $latency,
+                'answer_kind'       => $answerKind,
+                'source_kind'       => $citedSources ? $citedSources[0]['kind'] : null,
+                'sources'           => $citedSources ?: null,
+                'hand_over_offer'   => $offerReason,
             ]);
 
             foreach ($groups as $group => $products) {
@@ -270,11 +345,11 @@ class AskShoppingAssistant
      * throws or is killed later keeps what it spent; the assistant message gets the turn's totals only
      * for display, and the conversation is never raised again at the end of the turn.
      *
-     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, names: array<int, string>, basket: array<int, int>, facts: array<int, string>, families: array<int, int>, cleared: bool, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
+     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, names: array<int, string>, basket: array<int, int>, facts: array<int, string>, families: array<int, int>, sources: array<int, array{id: int, kind: string, source_type: string, source_id: ?string, title: string, url: ?string, body: string}>, cleared: bool, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
      */
     private function runModel(ShoppingAssistantConversation $conversation, ?Customer $customer, ShoppingAssistantMessage $customerMessage, string $message, string $model): array
     {
-        $turn = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'families' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
+        $turn = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'families' => [], 'sources' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
 
         if (!$customer) {
             $turn['flags'][] = 'model_unavailable';
@@ -424,6 +499,10 @@ class AskShoppingAssistant
         if (isset($result['fact'])) {
             $turn['facts'][] = $result['fact'];
         }
+        $turn['families'] = array_values(array_unique(array_merge($turn['families'], $result['families'] ?? [])));
+        foreach ($result['sources'] ?? [] as $source) {
+            $turn['sources'][$source['id']] = $source;
+        }
 
         $turn['tool_calls'][] = array_merge([
             'name'        => $name,
@@ -431,7 +510,7 @@ class AskShoppingAssistant
             'product_ids' => array_column($result['products'], 'id'),
             'error'       => $result['error'],
             'ms'          => (int) round((hrtime(true) - $toolStart) / 1e6),
-        ], isset($result['basket']) ? ['added_product_ids' => $result['basket']] : [], isset($result['families']) ? ['family_ids' => $result['families']] : []);
+        ], isset($result['basket']) ? ['added_product_ids' => $result['basket']] : [], isset($result['families']) ? ['family_ids' => $result['families']] : [], isset($result['sources']) ? ['source_ids' => array_column($result['sources'], 'id')] : []);
 
         return [[
             'role'         => 'tool',
@@ -575,6 +654,43 @@ class AskShoppingAssistant
         }
 
         return $groups;
+    }
+
+    /**
+     * The sources the answer cites that shop_information returned in this turn: ids it never
+     * returned are ignored.
+     *
+     * @param  array<string, mixed>  $answer
+     * @param  array<int, array{id: int, kind: string, source_type: string, source_id: ?string, title: string, url: ?string, body: string}>  $returned
+     *
+     * @return array<int, array{id: int, kind: string, source_type: string, source_id: ?string, title: string, url: ?string, body: string}>
+     */
+    private function citedSources(array $answer, array $returned): array
+    {
+        $ids = collect(is_array($answer['sources'] ?? null) ? $answer['sources'] : [])
+            ->filter(fn ($id) => is_int($id) || (is_string($id) && ctype_digit($id)))
+            ->map(fn ($id) => (int) $id)
+            ->unique();
+
+        return $ids->filter(fn (int $id) => isset($returned[$id]))->map(fn (int $id) => $returned[$id])->values()->all();
+    }
+
+    /**
+     * The fixed sentence that replaces the model's words when a person is offered. Whether the
+     * sentence asks the customer to tap is decided by what the website can offer.
+     */
+    private function offerSentence(ShoppingAssistantConversation $conversation, Customer $customer, ShoppingAssistantHandOverReasonEnum $reason): string
+    {
+        $locale  = $conversation->language_code;
+        $offered = $conversation->website && GetShoppingAssistantHandOverRoute::isOffered($conversation->website, $customer);
+
+        return match (true) {
+            $offered && $reason === ShoppingAssistantHandOverReasonEnum::NOT_SURE       => __('I am not sure about that, and I would rather not guess. Would you like to ask our team?', [], $locale),
+            $offered && $reason === ShoppingAssistantHandOverReasonEnum::ORDER_QUESTION => __('I cannot see your orders, so our team will need to answer that. Would you like to ask them?', [], $locale),
+            $offered                                                                    => __('Of course. Our team can help you with that.', [], $locale),
+            $reason === ShoppingAssistantHandOverReasonEnum::NOT_SURE                   => __('I am not sure about that, and I would rather not guess. Please contact our customer service team.', [], $locale),
+            default                                                                     => __('Please contact our customer service team, who will be glad to help.', [], $locale),
+        };
     }
 
     /**
@@ -773,7 +889,7 @@ Reply in $language{$addressForm}.
 
 Rules:
 - Only recommend products returned by the tools, by their ids, through present_products.
-- Never state prices, discounts, stock quantities, delivery times or how many shops buy something.
+- Never state prices, discounts, stock quantities, delivery times or how many shops buy something, except a figure stated in a text shop_information returned and that you cite in sources, repeated exactly.
 - When the customer asks how quickly orders are dispatched, call dispatch_times; when they ask what shipping costs, call shipping_cost. The system adds the sentence with the real figure under your reply: write one short lead-in with no figure, and never promise a delivery date.
 - Never mention other customers.
 - Do not invent product claims beyond the product and family names and what family_information returns.
@@ -785,8 +901,11 @@ Rules:
 - What the customer orders is only what is listed above. Say they order a family, or that it is one of their regular lines, only for the families of the last 12 months; for the older ones say they used to order it. Do not say what else they stock or sell.
 - If the customer says what kind of shop they run and the shop type is not known yet, call save_shop_type once.
 - Ask at most one short question when the request is too vague to search; otherwise search first.
-- Politely decline anything that is not about finding products for their shop, and steer back to it.
-- Always finish with present_products, with two or three follow_ups about products you can find, also when you ask a question, decline or show nothing (leave the product groups empty then).
+- When the customer asks a general question about buying from us (payment, delivery, returns, how to order, minimum order, their account, our terms, how the website works), call shop_information with their question and answer only from the texts it returns, with answer_kind shop_answer and the ids of the texts you used in sources. Never answer such a question from your own knowledge. If the texts do not answer it, do not guess: use answer_kind offer_person with offer_reason not_sure and write one short sentence; the system writes the reply. For how quickly orders are dispatched and what shipping costs for their basket, use dispatch_times and shipping_cost instead.
+- You cannot see the customer's orders, invoices, payments, refunds or deliveries. When they ask about one of their own, use answer_kind offer_person with offer_reason order_question.
+- When the customer asks for a person, a human or customer service, use answer_kind offer_person with offer_reason asked_for_person.
+- Decline politely only what has nothing to do with this shop (answer_kind off_topic), and steer back to their shop.
+- Always finish with present_products, with two or three follow_ups about products you can find, also when you ask a question, decline or show nothing (leave the product groups empty then). Set answer_kind every time.
 - Keep the reply to two or three short sentences.
 - In present_products, put products that fit the request or sell well for similar shops in must_haves, and complementary or previously ordered ones in add_ons.
 - Do not paste tool results or product ids into the reply text.

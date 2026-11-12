@@ -35,6 +35,7 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
@@ -356,7 +357,7 @@ test('the storefront assistant is on only for an enabled B2B website and a custo
     $website  = shoppingAssistantStorefront($this);
     $customer = shoppingAssistantCustomer($this->shop);
 
-    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava'])
+    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava', 'hand_over' => false])
         ->and(GetShoppingAssistantSettings::run($website, null))->toBeNull();
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => false]);
@@ -436,10 +437,10 @@ test('the answer job stores the assistant reply and the conversation returns it 
     expect($response->json('conversation'))->toBe($conversation->ulid)
         ->and($response->json('status'))->toBe('open')
         ->and($response->json('pending'))->toBeFalse()
-        ->and(array_keys($response->json()))->toBe(['conversation', 'status', 'pending', 'messages'])
+        ->and(array_keys($response->json()))->toBe(['conversation', 'status', 'pending', 'hand_over_available', 'messages'])
         ->and($messages)->toHaveCount(2)
         ->and(array_keys($messages[0]))->toBe(['id', 'role', 'body', 'created_at'])
-        ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'basket_added', 'links', 'groups'])
+        ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'basket_added', 'links', 'hand_over_offer', 'handed_over', 'groups'])
         ->and($messages[1]['role'])->toBe('assistant')
         ->and($messages[1]['body'])->toBe('Worth bringing back.')
         ->and($messages[1]['follow_ups'])->toBe(['Anything new?'])
@@ -870,10 +871,10 @@ test('the assistant budget is the config default unless the website sets one, an
     UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 0]);
     expect(shoppingAssistantBudget($website))->toMatchArray(['monthly' => 0.0, 'paused' => true])
         ->and(GetShoppingAssistantSettings::run($website->refresh(), $customer, true))->toBeNull()
-        ->and(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava']);
+        ->and(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 1000]);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer, true))->toBe(['name' => 'Ava']);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer, true))->toBe(['name' => 'Ava', 'hand_over' => false]);
 
     $settings = $website->settings;
     DB::table('websites')->where('id', $website->id)->update(['settings' => json_encode(data_set($settings, 'shopping_assistant.monthly_budget', 0))]);
@@ -944,22 +945,22 @@ test('the assistant is called Aura unless the group sets a name, and a website\'
     $customer = shoppingAssistantCustomer($this->shop);
     $group    = $website->group;
 
-    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava']);
+    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_name' => null]);
     UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => null]);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Aura']);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Aura', 'hand_over' => false]);
 
     UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => 'Sage']);
-    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Sage'])
+    expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Sage', 'hand_over' => false])
         ->and(data_get($group->refresh()->settings, 'shopping_assistant.name'))->toBe('Sage');
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_name' => 'Ava']);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava']);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
 
     UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => '  ']);
     UpdateWebsite::make()->action($website, ['shopping_assistant_name' => null]);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Aura'])
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Aura', 'hand_over' => false])
         ->and(data_get($group->refresh()->settings, 'shopping_assistant.name'))->toBeNull();
 });
 
@@ -2039,4 +2040,595 @@ test('the answer purchasing writes when marking a restock question done reaches 
     if ($hasOutbox) {
         App\Actions\Comms\Email\SendChatNotificationToCustomer::assertPushed(fn ($action, array $parameters) => str_contains($parameters[1]['chat_link'], '/assistant?conversation='.$emailed->ulid) && str_contains($parameters[1]['chat_message'], 'Back next week.'));
     }
+});
+
+function shoppingAssistantEmbeddingsFake(float $value = 0.1): Closure
+{
+    return fn (Request $request) => Http::response([
+        'data'  => collect($request['input'])->values()->map(fn ($text, $index) => ['index' => $index, 'embedding' => array_fill(0, 1024, $value)])->all(),
+        'usage' => ['prompt_tokens' => 1, 'total_tokens' => 1],
+    ]);
+}
+
+function shoppingAssistantKnowledge(Shop $shop, array $data = []): ChatKnowledgeEntry
+{
+    return ChatKnowledgeEntry::create(array_merge([
+        'group_id'        => $shop->group_id,
+        'organisation_id' => $shop->organisation_id,
+        'shop_id'         => $shop->id,
+        'kind'            => 'policy',
+        'title'           => 'Delivery · Free delivery',
+        'body'            => 'Orders over 150 pounds are delivered free of charge.',
+        'url'             => 'https://www.example.test/delivery',
+        'source_type'     => 'webpage',
+        'source_id'       => '1',
+        'is_manual'       => false,
+        'is_active'       => true,
+        'status'          => 'active',
+        'embedding'       => array_fill(0, 1024, 0.1),
+    ], $data));
+}
+
+function shoppingAssistantClearKnowledge(Shop $shop): void
+{
+    ChatKnowledgeEntry::where('shop_id', $shop->id)->delete();
+}
+
+function shoppingAssistantEmbeddingRequests(): int
+{
+    return Http::recorded(fn (Request $request) => str_contains($request->url(), 'embeddings'))->count();
+}
+
+test('a general question is answered from the knowledge text the assistant cites, which may repeat a figure of that text', function () {
+    shoppingAssistantClearKnowledge($this->shop);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $entry    = shoppingAssistantKnowledge($this->shop);
+
+    Http::fake([
+        '*embeddings'       => shoppingAssistantEmbeddingsFake(),
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('shop_information', ['question' => 'Is delivery free?'])]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'Delivery is free on orders over 150 pounds.', 'answer_kind' => 'shop_answer', 'sources' => [$entry->id]])),
+    ]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $result       = AskShoppingAssistant::run($conversation, 'Is delivery free?');
+    $message      = $result['message']->refresh();
+
+    expect($result['reply'])->toBe('Delivery is free on orders over 150 pounds.')
+        ->and($message->flags)->toBeNull()
+        ->and($message->answer_kind->value)->toBe('shop_answer')
+        ->and($message->source_kind)->toBe('policy')
+        ->and($message->hand_over_offer)->toBeNull()
+        ->and($message->sources)->toEqual([['id' => $entry->id, 'kind' => 'policy', 'source_type' => 'webpage', 'source_id' => '1', 'title' => 'Delivery · Free delivery', 'url' => 'https://www.example.test/delivery']])
+        ->and($message->tool_calls[0]['name'])->toBe('shop_information')
+        ->and($message->tool_calls[0]['source_ids'])->toBe([$entry->id])
+        ->and($message->tool_calls[0]['error'])->toBeNull();
+
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat/completions') && collect($request['messages'])->contains(fn ($sent) => ($sent['role'] ?? null) === 'tool' && str_contains($sent['content'], 'Orders over 150 pounds') && str_contains($sent['content'], '"id":'.$entry->id)));
+});
+
+test('a shop answer with a figure in no cited text, one citing no source and one citing a source the tool never returned all become the fixed offer', function () {
+    shoppingAssistantClearKnowledge($this->shop);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $entry    = shoppingAssistantKnowledge($this->shop);
+    $tool     = shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('shop_information', ['question' => 'Is delivery free?'])]], 'tool_calls');
+
+    Http::fake([
+        '*embeddings'       => shoppingAssistantEmbeddingsFake(),
+        '*chat/completions' => Http::sequence()
+            ->push($tool)
+            ->push(shoppingAssistantPresent(['reply' => 'Delivery is free over 200 pounds.', 'answer_kind' => 'shop_answer', 'sources' => [$entry->id], 'follow_ups' => ['How do I order?']]))
+            ->push($tool)
+            ->push(shoppingAssistantPresent(['reply' => 'Delivery is always free.', 'answer_kind' => 'shop_answer', 'sources' => []]))
+            ->push($tool)
+            ->push(shoppingAssistantPresent(['reply' => 'Delivery is always free.', 'answer_kind' => 'shop_answer', 'sources' => [999999999]]))
+            ->push($tool)
+            ->push(shoppingAssistantPresent(['reply' => 'Delivery is always free.', 'answer_kind' => 'products'])),
+    ]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $sentence     = __('I am not sure about that, and I would rather not guess. Please contact our customer service team.', [], $conversation->language_code);
+    $number       = AskShoppingAssistant::run($conversation, 'Is delivery free?');
+    $noSource     = AskShoppingAssistant::run($conversation->fresh(), 'Is delivery free?');
+    $unknown      = AskShoppingAssistant::run($conversation->fresh(), 'Is delivery free?');
+    $undeclared   = AskShoppingAssistant::run($conversation->fresh(), 'Is delivery free?');
+
+    foreach ([$number, $noSource, $unknown, $undeclared] as $result) {
+        $message = $result['message']->refresh();
+        expect($result['reply'])->toBe($sentence)
+            ->and($message->body)->toBe($sentence)
+            ->and($message->answer_kind->value)->toBe('offer_person')
+            ->and($message->hand_over_offer->value)->toBe('not_sure')
+            ->and($message->sources)->toBeNull()
+            ->and($message->source_kind)->toBeNull()
+            ->and(collect($result['groups'])->every->isEmpty())->toBeTrue();
+    }
+
+    expect($number['message']->flags)->toBe(['reply_replaced_number'])
+        ->and($number['follow_ups'])->toBe(['How do I order?'])
+        ->and($noSource['message']->flags)->toBe(['shop_answer_without_source'])
+        ->and($unknown['message']->flags)->toBe(['shop_answer_without_source'])
+        ->and($undeclared['message']->flags)->toBe(['shop_answer_without_source']);
+});
+
+test('an offer of a person always gets its fixed sentence by reason, and a website with no way to reach a person says to contact customer service', function () {
+    $website  = createWebsite($this->shop);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $silent   = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => false])]);
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantPresent(['reply' => 'Your order is on the way, probably tomorrow.', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question']))
+        ->push(shoppingAssistantPresent(['reply' => 'Where is my order 1234?', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question']))
+        ->push(shoppingAssistantPresent(['reply' => 'Sure.', 'answer_kind' => 'offer_person', 'offer_reason' => 'asked_for_person']))
+        ->push(shoppingAssistantPresent(['reply' => 'Hmm, maybe.', 'answer_kind' => 'offer_person', 'offer_reason' => 'something_else']))
+        ->push(shoppingAssistantPresent(['reply' => 'Hmm, maybe.', 'answer_kind' => 'offer_person']))]);
+
+    $unreachable = AskShoppingAssistant::run($silent, 'Where is my order?');
+
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $locale       = $conversation->language_code;
+    $order        = AskShoppingAssistant::run($conversation, 'Where is my order?');
+    $person       = AskShoppingAssistant::run($conversation->fresh(), 'Can I talk to a human?');
+    $unknownReason = AskShoppingAssistant::run($conversation->fresh(), 'Do you sell in Mars?');
+    $noReason     = AskShoppingAssistant::run($conversation->fresh(), 'Do you sell in Venus?');
+
+    expect($silent->website_id)->toBe($website->id)
+        ->and($conversation->website_id)->toBe($website->id)
+        ->and($unreachable['reply'])->toBe(__('Please contact our customer service team, who will be glad to help.', [], $locale))
+        ->and($unreachable['message']->refresh()->hand_over_offer->value)->toBe('order_question')
+        ->and($unreachable['message']->answer_kind->value)->toBe('offer_person')
+        ->and($order['reply'])->toBe(__('I cannot see your orders, so our team will need to answer that. Would you like to ask them?', [], $locale))
+        ->and($order['message']->refresh()->hand_over_offer->value)->toBe('order_question')
+        ->and($person['reply'])->toBe(__('Of course. Our team can help you with that.', [], $locale))
+        ->and($person['message']->refresh()->hand_over_offer->value)->toBe('asked_for_person')
+        ->and($unknownReason['reply'])->toBe(__('I am not sure about that, and I would rather not guess. Would you like to ask our team?', [], $locale))
+        ->and($unknownReason['message']->refresh()->hand_over_offer->value)->toBe('not_sure')
+        ->and($noReason['message']->refresh()->hand_over_offer->value)->toBe('not_sure')
+        ->and($order['message']->flags)->toBe(['reply_replaced_number']);
+});
+
+test('shop information with nothing written tells the model to offer a person, and a failed embedding call returns the tool error', function () {
+    shoppingAssistantClearKnowledge($this->shop);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $calls        = 0;
+
+    Http::fake([
+        '*embeddings'       => function (Request $request) use (&$calls) {
+            $calls++;
+
+            return $calls === 1 ? shoppingAssistantEmbeddingsFake()($request) : Http::response([], 500);
+        },
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('shop_information', ['question' => 'Do you take PayPal?'])]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'I do not know.', 'answer_kind' => 'offer_person', 'offer_reason' => 'not_sure'])),
+    ]);
+
+    $none        = $tools->execute($conversation, 'shop_information', ['question' => 'Do you take PayPal?']);
+    $unavailable = $tools->execute($conversation, 'shop_information', ['question' => 'Do you take PayPal?']);
+    $empty       = $tools->execute($conversation, 'shop_information', ['question' => '  ']);
+
+    expect($none['error'])->toBeNull()
+        ->and($none['content']['texts'])->toBe([])
+        ->and($none['content']['note'])->toBe('We have nothing written about this. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.')
+        ->and($none['sources'])->toBe([])
+        ->and($none['products'])->toBe([])
+        ->and($unavailable['error'])->not->toBeNull()
+        ->and($unavailable['content']['error'])->toContain('offer_person')
+        ->and($empty['error'])->not->toBeNull()
+        ->and($calls)->toBe(2);
+
+    $calls = 0;
+    $turn  = AskShoppingAssistant::run($conversation->fresh(), 'Do you take PayPal?');
+
+    expect($turn['message']->refresh()->tool_calls[0]['error'])->toBeNull()
+        ->and($turn['message']->tool_calls[0]['source_ids'])->toBe([])
+        ->and($turn['message']->answer_kind->value)->toBe('offer_person')
+        ->and($turn['message']->hand_over_offer->value)->toBe('not_sure');
+});
+
+test('the answer kind of a turn is what it really used: a family description, a tool sentence or products', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $product  = shoppingAssistantProduct($this->product);
+    $family   = $product->family;
+    DB::table('product_categories')->where('id', $family->id)->update(['description' => '<p>Pure oils.</p>', 'is_in_website' => true, 'state' => 'in_process']);
+    Illuminate\Support\Facades\Cache::put('shopping_assistant:dispatch_days:'.$this->shop->id, 3, 60);
+    shoppingAssistantStoppedOrdering($customer, $product);
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('family_information', ['family_id' => $family->id])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'They are pure oils.', 'answer_kind' => 'products']))
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('dispatch_times', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'We send orders out quickly.', 'answer_kind' => 'products']))
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('products_they_stopped_ordering', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'Worth bringing back.', 'must_haves' => [$product->id]]))
+        ->push(shoppingAssistantPresent(['reply' => 'What kind of shop do you run?', 'answer_kind' => 'question']))
+        ->push(shoppingAssistantPresent(['reply' => 'I only help with shop questions.', 'answer_kind' => 'off_topic']))]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $kinds        = collect(['Tell me about the oils', 'How fast do you dispatch?', 'What should I reorder?', 'Hi', 'Who won the match?'])
+        ->map(fn (string $text) => AskShoppingAssistant::run($conversation->fresh(), $text)['message']->refresh()->answer_kind->value)
+        ->all();
+
+    Illuminate\Support\Facades\Cache::forget('shopping_assistant:dispatch_days:'.$this->shop->id);
+
+    expect($kinds)->toBe(['family_description', 'tool', 'products', 'question', 'off_topic']);
+});
+
+test('the knowledge hydration keeps the embedding of an unchanged entry across runs and embeds only what is new', function () {
+    shoppingAssistantClearKnowledge($this->shop);
+    Http::fake(['*embeddings' => shoppingAssistantEmbeddingsFake(0.1)]);
+
+    $hydrate = App\Actions\Chat\ChatSession\HydrateChatKnowledge::make();
+    $copied  = fn () => ChatKnowledgeEntry::where('shop_id', $this->shop->id)->whereIn('source_type', ['webpage', 'shop_settings', 'docs']);
+
+    $created = $hydrate->handle($this->shop);
+    $first   = shoppingAssistantEmbeddingRequests();
+    $ids     = $copied()->pluck('id')->all();
+
+    expect($created)->toBeGreaterThan(0)
+        ->and($copied()->whereNull('embedding')->count())->toBe(0)
+        ->and($first)->toBeGreaterThan(0);
+
+    foreach ($copied()->get() as $entry) {
+        $entry->update(['embedding' => array_fill(0, 1024, 0.2)]);
+    }
+
+    $hydrate->handle($this->shop);
+
+    expect(shoppingAssistantEmbeddingRequests())->toBe($first)
+        ->and($copied()->pluck('id')->all())->not->toBe($ids)
+        ->and($copied()->count())->toBe($created)
+        ->and($copied()->get()->every(fn (ChatKnowledgeEntry $entry) => abs($entry->embedding[0] - 0.2) < 0.0001))->toBeTrue();
+
+    $note = shoppingAssistantKnowledge($this->shop, ['kind' => 'note', 'source_type' => 'manual', 'is_manual' => true, 'embedding' => null, 'title' => 'Shipping to Germany', 'body' => 'We ship to Germany from the EU warehouse.']);
+    $hydrate->handle($this->shop);
+
+    expect(shoppingAssistantEmbeddingRequests())->toBe($first + 1)
+        ->and(abs($note->refresh()->embedding[0] - 0.1))->toBeLessThan(0.0001)
+        ->and($copied()->get()->every(fn (ChatKnowledgeEntry $entry) => abs($entry->embedding[0] - 0.2) < 0.0001))->toBeTrue();
+});
+
+test('embedding what is missing fills a staff note and leaves the entry without one when the provider fails', function () {
+    shoppingAssistantClearKnowledge($this->shop);
+    $note = shoppingAssistantKnowledge($this->shop, ['kind' => 'note', 'source_type' => 'manual', 'is_manual' => true, 'embedding' => null, 'title' => 'Testers', 'body' => 'Diffuser testers are not available.']);
+    $hydrate = App\Actions\Chat\ChatSession\HydrateChatKnowledge::make();
+
+    $failing = true;
+    Http::fake(['*embeddings' => function (Request $request) use (&$failing) {
+        return $failing ? Http::response([], 500) : shoppingAssistantEmbeddingsFake()($request);
+    }]);
+
+    expect($hydrate->embedMissing($this->shop))->toBe(0)
+        ->and($note->refresh()->embedding)->toBeNull();
+
+    $failing = false;
+
+    expect($hydrate->embedMissing($this->shop))->toBe(1)
+        ->and($note->refresh()->embedding)->toHaveCount(1024);
+});
+
+
+function shoppingAssistantClearConversations(Shop $shop): void
+{
+    DB::table('shopping_assistant_conversations')->where('shop_id', $shop->id)->delete();
+}
+
+function shoppingAssistantGeneralTurn(Customer $customer, CarbonImmutable $at, string $question, array $answers = [], string $language = 'en', ?ShoppingAssistantConversation $conversation = null): array
+{
+    if (!$conversation) {
+        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
+        $conversation->forceFill(['created_at' => $at, 'language_code' => $language])->save();
+    }
+
+    $asked    = $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::CUSTOMER, 'body' => $question, 'created_at' => $at]);
+    $replies  = [];
+    foreach ($answers as $index => $answer) {
+        $replies[] = $conversation->messages()->create(array_merge(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'Answer', 'created_at' => $at->addSeconds($index + 1)], $answer));
+    }
+
+    return [$conversation, $asked, $replies];
+}
+
+function shoppingAssistantHandOver(ShoppingAssistantConversation $conversation, CarbonImmutable $at, string $reason, string $route, bool $inHours, ?int $chatSessionId = null, ?int $customerMessageId = null): int
+{
+    return DB::table('shopping_assistant_hand_overs')->insertGetId([
+        'shopping_assistant_conversation_id' => $conversation->id,
+        'customer_message_id'                => $customerMessageId,
+        'chat_session_id'                    => $chatSessionId,
+        'reason'                             => $reason,
+        'route'                              => $route,
+        'in_hours'                           => $inHours,
+        'agent_available'                    => $inHours,
+        'created_at'                         => $at,
+    ]);
+}
+
+function shoppingAssistantChat(Shop $shop, ShoppingAssistantConversation $conversation, string $status, array $agentMessages = []): array
+{
+    $ulid = (string) Str::ulid();
+    $id   = DB::table('chat_sessions')->insertGetId(['ulid' => $ulid, 'status' => $status, 'shop_id' => $shop->id, 'shopping_assistant_conversation_id' => $conversation->id]);
+    foreach ($agentMessages as $sender => $createdAt) {
+        DB::table('chat_messages')->insert(['chat_session_id' => $id, 'sender_type' => str_starts_with((string) $sender, 'agent') ? 'agent' : 'user', 'message_text' => 'Hi', 'created_at' => $createdAt]);
+    }
+
+    return [$id, $ulid];
+}
+
+/**
+ * Six conversations in the last 40 days, as the engine and the hand-over action write them.
+ *
+ * @return array{base: CarbonImmutable, c: array<int, ShoppingAssistantConversation>, chats: array<int, string>}
+ */
+function shoppingAssistantGeneralScenario(object $test): array
+{
+    shoppingAssistantClearConversations($test->shop);
+    $base = CarbonImmutable::now()->startOfDay()->subDays(40);
+    $day  = fn (int $days, string $time) => CarbonImmutable::parse($base->addDays($days)->toDateString().' '.$time);
+    $product = shoppingAssistantProduct($test->product);
+    $c = [];
+    $chats = [];
+
+    $customer = shoppingAssistantCustomer($test->shop);
+    [$c[1], $asked] = shoppingAssistantGeneralTurn($customer, $day(1, '10:00:00'), 'When do you deliver?', [
+        ['answer_kind' => 'shop_answer', 'source_kind' => 'policy', 'cost' => 0.1],
+    ]);
+    [, $asked1, $replies] = shoppingAssistantGeneralTurn($customer, $day(1, '10:01:00'), 'Do you ship to Mars?', [['answer_kind' => 'offer_person', 'hand_over_offer' => 'not_sure', 'cost' => 0.2]], conversation: $c[1]);
+    [$chat, $chats[1]] = shoppingAssistantChat($test->shop, $c[1], 'active', ['agent' => $day(1, '10:10:00'), 'user' => $day(1, '10:02:00'), 'agent2' => $day(1, '10:40:00')]);
+    shoppingAssistantHandOver($c[1], $day(1, '10:05:00'), 'not_sure', 'live_chat', true, $chat, $asked1->id);
+    shoppingAssistantOrderLine($customer, $product, $day(5, '09:00:00')->toIso8601String(), 10);
+
+    $customer = shoppingAssistantCustomer($test->shop);
+    [$c[2], $asked2] = shoppingAssistantGeneralTurn($customer, $day(2, '10:00:00'), "  do you SHIP   to mars? ", [['answer_kind' => 'offer_person', 'hand_over_offer' => 'not_sure', 'cost' => 0.2]], 'es');
+    [$chat, $chats[2]] = shoppingAssistantChat($test->shop, $c[2], 'active', ['agent' => $day(2, '10:30:00')]);
+    shoppingAssistantHandOver($c[2], $day(2, '10:00:00'), 'not_sure', 'email_chat', true, $chat, $asked2->id);
+    shoppingAssistantOrderLine($customer, $product, $day(11, '10:00:00')->toIso8601String(), 20);
+
+    $customer = shoppingAssistantCustomer($test->shop);
+    [$c[3], $asked3] = shoppingAssistantGeneralTurn($customer, $day(3, '20:00:00'), 'Where is my order?', [
+        ['answer_kind' => 'offer_person', 'hand_over_offer' => 'order_question', 'cost' => 0.3, 'staff_rating' => 'wrong', 'staff_rated_by_user_id' => $test->user->id, 'staff_rated_at' => $day(4, '09:00:00')],
+    ]);
+    [$chat, $chats[3]] = shoppingAssistantChat($test->shop, $c[3], 'closed', ['agent' => $day(4, '08:00:00'), 'agent2' => $day(3, '19:00:00')]);
+    DB::table('chat_messages')->insert(['chat_session_id' => $chat, 'sender_type' => 'agent', 'message_text' => 'deleted', 'created_at' => $day(3, '20:30:00'), 'deleted_at' => $day(3, '21:00:00')]);
+    shoppingAssistantHandOver($c[3], $day(3, '20:05:00'), 'order_question', 'email_chat', false, $chat, $asked3->id);
+
+    $customer = shoppingAssistantCustomer($test->shop);
+    [$c[4]] = shoppingAssistantGeneralTurn($customer, $day(4, '12:00:00'), 'Hello', [['answer_kind' => 'shop_answer', 'source_kind' => 'policy', 'cost' => 0.1]]);
+    shoppingAssistantHandOver($c[4], $day(4, '12:05:00'), 'asked_for_person', 'web_chat', false);
+
+    $customer = shoppingAssistantCustomer($test->shop);
+    $recent   = CarbonImmutable::now()->subDays(2);
+    [$c[5]] = shoppingAssistantGeneralTurn($customer, $recent, 'Tell me about candles', [['answer_kind' => 'family_description', 'cost' => 0.1]]);
+    shoppingAssistantHandOver($c[5], $recent->addMinutes(5), 'asked_for_person', 'live_chat', true);
+    shoppingAssistantOrderLine($customer, $product, CarbonImmutable::now()->subDay()->toIso8601String(), 30);
+
+    $customer = shoppingAssistantCustomer($test->shop);
+    [$c[6]] = shoppingAssistantGeneralTurn($customer, $day(20, '10:00:00'), 'Any notes?', [
+        ['answer_kind' => 'shop_answer', 'source_kind' => 'note', 'cost' => 0.1],
+        ['answer_kind' => 'products', 'cost' => 1],
+    ]);
+
+    return ['base' => $base, 'c' => $c, 'chats' => $chats];
+}
+
+function shoppingAssistantGeneralReport(object $test, array $scenario): array
+{
+    return shoppingAssistantReport(createWebsite($test->shop), $scenario['base']->toDateString(), CarbonImmutable::now()->toDateString())['general'];
+}
+
+test('the assistant report counts general questions, what answered them, offers and hand-overs by reason and route, the rates and the cost, against the period before', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website = createWebsite($this->shop);
+    shoppingAssistantClearConversations($this->shop);
+    $current = CarbonImmutable::parse('2025-03-10 10:00:00');
+    $before  = CarbonImmutable::parse('2025-02-10 10:00:00');
+
+    $one = shoppingAssistantCustomer($this->shop);
+    [$conversationOne, , $replies] = shoppingAssistantGeneralTurn($one, $current, 'Q', [
+        ['answer_kind' => 'shop_answer', 'source_kind' => 'policy', 'cost' => 0.1],
+        ['answer_kind' => 'shop_answer', 'source_kind' => 'note', 'cost' => 0.2],
+        ['answer_kind' => 'tool', 'cost' => 0.3],
+        ['answer_kind' => 'offer_person', 'hand_over_offer' => 'not_sure', 'cost' => 0.4],
+        ['answer_kind' => 'family_description', 'cost' => 0.5],
+        ['answer_kind' => 'products', 'cost' => 1],
+        ['answer_kind' => null, 'cost' => 9],
+    ]);
+    shoppingAssistantHandOver($conversationOne, $current, 'not_sure', 'email_chat', false);
+
+    [$conversationTwo] = shoppingAssistantGeneralTurn(shoppingAssistantCustomer($this->shop), $current->addDay(), 'Q', [
+        ['answer_kind' => 'shop_answer', 'source_kind' => 'policy', 'cost' => 0.05],
+        ['answer_kind' => 'offer_person', 'hand_over_offer' => 'order_question', 'cost' => 0.05],
+    ]);
+    shoppingAssistantHandOver($conversationTwo, $current->addDay(), 'order_question', 'live_chat', true);
+    shoppingAssistantHandOver($conversationTwo, $current->addDay(), 'asked_for_person', 'web_chat', true);
+
+    $staff = shoppingAssistantCustomer($this->shop);
+    $staff->update(['is_staff' => true]);
+    shoppingAssistantGeneralTurn($staff, $current, 'Q', [['answer_kind' => 'shop_answer', 'source_kind' => 'policy', 'cost' => 5]]);
+    [$command] = shoppingAssistantGeneralTurn(shoppingAssistantCustomer($this->shop), $current, 'Q', [['answer_kind' => 'shop_answer', 'source_kind' => 'policy', 'cost' => 5]]);
+    $command->update(['entry_point' => ShoppingAssistantEntryPointEnum::COMMAND]);
+
+    [$earlier] = shoppingAssistantGeneralTurn(shoppingAssistantCustomer($this->shop), $before, 'Q', [['answer_kind' => 'shop_answer', 'source_kind' => 'guide', 'cost' => 0.25]]);
+    shoppingAssistantHandOver($earlier, $before, 'not_sure', 'live_chat', true);
+
+    $general = shoppingAssistantReport($website, '2025-03-01', '2025-03-31')['general'];
+
+    expect($general['questions'])->toBe(['value' => 7, 'previous' => 1])
+        ->and($general['answered'])->toBe(['value' => 5, 'previous' => 1])
+        ->and($general['offers'])->toBe(['value' => 2, 'previous' => 0])
+        ->and($general['hand_overs'])->toBe(['value' => 3, 'previous' => 1])
+        ->and($general['by_source'][0])->toMatchArray(['key' => 'source:policy', 'label' => 'Policy pages', 'answers' => 2])
+        ->and(collect($general['by_source'])->pluck('answers', 'key')->sortKeys()->all())->toBe(['kind:family_description' => 1, 'kind:tool' => 1, 'source:note' => 1, 'source:policy' => 2])
+        ->and(collect($general['by_reason'])->keyBy('reason')->map(fn ($row) => [$row['offered'], $row['handed_over']])->all())->toBe(['not_sure' => [1, 1], 'order_question' => [1, 1], 'asked_for_person' => [0, 1]])
+        ->and(collect($general['by_route'])->pluck('hand_overs', 'route')->all())->toBe(['live_chat' => 1, 'email_chat' => 1, 'web_chat' => 1])
+        ->and($general['rate_per_question']['value'])->toEqualWithDelta(3 / 7, 0.0001)
+        ->and($general['rate_per_question']['previous'])->toEqual(1.0)
+        ->and($general['rate_per_conversation'])->toEqual(['value' => 1.0, 'previous' => 1.0])
+        ->and($general['ai_cost']['value'])->toEqualWithDelta(1.6, 0.0001)
+        ->and($general['ai_cost']['previous'])->toEqualWithDelta(0.25, 0.0001);
+});
+
+test('the first reply from a person is measured per hand-over in and outside chat hours, and the outcomes judge orders only on hand-overs old enough', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $general = shoppingAssistantGeneralReport($this, shoppingAssistantGeneralScenario($this));
+
+    expect($general['first_reply']['in_hours'])->toBe(['hand_overs' => 3, 'replied' => 2, 'median_minutes' => 17.5])
+        ->and($general['first_reply']['after_hours'])->toBe(['hand_overs' => 2, 'replied' => 1, 'median_minutes' => 715.0])
+        ->and($general['outcomes'])->toBe(['hand_overs' => 5, 'replied' => 3, 'closed' => 1, 'ordered' => 1, 'ordered_base' => 4]);
+});
+
+test('the knowledge gaps group a question asked in different case and spacing, name its languages and point to the latest conversation, and wrong answers are counted', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $scenario = shoppingAssistantGeneralScenario($this);
+    $general  = shoppingAssistantGeneralReport($this, $scenario);
+
+    expect($general['gaps'])->toHaveCount(1)
+        ->and($general['gaps'][0])->toMatchArray(['question' => 'do you ship to mars?', 'count' => 2, 'languages' => ['en', 'es'], 'conversation' => $scenario['c'][2]->ulid])
+        ->and($general['wrong_answers']['value'])->toBe(1)
+        ->and($general['questions']['value'])->toBe(7)
+        ->and($general['answered']['value'])->toBe(4);
+});
+
+test('every general drill-down keeps only the conversations behind its figure, an unknown value is ignored, and the table marks the handed-over ones', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $scenario = shoppingAssistantGeneralScenario($this);
+    $website  = createWebsite($this->shop);
+    $ulid     = fn (int ...$numbers) => collect($numbers)->map(fn (int $number) => $scenario['c'][$number]->ulid)->sort()->values()->all();
+
+    $expected = [
+        'questions'      => $ulid(1, 2, 3, 4, 5, 6),
+        'answered'       => $ulid(1, 4, 5, 6),
+        'offered'        => $ulid(1, 2, 3),
+        'handed_over'    => $ulid(1, 2, 3, 4, 5),
+        'wrong'          => $ulid(3),
+        'gap'            => $ulid(1, 2),
+        'kind:shop_answer' => $ulid(1, 4, 6),
+        'source:policy'  => $ulid(1, 4),
+        'offer:not_sure' => $ulid(1, 2),
+        'reason:order_question' => $ulid(3),
+        'route:email_chat' => $ulid(2, 3),
+        'in_hours'       => $ulid(1, 2, 5),
+        'after_hours'    => $ulid(3, 4),
+        'replied'        => $ulid(1, 2, 3),
+        'closed'         => $ulid(3),
+        'ordered'        => $ulid(1),
+    ];
+
+    $this->withoutVite();
+    $query = ['from' => $scenario['base']->toDateString(), 'to' => CarbonImmutable::now()->toDateString(), 'tab' => 'conversations'];
+
+    foreach ($expected as $value => $ulids) {
+        $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'general' => $value]))->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('filters.general', $value)
+                ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->sort()->values()->all() === $ulids));
+    }
+
+    $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'general' => 'nonsense']))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('filters.general', null)
+            ->where('conversations.data', fn ($rows) => count($rows) === 6)
+            ->where('conversations.data', fn ($rows) => collect($rows)->where('handed_over', true)->count() === 5));
+
+    expect($website->id)->toBeInt();
+});
+
+test('the transcript shows the answer kind, the cited sources, the offer, the hand-over with its route and chat link, and an answer marked wrong', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    createWebsite($this->shop);
+    $at = CarbonImmutable::now()->subDays(3);
+
+    [$conversation, , $replies] = shoppingAssistantGeneralTurn(shoppingAssistantCustomer($this->shop), $at, 'Delivery?', [[
+        'answer_kind' => 'shop_answer', 'source_kind' => 'policy', 'body' => 'Three days.',
+        'sources' => [['id' => 1, 'kind' => 'policy', 'source_type' => 'webpage', 'source_id' => '9', 'title' => 'Delivery policy', 'url' => 'https://example.com/delivery']],
+        'staff_rating' => 'wrong', 'staff_rated_by_user_id' => $this->user->id, 'staff_rated_at' => $at,
+    ]]);
+    shoppingAssistantGeneralTurn($conversation->customer, $at->addMinute(), 'Where is my order?', [['answer_kind' => 'offer_person', 'hand_over_offer' => 'order_question', 'body' => 'Shall I ask the team?']], conversation: $conversation);
+    [, $chatUlid] = shoppingAssistantChat($this->shop, $conversation, 'active');
+    $chatId = DB::table('chat_sessions')->where('ulid', $chatUlid)->value('id');
+    shoppingAssistantHandOver($conversation, $at->addMinutes(2), 'order_question', 'email_chat', false, $chatId);
+    shoppingAssistantGeneralTurn($conversation->customer, $at->addMinutes(2), 'Yes please', [['model' => 'hand-over', 'flags' => ['handed_over'], 'body' => 'Passed on.']], conversation: $conversation);
+
+    $this->withoutVite();
+    $this->get(route('grp.websites.shopping_assistant.conversations.show', [$conversation->ulid]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('conversation.handed_over', true)
+            ->where('messages.1.answer_kind_label', 'Shop knowledge')
+            ->where('messages.1.sources', [['title' => 'Delivery policy', 'url' => 'https://example.com/delivery']])
+            ->where('messages.1.wrong.by', $this->user->chatName())
+            ->where('messages.3.hand_over_offer_label', 'Question about their own order')
+            ->where('messages.3.hand_over', null)
+            ->where('messages.5.hand_over.route_label', 'Email chat, answered later')
+            ->where('messages.5.hand_over.in_hours', false)
+            ->where('messages.5.hand_over.chat_route', ['name' => 'grp.org.chat.inbox.conversation', 'parameters' => [$this->organisation->slug, $chatUlid]]));
+});
+
+test('a mixed question answered without citing a source is replaced by the offer, keeping the sentence our code wrote and the products the tools found', function () {
+    shoppingAssistantClearKnowledge($this->shop);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $product  = shoppingAssistantProduct($this->product);
+    shoppingAssistantStoppedOrdering($customer, $product);
+    $website = createWebsite($this->shop);
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
+    shoppingAssistantKnowledge($this->shop, ['title' => 'Payment', 'body' => 'We accept cards and bank transfer.']);
+    Illuminate\Support\Facades\Cache::put('shopping_assistant:dispatch_days:'.$this->shop->id, 3, 60);
+
+    Http::fake([
+        '*embeddings'       => shoppingAssistantEmbeddingsFake(),
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [
+                shoppingAssistantToolCall('shop_information', ['question' => 'Do you take PayPal?'], 'call_1'),
+                shoppingAssistantToolCall('dispatch_times', [], 'call_2'),
+            ]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'Yes, we accept PayPal.', 'answer_kind' => 'shop_answer', 'sources' => []]))
+            ->push(shoppingAssistantModelReply(['tool_calls' => [
+                shoppingAssistantToolCall('shop_information', ['question' => 'Do you take PayPal?'], 'call_1'),
+                shoppingAssistantToolCall('products_they_stopped_ordering', [], 'call_2'),
+            ]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'Yes, we accept PayPal.', 'answer_kind' => 'products', 'must_haves' => [$product->id]])),
+    ]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $locale       = $conversation->language_code;
+    $sentence     = __('I am not sure about that, and I would rather not guess. Would you like to ask our team?', [], $locale);
+    $fact         = __('Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.', ['days' => 3], $locale);
+    $withFact     = AskShoppingAssistant::run($conversation, 'Do you take PayPal, and how fast do you dispatch?');
+    $withProduct  = AskShoppingAssistant::run($conversation->fresh(), 'Do you take PayPal, and what should I reorder?');
+
+    Illuminate\Support\Facades\Cache::forget('shopping_assistant:dispatch_days:'.$this->shop->id);
+
+    expect($withFact['reply'])->toBe($sentence."\n\n".$fact)
+        ->and($withFact['reply'])->not->toContain('PayPal')
+        ->and($withFact['message']->refresh()->answer_kind->value)->toBe('offer_person')
+        ->and($withFact['message']->hand_over_offer->value)->toBe('not_sure')
+        ->and($withFact['message']->flags)->toBe(['shop_answer_without_source'])
+        ->and($withProduct['reply'])->toBe($sentence)
+        ->and($withProduct['groups']['must_haves']->pluck('id')->all())->toBe([$product->id])
+        ->and($withProduct['message']->refresh()->answer_kind->value)->toBe('offer_person')
+        ->and($withProduct['message']->hand_over_offer->value)->toBe('not_sure')
+        ->and($withProduct['message']->flags)->toBe(['shop_answer_without_source']);
+});
+
+test('an offer of a person declared with an empty reply is still offered', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $website  = createWebsite($this->shop);
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantPresent(['reply' => '', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'follow_ups' => ['What should I reorder?']]))]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $result       = AskShoppingAssistant::run($conversation, 'Where is my order?');
+    $message      = $result['message']->refresh();
+
+    expect($result['reply'])->toBe(__('I cannot see your orders, so our team will need to answer that. Would you like to ask them?', [], $conversation->language_code))
+        ->and($message->answer_kind->value)->toBe('offer_person')
+        ->and($message->hand_over_offer->value)->toBe('order_question')
+        ->and($message->flags)->toBeNull()
+        ->and($result['follow_ups'])->toBe(['What should I reorder?'])
+        ->and(collect($result['groups'])->every->isEmpty())->toBeTrue();
 });
