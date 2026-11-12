@@ -31,6 +31,8 @@ class StaticWebsitesResource extends JsonResource
             'domain'         => $this->domain,
             'url'            => 'https://www.'.$this->domain,
             'preview_url'    => route('grp.marketing.info_websites.preview', [$this->slug]),
+            'route'          => ['name' => 'grp.marketing.info_websites.show', 'parameters' => [$this->slug]],
+            'webpages_route' => ['name' => 'grp.marketing.info_websites.webpages.index', 'parameters' => [$this->slug]],
             'state'          => $state,
             'state_icon'     => StaticWebsiteStateEnum::stateIcon()[$state],
             'state_label'    => StaticWebsiteStateEnum::labels()[$state],

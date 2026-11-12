@@ -5156,3 +5156,210 @@ describe('serving an info website on its own domain', function () {
         App\Actions\Web\StaticWebsite\LaunchStaticWebsite::run($this->staticWebsite);
     })->throws(RuntimeException::class);
 });
+
+describe('sharing the header and footer of an info website', function () {
+    beforeEach(function () {
+        list($this->organisation) = createShop();
+
+        Illuminate\Support\Facades\Storage::fake(config('media-library.disk_name'));
+
+        $this->staticWebsite = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
+            'domain' => 'shared-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(10)).'.test',
+            'name'   => 'Shared parts',
+        ]);
+        $this->staticWebsite->update(['crawled_at' => now()->subDay()]);
+
+        $page = fn (string $path, string $menu, string $headerTheme, string $body) => '<!DOCTYPE html><html><head><title>'.$path.'</title></head><body>'
+            .'<header id="header" class="'.$headerTheme.' header">'
+            .'<a href="'.$path.'#page" class="header-skip-link">Skip</a>'
+            .'<div class="header-nav-item'.($path === '/about' ? ' header-nav-item--active' : '').'"><a href="/about"'.($path === '/about' ? ' aria-current="page"' : '').' class="preFade" style="transition-delay: 0.'.strlen($path).'s;">'.$menu.'</a></div>'
+            .'</header><main>'.$body.'</main>'
+            .'<footer class="sections" id="footer-sections"><p>Shared footer</p></footer></body></html>';
+
+        $this->staticWebsite->webpages()->createMany([
+            ['path' => '/', 'html' => $page('/', 'About us', 'black', 'Home body')],
+            ['path' => '/about', 'html' => $page('/about', 'About us', 'white', 'About body')],
+            ['path' => '/odd', 'html' => $page('/odd', 'A different menu', 'white', 'Odd body')],
+        ]);
+    });
+
+    it('stores the header and footer once and leaves a marker in every page that shares them', function () {
+        $summary = App\Actions\Web\StaticWebsite\ExtractStaticWebsiteComponents::run($this->staticWebsite);
+
+        $header = $this->staticWebsite->components()->where('code', 'header')->first();
+        $about  = $this->staticWebsite->webpages()->where('path', '/about')->value('html');
+
+        expect($summary['header']['pages_linked'])->toBe(2)
+            ->and($summary['header']['pages_left_inline'])->toBe(['/odd'])
+            ->and($summary['footer']['pages_linked'])->toBe(3)
+            ->and($header->html)->toContain('About us')
+            ->and($header->html)->not->toContain('header-nav-item--active')
+            ->and($header->html)->not->toContain('aria-current')
+            ->and($header->html)->toContain('href="#page"')
+            ->and($about)->toContain('<header id="header" class="white header"><!--aiku:component:header--></header>')
+            ->and($about)->toContain('About body')
+            ->and($this->staticWebsite->webpages()->where('path', '/odd')->value('html'))->toContain('A different menu');
+    });
+
+    it('puts the shared parts back when a page is served, so one edit reaches every page', function () {
+        App\Actions\Web\StaticWebsite\ExtractStaticWebsiteComponents::run($this->staticWebsite);
+        App\Actions\Web\StaticWebsite\LaunchStaticWebsite::run($this->staticWebsite);
+
+        $this->staticWebsite->components()->where('code', 'header')->first()->update(['html' => '<div class="header-nav-item"><a href="/about">Our story</a></div>']);
+
+        foreach (['/', '/about'] as $path) {
+            Pest\Laravel\get('https://www.'.$this->staticWebsite->domain.$path)
+                ->assertOk()
+                ->assertSee('Our story')
+                ->assertSee('Shared footer')
+                ->assertDontSee('aiku:component', false);
+        }
+    });
+
+    it('keeps a component edited in Aiku when the pages are extracted again, unless forced', function () {
+        App\Actions\Web\StaticWebsite\ExtractStaticWebsiteComponents::run($this->staticWebsite);
+        $header = $this->staticWebsite->components()->where('code', 'header')->first();
+        $header->update(['html' => '<p>Edited by the UK team</p>']);
+
+        $this->staticWebsite->webpages()->where('path', '/')->update(['html' => '<html><body><header id="header" class="black header"><div class="header-nav-item"><a href="/about">About us</a></div></header></body></html>']);
+
+        $summary = App\Actions\Web\StaticWebsite\ExtractStaticWebsiteComponents::run($this->staticWebsite);
+
+        expect($summary['header']['status'])->toBe('kept, edited in Aiku')
+            ->and($header->refresh()->html)->toBe('<p>Edited by the UK team</p>')
+            ->and($this->staticWebsite->webpages()->where('path', '/')->value('html'))->toContain('<!--aiku:component:header-->');
+
+        App\Actions\Web\StaticWebsite\ExtractStaticWebsiteComponents::run($this->staticWebsite, force: true);
+
+        expect($header->refresh()->html)->toContain('About us');
+    });
+
+    it('does not let an info website go live while a page uses a shared part that is missing', function () {
+        App\Actions\Web\StaticWebsite\ExtractStaticWebsiteComponents::run($this->staticWebsite);
+        $this->staticWebsite->components()->where('code', 'footer')->delete();
+
+        $result = App\Actions\Web\StaticWebsite\VerifyStaticWebsite::run($this->staticWebsite);
+
+        expect(collect($result['missing_components'])->pluck('component')->unique()->all())->toBe(['footer'])
+            ->and(App\Actions\Web\StaticWebsite\VerifyStaticWebsite::isReady($result))->toBeFalse();
+    });
+});
+
+describe('browsing and restoring an info website', function () {
+    beforeEach(function () {
+        list($this->organisation, $this->user) = createShop();
+
+        Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+        Illuminate\Support\Facades\Storage::fake(config('media-library.disk_name'));
+
+        $this->staticWebsite = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
+            'domain' => 'browse-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(10)).'.test',
+            'name'   => 'Browsed info website',
+        ]);
+        $this->home = $this->staticWebsite->webpages()->create([
+            'path'  => '/',
+            'title' => 'Home',
+            'html'  => '<!DOCTYPE html><html><body><header id="header" class="header"><!--aiku:component:header--></header><h1>First words</h1></body></html>',
+        ]);
+        $this->header = $this->staticWebsite->components()->create(['code' => 'header', 'html' => '<nav>Menu</nav>']);
+    });
+
+    it('keeps a snapshot of every change, and none for an unchanged save', function () {
+        expect($this->home->snapshots()->count())->toBe(1);
+
+        $this->home->snapshotComment = 'Typo fixed';
+        $this->home->update(['html' => str_replace('First words', 'Better words', $this->home->html)]);
+        $this->home->update(['html' => $this->home->html]);
+
+        $snapshots = $this->home->snapshots()->orderBy('id')->get();
+
+        expect($snapshots)->toHaveCount(2)
+            ->and($snapshots[0]->state)->toBe(App\Enums\Helpers\Snapshot\SnapshotStateEnum::HISTORIC)
+            ->and($snapshots[1]->state)->toBe(App\Enums\Helpers\Snapshot\SnapshotStateEnum::LIVE)
+            ->and($snapshots[1]->comment)->toBe('Typo fixed')
+            ->and($snapshots[1]->compiled_layout)->toContain('Better words')
+            ->and($snapshots[1]->builder)->toBe(App\Enums\Helpers\Snapshot\SnapshotBuilderEnum::STATIC_HTML);
+    });
+
+    it('restores an earlier version and keeps the restore as a snapshot too', function () {
+        $first = $this->home->snapshots()->first();
+        $this->home->update(['html' => '<p>A mistake</p>']);
+
+        App\Actions\Web\StaticWebsite\RestoreStaticWebsiteSnapshot::make()->action($first);
+
+        $snapshots = $this->home->snapshots()->orderBy('id')->get();
+
+        expect($this->home->refresh()->html)->toContain('First words')
+            ->and($snapshots)->toHaveCount(3)
+            ->and($snapshots->last()->state)->toBe(App\Enums\Helpers\Snapshot\SnapshotStateEnum::LIVE)
+            ->and($snapshots->last()->comment)->toStartWith('Restored the version of');
+    });
+
+    it('shows the info website with its webpages, shared parts and snapshots', function () {
+        Pest\Laravel\actingAs($this->user);
+
+        foreach (['showcase', 'webpages', 'components', 'snapshots'] as $tab) {
+            Pest\Laravel\get(route('grp.marketing.info_websites.show', [$this->staticWebsite->slug, 'tab' => $tab]))
+                ->assertOk()
+                ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                    ->component('Org/Marketing/StaticWebsite')
+                    ->where('tabs.current', $tab)
+                    ->has($tab)
+                    ->etc());
+        }
+
+        Pest\Laravel\get(route('grp.marketing.info_websites.show', [$this->staticWebsite->slug, 'tab' => 'components']))
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->where('components.data.0.code', 'header')
+                ->where('components.data.0.webpages_count', 1)
+                ->etc());
+    });
+
+    it('lists the webpages and shows a webpage and a shared part with their snapshots', function () {
+        Pest\Laravel\actingAs($this->user);
+
+        Pest\Laravel\get(route('grp.marketing.info_websites.webpages.index', [$this->staticWebsite->slug]))
+            ->assertOk()
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->component('Org/Marketing/StaticWebpages')
+                ->where('data.data.0.path', '/')
+                ->etc());
+
+        Pest\Laravel\get(route('grp.marketing.info_websites.webpages.show', [$this->staticWebsite->slug, $this->home->id]))
+            ->assertOk()
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->component('Org/Marketing/StaticWebsitePart')
+                ->where('showcase.shared_parts.0.label', 'Shared header')
+                ->etc());
+
+        Pest\Laravel\get(route('grp.marketing.info_websites.components.show', [$this->staticWebsite->slug, 'header', 'tab' => 'snapshots']))
+            ->assertOk()
+            ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+                ->component('Org/Marketing/StaticWebsitePart')
+                ->has('snapshots.data', 1)
+                ->etc());
+    });
+
+    it('does not show a webpage under another info website', function () {
+        Pest\Laravel\actingAs($this->user);
+
+        $other = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
+            'domain' => 'other-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(10)).'.test',
+            'name'   => 'Other',
+        ]);
+
+        Pest\Laravel\get(route('grp.marketing.info_websites.webpages.show', [$other->slug, $this->home->id]))->assertNotFound();
+    });
+
+    it('previews an earlier version of a shared part on the homepage, sandboxed', function () {
+        Pest\Laravel\actingAs($this->user);
+
+        $original = $this->header->snapshots()->first();
+        $this->header->update(['html' => '<nav>New menu</nav>']);
+
+        $response = Pest\Laravel\get(route('grp.marketing.info_websites.snapshots.preview', [$this->staticWebsite->slug, $original->id]));
+
+        $response->assertOk()->assertSee('<nav>Menu</nav>', false)->assertDontSee('New menu')->assertSee('First words');
+        expect($response->headers->get('Content-Security-Policy'))->toStartWith('sandbox');
+    });
+});

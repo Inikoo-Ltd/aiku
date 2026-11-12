@@ -29,7 +29,7 @@ class LaunchStaticWebsite
     {
         $verification = VerifyStaticWebsite::run($staticWebsite);
 
-        if ($verification['pages'] === 0 || $verification['forbidden_references'] || $verification['missing_assets']) {
+        if (!VerifyStaticWebsite::isReady($verification)) {
             throw new RuntimeException("$staticWebsite->domain is not ready: run static_website:verify $staticWebsite->domain");
         }
 

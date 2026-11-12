@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\StaticWebsite\Iris;
 
+use App\Actions\Web\StaticWebsite\RenderStaticWebpage;
 use App\Models\Web\StaticWebpage;
 use App\Models\Web\StaticWebsite;
 use Illuminate\Http\Request;
@@ -62,7 +63,7 @@ class ServeStaticWebsite
             ]);
         }
 
-        return response($this->withRuntime($webpage->html), 200, [
+        return response($this->withRuntime(RenderStaticWebpage::run($staticWebsite, $webpage->html)), 200, [
             'Content-Type'          => 'text/html; charset=UTF-8',
             'Cache-Control'         => 'public, max-age=300',
             'X-AIKU-STATIC-WEBSITE' => (string) $staticWebsite->id,
@@ -124,11 +125,15 @@ class ServeStaticWebsite
         ]);
     }
 
-    public function withRuntime(string $html): string
+    /**
+     * The site root tells the runtime which part of the address belongs to the page, so it can mark
+     * the current menu item both on the live domain and inside the preview.
+     */
+    public function withRuntime(string $html, string $siteRoot = ''): string
     {
         $version    = $this->runtimeVersion();
         $stylesheet = '<link rel="stylesheet" href="'.self::RUNTIME_PATH.'.css?v='.$version.'">';
-        $script     = '<script src="'.self::RUNTIME_PATH.'.js?v='.$version.'" defer></script>';
+        $script     = '<script src="'.self::RUNTIME_PATH.'.js?v='.$version.'" data-root="'.e($siteRoot).'" defer></script>';
 
         $html = preg_replace('/<\/head>/i', $stylesheet.'</head>', $html, 1) ?? $html;
 

@@ -19,8 +19,9 @@ use RuntimeException;
 
 /**
  * Loads a bundle written by devops/static-websites/freeze.mjs: the assets go to the media disk under
- * static-websites/<domain>/ and every page is stored with its frozen HTML. A page changed in Aiku after
- * it was imported is left alone unless forced, so a re-import never overwrites the UK team's edits.
+ * static-websites/<domain>/, every page is stored with its frozen HTML, and the header and footer the
+ * pages repeat become the site's shared components. A page or component changed in Aiku after it was
+ * imported is left alone unless forced, so a re-import never overwrites the UK team's edits.
  */
 class ImportStaticWebsite
 {
@@ -32,7 +33,7 @@ class ImportStaticWebsite
         {--force : Overwrite pages that were changed in Aiku after the last import}';
 
     /**
-     * @return array{assets_uploaded: int, assets_kept: int, pages_created: int, pages_updated: int, pages_skipped_as_edited: list<string>, pages_only_in_aiku: list<string>}
+     * @return array{assets_uploaded: int, assets_kept: int, pages_created: int, pages_updated: int, pages_skipped_as_edited: list<string>, pages_only_in_aiku: list<string>, components: array<string, array{status: string, pages_linked: int, pages_left_inline: list<string>}>}
      */
     public function handle(StaticWebsite $staticWebsite, string $bundlePath, bool $force = false): array
     {
@@ -72,6 +73,7 @@ class ImportStaticWebsite
                 $webpage ??= $staticWebsite->webpages()->make(['path' => $pageData['path']]);
                 $isNew = !$webpage->exists;
 
+                $webpage->snapshotComment = __('Copied from :source', ['source' => $pageData['source_url']]);
                 $webpage->forceFill([
                     'title'       => $pageData['title'] ?: null,
                     'description' => $pageData['description'] ?: null,
@@ -92,6 +94,8 @@ class ImportStaticWebsite
                 'crawled_at' => $frozenAt,
             ]);
         });
+
+        $summary['components'] = ExtractStaticWebsiteComponents::run($staticWebsite->refresh(), $force);
 
         return $summary;
     }
@@ -151,6 +155,10 @@ class ImportStaticWebsite
             ['Pages updated', $summary['pages_updated']],
             ['Pages kept because edited in Aiku', implode(', ', $summary['pages_skipped_as_edited']) ?: '-'],
             ['Pages only in Aiku', implode(', ', $summary['pages_only_in_aiku']) ?: '-'],
+            ...collect($summary['components'])->map(fn (array $row, string $code) => [
+                "Shared $code",
+                "{$row['status']}, used by {$row['pages_linked']} pages".($row['pages_left_inline'] ? '; own copy kept on '.implode(', ', $row['pages_left_inline']) : ''),
+            ])->values()->all(),
         ]);
         $command->line("Run static_website:verify $staticWebsite->domain to check nothing still points at the old host.");
 

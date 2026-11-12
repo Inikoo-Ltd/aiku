@@ -1469,6 +1469,8 @@ Route::prefix('rental-agreement/{rentalAgreement:id}')->group(function () {
     Route::patch('', UpdateRentalAgreement::class)->name('rental-agreement.update');
 });
 
+Route::post('static-website-snapshot/{snapshot:id}/restore', App\Actions\Web\StaticWebsite\RestoreStaticWebsiteSnapshot::class)->name('static_website_snapshot.restore');
+
 Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
     Route::patch('publish', PublishBanner::class)->name('publish');
     Route::patch('layout', UpdateUnpublishedBannerSnapshot::class)->name('layout.update');

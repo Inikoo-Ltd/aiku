@@ -8,6 +8,7 @@
 
 namespace App\Models\Web;
 
+use App\Models\Traits\HasStaticWebsiteSnapshots;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -23,9 +24,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read StaticWebsite $staticWebsite
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Snapshot> $snapshots
  */
 class StaticWebpage extends Model
 {
+    use HasStaticWebsiteSnapshots;
+
     protected $guarded = [];
 
     protected function casts(): array

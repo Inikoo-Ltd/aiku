@@ -7,6 +7,8 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { Link } from "@inertiajs/vue3"
+import { route } from "ziggy-js"
 import { ctrans } from "@/Composables/useTrans"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -22,6 +24,16 @@ defineProps<{
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <template #cell(name)="{ item }">
+            <Link :href="route(item.route.name, item.route.parameters)" class="text-gray-700 hover:text-[var(--app-accent)] hover:underline">
+                {{ item.name }}
+            </Link>
+        </template>
+        <template #cell(webpages_count)="{ item }">
+            <Link :href="route(item.webpages_route.name, item.webpages_route.parameters)" class="tabular-nums text-gray-700 hover:text-[var(--app-accent)] hover:underline">
+                {{ item.webpages_count }}
+            </Link>
+        </template>
         <template #cell(domain)="{ item }">
             <a :href="item.url" target="_blank" rel="noopener" v-tooltip="ctrans('Opens the live domain, which still shows the old host until its DNS points to Aiku')"
                class="whitespace-nowrap text-gray-700 hover:text-[var(--app-accent)] hover:underline">

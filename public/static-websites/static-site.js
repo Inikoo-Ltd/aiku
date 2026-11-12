@@ -1,5 +1,45 @@
 (() => {
     const root = document.documentElement
+    const siteRoot = (document.currentScript?.dataset.root ?? '').replace(/\/$/, '')
+
+    const sitePath = href => {
+        try {
+            const url = new URL(href, location.href)
+            if (url.origin !== location.origin || !url.pathname.startsWith(siteRoot)) {
+                return null
+            }
+            return url.pathname.slice(siteRoot.length).replace(/\/$/, '') || '/'
+        } catch {
+            return null
+        }
+    }
+
+    const markCurrentNavigation = () => {
+        const current = sitePath(location.href)
+        const links = [...document.querySelectorAll('.header-nav-item > a[href], .header-nav-folder-item > a[href], .header-menu-nav-item > a[href]')]
+            .map(link => ({ link, path: sitePath(link.getAttribute('href')) }))
+            .filter(({ link }) => !link.matches('[data-folder-id], [data-action], .user-accounts-text-link, .header-skip-link'))
+            .filter(({ path }) => path && (path === current || (path !== '/' && current.startsWith(path + '/'))))
+        const longest = Math.max(-1, ...links.map(({ path }) => path.length))
+
+        links.filter(({ path }) => path.length === longest).forEach(({ link }) => {
+            link.setAttribute('aria-current', 'page')
+            link.closest('.header-nav-item')?.classList.add('header-nav-item--active')
+            link.closest('.header-nav-folder-item')?.classList.add('header-nav-folder-item--active')
+            link.closest('.header-menu-nav-item')?.classList.add('header-menu-nav-item--active')
+
+            const folder = link.closest('.header-nav-item--folder')
+            folder?.classList.add('header-nav-item--active')
+            folder?.querySelector('.header-nav-folder-title')?.setAttribute('aria-current', 'true')
+
+            const menuFolder = link.closest('.header-menu-nav-folder[data-folder]')
+            if (menuFolder && menuFolder.dataset.folder !== 'root') {
+                const folderLink = document.querySelector(`.header-menu [data-folder-id="${CSS.escape(menuFolder.dataset.folder)}"]`)
+                folderLink?.setAttribute('aria-current', 'true')
+                folderLink?.closest('.header-menu-nav-item')?.classList.add('header-menu-nav-item--active')
+            }
+        })
+    }
 
     const layoutHeader = () => {
         const header = document.querySelector('.header')
@@ -197,6 +237,7 @@
         carousels.forEach(layoutCarousel => layoutCarousel())
     }
 
+    markCurrentNavigation()
     layout()
     document.fonts?.ready.then(layout)
     window.addEventListener('load', layout)

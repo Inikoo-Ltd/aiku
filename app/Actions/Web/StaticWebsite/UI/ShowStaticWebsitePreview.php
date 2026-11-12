@@ -10,6 +10,7 @@ namespace App\Actions\Web\StaticWebsite\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\StaticWebsite\Iris\ServeStaticWebsite;
+use App\Actions\Web\StaticWebsite\RenderStaticWebpage;
 use App\Models\Web\StaticWebpage;
 use App\Models\Web\StaticWebsite;
 use Illuminate\Support\Str;
@@ -23,24 +24,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ShowStaticWebsitePreview extends OrgAction
 {
+    use WithStaticWebsiteAuthorisation;
+
     public const string SANDBOX_POLICY = 'sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms';
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $user = $request->user();
-
-        if ($user->authTo('group-webmaster.view')) {
-            return true;
-        }
-
-        foreach ($this->group->shops()->pluck('id') as $shopId) {
-            if ($user->authTo("marketing.$shopId.view")) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     public function handle(StaticWebsite $staticWebsite, string $path): Response
     {
@@ -56,12 +42,20 @@ class ShowStaticWebsitePreview extends OrgAction
             ]);
         }
 
+        return $this->previewResponse($staticWebsite, RenderStaticWebpage::run($staticWebsite, $webpage->html));
+    }
+
+    /**
+     * A fully assembled page, made to work inside Aiku: assets and links stay in the preview.
+     */
+    public function previewResponse(StaticWebsite $staticWebsite, string $html): Response
+    {
         $pagePrefix  = rtrim(route('grp.marketing.info_websites.preview', [$staticWebsite->slug]), '/');
         $assetPrefix = Str::beforeLast(route('static_website_preview_asset', [$staticWebsite->slug, 'asset']), 'asset');
 
-        $html = ServeStaticWebsite::pointAssetsAt($webpage->html, $assetPrefix);
+        $html = ServeStaticWebsite::pointAssetsAt($html, $assetPrefix);
         $html = preg_replace('/(\shref=)(["\'])\/(?!\/)/', '$1$2'.$pagePrefix.'/', $html) ?? $html;
-        $html = ServeStaticWebsite::make()->withRuntime($html);
+        $html = ServeStaticWebsite::make()->withRuntime($html, (string) parse_url($pagePrefix, PHP_URL_PATH));
 
         return response($html, 200, [
             'Content-Type'            => 'text/html; charset=UTF-8',

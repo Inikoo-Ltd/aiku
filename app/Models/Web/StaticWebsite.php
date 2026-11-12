@@ -35,6 +35,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, StaticWebpage> $webpages
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, StaticWebsiteComponent> $components
  */
 class StaticWebsite extends Model
 {
@@ -130,5 +131,10 @@ class StaticWebsite extends Model
     public function webpages(): HasMany
     {
         return $this->hasMany(StaticWebpage::class);
+    }
+
+    public function components(): HasMany
+    {
+        return $this->hasMany(StaticWebsiteComponent::class);
     }
 }
