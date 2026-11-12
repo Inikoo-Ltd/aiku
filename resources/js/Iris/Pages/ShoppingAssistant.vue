@@ -97,7 +97,7 @@ const handOverErrors = ref<Record<number, string>>({})
 const canTalkToAPerson = computed(() => !!assistant.value?.hand_over || handOverAvailable.value)
 
 const showLanding = computed(() => !messages.value.length && !isPending.value && !isRestoring.value)
-const isLandingVisible = computed(() => showLanding.value && (!!assistant.value || isLoggedOut.value))
+const isLandingVisible = computed(() => showLanding.value && !!assistant.value)
 const isChatVisible = computed(() => !isLandingVisible.value && (!!assistant.value || messages.value.length > 0 || isPending.value))
 const isMerlin = computed(() => assistantName.value.trim().toLowerCase() === "merlin")
 
@@ -588,6 +588,12 @@ const goToLogin = () => {
     window.location.href = urlLoginWithRedirect()
 }
 
+watch(isLoggedOut, (loggedOut) => {
+    if (loggedOut) {
+        window.location.replace(urlLoginWithRedirect())
+    }
+}, { immediate: true })
+
 const askFromLanding = (text: string) => {
     const question = text.trim().slice(0, 1000)
     if (assistant.value) {
@@ -984,7 +990,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
             </section>
         </div>
 
-        <p v-else-if="isLayoutReady" class="text-sm text-gray-600">
+        <p v-else-if="isLayoutReady && !isLoggedOut" class="text-sm text-gray-600">
             {{ ctrans("The range advisor is not available on this website.") }}
         </p>
 
