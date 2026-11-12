@@ -632,32 +632,11 @@ const sendOnEnter = (event: KeyboardEvent) => {
         <div v-if="isLandingVisible">
             <section class="landing-hero">
                 <div class="landing-container landing-hero-inner">
-                    <div>
-                        <div class="landing-eyebrow-row">
-                            <span class="landing-badge" aria-hidden="true">
-                                <FontAwesomeIcon icon="far fa-sparkles" fixed-width />
-                            </span>
-                            <p class="landing-eyebrow">{{ ctrans("Meet :name · Your range advisor", { name: assistantName }) }}</p>
-                        </div>
-
-                        <h1 class="landing-title">
-                            {{ ctrans("Tell :name about your shop.", { name: assistantName }) }}<br>
-                            {{ ctrans(":name will find what sells.", { name: assistantName }) }}
-                        </h1>
-
-                        <p class="landing-intro">
-                            {{ knowsTheRange }}
-                            {{ ctrans("Describe your shop – what you sell, where you are, who your customers are and what you’d like to try – and :name will suggest must-haves and add-ons from what is in stock now, each with a reason why.", { name: assistantName }) }}
-                        </p>
-
-                        <p v-if="isMerlin" class="landing-legend">
-                            {{ ctrans("Named after the wise wizard of British legend – a fitting guide for a British company that has travelled the world for good finds since 1995.") }}
-                        </p>
-
+                    <div class="landing-hero-main">
                         <div class="landing-ask">
                             <Textarea
                                 v-model="draft"
-                                rows="2"
+                                rows="5"
                                 auto-resize
                                 maxlength="1000"
                                 class="landing-textarea"
@@ -680,7 +659,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
                         <p v-if="errorMessage" class="mt-2 text-xs text-red-500">{{ errorMessage }}</p>
                         <p v-if="notice" class="mt-2 text-sm text-gray-600">{{ notice }}</p>
-                        <p class="mt-2 text-xs text-gray-500">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
+                        <p class="landing-disclaimer">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
 
                         <div class="landing-chips">
                             <button
@@ -696,7 +675,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
                         <div v-if="canTalkToAPerson" class="landing-talk">
                             <div class="landing-talk-row">
-                                <span class="text-sm text-gray-600">{{ ctrans("Prefer a person?") }}</span>
+                                <span class="text-xs text-gray-500">{{ ctrans("Prefer a person?") }}</span>
                                 <button
                                     type="button"
                                     class="landing-chip landing-talk-button"
@@ -743,25 +722,45 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
                     </div>
 
+                    <aside class="landing-hero-info">
+                        <div class="landing-eyebrow-row">
+                            <span class="landing-badge" aria-hidden="true">
+                                <FontAwesomeIcon icon="far fa-sparkles" fixed-width />
+                            </span>
+                            <p class="landing-eyebrow">{{ ctrans("Meet :name · Your range advisor", { name: assistantName }) }}</p>
+                        </div>
+
+                        <h1 class="landing-title">
+                            {{ ctrans("Tell :name about your shop.", { name: assistantName }) }}<br>
+                            {{ ctrans(":name will find what sells.", { name: assistantName }) }}
+                        </h1>
+
+                        <p class="landing-intro">
+                            {{ knowsTheRange }}
+                            {{ ctrans("Describe your shop – what you sell, where you are, who your customers are and what you’d like to try – and :name will suggest must-haves and add-ons from what is in stock now, each with a reason why.", { name: assistantName }) }}
+                        </p>
+
+                        <p v-if="isMerlin" class="landing-legend">
+                            {{ ctrans("Named after the wise wizard of British legend – a fitting guide for a British company that has travelled the world for good finds since 1995.") }}
+                        </p>
+
+                        <div class="landing-steps">
+                            <div v-for="(step, index) in steps" :key="step.title" class="landing-step">
+                                <span class="landing-step-number" aria-hidden="true">{{ index + 1 }}</span>
+                                <div>
+                                    <p class="landing-step-title">{{ step.title }}</p>
+                                    <p class="landing-step-body">{{ step.body }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <ul class="landing-promises">
+                            <li v-for="promise in promises" :key="promise">✓ {{ promise }}</li>
+                            <li>{{ ctrans("Planning a big order? :name passes it to our team.", { name: assistantName }) }}</li>
+                        </ul>
+                    </aside>
                 </div>
             </section>
-
-            <section class="landing-container landing-steps">
-                <div v-for="(step, index) in steps" :key="step.title" class="landing-step">
-                    <span class="landing-step-number" aria-hidden="true">{{ index + 1 }}</span>
-                    <div>
-                        <p class="landing-step-title">{{ step.title }}</p>
-                        <p class="landing-step-body">{{ step.body }}</p>
-                    </div>
-                </div>
-            </section>
-
-            <div class="landing-promises">
-                <div class="landing-container landing-promises-row">
-                    <span v-for="promise in promises" :key="promise">✓ {{ promise }}</span>
-                    <span>{{ ctrans("Planning a big order? :name passes it to our team.", { name: assistantName }) }}</span>
-                </div>
-            </div>
         </div>
 
         <div v-else-if="isChatVisible" class="chat-shell" :class="{ 'chat-shell-collapsed': isSidebarCollapsed }">
@@ -1322,15 +1321,14 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .landing-talk {
-    margin-top: 1rem;
-    max-width: 42rem;
+    margin-top: 0.75rem;
 }
 
 .landing-talk-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.375rem;
 }
 
 .landing-talk-button {
@@ -1457,28 +1455,79 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .landing-hero-inner {
-    max-width: 48rem;
-    text-align: center;
+    display: grid;
+    gap: 2rem;
+    align-items: start;
 }
 
-.landing-hero-inner .landing-eyebrow-row,
-.landing-hero-inner .landing-chips,
-.landing-hero-inner .landing-talk-row {
-    justify-content: center;
+@media (min-width: 1024px) {
+    .landing-hero-inner {
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: 3rem;
+    }
 }
 
-.landing-hero-inner .landing-intro,
-.landing-hero-inner .landing-legend,
-.landing-hero-inner .landing-ask,
-.landing-hero-inner .landing-chips,
-.landing-hero-inner .landing-talk {
-    margin-left: auto;
-    margin-right: auto;
+.landing-hero-info .landing-title {
+    margin-top: 1rem;
+    font-size: 1.75rem;
 }
 
-.landing-hero-inner .landing-ask,
-.landing-hero-inner .landing-talk-box {
-    text-align: left;
+.landing-disclaimer {
+    margin-top: 0.5rem;
+    padding: 0 0.25rem;
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    color: #777;
+}
+
+.landing-hero-main .landing-chip {
+    background: transparent;
+    border-color: color-mix(in srgb, #1f1f1f 14%, transparent);
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    color: #555;
+}
+
+.landing-hero-main .landing-chip:hover {
+    color: #1f1f1f;
+    border-color: var(--theme-color-4);
+    background: white;
+}
+
+.landing-hero-main .landing-talk-button,
+.landing-hero-main .landing-talk-button:hover {
+    border: 0;
+    background: transparent;
+    padding: 0.25rem 0;
+    font-size: 0.75rem;
+    color: #555;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.landing-hero-main .landing-talk-button:hover {
+    color: #1f1f1f;
+}
+
+@media (max-width: 639px) {
+    .landing-ask .landing-textarea {
+        min-height: 6.5rem;
+    }
+
+    .landing-ask .landing-ask-button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.landing-hero-info .landing-steps {
+    grid-template-columns: none;
+    padding-top: 1.5rem;
+    padding-bottom: 0;
+}
+
+.landing-hero-info .landing-step-body {
+    max-width: none;
 }
 
 .landing-eyebrow-row {
@@ -1488,20 +1537,20 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .landing-badge {
-    width: 3.25rem;
-    height: 3.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
     flex-shrink: 0;
     border-radius: 9999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1rem;
     background-color: #1f1f1f;
     color: var(--theme-color-4);
 }
 
 .landing-eyebrow {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1523,37 +1572,40 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .landing-intro {
-    margin-top: 1.25rem;
-    max-width: 38rem;
-    font-size: 1rem;
-    line-height: 1.65;
-    color: #333;
+    margin-top: 0.875rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: #444;
 }
 
 .landing-legend {
-    margin-top: 1rem;
-    max-width: 38rem;
-    font-size: 0.8125rem;
+    margin-top: 0.75rem;
+    font-size: 0.75rem;
     font-style: italic;
-    line-height: 1.6;
-    color: #555;
+    line-height: 1.5;
+    color: #777;
 }
 
 .landing-ask {
-    margin-top: 1rem;
-    max-width: 42rem;
-    padding: 0.75rem;
-    border: 1px solid #e3ddd6;
-    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1.5px solid color-mix(in srgb, var(--theme-color-4) 35%, #e3ddd6);
+    border-radius: 1rem;
     background-color: white;
+    box-shadow: 0 6px 20px -8px rgb(0 0 0 / 0.15);
+}
+
+.landing-ask:focus-within {
+    border-color: var(--theme-color-4);
 }
 
 .landing-textarea {
     width: 100%;
+    min-height: 8.5rem;
     border: 0;
     box-shadow: none;
-    padding: 0.25rem;
-    font-size: 0.9375rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 1rem;
+    line-height: 1.5;
     background: transparent;
 }
 
@@ -1563,7 +1615,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .landing-ask-footer {
-    margin-top: 1.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f0ebe5;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1580,9 +1634,9 @@ const sendOnEnter = (event: KeyboardEvent) => {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.625rem 1.25rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 9999px;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 700;
     background-color: var(--theme-color-4);
     color: var(--theme-color-5);
@@ -1604,11 +1658,10 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .landing-chips {
-    margin-top: 1rem;
-    max-width: 42rem;
+    margin-top: 0.875rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.375rem;
 }
 
 .landing-chip {
@@ -1697,18 +1750,25 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .landing-promises {
+    margin: 1.25rem 0 0;
+    padding: 0.875rem 0 0;
     border-top: 1px solid #ece7e1;
-    border-bottom: 1px solid #ece7e1;
-}
-
-.landing-promises-row {
+    list-style: none;
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 0.5rem 1.5rem;
-    padding-top: 0.875rem;
-    padding-bottom: 0.875rem;
+    gap: 0.25rem 1.25rem;
     font-size: 0.8125rem;
+    color: #444;
+}
+
+.landing-promises li {
+    margin: 0;
+    padding: 0;
+}
+
+.landing-promises li:last-child {
+    flex-basis: 100%;
+    color: #777;
 }
 
 .assistant-link {
