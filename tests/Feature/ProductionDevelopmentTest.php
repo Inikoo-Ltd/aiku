@@ -764,3 +764,62 @@ test('UI paid as development tab', function () {
             ->where('targets.data', fn ($rows) => collect($rows)->contains('code', $experiment->code))
             ->etc());
 });
+
+test('artisans send feedback on a development product from the tablet, and its targets cannot be accepted while that feedback is open', function () {
+    [$experiment, $task] = developmentFixture($this, 'DEVFB');
+    $artisans = [dayPlanOperator($this->organisation), dayPlanOperator($this->organisation)];
+    foreach (range(0, 7) as $index) {
+        developmentSession($task, $artisans[$index % 2], now()->subDays(10)->startOfHour()->addHours($index * 2), 60, 100, $this->guest->getUser()->id);
+    }
+    $manager = createAdminGuest($this->group)->getUser();
+    \App\Actions\Production\Production\SetDevelopmentReviewSettings::make()->action($this->production, [...$this->production->developmentReviewSettings(), 'reviewer_ids' => [$manager->id]]);
+    $experiment->refresh();
+    $artisan = $this->guest->getUser();
+    ConfirmJobOrder::make()->action($task->jobOrder);
+
+    get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('tasks', fn ($tasks) => collect($tasks)->contains(fn ($floorTask) => $floorTask['in_development'] === [['id' => $experiment->id, 'code' => $experiment->code]]))
+            ->has('development_feedback.reasons', 4)
+            ->etc());
+
+    expect(fn () => \App\Actions\Production\Artefact\StoreArtefactDevelopmentFeedback::make()->action($experiment, $artisan, ['reasons' => [], 'comment' => ' ']))->toThrow(ValidationException::class);
+
+    $first  = \App\Actions\Production\Artefact\StoreArtefactDevelopmentFeedback::make()->action($experiment, $artisan, ['reasons' => ['missing_step'], 'comment' => 'It needs Shrinking']);
+    $floorUser = \App\Models\SysAdmin\User::factory()->create(['group_id' => $this->group->id]);
+    $floorUser->givePermissionTo("productions_operations.{$this->production->id}.view");
+    actingAs($floorUser);
+    \Pest\Laravel\post(route('grp.models.artefact.development_feedback.store', ['artefact' => $experiment->id]), ['reasons' => [], 'comment' => ''])->assertSessionHasErrors('reasons');
+    \Pest\Laravel\post(route('grp.models.artefact.development_feedback.store', ['artefact' => $experiment->id]), ['reasons' => ['wrong_order']])->assertSessionHasNoErrors()->assertRedirect();
+    actingAs($this->guest->getUser());
+    $second = \App\Models\Tasks\StaffTask::find($first->id);
+
+    expect($second->id)->toBe($first->id)
+        ->and($first->assignee_id)->toBe($manager->id)
+        ->and(array_column($second->data['subtasks'], 'title'))->toHaveCount(2)
+        ->and($second->data['subtasks'][0]['title'])->toContain('A step is missing')->toContain('It needs Shrinking');
+
+    $proposal = \App\Actions\Production\Artefact\GetArtefactDevelopmentProposal::run($experiment);
+    $targets  = [$proposal['steps'][0]['id'] => 100];
+    expect($proposal['open_feedback']['reference'])->toBe($first->reference)
+        ->and(fn () => \App\Actions\Production\Artefact\DecideArtefactDevelopmentReview::make()->action($experiment, ['decision' => 'accepted', 'targets' => $targets]))->toThrow(ValidationException::class);
+
+    \App\Actions\Production\Artefact\DecideArtefactDevelopmentReview::make()->action($experiment, ['decision' => 'kept', 'reason' => 'Steps being fixed']);
+    expect($experiment->refresh()->is_in_development)->toBeTrue();
+
+    $second->refresh()->update(['status' => \App\Enums\Tasks\StaffTaskStatusEnum::DONE]);
+    \App\Actions\Production\Artefact\DecideArtefactDevelopmentReview::make()->action($experiment, ['decision' => 'accepted', 'targets' => $targets]);
+    expect($experiment->refresh()->is_in_development)->toBeFalse();
+});
+
+test('ticking task lines by hand keeps what the lines are linked to', function () {
+    [$experiment] = developmentFixture($this, 'DEVTK');
+    \App\Actions\Production\Production\SetDevelopmentReviewSettings::make()->action($this->production, [...$this->production->developmentReviewSettings(), 'reviewer_ids' => [createAdminGuest($this->group)->getUser()->id]]);
+    $task = \App\Actions\Production\Artefact\StoreArtefactDevelopmentFeedback::make()->action($experiment->refresh(), $this->guest->getUser(), ['reasons' => ['material_wrong']]);
+    $task->update(['data' => [...$task->data, 'subtasks' => [[...$task->data['subtasks'][0], 'artefact_id' => $experiment->id]]]]);
+
+    $task = \App\Actions\Tasks\UpdateStaffTaskSubtasks::run($task, [['title' => $task->data['subtasks'][0]['title'], 'status' => 'done'], ['title' => 'Call supplier', 'status' => 'todo']]);
+
+    expect($task->data['subtasks'][0])->toMatchArray(['status' => 'done', 'artefact_id' => $experiment->id])
+        ->and($task->data['subtasks'][1])->toBe(['title' => 'Call supplier', 'status' => 'todo']);
+});

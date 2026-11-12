@@ -47,6 +47,7 @@ type Row = {
     last_run_at: string | null
     status: "overdue" | "ready_idle" | "collecting" | "kept"
     kept: { reason: string, user: string | null, at: string } | null
+    open_feedback: { reference: string, lines: string[] } | null
     steps: StepSummary[]
 }
 
@@ -242,6 +243,7 @@ onMounted(() => {
     <Table :resource="data" :name="tab" class="mt-3">
         <template #cell(status)="{ item }">
             <span class="whitespace-nowrap rounded-md px-2 py-0.5 text-xs ring-1 ring-inset" :class="statusClass(item.status)" v-tooltip="item.kept?.reason">{{ statusLabel(item.status) }}</span>
+            <div v-if="item.open_feedback" class="mt-1 whitespace-nowrap text-xs text-amber-700" v-tooltip="item.open_feedback.lines.join('\n')">{{ ctrans("Floor feedback open") }}</div>
         </template>
         <template #cell(code)="{ item }">
             <Link :href="route(artefactRoute.name, { ...artefactRoute.parameters, artefact: item.slug })" class="primaryLink whitespace-nowrap">{{ item.code }}</Link>
@@ -285,6 +287,13 @@ onMounted(() => {
         <div v-else class="space-y-4">
             <div v-if="reviewing?.kept" class="rounded-md bg-sky-50 px-3 py-2 text-xs text-sky-800">
                 {{ ctrans("Kept on development by :user on :date: :reason", { user: reviewing.kept.user ?? "", date: formatDate(reviewing.kept.at), reason: reviewing.kept.reason }) }}
+            </div>
+
+            <div v-if="reviewing?.open_feedback" class="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                <div class="font-semibold">{{ ctrans("Feedback from the floor is open (:reference): fix the recipe and close that task before saving the targets", { reference: reviewing.open_feedback.reference }) }}</div>
+                <ul class="mt-1 list-disc pl-4">
+                    <li v-for="(line, index) in reviewing.open_feedback.lines" :key="index">{{ line }}</li>
+                </ul>
             </div>
 
             <div v-for="step in steps" :key="step.id" class="rounded-md border border-gray-200 p-3">
@@ -368,7 +377,7 @@ onMounted(() => {
                     <Button type="tertiary" class="shrink-0" :label="ctrans('Keep on development')" :disabled="isSaving || isLoadingProposal" @click="isKeeping = true">
                         <template #icon><FontAwesomeIcon :icon="['fal', 'pause']" fixed-width class="text-sky-600" aria-hidden="true" /></template>
                     </Button>
-                    <Button type="primary" full :label="ctrans('Save targets')" :loading="isSaving" :disabled="isLoadingProposal || !Object.keys(filledTargets).length" @click="saveTargets">
+                    <Button type="primary" full :label="ctrans('Save targets')" :loading="isSaving" :disabled="isLoadingProposal || !!reviewing?.open_feedback || !Object.keys(filledTargets).length" @click="saveTargets">
                         <template #icon><FontAwesomeIcon :icon="['fal', 'check']" fixed-width aria-hidden="true" /></template>
                     </Button>
                 </template>

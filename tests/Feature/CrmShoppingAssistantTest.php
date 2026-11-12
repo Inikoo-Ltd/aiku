@@ -1535,3 +1535,169 @@ test('a question about a range is answered from the family description, with no 
         DB::table('product_categories')->where('id', $family->id)->update((array) $before);
     }
 });
+
+test('a code typed for a discontinued product names it apart without an id and searches by its name for the closest products', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $suffix       = Str::lower(Str::random(5));
+    $word         = 'quorl'.$suffix;
+    $alternative  = shoppingAssistantProduct($this->product);
+    $discontinued = shoppingAssistantProduct($this->product);
+    $exclusive    = shoppingAssistantProduct($this->product);
+    $alternative->update(['name' => ucfirst($word).' Fragrance Oil 10ml']);
+    $discontinued->update(['code' => 'Zd'.$suffix.'-03', 'name' => 'Pure '.ucfirst($word).' Oil 250g', 'state' => ProductStateEnum::DISCONTINUED, 'is_for_sale' => false, 'available_quantity' => 0]);
+    $exclusive->update(['code' => 'Zx'.$suffix.'-01', 'state' => ProductStateEnum::DISCONTINUED, 'is_for_sale' => false]);
+    DB::table('product_has_exclusive_customers')->insert(['product_id' => $exclusive->id, 'customer_id' => shoppingAssistantCustomer($this->shop)->id, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('products')->where('id', $alternative->id)->update(['is_in_website' => true]);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 0 : 1 => 1.0]);
+    Http::fake([
+        '*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $result       = $tools->execute($conversation, 'search_products', ['query' => 'ZD'.$suffix.'-03']);
+    $other        = $tools->execute($conversation, 'search_products', ['query' => 'zx'.$suffix.'01']);
+
+    expect($result['error'])->toBeNull()
+        ->and($result['content']['discontinued'])->toBe([['name' => $discontinued->name, 'family' => $discontinued->family->name]])
+        ->and($result['content']['note'])->toContain('discontinued')
+        ->and(collect($result['products'])->pluck('id')->all())->toContain($alternative->id)->not->toContain($discontinued->id)
+        ->and($result['names'])->toContain($discontinued->name)
+        ->and($other['content'])->not->toHaveKey('discontinued')
+        ->and(AskShoppingAssistant::make()->onlyGivenNumbers('The '.$discontinued->name.' has been discontinued.', 'ZD'.$suffix.'-03', $discontinued->name))->toBeTrue();
+});
+
+test('the assistant prompt lists the families ordered in the last 12 months apart from those only ordered before, and asks for follow-ups on every answer', function () {
+    $customer   = shoppingAssistantCustomer($this->shop);
+    $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $oldFamily  = \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($department, array_merge(\App\Models\Catalogue\ProductCategory::factory()->definition(), ['type' => \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value, 'name' => 'Rudraksha Old '.Str::random(5)]));
+    $oldProduct = shoppingAssistantProduct($this->product);
+    $oldProduct->update(['family_id' => $oldFamily->id]);
+    shoppingAssistantStoppedOrdering($customer, $oldProduct->fresh());
+    DB::table('customer_product_purchases')->insert([
+        'customer_id' => $customer->id, 'shop_id' => $customer->shop_id, 'product_id' => $this->product->id, 'family_id' => $this->product->family_id,
+        'orders' => 2, 'orders_12m' => 2, 'quantity_12m' => 4, 'spend_12m' => 40, 'first_ordered_at' => now()->subMonths(5), 'last_ordered_at' => now()->subMonth(),
+    ]);
+
+    Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantModelReply(['content' => 'I can only help with products.'], 'stop'))]);
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'when do I pay?');
+
+    $request = Http::recorded()->first()[0];
+    $prompt  = $request['messages'][0]['content'];
+    $present = collect($request['tools'])->firstWhere('function.name', 'present_products');
+
+    expect($prompt)->toContain('Product families they ordered most in the last 12 months: '.$this->product->family->name."\n")
+        ->and($prompt)->toContain('Product families they used to order but not in the last 12 months: '.$oldFamily->name."\n")
+        ->and($prompt)->toContain('Always finish with present_products')
+        ->and($present['function']['description'])->toContain('also when you show no products')
+        ->and(collect($request['tools'])->firstWhere('function.name', 'best_sellers_last_christmas')['function']['parameters']['properties'])->toHaveKey('kind');
+});
+
+test('the reply may say how many products the answer shows right before the kind of product, never as a price, stock or buyer count', function () {
+    $assistant = AskShoppingAssistant::make();
+    $asked     = 'suggest 20 bestselling soaps';
+    $names     = "Lemon Sherbet Whipped Soap 120g\nSliced Soap Loaf (13pcs) - Coconut Dream\nKerzen Lavendel";
+    $counts    = [10, 6, 16];
+
+    expect($assistant->onlyGivenNumbers('That comes to 16 soaps, not 20, because these are all the matches.', $asked, $names, $counts))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Hier sind 10 Kerzen.', $asked, $names, $counts))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('That comes to 16 soaps, not 20.', $asked, $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Here are 10 must-haves and 6 add-ons.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Only 6 left in stock.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('6 shops near you buy it.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Cuestan 6 euros.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Tylko 6 zł za sztukę.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Each one is only £16.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Ces savons coûtent 16 € pièce.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Save 16% on these.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Only 16.50 each.', $asked, $names, $counts))->toBeFalse();
+});
+
+test('the Christmas best sellers can be narrowed to one kind of product, and say so when none of that kind sold', function () {
+    $season   = \App\Actions\CRM\RangeAdvisor\GetChristmasBestSellers::make()->season();
+    $inSeason = $season[0]->addDays(10)->toDateTimeString();
+    $suffix   = Str::lower(Str::random(5));
+    $soapWord = 'sapon'.$suffix;
+    $candleWord = 'cerul'.$suffix;
+    $soap     = shoppingAssistantProduct($this->product);
+    $other    = shoppingAssistantProduct($this->product);
+    $candle   = shoppingAssistantProduct($this->product);
+    $soap->update(['name' => ucfirst($soapWord).' Whipped Soap']);
+    $candle->update(['name' => ucfirst($candleWord).' Candle']);
+    DB::table('products')->whereIn('id', [$soap->id, $other->id, $candle->id])->update(['created_at' => $season[0]->subYears(3), 'is_in_website' => true]);
+    foreach (range(1, 5) as $ignored) {
+        $buyer = shoppingAssistantCustomer($this->shop);
+        shoppingAssistantOrderLine($buyer, $soap, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $other, $inSeason, 20);
+    }
+    $cacheKey = 'range_advisor:christmas_best_sellers:'.$this->shop->id.':'.$season[1]->year;
+    Illuminate\Support\Facades\Cache::forget($cacheKey);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [match (true) {
+        str_contains(mb_strtolower($text), $soapWord)   => 0,
+        str_contains(mb_strtolower($text), $candleWord) => 1,
+        default                                         => 2,
+    } => 1.0]);
+    Http::fake([
+        '*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->reject(fn ($text) => str_contains($text, 'brokenkind'))->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $all          = $tools->execute($conversation, 'best_sellers_last_christmas', ['limit' => 24]);
+    $soaps        = $tools->execute($conversation, 'best_sellers_last_christmas', ['kind' => $soapWord, 'limit' => 24]);
+    $candles      = $tools->execute($conversation, 'best_sellers_last_christmas', ['kind' => $candleWord]);
+    $failed       = $tools->execute($conversation, 'best_sellers_for_similar_shops', ['kind' => 'brokenkind']);
+
+    expect(array_column($all['products'], 'id'))->toContain($soap->id, $other->id)
+        ->and($all['content'])->not->toHaveKey('note')
+        ->and(array_column($soaps['products'], 'id'))->toBe([$soap->id])
+        ->and($soaps['content']['note'])->toContain('not every product of that kind')
+        ->and($candles['products'])->toBe([])
+        ->and($candles['content']['note'])->toStartWith('None of the products matching')
+        ->and($failed['error'])->toContain('failed')
+        ->and($failed['products'])->toBe([]);
+
+    Illuminate\Support\Facades\Cache::forget($cacheKey);
+});
+
+test('a basket add sent together with the final answer still runs, an answer written before a basket add that fell short is asked again, and a count needs a number in the question', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $first    = shoppingAssistantProduct($this->product);
+    $second   = shoppingAssistantProduct($this->product);
+    $first->update(['name' => 'Quartz Tarot Deck']);
+    $second->update(['name' => 'Moon Tarot Deck']);
+    $shown = shoppingAssistantShown($customer, [$first->id, $second->id]);
+
+    $addAndPresent = fn (string $reply) => shoppingAssistantModelReply(['tool_calls' => [
+        shoppingAssistantToolCall('add_to_basket', ['product_ids' => [$first->id, $second->id]], 'call_add'),
+        shoppingAssistantToolCall('present_products', ['reply' => $reply, 'follow_ups' => ['Show me more like these']], 'call_present'),
+    ]], 'tool_calls');
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push($addAndPresent('Both are in your basket now.'))
+        ->push($addAndPresent('I have added both to your basket.'))
+        ->push(shoppingAssistantPresent(['reply' => 'Both were already in your basket.']))
+        ->push(shoppingAssistantPresent(['reply' => 'Here are 2 tarot decks.', 'must_haves' => [$first->id, $second->id]]))
+        ->push(shoppingAssistantPresent(['reply' => 'Here are 2 tarot decks.', 'must_haves' => [$first->id, $second->id]]))]);
+
+    $conversation = $shown->conversation;
+    $added        = AskShoppingAssistant::run($conversation, 'add them to my basket');
+    $again        = AskShoppingAssistant::run($conversation, 'add them again please');
+    $asked        = AskShoppingAssistant::run($conversation, 'show me 5 decks');
+    $notAsked     = AskShoppingAssistant::run($conversation, 'show me some decks');
+
+    expect(collect($added['message']->tool_calls)->pluck('name')->all())->toBe(['add_to_basket', 'present_products'])
+        ->and(collect($added['message']->tool_calls)->firstWhere('name', 'add_to_basket')['added_product_ids'])->toEqualCanonicalizing([$first->id, $second->id])
+        ->and($added['reply'])->toBe('Both are in your basket now.')
+        ->and($added['message']->model_calls)->toBe(1)
+        ->and($added['follow_ups'])->toBe(['Show me more like these'])
+        ->and($again['reply'])->toBe('Both were already in your basket.')
+        ->and($again['message']->model_calls)->toBe(2)
+        ->and(collect($again['message']->tool_calls)->pluck('error')->all())->toBe([null, 'answered_before_results', null])
+        ->and($asked['reply'])->toBe('Here are 2 tarot decks.')
+        ->and($notAsked['message']->flags)->toBe(['reply_replaced_number']);
+});

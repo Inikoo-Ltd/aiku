@@ -24,6 +24,8 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
     use WithCustomerSalesChannelEditAuthorisation;
     use AsAction;
 
+    public string $jobQueue = 'shopify';
+
     /**
      * @return array{0: bool, 1: string}
      */

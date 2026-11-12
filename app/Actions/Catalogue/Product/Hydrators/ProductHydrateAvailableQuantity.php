@@ -27,6 +27,8 @@ class ProductHydrateAvailableQuantity implements ShouldBeUniqueUntilProcessing
     use AsUniqueUntilProcessingAction;
     use WithEnumStats;
 
+    public string $jobQueue = 'stock-control';
+
     /** Storefronts read a stock of 250 or more as "Unlimited quantity available". */
     public const int ON_DEMAND_QUANTITY = 250;
 

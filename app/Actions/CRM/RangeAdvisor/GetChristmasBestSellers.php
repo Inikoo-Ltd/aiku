@@ -43,11 +43,16 @@ class GetChristmasBestSellers
     private const int RANKED = 200;
 
     /**
+     * @param  ?array<int, int>  $onlyProductIds  keep only these products, e.g. the ones matching what the customer asked for
+     *
      * @return Collection<int, Product>
      */
-    public function handle(Shop $shop, ?Customer $customer = null, int $limit = 12): Collection
+    public function handle(Shop $shop, ?Customer $customer = null, int $limit = 12, ?array $onlyProductIds = null): Collection
     {
         $ranked = $this->rankedProductIds($shop);
+        if ($onlyProductIds !== null) {
+            $ranked = array_values(array_intersect($ranked, $onlyProductIds));
+        }
 
         if (!$ranked) {
             return collect();

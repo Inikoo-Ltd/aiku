@@ -39,6 +39,12 @@ V **Settings** výber **Who reviews** určuje ľudí, ktorí dostanú úlohu (v�
 
 Ak v **Who reviews** nikto nie je vybraný, úloha sa neodošle; karta na to upozorní.
 
+## Spätná väzba z výroby
+
+Na tablete každá práca na produkte vo vývoji ukazuje **Product in development: the steps and timings are still being worked out** a zoznam prác ju označí **In development**. Remeselník môže stlačiť **Send feedback**, pred začatím alebo počas práce, a zaškrtnúť, čo nie je v poriadku: **A step is missing** (chýba krok), **A step is not needed** (krok je zbytočný), **Steps in the wrong order** (kroky v zlom poradí), **A material or packaging is missing or wrong** (chýba alebo je zlý materiál či obal), s voliteľným komentárom.
+
+Každý produkt má jednu úlohu pre svoju spätnú väzbu, **Feedback from the floor on …**, pre prvú osobu vybranú v **Who reviews** (výrobného manažéra). Každá spätná väzba sa do nej pridá ako riadok a správa. Kým je táto úloha otvorená, produkt má na karte **Floor feedback open** a **Review** spätnú väzbu zobrazí a nedovolí uložiť jeho ciele: opravte recept a úlohu zatvorte. Produkt môžete aj tak ponechať vo vývoji. Pridanie alebo odobratie kroku v recepte spustí meranie času odznova, ako je uvedené vyššie.
+
 ## Rozhodnutie
 
 Stlačte **Review** pri produkte. Pri každom kroku uvidíte navrhnutý cieľ, započítané relácie a tie, ktoré sa vynechali (aj prečo), a na porovnanie ciele podobných krokov v továrni. Potom:

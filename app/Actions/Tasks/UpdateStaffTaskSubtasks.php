@@ -33,10 +33,11 @@ class UpdateStaffTaskSubtasks
             $lockedTask->update([
                 'data' => [
                     ...($lockedTask->data ?? []),
-                    'subtasks' => collect($subtasks)->map(fn (array $subtask) => [
+                    'subtasks' => collect($subtasks)->values()->map(fn (array $subtask, int $index) => [
+                        ...(trim($lockedTask->data['subtasks'][$index]['title'] ?? '') === trim($subtask['title']) ? $lockedTask->data['subtasks'][$index] : []),
                         'title'  => trim($subtask['title']),
                         'status' => $subtask['status'],
-                    ])->values()->all(),
+                    ])->all(),
                 ],
             ]);
 

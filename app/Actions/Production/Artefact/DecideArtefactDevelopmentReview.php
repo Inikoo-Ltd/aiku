@@ -99,6 +99,12 @@ class DecideArtefactDevelopmentReview extends OrgAction
             return;
         }
 
+        if ($feedbackTask = StoreArtefactDevelopmentFeedback::openTaskFor($this->artefact)) {
+            $validator->errors()->add('decision', __('Feedback from the floor on :code is still open (:reference): fix the recipe and close that task before saving the targets', ['code' => $this->artefact->code, 'reference' => $feedbackTask->reference]));
+
+            return;
+        }
+
         $stepIds = $this->artefact->recipeSteps()->pluck('id');
         foreach (array_keys($this->get('targets', [])) as $stepId) {
             if (!$stepIds->contains((int) $stepId)) {
