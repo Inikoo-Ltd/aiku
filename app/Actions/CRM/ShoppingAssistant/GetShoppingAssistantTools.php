@@ -17,6 +17,7 @@ use App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales;
 use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
@@ -49,7 +50,12 @@ use Throwable;
  *
  * Every product a tool returns is live, in stock, priced and visible to the customer. search_products
  * also names, apart and without ids, the products asked for that are out of stock, so the customer
- * hears "out of stock" rather than "not found"; they can never be presented.
+ * hears "out of stock" rather than "not found"; they can never be presented. A code typed for a product
+ * we no longer sell names that product apart, without an id, and the meaning search runs on its name
+ * instead of the code, so the alternatives are like the old product rather than a guess from the code.
+ *
+ * The best-seller tools take an optional kind of product ("soap"): only best sellers among the close
+ * matches of a meaning search for it are kept, so "your best-selling soaps" is answerable.
  * present_products is never executed: AskShoppingAssistant reads its arguments as the final answer.
  *
  * add_to_basket puts one of each product in the customer's basket, only products already shown in
@@ -89,6 +95,10 @@ class GetShoppingAssistantTools
 
     private const float PRICE_SORT_MARGIN = 0.12;
 
+    private const int KIND_POOL = 600;
+
+    private const float KIND_MARGIN = 0.06;
+
     private const array SEGMENT_REASON_CODES = [
         RebuildRangeAdvisorSales::LEVEL_TYPE_AREA    => 'similar_shops_area',
         RebuildRangeAdvisorSales::LEVEL_TYPE_COUNTRY => 'similar_shops_country',
@@ -112,6 +122,11 @@ class GetShoppingAssistantTools
             'description' => 'How many products to return, default '.self::DEFAULT_LIMIT.'.',
         ];
 
+        $kind = [
+            'type'        => 'string',
+            'description' => 'Only when the customer asks about one kind of product or one range ("soap", "tarot cards", "solid soap loaves"): in their words, to get only the best sellers of that kind.',
+        ];
+
         $productIds = fn (string $description) => [
             'type'        => 'array',
             'items'       => ['type' => 'integer'],
@@ -132,13 +147,13 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'best_sellers_for_similar_shops',
-                'Best sellers among the shops closest to this customer: the same kind of shop when we know theirs, otherwise every shop, nearby first. Each product\'s why says exactly which shops it is about. Use it when the customer asks what sells well, wants ideas, or is starting or refreshing their range. Returns products with id, name, family and why.',
-                ['limit' => $limit]
+                'Best sellers among the shops closest to this customer: the same kind of shop when we know theirs, otherwise every shop, nearby first. Each product\'s why says exactly which shops it is about. Use it when the customer asks what sells well, wants ideas, or is starting or refreshing their range; with kind when they ask for the best sellers of one kind of product. Returns the top of the ranking, best first, not a full list. Returns products with id, name, family and why.',
+                ['kind' => $kind, 'limit' => $limit]
             ),
             $this->tool(
                 'best_sellers_last_christmas',
-                'Products that sold mostly in the run-up to last Christmas (September to December) in this shop, whether or not their name says Christmas. These are our sales to retailers, not this customer\'s own sales: say they sold well last Christmas, never that they sold in the customer\'s shop. Use it whenever the customer asks about Christmas, festive or seasonal stock, Christmas gifts, a Christmas stall or fair, or what sells at Christmas. Returns products with id, name, family and why.',
-                ['limit' => $limit]
+                'Products that sold mostly in the run-up to last Christmas (September to December) in this shop, whether or not their name says Christmas. These are our sales to retailers, not this customer\'s own sales: say they sold well last Christmas, never that they sold in the customer\'s shop. Use it whenever the customer asks about Christmas, festive or seasonal stock, Christmas gifts, a Christmas stall or fair, or what sells at Christmas; with kind when they ask about one kind of product. Returns the top of the ranking, best first, not a full list. Returns products with id, name, family and why.',
+                ['kind' => $kind, 'limit' => $limit]
             ),
             $this->tool(
                 'missing_from_range',
@@ -190,7 +205,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 self::PRESENT_PRODUCTS,
-                'Give your final answer with products. Use only ids returned by the other tools. Call it once, as your last step, whenever you show products.',
+                'Give your final answer. Call it once, as your last step, every time: also when you show no products, ask a question or decline (leave must_haves and add_ons empty), so the customer always gets follow_ups to tap. Use only ids returned by the other tools.',
                 [
                     'reply'      => ['type' => 'string', 'description' => 'Two or three short sentences for the customer, with no ids, prices, discounts, stock or numbers.'],
                     'must_haves' => $productIds('Ids of products that fit the request or sell well for similar shops, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
@@ -199,7 +214,7 @@ class GetShoppingAssistantTools
                         'type'        => 'array',
                         'items'       => ['type' => 'string'],
                         'maxItems'    => self::MAX_FOLLOW_UPS,
-                        'description' => 'At most '.self::MAX_FOLLOW_UPS.' short questions the customer could ask next.',
+                        'description' => 'Two or three short questions the customer could ask next, about products you can find for them. Always give them, also when you decline or show nothing.',
                     ],
                 ],
                 ['reply']
@@ -225,8 +240,8 @@ class GetShoppingAssistantTools
             return match ($name) {
                 'search_products'                => $this->searchProducts($customer, $arguments, $conversation->language_code),
                 'best_sellers_for_similar_shops' => $this->bestSellers($customer, $arguments, $conversation->language_code),
+                'best_sellers_last_christmas'    => $this->christmasBestSellers($customer, $arguments, $conversation->language_code),
                 'missing_from_range'             => $this->missingFromRange($customer, $arguments, $conversation->language_code),
-                'best_sellers_last_christmas'    => $this->productsResult($customer, GetChristmasBestSellers::run($customer->shop, $customer, $this->limit($arguments)), fn () => 'sold_last_christmas', $conversation->language_code),
                 'products_they_stopped_ordering' => $this->stoppedOrdering($customer, $arguments, $conversation->language_code),
                 'save_shop_type'                 => $this->saveShopType($conversation, $customer, $arguments),
                 'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments, $foundProductIds),
@@ -277,9 +292,10 @@ class GetShoppingAssistantTools
             return $this->error('query must be a non-empty string.');
         }
 
-        $limit     = $this->limit($arguments);
-        $inStock   = fn (Product $product) => $product->available_quantity > 0;
-        $byCode    = $query === '' ? collect() : $this->productsByCode($customer, $query);
+        $limit        = $this->limit($arguments);
+        $inStock      = fn (Product $product) => $product->available_quantity > 0;
+        $byCode       = $query === '' ? collect() : $this->productsByCode($customer, $query);
+        $discontinued = $byCode->isEmpty() && $query !== '' ? $this->discontinuedByCode($customer, $query) : collect();
         $byFamily  = $query === '' ? ['products' => collect(), 'exact' => false, 'families' => []] : $this->productsByFamilyCode($customer, $query, $limit);
         $codeIds   = $byCode->pluck('id')->flip();
         $familyIds = $byFamily['exact'] ? $byFamily['products']->pluck('id')->flip() : collect();
@@ -298,7 +314,7 @@ class GetShoppingAssistantTools
             return $result;
         }
 
-        $nearest = SearchCatalogueByMeaning::run($customer->shop, $query, $customer, $limit + self::MAX_OUT_OF_STOCK, false);
+        $nearest = SearchCatalogueByMeaning::run($customer->shop, $discontinued->isNotEmpty() ? $discontinued->first()->name : $query, $customer, $limit + self::MAX_OUT_OF_STOCK, false);
 
         $outOfStock = (new EloquentCollection($byCode->concat($nearest->take(self::MAX_OUT_OF_STOCK))->reject($inStock)->unique('id')->take(self::MAX_OUT_OF_STOCK)->all()))->loadMissing('family');
 
@@ -313,9 +329,92 @@ class GetShoppingAssistantTools
             $result['content']['matched_families'] = $byFamily['families'];
         }
         if ($outOfStock->isNotEmpty()) {
-            $result['names']                   = $outOfStock->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all();
             $result['content']['out_of_stock'] = $outOfStock->map(fn (Product $product) => array_filter(['name' => $product->name, 'family' => $product->family?->name, 'exact_code_match' => isset($codeIds[$product->id])]))->values()->all();
         }
+        if ($discontinued->isNotEmpty()) {
+            $result['content']['discontinued'] = $discontinued->map(fn (Product $product) => array_filter(['name' => $product->name, 'family' => $product->family?->name]))->values()->all();
+            $result['content']['note']         = 'The code the customer typed is a product we no longer sell, listed under discontinued. Say by its name that it has been discontinued, never guess what else the code could be, and present the products returned, which are the closest to it.';
+        }
+        $named = $outOfStock->concat($discontinued);
+        if ($named->isNotEmpty()) {
+            $result['names'] = $named->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all();
+        }
+
+        return $result;
+    }
+
+    /**
+     * A product of this shop whose code the customer typed and that has been discontinued, when no
+     * other product of the shop still uses that code. One made for another customer is never named.
+     *
+     * @return EloquentCollection<int, Product>
+     */
+    private function discontinuedByCode(Customer $customer, string $query): EloquentCollection
+    {
+        $candidates = $this->codeCandidates($query)->filter(fn (string $candidate) => preg_match('/\d/', $candidate) && preg_match('/[a-z]/', $candidate))->values();
+
+        if ($candidates->isEmpty()) {
+            return new EloquentCollection();
+        }
+
+        return Product::query()
+            ->where('products.shop_id', $customer->shop_id)
+            ->where('products.state', ProductStateEnum::DISCONTINUED->value)
+            ->where('products.is_minion_variant', false)
+            ->whereIn(DB::raw("lower(regexp_replace(products.code, '[^A-Za-z0-9]', '', 'g'))"), $candidates->all())
+            ->whereNotExists(fn ($query) => $query->from('products as live')
+                ->where('live.shop_id', $customer->shop_id)
+                ->where('live.state', '!=', ProductStateEnum::DISCONTINUED->value)
+                ->whereNull('live.deleted_at')
+                ->whereRaw("lower(regexp_replace(live.code, '[^A-Za-z0-9]', '', 'g')) = lower(regexp_replace(products.code, '[^A-Za-z0-9]', '', 'g'))"))
+            ->visibleToCustomer($customer->id)
+            ->with('family')
+            ->limit(self::MAX_OUT_OF_STOCK)
+            ->get();
+    }
+
+    /**
+     * Ids of the products of a kind ("soap"), for the best-seller tools: those within KIND_MARGIN of the
+     * closest match. On the UK catalogue (12 Nov 2026) that kept 181 for soap, 130 for candles, 8 for
+     * tarot cards, none reaching the pool; the wider price-sort margin let in room sprays for soap.
+     * Null when the search gave nothing at all (the embedding call failed), so the tool reports an
+     * error instead of telling the customer that none of that kind sells.
+     *
+     * @return ?array<int, int>
+     */
+    private function productIdsOfKind(Customer $customer, string $kind): ?array
+    {
+        $nearest = SearchCatalogueByMeaning::run($customer->shop, $kind, $customer, self::KIND_POOL);
+        if ($nearest->isEmpty()) {
+            return null;
+        }
+        $best = (float) $nearest->min('distance');
+
+        return $nearest->filter(fn (Product $product) => (float) $product->distance <= $best + self::KIND_MARGIN)->pluck('id')->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     */
+    private function kindOf(array $arguments): string
+    {
+        return is_string($arguments['kind'] ?? null) ? trim($arguments['kind']) : '';
+    }
+
+    /**
+     * @param  array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}  $result
+     *
+     * @return array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}
+     */
+    private function withKindNote(array $result, string $kind): array
+    {
+        if ($kind === '') {
+            return $result;
+        }
+
+        $result['content']['note'] = $result['products']
+            ? 'Only the best sellers matching "'.$kind.'", best first. This is the top of the ranking, not every product of that kind: never say you checked a full list.'
+            : 'None of the products matching "'.$kind.'" is among the best sellers. Say so plainly, and offer to show the matching products, which you find with search_products.';
 
         return $result;
     }
@@ -430,13 +529,41 @@ class GetShoppingAssistantTools
      */
     private function bestSellers(Customer $customer, array $arguments, string $locale): array
     {
-        $products = GetSegmentBestSellers::run($customer->shop, $customer->shop_type?->value, data_get($customer->location, 0), [
+        $kind     = $this->kindOf($arguments);
+        $options  = [
             'customer' => $customer,
             'area'     => RebuildRangeAdvisorSales::areaOf($customer),
             'limit'    => $this->limit($arguments),
-        ])['items'];
+        ];
+        if ($kind !== '') {
+            $options['product_ids'] = $this->productIdsOfKind($customer, $kind);
+            if ($options['product_ids'] === null) {
+                return $this->error('The search for "'.$kind.'" failed. Use search_products instead.');
+            }
+        }
 
-        return $this->productsResult($customer, $products, $this->segmentReasonCode(...), $locale);
+        $products = $kind !== '' && !$options['product_ids']
+            ? collect()
+            : GetSegmentBestSellers::run($customer->shop, $customer->shop_type?->value, data_get($customer->location, 0), $options)['items'];
+
+        return $this->withKindNote($this->productsResult($customer, $products, $this->segmentReasonCode(...), $locale), $kind);
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}
+     */
+    private function christmasBestSellers(Customer $customer, array $arguments, string $locale): array
+    {
+        $kind = $this->kindOf($arguments);
+        $ids  = $kind !== '' ? $this->productIdsOfKind($customer, $kind) : null;
+        if ($kind !== '' && $ids === null) {
+            return $this->error('The search for "'.$kind.'" failed. Use search_products instead.');
+        }
+        $products = GetChristmasBestSellers::run($customer->shop, $customer, $this->limit($arguments), $ids);
+
+        return $this->withKindNote($this->productsResult($customer, $products, fn () => 'sold_last_christmas', $locale), $kind);
     }
 
     /**
