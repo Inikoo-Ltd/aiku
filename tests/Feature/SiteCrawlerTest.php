@@ -16,6 +16,7 @@ use App\Models\Web\Crawl;
 use App\Services\SiteAudit\AuditedHtml;
 use App\Services\SiteAudit\CustomExtraction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 use function Pest\Laravel\actingAs;
 
@@ -227,6 +228,27 @@ test('a link repeated on a page is stored once and a page keeps at most five hun
 
     expect($links)->toHaveCount(500)
         ->and($links->where('kind', 'canonical'))->toHaveCount(1);
+});
+
+test('an external link whose address cannot be a url is recorded as an error instead of ending the audit', function () {
+    Http::fake(['https://partner.test/*' => Http::response('', 200)]);
+
+    $crawl  = makeAuditCrawl($this->website, true);
+    $action = crawlerForLinks($crawl);
+    $check  = new ReflectionMethod(AuditWebsite::class, 'checkResources');
+
+    $checked = $check->invoke($action, [
+        ['url' => 'https://partner.test/ok', 'kind' => 'link'],
+        ['url' => 'https://almofada interna 60x60 cm 700gm', 'kind' => 'link'],
+    ]);
+
+    $rows = DB::table('crawl_resources')->where('crawl_id', $crawl->id)->get()->keyBy('url');
+
+    expect($checked)->toBe(2)
+        ->and($rows['https://partner.test/ok']->status_code)->toBe(200)
+        ->and($rows['https://almofada interna 60x60 cm 700gm']->status_code)->toBeNull()
+        ->and($rows['https://almofada interna 60x60 cm 700gm']->fetch_error)->toContain('Invalid host');
+    Http::assertSentCount(1);
 });
 
 test('the site crawler refuses a website that is not live', function () {
