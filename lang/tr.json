@@ -16352,5 +16352,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece :code fazla, onaylansın mı?",
     "makes :count :unit": ":count :unit yapar",
     "Pack name": "Paket adı",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Bu ailenin paketle sayılan adımlarında bir paketin üretim alanındaki adı (örn. kutu, tepsi): ustalar 3'lü 40 kutu (120 poşet) görür. Bir reçete adımı kendi adını belirleyebilir; boşsa paket gösterilir."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Bu ailenin paketle sayılan adımlarında bir paketin üretim alanındaki adı (örn. kutu, tepsi): ustalar 3'lü 40 kutu (120 poşet) görür. Bir reçete adımı kendi adını belirleyebilir; boşsa paket gösterilir.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces yapıldı = :size'lik :packs paket + :loose tane açık. :next paket için :more tane daha yapın ya da :whole'de bitirip :loose açık bırakın?",
+    ":count loose pieces left, not in a full pack": "Tam pakete girmeyen :count açık parça kaldı",
+    "Back, make the pack up": "Geri, paketi tamamla",
+    "Yes, close with loose pieces": "Evet, açık parçalarla kapat"
 }

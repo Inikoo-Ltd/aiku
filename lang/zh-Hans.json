@@ -25767,5 +25767,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece :code 超额，批准吗？",
     "makes :count :unit": "制作 :count :unit",
     "Pack name": "包装名称",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "该系列中按包计数的步骤在生产车间对一包的称呼（如：盒、托盘）：工匠会看到 40 盒（每盒 3）（120 袋）。配方步骤可以设置自己的名称；留空则显示包。"
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "该系列中按包计数的步骤在生产车间对一包的称呼（如：盒、托盘）：工匠会看到 40 盒（每盒 3）（120 袋）。配方步骤可以设置自己的名称；留空则显示包。",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": "已做 :pieces 个 = :packs 包（每包 :size 个）+ 散件 :loose 个。再做 :more 个凑成 :next 包，还是在 :whole 个结束并留下 :loose 个散件？",
+    ":count loose pieces left, not in a full pack": "剩余 :count 个散件，不足一整包",
+    "Back, make the pack up": "返回，补满这一包",
+    "Yes, close with loose pieces": "是，带散件关闭"
 }

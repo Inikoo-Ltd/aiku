@@ -9030,5 +9030,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece od :code viška, odobriti?",
     "makes :count :unit": "radi :count :unit",
     "Pack name": "Naziv pakiranja",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Kako se jedno pakiranje zove u proizvodnji za korake ove obitelji koji se broje u pakiranjima (npr. kutije, pladnjevi): obrtnici vide 40 kutija po 3 (120 vrećica). Korak recepta može imati vlastiti; prazno prikazuje pakiranja."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Kako se jedno pakiranje zove u proizvodnji za korake ove obitelji koji se broje u pakiranjima (npr. kutije, pladnjevi): obrtnici vide 40 kutija po 3 (120 vrećica). Korak recepta može imati vlastiti; prazno prikazuje pakiranja.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces napravljeno = :packs pakiranja po :size + :loose pojedinačnih. Napravite još :more za :next pakiranja ili završite na :whole i ostavite :loose pojedinačnih?",
+    ":count loose pieces left, not in a full pack": "Ostalo je :count pojedinačnih komada izvan punog pakiranja",
+    "Back, make the pack up": "Natrag, dopuni pakiranje",
+    "Yes, close with loose pieces": "Da, zatvori s pojedinačnim komadima"
 }

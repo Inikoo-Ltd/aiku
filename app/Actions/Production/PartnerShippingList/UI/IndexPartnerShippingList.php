@@ -26,6 +26,7 @@ use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\Production\JobOrderItem;
 use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
 use App\Models\Production\Production;
@@ -195,8 +196,8 @@ class IndexPartnerShippingList extends OrgAction
                 'partner_shopping_list_items.created_at',
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',
-                'artefacts.recommended_batch_size as batch_size',
                 DB::raw(Artefact::UNIT_NAME_SQL.' as unit_name'),
+                'artefacts.recommended_batch_size as batch_size',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
@@ -347,8 +348,8 @@ class IndexPartnerShippingList extends OrgAction
                 'job_orders.created_at',
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',
-                'artefacts.recommended_batch_size as batch_size',
                 DB::raw(Artefact::UNIT_NAME_SQL.' as unit_name'),
+                'artefacts.recommended_batch_size as batch_size',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
@@ -524,6 +525,7 @@ class IndexPartnerShippingList extends OrgAction
         });
 
         $this->hitchhikerCount = $byLane->get('hitchhiking', collect())->count();
+        $this->attachLoosePieces($byLane->only(['producing', 'done'])->flatten(1));
 
         $preparingItems = $byLane->get('preparing', collect());
         $backlogItems   = $byLane->get('backlog', collect());
@@ -552,6 +554,29 @@ class IndexPartnerShippingList extends OrgAction
             ->map(fn ($label, $key) => ['label' => $label, 'items' => $byLane->get($key, collect())->values()->all()])
             ->values()
             ->all();
+    }
+
+    /**
+     * Loose pieces a job line holds past its last full pack (JobOrderItem::loosePieces), so the
+     * supervisor sees them on the card before the job is received (HELP-4673). Only the first card of
+     * a job order and stock carries them, so a job with several lines does not count them twice.
+     */
+    private function attachLoosePieces(Collection $jobItems): void
+    {
+        $jobItems = $jobItems->filter(fn ($item) => $item->job_order_id && $item->artefact_id);
+        if ($jobItems->isEmpty()) {
+            return;
+        }
+
+        $loose = JobOrderItem::whereIn('job_order_id', $jobItems->pluck('job_order_id')->unique())
+            ->with(['jobOrder', 'artefact.orgStock', 'tasks.manufactureTask', 'tasks.recipeStep'])
+            ->get()
+            ->groupBy(fn (JobOrderItem $line) => $line->job_order_id.'-'.$line->artefact_id)
+            ->map(fn (Collection $lines) => $lines->sum(fn (JobOrderItem $line) => $line->loosePieces()));
+
+        $jobItems->each(function ($item) use ($loose) {
+            $item->loose_pieces = $loose->pull($item->job_order_id.'-'.$item->artefact_id, 0);
+        });
     }
 
     /**

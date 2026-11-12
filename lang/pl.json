@@ -25931,5 +25931,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece z :code ponad plan, zatwierdzić?",
     "makes :count :unit": "robi :count :unit",
     "Pack name": "Nazwa opakowania",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Jak nazywa się jedno opakowanie na hali produkcyjnej dla kroków tej rodziny liczonych w opakowaniach (np. pudełka, tacki): rzemieślnicy widzą 40 pudełek po 3 (120 torebek). Krok receptury może mieć własną; puste pokazuje opakowania."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Jak nazywa się jedno opakowanie na hali produkcyjnej dla kroków tej rodziny liczonych w opakowaniach (np. pudełka, tacki): rzemieślnicy widzą 40 pudełek po 3 (120 torebek). Krok receptury może mieć własną; puste pokazuje opakowania.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces zrobione = :packs opakowań po :size + :loose luzem. Zrobić jeszcze :more na :next opakowań, czy zakończyć na :whole i zostawić :loose luzem?",
+    ":count loose pieces left, not in a full pack": "Zostało :count sztuk luzem, poza pełnym opakowaniem",
+    "Back, make the pack up": "Wróć, uzupełnij opakowanie",
+    "Yes, close with loose pieces": "Tak, zamknij ze sztukami luzem"
 }

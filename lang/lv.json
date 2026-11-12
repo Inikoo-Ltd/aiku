@@ -1991,5 +1991,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece no :code virs plāna, apstiprināt?",
     "makes :count :unit": "izgatavo :count :unit",
     "Pack name": "Iepakojuma nosaukums",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Kā viens iepakojums tiek saukts ražošanā šīs saimes soļiem, ko skaita iepakojumos (piem. kastes, paplātes): amatnieki redz 40 kastes pa 3 (120 maisiņi). Receptes solim var būt savs; tukšs rāda iepakojumus."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Kā viens iepakojums tiek saukts ražošanā šīs saimes soļiem, ko skaita iepakojumos (piem. kastes, paplātes): amatnieki redz 40 kastes pa 3 (120 maisiņi). Receptes solim var būt savs; tukšs rāda iepakojumus.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces izgatavoti = :packs iepakojumi pa :size + :loose atsevišķi. Izgatavot vēl :more, lai būtu :next iepakojumi, vai pabeigt pie :whole un atstāt :loose atsevišķi?",
+    ":count loose pieces left, not in a full pack": "Palikuši :count atsevišķi gabali, nav pilnā iepakojumā",
+    "Back, make the pack up": "Atpakaļ, papildināt iepakojumu",
+    "Yes, close with loose pieces": "Jā, slēgt ar atsevišķiem gabaliem"
 }

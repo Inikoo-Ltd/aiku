@@ -26662,5 +26662,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece of :code extra, approve?",
     "makes :count :unit": "makes :count :unit",
     "Pack name": "Pack name",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?",
+    ":count loose pieces left, not in a full pack": ":count loose pieces left, not in a full pack",
+    "Back, make the pack up": "Back, make the pack up",
+    "Yes, close with loose pieces": "Yes, close with loose pieces"
 }

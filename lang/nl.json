@@ -9831,5 +9831,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece van :code extra, goedkeuren?",
     "makes :count :unit": "maakt :count :unit",
     "Pack name": "Naam van de verpakking",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Hoe één verpakking op de productievloer heet voor stappen van deze familie die in verpakkingen worden geteld (bijv. dozen, trays): ambachtslieden zien 40 dozen van 3 (120 zakjes). Een receptstap kan een eigen naam hebben; leeg toont verpakkingen."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Hoe één verpakking op de productievloer heet voor stappen van deze familie die in verpakkingen worden geteld (bijv. dozen, trays): ambachtslieden zien 40 dozen van 3 (120 zakjes). Een receptstap kan een eigen naam hebben; leeg toont verpakkingen.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces gemaakt = :packs verpakkingen van :size + :loose los. Nog :more maken voor :next verpakkingen, of afronden op :whole en :loose los laten?",
+    ":count loose pieces left, not in a full pack": "Nog :count losse stuks, niet in een volle verpakking",
+    "Back, make the pack up": "Terug, verpakking aanvullen",
+    "Yes, close with loose pieces": "Ja, afsluiten met losse stuks"
 }

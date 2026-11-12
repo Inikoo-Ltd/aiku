@@ -7099,5 +7099,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece з :code понад план, затвердити?",
     "makes :count :unit": "робить :count :unit",
     "Pack name": "Назва упаковки",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Як називається одна упаковка на виробництві для кроків цієї родини, що рахуються в упаковках (напр. коробки, лотки): майстри бачать 40 коробок по 3 (120 пакетів). Крок рецепта може мати власну; порожнє показує упаковки."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Як називається одна упаковка на виробництві для кроків цієї родини, що рахуються в упаковках (напр. коробки, лотки): майстри бачать 40 коробок по 3 (120 пакетів). Крок рецепта може мати власну; порожнє показує упаковки.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces зроблено = :packs упаковок по :size + :loose поштучно. Зробити ще :more на :next упаковок чи завершити на :whole і залишити :loose поштучно?",
+    ":count loose pieces left, not in a full pack": "Залишилось :count штук поза повною упаковкою",
+    "Back, make the pack up": "Назад, доповнити упаковку",
+    "Yes, close with loose pieces": "Так, закрити зі штуками поза упаковкою"
 }

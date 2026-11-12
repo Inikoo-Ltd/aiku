@@ -1702,3 +1702,78 @@ test('INI-220 the floor runs the same number of queries however many tasks are o
     $repeated = $after->countBy()->filter(fn (int $times, string $sql) => $times > ($before->countBy()[$sql] ?? 0))->map(fn (int $times, string $sql) => $times.' vs '.($before->countBy()[$sql] ?? 0));
     expect($after->count())->toBe($before->count(), $repeated->map(fn ($n, $sql) => $n.'  '.substr($sql, 0, 300))->implode("\n"));
 });
+
+test('a job finished short is closed in whole packs and the floor is warned of the loose pieces it leaves, while a carried job keeps its part pack for the next part', function () {
+    $packing = stepTestManufactureTask($this->production, 'LPK', 'Packing');
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $packing->id               => ['position' => 2, 'units_per_artefact' => 0.0625],
+    ]);
+    $orgStockId = $this->artefact->org_stock_id;
+    if (!$this->artefact->orgStock) {
+        $orgStock = createOrgStocks($this->organisation, [createStocks($this->group)[0]])[0];
+        Artefact::where('org_stock_id', $orgStock->id)->update(['org_stock_id' => null]);
+        $this->artefact->update(['org_stock_id' => $orgStock->id]);
+    }
+    $packedIn = $this->artefact->refresh()->orgStock->packed_in;
+    $this->artefact->orgStock->update(['packed_in' => 16]);
+    $user = $this->guest->getUser();
+
+    $newLine = function () {
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 352]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        return $item;
+    };
+
+    $item   = $newLine();
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    $session = StartManufactureTaskSession::make()->action($user, $making);
+    expect(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 309, 'outcome' => 'complete']))
+        ->toThrow(ValidationException::class, '309 made = 19 packs of 16 + 5 loose. Make 11 more for 20 packs, or finish at 304 and leave 5 loose?');
+
+    CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 309, 'outcome' => 'complete', 'loose_confirmed' => true]);
+    $item->refresh();
+    expect($item->quantity)->toBe(304)
+        ->and((float) $item->tasks()->where('manufacture_task_id', $packing->id)->value('quantity_required'))->toBe(19.0)
+        ->and($making->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and($item->loosePieces())->toBe(5);
+
+    actingAs($user);
+    get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $item->jobOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('items.0.loose_pieces', 5)->etc());
+    $card = collect(get(route('grp.org.productions.show.to_produce.index', [$this->organisation->slug, $this->production->slug]))->assertOk()->viewData('page')['props']['groups'])
+        ->flatMap(fn ($lane) => $lane['items'])
+        ->first(fn ($boardItem) => data_get($boardItem, 'job_order_id') === $item->job_order_id);
+    expect(data_get($card, 'loose_pieces'))->toBe(5);
+
+    \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($session->refresh(), ['quantity_made' => 304], 'Supervisor');
+    expect($item->refresh()->loosePieces())->toBe(0);
+
+    $item   = $newLine();
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making), ['quantity_made' => 309, 'outcome' => 'carry_over']);
+    $item->refresh();
+    $carriedItem = JobOrder::find($item->data['carried_to'])->jobOrderItems()->first();
+    expect($item->quantity)->toBe(309)
+        ->and($item->loosePieces())->toBe(0)
+        ->and($carriedItem->quantity)->toBe(43);
+
+    $item = $newLine();
+    StoreJobOrderItem::make()->action($item->jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 32]);
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making), ['quantity_made' => 309, 'outcome' => 'complete']);
+    expect($item->refresh()->quantity)->toBe(309)
+        ->and($item->sharesPacks())->toBeTrue()
+        ->and($item->loosePieces())->toBe(0);
+
+    $item   = $newLine();
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making), ['quantity_made' => 10, 'outcome' => 'complete']);
+    expect($item->refresh()->quantity)->toBe(10);
+
+    $this->artefact->orgStock->update(['packed_in' => $packedIn]);
+    $this->artefact->update(['org_stock_id' => $orgStockId]);
+    $this->artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+});

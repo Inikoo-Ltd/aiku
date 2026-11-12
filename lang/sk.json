@@ -26722,5 +26722,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece z :code navyše, schváliť?",
     "makes :count :unit": "urobí :count :unit",
     "Pack name": "Názov balenia",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Ako sa jedno balenie volá vo výrobe pre kroky tejto rodiny počítané v baleniach (napr. krabice, tácky): remeselníci vidia 40 krabíc po 3 (120 vreciek). Krok receptu môže mať vlastný; prázdne zobrazí balenia."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Ako sa jedno balenie volá vo výrobe pre kroky tejto rodiny počítané v baleniach (napr. krabice, tácky): remeselníci vidia 40 krabíc po 3 (120 vreciek). Krok receptu môže mať vlastný; prázdne zobrazí balenia.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces vyrobených = :packs balení po :size + :loose voľných. Vyrobiť ešte :more na :next balení, alebo dokončiť na :whole a nechať :loose voľných?",
+    ":count loose pieces left, not in a full pack": "Zostáva :count voľných kusov mimo plného balenia",
+    "Back, make the pack up": "Späť, doplniť balenie",
+    "Yes, close with loose pieces": "Áno, uzavrieť s voľnými kusmi"
 }

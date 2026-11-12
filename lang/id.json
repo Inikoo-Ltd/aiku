@@ -23457,5 +23457,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece :code lebih, setujui?",
     "makes :count :unit": "membuat :count :unit",
     "Pack name": "Nama kemasan",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Sebutan satu kemasan di lantai produksi untuk langkah keluarga ini yang dihitung per kemasan (mis. kotak, nampan): perajin melihat 40 kotak isi 3 (120 kantong). Langkah resep bisa punya sebutan sendiri; kosong menampilkan kemasan."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Sebutan satu kemasan di lantai produksi untuk langkah keluarga ini yang dihitung per kemasan (mis. kotak, nampan): perajin melihat 40 kotak isi 3 (120 kantong). Langkah resep bisa punya sebutan sendiri; kosong menampilkan kemasan.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces dibuat = :packs pak isi :size + :loose lepas. Buat :more lagi untuk :next pak, atau selesaikan di :whole dan biarkan :loose lepas?",
+    ":count loose pieces left, not in a full pack": "Tersisa :count buah lepas, tidak dalam pak penuh",
+    "Back, make the pack up": "Kembali, lengkapi pak",
+    "Yes, close with loose pieces": "Ya, tutup dengan buah lepas"
 }

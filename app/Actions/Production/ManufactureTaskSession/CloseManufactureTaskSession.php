@@ -124,6 +124,10 @@ class CloseManufactureTaskSession extends OrgAction
                 $authorisedBy = $this->overproductionManager($session, $modelData['manager_code']);
             }
 
+            if (($modelData['outcome'] ?? null) === 'complete' && empty($modelData['loose_confirmed']) && !$session->is_combined && !$mixPoolKey && !$isRecordedInKg) {
+                $this->refuseLoosePieces($task, (float) $modelData['quantity_made']);
+            }
+
             if ($mixPoolKey) {
                 $session->fill([
                     'quantity_made' => $modelData['quantity_made'],
@@ -256,6 +260,37 @@ class CloseManufactureTaskSession extends OrgAction
                 'reference' => $jobOrder->reference,
                 'others'    => $otherParts->isNotEmpty() ? $otherParts->join(', ') : __('the other part of this job'),
             ]),
+        ]);
+    }
+
+    /**
+     * A job finished short is closed in whole packs (SettleShortJobOrderItemTask::wholePacks), so the
+     * artisan is told first how many pieces that leaves loose and can make the pack up instead.
+     * Saving again with loose_confirmed closes it (HELP-4673). A line that shares packs with other
+     * lines of its order is closed as made (JobOrderItem::sharesPacks).
+     */
+    private function refuseLoosePieces(JobOrderItemTask $task, float $quantityMade): void
+    {
+        $item     = $task->jobOrderItem;
+        $packedIn = $item->artefact->packedIn();
+        $pieces   = (int) $task->artefactsIn((float) $task->quantity_made + $quantityMade);
+        $loose    = $pieces % $packedIn;
+        if ($packedIn < 2 || $pieces < $packedIn || !$loose || $pieces >= $item->quantity || $item->sharesPacks()) {
+            return;
+        }
+
+        $replacements = [
+            'pieces' => $pieces,
+            'packs'  => intdiv($pieces, $packedIn),
+            'size'   => $packedIn,
+            'loose'  => $loose,
+            'more'   => $packedIn - $loose,
+            'next'   => intdiv($pieces, $packedIn) + 1,
+            'whole'  => $pieces - $loose,
+        ];
+
+        throw ValidationException::withMessages([
+            'loose' => __(':pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?', $replacements),
         ]);
     }
 
@@ -627,6 +662,7 @@ class CloseManufactureTaskSession extends OrgAction
             'quantity_made'          => [Rule::requiredIf(fn () => !$this->manufactureTaskSession->isNonProductive()), 'nullable', 'numeric', 'min:0'],
             'quantity_rejected'      => ['sometimes', 'numeric', 'min:0'],
             'outcome'                => ['sometimes', 'nullable', Rule::in(['complete', 'carry_over'])],
+            'loose_confirmed'        => ['sometimes', 'boolean'],
             'manager_code'           => ['sometimes', 'nullable', 'string', 'max:64'],
             'manager_method'         => ['sometimes', 'nullable', Rule::in(['qr', 'pin'])],
             'finished_before_shift_end' => ['sometimes', 'boolean'],

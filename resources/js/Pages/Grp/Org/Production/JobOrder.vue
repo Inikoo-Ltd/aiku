@@ -106,6 +106,7 @@ interface Item {
     artefact_name: string
     quantity: number
     demand_skos: number | null
+    loose_pieces: number
     suggested_quantity: number | null
     update_route: null | { name: string, parameters: object }
     split_route: null | { name: string, parameters: object }
@@ -640,6 +641,10 @@ function receiveIntoStock() {
                         <a :href="jobOrderUrl(carried.slug)" class="font-medium text-gray-700 underline">{{ carried.reference }}</a>
                     </span>
                 </template>
+            </div>
+
+            <div v-if="item.loose_pieces" class="mt-2 text-sm text-amber-600">
+                {{ ctrans(':count loose pieces left, not in a full pack', { count: item.loose_pieces }) }}
             </div>
 
             <div v-if="item.update_route && item.suggested_quantity && item.suggested_quantity !== item.quantity" class="mt-2 text-sm text-amber-600">

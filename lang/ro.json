@@ -25886,5 +25886,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece de :code în plus, aprobi?",
     "makes :count :unit": "face :count :unit",
     "Pack name": "Numele pachetului",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Cum se numește un pachet în secția de producție pentru pașii acestei familii numărați în pachete (ex. cutii, tăvi): artizanii văd 40 cutii a câte 3 (120 pungi). Un pas de rețetă își poate seta propriul nume; gol afișează pachete."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Cum se numește un pachet în secția de producție pentru pașii acestei familii numărați în pachete (ex. cutii, tăvi): artizanii văd 40 cutii a câte 3 (120 pungi). Un pas de rețetă își poate seta propriul nume; gol afișează pachete.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces făcute = :packs pachete a câte :size + :loose la bucată. Mai faceți :more pentru :next pachete sau terminați la :whole și lăsați :loose la bucată?",
+    ":count loose pieces left, not in a full pack": "Au rămas :count bucăți libere, care nu formează un pachet complet",
+    "Back, make the pack up": "Înapoi, completez pachetul",
+    "Yes, close with loose pieces": "Da, închide cu bucăți libere"
 }

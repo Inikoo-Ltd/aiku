@@ -9033,5 +9033,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece ebből: :code többlet, jóváhagyod?",
     "makes :count :unit": "készít :count :unit",
     "Pack name": "Csomag neve",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Hogyan hívják egy csomagot a gyártósoron e család csomagokban számolt lépéseinél (pl. doboz, tálca): a kézművesek 40 doboz (3 db-os) (120 zacskó) látnak. Egy receptlépés sajátot is megadhat; üresen csomag."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Hogyan hívják egy csomagot a gyártósoron e család csomagokban számolt lépéseinél (pl. doboz, tálca): a kézművesek 40 doboz (3 db-os) (120 zacskó) látnak. Egy receptlépés sajátot is megadhat; üresen csomag.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces kész = :packs csomag :size darabos + :loose különálló. Készítsen még :more darabot :next csomaghoz, vagy fejezze be :whole darabnál, és :loose különálló marad?",
+    ":count loose pieces left, not in a full pack": ":count különálló darab maradt, nincs teljes csomagban",
+    "Back, make the pack up": "Vissza, kiegészítem a csomagot",
+    "Yes, close with loose pieces": "Igen, lezárás különálló darabokkal"
 }

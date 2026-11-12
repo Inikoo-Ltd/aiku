@@ -1576,5 +1576,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :code の :piece :pieces 超過、承認しますか？",
     "makes :count :unit": ":count :unit を作る",
     "Pack name": "パック名",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "このファミリーのパック単位で数える工程で、製造現場で1パックを何と呼ぶか（例：箱、トレー）：職人には 40 箱（3入り）（120 袋）と表示されます。レシピの工程ごとに設定することもできます。空欄の場合はパック。"
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "このファミリーのパック単位で数える工程で、製造現場で1パックを何と呼ぶか（例：箱、トレー）：職人には 40 箱（3入り）（120 袋）と表示されます。レシピの工程ごとに設定することもできます。空欄の場合はパック。",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces 個製造 = :size 個入り :packs パック + バラ :loose 個。あと :more 個作って :next パックにしますか、それとも :whole 個で終了してバラ :loose 個を残しますか？",
+    ":count loose pieces left, not in a full pack": "バラが :count 個残っています（フルパックになっていません）",
+    "Back, make the pack up": "戻ってパックを満たす",
+    "Yes, close with loose pieces": "はい、バラのまま締める"
 }

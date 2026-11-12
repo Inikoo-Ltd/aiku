@@ -9424,5 +9424,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece от :code в повече, одобряваш ли?",
     "makes :count :unit": "прави :count :unit",
     "Pack name": "Име на опаковката",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Как се нарича една опаковка в производството за стъпките на това семейство, броени в опаковки (напр. кутии, табли): майсторите виждат 40 кутии по 3 (120 плика). Стъпка от рецептата може да има свое; празно показва опаковки."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Как се нарича една опаковка в производството за стъпките на това семейство, броени в опаковки (напр. кутии, табли): майсторите виждат 40 кутии по 3 (120 плика). Стъпка от рецептата може да има свое; празно показва опаковки.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces направени = :packs опаковки по :size + :loose единични. Направете още :more за :next опаковки или приключете на :whole и оставете :loose единични?",
+    ":count loose pieces left, not in a full pack": ":count единични броя остават, извън пълна опаковка",
+    "Back, make the pack up": "Назад, допълнете опаковката",
+    "Yes, close with loose pieces": "Да, затвори с единични броя"
 }

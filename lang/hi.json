@@ -22562,5 +22562,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :code के :pieces :piece अतिरिक्त, मंज़ूर करें?",
     "makes :count :unit": ":count :unit बनाता है",
     "Pack name": "पैक का नाम",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "इस परिवार के पैक में गिने जाने वाले चरणों के लिए उत्पादन फ़्लोर पर एक पैक को क्या कहते हैं (जैसे डिब्बे, ट्रे): कारीगर 3 वाले 40 डिब्बे (120 थैलियाँ) देखते हैं। रेसिपी का कोई चरण अपना नाम रख सकता है; खाली होने पर पैक।"
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "इस परिवार के पैक में गिने जाने वाले चरणों के लिए उत्पादन फ़्लोर पर एक पैक को क्या कहते हैं (जैसे डिब्बे, ट्रे): कारीगर 3 वाले 40 डिब्बे (120 थैलियाँ) देखते हैं। रेसिपी का कोई चरण अपना नाम रख सकता है; खाली होने पर पैक।",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces बने = :size के :packs पैक + :loose खुले। :next पैक के लिए :more और बनाएँ, या :whole पर समाप्त करें और :loose खुले छोड़ें?",
+    ":count loose pieces left, not in a full pack": ":count खुले नग बचे हैं, पूरे पैक में नहीं",
+    "Back, make the pack up": "वापस, पैक पूरा करें",
+    "Yes, close with loose pieces": "हाँ, खुले नगों के साथ बंद करें"
 }

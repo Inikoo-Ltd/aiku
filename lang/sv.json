@@ -9867,5 +9867,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :pieces :piece av :code extra, godkänna?",
     "makes :count :unit": "gör :count :unit",
     "Pack name": "Förpackningsnamn",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Vad en förpackning kallas på tillverkningsgolvet för steg i denna familj som räknas i förpackningar (t.ex. lådor, brickor): hantverkarna ser 40 lådor à 3 (120 påsar). Ett receptsteg kan ange sitt eget; tomt visar förpackningar."
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "Vad en förpackning kallas på tillverkningsgolvet för steg i denna familj som räknas i förpackningar (t.ex. lådor, brickor): hantverkarna ser 40 lådor à 3 (120 påsar). Ett receptsteg kan ange sitt eget; tomt visar förpackningar.",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces gjorda = :packs förpackningar à :size + :loose lösa. Gör :more till för :next förpackningar, eller avsluta på :whole och lämna :loose lösa?",
+    ":count loose pieces left, not in a full pack": ":count lösa styck kvar, inte i en full förpackning",
+    "Back, make the pack up": "Tillbaka, fyll på förpackningen",
+    "Yes, close with loose pieces": "Ja, stäng med lösa styck"
 }

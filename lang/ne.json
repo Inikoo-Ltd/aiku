@@ -23303,5 +23303,9 @@
     "+:count = :pieces :piece of :code extra, approve?": "+:count = :code का :pieces :piece थप, स्वीकृत गर्ने?",
     "makes :count :unit": ":count :unit बनाउँछ",
     "Pack name": "प्याकको नाम",
-    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "यस परिवारका प्याकमा गनिने चरणहरूका लागि उत्पादन फ्लोरमा एउटा प्याकलाई के भनिन्छ (जस्तै बाकस, ट्रे): कारीगरहरूले 3 वटाका 40 बाकस (120 थैली) देख्छन्। रेसिपीको चरणले आफ्नै नाम राख्न सक्छ; खाली भए प्याक।"
+    "What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.": "यस परिवारका प्याकमा गनिने चरणहरूका लागि उत्पादन फ्लोरमा एउटा प्याकलाई के भनिन्छ (जस्तै बाकस, ट्रे): कारीगरहरूले 3 वटाका 40 बाकस (120 थैली) देख्छन्। रेसिपीको चरणले आफ्नै नाम राख्न सक्छ; खाली भए प्याक।",
+    ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces बने = :size का :packs प्याक + :loose खुला। :next प्याकका लागि :more थप बनाउने, वा :whole मा सकेर :loose खुला छोड्ने?",
+    ":count loose pieces left, not in a full pack": ":count खुला टुक्रा बाँकी छन्, पूरा प्याकमा छैनन्",
+    "Back, make the pack up": "पछाडि, प्याक पूरा गर्ने",
+    "Yes, close with loose pieces": "हो, खुला टुक्रासहित बन्द गर्ने"
 }
