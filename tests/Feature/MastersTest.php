@@ -5726,6 +5726,40 @@ describe('competitor prices, HELP-3605', function () {
         expect(array_keys(get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->slug]))->viewData('page')['props']['tabs']['navigation']))->not->toContain('price_checks');
     });
 
+    test('a Shopify product sold in sizes takes the price of the size closest to ours, and the search tracking comes off its link, HELP-4686', function () {
+        $link = 'https://rival.example.com/products/brass-bowl?_pos=1&_sid=2ecabfc31&_ss=r';
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode([
+            'login_error' => null,
+            'cookies'     => [],
+            'pages'       => [[
+                'url'     => 'https://rival.example.com/search?q=Brass',
+                'status'  => 200,
+                'blocked' => false,
+                'text'    => 'Brass bowl Choose options',
+                'links'   => [['href' => $link, 'text' => 'Brass bowl']],
+            ]],
+        ]))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'openrouter.ai/*'                         => \Illuminate\Support\Facades\Http::sequence()
+                ->push(['choices' => [['message' => ['content' => json_encode(['products' => [['url' => $link, 'name' => 'Brass bowl', 'price' => null, 'units' => 1, 'minimum_order' => null, 'same_item' => true]]])]]]])
+                ->push(['choices' => [['message' => ['content' => json_encode(['size' => 1, 'units' => 2])]]]]),
+            'rival.example.com/products/brass-bowl.js' => \Illuminate\Support\Facades\Http::response(['variants' => [
+                ['id' => 501, 'title' => '5cm', 'price' => 900],
+                ['id' => 502, 'title' => '10cm', 'price' => 1600],
+            ]]),
+        ]);
+
+        expect(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]))->toBe(1);
+
+        $product = \App\Models\Masters\CompetitorProduct::where('competitor_id', $this->competitor->id)->sole();
+        expect($product->url)->toBe('https://rival.example.com/products/brass-bowl?variant=502')
+            ->and($product->name)->toBe('Brass bowl 10cm')
+            ->and((float) $product->price)->toBe(16.0)
+            ->and((float) $product->units)->toBe(2.0)
+            ->and(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::withoutSearchWords($link, 'Brass'))->toBe('https://rival.example.com/products/brass-bowl');
+    });
+
     test('a master shop left out of price tips has every product read once a week, a seventh each day, HELP-4686', function () {
         \Illuminate\Support\Facades\Queue::fake();
         $this->travelTo(now()->startOfWeek(\Carbon\CarbonInterface::SUNDAY)->addDays($this->competitorMasterAsset->id % 7));

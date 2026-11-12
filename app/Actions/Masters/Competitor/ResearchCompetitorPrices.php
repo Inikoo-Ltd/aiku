@@ -48,6 +48,8 @@ class ResearchCompetitorPrices
 
     private const int CHUNK = 20;
 
+    private const array SEARCH_TRACKING = ['_pos', '_sid', '_ss'];
+
     /**
      * @param  array<int, int>  $masterAssetIds
      */
@@ -104,7 +106,7 @@ class ResearchCompetitorPrices
             }
 
             foreach (static::candidates($this->ask($competitor, $masterAssets[$index], $searchWords[$index], $page), $page) as $candidate) {
-                $this->save($competitor, $masterAssets[$index], $searchWords[$index], $candidate);
+                $this->save($competitor, $masterAssets[$index], $searchWords[$index], $this->withSizePrice($competitor, $masterAssets[$index], $candidate));
                 $matches++;
             }
         }
@@ -154,7 +156,8 @@ class ResearchCompetitorPrices
     }
 
     /**
-     * The same product found by two searches must be one row, so the search words come off its link.
+     * The same product found by two searches must be one row, so the search words come off its link, and so
+     * does the tracking a Shopify search adds (_sid changes with every search, HELP-4686).
      */
     public static function withoutSearchWords(string $url, string $searchWords): string
     {
@@ -164,7 +167,7 @@ class ResearchCompetitorPrices
         }
 
         parse_str($query, $parameters);
-        $parameters = array_filter($parameters, fn ($value) => $value !== $searchWords);
+        $parameters = array_filter($parameters, fn ($value, $key) => $value !== $searchWords && !in_array($key, self::SEARCH_TRACKING, true), ARRAY_FILTER_USE_BOTH);
 
         return strtok($url, '?').($parameters ? '?'.http_build_query($parameters) : '');
     }
@@ -316,6 +319,68 @@ Links:
 PROMPT;
 
         return AskToAi::run($prompt, self::MODEL, ['response_format' => ['type' => 'json_object']]);
+    }
+
+    /**
+     * A product sold in several sizes shows no price in a Shopify search, only "Choose options" (HELP-4686).
+     * The store publishes every size with its price at /products/<handle>.js; the size closest to ours is
+     * kept, and the link names it so another size of the same product is its own row.
+     *
+     * @param  array{url: string, name: string, price: float|null, units: float, minimum_order: int|null, same_item: bool}  $candidate
+     * @return array{url: string, name: string, price: float|null, units: float, minimum_order: int|null, same_item: bool}
+     */
+    private function withSizePrice(Competitor $competitor, MasterAsset $masterAsset, array $candidate): array
+    {
+        if ($candidate['price'] !== null || !preg_match('#^(https?://[^/?\#]+/products/[^/?\#.]+)#i', $candidate['url'], $match)) {
+            return $candidate;
+        }
+
+        $variants = collect(rescue(fn () => Http::timeout(20)->withUserAgent(self::USER_AGENT)->get($match[1].'.js')->json('variants'), [], report: false) ?: [])
+            ->filter(fn ($variant) => is_array($variant) && isset($variant['id']) && is_numeric($variant['price'] ?? null) && $variant['price'] > 0)
+            ->values();
+
+        $choice = $variants->count() === 1 ? ['size' => 0, 'units' => $candidate['units']] : $this->pickSize($competitor, $masterAsset, $variants->all());
+        $size   = $variants->get($choice['size'] ?? -1);
+        if (!$size) {
+            return $candidate;
+        }
+
+        return [
+            ...$candidate,
+            'url'   => $match[1].'?variant='.$size['id'],
+            'name'  => mb_substr(trim($candidate['name'].' '.($variants->count() > 1 ? ($size['title'] ?? '') : '')), 0, 500),
+            'price' => $size['price'] / 100,
+            'units' => is_numeric($choice['units'] ?? null) && $choice['units'] > 0 ? (float) $choice['units'] : $candidate['units'],
+        ];
+    }
+
+    /**
+     * @param  array<int, array>  $variants
+     * @return array{size?: int|null, units?: float|null}
+     */
+    private function pickSize(Competitor $competitor, MasterAsset $masterAsset, array $variants): array
+    {
+        if (!$variants) {
+            return [];
+        }
+
+        $sizes = collect($variants)->map(fn ($variant, $index) => $index.': '.($variant['title'] ?? '').' '.$competitor->currency->code.' '.number_format($variant['price'] / 100, 2))->implode("\n");
+
+        $prompt = <<<PROMPT
+We sell this product to retailers:
+name: {$masterAsset->name}
+units per pack: {$masterAsset->units}
+
+A competitor sells a matching product in these sizes:
+{$sizes}
+
+Pick the size closest to ours. Reply with JSON only: {"size":its number,"units":how many of our units its price is for}
+Reply {"size":null} when no size is comparable.
+PROMPT;
+
+        $answer = json_decode(trim(preg_replace('/^```(?:json)?|```$/m', '', trim((string) AskToAi::run($prompt, self::MODEL, ['response_format' => ['type' => 'json_object']])))), true);
+
+        return is_array($answer) && is_int($answer['size'] ?? null) ? $answer : [];
     }
 
     private function clip(string $text, int $length): string
