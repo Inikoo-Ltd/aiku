@@ -23,6 +23,7 @@ final class LocationsStore {
     private(set) var lastPage = 0
     private(set) var loadError: String?
     private(set) var detailLoadedCodes: Set<String> = []
+    private(set) var abilities: [String: MobileLocation.Abilities] = [:]
     @ObservationIgnored private var loadedKey: LocationsLoadKey?
 
     init(warehouse: LocationsWarehouse = LocationsSampleData.warehouse) {
@@ -34,6 +35,18 @@ final class LocationsStore {
             return warehouse.list(tab: listTab, query: listQuery, filter: listFilter)
         }
         return listCodes.compactMap(warehouse.location(code:))
+    }
+
+    func pillTitle(for tab: LocationsListTab) -> String {
+        guard tab == listTab, let count = loadedCount(for: tab) else { return tab.title }
+        return "\(tab.title) \(count.locationsGrouped)"
+    }
+
+    private func loadedCount(for tab: LocationsListTab) -> Int? {
+        guard source == .remote else { return count(for: tab) }
+        var request = listRequestKey
+        request.tab = tab
+        return listTotalRequest == request ? listTotal : nil
     }
 
     func count(for tab: LocationsListTab) -> Int? {
@@ -191,9 +204,7 @@ final class LocationsStore {
     func loadLocation(code: String, apiClient: APIClient) async {
         guard source == .remote, let id = warehouse.location(code: code)?.remote?.id else { return }
         do {
-            let detail = try await apiClient.fetchLocation(id: id)
-            merge([LocationsLocation(remote: detail)], replacingAll: false)
-            detailLoadedCodes.insert(code)
+            applyDetail(try await apiClient.fetchLocation(id: id))
         } catch where error.isCancellation {
             return
         } catch {
@@ -235,6 +246,7 @@ final class LocationsStore {
         listTotalRequest = nil
         listCodes = []
         detailLoadedCodes = []
+        abilities = [:]
         currentPage = 0
         lastPage = 0
         loadError = nil
@@ -296,6 +308,98 @@ final class LocationsStore {
 
     func update(sko reference: String, in code: String, settings: LocationsSlotSettings) {
         warehouse.update(sko: reference, in: code, settings: settings)
+    }
+
+    var isRemote: Bool {
+        source == .remote
+    }
+
+    func canEditStocks(in code: String) -> Bool {
+        source == .sample || abilities[code]?.editStocks == true
+    }
+
+    func canEditLocations(in code: String) -> Bool {
+        source == .sample || abilities[code]?.editLocations == true
+    }
+
+    @discardableResult
+    func auditRemotely(location code: String, counts: [LocationsAuditCount], apiClient: APIClient) async throws -> Int {
+        guard let location = warehouse.location(code: code), let id = location.remote?.id else { throw LocationsActionError.notLoaded }
+        let changes = counts.compactMap { count -> MobileLocationAuditCount? in
+            guard let slot = location.slot(count.skoReference), let linkID = slot.remoteLinkID else { return nil }
+            let difference = count.counted - max(slot.quantity, 0)
+            return MobileLocationAuditCount(
+                locationOrgStockId: linkID,
+                quantity: max(count.counted, 0),
+                reason: difference == 0 ? LocationsAuditReason.unchangedRemoteValue : (count.reason?.remoteValue ?? LocationsAuditReason.unchangedRemoteValue),
+                note: count.note.isEmpty ? nil : count.note
+            )
+        }
+        guard !changes.isEmpty else { throw LocationsActionError.notLoaded }
+        let differences = counts.filter { count in
+            location.slot(count.skoReference).map { count.counted != max($0.quantity, 0) } ?? false
+        }.count
+        applyDetail(try await apiClient.auditLocation(id: id, counts: changes))
+        return differences
+    }
+
+    @discardableResult
+    func moveRemotely(from sourceCode: String, to targetCode: String, quantities: [String: Int], removeFromSource: Bool, movesEverything: Bool, apiClient: APIClient) async throws -> Int {
+        guard let source = warehouse.location(code: sourceCode), let sourceID = source.remote?.id else { throw LocationsActionError.notLoaded }
+        guard let target = await locationMatching(scannedCode: targetCode, apiClient: apiClient), let targetID = target.remote?.id else {
+            throw LocationsActionError.targetNotFound(targetCode)
+        }
+        let moved = quantities.values.reduce(0, +)
+        if movesEverything {
+            applyDetail(try await apiClient.moveAllFromLocation(id: sourceID, targetID: targetID, removeAfterMove: removeFromSource))
+        } else {
+            let orgStocks = quantities.compactMap { reference, quantity -> MobileMovedOrgStock? in
+                guard quantity > 0, let orgStockID = source.slot(reference)?.remoteOrgStockID else { return nil }
+                return MobileMovedOrgStock(orgStockId: orgStockID, quantity: quantity, removeAfterMove: removeFromSource)
+            }
+            guard !orgStocks.isEmpty else { return 0 }
+            applyDetail(try await apiClient.moveSomeFromLocation(id: sourceID, targetID: targetID, orgStocks: orgStocks))
+        }
+        detailLoadedCodes.remove(target.code)
+        return moved
+    }
+
+    @discardableResult
+    func removeRemotely(skos references: Set<String>, from code: String, apiClient: APIClient) async throws -> Int {
+        guard let location = warehouse.location(code: code), let id = location.remote?.id else { throw LocationsActionError.notLoaded }
+        let orgStockIDs = references.compactMap { location.slot($0)?.remoteOrgStockID }
+        guard !orgStockIDs.isEmpty else { return 0 }
+        let result = try await apiClient.removeOrgStocks(fromLocation: id, orgStockIDs: orgStockIDs)
+        applyDetail(result.data)
+        return result.removed
+    }
+
+    func updateRemotely(sko reference: String, in code: String, settings: LocationsSlotSettings, apiClient: APIClient) async throws {
+        guard let slot = warehouse.location(code: code)?.slot(reference), let linkID = slot.remoteLinkID else { throw LocationsActionError.notLoaded }
+        applyDetail(try await apiClient.updateLocationOrgStock(linkID: linkID, update: LocationsRemoteUpdate.body(from: slot, to: settings)))
+    }
+
+    func searchMoveTargets(_ query: String, apiClient: APIClient) async {
+        guard source == .remote, let remoteWarehouse else { return }
+        let page = try? await apiClient.fetchLocations(
+            warehouseID: remoteWarehouse.id,
+            query: MobileLocationsQuery(search: query, perPage: 20)
+        )
+        guard let page else { return }
+        merge(page.data.map(LocationsLocation.init(remote:)), replacingAll: false)
+    }
+
+    private func applyDetail(_ detail: MobileLocation) {
+        let location = LocationsLocation(remote: detail)
+        if let index = warehouse.locations.firstIndex(where: { $0.code == location.code }) {
+            warehouse.locations[index] = location
+        } else {
+            warehouse.locations.append(location)
+        }
+        detailLoadedCodes.insert(location.code)
+        if let can = detail.can {
+            abilities[location.code] = can
+        }
     }
 
     func setAutoRemoval(_ isOn: Bool, by name: String, on date: Date = Date()) {
@@ -367,5 +471,36 @@ extension LocationsListTab {
         case .empty: .empty
         case .partiallyEmpty: .partiallyEmpty
         }
+    }
+}
+
+enum LocationsActionError: LocalizedError, Equatable {
+    case notLoaded
+    case targetNotFound(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .notLoaded: "This location is still loading. Try again in a moment."
+        case let .targetNotFound(code): "No location \(code) in this warehouse."
+        }
+    }
+}
+
+enum LocationsRemoteUpdate {
+    static func body(from slot: LocationsSlot, to settings: LocationsSlotSettings) -> MobileLocationOrgStockUpdate {
+        var update = MobileLocationOrgStockUpdate(type: settings.type.rawValue, notes: settings.note)
+        if settings.type == .picking {
+            update.minStock = settings.minStock
+            update.maxStock = settings.maxStock
+            if settings.roles.contains(.wholesale), !slot.roles.contains(.wholesale) {
+                update.setAsPriorityWholesale = true
+            }
+            if settings.roles.contains(.dropshipping), !slot.roles.contains(.dropshipping) {
+                update.setAsPriorityDropshipping = true
+            }
+        } else {
+            update.replenishmentStock = settings.replenishment
+        }
+        return update
     }
 }

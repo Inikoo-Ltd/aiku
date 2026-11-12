@@ -90,6 +90,8 @@ struct LocationsSlot: Identifiable, Hashable, Sendable {
     var unitWeightKg: Double
     var unitVolumeM3: Double
     var unitValue: Double
+    var remoteOrgStockID: Int? = nil
+    var remoteLinkID: Int? = nil
 
     var id: String { skoReference }
     var isEmpty: Bool { quantity <= 0 }

@@ -115,6 +115,64 @@ struct MobileLocation: Decodable, Sendable, Equatable {
     let stockValue: Double
     let auditedAt: String?
     let orgStocks: [OrgStock]?
+    let can: Abilities?
+
+    struct Abilities: Decodable, Sendable, Equatable {
+        let editStocks: Bool
+        let editLocations: Bool
+    }
+}
+
+struct MobileLocationAuditCount: Encodable, Sendable, Equatable {
+    let locationOrgStockId: Int
+    let quantity: Int
+    let reason: String
+    let note: String?
+}
+
+struct MobileLocationAuditBody: Encodable, Sendable {
+    let counts: [MobileLocationAuditCount]
+}
+
+struct MobileMoveAllBody: Encodable, Sendable {
+    let locationId: Int
+    let removeAfterMove: Bool
+    let reason: String
+}
+
+struct MobileMovedOrgStock: Encodable, Sendable, Equatable {
+    let orgStockId: Int
+    let quantity: Int
+    let removeAfterMove: Bool
+}
+
+struct MobileMoveSomeBody: Encodable, Sendable {
+    let locationId: Int
+    let orgStocks: [MobileMovedOrgStock]
+    let reason: String
+}
+
+struct MobileRemoveOrgStocksBody: Encodable, Sendable {
+    let orgStockIds: [Int]
+}
+
+struct MobileRemovedOrgStocks: Decodable, Sendable {
+    let removed: Int
+    let data: MobileLocation
+}
+
+struct MobileLocationOrgStockUpdate: Encodable, Sendable, Equatable {
+    var type: String
+    var minStock: Int?
+    var maxStock: Int?
+    var replenishmentStock: Int?
+    var notes: String
+    var setAsPriorityWholesale: Bool?
+    var setAsPriorityDropshipping: Bool?
+}
+
+enum MobileStockMovementReason {
+    static let transfer = "transfer"
 }
 
 struct FlexibleDouble: Decodable, Sendable, Equatable {
@@ -242,6 +300,26 @@ extension Endpoint {
         }
     }
 
+    static func mobileLocationAudit(id: Int, counts: [MobileLocationAuditCount]) -> Endpoint {
+        .jsonBody("mobile/locations/\(id)/audit", method: .post, MobileLocationAuditBody(counts: counts))
+    }
+
+    static func mobileLocationMoveAll(id: Int, targetID: Int, removeAfterMove: Bool) -> Endpoint {
+        .jsonBody("mobile/locations/\(id)/move-all", method: .post, MobileMoveAllBody(locationId: targetID, removeAfterMove: removeAfterMove, reason: MobileStockMovementReason.transfer))
+    }
+
+    static func mobileLocationMoveSome(id: Int, targetID: Int, orgStocks: [MobileMovedOrgStock]) -> Endpoint {
+        .jsonBody("mobile/locations/\(id)/move-some", method: .post, MobileMoveSomeBody(locationId: targetID, orgStocks: orgStocks, reason: MobileStockMovementReason.transfer))
+    }
+
+    static func mobileLocationRemoveOrgStocks(id: Int, orgStockIDs: [Int]) -> Endpoint {
+        .jsonBody("mobile/locations/\(id)/remove-org-stocks", method: .post, MobileRemoveOrgStocksBody(orgStockIds: orgStockIDs))
+    }
+
+    static func mobileLocationOrgStockUpdate(linkID: Int, update: MobileLocationOrgStockUpdate) -> Endpoint {
+        .jsonBody("mobile/location-org-stocks/\(linkID)", method: .patch, update)
+    }
+
     static func mobileEmptyLocationsRemoval(warehouseID: Int, enabled: Bool) -> Endpoint {
         .jsonBody("mobile/warehouses/\(warehouseID)/empty-locations-removal", method: .patch, MobileEmptyLocationsRemovalBody(enabled: enabled))
     }
@@ -270,6 +348,26 @@ extension APIClient {
 
     func fetchEmptyLocationSlots(warehouseID: Int, kind: MobileEmptyLocationSlotsKind, search: String = "", page: Int = 1, perPage: Int = 50) async throws -> MobileEmptyLocationSlotsPage {
         try await send(.mobileEmptyLocationSlots(warehouseID: warehouseID, kind: kind, search: search, page: page, perPage: perPage), as: MobileEmptyLocationSlotsPage.self)
+    }
+
+    func auditLocation(id: Int, counts: [MobileLocationAuditCount]) async throws -> MobileLocation {
+        try await send(.mobileLocationAudit(id: id, counts: counts), as: DataEnvelope<MobileLocation>.self).value
+    }
+
+    func moveAllFromLocation(id: Int, targetID: Int, removeAfterMove: Bool) async throws -> MobileLocation {
+        try await send(.mobileLocationMoveAll(id: id, targetID: targetID, removeAfterMove: removeAfterMove), as: DataEnvelope<MobileLocation>.self).value
+    }
+
+    func moveSomeFromLocation(id: Int, targetID: Int, orgStocks: [MobileMovedOrgStock]) async throws -> MobileLocation {
+        try await send(.mobileLocationMoveSome(id: id, targetID: targetID, orgStocks: orgStocks), as: DataEnvelope<MobileLocation>.self).value
+    }
+
+    func removeOrgStocks(fromLocation id: Int, orgStockIDs: [Int]) async throws -> MobileRemovedOrgStocks {
+        try await send(.mobileLocationRemoveOrgStocks(id: id, orgStockIDs: orgStockIDs), as: MobileRemovedOrgStocks.self)
+    }
+
+    func updateLocationOrgStock(linkID: Int, update: MobileLocationOrgStockUpdate) async throws -> MobileLocation {
+        try await send(.mobileLocationOrgStockUpdate(linkID: linkID, update: update), as: DataEnvelope<MobileLocation>.self).value
     }
 
     func updateEmptyLocationsRemoval(warehouseID: Int, enabled: Bool) async throws -> MobileEmptyLocationsRemoval {

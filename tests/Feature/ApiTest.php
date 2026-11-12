@@ -19,7 +19,10 @@ use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Inventory\WarehouseArea\StoreWarehouseArea;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Models\Goods\Stock;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementReasonEnum;
+use App\Enums\Inventory\OrgStockMovement\OrgStockMovementTypeEnum;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockMovement;
 use App\Models\Inventory\Warehouse;
@@ -139,6 +142,24 @@ function createMobileEmptyLocationLink(Warehouse $warehouse, Location $location)
     OrgStock::whereKey($orgStock->id)->update(['picking_location_id' => null, 'picking_dropshipping_location_id' => null]);
 
     return [$location, $orgStock];
+}
+
+/**
+ * @return array{0: \App\Models\SysAdmin\User, 1: Warehouse}
+ */
+function actingAsMobileWarehouseUser(Group $group, RolesEnum $role): array
+{
+    [$user, $warehouse] = actingAsMobileLocationsViewer($group);
+    grantMobileWarehouseRole($user, $warehouse, $role);
+
+    return [$user, $warehouse];
+}
+
+function grantMobileWarehouseRole(\App\Models\SysAdmin\User $user, Warehouse $warehouse, RolesEnum $role): void
+{
+    $user->assignRole(RolesEnum::getRoleName($role->value, $warehouse));
+    SetUserAuthorisedModels::run($user);
+    Sanctum::actingAs($user->refresh(), ['mobile']);
 }
 
 beforeAll(function () {
@@ -1469,4 +1490,110 @@ test('the app profile of a user with no employment has no position or organisati
         ->assertOk()
         ->assertJsonPath('data.organisation', null)
         ->assertJsonPath('data.job_title', null);
+});
+
+
+test('mobile stock movement reasons are the ones the web offers', function () {
+    actingAsMobileLocationsViewer($this->group);
+
+    getJson(route('grp.api.mobile.stock_movement_reasons'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.transfer', OrgStockMovementReasonEnum::withLabels(OrgStockMovementReasonEnum::transferReason()))
+        ->assertJsonPath('data.decrease.count_short', OrgStockMovementReasonEnum::COUNT_SHORT->label());
+});
+
+test('mobile location audit records the web audit movement for each SKO counted', function () {
+    [$user, $warehouse] = actingAsMobileWarehouseUser($this->group, RolesEnum::STOCK_CONTROLLER);
+    [, $stocked] = createMobileLocationsFixture($warehouse);
+    $link = $stocked->locationOrgStocks()->first();
+
+    postJson(route('grp.api.mobile.locations.audit', $stocked->id), ['counts' => [[
+        'location_org_stock_id' => $link->id,
+        'quantity'              => 25,
+        'reason'                => OrgStockMovementReasonEnum::COUNT_SHORT->value,
+        'note'                  => 'Counted in the app',
+    ]]], ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.can.edit_stocks', true)
+        ->assertJsonPath('data.can.edit_locations', false);
+
+    $movement = OrgStockMovement::where('org_stock_id', $link->org_stock_id)->where('type', OrgStockMovementTypeEnum::AUDIT)->latest('id')->first();
+
+    expect((float) $link->refresh()->quantity)->toBe(25.0)
+        ->and($link->audited_at)->not->toBeNull()
+        ->and($movement->reason)->toBe(OrgStockMovementReasonEnum::COUNT_SHORT)
+        ->and($movement->note)->toBe('Counted in the app')
+        ->and($movement->user_id)->toBe($user->id)
+        ->and((float) $movement->quantity)->toBe(-5.0);
+});
+
+test('mobile location audit needs stock edit rights and SKOs of that location', function () {
+    [$user, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [, $stocked, $empty] = createMobileLocationsFixture($warehouse);
+    $link = $stocked->locationOrgStocks()->first();
+    $count = ['counts' => [['location_org_stock_id' => $link->id, 'quantity' => 1, 'reason' => 'recount']]];
+
+    postJson(route('grp.api.mobile.locations.audit', $stocked->id), $count, ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
+
+    grantMobileWarehouseRole($user, $warehouse, RolesEnum::STOCK_CONTROLLER);
+    postJson(route('grp.api.mobile.locations.audit', $empty->id), $count, ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('counts.0.location_org_stock_id');
+});
+
+test('mobile SKO in location settings use the web update and need stock edit rights', function () {
+    [$user, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [, $stocked] = createMobileLocationsFixture($warehouse);
+    $link = $stocked->locationOrgStocks()->first();
+    $settings = ['type' => LocationStockTypeEnum::STORING->value, 'min_stock' => 5, 'max_stock' => 60, 'notes' => 'Top shelf'];
+
+    patchJson(route('grp.api.mobile.location_org_stocks.update', $link->id), $settings, ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
+
+    grantMobileWarehouseRole($user, $warehouse, RolesEnum::STOCK_CONTROLLER);
+    patchJson(route('grp.api.mobile.location_org_stocks.update', $link->id), $settings, ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.org_stocks.0.notes', 'Top shelf')
+        ->assertJsonPath('data.org_stocks.0.min_stock', 5)
+        ->assertJsonPath('data.org_stocks.0.max_stock', 60);
+
+    expect($link->refresh()->type)->toBe(LocationStockTypeEnum::STORING);
+});
+
+test('mobile move and remove follow the web location edit rights', function () {
+    [, $warehouse] = actingAsMobileWarehouseUser($this->group, RolesEnum::STOCK_CONTROLLER);
+    [, $stocked, $empty] = createMobileLocationsFixture($warehouse);
+    $orgStockId = $stocked->locationOrgStocks()->value('org_stock_id');
+    $headers = ['X-Aiku-App-Key' => 'mobile-test-key'];
+
+    postJson(route('grp.api.mobile.locations.move_all', $stocked->id), ['location_id' => $empty->id, 'reason' => 'transfer'], $headers)->assertForbidden();
+    postJson(route('grp.api.mobile.locations.move_some', $stocked->id), ['location_id' => $empty->id, 'reason' => 'transfer', 'org_stocks' => [['org_stock_id' => $orgStockId, 'quantity' => 1]]], $headers)->assertForbidden();
+    postJson(route('grp.api.mobile.locations.remove_org_stocks', $stocked->id), ['org_stock_ids' => [$orgStockId]], $headers)->assertForbidden();
+});
+
+test('mobile move some, move all and remove use the web location actions', function () {
+    [, $warehouse] = actingAsMobileWarehouseUser($this->group, RolesEnum::WAREHOUSE_ADMIN);
+    [, $stocked, $empty] = createMobileLocationsFixture($warehouse);
+    $orgStockId = $stocked->locationOrgStocks()->value('org_stock_id');
+    $headers = ['X-Aiku-App-Key' => 'mobile-test-key'];
+    $quantityIn = fn (Location $location) => (float) LocationOrgStock::where('location_id', $location->id)->where('org_stock_id', $orgStockId)->value('quantity');
+
+    postJson(route('grp.api.mobile.locations.move_some', $stocked->id), ['location_id' => $empty->id, 'reason' => 'transfer', 'org_stocks' => [['org_stock_id' => $orgStockId, 'quantity' => 10]]], $headers)
+        ->assertOk()
+        ->assertJsonPath('data.id', $stocked->id);
+    expect($quantityIn($stocked))->toBe(20.0)->and($quantityIn($empty))->toBe(10.0);
+
+    postJson(route('grp.api.mobile.locations.move_all', $empty->id), ['location_id' => $stocked->id, 'reason' => 'transfer', 'remove_after_move' => true], $headers)
+        ->assertOk()
+        ->assertJsonCount(0, 'data.org_stocks');
+    expect($quantityIn($stocked))->toBe(30.0)
+        ->and(LocationOrgStock::where('location_id', $empty->id)->exists())->toBeFalse();
+
+    postJson(route('grp.api.mobile.locations.remove_org_stocks', $stocked->id), ['org_stock_ids' => [$orgStockId]], $headers)
+        ->assertOk()
+        ->assertJsonPath('removed', 1);
+    expect(LocationOrgStock::where('location_id', $stocked->id)->exists())->toBeFalse();
+
+    postJson(route('grp.api.mobile.locations.move_all', $stocked->id), ['location_id' => $stocked->id, 'reason' => 'transfer'], $headers)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('location_id');
 });
