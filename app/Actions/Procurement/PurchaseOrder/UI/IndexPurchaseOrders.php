@@ -262,7 +262,13 @@ class IndexPurchaseOrders extends OrgAction
                 ->select('purchase_order_id')
                 ->selectRaw('SUM(quantity_ordered) as quantity_ordered')
                 ->selectRaw('SUM(org_net_amount) as org_net_amount')
-                ->where($parent instanceof SupplierProduct ? 'supplier_product_id' : 'org_supplier_product_id', $parent->id)
+                ->when(
+                    $parent instanceof SupplierProduct,
+                    fn ($query) => $query->where('supplier_product_id', $parent->id),
+                    fn ($query) => $this->viewingAgent
+                        ? $query->where('supplier_product_id', $parent->supplier_product_id)
+                        : $query->where('org_supplier_product_id', $parent->id)
+                )
                 ->groupBy('purchase_order_id');
 
             $query->joinSub($productTransactions, 'product_transactions', function ($join) {
