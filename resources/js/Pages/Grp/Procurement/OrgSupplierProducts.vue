@@ -36,6 +36,7 @@ const props = defineProps<{
         pdf_route: routeType
         ids_parameter: string
     }
+    link_group_sko_route?: routeType | null
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -56,6 +57,6 @@ const component = computed(() => ({
         :is="component"
         :data="props[currentTab]"
         :tab="currentTab"
-        v-bind="currentTab === 'index' ? { copyProducts: copy_products, copyTargets: copy_targets, labelsPrint: labels_print } : {}"
+        v-bind="currentTab === 'index' ? { copyProducts: copy_products, copyTargets: copy_targets, labelsPrint: labels_print, linkGroupSkoRoute: link_group_sko_route } : {}"
     />
 </template>

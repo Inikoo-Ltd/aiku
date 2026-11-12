@@ -569,6 +569,7 @@ use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductMinimumCartonOrder;
 use App\Actions\Procurement\PurchaseOrder\PokeOrganisationsForMinimumOrder;
+use App\Actions\Procurement\OrgSupplierProducts\LinkOrgSupplierProductToGroupSko;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductAgentDetails;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductCartonBarcode;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductCartonWeights;
@@ -1207,6 +1208,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/stock/{stock:id}/carton-barcode', UpdateOrgSupplierProductCartonBarcode::class)->name('org_supplier_product.carton_barcode.update')->withoutScopedBindings();
     Route::post('org-supplier-product/{orgSupplierProduct:id}/packing-spec', StorePackingSpec::class)->name('org_supplier_product.packing_spec.store')->withoutScopedBindings();
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/packing-instructions', UpdateSupplierProductPackingInstructions::class)->name('org_supplier_product.packing_instructions.update')->withoutScopedBindings();
+    Route::post('org-supplier-product/{orgSupplierProduct:id}/link-group-sko', LinkOrgSupplierProductToGroupSko::class)->name('org_supplier_product.link_group_sko')->withoutScopedBindings();
     Route::post('packing-spec/{packingSpec:id}/return', ReturnPackingSpec::class)->name('packing_spec.return')->withoutScopedBindings();
     Route::post('packing-spec/{packingSpec:id}/verify', VerifyPackingSpec::class)->name('packing_spec.verify')->withoutScopedBindings();
     Route::get('packing-spec/{packingSpec:id}/pdf', PdfPackingSpec::class)->name('packing_spec.pdf')->withoutScopedBindings();
