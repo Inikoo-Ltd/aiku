@@ -48,6 +48,7 @@ const props = defineProps<{
 	canEdit: boolean
 	organisationId: number
 	scope: "review" | "unmatched" | "dismissed"
+	period: "90d" | "1y" | "all"
 	data: { data: BankLine[] }
 }>()
 
@@ -65,9 +66,24 @@ const scopeOptions = [
 	{ label: ctrans("No order number"), value: "unmatched" },
 	{ label: ctrans("Set aside"), value: "dismissed" },
 ]
+const periodOptions = [
+	{ label: ctrans("Last 90 days"), value: "90d" },
+	{ label: ctrans("Last year"), value: "1y" },
+	{ label: ctrans("All"), value: "all" },
+]
+const reload = (query: Record<string, string>) =>
+	router.get(
+		route("grp.org.accounting.bank_review.index", [route().params["organisation"]]),
+		{ scope: props.scope, period: props.period, ...query },
+		{ preserveState: false }
+	)
 const scope = computed({
 	get: () => props.scope,
-	set: (value: string) => router.get(route("grp.org.accounting.bank_review.index", [route().params["organisation"]]), { scope: value }, { preserveState: false }),
+	set: (value: string) => reload({ scope: value }),
+})
+const period = computed({
+	get: () => props.period,
+	set: (value: string) => reload({ period: value }),
 })
 
 const restoreError = ref<{ id: number; message: string } | null>(null)
@@ -138,8 +154,9 @@ const submit = () => {
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead" />
 
-	<div class="px-4 pt-3">
+	<div class="flex flex-wrap items-center gap-3 px-4 pt-3">
 		<SegmentedToggle v-model="scope" :options="scopeOptions" :aria-label="ctrans('Which bank payments')" />
+		<SegmentedToggle v-model="period" :options="periodOptions" soft :aria-label="ctrans('Received in')" />
 	</div>
 
 	<Table :resource="data" class="mt-5">
