@@ -126,8 +126,8 @@ const props = defineProps < {
             state: string
             state_label: string
             is_partner?: boolean
-        }
             line_state: string
+        }
     }
    	timelines: {
 		[key: string]: TSTimeline
