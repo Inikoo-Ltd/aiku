@@ -43,7 +43,6 @@ import Textarea from "primevue/textarea"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
-import InputNumber from "primevue/inputnumber"
 import Select from "primevue/select"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import AspoDepositsChecklist from "@/Components/Procurement/AspoDepositsChecklist.vue"
@@ -242,10 +241,6 @@ const props = defineProps < {
             org_currency: string | null
             org_exchange: number | string | null
             items: number | string | null
-            extra: number | string | null
-            shipping: number | string | null
-            duties: number | string | null
-            tax: number | string | null
             total: number | string
             org_items: number | string
             estimated_expenses?: number
@@ -357,17 +352,9 @@ const orgPerOrder = computed(() => {
 	return Number(org_exchange) || null
 })
 
-const costRows = computed(() => {
-	const { items, extra, shipping, duties, tax } = props.box_stats.third_block
-
-	return [
-		{ key: "items", label: ctrans("Items"), amount: Number(items) || 0, alwaysShown: true },
-		{ key: "extra", label: ctrans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
-		{ key: "shipping", label: ctrans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
-		{ key: "duties", label: ctrans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
-		{ key: "tax", label: ctrans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
-	].filter(row => row.alwaysShown || row.amount !== 0)
-})
+const costRows = computed(() => [
+	{ key: "items", label: ctrans("Items"), amount: Number(props.box_stats.third_block.items) || 0 },
+])
 
 const costBlocks = computed(() => {
 	const { currency, org_currency, total, org_items } = props.box_stats.third_block
@@ -411,8 +398,6 @@ const costBlocks = computed(() => {
 	return sameCurrency ? [supplierBlock] : [supplierBlock, organisationBlock]
 })
 
-const showExtraCosts = ref(false)
-
 const paymentsOrgRate = computed(() => {
 	const { currency, org_currency } = props.box_stats.third_block
 
@@ -420,28 +405,13 @@ const paymentsOrgRate = computed(() => {
 })
 
 const summaryGroups = computed(() => {
-	const { items, extra, shipping, duties, tax, total, currency, org_currency, org_items } = props.box_stats.third_block
+	const { items, total, currency, org_currency, org_items } = props.box_stats.third_block
 	const inOrgCurrency = org_currency && org_currency !== currency
 	const orgMoney = (amount: number) => (inOrgCurrency ? locale.currencyFormat(org_currency, amount) : undefined)
 	const rate = Number(orgPerOrder.value) || 0
-	const net = (Number(items) || 0) + (Number(extra) || 0) + (Number(shipping) || 0) + (Number(duties) || 0)
 
 	return [
 		[{ label: ctrans("Items"), quantity: props.box_stats.second_block.total_items, price_total: Number(items) || 0, information: orgMoney(Number(org_items) || 0) }],
-		[
-			{ label: ctrans("Extra costs, shipping and duties"), price_total: (Number(extra) || 0) + (Number(shipping) || 0) + (Number(duties) || 0), slot_name: "extra_costs" },
-			...(showExtraCosts.value
-				? [
-					{ label: ctrans("Extra costs"), price_total: Number(extra) || 0, label_class: "pl-5" },
-					{ label: ctrans("Shipping"), price_total: Number(shipping) || 0, label_class: "pl-5" },
-					{ label: ctrans("Duties"), price_total: Number(duties) || 0, label_class: "pl-5" },
-				]
-				: []),
-		],
-		[
-			{ label: ctrans("Net"), price_total: net },
-			{ label: ctrans("Tax"), price_total: Number(tax) || 0 },
-		],
 		[{ label: ctrans("Total"), price_total: Number(total) || 0, information: inOrgCurrency ? `${orgMoney(Number(total) * rate)} · ${moneyTable.value.rateLabel}` : undefined }],
 		...(Number(props.box_stats.third_block.estimated_expenses) > 0
 			? [[
@@ -695,31 +665,22 @@ const undoCancelDialogAction = ref<any>(null)
 const undoCancelLoading = ref(false)
 const undoCancelReason = ref("")
 const undoCancelConfirmationText = ref("")
-const undoCancelCosts = ref<Record<string, number | null>>({})
 const undoCancelErrors = ref<Record<string, string>>({})
-const costLabels: Record<string, string> = {
-	cost_extra: ctrans("Extra costs"),
-	cost_shipping: ctrans("Shipping"),
-	cost_duties: ctrans("Duties"),
-	cost_tax: ctrans("Tax"),
-}
 const isUndoCancelReady = computed(() =>
 	["yes", cancelConfirmationWord.value].includes(undoCancelConfirmationText.value.trim().toLowerCase())
 	&& !!undoCancelReason.value.trim()
-	&& (undoCancelDialogAction.value?.missing_costs ?? []).every((field: string) => undoCancelCosts.value[field] !== null && undoCancelCosts.value[field] !== undefined)
 )
 
 const confirmUndoCancelPurchaseOrder = (action: any) => {
 	undoCancelReason.value = ""
 	undoCancelConfirmationText.value = ""
 	undoCancelErrors.value = {}
-	undoCancelCosts.value = Object.fromEntries((action.missing_costs ?? []).map((field: string) => [field, null]))
 	undoCancelDialogAction.value = action
 }
 
 const undoCancelPurchaseOrder = () => {
 	const action = undoCancelDialogAction.value
-	router.patch(route(action.route.name, action.route.parameters), { counterparty_informed: "yes", reason: undoCancelReason.value.trim(), ...undoCancelCosts.value }, {
+	router.patch(route(action.route.name, action.route.parameters), { counterparty_informed: "yes", reason: undoCancelReason.value.trim() }, {
 		onStart: () => { undoCancelLoading.value = true },
 		onFinish: () => { undoCancelLoading.value = false },
 		onSuccess: () => { undoCancelDialogAction.value = null },
@@ -1615,16 +1576,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 								aria-hidden="true" />
 						</span>
 					</div>
-					<OrderSummary :order_summary="summaryGroups" :currency_code="box_stats.third_block.currency ?? ''">
-						<template #cell_extra_costs_1="{ fieldSummary }">
-							<dt class="col-span-3">
-								<button type="button" class="flex items-center gap-1.5 text-left leading-none hover:text-gray-800" :aria-expanded="showExtraCosts" @click="showExtraCosts = !showExtraCosts">
-									<FontAwesomeIcon :icon="showExtraCosts ? 'fal fa-chevron-down' : 'fal fa-chevron-right'" class="w-3.5 text-gray-400" aria-hidden="true" />
-									{{ fieldSummary.label }}
-								</button>
-							</dt>
-						</template>
-					</OrderSummary>
+					<OrderSummary :order_summary="summaryGroups" :currency_code="box_stats.third_block.currency ?? ''" />
 					<PurchaseOrderPayments v-if="payments" :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
 				</section>
 			</div>
@@ -1855,22 +1807,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					</ul>
 					<p>{{ ctrans("Bringing this order back may order them twice.") }}</p>
 				</div>
-			</div>
-			<div v-if="undoCancelDialogAction.missing_costs?.length" class="flex flex-col gap-2">
-				<p class="text-sm text-gray-700">
-					{{ ctrans("This order was cancelled before its costs were kept. Enter them again.") }}
-					<template v-if="undoCancelDialogAction.cost_total !== null">
-						{{ ctrans("Its total before cancelling was :total.", { total: locale.currencyFormat(undoCancelDialogAction.currency_code ?? "", undoCancelDialogAction.cost_total) }) }}
-					</template>
-				</p>
-				<p v-if="undoCancelDialogAction.cost_gap !== null" class="text-sm font-medium text-gray-700">
-					{{ ctrans("Extra costs and tax must add up to :amount.", { amount: locale.currencyFormat(undoCancelDialogAction.currency_code ?? "", undoCancelDialogAction.cost_gap) }) }}
-				</p>
-				<label v-for="field in undoCancelDialogAction.missing_costs" :key="field" class="flex flex-col gap-1 text-sm font-medium text-gray-700">
-					<span>{{ costLabels[field] }} <span class="text-red-500">*</span></span>
-					<InputNumber v-model="undoCancelCosts[field]" @update:modelValue="() => { delete undoCancelErrors[field]; delete undoCancelErrors.cost_tax }" mode="currency" :currency="undoCancelDialogAction.currency_code ?? 'USD'" :min="0" :minFractionDigits="2" :maxFractionDigits="2" fluid />
-					<span v-if="undoCancelErrors[field]" class="text-xs text-red-600">{{ undoCancelErrors[field] }}</span>
-				</label>
 			</div>
 			<label for="purchase-order-undo-cancel-reason" class="flex flex-col gap-1 text-sm font-medium text-gray-700">
 				<span>{{ ctrans("Reason") }} <span class="text-red-500">*</span></span>

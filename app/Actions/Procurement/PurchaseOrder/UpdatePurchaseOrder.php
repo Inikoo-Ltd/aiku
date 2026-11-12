@@ -210,10 +210,6 @@ class UpdatePurchaseOrder extends OrgAction
             $rules['state']          = ['sometimes', Rule::enum(PurchaseOrderStateEnum::class)];
             $rules['delivery_state'] = ['sometimes', Rule::enum(PurchaseOrderDeliveryStateEnum::class)];
             $rules['cost_items']     = ['sometimes', 'numeric'];
-            $rules['cost_extra']     = ['sometimes', 'numeric'];
-            $rules['cost_shipping']  = ['sometimes', 'numeric'];
-            $rules['cost_duties']    = ['sometimes', 'numeric'];
-            $rules['cost_tax']       = ['sometimes', 'numeric'];
             $rules['cost_total']     = ['sometimes', 'numeric'];
 
             $rules = $this->noStrictUpdateRules($rules);
