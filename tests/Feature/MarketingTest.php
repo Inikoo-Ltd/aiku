@@ -5229,6 +5229,7 @@ describe('sharing the header and footer of an info website', function () {
             ->and($header->refresh()->html)->toBe('<p>Edited by the UK team</p>')
             ->and($this->staticWebsite->webpages()->where('path', '/')->value('html'))->toContain('<!--aiku:component:header-->');
 
+        $this->staticWebsite->webpages()->where('path', '/')->update(['html' => '<html><body><header id="header" class="black header"><div class="header-nav-item"><a href="/about">About us</a></div></header></body></html>']);
         App\Actions\Web\StaticWebsite\ExtractStaticWebsiteComponents::run($this->staticWebsite, force: true);
 
         expect($header->refresh()->html)->toContain('About us');

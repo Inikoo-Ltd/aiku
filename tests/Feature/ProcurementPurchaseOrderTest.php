@@ -1339,7 +1339,7 @@ test('a purchase order with no deposit needed waits at submitted and passes the 
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('stages.stages.1.reached', true)
             ->where('stages.stages.1.not_required', true)
-            ->where('stages.stages.1.marks', []));
+            ->where('stages.stages.1.marks', fn ($marks) => collect($marks)->pluck('field')->all() === ['approved_ready_at']));
 });
 
 test('container list lines not filled green are still being made, so their purchase order is marked in production', function () {

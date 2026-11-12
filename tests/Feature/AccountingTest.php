@@ -4628,6 +4628,7 @@ test('services to partner invoice category takes partner invoices whose lines ar
     $product = createProduct($this->shop)[1];
 
     $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    DB::table('customers')->where('shop_id', $this->shop->id)->where('as_organisation_id', $this->organisation->id)->update(['as_organisation_id' => null]);
     DB::table('customers')->where('id', $customer->id)->update(['as_organisation_id' => $this->organisation->id]);
     $customer->refresh();
 

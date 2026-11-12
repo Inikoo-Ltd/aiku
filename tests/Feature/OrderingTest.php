@@ -7682,6 +7682,7 @@ test('the recharge sales channel is refused on orders of customers that are not 
     expect(fn () => UpdateOrder::make()->action($order, ['sales_channel_id' => $recharge->id]))->toThrow(ValidationException::class)
         ->and($order->refresh()->sales_channel_id)->toBe($other->id);
 
+    DB::table('customers')->where('shop_id', $this->shop->id)->where('as_organisation_id', $this->organisation->id)->update(['as_organisation_id' => null]);
     DB::table('customers')->where('id', $customer->id)->update(['as_organisation_id' => $this->organisation->id]);
     $customer->refresh();
     $order->refresh();

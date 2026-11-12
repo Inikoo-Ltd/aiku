@@ -2329,19 +2329,16 @@ test('UI edit org supplier relationship (not owned)', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.procurement.org_suppliers.edit', [$this->organisation->slug, $this->orgSupplier->slug]));
 
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('EditModel')
-            ->has(
-                'formData',
-                fn (AssertableInertia $page) => $page
-                    ->where('args.updateRoute.name', 'grp.models.org_supplier.update')
-                    ->has('blueprint.0.fields.status')
-                    ->where('blueprint.1.fields.purchase_order_reference_format.updateRoute.name', 'grp.models.org_supplier.update')
-                    ->has('blueprint.1.fields.purchase_order_last_number')
-                    ->etc()
-            );
-    });
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('EditModel')
+        ->where('formData.args.updateRoute.name', 'grp.models.supplier.update')
+        ->where('formData.blueprint', function ($blueprint) {
+            $fields = collect($blueprint)->flatMap(fn ($section) => $section['fields'] ?? []);
+
+            return $fields['status']['updateRoute']['name'] === 'grp.models.org_supplier.update'
+                && $fields['purchase_order_reference_format']['updateRoute']['name'] === 'grp.models.org_supplier.update'
+                && $fields->has('purchase_order_last_number');
+        }));
 });
 
 test('UI create org supplier picker page', function () {

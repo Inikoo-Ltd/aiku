@@ -31,7 +31,7 @@ class StoreStaticWebsite extends OrgAction
         /** @var StaticWebsite $staticWebsite */
         $staticWebsite = $group->staticWebsites()->create($modelData);
 
-        return $staticWebsite;
+        return $staticWebsite->refresh();
     }
 
     public function authorize(ActionRequest $request): bool

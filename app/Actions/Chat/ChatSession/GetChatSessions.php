@@ -238,7 +238,8 @@ class GetChatSessions
                 ->orderByRaw(FlagUrgentChatRequest::waitingSql('chat_sessions'))
                 ->orderBy('waiting_since');
         } else {
-            $query->orderBy('last_message_at', self::ascending($filters) ? 'asc' : 'desc');
+            $direction = self::ascending($filters) ? 'asc' : 'desc';
+            $query->orderByRaw("last_message_at $direction nulls last")->orderBy('chat_sessions.id', $direction);
         }
 
 
