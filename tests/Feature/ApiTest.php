@@ -11,6 +11,19 @@
 namespace Tests\Feature;
 
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Goods\Stock\StoreStock;
+use App\Actions\Inventory\Location\StoreLocation;
+use App\Actions\Inventory\LocationOrgStock\DisassociateEmptyLocationOrgStocks;
+use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
+use App\Actions\Inventory\OrgStock\StoreOrgStock;
+use App\Actions\Inventory\WarehouseArea\StoreWarehouseArea;
+use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
+use App\Models\Goods\Stock;
+use App\Models\Inventory\Location;
+use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockMovement;
+use App\Models\Inventory\Warehouse;
+use App\Models\Inventory\WarehouseArea;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\HumanResources\AttendanceAdjustment\StoreAttendanceAdjustment;
@@ -85,6 +98,64 @@ function postMobileLogin(array $body, array $headers = ['X-Aiku-App-Key' => 'mob
     config(['app.mobile_app_keys' => ['mobile-test-key']]);
 
     return postJson(route('grp.api.mobile.login'), $body, $headers);
+}
+
+/**
+ * @return array{0: User, 1: Warehouse}
+ */
+function actingAsMobileLocationsViewer(Group $group): array
+{
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    Auth::shouldUse('web');
+    $warehouse = createWarehouse();
+    $user      = createMobileAppUser($group);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::DISPATCH_CLERK->value, $warehouse));
+    SetUserAuthorisedModels::run($user);
+    Sanctum::actingAs($user, ['mobile']);
+
+    return [$user, $warehouse];
+}
+
+/**
+ * @return array{0: WarehouseArea, 1: Location, 2: Location, 3: string}
+ */
+function createMobileLocationsFixture(Warehouse $warehouse): array
+{
+    $prefix = 'MB'.Str::upper(Str::random(5));
+    $area   = StoreWarehouseArea::make()->action($warehouse, array_merge(WarehouseArea::factory()->definition(), ['code' => $prefix.'A']));
+
+    $stocked = StoreLocation::make()->action($area, ['code' => $prefix.'-01', 'max_weight' => 120, 'max_volume' => 1.2]);
+    $empty   = StoreLocation::make()->action($area, ['code' => $prefix.'-02']);
+
+    $stock    = StoreStock::make()->action($warehouse->group, Stock::factory()->definition());
+    $orgStock = StoreOrgStock::make()->action($warehouse->organisation, $stock);
+    StoreLocationOrgStock::make()->action(
+        orgStock: $orgStock,
+        location: $stocked,
+        modelData: ['quantity' => 30, 'type' => LocationStockTypeEnum::PICKING, 'settings' => ['min_stock' => 12, 'max_stock' => 48], 'fetched_at' => now()],
+        strict: false
+    );
+
+    return [$area, $stocked->refresh(), $empty->refresh(), $prefix];
+}
+
+/**
+ * @return array{0: Location, 1: OrgStock}
+ */
+function createMobileEmptyLocationLink(Warehouse $warehouse, Location $location): array
+{
+    $stock    = StoreStock::make()->action($warehouse->group, Stock::factory()->definition());
+    $orgStock = StoreOrgStock::make()->action($warehouse->organisation, $stock);
+    StoreLocationOrgStock::make()->action(
+        orgStock: $orgStock,
+        location: $location,
+        modelData: ['quantity' => 0, 'type' => LocationStockTypeEnum::STORING, 'fetched_at' => now()],
+        strict: false
+    );
+    OrgStockMovement::where('org_stock_id', $orgStock->id)->update(['date' => now()->subDays(2)]);
+    OrgStock::whereKey($orgStock->id)->update(['picking_location_id' => null, 'picking_dropshipping_location_id' => null]);
+
+    return [$location, $orgStock];
 }
 
 beforeAll(function () {
@@ -1176,4 +1247,214 @@ test('the app calendar shows the employee\'s own leave of the month', function (
 
     getJson(route('grp.api.mobile.clocking.calendar', ['month' => $day->copy()->addMonths(2)->format('Y-m')]), $headers)
         ->assertJsonPath('data.leaves', []);
+});
+
+test('mobile locations overview counts the locations of a warehouse the user may view', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    createMobileLocationsFixture($warehouse);
+
+    $response = getJson(route('grp.api.mobile.warehouses.locations_overview', $warehouse->id), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.warehouse.id', $warehouse->id)
+        ->assertJsonPath('data.warehouse.code', $warehouse->code);
+
+    $stats = $warehouse->refresh()->stats;
+
+    expect($response->json('data.number_locations'))->toBe((int) $stats->number_locations)
+        ->and($response->json('data.number_areas'))->toBe((int) $stats->number_warehouse_areas)
+        ->and($response->json('data.number_locations_empty'))->toBe((int) $stats->number_locations_stock_slots_all_empty);
+});
+
+test('mobile warehouse areas list each area of the warehouse', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [$area] = createMobileLocationsFixture($warehouse);
+
+    $areas = collect(getJson(route('grp.api.mobile.warehouses.areas', $warehouse->id), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->json('data'));
+
+    expect($areas->firstWhere('id', $area->id))->toMatchArray([
+        'code' => $area->code,
+        'name' => $area->name,
+    ]);
+});
+
+test('mobile locations list searches by code and filters by area', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [$area, $stocked, $empty, $prefix] = createMobileLocationsFixture($warehouse);
+
+    getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'q' => $prefix]), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('meta.total', 2)
+        ->assertJsonPath('data.0.code', $stocked->code)
+        ->assertJsonPath('data.0.area.code', $area->code)
+        ->assertJsonPath('data.0.max_weight', 120)
+        ->assertJsonPath('data.1.code', $empty->code);
+
+    getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'area_id' => $area->id, 'q' => $prefix.'-02']), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.id', $empty->id);
+});
+
+test('mobile locations list combines several areas, statuses, scopes and occupancies', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [$area, $stocked, $empty, $prefix] = createMobileLocationsFixture($warehouse);
+    [$otherArea, $otherStocked] = createMobileLocationsFixture($warehouse);
+    $headers = ['X-Aiku-App-Key' => 'mobile-test-key'];
+
+    $bothAreas = collect(getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'area_ids' => [$area->id, $otherArea->id], 'per_page' => 150]), $headers)
+        ->assertOk()
+        ->json('data'))->pluck('id');
+
+    expect($bothAreas)->toContain($stocked->id, $empty->id, $otherStocked->id)
+        ->and($bothAreas)->toHaveCount(Location::whereIn('warehouse_area_id', [$area->id, $otherArea->id])->count());
+
+    getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'q' => $prefix, 'statuses' => ['operational'], 'scopes' => ['stocks', 'dropshipping']]), $headers)
+        ->assertOk()
+        ->assertJsonPath('meta.total', Location::where('code', 'like', $prefix.'%')->where('status', 'operational')->where(fn ($query) => $query->where('allow_stocks', true)->orWhere('allow_dropshipping', true))->count());
+
+    getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'q' => $prefix, 'occupancies' => ['goods_out', 'keep_empty_org_stocks']]), $headers)
+        ->assertOk()
+        ->assertJsonPath('meta.total', 0);
+
+    getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'area_ids' => [999999999]]), $headers)
+        ->assertUnprocessable();
+});
+
+test('mobile locations list pages like the web table, with at least the web minimum per page', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [, $stocked, $empty, $prefix] = createMobileLocationsFixture($warehouse);
+
+    getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'q' => $prefix, 'per_page' => 1]), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('meta.per_page', config('ui.table.min_records_per_page'))
+        ->assertJsonPath('meta.total', 2)
+        ->assertJsonPath('data.0.id', $stocked->id)
+        ->assertJsonPath('data.1.id', $empty->id);
+
+    getJson(route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'q' => $prefix, 'sort' => '-code']), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $empty->id);
+});
+
+test('mobile locations list filters empty and partially empty locations', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [, $stocked, $empty, $prefix] = createMobileLocationsFixture($warehouse);
+    $stocked->stats()->update(['number_org_stock_slots' => 3, 'number_empty_stock_slots' => 1]);
+    $empty->stats()->update(['number_org_stock_slots' => 2, 'number_empty_stock_slots' => 2]);
+
+    $url = fn (string $occupancy) => route('grp.api.mobile.warehouses.locations', ['warehouse' => $warehouse->id, 'q' => $prefix, 'occupancy' => $occupancy]);
+
+    getJson($url('empty'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.id', $empty->id);
+
+    getJson($url('partially_empty'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.id', $stocked->id)
+        ->assertJsonPath('data.0.number_org_stock_slots', 3)
+        ->assertJsonPath('data.0.number_empty_stock_slots', 1);
+});
+
+test('mobile location shows the stock kept in it', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [, $stocked] = createMobileLocationsFixture($warehouse);
+    $locationOrgStock = $stocked->locationOrgStocks()->with('orgStock')->first();
+
+    getJson(route('grp.api.mobile.locations.show', $stocked->id), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.code', $stocked->code)
+        ->assertJsonCount(1, 'data.org_stocks')
+        ->assertJsonPath('data.org_stocks.0.code', $locationOrgStock->orgStock->code)
+        ->assertJsonPath('data.org_stocks.0.location_org_stock_id', $locationOrgStock->id)
+        ->assertJsonPath('data.org_stocks.0.quantity', '30')
+        ->assertJsonPath('data.org_stocks.0.type', 'picking')
+        ->assertJsonPath('data.org_stocks.0.min_stock', 12)
+        ->assertJsonPath('data.org_stocks.0.max_stock', 48);
+});
+
+test('mobile locations are forbidden without location access in that warehouse', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    $warehouse = createWarehouse();
+    [, $stocked] = createMobileLocationsFixture($warehouse);
+    Sanctum::actingAs(createMobileAppUser($this->group), ['mobile']);
+
+    getJson(route('grp.api.mobile.warehouses.locations_overview', $warehouse->id), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
+    getJson(route('grp.api.mobile.warehouses.areas', $warehouse->id), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
+    getJson(route('grp.api.mobile.warehouses.locations', $warehouse->id), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
+    getJson(route('grp.api.mobile.locations.show', $stocked->id), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
+});
+
+test('mobile locations need the app key', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+
+    getJson(route('grp.api.mobile.warehouses.locations', $warehouse->id))->assertNotFound();
+});
+
+
+test('mobile locations overview reports the empty location removal for the warehouse', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [, , $empty] = createMobileLocationsFixture($warehouse);
+    createMobileEmptyLocationLink($warehouse, $empty);
+
+    getJson(route('grp.api.mobile.warehouses.locations_overview', $warehouse->id), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.empty_locations_removal.enabled', false)
+        ->assertJsonPath('data.empty_locations_removal.can_edit', false)
+        ->assertJsonPath('data.empty_locations_removal.to_remove', DisassociateEmptyLocationOrgStocks::candidatesQuery($warehouse)->count())
+        ->assertJsonPath('data.empty_locations_removal.max_per_run', DisassociateEmptyLocationOrgStocks::MAX_PER_RUN);
+});
+
+test('mobile empty location org stocks list the links the next run would remove', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [, , $empty] = createMobileLocationsFixture($warehouse);
+    [, $orgStock] = createMobileEmptyLocationLink($warehouse, $empty);
+
+    $rows = collect(getJson(route('grp.api.mobile.warehouses.empty_location_org_stocks', [$warehouse->id, 'q' => $empty->code]), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('meta.total', 1)
+        ->json('data'));
+
+    expect($rows->first())->toMatchArray([
+        'code'          => $orgStock->code,
+        'name'          => $orgStock->name,
+        'location_code' => $empty->code,
+    ]);
+});
+
+test('mobile empty locations removal needs stock edit rights', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+
+    patchJson(route('grp.api.mobile.warehouses.empty_locations_removal.update', $warehouse->id), ['enabled' => true], ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertForbidden();
+
+    expect($warehouse->refresh()->isAutoDisassociatingEmptyLocations())->toBeFalse();
+});
+
+test('mobile empty locations removal is switched on and the removed links are listed', function () {
+    [$user, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    $user->assignRole(RolesEnum::getRoleName(RolesEnum::STOCK_CONTROLLER->value, $warehouse));
+    SetUserAuthorisedModels::run($user);
+    [, , $empty] = createMobileLocationsFixture($warehouse);
+    [, $orgStock] = createMobileEmptyLocationLink($warehouse, $empty);
+
+    patchJson(route('grp.api.mobile.warehouses.empty_locations_removal.update', $warehouse->id), ['enabled' => true], ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.enabled', true)
+        ->assertJsonPath('data.can_edit', true);
+
+    expect($warehouse->refresh()->isAutoDisassociatingEmptyLocations())->toBeTrue();
+
+    DisassociateEmptyLocationOrgStocks::run();
+
+    $rows = collect(getJson(route('grp.api.mobile.warehouses.removed_empty_location_org_stocks', [$warehouse->id, 'q' => $empty->code]), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->json('data'));
+
+    expect($rows->pluck('code'))->toContain($orgStock->code)
+        ->and($rows->first()['location_code'])->toBe($empty->code)
+        ->and($rows->first()['date'])->not->toBeNull();
 });

@@ -645,15 +645,24 @@ class SendChatMessageByGmail
 
             return "\0".(count($links) - 1)."\0";
         }, $text) ?? $text;
-        $text = preg_replace_callback('/\b(?:https?:\/\/|www\.)[^\s<>"]+/iu', function (array $match) use (&$links): string {
-            $url = preg_replace('/[.,;:!?\'")\]*_~]+$/u', '', $match[0]) ?? $match[0];
-            while (strlen($match[0]) > strlen($url) && $match[0][strlen($url)] === ')' && substr_count($url, '(') > substr_count($url, ')')) {
-                $url .= ')';
+        $source = $text;
+        $text   = preg_replace_callback('/\b(?:https?:\/\/|www\.)[^\s<>"]+/iu', function (array $match) use (&$links, $source): string {
+            [$whole, $offset] = $match[0];
+            $lineBefore       = preg_replace('/\b(?:https?:\/\/|www\.)[^\s<>"]+/iu', '', Str::afterLast(substr($source, 0, $offset), "\n")) ?? '';
+            $url              = preg_replace('/[.,;:!?\'")\]*_~]+$/u', '', $whole) ?? $whole;
+            while (strlen($whole) > strlen($url)) {
+                $next = $whole[strlen($url)];
+                $isOwnBracket = $next === ')' && substr_count($url, '(') > substr_count($url, ')');
+                $isUnopenedMarker = str_contains('*_~', $next) && ! preg_match('/(?:^|[^\w*_~])'.preg_quote($next, '/').'(?=\S)/u', $lineBefore);
+                if (! $isOwnBracket && ! $isUnopenedMarker) {
+                    break;
+                }
+                $url .= $next;
             }
             $links[] = ['url' => $url, 'label' => $url];
 
-            return "\0".(count($links) - 1)."\0".substr($match[0], strlen($url));
-        }, $text) ?? $text;
+            return "\0".(count($links) - 1)."\0".substr($whole, strlen($url));
+        }, $text, flags: PREG_OFFSET_CAPTURE) ?? $text;
 
         $html = preg_replace('/```([\s\S]+?)```/u', '<code style="font-family:monospace">$1</code>', e($text)) ?? e($text);
 

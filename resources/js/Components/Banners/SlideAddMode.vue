@@ -53,7 +53,7 @@ const onChange = () => {
                     <p class="pl-1">{{ ctrans("Click me or drag some images here.") }}</p>
                 </div>
                 <p class="text-[0.7rem] mb-2.5">
-                    {{ ctrans("PNG, JPG, GIF up to 10MB") }}
+                    {{ ctrans("PNG, JPG, GIF up to 10MB (animated GIF up to 300 KB)") }}
                 </p>
                 <div class="mt-2.5 flex items-center justify-center gap-x-2">
                     <Button id="gallery" :style="`tertiary`" :icon="'fal fa-photo-video'" label="Gallery" size="xs"

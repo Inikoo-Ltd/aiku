@@ -2,14 +2,16 @@ import SwiftUI
 
 struct LocationsFilterSheet: View {
     let areas: [LocationsArea]
-    let resultCount: (LocationsFilter) -> Int
+    let resultCount: (LocationsFilter) async -> Int?
     let onApply: (LocationsFilter) -> Void
     @State private var draft: LocationsFilter
+    @State private var count: Int?
+    @State private var isCounting = false
 
     init(
         initial: LocationsFilter,
         areas: [LocationsArea],
-        resultCount: @escaping (LocationsFilter) -> Int,
+        resultCount: @escaping (LocationsFilter) async -> Int?,
         onApply: @escaping (LocationsFilter) -> Void
     ) {
         self.areas = areas
@@ -19,7 +21,6 @@ struct LocationsFilterSheet: View {
     }
 
     var body: some View {
-        let count = resultCount(draft)
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 10) {
                 AppIcon.filter.image
@@ -76,7 +77,7 @@ struct LocationsFilterSheet: View {
                     .font(.aiku(12))
                     .foregroundStyle(AikuColor.text3)
                     .frame(maxWidth: .infinity)
-                AikuButton("Show \(count.locationsGrouped) \(count == 1 ? "location" : "locations")") {
+                AikuButton(applyTitle) {
                     onApply(draft)
                 }
                 .accessibilityIdentifier("locations.filter.apply")
@@ -85,6 +86,22 @@ struct LocationsFilterSheet: View {
         .padding(.horizontal, 20)
         .padding(.top, 28)
         .padding(.bottom, 16)
+        .task(id: draft) {
+            isCounting = true
+            if count != nil {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled else { return }
+            }
+            let counted = await resultCount(draft)
+            guard !Task.isCancelled else { return }
+            count = counted
+            isCounting = false
+        }
+    }
+
+    private var applyTitle: String {
+        guard let count, !isCounting else { return "Show locations" }
+        return "Show \(count.locationsGrouped) \(count == 1 ? "location" : "locations")"
     }
 
     private func hint(_ count: Int) -> String {

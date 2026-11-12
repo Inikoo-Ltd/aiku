@@ -12,6 +12,7 @@ struct LocationsAreasView: View {
         AppScreen(title: "Areas", kicker: "Locations · \(session.warehouseLabel)") {
             ModuleTabs(.locations, current: .areas)
         } content: {
+            LocationsLoadErrorBanner(store: store)
             SearchField(text: $store.areaQuery, placeholder: "Code or name", onScan: { isScanning = true })
             if areas.isEmpty {
                 EmptyState(icon: .search, title: "No areas found", message: "Try another code or name.")
@@ -24,6 +25,7 @@ struct LocationsAreasView: View {
                 }
             }
         }
+        .loadsRemoteLocations(into: store)
         .fullScreenCover(isPresented: $isScanning) {
             LocationsScanCover(title: "Scan location") {
                 isScanning = false

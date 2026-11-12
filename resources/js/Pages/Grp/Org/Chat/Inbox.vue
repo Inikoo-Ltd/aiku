@@ -3124,7 +3124,7 @@ if (!isEmbedded) {
     prefetchedFirstList = firstList.response
     firstListSource = `list:${firstList.outcome}${props.initialSession ? ":conversation" : ""}`
 
-    rememberFirstList(sessionsUrl.value, buildParams(1))
+    rememberFirstList(sessionsUrl.value, buildParams(1), usePage().url)
 }
 
 const firstListLoad = reloadContacts()

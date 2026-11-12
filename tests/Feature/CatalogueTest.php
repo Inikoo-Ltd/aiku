@@ -868,20 +868,28 @@ test('a product can be priced at zero, free gifts are not editable otherwise', f
     expect((float)$product->refresh()->price)->toBe(0.0);
 })->depends('create family');
 
-test('a Wix order with a product missing from the catalogue is skipped and reported once, not on every poll', function (ProductCategory $family) {
+test('a Wix order with a product missing from the catalogue is skipped and raises one ticket, not one per poll', function (ProductCategory $family) {
+    \Illuminate\Support\Facades\Queue::fake();
     $action   = \App\Actions\Catalogue\Shop\External\Wix\StoreOrderFromWix::make();
     $wixOrder = [
         'id'        => 'wix-order-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8)),
         'status'    => 'APPROVED',
         'number'    => '20189',
-        'lineItems' => [['id' => 'line-1', 'physicalProperties' => ['sku' => 'NOT-IN-CATALOGUE-'.\Illuminate\Support\Str::random(6)], 'quantity' => 1]],
+        'lineItems' => [
+            ['id' => 'line-1', 'physicalProperties' => ['sku' => 'NOT-IN-CATALOGUE-'.\Illuminate\Support\Str::random(6)], 'productName' => ['original' => 'JOYOUS'], 'quantity' => 1],
+            ['id' => 'line-2', 'physicalProperties' => ['sku' => ''], 'productName' => ['original' => 'Dark Fairytale'], 'descriptionLines' => [['name' => ['original' => 'Size'], 'plainText' => ['original' => '10ml']]], 'quantity' => 1],
+        ],
     ];
-    $reportKey = $action->skippedOrderReportKey($family->shop, $wixOrder['id']);
+    $tickets = fn () => \App\Models\Helpers\Ticket::where('shop_id', $family->shop_id)->where('data->wix_order_id', $wixOrder['id'])->get();
 
-    expect(\Illuminate\Support\Facades\Cache::has($reportKey))->toBeFalse()
+    expect($tickets())->toHaveCount(0)
         ->and($action->handle($family->shop, $wixOrder))->toBeNull()
-        ->and(\Illuminate\Support\Facades\Cache::has($reportKey))->toBeTrue()
-        ->and($action->handle($family->shop, $wixOrder))->toBeNull();
+        ->and($action->handle($family->shop, $wixOrder))->toBeNull()
+        ->and($tickets())->toHaveCount(1)
+        ->and($tickets()->first()->subject)->toContain($family->shop->code.'-20189')
+        ->and($tickets()->first()->description)->toContain('JOYOUS: SKU NOT-IN-CATALOGUE-')
+        ->and($tickets()->first()->description)->toContain('Dark Fairytale (10ml) has no SKU in Wix')
+        ->and($tickets()->first()->description)->toContain('Aiku only imports Wix products that have a SKU');
 })->depends('create family');
 
 test('a Wix order keeps the sale price and shipping the buyer paid in Wix', function (ProductCategory $family) {
@@ -923,6 +931,46 @@ test('a Wix order keeps the sale price and shipping the buyer paid in Wix', func
 
     expect((float) $order->refresh()->net_amount)->toBe(27.5)
         ->and((float) $order->tax_amount)->not->toBe(10.5);
+})->depends('create family');
+
+test('a Wix order already fulfilled in Wix comes in invoiced and dispatched on its Wix date, without a delivery note', function (ProductCategory $family) {
+    \Illuminate\Support\Facades\Http::fake();
+    $product = StoreProduct::make()->action($family, array_merge(
+        Product::factory()->definition(),
+        ['trade_units' => [['id' => $this->tradeUnit1->id, 'quantity' => 1]], 'price' => 53]
+    ));
+
+    $order = \App\Actions\Catalogue\Shop\External\Wix\StoreOrderFromWix::make()->handle($family->shop, [
+        'id'                => 'wix-order-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8)),
+        'status'            => 'APPROVED',
+        'fulfillmentStatus' => 'FULFILLED',
+        'number'            => '20211',
+        'createdDate'       => '2026-11-02T12:39:26Z',
+        'buyerInfo'         => ['email' => 'wix-buyer-'.\Illuminate\Support\Str::random(6).'@example.com'],
+        'billingInfo'       => ['contactDetails' => ['firstName' => 'Wix', 'lastName' => 'Buyer'], 'address' => ['country' => 'GB', 'city' => 'Chesterfield', 'postalCode' => 'S41 9QJ', 'addressLine' => 'Broombank Road']],
+        'priceSummary'      => ['subtotal' => ['amount' => '45.05'], 'shipping' => ['amount' => '0'], 'tax' => ['amount' => '9.02']],
+        'lineItems'         => [[
+            'id'                   => 'line-1',
+            'quantity'             => 1,
+            'physicalProperties'   => ['sku' => $product->code],
+            'price'                => ['amount' => '45.05'],
+            'priceBeforeDiscounts' => ['amount' => '53.00'],
+            'totalPriceBeforeTax'  => ['amount' => '45.05'],
+            'totalPriceAfterTax'   => ['amount' => '54.06'],
+        ]],
+    ], '2026-11-04 13:34:40');
+
+    $invoice = $order->invoices()->where('type', \App\Enums\Accounting\Invoice\InvoiceTypeEnum::INVOICE)->sole();
+
+    expect($order->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED)
+        ->and($order->dispatched_at->toDateTimeString())->toBe('2026-11-04 13:34:40')
+        ->and($order->deliveryNotes()->count())->toBe(0)
+        ->and((float) $order->transactions()->where('model_type', 'Product')->sole()->quantity_dispatched)->toBe(1.0)
+        ->and($invoice->date->toDateString())->toBe('2026-11-04')
+        ->and((float) $invoice->net_amount)->toBe(45.05)
+        ->and((float) $invoice->tax_amount)->toBe(9.02)
+        ->and((float) $invoice->total_amount)->toBe(54.07);
+    \Illuminate\Support\Facades\Http::assertNothingSent();
 })->depends('create family');
 
 test('a free Wix variant syncs onto an existing product without an rrp', function (ProductCategory $family) {
@@ -987,6 +1035,20 @@ test('wix products without variants share the all-zero variant id and still impo
     expect($action->discontinueProductsGoneFromWix($wixShop, $liveVariantKeys))->toBe(1)
         ->and($products[4]->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::DISCONTINUED)
         ->and($products[0]->refresh()->state)->toBe(\App\Enums\Catalogue\Product\ProductStateEnum::ACTIVE);
+});
+
+test('wix variants without a sku are listed so they can be fixed in wix', function () {
+    $variant = fn (string $name, ?string $sku, bool $visible = true) => ['product_id' => 'p-'.$name, 'variant_id' => 'v-'.$name, 'sku' => $sku, 'name' => $name, 'visible' => $visible];
+
+    $rows = \App\Actions\Catalogue\Shop\External\Wix\GetWixProducts::make()->getWixVariantsWithoutSku([
+        $variant('GINGERBREAD - 10ml', ''),
+        $variant('Christmas Spice - 10ml', 'FOKG-270-10ml'),
+        $variant('Dark Fairytale - 50ml', null, false),
+        $variant('Aquamarine - 5g', '  '),
+    ]);
+
+    expect(array_column($rows, 'name'))->toBe(['Aquamarine - 5g', 'Dark Fairytale - 50ml', 'GINGERBREAD - 10ml'])
+        ->and($rows[1])->toBe(['name' => 'Dark Fairytale - 50ml', 'visible' => 'no', 'product_id' => 'p-Dark Fairytale - 50ml', 'variant_id' => 'v-Dark Fairytale - 50ml']);
 });
 
 test('stock changes of several variants of one wix product queue a single inventory push', function () {
@@ -2698,4 +2760,30 @@ test('a change in available quantity is broadcast to the organisation staff scre
         $orgStock->update($originalOrgStock);
         $product->orgStocks()->detach();
     }
+});
+
+test('faire days to dispatch is changed only by organisation admins, between 1 and 21 days', function () {
+    $faireShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), [
+        'type'   => ShopTypeEnum::EXTERNAL->value,
+        'engine' => \App\Enums\Catalogue\Shop\ShopEngineEnum::FAIRE->value,
+    ]));
+    $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $faireShop->group_id, 'status' => true]);
+
+    $daysField = fn () => collect(
+        get(route('grp.org.shops.show.settings.edit', [$faireShop->organisation->slug, $faireShop->slug]))->assertOk()->viewData('page')['props']['formData']['blueprint']
+    )->keyBy('label')->get('Faire Settings')['fields']['faire_order_from_days'];
+
+    actingAsUserWithOnlyPermissions($user, ['shop-admin.'.$faireShop->id]);
+    expect($daysField())->toMatchArray(['value' => 6])->and($daysField()['bind']['disabled'])->toBeTrue();
+    patch(route('grp.models.org.shop.update', [$faireShop->organisation_id, $faireShop->id]), ['faire_order_from_days' => 14])->assertSessionHasErrors('faire_order_from_days');
+    expect(\Illuminate\Support\Arr::get($faireShop->refresh()->settings, 'faire.order_from_days'))->toBeNull();
+
+    actingAsUserWithOnlyPermissions($user, ['org-admin.'.$faireShop->organisation_id]);
+    expect($daysField()['bind']['disabled'])->toBeFalse();
+    foreach ([0, -3, 22] as $invalidDays) {
+        patch(route('grp.models.org.shop.update', [$faireShop->organisation_id, $faireShop->id]), ['faire_order_from_days' => $invalidDays])->assertSessionHasErrors('faire_order_from_days');
+    }
+    patch(route('grp.models.org.shop.update', [$faireShop->organisation_id, $faireShop->id]), ['faire_order_from_days' => 14])->assertSessionHasNoErrors();
+    expect(\Illuminate\Support\Arr::get($faireShop->refresh()->settings, 'faire.order_from_days'))->toBe(14)
+        ->and(\App\Actions\Catalogue\Shop\External\Faire\AcceptFaireOrder::make()->getExpectedShipDate($faireShop, null)->toDateString())->toBe(now()->addDays(14)->toDateString());
 });

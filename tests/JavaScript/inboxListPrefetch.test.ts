@@ -124,6 +124,38 @@ test("Back or Forward to the inbox asks for the list that address opened with la
 	assert.equal(requests.length, 2, "a change of hash alone asks for nothing")
 })
 
+test("Back to an inbox showing a conversation asks for the list of the inbox's own address, which history keeps", () => {
+	store.clear()
+	requests.length = 0
+	const conversationParams = { ...params, statuses: ["active"] }
+	location.href = "https://app.aiku.test/org/aw/chat/inbox/01M52ZHJ1KPDCSXMVMF33CNSY2"
+	rememberFirstList(url, conversationParams)
+	location.href = "https://app.aiku.test/org/aw/chat/inbox"
+	rememberFirstList(url, params)
+
+	location.href = "https://app.aiku.test/org/aw/chat/inbox/01M6GNVSNA35CFVBB4YB9MSCNM"
+	listeners.popstate({ state: { page: { url: "/org/aw/chat/inbox" } } })
+
+	assert.equal(takePrefetchedList(url, params).outcome, "prefetched")
+	assert.deepEqual(requests.map((r) => r.params), [params])
+})
+
+test("/chat/inbox asks for the list an organisation's inbox opened with last, which a shop inbox or supervision does not change", () => {
+	store.clear()
+	requests.length = 0
+	location.href = "https://app.aiku.test/org/aw/chat/inbox"
+	rememberFirstList(url, params)
+	location.href = "https://app.aiku.test/org/aw/shops/uk/chat/inbox"
+	rememberFirstList(url, { ...params, shop_ids: [7] })
+	location.href = "https://app.aiku.test/org/aw/chat/supervision"
+	rememberFirstList(url, { ...params, statuses: ["waiting"] })
+
+	visit("/chat/inbox")
+
+	assert.equal(takePrefetchedList(url, params).outcome, "prefetched")
+	assert.deepEqual(requests.map((r) => r.params), [params])
+})
+
 test("nothing is remembered from a page that is not an inbox", () => {
 	store.clear()
 	location.href = "https://app.aiku.test/org/aw/shops/uk/orders"
@@ -165,7 +197,7 @@ test("a choice changed while a notification link is open is remembered for the i
 
 	rememberFirstList(url, params, "https://app.aiku.test/org/aw/chat/inbox")
 
-	assert.deepEqual([...store.keys()], ["inbox-first-list:aw:inbox"])
+	assert.deepEqual([...store.keys()], ["inbox-first-list:aw:inbox", "inbox-first-list:home"])
 })
 
 test("a conversation's address opens on the list the last conversation opened on, apart from the inbox", () => {
@@ -184,5 +216,5 @@ test("a conversation's address opens on the list the last conversation opened on
 	visit("/org/aw/chat/inbox")
 	assert.equal(takePrefetchedList(url, params).outcome, "prefetched")
 
-	assert.deepEqual([...store.keys()].sort(), ["inbox-first-list:aw:inbox", "inbox-first-list:aw:inbox:conversation"])
+	assert.deepEqual([...store.keys()].sort(), ["inbox-first-list:aw:inbox", "inbox-first-list:aw:inbox:conversation", "inbox-first-list:home"])
 })

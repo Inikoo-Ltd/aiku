@@ -4,15 +4,25 @@ struct LocationsAreaDetailView: View {
     let code: String
     @Environment(AppRouter.self) private var router
     @State private var store = LocationsStore.shared
+    @Environment(\.apiClient) private var apiClient
 
     var body: some View {
+        areaContent
+            .loadsRemoteLocations(into: store)
+            .task(id: code) {
+                await store.loadArea(code: code, apiClient: apiClient)
+            }
+    }
+
+    @ViewBuilder
+    private var areaContent: some View {
         if let area = store.warehouse.areaOrFallback(code: code) {
             let locations = store.warehouse.locations(inArea: area.code)
             AppScreen(title: area.title, kicker: "Warehouse area · code \(area.code)") {
                 StatGrid(columns: 3) {
                     StatTile(area.locationCount.locationsGrouped, label: "Locations")
                     StatTile(area.emptyCount.locationsGrouped, label: "Empty", tone: .warn)
-                    StatTile("\(area.pickingOrder)", label: "Picking order")
+                    StatTile(area.pickingOrder.map { "\($0)" } ?? "–", label: "Picking order")
                 }
                 SectionHeading("Locations")
                 if locations.isEmpty {

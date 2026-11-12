@@ -553,6 +553,17 @@
   },
   {
     "outboxes": [
+      "account_erased"
+    ],
+    "name": "Account erased",
+    "content": "account_erased.blade.php",
+    "builder": "blade",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
       "order_payment_reminder"
     ],
     "name": "Order payment reminder",

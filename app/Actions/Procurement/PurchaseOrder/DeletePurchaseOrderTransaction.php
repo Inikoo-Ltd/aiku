@@ -46,6 +46,7 @@ class DeletePurchaseOrderTransaction extends OrgAction
         $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
         self::reopenShoppingListItems([$purchaseOrderTransaction->id]);
         self::rememberRemovedFromDraft($purchaseOrder, $purchaseOrderTransaction);
+        self::rememberRemovedLineForHistory($purchaseOrder, $purchaseOrderTransaction);
         $purchaseOrderTransaction->delete();
         CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
@@ -75,6 +76,13 @@ class DeletePurchaseOrderTransaction extends OrgAction
             $data['removed_org_supplier_product_ids'] = [...$removed, $purchaseOrderTransaction->org_supplier_product_id];
             $purchaseOrder->update(['data' => $data]);
         }
+    }
+
+    private static function rememberRemovedLineForHistory(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $purchaseOrderTransaction): void
+    {
+        $data = $purchaseOrder->data ?? [];
+        $data['removed_transactions'][$purchaseOrderTransaction->id] = $purchaseOrderTransaction->orgStock?->code ?? '#'.$purchaseOrderTransaction->id;
+        $purchaseOrder->update(['data' => $data]);
     }
 
     public function action(PurchaseOrderTransaction $purchaseOrderTransaction): void

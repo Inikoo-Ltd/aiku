@@ -168,6 +168,11 @@ type Props = {
     pays_by_speed: boolean
     under_target_reasons: Record<string, string>
     non_productive_activities: { value: string, label: string }[]
+    development_time: null | {
+        route: { name: string, parameters: object }
+        artisans: { id: number, name: string, on_tablet: boolean, until: string | null, switch_route: null | { name: string, parameters: object } }[]
+        history: { id: number, artisan: string, changed_at: string, by: string | null, on: boolean, until: string | null }[]
+    }
     activity: string | null
     preparation_reason: string | null
     preparation_reasons: { id: number, name: string, is_other: boolean }[]
@@ -680,6 +685,75 @@ function saveTimes() {
     withLockReason({ locked_for_payroll: session.locked_for_payroll || (!!editStart.value && editStart.value < lockedBefore) }, (lock) => sendTimes(session, { ...data, ...lock }), session)
 }
 
+const addingDevelopment = ref(false)
+const developmentEmployeeId = ref<number | null>(null)
+const developmentStart = ref<Date | null>(null)
+const developmentEnd = ref<Date | null>(null)
+const developmentNote = ref("")
+const developmentErrors = ref<Record<string, string>>({})
+const notPaidConfirmed = ref(false)
+watch([developmentEmployeeId, developmentStart, developmentEnd], () => notPaidConfirmed.value = false)
+const canSaveDevelopment = computed(() => !!developmentEmployeeId.value && !!developmentStart.value && !!developmentEnd.value && developmentEnd.value > developmentStart.value && developmentNote.value.trim() !== "")
+
+function openDevelopment() {
+    addingDevelopment.value = true
+    developmentEmployeeId.value = null
+    developmentStart.value = null
+    developmentEnd.value = null
+    developmentNote.value = ""
+    developmentErrors.value = {}
+    notPaidConfirmed.value = false
+}
+
+function saveDevelopment() {
+    if (!props.development_time || !canSaveDevelopment.value) return
+    const data = {
+        employee_id: developmentEmployeeId.value,
+        started_at: developmentStart.value?.toISOString(),
+        ended_at: developmentEnd.value?.toISOString(),
+        note: developmentNote.value.trim(),
+        not_paid_confirmed: notPaidConfirmed.value,
+    }
+    const lockedBefore = new Date(props.payroll_lock.locked_before + "T00:00:00")
+    withLockReason({ locked_for_payroll: developmentStart.value! < lockedBefore }, (lock) => {
+        processing.value = true
+        router.post(route(props.development_time!.route.name, props.development_time!.route.parameters), { ...data, ...lock }, {
+            preserveScroll: true,
+            onSuccess: () => addingDevelopment.value = false,
+            onError: (errors) => {
+                developmentErrors.value = errors
+                notPaidConfirmed.value ||= !!errors.not_paid
+            },
+            onFinish: () => processing.value = false,
+        })
+    }, developmentErrors)
+}
+
+const switchingDevelopment = ref(false)
+const developmentSwitchError = ref<string | null>(null)
+const developmentUntil = ref<Record<number, Date | null>>({})
+const canSwitchDevelopment = computed(() => !!props.development_time?.artisans.some(artisan => artisan.switch_route))
+const isoDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+
+function openDevelopmentSwitches() {
+    developmentSwitchError.value = null
+    developmentUntil.value = Object.fromEntries((props.development_time?.artisans ?? []).map(artisan => [artisan.id, artisan.until ? new Date(artisan.until + "T00:00:00") : null]))
+    switchingDevelopment.value = true
+}
+
+function setDevelopmentOnTablet(artisan: NonNullable<Props['development_time']>['artisans'][number], on: boolean) {
+    if (!artisan.switch_route) return
+    const until = developmentUntil.value[artisan.id]
+    processing.value = true
+    developmentSwitchError.value = null
+    router.patch(route(artisan.switch_route.name, artisan.switch_route.parameters), { development_on_tablet: on, development_on_tablet_until: on && until ? isoDay(until) : null }, {
+        preserveScroll: true,
+        onSuccess: () => { if (!on) developmentUntil.value[artisan.id] = null },
+        onError: (errors) => developmentSwitchError.value = Object.values(errors)[0] as string,
+        onFinish: () => processing.value = false,
+    })
+}
+
 function sendTimes(session: EditableSession, data: Record<string, unknown>) {
     processing.value = true
     router.patch(
@@ -772,6 +846,12 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
             </label>
             <Button type="tertiary" :label="ctrans('Apply')" @click="applyPeriod">
                 <template #icon><FontAwesomeIcon :icon="['fal', 'filter']" fixed-width aria-hidden="true" /></template>
+            </Button>
+            <Button v-if="canSwitchDevelopment" v-tooltip="ctrans('Choose which artisans can start Development on the tablet')" type="tertiary" :label="ctrans('Development on tablet')" @click="openDevelopmentSwitches">
+                <template #icon><FontAwesomeIcon :icon="['fal', 'cog']" fixed-width aria-hidden="true" /></template>
+            </Button>
+            <Button v-if="development_time" v-tooltip="ctrans('Development work kept on paper instead of on the tablet, paid at the Development rate')" type="tertiary" :label="ctrans('Add development time')" @click="openDevelopment">
+                <template #icon><FontAwesomeIcon :icon="['fal', 'plus']" fixed-width aria-hidden="true" /></template>
             </Button>
             <Button v-if="preparation_reasons_route" type="tertiary" :label="ctrans('Preparation reasons')" class="ml-auto" @click="openReasons">
                 <template #icon><FontAwesomeIcon :icon="['fal', 'cog']" fixed-width aria-hidden="true" /></template>
@@ -1415,6 +1495,81 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                     </Button>
                     <Button type="tertiary" :label="warningConfirmed ? ctrans('Save anyway') : ctrans('Save times')" :loading="processing" :disabled="!canSaveTimes" @click="saveTimes">
                         <template #icon><FontAwesomeIcon :icon="['fal', warningConfirmed ? 'exclamation-triangle' : 'check']" :class="warningConfirmed ? 'text-amber-600' : 'text-green-600'" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                </div>
+            </div>
+        </Dialog>
+
+        <Dialog :visible="switchingDevelopment" modal :header="ctrans('Development on tablet')" :style="{ width: '44rem' }" @update:visible="(visible: boolean) => { if (!visible) switchingDevelopment = false }">
+            <div v-if="development_time" class="space-y-3 text-sm">
+                <div class="text-xs text-gray-500">{{ ctrans('The Development button shows on the tablet only for the artisans switched on here. With a last day it hides again by itself after that day. Development time can still be added for anyone with Add development time.') }}</div>
+                <div v-if="developmentSwitchError" class="rounded border border-red-200 bg-red-50 px-2 py-1 text-red-700">{{ developmentSwitchError }}</div>
+                <div class="max-h-[22rem] overflow-y-auto">
+                    <table class="w-full">
+                        <thead class="whitespace-nowrap">
+                            <tr class="border-b border-gray-200 text-xs text-gray-500">
+                                <th class="py-1 pr-3 text-left font-medium">{{ ctrans('Artisan') }}</th>
+                                <th class="py-1 px-3 text-left font-medium">{{ ctrans('On the tablet') }}</th>
+                                <th class="py-1 pl-3 text-left font-medium">{{ ctrans('Last day (optional)') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="artisan in development_time.artisans" :key="artisan.id" class="border-b border-gray-100">
+                                <td class="py-1.5 pr-3 text-gray-800">{{ artisan.name }}</td>
+                                <td class="py-1.5 px-3">
+                                    <ToggleSwitch :modelValue="artisan.on_tablet" :disabled="processing" :aria-label="ctrans('Development on the tablet for :name', { name: artisan.name })" @update:modelValue="(on: boolean) => setDevelopmentOnTablet(artisan, on)" />
+                                </td>
+                                <td class="py-1.5 pl-3">
+                                    <DatePicker v-model="developmentUntil[artisan.id]" dateFormat="d M yy" :minDate="new Date()" showButtonBar :manualInput="false" :disabled="processing || !artisan.on_tablet" class="w-40" :class="fieldFocusClass" :aria-label="ctrans('Last day')" @update:modelValue="setDevelopmentOnTablet(artisan, true)" />
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-if="development_time.history.length" class="text-xs text-gray-500">
+                    <div class="mb-1 font-medium text-gray-600">{{ ctrans('Changes') }}</div>
+                    <div class="max-h-32 overflow-y-auto">
+                        <div v-for="change in development_time.history" :key="change.id" class="tabular-nums">
+                            {{ useFormatTime(change.changed_at, { formatTime: 'd MMM yyyy HH:mm' }) }} · {{ change.by ?? '—' }} · {{ change.artisan }}:
+                            {{ change.on ? (change.until ? ctrans('switched on until :date', { date: useFormatTime(change.until) }) : ctrans('switched on')) : ctrans('switched off') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Dialog>
+
+        <Dialog :visible="addingDevelopment" modal :closable="!processing" :header="ctrans('Add development time')" :style="{ width: '32rem' }" @update:visible="(visible: boolean) => { if (!visible) addingDevelopment = false }">
+            <div v-if="development_time" class="space-y-3 text-sm">
+                <div class="text-xs text-gray-500">{{ ctrans('For development work on no job order that was not started on the tablet. It is paid at the Development rate, within the hours the artisan clocked that day.') }}</div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Artisan') }} <span class="text-red-500">*</span></label>
+                    <Select v-model="developmentEmployeeId" :options="development_time.artisans" optionLabel="name" optionValue="id" filter :placeholder="ctrans('Choose an artisan')" fluid :class="fieldFocusClass" />
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">{{ ctrans('Start') }} <span class="text-red-500">*</span></label>
+                        <DatePicker v-model="developmentStart" showTime hourFormat="24" dateFormat="d M yy" :maxDate="developmentEnd ?? new Date()" fluid :class="fieldFocusClass" :aria-label="ctrans('Start')" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">{{ ctrans('End') }} <span class="text-red-500">*</span></label>
+                        <DatePicker v-model="developmentEnd" showTime hourFormat="24" dateFormat="d M yy" :minDate="developmentStart ?? undefined" :maxDate="new Date()" fluid :class="fieldFocusClass" :aria-label="ctrans('End')" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">{{ ctrans('What was worked on') }} <span class="text-red-500">*</span></label>
+                    <InputText v-model="developmentNote" maxlength="255" fluid />
+                </div>
+                <div v-for="(message, field) in developmentErrors" :key="field"
+                    class="rounded px-2 py-1"
+                    :class="field === 'not_paid' ? 'border border-amber-200 bg-amber-50 text-amber-800' : 'border border-red-200 bg-red-50 text-red-700'">
+                    {{ message }}
+                </div>
+                <div class="flex w-full gap-2">
+                    <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="addingDevelopment = false">
+                        <template #icon><FontAwesomeIcon :icon="['fal', 'times']" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                    </Button>
+                    <Button type="primary" full :label="notPaidConfirmed ? ctrans('Save anyway') : ctrans('Add time')" :loading="processing" :disabled="!canSaveDevelopment" @click="saveDevelopment">
+                        <template #icon><FontAwesomeIcon :icon="['fal', notPaidConfirmed ? 'exclamation-triangle' : 'check']" fixed-width aria-hidden="true" /></template>
                     </Button>
                 </div>
             </div>

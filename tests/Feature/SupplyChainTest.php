@@ -1485,7 +1485,7 @@ test('UI supply chain PO journey', function (Supplier $supplier) {
                 ->where('pagination.total', 0)
                 ->where('summary.open', 1)));
 
-    $purchaseOrder->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+    $purchaseOrder->updateQuietly(['state' => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum::CONFIRMED, 'submitted_at' => now()]);
     $this->patch(route('grp.models.purchase-order.journey_stage', ['purchaseOrder' => $purchaseOrder->id]), [
         'stage' => 'in_production',
         'date'  => now()->toDateString(),

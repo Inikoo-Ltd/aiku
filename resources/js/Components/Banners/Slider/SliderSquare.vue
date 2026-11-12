@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import { bannerVideo } from "@/Composables/bannerVideo"
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { get } from 'lodash-es'
 
@@ -267,7 +268,7 @@ onMounted(() => {
                         class="relative w-full h-full">
                         <Image :src="get(component, ['image', props.view || 'desktop', 'source'], null) ?? get(component, ['image', 'desktop', 'source'], null)"
                             :srcset="get(component, ['image', props.view || 'desktop', 'srcset'], undefined) ?? get(component, ['image', 'desktop', 'srcset'], undefined)"
-                            alt="Wowsbar"
+                            :alt="component?.layout?.centralStage?.title || ''"
                             :imgAttributes="index === 0 ? { loading: 'eager', fetchpriority: 'high', decoding: 'async' } : { loading: 'lazy', decoding: 'async' }" />
                     </div>
                     <!-- Video -->
@@ -275,28 +276,17 @@ onMounted(() => {
                         v-else-if="get(component, ['layout', 'backgroundType', props.view || 'desktop'], 'image') === 'video'"
                         class="relative w-full h-full overflow-hidden"
                         >
-                        <!-- Direct video -->
                         <video
-                            v-if="get(component, ['layout', 'video', props.view || 'desktop'])?.match(/\.(mp4|webm|ogg)$/i)"
-                            :src="get(component, ['layout', 'video', props.view || 'desktop'])"
+                            v-if="bannerVideo(get(component, ['layout', 'video', props.view || 'desktop']))?.kind === 'file'"
+                            :src="bannerVideo(get(component, ['layout', 'video', props.view || 'desktop']))?.src"
                             autoplay muted loop playsinline
                             class="w-full h-full object-cover"
                         />
-
-                        <!-- YouTube -->
                         <iframe
-                            v-else-if="get(component, ['layout', 'video', props.view || 'desktop'])?.includes('youtube')"
-                            :src="`https://www.youtube.com/embed/${
-                            get(component, ['layout', 'video', props.view || 'desktop'])
-                                ?.split('v=')[1]
-                                ?.split('&')[0]
-                            }?autoplay=1&mute=1&loop=1&playlist=${
-                            get(component, ['layout', 'video', props.view || 'desktop'])
-                                ?.split('v=')[1]
-                                ?.split('&')[0]
-                            }`"
-                            class="w-full h-full"
-                            allow="autoplay"
+                            v-else-if="bannerVideo(get(component, ['layout', 'video', props.view || 'desktop']))"
+                            :src="bannerVideo(get(component, ['layout', 'video', props.view || 'desktop']))?.src"
+                            class="w-full h-full pointer-events-none"
+                            allow="autoplay; fullscreen; picture-in-picture"
                         />
                     </div>
                     <div v-else

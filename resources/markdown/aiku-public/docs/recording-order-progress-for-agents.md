@@ -10,7 +10,7 @@ order: 2
 ---
 
 <aside class="tldr">
-For coordination agents. The buying company follows every order through eight stages: PO Launch, Deposit & Go, Making It Happen, Ready to Roll, Clean Hand Over, Homeward Bound, Counted & Costed and Mission Complete. Stages 1 to 5 are your part of the work. It can see by itself when goods are dispatched and when they arrive, but it cannot see what happens at the supplier. That part comes from you: on each order to a supplier you record when the deposit was paid, when production started, when production was done, the date you expect the goods ready, and the day you hand the goods over to the shipping agent. Record each one on the day it happens. The buyer's side is explained in <a href="/docs/reading-the-po-journey-board">reading the PO journey board</a>.
+For coordination agents. The buying company follows every order through eight stages: PO Launch, Agreement, Making It Happen, Ready to Roll, Clean Hand Over, Homeward Bound, Counted & Costed and Mission Complete. Stages 1 to 5 are your part of the work. It can see by itself when goods are dispatched and when they arrive, but it cannot see what happens at the supplier. That part comes from you: on each order to a supplier you record when the deposit was paid, when production started, when production was done, the date you expect the goods ready, and the day you hand the goods over to the shipping agent. Record each one on the day it happens. The buyer's side is explained in <a href="/docs/reading-the-po-journey-board">reading the PO journey board</a>.
 </aside>
 
 ## Why your dates matter
@@ -41,7 +41,22 @@ Clean Hand Over is the moment your work on an order is done. What it means is se
 
 A dispatched shipment always completes the stage. The buying company may also give a stage its own name for you, for example "Sent to forwarder": it shows on the order with that name.
 
-Stages go in order. Record each date on the day it happens. A date more than a day in the past, a stage recorded before the one before it, or a date you clear asks you for a reason. The reason is kept in the order's history, with your name, so the buyer can see why.
+## Stages go in order
+
+Stages go strictly in order, one after the other:
+
+- **While the order is Submitted**, only stage 2, Agreement, can be done: the deposit is paid, or the order is marked **No deposit needed**. Either one agrees the terms and the order reads **Agreed**. Until then every later button is grey, and pointing at it says what to do first.
+- **From Agreed on**, only the buttons of the stage the order is at work, with those before it. A later stage stays grey until the one before it is done, and pointing at it names the stage to finish first.
+- The automatic steps are never held back: goods receipts, container lists, payments and dispatched containers record what happened, whatever the stage.
+
+Record each date on the day it happens. A date more than a day in the past, or a date you clear, asks you for a reason. The reason is kept in the order's history, with your name, so the buyer can see why.
+
+## When a step does not happen
+
+An order never gets stuck on a step that is not done for it: each stage has a skip button. A skip asks for a short reason, shows on the stage as **Skipped** with who, when and why, goes to the order's history, and can be undone.
+
+- **QC skipped** is yours: on Ready to Roll, when no quality check is done for the order, so that you can record **Handed over** without waiting for one.
+- The other skips are the buying company's: **Sample skipped**, **Shipped direct** (the goods do not go through your warehouse), **Compliance skipped** and **Handed over without checks**.
 
 ## What the buying company records
 
@@ -49,7 +64,7 @@ Some dates you cannot enter, by design:
 
 - **Sample approved.** The buyer approves the sample. New products only; reorders have no sample.
 - **Approved ready date.** The buyer approves your proposed date. From then on it is locked, and it sets the targets: quality check is due that day, and the clean handover within seven days of it.
-- **QC passed.** The buyer confirms it, usually from your quality evidence. Approving the QC releases the balance payment: until then, paying the balance asks for a reason.
+- **QC passed.** The buyer confirms it, usually from your quality evidence. Approving the QC releases the balance payment: until then, paying the balance asks for a reason. When no quality check is done, you mark **QC skipped** instead, with the reason.
 - **Compliance pack complete.**
 
 Your <a href="/docs/your-clean-handover-score">Clean Handover Score</a> is calculated from these dates and from the handover date you record. The handover date is yours to record, so record the day the goods actually reached the shipping agent. The buyer sees who recorded it and when, can check it against the shipping agent's receipt, and can correct it; a correction is kept in the order's history with the reason.
@@ -97,10 +112,10 @@ If an order was cancelled by mistake, or the buying company wants it after all, 
 
 <aside class="wayfinder">
 <b>Where to click in aiku</b><br>
-Log in → <b>Purchase Orders</b> → open the order. Each purchase order is to one of your suppliers. The stages are at the top of the page: use the <b>Production started</b>, <b>Production done</b> and, if you hand goods to a shipping agent, <b>Handed over</b> buttons there. The deposit is recorded with <b>Pay deposit</b> in the payments panel. Then open <b>Edit</b>: <b>Proposed ready date</b> and <b>Agent's order number</b> are in the <b>Clean handover</b> section.
+Log in → <b>Purchase Orders</b> → open the order. Each purchase order is to one of your suppliers. The stages are at the top of the page: use the <b>Production started</b>, <b>Production done</b>, <b>QC skipped</b> and, if you hand goods to a shipping agent, <b>Handed over</b> buttons there. A grey button belongs to a later stage: point at it to see what comes first. The deposit is recorded with <b>Pay deposit</b> in the payments panel. Then open <b>Edit</b>: <b>Proposed ready date</b> and <b>Agent's order number</b> are in the <b>Clean handover</b> section.
 </aside>
 
 <aside class="wayfinder">
 <b>Permissions you need</b><br>
-A login for your agent organisation. You can mark only your own stages, on your own orders: production started, production done and handed over on the stages, the deposit as a payment, and your proposed ready date and order number on the edit page. Sample approval, the approved ready date, QC and compliance are not open to you, because the buying company records them.
+A login for your agent organisation. You can mark only your own stages, on your own orders: production started, production done and handed over on the stages, QC skipped, the deposit as a payment, and your proposed ready date and order number on the edit page. Sample approval, the approved ready date, QC and compliance are not open to you, because the buying company records them.
 </aside>

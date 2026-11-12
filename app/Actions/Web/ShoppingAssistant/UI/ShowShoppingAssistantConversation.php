@@ -16,6 +16,7 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Http\Resources\Web\ShoppingAssistantConversationsResource;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
@@ -39,10 +40,16 @@ class ShowShoppingAssistantConversation extends OrgAction
 
     private ?Website $website = null;
 
+    private bool $inShopMenu = false;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
+        }
+
+        if ($this->inShopMenu) {
+            return $request->user()->authTo(["websites-view.{$this->organisation->id}", "web.{$this->shop->id}.view", 'group-webmaster.view']);
         }
 
         return $this->website ? $this->authorizeWebsiteRoute($request) : $this->canViewGroupShoppingAssistant($request->user());
@@ -62,6 +69,17 @@ class ShowShoppingAssistantConversation extends OrgAction
         $this->website = $website;
         $this->initialisationFromShop($shop, $request);
         abort_unless($conversation->website_id === $website->id, 404);
+
+        return $this->handle($conversation);
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ShoppingAssistantConversation $conversation, ActionRequest $request): ShoppingAssistantConversation
+    {
+        abort_unless($shop->website, 404);
+        $this->website    = $shop->website;
+        $this->inShopMenu = true;
+        $this->initialisationFromShop($shop, $request);
+        abort_unless($conversation->website_id === $this->website->id, 404);
 
         return $this->handle($conversation);
     }
@@ -96,7 +114,10 @@ class ShowShoppingAssistantConversation extends OrgAction
             fn (ShoppingAssistantEvent $event) => $event->type === $type && $event->product_id === $shown->product_id && $event->shopping_assistant_message_id === $shown->shopping_assistant_message_id
         );
 
-        $messages = $conversation->messages()->orderBy('id')->get()->map(function (ShoppingAssistantMessage $message) use ($events, $done, $productOutcomes, $conversation, $usdRate) {
+        $storedMessages = $conversation->messages()->orderBy('id')->get();
+        $addedCodes     = Product::whereIn('id', $storedMessages->flatMap(fn (ShoppingAssistantMessage $message) => collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['added_product_ids'] ?? []))->unique()->all())->pluck('code', 'id');
+
+        $messages = $storedMessages->map(function (ShoppingAssistantMessage $message) use ($events, $done, $productOutcomes, $conversation, $usdRate, $addedCodes) {
             $base = [
                 'id'         => $message->id,
                 'role'       => $message->role->value,
@@ -111,6 +132,12 @@ class ShowShoppingAssistantConversation extends OrgAction
             return array_merge($base, [
                 'follow_ups' => $message->follow_ups ?? [],
                 'flags'      => $message->flags ?? [],
+                'actions'    => collect($message->tool_calls)->map(fn ($toolCall) => match ($toolCall['name'] ?? null) {
+                    'add_to_basket'      => __('Added to the basket when the customer asked: :products', ['products' => collect($toolCall['added_product_ids'] ?? [])->map(fn ($id) => $addedCodes[$id] ?? null)->filter()->implode(', ') ?: __('nothing new')]),
+                    'clear_conversation' => __('The customer asked to clear this conversation; it is hidden from them and kept here'),
+                    'family_information' => ($toolCall['family_ids'] ?? []) ? __('Answered from the family description, with a link to the family page') : null,
+                    default              => null,
+                })->filter()->values()->all(),
                 'latency_ms' => $message->latency_ms,
                 'cost'       => $message->cost === null ? null : (float) $message->cost * ($usdRate ?? 1),
                 'model'      => $message->model,
@@ -183,7 +210,9 @@ class ShowShoppingAssistantConversation extends OrgAction
         $performance = ShowShoppingAssistantPerformance::make();
         $listParameters = collect($routeParameters)->except('conversation')->all();
 
-        if ($this->website) {
+        if ($this->inShopMenu) {
+            $performance->forShopMenu($this->website);
+        } elseif ($this->website) {
             $performance->forWebsite($this->website);
         }
 

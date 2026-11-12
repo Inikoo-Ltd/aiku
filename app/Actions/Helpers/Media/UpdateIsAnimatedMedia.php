@@ -44,7 +44,7 @@ class UpdateIsAnimatedMedia
 
     }
 
-    private function isGifAnimated($fh): bool
+    public function isGifAnimated($fh): bool
     {
 
 

@@ -94,9 +94,9 @@ Send the token with every request in the header <b>Authorization: Bearer</b> fol
 
 ### Test first on staging
 
-The <b>Overview</b> tab also has <b>Open staging mirror</b>. Staging is a separate copy of the site where you can test without real orders or payments. Log in with the same email and password. Staging is reset regularly with a fresh copy, which erases what you created there. Tokens from the real site do not work on staging: generate a separate token on staging, and a new one after each reset. The staging base address is shown on the <b>Overview</b> tab.
+The <b>Overview</b> tab also has <b>Open staging mirror</b>. Staging is a separate copy of the site where you can test without real orders or payments. Log in with the same email and password. Staging is reset every Sunday at 03:00 UTC with a fresh copy, which erases what you created there. Tokens from the real site do not work on staging: generate a separate token on staging, and a new one after each reset. The staging base address is shown on the <b>Overview</b> tab.
 
-Orders on staging are not picked or sent by the warehouse. To test how the API returns a dispatched order with its tracking, pay a staging order, wait until it shows <b>In Warehouse</b>, then ask us in the chat on our website and give its order number. We mark it dispatched with a test tracking number. Nothing is shipped. Test it before the next reset, which erases it.
+Orders on staging are not picked or sent by the warehouse. To test how the API returns a dispatched order with its tracking, pay a staging order, wait until it shows <b>In Warehouse</b>, then send <code>PATCH dropshipping/order/{id}/dispatch-test</code> to the staging base address with your staging token. The order goes through picking and packing and comes back <b>Dispatched</b> with the test tracking number <code>TEST-</code> followed by the order number. Nothing is shipped, no carrier is called, nothing on the real site changes, and this call only works on staging. Test it before the next reset, which erases it. Tell us in the chat on our website what worked and what was missing: the chat is on the real site, so your feedback is kept after the reset.
 
 ### How API orders are paid
 

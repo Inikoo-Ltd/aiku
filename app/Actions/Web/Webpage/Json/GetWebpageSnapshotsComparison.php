@@ -56,8 +56,8 @@ class GetWebpageSnapshotsComparison extends OrgAction
         /** @var Snapshot|null $previous */
         $previous = $webpage->snapshots()
             ->where('state', '!=', SnapshotStateEnum::UNPUBLISHED->value)
-            ->where('id', '!=', $snapshot->id)
-            ->where('published_at', '<=', $snapshot->published_at)
+            ->where(fn ($query) => $query->where('published_at', '<', $snapshot->published_at)
+                ->orWhere(fn ($query) => $query->where('published_at', $snapshot->published_at)->where('id', '<', $snapshot->id)))
             ->orderByDesc('published_at')
             ->orderByDesc('id')
             ->first();
@@ -232,7 +232,7 @@ class GetWebpageSnapshotsComparison extends OrgAction
     private function flattenFields(mixed $value, string $path, array &$fields): void
     {
         if (is_array($value) && $this->isImageSource($value)) {
-            $fields[$path] = ['kind' => 'image', 'value' => (string) $value['original']];
+            $fields[preg_replace('/\.source$/', '', $path)] = ['kind' => 'image', 'value' => (string) $value['original']];
 
             return;
         }

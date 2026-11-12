@@ -10,7 +10,7 @@ order: 2
 ---
 
 <aside class="tldr">
-Pre koordinačných agentov. Nakupujúca spoločnosť sleduje každú objednávku v ôsmich fázach: PO Launch (spustenie objednávky), Deposit & Go (záloha a štart), Making It Happen (výroba prebieha), Ready to Roll (pripravené na odoslanie), Clean Hand Over (čisté odovzdanie), Homeward Bound (na ceste domov), Counted & Costed (spočítané a naceňené) a Mission Complete (misia splnená). Fázy 1 až 5 sú vaša časť práce. Sama vidí, kedy je tovar expedovaný a kedy dorazí, ale nevidí, čo sa deje u dodávateľa. Túto časť dopĺňate vy: na každej objednávke dodávateľovi zaznamenávate, kedy bola zaplatená záloha, kedy sa začala výroba, kedy bola výroba dokončená, dátum, kedy očakávate, že bude tovar pripravený, a deň, keď tovar odovzdáte prepravnému agentovi. Zaznamenajte každý z nich v ten deň, keď sa to stane. Strana nákupcu je vysvetlená v <a href="/docs/reading-the-po-journey-board-sk">čítaní tabule PO journey</a>.
+Pre koordinačných agentov. Nakupujúca spoločnosť sleduje každú objednávku v ôsmich fázach: PO Launch (spustenie objednávky), Agreement (dohoda), Making It Happen (výroba prebieha), Ready to Roll (pripravené na odoslanie), Clean Hand Over (čisté odovzdanie), Homeward Bound (na ceste domov), Counted & Costed (spočítané a naceňené) a Mission Complete (misia splnená). Fázy 1 až 5 sú vaša časť práce. Sama vidí, kedy je tovar expedovaný a kedy dorazí, ale nevidí, čo sa deje u dodávateľa. Túto časť dopĺňate vy: na každej objednávke dodávateľovi zaznamenávate, kedy bola zaplatená záloha, kedy sa začala výroba, kedy bola výroba dokončená, dátum, kedy očakávate, že bude tovar pripravený, a deň, keď tovar odovzdáte prepravnému agentovi. Zaznamenajte každý z nich v ten deň, keď sa to stane. Strana nákupcu je vysvetlená v <a href="/docs/reading-the-po-journey-board-sk">čítaní tabule PO journey</a>.
 </aside>
 
 ## Prečo záležia vaše dátumy
@@ -41,7 +41,22 @@ Clean Hand Over je okamih, keď je vaša práca na objednávke hotová. Čo to z
 
 Odoslaná zásielka fázu vždy dokončí. Nakupujúca spoločnosť môže fáze dať aj vlastný názov pre vás, napríklad „Sent to forwarder“: na objednávke sa zobrazí pod týmto názvom.
 
-Fázy idú v poradí. Každý dátum zaznamenajte v deň, keď nastane. Dátum starší ako jeden deň, fáza zaznamenaná pred predchádzajúcou fázou alebo vymazanie dátumu si od vás vyžiada dôvod. Dôvod sa uchová v histórii objednávky spolu s vaším menom, aby nákupca videl, prečo.
+## Fázy idú v poradí
+
+Fázy idú prísne v poradí, jedna po druhej:
+
+- **Kým je objednávka Submitted (odoslaná)**, dá sa urobiť len fáza 2, Agreement (dohoda): záloha je zaplatená, alebo je objednávka označená ako **No deposit needed** (záloha nie je potrebná). Ktorékoľvek z toho dohodne podmienky a objednávka sa zobrazí ako **Agreed** (dohodnuté). Dovtedy sú všetky ďalšie tlačidlá sivé a po nabehnutí kurzora ukážu, čo treba urobiť najskôr.
+- **Od stavu Agreed** fungujú len tlačidlá fázy, v ktorej objednávka je, spolu s tými pred ňou. Neskoršia fáza zostáva sivá, kým nie je hotová tá pred ňou, a po nabehnutí kurzora uvedie, ktorú fázu treba dokončiť najskôr.
+- Automatické kroky sa nikdy nezdržiavajú: príjemky tovaru, zoznamy kontajnerov, platby a expedované kontajnery zaznamenávajú, čo sa stalo, v ktorejkoľvek fáze.
+
+Každý dátum zaznamenajte v deň, keď nastane. Dátum starší ako jeden deň alebo vymazanie dátumu si od vás vyžiada dôvod. Dôvod sa uchová v histórii objednávky spolu s vaším menom, aby nákupca videl, prečo.
+
+## Keď sa krok nekoná
+
+Objednávka nikdy neuviazne na kroku, ktorý sa pre ňu nerobí: každá fáza má tlačidlo preskočenia. Preskočenie si vyžiada krátky dôvod, zobrazí sa na fáze ako **Skipped** (preskočené) s tým, kto, kedy a prečo, ide do histórie objednávky a dá sa vrátiť späť.
+
+- **QC skipped** (kontrola kvality preskočená) je vaše: na Ready to Roll, keď sa pre objednávku nerobí žiadna kontrola kvality, aby ste mohli zaznamenať **Handed over** (odovzdané) bez čakania na ňu.
+- Ostatné preskočenia patria nakupujúcej spoločnosti: **Sample skipped** (vzorka preskočená), **Shipped direct** (odoslané priamo; tovar nejde cez váš sklad), **Compliance skipped** (compliance preskočené) a **Handed over without checks** (odovzdané bez kontrol).
 
 ## Čo zaznamenáva nakupujúca spoločnosť
 
@@ -49,7 +64,7 @@ Niektoré dátumy nemôžete zadať vy — je to zámer:
 
 - **Sample approved (schválená vzorka).** Vzorku schvaľuje nákupca. Len pri nových produktoch; opakované objednávky vzorku nemajú.
 - **Schválený dátum pripravenosti (Approved ready date).** Nákupca schváli váš navrhovaný dátum. Odvtedy je uzamknutý a určuje termíny: kontrola kvality má termín v ten deň a <b>Clean handover</b> do siedmich dní od neho.
-- **Kontrola kvality (QC passed).** Potvrdzuje ju nákupca, zvyčajne na základe vášho dôkazu o kvalite. Schválenie QC uvoľní doplatok: kým nie je schválené, platba doplatku si vyžiada dôvod.
+- **Kontrola kvality (QC passed).** Potvrdzuje ju nákupca, zvyčajne na základe vášho dôkazu o kvalite. Schválenie QC uvoľní doplatok: kým nie je schválené, platba doplatku si vyžiada dôvod. Ak sa kontrola kvality nerobí, namiesto nej označíte **QC skipped** s dôvodom.
 - **Kompletný compliance balík.**
 
 Vaše <a href="/docs/your-clean-handover-score-sk">Clean Handover Score</a> sa počíta z týchto dátumov a z dátumu odovzdania, ktorý zaznamenávate. Dátum odovzdania zaznamenávate vy, preto zaznamenajte deň, keď tovar skutočne dorazil k prepravnému agentovi. Nákupca vidí, kto ho zaznamenal a kedy, môže ho porovnať s potvrdením prepravného agenta a môže ho opraviť; oprava sa uchová v histórii objednávky spolu s dôvodom.
@@ -97,10 +112,10 @@ Ak bola objednávka zrušená omylom, alebo ju nakupujúca spoločnosť predsa l
 
 <aside class="wayfinder">
 <b>Kde kliknúť v aiku</b><br>
-Prihláste sa → <b>Purchase Orders</b> → otvorte objednávku. Každá objednávka je pre jedného z vašich dodávateľov. Fázy sú v hornej časti stránky: použite tam tlačidlá <b>Production started</b>, <b>Production done</b> a, ak odovzdávate tovar prepravnému agentovi, <b>Handed over</b>. Záloha sa zaznamenáva cez <b>Pay deposit</b> v paneli platieb. Potom otvorte <b>Edit</b>: <b>Proposed ready date</b> a <b>Agent's order number</b> sú v sekcii <b>Clean handover</b>.
+Prihláste sa → <b>Purchase Orders</b> → otvorte objednávku. Každá objednávka je pre jedného z vašich dodávateľov. Fázy sú v hornej časti stránky: použite tam tlačidlá <b>Production started</b>, <b>Production done</b>, <b>QC skipped</b> a, ak odovzdávate tovar prepravnému agentovi, <b>Handed over</b>. Sivé tlačidlo patrí neskoršej fáze: nabehnite naň kurzorom a uvidíte, čo ide skôr. Záloha sa zaznamenáva cez <b>Pay deposit</b> v paneli platieb. Potom otvorte <b>Edit</b>: <b>Proposed ready date</b> a <b>Agent's order number</b> sú v sekcii <b>Clean handover</b>.
 </aside>
 
 <aside class="wayfinder">
 <b>Aké práva potrebujete</b><br>
-Prihlásenie pre vašu agentskú organizáciu. Môžete označovať len svoje vlastné fázy na svojich vlastných objednávkach: začatie výroby, dokončenú výrobu a odovzdanie na fázach, zálohu ako platbu a na stránke Edit svoj navrhovaný dátum pripravenosti a číslo objednávky. Schválenie vzorky, schválený dátum pripravenosti, QC a compliance pre vás otvorené nie sú, pretože ich zaznamenáva nakupujúca spoločnosť.
+Prihlásenie pre vašu agentskú organizáciu. Môžete označovať len svoje vlastné fázy na svojich vlastných objednávkach: začatie výroby, dokončenú výrobu a odovzdanie na fázach, QC skipped, zálohu ako platbu a na stránke Edit svoj navrhovaný dátum pripravenosti a číslo objednávky. Schválenie vzorky, schválený dátum pripravenosti, QC a compliance pre vás otvorené nie sú, pretože ich zaznamenáva nakupujúca spoločnosť.
 </aside>

@@ -178,6 +178,8 @@ class Employee extends Model implements HasMedia, Auditable
         'guru_since' => 'date',
         'guru_until' => 'date',
         'is_agency_worker' => 'boolean',
+        'development_on_tablet' => 'boolean',
+        'development_on_tablet_until' => 'date',
     ];
     //ss
 
@@ -226,6 +228,8 @@ class Employee extends Model implements HasMedia, Auditable
         'is_agency_worker',
         'guru_since',
         'guru_until',
+        'development_on_tablet',
+        'development_on_tablet_until',
     ];
 
     protected array $attributeModifiers = [
@@ -547,6 +551,23 @@ class Employee extends Model implements HasMedia, Auditable
     public function getDepartmentAttribute(): ?string
     {
         return $this->getCurrentDepartment();
+    }
+
+    /**
+     * Today in the organisation's own time, the day a Development switch with a last day is checked against.
+     */
+    public static function developmentDay(Organisation $organisation): string
+    {
+        return now()->setTimezone($organisation->timezone?->name ?? config('app.timezone'))->toDateString();
+    }
+
+    /**
+     * Whether the tablet offers this artisan Development on no job order: switched on by the Production Manager, up to its last day if one was given (HELP-4648).
+     */
+    public function canStartDevelopment(): bool
+    {
+        return $this->development_on_tablet
+            && (!$this->development_on_tablet_until || self::developmentDay($this->organisation) <= $this->development_on_tablet_until->toDateString());
     }
 
     public function isGuruOn(?DateTimeInterface $moment): bool

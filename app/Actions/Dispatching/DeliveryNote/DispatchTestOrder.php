@@ -26,6 +26,7 @@ use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use RuntimeException;
 
@@ -33,7 +34,8 @@ use RuntimeException;
  * Staging only: walks a paid dropshipping test order through the warehouse (pick, pack, a shipment
  * with a test tracking number on a shipper with no carrier API, finalise and dispatch), so a
  * customer testing the API on the staging mirror can see a dispatched order with tracking
- * (PRE-88, CUS-1790). Everything that could stop it half way is checked before the first write.
+ * (PRE-88, CUS-1790). What can be checked is checked before the first write, and the warehouse
+ * steps run in one transaction, so a step that still refuses leaves the order as it was.
  */
 class DispatchTestOrder
 {
@@ -69,9 +71,11 @@ class DispatchTestOrder
             $this->ensureDispatchable($deliveryNote);
         }
 
-        foreach ($deliveryNotes as $deliveryNote) {
-            $this->dispatchDeliveryNote($deliveryNote, $user, $shipper, $tracking);
-        }
+        DB::transaction(function () use ($deliveryNotes, $user, $shipper, $tracking) {
+            foreach ($deliveryNotes as $deliveryNote) {
+                $this->dispatchDeliveryNote($deliveryNote, $user, $shipper, $tracking);
+            }
+        });
 
         OrderHydrateShipments::run($order->id);
 

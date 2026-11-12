@@ -28,7 +28,7 @@ const customerHref = (customerRoute: { name: string; parameters: Record<string, 
 <template>
     <Table :resource="data" :name="tab" class="mt-2">
         <template #cell(created_at)="{ item }">
-            <span class="whitespace-nowrap text-gray-600">{{ useFormatTime(item.created_at, { formatTime: "hm" }) }}</span>
+            <Link :href="conversationHref(item.ulid)" class="primaryLink whitespace-nowrap">{{ useFormatTime(item.created_at, { formatTime: "hm" }) }}</Link>
         </template>
 
         <template #cell(customer_name)="{ item }">
@@ -47,7 +47,7 @@ const customerHref = (customerRoute: { name: string; parameters: Record<string, 
         </template>
 
         <template #cell(first_question)="{ item }">
-            <Link :href="conversationHref(item.ulid)" class="line-clamp-2 max-w-md text-gray-800 hover:underline" :title="item.first_question">
+            <Link :href="conversationHref(item.ulid)" class="primaryLink line-clamp-2 max-w-md" :title="item.first_question">
                 {{ item.first_question || ctrans("(no question)") }}
             </Link>
         </template>

@@ -5,6 +5,7 @@ struct ShellWarehouseSheet: View {
     @Environment(ToastCenter.self) private var toasts
     let onClose: () -> Void
     @State private var selected: ShellWarehouseChoice?
+    @State private var warehouseStore = WarehouseStore.shared
 
     var body: some View {
         let current = currentChoice
@@ -20,7 +21,7 @@ struct ShellWarehouseSheet: View {
                     .foregroundStyle(AikuColor.text)
                     .accessibilityAddTraits(.isHeader)
             }
-            ForEach(ShellWarehouseDirectory.organisations) { organisation in
+            ForEach(organisations) { organisation in
                 organisationGroup(organisation, chosen: chosen, current: current)
             }
             Text("Only organisations and warehouses you have permission for are listed. Every screen, list and scan follows your choice.")
@@ -38,11 +39,18 @@ struct ShellWarehouseSheet: View {
         .padding(.bottom, 16)
     }
 
+    private var organisations: [ShellOrganisation] {
+        warehouseStore.isLive
+            ? ShellWarehouseDirectory.organisations(from: warehouseStore.warehouses)
+            : ShellWarehouseDirectory.organisations
+    }
+
     private var currentChoice: ShellWarehouseChoice {
         ShellWarehouseChoice(
             organisation: session.profile.organisation,
             warehouseName: session.profile.warehouseName,
-            warehouseCode: session.profile.warehouseCode
+            warehouseCode: session.profile.warehouseCode,
+            warehouseID: warehouseStore.isLive ? warehouseStore.selectedID : nil
         )
     }
 
@@ -117,6 +125,9 @@ struct ShellWarehouseSheet: View {
 
     private func apply(_ choice: ShellWarehouseChoice, current: ShellWarehouseChoice) {
         if choice != current {
+            if let warehouseID = choice.warehouseID {
+                warehouseStore.select(warehouseID)
+            }
             session.profile.organisation = choice.organisation
             session.profile.warehouseName = choice.warehouseName
             session.profile.warehouseCode = choice.warehouseCode

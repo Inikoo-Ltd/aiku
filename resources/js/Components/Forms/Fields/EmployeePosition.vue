@@ -829,7 +829,7 @@ const isShopPermissionImplied = (shopSlug: string, subDepartmentSlug: string) =>
     !!props.isGroupAdminSelected
     || isRadioChecked("org-admin")
     || isRadioChecked("group-admin")
-    || (subDepartmentSlug !== "shop-admin" && get(newForm, [props.fieldName, "shop-admin", "shops"], []).includes(shopSlug))
+    || (!["shop-admin", "cus-c"].includes(subDepartmentSlug) && get(newForm, [props.fieldName, "shop-admin", "shops"], []).includes(shopSlug))
 
 const isShopPermissionChecked = (shopSlug: string, subDepartmentSlug: string) =>
     get(newForm, [props.fieldName, subDepartmentSlug, "shops"], []).includes(shopSlug)

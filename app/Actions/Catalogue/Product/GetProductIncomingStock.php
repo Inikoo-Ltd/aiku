@@ -129,6 +129,7 @@ class GetProductIncomingStock
 
     /**
      * The earliest date and whether it is only estimated; a typed date wins a tie with an estimate.
+     * A late delivery is left out: its rolling "tomorrow" is not a date a customer can plan on.
      *
      * @return array{eta: string, is_estimate: bool}|null
      */
@@ -143,7 +144,7 @@ class GetProductIncomingStock
      */
     private function earliest(Collection $lines): ?array
     {
-        $line = $lines->filter(fn ($line) => $line['eta'])
+        $line = $lines->filter(fn ($line) => $line['eta'] && !($line['is_overdue'] ?? false))
             ->sortBy([['eta', 'asc'], ['is_estimate', 'asc']])
             ->first();
 
@@ -260,6 +261,7 @@ class GetProductIncomingStock
                     ? $this->eta($row->typed_eta)
                     : $this->partnerDeliveryEta($row),
                 'is_estimate'       => $row->typed_eta ? $row->is_lead_time_eta || $this->isOverdue($row->typed_eta) : $row->parent_type === 'OrgPartner',
+                'is_overdue'        => $row->typed_eta && $this->isOverdue($row->typed_eta),
                 'organisation_slug' => $row->organisation_slug,
             ])
             ->values()
@@ -342,6 +344,7 @@ class GetProductIncomingStock
                 'quantity'          => (float) $row->quantity,
                 'eta'               => $this->eta($row->typed_eta),
                 'is_estimate'       => $row->typed_eta !== null && ($row->staff_eta === null || $this->isOverdue($row->typed_eta)),
+                'is_overdue'        => $row->typed_eta !== null && $this->isOverdue($row->typed_eta),
                 'organisation_slug' => $row->organisation_slug,
             ])
             ->values()

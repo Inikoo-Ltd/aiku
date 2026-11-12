@@ -33,7 +33,7 @@ class SearchCatalogueByMeaning
 
     private const int MAX_QUERY = 500;
 
-    public function handle(Shop $shop, string $query, ?Customer $customer = null, int $limit = 12): Collection
+    public function handle(Shop $shop, string $query, ?Customer $customer = null, int $limit = 12, bool $inStock = true): Collection
     {
         $vector = $this->embedQuery($query);
 
@@ -41,7 +41,7 @@ class SearchCatalogueByMeaning
             return collect();
         }
 
-        return $this->recommendableProducts($shop, $customer)
+        return $this->recommendableProducts($shop, $customer, $inStock)
             ->join('catalogue_search_embeddings', fn (JoinClause $join) => $join->on('catalogue_search_embeddings.model_id', '=', 'products.id')->where('catalogue_search_embeddings.model_type', 'Product'))
             ->addSelect('products.*')
             ->selectVectorDistance('catalogue_search_embeddings.embedding', $vector, 'distance')

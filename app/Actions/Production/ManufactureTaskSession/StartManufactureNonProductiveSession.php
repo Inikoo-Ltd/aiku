@@ -28,10 +28,18 @@ use Lorisleiva\Actions\ActionRequest;
 class StartManufactureNonProductiveSession extends OrgAction
 {
     /**
-     * @param array{activity_type: string, job_order_id?: int|null} $modelData
+     * @param array{activity_type: string, job_order_id?: int|null, reason?: string|null} $modelData
      */
     public function handle(User $user, Production $production, array $modelData): ManufactureTaskSession
     {
+        $employee      = GetUserCurrentEmployee::run($user, $production->organisation_id);
+        $isDevelopment = $modelData['activity_type'] == ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT->value;
+        if ($isDevelopment && !$employee?->canStartDevelopment()) {
+            throw ValidationException::withMessages([
+                'activity_type' => __('Development is not switched on for you, ask the production manager'),
+            ]);
+        }
+
         $hasOpenSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
             ->exists();
@@ -51,10 +59,11 @@ class StartManufactureNonProductiveSession extends OrgAction
                 'group_id'        => $production->group_id,
                 'organisation_id' => $production->organisation_id,
                 'production_id'   => $production->id,
-                'job_order_id'    => $modelData['job_order_id'] ?? null,
+                'job_order_id'    => $isDevelopment ? null : ($modelData['job_order_id'] ?? null),
                 'activity_type'   => $modelData['activity_type'],
+                'non_productive_reason' => $isDevelopment ? trim($modelData['reason']) : null,
                 'user_id'         => $user->id,
-                'employee_id'     => GetUserCurrentEmployee::run($user, $production->organisation_id)?->id,
+                'employee_id'     => $employee?->id,
                 'state'           => ManufactureTaskSessionStateEnum::OPEN,
                 'started_at'      => now(),
             ]);
@@ -75,12 +84,31 @@ class StartManufactureNonProductiveSession extends OrgAction
                 'integer',
                 Rule::exists('job_orders', 'id')->where('production_id', $this->production->id)->whereNull('deleted_at'),
             ],
+            'reason'        => [
+                Rule::requiredIf(fn () => $this->get('activity_type') == ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT->value),
+                'nullable',
+                'string',
+                'max:255',
+            ],
+        ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        return [
+            'reason.required' => __('Say what the development work is for'),
         ];
     }
 
     public function afterValidator(Validator $validator): void
     {
-        if ($validator->errors()->isNotEmpty() || $this->get('activity_type') != ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value) {
+        if ($validator->errors()->isNotEmpty()) {
+            return;
+        }
+        if ($this->get('activity_type') == ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT->value && !$this->production->paysDevelopment()) {
+            $validator->errors()->add('activity_type', __('This production has no Development rate'));
+        }
+        if ($this->get('activity_type') != ManufactureTaskSessionActivityTypeEnum::MAINTENANCE->value) {
             return;
         }
 

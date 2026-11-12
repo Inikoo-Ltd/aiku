@@ -36,6 +36,7 @@ type Message = {
     created_at: string
     follow_ups?: string[]
     flags?: string[]
+    actions?: string[]
     latency_ms?: number | null
     cost?: number | null
     model?: string | null
@@ -138,6 +139,13 @@ const detailLine = (message: Message) =>
                         <span v-for="flag in message.flags" :key="flag" class="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">
                             <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
                             {{ flag.replace(/_/g, " ") }}
+                        </span>
+                    </div>
+
+                    <div v-if="message.actions?.length" class="mb-1.5 flex flex-wrap gap-1">
+                        <span v-for="action in message.actions" :key="action" class="inline-flex items-center gap-1 rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-800">
+                            <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+                            {{ action }}
                         </span>
                     </div>
 

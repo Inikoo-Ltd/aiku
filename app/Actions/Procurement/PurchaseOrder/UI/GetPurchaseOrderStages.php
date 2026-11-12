@@ -10,7 +10,6 @@ namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt;
-use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
@@ -90,7 +89,7 @@ class GetPurchaseOrderStages
             $stages[$stage->value] = match (true) {
                 $stage->isDeliveryStage()     => $this->deliveryStage($purchaseOrder, $stage, $deliveries),
                 $stage === Stage::IN_WAREHOUSE => [
-                    'recorded'   => $this->warehouseDates($purchaseOrder)['warehouse_arrived_at'] !== null,
+                    'recorded'   => $this->warehouseDates($purchaseOrder)['warehouse_arrived_at'] !== null || $purchaseOrder->stageSkip('in_warehouse') !== null,
                     'date'       => $this->warehouseDates($purchaseOrder)['warehouse_arrived_at'],
                     'user_id'    => null,
                     'deliveries' => null,
@@ -104,6 +103,7 @@ class GetPurchaseOrderStages
                 $stage === Stage::HANDED_OVER => $this->handedOverStage($purchaseOrder, $deliveries),
                 default => [
                     'recorded'   => $purchaseOrder->{$stage->column()} !== null
+                        || ($stage === Stage::READY && $purchaseOrder->stageSkip('qc') !== null)
                         || ($stage === Stage::SUBMITTED && $purchaseOrder->state !== PurchaseOrderStateEnum::IN_PROCESS)
                         || ($stage === Stage::DEPOSIT_PAID && $this->depositNotRequired($purchaseOrder)),
                     'date'       => $purchaseOrder->{$stage->column()},
@@ -173,7 +173,7 @@ class GetPurchaseOrderStages
                 if (!$this->evidenceCount($purchaseOrder, $gate)) {
                     $skipped[] = PurchaseOrderAttachmentScopeEnum::labels()[$gate->value];
                 }
-            } elseif ($purchaseOrder->{$gate} === null) {
+            } elseif ($purchaseOrder->{$gate} === null && !($gate === 'sample_approved_at' && $purchaseOrder->stageSkip('sample'))) {
                 $skipped[] = Stage::fieldLabels()[$gate];
             }
         }
@@ -207,6 +207,63 @@ class GetPurchaseOrderStages
             : (float) $purchaseOrder->deposit_amount == 0;
     }
 
+    /**
+     * The stage the order is at: the one after the furthest stage reached or skipped. A submitted order is at
+     * Agreement until the terms are agreed, whatever was recorded after it.
+     */
+    public function openStage(PurchaseOrder $purchaseOrder, array $stages): ?Stage
+    {
+        if ($purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED) {
+            return Stage::DEPOSIT_PAID;
+        }
+
+        $open = null;
+        foreach (array_reverse($this->stagesOf($purchaseOrder)) as $stage) {
+            if (($stages[$stage->value]['reached'] ?? false) || in_array($stage, [Stage::SUBMITTED, Stage::DEPOSIT_PAID])) {
+                return $open;
+            }
+            $open = $stage;
+        }
+
+        return $open;
+    }
+
+    /**
+     * Why a person can not record or skip this stage yet, null when they can. Stages go strictly in order: only the
+     * stage the order is at, and those before it, take marks and skips. Automatic paths (imports, payments,
+     * containers) never ask.
+     */
+    public function blockedReason(PurchaseOrder $purchaseOrder, Stage $stage, array $stages): ?string
+    {
+        $open = $this->openStage($purchaseOrder, $stages);
+        if ($open === null || $stage->position() <= $open->position()) {
+            return null;
+        }
+
+        return $open === Stage::DEPOSIT_PAID && $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED
+            ? __('Agree the terms first: pay the deposit or mark No deposit needed')
+            : __('Finish :stage first', ['stage' => Stage::labels()[$open->value]]);
+    }
+
+    /**
+     * Whether what a skip stands in for is already recorded, so there is nothing to skip.
+     */
+    public function isSkipRecorded(PurchaseOrder $purchaseOrder, string $key, array $stages): bool
+    {
+        if ($purchaseOrder->stageSkip($key) !== null) {
+            return false;
+        }
+
+        return match ($key) {
+            'sample'       => $purchaseOrder->sample_approved_at !== null,
+            'in_warehouse' => (bool) ($stages['in_warehouse']['recorded'] ?? false),
+            'qc'           => (bool) ($stages['ready']['recorded'] ?? false),
+            'compliance'   => $purchaseOrder->compliance_complete_at !== null,
+            'handed_over'  => (bool) ($stages['handed_over']['recorded'] ?? false),
+            default        => false,
+        };
+    }
+
     public function evidenceCount(PurchaseOrder $purchaseOrder, PurchaseOrderAttachmentScopeEnum $scope): int
     {
         return $purchaseOrder->attachments()->wherePivot('scope', $scope->value)->count();
@@ -215,7 +272,11 @@ class GetPurchaseOrderStages
     /**
      * @param string[] $markableFields
      */
-    public function forUi(PurchaseOrder $purchaseOrder, array $markableFields): array
+    /**
+     * @param string[] $markableFields
+     * @param string[] $skippableKeys
+     */
+    public function forUi(PurchaseOrder $purchaseOrder, array $markableFields, array $skippableKeys = []): array
     {
         $stages     = $this->handle($purchaseOrder);
         $deliveries = $this->liveDeliveries($purchaseOrder);
@@ -234,11 +295,14 @@ class GetPurchaseOrderStages
         $names = $userIds->isEmpty() ? collect() : User::whereIn('id', $userIds)->get(['id', 'contact_name', 'username'])
             ->mapWithKeys(fn (User $user) => [$user->id => $user->contact_name ?: $user->username]);
 
+        $skipUserIds = collect($purchaseOrder->data['stage_skips'] ?? [])->pluck('user_id')->filter()->unique();
+        $skipNames   = $skipUserIds->isEmpty() ? collect() : User::whereIn('id', $skipUserIds)->get(['id', 'contact_name', 'username'])
+            ->mapWithKeys(fn (User $user) => [$user->id => $user->contact_name ?: $user->username]);
+
         $agentTexts = $purchaseOrder->isAgentOrder() && $purchaseOrder->agent ? $purchaseOrder->agent->poJourney()['stages'] : [];
         $current  = collect($stages)->filter(fn (array $stage) => $stage['reached'])->keys()->last();
         $expected = $this->expectedDates($purchaseOrder);
         $today    = now()->startOfDay();
-        $confirmsOrder = MarkPurchaseOrderStage::confirmsOrder($purchaseOrder, $today) && !$purchaseOrder->isWaitingForLineAnswers();
 
         return collect($this->stagesOf($purchaseOrder))->values()->map(fn (Stage $stage, int $index) => [
             'key'         => $stage->value,
@@ -294,16 +358,28 @@ class GetPurchaseOrderStages
                 ->keys()
                 ->map(fn (string $field) => [
                     'field'   => $field,
-                    'label'   => match (true) {
-                        $field !== 'production_started_at' || $purchaseOrder->{$field} !== null => $fieldLabels[$field],
-                        $confirmsOrder                                                       => __('Supplier start production'),
-                        default                                                              => __('Set production start date'),
-                    },
-                    'confirms_order' => $confirmsOrder && $purchaseOrder->{$field} === null,
+                    'label'   => $fieldLabels[$field],
                     'date'    => $purchaseOrder->{$field},
+                    'blocked' => $purchaseOrder->{$field} === null ? $this->blockedReason($purchaseOrder, $stage, $stages) : null,
                     'skipped' => $this->skippedBy($purchaseOrder, $field, $stages),
                     'planned' => in_array($field, Stage::PLANNED_FIELDS),
                     'suggested' => $field === 'approved_ready_at' ? $purchaseOrder->proposed_ready_at : null,
+                ])->values()->all(),
+            'skips'       => collect(Stage::SKIPS)
+                ->filter(fn (Stage $skipStage, string $key) => $skipStage === $stage && in_array($key, $skippableKeys)
+                    && !($key === 'handed_over' && $this->hidesHandedOver($purchaseOrder))
+                    && !$this->isSkipRecorded($purchaseOrder, $key, $stages))
+                ->keys()
+                ->map(fn (string $key) => [
+                    'key'         => $key,
+                    'label'       => Stage::skipLabels()[$key],
+                    'description' => Stage::skipDescriptions()[$key],
+                    'skipped'     => ($skip = $purchaseOrder->stageSkip($key)) ? [
+                        'at'     => $skip['at'],
+                        'by'     => $skipNames->get($skip['user_id']),
+                        'reason' => $skip['reason'],
+                    ] : null,
+                    'blocked'     => $this->blockedReason($purchaseOrder, $stage, $stages),
                 ])->values()->all(),
         ])->all();
     }
@@ -447,7 +523,9 @@ class GetPurchaseOrderStages
      * packing for an agent warehouse, otherwise the production done date. With an agent warehouse QC is also done once
      * every item received is checked, when nobody recorded the QC itself.
      *
-     * @return array<int, array{key: string, label: string, done: bool, date: ?Carbon}>|null
+     * A QC or compliance check a person skipped counts as done, dated by the skip.
+     *
+     * @return array<int, array{key: string, label: string, done: bool, date: ?Carbon, skipped: bool}>|null
      */
     public function readyChecks(PurchaseOrder $purchaseOrder): ?array
     {
@@ -464,7 +542,15 @@ class GetPurchaseOrderStages
                 default                                                         => $purchaseOrder->{Stage::READY_CHECK_FIELDS[$key]},
             };
 
-            return ['key' => $key, 'label' => $labels[$key], 'done' => $date !== null, 'date' => $date];
+            $skip = in_array($key, ['qc', 'compliance']) && $date === null ? $purchaseOrder->stageSkip($key) : null;
+
+            return [
+                'key'     => $key,
+                'label'   => $labels[$key],
+                'done'    => $date !== null || $skip !== null,
+                'date'    => $date ?? ($skip ? Carbon::parse($skip['at']) : null),
+                'skipped' => $skip !== null,
+            ];
         })->all();
     }
 

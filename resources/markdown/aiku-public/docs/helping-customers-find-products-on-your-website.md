@@ -37,6 +37,13 @@ Before you turn it on for a shop for the first time, ask the help desk to prepar
 - An **Ask** button with the assistant's name inside the search box.
 - When a search reads like a question or a need, an offer to ask the advisor: in the search dropdown and at the top of the results page. A search counts as a question when it has four words or more, or a question mark. The same offer shows when a search finds nothing.
 - A conversation page. The customer describes their shop and what they need, and the advisor answers with one short sentence and two tabs of products, **Must-haves** and **Add-ons to your range**. The products are the usual product cards, so the customer can add them to the basket from there, and each card carries a one-line reason such as "Popular with shops like yours in your area", "You used to order this" or "Matches what you asked for".
+- An answer shows up to 8 products in each tab, and up to 12 when the customer asks for more or a wider selection.
+- **Add all to basket** under each answer puts one of each product shown in the basket and leaves alone the ones already there. The customer can also ask in words ("add these to my basket") and the advisor does the same, only for products it has shown in that conversation. Quantities are changed on the product cards or in the basket.
+- A customer can ask the advisor to delete the conversation. It is then cleared from their screen and they cannot open it again. The record is kept in aiku: on the **Conversations** tab its status reads **Cleared by customer**, and the transcript shows what the advisor added to the basket and that the customer asked to clear it.
+- The advisor finds a product or a whole family by its code, typed loosely ("tiba 04", "bbskt"), and says when the product asked for is out of stock.
+- Asked for the cheapest or the most expensive, it shows the products ordered by price. It still writes no price itself: the cards show them.
+- For Christmas and gift questions it adds the products that sold mostly between September and Christmas last year, marked "Sold well last Christmas", whether or not their name says Christmas.
+- Asked how fast orders are dispatched, it answers with the real figure of the shop for the last 30 days ("9 out of 10 orders were dispatched within 4 days"). Asked what shipping costs, it gives the shipping of the customer's current basket, as worked out in the basket. Both sentences are written by aiku from the data, not by the AI.
 - Under the answer, buttons with follow-up questions, a box to type another question, and **Start a new conversation**.
 
 Normal searches by word or product code are not changed and are not slowed down.

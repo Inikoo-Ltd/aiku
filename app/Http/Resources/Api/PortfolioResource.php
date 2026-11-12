@@ -61,6 +61,8 @@ class PortfolioResource extends JsonResource
             $image = $this->item->imageSources(64, 64);
         }
 
+        $product = $this->item instanceof Product ? $this->item : null;
+
         return [
             'id'                        => $this->id,
             'item_id'                   => $itemId,
@@ -69,6 +71,8 @@ class PortfolioResource extends JsonResource
             'currency_code'             => $this->item?->currency?->code,
             'name'                      => $this->item?->name ?? $this->item_name ?? $this->item?->code,
             'ingredients'               => $this->item instanceof Product ? $this->item->marketing_ingredients : null,
+            'description'               => $product?->description,
+            'description_extra'         => $product?->description_extra,
             'customer_product_name'     => $this->customer_product_name,
             'customer_description'      => $this->customer_description,
             'selling_price'             => $this->selling_price,
@@ -80,6 +84,12 @@ class PortfolioResource extends JsonResource
             'ean_barcode'               => $this->item?->barcode,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
+            'department_slug'           => $product?->department?->slug,
+            'department_name'           => $product?->department?->name,
+            'sub_department_slug'       => $product?->subDepartment?->slug,
+            'sub_department_name'       => $product?->subDepartment?->name,
+            'family_slug'               => $product?->family?->slug,
+            'family_name'               => $product?->family?->name,
         ];
     }
 }

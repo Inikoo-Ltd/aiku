@@ -17,6 +17,8 @@ struct LocationsDestination: View {
             LocationsDetailView(code: code)
         case let .skoInLocation(sko, location):
             LocationsStockEditView(sko: sko, locationCode: location)
+        case let .emptySlots(kind):
+            LocationsEmptySlotsView(kind: kind)
         }
     }
 }

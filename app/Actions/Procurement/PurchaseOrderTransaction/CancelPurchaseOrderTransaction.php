@@ -26,11 +26,11 @@ class CancelPurchaseOrderTransaction extends OrgAction
     use WithPurchaseOrderAgentEditAuthorisation;
     use WithActionUpdate;
 
-    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, ?string $reason = null): PurchaseOrderTransaction
+    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, ?string $reason = null, bool $cancelEmptyOrder = true): PurchaseOrderTransaction
     {
         $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
 
-        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction, $reason) {
+        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction, $reason, $cancelEmptyOrder) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->first();
             $purchaseOrderTransaction->refresh();
 
@@ -70,7 +70,7 @@ class CancelPurchaseOrderTransaction extends OrgAction
                 ]);
             }
 
-            if ($this->isLeftEmpty($purchaseOrder)) {
+            if ($cancelEmptyOrder && $this->isLeftEmpty($purchaseOrder)) {
                 UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder, source: UpdatePurchaseOrderStateToCancelled::SOURCE_EMPTIED);
             }
 
@@ -119,14 +119,17 @@ class CancelPurchaseOrderTransaction extends OrgAction
         ];
     }
 
-    public function action(PurchaseOrderTransaction $purchaseOrderTransaction, int $hydratorsDelay = 0): PurchaseOrderTransaction
+    /**
+     * Moving lines to another supplier and undoing a move settle an emptied order themselves, so they pass $cancelEmptyOrder false.
+     */
+    public function action(PurchaseOrderTransaction $purchaseOrderTransaction, int $hydratorsDelay = 0, bool $cancelEmptyOrder = true): PurchaseOrderTransaction
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisation($purchaseOrderTransaction->organisation, []);
 
-        return $this->handle($purchaseOrderTransaction);
+        return $this->handle($purchaseOrderTransaction, cancelEmptyOrder: $cancelEmptyOrder);
     }
 
     public function jsonResponse(PurchaseOrderTransaction $purchaseOrderTransaction): PurchaseOrderTransactionResource

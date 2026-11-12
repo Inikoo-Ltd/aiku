@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import { bannerVideo } from "@/Composables/bannerVideo"
 import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { get } from 'lodash-es'
 
@@ -206,11 +207,6 @@ const cardEdgeMargin = (card: any) => {
 }
 
 
-const isYoutube = (url: string) =>
-    url?.includes("youtube.com") || url?.includes("youtu.be")
-
-const isDirectVideo = (url: string) =>
-    url?.match(/\.(mp4|webm|ogg)$/i)
 
 /* const bannerHeight = computed(() => {
     return get(props.data, ['common', 'height', props.view],
@@ -336,19 +332,16 @@ onBeforeUnmount(() => {
                         <!-- Slide: Image -->
                         <div v-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'image'"
                             class="relative w-full h-full">
-                            <Image :src="renderImage(component)" :srcset="renderImageSrcset(component)" sizes="100vw" alt="Wowsbar" :imgAttributes="slideImgAttributes(index)" />
+                            <Image :src="renderImage(component)" :srcset="renderImageSrcset(component)" sizes="100vw" :alt="component?.layout?.centralStage?.title || ''" :imgAttributes="slideImgAttributes(index)" />
                         </div>
                         <div v-else-if="get(component, ['layout', 'backgroundType', props.view], get(component, ['layout', 'backgroundType', 'desktop'], 'image')) == 'video'"
                             class="relative w-full h-full overflow-hidden">
 
-                            <!-- Direct mp4 -->
-                            <video v-if="isDirectVideo(renderVideoUrl(component))" :src="renderVideoUrl(component)"
+                            <video v-if="bannerVideo(renderVideoUrl(component))?.kind === 'file'" :src="bannerVideo(renderVideoUrl(component))?.src"
                                 autoplay muted loop playsinline class="w-full h-full object-cover" />
-
-                            <!-- YouTube -->
-                            <iframe v-else-if="isYoutube(renderVideoUrl(component))"
-                                :src="`https://www.youtube.com/embed/${renderVideoUrl(component).split('v=')[1]}?autoplay=1&mute=1&loop=1&playlist=${renderVideoUrl(component).split('v=')[1]}`"
-                                class="w-full h-full" allow="autoplay" />
+                            <iframe v-else-if="bannerVideo(renderVideoUrl(component))"
+                                :src="bannerVideo(renderVideoUrl(component))?.src"
+                                class="w-full h-full pointer-events-none" allow="autoplay; fullscreen; picture-in-picture" />
 
                         </div>
                         <div v-else :style="{ background: renderBackground(component) }" class="w-full h-full" />
