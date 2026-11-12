@@ -11,10 +11,14 @@ namespace App\Actions\Accounting\BankTransaction;
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\BankConnection;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Models\Accounting\BankTransaction;
+use App\Models\Helpers\Currency;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -108,12 +112,30 @@ class MatchBankTransactions
         $difference = round($received - $owed, 2);
         $matchData  = ['owed' => $owed, 'received' => $received, 'difference' => $difference];
 
-        $successfulPayments = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS);
+        $successfulPayments = $order->payments()
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->whereHas('paymentAccount', fn ($query) => $query->whereNot('type', PaymentAccountTypeEnum::BANK_FEE));
 
-        if ((clone $successfulPayments)->whereBetween('payments.amount', [$received - 0.01, $received + 0.01])->exists()) {
+        $releasedFromThisOrder = $order->payments()
+            ->where('payments.state', PaymentStateEnum::CANCELLED)
+            ->where('payments.data->bank_transaction_id', $bankTransaction->id)
+            ->exists();
+        if ($releasedFromThisOrder) {
+            return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'a payment from this line on this order was cancelled'])];
+        }
+
+        $sameAmountPaymentId = (clone $successfulPayments)->whereBetween('payments.amount', [$received - 0.01, $received + 0.01])->value('payments.id');
+        if ($sameAmountPaymentId && BankTransaction::where('payment_id', $sameAmountPaymentId)->where('id', '!=', $bankTransaction->id)->exists()) {
+            return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'a second transfer of the same amount, the first one already paid this order'])];
+        }
+        if ($sameAmountPaymentId) {
             return [BankTransactionMatchStateEnum::ALREADY_PAID, $order, array_merge($matchData, ['reason' => 'a payment of this amount is already on the order'])];
         }
         $hasSuccessfulPayment = (clone $successfulPayments)->exists();
+        if ($owed <= 0.01 && $order->absorbedBankFees() > 0) {
+            return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'a bank fee was absorbed on this order, the customer may be paying it'])];
+        }
         if ($owed <= 0.01) {
             return $hasSuccessfulPayment
                 ? [BankTransactionMatchStateEnum::ALREADY_PAID, $order, array_merge($matchData, ['reason' => 'order already settled'])]
@@ -134,20 +156,38 @@ class MatchBankTransactions
         if ($difference > 0.01) {
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'pays more than owed'])];
         }
-        if (-$difference > $this->feeTolerance($owed)) {
+        if (-$difference > $this->feeTolerance($owed, $bankTransaction)) {
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'pays less than owed'])];
         }
 
         return [BankTransactionMatchStateEnum::MATCHED, $order, $matchData];
     }
 
+    public const float DEFAULT_FEE_CEILING_EUR = 15;
+
+    /** @var array<string, float> */
+    private array $feeCeilings = [];
+
     /**
-     * Banks take small fees off incoming transfers (0.2-0.8% seen on Wise): accept 1% short, or up to 1 in the currency
-     * when that is less than 10% of what is owed.
+     * Banks take small fees off incoming transfers (0.2-0.8% seen on Wise): accept up to 1% short, never more than the
+     * connection's ceiling (15 EUR by default) in the line's currency. A line short by more goes to review.
      */
-    public function feeTolerance(float $owed): float
+    public function feeTolerance(float $owed, BankTransaction $bankTransaction): float
     {
-        return round(max($owed * 0.01, min(1, $owed * 0.1)), 2);
+        return round(min($owed * 0.01, $this->feeCeiling($bankTransaction)), 2);
+    }
+
+    private function feeCeiling(BankTransaction $bankTransaction): float
+    {
+        $key = $bankTransaction->bank_connection_id.':'.$bankTransaction->currency_id;
+
+        return $this->feeCeilings[$key] ??= (function () use ($bankTransaction) {
+            $ceilingEur = (float)($bankTransaction->bankConnection->settings['fee_ceiling_eur'] ?? self::DEFAULT_FEE_CEILING_EUR);
+            $euro       = Currency::where('code', 'EUR')->firstOrFail();
+            $rate       = $bankTransaction->currency_id === $euro->id ? 1.0 : GetCurrencyExchange::run($euro, $bankTransaction->currency);
+
+            return $rate ? $ceilingEur * $rate : 0.0;
+        })();
     }
 
     /**

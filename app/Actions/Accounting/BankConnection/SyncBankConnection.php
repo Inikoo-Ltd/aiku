@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\BankConnection;
 
 use App\Actions\Accounting\BankConnection\Wise\SyncWiseBankConnection;
 use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
+use App\Actions\Accounting\BankTransaction\PayMatchedBankTransactions;
 use App\Enums\Accounting\BankConnection\BankConnectionProviderEnum;
 use App\Enums\Accounting\BankConnection\BankConnectionStateEnum;
 use App\Models\Accounting\BankConnection;
@@ -84,6 +85,7 @@ class SyncBankConnection
 
         try {
             MatchBankTransactions::run($bankConnection);
+            PayMatchedBankTransactions::run($bankConnection->refresh());
         } catch (Throwable $exception) {
             Sentry::captureException($exception);
         }

@@ -41,7 +41,7 @@ class AddBalanceFromExcessPaymentOrder extends OrgAction
 
             $totalAmount = $order->total_amount + $refunds->sum('total_amount');
 
-            $amount = round($order->payment_amount - $totalAmount, 2);
+            $amount = round($order->payment_amount - $order->absorbedBankFees() - $totalAmount, 2);
 
             /** @var PaymentAccountShop $paymentAccountShop */
             $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();

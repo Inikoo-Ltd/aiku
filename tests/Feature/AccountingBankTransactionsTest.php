@@ -23,6 +23,25 @@ use App\Models\Helpers\Currency;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Helpers\Address;
+use App\Actions\Accounting\BankConnection\SetBankConnectionAutoPay;
+use App\Actions\Accounting\BankTransaction\PayMatchedBankTransactions;
+use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Actions\Accounting\Payment\CancelPayment;
+use App\Actions\Accounting\Payment\RefundPaymentToBalance;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Ordering\Order\UpdateState\CancelOrder;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Models\Accounting\PaymentServiceProvider;
+use App\Models\Ordering\Order;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
+use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\Http;
 
 uses()->group('base');
@@ -320,6 +339,206 @@ test('a matching decision is taken again when the bank cancels the line', functi
     expect($line->refresh()->status)->toBe(BankTransactionStatusEnum::CANCELLED)
         ->and($line->match_state)->toBeNull()
         ->and($line->order_id)->toBeNull();
+});
+
+test('auto-pay records the money received and absorbs the bank fee, only for lines after it was switched on', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $order          = bankMatchingOrder(createCustomer($this->shop), 100);
+    $older          = bankMatchingOrder(createCustomer($this->shop), 40);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'wise'.random_int(1000, 9999), 'name' => 'Wise test']
+    );
+
+    $line = fn (string $id, Order $order, float $amount, $bookedAt) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => $order->reference,
+        'booked_at'               => $bookedAt,
+    ]);
+
+    $beforeSwitchOn = $line('p0', $older, 40, now()->subDay());
+
+    SetBankConnectionAutoPay::run($bankConnection, [$order->currency->code => $bankAccount->code]);
+    $bankConnection->refresh();
+
+    $paidLine = $line('p1', $order, 99.50, now()->addMinute());
+
+    MatchBankTransactions::run($bankConnection);
+    expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 1]);
+
+    $paidLine->refresh();
+    $order->refresh();
+
+    expect($beforeSwitchOn->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($beforeSwitchOn->payment_id)->toBeNull()
+        ->and((float)$paidLine->payment->amount)->toBe(99.5)
+        ->and($paidLine->payment->payment_account_id)->toBe($bankAccount->id)
+        ->and((float)$paidLine->bankFeePayment->amount)->toBe(0.5)
+        ->and($paidLine->bankFeePayment->paymentAccount->type)->toBe(PaymentAccountTypeEnum::BANK_FEE)
+        ->and($order->pay_status)->toBe(OrderPayStatusEnum::PAID)
+        ->and((float)$order->payment_amount)->toBe(100.0)
+        ->and(PayMatchedBankTransactions::run($bankConnection))->toBe([]);
+
+    expect(fn () => DB::transaction(fn () => RefundPaymentToBalance::lockForRefund($paidLine->bankFeePayment, null, 0.5)))
+        ->toThrow(ValidationException::class);
+
+    $topUp = $line('p2', $order, 0.50, now()->addMinutes(2));
+    MatchBankTransactions::run($bankConnection);
+    expect($topUp->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($topUp->match_data['reason'])->toBe('a bank fee was absorbed on this order, the customer may be paying it');
+
+    CancelOrder::make()->action($order->refresh());
+
+    expect($paidLine->bankFeePayment->refresh()->state)->toBe(PaymentStateEnum::CANCELLED)
+        ->and((float)$order->refresh()->payments()->where('payments.type', PaymentTypeEnum::REFUND)->sum('payments.amount'))->toBe(-99.5);
+});
+
+test('cancelling a payment recorded from a bank line takes its absorbed fee with it and sends the line to review', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $order          = bankMatchingOrder(createCustomer($this->shop), 200);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'wise'.random_int(1000, 9999), 'name' => 'Wise cancel test']
+    );
+    SetBankConnectionAutoPay::run($bankConnection, [$order->currency->code => $bankAccount->code]);
+
+    $bankTransaction = BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'x1',
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 199,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => $order->reference,
+        'booked_at'               => now()->addMinute(),
+    ]);
+
+    MatchBankTransactions::run($bankConnection->refresh());
+    expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 1]);
+
+    $bankTransaction->refresh();
+    $bankFeePayment = $bankTransaction->bankFeePayment;
+
+    CancelPayment::make()->handle($bankTransaction->payment);
+
+    expect($bankFeePayment->refresh()->state)->toBe(PaymentStateEnum::CANCELLED)
+        ->and($bankTransaction->refresh()->payment_id)->toBeNull()
+        ->and($bankTransaction->bank_fee_payment_id)->toBeNull()
+        ->and($bankTransaction->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and((float)$order->refresh()->payment_amount)->toBe(0.0)
+        ->and(PayMatchedBankTransactions::run($bankConnection))->toBe([]);
+
+    $bankTransaction->update(['match_state' => null]);
+    MatchBankTransactions::run($bankConnection);
+
+    expect($bankTransaction->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($bankTransaction->match_data['reason'])->toBe('a payment from this line on this order was cancelled');
+});
+
+test('a second transfer of the same amount for an order already paid from the bank goes to review', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $order          = bankMatchingOrder(createCustomer($this->shop), 80);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'wise'.random_int(1000, 9999), 'name' => 'Wise duplicate test']
+    );
+    SetBankConnectionAutoPay::run($bankConnection, [$order->currency->code => $bankAccount->code]);
+    $bankConnection->refresh();
+
+    $line = fn (string $id) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => 80,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => $order->reference,
+        'booked_at'               => now()->addMinute(),
+    ]);
+
+    $first = $line('d1');
+    MatchBankTransactions::run($bankConnection);
+    PayMatchedBankTransactions::run($bankConnection);
+
+    $second = $line('d2');
+    MatchBankTransactions::run($bankConnection);
+
+    expect($first->refresh()->payment_id)->not->toBeNull()
+        ->and($second->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($second->match_data['reason'])->toBe('a second transfer of the same amount, the first one already paid this order');
+});
+
+test('invoicing an order paid with an absorbed bank fee leaves its stored pay status true to its payments', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $customer       = createCustomer($this->shop);
+    [, $product]    = createProduct($this->shop);
+    $order          = bankMatchingOrder($customer, 0);
+    $transaction = StoreTransaction::make()->action($order, $product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 10]));
+    $order->refresh();
+    $order->updateQuietly(['state' => OrderStateEnum::SUBMITTED]);
+
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'wise'.random_int(1000, 9999), 'name' => 'Wise invoice test']
+    );
+    SetBankConnectionAutoPay::run($bankConnection, [$order->currency->code => $bankAccount->code]);
+    $bankConnection->refresh();
+
+    $owed     = (float)$order->total_amount;
+    $received = round($owed - min(0.5, round($owed * 0.009, 2)), 2);
+
+    BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => 'i1',
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $received,
+        'currency_id'             => $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => $order->reference,
+        'booked_at'               => now()->addMinute(),
+    ]);
+
+    MatchBankTransactions::run($bankConnection);
+    expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 1]);
+
+    $transaction->updateQuietly(['quantity_ordered' => 5]);
+    $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
+
+    expect((float)$invoice->total_amount)->toBeLessThan($received);
+
+    $stored = $order->refresh()->only(['pay_status', 'pay_detailed_status', 'payment_amount']);
+    $fresh  = UpdateOrderPaymentsStatus::run($order->refresh())->only(['pay_status', 'pay_detailed_status', 'payment_amount']);
+
+    expect($stored)->toEqual($fresh);
 });
 
 test('order numbers are read from bank references as whole words', function () {

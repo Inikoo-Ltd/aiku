@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\BankConnection\Wise;
 
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
+use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Models\Accounting\BankConnection;
 use App\Models\Accounting\BankTransaction;
@@ -17,6 +18,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 /**
  * Mirrors a Wise business profile into bank_transactions. Wise only lets a personal token read the activity
@@ -36,7 +38,7 @@ class SyncWiseBankConnection
 
     private const string JAR = 'jar';
 
-    private const int PARSER_VERSION = 2;
+    private const int PARSER_VERSION = 3;
 
     /** @var array<string, int|null> */
     private array $currencyIds = [];
@@ -139,6 +141,7 @@ class SyncWiseBankConnection
                     'amount'              => $direction === BankTransactionDirectionEnum::OUT ? -$value : $value,
                     'currency_id'         => $currencyIds[$suffix],
                     'account_reference'   => $leg[3] ?? null,
+                    'fee_amount'          => $suffix === '' ? $this->bankFee($activity, $transfer, $direction, $value, $leg[2]) : null,
                     'status'              => match ($activity['status'] ?? null) {
                         'COMPLETED' => BankTransactionStatusEnum::BOOKED,
                         'CANCELLED' => BankTransactionStatusEnum::CANCELLED,
@@ -154,7 +157,11 @@ class SyncWiseBankConnection
 
             $stored = BankTransaction::where('bank_connection_id', $bankConnection->id)->where('provider_transaction_id', $activity['id'].$suffix)->first();
             if ($stored) {
-                $stored->update(array_merge($values, $this->decisionNoLongerValid($stored, $values) ? self::FORGET_DECISION : []));
+                $stored->update(array_merge($values, match (true) {
+                    $this->paidLineChanged($stored, $values) => $this->flagPaidLineChanged($stored),
+                    $this->decisionNoLongerValid($stored, $values) => self::FORGET_DECISION,
+                    default => [],
+                }));
             } else {
                 BankTransaction::create(array_merge($values, [
                     'bank_connection_id'      => $bankConnection->id,
@@ -176,6 +183,30 @@ class SyncWiseBankConnection
             return false;
         }
 
+        return $this->lineChanged($stored, $values);
+    }
+
+    private function paidLineChanged(BankTransaction $stored, array $values): bool
+    {
+        return $stored->payment_id !== null && $stored->match_state !== BankTransactionMatchStateEnum::REVIEW && $this->lineChanged($stored, $values);
+    }
+
+    /**
+     * Money was already recorded on an order from this line; the bank now says something else (reversed, cancelled,
+     * another amount), so a person has to look at the order.
+     */
+    private function flagPaidLineChanged(BankTransaction $stored): array
+    {
+        Sentry::captureMessage("Bank line $stored->id changed after it paid order $stored->order_id (payment $stored->payment_id)");
+
+        return [
+            'match_state' => BankTransactionMatchStateEnum::REVIEW,
+            'match_data'  => array_merge($stored->match_data, ['reason' => 'the bank changed this line after it was paid']),
+        ];
+    }
+
+    private function lineChanged(BankTransaction $stored, array $values): bool
+    {
         return $stored->status !== $values['status']
             || $stored->currency_id !== $values['currency_id']
             || $stored->reference !== $values['reference']
@@ -250,6 +281,28 @@ class SyncWiseBankConnection
             round((float)str_replace(',', '', $matches[2]), 2),
             $matches[3],
         ];
+    }
+
+    /**
+     * The bank's own fee on this line: what the payer sent minus what reached us on incoming lines, what left our
+     * balance minus what the recipient was sent on outgoing ones. Only when both sides are in the line's currency.
+     */
+    public function bankFee(array $activity, ?array $transfer, BankTransactionDirectionEnum $direction, float $value, string $currencyCode): ?float
+    {
+        if (($activity['type'] ?? null) !== 'TRANSFER') {
+            return null;
+        }
+
+        if ($direction === BankTransactionDirectionEnum::IN) {
+            $sent = $this->parseAmount($activity['secondaryAmount'] ?? '');
+            $fee  = $sent && $sent[2] === $currencyCode ? round($sent[1] - $value, 2) : null;
+        } else {
+            $fee = ($transfer['sourceCurrency'] ?? null) === $currencyCode && isset($transfer['sourceValue'])
+                ? round($value - (float)$transfer['sourceValue'], 2)
+                : null;
+        }
+
+        return $fee !== null && $fee > 0 ? $fee : null;
     }
 
     private function fetchTransfer(BankConnection $bankConnection, string $transferId): ?array

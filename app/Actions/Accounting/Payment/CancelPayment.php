@@ -21,6 +21,8 @@ use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
+use App\Models\Accounting\BankTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
@@ -57,6 +59,8 @@ class CancelPayment extends OrgAction
             $payment->update([
                 'state' => PaymentStateEnum::CANCELLED,
             ]);
+
+            $this->releaseBankTransaction($payment);
 
             $originalPayment = $payment->originalPayment;
 
@@ -104,4 +108,33 @@ class CancelPayment extends OrgAction
         $this->handle($payment);
     }
 
+
+    /**
+     * A payment recorded automatically from a bank line (HELP-4642): its absorbed bank fee goes with it, and the line
+     * goes back to review so a person decides where the money belongs, instead of it being paid to the same order again.
+     *
+     * @throws \Throwable
+     */
+    private function releaseBankTransaction(Payment $payment): void
+    {
+        BankTransaction::where('bank_fee_payment_id', $payment->id)->update(['bank_fee_payment_id' => null]);
+
+        $bankTransaction = BankTransaction::where('payment_id', $payment->id)->lockForUpdate()->first();
+        if (!$bankTransaction) {
+            return;
+        }
+
+        $bankFeePayment = $bankTransaction->bank_fee_payment_id ? Payment::find($bankTransaction->bank_fee_payment_id) : null;
+
+        $bankTransaction->update([
+            'payment_id'          => null,
+            'bank_fee_payment_id' => null,
+            'match_state'         => BankTransactionMatchStateEnum::REVIEW,
+            'match_data'          => array_merge($bankTransaction->match_data, ['reason' => 'the payment recorded from this line was cancelled']),
+        ]);
+
+        if ($bankFeePayment && $bankFeePayment->state !== PaymentStateEnum::CANCELLED) {
+            $this->handle($bankFeePayment);
+        }
+    }
 }

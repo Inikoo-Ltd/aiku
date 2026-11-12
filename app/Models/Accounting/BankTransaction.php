@@ -41,6 +41,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property BankTransactionMatchStateEnum|null $match_state
  * @property int|null $order_id
  * @property int|null $payment_id
+ * @property string|null $fee_amount the bank's own fee on this line, in its currency
+ * @property int|null $bank_fee_payment_id the absorbed customer-side fee recorded with the payment
  * @property array<string, mixed> $match_data
  * @property \Illuminate\Support\Carbon|null $matched_at
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -81,6 +83,11 @@ class BankTransaction extends Model
     public function payment(): BelongsTo
     {
         return $this->belongsTo(Payment::class);
+    }
+
+    public function bankFeePayment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class, 'bank_fee_payment_id');
     }
 
     public function bankConnection(): BelongsTo
