@@ -40,6 +40,7 @@ use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\UI\EditPaymentAccountShop;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
 use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
+use App\Actions\Accounting\Reports\BankFees\IndexBankFees;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\IndexInvoicesPerShop;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
@@ -130,5 +131,7 @@ Route::get('/invoice-categories/{invoiceCategory}/backlog', IndexOrdersBacklogIn
 Route::get('/invoice-categories/{invoiceCategory}/edit', EditInvoiceCategory::class)->name('invoice-categories.edit');
 
 Route::get('/customer-balances', [IndexCustomerBalances::class, 'inOrganisation'])->name('balances.index');
+
+Route::get('/bank-fees', IndexBankFees::class)->name('bank_fees.index');
 
 Route::get('/credit-transactions', [IndexCreditTransactionsAll::class, 'inOrganisation'])->name('credit_transactions.index');

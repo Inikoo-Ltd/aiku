@@ -9,6 +9,7 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Accounting\BankConnection\StoreBankConnection;
+use App\Actions\Accounting\Reports\BankFees\IndexBankFees;
 use App\Actions\Accounting\BankConnection\SyncBankConnection;
 use App\Actions\Accounting\BankConnection\Wise\SyncWiseBankConnection;
 use App\Enums\Accounting\BankConnection\BankConnectionProviderEnum;
@@ -36,6 +37,12 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Ordering\Order;
+use Carbon\Carbon;
+use App\Actions\SysAdmin\Organisation\StoreOrganisation;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\Config;
+use Inertia\Testing\AssertableInertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
@@ -43,6 +50,9 @@ use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\Http;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
 
 uses()->group('base');
 
@@ -582,4 +592,113 @@ test('a failing bank sync marks the connection as error', function () {
     expect(SyncBankConnection::run($bankConnection))->toBeNull()
         ->and($bankConnection->refresh()->state)->toBe(BankConnectionStateEnum::ERROR)
         ->and($bankConnection->last_error)->not->toBeNull();
+});
+
+test('the bank fees report sums fees the bank took and fees absorbed, per currency and month', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $order          = bankMatchingOrder(createCustomer($this->shop), 200);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'wise'.random_int(1000, 9999), 'name' => 'Wise fees report']
+    );
+    SetBankConnectionAutoPay::run($bankConnection, [$order->currency->code => $bankAccount->code]);
+
+    $otherOrganisationData = Organisation::factory()->definition();
+    data_set($otherOrganisationData, 'code', 'fees'.random_int(1000, 9999));
+    data_set($otherOrganisationData, 'type', OrganisationTypeEnum::SHOP);
+    $otherOrganisation = StoreOrganisation::make()->action($this->organisation->group, $otherOrganisationData);
+    $otherConnection   = bankMatchingConnection($otherOrganisation);
+
+    $otherCurrency = Currency::where('id', '!=', $order->currency_id)->firstOrFail();
+
+    $thisMonth = now()->startOfMonth()->addDays(10)->setTime(12, 0);
+    $olderMonth = $thisMonth->copy()->subMonths(2);
+    $emptyMonth = $thisMonth->copy()->subMonths(4);
+    $from       = $thisMonth->copy()->subMonths(5)->startOfMonth()->toDateString();
+    $to         = $thisMonth->copy()->endOfMonth()->toDateString();
+
+    $report = function () use ($order, $otherCurrency, $from, $to) {
+        $rows = IndexBankFees::make()->handle($this->organisation, $from, $to);
+        $pick = fn (string $month, string $currencyCode) => $rows->first(fn ($row) => $row->month === $month && $row->currency_code === $currencyCode);
+        $read = fn ($row) => [(float)($row->bank_fees ?? 0), (float)($row->bank_base ?? 0), (float)($row->absorbed_fees ?? 0)];
+
+        return [
+            'now'   => $read($pick(now()->format('Y-m'), $order->currency->code)),
+            'older' => $read($pick(now()->subMonths(2)->startOfMonth()->format('Y-m'), $order->currency->code)),
+            'empty' => $read($pick(now()->subMonths(4)->startOfMonth()->format('Y-m'), $order->currency->code)),
+            'other' => $read($pick(now()->format('Y-m'), $otherCurrency->code)),
+            'count' => $rows->count(),
+        ];
+    };
+    $before = $report();
+
+    $line = fn (BankConnection $connection, string $id, float $amount, float $fee, $bookedAt, ?string $reference = null, ?int $currencyId = null, BankTransactionStatusEnum $status = BankTransactionStatusEnum::BOOKED) => BankTransaction::create([
+        'group_id'                => $connection->group_id,
+        'organisation_id'         => $connection->organisation_id,
+        'bank_connection_id'      => $connection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'fee_amount'              => $fee,
+        'currency_id'             => $currencyId ?? $order->currency_id,
+        'status'                  => $status,
+        'reference'               => $reference,
+        'booked_at'               => $bookedAt,
+    ]);
+
+    $paidLine = $line($bankConnection, 'f1', 199, 0.50, now()->addMinute(), $order->reference);
+    $line($bankConnection, 'f2', 100, 0.25, $thisMonth);
+    $line($bankConnection, 'f3', 50, 1.00, $olderMonth);
+    $line($bankConnection, 'f4', 80, 0, $thisMonth);
+    $line($bankConnection, 'f5', 40, 0.10, $thisMonth, null, $otherCurrency->id);
+
+    $line($otherConnection, 'x1', 500, 7, $thisMonth);
+    $line($bankConnection, 'x2', 500, 7, $thisMonth, null, null, BankTransactionStatusEnum::PENDING);
+    $line($bankConnection, 'x3', 500, 7, $thisMonth, null, null, BankTransactionStatusEnum::CANCELLED);
+    $line($bankConnection, 'x4', 500, 7, Carbon::parse($from)->subDay()->setTime(12, 0));
+
+    MatchBankTransactions::run($bankConnection->refresh());
+    expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 1]);
+
+    $paidLine->update(['booked_at' => $thisMonth]);
+    $absorbedPayment = $paidLine->refresh()->bankFeePayment;
+    $cancelledCopy   = $absorbedPayment->replicate(['slug'])->fill(['reference' => 'c'.random_int(1000, 9999), 'state' => PaymentStateEnum::CANCELLED]);
+    $cancelledCopy->save();
+    $deletedCopy = $absorbedPayment->replicate(['slug'])->fill(['reference' => 'd'.random_int(1000, 9999)]);
+    $deletedCopy->save();
+    $deletedCopy->delete();
+
+    $emptyMonthCopy = $absorbedPayment->replicate(['slug'])->fill(['reference' => 'e'.random_int(1000, 9999), 'date' => $emptyMonth]);
+    $emptyMonthCopy->save();
+
+    $after = $report();
+    $diff  = fn (string $key) => array_map(fn ($a, $b) => round($a - $b, 2), $after[$key], $before[$key]);
+
+    expect($diff('now'))->toBe([0.75, 299.0, 1.0])
+        ->and($diff('older'))->toBe([1.0, 50.0, 0.0])
+        ->and($diff('empty'))->toBe([0.0, 0.0, 1.0])
+        ->and($diff('other'))->toBe([0.1, 40.0, 0.0]);
+
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+
+    get(route('grp.org.accounting.bank_fees.index', [$this->organisation->slug, 'from' => $to, 'to' => $from]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/BankFees')
+            ->where('range', ['from' => $from, 'to' => $to])
+            ->where('data.data', function ($rows) use ($order) {
+                $rows = collect($rows);
+                $now  = $rows->first(fn ($row) => $row['month'] === now()->format('Y-m') && $row['currency_code'] === $order->currency->code);
+                $none = $rows->first(fn ($row) => $row['month'] === now()->subMonths(4)->startOfMonth()->format('Y-m') && $row['currency_code'] === $order->currency->code);
+
+                return abs($now['bank_fee_percentage'] - round($now['bank_fees'] / $now['bank_base'] * 100, 2)) < 0.001
+                    && (float)$none['bank_base'] === 0.0 && $none['bank_fee_percentage'] === null;
+            }));
+
+    get(route('grp.org.accounting.bank_fees.index', [$this->organisation->slug, 'from' => 'garbage']))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('range.to', now()->toDateString()));
 });
