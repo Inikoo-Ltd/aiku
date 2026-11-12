@@ -37,12 +37,6 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Ordering\Order;
-use Carbon\Carbon;
-use App\Actions\SysAdmin\Organisation\StoreOrganisation;
-use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
-use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Facades\Config;
-use Inertia\Testing\AssertableInertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
@@ -50,9 +44,17 @@ use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\Http;
+use App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder;
+use Carbon\Carbon;
+use App\Actions\SysAdmin\Organisation\StoreOrganisation;
+use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\Config;
+use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\post;
 
 uses()->group('base');
 
@@ -549,6 +551,102 @@ test('invoicing an order paid with an absorbed bank fee leaves its stored pay st
     $fresh  = UpdateOrderPaymentsStatus::run($order->refresh())->only(['pay_status', 'pay_detailed_status', 'payment_amount']);
 
     expect($stored)->toEqual($fresh);
+});
+
+test('staff record a bank payment from the review queue on the order they name, or set it aside', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
+    $order          = bankMatchingOrder(createCustomer($this->shop), 50);
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'wise'.random_int(1000, 9999), 'name' => 'Wise queue test']
+    );
+    SetBankConnectionAutoPay::run($bankConnection, [$order->currency->code => $bankAccount->code]);
+    SetBankConnectionAutoPay::run($bankConnection->refresh(), [], off: true);
+    $bankConnection->refresh();
+
+    $line = fn (string $id, float $amount, ?int $currencyId = null) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $currencyId ?? $order->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => 'Thank you',
+        'booked_at'               => now(),
+        'match_state'             => BankTransactionMatchStateEnum::REVIEW,
+        'match_data'              => ['reason' => 'no order number in the reference'],
+    ]);
+
+    $wrongCurrency = $line('q0', 49.60, Currency::where('id', '!=', $order->currency_id)->value('id'));
+    expect(fn () => PayBankTransactionToOrder::make()->handle($wrongCurrency, ['order_reference' => $order->reference]))
+        ->toThrow(ValidationException::class);
+
+    $paid = $line('q1', 49.60);
+    PayBankTransactionToOrder::make()->handle($paid, ['order_reference' => strtolower($order->reference), 'absorb_bank_fee' => true]);
+
+    $paid->refresh();
+    expect($paid->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($paid->order_id)->toBe($order->id)
+        ->and((float)$paid->payment->amount)->toBe(49.6)
+        ->and((float)$paid->bankFeePayment->amount)->toBe(0.4)
+        ->and($order->refresh()->pay_status)->toBe(OrderPayStatusEnum::PAID);
+
+    $partOrder = bankMatchingOrder(createCustomer($this->shop), 100);
+    $partPayment = $line('q4', 50);
+    PayBankTransactionToOrder::make()->handle($partPayment, ['order_reference' => $partOrder->reference, 'absorb_bank_fee' => true]);
+    expect($partPayment->refresh()->bank_fee_payment_id)->toBeNull()
+        ->and((float)$partOrder->refresh()->payment_amount)->toBe(50.0);
+
+    $basket = bankMatchingOrder(createCustomer($this->shop), 30);
+    $basket->updateQuietly(['state' => OrderStateEnum::CREATING]);
+    expect(fn () => PayBankTransactionToOrder::make()->handle($line('q5', 30), ['order_reference' => $basket->reference]))
+        ->toThrow(ValidationException::class);
+    expect(fn () => PayBankTransactionToOrder::make()->handle($line('q6', 49.60), ['order_reference' => $order->reference]))
+        ->toThrow(ValidationException::class);
+
+    $twin      = bankMatchingOrder(createCustomer($this->shop), 20);
+    $twinOther = bankMatchingOrder(createCustomer($this->shop), 20);
+    $twinOther->updateQuietly(['reference' => $twin->reference]);
+    expect(fn () => PayBankTransactionToOrder::make()->handle($line('q7', 20), ['order_reference' => $twin->reference]))
+        ->toThrow(ValidationException::class);
+    $suggested = $line('q8', 20);
+    $suggested->update(['order_id' => $twinOther->id]);
+    PayBankTransactionToOrder::make()->handle($suggested, ['order_reference' => $twin->reference]);
+    expect($suggested->refresh()->order_id)->toBe($twinOther->id);
+
+    $payout = $line('q2', 900);
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+
+    post(route('grp.models.org.bank_transaction.dismiss', [$this->organisation->id, $payout->id]), ['note' => 'Faire payout'])->assertRedirect();
+    $this->artisan('bank-transactions:match', ['bankConnection' => $bankConnection->id, '--reset' => true])->run();
+
+    expect($payout->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::DISMISSED)
+        ->and($payout->match_data['dismissed_note'])->toBe('Faire payout');
+
+    post(route('grp.models.org.bank_transaction.restore', [$this->organisation->id, $payout->id]))->assertRedirect();
+    expect($payout->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
+    $payout->update(['match_state' => BankTransactionMatchStateEnum::DISMISSED]);
+
+    $toReview = $line('q3', 12);
+    $this->artisan('bank-transactions:match', ['bankConnection' => $bankConnection->id])->run();
+    $toReview->update(['match_state' => BankTransactionMatchStateEnum::REVIEW, 'match_data' => ['reason' => 'pays less than owed']]);
+
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+
+    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Org/Accounting/BankTransactionsToReview')
+            ->where('canEdit', true)
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($toReview->id)
+                && !collect($rows)->pluck('id')->contains($paid->id)
+                && !collect($rows)->pluck('id')->contains($payout->id)));
 });
 
 test('order numbers are read from bank references as whole words', function () {

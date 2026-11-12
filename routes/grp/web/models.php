@@ -80,6 +80,9 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Actions\Accounting\BankTransaction\DismissBankTransaction;
+use App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder;
+use App\Actions\Accounting\BankTransaction\RestoreBankTransaction;
 use App\Actions\Accounting\Payment\CancelPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
@@ -1284,6 +1287,10 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
 
     Route::patch('/payment/{payment:id}/cancel', CancelPayment::class)->name('payment.cancel')->withoutScopedBindings();
+
+    Route::post('/bank-transaction/{bankTransaction:id}/pay-order', PayBankTransactionToOrder::class)->name('bank_transaction.pay_order')->withoutScopedBindings();
+    Route::post('/bank-transaction/{bankTransaction:id}/dismiss', DismissBankTransaction::class)->name('bank_transaction.dismiss')->withoutScopedBindings();
+    Route::post('/bank-transaction/{bankTransaction:id}/restore', RestoreBankTransaction::class)->name('bank_transaction.restore')->withoutScopedBindings();
 });
 
 Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {

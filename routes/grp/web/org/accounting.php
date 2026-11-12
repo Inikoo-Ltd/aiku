@@ -41,6 +41,7 @@ use App\Actions\Accounting\PaymentAccountShop\UI\EditPaymentAccountShop;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
 use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
 use App\Actions\Accounting\Reports\BankFees\IndexBankFees;
+use App\Actions\Accounting\BankTransaction\UI\IndexBankTransactionsToReview;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\IndexInvoicesPerShop;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
@@ -50,6 +51,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', ShowAccountingDashboard::class)->name('dashboard');
 
 Route::get('/per-store', IndexInvoicesPerShop::class)->name('invoices-shop');
+
+Route::get('/bank-review', IndexBankTransactionsToReview::class)->name('bank_review.index');
 
 
 

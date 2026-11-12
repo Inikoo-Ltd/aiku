@@ -217,6 +217,7 @@ class MatchBankTransactions
             if ($command->option('reset')) {
                 BankTransaction::where('bank_connection_id', $bankConnection->id)
                     ->whereNull('payment_id')
+                    ->where(fn ($query) => $query->whereNull('match_state')->orWhere('match_state', '!=', BankTransactionMatchStateEnum::DISMISSED))
                     ->update(['match_state' => null, 'order_id' => null, 'match_data' => '{}', 'matched_at' => null]);
             }
 

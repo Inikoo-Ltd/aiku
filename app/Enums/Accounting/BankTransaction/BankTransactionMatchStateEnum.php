@@ -18,4 +18,5 @@ enum BankTransactionMatchStateEnum: string
     case ALREADY_PAID = 'already_paid';
     case REVIEW = 'review';
     case UNMATCHED = 'unmatched';
+    case DISMISSED = 'dismissed';
 }

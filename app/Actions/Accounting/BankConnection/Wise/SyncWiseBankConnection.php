@@ -179,7 +179,7 @@ class SyncWiseBankConnection
      */
     private function decisionNoLongerValid(BankTransaction $stored, array $values): bool
     {
-        if ($stored->match_state === null || $stored->payment_id !== null) {
+        if ($stored->match_state === null || $stored->match_state === BankTransactionMatchStateEnum::DISMISSED || $stored->payment_id !== null) {
             return false;
         }
 
