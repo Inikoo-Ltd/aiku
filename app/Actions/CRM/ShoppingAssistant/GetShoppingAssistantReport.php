@@ -236,6 +236,7 @@ class GetShoppingAssistantReport
 
     /**
      * The conversations the report counts. The caller has joined `customers` on the conversation's customer.
+     * Range Advisor panel days have no messages, so they only count when that entry point is chosen.
      *
      * @param  Filters  $filters
      */
@@ -249,6 +250,7 @@ class GetShoppingAssistantReport
             ->whereRaw('coalesce(customers.is_staff, false) = false')
             ->when($filters['language'], fn ($query, $language) => $query->where('shopping_assistant_conversations.language_code', $language))
             ->when($filters['entry_point'], fn ($query, $entryPoint) => $query->where('shopping_assistant_conversations.entry_point', $entryPoint))
+            ->when(!$filters['entry_point'], fn ($query) => $query->where('shopping_assistant_conversations.entry_point', '!=', ShoppingAssistantEntryPointEnum::PANEL->value))
             ->when($filters['shop_type'], fn ($query, $shopType) => $query->where('customers.shop_type', $shopType))
             ->when($filters['country'], fn ($query, $country) => $query->whereRaw("customers.location->>0 = ?", [$country]));
     }
@@ -276,6 +278,8 @@ class GetShoppingAssistantReport
      * Runs $select after the CTEs `convs` (the conversations of $conversations), `matches` (every order
      * line attributed to a conversation of convs) and `lines` (each attributed line once, for the
      * earliest conversation of the customer that showed it, kept when that conversation is in convs).
+     * A conversation wins over a Range Advisor panel day that showed the same product, even an earlier
+     * one, so the default report (which leaves panel days out) never loses a line the chat showed.
      *
      * @param  array<int, mixed>  $selectBindings
      *
@@ -300,20 +304,20 @@ class GetShoppingAssistantReport
         $sql = <<<SQL
             with convs as ({$conversations->toSql()}),
             customer_conversations as (
-                select customer_conversations.id, customer_conversations.customer_id
+                select customer_conversations.id, customer_conversations.customer_id, customer_conversations.entry_point = ? as is_panel
                 from shopping_assistant_conversations customer_conversations
                 where customer_conversations.customer_id in (select convs.customer_id from convs)
                     and customer_conversations.entry_point <> ?
             ),
             first_shown as (
-                select events.shopping_assistant_conversation_id as conversation_id, customer_conversations.customer_id, events.product_id, min(events.created_at) as shown_at
+                select events.shopping_assistant_conversation_id as conversation_id, customer_conversations.customer_id, customer_conversations.is_panel, events.product_id, min(events.created_at) as shown_at
                 from shopping_assistant_events events
                 join customer_conversations on customer_conversations.id = events.shopping_assistant_conversation_id
                 where events.type = 'shown'
-                group by events.shopping_assistant_conversation_id, customer_conversations.customer_id, events.product_id
+                group by events.shopping_assistant_conversation_id, customer_conversations.customer_id, customer_conversations.is_panel, events.product_id
             ),
             all_matches as (
-                select first_shown.conversation_id, first_shown.product_id, first_shown.shown_at, transactions.id as transaction_id,
+                select first_shown.conversation_id, first_shown.is_panel, first_shown.product_id, first_shown.shown_at, transactions.id as transaction_id,
                     transactions.order_id, transactions.customer_id, transactions.family_id, transactions.submitted_at, transactions.{$amountColumn} as amount
                 from first_shown
                 join transactions on transactions.customer_id = first_shown.customer_id
@@ -332,7 +336,7 @@ class GetShoppingAssistantReport
             ),
             lines as (
                 select * from (
-                    select distinct on (all_matches.transaction_id) * from all_matches order by all_matches.transaction_id, all_matches.shown_at, all_matches.conversation_id
+                    select distinct on (all_matches.transaction_id) * from all_matches order by all_matches.transaction_id, all_matches.is_panel, all_matches.shown_at, all_matches.conversation_id
                 ) earliest
                 where earliest.conversation_id in (select convs.id from convs)
             )
@@ -341,6 +345,7 @@ class GetShoppingAssistantReport
 
         return [$sql, [
             ...$conversations->getBindings(),
+            ShoppingAssistantEntryPointEnum::PANEL->value,
             ShoppingAssistantEntryPointEnum::COMMAND->value,
             $this->attributionDays(),
             ...$this->notOrderedStates(),
@@ -457,14 +462,14 @@ class GetShoppingAssistantReport
                 select convs.customer_id, count(*) as conversations,
                     exists (
                         select 1 from shopping_assistant_conversations earlier
-                        where earlier.customer_id = convs.customer_id and earlier.created_at < ? and earlier.entry_point <> ?
+                        where earlier.customer_id = convs.customer_id and earlier.created_at < ? and earlier.entry_point not in (?, ?)
                     ) as earlier
                 from convs
                 where convs.customer_id is not null
                 group by convs.customer_id
             ) per_customer
             SQL,
-            [...$conversations->getBindings(), $from->toIso8601String(), ShoppingAssistantEntryPointEnum::COMMAND->value]
+            [...$conversations->getBindings(), $from->toIso8601String(), ShoppingAssistantEntryPointEnum::COMMAND->value, ShoppingAssistantEntryPointEnum::PANEL->value]
         );
 
         $aov = $this->averageOrderValues($conversations, $filters, $from, $to, $amountColumn);

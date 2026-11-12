@@ -9046,5 +9046,22 @@
     "Shopping assistant answers": "A vásárlási asszisztens válaszai",
     "Shopping assistant customer challenges": "Vásárlói akadályok a vásárlási asszisztensben",
     "Answers customers in the AI shopping assistant on the websites.": "Válaszol a vásárlóknak a weboldalak AI vásárlási asszisztensében.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Elolvassa a vásárlási asszisztenssel lezárult beszélgetéseket, és rögzíti, mi akadályozta a vásárlót a rendelésben."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Elolvassa a vásárlási asszisztenssel lezárult beszélgetéseket, és rögzíti, mi akadályozta a vásárlót a rendelésben.",
+    "Missing from your range": "Hiányzik a választékából",
+    "Forgotten favourites": "Elfelejtett kedvencek",
+    "Starter packs": "Kezdőcsomagok",
+    "New for your shop": "Újdonságok az Ön üzletének",
+    "Picked for your shop: :details.": "Az Ön üzletének válogatva: :details.",
+    ":name noticed": "Amit :name észrevett",
+    "In stock now, at your trade prices.": "Most raktáron, az Ön nagykereskedelmi áraival.",
+    "Tell :name what kind of shop you run to get better picks": "Mondja el :name számára, milyen üzletet vezet, így jobb javaslatokat kap",
+    "Best sellers from a family you don’t stock yet": "Bestsellerek egy termékcsaládból, amely még nincs meg Önnél",
+    "Add pack to basket": "Csomag a kosárba",
+    "New in our range": "Újdonság a kínálatunkban",
+    "Range Advisor": "Választéktanácsadó",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name megtalálja, mi fogy az Önéhez hasonló üzletekben, abból, ami most készleten van.",
+    "See :name’s picks for you": "Tekintse meg az ajánlásokat, amelyeket :name válogatott Önnek",
+    "Not interested, thanks": "Nem érdekel, köszönöm",
+    ":name remembers:": ":name emlékszik:",
+    "Forget this": "Felejtse el"
 }

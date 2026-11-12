@@ -9043,5 +9043,22 @@
     "Shopping assistant answers": "Odgovori asistenta za kupnju",
     "Shopping assistant customer challenges": "Prepreke kupaca u asistentu za kupnju",
     "Answers customers in the AI shopping assistant on the websites.": "Odgovara kupcima u AI asistentu za kupnju na web stranicama.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Čita završene razgovore s asistentom za kupnju i bilježi što je kupca spriječilo da naruči."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Čita završene razgovore s asistentom za kupnju i bilježi što je kupca spriječilo da naruči.",
+    "Missing from your range": "Nedostaje u vašem asortimanu",
+    "Forgotten favourites": "Zaboravljeni favoriti",
+    "Starter packs": "Početni paketi",
+    "New for your shop": "Novo za vašu trgovinu",
+    "Picked for your shop: :details.": "Odabrano za vašu trgovinu: :details.",
+    ":name noticed": "Zapažanja: :name",
+    "In stock now, at your trade prices.": "Na zalihi sada, po vašim veleprodajnim cijenama.",
+    "Tell :name what kind of shop you run to get better picks": "Recite :name kakvu trgovinu imate za bolje prijedloge",
+    "Best sellers from a family you don’t stock yet": "Najprodavaniji iz kategorije koju još nemate",
+    "Add pack to basket": "Dodaj paket u košaricu",
+    "New in our range": "Novo u našem asortimanu",
+    "Range Advisor": "Savjetnik za asortiman",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name pronalazi što se prodaje u trgovinama poput vaše, prema tome što je trenutačno na zalihi.",
+    "See :name’s picks for you": "Pogledajte prijedloge od :name za vas",
+    "Not interested, thanks": "Ne zanima me, hvala",
+    ":name remembers:": ":name pamti:",
+    "Forget this": "Zaboravi"
 }

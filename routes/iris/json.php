@@ -67,7 +67,10 @@ use App\Actions\Search\RecordWebsiteSearchSuggestionsViewed;
 use App\Actions\Search\SearchIrisCatalogue;
 use App\Actions\Search\SearchIrisCataloguePage;
 use App\Actions\Iris\ShoppingAssistant\AskIrisShoppingAssistant;
+use App\Actions\Iris\ShoppingAssistant\ForgetIrisShoppingAssistantShopProfile;
+use App\Actions\Iris\ShoppingAssistant\GetIrisShoppingAssistantPanel;
 use App\Actions\Iris\ShoppingAssistant\HandOverIrisShoppingAssistant;
+use App\Actions\Iris\ShoppingAssistant\StoreIrisShoppingAssistantPanelEvent;
 use App\Actions\Iris\ShoppingAssistant\IndexIrisShoppingAssistantConversations;
 use App\Actions\Iris\ShoppingAssistant\ShowIrisShoppingAssistantConversation;
 use App\Actions\Iris\ShoppingAssistant\StoreIrisShoppingAssistantEvent;
@@ -90,6 +93,9 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 
     Route::post('shopping-assistant/ask', AskIrisShoppingAssistant::class)->name('shopping_assistant.ask')->middleware('throttle:shopping-assistant');
     Route::post('shopping-assistant/hand-over', HandOverIrisShoppingAssistant::class)->name('shopping_assistant.hand_over')->middleware('throttle:6,1');
+    Route::get('shopping-assistant/panel', GetIrisShoppingAssistantPanel::class)->name('shopping_assistant.panel')->middleware('throttle:30,1');
+    Route::delete('shopping-assistant/shop-profile', ForgetIrisShoppingAssistantShopProfile::class)->name('shopping_assistant.shop_profile.delete')->middleware('throttle:10,1');
+    Route::post('shopping-assistant/panel/events', StoreIrisShoppingAssistantPanelEvent::class)->name('shopping_assistant.panel.events.store')->middleware('throttle:120,1');
     Route::get('shopping-assistant/conversations', IndexIrisShoppingAssistantConversations::class)->name('shopping_assistant.index')->middleware('throttle:60,1');
     Route::get('shopping-assistant/{conversation:ulid}', ShowIrisShoppingAssistantConversation::class)->name('shopping_assistant.show')->middleware('throttle:120,1')->withoutScopedBindings();
     Route::post('shopping-assistant/{conversation:ulid}/events', StoreIrisShoppingAssistantEvent::class)->name('shopping_assistant.events.store')->middleware('throttle:120,1')->withoutScopedBindings();

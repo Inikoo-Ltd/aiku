@@ -9844,5 +9844,22 @@
     "Shopping assistant answers": "Antwoorden van de winkelassistent",
     "Shopping assistant customer challenges": "Obstakels van klanten in de winkelassistent",
     "Answers customers in the AI shopping assistant on the websites.": "Beantwoordt klanten in de AI-winkelassistent op de websites.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Leest afgeronde gesprekken met de winkelassistent en legt vast wat de klant van een bestelling weerhield."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Leest afgeronde gesprekken met de winkelassistent en legt vast wat de klant van een bestelling weerhield.",
+    "Missing from your range": "Ontbreekt in jouw assortiment",
+    "Forgotten favourites": "Vergeten favorieten",
+    "Starter packs": "Startpakketten",
+    "New for your shop": "Nieuw voor jouw winkel",
+    "Picked for your shop: :details.": "Gekozen voor jouw winkel: :details.",
+    ":name noticed": "Dit viel :name op",
+    "In stock now, at your trade prices.": "Nu op voorraad, tegen jouw groothandelsprijzen.",
+    "Tell :name what kind of shop you run to get better picks": "Vertel :name wat voor winkel je hebt voor betere suggesties",
+    "Best sellers from a family you don’t stock yet": "Bestsellers uit een productgroep die je nog niet voert",
+    "Add pack to basket": "Pakket in winkelmandje",
+    "New in our range": "Nieuw in ons assortiment",
+    "Range Advisor": "Assortimentsadviseur",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name vindt wat goed verkoopt bij winkels zoals de jouwe, op basis van wat nu op voorraad is.",
+    "See :name’s picks for you": "Bekijk de keuzes van :name voor jou",
+    "Not interested, thanks": "Geen interesse, bedankt",
+    ":name remembers:": ":name onthoudt:",
+    "Forget this": "Vergeten"
 }

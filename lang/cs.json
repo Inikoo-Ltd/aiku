@@ -26877,5 +26877,22 @@
     "Shopping assistant answers": "Odpovědi nákupního asistenta",
     "Shopping assistant customer challenges": "Překážky zákazníků v nákupním asistentovi",
     "Answers customers in the AI shopping assistant on the websites.": "Odpovídá zákazníkům v AI nákupním asistentovi na webových stránkách.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Čte dokončené konverzace s nákupním asistentem a zaznamenává, co zákazníkovi bránilo v objednávce."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Čte dokončené konverzace s nákupním asistentem a zaznamenává, co zákazníkovi bránilo v objednávce.",
+    "Missing from your range": "Chybí ve vašem sortimentu",
+    "Forgotten favourites": "Zapomenuté oblíbené",
+    "Starter packs": "Startovací balení",
+    "New for your shop": "Novinky pro váš obchod",
+    "Picked for your shop: :details.": "Vybráno pro váš obchod: :details.",
+    ":name noticed": "Postřehy od :name",
+    "In stock now, at your trade prices.": "Skladem nyní, za vaše velkoobchodní ceny.",
+    "Tell :name what kind of shop you run to get better picks": "Řekněte :name, jaký obchod provozujete, a dostanete lepší doporučení",
+    "Best sellers from a family you don’t stock yet": "Nejprodávanější z kategorie, kterou ještě nemáte",
+    "Add pack to basket": "Přidat balení do košíku",
+    "New in our range": "Novinka v našem sortimentu",
+    "Range Advisor": "Poradce pro sortiment",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name najde, co se prodává v obchodech, jako je váš, podle toho, co je právě skladem.",
+    "See :name’s picks for you": "Zobrazit tipy od :name pro vás",
+    "Not interested, thanks": "Nemám zájem, děkuji",
+    ":name remembers:": ":name si pamatuje:",
+    "Forget this": "Zapomenout"
 }

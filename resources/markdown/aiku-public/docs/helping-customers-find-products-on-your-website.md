@@ -48,6 +48,19 @@ Before you turn it on for a shop for the first time, ask the help desk to prepar
 
 Normal searches by word or product code are not changed and are not slowed down.
 
+### The ready-made panel
+
+Logged-in customers also have the advisor inside their account: an **Ask <name>** card on the account dashboard, next to their details and the WhatsApp updates, to ask a question straight away, and its **See <name>'s picks for you** link opens the advisor inside the account, with the same conversation, history and panel as the storefront's advisor page. On the advisor page, before they ask anything, a panel headed "<name> noticed" shows up to four tabs of products, all in stock and at the customer's own prices:
+
+- **Missing from your range**: what shops like theirs buy most that they have never bought, from the families they already buy from. A customer with no orders yet sees **Best sellers for shops like yours** instead.
+- **Forgotten favourites**: products they used to order but have not ordered for a year.
+- **Starter packs**: up to three families they have never bought from, each with three or four of its best sellers and an **Add pack to basket** button.
+- **New for your shop**: new arrivals, those that shops like theirs already buy first.
+
+A tab with nothing in it is not shown. Each list has **Add all to basket**. When we do not know the customer's shop type, the panel asks them to tell the advisor, which then saves it. Which tabs were looked at, the products clicked and what was added to the basket are recorded, one panel record per customer and day.
+
+The advisor also remembers lasting facts the customer tells it about their shop, such as being a florist, also selling online, or not wanting incense, and starts every later conversation knowing them. They show on the panel as "<name> remembers" with a **Forget this** link that clears them, and they are wiped when the customer is anonymised. It never keeps figures. It may open a conversation with one short personal touch from what it knows, such as the customer's first name or the time of day where they are; with staff accounts that touch may be a light joke.
+
 ### What it knows and what it never says
 
 The advisor answers from four things: the shop's catalogue, the best sellers of the last 12 months among customers like the one asking, the products that customer has not tried yet, and the products they used to order and stopped. "Customers like the one asking" means the same shop type first, in the same area, then the same country, then everybody.
@@ -144,7 +157,7 @@ Each search records which suggestions were offered and whether the block came in
 
 Go to **Website** in the shop menu, then **Analytics** in the top menu and **AI Assistant**. The page reports one website. People who look after every website of the group also find it under **WebOps → AI Assistant**, for all websites together and with a website filter.
 
-At the top you choose the dates and can narrow the figures by language, by where the conversation was opened from (search box, profile page or chat box), by shop type and by country. Every figure is compared with the period of the same length just before, which the line under the filters names. Conversations by staff accounts are left out.
+At the top you choose the dates and can narrow the figures by language, by where the conversation was opened from (search box, profile page, chat box or Range Advisor panel; the panel's figures only show when you choose it), by shop type and by country. Every figure is compared with the period of the same length just before, which the line under the filters names. Conversations by staff accounts are left out.
 
 ### The Overview tab
 

@@ -246,3 +246,26 @@ test('the consent wording shown on the dashboard is the wording stored with the 
         ->toContain('orders, membership, restocks and occasional offers')
         ->and($subscriber->consent['text'])->toBe($shownConsentText);
 });
+
+test('Not interested hides the dashboard WhatsApp card for good, while Email management still offers the opt-in', function () {
+    $this->customer->comms->update(['whatsapp_newsletter_opt_in_dismissed_at' => null]);
+    actingAs($this->webUser, 'retina');
+
+    expect(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website, dismissible: true)['dismiss_route']['name'])->toBe('retina.models.whatsapp_newsletter.dismiss')
+        ->and(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website)['dismiss_route'])->toBeNull();
+
+    $this->post(route('retina.models.whatsapp_newsletter.dismiss'))->assertRedirect();
+
+    expect($this->customer->comms->fresh()->whatsapp_newsletter_opt_in_dismissed_at)->not->toBeNull()
+        ->and(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website, dismissible: true))->toBeNull();
+
+    $this->get(route('retina.sysadmin.email.edit'))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')
+            ->where('formData.blueprint.1.fields.whatsapp_optin.optin.is_subscribed', false)
+            ->where('formData.blueprint.1.fields.whatsapp_optin.optin.dismiss_route', null));
+
+    $this->post(route('retina.models.whatsapp_newsletter.subscribe'), ['phone' => '+44 7700 900123', 'consent' => true])->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($this->customer->comms->fresh()->whatsapp_newsletter_opt_in_dismissed_at)->toBeNull()
+        ->and(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website, dismissible: true)['is_subscribed'])->toBeTrue();
+});

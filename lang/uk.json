@@ -7112,5 +7112,22 @@
     "Shopping assistant answers": "Відповіді асистента з покупок",
     "Shopping assistant customer challenges": "Перешкоди клієнтів в асистенті з покупок",
     "Answers customers in the AI shopping assistant on the websites.": "Відповідає клієнтам в AI-асистенті з покупок на вебсайтах.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Читає завершені розмови з асистентом з покупок і записує, що завадило клієнту замовити."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Читає завершені розмови з асистентом з покупок і записує, що завадило клієнту замовити.",
+    "Missing from your range": "Бракує у Вашому асортименті",
+    "Forgotten favourites": "Забуті улюбленці",
+    "Starter packs": "Стартові набори",
+    "New for your shop": "Новинки для Вашого магазину",
+    "Picked for your shop: :details.": "Підібрано для Вашого магазину: :details.",
+    ":name noticed": "Спостереження від :name",
+    "In stock now, at your trade prices.": "Є в наявності, за Вашими гуртовими цінами.",
+    "Tell :name what kind of shop you run to get better picks": "Розкажіть :name, який у Вас магазин, щоб отримати кращі пропозиції",
+    "Best sellers from a family you don’t stock yet": "Бестселери з категорії, якої у Вас ще немає",
+    "Add pack to basket": "Додати набір до кошика",
+    "New in our range": "Новинка в нашому асортименті",
+    "Range Advisor": "Радник з асортименту",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name знаходить, що продається в магазинах, схожих на Ваш, з огляду на те, що зараз є в наявності.",
+    "See :name’s picks for you": "Переглянути пропозиції від :name для Вас",
+    "Not interested, thanks": "Мене це не цікавить, дякую",
+    ":name remembers:": ":name пам’ятає:",
+    "Forget this": "Забути це"
 }

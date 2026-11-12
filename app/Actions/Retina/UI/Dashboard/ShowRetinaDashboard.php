@@ -49,7 +49,7 @@ class ShowRetinaDashboard extends RetinaAction
         if ($this->shop->type === ShopTypeEnum::B2B && !$this->asPupil) {
             $customer          = $this->customer;
             $props['insights'] = Inertia::defer(fn () => GetRetinaB2BDashboardInsights::run($customer));
-            $props['whatsapp_optin'] = GetRetinaWhatsappOptInData::run($customer, $this->website);
+            $props['whatsapp_optin'] = GetRetinaWhatsappOptInData::run($customer, $this->website, dismissible: true);
         }
 
         return Inertia::render($inertiaPage, $props);

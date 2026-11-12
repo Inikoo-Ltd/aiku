@@ -56,6 +56,7 @@ class SubscribeRetinaCustomerToWhatsappNewsletter extends RetinaAction
             if (!$comms->is_subscribed_to_whatsapp_newsletter) {
                 UpdateCustomerComms::run($comms, ['is_subscribed_to_whatsapp_newsletter' => true]);
             }
+            $comms->update(['whatsapp_newsletter_opt_in_dismissed_at' => null]);
 
             $customer->update(['marketing_whatsapp_phone' => $modelData['phone']]);
 

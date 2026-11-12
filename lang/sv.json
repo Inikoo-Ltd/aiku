@@ -9880,5 +9880,22 @@
     "Shopping assistant answers": "Shoppingassistentens svar",
     "Shopping assistant customer challenges": "Kundernas hinder i shoppingassistenten",
     "Answers customers in the AI shopping assistant on the websites.": "Svarar kunder i AI-shoppingassistenten på webbplatserna.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Läser avslutade samtal med shoppingassistenten och noterar vad som hindrade kunden från att beställa."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Läser avslutade samtal med shoppingassistenten och noterar vad som hindrade kunden från att beställa.",
+    "Missing from your range": "Saknas i ditt sortiment",
+    "Forgotten favourites": "Bortglömda favoriter",
+    "Starter packs": "Startpaket",
+    "New for your shop": "Nytt för din butik",
+    "Picked for your shop: :details.": "Utvalt för din butik: :details.",
+    ":name noticed": "Det här har :name märkt",
+    "In stock now, at your trade prices.": "I lager nu, till dina grossistpriser.",
+    "Tell :name what kind of shop you run to get better picks": "Berätta för :name vilken sorts butik du har för bättre förslag",
+    "Best sellers from a family you don’t stock yet": "Storsäljare från en produktfamilj du inte har än",
+    "Add pack to basket": "Lägg paketet i varukorgen",
+    "New in our range": "Nytt i vårt sortiment",
+    "Range Advisor": "Sortimentsrådgivare",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name hittar det som säljer hos butiker som din, utifrån vad som finns i lager nu.",
+    "See :name’s picks for you": "Se tips från :name till dig",
+    "Not interested, thanks": "Inget intresse, tack",
+    ":name remembers:": ":name kommer ihåg:",
+    "Forget this": "Glöm detta"
 }

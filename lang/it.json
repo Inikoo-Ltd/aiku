@@ -12989,5 +12989,22 @@
     "Shopping assistant answers": "Risposte dell'assistente agli acquisti",
     "Shopping assistant customer challenges": "Ostacoli dei clienti nell'assistente agli acquisti",
     "Answers customers in the AI shopping assistant on the websites.": "Risponde ai clienti nell'assistente agli acquisti IA dei siti web.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Legge le conversazioni concluse con l'assistente agli acquisti e registra cosa ha impedito al cliente di ordinare."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Legge le conversazioni concluse con l'assistente agli acquisti e registra cosa ha impedito al cliente di ordinare.",
+    "Missing from your range": "Manca nel suo assortimento",
+    "Forgotten favourites": "Preferiti dimenticati",
+    "Starter packs": "Pack di partenza",
+    "New for your shop": "Novità per il suo negozio",
+    "Picked for your shop: :details.": "Scelti per il suo negozio: :details.",
+    ":name noticed": "Ciò che :name ha notato",
+    "In stock now, at your trade prices.": "Disponibili ora, ai suoi prezzi per rivenditori.",
+    "Tell :name what kind of shop you run to get better picks": "Dica a :name che tipo di negozio ha per ricevere suggerimenti migliori",
+    "Best sellers from a family you don’t stock yet": "I più venduti di una famiglia che non ha ancora",
+    "Add pack to basket": "Aggiungi il pack al carrello",
+    "New in our range": "Novità nella nostra gamma",
+    "Range Advisor": "Consulente per l'assortimento",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name trova ciò che vende nei negozi come il suo, in base a ciò che è disponibile a magazzino ora.",
+    "See :name’s picks for you": "Scopra i consigli di :name per lei",
+    "Not interested, thanks": "Non mi interessa, grazie",
+    ":name remembers:": ":name ricorda:",
+    "Forget this": "Dimentica"
 }

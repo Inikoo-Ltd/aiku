@@ -125,6 +125,8 @@ class GetShoppingAssistantTools
 
     private const float KIND_MARGIN = 0.06;
 
+    public const int SHOP_PROFILE_MAX_LENGTH = 500;
+
     private const array SEGMENT_REASON_CODES = [
         RebuildRangeAdvisorSales::LEVEL_TYPE_AREA    => 'similar_shops_area',
         RebuildRangeAdvisorSales::LEVEL_TYPE_COUNTRY => 'similar_shops_country',
@@ -198,6 +200,14 @@ class GetShoppingAssistantTools
                     'shop_type' => ['type' => 'string', 'enum' => CustomerShopTypeEnum::values(), 'description' => 'The kind of shop the customer said they run.'],
                 ],
                 ['shop_type']
+            ),
+            $this->tool(
+                'remember_about_shop',
+                'Keep lasting facts the customer told you about their shop for later conversations: what they sell, where they sell (a shop, online, markets, events), who their customers are, their style or price level, ranges they want to try or never want. Pass the whole updated list, replacing what is remembered. Returns no products.',
+                [
+                    'facts' => ['type' => 'string', 'maxLength' => self::SHOP_PROFILE_MAX_LENGTH, 'description' => 'Short facts separated by "; ", in the language of the conversation, written as facts about the shop (e.g. "florist; also sells online; tourist customers; no incense"). No numbers, no names of people, nothing about payments or their account.'],
+                ],
+                ['facts']
             ),
             $this->tool(
                 'add_to_basket',
@@ -317,6 +327,7 @@ class GetShoppingAssistantTools
                 'missing_from_range'             => $this->missingFromRange($customer, $arguments, $conversation->language_code),
                 'products_they_stopped_ordering' => $this->stoppedOrdering($customer, $arguments, $conversation->language_code),
                 'save_shop_type'                 => $this->saveShopType($conversation, $customer, $arguments),
+                'remember_about_shop'            => $this->rememberAboutShop($conversation, $customer, $arguments),
                 'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments, $foundProductIds),
                 'clear_conversation'             => $this->clearConversation($conversation),
                 'better_price_options'           => $this->betterPriceOptions($customer, $conversation->language_code),
@@ -352,6 +363,7 @@ class GetShoppingAssistantTools
             'used_to_order'         => __('You used to order this', [], $locale),
             'sold_last_christmas'   => __('Sold well last Christmas', [], $locale),
             'matches_request'       => __('Matches what you asked for', [], $locale),
+            'new_arrival'           => __('New in our range', [], $locale),
             default                 => null,
         };
     }
@@ -697,6 +709,32 @@ class GetShoppingAssistantTools
         $conversation->setRelation('customer', $customer);
 
         return ['content' => ['saved' => true, 'shop_type' => $shopType->value], 'products' => [], 'error' => null];
+    }
+
+    /**
+     * Facts with a figure are refused, as the reply guard only lets the AI repeat numbers the customer
+     * typed in the same conversation, and a remembered figure would come back in a later one.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string}
+     */
+    private function rememberAboutShop(ShoppingAssistantConversation $conversation, Customer $customer, array $arguments): array
+    {
+        $facts = trim(preg_replace('/\s+/u', ' ', (string) ($arguments['facts'] ?? '')));
+
+        if ($facts === '') {
+            return $this->error('facts is empty.');
+        }
+        if (preg_match('/\d/u', $facts)) {
+            return $this->error('Leave out numbers: keep only facts without figures.');
+        }
+
+        $facts = mb_substr($facts, 0, self::SHOP_PROFILE_MAX_LENGTH);
+        DB::table('customers')->where('id', $customer->id)->update(['shop_profile' => $facts]);
+        $conversation->setRelation('customer', $customer->setAttribute('shop_profile', $facts));
+
+        return ['content' => ['saved' => true], 'products' => [], 'error' => null];
     }
 
     /**
@@ -1118,7 +1156,7 @@ class GetShoppingAssistantTools
         return ['content' => ['products' => $content], 'products' => $found, 'error' => null];
     }
 
-    private function segmentReasonCode(Product $product): string
+    public function segmentReasonCode(Product $product): string
     {
         return self::SEGMENT_REASON_CODES[$product->segment_level] ?? 'best_seller';
     }

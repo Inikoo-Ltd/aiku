@@ -26829,5 +26829,22 @@
     "Shopping assistant answers": "Réponses de l'assistant d'achat",
     "Shopping assistant customer challenges": "Obstacles des clients dans l'assistant d'achat",
     "Answers customers in the AI shopping assistant on the websites.": "Répond aux clients dans l'assistant d'achat IA des sites web.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Lit les conversations terminées avec l'assistant d'achat et note ce qui a empêché le client de commander."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Lit les conversations terminées avec l'assistant d'achat et note ce qui a empêché le client de commander.",
+    "Missing from your range": "Manque à votre assortiment",
+    "Forgotten favourites": "Favoris oubliés",
+    "Starter packs": "Packs de démarrage",
+    "New for your shop": "Nouveautés pour votre boutique",
+    "Picked for your shop: :details.": "Choisi pour votre boutique : :details.",
+    ":name noticed": "Ce que :name a remarqué",
+    "In stock now, at your trade prices.": "En stock, à vos tarifs professionnels.",
+    "Tell :name what kind of shop you run to get better picks": "Dites à :name quel type de boutique vous tenez pour de meilleures suggestions",
+    "Best sellers from a family you don’t stock yet": "Les meilleures ventes d’une famille que vous ne proposez pas encore",
+    "Add pack to basket": "Ajouter le pack au panier",
+    "New in our range": "Nouveau dans notre gamme",
+    "Range Advisor": "Conseiller en assortiment",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name trouve ce qui se vend dans les boutiques comme la vôtre, à partir du stock actuel.",
+    "See :name’s picks for you": "Voir les suggestions de :name pour vous",
+    "Not interested, thanks": "Ça ne m’intéresse pas, merci",
+    ":name remembers:": ":name se souvient :",
+    "Forget this": "Oublier"
 }

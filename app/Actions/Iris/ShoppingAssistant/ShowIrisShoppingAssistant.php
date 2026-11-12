@@ -11,6 +11,7 @@ namespace App\Actions\Iris\ShoppingAssistant;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\IrisAction;
 use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
+use App\Models\Catalogue\Shop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -29,7 +30,7 @@ class ShowIrisShoppingAssistant extends IrisAction
         return Inertia::render('ShoppingAssistant', [
             'web_block_family'      => data_get($this->website->liveProductsSnapshot?->layout, 'data'),
             'web_block_family_code' => FetchUsedProductsWebBlock::run($this->website),
-            'products_in_range'     => $this->productsInRange(),
+            'products_in_range'     => self::productsInRange($this->shop),
             'assistant_name'        => GetShoppingAssistantSettings::name($this->website),
         ]);
     }
@@ -38,9 +39,9 @@ class ShowIrisShoppingAssistant extends IrisAction
      * Products for sale rounded down to the 500 (to the 100 below 500), as the landing page says "9,000+ products";
      * null for a small range, where a rounded figure would undersell it.
      */
-    private function productsInRange(): ?int
+    public static function productsInRange(Shop $shop): ?int
     {
-        $productsForSale = (int) $this->shop->stats()->value('number_products_status_for_sale');
+        $productsForSale = (int) $shop->stats()->value('number_products_status_for_sale');
 
         if ($productsForSale < 100) {
             return null;

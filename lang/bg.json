@@ -9437,5 +9437,22 @@
     "Shopping assistant answers": "Отговори на асистента за пазаруване",
     "Shopping assistant customer challenges": "Пречки пред клиентите в асистента за пазаруване",
     "Answers customers in the AI shopping assistant on the websites.": "Отговаря на клиентите в AI асистента за пазаруване на уебсайтовете.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Чете приключилите разговори с асистента за пазаруване и записва какво е попречило на клиента да поръча."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Чете приключилите разговори с асистента за пазаруване и записва какво е попречило на клиента да поръча.",
+    "Missing from your range": "Липсва във вашия асортимент",
+    "Forgotten favourites": "Забравени фаворити",
+    "Starter packs": "Стартови пакети",
+    "New for your shop": "Новости за вашия магазин",
+    "Picked for your shop: :details.": "Избрано за вашия магазин: :details.",
+    ":name noticed": "Забелязано от :name",
+    "In stock now, at your trade prices.": "На склад сега, на вашите цени на едро.",
+    "Tell :name what kind of shop you run to get better picks": "Кажете на :name какъв магазин имате, за да получите по-добри предложения",
+    "Best sellers from a family you don’t stock yet": "Най-продавани от семейство, което още нямате",
+    "Add pack to basket": "Добави пакета в количката",
+    "New in our range": "Ново в нашия асортимент",
+    "Range Advisor": "Съветник за асортимента",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name намира какво се продава в магазини като вашия, според наличностите в момента.",
+    "See :name’s picks for you": "Вижте предложенията от :name за вас",
+    "Not interested, thanks": "Не ме интересува, благодаря",
+    ":name remembers:": ":name помни:",
+    "Forget this": "Забрави това"
 }

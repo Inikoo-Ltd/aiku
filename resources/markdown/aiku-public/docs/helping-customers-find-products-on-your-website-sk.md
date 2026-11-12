@@ -48,6 +48,19 @@ Skôr než ho prvýkrát zapnete pre obchod, požiadajte help desk, aby preň pr
 
 Bežné vyhľadávania podľa slova alebo kódu produktu sa nemenia a nespomaľujú.
 
+### Panel s návrhmi
+
+Prihlásení zákazníci majú poradcu aj vo svojom účte: kartu **Opýtajte sa asistenta: <meno>** na úvodnej stránke účtu vedľa svojich údajov a noviniek cez WhatsApp, kde sa môžu hneď opýtať, a jej odkaz na návrhy otvorí poradcu priamo v účte s rovnakou konverzáciou, históriou a panelom ako stránka poradcu v obchode. Na stránke poradcu ešte predtým, ako sa na niečo opýtajú, panel s nadpisom "Postrehy od <meno>" ukáže až štyri karty produktov, všetky skladom a za ceny daného zákazníka:
+
+- **Chýba vo vašom sortimente**: čo obchody ako ich kupujú najviac a oni to nikdy nekúpili, z rodín, z ktorých už nakupujú. Zákazník ešte bez objednávok namiesto toho vidí **Najpredávanejšie v obchodoch, ako je váš**.
+- **Zabudnuté obľúbené**: produkty, ktoré objednávali, ale rok ich neobjednali.
+- **Štartovacie balenia**: až tri rodiny, z ktorých nikdy nenakupovali, každá s tromi alebo štyrmi najpredávanejšími produktmi a tlačidlom **Pridať balenie do košíka**.
+- **Novinky pre váš obchod**: novinky, najprv tie, ktoré už kupujú obchody ako ich.
+
+Prázdna karta sa nezobrazí. Každý zoznam má **Pridať všetko do košíka**. Keď nepoznáme typ obchodu zákazníka, panel ho vyzve, aby ho povedal poradcovi, ktorý ho uloží. Zaznamená sa, ktoré karty si pozrel, na ktoré produkty klikol a čo pridal do košíka, jeden záznam panelu na zákazníka a deň.
+
+Poradca si tiež pamätá trvalé fakty, ktoré mu zákazník povie o svojom obchode, napríklad že je kvetinárstvo, že predáva aj online alebo že nechce kadidlo, a každú ďalšiu konverzáciu začína s ich znalosťou. Na paneli sa zobrazujú ako "<meno> si pamätá" s odkazom **Zabudnúť**, ktorý ich vymaže, a pri anonymizácii zákazníka sa zmažú. Nikdy si neukladá čísla. Konverzáciu môže otvoriť krátkym osobným dotykom z toho, čo vie, napríklad krstným menom zákazníka alebo dennou dobou u neho; pri účtoch zamestnancov to môže byť ľahký žart.
+
 ### Čo vie a čo nikdy nepovie
 
 Poradca odpovedá zo štyroch vecí: katalóg obchodu, najpredávanejšie produkty za posledných 12 mesiacov medzi zákazníkmi podobnými tomu, kto sa pýta, produkty, ktoré tento zákazník ešte nevyskúšal, a produkty, ktoré kedysi objednával a prestal. „Zákazníci podobní tomu, kto sa pýta" znamená najprv rovnaký typ obchodu v tej istej oblasti, potom tá istá krajina, potom všetci.
@@ -144,7 +157,7 @@ Každé vyhľadávanie zaznamenáva, ktoré návrhy sa ponúkli a či sa blok do
 
 Prejdite na **Website** v menu obchodu, potom na **Analytics** (analytika) v hornom menu a na **AI Assistant** (AI asistent). Stránka hlási jeden web. Ľudia, ktorí spravujú všetky weby skupiny, ju nájdu aj v **WebOps → AI Assistant**, pre všetky weby spolu a s filtrom webu.
 
-Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa toho, odkiaľ sa konverzácia otvorila (vyhľadávacie pole, stránka profilu alebo chatové okno), podľa typu obchodu a podľa krajiny. Každé číslo sa porovnáva s obdobím rovnakej dĺžky bezprostredne predtým, ktoré pomenúva riadok pod filtrami. Konverzácie zamestnaneckých účtov sa vynechávajú.
+Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa toho, odkiaľ sa konverzácia otvorila (vyhľadávacie pole, stránka profilu, chatové okno alebo panel poradcu pre sortiment; čísla panelu sa ukážu, len keď ho vyberiete), podľa typu obchodu a podľa krajiny. Každé číslo sa porovnáva s obdobím rovnakej dĺžky bezprostredne predtým, ktoré pomenúva riadok pod filtrami. Konverzácie zamestnaneckých účtov sa vynechávajú.
 
 ### Záložka Overview
 

@@ -26673,5 +26673,22 @@
     "Shopping assistant answers": "Antworten des Einkaufsassistenten",
     "Shopping assistant customer challenges": "Hürden der Kunden im Einkaufsassistenten",
     "Answers customers in the AI shopping assistant on the websites.": "Beantwortet Kundenfragen im KI-Einkaufsassistenten auf den Websites.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Liest abgeschlossene Gespräche mit dem Einkaufsassistenten und hält fest, was den Kunden von einer Bestellung abgehalten hat."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Liest abgeschlossene Gespräche mit dem Einkaufsassistenten und hält fest, was den Kunden von einer Bestellung abgehalten hat.",
+    "Missing from your range": "Fehlt in Ihrem Sortiment",
+    "Forgotten favourites": "Vergessene Favoriten",
+    "Starter packs": "Starterpakete",
+    "New for your shop": "Neu für Ihren Shop",
+    "Picked for your shop: :details.": "Ausgewählt für Ihren Shop: :details.",
+    ":name noticed": "Das ist :name aufgefallen",
+    "In stock now, at your trade prices.": "Jetzt lieferbar, zu Ihren Händlerpreisen.",
+    "Tell :name what kind of shop you run to get better picks": "Sagen Sie :name, welchen Shop Sie führen, und erhalten Sie bessere Vorschläge",
+    "Best sellers from a family you don’t stock yet": "Bestseller aus einer Warengruppe, die Sie noch nicht führen",
+    "Add pack to basket": "Paket in den Warenkorb",
+    "New in our range": "Neu in unserem Sortiment",
+    "Range Advisor": "Sortimentsberater",
+    ":name finds what sells for shops like yours, from what is in stock now.": ":name findet, was sich in Shops wie Ihrem verkauft, anhand des aktuellen Lagerbestands.",
+    "See :name’s picks for you": "Empfehlungen von :name für Sie ansehen",
+    "Not interested, thanks": "Kein Interesse, danke",
+    ":name remembers:": ":name merkt sich:",
+    "Forget this": "Vergessen"
 }

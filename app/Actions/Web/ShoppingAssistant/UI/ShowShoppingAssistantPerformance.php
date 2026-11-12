@@ -217,6 +217,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
             ShoppingAssistantEntryPointEnum::PROFILE->value => __('Profile'),
             ShoppingAssistantEntryPointEnum::SEARCH->value  => __('Search'),
             ShoppingAssistantEntryPointEnum::CHAT->value    => __('Chat'),
+            ShoppingAssistantEntryPointEnum::PANEL->value   => __('Range Advisor panel'),
             default                                         => __('Command line'),
         };
     }

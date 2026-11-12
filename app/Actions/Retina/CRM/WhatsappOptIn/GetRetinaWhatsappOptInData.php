@@ -17,10 +17,18 @@ class GetRetinaWhatsappOptInData
 {
     use AsObject;
 
-    public function handle(Customer $customer, Website $website): ?array
+    /**
+     * On the dashboard ($dismissible) the card offers Not interested and is not shown again once
+     * dismissed; in the settings it is always shown, so a customer can still opt in there.
+     */
+    public function handle(Customer $customer, Website $website, bool $dismissible = false): ?array
     {
         $comms = $customer->comms;
         if (!$comms) {
+            return null;
+        }
+
+        if ($dismissible && $comms->whatsapp_newsletter_opt_in_dismissed_at && !$comms->is_subscribed_to_whatsapp_newsletter) {
             return null;
         }
 
@@ -39,6 +47,11 @@ class GetRetinaWhatsappOptInData
                 'parameters' => [],
                 'method'     => 'post',
             ],
+            'dismiss_route'        => $dismissible ? [
+                'name'       => 'retina.models.whatsapp_newsletter.dismiss',
+                'parameters' => [],
+                'method'     => 'post',
+            ] : null,
             'unsubscribe_route'    => [
                 'name'       => 'retina.models.customer_comms.update',
                 'parameters' => ['customerComms' => $comms->id],

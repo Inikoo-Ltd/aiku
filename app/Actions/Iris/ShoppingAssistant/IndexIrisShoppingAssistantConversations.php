@@ -11,6 +11,7 @@ namespace App\Actions\Iris\ShoppingAssistant;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\IrisAction;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
@@ -36,6 +37,7 @@ class IndexIrisShoppingAssistantConversations extends IrisAction
             ->where('customer_id', $customer->id)
             ->where('website_id', $this->website->id)
             ->where('status', '!=', ShoppingAssistantConversationStatusEnum::CLEARED)
+            ->where('entry_point', '!=', ShoppingAssistantEntryPointEnum::PANEL)
             ->whereNull('wiped_at')
             ->addSelect([
                 'ulid',

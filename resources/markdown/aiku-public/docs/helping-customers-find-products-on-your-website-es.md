@@ -48,6 +48,19 @@ Antes de activarlo por primera vez en una tienda, pide al help desk que prepare 
 
 Las búsquedas normales por palabra o por código de producto no cambian y no se ralentizan.
 
+### El panel de sugerencias
+
+Los clientes con sesión iniciada también tienen el asesor dentro de su cuenta: una tarjeta **Preguntar a <nombre>** en el panel de la cuenta, junto a sus datos y las novedades por WhatsApp, para preguntar directamente, y su enlace a las sugerencias abre el asesor dentro de la cuenta, con la misma conversación, historial y panel que la página del asesor en la tienda. En la página del asesor, antes de preguntar nada, un panel titulado "Lo que <nombre> ha notado" muestra hasta cuatro pestañas de productos, todos en stock y a los precios del propio cliente:
+
+- **Le falta en su gama**: lo que más compran las tiendas como la suya y que nunca ha comprado, de las familias que ya compra. Un cliente sin pedidos ve en su lugar **Los más vendidos en tiendas como la suya**.
+- **Favoritos olvidados**: productos que pedía y que no ha pedido en un año.
+- **Packs de inicio**: hasta tres familias que nunca ha comprado, cada una con tres o cuatro de sus más vendidos y un botón **Añadir pack a la cesta**.
+- **Novedades para su tienda**: las novedades, primero las que ya compran las tiendas como la suya.
+
+Una pestaña vacía no se muestra. Cada lista tiene **Añadir todo a la cesta**. Si no sabemos el tipo de tienda del cliente, el panel le pide que se lo diga al asesor, que lo guarda. Se registra qué pestañas se miraron, los productos en los que se hizo clic y lo que se añadió a la cesta, un registro de panel por cliente y día.
+
+El asesor también recuerda los datos duraderos que el cliente le cuenta sobre su tienda, como que es una floristería, que también vende en línea o que no quiere incienso, y empieza cada conversación posterior sabiéndolos. Se muestran en el panel como "<nombre> recuerda" con un enlace **Olvidar esto** que los borra, y se eliminan cuando se anonimiza al cliente. Nunca guarda cifras. Puede empezar una conversación con un breve toque personal a partir de lo que sabe, como el nombre del cliente o la hora del día donde está; con las cuentas del personal, ese toque puede ser una broma ligera.
+
 ### Qué sabe y qué nunca dice
 
 El asesor responde a partir de cuatro cosas: el catálogo de la tienda, los más vendidos de los últimos 12 meses entre clientes como el que pregunta, los productos que ese cliente todavía no ha probado y los productos que antes pedía y dejó de pedir. "Clientes como el que pregunta" significa primero el mismo tipo de tienda, en la misma zona, luego el mismo país y después todos.
@@ -144,7 +157,7 @@ Cada búsqueda registra qué sugerencias se ofrecieron y si el bloque llegó a v
 
 Ve a **Website** en el menú de la tienda, luego a **Analytics** en el menú superior y a **AI Assistant**. La página informa de una web. Quienes se ocupan de todas las webs del grupo también la encuentran en **WebOps → AI Assistant**, para todas las webs juntas y con un filtro de web.
 
-Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se abrió la conversación (cuadro de búsqueda, página de perfil o cuadro de chat), por tipo de tienda y por país. Cada cifra se compara con el periodo de la misma duración inmediatamente anterior, que nombra la línea bajo los filtros. Las conversaciones de las cuentas de personal quedan fuera.
+Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se abrió la conversación (cuadro de búsqueda, página de perfil, cuadro de chat o panel del asesor de gama; las cifras del panel solo se ven si lo eliges), por tipo de tienda y por país. Cada cifra se compara con el periodo de la misma duración inmediatamente anterior, que nombra la línea bajo los filtros. Las conversaciones de las cuentas de personal quedan fuera.
 
 ### La pestaña Overview
 

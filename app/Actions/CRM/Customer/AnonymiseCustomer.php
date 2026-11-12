@@ -185,6 +185,7 @@ class AnonymiseCustomer extends OrgAction
             'warehouse_internal_notes' => null,
             'warehouse_public_notes'   => null,
             'rejected_notes'           => null,
+            'shop_profile'             => null,
             'accounting_reference'     => null,
             'contact_name_components'  => [],
             'location'                 => $location,

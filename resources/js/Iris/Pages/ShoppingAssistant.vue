@@ -22,6 +22,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
+import RangeAdvisorPanel from "@/Iris/Components/RangeAdvisorPanel.vue"
 import { ProductResource } from "@/types/Iris/Products"
 import {
     shoppingAssistantConversationKey,
@@ -94,6 +95,14 @@ const talkDraft = ref("")
 const talkError = ref("")
 const handingOver = ref<number | "link" | null>(null)
 const handOverErrors = ref<Record<number, string>>({})
+
+const hasPanelProducts = ref(true)
+
+const focusLandingTextarea = () => {
+    const textarea = document.querySelector<HTMLTextAreaElement>(".landing-textarea")
+    textarea?.scrollIntoView({ behavior: "smooth", block: "center" })
+    textarea?.focus({ preventScroll: true })
+}
 
 const canTalkToAPerson = computed(() => !!assistant.value?.hand_over || handOverAvailable.value)
 
@@ -744,7 +753,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                             {{ ctrans("Named after the wise wizard of British legend – a fitting guide for a British company that has travelled the world for good finds since 1995.") }}
                         </p>
 
-                        <div class="landing-steps">
+                        <div v-if="!hasPanelProducts" class="landing-steps">
                             <div v-for="(step, index) in steps" :key="step.title" class="landing-step">
                                 <span class="landing-step-number" aria-hidden="true">{{ index + 1 }}</span>
                                 <div>
@@ -761,6 +770,16 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </aside>
                 </div>
             </section>
+
+            <RangeAdvisorPanel
+                v-if="isLayoutReady && layout.iris?.is_logged_in"
+                :assistantName
+                :fieldValue
+                :productCardCode
+                :screenType
+                @loaded="(hasProducts) => hasPanelProducts = hasProducts"
+                @tellShop="focusLandingTextarea"
+            />
         </div>
 
         <div v-else-if="isChatVisible" class="chat-shell" :class="{ 'chat-shell-collapsed': isSidebarCollapsed }">
