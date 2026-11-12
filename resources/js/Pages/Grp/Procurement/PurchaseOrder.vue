@@ -1275,10 +1275,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	<p v-if="actionError" class="mx-4 mt-2 text-xs text-red-600">{{ actionError }}</p>
 
 	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :sample="stages.sample">
-		<template v-if="agent_money" #stage-deposit_paid>
+		<template v-if="agent_money && !stageActions.deposit_paid" #stage-deposit_paid>
 			<AgentPurchaseOrderMoney :money="agent_money" />
 		</template>
-		<template v-else-if="payments" #stage-deposit_paid>
+		<template v-else-if="payments && !stageActions.deposit_paid" #stage-deposit_paid>
 			<PurchaseOrderDepositPayments :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
 		</template>
 		<template v-if="agent_money" #check-balance>
@@ -1348,6 +1348,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 							</template>
 						</Button>
 					</span>
+				</template>
+				<template v-if="stageKey === 'deposit_paid'">
+					<AgentPurchaseOrderMoney v-if="agent_money" :money="agent_money" />
+					<PurchaseOrderDepositPayments v-else-if="payments" :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
 				</template>
 			</div>
 		</template>
