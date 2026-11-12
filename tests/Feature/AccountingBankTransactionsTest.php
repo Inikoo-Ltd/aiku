@@ -405,6 +405,14 @@ test('auto-pay records the money received and absorbs the bank fee, only for lin
     expect(fn () => DB::transaction(fn () => RefundPaymentToBalance::lockForRefund($paidLine->bankFeePayment, null, 0.5)))
         ->toThrow(ValidationException::class);
 
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    $paymentsBefore = $order->payments()->count();
+    foreach ([99.5, 100] as $amount) {
+        post(route('grp.models.order.payment.store', [$order->id, $bankAccount->id]), ['amount' => $amount, 'status' => 'success', 'state' => 'completed'])
+            ->assertSessionHasErrors('amount');
+    }
+    expect($order->payments()->count())->toBe($paymentsBefore);
+
     $topUp = $line('p2', $order, 0.50, now()->addMinutes(2));
     MatchBankTransactions::run($bankConnection);
     expect($topUp->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
@@ -602,6 +610,13 @@ test('staff record a bank payment from the review queue on the order they name, 
     PayBankTransactionToOrder::make()->handle($partPayment, ['order_reference' => $partOrder->reference, 'absorb_bank_fee' => true]);
     expect($partPayment->refresh()->bank_fee_payment_id)->toBeNull()
         ->and((float)$partOrder->refresh()->payment_amount)->toBe(50.0);
+
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    post(route('grp.models.order.payment.store', [$partOrder->id, $bankAccount->id]), ['amount' => 60, 'status' => 'success', 'state' => 'completed'])
+        ->assertSessionHasErrors('amount');
+    post(route('grp.models.order.payment.store', [$partOrder->id, $bankAccount->id]), ['amount' => 50, 'status' => 'success', 'state' => 'completed'])
+        ->assertSessionHasNoErrors();
+    expect((float)$partOrder->refresh()->payment_amount)->toBe(100.0);
 
     $basket = bankMatchingOrder(createCustomer($this->shop), 30);
     $basket->updateQuietly(['state' => OrderStateEnum::CREATING]);
