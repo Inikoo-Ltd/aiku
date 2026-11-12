@@ -1868,3 +1868,371 @@ test('agents tick several inbox conversations and mark them read or close them, 
 
     expect($session->refresh()->status)->toBe(ChatSessionStatusEnum::CLOSED);
 });
+
+function handOverTestStorefront(bool $chatOn, bool $mailbox, ?string $email = null): array
+{
+    [, , $shop] = createShop();
+    $website    = createWebsite($shop);
+    $website->update(['status' => true]);
+    \App\Actions\Web\Website\UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => true, 'shopping_assistant_name' => 'Aura', 'shopping_assistant_monthly_budget' => 1000]);
+    \App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget::forget($website);
+
+    $websiteSettings = $website->refresh()->settings ?? [];
+    data_set($websiteSettings, 'enable_chat', $chatOn);
+    $website->update(['settings' => $websiteSettings]);
+
+    $shopSettings = $shop->refresh()->settings ?? [];
+    if ($mailbox) {
+        $shopSettings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
+    } else {
+        unset($shopSettings['gmail']);
+    }
+    $shop->update(['settings' => $shopSettings]);
+
+    \App\Actions\Web\Website\UI\DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($website->domain);
+
+    $customer = StoreCustomer::make()->action($shop->refresh(), array_merge(Customer::factory()->definition(), ['email' => $email ?? 'handover.'.uniqid().'@example.com', 'contact_name' => 'Hanna Handover']));
+    $webUser  = StoreWebUser::make()->action($customer, ['username' => 'ho-'.uniqid(), 'email' => $customer->email, 'password' => 'test'], sendRegistrationEmail: false);
+
+    return [$website->refresh(), $customer, $webUser, $shop->refresh()];
+}
+
+function handOverTestAvailableAgent(\App\Models\Catalogue\Shop $shop): ChatAgent
+{
+    $user = User::factory()->create(['group_id' => $shop->group_id]);
+    makeChatWorker($user, $shop);
+
+    return ChatAgent::create([
+        'user_id'              => $user->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => true,
+        'is_available'         => true,
+        'current_chat_count'   => 0,
+        'presence_status'      => ChatAgentPresenceStatusEnum::ONLINE,
+        'last_heartbeat_at'    => now(),
+    ]);
+}
+
+function handOverTestOffer(Customer $customer, \App\Models\Web\Website $website, WebUser $webUser, string $question = 'Do you deliver to Jersey?', ?\App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation $conversation = null): \App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage
+{
+    $conversation ??= \App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation::run($customer, \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum::SEARCH, ['web_user_id' => $webUser->id]);
+    \App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant::make()->storeCustomerMessage($conversation, $question);
+
+    return $conversation->messages()->create([
+        'role'            => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum::ASSISTANT,
+        'body'            => 'I am not sure about that one.',
+        'hand_over_offer' => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum::NOT_SURE,
+    ]);
+}
+
+function handOverTestUrl(\App\Models\Web\Website $website, string $path = 'hand-over'): string
+{
+    return 'http://'.$website->domain.'/json/shopping-assistant/'.$path;
+}
+
+test('tapping the offer in chat hours with an agent free opens a website chat from the assistant conversation, waiting and unassigned', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 11:00', 'Europe/London'));
+    handOverTestAvailableAgent($shop);
+    $offer = handOverTestOffer($customer, $website, $webUser);
+    $conversation = $offer->conversation;
+
+    $response = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $conversation->ulid, 'offer_message_id' => $offer->id])->assertOk();
+
+    $session = ChatSession::where('ulid', $response->json('chat_session'))->firstOrFail();
+    $handOver = $conversation->handOvers()->sole();
+    $told     = $conversation->messages()->where('role', 'assistant')->latest('id')->first();
+    expect($response->json('route'))->toBe('live_chat')
+        ->and($response->json('conversation'))->toBe($conversation->ulid)
+        ->and($response->json('message_id'))->toBe($told->id)
+        ->and($session->channel)->toBe(ChatChannelEnum::WEBSITE)
+        ->and($session->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($session->shopping_assistant_conversation_id)->toBe($conversation->id)
+        ->and($session->web_user_id)->toBe($webUser->id)
+        ->and($session->assignments()->count())->toBe(0)
+        ->and($session->messages()->pluck('message_text')->all())->toBe(['Do you deliver to Jersey?'])
+        ->and($session->messages()->first()->sender_type)->toBe(ChatSenderTypeEnum::USER)
+        ->and($handOver->reason->value)->toBe('not_sure')
+        ->and($handOver->route->value)->toBe('live_chat')
+        ->and($handOver->in_hours)->toBeTrue()
+        ->and($handOver->agent_available)->toBeTrue()
+        ->and($handOver->question)->toBe('Do you deliver to Jersey?')
+        ->and($handOver->offer_message_id)->toBe($offer->id)
+        ->and($handOver->chat_session_id)->toBe($session->id)
+        ->and($conversation->refresh()->status->value)->toBe('open')
+        ->and($conversation->handed_over_at)->not->toBeNull()
+        ->and($conversation->chat_session_id)->toBe($session->id)
+        ->and($told->body)->toBe('I am passing you to our team. Your chat with them is opening now.')
+        ->and($told->flags)->toBe(['handed_over']);
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});
+
+test('outside chat hours with a usable mailbox the hand-over opens an email chat and says when the team is back', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, true);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
+    $offer = handOverTestOffer($customer, $website, $webUser);
+
+    $response = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $offer->conversation->ulid, 'offer_message_id' => $offer->id])->assertOk();
+
+    $handOver = $offer->conversation->handOvers()->sole();
+    $session  = $handOver->chatSession;
+    $told     = $offer->conversation->messages()->where('role', 'assistant')->latest('id')->first();
+    expect($response->json('route'))->toBe('email_chat')
+        ->and($response->json('chat_session'))->toBeNull()
+        ->and($handOver->in_hours)->toBeFalse()
+        ->and($handOver->agent_available)->toBeFalse()
+        ->and($session->channel)->toBe(ChatChannelEnum::EMAIL)
+        ->and($session->status)->toBe(ChatSessionStatusEnum::WAITING)
+        ->and($session->assignments()->count())->toBe(0)
+        ->and(Arr::get($session->metadata, 'email_subject'))->toBe('Your question: Do you deliver to Jersey?')
+        ->and(Arr::get($session->metadata, 'email_from'))->toBe($customer->email)
+        ->and(Arr::get($session->metadata, 'email_from_name'))->toBe('Hanna Handover')
+        ->and($session->messages()->count())->toBe(1)
+        ->and($told->body)->toStartWith('Our team is back on Friday at ')
+        ->and($told->body)->toEndWith(' and will reply by email, to the address on your account.');
+    Bus::assertNotDispatched(fn (\Lorisleiva\Actions\Decorators\JobDecorator $job) => $job->decorates(\App\Actions\Comms\Mailbox\SendChatMessageByGmail::class));
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});
+
+test('with no mailbox the hand-over is a website chat answered later, and with neither chat nor mailbox nothing is offered', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
+    $offer = handOverTestOffer($customer, $website, $webUser);
+
+    $response = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $offer->conversation->ulid, 'offer_message_id' => $offer->id])->assertOk();
+
+    $session = ChatSession::where('ulid', $response->json('chat_session'))->firstOrFail();
+    $told    = $offer->conversation->messages()->where('role', 'assistant')->latest('id')->first();
+    expect($response->json('route'))->toBe('web_chat')
+        ->and($session->channel)->toBe(ChatChannelEnum::WEBSITE)
+        ->and($told->body)->toStartWith('Our team is back on Friday at ')
+        ->and($told->body)->toEndWith(' and will reply in the chat on this website.');
+
+    [$bareWebsite, $bareCustomer, $bareWebUser] = handOverTestStorefront(false, false);
+    $bareOffer = handOverTestOffer($bareCustomer, $bareWebsite, $bareWebUser);
+
+    expect(\App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings::run($bareWebsite, $bareCustomer))->toBe(['name' => 'Aura', 'hand_over' => false]);
+    $this->actingAs($bareWebUser, 'retina')->postJson(handOverTestUrl($bareWebsite), ['conversation' => $bareOffer->conversation->ulid, 'offer_message_id' => $bareOffer->id])->assertNotFound();
+    expect($bareOffer->conversation->handOvers()->count())->toBe(0);
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});
+
+test('tapping twice gives one hand-over and one chat, and a second question joins the open chat', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 11:00', 'Europe/London'));
+    handOverTestAvailableAgent($shop);
+    $offer        = handOverTestOffer($customer, $website, $webUser);
+    $conversation = $offer->conversation;
+    $body         = ['conversation' => $conversation->ulid, 'offer_message_id' => $offer->id];
+
+    $first  = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), $body)->assertOk();
+    $second = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), $body)->assertOk();
+
+    expect($second->json())->toBe($first->json())
+        ->and($conversation->handOvers()->count())->toBe(1)
+        ->and(ChatSession::where('shopping_assistant_conversation_id', $conversation->id)->count())->toBe(1)
+        ->and($conversation->messages()->where('model', 'hand-over')->count())->toBe(1);
+
+    $secondOffer = handOverTestOffer($customer, $website, $webUser, 'Can I pay by cheque?', $conversation);
+    $third       = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $conversation->ulid, 'offer_message_id' => $secondOffer->id])->assertOk();
+
+    $session = ChatSession::where('ulid', $first->json('chat_session'))->firstOrFail();
+    expect($third->json('chat_session'))->toBe($first->json('chat_session'))
+        ->and($conversation->handOvers()->count())->toBe(2)
+        ->and($conversation->handOvers()->pluck('route')->map->value->unique()->all())->toBe(['live_chat'])
+        ->and($session->messages()->orderBy('id')->pluck('message_text')->all())->toBe(['Do you deliver to Jersey?', 'Can I pay by cheque?'])
+        ->and(ChatSession::where('shopping_assistant_conversation_id', $conversation->id)->count())->toBe(1);
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});
+
+test('the Talk to a person link with a typed question starts the conversation and hands over, and without a question it is refused', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 11:00', 'Europe/London'));
+    handOverTestAvailableAgent($shop);
+    $before = \App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation::where('customer_id', $customer->id)->count();
+
+    $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), [])->assertUnprocessable();
+    $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['message' => '   '])->assertUnprocessable();
+    expect(\App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation::where('customer_id', $customer->id)->count())->toBe($before);
+
+    $response = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['message' => 'I need a quote for 500 candles'])->assertOk();
+
+    $conversation = \App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation::where('ulid', $response->json('conversation'))->firstOrFail();
+    $handOver     = $conversation->handOvers()->sole();
+    $session      = $handOver->chatSession;
+    expect($conversation->web_user_id)->toBe($webUser->id)
+        ->and($conversation->messages()->where('role', 'customer')->pluck('body')->all())->toBe(['I need a quote for 500 candles'])
+        ->and($handOver->reason->value)->toBe('asked_for_person')
+        ->and($handOver->offer_message_id)->toBeNull()
+        ->and($handOver->customer_message_id)->toBe($conversation->messages()->where('role', 'customer')->value('id'))
+        ->and($session->messages()->pluck('message_text')->all())->toBe(['I need a quote for 500 candles'])
+        ->and($conversation->messages()->where('role', 'assistant')->count())->toBe(1);
+
+    $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $conversation->ulid])->assertUnprocessable();
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});
+
+test('another customer cannot hand over a conversation that is not theirs, and a spent AI budget does not block a hand-over', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
+    $offer = handOverTestOffer($customer, $website, $webUser);
+
+    $otherCustomer = StoreCustomer::make()->action($shop, array_merge(Customer::factory()->definition(), ['email' => 'other.'.uniqid().'@example.com']));
+    $otherWebUser  = StoreWebUser::make()->action($otherCustomer, ['username' => 'ho-'.uniqid(), 'email' => $otherCustomer->email, 'password' => 'test'], sendRegistrationEmail: false);
+
+    $this->actingAs($otherWebUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $offer->conversation->ulid, 'offer_message_id' => $offer->id])->assertNotFound();
+    expect($offer->conversation->handOvers()->count())->toBe(0);
+
+    \App\Actions\Web\Website\UpdateWebsite::make()->action($website, ['shopping_assistant_monthly_budget' => 0]);
+    \App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget::forget($website);
+    expect(\App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings::run($website->refresh(), $customer, true))->toBeNull();
+
+    $response = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $offer->conversation->ulid, 'offer_message_id' => $offer->id])->assertOk();
+
+    expect($response->json('route'))->toBe('web_chat')
+        ->and($offer->conversation->handOvers()->count())->toBe(1);
+
+    outOfHoursTestCleanUp($schedule, [ChatSession::where('ulid', $response->json('chat_session'))->firstOrFail()]);
+});
+
+test('the conversation JSON carries the hand-over fields and the cited source links, and anonymising the customer wipes the hand-over question', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
+    $offer = handOverTestOffer($customer, $website, $webUser);
+    $offer->update(['sources' => [
+        ['id' => 1, 'kind' => 'page', 'source_type' => 'Webpage', 'source_id' => 1, 'title' => 'Delivery · Shipping times', 'url' => 'https://shop.test/delivery'],
+        ['id' => 2, 'kind' => 'page', 'source_type' => 'Webpage', 'source_id' => 1, 'title' => 'Delivery · Costs', 'url' => 'https://shop.test/delivery'],
+        ['id' => 3, 'kind' => 'faq', 'source_type' => 'Faq', 'source_id' => 2, 'title' => 'No page', 'url' => null],
+    ]]);
+    $conversation = $offer->conversation;
+
+    $before = $this->actingAs($webUser, 'retina')->getJson(handOverTestUrl($website, $conversation->ulid))->assertOk();
+    $assistant = collect($before->json('messages'))->firstWhere('id', $offer->id);
+    expect($before->json('hand_over_available'))->toBeTrue()
+        ->and($assistant['hand_over_offer'])->toBe('not_sure')
+        ->and($assistant['handed_over'])->toBeFalse()
+        ->and($assistant['links'])->toBe([['label' => 'Delivery', 'url' => 'https://shop.test/delivery']]);
+
+    $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $conversation->ulid, 'offer_message_id' => $offer->id])->assertOk();
+
+    $after = $this->actingAs($webUser, 'retina')->getJson(handOverTestUrl($website, $conversation->ulid))->assertOk();
+    expect(collect($after->json('messages'))->firstWhere('id', $offer->id)['handed_over'])->toBeTrue();
+
+    $handOver = $conversation->handOvers()->sole();
+    expect($handOver->question)->toBe('Do you deliver to Jersey?');
+    \App\Actions\CRM\Customer\AnonymiseCustomer::make()->action($customer, 'Erasure request', false);
+    expect($handOver->refresh()->question)->toBeNull();
+
+    outOfHoursTestCleanUp($schedule, [$handOver->chatSession]);
+});
+
+test('the same typed question sent twice within a minute is one hand-over, and a different question from a new conversation goes into the customers open chat', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 11:00', 'Europe/London'));
+    handOverTestAvailableAgent($shop);
+
+    $first  = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['message' => 'I need a quote for 500 candles'])->assertOk();
+    $second = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['message' => 'I need a quote for 500 candles'])->assertOk();
+
+    $conversations = fn () => \App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation::where('customer_id', $customer->id)->where('website_id', $website->id);
+    $session       = ChatSession::where('ulid', $first->json('chat_session'))->firstOrFail();
+    expect($second->json())->toBe($first->json())
+        ->and($conversations()->count())->toBe(1)
+        ->and(\App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage::where('shopping_assistant_conversation_id', $conversations()->value('id'))->where('role', 'customer')->count())->toBe(1)
+        ->and(\App\Models\CRM\ShoppingAssistant\ShoppingAssistantHandOver::whereIn('shopping_assistant_conversation_id', $conversations()->pluck('id'))->count())->toBe(1)
+        ->and($session->messages()->count())->toBe(1);
+
+    $third = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['message' => 'And do you do gift wrapping?'])->assertOk();
+
+    expect($third->json('conversation'))->not->toBe($first->json('conversation'))
+        ->and($third->json('chat_session'))->toBe($first->json('chat_session'))
+        ->and($third->json('route'))->toBe('live_chat')
+        ->and($conversations()->count())->toBe(2)
+        ->and(\App\Models\CRM\ShoppingAssistant\ShoppingAssistantHandOver::whereIn('shopping_assistant_conversation_id', $conversations()->pluck('id'))->count())->toBe(2)
+        ->and(ChatSession::where('web_user_id', $webUser->id)->where('shop_id', $shop->id)->count())->toBe(1)
+        ->and($session->messages()->orderBy('id')->pluck('message_text')->all())->toBe(['I need a quote for 500 candles', 'And do you do gift wrapping?']);
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});
+
+test('a customer cannot hand over more than the daily limit of questions on a website, and nothing is created by the refused one', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 15:30', 'Europe/London'));
+
+    $conversation = \App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation::run($customer, \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum::SEARCH, ['web_user_id' => $webUser->id]);
+    $rows         = collect(range(1, \App\Actions\CRM\ShoppingAssistant\HandOverShoppingAssistantConversation::MAX_PER_DAY))->map(fn (int $number) => \App\Models\CRM\ShoppingAssistant\ShoppingAssistantHandOver::create([
+        'shopping_assistant_conversation_id' => $conversation->id,
+        'reason'                             => 'asked_for_person',
+        'route'                              => 'web_chat',
+        'in_hours'                           => false,
+        'agent_available'                    => false,
+        'question'                           => "Earlier question $number",
+        'created_at'                         => now()->subHours(2),
+    ]));
+
+    $conversationsBefore = \App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation::count();
+    $handOversBefore     = \App\Models\CRM\ShoppingAssistant\ShoppingAssistantHandOver::count();
+    $chatsBefore         = ChatSession::count();
+
+    $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['message' => 'One question too many'])->assertStatus(429);
+    $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['conversation' => $conversation->ulid, 'message' => 'One question too many'])->assertStatus(429);
+
+    expect(\App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation::count())->toBe($conversationsBefore)
+        ->and(\App\Models\CRM\ShoppingAssistant\ShoppingAssistantHandOver::count())->toBe($handOversBefore)
+        ->and(ChatSession::count())->toBe($chatsBefore);
+
+    \Illuminate\Support\Facades\DB::table('shopping_assistant_hand_overs')->where('id', $rows->first()->id)->update(['created_at' => now()->subHours(25)]);
+
+    $response = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), ['message' => 'One question too many'])->assertOk();
+
+    expect(\App\Models\CRM\ShoppingAssistant\ShoppingAssistantHandOver::count())->toBe($handOversBefore + 1);
+
+    outOfHoursTestCleanUp($schedule, [ChatSession::where('ulid', $response->json('chat_session'))->firstOrFail()]);
+});
+
+test('a second tap on an offer whose chat never got the question sends it then', function () {
+    fakeActionJobs(ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class);
+    [$website, $customer, $webUser, $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 11:00', 'Europe/London'));
+    handOverTestAvailableAgent($shop);
+    $offer = handOverTestOffer($customer, $website, $webUser);
+    $body  = ['conversation' => $offer->conversation->ulid, 'offer_message_id' => $offer->id];
+
+    $first   = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), $body)->assertOk();
+    $session = ChatSession::where('ulid', $first->json('chat_session'))->firstOrFail();
+    $session->messages()->withTrashed()->forceDelete();
+    expect($session->messages()->count())->toBe(0);
+
+    $second = $this->actingAs($webUser, 'retina')->postJson(handOverTestUrl($website), $body)->assertOk();
+
+    expect($second->json())->toBe($first->json())
+        ->and($offer->conversation->handOvers()->count())->toBe(1)
+        ->and($session->messages()->pluck('message_text')->all())->toBe(['Do you deliver to Jersey?']);
+
+    outOfHoursTestCleanUp($schedule, [$session]);
+});

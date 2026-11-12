@@ -315,6 +315,7 @@ class AnonymiseCustomer extends OrgAction
             ->update(['body' => null, 'tool_calls' => null, 'follow_ups' => null]);
         ShoppingAssistantEvent::whereIn('shopping_assistant_conversation_id', $conversationIds)
             ->update(['reason' => null]);
+        DB::table('shopping_assistant_hand_overs')->whereIn('shopping_assistant_conversation_id', $conversationIds)->update(['question' => null]);
     }
 
     private function anonymiseDispatchedEmailRecipients(Customer $customer, array $webUserIds): void

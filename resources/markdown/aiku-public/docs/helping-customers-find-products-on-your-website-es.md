@@ -89,6 +89,23 @@ Para responder, escriba la respuesta para el cliente en la nota al marcar la tar
 
 Lo configuran los administradores del sistema en **Organisations**: se abre la organización, se pulsa **Edit** y se va a **Restock questions**. El interruptor **Ask purchasing when there is no reliable date** está activado por defecto; desactivado, el asesor solo responde con nuestros pedidos. **Restock questions go to** elige quién las recibe; si se deja vacío, van a los compradores de la organización.
 
+### Preguntas generales y paso a una persona
+
+Además de productos, el asistente responde preguntas sobre cómo comprar en la tienda: pago, entrega, devoluciones, pedidos y la cuenta del cliente. Responde a partir de las páginas de políticas de la propia tienda, los ajustes de la tienda y las notas de atención al cliente y los datos verificados que se guardan en los ajustes de chat de la tienda, y enlaza la página que ha usado. Nunca responde con conocimientos generales, y solo repite una cifra, como un plazo de entrega o una tarifa, cuando esa cifra está escrita en el texto que ha usado.
+
+Cuando no está seguro, o la pregunta trata del pedido, la factura o el reembolso del propio cliente, no adivina. Lo dice y ofrece preguntar al equipo, con un toque en un botón bajo la respuesta. En la página del asistente también hay siempre un enlace **Talk to a person** (hablar con una persona).
+
+Lo que ocurre al tocarlo depende del momento y de la web:
+
+- Dentro del horario de chat, con alguien disponible, se abre un chat en la ventana de chat de la web.
+- Si no, la pregunta llega como una conversación por correo. Al cliente se le dice cuándo vuelve el equipo y que la respuesta llegará por correo, y su respuesta a ese correo cae en la misma conversación.
+- Una tienda sin buzón de correo conectado recibe un chat web que se responde más tarde.
+- Una web sin chat y sin buzón de correo no ofrece ninguna persona.
+
+Para el equipo de chat: estos chats llegan a la bandeja y a las alertas de siempre, marcados con el nombre del asistente. Usa el filtro **From the AI assistant** (del asistente de IA) para ver solo esos. La conversación del asistente con el cliente está al principio del chat, así que ves lo que ya se dijo. Si una respuesta del asistente fue incorrecta, márcala como **Wrong answer** (respuesta incorrecta) ahí mismo. Estos chats no cuentan en las cifras de tiempo de respuesta ni de cobertura de IA del chat; se informan en el informe **AI Assistant**, que se explica más abajo.
+
+Para que el asistente responda más, abre el informe y mira **Questions the assistant could not answer** (preguntas que el asistente no supo responder). Añade en los ajustes de chat de la tienda una nota que responda a una de ellas, y el asistente la responderá la próxima vez, en aproximadamente una hora.
+
 ### Límites y qué se registra
 
 Cada cliente puede hacer 6 preguntas por minuto, 40 por hora y 120 al día. Una respuesta tarda unos segundos y la página espera. Cada respuesta es uso de IA de pago, así que activa el asesor donde quieras que los clientes lo usen.
@@ -148,6 +165,22 @@ Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se ab
 **From the search box to a question** (del cuadro de búsqueda a una pregunta) muestra en cuántas búsquedas se ofreció el botón **Ask**, en cuántas de ellas se mostró la oferta de preguntar, y cuántas conversaciones se abrieron desde el cuadro de búsqueda, con las preguntas rechazadas por los límites o por el presupuesto debajo.
 
 Las cifras principales y los pasos del embudo son enlaces: abren las conversaciones que hay detrás.
+
+### Preguntas generales y traspasos
+
+En la pestaña **Overview**, **General questions and passing to a person** (preguntas generales y paso a una persona) muestra cómo trata el asistente las preguntas sobre la tienda y los traspasos a una persona. Solo se cuentan las conversaciones posteriores a la llegada de esta función. Cada cifra se compara con el periodo anterior y cada una es un enlace a las conversaciones que hay detrás.
+
+- **General questions** (preguntas generales) cuenta las respuestas sobre la tienda (políticas, entrega, devoluciones, la cuenta) y **Answered by the assistant** (respondidas por el asistente) las que respondió él mismo, sin ofrecer una persona.
+- **Passed to a person** (pasadas a una persona) cuenta los clientes que tocaron la oferta de preguntar al equipo. **Hand-over rate** (tasa de traspaso) es ese número por pregunta general, con la proporción de conversaciones que acabaron en traspaso debajo.
+- **AI cost of these answers** (coste de IA de estas respuestas) es el coste solo de las respuestas generales. **Answers marked wrong** (respuestas marcadas como incorrectas) cuenta las respuestas que el equipo de chat marcó como incorrectas.
+- **Answered from** (respondido a partir de) muestra en qué se basaron las respuestas: páginas de políticas, ajustes de la tienda, guías, notas, datos verificados o reglas aprendidas, descripciones de familias, o nuestros propios datos.
+- **Why a person was offered** (por qué se ofreció una persona) compara, para cada motivo (no estaba seguro de la respuesta, una pregunta sobre su propio pedido, el cliente pidió una persona), cuántas veces se ofreció una persona y a cuántos clientes se les pasó.
+- **How it reached the team** (cómo llegó al equipo) reparte los traspasos entre chat en vivo, chat por correo respondido más tarde y chat web respondido más tarde.
+- **First reply from a person** (primera respuesta de una persona) muestra, dentro y fuera del horario de chat, cuántos traspasos hubo, a cuántos respondió una persona y la espera mediana hasta esa primera respuesta. Fuera del horario de chat la espera incluye la noche.
+- **After passing to a person** (tras pasar a una persona) muestra a cuántos se respondió, cuántos chats están cerrados y cuántos clientes hicieron un pedido en los 7 días siguientes al traspaso. Solo se pueden juzgar los traspasos de más de 7 días, y la cifra indica cuántos son.
+- **Questions the assistant could not answer** (preguntas que el asistente no supo responder) lista lo que preguntaron los clientes cuando el asistente no estaba seguro, con cuántas veces, los idiomas y la última vez, y un enlace **Open** (abrir) a la conversación más reciente. Las preguntas solo se agrupan cuando las palabras son las mismas, así que dos formas de preguntar lo mismo salen como dos líneas.
+
+En la pestaña **Conversations**, una columna muestra qué conversaciones se pasaron a una persona, y la transcripción muestra, bajo cada respuesta, de dónde salió, cuándo se ofreció una persona y el chat al que se pasó.
 
 ### La pestaña Conversations
 

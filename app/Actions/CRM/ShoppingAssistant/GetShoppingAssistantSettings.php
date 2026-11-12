@@ -20,13 +20,14 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * sells B2B and the customer belongs to that shop. The switch is read first, so a website with it
  * off costs no query. Where a new question is offered or accepted ($forNewQuestion) the website's
  * monthly AI budget must not be spent; reading an answer, clicks and basket adds stay on.
+ * hand_over says whether a person can be offered at all (see GetShoppingAssistantHandOverRoute::isOffered).
  */
 class GetShoppingAssistantSettings
 {
     use AsAction;
 
     /**
-     * @return array{name: string}|null
+     * @return array{name: string, hand_over: bool}|null
      */
     public function handle(Website $website, ?Customer $customer, bool $forNewQuestion = false): ?array
     {
@@ -38,7 +39,7 @@ class GetShoppingAssistantSettings
             return null;
         }
 
-        return ['name' => self::name($website)];
+        return ['name' => self::name($website), 'hand_over' => GetShoppingAssistantHandOverRoute::isOffered($website, $customer)];
     }
 
     /**

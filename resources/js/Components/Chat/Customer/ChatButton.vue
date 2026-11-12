@@ -838,14 +838,11 @@ const handleOfflineSession = (sessionData: ChatSessionData) => {
     saveChatSession(sessionData)
 }
 
-const handleChatFromUrl = async () => {
-    const params = new URLSearchParams(window.location.search)
-    const sessionUlid = params.get("chat_session")
-
-    if (!sessionUlid) return
+const openSession = async (ulid: string) => {
+    const previousUlid = chatSession.value?.ulid
 
     const sessionData: ChatSessionData & { saved_at: string } = {
-        ulid: sessionUlid,
+        ulid,
         saved_at: new Date().toISOString(),
     }
 
@@ -853,16 +850,32 @@ const handleChatFromUrl = async () => {
 
     chatSession.value = sessionData
 
-    const cleanUrl = window.location.origin + window.location.pathname
-    window.history.replaceState({}, document.title, cleanUrl)
-
-    if (!open.value) {
+    if (!open.value || previousUlid !== ulid) {
         open.value = true
         activeView.value = "chat"
         hasOpenedLiveChat.value = true
         await startChat()
     }
     emit("requestOpen")
+}
+
+const handleChatFromUrl = async () => {
+    const params = new URLSearchParams(window.location.search)
+    const sessionUlid = params.get("chat_session")
+
+    if (!sessionUlid) return
+
+    const cleanUrl = window.location.origin + window.location.pathname
+    window.history.replaceState({}, document.title, cleanUrl)
+
+    await openSession(sessionUlid)
+}
+
+const onOpenChatEvent = (event: Event) => {
+    const ulid = (event as CustomEvent<{ ulid?: string }>).detail?.ulid
+    if (typeof ulid === "string" && ulid) {
+        openSession(ulid)
+    }
 }
 
 watch(activeMenu, (v) => v === "history" && loadUserSessions())
@@ -877,6 +890,8 @@ onMounted(() => {
     window.addEventListener("pageshow", onChatPageShow)
     document.addEventListener("visibilitychange", onPresenceVisible)
     window.addEventListener("pagehide", onPresencePageHide)
+    ;(window as any).irisChatWidgetMounted = true
+    window.addEventListener("iris-open-chat", onOpenChatEvent)
     startPresence()
 
 
@@ -928,6 +943,8 @@ onBeforeUnmount(() => {
     window.removeEventListener("pageshow", onChatPageShow)
     document.removeEventListener("visibilitychange", onPresenceVisible)
     window.removeEventListener("pagehide", onPresencePageHide)
+    window.removeEventListener("iris-open-chat", onOpenChatEvent)
+    ;(window as any).irisChatWidgetMounted = false
     stopPresence()
     if (chatPollTimer) clearInterval(chatPollTimer)
     if (boundConnection) {

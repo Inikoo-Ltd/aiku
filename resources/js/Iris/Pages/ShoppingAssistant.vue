@@ -4,6 +4,7 @@ import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import { get } from "lodash-es"
 import InputText from "primevue/inputtext"
+import Textarea from "primevue/textarea"
 import Tabs from "primevue/tabs"
 import TabList from "primevue/tablist"
 import Tab from "primevue/tab"
@@ -11,7 +12,7 @@ import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck } from "@far"
+import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faHeadset, faTimes } from "@far"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
@@ -25,7 +26,7 @@ import {
     shoppingAssistantQuestionKey,
     useShoppingAssistant,
 } from "@/Iris/Composables/useShoppingAssistant"
-library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck)
+library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faHeadset, faTimes)
 
 type Card = ProductResource & {
     assistant_reason: string
@@ -42,6 +43,8 @@ type Message =
         follow_ups: string[]
         basket_added?: number[]
         links?: { label: string, url: string }[]
+        hand_over_offer?: string | null
+        handed_over?: boolean
         groups: { must_haves: Card[], add_ons: Card[] }
     }
 
@@ -78,6 +81,14 @@ const notice = ref("")
 const cardsVersion = ref(0)
 const addingTo = ref<number | null>(null)
 const addErrors = ref<Record<number, string>>({})
+const handOverAvailable = ref(false)
+const isTalkBoxOpen = ref(false)
+const talkDraft = ref("")
+const talkError = ref("")
+const handingOver = ref<number | "link" | null>(null)
+const handOverErrors = ref<Record<number, string>>({})
+
+const canTalkToAPerson = computed(() => !!assistant.value?.hand_over || handOverAvailable.value)
 
 const latestAssistantId = computed(() => [...messages.value].reverse().find((message) => message.role === "assistant")?.id ?? null)
 
@@ -91,6 +102,7 @@ const jsonUrl = (name: string, params: Record<string, string>, fallback: string)
 
 const askUrl = () => jsonUrl("iris.json.shopping_assistant.ask", {}, "/json/shopping-assistant/ask")
 const showUrl = (id: string) => jsonUrl("iris.json.shopping_assistant.show", { conversation: id }, `/json/shopping-assistant/${id}`)
+const handOverUrl = () => jsonUrl("iris.json.shopping_assistant.hand_over", {}, "/json/shopping-assistant/hand-over")
 const eventsUrl = (id: string) => jsonUrl("iris.json.shopping_assistant.events.store", { conversation: id }, `/json/shopping-assistant/${id}/events`)
 
 const POLL_INTERVAL_MS = 1500
@@ -130,6 +142,7 @@ const fetchConversation = async (after?: number): Promise<{ pending: boolean, ha
         notice.value = ctrans("This conversation has been cleared and will not be shown to you again.")
         return null
     }
+    handOverAvailable.value = !!data.hand_over_available
     const known = new Set(messages.value.map((message) => message.id))
     const incoming: Message[] = (data.messages ?? []).filter((message: Message) => !known.has(message.id))
     messages.value = [...messages.value, ...incoming].sort((first, second) => first.id - second.id)
@@ -265,6 +278,72 @@ const send = async (text: string) => {
     }
 }
 
+const openChatWindow = (chatSession: string) => {
+    if ((window as any).irisChatWidgetMounted === true) {
+        window.dispatchEvent(new CustomEvent("iris-open-chat", { detail: { ulid: chatSession } }))
+        return
+    }
+    window.location.assign(window.location.pathname + "?chat_session=" + chatSession)
+}
+
+const rememberChatForLater = (chatSession: string) => {
+    try {
+        localStorage.setItem("chat", JSON.stringify({ ulid: chatSession, saved_at: new Date().toISOString() }))
+    } catch {
+        return
+    }
+}
+
+const handOver = async (offerMessageId: number | null, typed?: string) => {
+    if (handingOver.value !== null) {
+        return
+    }
+    const target: number | "link" = offerMessageId ?? "link"
+    const question = (typed ?? "").trim().slice(0, 1000)
+    if (offerMessageId === null && !question) {
+        talkError.value = ctrans("Please write your question for our team.")
+        return
+    }
+    talkError.value = ""
+    handOverErrors.value = { ...handOverErrors.value, [offerMessageId ?? 0]: "" }
+    handingOver.value = target
+    const requestGeneration = generation
+    try {
+        const { data } = await axios.post(handOverUrl(), offerMessageId !== null
+            ? { conversation: conversation.value, offer_message_id: offerMessageId }
+            : { conversation: conversation.value, message: question })
+        if (requestGeneration !== generation) {
+            return
+        }
+        conversation.value = data.conversation
+        sessionStorage.setItem(shoppingAssistantConversationKey, data.conversation)
+        if (offerMessageId !== null) {
+            messages.value = messages.value.map((message) => message.id === offerMessageId && message.role === "assistant" ? { ...message, handed_over: true } : message)
+        } else {
+            isTalkBoxOpen.value = false
+            talkDraft.value = ""
+        }
+        await fetchConversation(lastMessageId())
+        if (data.route === "live_chat" && data.chat_session) {
+            openChatWindow(data.chat_session)
+        } else if (data.route === "web_chat" && data.chat_session) {
+            rememberChatForLater(data.chat_session)
+        }
+    } catch (error: any) {
+        if (requestGeneration !== generation) {
+            return
+        }
+        const message = ctrans("Sorry, that did not work. Please try again.")
+        if (offerMessageId !== null) {
+            handOverErrors.value = { ...handOverErrors.value, [offerMessageId]: message }
+        } else {
+            talkError.value = message
+        }
+    } finally {
+        handingOver.value = null
+    }
+}
+
 const conversationFromLink = (): string | null => {
     const fromLink = new URLSearchParams(window.location.search).get("conversation")
     return fromLink && /^[0-9A-Za-z]{26}$/.test(fromLink) ? fromLink : null
@@ -361,6 +440,19 @@ const goToLogin = () => {
         <template v-if="assistant || messages.length || isPending">
             <div class="flex items-start justify-between gap-4">
                 <h1 class="text-2xl font-bold">{{ assistantName }}</h1>
+                <div class="flex shrink-0 items-center gap-2">
+                <Button
+                    v-if="canTalkToAPerson"
+                    type="tertiary"
+                    size="xs"
+                    class="shrink-0"
+                    :label="ctrans('Talk to a person')"
+                    @click="isTalkBoxOpen = !isTalkBoxOpen"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="far fa-headset" class="text-gray-500" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
                 <Button
                     v-if="conversation || messages.length"
                     type="tertiary"
@@ -373,6 +465,34 @@ const goToLogin = () => {
                         <FontAwesomeIcon icon="far fa-redo" class="text-gray-500" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
+                </div>
+            </div>
+
+            <div v-if="isTalkBoxOpen && canTalkToAPerson" class="mt-4 rounded border border-gray-200 p-4">
+                <label for="assistant-talk-to-a-person" class="mb-1 block text-sm">
+                    {{ ctrans("What would you like to ask our team?") }} <span class="text-red-500">*</span>
+                </label>
+                <Textarea id="assistant-talk-to-a-person" v-model="talkDraft" rows="3" autoResize maxlength="1000" class="w-full" />
+                <p v-if="talkError" class="mt-1 text-xs text-red-500">{{ talkError }}</p>
+                <div class="mt-3 flex gap-2">
+                    <Button
+                        :label="ctrans('Send to our team')"
+                        icon="far fa-paper-plane"
+                        :loading="handingOver === 'link'"
+                        :disabled="handingOver !== null"
+                        @click="handOver(null, talkDraft)"
+                    />
+                    <Button
+                        type="tertiary"
+                        :label="ctrans('Cancel')"
+                        :disabled="handingOver !== null"
+                        @click="isTalkBoxOpen = false; talkError = ''"
+                    >
+                        <template #icon>
+                            <FontAwesomeIcon icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </Button>
+                </div>
             </div>
 
             <div v-if="isRestoring && !messages.length" class="skeleton assistant-skeleton mt-6 rounded" />
@@ -452,6 +572,23 @@ const goToLogin = () => {
                                         <FontAwesomeIcon icon="far fa-comment-alt" class="text-gray-500" fixed-width aria-hidden="true" />
                                     </template>
                                 </Button>
+                            </div>
+                            <div v-if="message.hand_over_offer && (handOverAvailable || message.handed_over)" class="mt-3">
+                                <p v-if="message.handed_over" class="text-xs text-gray-500">{{ ctrans("Passed to our team") }}</p>
+                                <Button
+                                    v-else
+                                    type="tertiary"
+                                    size="xs"
+                                    :label="ctrans('Talk to our team')"
+                                    :disabled="handingOver !== null || isPending"
+                                    @click="handOver(message.id)"
+                                >
+                                    <template #icon>
+                                        <LoadingIcon v-if="handingOver === message.id" />
+                                        <FontAwesomeIcon v-else icon="far fa-headset" class="text-gray-500" fixed-width aria-hidden="true" />
+                                    </template>
+                                </Button>
+                                <p v-if="handOverErrors[message.id]" class="mt-1 text-xs text-red-500">{{ handOverErrors[message.id] }}</p>
                             </div>
                         </div>
                     </div>

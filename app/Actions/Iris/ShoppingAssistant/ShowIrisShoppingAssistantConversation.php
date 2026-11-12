@@ -13,6 +13,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Actions\Catalogue\Product\Json\WithIrisProductsInWebpage;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantHandOverRoute;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\IrisAction;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
@@ -23,6 +24,7 @@ use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -31,20 +33,28 @@ use Lorisleiva\Actions\ActionRequest;
  * prices, stock and basket quantity; a product whose webpage went offline since is left out.
  * A conversation the customer cleared answers the poll that was waiting for it, so the page can
  * say so, and is not found from then on.
+ * An answer that offered a person says so (hand_over_offer) and whether the customer already took
+ * it up (handed_over); an answer's links are the families it mentioned plus the pages of the shop
+ * knowledge it was written from. hand_over_available says whether a person can be reached at all.
  */
 class ShowIrisShoppingAssistantConversation extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
     /**
-     * @return array{conversation: string, status: string, pending: bool, messages: array<int, array<string, mixed>>}
+     * @return array{conversation: string, status: string, pending: bool, hand_over_available: bool, messages: array<int, array<string, mixed>>}
      */
     public function handle(ShoppingAssistantConversation $conversation, ?int $after): array
     {
         $messages = $conversation->messages()
             ->when($after, fn ($query) => $query->where('id', '>', $after))
             ->orderBy('id')
-            ->get(['id', 'role', 'body', 'follow_ups', 'tool_calls', 'created_at']);
+            ->get(['id', 'role', 'body', 'follow_ups', 'tool_calls', 'hand_over_offer', 'sources', 'created_at']);
+
+        $handedOverOfferIds = $conversation->handOvers()
+            ->whereIn('offer_message_id', $messages->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->pluck('id'))
+            ->pluck('offer_message_id')
+            ->flip();
 
         $events = ShoppingAssistantEvent::whereIn('shopping_assistant_message_id', $messages->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->pluck('id'))
             ->where('type', ShoppingAssistantEventTypeEnum::SHOWN)
@@ -72,7 +82,8 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
             'conversation' => $conversation->ulid,
             'status'       => $conversation->status->value,
             'pending'      => $conversation->isPending(),
-            'messages'     => $messages->map(function (ShoppingAssistantMessage $message) use ($events, $cards, $familyLinks) {
+            'hand_over_available' => $conversation->website && $conversation->customer && GetShoppingAssistantHandOverRoute::isOffered($conversation->website, $conversation->customer),
+            'messages'     => $messages->map(function (ShoppingAssistantMessage $message) use ($events, $cards, $familyLinks, $handedOverOfferIds) {
                 $data = [
                     'id'         => $message->id,
                     'role'       => $message->role->value,
@@ -83,7 +94,11 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                 if ($message->role === ShoppingAssistantMessageRoleEnum::ASSISTANT) {
                     $data['follow_ups']   = $message->follow_ups ?? [];
                     $data['basket_added'] = collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['added_product_ids'] ?? [])->values()->all();
-                    $data['links']        = collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['family_ids'] ?? [])->unique()->map(fn ($familyId) => $familyLinks->get($familyId))->filter()->values()->all();
+                    $data['links']        = collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['family_ids'] ?? [])->unique()->map(fn ($familyId) => $familyLinks->get($familyId))->filter()
+                        ->merge(collect($message->sources)->filter(fn ($source) => filled(Arr::get($source, 'url')))->unique('url')->map(fn ($source) => ['label' => Str::before((string) Arr::get($source, 'title'), ' · '), 'url' => $source['url']]))
+                        ->unique('url')->values()->all();
+                    $data['hand_over_offer'] = $message->hand_over_offer?->value;
+                    $data['handed_over']     = $handedOverOfferIds->has($message->id);
                     $data['groups']     = array_fill_keys(AskShoppingAssistant::GROUPS, []);
 
                     foreach ($events->where('shopping_assistant_message_id', $message->id) as $event) {

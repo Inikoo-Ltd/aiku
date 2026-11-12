@@ -472,6 +472,7 @@ const mapSession = (s: SessionAPI): Contact => ({
     claim: (s as any).claim ?? null,
     promise: (s as any).promise ?? null,
     urgent: (s as any).urgent ?? null,
+    assistant_hand_over: (s as any).assistant_hand_over ?? null,
     waiting_until: (s as any).waiting_until ?? null,
     customer_suggestion: (s as any).customer_suggestion ?? null,
     is_highlighted: (s as any).is_highlighted ?? false,
@@ -609,7 +610,7 @@ const storeSelection = () => {
 
 const showsOnlySavedSelection = () =>
     !isFolderView.value && inboxView.value === "all" && viewMode.value === "my" && !searchQuery.value.trim()
-    && !selectedAgentIds.value.length && !dsKind.value && !promisedOnly.value && !starredOnly.value
+    && !selectedAgentIds.value.length && !dsKind.value && !promisedOnly.value && !starredOnly.value && !fromAssistantOnly.value
     && sortOrder.value === null && labelFilterId.value === null
 
 /**
@@ -850,9 +851,16 @@ const toggleStarredOnly = () => {
     onListFiltersChanged()
 }
 
+const fromAssistantOnly = ref(false)
+const toggleFromAssistantOnly = () => {
+    fromAssistantOnly.value = !fromAssistantOnly.value
+    onListFiltersChanged()
+}
+
 const buildParams = (page: number) => ({
     ...buildListParams(page),
     ...(sortOrder.value ? { order: sortOrder.value } : {}),
+    ...(fromAssistantOnly.value ? { from_assistant: 1 } : {}),
     ...(starredOnly.value && !highlightView.value ? { highlighted: 1 } : {}),
 })
 
@@ -4027,6 +4035,13 @@ onUnmounted(() => {
                     @click="toggleStarredOnly">
                     <FontAwesomeIcon :icon="starredOnly ? faStarSolid : faStar" class="text-amber-400" fixed-width />
                     {{ ctrans("Highlighted") }}
+                </button>
+                <button v-if="selectedChannel !== 'whatsapp'" type="button" :aria-pressed="fromAssistantOnly"
+                    v-tooltip="ctrans('Only the conversations the AI shopping assistant handed over, in this list')"
+                    class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-xs transition"
+                    :class="fromAssistantOnly ? 'border-gray-400 bg-white font-medium text-gray-800 shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-white hover:text-gray-800'"
+                    @click="toggleFromAssistantOnly">
+                    {{ ctrans("From the AI assistant") }}
                 </button>
                 <span class="flex-1" />
                 <button v-if="isEmailMailbox && promisedCapsuleShown && promisedCount" type="button"
