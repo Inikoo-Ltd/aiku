@@ -29,7 +29,7 @@ const layout = inject('layout', retinaLayoutStructure)
 
 const inputValue = ref('')
 
-const { assistant, askLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
+const { assistant, askLabel, buttonLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
 
 const askAssistant = () => {
     closePopover()
@@ -259,8 +259,9 @@ const visitSearchPage = () => {
         <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
         <Button
             v-if="assistant"
-            :label="askLabel"
+            :label="buttonLabel"
             :title="askLabel"
+            :aria-label="askLabel"
             size="xs"
             class="iris-search-ask absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full"
             @click="askAssistant"
@@ -320,7 +321,7 @@ const visitSearchPage = () => {
 }
 
 .iris-search-box .iris-search-input-ask {
-    padding-right: 11rem;
+    padding-right: 9rem;
 }
 
 .iris-search-box .iris-search-ask > span {

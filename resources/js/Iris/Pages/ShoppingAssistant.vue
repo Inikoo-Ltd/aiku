@@ -19,7 +19,6 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import Image from "@/Common/Components/Image.vue"
 import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
 import { ProductResource } from "@/types/Iris/Products"
 import {
@@ -58,7 +57,6 @@ const props = defineProps<{
     web_block_family_code?: string
     products_in_range?: number | null
     assistant_name?: string
-    example_products?: { name: string, image: Record<string, any> | null }[]
 }>()
 
 const fieldValue = computed(() => props.web_block_family?.fieldValue)
@@ -113,21 +111,6 @@ const starterQuestions = computed(() => [
     ctrans("Low-priced Christmas gifts that sell well"),
     ctrans("Help me start bath & body"),
     ctrans("What did I use to order that still sells?"),
-])
-
-const exampleSuggestions = computed(() => props.example_products?.length === 3
-    ? props.example_products.map((product) => ({ colour: "#f3f0ec", name: product.name, image: product.image, reason: ctrans("Sold well last Christmas") }))
-    : placeholderSuggestions.value)
-
-const placeholderSuggestions = computed(() => [
-    { colour: "#e3ecef", name: ctrans("Aromatherapy Shower Steamers"), image: null, reason: ctrans("Popular with shops like yours") },
-    { colour: "#f3e4e8", name: ctrans("Soap Flower Bouquet"), image: null, reason: ctrans("Sold well last Christmas") },
-    { colour: "#ece6da", name: ctrans("Mini Singing Bowl"), image: null, reason: ctrans("Matches what you asked for") },
-])
-
-const exampleFollowUps = computed(() => [
-    ctrans("Show me more incense"),
-    ctrans("Anything for the till?"),
 ])
 
 const steps = computed(() => [
@@ -623,7 +606,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     <div :class="isLandingVisible || isChatVisible ? 'landing-page' : 'assistant-page px-4 py-8'">
         <div v-if="isLandingVisible">
             <section class="landing-hero">
-                <div class="landing-container landing-hero-grid">
+                <div class="landing-container landing-hero-inner">
                     <div>
                         <div class="landing-eyebrow-row">
                             <span class="landing-badge" aria-hidden="true">
@@ -734,47 +717,6 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
                     </div>
 
-                    <div class="landing-example">
-                        <p class="landing-example-title">{{ ctrans("How a chat looks") }}</p>
-                        <div class="landing-example-bubble">
-                            {{ ctrans("Small yoga studio in Leeds. We sell a few candles and incense. Gifts that sell for Christmas?") }}
-                        </div>
-                        <div class="landing-example-reply">
-                            <span class="assistant-avatar landing-example-avatar" aria-hidden="true"><FontAwesomeIcon icon="far fa-sparkles" fixed-width /></span>
-                            <div class="min-w-0 flex-1">
-                                <p class="landing-example-answer">{{ ctrans("Here are easy wins for a yoga studio – all in stock.") }}</p>
-
-                                <div class="landing-example-tabs" aria-hidden="true">
-                                    <span class="landing-example-tab landing-example-tab-active">{{ ctrans("Must-haves") }}</span>
-                                    <span class="landing-example-tab">{{ ctrans("Add-ons to your range") }}</span>
-                                </div>
-
-                                <div class="landing-example-grid">
-                                    <div v-for="suggestion in exampleSuggestions" :key="suggestion.name" class="landing-example-item">
-                                        <p class="landing-example-reason">{{ suggestion.reason }}</p>
-                                        <div class="landing-example-card">
-                                            <span class="landing-example-thumb" :style="{ backgroundColor: suggestion.colour }" aria-hidden="true">
-                                                <Image v-if="suggestion.image" :src="suggestion.image" :alt="suggestion.name" imageCover class="landing-example-image" />
-                                            </span>
-                                            <span class="landing-example-name">{{ suggestion.name }}</span>
-                                            <span class="landing-example-add">{{ ctrans("Add to basket") }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="landing-example-actions">
-                                    <span class="landing-example-pill">
-                                        <FontAwesomeIcon icon="far fa-shopping-basket" class="text-green-600" fixed-width aria-hidden="true" />
-                                        {{ ctrans("Add all to basket") }}
-                                    </span>
-                                    <span v-for="followUp in exampleFollowUps" :key="followUp" class="landing-example-pill landing-example-pill-round">
-                                        <FontAwesomeIcon icon="far fa-comment-alt" class="text-gray-500" fixed-width aria-hidden="true" />
-                                        {{ followUp }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </section>
 
@@ -1461,17 +1403,29 @@ const sendOnEnter = (event: KeyboardEvent) => {
     padding-bottom: 2.5rem;
 }
 
-.landing-hero-grid {
-    display: grid;
-    gap: 2.5rem;
-    align-items: center;
+.landing-hero-inner {
+    max-width: 48rem;
+    text-align: center;
 }
 
-@media (min-width: 1024px) {
-    .landing-hero-grid {
-        grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-        gap: 3rem;
-    }
+.landing-hero-inner .landing-eyebrow-row,
+.landing-hero-inner .landing-chips,
+.landing-hero-inner .landing-talk-row {
+    justify-content: center;
+}
+
+.landing-hero-inner .landing-intro,
+.landing-hero-inner .landing-legend,
+.landing-hero-inner .landing-ask,
+.landing-hero-inner .landing-chips,
+.landing-hero-inner .landing-talk {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.landing-hero-inner .landing-ask,
+.landing-hero-inner .landing-talk-box {
+    text-align: left;
 }
 
 .landing-eyebrow-row {
@@ -1623,154 +1577,26 @@ const sendOnEnter = (event: KeyboardEvent) => {
     outline-offset: 2px;
 }
 
-.landing-example {
-    padding: 1rem;
-    border: 1px solid #e3ddd6;
-    border-radius: 0.75rem;
-    background-color: white;
-}
 
-.landing-example-title {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #555;
-}
 
-.landing-example-bubble {
-    margin-top: 0.75rem;
-    margin-left: auto;
-    max-width: 92%;
-    padding: 0.625rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.8125rem;
-    line-height: 1.5;
-    background-color: color-mix(in srgb, var(--theme-color-4) 6%, #f2ece6);
-}
 
-.landing-example-reply {
-    margin-top: 0.875rem;
-    display: flex;
-    gap: 0.625rem;
-}
 
-.landing-example-avatar {
-    width: 1.75rem;
-    height: 1.75rem;
-    font-size: 0.75rem;
-}
 
-.landing-example-answer {
-    font-size: 0.8125rem;
-    line-height: 1.5;
-}
 
-.landing-example-tabs {
-    margin-top: 0.625rem;
-    display: flex;
-    gap: 1rem;
-    border-bottom: 1px solid #ece7e1;
-}
 
-.landing-example-tab {
-    padding-bottom: 0.375rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #777;
-}
 
-.landing-example-tab-active {
-    color: var(--theme-color-0);
-    box-shadow: inset 0 -2px 0 var(--theme-color-0);
-}
 
-.landing-example-grid {
-    margin-top: 0.75rem;
-    display: grid;
-    gap: 0.625rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 
-.landing-example-reason {
-    min-height: 2rem;
-    margin-bottom: 0.25rem;
-    font-size: 0.625rem;
-    line-height: 1.3;
-    color: #555;
-}
 
-.landing-example-item {
-    display: flex;
-    flex-direction: column;
-}
 
-.landing-example-card {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-    padding: 0.375rem;
-    border: 1px solid #ece7e1;
-    border-radius: 0.375rem;
-}
 
-.landing-example-thumb {
-    display: block;
-    aspect-ratio: 1 / 1;
-    width: 100%;
-    border-radius: 0.25rem;
-}
 
-.landing-example-thumb {
-    overflow: hidden;
-}
 
-.landing-example-image,
-.landing-example-image :deep(img) {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
 
-.landing-example-name {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    line-height: 1.3;
-}
 
-.landing-example-add {
-    margin-top: auto;
-    padding: 0.25rem;
-    border-radius: 0.25rem;
-    text-align: center;
-    font-size: 0.625rem;
-    font-weight: 600;
-    background-color: var(--theme-color-4);
-    color: var(--theme-color-5);
-}
 
-.landing-example-actions {
-    margin-top: 0.75rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-}
 
-.landing-example-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    border: 1px solid #d1d5db;
-    border-radius: 0.375rem;
-    font-size: 0.6875rem;
-    color: #374151;
-}
 
-.landing-example-pill-round {
-    border-radius: 9999px;
-}
 
 .landing-steps {
     display: grid;

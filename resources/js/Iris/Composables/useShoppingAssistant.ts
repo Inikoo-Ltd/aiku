@@ -39,6 +39,8 @@ export const useShoppingAssistant = () => {
         ? ctrans("Ask :name", { name: assistant.value.name })
         : ctrans("Ask our range advisor"))
 
+    const buttonLabel = computed(() => assistant.value?.name || ctrans("Ask"))
+
     const offerLabel = computed(() => ctrans("Ask :name to find products for your shop", {
         name: assistant.value?.name || ctrans("our range advisor"),
     }))
@@ -55,5 +57,5 @@ export const useShoppingAssistant = () => {
         }
     }
 
-    return { assistant, isOfferedNow, askLabel, offerLabel, looksLikeANeed, openAssistant }
+    return { assistant, isOfferedNow, askLabel, buttonLabel, offerLabel, looksLikeANeed, openAssistant }
 }

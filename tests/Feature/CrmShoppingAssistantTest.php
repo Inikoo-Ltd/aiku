@@ -941,7 +941,7 @@ test('the AI assistant report sends this month\'s budget of each website with th
     $this->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->has('budgets', 0));
 });
 
-test('the assistant is called Aura unless the group sets a name, and a website\'s own name wins', function () {
+test('the assistant is called Merlin unless the group sets a name, and a website\'s own name wins', function () {
     $website  = shoppingAssistantStorefront($this);
     $customer = shoppingAssistantCustomer($this->shop);
     $group    = $website->group;
@@ -950,7 +950,7 @@ test('the assistant is called Aura unless the group sets a name, and a website\'
 
     UpdateWebsite::make()->action($website, ['shopping_assistant_name' => null]);
     UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => null]);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Aura', 'hand_over' => false]);
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Merlin', 'hand_over' => false]);
 
     UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => 'Sage']);
     expect(GetShoppingAssistantSettings::run($website, $customer))->toBe(['name' => 'Sage', 'hand_over' => false])
@@ -961,7 +961,7 @@ test('the assistant is called Aura unless the group sets a name, and a website\'
 
     UpdateGroupSettings::make()->action($group, ['shopping_assistant_name' => '  ']);
     UpdateWebsite::make()->action($website, ['shopping_assistant_name' => null]);
-    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Aura', 'hand_over' => false])
+    expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Merlin', 'hand_over' => false])
         ->and(data_get($group->refresh()->settings, 'shopping_assistant.name'))->toBeNull();
 });
 
@@ -2643,7 +2643,7 @@ test('the assistant landing page sends the assistant name and the range size rou
         ->component('ShoppingAssistant', false)
         ->where('assistant_name', 'Ava')
         ->where('products_in_range', 9000)
-        ->where('example_products', fn ($products) => collect($products)->count() <= 3 && collect($products)->every(fn ($product) => filled($product['name']) && filled($product['image']))));
+        ->missing('example_products'));
 
     $this->shop->stats->update(['number_products_status_for_sale' => 480]);
     $page()->assertInertia(fn (AssertableInertia $page) => $page->where('products_in_range', 400));
