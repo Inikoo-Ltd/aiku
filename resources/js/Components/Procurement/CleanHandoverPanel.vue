@@ -28,7 +28,6 @@ export interface CleanHandoverData {
         commission_rate: number | null
     }[]
     hygiene?: {
-        avg_ready_date_padding_days: number | null
         exclusion_rate: number | null
         handed_over_missing_checks: number
     }
@@ -68,11 +67,11 @@ const isCalculationShown = ref(false)
             :style="{ width: '36rem', maxWidth: 'calc(100vw - 2rem)' }"
         >
             <div class="space-y-3 text-sm text-gray-700">
-                <p>{{ ctrans('Each purchase order through the agent counts in the calendar quarter of its approved ready date. The last four quarters are shown; cancelled orders are left out.') }}</p>
+                <p>{{ ctrans('Each purchase order through the agent counts in the calendar quarter of its proposed ready date. The last four quarters are shown; cancelled orders are left out.') }}</p>
                 <div>
                     <p class="font-medium text-gray-900">{{ ctrans('An order is clean when all of these are true:') }}</p>
                     <ul class="mt-1 list-disc space-y-0.5 pl-5">
-                        <li>{{ ctrans('Handed over no later than :days days after the approved ready date (for an agent receiving goods in its own warehouse, the goods receipt that completed the order)', { days: data.handover_tolerance_days }) }}</li>
+                        <li>{{ ctrans('Handed over no later than :days days after the proposed ready date (for an agent receiving goods in its own warehouse, the goods receipt that completed the order)', { days: data.handover_tolerance_days }) }}</li>
                         <li>{{ ctrans('QC passed') }}</li>
                         <li>{{ ctrans('Compliance complete') }}</li>
                         <li>{{ ctrans('Not marked as not received') }}</li>
@@ -94,7 +93,6 @@ const isCalculationShown = ref(false)
                 <div v-if="showHygiene">
                     <p class="font-medium text-gray-900">{{ ctrans('Hygiene') }}</p>
                     <ul class="mt-1 list-disc space-y-0.5 pl-5">
-                        <li>{{ ctrans('Avg ready-date shift on approval: average days between the proposed and the approved ready date. A large shift means the ready date is being padded.') }}</li>
                         <li>{{ ctrans('Excluded from score: share of the order value left out of the score. Above 10% shows in red.') }}</li>
                         <li>{{ ctrans('Handed over w/o QC or compliance: orders handed over before QC passed or compliance was complete.') }}</li>
                     </ul>
@@ -132,16 +130,10 @@ const isCalculationShown = ref(false)
             </table>
         </div>
         <p v-else class="px-6 py-8 text-center text-sm text-gray-400">
-            {{ ctrans('No purchase orders with an approved ready date yet') }}
+            {{ ctrans('No purchase orders with a proposed ready date yet') }}
         </p>
 
-        <div v-if="showHygiene" class="grid grid-cols-1 gap-4 border-t border-gray-900/5 bg-gray-50/60 px-6 py-4 text-sm sm:grid-cols-3">
-            <div>
-                <div class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Avg ready-date shift on approval') }}</div>
-                <div class="font-semibold text-gray-900">
-                    {{ data.hygiene.avg_ready_date_padding_days === null ? '—' : data.hygiene.avg_ready_date_padding_days + ' ' + ctrans('days') }}
-                </div>
-            </div>
+        <div v-if="showHygiene" class="grid grid-cols-1 gap-4 border-t border-gray-900/5 bg-gray-50/60 px-6 py-4 text-sm sm:grid-cols-2">
             <div>
                 <div class="text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans('Excluded from score') }}</div>
                 <div class="font-semibold text-gray-900"

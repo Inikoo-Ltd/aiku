@@ -50,6 +50,7 @@ import PurchaseOrderPayments from "@/Components/Procurement/PurchaseOrderPayment
 import PurchaseOrderDepositPayments, { type PurchaseOrderPaymentsData } from "@/Components/Procurement/PurchaseOrderDepositPayments.vue"
 import AgentPurchaseOrderMoney, { type AgentPurchaseOrderMoneyData } from "@/Components/Procurement/AgentPurchaseOrderMoney.vue"
 import PurchaseOrderStages from "@/Components/Procurement/PurchaseOrderStages.vue"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import PurchaseOrderStageContainers from "@/Components/Procurement/PurchaseOrderStageContainers.vue"
 import PurchaseOrderReadyCheckItems, { type ReadyCheckItems } from "@/Components/Procurement/PurchaseOrderReadyCheckItems.vue"
 import PurchaseOrderSampleRequired, { type PurchaseOrderSample } from "@/Components/Procurement/PurchaseOrderSampleRequired.vue"
@@ -190,7 +191,6 @@ const props = defineProps < {
     		}
     		seller_order?: { reference: string; url: string | null } | null
     		clean_handover?: {
-    			proposed_ready_at: string | null
     			approved_ready_at: string | null
     			compliance_complete_at: string | null
     			chs_excluded: boolean
@@ -1432,13 +1432,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<span v-else class="text-gray-700">{{ box_stats.first_block.orderer.via_agent.name }}</span>
 				</div>
 				<div v-if="box_stats.first_block.clean_handover" class="flex flex-col gap-1 text-sm text-gray-500">
-					<div v-tooltip="ctrans('Date the buyer or the agent proposes the goods will be ready for handover')" class="flex w-fit items-center gap-3">
+					<div class="flex w-fit items-center gap-3">
 						<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" aria-hidden="true" fixed-width />
-						<span>{{ ctrans("Proposed ready") }}: {{ box_stats.first_block.clean_handover.proposed_ready_at ? useFormatTime(box_stats.first_block.clean_handover.proposed_ready_at) : "-" }}</span>
-					</div>
-					<div v-tooltip="ctrans('Ready date approved by management, in answer to the proposed date')" class="flex w-fit items-center gap-3">
-						<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" aria-hidden="true" fixed-width />
-						<span>{{ ctrans("Approved ready") }}: {{ box_stats.first_block.clean_handover.approved_ready_at ? useFormatTime(box_stats.first_block.clean_handover.approved_ready_at) : "-" }}</span>
+						<span>{{ ctrans("Proposed ready date") }} <InformationIcon :information="ctrans('Expected Clean Hand Over date')" />: {{ box_stats.first_block.clean_handover.approved_ready_at ? useFormatTime(box_stats.first_block.clean_handover.approved_ready_at) : "-" }}</span>
 					</div>
 					<div class="flex items-center gap-3">
 						<FontAwesomeIcon icon="fal fa-clipboard-list" class="text-gray-400" aria-hidden="true" fixed-width />

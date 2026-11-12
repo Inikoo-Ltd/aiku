@@ -7636,6 +7636,7 @@
     "No pull request linked": "Bağlı pull request yok",
     "No purchase orders match these filters.": "Bu filtrelerle eşleşen satın alma siparişi yok.",
     "No purchase orders with an approved ready date yet": "Henüz onaylı hazır olma tarihi olan satın alma siparişi yok",
+    "No purchase orders with a proposed ready date yet": "Henüz önerilen hazır olma tarihi olan satın alma siparişi yok",
     "No purchase records": "Satın alma kaydı yok",
     "No purged orders found": "Temizlenmiş sipariş bulunamadı",
     "No purges found": "Temizleme bulunamadı",

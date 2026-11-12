@@ -1698,7 +1698,6 @@ test('clean handover score', function () {
     $updated = UpdatePurchaseOrder::make()->action(
         $purchaseOrder,
         [
-            'proposed_ready_at'      => now()->subDays(12),
             'approved_ready_at'      => now()->subDays(10),
             'handed_over_at'         => now()->subDays(5),
             'qc_passed_at'           => now()->subDays(6),
@@ -1718,7 +1717,6 @@ test('clean handover score', function () {
         ->and($currentScore['number_clean'])->toBe(1)
         ->and($currentScore['chs'])->toEqualWithDelta(100.0, 0.01)
         ->and($currentScore['commission_rate'])->toEqualWithDelta(3.0, 0.01)
-        ->and($score['hygiene']['avg_ready_date_padding_days'])->toEqualWithDelta(2.0, 0.1)
         ->and($score['hygiene']['handed_over_missing_checks'])->toBe(0);
 
     $updated = UpdatePurchaseOrder::make()->action(
@@ -2103,7 +2101,8 @@ test('UI edit agent purchase order has the clean handover section', function (Pu
 
     $props = json_encode($this->get(route('grp.org.procurement.purchase_orders.edit', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))->viewData('page')['props']);
 
-    expect($props)->toContain('proposed_ready_at');
+    expect($props)->toContain('agent_reference')
+        ->and($props)->not->toContain('proposed_ready_at');
 })->depends('add item to agent purchase order');
 
 test('add more items to purchase order', function (PurchaseOrder $purchaseOrder) {

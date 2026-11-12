@@ -6,6 +6,7 @@ import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
 import Textarea from "primevue/textarea"
@@ -397,7 +398,10 @@ function save() {
 
             <dl v-if="stage.steps.length" class="mt-2 space-y-0.5 text-xs">
                 <div v-for="step in stage.steps" :key="step.key" class="flex justify-between gap-2">
-                    <dt class="text-gray-500">{{ step.label }}</dt>
+                    <dt class="text-gray-500">
+                        {{ step.label }}
+                        <InformationIcon v-if="step.key === 'approved_ready_at'" :information="ctrans('Expected Clean Hand Over date')" />
+                    </dt>
                     <dd class="tabular-nums text-right" :class="step.date ? 'text-gray-700' : 'text-gray-400'" v-tooltip="step.note ?? step.by">
                         {{ formatDate(step.date) ?? "-" }}
                         <div v-if="step.note" class="text-gray-500">{{ step.note }}</div>

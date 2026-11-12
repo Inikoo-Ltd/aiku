@@ -121,7 +121,6 @@ class IndexAgentProductsInProduction extends OrgAction
                 DB::raw('least('.self::OUTSTANDING_SQL.', '.self::REJECTED_SQL.') as quantity_rejected'),
                 DB::raw(self::OUTSTANDING_SQL.' as quantity_outstanding'),
                 'production_orders.production_started_at',
-                'production_orders.proposed_ready_at',
                 'production_orders.approved_ready_at',
             ]),
             'purchase_order_transactions'
@@ -145,8 +144,7 @@ class IndexAgentProductsInProduction extends OrgAction
                 'id'                    => $transaction->id,
                 'quantity_ordered'      => (float) $transaction->quantity_ordered,
                 'production_started_at' => $transaction->production_started_at,
-                'ready_at'              => $transaction->approved_ready_at ?? $transaction->proposed_ready_at,
-                'ready_at_is_approved'  => $transaction->approved_ready_at !== null,
+                'ready_at'              => $transaction->approved_ready_at,
                 'quantity_rejected'     => (float) $transaction->quantity_rejected,
                 'quantity_outstanding'  => (float) $transaction->quantity_outstanding,
             ])));

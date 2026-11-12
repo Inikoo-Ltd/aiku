@@ -37,7 +37,7 @@ enum PurchaseOrderStageEnum: string
      */
     public const array MARKABLE_FIELDS = [
         'sample_approved_at'     => self::IN_PRODUCTION,
-        'approved_ready_at'      => self::IN_PRODUCTION,
+        'approved_ready_at'      => self::DEPOSIT_PAID,
         'produced_at'            => self::READY,
         'handed_over_at'         => self::HANDED_OVER,
         'compliance_complete_at' => self::READY,
@@ -290,7 +290,7 @@ enum PurchaseOrderStageEnum: string
             'sample_approved_at'     => __('Sample approved'),
             'production_started_at'  => __('Production started'),
             'proposed_ready_at'      => __('Proposed ready date'),
-            'approved_ready_at'      => __('Approved ready date'),
+            'approved_ready_at'      => __('Proposed ready date'),
             'produced_at'            => __('Production done'),
             'qc_passed_at'           => __('QC approved'),
             'warehouse_arrived_at'   => __('Arrived in warehouse'),
@@ -333,8 +333,8 @@ enum PurchaseOrderStageEnum: string
     {
         return match ($this) {
             self::SUBMITTED     => [],
-            self::DEPOSIT_PAID  => [],
-            self::IN_PRODUCTION => ['sample_approved_at', 'proposed_ready_at', 'approved_ready_at'],
+            self::DEPOSIT_PAID  => ['approved_ready_at'],
+            self::IN_PRODUCTION => ['sample_approved_at'],
             self::IN_WAREHOUSE  => ['warehouse_arrived_at', 'warehouse_checked_at', 'warehouse_packed_at'],
             self::READY         => ['produced_at', 'balance_paid_at', 'compliance_complete_at'],
             self::HANDED_OVER   => [],

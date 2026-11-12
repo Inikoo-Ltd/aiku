@@ -365,7 +365,6 @@ class ShowPurchaseOrder extends OrgAction
                         ],
                         'seller_order' => $this->sellerOrder($purchaseOrder, $request),
                         'clean_handover' => $purchaseOrder->isAgentOrder() ? [
-                            'proposed_ready_at'      => $purchaseOrder->proposed_ready_at,
                             'approved_ready_at'      => $purchaseOrder->approved_ready_at,
                             'compliance_complete_at' => $purchaseOrder->compliance_complete_at,
                             'chs_excluded'           => $purchaseOrder->chs_excluded,
