@@ -14427,6 +14427,7 @@
     "Leave empty to use the warehouse address": "Pozostaw puste, aby użyć adresu magazynu",
     "Proposed ready date": "Proponowana data gotowości",
     "Expected Clean Hand Over date": "Oczekiwana data Clean Hand Over",
+    "Expected Clean Hand Over date. Only the buyer's procurement team can change it, not the agent.": "Oczekiwana data Clean Hand Over. Zmienić ją może tylko zespół zakupów kupującego, nie agent.",
     "The address the supplier ships the goods to, printed on the purchase order.": "Adres, na który dostawca wysyła towar, drukowany na zamówieniu zakupu.",
     "The agent's own number for this order, as it appears on their documents.": "Własny numer agenta dla tego zamówienia, taki jak na jego dokumentach.",
     "The day the buyer or the agent expects the goods to be ready to hand over. A purchaser approves it as the approved ready date on the order's stages.": "Dzień, w którym kupujący lub agent spodziewa się, że towar będzie gotowy do przekazania. Osoba odpowiedzialna za zakupy zatwierdza go jako zatwierdzoną datę gotowości w etapach zamówienia.",

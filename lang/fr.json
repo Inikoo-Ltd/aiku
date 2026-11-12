@@ -10580,6 +10580,7 @@
     "Leave empty to use the warehouse address": "Laissez vide pour utiliser l'adresse de l'entrepôt",
     "Proposed ready date": "Date de disponibilité proposée",
     "Expected Clean Hand Over date": "Date prévue de Clean Hand Over",
+    "Expected Clean Hand Over date. Only the buyer's procurement team can change it, not the agent.": "Date prévue de Clean Hand Over. Seule l'équipe achats de l'acheteur peut la modifier, pas l'agent.",
     "The address the supplier ships the goods to, printed on the purchase order.": "L'adresse à laquelle le fournisseur expédie les marchandises, imprimée sur le bon de commande.",
     "The agent's own number for this order, as it appears on their documents.": "Le numéro propre à l'agent pour cette commande, tel qu'il figure sur ses documents.",
     "The day the buyer or the agent expects the goods to be ready to hand over. A purchaser approves it as the approved ready date on the order's stages.": "Le jour où l'acheteur ou l'agent s'attend à ce que les marchandises soient prêtes à être remises. Un acheteur l'approuve comme date de disponibilité approuvée dans les étapes de la commande.",

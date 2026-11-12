@@ -14079,6 +14079,7 @@
     "Proposed ready": "Usulan siap",
     "Proposed ready date": "Tanggal siap yang diusulkan",
     "Expected Clean Hand Over date": "Perkiraan tanggal Clean Hand Over",
+    "Expected Clean Hand Over date. Only the buyer's procurement team can change it, not the agent.": "Perkiraan tanggal Clean Hand Over. Hanya tim procurement pembeli yang bisa mengubahnya, bukan agent.",
     "Proposed ready date (agent)": "Usulan tanggal siap (agen)",
     "Proposes synonyms for website searches that found no products.": "Mengusulkan sinonim untuk pencarian di situs web yang tidak menemukan produk.",
     "Prospect": "Prospek",

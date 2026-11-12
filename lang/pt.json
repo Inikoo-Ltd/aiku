@@ -15285,6 +15285,7 @@
     "Proposed ready": "Pronto proposto",
     "Proposed ready date": "Data de conclusão proposta",
     "Expected Clean Hand Over date": "Data prevista de Clean Hand Over",
+    "Expected Clean Hand Over date. Only the buyer's procurement team can change it, not the agent.": "Data prevista de Clean Hand Over. Só a equipa de compras do comprador a pode alterar, não o agente.",
     "Proposed ready date (agent)": "Data de conclusão proposta (agente)",
     "Proposes synonyms for website searches that found no products.": "Propõe sinónimos para pesquisas no website que não encontraram produtos.",
     "Prospect": "Cliente potencial",

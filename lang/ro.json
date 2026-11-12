@@ -13696,6 +13696,7 @@
     "Leave empty to use the warehouse address": "Lăsați gol pentru a folosi adresa depozitului",
     "Proposed ready date": "Data de pregătire propusă",
     "Expected Clean Hand Over date": "Data estimată pentru Clean Hand Over",
+    "Expected Clean Hand Over date. Only the buyer's procurement team can change it, not the agent.": "Data estimată pentru Clean Hand Over. Doar echipa de achiziții a cumpărătorului o poate modifica, nu agentul.",
     "The address the supplier ships the goods to, printed on the purchase order.": "Adresa la care furnizorul expediază marfa, tipărită pe comanda de achiziție.",
     "The agent's own number for this order, as it appears on their documents.": "Numărul propriu al agentului pentru această comandă, așa cum apare pe documentele sale.",
     "The day the buyer or the agent expects the goods to be ready to hand over. A purchaser approves it as the approved ready date on the order's stages.": "Ziua în care cumpărătorul sau agentul se așteaptă ca marfa să fie gata de predare. Un achizitor o aprobă ca dată de pregătire aprobată în etapele comenzii.",

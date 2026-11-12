@@ -15365,6 +15365,7 @@
     "Proposed ready": "Navrhovaná pripravenosť",
     "Proposed ready date": "Navrhovaný dátum pripravenosti",
     "Expected Clean Hand Over date": "Očakávaný dátum Clean Hand Over",
+    "Expected Clean Hand Over date. Only the buyer's procurement team can change it, not the agent.": "Očakávaný dátum Clean Hand Over. Zmeniť ho môže len nákupný tím kupujúceho, nie agent.",
     "Proposed ready date (agent)": "Navrhovaný dátum pripravenosti (agent)",
     "Proposes synonyms for website searches that found no products.": "Navrhuje synonymá pre vyhľadávania na webe, ktoré nenašli žiadne produkty.",
     "Prospect": "Potenciálny zákazník",

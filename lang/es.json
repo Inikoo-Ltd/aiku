@@ -15360,6 +15360,7 @@
     "Proposed ready": "Disponibilidad propuesta",
     "Proposed ready date": "Fecha de disponibilidad propuesta",
     "Expected Clean Hand Over date": "Fecha prevista de Clean Hand Over",
+    "Expected Clean Hand Over date. Only the buyer's procurement team can change it, not the agent.": "Fecha prevista de Clean Hand Over. Solo el equipo de compras del comprador puede cambiarla, no el agente.",
     "Proposed ready date (agent)": "Fecha de disponibilidad propuesta (agente)",
     "Proposes synonyms for website searches that found no products.": "Propone sinónimos para las búsquedas en el sitio web que no encontraron productos.",
     "Prospect": "Cliente potencial",

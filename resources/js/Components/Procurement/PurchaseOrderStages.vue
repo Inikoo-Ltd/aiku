@@ -22,6 +22,8 @@ interface Step {
     date: string | null
     by: string | null
     note?: string | null
+    expected?: string | null
+    expected_note?: string | null
 }
 
 interface Mark {
@@ -400,10 +402,11 @@ function save() {
                 <div v-for="step in stage.steps" :key="step.key" class="flex justify-between gap-2">
                     <dt class="text-gray-500">
                         {{ step.label }}
-                        <InformationIcon v-if="step.key === 'approved_ready_at'" :information="ctrans('Expected Clean Hand Over date')" />
+                        <InformationIcon v-if="step.key === 'approved_ready_at'" :information="ctrans('Expected Clean Hand Over date. Only the buyer\'s procurement team can change it, not the agent.')" />
                     </dt>
-                    <dd class="tabular-nums text-right" :class="step.date ? 'text-gray-700' : 'text-gray-400'" v-tooltip="step.note ?? step.by">
-                        {{ formatDate(step.date) ?? "-" }}
+                    <dd class="tabular-nums text-right" :class="step.date ? 'text-gray-700' : 'text-gray-400'" v-tooltip="step.note ?? step.expected_note ?? step.by">
+                        <template v-if="!step.date && step.expected">{{ ctrans("Expected :date", { date: formatDate(step.expected) as string }) }}</template>
+                        <template v-else>{{ formatDate(step.date) ?? "-" }}</template>
                         <div v-if="step.note" class="text-gray-500">{{ step.note }}</div>
                     </dd>
                 </div>

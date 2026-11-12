@@ -15396,6 +15396,7 @@
     "Proposed ready": "建议就绪",
     "Proposed ready date": "建议就绪日期",
     "Expected Clean Hand Over date": "预计 Clean Hand Over 日期",
+    "Expected Clean Hand Over date. Only the buyer's procurement team can change it, not the agent.": "预计 Clean Hand Over 日期。只有买方的采购团队可以修改，代理不能修改。",
     "Proposed ready date (agent)": "建议就绪日期（代理商）",
     "Proposes synonyms for website searches that found no products.": "为没有找到产品的网站搜索建议同义词。",
     "Prospect": "潜在客户",

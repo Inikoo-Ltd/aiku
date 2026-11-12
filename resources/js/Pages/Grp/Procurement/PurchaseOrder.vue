@@ -989,6 +989,8 @@ function showGoodsToCheck() {
 
 onUnmounted(() => goodsReceiptsHighlightTimers.forEach(clearTimeout))
 
+const expectedProposedReadyAt = computed(() => (props.stages?.stages ?? []).flatMap((stage) => stage.steps).find((step) => step.key === "approved_ready_at")?.expected ?? null)
+
 const stageActions = computed<Record<string, Action[]>>(() => {
 	const actions: Action[] = (props.pageHead.actions ?? []).filter(Boolean)
 	const stageKeys = (props.stages?.stages ?? []).map((stage) => stage.key)
@@ -1434,7 +1436,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				<div v-if="box_stats.first_block.clean_handover" class="flex flex-col gap-1 text-sm text-gray-500">
 					<div class="flex w-fit items-center gap-3">
 						<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" aria-hidden="true" fixed-width />
-						<span>{{ ctrans("Proposed ready date") }} <InformationIcon :information="ctrans('Expected Clean Hand Over date')" />: {{ box_stats.first_block.clean_handover.approved_ready_at ? useFormatTime(box_stats.first_block.clean_handover.approved_ready_at) : "-" }}</span>
+						<span>{{ ctrans("Proposed ready date") }} <InformationIcon :information="ctrans('Expected Clean Hand Over date. Only the buyer\'s procurement team can change it, not the agent.')" />:
+							<template v-if="box_stats.first_block.clean_handover.approved_ready_at">{{ useFormatTime(box_stats.first_block.clean_handover.approved_ready_at) }}</template>
+							<span v-else-if="expectedProposedReadyAt" class="text-gray-400">{{ ctrans("Expected :date", { date: useFormatTime(expectedProposedReadyAt) }) }}</span>
+							<template v-else>-</template>
+						</span>
 					</div>
 					<div class="flex items-center gap-3">
 						<FontAwesomeIcon icon="fal fa-clipboard-list" class="text-gray-400" aria-hidden="true" fixed-width />

@@ -19,8 +19,6 @@ class GetPurchaseOrderJourney
 
     public const int AT_RISK_DAYS = 3;
 
-    public const int HANDOVER_DAYS_AFTER_READY = 7;
-
     private const array LEAD_TIME_STAGES = ['deposit_paid', 'in_production', 'ready', 'handed_over', 'arrived', 'received'];
 
     private const array DISPATCHED_STATES = ['dispatched', 'received', 'checked', 'placed'];
@@ -78,11 +76,9 @@ class GetPurchaseOrderJourney
         [$days, $dayBases] = $this->stageDays($facts, array_keys($stages));
 
         if ($stages['handed_over']['ready_at']) {
-            $handoverDays = $dayBases['handed_over'] === 'stage_days' ? $days['handed_over'] : self::HANDOVER_DAYS_AFTER_READY;
-
-            $stages['handed_over']['target'] = Carbon::parse($stages['handed_over']['ready_at'])->addDays($handoverDays)->toDateString();
-            $stages['handed_over']['basis']  = 'after_ready';
-            $days['handed_over']             = $handoverDays;
+            $stages['handed_over']['target'] = $stages['handed_over']['ready_at'];
+            $stages['handed_over']['basis']  = 'approved_ready';
+            $days['handed_over']             = 0;
         } elseif (!$stages['handed_over']['done'] && $stages['received']['target']) {
             $stages['handed_over']['target'] = Carbon::parse($stages['received']['target'])->subDays($days['received'] + $days['arrived'])->toDateString();
             $stages['handed_over']['basis']  = 'before_arrival';
