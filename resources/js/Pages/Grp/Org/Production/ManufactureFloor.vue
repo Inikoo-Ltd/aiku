@@ -13,6 +13,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import ManufactureWorkingCard from '@/Components/ManufactureWorkingCard.vue'
 import TrialRunBrief, { type TrialRunBriefData } from '@/Components/Production/TrialRunBrief.vue'
 import TrialRunFormulation from '@/Components/Production/TrialRunFormulation.vue'
+import DevelopmentFeedback from '@/Components/Production/DevelopmentFeedback.vue'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
@@ -102,6 +103,7 @@ interface FloorTask {
     separate_route: null | { name: string, parameters: object }
     start_route: { name: string, parameters: object }
     is_quantity_only: boolean
+    in_development?: { id: number, code: string }[]
     trial_run: null | {
         needs_formulation: boolean
         brief_route: { name: string, parameters: object }
@@ -157,6 +159,7 @@ const props = defineProps<{
     can_pick_open_jobs: boolean
     combine_route: null | { name: string, parameters: object }
     tasks: FloorTask[]
+    development_feedback: { route: { name: string, parameters: object, method: string }, reasons: { value: string, label: string }[] }
     finished_today: {
         id: number
         ended_at: string
@@ -469,6 +472,7 @@ function startTask(task: FloorTask) {
                         <span>{{ task.task_name }} · {{ task.job_order_reference }}</span>
                         <span class="tabular-nums">{{ packsLabel(task.quantity_made, task.pack_size) }}/{{ packsLabel(task.quantity_required, task.pack_size) }}<template v-if="task.unit"> {{ task.unit }}</template><template v-if="mixBatches(task)"> · {{ mixBatches(task) }}</template><template v-if="task.pack_size"> · {{ ctrans('packs of :size', { size: task.pack_size }) }}</template></span>
                     </div>
+                    <div v-if="task.in_development?.length" class="text-xs font-medium text-violet-700 truncate">{{ ctrans('In development') }}</div>
                     <div v-if="task.continued_from || task.continued_in" class="text-xs text-gray-500 truncate">
                         <span v-if="task.continued_from">{{ ctrans('Continued from :reference', { reference: task.continued_from }) }}</span>
                         <span v-if="task.continued_in">{{ ctrans('Continued in :reference', { reference: task.continued_in }) }}</span>
@@ -591,6 +595,7 @@ function startTask(task: FloorTask) {
 
             <template v-else-if="open_session">
                 <ManufactureWorkingCard :key="open_session.id" :session="open_session" :server-time="server_time" class="w-full max-w-5xl" />
+                <DevelopmentFeedback v-if="open_session.task?.in_development?.length" :artefacts="open_session.task.in_development" :feedback="development_feedback" class="max-w-5xl" />
                 <TrialRunBrief v-if="open_session.task?.trial_run" :key="'working-' + open_session.id" :briefRoute="open_session.task.trial_run.brief_route" collapsible class="w-full max-w-5xl" />
             </template>
 
@@ -606,6 +611,7 @@ function startTask(task: FloorTask) {
                     <FontAwesomeIcon icon="fal fa-print" fixed-width aria-hidden="true" />
                     {{ ctrans('Print packing slips') }}
                 </a>
+                <DevelopmentFeedback v-if="selectedTask.in_development?.length" :key="'feedback-' + selectedTask.id" :artefacts="selectedTask.in_development" :feedback="development_feedback" class="mt-4" />
                 <div class="text-5xl font-semibold tabular-nums my-6">
                     {{ packsLabel(selectedTask.quantity_made, selectedTask.pack_size) }} <span class="text-gray-400 text-3xl">/ {{ packsLabel(selectedTask.quantity_required, selectedTask.pack_size) }}<template v-if="selectedTask.unit"> {{ selectedTask.unit }}</template></span>
                     <div v-if="mixBatches(selectedTask)" class="mt-1 text-3xl text-[var(--app-accent-strong)]">{{ mixBatches(selectedTask) }}</div>

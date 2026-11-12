@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property WhatsappSubscriberOptInMethodEnum $opt_in_method
  * @property string|null $parent_type
  * @property int|null $parent_id
+ * @property \Illuminate\Support\Carbon|null $consented_at
+ * @property array<array-key, mixed>|null $consent
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -36,6 +38,8 @@ class WhatsappSubscriber extends Model
 
     protected $casts = [
         'opt_in_method' => WhatsappSubscriberOptInMethodEnum::class,
+        'consented_at'  => 'datetime',
+        'consent'       => 'array',
     ];
 
     public function parent(): MorphTo

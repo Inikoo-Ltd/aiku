@@ -67,6 +67,8 @@ use App\Actions\Search\RecordWebsiteSearchSuggestionsViewed;
 use App\Actions\Search\SearchIrisCatalogue;
 use App\Actions\Search\SearchIrisCataloguePage;
 use App\Actions\Iris\ShoppingAssistant\AskIrisShoppingAssistant;
+use App\Actions\Iris\ShoppingAssistant\HandOverIrisShoppingAssistant;
+use App\Actions\Iris\ShoppingAssistant\IndexIrisShoppingAssistantConversations;
 use App\Actions\Iris\ShoppingAssistant\ShowIrisShoppingAssistantConversation;
 use App\Actions\Iris\ShoppingAssistant\StoreIrisShoppingAssistantEvent;
 use App\Actions\Iris\WebsiteDialog\GetIrisWebsiteDialogDismissals;
@@ -86,6 +88,8 @@ Route::middleware(["retina-auth:retina"])->group(function () {
     Route::post('website-dialog-dismissals/{websiteDialog:ulid}', StoreIrisWebsiteDialogDismissal::class)->name('website_dialog_dismissals.store')->withoutScopedBindings();
 
     Route::post('shopping-assistant/ask', AskIrisShoppingAssistant::class)->name('shopping_assistant.ask')->middleware('throttle:shopping-assistant');
+    Route::post('shopping-assistant/hand-over', HandOverIrisShoppingAssistant::class)->name('shopping_assistant.hand_over')->middleware('throttle:6,1');
+    Route::get('shopping-assistant/conversations', IndexIrisShoppingAssistantConversations::class)->name('shopping_assistant.index')->middleware('throttle:60,1');
     Route::get('shopping-assistant/{conversation:ulid}', ShowIrisShoppingAssistantConversation::class)->name('shopping_assistant.show')->middleware('throttle:120,1')->withoutScopedBindings();
     Route::post('shopping-assistant/{conversation:ulid}/events', StoreIrisShoppingAssistantEvent::class)->name('shopping_assistant.events.store')->middleware('throttle:120,1')->withoutScopedBindings();
 });

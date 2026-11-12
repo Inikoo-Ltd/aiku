@@ -453,7 +453,7 @@ class DetectCrawlIssues
                 foreach ($chunk as $row) {
                     $page = $pagesById->get($row->id);
 
-                    if ($page) {
+                    if ($page && $this->isHtmlPage($page)) {
                         $this->detectPageFactIssues($page, json_decode($row->facts, true) ?: [], $pages, $failedResources);
                     }
                 }

@@ -88,6 +88,7 @@ class ShowDevelopmentRoom extends OrgAction
                         default                 => 'collecting',
                     },
                     'kept'                   => $proposal['kept'],
+                    'open_feedback'          => $proposal['open_feedback'],
                     'steps'                  => array_map(fn (array $step) => Arr::only($step, ['id', 'name', 'target', 'is_piece_rate', 'sessions_count', 'artisans_count', 'hours', 'proposed_target', 'is_ready', 'missing']), $proposal['steps']),
                 ];
             })
@@ -422,7 +423,7 @@ class ShowDevelopmentRoom extends OrgAction
                     ->values()
                     ->all()
                 : [],
-            'reviewers'      => User::whereIn('id', $settings['reviewer_ids'])->get()->map(fn (User $user) => $user->chatName())->values()->all(),
+            'reviewers'      => User::whereIn('id', $settings['reviewer_ids'])->get()->sortBy(fn (User $user) => array_search($user->id, $settings['reviewer_ids']))->map(fn (User $user) => $user->chatName())->values()->all(),
             'settings_route' => ['name' => 'grp.models.production.development_review_settings.update', 'parameters' => ['production' => $production->id]],
             'proposal_route' => ['name' => 'grp.json.artefact.development_proposal', 'parameters' => []],
             'decide_route'   => ['name' => 'grp.models.artefact.development_review.decide', 'parameters' => []],

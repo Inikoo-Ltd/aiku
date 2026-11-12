@@ -12,6 +12,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object ProfileRoute
 @Serializable data object AppearanceRoute
 @Serializable data object LanguageRoute
+@Serializable data object ChangePasswordRoute
 @Serializable data object SyncQueueRoute
 @Serializable data object ResolveConflictsRoute
 @Serializable data class ConflictRoute(val reference: String)

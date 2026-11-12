@@ -57,6 +57,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Ordering\Order;
+use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -253,6 +254,39 @@ test('the merchant fulfilment request message becomes the shipping notes and the
     $order = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6016')->first();
     expect($order->shipping_notes)->toBe($locker."\nplease dispatch as soon as possible")
         ->and($order->customer_notes)->toBe('OLS10BAPP');
+});
+
+test('a tiktok order shipped by tiktok arriving through shopify with a hidden address tells the warehouse not to send it', function () {
+    Queue::fake();
+    $shopifyUser = shopifyOrderChannel($this, 'orders-tiktok-masked');
+    $portfolio   = shopifyPortfolioFor($this, $shopifyUser);
+
+    ShopifyFake::fake([
+        'assignedFulfillmentOrders' => shopifyAssignedOrdersReply([
+            shopifyFulfilmentOrder([['sku' => $portfolio->sku]], [
+                'id'               => 'gid://shopify/FulfillmentOrder/6017',
+                'order'            => ['id' => 'gid://shopify/Order/5017'],
+                'destination'      => ['firstName' => 'C***re', 'lastName' => 'D***els', 'address1' => '12****', 'zip' => 'DE** ****'],
+                'merchantRequests' => ['edges' => [['node' => ['message' => 'please dispatch as soon as possible']]]],
+            ]),
+            shopifyFulfilmentOrder([['sku' => $portfolio->sku, 'id' => 'gid://shopify/FulfillmentOrderLineItem/9101']], [
+                'id'    => 'gid://shopify/FulfillmentOrder/6018',
+                'order' => ['id' => 'gid://shopify/Order/5018'],
+            ]),
+        ]),
+        'acceptFulfillmentRequest'  => ShopifyFake::graphql(['fulfillmentOrderAcceptFulfillmentRequest' => ['fulfillmentOrder' => ['status' => 'OPEN', 'requestStatus' => 'ACCEPTED'], 'userErrors' => []]]),
+    ]);
+
+    CallbackFulfillmentOrderNotification::run($shopifyUser, ['kind' => 'FULFILLMENT_REQUEST']);
+
+    $masked = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6017')->first();
+    $plain  = Order::where('platform_order_id', 'gid://shopify/FulfillmentOrder/6018')->first();
+
+    expect($masked->shipping_notes)->toBe(
+        'TikTok hid the delivery address because this order is shipped by TikTok. Do not send it until the full delivery address is on the order.'
+        ."\nplease dispatch as soon as possible"
+    )
+        ->and($plain->shipping_notes)->toBeNull();
 });
 
 test('the same fulfilment request arriving twice creates one order and one client', function () {
@@ -758,6 +792,16 @@ test('the order poller imports the open fulfilment order of each unfulfilled sho
     ShopifyFake::fake(['getUnfulfilledOrders' => Http::response(['errors' => [['message' => 'Access denied for orders field. Shop is under review.', 'extensions' => ['code' => 'SHOP_PENDING_TERMINATION']]]])]);
     expect(FetchShopifyOrdersFromApi::run($shopifyUser, 7, true))->toBe(0)
         ->and(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class, 'SHOP_PENDING_TERMINATION');
+
+    foreach ([
+        'THROTTLED' => fn () => Http::response(['errors' => [['message' => 'Throttled', 'extensions' => ['code' => 'THROTTLED']]]]),
+        'HTTP 503'  => fn () => Http::response(['errors' => [['message' => 'There was a problem loading this website. Please try again.', 'extensions' => ['code' => 'SERVICE_UNAVAILABLE']]]], 503),
+        'timed out' => fn (array $variables, $request) => throw new ConnectException('cURL error 28: Operation timed out after 60000 milliseconds', $request->toPsrRequest()),
+    ] as $error => $busyReply) {
+        ShopifyFake::fake(['getUnfulfilledOrders' => $busyReply]);
+        expect(FetchShopifyOrdersFromApi::run($shopifyUser, 7, true))->toBe(0)
+            ->and(fn () => FetchShopifyOrdersFromApi::run($shopifyUser))->toThrow(Exception::class, $error);
+    }
 
     ShopifyFake::fake([
         'getFulfilmentOrder' => ShopifyFake::graphql(['order' => $orderNode('gid://shopify/Order/5030', [$fulfilmentOrder('gid://shopify/FulfillmentOrder/6030', 'IN_PROGRESS')])]),

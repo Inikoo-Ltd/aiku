@@ -17,6 +17,8 @@ class AddressHydrateFixedUsage implements ShouldBeUnique
 {
     use AsAction;
 
+    public bool $jobDeleteWhenMissingModels = true;
+
     public string $jobQueue = 'hydrators-slave';
 
     public function getJobUniqueId(Address $address): string

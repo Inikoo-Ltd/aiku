@@ -44,6 +44,7 @@ class OrgSupplierProductsResource extends JsonResource
             'group_currency_code' => $this->group_currency_code,
             'supplier_product_id' => $this->supplier_product_id,
             'internal_code'     => $this->internal_code,
+            'group_sko_code'    => $this->group_sko_code,
             'cbm'               => $this->cbm !== null ? (float) $this->cbm : null,
             'lead_time_days'    => $this->lead_time_days,
             'moq'               => $this->moq,

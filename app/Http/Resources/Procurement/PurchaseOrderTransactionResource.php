@@ -35,6 +35,7 @@ class PurchaseOrderTransactionResource extends JsonResource
         $supplierProduct = $transaction->supplierProduct;
         $orgStock        = $transaction->orgStock;
         $tradeUnit       = $orgStock?->tradeUnits->first(fn ($tradeUnit) => $tradeUnit->image_id !== null);
+        $imageOwner      = $tradeUnit ?? ($supplierProduct?->image_id ? $supplierProduct : null);
 
         return [
             'id'                   => $transaction->id,
@@ -46,9 +47,9 @@ class PurchaseOrderTransactionResource extends JsonResource
             'supplier_slug'        => $transaction->orgSupplierProduct?->orgSupplier?->slug,
             'org_stock_id'         => $transaction->org_stock_id,
             'org_stock_code'       => $orgStock?->code,
-            'image_thumbnail'      => $tradeUnit?->imageSources(160, 160),
-            'image_preview'        => $tradeUnit?->imageSources(480, 480),
-            'image_full'           => $tradeUnit?->image?->fullResolutionUrls(),
+            'image_thumbnail'      => $imageOwner?->imageSources(160, 160),
+            'image_preview'        => $imageOwner?->imageSources(480, 480),
+            'image_full'           => $imageOwner?->image?->fullResolutionUrls(),
             'stock_in_locations'   => $orgStock?->quantity_in_locations === null ? null : trimDecimalZeros($orgStock->quantity_in_locations),
             'stock_available'      => $orgStock?->quantity_available === null ? null : trimDecimalZeros(max(0, $orgStock->quantity_available)),
             'quarterly_usage'      => $transaction->quarterly_usage ?? [],
@@ -222,7 +223,7 @@ class PurchaseOrderTransactionResource extends JsonResource
 
         return $agentOrganisationId !== null
             && $this->viewingOrganisationId($request) === $agentOrganisationId
-            && in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            && in_array($purchaseOrder->state, PurchaseOrderStateEnum::open())
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
             && $request->user()?->authTo("procurement.$agentOrganisationId.edit")
             && !AskPurchaseOrderTransactionQuantityChange::isShipped($transaction);
@@ -232,8 +233,7 @@ class PurchaseOrderTransactionResource extends JsonResource
     {
         return $transaction->quantity_query_state === PurchaseOrderTransactionQuantityQueryStateEnum::PENDING
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
-            && in_array($transaction->purchaseOrder?->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
-            && $this->viewingOrganisationId($request) === $transaction->organisation_id
+            && in_array($transaction->purchaseOrder?->state, PurchaseOrderStateEnum::open())
             && $request->user()?->authTo("procurement.$transaction->organisation_id.edit");
     }
 
@@ -241,8 +241,7 @@ class PurchaseOrderTransactionResource extends JsonResource
     {
         return $isQuestionPending
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
-            && in_array($transaction->purchaseOrder?->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
-            && $this->viewingOrganisationId($request) === $transaction->organisation_id
+            && in_array($transaction->purchaseOrder?->state, PurchaseOrderStateEnum::open(), true)
             && $request->user()?->authTo("procurement.$transaction->organisation_id.edit");
     }
 
@@ -275,7 +274,7 @@ class PurchaseOrderTransactionResource extends JsonResource
             ? max(0, min($awaiting, (float) $transaction->getAttribute('quantity_received_at_agent_warehouse') - $onContainers))
             : $awaiting;
 
-        $canAddToContainer = $purchaseOrder?->state === PurchaseOrderStateEnum::CONFIRMED
+        $canAddToContainer = $purchaseOrder?->state->isAgreed()
             && $transaction->state === PurchaseOrderTransactionStateEnum::CONFIRMED
             && $readyToShip > StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE
             && ($isAgentEditing || $canEdit);

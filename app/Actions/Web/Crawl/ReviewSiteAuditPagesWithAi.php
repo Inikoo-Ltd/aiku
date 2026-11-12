@@ -77,9 +77,10 @@ class ReviewSiteAuditPagesWithAi
             ->where('date', '>=', now()->subDays(28)->toDateString())
             ->whereNotNull('webpage_id')
             ->groupBy('webpage_id')
-            ->orderByRaw('SUM(clicks) DESC')
+            ->selectRaw('webpage_id, SUM(clicks) AS total_clicks')
+            ->orderByDesc('total_clicks')
             ->limit(self::PAGES_REVIEWED * 2)
-            ->pluck(DB::raw('SUM(clicks)'), 'webpage_id');
+            ->pluck('total_clicks', 'webpage_id');
 
         $pages = CrawlPage::where('crawl_id', $crawl->id)
             ->where('status_code', 200)

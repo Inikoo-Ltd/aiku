@@ -5363,3 +5363,100 @@ describe('browsing and restoring an info website', function () {
         expect($response->headers->get('Content-Security-Policy'))->toStartWith('sandbox');
     });
 });
+
+describe('mailshot ready-made links', function () {
+    beforeEach(function () {
+        resetMarketingFixtures();
+
+        list($this->organisation, $this->user, $this->shop) = createOwnShop('mailshot ready-made links');
+        $this->outbox   = $this->shop->outboxes()->where('type', OutboxCodeEnum::MARKETING)->first();
+        $this->website  = createWebsite($this->shop);
+        $this->mailshot = StoreMailshot::make()->action($this->outbox, Mailshot::factory()->definition());
+        $this->link     = collect(App\Actions\Comms\Mailshot\GetMailshotReadyMadeLinks::run($this->mailshot))->firstWhere('key', 'whatsapp_opt_in');
+    });
+
+    it('offers the WhatsApp opt-in link on the website of the mailshot', function () {
+        expect($this->link['url'])->toEndWith('/app/dashboard#whatsapp-updates')
+            ->and($this->link['url'])->toContain($this->website->domain);
+    });
+
+    it('tags a ready-made link with its own campaign and keeps the anchor at the end', function () {
+        $html = App\Actions\Comms\Mailshot\InjectUtmToEmailLinks::run($this->mailshot, '<a href="'.$this->link['url'].'">Choose WhatsApp updates</a>');
+
+        preg_match('/href="([^"]+)"/', $html, $matches);
+        $sent = html_entity_decode($matches[1]);
+        parse_str((string) parse_url($sent, PHP_URL_QUERY), $query);
+
+        expect($query['utm_campaign'])->toBe('whatsapp_optin')
+            ->and($query['utm_source'])->toBe('newsletter')
+            ->and($query['utm_medium'])->toBe('email')
+            ->and($sent)->toEndWith('#whatsapp-updates');
+    });
+
+    it('replaces campaign values typed into a ready-made link instead of adding a second one', function () {
+        $typed = str_replace('#', '?utm_source=newsletter&utm_campaign=typed#', $this->link['url']);
+        $html  = App\Actions\Comms\Mailshot\InjectUtmToEmailLinks::run($this->mailshot, '<a href="'.$typed.'">x</a>');
+
+        expect(substr_count($html, 'utm_campaign='))->toBe(1)
+            ->and($html)->toContain('utm_campaign=whatsapp_optin');
+    });
+
+    it('lets a hand override in link tracking win over the ready-made campaign', function () {
+        App\Actions\Comms\Mailshot\UpdateMailshotUrlUtm::make()->action($this->mailshot, ['url' => $this->link['url'], 'utm_campaign' => 'spring']);
+
+        $html = App\Actions\Comms\Mailshot\InjectUtmToEmailLinks::run($this->mailshot->refresh(), '<a href="'.$this->link['url'].'">x</a>');
+
+        expect($html)->toContain('utm_campaign=spring')
+            ->and($html)->not->toContain('whatsapp_optin');
+    });
+
+    it('keeps the ready-made campaign when automatic tagging is off, and leaves other links alone', function () {
+        $this->mailshot->update(['data' => array_merge($this->mailshot->data ?? [], ['utm' => ['is_enabled' => false]])]);
+        $other = 'http://'.$this->website->domain.'/catalogue';
+
+        $html = App\Actions\Comms\Mailshot\InjectUtmToEmailLinks::run($this->mailshot->refresh(), '<a href="'.$this->link['url'].'">x</a><a href="'.$other.'">y</a>');
+
+        expect($html)->toContain('utm_campaign=whatsapp_optin')
+            ->and($html)->toContain('utm_source=newsletter')
+            ->and($html)->not->toContain('utm_id=')
+            ->and($html)->toContain('href="'.$other.'"');
+    });
+
+    it('tags normal links exactly as before when ready-made links are on offer', function () {
+        $normal   = 'http://'.$this->website->domain.'/catalogue';
+        $dashboard = 'http://'.$this->website->domain.'/app/dashboard';
+        $campaign = App\Actions\Comms\Mailshot\GetMailshotUtmSettings::run($this->mailshot)['parameters']['utm_campaign'];
+
+        $html = App\Actions\Comms\Mailshot\InjectUtmToEmailLinks::run($this->mailshot, '<a href="'.$normal.'">x</a><a href="'.$dashboard.'">y</a><a href="https://example.com/page">z</a>');
+
+        expect(substr_count($html, 'utm_campaign='.$campaign))->toBe(2)
+            ->and($html)->not->toContain('whatsapp_optin')
+            ->and($html)->toContain('href="https://example.com/page"');
+
+        $this->mailshot->update(['data' => array_merge($this->mailshot->data ?? [], ['utm' => ['is_enabled' => false]])]);
+        $untouched = '<a href="'.$normal.'">x</a><a href="https://example.com/page">z</a>';
+
+        expect(App\Actions\Comms\Mailshot\InjectUtmToEmailLinks::run($this->mailshot->refresh(), $untouched))->toBe($untouched);
+    });
+
+    it('shows normal links in link tracking without a ready-made mark', function () {
+        $normal = 'http://'.$this->website->domain.'/catalogue';
+        $this->mailshot->email->unpublishedSnapshot->update(['layout' => ['rows' => [['button' => ['href' => $normal, 'label' => 'Shop']]]]]);
+
+        $link = collect(App\Actions\Comms\Mailshot\GetMailshotUrls::make()->handle($this->mailshot->refresh())['links'])->firstWhere('url', $normal);
+
+        expect($link['ready_made'])->toBeNull()
+            ->and($link['is_internal'])->toBeTrue()
+            ->and($link['utm'])->toBe([]);
+    });
+
+    it('marks the ready-made link in link tracking', function () {
+        $this->mailshot->email->unpublishedSnapshot->update(['layout' => ['rows' => [['button' => ['href' => $this->link['url'], 'label' => 'Choose WhatsApp updates']]]]]);
+
+        $link = collect(App\Actions\Comms\Mailshot\GetMailshotUrls::make()->handle($this->mailshot->refresh())['links'])->firstWhere('url', $this->link['url']);
+
+        expect($link['ready_made']['key'])->toBe('whatsapp_opt_in')
+            ->and($link['ready_made']['utm'])->toBe(['utm_campaign' => 'whatsapp_optin'])
+            ->and($link['is_internal'])->toBeTrue();
+    });
+});

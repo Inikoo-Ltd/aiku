@@ -8,6 +8,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
+use App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus;
 use App\Actions\SupplyChain\SupplierMailshot\UI\WithSupplierMailshotsSubNavigation;
 use App\Actions\Procurement\WithParentSiblingsNavigation;
 use App\Actions\OrgAction;
@@ -98,7 +99,7 @@ class IndexSuppliers extends OrgAction
             ];
         }
 
-        return [
+        $groups = [
             'type' => [
                 'label'    => __('Type'),
                 'elements' => $elements,
@@ -117,6 +118,41 @@ class IndexSuppliers extends OrgAction
                 },
             ],
         ];
+
+        $agreement = $this->agreementElementGroup($parent);
+        if ($agreement) {
+            $groups['agreement'] = $agreement;
+        }
+
+        return $groups;
+    }
+
+    /**
+     * The list of independent suppliers filters only on the agreement; the others on type and agreement.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    protected function elementGroups(Group|Agent $parent): array
+    {
+        if (!$this->onlyFreeSuppliers) {
+            return $this->getSupplierElementGroups($parent);
+        }
+
+        $agreement = $this->agreementElementGroup($parent);
+
+        return $agreement ? ['agreement' => $agreement] : [];
+    }
+
+    /**
+     * Once a Supplier Agreement is published, the list filters on where each supplier stands with it.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function agreementElementGroup(Group|Agent $parent): ?array
+    {
+        return GetSupplierAgreementStatus::make()->elementGroup($parent->group_id ?? $parent->id, fn ($query) => $query
+            ->when($parent instanceof Agent, fn ($query) => $query->where('agent_id', $parent->id), fn ($query) => $query->where('group_id', $parent->id))
+            ->when($this->onlyFreeSuppliers, fn ($query) => $query->whereNull('agent_id')));
     }
 
     public function handle(Group|Agent $parent, $prefix = null): LengthAwarePaginator
@@ -147,15 +183,13 @@ class IndexSuppliers extends OrgAction
             }
         }
 
-        if (!$this->onlyFreeSuppliers) {
-            foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
-                $queryBuilder->whereElementGroup(
-                    key: $key,
-                    allowedElements: array_keys($elementGroup['elements']),
-                    engine: $elementGroup['engine'],
-                    prefix: $prefix
-                );
-            }
+        foreach ($this->elementGroups($parent) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
         }
 
         return $queryBuilder
@@ -173,6 +207,7 @@ class IndexSuppliers extends OrgAction
                 'supplier_stats.number_stock_deliveries',
             ])
             ->selectSub(ProcurementNote::openIncidentsOfSupplierQuery(), 'open_incidents')
+            ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $parent->group_id ?? $parent->id))
             ->allowedSorts([
                 'code',
                 'name',
@@ -195,14 +230,12 @@ class IndexSuppliers extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            if (!$this->onlyFreeSuppliers) {
-                foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
-                    $table->elementGroup(
-                        key: $key,
-                        label: $elementGroup['label'],
-                        elements: $elementGroup['elements']
-                    );
-                }
+            foreach ($this->elementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
             }
 
             $table
@@ -221,8 +254,13 @@ class IndexSuppliers extends OrgAction
                 ->column(key: 'location', label: __('Supplier location'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
-                ->defaultSort('code');
+                ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right');
+
+            if (GetSupplierAgreementStatus::make()->requiredVersionNumber($parent->group_id ?? $parent->id) !== null) {
+                $table->column(key: 'agreement', label: __('Agreement'), canBeHidden: false);
+            }
+
+            $table->defaultSort('code');
         };
     }
 

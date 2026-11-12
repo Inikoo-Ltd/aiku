@@ -230,6 +230,10 @@ function canEditPrice(item: any) {
     return isPriceEditable.value && !isInAgentOrganisation && item.updateRoute && ['in_process', 'submitted'].includes(item.state)
 }
 
+function isAlsoUpdatingSupplierPrice(item: any): boolean {
+    return !!item.can_update_supplier_cost && (alsoUpdateSupplierPrice.value[item.id] ?? !!item.answerPriceRoute)
+}
+
 function isPriceQueryAnswered(item: any) {
     return !!item.price_query && item.price_query.state !== 'pending'
 }
@@ -260,7 +264,7 @@ async function savePrice(item: any, unitCost: number, updateSupplierCost: boolea
             }
         )
         form?.defaults()
-        alsoUpdateSupplierPrice.value[item.id] = false
+        delete alsoUpdateSupplierPrice.value[item.id]
         router.reload({ only: [props.tab ?? 'items', 'box_stats', 'pageHead'] })
     } catch (error: any) {
         priceErrors.value[item.id] = error?.response?.data?.message || ctrans('Failed to update price')
@@ -270,7 +274,7 @@ async function savePrice(item: any, unitCost: number, updateSupplierCost: boolea
 }
 
 function onSavePrice(item: any, form: any) {
-    savePrice(item, Number(form.quantity), !!alsoUpdateSupplierPrice.value[item.id], form)
+    savePrice(item, Number(form.quantity), isAlsoUpdatingSupplierPrice(item), form)
 }
 
 const typedSkos = ref<Record<number, number>>({})
@@ -816,8 +820,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                         v-if="hasMovableRows"
                         :label="ctransChoice('Move :count item|Move :count items', rowsSelectedForMove.length)"
                         :tooltip="rowsSelectedForMove.length
-                            ? ctrans('The supplier can not make them: give the selected products to another supplier of the agent')
-                            : ctrans('Tick the products to give to another supplier of the agent')"
+                            ? ctrans('Move the selected products to another purchase order, of this supplier or another supplier of the agent')
+                            : ctrans('Tick the products to move to another purchase order')"
                         type="tertiary"
                         size="xs"
                         :disabled="!rowsSelectedForMove.length"
@@ -1050,20 +1054,26 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                         </div>
                     </div>
                     <div v-if="priceErrors[item.id]" class="text-red-600">{{ priceErrors[item.id] }}</div>
-                    <label
-                        v-if="item.can_update_supplier_cost"
-                        class="flex items-center gap-1 select-none"
-                        :class="isPriceQueryAnswered(item) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
-                        v-tooltip="isPriceQueryAnswered(item) ? ctrans('The supplier price change was already answered') : undefined"
-                    >
-                        <Checkbox v-model="alsoUpdateSupplierPrice[item.id]" binary size="small" :disabled="isPriceQueryAnswered(item)" />
-                        {{ ctrans('Also update supplier price') }}
-                    </label>
                 </div>
                 <div v-else-if="isInProcess" class="text-xs text-gray-500">
                     {{ level.cost }}: {{ levelCostLabel(item) }}
                 </div>
-                <PurchaseOrderLinePriceChange v-if="!isPartner" :item="item" :unitsPerLevel="1" :costLabel="ctrans('Unit cost')" :updateSupplierCost="!!alsoUpdateSupplierPrice[item.id]" />
+                <label
+                    v-if="item.can_update_supplier_cost && (canEditPrice(item) || item.answerPriceRoute)"
+                    class="flex items-center gap-1 select-none text-xs text-gray-500"
+                    :class="isPriceQueryAnswered(item) ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'"
+                    v-tooltip="isPriceQueryAnswered(item) ? ctrans('The supplier price change was already answered') : undefined"
+                >
+                    <Checkbox
+                        :modelValue="isAlsoUpdatingSupplierPrice(item)"
+                        binary
+                        size="small"
+                        :disabled="isPriceQueryAnswered(item)"
+                        @update:modelValue="(isChecked: boolean) => (alsoUpdateSupplierPrice[item.id] = isChecked)"
+                    />
+                    {{ ctrans('Also update supplier price') }}
+                </label>
+                <PurchaseOrderLinePriceChange v-if="!isPartner" :item="item" :unitsPerLevel="1" :costLabel="ctrans('Unit cost')" :updateSupplierCost="isAlsoUpdatingSupplierPrice(item)" />
                 <PurchaseOrderLineAgentUnitExpense v-if="!isPartner" :item="item" :tab="tab" />
                 <div v-if="!isPartner" class="text-xs text-gray-500">
                     {{ skoAndCartonPackingLabel(item.units_per_pack, item.units_per_carton) }}
@@ -1214,8 +1224,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
                 <Button
                     v-if="canCancelItems && item.moveRoute"
-                    :label="ctrans('Move supplier')"
-                    :tooltip="ctrans('The supplier can not make it: give it to another supplier of the agent')"
+                    :label="ctrans('Move')"
+                    :tooltip="ctrans('Move it to another purchase order, of this supplier or another supplier of the agent')"
                     :icon="faExchange"
                     type="tertiary"
                     size="xs"

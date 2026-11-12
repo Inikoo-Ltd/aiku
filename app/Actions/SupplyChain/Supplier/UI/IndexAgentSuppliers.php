@@ -2,6 +2,7 @@
 
 namespace App\Actions\SupplyChain\Supplier\UI;
 
+use App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus;
 use App\Actions\OrgAction;
 use App\Actions\SupplyChain\UI\ShowSupplyChainDashboard;
 use App\Actions\Traits\Authorisations\WithSupplyChainAuthorisation;
@@ -39,7 +40,19 @@ class IndexAgentSuppliers extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(Supplier::class)
+        $queryBuilder = QueryBuilder::for(Supplier::class);
+
+        $agreement = $this->agreementElementGroup($group);
+        if ($agreement) {
+            $queryBuilder->whereElementGroup(
+                key: 'agreement',
+                allowedElements: array_keys($agreement['elements']),
+                engine: $agreement['engine'],
+                prefix: $prefix
+            );
+        }
+
+        return $queryBuilder
             ->leftJoin('supplier_stats', 'supplier_stats.supplier_id', '=', 'suppliers.id')
             ->join('agents', 'agents.id', '=', 'suppliers.agent_id')
             ->where('suppliers.group_id', $group->id)
@@ -59,6 +72,7 @@ class IndexAgentSuppliers extends OrgAction
                 'supplier_stats.number_purchase_orders',
                 'supplier_stats.number_stock_deliveries',
             ])
+            ->tap(fn ($query) => GetSupplierAgreementStatus::make()->selectStatus($query, $group->id))
             ->allowedSorts([
                 'code',
                 'name',
@@ -73,6 +87,14 @@ class IndexAgentSuppliers extends OrgAction
             ->withQueryString();
     }
 
+    /**
+     * @return array{label: string, elements: array<string, array<int, mixed>>, engine: callable}|null
+     */
+    private function agreementElementGroup(Group $group): ?array
+    {
+        return GetSupplierAgreementStatus::make()->elementGroup($group->id, fn ($query) => $query->where('group_id', $group->id)->whereNotNull('agent_id'));
+    }
+
     public function tableStructure(Group $group, ?string $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($group, $prefix) {
@@ -80,6 +102,11 @@ class IndexAgentSuppliers extends OrgAction
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
+            }
+
+            $agreement = $this->agreementElementGroup($group);
+            if ($agreement) {
+                $table->elementGroup(key: 'agreement', label: $agreement['label'], elements: $agreement['elements']);
             }
 
             $table
@@ -95,8 +122,13 @@ class IndexAgentSuppliers extends OrgAction
                 ->column(key: 'location', label: __('Supplier location'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_supplier_products', label: __("Supplier's Products"), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'number_purchase_orders', label: __('Purchase Orders'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right')
-                ->defaultSort('code');
+                ->column(key: 'number_stock_deliveries', label: __('Stock Deliveries'), canBeHidden: false, sortable: true, align: 'right');
+
+            if ($agreement) {
+                $table->column(key: 'agreement', label: __('Agreement'), canBeHidden: false);
+            }
+
+            $table->defaultSort('code');
         };
     }
 

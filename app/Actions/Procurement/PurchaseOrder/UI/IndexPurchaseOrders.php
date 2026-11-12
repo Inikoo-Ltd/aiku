@@ -162,10 +162,10 @@ class IndexPurchaseOrders extends OrgAction
                             $query->orWhere(fn ($query) => $query->where('purchase_orders.state', PurchaseOrderStateEnum::SUBMITTED)->where('purchase_orders.submitted_at', '<', now()->subDays(30)));
                         }
                         if (in_array('past_expected_date', $elements)) {
-                            $query->orWhere(fn ($query) => $query->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])->where('purchase_orders.estimated_received_at', '<', now()));
+                            $query->orWhere(fn ($query) => $query->whereIn('purchase_orders.state', PurchaseOrderStateEnum::open())->where('purchase_orders.estimated_received_at', '<', now()));
                         }
                         if (in_array('in_production', $elements)) {
-                            $query->orWhereRaw(PurchaseOrderStageEnum::inProductionSql());
+                            $query->orWhere('purchase_orders.state', PurchaseOrderStateEnum::IN_PRODUCTION);
                         }
                         if (in_array('past_eta', $elements)) {
                             $query->orWhereRaw(PurchaseOrderStageEnum::pastEtaSql());
@@ -179,25 +179,6 @@ class IndexPurchaseOrders extends OrgAction
                     });
                 },
             ],
-            ...($organisationAgent ? [
-                'progress' => [
-                    'label'    => __('Progress'),
-                    'elements' => collect(PurchaseOrderStageEnum::progressLabels())->except('draft')->map(fn ($label) => [$label, null])->all(),
-                    'engine'   => function ($query, $elements) {
-                        $query->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
-                            ->whereIn(DB::raw(PurchaseOrderStageEnum::progressSql()), $elements);
-                    },
-                ],
-                'factory'  => [
-                    'label'    => __('At the factory'),
-                    'elements' => collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn ($label) => [$label, null])->all(),
-                    'engine'   => function ($query, $elements) {
-                        $query->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
-                            ->whereIn(DB::raw(PurchaseOrderStageEnum::progressSql()), ['confirmed', 'at_factory'])
-                            ->whereIn(DB::raw(PurchaseOrderStageEnum::factoryStageSql()), $elements);
-                    },
-                ],
-            ] : []),
         ];
 
         if ($this->onlyIncoming) {
@@ -262,7 +243,13 @@ class IndexPurchaseOrders extends OrgAction
                 ->select('purchase_order_id')
                 ->selectRaw('SUM(quantity_ordered) as quantity_ordered')
                 ->selectRaw('SUM(org_net_amount) as org_net_amount')
-                ->where($parent instanceof SupplierProduct ? 'supplier_product_id' : 'org_supplier_product_id', $parent->id)
+                ->when(
+                    $parent instanceof SupplierProduct,
+                    fn ($query) => $query->where('supplier_product_id', $parent->id),
+                    fn ($query) => $this->viewingAgent
+                        ? $query->where('supplier_product_id', $parent->supplier_product_id)
+                        : $query->where('org_supplier_product_id', $parent->id)
+                )
                 ->groupBy('purchase_order_id');
 
             $query->joinSub($productTransactions, 'product_transactions', function ($join) {
@@ -291,7 +278,7 @@ class IndexPurchaseOrders extends OrgAction
                 allowedElements: array_keys($elementGroup['elements']),
                 engine: $elementGroup['engine'],
                 prefix: $prefix,
-                optional: in_array($key, ['attention', 'progress', 'factory']),
+                optional: $key === 'attention',
             );
         }
 
@@ -349,7 +336,7 @@ class IndexPurchaseOrders extends OrgAction
                 $globalSearch,
                 ...($this->onlyPendingThroughAgents ? [
                     AllowedFilter::callback('agent', fn ($query, $value) => $query->whereIn('purchase_orders.agent_id', Agent::where('slug', $value)->select('id'))),
-                    AllowedFilter::callback('stage', fn ($query, $value) => $query->whereIn(DB::raw(ShowAgentsPurchaseOrderStates::stageSql()), (array) $value)),
+                    AllowedFilter::callback('state', fn ($query, $value) => $query->whereIn('purchase_orders.state', array_intersect((array) $value, PurchaseOrderStateEnum::liveValues()))),
                     AllowedFilter::callback('deposit', fn ($query, $value) => $value === 'deposit' ? $query->whereNotNull('purchase_orders.deposit_paid_at') : $query->whereNull('purchase_orders.deposit_paid_at')),
                     AllowedFilter::callback('client', fn ($query, $value) => $query->whereIn('purchase_orders.organisation_id', Organisation::whereIn('slug', (array) $value)->select('id'))),
                     AllowedFilter::callback('sent', fn ($query, $value) => $query->whereIn(DB::raw(ShowAgentsPurchaseOrderStates::ageSql()), (array) $value)),
@@ -571,10 +558,10 @@ class IndexPurchaseOrders extends OrgAction
         $list    = fn (string $key) => array_values(array_filter(Arr::flatten(array_map(fn ($value) => explode(',', (string) $value), Arr::wrap(Arr::get($filters, $key))))));
 
         $stageLabels = ShowAgentsPurchaseOrderStates::stageLabels();
-        $stages      = $list('stage');
+        $stages      = $list('state');
         $title       = match (true) {
             count($stages) === 1 => $stageLabels[$stages[0]] ?? __('Pending POs'),
-            $stages && !in_array('draft', $stages) && count($stages) === count($stageLabels) - 1 => __('Pending POs, without drafts'),
+            $stages && !in_array(PurchaseOrderStateEnum::IN_PROCESS->value, $stages) && count($stages) === count($stageLabels) - 1 => __('Pending POs, without drafts'),
             default => __('Pending POs'),
         };
 
@@ -738,7 +725,7 @@ class IndexPurchaseOrders extends OrgAction
                     key: $key,
                     allowedElements: array_keys($elementGroup['elements']),
                     engine: $elementGroup['engine'],
-                    optional: in_array($key, ['attention', 'progress', 'factory']),
+                    optional: $key === 'attention',
                 );
             }
 

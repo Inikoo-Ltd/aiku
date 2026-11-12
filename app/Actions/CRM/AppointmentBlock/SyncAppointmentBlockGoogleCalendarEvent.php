@@ -5,6 +5,7 @@ namespace App\Actions\CRM\AppointmentBlock;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\AppointmentBlock;
 use App\Services\GoogleCalendar\GoogleCalendarClient;
+use App\Services\GoogleCalendar\ReleaseWhenGoogleCalendarRateLimited;
 use Illuminate\Http\Client\RequestException;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -17,7 +18,14 @@ class SyncAppointmentBlockGoogleCalendarEvent
 
     public string $jobQueue = 'low-priority';
 
-    public int $jobTries = 3;
+    public int $jobTries = 10;
+
+    public int $jobMaxExceptions = 3;
+
+    public function getJobMiddleware(): array
+    {
+        return [new ReleaseWhenGoogleCalendarRateLimited()];
+    }
 
     public static function dispatchFor(Shop $shop, int $blockId): void
     {

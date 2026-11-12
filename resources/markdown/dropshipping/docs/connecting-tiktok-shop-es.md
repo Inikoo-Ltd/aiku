@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Ve a <b>Canales</b>, pulsa <b>Agregar canal de ventas</b> y luego <b>Conectar</b> en la tarjeta de TikTok. Pulsa <b>Tienda de autorización</b>, aprueba nuestra aplicación en TikTok, vuelve y pulsa <b>Próximo</b>, elige tu tienda y pulsa <b>Próximo</b> otra vez. Antes de empezar, tu TikTok Shop necesita una cuenta de vendedor activa y un almacén por defecto, y tus pedidos necesitan la configuración de envío correcta (consulta las dos guías siguientes).
+Ve a <b>Canales</b>, pulsa <b>Agregar canal de ventas</b> y luego <b>Conectar</b> en la tarjeta de TikTok. Pulsa <b>Tienda de autorización</b>, aprueba nuestra aplicación en TikTok, vuelve y pulsa <b>Próximo</b>, elige tu tienda y pulsa <b>Próximo</b> otra vez. Antes de empezar, tu TikTok Shop necesita una cuenta de vendedor activa, un almacén por defecto con tu propia dirección y una plantilla de envío "Shipped by Seller" (consulta las dos guías siguientes). Los pedidos que usan TikTok Shipping pueden cancelarse.
 </aside>
 
 ## Antes de empezar
@@ -20,7 +20,7 @@ Comprueba esto primero en el Seller Center de TikTok Shop. Sin ello la conexión
 
 - Tu cuenta de vendedor de TikTok está activa. TikTok rechaza todas las subidas de una cuenta inactiva.
 - Tu tienda tiene un almacén, y está fijado como almacén por defecto. Enviamos tu stock a ese almacén. Consulta [Configurar tu almacén de TikTok Shop](/docs/tiktok-shop-warehouse).
-- Tu plantilla de envío está fijada en "Shipped by Seller", o tu método de entrega es "Pickup". Consulta [Configurar una plantilla de envío de TikTok Shop](/docs/tiktok-shop-shipping-template).
+- Tu plantilla de envío está fijada en "Shipped by Seller". Enviamos el paquete con nuestros transportistas y el seguimiento se devuelve a TikTok. Los pedidos que usan TikTok Shipping pueden cancelarse. Consulta [Configurar una plantilla de envío de TikTok Shop](/docs/tiktok-shop-shipping-template).
 
 TikTok está disponible en todas nuestras webs de dropshipping. Conéctalo desde la web donde tienes tu cuenta de dropshipping.
 
@@ -29,7 +29,7 @@ TikTok está disponible en todas nuestras webs de dropshipping. Conéctalo desde
 1. Abre <b>Canales</b> en el menú. La página <b>Canales de venta</b> muestra los canales que ya tienes.
 2. Pulsa <b>Agregar canal de ventas</b>. Se abre la página <b>Crear canales</b>.
 3. En la tarjeta de <b>Tiktok</b> pulsa <b>Conectar</b>. Se abre una ventana llamada <b>Connect to Tiktok channel</b>.
-4. Lee el recuadro <b>Warning!</b>. La conexión con TikTok todavía está en beta, y si usas TikTok Shipping tu método de entrega debe ser Pickup.
+4. Lee el recuadro <b>Warning!</b>. La conexión con TikTok todavía está en beta. Usa "Shipped by Seller" para tus pedidos: los pedidos que usan TikTok Shipping pueden cancelarse.
 5. Pulsa <b>Tienda de autorización</b>. TikTok se abre en una pestaña nueva del navegador.
 
 <!-- screenshot: la ventana Connect to Tiktok channel con el recuadro Warning! y el botón Auth Store -->
@@ -110,4 +110,4 @@ Mensajes que puedes ver al subir productos a TikTok. Son reglas de TikTok, y sol
 - <b>Incorrect price</b>: tu precio de venta está fuera de lo que TikTok permite. Cambia tu precio de venta del producto en <b>Mis productos</b> y vuelve a subir.
 - <b>No warehouse matches 0</b>, <b>Nonexistent warehouse ID(s): 0</b> o <b>the warehouse does not belong to this shop</b>: no tenemos ningún almacén de TikTok utilizable para tu canal. Consulta [Configurar tu almacén de TikTok Shop](/docs/tiktok-shop-warehouse).
 
-Si un pedido no se envió por la configuración de envío de TikTok, lee [Configurar una plantilla de envío de TikTok Shop](/docs/tiktok-shop-shipping-template).
+Si un pedido no se envió porque usa TikTok Shipping, lee [Configurar una plantilla de envío de TikTok Shop](/docs/tiktok-shop-shipping-template).

@@ -14,6 +14,7 @@ import InputNumber from "primevue/inputnumber"
 import InputText from "primevue/inputtext"
 import AutoComplete from "primevue/autocomplete"
 import Checkbox from "primevue/checkbox"
+import RadioButton from "primevue/radiobutton"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faTimes, faExclamationTriangle, faPlus } from "@fal"
@@ -23,13 +24,23 @@ import { routeType } from "@/types/route"
 
 type SupplierProduct = { code: string; cost: number; units_per_carton: number }
 
+type UnsettledPurchaseOrder = {
+	reference: string
+	state: string
+	state_label: string
+	number_of_items: number
+	can_take_lines: boolean
+}
+
 type SupplierOption = {
 	org_supplier_id: number
+	is_current: boolean
 	code: string
 	name: string
 	currency: string | null
 	reference: string
 	open_purchase_orders: string[]
+	unsettled_purchase_orders: UnsettledPurchaseOrder[]
 	products: Record<number, SupplierProduct | null>
 	products_count: number
 }
@@ -68,9 +79,12 @@ const locale = useLocaleStore()
 const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)] focus:!border-[var(--app-accent)]"
 const productFields = ["code", "name", "cost", "units_per_carton"]
 
+type MoveTarget = "other_supplier" | "same_supplier"
+
 const suppliers = ref<SupplierOption[]>([])
 const isFetching = ref(false)
-const onlySuppliersWithProducts = ref(true)
+const moveTarget = ref<MoveTarget>("other_supplier")
+const onlySuppliersWithProducts = ref(false)
 const orgSupplierId = ref<number | null>(null)
 const purchaseOrderReference = ref("")
 const referenceSuggestions = ref<string[]>([])
@@ -80,28 +94,38 @@ const errors = ref<Record<string, string>>({})
 
 const isMany = computed(() => props.items.length > 1)
 const purchaseOrderId = computed(() => props.items[0]?.moveRoute.parameters.purchaseOrder)
-const supplier = computed(() => suppliers.value.find((option) => option.org_supplier_id === orgSupplierId.value) ?? null)
+const isSameSupplier = computed(() => moveTarget.value === "same_supplier")
+const currentSupplier = computed(() => suppliers.value.find((option) => option.is_current) ?? null)
+const otherSuppliers = computed(() => suppliers.value.filter((option) => !option.is_current))
+const supplier = computed(() => isSameSupplier.value
+	? currentSupplier.value
+	: otherSuppliers.value.find((option) => option.org_supplier_id === orgSupplierId.value) ?? null)
 const typedReference = computed(() => purchaseOrderReference.value.trim())
 const joinsOpenOrder = computed(() => !!supplier.value && supplier.value.open_purchase_orders.some((reference) => reference.toLowerCase() === typedReference.value.toLowerCase()))
+const createsNewOrder = computed(() => !!supplier.value && !!typedReference.value && !joinsOpenOrder.value)
 
 const sellsEveryProduct = (option: SupplierOption) => option.products_count === props.items.length
+const sellsSomeProducts = (option: SupplierOption) => option.products_count > 0 && !sellsEveryProduct(option)
 const supplierOptions = computed(() =>
-	suppliers.value
+	otherSuppliers.value
 		.filter((option) => !onlySuppliersWithProducts.value || sellsEveryProduct(option))
+		.sort((first, second) => second.products_count - first.products_count)
 		.map((option) => ({
 			...option,
-			label: !onlySuppliersWithProducts.value && isMany.value && option.products_count
-				? `${option.code} ${option.name} (${ctrans("sells :count of :total", { count: option.products_count, total: props.items.length })})`
-				: `${option.code} ${option.name}`,
+			label: `${option.code} ${option.name}`,
 		}))
 )
 
 const ordered = (item: MoveItem) => Number(item.quantity_ordered)
 const agreedCost = (item: MoveItem) => Number(item.unit_cost ?? 0)
-const productOf = (item: MoveItem) => supplier.value?.products[item.id] ?? null
-const needsProduct = (item: MoveItem) => !!supplier.value && !productOf(item)
+const productOf = (item: MoveItem) => isSameSupplier.value ? null : supplier.value?.products[item.id] ?? null
+const needsProduct = (item: MoveItem) => !isSameSupplier.value && !!supplier.value && !productOf(item)
 const newCost = (item: MoveItem) => productOf(item)?.cost ?? lines.value[item.id]?.cost ?? null
 const isCostDifferent = (item: MoveItem) => {
+	if (isSameSupplier.value) {
+		return false
+	}
+
 	const cost = newCost(item)
 
 	return cost !== null && cost > 0 && Math.round(cost * 1e6) !== Math.round(agreedCost(item) * 1e6)
@@ -121,7 +145,7 @@ const isLineReady = (item: MoveItem) => {
 const canSubmit = computed(() => !!supplier.value && !!typedReference.value && props.items.every(isLineReady))
 
 const otherErrors = computed(() => {
-	const shown = new Set(["org_supplier_id", "reference"])
+	const shown = new Set(isSameSupplier.value ? ["reference"] : ["org_supplier_id", "reference"])
 	props.items.forEach((item) => {
 		shown.add(`lines.${item.id}.quantity`)
 		if (needsProduct(item)) {
@@ -142,8 +166,16 @@ watch(onlySuppliersWithProducts, () => {
 	}
 })
 
+const unsettledPurchaseOrderOf = (reference: string) =>
+	supplier.value?.unsettled_purchase_orders?.find((unsettledPurchaseOrder) => unsettledPurchaseOrder.reference.toLowerCase() === reference.toLowerCase()) ?? null
+const cannotTakeLines = (reference: string) => unsettledPurchaseOrderOf(reference)?.can_take_lines === false
+
 function suggestReferences(event: { query: string }) {
-	const options = [...new Set([supplier.value?.reference ?? "", ...(supplier.value?.open_purchase_orders ?? [])].filter(Boolean))]
+	const options = [...new Set([
+		supplier.value?.reference ?? "",
+		...(supplier.value?.open_purchase_orders ?? []),
+		...(supplier.value?.unsettled_purchase_orders ?? []).map((unsettledPurchaseOrder) => unsettledPurchaseOrder.reference),
+	].filter(Boolean))]
 	const query = event.query.trim().toLowerCase()
 	referenceSuggestions.value = query ? options.filter((reference) => reference.toLowerCase().includes(query)) : options
 }
@@ -153,9 +185,10 @@ watch(visible, async (isVisible) => {
 		return
 	}
 
+	moveTarget.value = "other_supplier"
 	orgSupplierId.value = null
 	purchaseOrderReference.value = ""
-	onlySuppliersWithProducts.value = true
+	onlySuppliersWithProducts.value = false
 	errors.value = {}
 	lines.value = Object.fromEntries(props.items.map((item) => [item.id, {
 		quantity: ordered(item),
@@ -188,7 +221,7 @@ function submit() {
 	router.post(
 		route("grp.models.purchase-order.transaction.move_many", { purchaseOrder: purchaseOrderId.value }),
 		{
-			org_supplier_id: orgSupplierId.value,
+			org_supplier_id: supplier.value?.org_supplier_id,
 			reference: typedReference.value,
 			lines: props.items.map((item) => {
 				const line = lines.value[item.id]
@@ -221,12 +254,26 @@ function submit() {
 	<Dialog
 		v-model:visible="visible"
 		modal
-		:header="isMany ? ctrans('Move :count items to another supplier', { count: items.length }) : ctrans('Move :code to another supplier', { code: items[0]?.code })"
+		:header="isMany ? ctrans('Move :count items', { count: items.length }) : ctrans('Move :code', { code: items[0]?.code })"
 		:style="{ width: isMany ? '38rem' : '30rem', maxWidth: 'calc(100vw - 2rem)' }"
 		:draggable="false"
 	>
 		<div class="space-y-4 text-sm">
 			<div class="space-y-1">
+				<span class="block text-xs text-gray-500">{{ ctrans("Move to") }}</span>
+				<div class="flex flex-wrap gap-x-5 gap-y-2">
+					<label class="flex cursor-pointer items-center gap-2">
+						<RadioButton v-model="moveTarget" inputId="move-target-other" value="other_supplier" size="small" />
+						<span>{{ ctrans("Another supplier") }}</span>
+					</label>
+					<label class="flex items-center gap-2" :class="currentSupplier ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'">
+						<RadioButton v-model="moveTarget" inputId="move-target-same" value="same_supplier" size="small" :disabled="!currentSupplier" />
+						<span>{{ currentSupplier ? ctrans("Same supplier (:supplier)", { supplier: currentSupplier.code }) : ctrans("Same supplier") }}</span>
+					</label>
+				</div>
+			</div>
+
+			<div v-if="!isSameSupplier" class="space-y-1">
 				<span class="block text-xs text-gray-500">{{ ctrans("Supplier") }} <span class="text-red-500">*</span></span>
 				<Select
 					v-model="orgSupplierId"
@@ -243,7 +290,27 @@ function submit() {
 							: ctrans('The agent has no other supplier')"
 					:class="fieldFocusClass"
 					fluid
-				/>
+				>
+					<template #option="{ option }">
+						<div class="flex w-full min-w-0 items-center gap-2">
+							<span class="whitespace-nowrap font-medium">{{ option.code }}</span>
+							<span class="truncate text-gray-500">{{ option.name }}</span>
+							<span
+								v-if="sellsEveryProduct(option)"
+								class="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
+							>
+								<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+								{{ isMany ? ctrans("Has all products") : ctrans("Has this product") }}
+							</span>
+							<span
+								v-else-if="sellsSomeProducts(option)"
+								class="ml-auto shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+							>
+								{{ ctrans("Has :count of :total", { count: option.products_count, total: items.length }) }}
+							</span>
+						</div>
+					</template>
+				</Select>
 				<label class="flex cursor-pointer items-center gap-2 text-xs text-gray-600 w-fit">
 					<Checkbox v-model="onlySuppliersWithProducts" binary size="small" />
 					{{ isMany
@@ -260,11 +327,38 @@ function submit() {
 					:suggestions="referenceSuggestions"
 					dropdown
 					completeOnFocus
+					:optionDisabled="cannotTakeLines"
 					:emptySearchMessage="ctrans('Create a new purchase order :reference for :supplier', { reference: typedReference, supplier: supplier.code })"
 					:class="fieldFocusClass"
 					fluid
 					@complete="suggestReferences"
 				>
+					<template #option="{ option }">
+						<div class="flex w-full min-w-0 items-center gap-2">
+							<span class="truncate font-medium">{{ option }}</span>
+							<template v-if="unsettledPurchaseOrderOf(option)">
+								<span
+									v-if="cannotTakeLines(option)"
+									v-tooltip="ctrans('This order can not take these items: it is in another currency, in production or already has a delivery')"
+									class="ml-auto shrink-0 whitespace-nowrap text-xs text-gray-400"
+								>
+									{{ ctrans("Can not take these items") }}
+								</span>
+								<span
+									class="shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+									:class="{ 'ml-auto': !cannotTakeLines(option) }"
+								>
+									{{ unsettledPurchaseOrderOf(option)!.state_label }}
+								</span>
+								<span class="shrink-0 whitespace-nowrap text-xs text-gray-500">
+									{{ ctransChoice(":count item|:count items", unsettledPurchaseOrderOf(option)!.number_of_items) }}
+								</span>
+							</template>
+							<span v-else class="ml-auto shrink-0 whitespace-nowrap rounded-full bg-[var(--app-accent-soft)] px-2 py-0.5 text-xs text-[var(--app-accent-deep)]">
+								{{ ctrans("New") }}
+							</span>
+						</div>
+					</template>
 					<template #empty>
 						<div class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700">
 							<FontAwesomeIcon :icon="faPlus" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
@@ -292,7 +386,7 @@ function submit() {
 						<InputNumber v-model="lines[item.id].quantity" :min="0" :max="ordered(item)" :maxFractionDigits="3" :suffix="` ${ctrans('units')}`" :class="fieldFocusClass" fluid />
 						<span class="block text-xs text-gray-500">
 							{{ lines[item.id].quantity !== null && lines[item.id].quantity! < ordered(item)
-								? ctrans(":left units stay with this supplier", { left: locale.number(Math.round((ordered(item) - lines[item.id].quantity!) * 1000) / 1000) })
+								? ctrans(":left units stay on this order", { left: locale.number(Math.round((ordered(item) - lines[item.id].quantity!) * 1000) / 1000) })
 								: ctrans("The whole line moves, it is cancelled here") }}
 						</span>
 						<p v-if="lineError(item, 'quantity')" class="text-xs text-red-600">{{ lineError(item, "quantity") }}</p>
@@ -356,7 +450,9 @@ function submit() {
 				<Button
 					type="primary"
 					full
-					:label="isMany ? ctransChoice('Move :count item|Move :count items', items.length) : ctrans('Move')"
+					:label="createsNewOrder
+						? (isMany ? ctransChoice('Move :count item (new PO)|Move :count items (new PO)', items.length) : ctrans('Move (new PO)'))
+						: (isMany ? ctransChoice('Move :count item|Move :count items', items.length) : ctrans('Move'))"
 					:loading="isSaving"
 					:disabled="!canSubmit"
 					@click="submit"

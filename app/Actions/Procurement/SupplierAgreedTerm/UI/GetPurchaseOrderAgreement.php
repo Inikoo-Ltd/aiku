@@ -9,16 +9,19 @@
 namespace App\Actions\Procurement\SupplierAgreedTerm\UI;
 
 use App\Actions\Procurement\SupplierAgreedTerm\GetPurchaseOrderAgreedTerms;
+use App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteCategoryEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteIncidentOutcomeEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteSeverityEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteVisibilityEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\SupplyChain\SupplierAgreement\SupplierAgreementStatusEnum;
 use App\Http\Resources\Procurement\ProcurementNoteResource;
 use App\Http\Resources\Procurement\SupplierAgreedTermResource;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\ProcurementNote;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\SupplyChain\SupplierAgreementAcceptance;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +56,41 @@ class GetPurchaseOrderAgreement
             )->resolve(),
             'open_incidents'   => (clone $notes)->where('category', ProcurementNoteCategoryEnum::INCIDENT)->where('incident_outcome', ProcurementNoteIncidentOutcomeEnum::OPEN)->count(),
             'must_acknowledge' => !$forAgent && $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS && $this->hasCriticalNotes($purchaseOrder),
+            'supplier_agreement_status' => $this->supplierAgreement($purchaseOrder),
+        ];
+    }
+
+    /**
+     * Where the order's supplier stands with the Supplier Agreement, and the acceptance the order kept when it was
+     * confirmed. Only orders straight to one supplier have it.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function supplierAgreement(PurchaseOrder $purchaseOrder): ?array
+    {
+        if (!$purchaseOrder->supplier_id) {
+            return null;
+        }
+
+        $status = GetSupplierAgreementStatus::make()->forSuppliers($purchaseOrder->group_id, [$purchaseOrder->supplier_id])[$purchaseOrder->supplier_id] ?? null;
+        if (!$status) {
+            return null;
+        }
+
+        $stamped = $purchaseOrder->supplier_agreement_acceptance_id
+            ? SupplierAgreementAcceptance::with('version:id,version')->find($purchaseOrder->supplier_agreement_acceptance_id)
+            : null;
+
+        return [
+            ...$status,
+            'warning'         => $status['status'] !== SupplierAgreementStatusEnum::ACCEPTED->value
+                ? __('This supplier has not accepted the current Supplier Agreement. The order can still be sent.')
+                : null,
+            'order_acceptance' => $stamped ? [
+                'version'           => $stamped->version->version,
+                'accepted_at'       => $stamped->accepted_at->toIso8601String(),
+                'authorised_person' => $stamped->authorised_person,
+            ] : null,
         ];
     }
 

@@ -8,8 +8,11 @@ import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.api.WarehouseApi
 import io.aiku.droid.data.api.WarehousesResult
 import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.data.session.StaffSession
+import io.aiku.droid.data.session.WarehouseCache
 import io.aiku.droid.data.settings.WarehouseSelection
 import io.aiku.droid.ui.UiMessage
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,10 +35,13 @@ class WarehousesViewModel(
     private val authApi: AuthApi,
     private val sessions: SessionRepository,
     private val selection: WarehouseSelection,
+    private val cache: WarehouseCache,
 ) : ViewModel() {
 
     private val mutableState = MutableStateFlow<WarehousesUiState>(WarehousesUiState.Loading)
     val state: StateFlow<WarehousesUiState> = mutableState.asStateFlow()
+
+    private var fetch: Job? = null
 
     init {
         viewModelScope.launch {
@@ -44,6 +50,8 @@ class WarehousesViewModel(
                 .distinctUntilChanged()
                 .collect { token ->
                     if (token == null) {
+                        fetch?.cancel()
+                        cache.clear()
                         mutableState.value = WarehousesUiState.Loading
                     } else {
                         load()
@@ -53,17 +61,30 @@ class WarehousesViewModel(
     }
 
     fun load() {
-        val token = sessions.session.value?.token ?: return
+        val session = sessions.session.value ?: return
+        fetch?.cancel()
         mutableState.value = WarehousesUiState.Loading
 
-        viewModelScope.launch {
-            mutableState.value = when (val result = warehouseApi.warehouses(token)) {
-                is WarehousesResult.Loaded -> readyState(result.warehouses)
-                WarehousesResult.SessionExpired -> WarehousesUiState.SessionExpired
+        fetch = viewModelScope.launch {
+            mutableState.value = when (val result = warehouseApi.warehouses(session.token)) {
+                is WarehousesResult.Loaded -> loaded(session, result.warehouses)
+                WarehousesResult.SessionExpired -> expired()
                 WarehousesResult.AppKeyRejected -> WarehousesUiState.Failed(UiMessage.FromResource(R.string.alert_app_key_body))
-                WarehousesResult.Unreachable -> WarehousesUiState.Offline
+                WarehousesResult.Unreachable -> cache.read(session.userId)?.let(::readyState) ?: WarehousesUiState.Offline
                 is WarehousesResult.ServerError -> WarehousesUiState.ServerError(result.statusCode)
             }
+        }
+    }
+
+    fun refresh() {
+        val session = sessions.session.value ?: return
+        if (fetch?.isActive == true) {
+            return
+        }
+        when (mutableState.value) {
+            is WarehousesUiState.Ready, WarehousesUiState.NoWarehouses -> refreshQuietly(session)
+            WarehousesUiState.Offline, is WarehousesUiState.ServerError, is WarehousesUiState.Failed -> load()
+            WarehousesUiState.Loading, WarehousesUiState.SessionExpired -> Unit
         }
     }
 
@@ -82,6 +103,26 @@ class WarehousesViewModel(
         val session = sessions.session.value ?: return
         sessions.end()
         viewModelScope.launch { authApi.logout(session.token) }
+    }
+
+    private fun refreshQuietly(session: StaffSession) {
+        fetch = viewModelScope.launch {
+            when (val result = warehouseApi.warehouses(session.token)) {
+                is WarehousesResult.Loaded -> mutableState.value = loaded(session, result.warehouses)
+                WarehousesResult.SessionExpired -> mutableState.value = expired()
+                WarehousesResult.AppKeyRejected, WarehousesResult.Unreachable, is WarehousesResult.ServerError -> Unit
+            }
+        }
+    }
+
+    private fun loaded(session: StaffSession, warehouses: List<WarehouseAccess>): WarehousesUiState {
+        cache.save(session.userId, warehouses)
+        return readyState(warehouses)
+    }
+
+    private fun expired(): WarehousesUiState {
+        cache.clear()
+        return WarehousesUiState.SessionExpired
     }
 
     private fun readyState(warehouses: List<WarehouseAccess>): WarehousesUiState {

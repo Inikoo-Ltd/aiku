@@ -23,7 +23,6 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdatePurchaseOrderStateFromCancelled extends OrgAction
@@ -32,44 +31,19 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
     use HasPurchaseOrderHydrators;
     use WithActionUpdate;
 
-    public const array COST_FIELDS = ['cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax'];
     public const string SOURCE_UNKNOWN = 'unknown';
 
     /**
-     * Brings a cancelled order back to the state it had, with the lines that were live and the costs cancelling wiped.
-     *
-     * @param  array<string, float|int|string|null>  $costs  entered by the user, needed only where the cancellation did not keep them
+     * Brings a cancelled order back to the state it had, with the lines that were live. Its total is its items.
      */
-    public function handle(PurchaseOrder $purchaseOrder, ?string $reason = null, array $costs = []): PurchaseOrder
+    public function handle(PurchaseOrder $purchaseOrder, ?string $reason = null): PurchaseOrder
     {
-        return DB::transaction(function () use ($purchaseOrder, $reason, $costs) {
+        return DB::transaction(function () use ($purchaseOrder, $reason) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
             $cancellation  = self::cancellation($purchaseOrder);
 
             if ($blockedReason = self::blockedReason($purchaseOrder, $cancellation)) {
                 abort(422, $blockedReason);
-            }
-
-            $restoredCosts = [];
-            $missing       = [];
-            foreach (self::COST_FIELDS as $field) {
-                $value = $cancellation['costs'][$field] ?? null;
-                if ($value === null && isset($costs[$field]) && $costs[$field] !== '') {
-                    $value = (float) $costs[$field];
-                }
-                if ($value === null) {
-                    $missing[$field] = __('Enter what this order had before it was cancelled');
-                }
-                $restoredCosts[$field] = $value;
-            }
-            if ($missing) {
-                throw ValidationException::withMessages($missing);
-            }
-
-            if ($cancellation['cost_gap'] !== null && round($restoredCosts['cost_extra'] + $restoredCosts['cost_tax'] - $cancellation['cost_gap'], 2) != 0.0) {
-                throw ValidationException::withMessages([
-                    'cost_tax' => __('Extra costs and tax must add up to :amount, what the order had before it was cancelled', ['amount' => number_format($cancellation['cost_gap'], 2)]),
-                ]);
             }
 
             foreach (self::restorableTransactions($purchaseOrder, $cancellation) as $transaction) {
@@ -87,16 +61,13 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
                 $transaction->update(array_merge($amounts, ['state' => $line['state']]));
             }
 
-            $purchaseOrder->update(array_merge($restoredCosts, [
+            $purchaseOrder->update([
                 'state'        => $cancellation['state'],
                 'cancelled_at' => null,
                 'data'         => Arr::except($purchaseOrder->data ?? [], 'cancellation'),
-            ]));
+            ]);
 
             CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
-            if ($cancellation['totals']) {
-                $purchaseOrder->update($cancellation['totals']);
-            }
             if ($purchaseOrder->depositPayments()->exists()) {
                 SyncPurchaseOrderDepositPaid::run($purchaseOrder);
             }
@@ -111,12 +82,10 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
     }
 
     /**
-     * What cancelling wiped. Orders cancelled before data.cancellation existed are read from their own cancel audit,
-     * which holds only the fields that changed: a cost it lacks was already 0. Extra and tax were not audited, so they
-     * are asked for, and must add up to what is left of the old total. Without such an audit nothing is known and
-     * the source is unknown.
+     * What cancelling wiped. Orders cancelled before data.cancellation existed are read from their own cancel audit.
+     * Without such an audit nothing is known and the source is unknown.
      *
-     * @return array{state: string, costs: array<string, float|null>, lines: array<int, array<string, mixed>>, totals: array<string, float>, source: string, cost_total: float|null, cost_gap: float|null}
+     * @return array{state: string, lines: array<int, array<string, mixed>>, source: string}
      */
     public static function cancellation(PurchaseOrder $purchaseOrder): array
     {
@@ -124,24 +93,16 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
 
         if (is_array($stored)) {
             return [
-                'state'      => $stored['state'] ?? PurchaseOrderStateEnum::SUBMITTED->value,
-                'costs'      => Arr::only($stored['costs'] ?? [], self::COST_FIELDS),
-                'lines'      => collect($stored['transactions'] ?? [])->mapWithKeys(fn (array $line) => [(int) $line['id'] => $line])->all(),
-                'totals'     => Arr::only($stored['totals'] ?? [], ['cost_items', 'cost_total']),
-                'source'     => $stored['source'] ?? UpdatePurchaseOrderStateToCancelled::SOURCE_USER,
-                'cost_total' => null,
-                'cost_gap'   => null,
+                'state'  => $stored['state'] ?? PurchaseOrderStateEnum::SUBMITTED->value,
+                'lines'  => collect($stored['transactions'] ?? [])->mapWithKeys(fn (array $line) => [(int) $line['id'] => $line])->all(),
+                'source' => $stored['source'] ?? UpdatePurchaseOrderStateToCancelled::SOURCE_USER,
             ];
         }
 
         $unknown = [
-            'state'      => PurchaseOrderStateEnum::SUBMITTED->value,
-            'costs'      => array_fill_keys(self::COST_FIELDS, null),
-            'lines'      => [],
-            'totals'     => [],
-            'source'     => self::SOURCE_UNKNOWN,
-            'cost_total' => null,
-            'cost_gap'   => null,
+            'state'  => PurchaseOrderStateEnum::SUBMITTED->value,
+            'lines'  => [],
+            'source' => self::SOURCE_UNKNOWN,
         ];
 
         $audit = Audit::where('auditable_type', 'PurchaseOrder')
@@ -151,20 +112,13 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
             ->first();
         $old = $audit?->old_values ?? [];
 
-        if (!$audit || !in_array($old['state'] ?? null, [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value], true)
+        if (!$audit || !in_array($old['state'] ?? null, PurchaseOrderStateEnum::openValues(), true)
             || ($purchaseOrder->created_at && $audit->created_at && $audit->created_at->lt($purchaseOrder->created_at))) {
             return $unknown;
         }
 
         $state     = $old['state'];
         $costItems = (float) ($old['cost_items'] ?? 0);
-        $costTotal = (float) ($old['cost_total'] ?? 0);
-        $costs     = [
-            'cost_extra'    => array_key_exists('cost_extra', $old) ? (float) $old['cost_extra'] : null,
-            'cost_shipping' => (float) ($old['cost_shipping'] ?? 0),
-            'cost_duties'   => (float) ($old['cost_duties'] ?? 0),
-            'cost_tax'      => array_key_exists('cost_tax', $old) ? (float) $old['cost_tax'] : null,
-        ];
 
         $cancelledLines = $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::CANCELLED)
@@ -185,28 +139,10 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
             $source = UpdatePurchaseOrderStateToCancelled::SOURCE_EMPTIED;
         }
 
-        $rebuiltItems = round($restorable->sum(fn (PurchaseOrderTransaction $transaction) => round((float) $transaction->quantity_ordered * (float) $transaction->unit_cost, 2)), 2);
-        $costGap      = null;
-        if (abs($rebuiltItems - $costItems) > 0.01) {
-            $costs     = array_fill_keys(self::COST_FIELDS, null);
-            $costTotal = null;
-        } elseif ($costs['cost_extra'] === null || $costs['cost_tax'] === null) {
-            $costGap = round($costTotal - $costItems - $costs['cost_shipping'] - $costs['cost_duties'] - ($costs['cost_extra'] ?? 0) - ($costs['cost_tax'] ?? 0), 2);
-            if ($costGap == 0.0) {
-                $costs['cost_extra'] ??= 0.0;
-                $costs['cost_tax']   ??= 0.0;
-                $costGap = null;
-            }
-        }
-
         return [
-            'state'      => $state,
-            'costs'      => $costs,
-            'lines'      => $restorable->mapWithKeys(fn (PurchaseOrderTransaction $transaction) => [$transaction->id => ['id' => $transaction->id, 'state' => $state]])->all(),
-            'totals'     => [],
-            'source'     => $source,
-            'cost_total' => $costTotal,
-            'cost_gap'   => $costGap,
+            'state'  => $state,
+            'lines'  => $restorable->mapWithKeys(fn (PurchaseOrderTransaction $transaction) => [$transaction->id => ['id' => $transaction->id, 'state' => PurchaseOrderStateEnum::from($state)->transactionState()->value]])->all(),
+            'source' => $source,
         ];
     }
 
@@ -272,7 +208,7 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
 
         return PurchaseOrder::where('organisation_id', $purchaseOrder->organisation_id)
             ->whereKeyNot($purchaseOrder->id)
-            ->whereIn('state', [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('state', PurchaseOrderStateEnum::live())
             ->when($purchaseOrder->cancelled_at, fn ($query, $cancelledAt) => $query->where('created_at', '>=', $cancelledAt))
             ->whereHas('purchaseOrderTransactions', fn ($query) => $query->whereIn('supplier_product_id', $supplierProductIds)->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED))
             ->orderBy('id')
@@ -302,14 +238,12 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
         if ($this->asAction) {
             return [
                 'reason' => ['sometimes', 'nullable', 'string', 'max:500'],
-                ...array_fill_keys(self::COST_FIELDS, ['sometimes', 'nullable', 'numeric', 'min:0']),
             ];
         }
 
         return [
             'reason'                => ['required', 'string', 'max:500'],
             'counterparty_informed' => ['required', 'string', 'in:yes,Yes,YES'],
-            ...array_fill_keys(self::COST_FIELDS, ['sometimes', 'nullable', 'numeric', 'min:0']),
         ];
     }
 
@@ -324,7 +258,7 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
     {
         $this->initialisation($purchaseOrder->organisation, $request);
 
-        return $this->handle($purchaseOrder, trim($this->validatedData['reason']), Arr::only($this->validatedData, self::COST_FIELDS));
+        return $this->handle($purchaseOrder, trim($this->validatedData['reason']));
     }
 
     /**
@@ -335,7 +269,7 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
         $this->asAction = true;
         $this->initialisation($purchaseOrder->organisation, $modelData);
 
-        return $this->handle($purchaseOrder, Arr::get($this->validatedData, 'reason'), Arr::only($this->validatedData, self::COST_FIELDS));
+        return $this->handle($purchaseOrder, Arr::get($this->validatedData, 'reason'));
     }
 
     public function jsonResponse(PurchaseOrder $purchaseOrder): PurchaseOrderResource

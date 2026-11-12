@@ -77,9 +77,7 @@ const formatQuantity = (value: number | null | undefined) => locale.number(Math.
 			<span v-if="row.production_started_at" class="whitespace-nowrap">{{ useFormatTime(row.production_started_at) }}</span>
 		</template>
 		<template #cell(ready_at)="{ item: row }">
-			<span v-if="row.ready_at" class="whitespace-nowrap" v-tooltip="row.ready_at_is_approved ? ctrans('Approved ready date') : ctrans('Ready date proposed by the supplier, not approved yet')">
-				{{ useFormatTime(row.ready_at) }}<span v-if="!row.ready_at_is_approved" class="text-gray-400"> ({{ ctrans("proposed") }})</span>
-			</span>
+			<span v-if="row.ready_at" class="whitespace-nowrap" v-tooltip="ctrans('Expected Clean Hand Over date')">{{ useFormatTime(row.ready_at) }}</span>
 		</template>
 		<template #cell(quantity)="{ item: row }">
 			<div class="flex items-center justify-end gap-1.5">

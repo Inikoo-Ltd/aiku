@@ -17,6 +17,7 @@ use App\Enums\SupplyChain\SupplierChangeRequest\SupplierChangeRequestStateEnum;
 use App\Enums\SupplyChain\SupplierChangeRequest\SupplierChangeRequestTypeEnum;
 use App\Models\SupplyChain\SupplierChangeRequest;
 use App\Models\SysAdmin\User;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Helpers\Currency;
@@ -122,7 +123,7 @@ class GetAgentSuppliersDashboard
                     'value'       => $sent->count(),
                     'amount'      => $money($sent->sum('amount')),
                     'without_eta' => $sent->whereNull('estimated_received_at')->count(),
-                    'route'       => $purchaseOrdersRoute(['state' => 'submitted,confirmed']),
+                    'route'       => $purchaseOrdersRoute(['state' => implode(',', PurchaseOrderStateEnum::openValues())]),
                 ],
                 'chase'            => [
                     'value'       => $pastEta->count() + $unconfirmed->count(),
@@ -131,9 +132,9 @@ class GetAgentSuppliersDashboard
                     'route'       => $purchaseOrdersRoute(['attention' => 'past_eta,unconfirmed_over_14_days']),
                 ],
                 'in_transit'       => [
-                    'value'  => $sent->where('progress', 'dispatched')->count(),
-                    'amount' => $money($sent->where('progress', 'dispatched')->sum('amount')),
-                    'route'  => $purchaseOrdersRoute(['progress' => 'dispatched']),
+                    'value'  => $sent->where('delivery_state', PurchaseOrderDeliveryStateEnum::DISPATCHED->value)->count(),
+                    'amount' => $money($sent->where('delivery_state', PurchaseOrderDeliveryStateEnum::DISPATCHED->value)->sum('amount')),
+                    'route'  => $purchaseOrdersRoute(['delivery_state' => PurchaseOrderDeliveryStateEnum::DISPATCHED->value]),
                 ],
                 'lead_time'        => [
                     'median_days'     => $this->medianDays($received),
@@ -159,12 +160,12 @@ class GetAgentSuppliersDashboard
                     'amount' => $packing['packaging_spend'],
                 ],
             ],
-            'stages'      => collect(PurchaseOrderStageEnum::progressLabels())->map(fn ($label, $key) => [
+            'stages'      => collect(PurchaseOrderStateEnum::labels())->only(PurchaseOrderStateEnum::liveValues())->map(fn ($label, $key) => [
                 'key'    => $key,
-                'label'  => $label,
-                'value'  => $openOrders->where('progress', $key)->count(),
-                'amount' => $money($openOrders->where('progress', $key)->sum('amount')),
-                'route'  => $key === 'draft' ? null : $purchaseOrdersRoute(['progress' => $key]),
+                'label'  => $key === PurchaseOrderStateEnum::IN_PROCESS->value ? __('Draft') : $label,
+                'value'  => $openOrders->where('state', $key)->count(),
+                'amount' => $money($openOrders->where('state', $key)->sum('amount')),
+                'route'  => $key === PurchaseOrderStateEnum::IN_PROCESS->value ? null : $purchaseOrdersRoute(['state' => $key]),
             ])->values(),
             'ages'        => collect([[0, 30, '< 30'], [30, 60, '30-60'], [60, 90, '60-90'], [90, 120, '90-120'], [120, null, '120+']])
                 ->map(fn ($bucket) => [
@@ -298,11 +299,11 @@ class GetAgentSuppliersDashboard
             ->leftJoin('org_suppliers', function ($join) {
                 $join->on('org_suppliers.id', '=', 'purchase_orders.parent_id')->where('purchase_orders.parent_type', 'OrgSupplier');
             })
-            ->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::IN_PROCESS->value, PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::liveValues())
             ->selectRaw(
                 'purchase_orders.id, purchase_orders.slug, purchase_orders.reference, purchase_orders.parent_name, purchase_orders.state,
                 purchase_orders.submitted_at, purchase_orders.estimated_received_at, organisations.code as buyer_code, org_suppliers.slug as org_supplier_slug,
-                '.PurchaseOrderStageEnum::progressSql().' as progress,
+                purchase_orders.delivery_state,
                 '.PurchaseOrderStageEnum::pastEtaSql().' as past_eta,
                 '.PurchaseOrderStageEnum::unconfirmedSql(self::UNCONFIRMED_DAYS).' as unconfirmed,
                 floor(extract(epoch from now() - purchase_orders.submitted_at) / 86400) as days_open,

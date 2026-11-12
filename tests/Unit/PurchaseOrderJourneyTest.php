@@ -119,11 +119,11 @@ it('does not count a draft as sent even when it carries a submitted date', funct
         ->and(segmentOf($journey, 'submitted')['done_at'])->toBeNull();
 });
 
-it('targets QC on the approved ready date and shipping, after the clean handover, seven days after it', function () {
+it('targets QC and the clean handover on the proposed ready date', function () {
     $journey = journeyFor(['deposit_paid_at' => '2026-09-05', 'approved_ready_at' => '2026-10-20']);
 
     expect(segmentOf($journey, 'ready')['planned_at'])->toBe('2026-10-20')
-        ->and(segmentOf($journey, 'handed_over')['planned_at'])->toBe('2026-10-27');
+        ->and(segmentOf($journey, 'handed_over')['planned_at'])->toBe('2026-10-20');
 });
 
 it('works the shipping target back from a recorded arrival date', function () {

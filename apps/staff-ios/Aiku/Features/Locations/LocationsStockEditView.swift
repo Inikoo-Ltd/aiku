@@ -46,7 +46,9 @@ private struct LocationsStockEditForm: View {
     let store: LocationsStore
     @Environment(AppRouter.self) private var router
     @Environment(ToastCenter.self) private var toasts
+    @Environment(\.apiClient) private var apiClient
     @State private var settings: LocationsSlotSettings
+    @State private var isSaving = false
     @State private var sheet: LocationsStockEditSheet?
 
     init(location: LocationsLocation, slot: LocationsSlot, store: LocationsStore) {
@@ -101,7 +103,11 @@ private struct LocationsStockEditForm: View {
                 HStack(alignment: .top, spacing: 8) {
                     ForEach(LocationsPickingRole.allCases, id: \.self) { role in
                         RadioCard(role.title, subtitle: roleDetail(role), isSelected: settings.roles.contains(role)) {
-                            settings.roles.formSymmetricDifference([role])
+                            if slot.roles.contains(role) {
+                                settings.roles.insert(role)
+                            } else {
+                                settings.roles.formSymmetricDifference([role])
+                            }
                         }
                         .accessibilityIdentifier("locations.stockEdit.role.\(role.rawValue)")
                     }
@@ -122,15 +128,20 @@ private struct LocationsStockEditForm: View {
             }
 
             AikuTextArea("Note", text: $settings.note, placeholder: "Top shelf, behind the gift sets", minHeight: 60)
+            if settings.type == .picking {
+                HelperText("An active picking location stays active until another location of this SKO is made the active one, as on the web.")
+            }
             HelperText("Storing locations have a replenishment quantity instead of min and max. Needs stock edit rights.")
         } footer: {
             HStack(spacing: 8) {
                 AikuButton("Audit", kind: .tertiary) { sheet = .audit }
+                    .disabled(!store.canEditStocks(in: location.code))
                     .accessibilityIdentifier("locations.stockEdit.audit")
                 AikuButton("Move", kind: .tertiary) { sheet = .move }
-                    .disabled(slot.quantity <= 0)
+                    .disabled(slot.quantity <= 0 || !store.canEditLocations(in: location.code))
                     .accessibilityIdentifier("locations.stockEdit.move")
                 AikuButton("Save") { save() }
+                    .disabled(isSaving || !store.canEditStocks(in: location.code))
                     .accessibilityIdentifier("locations.stockEdit.save")
             }
         }
@@ -138,9 +149,8 @@ private struct LocationsStockEditForm: View {
             switch kind {
             case .audit:
                 LocationsAuditSheet(location: location, onlySko: slot.skoReference) { counts in
-                    let differences = store.audit(location: location.code, counts: counts)
                     sheet = nil
-                    toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+                    audit(counts)
                 } onCancel: {
                     sheet = nil
                 }
@@ -149,11 +159,12 @@ private struct LocationsStockEditForm: View {
                     source: location,
                     warehouse: store.warehouse,
                     startsWithSome: true,
-                    preselected: slot.skoReference
-                ) { target, quantities, removeFromSource in
-                    let result = store.move(from: location.code, to: target, quantities: quantities, removeFromSource: removeFromSource)
+                    preselected: slot.skoReference,
+                    isRemote: store.isRemote,
+                    searchTargets: { query in await store.searchMoveTargets(query, apiClient: apiClient) }
+                ) { target, quantities, removeFromSource, movesEverything in
                     sheet = nil
-                    LocationsToastText.showMove(result, target: target, store: store, toasts: toasts)
+                    move(to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: movesEverything)
                 } onCancel: {
                     sheet = nil
                 }
@@ -172,8 +183,54 @@ private struct LocationsStockEditForm: View {
     }
 
     private func save() {
-        store.update(sko: slot.skoReference, in: location.code, settings: settings)
-        toasts.show("\(slot.skoReference) in \(location.code) saved")
-        router.back()
+        guard store.isRemote else {
+            store.update(sko: slot.skoReference, in: location.code, settings: settings)
+            toasts.show("\(slot.skoReference) in \(location.code) saved")
+            router.back()
+            return
+        }
+        isSaving = true
+        Task {
+            defer { isSaving = false }
+            do {
+                try await store.updateRemotely(sko: slot.skoReference, in: location.code, settings: settings, apiClient: apiClient)
+                toasts.show("\(slot.skoReference) in \(location.code) saved")
+                router.back()
+            } catch {
+                toasts.show("Not saved: \(error.localizedDescription)", tone: .danger)
+            }
+        }
+    }
+
+    private func audit(_ counts: [LocationsAuditCount]) {
+        guard store.isRemote else {
+            let differences = store.audit(location: location.code, counts: counts)
+            toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+            return
+        }
+        Task {
+            do {
+                let differences = try await store.auditRemotely(location: location.code, counts: counts, apiClient: apiClient)
+                toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+            } catch {
+                toasts.show("Audit not saved: \(error.localizedDescription)", tone: .danger)
+            }
+        }
+    }
+
+    private func move(to target: String, quantities: [String: Int], removeFromSource: Bool, movesEverything: Bool) {
+        guard store.isRemote else {
+            let result = store.move(from: location.code, to: target, quantities: quantities, removeFromSource: removeFromSource)
+            LocationsToastText.showMove(result, target: target, store: store, toasts: toasts)
+            return
+        }
+        Task {
+            do {
+                let moved = try await store.moveRemotely(from: location.code, to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: false, apiClient: apiClient)
+                toasts.show(moved > 0 ? "\(LocationsFormat.units(moved)) moved to \(target)" : "Nothing to move", tone: moved > 0 ? .success : .warn)
+            } catch {
+                toasts.show("Move not saved: \(error.localizedDescription)", tone: .danger)
+            }
+        }
     }
 }

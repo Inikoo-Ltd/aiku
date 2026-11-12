@@ -53,6 +53,9 @@ use App\Models\Traits\HasSearch;
 use App\Models\Traits\InCustomer;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -767,6 +770,26 @@ class Order extends Model implements HasMedia, Auditable
     public function isDropshipping(): bool
     {
         return $this->customer_sales_channel_id !== null;
+    }
+
+    /**
+     * Bank fees absorbed when a customer's transfer arrived short (HELP-4642): settled on the order but never received,
+     * so never credited back or moved to another order.
+     *
+     * @return Collection<int, Payment>
+     */
+    public function absorbedBankFeePayments(): Collection
+    {
+        return $this->payments()
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->whereHas('paymentAccount', fn ($query) => $query->where('type', PaymentAccountTypeEnum::BANK_FEE))
+            ->get();
+    }
+
+    public function absorbedBankFees(): float
+    {
+        return round((float)$this->absorbedBankFeePayments()->sum('amount'), 2);
     }
 
     public function amountStillToPay(): float

@@ -1,8 +1,8 @@
 ---
 title: Ayudar a los clientes a encontrar productos en tu web
 summary: Dos interruptores en los ajustes de la web ayudan a los clientes profesionales a encontrar qué tener en stock. El asesor de gama responde una pregunta escrita en el cuadro de búsqueda con productos y un motivo para cada uno, y Keep exploring añade búsquedas relacionadas, familias y productos bajo cada búsqueda.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-12
+source_date: 2026-11-12
 tags: website, search, shop, crm
 category: marketing
 ---
@@ -61,6 +61,51 @@ Está hecho para cumplir estas reglas:
 - No dice nada sobre lo que compra ningún otro cliente, y no se muestran recuentos de compradores ni cifras de ventas.
 - Responde en el idioma de la tienda.
 
+### Mejores precios y pedidos grandes
+
+Cuando un cliente pide un mejor precio o un descuento, o dice que algo es demasiado caro, el asesor no negocia. Muestra productos más baratos del tipo que pidió y añade tres cosas calculadas con nuestros datos, nunca por la IA:
+
+- si el cliente es miembro de **Gold Reward** y hasta cuándo, o cómo hacerse miembro (un pedido facturado le hace miembro durante 30 días);
+- una amnistía de precios para miembros, cuando la tienda tiene una activa;
+- el importe de pedido a partir del cual nuestro equipo llama para hablar de mejores condiciones.
+
+Después pregunta cuánto piensa pedir. Cuando el pedido previsto llega a ese importe, el asesor lo pasa enseguida, incluso antes de que el cliente acepte la llamada, para que un pedido grande nunca se pierda. Ofrece la llamada, pregunta si usar el teléfono de su cuenta u otro y cuándo le viene bien, y añade la respuesta al mismo aviso. Nunca dice quién llamará ni promete un descuento.
+
+Cada aviso es una tarea de prioridad alta para el equipo de **atención al cliente** de la organización, enlazada al cliente, con el importe previsto, el teléfono, la mejor hora y un enlace a la conversación. Todo el equipo recibe el aviso en aiku. Los responsables de oportunidades de venta de la organización están en la tarea y reciben el aviso por email, Slack y notificación del navegador (cada uno puede cambiarlo en su perfil). Mientras nadie haya cogido la tarea, se les recuerda a las 4 horas y después una vez al día, en días laborables entre las 09:00 y las 18:00 de la zona horaria de la organización.
+
+Lo configuran los administradores del sistema en **Organisations**: se abre la organización, se pulsa **Edit** y se va a **Sales leads**.
+
+- **Sales leads manager** (responsable de oportunidades): quién recibe cada aviso. Si se deja vacío, lo reciben los supervisores de atención al cliente y, si no hay ninguno, todos los administradores de la organización. Conviene indicar un responsable para que los avisos lleguen a la persona adecuada y no a todos los administradores.
+- **Big order from (EUR)** (pedido grande desde): el importe de pedido previsto a partir del cual se ofrece la llamada, convertido a la moneda de cada tienda. Si se deja vacío son 2.000 EUR, más o menos el mayor de cada 100 pedidos.
+- **Sales leads Slack channel** (canal de Slack): dónde se publica cada aviso y sus recordatorios. El bot de aiku tiene que ser miembro del canal.
+
+### Cuándo vuelve un producto
+
+Cuando un cliente pregunta cuándo vuelve un producto agotado, el asesor mira lo que hay pedido. Solo da un periodo cuando la fecha es fiable: una entrega en camino con fecha prevista aún por llegar, o un pedido hecho en los últimos 9 meses cuya llegada prevista aún no ha pasado. Dice "previsto entre el 1 y el 15 de diciembre", nunca un día exacto ni una cantidad. Muchos pedidos no tienen fecha prevista y algunos antiguos nunca se cerraron, así que a menudo no hay fecha fiable.
+
+Entonces el asesor lo dice y ofrece que nuestro equipo de compras se ponga en contacto con el cliente. Solo si el cliente acepta, la pregunta se convierte en una tarea para las personas de compras de la organización, enlazada al producto, con el cliente, su pregunta y lo que muestran nuestros pedidos. Reciben el aviso por email, Slack y notificación del navegador, y un recordatorio mientras nadie la coja, como los pedidos grandes.
+
+Para responder, escriba la respuesta para el cliente en la nota al marcar la tarea como hecha (o como último mensaje de la tarea antes de marcarla). Se traduce al idioma del cliente, se añade a su conversación con el asesor y se le envía con el email de notificación de chat de la tienda, con un enlace a la conversación. En una tienda donde ese email no está activado, atención al cliente recibe una tarea para enviar la respuesta. Si la tarea se marca como hecha sin respuesta, no se envía nada y la tarea lo indica.
+
+Lo configuran los administradores del sistema en **Organisations**: se abre la organización, se pulsa **Edit** y se va a **Restock questions**. El interruptor **Ask purchasing when there is no reliable date** está activado por defecto; desactivado, el asesor solo responde con nuestros pedidos. **Restock questions go to** elige quién las recibe; si se deja vacío, van a los compradores de la organización.
+
+### Preguntas generales y paso a una persona
+
+Además de productos, el asistente responde preguntas sobre cómo comprar en la tienda: pago, entrega, devoluciones, pedidos y la cuenta del cliente. Responde a partir de las páginas de políticas de la propia tienda, los ajustes de la tienda y las notas de atención al cliente y los datos verificados que se guardan en los ajustes de chat de la tienda, y enlaza la página que ha usado. Nunca responde con conocimientos generales, y solo repite una cifra, como un plazo de entrega o una tarifa, cuando esa cifra está escrita en el texto que ha usado.
+
+Cuando no está seguro, o la pregunta trata del pedido, la factura o el reembolso del propio cliente, no adivina. Lo dice y ofrece preguntar al equipo, con un toque en un botón bajo la respuesta. En la página del asistente también hay siempre un enlace **Talk to a person** (hablar con una persona).
+
+Lo que ocurre al tocarlo depende del momento y de la web:
+
+- Dentro del horario de chat, con alguien disponible, se abre un chat en la ventana de chat de la web.
+- Si no, la pregunta llega como una conversación por correo. Al cliente se le dice cuándo vuelve el equipo y que la respuesta llegará por correo, y su respuesta a ese correo cae en la misma conversación.
+- Una tienda sin buzón de correo conectado recibe un chat web que se responde más tarde.
+- Una web sin chat y sin buzón de correo no ofrece ninguna persona.
+
+Para el equipo de chat: estos chats llegan a la bandeja y a las alertas de siempre, marcados con el nombre del asistente. Usa el filtro **From the AI assistant** (del asistente de IA) para ver solo esos. La conversación del asistente con el cliente está al principio del chat, así que ves lo que ya se dijo. Si una respuesta del asistente fue incorrecta, márcala como **Wrong answer** (respuesta incorrecta) ahí mismo. Estos chats no cuentan en las cifras de tiempo de respuesta ni de cobertura de IA del chat; se informan en el informe **AI Assistant**, que se explica más abajo.
+
+Para que el asistente responda más, abre el informe y mira **Questions the assistant could not answer** (preguntas que el asistente no supo responder). Añade en los ajustes de chat de la tienda una nota que responda a una de ellas, y el asistente la responderá la próxima vez, en aproximadamente una hora.
+
 ### Límites y qué se registra
 
 Cada cliente puede hacer 6 preguntas por minuto, 40 por hora y 120 al día. Una respuesta tarda unos segundos y la página espera. Cada respuesta es uso de IA de pago, así que activa el asesor donde quieras que los clientes lo usen.
@@ -109,6 +154,7 @@ Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se ab
 - **Conversion** (conversión) es la proporción de conversaciones seguidas de un pedido así. Deja fuera las conversaciones de los últimos 7 días, porque todavía pueden convertirse en pedidos. Una nota ámbar indica desde qué día las cifras aún no son definitivas.
 - **AI cost** (coste de IA), en total, por conversación y como proporción de los ingresos.
 - **AI budget this month** (presupuesto de IA de este mes) muestra, por cada web con el asesor activado, lo gastado frente a su presupuesto mensual. La barra se vuelve ámbar a partir del 80% y roja con **Paused until** (en pausa hasta) y la fecha cuando se agota el presupuesto.
+- **Passed on to the team** (pasado al equipo) lista los pedidos grandes y las preguntas de reposición del periodo, primero los abiertos: el cliente, el pedido previsto o el producto, si pidió una llamada o cómo le llegó la respuesta, el estado de la tarea y quién la cogió. Lo que nadie ha cogido sale en ámbar con cuántos recordatorios se han enviado.
 
 **Funnel** (embudo) sigue las conversaciones paso a paso: productos mostrados, pulsados, añadidos a la cesta y pedidos, cada uno con su proporción respecto al paso anterior y respecto a todas las conversaciones. **Ordered** (pedidos) puede ser mayor que **Added to basket** (añadidos a la cesta), porque también cuenta productos que llegaron a la cesta de otra forma. El gráfico de al lado muestra los mismos pasos por día, o por semana en un periodo largo.
 
@@ -119,6 +165,22 @@ Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se ab
 **From the search box to a question** (del cuadro de búsqueda a una pregunta) muestra en cuántas búsquedas se ofreció el botón **Ask**, en cuántas de ellas se mostró la oferta de preguntar, y cuántas conversaciones se abrieron desde el cuadro de búsqueda, con las preguntas rechazadas por los límites o por el presupuesto debajo.
 
 Las cifras principales y los pasos del embudo son enlaces: abren las conversaciones que hay detrás.
+
+### Preguntas generales y traspasos
+
+En la pestaña **Overview**, **General questions and passing to a person** (preguntas generales y paso a una persona) muestra cómo trata el asistente las preguntas sobre la tienda y los traspasos a una persona. Solo se cuentan las conversaciones posteriores a la llegada de esta función. Cada cifra se compara con el periodo anterior y cada una es un enlace a las conversaciones que hay detrás.
+
+- **General questions** (preguntas generales) cuenta las respuestas sobre la tienda (políticas, entrega, devoluciones, la cuenta) y **Answered by the assistant** (respondidas por el asistente) las que respondió él mismo, sin ofrecer una persona.
+- **Passed to a person** (pasadas a una persona) cuenta los clientes que tocaron la oferta de preguntar al equipo. **Hand-over rate** (tasa de traspaso) es ese número por pregunta general, con la proporción de conversaciones que acabaron en traspaso debajo.
+- **AI cost of these answers** (coste de IA de estas respuestas) es el coste solo de las respuestas generales. **Answers marked wrong** (respuestas marcadas como incorrectas) cuenta las respuestas que el equipo de chat marcó como incorrectas.
+- **Answered from** (respondido a partir de) muestra en qué se basaron las respuestas: páginas de políticas, ajustes de la tienda, guías, notas, datos verificados o reglas aprendidas, descripciones de familias, o nuestros propios datos.
+- **Why a person was offered** (por qué se ofreció una persona) compara, para cada motivo (no estaba seguro de la respuesta, una pregunta sobre su propio pedido, el cliente pidió una persona), cuántas veces se ofreció una persona y a cuántos clientes se les pasó.
+- **How it reached the team** (cómo llegó al equipo) reparte los traspasos entre chat en vivo, chat por correo respondido más tarde y chat web respondido más tarde.
+- **First reply from a person** (primera respuesta de una persona) muestra, dentro y fuera del horario de chat, cuántos traspasos hubo, a cuántos respondió una persona y la espera mediana hasta esa primera respuesta. Fuera del horario de chat la espera incluye la noche.
+- **After passing to a person** (tras pasar a una persona) muestra a cuántos se respondió, cuántos chats están cerrados y cuántos clientes hicieron un pedido en los 7 días siguientes al traspaso. Solo se pueden juzgar los traspasos de más de 7 días, y la cifra indica cuántos son.
+- **Questions the assistant could not answer** (preguntas que el asistente no supo responder) lista lo que preguntaron los clientes cuando el asistente no estaba seguro, con cuántas veces, los idiomas y la última vez, y un enlace **Open** (abrir) a la conversación más reciente. Las preguntas solo se agrupan cuando las palabras son las mismas, así que dos formas de preguntar lo mismo salen como dos líneas.
+
+En la pestaña **Conversations**, una columna muestra qué conversaciones se pasaron a una persona, y la transcripción muestra, bajo cada respuesta, de dónde salió, cuándo se ofreció una persona y el chat al que se pasó.
 
 ### La pestaña Conversations
 

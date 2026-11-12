@@ -13,7 +13,6 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Http\Resources\Procurement\StockDeliveryResource;
 use App\Models\Catalogue\Shop;
@@ -50,7 +49,7 @@ class StoreStockDeliveryFromPurchaseOrder extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder, array $modelData = []): StockDelivery
     {
-        if ($purchaseOrder->state !== PurchaseOrderStateEnum::CONFIRMED) {
+        if (!$purchaseOrder->state->isAgreed()) {
             abort(422, __('Only confirmed purchase orders can create a stock delivery'));
         }
 

@@ -91,7 +91,7 @@ class ShowAgentOrderStage extends OrgAction
                 ->where('po.organisation_id', $orgAgent->organisation_id)
                 ->where('po.agent_id', $orgAgent->agent_id)
                 ->where('po.parent_type', 'OrgSupplier')
-                ->whereIn('po.state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+                ->whereIn('po.state', PurchaseOrderStateEnum::openValues())
                 ->whereNull('po.deleted_at')
                 ->whereNotExists(fn (QueryBuilderContract $query) => $query->selectRaw('1')
                     ->from('purchase_order_stock_delivery as posd')

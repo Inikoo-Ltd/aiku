@@ -200,7 +200,7 @@ class ImportAgentWarehouseStocksFromSheet
     private function openOrderWithProduct(Organisation $organisation, Collection $candidates, array $orderIds): ?PurchaseOrder
     {
         return PurchaseOrder::where('organisation_id', $organisation->id)
-            ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('state', PurchaseOrderStateEnum::open())
             ->whereHas('purchaseOrderTransactions', fn ($query) => $query->whereIn('supplier_product_id', $candidates->pluck('id')))
             ->orderByRaw('id = any(?::int[]) desc', ['{'.implode(',', $orderIds).'}'])
             ->orderByDesc('id')

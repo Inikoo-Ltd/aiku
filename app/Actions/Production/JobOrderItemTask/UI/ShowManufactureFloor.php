@@ -9,6 +9,7 @@
 namespace App\Actions\Production\JobOrderItemTask\UI;
 
 use App\Actions\Goods\ProductDevelopment\Recipe\RecordTrialRunFormulation;
+use App\Actions\Production\Artefact\StoreArtefactDevelopmentFeedback;
 use App\Actions\Production\JobOrderItem\GetJobOrderItemMissingMixes;
 use App\Actions\Production\JobOrderItemTask\SettleShortJobOrderItemTask;
 use App\Actions\Production\JobOrderItemTask\ShareMixPool;
@@ -345,6 +346,10 @@ class ShowManufactureFloor extends OrgAction
                     'parameters' => ['production' => $this->production->id],
                     'method'     => 'post',
                 ] : null,
+                'development_feedback' => [
+                    'route'   => ['name' => 'grp.models.artefact.development_feedback.store', 'parameters' => [], 'method' => 'post'],
+                    'reasons' => collect(StoreArtefactDevelopmentFeedback::reasonLabels())->map(fn (string $label, string $value) => ['value' => $value, 'label' => $label])->values()->all(),
+                ],
                 'tasks'        => $tasks,
                 'finished_today' => $finishedToday,
                 'today'        => [
@@ -557,6 +562,8 @@ class ShowManufactureFloor extends OrgAction
                 'parameters' => ['jobOrderItemTask' => $task->id],
                 'method'     => 'patch',
             ] : null,
+            'in_development'      => $members->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact)->filter(fn ($artefact) => $artefact->is_in_development)
+                ->unique('id')->map(fn ($artefact) => ['id' => $artefact->id, 'code' => $artefact->code])->values()->all(),
             'trial_run'           => !$isCombined && $task->jobOrder->isRequestedByDevelopment() ? [
                 'needs_formulation' => in_array($task->job_order_id, $this->trialRunsNeedingFormulation, true),
                 'brief_route'       => ['name' => 'grp.json.production.job_order.trial_run_brief', 'parameters' => ['jobOrder' => $task->job_order_id]],

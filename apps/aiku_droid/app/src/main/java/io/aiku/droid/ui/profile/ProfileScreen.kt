@@ -45,6 +45,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.aiku.droid.BuildConfig
 import io.aiku.droid.R
+import io.aiku.droid.data.api.StaffProfile
+import io.aiku.droid.ui.clocking.LocalClocking
+import io.aiku.droid.ui.clocking.clockingWeekTotal
+import io.aiku.droid.ui.clocking.rememberClockingNow
 import io.aiku.droid.ui.components.AikuButton
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.AppScreen
@@ -52,31 +56,28 @@ import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.GroupLabel
 import io.aiku.droid.ui.components.ListGroup
-import io.aiku.droid.ui.components.RowDivider
-import io.aiku.droid.ui.clocking.LocalClocking
-import io.aiku.droid.ui.clocking.clockingWeekTotal
-import io.aiku.droid.ui.clocking.rememberClockingNow
-import io.aiku.droid.ui.states.StatePreview
-import io.aiku.droid.ui.navigation.ClockingErrorRoute
-import io.aiku.droid.ui.navigation.StatePreviewRoute
 import io.aiku.droid.ui.components.ListRow
+import io.aiku.droid.ui.components.RowDivider
 import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.navigation.AppearanceRoute
-import io.aiku.droid.ui.navigation.TimesheetsRoute
+import io.aiku.droid.ui.navigation.ChangePasswordRoute
+import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.ClockingRoute
 import io.aiku.droid.ui.navigation.LanguageRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.navigation.LocalStaff
-import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.LocalWarehouse
 import io.aiku.droid.ui.navigation.LocalWarehouses
+import io.aiku.droid.ui.navigation.MainTab
 import io.aiku.droid.ui.navigation.NoWarehouseAccess
+import io.aiku.droid.ui.navigation.StatePreviewRoute
 import io.aiku.droid.ui.navigation.SyncQueueRoute
+import io.aiku.droid.ui.navigation.TimesheetsRoute
+import io.aiku.droid.ui.states.StatePreview
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private object ProfileSample {
-    const val ROLE = "Warehouse staff"
     const val LANGUAGE = "English"
     const val NOTIFICATIONS = "On"
     const val SYNC_WAITING = 3
@@ -95,7 +96,7 @@ private fun initialsOf(displayName: String, username: String): String {
 }
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(details: StaffProfile? = null) {
     val colors = LocalAikuColors.current
     val staff = LocalStaff.current
     val warehouse = LocalWarehouse.current
@@ -114,7 +115,12 @@ fun ProfileScreen() {
             )
         },
     ) {
-        UserCard(displayName = staff.displayName, username = staff.username)
+        UserCard(
+            displayName = staff.displayName,
+            username = staff.username,
+            position = details?.position,
+            organisation = details?.organisation?.name,
+        )
 
         if (hasWarehouse) {
             ProfileSection(title = stringResource(R.string.profile_org_warehouse)) {
@@ -180,6 +186,15 @@ fun ProfileScreen() {
             }
         }
 
+        ProfileSection(title = stringResource(R.string.profile_security)) {
+            ListGroup {
+                AppRow(
+                    label = stringResource(R.string.profile_change_password),
+                    onClick = { navigator.open(ChangePasswordRoute) },
+                )
+            }
+        }
+
         AikuButton(
             text = stringResource(R.string.profile_sign_out),
             onClick = navigator::signOut,
@@ -232,7 +247,7 @@ private fun ProfileSection(title: String, content: @Composable ColumnScope.() ->
 }
 
 @Composable
-private fun UserCard(displayName: String, username: String) {
+private fun UserCard(displayName: String, username: String, position: String?, organisation: String?) {
     val colors = LocalAikuColors.current
 
     Row(
@@ -272,15 +287,25 @@ private fun UserCard(displayName: String, username: String) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
                 )
-                Text(text = " · ", fontSize = 13.sp, color = colors.textTertiary)
+                if (position != null) {
+                    Text(text = " · ", fontSize = 13.sp, color = colors.textTertiary)
+                    Text(
+                        text = position,
+                        fontSize = 13.sp,
+                        color = colors.textTertiary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                }
+            }
+            if (organisation != null) {
                 Text(
-                    text = ProfileSample.ROLE,
+                    text = organisation,
                     fontSize = 13.sp,
                     color = colors.textTertiary,
                     maxLines = 1,
-                    modifier = Modifier
-                        .fakeData(4.dp)
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -392,7 +417,7 @@ private fun ScanCheckRow(label: String, isChecked: Boolean, onToggle: (Boolean) 
 @Composable
 private fun AppRow(
     label: String,
-    value: String,
+    value: String? = null,
     valueColor: Color? = null,
     isSampleValue: Boolean = false,
     onClick: (() -> Unit)? = null,
@@ -409,13 +434,15 @@ private fun AppRow(
             .padding(horizontal = 16.dp),
     ) {
         Text(text = label, fontSize = 15.sp, color = colors.text, modifier = Modifier.weight(1f))
-        Text(
-            text = value,
-            fontSize = 14.sp,
-            color = valueColor ?: colors.textTertiary,
-            maxLines = 1,
-            modifier = if (isSampleValue) Modifier.fakeData(4.dp).padding(horizontal = 6.dp, vertical = 2.dp) else Modifier,
-        )
+        if (value != null) {
+            Text(
+                text = value,
+                fontSize = 14.sp,
+                color = valueColor ?: colors.textTertiary,
+                maxLines = 1,
+                modifier = if (isSampleValue) Modifier.fakeData(4.dp).padding(horizontal = 6.dp, vertical = 2.dp) else Modifier,
+            )
+        }
     }
 }
 

@@ -6,6 +6,9 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
+use App\Actions\SupplyChain\SupplierAgreement\PublishSupplierAgreementVersion;
+use App\Actions\SupplyChain\SupplierAgreement\StoreSupplierAgreementVersion;
+use App\Actions\SupplyChain\SupplierAgreement\UpdateSupplierAgreementVersion;
 use App\Actions\Goods\ProductDevelopment\MoveProductDevelopmentToNextStage;
 use App\Actions\Goods\ProductDevelopment\StoreProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\StoreProductDevelopmentComment;
@@ -80,6 +83,9 @@ use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Actions\Accounting\BankTransaction\DismissBankTransaction;
+use App\Actions\Accounting\BankTransaction\PayBankTransactionToOrder;
+use App\Actions\Accounting\BankTransaction\RestoreBankTransaction;
 use App\Actions\Accounting\Payment\CancelPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
@@ -566,6 +572,7 @@ use App\Actions\Procurement\OrgSupplier\UpdateOrgSupplier;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProduct;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductMinimumCartonOrder;
 use App\Actions\Procurement\PurchaseOrder\PokeOrganisationsForMinimumOrder;
+use App\Actions\Procurement\OrgSupplierProducts\LinkOrgSupplierProductToGroupSko;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductAgentDetails;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductCartonBarcode;
 use App\Actions\Procurement\OrgSupplierProducts\UpdateOrgSupplierProductCartonWeights;
@@ -587,6 +594,7 @@ use App\Actions\Procurement\SupplierAgreedTerm\StoreSupplierAgreedTerm;
 use App\Actions\Procurement\SupplierAgreedTerm\WithdrawSupplierAgreedTerm;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderJourneyStage;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderReference;
 use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrder\SkipPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrderChase\StorePurchaseOrderChase;
@@ -639,6 +647,7 @@ use App\Actions\Production\Artefact\BranchArtefact;
 use App\Actions\Production\Artefact\MergeArtefactBranch;
 use App\Actions\Production\Artefact\CancelArtefactDevelopment;
 use App\Actions\Production\Artefact\DecideArtefactDevelopmentReview;
+use App\Actions\Production\Artefact\StoreArtefactDevelopmentFeedback;
 use App\Actions\Production\Production\SetDevelopmentReviewSettings;
 use App\Actions\Production\JobOrder\StoreTrialRunJobOrder;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
@@ -1202,6 +1211,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/stock/{stock:id}/carton-barcode', UpdateOrgSupplierProductCartonBarcode::class)->name('org_supplier_product.carton_barcode.update')->withoutScopedBindings();
     Route::post('org-supplier-product/{orgSupplierProduct:id}/packing-spec', StorePackingSpec::class)->name('org_supplier_product.packing_spec.store')->withoutScopedBindings();
     Route::patch('org-supplier-product/{orgSupplierProduct:id}/packing-instructions', UpdateSupplierProductPackingInstructions::class)->name('org_supplier_product.packing_instructions.update')->withoutScopedBindings();
+    Route::post('org-supplier-product/{orgSupplierProduct:id}/link-group-sko', LinkOrgSupplierProductToGroupSko::class)->name('org_supplier_product.link_group_sko')->withoutScopedBindings();
     Route::post('packing-spec/{packingSpec:id}/return', ReturnPackingSpec::class)->name('packing_spec.return')->withoutScopedBindings();
     Route::post('packing-spec/{packingSpec:id}/verify', VerifyPackingSpec::class)->name('packing_spec.verify')->withoutScopedBindings();
     Route::get('packing-spec/{packingSpec:id}/pdf', PdfPackingSpec::class)->name('packing_spec.pdf')->withoutScopedBindings();
@@ -1283,6 +1293,10 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
 
     Route::patch('/payment/{payment:id}/cancel', CancelPayment::class)->name('payment.cancel')->withoutScopedBindings();
+
+    Route::post('/bank-transaction/{bankTransaction:id}/pay-order', PayBankTransactionToOrder::class)->name('bank_transaction.pay_order')->withoutScopedBindings();
+    Route::post('/bank-transaction/{bankTransaction:id}/dismiss', DismissBankTransaction::class)->name('bank_transaction.dismiss')->withoutScopedBindings();
+    Route::post('/bank-transaction/{bankTransaction:id}/restore', RestoreBankTransaction::class)->name('bank_transaction.restore')->withoutScopedBindings();
 });
 
 Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {
@@ -1902,6 +1916,7 @@ Route::patch('/production/{production:id}/preparation-reasons', UpdateManufactur
 Route::patch('/production/{production:id}/mix-batch-sizes', UpdateProductionMixBatchSizes::class)->name('production.mix_batch_sizes.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/development-review-settings', SetDevelopmentReviewSettings::class)->name('production.development_review_settings.update')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/development-review', DecideArtefactDevelopmentReview::class)->name('artefact.development_review.decide')->withoutScopedBindings();
+Route::post('/artefact/{artefact:id}/development-feedback', StoreArtefactDevelopmentFeedback::class)->name('artefact.development_feedback.store')->withoutScopedBindings();
 Route::patch('/manufacture-break/{manufactureBreak:id}/end', EndManufactureBreak::class)->name('manufacture-break.end')->withoutScopedBindings();
 Route::patch('/manufacture-break/{manufactureBreak:id}/correct-end', CorrectManufactureBreakEnd::class)->name('manufacture-break.correct_end')->withoutScopedBindings();
 
@@ -1991,6 +2006,9 @@ Route::post('supplier-product/{supplierProduct:id}/agreed-term', [StoreSupplierA
 Route::post('agent/{agent:id}/agreed-term', [StoreSupplierAgreedTerm::class, 'inAgent'])->name('agent.agreed_term.store');
 Route::patch('agent/{agent:id}/packing-spec-cut-off', UpdateAgentPackingSpecCutOff::class)->name('agent.packing_spec_cut_off.update');
 Route::patch('supplier-agreed-term/{supplierAgreedTerm:id}/withdraw', [WithdrawSupplierAgreedTerm::class, 'withdraw'])->name('supplier_agreed_term.withdraw');
+Route::post('supplier-agreement-versions', StoreSupplierAgreementVersion::class)->name('supplier_agreement_version.store');
+Route::patch('supplier-agreement-versions/{supplierAgreementVersion:id}', UpdateSupplierAgreementVersion::class)->name('supplier_agreement_version.update');
+Route::post('supplier-agreement-versions/{supplierAgreementVersion:id}/publish', PublishSupplierAgreementVersion::class)->name('supplier_agreement_version.publish');
 
 Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->group(function () {
     Route::post('note', [StoreProcurementNote::class, 'inStockDelivery'])->name('note.store');
@@ -2080,6 +2098,7 @@ Route::name('org-partner.')->prefix('org-partner/{orgPartner:id}')->group(functi
 
 Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->group(function () {
     Route::patch('update', UpdatePurchaseOrder::class)->name('update');
+    Route::patch('reference', UpdatePurchaseOrderReference::class)->name('reference.update');
     Route::patch('journey-stage', UpdatePurchaseOrderJourneyStage::class)->name('journey_stage');
     Route::patch('stage', MarkPurchaseOrderStage::class)->name('stage');
     Route::patch('skip-stage', SkipPurchaseOrderStage::class)->name('skip_stage');

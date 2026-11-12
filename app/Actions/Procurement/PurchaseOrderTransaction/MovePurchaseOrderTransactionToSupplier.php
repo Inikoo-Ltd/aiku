@@ -37,9 +37,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The supplier of an order through an agent can not make a product: the agent gives all or part of the line to another
- * supplier of the same agent. The line lands on that supplier's open order of the same agent order in the same state, or
+ * supplier of the same agent. The line lands on that supplier's open order of the same agent order in any state up to Agreed, or
  * on a new one named after the source order with the new supplier's code, at the
  * price the buyer agreed; a different supplier price is asked to the buyer with the usual price question.
+ * The agent can also move the line to another order of the same supplier: it keeps its product and price.
  */
 class MovePurchaseOrderTransactionToSupplier extends OrgAction
 {
@@ -60,8 +61,10 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             $this->ensureMovable($sourcePurchaseOrder, $purchaseOrderTransaction, $quantity);
             $orgSupplier = $this->targetOrgSupplier($sourcePurchaseOrder, (int) $modelData['org_supplier_id']);
 
+            $isSameSupplier     = $orgSupplier->id === $sourcePurchaseOrder->parent_id;
             $orgStock           = $purchaseOrderTransaction->orgStock;
-            $orgSupplierProduct = $this->orgSupplierProductOfStock($orgSupplier, $orgStock->id)
+            $orgSupplierProduct = ($isSameSupplier ? $purchaseOrderTransaction->orgSupplierProduct : null)
+                ?? $this->orgSupplierProductOfStock($orgSupplier, $orgStock->id)
                 ?? StoreSupplierProductForOrgStock::make()->action($orgStock, [
                     'org_supplier_id'  => $orgSupplier->id,
                     'code'             => Arr::get($modelData, 'code') ?: $purchaseOrderTransaction->supplierProduct?->code,
@@ -72,7 +75,8 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
                     'cbm'              => $purchaseOrderTransaction->supplierProduct?->cbm,
                 ]);
 
-            $supplierProduct = $orgSupplierProduct->supplierProduct;
+            $supplierProduct        = $orgSupplierProduct->supplierProduct;
+            $historicSupplierProduct = ($isSameSupplier ? $purchaseOrderTransaction->historicSupplierProduct : null) ?? $supplierProduct->historicSupplierProduct;
             // ponytail: agents' suppliers share the agent's currency; a supplier in another currency is refused rather than converted
             if ($purchaseOrderTransaction->supplierProduct && $supplierProduct->currency_id !== $purchaseOrderTransaction->supplierProduct->currency_id) {
                 throw ValidationException::withMessages(['org_supplier_id' => __(':supplier sells in another currency: cancel the line and order it from them instead', ['supplier' => $orgSupplier->supplier->name])]);
@@ -95,13 +99,13 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
             $moved = StorePurchaseOrderTransaction::make()->action(
                 $targetPurchaseOrder,
-                $supplierProduct->historicSupplierProduct,
+                $historicSupplierProduct,
                 $orgStock,
                 array_filter([
                     'quantity_ordered'        => $quantity,
                     'net_amount'              => round($agreedUnitCost * $quantity, 2),
                     'org_supplier_product_id' => $orgSupplierProduct->id,
-                    'state'                   => $isNewPurchaseOrder ? null : PurchaseOrderTransactionStateEnum::from($targetPurchaseOrder->state->value),
+                    'state'                   => $isNewPurchaseOrder ? null : $targetPurchaseOrder->state->transactionState(),
                 ], fn ($value) => $value !== null),
                 strict: false
             );
@@ -109,12 +113,12 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             if ($isNewPurchaseOrder) {
                 // ponytail: handle(), not action(): the packing spec check would stop a product created a moment ago
                 $targetPurchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->handle($targetPurchaseOrder);
-                if ($sourcePurchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED) {
+                if ($sourcePurchaseOrder->state->isAgreed()) {
                     $targetPurchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->handle($targetPurchaseOrder);
                 }
             }
 
-            if (round((float) $supplierProduct->cost, 6) !== round($agreedUnitCost, 6) && (float) $supplierProduct->cost > 0) {
+            if (!$isSameSupplier && round((float) $supplierProduct->cost, 6) !== round($agreedUnitCost, 6) && (float) $supplierProduct->cost > 0) {
                 $moved = AskPurchaseOrderTransactionPriceChange::make()->action($moved->refresh(), [
                     'unit_cost' => $supplierProduct->cost,
                     'note'      => __('Moved from :reference', ['reference' => $sourcePurchaseOrder->reference]),
@@ -172,7 +176,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
         return $purchaseOrder !== null
             && $purchaseOrder->isAgentOrder()
-            && in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+            && in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
             && in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
             && !$purchaseOrder->areLinesLockedByProduction()
             && $purchaseOrderTransaction->org_stock_id !== null
@@ -191,7 +195,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
         $purchaseOrderTransaction->setRelation('purchaseOrder', $purchaseOrder);
 
         if (!self::isMovable($purchaseOrderTransaction)) {
-            throw ValidationException::withMessages(['purchase_order_transaction' => __('Only items not yet in production nor on a stock delivery can be moved to another supplier')]);
+            throw ValidationException::withMessages(['purchase_order_transaction' => __('Only items not yet in production nor on a stock delivery can be moved')]);
         }
 
         if ($quantity <= 0 || $quantity > (float) $purchaseOrderTransaction->quantity_ordered) {
@@ -203,8 +207,8 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
     {
         $orgSupplier = OrgSupplier::where('organisation_id', $purchaseOrder->organisation_id)->find($orgSupplierId);
 
-        if (!$orgSupplier || $orgSupplier->id === $purchaseOrder->parent_id || $orgSupplier->orgAgent?->agent_id !== $purchaseOrder->agent_id) {
-            throw ValidationException::withMessages(['org_supplier_id' => __('Choose another supplier of the same agent')]);
+        if (!$orgSupplier || ($orgSupplier->id !== $purchaseOrder->parent_id && $orgSupplier->orgAgent?->agent_id !== $purchaseOrder->agent_id)) {
+            throw ValidationException::withMessages(['org_supplier_id' => __('Choose a supplier of the same agent')]);
         }
 
         return $orgSupplier;
@@ -252,7 +256,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
      */
     public function openPurchaseOrderOf(OrgSupplier $orgSupplier, PurchaseOrder $sourcePurchaseOrder, ?Collection $purchaseOrdersTakingMovedLines = null): ?PurchaseOrder
     {
-        $movedLinesReference = mb_strtolower($this->baseReferenceForMovedLines($sourcePurchaseOrder).'-'.$orgSupplier->supplier->code);
+        $movedLinesReference = mb_strtolower($this->stemReferenceForMovedLines($sourcePurchaseOrder, $orgSupplier));
         $agentOrderReference = $sourcePurchaseOrder->agent_order_reference ? mb_strtolower($sourcePurchaseOrder->agent_order_reference) : null;
 
         return ($purchaseOrdersTakingMovedLines ?? $this->purchaseOrdersTakingMovedLines($orgSupplier, $sourcePurchaseOrder))
@@ -274,8 +278,9 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
     }
 
     /**
-     * Supplier orders in the same state that can still take lines: same agent and currency, not in production,
-     * nothing on a delivery. Any of them takes the line when the user types its reference.
+     * Supplier orders that can still take lines: in process, submitted or agreed whatever the source order's state, same
+     * agent and currency, not in production, nothing on a delivery, never the source order. Any of them takes the line
+     * when the user types its reference, and the line takes that order's state.
      *
      * @return EloquentBuilder<PurchaseOrder>
      */
@@ -283,8 +288,9 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
     {
         return PurchaseOrder::query()
             ->where('organisation_id', $sourcePurchaseOrder->organisation_id)
+            ->whereKeyNot($sourcePurchaseOrder->id)
             ->where('parent_type', 'OrgSupplier')
-            ->where('state', $sourcePurchaseOrder->state)
+            ->whereIn('state', self::statesTakingMovedLines())
             ->where('agent_id', $sourcePurchaseOrder->agent_id)
             ->where('currency_id', $sourcePurchaseOrder->currency_id)
             ->whereNull('production_started_at')
@@ -292,6 +298,14 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             ->whereNull('produced_at')
             ->whereDoesntHave('stockDeliveries', fn (EloquentBuilder $deliveries) => $deliveries->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED))
             ->orderBy('id');
+    }
+
+    /**
+     * @return array<int, PurchaseOrderStateEnum>
+     */
+    public static function statesTakingMovedLines(): array
+    {
+        return [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED];
     }
 
     /**
@@ -310,6 +324,10 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             return $openOrder;
         }
 
+        if ($lowerReference === mb_strtolower($sourcePurchaseOrder->reference)) {
+            throw ValidationException::withMessages(['reference' => __('The items are already on :reference: type the name of another order', ['reference' => $reference])]);
+        }
+
         if (PurchaseOrder::where('organisation_id', $sourcePurchaseOrder->organisation_id)->whereRaw('lower(reference) = ?', [$lowerReference])->exists()) {
             throw ValidationException::withMessages(['reference' => __(':reference is already used by an order that can not take this line: type another name', ['reference' => $reference])]);
         }
@@ -319,24 +337,32 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
     /**
      * The source reference with the new supplier's code, the way buyers split agent orders by hand (AWChina-94-SK-KEL):
-     * a line already moved once swaps the previous supplier's code instead of stacking codes.
+     * a line already moved once swaps the previous supplier's code instead of stacking codes. Lines staying with the same
+     * supplier get the source reference with the next free number (SET-AWIndo-134-2).
      *
      * @param Collection<int, string>|null $takenReferences lower case references starting with the source's, to name many suppliers with one query
      */
     public function referenceForMovedLines(PurchaseOrder $sourcePurchaseOrder, OrgSupplier $orgSupplier, ?Collection $takenReferences = null): string
     {
-        $supplierCode    = $orgSupplier->supplier->code;
-        $baseReference   = $this->baseReferenceForMovedLines($sourcePurchaseOrder);
+        $isSameSupplier  = $orgSupplier->id === $sourcePurchaseOrder->parent_id;
+        $stemReference   = $this->stemReferenceForMovedLines($sourcePurchaseOrder, $orgSupplier);
         $takenReferences = ($takenReferences ?? $this->takenReferencesForMovedLines($sourcePurchaseOrder))->flip();
 
-        $reference = $baseReference.'-'.$supplierCode;
-        $copy      = 1;
+        $copy      = $isSameSupplier ? 2 : 1;
+        $reference = $isSameSupplier ? $stemReference.'-'.$copy : $stemReference;
         while ($takenReferences->has(mb_strtolower($reference))) {
             $copy++;
-            $reference = $baseReference.'-'.$supplierCode.'-'.$copy;
+            $reference = $stemReference.'-'.$copy;
         }
 
         return $reference;
+    }
+
+    private function stemReferenceForMovedLines(PurchaseOrder $sourcePurchaseOrder, OrgSupplier $orgSupplier): string
+    {
+        return $orgSupplier->id === $sourcePurchaseOrder->parent_id
+            ? $sourcePurchaseOrder->reference
+            : $this->baseReferenceForMovedLines($sourcePurchaseOrder).'-'.$orgSupplier->supplier->code;
     }
 
     /**
@@ -367,7 +393,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
      */
     private function cancelWhenEmpty(PurchaseOrder $purchaseOrder): bool
     {
-        if (!in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+        if (!in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
             || $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()) {
             return false;
         }
@@ -419,16 +445,22 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
         $lastResult  = end($results);
         $targetOrder = $lastResult['moved']->purchaseOrder;
         $currency    = $targetOrder->currency?->code;
+        $movedLines  = collect($results)->map(fn (array $result) => __(':quantity units of :code', [
+            'quantity' => trimDecimalZeros($result['moved']->quantity_ordered),
+            'code'     => $result['moved']->supplierProduct?->code ?? $result['moved']->orgStock?->code,
+        ]))->implode(', ');
 
         NotifyBuyerOfAgentStageChange::run($purchaseOrder, $user, fn () => implode(' ', array_filter([
-            __('the agent moved :lines to :supplier (:reference), the supplier can not make them.', [
-                'lines'     => collect($results)->map(fn (array $result) => __(':quantity units of :code', [
-                    'quantity' => trimDecimalZeros($result['moved']->quantity_ordered),
-                    'code'     => $result['moved']->supplierProduct?->code ?? $result['moved']->orgStock?->code,
-                ]))->implode(', '),
-                'supplier'  => $targetOrder->parent_name,
-                'reference' => $targetOrder->reference,
-            ]),
+            $targetOrder->parent_id === $purchaseOrder->parent_id
+                ? __('the agent moved :lines to :reference, another order of the same supplier.', [
+                    'lines'     => $movedLines,
+                    'reference' => $targetOrder->reference,
+                ])
+                : __('the agent moved :lines to :supplier (:reference), the supplier can not make them.', [
+                    'lines'     => $movedLines,
+                    'supplier'  => $targetOrder->parent_name,
+                    'reference' => $targetOrder->reference,
+                ]),
             ...collect($results)->filter(fn (array $result) => $result['moved']->price_query_state)->map(fn (array $result) => __('New supplier price of :code :new, was :old: answer it on :reference.', [
                 'code'      => $result['moved']->supplierProduct?->code ?? $result['moved']->orgStock?->code,
                 'new'       => trimDecimalZeros($result['moved']->price_query_unit_cost).' '.$currency,

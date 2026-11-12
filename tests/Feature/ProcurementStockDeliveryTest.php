@@ -25,6 +25,8 @@ use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersCostedFromStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\RepairStockDeliveryCostings;
 use App\Actions\GoodsIn\StockDelivery\GetStockDeliveriesCostingReminder;
@@ -730,7 +732,12 @@ test('UI index purchase orders for supplier shows supplier-specific columns and 
                 'in_process'   => [__('In process'), 11],
                 'submitted'    => [__('Submitted'), 12],
                 'confirmed'    => [__('Agreed'), 13],
-                'settled'      => [__('Settled'), 14],
+                'in_production' => [__('Making It Happen'), 0],
+                'in_warehouse' => [__('In warehouse'), 0],
+                'ready'        => [__('Ready to Roll'), 0],
+                'handed_over'  => [__('Clean Hand Over'), 0],
+                'arrived'      => [__('Homeward Bound'), 0],
+                'settled'      => [__('Counted & Costed'), 14],
                 'cancelled'    => [__('Cancelled'), 15],
                 'not_received' => [__('Not Received'), 16],
             ])
@@ -2847,6 +2854,47 @@ describe('stock delivery costing checklist', function () {
         expect($stockDelivery->refresh()->is_costed)->toBeFalse();
     });
 
+    test('costing a delivery leaves the amounts of its purchase orders as ordered and only tells them they are costed (INI-236)', function () {
+        $stockDelivery  = $this->costingStockDelivery;
+        $orgSupplier    = OrgSupplier::first();
+        $costFields     = ['cost_items', 'cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax', 'cost_total'];
+        $purchaseOrders = collect([300, 700])->map(function (int $ordered) use ($orgSupplier, $stockDelivery) {
+            $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'INI-236-'.uniqid()]), strict: false);
+            $purchaseOrder->updateQuietly(['cost_items' => $ordered, 'cost_total' => $ordered]);
+            $stockDelivery->purchaseOrders()->syncWithoutDetaching([$purchaseOrder->id]);
+
+            return $purchaseOrder->refresh();
+        });
+        $asOrdered = $purchaseOrders->mapWithKeys(fn (PurchaseOrder $purchaseOrder) => [$purchaseOrder->id => $purchaseOrder->only($costFields)]);
+        $current   = fn () => $purchaseOrders->mapWithKeys(fn (PurchaseOrder $purchaseOrder) => [$purchaseOrder->id => $purchaseOrder->refresh()->only($costFields)]);
+        $costed    = fn () => $purchaseOrders->map(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->refresh()->is_costed)->all();
+
+        $stockDelivery->updateQuietly([
+            'state'         => StockDeliveryStateEnum::PLACED,
+            'placed_at'     => now(),
+            'is_costed'     => true,
+            'cost_items'    => 1000,
+            'cost_shipping' => 200,
+            'cost_extra'    => 50,
+            'cost_total'    => 1250,
+        ]);
+        UpdatePurchaseOrdersCostedFromStockDelivery::run($stockDelivery->refresh());
+
+        expect($costed())->toBe([true, true])
+            ->and($current()->all())->toEqual($asOrdered->all());
+
+        StockDeliveriesHydrateCosts::run($stockDelivery);
+
+        expect($costed())->toBe([true, true])
+            ->and($current()->all())->toEqual($asOrdered->all());
+
+        $stockDelivery->updateQuietly(['is_costed' => false]);
+        UpdatePurchaseOrdersCostedFromStockDelivery::run($stockDelivery);
+
+        expect($costed())->toBe([false, false])
+            ->and($current()->all())->toEqual($asOrdered->all());
+    });
+
     test('the agent or supplier invoice waiting for its invoice takes an estimate that lets put-away through until the real invoice replaces it', function () {
         $stockDelivery = $this->costingStockDelivery;
         $stockDelivery->update(['created_at' => StockDelivery::COSTS_REQUIRED_FROM]);
@@ -3511,7 +3559,7 @@ describe('supplier deposits', function () {
         $totalToPay = \App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder);
         expect($totalToPay)->toBe(round((float) $purchaseOrder->cost_items, 2))
             ->and($totalToPay)->toBeGreaterThan(400.0)
-            ->and(round((float) $purchaseOrder->cost_total, 2))->toBe($totalToPay + 150);
+            ->and(round((float) $purchaseOrder->cost_total, 2))->toBe($totalToPay);
 
         $this->post($confirmRoute, $payment())->assertSessionHasErrors('paid_at');
 
@@ -4118,4 +4166,18 @@ test('the shipment CBM of a purchase order counts its items as the container pag
 
     expect((float) collect($shipments)->firstWhere('reference', $stockDelivery->reference)['cbm'])->toEqual(2.0)
         ->and((float) $containerPage['volume'])->toEqual(2.0);
+});
+
+test('procurement is told about a delivery booked in without costs from a queue worker that has no permissions team set', function () {
+    Notification::fake();
+    $user = $this->adminGuest->getUser();
+    setPermissionsTeamId($this->group->id);
+    $user->assignRole("procurement-clerk-{$this->organisation->id}");
+    $stockDelivery = createStockDeliveryWithItems($this, 'NO-COSTS-QUEUE', [10]);
+    setPermissionsTeamId(null);
+
+    expect(\App\Actions\GoodsIn\StockDelivery\ReportStockDeliveryBookedInWithoutCosts::run($stockDelivery, ['Shipping']))->toBeGreaterThan(0);
+    Notification::assertSentTo($user, \App\Notifications\StockDeliveryBookedInWithoutCostsNotification::class);
+
+    $user->removeRole("procurement-clerk-{$this->organisation->id}");
 });

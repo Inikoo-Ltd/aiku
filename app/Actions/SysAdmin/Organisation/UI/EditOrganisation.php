@@ -223,6 +223,54 @@ class EditOrganisation extends OrgAction
                             ],
                         ],
                     ],
+                    [
+                        "label"  => __("Sales leads"),
+                        "icon"   => "fal fa-phone-alt",
+                        "fields" => [
+                            "sales_leads_manager_user_ids" => [
+                                "type"        => "multiselect-tags",
+                                "label"       => __("Sales leads manager"),
+                                "information" => __("Told at once, and again while nobody has taken it, when a customer asks the AI shopping assistant for a call about a big order. The customer services team gets the task. Leave empty to tell the customer services supervisors, or the organisation's administrators when there are none."),
+                                "options"     => $staffOptions,
+                                "labelProp"   => "name",
+                                "valueProp"   => "id",
+                                "value"       => Arr::get($organisation->settings, "sales_leads.manager_user_ids", []),
+                            ],
+                            "sales_leads_threshold_eur" => [
+                                "type"        => "input",
+                                "label"       => __("Big order from (EUR)"),
+                                "information" => __("The AI shopping assistant offers a call when a customer plans an order of at least this much, converted to the shop's currency. Leave empty for :amount EUR.", ["amount" => number_format((float) config("services.shopping_assistant.sales_lead_threshold_eur"))]),
+                                "value"       => Arr::get($organisation->settings, "sales_leads.threshold_eur"),
+                            ],
+                            "sales_leads_slack_channel" => [
+                                "type"        => "input",
+                                "label"       => __("Sales leads Slack channel"),
+                                "information" => __("Channel name or id where each big order lead and its reminders are posted by the aiku bot, which must be a member of the channel. Leave empty for no Slack post."),
+                                "value"       => Arr::get($organisation->settings, "sales_leads.slack_channel"),
+                            ],
+                        ],
+                    ],
+                    [
+                        "label"  => __("Restock questions"),
+                        "icon"   => "fal fa-box-open",
+                        "fields" => [
+                            "restock_questions_enabled" => [
+                                "type"        => "toggle",
+                                "label"       => __("Ask purchasing when there is no reliable date"),
+                                "information" => __("When a customer asks the AI shopping assistant when an out of stock product is coming back and our orders give no reliable date, it offers to have our purchasing team get back to them. The answer purchasing writes on the task is sent to the customer by email in their language."),
+                                "value"       => (bool) Arr::get($organisation->settings, "restock_questions.enabled", true),
+                            ],
+                            "restock_questions_user_ids" => [
+                                "type"        => "multiselect-tags",
+                                "label"       => __("Restock questions go to"),
+                                "information" => __("Leave empty to send them to the buyers of the organisation."),
+                                "options"     => $staffOptions,
+                                "labelProp"   => "name",
+                                "valueProp"   => "id",
+                                "value"       => Arr::get($organisation->settings, "restock_questions.user_ids", []),
+                            ],
+                        ],
+                    ],
                 ],
                 "args" => [
                     "updateRoute" => [

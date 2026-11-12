@@ -145,13 +145,7 @@ class EditPurchaseOrder extends OrgAction
                 'title'  => __('Clean handover'),
                 'icon'   => 'fal fa-clipboard-list',
                 'fields' => [
-                    'agent_reference'   => $this->agentReferenceField($purchaseOrder),
-                    'proposed_ready_at' => [
-                        'type'        => 'date',
-                        'label'       => __('Proposed ready date'),
-                        'information' => __('The day the buyer or the agent expects the goods to be ready to hand over. A purchaser approves it as the approved ready date on the order\'s stages.'),
-                        'value'       => $purchaseOrder->proposed_ready_at,
-                    ],
+                    'agent_reference' => $this->agentReferenceField($purchaseOrder),
                 ],
             ],
         ];
@@ -209,13 +203,7 @@ class EditPurchaseOrder extends OrgAction
         }
 
         $fields = [
-            'agent_reference'   => $this->agentReferenceField($purchaseOrder),
-            'proposed_ready_at' => [
-                'type'        => 'date',
-                'label'       => __('Proposed ready date'),
-                'information' => __('The day the buyer or the agent expects the goods to be ready to hand over. A purchaser approves it as the approved ready date on the order\'s stages.'),
-                'value'       => $purchaseOrder->proposed_ready_at,
-            ],
+            'agent_reference' => $this->agentReferenceField($purchaseOrder),
         ];
 
         if ($request->user()->authorisedShopOrganisations()->exists()) {

@@ -40,17 +40,23 @@ class IndexRepairSupplierProducts extends OrgAction
     use WithOrgSupplierSubNavigation;
     use WithProcurementAuthorisation;
 
-    private const string ON_DRAFT_PO = "exists (select 1 from purchase_order_transactions pot join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
-        where pot.supplier_product_id = supplier_products.id and pot.deleted_at is null and po.state in ('in_process', 'submitted'))";
+    private const string ON_PO = 'exists (select 1 from purchase_order_transactions pot join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
+        where pot.supplier_product_id = supplier_products.id and pot.deleted_at is null and po.state in (%s))';
 
-    private const string ON_SENT_PO = "exists (select 1 from purchase_order_transactions pot join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
-        where pot.supplier_product_id = supplier_products.id and pot.deleted_at is null and po.state = 'confirmed')";
+    /**
+     * @return array<string, string>
+     */
+    private static function purchaseOrderFilters(): array
+    {
+        $onDraft = sprintf(self::ON_PO, "'in_process', 'submitted'");
+        $onSent  = sprintf(self::ON_PO, PurchaseOrderStateEnum::agreedSql());
 
-    private const array PURCHASE_ORDER_FILTERS = [
-        'none'  => 'not '.self::ON_DRAFT_PO.' and not '.self::ON_SENT_PO,
-        'draft' => self::ON_DRAFT_PO,
-        'sent'  => self::ON_SENT_PO,
-    ];
+        return [
+            'none'  => "not $onDraft and not $onSent",
+            'draft' => $onDraft,
+            'sent'  => $onSent,
+        ];
+    }
 
     public function handle(Supplier $supplier, ?string $state, ?string $purchaseOrders): LengthAwarePaginator
     {
@@ -63,7 +69,7 @@ class IndexRepairSupplierProducts extends OrgAction
 
         $queryBuilder = QueryBuilder::for($this->supplierProducts($supplier))
             ->when($state, fn ($query) => $query->where('supplier_products.state', $state))
-            ->when($purchaseOrders, fn ($query) => $query->whereRaw(self::PURCHASE_ORDER_FILTERS[$purchaseOrders]));
+            ->when($purchaseOrders, fn ($query) => $query->whereRaw(self::purchaseOrderFilters()[$purchaseOrders]));
 
         return $queryBuilder
             ->defaultSort('supplier_products.code')
@@ -74,7 +80,7 @@ class IndexRepairSupplierProducts extends OrgAction
                 'supplier_products.state',
             ])
             ->selectSub($this->purchaseOrderReferences([PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED]), 'draft_purchase_orders')
-            ->selectSub($this->purchaseOrderReferences([PurchaseOrderStateEnum::CONFIRMED]), 'sent_purchase_orders')
+            ->selectSub($this->purchaseOrderReferences(PurchaseOrderStateEnum::agreed()), 'sent_purchase_orders')
             ->allowedSorts(['code', 'name', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator(null, tableName: request()->route()->getName())
@@ -123,7 +129,7 @@ class IndexRepairSupplierProducts extends OrgAction
     {
         $stateCounts = $this->supplierProducts($supplier)->selectRaw('state, count(*) as count')->groupBy('state')->pluck('count', 'state')->all();
         $poCounts    = (array) $this->supplierProducts($supplier)->toBase()->selectRaw(
-            implode(', ', array_map(fn (string $key) => 'count(*) filter (where '.self::PURCHASE_ORDER_FILTERS[$key].') as '.$key, array_keys(self::PURCHASE_ORDER_FILTERS)))
+            implode(', ', array_map(fn (string $key) => 'count(*) filter (where '.self::purchaseOrderFilters()[$key].') as '.$key, array_keys(self::purchaseOrderFilters())))
         )->first();
 
         return [
@@ -173,7 +179,7 @@ class IndexRepairSupplierProducts extends OrgAction
         $title          = __('Repair');
         $state          = $request->query('state', SupplierProductStateEnum::ACTIVE->value);
         $state          = SupplierProductStateEnum::tryFrom((string) $state)?->value;
-        $purchaseOrders = array_key_exists((string) $request->query('purchase_orders'), self::PURCHASE_ORDER_FILTERS) ? (string) $request->query('purchase_orders') : null;
+        $purchaseOrders = array_key_exists((string) $request->query('purchase_orders'), self::purchaseOrderFilters()) ? (string) $request->query('purchase_orders') : null;
 
         return Inertia::render(
             'Procurement/RepairSupplierProducts',

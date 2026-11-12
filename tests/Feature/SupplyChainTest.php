@@ -1844,7 +1844,7 @@ test('UI agents purchase order states', function () {
 test('UI agents pending purchase orders list', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.agents.purchase_order_states.purchase_orders', [
-        'filter[stage]'   => 'submitted',
+        'filter[state]'   => 'submitted',
         'filter[deposit]' => 'no_deposit',
         'filter[sent]'    => '0_3,3_6',
         'filter[client]'  => $this->organisation->slug,
@@ -2417,4 +2417,21 @@ test('the group supplier product page saves the carton barcode through the organ
 
     $this->patchJson(route($route['name'], $route['parameters']), ['carton_barcode' => ' 5050000000079C '])->assertOk();
     expect($this->stocks[0]->refresh()->carton_barcode)->toBe('5050000000079C');
+});
+
+test('an organisation buying from a supplier through an agent can rename it from its own edit page', function () {
+    setPermissionsTeamId($this->group->id);
+    $agent       = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $supplier    = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $supplier    = UpdateSupplier::make()->action(supplier: $supplier, modelData: ['agent_id' => $agent->id]);
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', '!=', $agent->organisation_id)->first();
+    $user        = \App\Actions\SysAdmin\Guest\StoreGuest::make()->action($this->group, array_merge(\App\Models\SysAdmin\Guest::factory()->definition(), ['positions' => []]))->getUser();
+    $user->givePermissionTo(["procurement.{$orgSupplier->organisation_id}.view", "procurement.{$orgSupplier->organisation_id}.edit"]);
+    actingAs($user);
+
+    $blueprint = $this->get(route('grp.org.procurement.org_suppliers.edit', [$orgSupplier->organisation->slug, $orgSupplier->slug]))->viewData('page')['props']['formData']['blueprint'];
+    expect(collect($blueprint)->pluck('fields.name.type')->filter()->values()->all())->toBe(['input']);
+
+    $this->patch(route('grp.models.supplier.update', $supplier->id), ['name' => 'Renamed by buyer'])->assertSessionHasNoErrors();
+    expect($supplier->refresh()->name)->toBe('Renamed by buyer');
 });

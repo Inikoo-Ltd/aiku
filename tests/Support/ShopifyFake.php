@@ -10,8 +10,10 @@ namespace Tests\Support;
 
 use App\Actions\Dropshipping\Shopify\ShopifyApiInit;
 use Gnikyt\BasicShopifyAPI\Options;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\ResponseSequence;
 use Illuminate\Support\Arr;
@@ -36,7 +38,7 @@ class ShopifyFake
 
     private static array $replies = [];
 
-    private static ?int $fakedFactory = null;
+    private static ?\WeakReference $fakedFactory = null;
 
     public static function fake(array $replies): void
     {
@@ -53,10 +55,10 @@ class ShopifyFake
 
         Http::preventStrayRequests();
 
-        if (self::$fakedFactory === spl_object_id(Http::getFacadeRoot())) {
+        if (self::$fakedFactory?->get() === Http::getFacadeRoot()) {
             return;
         }
-        self::$fakedFactory = spl_object_id(Http::getFacadeRoot());
+        self::$fakedFactory = \WeakReference::create(Http::getFacadeRoot());
 
         Http::fake(function (Request $request) {
             $operation = self::operation($request);
@@ -129,9 +131,13 @@ class ShopifyFake
             $headers = array_map(fn (array $values) => implode(', ', $values), $request->getHeaders());
             unset($headers['Content-Length']);
 
-            $response = Http::withHeaders($headers)
-                ->withBody((string) $request->getBody(), $request->getHeaderLine('Content-Type') ?: 'application/json')
-                ->send($request->getMethod(), (string) $request->getUri());
+            try {
+                $response = Http::withHeaders($headers)
+                    ->withBody((string) $request->getBody(), $request->getHeaderLine('Content-Type') ?: 'application/json')
+                    ->send($request->getMethod(), (string) $request->getUri());
+            } catch (ConnectionException|ConnectException $exception) {
+                return Create::rejectionFor(new ConnectException($exception->getMessage(), $request));
+            }
 
             return Create::promiseFor($response->toPsrResponse());
         };

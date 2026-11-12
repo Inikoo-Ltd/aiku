@@ -175,6 +175,17 @@ class IndexOrgSupplierProducts extends OrgAction
                     ->select('org_stocks.code'),
                 'internal_code'
             );
+            $queryBuilder->selectSub(
+                fn ($query) => $query->from('org_stocks')
+                    ->whereColumn('org_stocks.organisation_id', 'org_supplier_products.organisation_id')
+                    ->whereIn('org_stocks.stock_id', fn ($query) => $query->from('stock_has_supplier_products')
+                        ->whereColumn('stock_has_supplier_products.supplier_product_id', 'org_supplier_products.supplier_product_id')
+                        ->select('stock_has_supplier_products.stock_id'))
+                    ->orderBy('org_stocks.id')
+                    ->limit(1)
+                    ->select('org_stocks.code'),
+                'group_sko_code'
+            );
             $queryBuilder->selectRaw("case when supplier_products.is_available and org_supplier_products.is_available then 'available' else 'unavailable' end as availability_status");
         }
 
@@ -418,6 +429,9 @@ class IndexOrgSupplierProducts extends OrgAction
                         : Inertia::optional(fn () => AgentSuppliersDataQualityResource::collection(IndexAgentSuppliersDataQuality::run($agent, $this->parent, OrgSupplierProductsTabsEnum::SUPPLIERS->value))))
                     : null,
                 'labels_print'  => $this->getLabelsPrint(),
+                'link_group_sko_route' => $request->user()->authTo("procurement.{$this->organisation->id}.edit")
+                    ? ['name' => 'grp.models.org.org_supplier_product.link_group_sko', 'parameters' => ['organisation' => $this->organisation->id]]
+                    : null,
                 'copy_products' => $this->getCopyProducts($request),
                 'copy_targets'  => Inertia::optional(fn () => $this->getCopyTargets($request)),
                 OrgSupplierProductsTabsEnum::HISTORY->value => $this->parent instanceof OrgSupplier && $this->tab == OrgSupplierProductsTabsEnum::HISTORY->value

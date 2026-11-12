@@ -25,6 +25,7 @@ enum InvoiceCategoryTypeEnum: string
     case IN_SALES_CHANNEL = 'in_sales_channel';
     case IN_SALES_CHANNEL_SHOP = 'in_sales_channel_shop';
     case IN_SHOP_OR_IN_SALES_CHANNEL_SHOP = 'in_shop_or_in_sales_channel_shop';
+    case SERVICES_TO_PARTNER = 'services_to_partner';
 
     public static function labels(): array
     {
@@ -39,6 +40,7 @@ enum InvoiceCategoryTypeEnum: string
             'in_sales_channel'                 => __('In sales channel'),
             'in_sales_channel_shop'            => __('In sales channel/shop'),
             'in_shop_or_in_sales_channel_shop' => __('In shop or in sales channel/shop'),
+            'services_to_partner'              => __('Services to partner'),
         ];
     }
 }

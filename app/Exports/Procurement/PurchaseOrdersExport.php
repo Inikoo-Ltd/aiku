@@ -52,10 +52,6 @@ class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
             $row->gross_weight,
             $row->net_weight,
             $row->cost_items,
-            $row->cost_extra,
-            $row->cost_shipping,
-            $row->cost_duties,
-            $row->cost_tax,
             $row->cost_total,
             $row->created_at
         ];
@@ -80,10 +76,6 @@ class PurchaseOrdersExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
             'Gross Weight',
             'Net Weight',
             'Cost Items',
-            'Cost Extra',
-            'Cost Shipping',
-            'Cost Duties',
-            'Cost Tax',
             'Cost Total',
             'Created At'
         ];

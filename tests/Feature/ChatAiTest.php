@@ -763,6 +763,7 @@ test('the knowledge base splits pages into sections and keeps the notes staff wr
 
     $saved = \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, null, ['title' => 'Testers', 'body' => 'Diffuser testers are not available until the website variants are fixed.'], $this->user);
     \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, $saved, ['title' => 'Diffuser testers', 'body' => $saved->body]);
+    \Illuminate\Support\Facades\Http::fake(['*embeddings' => \Illuminate\Support\Facades\Http::response([], 500)]);
     \App\Actions\Chat\ChatSession\HydrateChatKnowledge::run($this->shop);
 
     expect($saved->refresh()->only(['title', 'is_manual', 'kind', 'created_by_user_id']))->toBe(['title' => 'Diffuser testers', 'is_manual' => true, 'kind' => 'note', 'created_by_user_id' => $this->user->id])
@@ -1401,7 +1402,9 @@ test('Polish rewrites a staff reply but keeps pictures, merge fields, links and 
     [$masked, $tokens] = $polish->mask($original);
 
     expect($tokens)->toBe(['[image:abc-1]', 'https://example.com/p?a_b=1', 'cs@shop.com', '{first_name}'])
-        ->and($masked)->toBe('hola Ana, tu pedido 123456 sale mañana, total 45.90 €. mira ⟦1⟧ y ⟦2⟧ o escribe a ⟦3⟧ ⟦4⟧');
+        ->and($masked)->toBe('hola Ana, tu pedido 123456 sale mañana, total 45.90 €. mira ⟦1⟧ y ⟦2⟧ o escribe a ⟦3⟧ ⟦4⟧')
+        ->and($polish->mask('Paga aquí: *https://pay.checkout.com/link/pl_WMgxYICK-AN_* o _mira www.shop.test/p_'))->toBe(['Paga aquí: *⟦1⟧* o _mira ⟦2⟧_', ['https://pay.checkout.com/link/pl_WMgxYICK-AN_', 'www.shop.test/p']])
+        ->and($polish->mask('_Paga aquí_: https://pay.checkout.com/link/pl_X_.'))->toBe(['_Paga aquí_: ⟦1⟧.', ['https://pay.checkout.com/link/pl_X_']]);
 
     $reply  = fn (string $text) => ['choices' => [['message' => ['content' => json_encode(['text' => $text])]]]];
     $jev    = fn (float $meaning) => ['answers' => [

@@ -39,6 +39,12 @@ En **Settings**, **Who reviews** elige a las personas que reciben la tarea (el r
 
 Si no hay nadie elegido en **Who reviews**, no se envía ninguna tarea; la pestaña lo indica.
 
+## Comentarios desde la planta
+
+En la tableta, cada trabajo de un producto en desarrollo muestra **Product in development: the steps and timings are still being worked out**, y la lista de trabajos lo marca **In development**. El artesano puede pulsar **Send feedback**, antes de empezar o mientras trabaja, y marcar qué está mal: **A step is missing** (falta un paso), **A step is not needed** (sobra un paso), **Steps in the wrong order** (pasos en mal orden), **A material or packaging is missing or wrong** (falta o está mal un material o embalaje), con un comentario opcional.
+
+Cada producto tiene una tarea para sus comentarios, **Feedback from the floor on …**, para la primera persona elegida en **Who reviews** (el responsable de producción). Cada comentario se añade como una línea y un mensaje. Mientras esa tarea está abierta, el producto muestra **Floor feedback open** en la pestaña, y **Review** enseña los comentarios y no deja guardar sus objetivos: corrige la receta y cierra la tarea. Aun así puedes dejar el producto en desarrollo. Añadir o quitar un paso de la receta reinicia su cronometraje, como se explica arriba.
+
 ## Decidir
 
 Pulsa **Review** en un producto. Para cada paso ves el objetivo propuesto, las sesiones contadas y las que se dejaron fuera (con el motivo), y los objetivos de pasos similares de la fábrica como comparación. Después:

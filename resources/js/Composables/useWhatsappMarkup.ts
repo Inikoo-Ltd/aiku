@@ -15,23 +15,73 @@ const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ESCAPE
  * only closes when the character after it is not a word character. Without that guard an
  * underscore inside snake_case or an asterisk in a maths expression would open a tag.
  */
-const wrap = (text: string, marker: string, tag: string) => {
+const markerPattern = (marker: string) => {
     const escaped = marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-    const pattern = new RegExp(
+
+    return new RegExp(
         `(^|[^\\w${escaped}])${escaped}([^\\s${escaped}][^${escaped}\\n]*[^\\s${escaped}]|[^\\s${escaped}])${escaped}(?![\\w${escaped}])`,
         "g"
     )
-
-    return text.replace(pattern, `$1<${tag}>$2</${tag}>`)
 }
 
-const URL_PATTERN = /\b(?:https?:\/\/|www\.)[^\s<>"]+/gi
+const wrap = (text: string, marker: string, tag: string) => text.replace(markerPattern(marker), `$1<${tag}>$2</${tag}>`)
+
+const MARKER_ORDER = ["__", "*", "_", "~"]
+const URL_PATTERN = /(^|[\W_])((?:https?:\/\/|www\.)[^\s<>"]+)/gi
 const TRAILING_PUNCTUATION = /[.,;:!?'")\]*_~]+$/
+const OPENING_MARKERS = /(^|[^\w*_~])([*_~]+)(?=[^\s*_~])/g
+const CLOSING_MARKERS = /([^\s*_~])([*_~]+)(?![\w*_~])/g
+
+/**
+ * How many of each marker character stand where the pattern looks, once the formatting that
+ * opens and closes within the stretch of line is taken out. No lookbehind: the storefront chat
+ * loads this file, and browsers without it would fail to load the chat at all.
+ */
+const looseMarkers = (stretch: string, pattern: RegExp): Record<string, number> => {
+    const counts: Record<string, number> = {}
+    MARKER_ORDER.reduce((rest, marker) => rest.replace(markerPattern(marker), "$1$2"), stretch).replace(
+        pattern,
+        (found: string, _before: string, markers: string) => {
+            for (const marker of markers) {
+                counts[marker] = (counts[marker] ?? 0) + 1
+            }
+
+            return found
+        }
+    )
+
+    return counts
+}
+
+/**
+ * Where a bare link ends. Trailing punctuation stays outside it, except a closing bracket
+ * the link itself opened, as Wikipedia's do, and a trailing *, _ or ~: Checkout.com payment
+ * links end in _. A trailing marker closes formatting only when that formatting is still open
+ * before the link on its line and nothing after the link closes it; where more trail than
+ * that, the last ones close and those before them belong to the link.
+ * SendChatMessageByGmail::bareLinkUrl must stay in step.
+ */
+const linkEnd = (whole: string, lineBefore: string, lineAfter: string): string => {
+    const open = looseMarkers(`${lineBefore}\u0000`, OPENING_MARKERS)
+    const closedLater = looseMarkers(`\u0000${lineAfter.replace(URL_PATTERN, "$1\u0000")}`, CLOSING_MARKERS)
+    let url = whole.replace(TRAILING_PUNCTUATION, "")
+    while (whole.length > url.length) {
+        const next = whole[url.length]
+        const isOwnBracket = next === ")" && url.split("(").length > url.split(")").length
+        const closing = Math.max(0, (open[next] ?? 0) - (closedLater[next] ?? 0))
+        const isOwnMarker = "*_~".includes(next) && whole.slice(url.length).split(next).length - 1 > closing
+        if (!isOwnBracket && !isOwnMarker) {
+            break
+        }
+        url += next
+    }
+
+    return url
+}
 
 /**
  * Pulls the links out before escaping and markup, so an underscore or asterisk inside a URL
- * never opens a tag, and puts them back as anchors at the end. Trailing punctuation stays
- * outside the link, except a closing bracket the URL itself opened, as Wikipedia's do.
+ * never opens a tag, and puts them back as anchors at the end.
  */
 const LABELLED_LINK = /\[([^[\]\n]+)\]\((https?:\/\/[^\s()<>"]+)\)/gi
 
@@ -47,20 +97,17 @@ const extractLinks = (value: string, labelledLinks: boolean): [string, Extracted
         })
     }
 
-    const text = value.replace(URL_PATTERN, (match: string, offset: number, source: string) => {
-        const lineBefore = (source.slice(0, offset).split("\n").pop() ?? "").replace(URL_PATTERN, "")
-        let url = match.replace(TRAILING_PUNCTUATION, "")
-        while (match.length > url.length) {
-            const next = match[url.length]
-            const isOwnBracket = next === ")" && url.split("(").length > url.split(")").length
-            const isUnopenedMarker = "*_~".includes(next) && !new RegExp(`(?:^|[^\\w*_~])\\${next}(?=\\S)`).test(lineBefore)
-            if (!isOwnBracket && !isUnopenedMarker) {
-                break
-            }
-            url += next
-        }
+    let processed = ""
+    let cursor = 0
+    const text = value.replace(URL_PATTERN, (found: string, before: string, whole: string, offset: number, source: string) => {
+        processed += source.slice(cursor, offset) + before
+        cursor = offset + found.length
+        const url = linkEnd(whole, processed.split("\n").pop() ?? "", source.slice(cursor).split("\n")[0])
         links.push({ url, label: url })
-        return `\u0000${links.length - 1}\u0000${match.slice(url.length)}`
+        const placed = `\u0000${links.length - 1}\u0000${whole.slice(url.length)}`
+        processed += placed
+
+        return before + placed
     })
 
     return [text, links]

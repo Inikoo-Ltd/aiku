@@ -8,15 +8,21 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-class KeystoreCipher(private val keyAlias: String) {
+interface ByteCipher {
+    fun encrypt(plainBytes: ByteArray): ByteArray
 
-    fun encrypt(plainBytes: ByteArray): ByteArray {
+    fun decrypt(encryptedBytes: ByteArray): ByteArray
+}
+
+class KeystoreCipher(private val keyAlias: String) : ByteCipher {
+
+    override fun encrypt(plainBytes: ByteArray): ByteArray {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, secretKey())
         return cipher.iv + cipher.doFinal(plainBytes)
     }
 
-    fun decrypt(encryptedBytes: ByteArray): ByteArray {
+    override fun decrypt(encryptedBytes: ByteArray): ByteArray {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.DECRYPT_MODE, secretKey(), GCMParameterSpec(TAG_LENGTH_BITS, encryptedBytes, 0, IV_LENGTH_BYTES))
         return cipher.doFinal(encryptedBytes, IV_LENGTH_BYTES, encryptedBytes.size - IV_LENGTH_BYTES)

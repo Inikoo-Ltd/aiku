@@ -10,6 +10,7 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Comms\Email\SendAccountErasedEmail;
+use App\Actions\Comms\WhatsappSubscriber\SyncCustomerWhatsappSubscriber;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -18,6 +19,7 @@ use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatMessageTranslation;
 use App\Models\Chat\ChatSession;
 use App\Models\Comms\EmailAddress;
+use App\Models\Comms\WhatsappSubscriber;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
@@ -176,6 +178,7 @@ class AnonymiseCustomer extends OrgAction
             'fiscal_name'              => $keepCompanyName ? $customer->fiscal_name : null,
             'email'                    => null,
             'phone'                    => null,
+            'marketing_whatsapp_phone' => null,
             'identity_document_type'   => null,
             'identity_document_number' => null,
             'contact_website'          => null,
@@ -312,6 +315,7 @@ class AnonymiseCustomer extends OrgAction
             ->update(['body' => null, 'tool_calls' => null, 'follow_ups' => null]);
         ShoppingAssistantEvent::whereIn('shopping_assistant_conversation_id', $conversationIds)
             ->update(['reason' => null]);
+        DB::table('shopping_assistant_hand_overs')->whereIn('shopping_assistant_conversation_id', $conversationIds)->update(['question' => null]);
     }
 
     private function anonymiseDispatchedEmailRecipients(Customer $customer, array $webUserIds): void
@@ -353,6 +357,13 @@ class AnonymiseCustomer extends OrgAction
             $unsubscribed[$channel.'_unsubscribed_origin_type'] = 'Customer';
         }
         $comms->forceFill($unsubscribed)->saveQuietly();
+
+        WhatsappSubscriber::withTrashed()
+            ->where('parent_type', 'Customer')
+            ->where('parent_id', $customer->id)
+            ->update(['consented_at' => null, 'consent' => null]);
+
+        SyncCustomerWhatsappSubscriber::run($customer);
     }
 
     private function scrubEarlierAudits(Customer $customer, array $webUserIds): void

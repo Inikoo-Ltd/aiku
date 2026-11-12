@@ -1,5 +1,20 @@
 export type LinkType = 'web' | 'email' | 'phone' | 'sms'
 
+export interface ReadyMadeLink {
+    key: string
+    label: string
+    url: string
+}
+
+const withoutQuery = (url: string | null | undefined): string => {
+    const [withoutFragment, fragment] = String(url ?? '').trim().split('#')
+
+    return withoutFragment.split('?')[0].replace(/\/$/, '') + (fragment ? '#' + fragment : '')
+}
+
+export const findReadyMadeLink = (readyMadeLinks: ReadyMadeLink[] | undefined, url: string | null | undefined): ReadyMadeLink | null =>
+    (readyMadeLinks ?? []).find((link) => withoutQuery(link.url) === withoutQuery(url)) ?? null
+
 export interface LinkDialogValue {
     href: string
     text: string

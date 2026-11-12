@@ -23,7 +23,6 @@ use App\Models\Procurement\AgentGoodsReceipt;
 use App\Models\Procurement\AgentGoodsReceiptItem;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\User;
-use App\Actions\SupplyChain\UI\GetPurchaseOrderJourney;
 use App\Actions\SupplyChain\UI\ShowSupplyChainPurchaseOrderJourney;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -343,6 +342,8 @@ class GetPurchaseOrderStages
                 'date'  => $step['date'],
                 'by'    => $names->get($step['user_id']),
                 'note'  => $this->stepNote($step, $steps[$stage->value] ?? []),
+                'expected' => $step['key'] === 'approved_ready_at' && $step['date'] === null ? ($expected[Stage::HANDED_OVER->value]['date'] ?? null) : null,
+                'expected_note' => $step['key'] === 'approved_ready_at' && $step['date'] === null ? ($expected[Stage::HANDED_OVER->value]['note'] ?? null) : null,
             ])->all(),
             'evidence'    => collect($stage->evidence())->map(fn (PurchaseOrderAttachmentScopeEnum $scope) => [
                 'scope' => $scope->value,
@@ -363,7 +364,7 @@ class GetPurchaseOrderStages
                     'blocked' => $purchaseOrder->{$field} === null ? $this->blockedReason($purchaseOrder, $stage, $stages) : null,
                     'skipped' => $this->skippedBy($purchaseOrder, $field, $stages),
                     'planned' => in_array($field, Stage::PLANNED_FIELDS),
-                    'suggested' => $field === 'approved_ready_at' ? $purchaseOrder->proposed_ready_at : null,
+                    'suggested' => $field === 'approved_ready_at' ? ($purchaseOrder->proposed_ready_at ?? ($expected[Stage::HANDED_OVER->value]['date'] ?? null)) : null,
                 ])->values()->all(),
             'skips'       => collect(Stage::SKIPS)
                 ->filter(fn (Stage $skipStage, string $key) => $skipStage === $stage && in_array($key, $skippableKeys)
@@ -386,7 +387,7 @@ class GetPurchaseOrderStages
 
     /**
      * Each stage's expected date, from the plan the PO journey board draws for the order: the agent's or
-     * supplier's lead time stretched over the stages, and the approved ready date for QC. The board works the
+     * supplier's lead time stretched over the stages, and the proposed ready date for QC and Clean Hand Over. The board works the
      * shipping date back from the arrival estimate, so a stage is never expected before the one ahead of it.
      * Each date carries a note saying where it came from, so a buyer can tell a plan from a promise.
      *
@@ -442,9 +443,8 @@ class GetPurchaseOrderStages
             'lead_time'            => __(':days days after :stage: this stage\'s share of the :lead-day lead time set on :parent.', [...$replacements, 'lead' => $ribbon['lead_time'], 'parent' => $ribbon['parent_name']]),
             'stage_days'           => __(':days days after :stage, as set in the journey stage days of :parent.', [...$replacements, 'parent' => $ribbon['parent_name']]),
             'production_time'      => __(':days days after :stage, the production time set on :supplier.', [...$replacements, 'supplier' => $ribbon['supplier_name'] ?? $ribbon['parent_name']]),
-            'approved_ready'       => __('The approved ready date.'),
+            'approved_ready'       => __('The proposed ready date.'),
             'estimated_production' => __('The estimated production date given for this order.'),
-            'after_ready'          => __(':days days after the approved ready date, to hand the goods over.', ['days' => GetPurchaseOrderJourney::HANDOVER_DAYS_AFTER_READY]),
             'arrival_estimate'     => __('The estimated arrival date of the delivery, or of the order while it has no delivery.'),
             'before_arrival'       => __(':days days before the estimated arrival, worked back from it.', $replacements),
             default                => __(':days days after :stage, the standard length of this stage.', $replacements),

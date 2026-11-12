@@ -26,6 +26,7 @@ enum PaymentAccountTypeEnum: string
     case HOKODO = 'hokodo';
     case PASTPAY = 'pastpay';
     case CASH_ON_DELIVERY = 'cash_on_delivery';
+    case BANK_FEE = 'bank_fee';
 
     public const MANUALLY_SETTLED = [self::PASTPAY, self::CASH_ON_DELIVERY, self::BANK];
 
@@ -51,6 +52,7 @@ enum PaymentAccountTypeEnum: string
             'hokodo'           => 'Hokodo',
             'pastpay'          => 'Pastpay',
             'cash_on_delivery' => __('Cash on Delivery'),
+            'bank_fee'         => __('Bank fee (absorbed)'),
         ];
     }
 

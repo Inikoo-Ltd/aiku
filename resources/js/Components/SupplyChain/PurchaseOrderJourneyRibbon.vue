@@ -64,7 +64,6 @@ export interface JourneyRibbon {
     skipped_stages?: string[]
     is_deletable?: boolean
     delete_blockers?: DeleteBlocker[]
-    extra_costs?: number | null
     lines?: number | null
     cancelled_lines?: number | null
     pending_price_changes?: number

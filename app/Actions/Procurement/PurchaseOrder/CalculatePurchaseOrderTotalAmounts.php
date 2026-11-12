@@ -12,32 +12,39 @@ namespace App\Actions\Procurement\PurchaseOrder;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use RuntimeException;
 
 class CalculatePurchaseOrderTotalAmounts extends OrgAction
 {
+    /**
+     * A purchase order carries only what is ordered from the supplier, so its total is its items. Freight, duty
+     * and every other landed cost live on the stock delivery, where they are costed.
+     */
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        $itemsNet = $purchaseOrder->purchaseOrderTransactions()
-            ->with('supplierProduct.currency')
-            ->get()
-            ->sum(fn (PurchaseOrderTransaction $transaction) => $this->netAmountInOrderCurrency($purchaseOrder, $transaction));
-
-        $extras = (float) $purchaseOrder->cost_extra
-            + (float) $purchaseOrder->cost_shipping
-            + (float) $purchaseOrder->cost_duties
-            + (float) $purchaseOrder->cost_tax;
+        $itemsNet = $this->itemsNet($purchaseOrder);
 
         $purchaseOrder->update([
             'cost_items' => $itemsNet,
-            'cost_total' => $itemsNet + $extras,
+            'cost_total' => $itemsNet,
         ]);
 
         if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->depositPayments()->exists()) {
             SyncPurchaseOrderDepositPaid::run($purchaseOrder);
         }
+
+        PurchaseOrderHydrateState::run($purchaseOrder);
+    }
+
+    public function itemsNet(PurchaseOrder $purchaseOrder): float
+    {
+        return (float) $purchaseOrder->purchaseOrderTransactions()
+            ->with('supplierProduct.currency')
+            ->get()
+            ->sum(fn (PurchaseOrderTransaction $transaction) => $this->netAmountInOrderCurrency($purchaseOrder, $transaction));
     }
 
     private function netAmountInOrderCurrency(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $transaction): float

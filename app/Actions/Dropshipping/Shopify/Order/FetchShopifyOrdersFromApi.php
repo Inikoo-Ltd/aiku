@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Models\Dropshipping\ShopifyUser;
+use GuzzleHttp\Exception\ConnectException;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -71,10 +72,18 @@ class FetchShopifyOrdersFromApi
         $failed = 0;
 
         for ($page = 0; $page < self::MAX_PAGES; $page++) {
-            list($success, $response) = $this->doPost($shopifyUser, $query, $variables);
+            try {
+                list($success, $response) = $this->doPost($shopifyUser, $query, $variables);
+            } catch (ConnectException $exception) {
+                if ($acceptedOnly) {
+                    return $failed;
+                }
+
+                throw $exception;
+            }
 
             if (!$success) {
-                if ($acceptedOnly && is_string($response) && $this->isStoreUnreachable($response)) {
+                if ($acceptedOnly && is_string($response) && ($this->isStoreUnreachable($response) || $this->isShopifyBusy($response))) {
                     return $failed;
                 }
 
@@ -128,6 +137,16 @@ class FetchShopifyOrdersFromApi
         return $response === 'Failed to initialize Shopify client'
             || preg_match('/^Error in API response: HTTP (402|404) /', $response)
             || str_contains($response, 'SHOP_PENDING_TERMINATION');
+    }
+
+    /**
+     * Shopify down for a moment (5xx), out of query budget (THROTTLED) or too slow to answer is not
+     * worth a failed job in the sweep: the next hourly run reads the same days again.
+     */
+    private function isShopifyBusy(string $response): bool
+    {
+        return preg_match('/^Error in API response: HTTP (429|5\d\d) /', $response)
+            || str_contains($response, '"code":"THROTTLED"');
     }
 
     public string $commandSignature = 'shopify:fetch-orders {shopifyUser} {--days=30}';

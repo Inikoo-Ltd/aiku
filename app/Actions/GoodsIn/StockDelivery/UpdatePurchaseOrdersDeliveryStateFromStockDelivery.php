@@ -64,11 +64,17 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
             $this->cancelWhatThePartnerDidNotSend($purchaseOrder);
         }
 
+        if ($deliveryState === PurchaseOrderDeliveryStateEnum::PLACED) {
+            $updatedTransactions += $this->markWhatNeverArrived($purchaseOrder, $stockDelivery);
+        } elseif (!$shouldSettle) {
+            $updatedTransactions += $this->reopenWhatNeverArrived($purchaseOrder, $stockDelivery);
+        }
+
         $isAwaitingDelivery = $purchaseOrder->purchaseOrderTransactions()
             ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
             ->exists();
 
-        if (!$isAwaitingDelivery && $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED) {
+        if (!$isAwaitingDelivery && $purchaseOrder->state->isAgreed()) {
             $purchaseOrder->update([
                 'state'      => PurchaseOrderStateEnum::SETTLED,
                 'settled_at' => now(),
@@ -99,6 +105,39 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
             ->whereNotExists(fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction($items))
             ->get()
             ->each(fn (PurchaseOrderTransaction $purchaseOrderTransaction) => CancelPurchaseOrderTransaction::make()->action($purchaseOrderTransaction));
+    }
+
+    /**
+     * Once the delivery is placed, a line whose goods were all booked as not received on it, and that is on no other
+     * live delivery, is not received: nothing more is coming, so the order can settle without it.
+     */
+    private function markWhatNeverArrived(PurchaseOrder $purchaseOrder, StockDelivery $stockDelivery): int
+    {
+        return $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
+            ->whereExists(
+                fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::deliveryItemsOfTransaction($items)
+                    ->where('stock_delivery_items.stock_delivery_id', $stockDelivery->id)
+                    ->where('stock_delivery_items.state', StockDeliveryItemStateEnum::NOT_RECEIVED->value)
+            )
+            ->whereNotExists(fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction($items))
+            ->update(['state' => PurchaseOrderTransactionStateEnum::NOT_RECEIVED]);
+    }
+
+    /**
+     * A delivery taken back before received (unreceived) reopens the lines it had marked not received, so they are
+     * waited for again.
+     */
+    private function reopenWhatNeverArrived(PurchaseOrder $purchaseOrder, StockDelivery $stockDelivery): int
+    {
+        return $purchaseOrder->purchaseOrderTransactions()
+            ->where('state', PurchaseOrderTransactionStateEnum::NOT_RECEIVED)
+            ->whereExists(
+                fn (Builder $items) => StoreStockDeliveryFromPurchaseOrder::deliveryItemsOfTransaction($items)
+                    ->where('stock_delivery_items.stock_delivery_id', $stockDelivery->id)
+                    ->where('stock_delivery_items.state', StockDeliveryItemStateEnum::NOT_RECEIVED->value)
+            )
+            ->update(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
     }
 
     /**

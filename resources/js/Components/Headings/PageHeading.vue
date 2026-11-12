@@ -228,7 +228,9 @@ const setError = (e) => {
 								<span class="text-gray-400 font-medium" :class="data.modelStyle">{{ data.model }}</span>
 								<span>&nbsp;</span>
 							</template>
-							<span class="inline-block" v-tooltip="data.title?.length > 30 ? data.title : undefined">{{ useTruncate(data.title, 30) }}</span>
+							<slot name="title" :data="data">
+								<span class="inline-block" v-tooltip="data.title?.length > 30 ? data.title : undefined">{{ useTruncate(data.title, 30) }}</span>
+							</slot>
 						</div>
 						<!-- Section: After Title -->
 						<slot name="afterTitle" :data="data">

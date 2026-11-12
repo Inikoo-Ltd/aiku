@@ -114,6 +114,15 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
+                            'label' => __('Bank review'),
+                            'icon'  => ['fal', 'fa-university'],
+                            'root'  => 'grp.org.accounting.bank_review.',
+                            'route' => [
+                                'name'       => 'grp.org.accounting.bank_review.index',
+                                'parameters' => [$organisation->slug],
+                            ]
+                        ],
+                        [
                             'label' => __('Invoices'),
                             'icon'  => ['fal', 'fa-file-invoice-dollar'],
                             'root'  => 'grp.org.accounting.invoices.',

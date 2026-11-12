@@ -61,7 +61,7 @@ class CancelPurchaseOrderTransaction extends OrgAction
 
             CalculatePurchaseOrderTotalAmounts::run($purchaseOrder);
 
-            if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
+            if ($purchaseOrder->state->isAgreed()
                 && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()
                 && !$purchaseOrder->purchaseOrderTransactions()->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)->exists()) {
                 $purchaseOrder->update([
@@ -88,7 +88,7 @@ class CancelPurchaseOrderTransaction extends OrgAction
      */
     public function isLeftEmpty(PurchaseOrder $purchaseOrder): bool
     {
-        return in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+        return in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
             && !$purchaseOrder->purchaseOrderTransactions()->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)->exists()
             && DeleteEmptyPurchaseOrders::deletableIds($purchaseOrder->group, [$purchaseOrder->id]) === [$purchaseOrder->id];
     }

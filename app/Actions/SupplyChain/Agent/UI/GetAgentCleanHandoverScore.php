@@ -133,7 +133,6 @@ class GetAgentCleanHandoverScore
 
     private function hygiene($purchaseOrders): array
     {
-        $gaps          = [];
         $totalValue    = 0.0;
         $excludedValue = 0.0;
         $incomplete    = 0;
@@ -146,10 +145,6 @@ class GetAgentCleanHandoverScore
                 $excludedValue += $value;
             }
 
-            if ($purchaseOrder->proposed_ready_at) {
-                $gaps[] = $purchaseOrder->proposed_ready_at->diffInDays($purchaseOrder->approved_ready_at, false);
-            }
-
             if ($this->handedOverAt($purchaseOrder)
                 && (!$purchaseOrder->qc_passed_at || !$purchaseOrder->compliance_complete_at)) {
                 $incomplete++;
@@ -157,9 +152,8 @@ class GetAgentCleanHandoverScore
         }
 
         return [
-            'avg_ready_date_padding_days' => $gaps ? round(array_sum($gaps) / count($gaps), 1) : null,
-            'exclusion_rate'              => $totalValue > 0 ? round($excludedValue / $totalValue * 100, 2) : null,
-            'handed_over_missing_checks'  => $incomplete,
+            'exclusion_rate'             => $totalValue > 0 ? round($excludedValue / $totalValue * 100, 2) : null,
+            'handed_over_missing_checks' => $incomplete,
         ];
     }
 }

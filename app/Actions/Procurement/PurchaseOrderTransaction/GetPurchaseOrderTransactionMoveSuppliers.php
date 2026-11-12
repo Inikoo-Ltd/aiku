@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithPurchaseOrderAgentEditAuthorisation;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
@@ -18,7 +19,7 @@ use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
- * The other suppliers of the agent the lines can move to, each with its product for the SKO of every line when it has
+ * The suppliers of the agent the lines can move to, the order's own supplier marked is_current, each with its product for the SKO of every line when it has
  * one, the order the lines would land on and its open orders that can take them. A handful of queries for all the
  * suppliers: an agent can have over a hundred.
  */
@@ -33,8 +34,7 @@ class GetPurchaseOrderTransactionMoveSuppliers extends OrgAction
     {
         $move         = MovePurchaseOrderTransactionToSupplier::make();
         $orgSuppliers = OrgSupplier::where('organisation_id', $purchaseOrder->organisation_id)
-            ->where('status', true)
-            ->whereKeyNot($purchaseOrder->parent_id)
+            ->where(fn ($query) => $query->where('status', true)->orWhere('id', $purchaseOrder->parent_id))
             ->whereHas('orgAgent', fn ($query) => $query->where('agent_id', $purchaseOrder->agent_id))
             ->with('supplier.currency')
             ->get();
@@ -44,10 +44,20 @@ class GetPurchaseOrderTransactionMoveSuppliers extends OrgAction
         $productsBySupplier   = MovePurchaseOrderTransactionToSupplier::orgSupplierProductsOfStocks($orgSupplierIds, $orgStockIds)->groupBy('org_supplier_id');
         $openOrdersBySupplier = $move->purchaseOrdersTakingMovedLinesQuery($purchaseOrder)->whereIn('parent_id', $orgSupplierIds)->get()->groupBy('parent_id');
         $takenReferences      = $move->takenReferencesForMovedLines($purchaseOrder);
+        $unsettledBySupplier  = PurchaseOrder::query()
+            ->where('organisation_id', $purchaseOrder->organisation_id)
+            ->whereKeyNot($purchaseOrder->id)
+            ->where('parent_type', 'OrgSupplier')
+            ->whereIn('parent_id', $orgSupplierIds)
+            ->where('agent_id', $purchaseOrder->agent_id)
+            ->whereIn('state', MovePurchaseOrderTransactionToSupplier::statesTakingMovedLines())
+            ->orderBy('id')
+            ->get(['id', 'parent_id', 'reference', 'state', 'number_purchase_order_transactions'])
+            ->groupBy('parent_id');
 
         return $orgSuppliers
             ->sortBy(fn (OrgSupplier $orgSupplier) => $orgSupplier->supplier->code)
-            ->map(function (OrgSupplier $orgSupplier) use ($purchaseOrder, $purchaseOrderTransactions, $move, $productsBySupplier, $openOrdersBySupplier, $takenReferences) {
+            ->map(function (OrgSupplier $orgSupplier) use ($purchaseOrder, $purchaseOrderTransactions, $move, $productsBySupplier, $openOrdersBySupplier, $takenReferences, $unsettledBySupplier) {
                 $supplierProducts   = $productsBySupplier->get($orgSupplier->id, collect());
                 $openPurchaseOrders = $openOrdersBySupplier->get($orgSupplier->id, collect())->toBase();
                 $products           = $purchaseOrderTransactions->mapWithKeys(function (PurchaseOrderTransaction $transaction) use ($supplierProducts) {
@@ -62,11 +72,19 @@ class GetPurchaseOrderTransactionMoveSuppliers extends OrgAction
 
                 return [
                     'org_supplier_id'      => $orgSupplier->id,
+                    'is_current'           => $orgSupplier->id === $purchaseOrder->parent_id,
                     'code'                 => $orgSupplier->supplier->code,
                     'name'                 => $orgSupplier->supplier->name,
                     'currency'             => $orgSupplier->supplier->currency?->code,
                     'reference'            => $move->openPurchaseOrderOf($orgSupplier, $purchaseOrder, $openPurchaseOrders)?->reference ?? $move->referenceForMovedLines($purchaseOrder, $orgSupplier, $takenReferences),
                     'open_purchase_orders' => $openPurchaseOrders->pluck('reference')->all(),
+                    'unsettled_purchase_orders' => $unsettledBySupplier->get($orgSupplier->id, collect())->map(fn (PurchaseOrder $unsettledPurchaseOrder) => [
+                        'reference'       => $unsettledPurchaseOrder->reference,
+                        'state'           => $unsettledPurchaseOrder->state->value,
+                        'state_label'     => PurchaseOrderStateEnum::labels()[$unsettledPurchaseOrder->state->value],
+                        'number_of_items' => (int) $unsettledPurchaseOrder->number_purchase_order_transactions,
+                        'can_take_lines'  => $openPurchaseOrders->contains('id', $unsettledPurchaseOrder->id),
+                    ])->values()->all(),
                     'products'             => $products->all(),
                     'products_count'       => $products->filter()->count(),
                 ];

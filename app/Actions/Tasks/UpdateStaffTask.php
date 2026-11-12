@@ -8,6 +8,8 @@
 
 namespace App\Actions\Tasks;
 
+use App\Actions\CRM\ShoppingAssistant\FollowUpShoppingAssistantRestockQuestion;
+use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRestockQuestion;
 use App\Actions\Goods\ProductDevelopment\FollowUpProductDevelopmentTask;
 use App\Actions\Chat\Staff\SendStaffMessage;
 use App\Enums\Tasks\StaffTaskStatusEnum;
@@ -82,6 +84,9 @@ class UpdateStaffTask
 
         if ($task->wasChanged('status')) {
             FollowUpProductDevelopmentTask::run($task, $actor);
+            if (data_get($task->data, 'kind') === StoreShoppingAssistantRestockQuestion::TASK_KIND && $task->status === StaffTaskStatusEnum::DONE) {
+                FollowUpShoppingAssistantRestockQuestion::dispatch($task, $actor, $note);
+            }
         }
 
         $this->notify($task, $actor);

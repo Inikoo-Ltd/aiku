@@ -95,7 +95,7 @@ class CheckAgentGoodsReceiptItem extends OrgAction
     private function syncProductionDone(AgentGoodsReceiptItem $item): void
     {
         $purchaseOrder = $item->purchase_order_id ? PurchaseOrder::find($item->purchase_order_id) : null;
-        if (!in_array($purchaseOrder?->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
+        if (!in_array($purchaseOrder?->state, PurchaseOrderStateEnum::open(), true)) {
             return;
         }
 

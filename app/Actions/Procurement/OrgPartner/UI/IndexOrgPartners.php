@@ -90,7 +90,7 @@ class IndexOrgPartners extends OrgAction
         $organisationSlug = $orgPartner->organisation->slug;
 
         $purchaseOrders = $orgPartner->purchaseOrders()
-            ->whereIn('state', [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('state', PurchaseOrderStateEnum::live())
             ->whereDoesntHave('stockDeliveries')
             ->orderByDesc('created_at')
             ->get(['id', 'slug', 'reference', 'state', 'number_purchase_order_transactions', 'submitted_at', 'created_at'])

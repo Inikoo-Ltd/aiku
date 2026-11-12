@@ -617,7 +617,7 @@ test('agent manager only sees their own agent organisation', function () {
             ->where('tabs.navigation.index.number', Supplier::where('agent_id', $this->agent->id)->where('status', true)->count())
             ->missing('dashboard.kpis.active_suppliers')
             ->has('dashboard.chase.rows')
-            ->has('dashboard.stages', 6));
+            ->has('dashboard.stages', count(PurchaseOrderStateEnum::liveValues())));
 
     [$chaseSupplier] = createAgentOrgSupplierWithProduct($this);
     $chased          = tap(StorePurchaseOrder::make()->action($chaseSupplier, PurchaseOrder::factory()->definition()))
@@ -627,8 +627,8 @@ test('agent manager only sees their own agent organisation', function () {
         'elements' => ['organisation' => $chased->organisation->slug, ...$elements],
         'filter'   => ['global' => $chased->reference],
     ]))->viewData('page')['props']['data']['data'])->pluck('slug')->all();
-    expect($chaseList(['attention' => 'past_eta,unconfirmed_over_14_days', 'progress' => 'confirmed']))->toBe([$chased->slug])
-        ->and($chaseList(['progress' => 'dispatched']))->toBe([]);
+    expect($chaseList(['attention' => 'past_eta,unconfirmed_over_14_days', 'state' => 'confirmed']))->toBe([$chased->slug])
+        ->and($chaseList(['state' => 'handed_over']))->toBe([]);
 
     $incomingList = fn () => collect($this->get(route('grp.org.agent.incoming_purchase_orders.index', [
         $organisation->slug,
@@ -664,8 +664,9 @@ test('agent manager only sees their own agent organisation', function () {
     expect($organisationCounts('submitted'))->toBe([$chased->organisation->slug => 1])
         ->and($organisationCounts('cancelled'))->toBe([]);
     $chased->update(['production_started_at' => now()]);
-    expect($incomingList())->toBe([])
-        ->and($incomingCount())->toBe($countBefore);
+    expect($incomingList())->toBe([$chased->slug])
+        ->and($incomingCount())->toBe($countBefore + 1)
+        ->and($chased->refresh()->state)->toBe(PurchaseOrderStateEnum::SUBMITTED);
     $chased->update(['state' => PurchaseOrderStateEnum::CONFIRMED, 'production_started_at' => null]);
 
     $backlog = $this->get(route('grp.org.agent.orders.index', $organisation->slug))->assertOk()
@@ -715,7 +716,7 @@ test('agent manager only sees their own agent organisation', function () {
 
     $factoryParts = collect($backlog['data'][$clientSlug]['po_in_factory']['breakdown']);
     expect($factoryParts->sum('value'))->toBe($backlog['data'][$clientSlug]['po_in_factory']['value'] + $backlog['data'][$clientSlug]['po_in_factory']['shared']);
-    $notStarted     = $factoryParts->first(fn ($part) => $part['route_target']['parameters']['_query']['elements[factory]'] === 'not_started');
+    $notStarted     = $factoryParts->first(fn ($part) => $part['route_target']['parameters']['_query']['elements[state]'] === 'confirmed');
     $notStartedList = collect($this->get(route($notStarted['route_target']['name'], Arr::except($notStarted['route_target']['parameters'], '_query')).'?'.http_build_query($notStarted['route_target']['parameters']['_query']))
         ->assertOk()->viewData('page')['props']['data']['data']);
     expect($notStartedList->pluck('slug'))->toContain($chased->slug)
@@ -1698,7 +1699,6 @@ test('clean handover score', function () {
     $updated = UpdatePurchaseOrder::make()->action(
         $purchaseOrder,
         [
-            'proposed_ready_at'      => now()->subDays(12),
             'approved_ready_at'      => now()->subDays(10),
             'handed_over_at'         => now()->subDays(5),
             'qc_passed_at'           => now()->subDays(6),
@@ -1718,7 +1718,6 @@ test('clean handover score', function () {
         ->and($currentScore['number_clean'])->toBe(1)
         ->and($currentScore['chs'])->toEqualWithDelta(100.0, 0.01)
         ->and($currentScore['commission_rate'])->toEqualWithDelta(3.0, 0.01)
-        ->and($score['hygiene']['avg_ready_date_padding_days'])->toEqualWithDelta(2.0, 0.1)
         ->and($score['hygiene']['handed_over_missing_checks'])->toBe(0);
 
     $updated = UpdatePurchaseOrder::make()->action(
@@ -1905,9 +1904,8 @@ test('agent suppliers dashboard counts open orders, the orders to chase and thei
         ->and($after['kpis']['open']['without_eta'] - $before['kpis']['open']['without_eta'])->toBe(1)
         ->and($after['kpis']['chase']['past_eta'] - $before['kpis']['chase']['past_eta'])->toBe(1)
         ->and($after['kpis']['chase']['unconfirmed'] - $before['kpis']['chase']['unconfirmed'])->toBe(2)
-        ->and($stage($after, 'submitted') - $stage($before, 'submitted'))->toBe(2)
+        ->and($stage($after, 'submitted') - $stage($before, 'submitted'))->toBe(3)
         ->and($stage($after, 'confirmed') - $stage($before, 'confirmed'))->toBe(1)
-        ->and($stage($after, 'at_factory') - $stage($before, 'at_factory'))->toBe(1)
         ->and($dashboard()['kpis']['open']['value'] - $beforeAll['kpis']['open']['value'])->toBe(4)
         ->and($after['filters']['currencies']->first())->toBe($agent->organisation->group->currency->code)
         ->and($after['filters']['buyer'])->toBe($buyer->slug);
@@ -2103,7 +2101,8 @@ test('UI edit agent purchase order has the clean handover section', function (Pu
 
     $props = json_encode($this->get(route('grp.org.procurement.purchase_orders.edit', [$purchaseOrder->organisation->slug, $purchaseOrder->slug]))->viewData('page')['props']);
 
-    expect($props)->toContain('proposed_ready_at');
+    expect($props)->toContain('agent_reference')
+        ->and($props)->not->toContain('proposed_ready_at');
 })->depends('add item to agent purchase order');
 
 test('add more items to purchase order', function (PurchaseOrder $purchaseOrder) {
@@ -3357,7 +3356,7 @@ test('purchase order delivered in two parts stays open for the remaining items',
 
     expect((new ReflectionProperty(\App\InertiaTable\InertiaTable::class, 'columns'))->getValue($table)->pluck('key'))->toContain('actions');
 
-    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+    expect($purchaseOrder->refresh()->state->isAgreed())->toBeTrue()
         ->and($firstLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
         ->and($secondLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED);
 
@@ -3375,7 +3374,7 @@ test('purchase order delivered in two parts stays open for the remaining items',
 
     $place($secondDelivery);
 
-    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+    expect($purchaseOrder->refresh()->state->isAgreed())->toBeTrue();
 
     CancelPurchaseOrderTransaction::make()->action($thirdLine->refresh());
 
@@ -3491,7 +3490,7 @@ test('a settled purchase order reopens only when a delivery takes back lines it 
     $delivery->update(['state' => StockDeliveryStateEnum::DISPATCHED]);
     UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($delivery->refresh());
 
-    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+    expect($purchaseOrder->refresh()->state->isAgreed())->toBeTrue()
         ->and($purchaseOrder->delivery_state)->toBe(PurchaseOrderDeliveryStateEnum::DISPATCHED)
         ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED);
 });
@@ -4178,7 +4177,7 @@ test('the agent cancels the line the supplier can not make, the buyer is told an
 
     expect($lostLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CANCELLED)
         ->and($keptLine->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
-        ->and($order->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and($order->refresh()->state->isAgreed())->toBeTrue()
         ->and(IndexPurchaseOrderTransactions::run($order)->getCollection()->firstWhere('id', $lostLine->id)->cancellation['reason'])->toBe('Factory stopped making it');
     \Illuminate\Support\Facades\Notification::assertSentTo(
         $admin,
@@ -4367,7 +4366,9 @@ test('the agent moves a line the supplier can not make to another supplier of th
 
     actingAs(agentOrganisationAdmin($orgAgent->agent->organisation, 'agent-move-'.Str::lower(Str::random(6))));
     $options = $this->getJson(route('grp.models.purchase-order.transaction.move.suppliers', [$order->id, 'transactions' => [$line->id]]))->assertOk()->json();
-    expect(collect($options)->pluck('org_supplier_id')->all())->toContain($toSupplier->id)->not->toContain($fromSupplier->id)->not->toContain($otherAgentSupplier->id)
+    expect(collect($options)->pluck('org_supplier_id')->all())->toContain($toSupplier->id)->toContain($fromSupplier->id)->not->toContain($otherAgentSupplier->id)
+        ->and(collect($options)->firstWhere('org_supplier_id', $fromSupplier->id)['is_current'])->toBeTrue()
+        ->and(collect($options)->firstWhere('org_supplier_id', $toSupplier->id)['is_current'])->toBeFalse()
         ->and(collect($options)->firstWhere('org_supplier_id', $toSupplier->id)['products'][$line->id])->toBeNull();
 
     $moveRoute = route('grp.models.purchase-order.transaction.move', [$order->id, $line->id]);
@@ -4582,17 +4583,16 @@ function cancellableAgentOrder(object $test): array
     $line     = $order->purchaseOrderTransactions()->firstOrFail();
     $line->update(['unit_cost' => 12.5, 'net_amount' => round(12.5 * (float) $line->quantity_ordered, 2)]);
     $order = UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh())->refresh();
-    $order->update(['cost_extra' => 7, 'cost_shipping' => 30, 'cost_duties' => 4.5, 'cost_tax' => 2]);
     CalculatePurchaseOrderTotalAmounts::run($order);
 
     return [$orgAgent, $order->refresh(), $line->refresh()];
 }
 
-test('the agent undoes cancelling a purchase order and its state, lines and costs come back', function () {
+test('the agent undoes cancelling a purchase order and its state, lines and amounts come back', function () {
     PurchaseOrder::enableAuditing();
     [$orgAgent, $order, $line] = cancellableAgentOrder($this);
     $line->update(['org_net_amount' => 1.23, 'grp_net_amount' => 4.56, 'unit_cost' => null]);
-    $before  = $order->only(['cost_items', 'cost_total', 'cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax']);
+    $before  = $order->only(['cost_items', 'cost_total']);
     $lineBefore = $line->refresh()->only(['net_amount', 'grp_net_amount', 'org_net_amount']);
 
     $this->patch(route('grp.models.purchase-order.cancel', $order->id), ['counterparty_informed' => 'yes', 'reason' => 'Buyer changed plan'])->assertSessionHasNoErrors();
@@ -4602,7 +4602,7 @@ test('the agent undoes cancelling a purchase order and its state, lines and cost
     expect($order->state)->toBe(PurchaseOrderStateEnum::CANCELLED)
         ->and((float) $order->cost_total)->toBe(0.0)
         ->and($order->data['cancellation']['state'])->toBe('submitted')
-        ->and($order->data['cancellation']['costs']['cost_shipping'])->toEqual(30)
+        ->and($order->data['cancellation'])->not->toHaveKey('costs')
         ->and($order->data['cancellation']['reason'])->toBe('Buyer changed plan')
         ->and(collect($order->data['cancellation']['transactions'])->map(fn (array $snapshot) => [$snapshot['id'], $snapshot['state'], $snapshot['org_net_amount']])->all())->toBe([[$line->id, 'submitted', 1.23]])
         ->and(collect(ShowPurchaseOrder::make()->getAgentActions($order))->pluck('key'))->toContain('undo_cancel_purchase_order');
@@ -4668,7 +4668,7 @@ test('undoing a cancel warns about later purchase orders with the same supplier 
         ->and(collect($action['duplicates'])->pluck('id')->all())->toBe([$later->id]);
 });
 
-test('a purchase order cancelled before its costs were kept asks for the costs the cancel audit lost', function () {
+test('a purchase order cancelled before aiku kept what cancelling removes comes back from its cancel audit with its total equal to its items', function () {
     [, $order, $line] = cancellableAgentOrder($this);
     UpdatePurchaseOrderStateToCancelled::make()->action($order);
     $order->refresh();
@@ -4684,17 +4684,14 @@ test('a purchase order cancelled before its costs were kept asks for the costs t
     ])->save();
 
     $action = collect(ShowPurchaseOrder::make()->getActions($order, false))->firstWhere('key', 'undo_cancel_purchase_order');
-    expect($action['missing_costs'])->toBe(['cost_extra', 'cost_tax'])
-        ->and($action['cost_total'])->toBe(168.5)
-        ->and($action['cost_gap'])->toBe(9.0)
-        ->and(fn () => UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh()))->toThrow(\Illuminate\Validation\ValidationException::class)
-        ->and(fn () => UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh(), ['cost_extra' => 7, 'cost_tax' => 5]))->toThrow(\Illuminate\Validation\ValidationException::class);
+    expect($action['disabled_reason'])->toBeNull()
+        ->and($action)->not->toHaveKeys(['missing_costs', 'cost_total', 'cost_gap']);
 
-    UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh(), ['cost_extra' => 7, 'cost_tax' => 2]);
+    UpdatePurchaseOrderStateFromCancelled::make()->action($order->refresh());
 
     expect($order->refresh()->state)->toBe(PurchaseOrderStateEnum::SUBMITTED)
-        ->and((float) $order->cost_shipping)->toBe(30.0)
-        ->and((float) $order->cost_extra)->toBe(7.0)
+        ->and((float) $order->cost_items)->toBe(125.0)
+        ->and((float) $order->cost_total)->toBe(125.0)
         ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SUBMITTED)
         ->and((float) $line->net_amount)->toBe(125.0);
 
@@ -4722,7 +4719,7 @@ test('automatic paths still record stages on a submitted order, and a skip is ke
 
     MarkPurchaseOrderStage::make()->action($purchaseOrder, ['field' => 'production_started_at', 'date' => $today, 'reason' => 'From the goods receipt']);
     expect($purchaseOrder->refresh()->production_started_at)->not->toBeNull()
-        ->and($purchaseOrder->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+        ->and($purchaseOrder->state->isAgreed())->toBeTrue();
 
     $this->patch($skipRoute, ['key' => 'qc', 'skipped' => true])->assertSessionHasErrors('reason');
     if (GetPurchaseOrderStages::make()->usesAgentWarehouse($purchaseOrder)) {
@@ -4756,4 +4753,135 @@ test('automatic paths still record stages on a submitted order, and a skip is ke
         ->and(GetPurchaseOrderStages::run($purchaseOrder)['ready']['recorded'])->toBeFalse();
 
     PurchaseOrder::disableAuditing();
+});
+
+test('the state follows an agreed order through production, the agent warehouse and its container, and steps back when the container is undone', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
+
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS);
+
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()->subDays(5)]);
+    $purchaseOrder->update(['production_started_at' => now()->subDays(5)]);
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SUBMITTED);
+    $purchaseOrder->update(['production_started_at' => null]);
+
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CONFIRMED, 'confirmed_at' => now()->subDays(4), 'deposit_amount' => 0]);
+    $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+
+    $purchaseOrder->update(['production_started_at' => now()->subDays(3)]);
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_PRODUCTION)
+        ->and(PurchaseOrdersResource::make($purchaseOrder)->toArray(request())['state_label'])->toBe(__('Making It Happen'))
+        ->and($purchaseOrder->state->transactionState())->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($orgSupplier->stats->refresh()->number_purchase_orders_state_in_production)->toBe(1)
+        ->and($orgSupplier->stats->number_purchase_orders_state_confirmed)->toBe(0);
+
+    $receive = fn () => App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 100]],
+    ]);
+    $receipt = $receive();
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_WAREHOUSE);
+
+    App\Actions\Procurement\AgentGoodsReceipt\CancelAgentGoodsReceipt::make()->handle($receipt);
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_PRODUCTION);
+
+    $receive();
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_WAREHOUSE);
+
+    $stockDelivery = App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), []);
+    $reachedInContainer = $purchaseOrder->refresh()->state;
+    expect($reachedInContainer)->toBeIn([PurchaseOrderStateEnum::READY, PurchaseOrderStateEnum::HANDED_OVER]);
+
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::HANDED_OVER);
+
+    App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms::make()->action($stockDelivery->refresh(), ['arrived_at' => now()->toDateString()]);
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::ARRIVED)
+        ->and(PurchaseOrdersResource::make($purchaseOrder)->toArray(request())['state_label'])->toBe(__('Homeward Bound'));
+
+    App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms::make()->action($stockDelivery->refresh(), ['arrived_at' => null, 'reason' => 'Entered on the wrong container']);
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::HANDED_OVER);
+
+    App\Actions\GoodsIn\StockDelivery\UndispatchStockDelivery::make()->action($stockDelivery->refresh());
+    expect($purchaseOrder->refresh()->state)->toBe($reachedInContainer);
+
+    App\Actions\GoodsIn\StockDelivery\RemovePurchaseOrderFromStockDelivery::make()->action($stockDelivery->refresh(), $purchaseOrder->refresh());
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_WAREHOUSE)
+        ->and(PurchaseOrdersResource::make($purchaseOrder)->toArray(request())['state_label'])->toBe(PurchaseOrderStateEnum::labels()['in_warehouse']);
+
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED, 'cancelled_at' => now()]);
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CANCELLED);
+});
+
+test('the state steps back when a line is added to an order whose lines are all in a container, and a deleted order keeps its state', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
+
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CONFIRMED, 'submitted_at' => now()->subDays(5), 'confirmed_at' => now()->subDays(4), 'deposit_amount' => 0, 'production_started_at' => now()->subDays(3)]);
+    $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+
+    App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 100]],
+    ]);
+    App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), []);
+    expect($purchaseOrder->refresh()->state)->toBeIn([PurchaseOrderStateEnum::READY, PurchaseOrderStateEnum::HANDED_OVER]);
+
+    $addedLine = StorePurchaseOrderTransaction::make()->action($purchaseOrder->refresh(), $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[1], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 50]);
+    $addedLine->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+    App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($addedLine->refresh(), ['quantity_ordered' => 60]);
+    $steppedBack = $purchaseOrder->refresh()->state;
+    expect($steppedBack)->toBeIn([PurchaseOrderStateEnum::IN_PRODUCTION, PurchaseOrderStateEnum::IN_WAREHOUSE]);
+
+    $purchaseOrder->delete();
+    expect(PurchaseOrder::withTrashed()->find($purchaseOrder->id)->state)->toBe($steppedBack);
+});
+
+test('a line goods-in counted as not received is marked not received once its delivery is placed, so the order settles, and waits again if the delivery is unreceived', function () {
+    $supplier    = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $historicSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'SHORT-PO',
+        'name'             => 'Short delivery',
+        'cost'             => 10,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]))->supplierProduct->historicSupplierProduct;
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $arrived       = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[0], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10]));
+    $missing       = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[1], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 20]));
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+
+    $stockDelivery = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), []);
+    $stockDelivery->items()->where('org_stock_id', $this->orgStocks[0]->id)->update(['state' => StockDeliveryItemStateEnum::PLACED]);
+    $stockDelivery->items()->where('org_stock_id', $this->orgStocks[1]->id)->update(['state' => StockDeliveryItemStateEnum::NOT_RECEIVED]);
+
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::CHECKED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery->refresh());
+    expect($missing->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::ARRIVED);
+
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::PLACED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery->refresh());
+    expect($arrived->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
+        ->and($missing->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::NOT_RECEIVED)
+        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED);
+
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::DISPATCHED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery->refresh());
+    expect($missing->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($arrived->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::HANDED_OVER);
 });

@@ -32,10 +32,15 @@ class UpdateUserPasswordViaEmail
     }
 
 
+    public static function passwordRule(): ?PasswordRule
+    {
+        return app()->isLocal() || app()->environment('testing') ? null : PasswordRule::min(8);
+    }
+
     public function rules(): array
     {
         return [
-            'password' => ['required', app()->isLocal() || app()->environment('testing') ? null : PasswordRule::min(8)],
+            'password' => ['required', self::passwordRule()],
             'token'    => ['required', 'string'],
             'email'    => ['required', 'email']
         ];

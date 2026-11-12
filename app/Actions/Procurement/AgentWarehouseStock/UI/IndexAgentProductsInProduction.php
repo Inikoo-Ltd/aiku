@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\InertiaTable\InertiaTable;
@@ -58,7 +57,7 @@ class IndexAgentProductsInProduction extends OrgAction
             ->leftJoinSub(self::receivedLines(), 'received_lines', 'received_lines.purchase_order_transaction_id', 'purchase_order_transactions.id')
             ->where('production_orders.agent_id', $agent->id)
             ->whereNull('production_orders.deleted_at')
-            ->whereIn('production_orders.state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('production_orders.state', PurchaseOrderStateEnum::open())
             ->whereIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
             ->whereRaw('('.self::inProductionStageSql($agent).' or '.self::REJECTED_SQL.' > 0)')
             ->whereRaw(self::OUTSTANDING_SQL.' > 0');
@@ -72,7 +71,10 @@ class IndexAgentProductsInProduction extends OrgAction
      */
     private static function inProductionStageSql(?Agent $agent = null): string
     {
-        $stageSql = str_replace('purchase_orders.', 'production_orders.', PurchaseOrderStageEnum::inProductionSql());
+        $stageSql = '(production_orders.state in ('.PurchaseOrderStateEnum::openSql().")
+            and (production_orders.production_started_at is not null or production_orders.sample_approved_at is not null)
+            and production_orders.qc_passed_at is null
+            and production_orders.delivery_state in ('in_process', 'confirmed'))";
 
         if (!$agent?->receivesGoodsInOwnWarehouse()) {
             return $stageSql;
@@ -121,7 +123,6 @@ class IndexAgentProductsInProduction extends OrgAction
                 DB::raw('least('.self::OUTSTANDING_SQL.', '.self::REJECTED_SQL.') as quantity_rejected'),
                 DB::raw(self::OUTSTANDING_SQL.' as quantity_outstanding'),
                 'production_orders.production_started_at',
-                'production_orders.proposed_ready_at',
                 'production_orders.approved_ready_at',
             ]),
             'purchase_order_transactions'
@@ -145,8 +146,7 @@ class IndexAgentProductsInProduction extends OrgAction
                 'id'                    => $transaction->id,
                 'quantity_ordered'      => (float) $transaction->quantity_ordered,
                 'production_started_at' => $transaction->production_started_at,
-                'ready_at'              => $transaction->approved_ready_at ?? $transaction->proposed_ready_at,
-                'ready_at_is_approved'  => $transaction->approved_ready_at !== null,
+                'ready_at'              => $transaction->approved_ready_at,
                 'quantity_rejected'     => (float) $transaction->quantity_rejected,
                 'quantity_outstanding'  => (float) $transaction->quantity_outstanding,
             ])));

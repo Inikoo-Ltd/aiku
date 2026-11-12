@@ -10,7 +10,6 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Http\RedirectResponse;
@@ -70,7 +69,7 @@ class AddPurchaseOrderItemsToNewAgentContainer extends OrgAction
     {
         $orgAgent = $this->purchaseOrder->isAgentOrder() ? $this->purchaseOrder->orgAgentOfOrder() : null;
 
-        if (!$orgAgent || $this->purchaseOrder->state !== PurchaseOrderStateEnum::CONFIRMED) {
+        if (!$orgAgent || !$this->purchaseOrder->state->isAgreed()) {
             $validator->errors()->add('items', __('Only the items of a confirmed agent order go in a container'));
         } elseif ($orgAgent->agent->organisation->currency_id !== $this->purchaseOrder->currency_id) {
             $validator->errors()->add('items', __('A new container is in the agent\'s currency, and this order is in another one'));

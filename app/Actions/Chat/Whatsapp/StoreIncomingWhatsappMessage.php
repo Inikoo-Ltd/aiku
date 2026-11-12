@@ -17,6 +17,7 @@ use App\Actions\Chat\MetaChatSession\RestoreMetaChatSession;
 use App\Actions\Chat\MetaChatSession\SetMetaChatMessageReaction;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatMessage;
 use App\Actions\Chat\MetaChatSession\StoreMetaChatSession;
+use App\Actions\Comms\WhatsappSubscriber\UnsubscribeWhatsappNumberFromMarketing;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatMessageTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -170,6 +171,10 @@ class StoreIncomingWhatsappMessage
         // a video can be tens of megabytes — happens after the webhook is answered.
         if ($isMedia) {
             DownloadWhatsappMedia::dispatch($metaChatMessage, $shop);
+        }
+
+        if (in_array($type, ['text', 'button', 'interactive'], true) && UnsubscribeWhatsappNumberFromMarketing::isStopRequest($metaChatMessage->message_text)) {
+            UnsubscribeWhatsappNumberFromMarketing::run($metaChatSession, $digits);
         }
 
         $metaChatSession->update(['last_visitor_message_at' => now()]);

@@ -17,12 +17,12 @@ import Select from "primevue/select"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBarcodeRead, faCheck, faCopy, faPlus, faTimes } from "@fal"
+import { faBarcodeRead, faCheck, faCopy, faLink, faPlus, faTimes } from "@fal"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import CompletenessBar from "@/Components/Procurement/CompletenessBar.vue"
 import SupplierProductLabelsDialog from "@/Components/SupplyChain/SupplierProductLabelsDialog.vue"
 
-library.add(faBarcodeRead, faCheck, faCopy, faPlus, faTimes)
+library.add(faBarcodeRead, faCheck, faCopy, faLink, faPlus, faTimes)
 
 const locale = inject("locale", aikuLocaleStructure)
 
@@ -40,6 +40,7 @@ const props = defineProps<{
     pdf_route: routeType
     ids_parameter: string
   }
+  linkGroupSkoRoute?: routeType | null
 }>()
 
 const _table = ref<InstanceType<typeof Table> | null>(null)
@@ -99,6 +100,29 @@ function createSupplierWithSelectedProducts() {
   router.get(
     route(targetAgent.value.create_route.name, targetAgent.value.create_route.parameters),
     { org_supplier_products: selectedIds.value }
+  )
+}
+
+const linkingId = ref<number | null>(null)
+const linkErrors = ref<Record<number, string>>({})
+
+function linkGroupSko(supplierProduct: { id: number }) {
+  if (!props.linkGroupSkoRoute) {
+    return
+  }
+
+  router.post(
+    route(props.linkGroupSkoRoute.name, { ...props.linkGroupSkoRoute.parameters, orgSupplierProduct: supplierProduct.id }),
+    {},
+    {
+      preserveScroll: true,
+      onStart: () => {
+        linkingId.value = supplierProduct.id
+        delete linkErrors.value[supplierProduct.id]
+      },
+      onFinish: () => linkingId.value = null,
+      onError: (errors) => linkErrors.value[supplierProduct.id] = Object.values(errors)[0] as string,
+    }
   )
 }
 
@@ -198,7 +222,23 @@ function orgSupplierRoute(orgSupplierSlug: string) {
       <Link v-if="supplier_product.internal_code" :href="supplierProductRoute(supplier_product)" class="primaryLink">
         {{ supplier_product.internal_code }}
       </Link>
-      <span v-else class="italic text-gray-400">{{ ctrans("No SKO") }}</span>
+      <span v-else class="inline-flex items-center gap-2">
+        <span class="italic text-gray-400">{{ ctrans("No SKO") }}</span>
+        <Button
+          v-if="linkGroupSkoRoute && supplier_product.group_sko_code"
+          v-tooltip="ctrans('Linked to :sko at group level, not yet in this organisation', { sko: supplier_product.group_sko_code })"
+          type="tertiary"
+          size="xxs"
+          :label="ctrans('Link to :sko', { sko: supplier_product.group_sko_code })"
+          :loading="linkingId === supplier_product.id"
+          @click="linkGroupSko(supplier_product)"
+        >
+          <template #icon>
+            <FontAwesomeIcon icon="fal fa-link" class="text-[var(--app-accent)]" fixed-width aria-hidden="true" />
+          </template>
+        </Button>
+      </span>
+      <p v-if="linkErrors[supplier_product.id]" class="text-xs text-red-600">{{ linkErrors[supplier_product.id] }}</p>
       <span v-if="supplier_product.availability_status && supplier_product.availability_status !== 'available'"
         class="ml-1.5 whitespace-nowrap rounded px-1 py-0.5 text-[11px]"
         :class="supplier_product.availability_status === 'limited' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'">

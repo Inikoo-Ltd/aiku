@@ -11,6 +11,8 @@ namespace App\Actions\Web\ShoppingAssistant\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
+use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRestockQuestion;
+use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\UI\Websites\WebsitesDashboard;
@@ -18,12 +20,14 @@ use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Actions\Web\Website\WithWebsiteAnalyticsSubNavigation;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
+use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\UI\Web\ShoppingAssistantPerformanceTabsEnum;
 use App\Http\Resources\Web\ShoppingAssistantConversationsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Tasks\StaffTask;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Carbon\CarbonImmutable;
@@ -158,6 +162,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
             'shop_type'     => $pick('shop_type', CustomerShopTypeEnum::values()),
             'country'       => $pick('country', array_column($options['countries'], 'value')),
             'outcome'       => $pick('outcome', self::OUTCOMES),
+            'general'       => GetShoppingAssistantReport::make()->validGeneralFilter($request->query('general')),
             'website_ids'   => $websiteIds,
             'search_website_ids' => $language
                 ? DB::table('websites')->join('shops', 'shops.id', '=', 'websites.shop_id')->join('languages', 'languages.id', '=', 'shops.language_id')
@@ -252,6 +257,10 @@ class ShowShoppingAssistantPerformance extends OrgAction
 
         $eventCount = fn (string $type) => "(select count(*) from shopping_assistant_events events where events.shopping_assistant_conversation_id = shopping_assistant_conversations.id and events.type = '$type') as $type";
 
+        if ($generalCondition = $report->generalFilterCondition($filters['general'])) {
+            $query->whereRaw($generalCondition);
+        }
+
         if ($filters['outcome'] === 'ordered') {
             [$orderedSql, $orderedBindings] = $report->attributionSql(
                 $report->conversationsQuery($filters, $filters['from']->startOfDay(), $filters['to']->endOfDay()),
@@ -280,6 +289,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
             ->selectRaw($eventCount('shown'))
             ->selectRaw($eventCount('clicked'))
             ->selectRaw($eventCount('added'))
+            ->selectRaw('exists (select 1 from shopping_assistant_hand_overs where shopping_assistant_hand_overs.shopping_assistant_conversation_id = shopping_assistant_conversations.id) as handed_over')
             ->defaultSort('-created_at')
             ->allowedSorts([
                 AllowedSort::field('created_at', 'shopping_assistant_conversations.created_at'),
@@ -334,10 +344,52 @@ class ShowShoppingAssistantPerformance extends OrgAction
                 ->column(key: 'clicked', label: __('Clicked'), canBeHidden: false, align: 'right')
                 ->column(key: 'added', label: __('Added'), canBeHidden: false, align: 'right')
                 ->column(key: 'ordered', label: __('Ordered'), canBeHidden: false)
+                ->column(key: 'handed_over', label: __('Handed over'), canBeHidden: false)
                 ->column(key: 'cost', label: __('AI cost'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'status_label', label: __('Status'), canBeHidden: false)
                 ->defaultSort('-created_at');
         };
+    }
+
+    /**
+     * What the assistant passed on to the team in the period, open ones first, so one nobody has
+     * taken stays in sight until it is done: big order leads (customer services) and restock
+     * questions (purchasing), with how the restock answer reached the customer.
+     *
+     * @return array<int, array{reference: string, kind: string, customer: ?string, website: ?string, amount: ?float, currency: ?string, product: ?string, agreed_to_call: bool, answer_channel: ?string, status: string, status_label: string, assignee: ?string, reminders: int, created_at: string, url: string}>
+     */
+    private function salesLeads(array $filters): array
+    {
+        $domains = Website::whereIn('id', $filters['website_ids'])->pluck('domain', 'id');
+
+        return StaffTask::query()
+            ->with('assignee:id,contact_name,username,nickname')
+            ->whereIn('data->kind', [StoreShoppingAssistantSalesLead::TASK_KIND, StoreShoppingAssistantRestockQuestion::TASK_KIND])
+            ->whereIn(DB::raw("(data->>'website_id')::int"), $filters['website_ids'] ?: [0])
+            ->where('created_at', '>=', $filters['from']->startOfDay())
+            ->where('created_at', '<=', $filters['to']->endOfDay())
+            ->orderByRaw("case when status in ('todo', 'in_progress') then 0 else 1 end")
+            ->latest('id')
+            ->limit(50)
+            ->get()
+            ->map(fn (StaffTask $task) => [
+                'reference'      => $task->reference,
+                'kind'           => data_get($task->data, 'kind') === StoreShoppingAssistantRestockQuestion::TASK_KIND ? 'restock' : 'big_order',
+                'product'        => data_get($task->data, 'product_name'),
+                'answer_channel' => data_get($task->data, 'answer_channel'),
+                'customer'       => data_get($task->data, 'customer_name'),
+                'website'        => $domains[(int) data_get($task->data, 'website_id')] ?? null,
+                'amount'         => is_numeric(data_get($task->data, 'amount')) ? (float) data_get($task->data, 'amount') : null,
+                'currency'       => data_get($task->data, 'currency'),
+                'agreed_to_call' => (bool) data_get($task->data, 'agreed_to_call'),
+                'status'         => $task->status->value,
+                'status_label'   => StaffTaskStatusEnum::labels()[$task->status->value],
+                'assignee'       => $task->assignee?->chatName(),
+                'reminders'      => (int) data_get($task->data, 'reminders', 0),
+                'created_at'     => $task->created_at->toIso8601String(),
+                'url'            => route('grp.tasks.show', $task->reference),
+            ])
+            ->all();
     }
 
     private function tabProp(ShoppingAssistantPerformanceTabsEnum $tab, Closure $resolver): mixed
@@ -387,6 +439,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                     'shop_type'      => $filters['shop_type'],
                     'country'        => $filters['country'],
                     'outcome'        => $filters['outcome'],
+                    'general'        => $filters['general'],
                     'website_locked' => $filters['website_locked'],
                     'options'        => $filters['options'],
                 ],
@@ -397,6 +450,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                     ->filter(fn (Website $website) => data_get($website->settings, 'shopping_assistant.enabled'))
                     ->map(fn (Website $website) => ['website' => $website->domain, ...GetShoppingAssistantBudget::run($website)])
                     ->values()->all(),
+                'sales_leads'      => $this->salesLeads($filters),
                 'routes'           => [
                     'page'         => ['name' => $routePrefix.'show', 'parameters' => $routeParameters],
                     'conversation' => ['name' => $routePrefix.'conversations.show', 'parameters' => $routeParameters],

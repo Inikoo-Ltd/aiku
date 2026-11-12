@@ -41,7 +41,7 @@ class MoveOrderExcessPaymentToPreOrder
         $preOrderOrder = UpdateOrderPaymentsStatus::run($preOrderOrder);
 
         $amount = round(min(
-            (float) $order->payment_amount - (float) $order->total_amount,
+            (float) $order->payment_amount - $order->absorbedBankFees() - (float) $order->total_amount,
             (float) $preOrderOrder->total_amount - (float) $preOrderOrder->payment_amount
         ), 2);
 

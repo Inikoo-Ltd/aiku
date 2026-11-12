@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use App\Notifications\SupplierProductAvailabilityChangedNotification;
 
 use function Pest\Laravel\actingAs;
@@ -456,4 +457,263 @@ test('a supplier link prints at most five label PDFs a minute', function () {
         $this->getJson(route('grp.supplier_share.labels', $token))->assertUnprocessable();
     }
     $this->getJson(route('grp.supplier_share.labels', $token))->assertTooManyRequests();
+});
+
+/**
+ * Publishes a new version of the group's Supplier Agreement through the supervisor routes, reusing a draft left by an
+ * earlier test or the v1 draft the migration adds.
+ */
+function publishSupplierAgreement(object $test, bool $requiresReacceptance = true, ?string $changeSummary = null): \App\Models\SupplyChain\SupplierAgreementVersion
+{
+    actingAs($test->adminGuest->getUser());
+    $draft = \App\Models\SupplyChain\SupplierAgreementVersion::where('group_id', $test->group->id)->where('state', 'draft')->first();
+    if (!$draft) {
+        $test->post(route('grp.models.supplier_agreement_version.store'))->assertSessionHasNoErrors();
+        $draft = \App\Models\SupplyChain\SupplierAgreementVersion::where('group_id', $test->group->id)->where('state', 'draft')->firstOrFail();
+    }
+
+    $test->patch(route('grp.models.supplier_agreement_version.update', $draft->id), [
+        'body'                  => "## Conditions\n\nVersion text ".Str::random(8),
+        'requires_reacceptance' => $requiresReacceptance,
+        'change_summary'        => $changeSummary,
+    ])->assertSessionHasNoErrors();
+    $test->post(route('grp.models.supplier_agreement_version.publish', $draft->id))->assertSessionHasNoErrors();
+
+    return $draft->refresh();
+}
+
+/**
+ * @return \Illuminate\Testing\TestResponse<\Symfony\Component\HttpFoundation\Response>
+ */
+function acceptSupplierAgreement(object $test, string $token, \App\Models\SupplyChain\SupplierAgreementVersion $version, array $overrides = []): \Illuminate\Testing\TestResponse
+{
+    return $test->withHeaders(['CF-IPCountry' => 'ID', 'User-Agent' => 'PortalTest/1.0'])->post(route('grp.supplier_share.agreement.accept', $token), [
+        'supplier_agreement_version_id' => $version->id,
+        'accept'                        => true,
+        'supplier_legal_name'           => 'PT Kayu Indah',
+        'authorised_person'             => 'Made Wira',
+        'position'                      => 'Director',
+        ...$overrides,
+    ]);
+}
+
+test('INI-238 a supervisor publishes the Supplier Agreement and the supplier accepts it in its portal, with the proof stored and never changed', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $version              = publishSupplierAgreement($this);
+    Auth::logout();
+
+    expect($version->state)->toBe(\App\Enums\SupplyChain\SupplierAgreement\SupplierAgreementVersionStateEnum::PUBLISHED)
+        ->and(\App\Models\SupplyChain\SupplierAgreementVersion::where('group_id', $this->group->id)->where('state', 'published')->count())->toBe(1);
+
+    $this->get(route('grp.supplier_share.show', $token))
+        ->assertInertia(fn ($page) => $page
+            ->where('agreement.version.id', $version->id)
+            ->where('agreement.status.status', 'not_accepted')
+            ->where('agreement.must_accept', true));
+
+    acceptSupplierAgreement($this, $token, $version, ['accept' => false])->assertSessionHasErrors('accept');
+    acceptSupplierAgreement($this, $token, $version, ['authorised_person' => ''])->assertSessionHasErrors('authorised_person');
+    acceptSupplierAgreement($this, $token, $version, ['accepted_at' => '2020-01-01'])->assertSessionHasNoErrors();
+
+    $acceptance = \App\Models\SupplyChain\SupplierAgreementAcceptance::where('supplier_id', $supplier->id)->sole();
+    expect($acceptance->supplier_agreement_version_id)->toBe($version->id)
+        ->and($acceptance->supplier_share_link_id)->toBe(\App\Models\SupplyChain\SupplierShareLink::findLiveByToken($token)->id)
+        ->and($acceptance->accepted_at->isToday())->toBeTrue()
+        ->and($acceptance->ip)->not->toBeNull()
+        ->and($acceptance->country_code)->toBe('ID')
+        ->and($acceptance->user_agent)->toBe('PortalTest/1.0')
+        ->and($acceptance->locale)->not->toBeNull()
+        ->and($acceptance->body_hash)->toBe(hash('sha256', $version->body))
+        ->and($acceptance->authorised_person)->toBe('Made Wira');
+
+    $this->get(route('grp.supplier_share.show', $token))
+        ->assertInertia(fn ($page) => $page
+            ->where('agreement.status.status', 'accepted')
+            ->where('agreement.status.label', 'Accepted v'.$version->version)
+            ->where('agreement.must_accept', false));
+
+    expect(fn () => $acceptance->update(['position' => 'Owner']))->toThrow(LogicException::class)
+        ->and(fn () => $acceptance->delete())->toThrow(LogicException::class)
+        ->and(fn () => DB::table('supplier_agreement_acceptances')->where('id', $acceptance->id)->update(['position' => 'Owner']))->toThrow(\Illuminate\Database\QueryException::class)
+        ->and(fn () => DB::table('supplier_agreement_acceptances')->where('id', $acceptance->id)->delete())->toThrow(\Illuminate\Database\QueryException::class)
+        ->and(fn () => $version->update(['body' => 'changed']))->toThrow(LogicException::class)
+        ->and(fn () => DB::table('supplier_agreement_versions')->where('id', $version->id)->update(['body' => 'changed']))->toThrow(\Illuminate\Database\QueryException::class);
+
+    actingAs($this->adminGuest->getUser());
+    $this->patch(route('grp.models.supplier_agreement_version.update', $version->id), ['body' => 'changed'])->assertSessionHasErrors('version');
+    expect($version->refresh()->body)->not->toBe('changed');
+});
+
+test('INI-238 the portal preview shows the agreement form but nothing can be sent from it, and only procurement supervisors publish', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $version              = publishSupplierAgreement($this);
+
+    $this->get(route('grp.supply-chain.suppliers.portal_preview', $supplier))
+        ->assertInertia(fn ($page) => $page
+            ->where('preview', true)
+            ->where('agreement.status.status', 'not_accepted')
+            ->where('agreement.accept_route', route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'agreement'])));
+    $this->post(route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'agreement']), [
+        'supplier_agreement_version_id' => $version->id,
+        'accept'                        => true,
+        'supplier_legal_name'           => 'X',
+        'authorised_person'             => 'Y',
+        'position'                      => 'Z',
+    ])->assertSessionHasErrors('preview');
+    expect(\App\Models\SupplyChain\SupplierAgreementAcceptance::where('supplier_id', $supplier->id)->exists())->toBeFalse();
+
+    $buyer = userWithJobPosition($this, 'buy', 'ini238-buyer-'.Str::lower(Str::random(6)));
+    actingAsUserWithOnlyPermissions($buyer, ['supply-chain.view', "procurement.{$this->organisation->id}.view", "procurement.{$this->organisation->id}.edit"]);
+    $this->post(route('grp.models.supplier_agreement_version.store'))->assertForbidden();
+    $this->get(route('grp.supply-chain.supplier_agreement.index'))->assertOk()
+        ->assertInertia(fn ($page) => $page->component('SupplyChain/SupplierAgreementVersions')->where('can_edit', false)->where('store_route', null));
+});
+
+test('INI-238 a new version asking to accept again makes the supplier outdated, one that does not keeps it accepted, and every page says the same', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $first                = publishSupplierAgreement($this);
+    Auth::logout();
+    acceptSupplierAgreement($this, $token, $first)->assertSessionHasNoErrors();
+
+    $clarification = publishSupplierAgreement($this, false, 'Fixed a typo in clause 4');
+    Auth::logout();
+    acceptSupplierAgreement($this, $token, $first)->assertSessionHasErrors('supplier_agreement_version_id');
+    $this->get(route('grp.supplier_share.show', $token))
+        ->assertInertia(fn ($page) => $page
+            ->where('agreement.status.status', 'accepted')
+            ->where('agreement.status.label', 'Accepted v'.$first->version)
+            ->where('agreement.must_accept', false)
+            ->where('agreement.changes.0.change_summary', 'Fixed a typo in clause 4'));
+    expect($first->refresh()->state->value)->toBe('retired')
+        ->and($clarification->state->value)->toBe('published');
+
+    $newTerms = publishSupplierAgreement($this);
+    $status   = \App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus::make()->handle($supplier);
+    expect($status['status'])->toBe('outdated');
+
+    $this->get(route('grp.supply-chain.suppliers.show', $supplier))
+        ->assertInertia(fn ($page) => $page->where('agreement.supplier_agreement.status', 'outdated')->has('agreement.supplier_agreement.history', 1));
+    $listed = collect($this->getJson(route('grp.supply-chain.suppliers.index', ['elements[agreement]' => 'outdated', 'filter[global]' => $supplier->code]))->json('data'))->keyBy('code');
+    expect($listed[$supplier->code]['agreement']['status'])->toBe('outdated');
+    $notAccepted = collect($this->getJson(route('grp.supply-chain.suppliers.index', ['elements[agreement]' => 'not_accepted', 'filter[global]' => $supplier->code]))->json('data'));
+    expect($notAccepted->pluck('code'))->not->toContain($supplier->code);
+
+    Auth::logout();
+    $this->get(route('grp.supplier_share.show', $token))->assertInertia(fn ($page) => $page->where('agreement.status.status', 'outdated')->where('agreement.must_accept', true));
+    acceptSupplierAgreement($this, $token, $newTerms)->assertSessionHasNoErrors();
+    expect(\App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus::make()->handle($supplier)['label'])->toBe('Accepted v'.$newTerms->version);
+
+    actingAs($this->adminGuest->getUser());
+    $acceptance = \App\Models\SupplyChain\SupplierAgreementAcceptance::where('supplier_id', $supplier->id)->latest('id')->first();
+    $this->get(route('grp.supply-chain.suppliers.agreement_acceptance.pdf', [$supplier->slug, $acceptance->id]))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
+});
+
+test('INI-238 a purchase order confirmed after the acceptance keeps it, one confirmed before keeps none, and an order to a supplier that has not accepted warns but is not blocked', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $version              = publishSupplierAgreement($this);
+
+    $confirmedBefore = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $confirmedBefore->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+    $confirmedBefore = \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed::make()->action($confirmedBefore->refresh());
+    expect($confirmedBefore->supplier_agreement_acceptance_id)->toBeNull();
+
+    $warning = \App\Actions\Procurement\SupplierAgreedTerm\UI\GetPurchaseOrderAgreement::make()->supplierAgreement($confirmedBefore);
+    expect($warning['status'])->toBe('not_accepted')->and($warning['warning'])->not->toBeNull();
+
+    Auth::logout();
+    acceptSupplierAgreement($this, $token, $version)->assertSessionHasNoErrors();
+    $acceptance = \App\Models\SupplyChain\SupplierAgreementAcceptance::where('supplier_id', $supplier->id)->sole();
+
+    $this->travel(1)->minutes();
+    $confirmedAfter = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $confirmedAfter->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+    $confirmedAfter = \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed::make()->action($confirmedAfter->refresh());
+
+    expect($confirmedAfter->supplier_agreement_acceptance_id)->toBe($acceptance->id)
+        ->and($confirmedBefore->refresh()->supplier_agreement_acceptance_id)->toBeNull();
+
+    $status = \App\Actions\Procurement\SupplierAgreedTerm\UI\GetPurchaseOrderAgreement::make()->supplierAgreement($confirmedAfter);
+    expect($status['status'])->toBe('accepted')
+        ->and($status['warning'])->toBeNull()
+        ->and($status['order_acceptance']['version'])->toBe($version->version);
+});
+
+test('INI-238 once a version is published every staff page shows the status, agent organisations see only the status, and reverting an order clears its acceptance', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $agent                = \App\Actions\SupplyChain\Agent\StoreAgent::make()->action($this->group, \App\Models\SupplyChain\Agent::factory()->definition());
+    $orgAgent             = \App\Actions\Procurement\OrgAgent\StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    [$agentOrgSupplier]   = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $version              = publishSupplierAgreement($this);
+    Auth::logout();
+    acceptSupplierAgreement($this, $token, $version)->assertSessionHasNoErrors();
+    actingAs($this->adminGuest->getUser());
+
+    $this->get(route('grp.supply-chain.supplier_agreement.index'))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('can_edit', true)->has('supplier_counts.accepted'));
+    $this->get(route('grp.supply-chain.supplier_agreement.show', $version->id))->assertOk()
+        ->assertInertia(fn ($page) => $page->component('SupplyChain/SupplierAgreementVersion')->where('can_edit', false)->where('version.body_hash', hash('sha256', $version->body)));
+
+    $this->get(route('grp.org.procurement.org_suppliers.show', [$this->organisation->slug, $orgSupplier->slug]))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('agreement.supplier_agreement.status', 'accepted')->has('agreement.supplier_agreement.history', 1));
+    $this->get(route('grp.supply-chain.agents.show', [$agent->slug]))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('agreement.supplier_agreement.not_accepted', 1)->where('agreement.supplier_agreement.suppliers.0.code', $agentOrgSupplier->supplier->code));
+    $this->get(route('grp.org.procurement.org_agents.show', [$this->organisation->slug, $orgAgent->slug]))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('agreement.supplier_agreement.suppliers.0.status', 'not_accepted'));
+    $agentSuppliers = collect($this->getJson(route('grp.supply-chain.agent_suppliers.index', ['elements[agreement]' => 'not_accepted', 'filter[global]' => $agentOrgSupplier->supplier->code]))->json('data'));
+    expect($agentSuppliers->firstWhere('code', $agentOrgSupplier->supplier->code)['agreement']['status'])->toBe('not_accepted');
+    expect(collect($this->getJson(route('grp.supply-chain.agent_suppliers.index', ['elements[agreement]' => 'accepted', 'filter[global]' => $agentOrgSupplier->supplier->code]))->json('data'))->pluck('code'))
+        ->not->toContain($agentOrgSupplier->supplier->code);
+
+    $forAgentOrganisation = \App\Actions\Procurement\SupplierAgreedTerm\UI\GetAgreement::run($supplier, $this->organisation, $this->adminGuest->getUser(), true)['supplier_agreement'];
+    expect($forAgentOrganisation['status'])->toBe('accepted')
+        ->and($forAgentOrganisation)->not->toHaveKey('history')
+        ->and($forAgentOrganisation)->not->toHaveKey('authorised_person');
+    $agentRows = \App\Actions\Procurement\SupplierAgreedTerm\UI\GetAgreement::run($agent, $this->organisation, $this->adminGuest->getUser(), true)['supplier_agreement']['suppliers'];
+    expect($agentRows[0]['slug'])->toBeNull()->and($agentRows[0])->not->toHaveKey('authorised_person');
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+    $purchaseOrder = \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+    expect($purchaseOrder->supplier_agreement_acceptance_id)->not->toBeNull();
+
+    $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))->assertOk()
+        ->assertInertia(fn ($page) => $page->where('agreement.supplier_agreement_status.status', 'accepted')->where('agreement.supplier_agreement_status.order_acceptance.version', $version->version));
+
+    $purchaseOrder = \App\Actions\Procurement\PurchaseOrder\RevertPurchaseOrderToSubmitted::make()->action($purchaseOrder);
+    expect($purchaseOrder->refresh()->supplier_agreement_acceptance_id)->toBeNull();
+
+    $supervisor = userWithJobPosition($this, 'buy', 'ini238-lead-'.Str::lower(Str::random(6)));
+    actingAsUserWithOnlyPermissions($supervisor, ["org-supervisor.{$this->organisation->id}.procurement", "procurement.{$this->organisation->id}.view", "procurement.{$this->organisation->id}.edit"]);
+    $this->get(route('grp.supply-chain.supplier_agreement.index'))->assertOk()->assertInertia(fn ($page) => $page->where('can_edit', true));
+});
+
+test('INI-238 a published version never goes back to draft, a supplier accepts a version once, and an order confirmed on an earlier date keeps the acceptance in force then', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $version              = publishSupplierAgreement($this);
+
+    expect(fn () => $version->update(['state' => 'draft']))->toThrow(LogicException::class)
+        ->and(fn () => DB::table('supplier_agreement_versions')->where('id', $version->id)->update(['state' => 'draft']))->toThrow(\Illuminate\Database\QueryException::class);
+
+    $this->travel(-10)->days();
+    Auth::logout();
+    acceptSupplierAgreement($this, $token, $version)->assertSessionHasNoErrors();
+    $this->travelBack();
+    acceptSupplierAgreement($this, $token, $version)->assertSessionHasNoErrors();
+    expect(\App\Models\SupplyChain\SupplierAgreementAcceptance::where('supplier_id', $supplier->id)->count())->toBe(1)
+        ->and(fn () => \App\Actions\SupplyChain\SupplierAgreement\AcceptSupplierAgreement::make()->handle($supplier, $version, [
+            'supplier_legal_name' => 'X', 'authorised_person' => 'Y', 'position' => 'Z',
+        ]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+    $purchaseOrder = \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+    expect($purchaseOrder->supplier_agreement_acceptance_id)->not->toBeNull();
+
+    $purchaseOrder->update(['confirmed_at' => now()->subDays(20)]);
+    expect($purchaseOrder->refresh()->supplier_agreement_acceptance_id)->toBeNull();
 });

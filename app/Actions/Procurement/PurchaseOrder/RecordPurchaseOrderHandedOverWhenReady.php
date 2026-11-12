@@ -9,6 +9,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
@@ -26,6 +27,14 @@ class RecordPurchaseOrderHandedOverWhenReady
     use AsObject;
 
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
+    {
+        $purchaseOrder = $this->recordWhenReady($purchaseOrder);
+        PurchaseOrderHydrateState::run($purchaseOrder);
+
+        return $purchaseOrder;
+    }
+
+    private function recordWhenReady(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         $purchaseOrder->refresh();
 

@@ -68,6 +68,7 @@ extension LocationsLocation {
             maxWeightKg: remote.maxWeight,
             maxVolumeM3: remote.maxVolume,
             slots: (remote.orgStocks ?? []).map(LocationsSlot.init(remote:)),
+            pallets: (remote.pallets ?? []).map(LocationsPallet.init(remote:)),
             auditedOn: remote.auditedAt.flatMap(LocationsFormat.isoDate),
             remote: LocationsRemoteSummary(
                 id: remote.id,
@@ -100,7 +101,9 @@ extension LocationsSlot {
             note: remote.notes ?? "",
             unitWeightKg: 0,
             unitVolumeM3: 0,
-            unitValue: quantity > 0 ? value / Double(quantity) : 0
+            unitValue: quantity > 0 ? value / Double(quantity) : 0,
+            remoteOrgStockID: remote.id,
+            remoteLinkID: remote.locationOrgStockId
         )
     }
 }
@@ -118,5 +121,31 @@ extension LocationsFormat {
         }
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter.date(from: text)
+    }
+}
+
+extension LocationsPallet {
+    init(remote: MobileLocation.Pallet) {
+        self.init(
+            reference: remote.reference,
+            customer: remote.customerName ?? remote.customerReference ?? "",
+            state: remote.stateLabel ?? ""
+        )
+    }
+}
+
+extension LocationsMovement {
+    init(remote: MobileLocationMovement) {
+        self.init(
+            id: remote.id,
+            date: remote.date.flatMap(LocationsFormat.isoDate),
+            typeLabel: remote.typeLabel ?? remote.type,
+            reasonLabel: remote.reasonLabel,
+            note: remote.note,
+            skoReference: remote.orgStockCode ?? remote.orgStockName ?? "",
+            quantity: remote.quantity?.value ?? 0,
+            runningQuantity: remote.runningQuantity?.value ?? nil,
+            userName: remote.userName
+        )
     }
 }

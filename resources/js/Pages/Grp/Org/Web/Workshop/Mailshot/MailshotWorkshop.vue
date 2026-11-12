@@ -48,6 +48,7 @@ const props = defineProps<{
     unpublished_layout: any
     compiledLayout: string | null
     mergeTags: Array<any>
+    readyMadeLinks?: Array<{ key: string, label: string, url: string }>
     socialIcons?: Record<string, string>
     mergeContents: Array<any> | null
     status: string
@@ -396,7 +397,7 @@ onMounted(() => {
 
     <template v-if="builder == 'beefree' && !isRefreshingLayout">
         <EmailWorkshop :updateRoute="updateRoute" :imagesUploadRoute="imagesUploadRoute" :videoThumbnailRoute="videoThumbnailRoute" :websiteTheme="websiteTheme" :imageCategories="imageCategories"
-            :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags" :socialIcons="socialIcons"
+            :snapshot="activeSnapshot" :unpublished_layout="unpublished_layout" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" :socialIcons="socialIcons"
             :mergeContents="mergeContents" :organisationSlug="organisationSlug" :shopSlug="shopSlug" :shopId="shopId"
             @onSave="onSendPublish" @sendTest="openSendTest" :autoSaveRoute="updateRoute" @saveTemplate="onSaveTemplate"
             :mailshot="mailshotData" :updateMailshotRoute="can_edit ? updateMailshotRoute : undefined" @mailshotSaved="onMailshotSaved"

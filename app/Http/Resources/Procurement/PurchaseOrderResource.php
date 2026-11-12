@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Procurement;
 
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -34,8 +35,9 @@ class PurchaseOrderResource extends JsonResource
             'slug'        => $purchaseOrder->slug,
             'date'        => $purchaseOrder->date,
             'state'       => $purchaseOrder->state->value,
-            'state_label' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
-            'state_icon'  => $purchaseOrder->state->stateIcon()[$purchaseOrder->state->value],
+            'line_state'  => $purchaseOrder->state->transactionState()->value,
+            'state_label' => PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value],
+            'state_icon'  => PurchaseOrderStateEnum::stateIcon()[$purchaseOrder->state->value],
             'is_partner'  => $purchaseOrder->parent_type === 'OrgPartner',
             'created_at'  => $purchaseOrder->created_at,
             'updated_at'  => $purchaseOrder->updated_at,

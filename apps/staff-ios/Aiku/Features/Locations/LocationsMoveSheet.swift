@@ -3,8 +3,10 @@ import SwiftUI
 struct LocationsMoveSheet: View {
     let source: LocationsLocation
     let warehouse: LocationsWarehouse
-    let onMove: (String, [String: Int], Bool) -> Void
+    let isRemote: Bool
+    let onMove: (String, [String: Int], Bool, Bool) -> Void
     let onCancel: () -> Void
+    let searchTargets: (String) async -> Void
     @State private var isSome: Bool
     @State private var query = ""
     @State private var targetCode: String?
@@ -18,17 +20,21 @@ struct LocationsMoveSheet: View {
         warehouse: LocationsWarehouse,
         startsWithSome: Bool,
         preselected: String? = nil,
-        onMove: @escaping (String, [String: Int], Bool) -> Void,
+        isRemote: Bool = false,
+        searchTargets: @escaping (String) async -> Void = { _ in },
+        onMove: @escaping (String, [String: Int], Bool, Bool) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.source = source
         self.warehouse = warehouse
+        self.isRemote = isRemote
+        self.searchTargets = searchTargets
         self.onMove = onMove
         self.onCancel = onCancel
         _isSome = State(initialValue: startsWithSome)
         _picked = State(initialValue: preselected.map { [$0] } ?? [])
         _quantities = State(initialValue: Dictionary(uniqueKeysWithValues: source.slots.map { ($0.skoReference, max($0.quantity, 0)) }))
-        _targetCode = State(initialValue: warehouse.moveTargets(from: source.code, query: "").first?.code)
+        _targetCode = State(initialValue: isRemote ? nil : warehouse.moveTargets(from: source.code, query: "").first?.code)
     }
 
     private var movableSlots: [LocationsSlot] {
@@ -59,7 +65,7 @@ struct LocationsMoveSheet: View {
                 isSome.toggle()
             }
             .accessibilityIdentifier("locations.move.mode")
-            SearchField(text: $query, placeholder: "Target location code", onScan: { isScanning = true })
+            SearchField(text: $query, placeholder: "Target location code", onScan: isRemote ? nil : { isScanning = true })
             if targets.isEmpty {
                 HelperText("No operational stock location starts with “\(query)”.")
             }
@@ -83,12 +89,18 @@ struct LocationsMoveSheet: View {
         } footer: {
             AikuButton(primaryTitle) {
                 if let targetCode {
-                    onMove(targetCode, plannedQuantities, removeFromSource)
+                    onMove(targetCode, plannedQuantities, removeFromSource, !isSome)
                 }
             }
             .disabled(targetCode == nil || plannedUnits == 0)
             .accessibilityIdentifier("locations.move.confirm")
             AikuButton("Cancel", kind: .tertiary, action: onCancel)
+        }
+        .task(id: query) {
+            guard isRemote else { return }
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            await searchTargets(query)
         }
         .fullScreenCover(isPresented: $isScanning) {
             LocationsScanCover(title: "Scan target location") {

@@ -11,7 +11,7 @@ shops: awd, dssk, dse
 ---
 
 <aside class="tldr">
-Tus pedidos de TikTok deben usar una plantilla de envío "Shipped by Seller", o TikTok Shipping con recogida (Pickup). Con "Shipped by Seller" enviamos el paquete con nuestro transportista y mandamos el número de seguimiento a TikTok por ti. Un pedido con etiqueta de entrega en punto TikTok no se puede enviar y se cancela, así que configúralo antes de tu primera venta.
+Tus pedidos de TikTok deben usar una plantilla de envío "Shipped by Seller". Enviamos el paquete con nuestros transportistas y el seguimiento se devuelve a TikTok por ti. Los pedidos que usan TikTok Shipping pueden cancelarse, así que configúralo antes de tu primera venta.
 </aside>
 
 ## Por qué importa esto
@@ -19,8 +19,7 @@ Tus pedidos de TikTok deben usar una plantilla de envío "Shipped by Seller", o 
 Cada pedido de TikTok lleva el tipo de envío de tu plantilla.
 
 - **Shipped by Seller**: preparamos el pedido, lo enviamos con nuestro transportista, y cuando se expide mandamos el número de seguimiento a TikTok. El pedido aparece como enviado en TikTok. No tienes que hacer nada.
-- **TikTok Shipping**: TikTok crea la etiqueta. El pedido igualmente recibe una nota de que no podemos enviarlo, porque no podemos ver tu método de entrega. Solo funciona cuando tu método de entrega es "Pickup", de modo que el transportista de TikTok recoge en nuestro almacén. Consulta [Configurar tu almacén de TikTok Shop](/docs/tiktok-shop-warehouse).
-- **TikTok Shipping con punto de entrega**: no podemos llevar paquetes a un punto de entrega, así que el pedido se cancelará.
+- **TikTok Shipping**: la recogida o el punto de entrega de TikTok. No lo uses. Estos pedidos pueden cancelarse.
 
 ## Crea la plantilla
 
@@ -51,7 +50,7 @@ Después de guardar, todos los productos de tu tienda de TikTok usan esta planti
 
 ## Cuando algo falla
 
-<b>Un pedido dice que no podemos enviarlo porque la plantilla de envío no es "Shipped by Seller" y el método de entrega es DROP_OFF.</b> Este pedido usa TikTok Shipping. Añadimos esta nota a todos los pedidos de TikTok Shipping, porque no podemos ver tu método de entrega. Con "Pickup" el transportista de TikTok lo recoge. Con punto de entrega no podemos enviarlo y se cancelará. Vincula una plantilla "Shipped by Seller" a tu almacén, o pon tu método de entrega en "Pickup", para que tus próximos pedidos se puedan enviar.
+<b>Un pedido dice que no podemos enviarlo porque la plantilla de envío no es "Shipped by Seller" y el método de entrega es DROP_OFF.</b> Este pedido usa TikTok Shipping, y puede cancelarse. Vincula una plantilla "Shipped by Seller" a tu almacén, para que tus próximos pedidos se puedan enviar.
 
 <b>TikTok sigue mostrando el pedido como no enviado.</b> Mandamos el número de seguimiento cuando el pedido se expide. Si TikTok no acepta nuestro transportista para ese pedido, el seguimiento puede no aparecer. Comprueba el pedido en <b>Pedidos</b> de tu canal, y si ya se expidió, pídenoslo en el chat de nuestra web con el número de pedido.
 

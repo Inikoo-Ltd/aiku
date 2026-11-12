@@ -103,6 +103,10 @@ class RefundPaymentToBalance extends OrgAction
             throw ValidationException::withMessages(['amount' => __('Only a payment can be refunded, not a refund')]);
         }
 
+        if ($payment->paymentAccount->type === PaymentAccountTypeEnum::BANK_FEE) {
+            throw ValidationException::withMessages(['amount' => __('A bank fee we absorbed was never received, so it cannot be refunded')]);
+        }
+
         if ($payment->status !== PaymentStatusEnum::SUCCESS) {
             throw ValidationException::withMessages(['amount' => __('Only a successful payment can be refunded, this one is :state', ['state' => PaymentStateEnum::labels()[$payment->state->value] ?? $payment->state->value])]);
         }

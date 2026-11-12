@@ -3,6 +3,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { useLocaleStore } from "@/Stores/locale"
+import SupplierAgreementStatusBadge from "@/Components/Procurement/SupplierAgreementStatusBadge.vue"
 
 interface AgentSupplier {
 	id: number
@@ -15,6 +16,7 @@ interface AgentSupplier {
 	number_supplier_products: number
 	number_purchase_orders: number
 	number_stock_deliveries: number
+	agreement: { status: string, label: string, colour: string, icon: string } | null
 }
 
 defineProps<{
@@ -56,6 +58,9 @@ function agentRoute(supplier: AgentSupplier) {
 		</template>
 		<template #cell(number_stock_deliveries)="{ item: supplier }">
 			{{ locale.number(supplier.number_stock_deliveries) }}
+		</template>
+		<template #cell(agreement)="{ item: supplier }">
+			<SupplierAgreementStatusBadge v-if="supplier.agreement" :status="supplier.agreement" />
 		</template>
 	</Table>
 </template>

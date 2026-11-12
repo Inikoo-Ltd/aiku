@@ -14,11 +14,13 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\CRM\Customer;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
+ * @property-read Website|null $website
  * @property string $ulid
  * @property int $group_id
  * @property int $organisation_id
@@ -73,6 +75,11 @@ class ShoppingAssistantConversation extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function website(): BelongsTo
+    {
+        return $this->belongsTo(Website::class);
+    }
+
     public function messages(): HasMany
     {
         return $this->hasMany(ShoppingAssistantMessage::class);
@@ -81,6 +88,11 @@ class ShoppingAssistantConversation extends Model
     public function events(): HasMany
     {
         return $this->hasMany(ShoppingAssistantEvent::class);
+    }
+
+    public function handOvers(): HasMany
+    {
+        return $this->hasMany(ShoppingAssistantHandOver::class);
     }
 
     /**

@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $credentials
  * @property BankConnectionStateEnum $state
  * @property array<string, mixed> $sync_data
+ * @property array{auto_pay_from?: string, payment_accounts?: array<string, int>, bank_fee_payment_account_id?: int, fee_ceiling_eur?: float} $settings
  * @property \Illuminate\Support\Carbon|null $last_synced_at
  * @property \Illuminate\Support\Carbon|null $last_error_at
  * @property string|null $last_error
@@ -44,6 +45,7 @@ class BankConnection extends Model
 
     protected $attributes = [
         'sync_data' => '{}',
+        'settings'  => '{}',
     ];
 
     protected function casts(): array
@@ -53,6 +55,7 @@ class BankConnection extends Model
             'state'          => BankConnectionStateEnum::class,
             'credentials'    => 'encrypted',
             'sync_data'      => 'array',
+            'settings'       => 'array',
             'last_synced_at' => 'datetime',
             'last_error_at'  => 'datetime',
         ];

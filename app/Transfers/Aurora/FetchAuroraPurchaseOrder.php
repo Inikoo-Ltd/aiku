@@ -157,11 +157,8 @@ class FetchAuroraPurchaseOrder extends FetchAurora
             "state"          => $state,
             "delivery_state" => $deliveryState,
 
-            "cost_items"    => $this->auroraModelData->{'Purchase Order Items Net Amount'},
-            "cost_shipping" => $this->auroraModelData->{'Purchase Order Shipping Net Amount'},
-            "cost_extra"    => $this->auroraModelData->{'Purchase Order Extra Cost Amount'},
-            "cost_tax"      => $this->auroraModelData->{'Purchase Order Total Tax Amount'},
-            "cost_total"    => $this->auroraModelData->{'Purchase Order Total Amount'},
+            "cost_items" => $this->auroraModelData->{'Purchase Order Items Net Amount'},
+            "cost_total" => $this->auroraModelData->{'Purchase Order Items Net Amount'},
 
             "estimated_received_at" => $estimatedReceivingDate,
             "buyer_id"              => $this->parseBuyerId(),

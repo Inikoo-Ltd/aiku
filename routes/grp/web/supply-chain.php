@@ -6,6 +6,9 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\SupplyChain\SupplierAgreement\PdfSupplierAgreementAcceptance;
+use App\Actions\SupplyChain\SupplierAgreement\UI\IndexSupplierAgreementVersions;
+use App\Actions\SupplyChain\SupplierAgreement\UI\ShowSupplierAgreementVersion;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\Procurement\SupplierAgreedTerm\PdfSupplierAgreement;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrders;
@@ -54,6 +57,8 @@ Route::get('shopping-list', [ShowShoppingListBoard::class, 'asGroupController'])
 Route::get('agent-suppliers', IndexAgentSuppliers::class)->name('agent_suppliers.index');
 Route::get('supplier-submissions', IndexSupplierSubmissions::class)->name('supplier_submissions.index');
 Route::get('supplier-portal-activity', IndexSupplierPortalActivity::class)->name('supplier_portal_activity.index');
+Route::get('supplier-agreement', IndexSupplierAgreementVersions::class)->name('supplier_agreement.index');
+Route::get('supplier-agreement/{supplierAgreementVersion}', ShowSupplierAgreementVersion::class)->name('supplier_agreement.show');
 Route::prefix('supplier-emails')->as('supplier_mailshots.')->group(function () {
     Route::get('', IndexSupplierMailshots::class)->name('index');
     Route::get('{mailshot}', ShowSupplierMailshot::class)->name('show');
@@ -118,6 +123,7 @@ Route::prefix("suppliers")->name("suppliers")->group(
         Route::prefix('{supplier}')->group(function () {
             Route::get('', ShowSupplier::class)->name('.show');
             Route::get('agreement/pdf', [PdfSupplierAgreement::class, 'inGroup'])->name('.agreement.pdf');
+            Route::get('agreement-acceptances/{supplierAgreementAcceptance}/pdf', PdfSupplierAgreementAcceptance::class)->name('.agreement_acceptance.pdf')->withoutScopedBindings();
             Route::get('edit', EditSupplier::class)->name('.edit');
 
             Route::prefix('supplier-products')->as('.supplier_products')->group(function () {

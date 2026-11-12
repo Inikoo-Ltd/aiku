@@ -4,6 +4,9 @@ import { ctrans } from "@/Composables/useTrans"
 import axios from "axios"
 import Dialog from "primevue/dialog"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
+
+type PhoneSource = "main" | "marketing_whatsapp"
 
 const visible = defineModel<boolean>("visible", { required: true })
 
@@ -54,8 +57,25 @@ const showNewContact = computed(
     () => !selectedCustomer.value && noResults.value && isPhoneValid.value
 )
 
+const phoneSource = ref<PhoneSource>("main")
+
+const customerPhoneOptions = computed(() => {
+    const options: Array<{ label: string; value: PhoneSource; phone: string }> = []
+    if (selectedCustomer.value?.marketing_whatsapp_phone) {
+        options.push({ label: ctrans("WhatsApp marketing"), value: "marketing_whatsapp", phone: selectedCustomer.value.marketing_whatsapp_phone })
+    }
+    if (selectedCustomer.value?.phone) {
+        options.push({ label: ctrans("Main phone"), value: "main", phone: selectedCustomer.value.phone })
+    }
+    return options
+})
+
+const selectedCustomerPhone = computed(
+    () => customerPhoneOptions.value.find((option) => option.value === phoneSource.value)?.phone ?? customerPhoneOptions.value[0]?.phone ?? null
+)
+
 const canStart = computed(() =>
-    submitting.value ? false : !!selectedCustomer.value?.phone || isPhoneValid.value
+    submitting.value ? false : !!selectedCustomerPhone.value || isPhoneValid.value
 )
 
 const fetchRoute = computed(() => ({
@@ -74,6 +94,8 @@ const onSelectCustomer = (customer: any) => {
         noResults.value = false
         contactName.value = ""
     }
+
+    phoneSource.value = customerPhoneOptions.value[0]?.value ?? "main"
 }
 
 const onOptionsList = (options: any[]) => {
@@ -97,6 +119,7 @@ const startChat = async () => {
 
         if (selectedCustomer.value) {
             payload.customer_id = selectedCustomer.value.id
+            payload.phone_source = phoneSource.value
         } else {
             payload.phone_number = normalisedPhone.value
             payload.name = contactName.value.trim() || normalisedPhone.value
@@ -120,6 +143,7 @@ watch(visible, (isVisible) => {
         contactName.value = ""
         noResults.value = false
         error.value = ""
+        phoneSource.value = "main"
     }
 })
 </script>
@@ -140,7 +164,7 @@ watch(visible, (isVisible) => {
                         <div class="w-full text-left pl-4 leading-4 truncate mr-2">
                             {{ value.name }}
                             <span class="text-sm text-gray-400">
-                                ({{ value.reference }}<template v-if="value.phone"> · {{ value.phone }}</template>)
+                                ({{ value.reference }}<template v-if="value.phone || value.marketing_whatsapp_phone"> · {{ value.phone || value.marketing_whatsapp_phone }}</template>)
                             </span>
                         </div>
                     </template>
@@ -149,11 +173,17 @@ watch(visible, (isVisible) => {
                         <div>
                             {{ option.name }}
                             <span class="text-sm text-gray-400">
-                                ({{ option.reference }}<template v-if="option.phone"> · {{ option.phone }}</template>)
+                                ({{ option.reference }}<template v-if="option.phone || option.marketing_whatsapp_phone"> · {{ option.phone || option.marketing_whatsapp_phone }}</template>)
                             </span>
                         </div>
                     </template>
                 </PureMultiselectInfiniteScroll>
+            </div>
+
+            <div v-if="customerPhoneOptions.length > 1" class="flex flex-col gap-1">
+                <label class="text-xs font-medium text-gray-600">{{ ctrans("Send to") }}</label>
+                <SegmentedToggle v-model="phoneSource" :options="customerPhoneOptions" :ariaLabel="ctrans('Send to')" />
+                <p class="text-xs text-gray-500">{{ selectedCustomerPhone }}</p>
             </div>
 
             <p v-if="phoneError" class="text-xs text-red-500 leading-snug">{{ phoneError }}</p>

@@ -94,6 +94,15 @@ class ShowMailshot extends OrgAction
             : null;
 
 
+        $workshopRoute = [
+            'name'       => $mailshot->type === MailshotTypeEnum::MARKETING ? 'grp.org.shops.show.marketing.mailshots.workshop' : 'grp.org.shops.show.marketing.newsletters.workshop',
+            'parameters' => [
+                'organisation' => $this->organisation->slug,
+                'shop'         => $this->shop->slug,
+                'mailshot'     => $mailshot->slug
+            ]
+        ];
+
         $webpage = $mailshot->webpages()->first();
         /* NOTE:
          * is_second_wave_enabled is perspective from parent mailshot
@@ -142,6 +151,14 @@ class ShowMailshot extends OrgAction
                         ]
                     ] : false,
                     'actions' => [
+                        $isShowActions ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'key'   => 'workshop',
+                            'label' => __('Workshop'),
+                            'icon'  => ['fal', 'fa-drafting-compass'],
+                            'route' => $workshopRoute
+                        ] : [],
                         $isShowEditName && !$webpage && !$hasSourceReference ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -334,14 +351,7 @@ class ShowMailshot extends OrgAction
                 'numberSecondWaveRecipients' => $mailshotSecondWave?->recipients?->count() ?? 0,
                 'mailshotId' => $mailshot->id,
                 'groupId' => $mailshot->group_id,
-                'workshopRoute' => [
-                    'name' => $mailshot->type === MailshotTypeEnum::MARKETING ? "grp.org.shops.show.marketing.mailshots.workshop" : "grp.org.shops.show.marketing.newsletters.workshop",
-                    'parameters' => [
-                        'organisation' => $this->organisation->slug,
-                        'shop' => $this->shop->slug,
-                        'mailshot' => $mailshot->slug
-                    ]
-                ],
+                'workshopRoute' => $workshopRoute,
                 'timeZoneOptions' => GetTimeZoneSelectOptions::run(),
                 'defaultShopTimezone' => $this->shop->timezone->name,
 
