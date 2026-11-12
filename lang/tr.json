@@ -16318,5 +16318,7 @@
     "Final checks done": "Son kontroller yapıldı",
     "Available to ship": "Gönderime hazır",
     "Transit & arrival": "Transit ve varış",
-    "Booked into stock": "Stoka alındı"
+    "Booked into stock": "Stoka alındı",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "İşlemde, gönderilmiş veya anlaşılmış ve henüz stoğa alınmamış satın alma siparişleri",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Anlaştığınız satın alma siparişleri, konteynerleri yola çıkana kadar: anlaşıldı, üretimde, deponuzda, yola hazır veya teslim edildi"
 }

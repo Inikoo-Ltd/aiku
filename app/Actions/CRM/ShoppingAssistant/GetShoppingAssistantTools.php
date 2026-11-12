@@ -22,13 +22,16 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Chat\ChatKnowledgeEntry;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use Carbon\Carbon;
@@ -78,6 +81,13 @@ use Throwable;
  * only when the date is reliable. ask_purchasing_team, after the customer said yes, passes a
  * restock question with no reliable answer to the organisation's purchasing people
  * (StoreShoppingAssistantRestockQuestion); their answer reaches the customer by email.
+ *
+ * shop_information answers a general question about buying from the shop (payment, delivery rules,
+ * returns, ordering, the account, terms) from the shop's knowledge base, found by meaning
+ * (SearchShopKnowledge): up to four texts, each with its id, and `sources` for the turn, which
+ * AskShoppingAssistant checks the answer cites. With no text it tells the model to offer a person,
+ * and when the search is not available it returns the tool error, so the model never answers a
+ * shop question from its own knowledge.
  *
  * dispatch_times and shipping_cost never give the model a figure: each returns a `fact`, a sentence
  * written here from our data in the shop's language, which AskShoppingAssistant puts under the
@@ -251,6 +261,14 @@ class GetShoppingAssistantTools
                 ['question', 'customer_agreed']
             ),
             $this->tool(
+                'shop_information',
+                'What our own pages, shop settings and customer service notes say about buying from this shop: payment, delivery and its cost rules, returns, ordering, minimum order, the customer\'s account, our terms. Use it for every general question about the shop that is not a request for products. Returns up to 4 texts, each with an id. Answer only from these texts and list the ids you used in sources. Returns no products.',
+                [
+                    'question' => ['type' => 'string', 'description' => 'The customer\'s question, in their words.'],
+                ],
+                ['question']
+            ),
+            $this->tool(
                 'clear_conversation',
                 'Clear this conversation when the customer asks to delete, clear or forget it. The page then tells them it was cleared. Returns no products.',
                 []
@@ -259,7 +277,10 @@ class GetShoppingAssistantTools
                 self::PRESENT_PRODUCTS,
                 'Give your final answer. Call it once, as your last step, every time: also when you show no products, ask a question or decline (leave must_haves and add_ons empty), so the customer always gets follow_ups to tap. Use only ids returned by the other tools.',
                 [
-                    'reply'      => ['type' => 'string', 'description' => 'Two or three short sentences for the customer, with no ids, prices, discounts, stock or numbers.'],
+                    'reply'        => ['type' => 'string', 'description' => 'Two or three short sentences for the customer, with no ids, prices, discounts or stock, and no numbers other than figures stated in the texts you cite in sources.'],
+                    'answer_kind'  => ['type' => 'string', 'enum' => ShoppingAssistantAnswerKindEnum::declarable(), 'description' => 'products when you show or talk about products or ranges; shop_answer when you answer a general question from texts shop_information returned (sources is then required); question when you only ask the customer something; offer_person when you cannot answer and a person should (offer_reason is then required); off_topic when you decline something that has nothing to do with this shop.'],
+                    'sources'      => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Ids of the shop_information texts your answer rests on. Required with answer_kind shop_answer.'],
+                    'offer_reason' => ['type' => 'string', 'enum' => array_column(ShoppingAssistantHandOverReasonEnum::cases(), 'value'), 'description' => 'not_sure: you could not answer from the texts or have none; order_question: the customer asks about their own order, invoice, payment, refund or delivery; asked_for_person: the customer asks for a person.'],
                     'must_haves' => $productIds('Ids of products that fit the request or sell well for similar shops, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
                     'add_ons'    => $productIds('Ids of complementary or previously ordered products, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
                     'follow_ups' => [
@@ -269,7 +290,7 @@ class GetShoppingAssistantTools
                         'description' => 'Two or three short questions the customer could ask next, about products you can find for them. Always give them, also when you decline or show nothing.',
                     ],
                 ],
-                ['reply']
+                ['reply', 'answer_kind']
             ),
         ];
     }
@@ -305,6 +326,7 @@ class GetShoppingAssistantTools
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
+                'shop_information'               => $this->shopInformation($customer, $arguments),
                 default                          => $this->error("Unknown tool $name."),
             };
         } catch (Throwable $exception) {
@@ -766,6 +788,53 @@ class GetShoppingAssistantTools
             'error'    => null,
             'families' => [$family->id],
             'names'    => array_values(array_filter([$family->name, $description])),
+        ];
+    }
+
+    /**
+     * The shop's knowledge entries nearest to the question. Staff notes and verified facts are marked
+     * checked_by_staff: they were written for customer service, some of them because a page of ours is
+     * out of date, so the model is told to follow them over a page and to leave out what is only for
+     * staff (internal codes, ids, system names, what staff can do, remarks about our own pages).
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, sources?: array<int, array{id: int, kind: string, source_type: string, source_id: ?string, title: string, url: ?string, body: string}>}
+     */
+    private function shopInformation(Customer $customer, array $arguments): array
+    {
+        $question = is_string($arguments['question'] ?? null) ? $arguments['question'] : '';
+        $entries  = SearchShopKnowledge::run($customer->shop, $question);
+
+        if ($entries === null) {
+            return $this->error('The shop information is not available right now. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.');
+        }
+
+        if ($entries->isEmpty()) {
+            return [
+                'content'  => ['texts' => [], 'note' => 'We have nothing written about this. Do not answer from your own knowledge: answer with answer_kind offer_person and offer_reason not_sure.'],
+                'products' => [],
+                'error'    => null,
+                'sources'  => [],
+            ];
+        }
+
+        return [
+            'content'  => [
+                'texts' => $entries->map(fn (ChatKnowledgeEntry $entry) => ['id' => $entry->id, 'title' => $entry->title, 'text' => $entry->body, 'checked_by_staff' => $entry->is_manual || $entry->source_type === 'verified'])->values()->all(),
+                'note'  => 'Answer only if these texts clearly answer the question, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. You may repeat a figure only exactly as a text states it. A text marked checked_by_staff is newer than our pages: when it disagrees with a page, follow it and cite it. Some texts are notes written for our staff: tell the customer only what answers their question, in plain words, and never repeat internal codes, ids, system or file names, what staff can do, or that a page of ours is wrong or out of date. If the texts do not answer the question, do not guess: answer with answer_kind offer_person and offer_reason not_sure.',
+            ],
+            'products' => [],
+            'error'    => null,
+            'sources'  => $entries->map(fn (ChatKnowledgeEntry $entry) => [
+                'id'          => $entry->id,
+                'kind'        => $entry->kind,
+                'source_type' => $entry->source_type,
+                'source_id'   => $entry->source_id,
+                'title'       => $entry->title,
+                'url'         => $entry->url,
+                'body'        => $entry->body,
+            ])->values()->all(),
         ];
     }
 

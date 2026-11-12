@@ -1541,5 +1541,7 @@
     "Final checks done": "最終チェック完了",
     "Available to ship": "出荷可能",
     "Transit & arrival": "輸送・到着",
-    "Booked into stock": "在庫に計上"
+    "Booked into stock": "在庫に計上",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "処理中、送信済み、または合意済みで、まだ入庫されていない発注書",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "合意済みの発注書（コンテナが出発するまで）：合意済み、製造中、貴社倉庫内、出発準備完了、または引き渡し済み"
 }

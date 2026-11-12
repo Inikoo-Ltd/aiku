@@ -90,6 +90,11 @@ class ShoppingAssistantConversation extends Model
         return $this->hasMany(ShoppingAssistantEvent::class);
     }
 
+    public function handOvers(): HasMany
+    {
+        return $this->hasMany(ShoppingAssistantHandOver::class);
+    }
+
     /**
      * Waiting for an answer: the latest message is the customer's and is younger than the answer job's timeout.
      */

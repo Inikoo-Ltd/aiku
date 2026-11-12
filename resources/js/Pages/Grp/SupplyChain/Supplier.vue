@@ -33,6 +33,7 @@ import SupplierDeclarations from '@/Components/SupplyChain/SupplierDeclarations.
 import TableSupplierAgreedTerms from '@/Components/Tables/Grp/Org/Procurement/TableSupplierAgreedTerms.vue'
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
 import AgreementSummary from '@/Components/Procurement/AgreementSummary.vue'
+import SupplierAgreementStatusBadge from '@/Components/Procurement/SupplierAgreementStatusBadge.vue'
 import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
 
@@ -80,6 +81,9 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #afterTitle2>
+            <SupplierAgreementStatusBadge v-if="agreement?.supplier_agreement?.status" :status="agreement.supplier_agreement" class="ml-2" />
+        </template>
         <template #other>
             <Button v-if="currentTab === 'attachments'" :label="ctrans('Attach')" icon="upload" @click="() => (isModalUploadAttachmentOpen = true)" />
         </template>

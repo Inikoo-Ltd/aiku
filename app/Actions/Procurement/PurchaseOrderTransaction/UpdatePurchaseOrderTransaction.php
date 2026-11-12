@@ -131,6 +131,6 @@ class UpdatePurchaseOrderTransaction extends OrgAction
 
     public function jsonResponse(PurchaseOrderTransaction $purchaseOrderTransaction): PurchaseOrderResource
     {
-        return new PurchaseOrderResource($purchaseOrderTransaction);
+        return new PurchaseOrderResource($purchaseOrderTransaction->purchaseOrder);
     }
 }

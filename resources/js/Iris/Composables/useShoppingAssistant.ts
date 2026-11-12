@@ -5,6 +5,7 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
 export interface ShoppingAssistant {
     name: string | null
+    hand_over?: boolean
 }
 
 export const shoppingAssistantQuestionKey = "shopping_assistant_question"

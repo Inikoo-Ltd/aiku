@@ -102,7 +102,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
         $movedFrom = Arr::get($movedTransaction->data, 'moved_from');
 
         if (!$movedFrom) {
-            return __('This item was not moved from another supplier');
+            return __('This item was not moved from another order');
         }
 
         if (Arr::get($movedFrom, 'undone_at')) {

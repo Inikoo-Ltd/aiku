@@ -53,7 +53,8 @@ trait WithChatReportsResponse
                     ],
                 ] : [],
             ],
-            'stats'     => $reports->handle($shops->pluck('id'), $interval, $shopNames),
+            'stats'     => $reports->handle($shops->pluck('id'), $interval, $shopNames, request()->boolean('from_assistant')),
+            'fromAssistant' => request()->boolean('from_assistant'),
             'intervals' => $reports->intervalOptions(),
             'showShops' => $shops->count() > 1,
             'conversationsRoute' => Route::has($conversationsRouteName) ? [
