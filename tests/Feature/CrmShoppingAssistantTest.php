@@ -941,6 +941,34 @@ test('the AI assistant report sends this month\'s budget of each website with th
     $this->get($url)->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->has('budgets', 0));
 });
 
+test('the group AI assistant report counts the period\'s conversations on its tab and lists each website with its figures and budget on Shops / Budget', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $website  = createWebsite($this->shop);
+    $product  = shoppingAssistantProduct($this->product);
+    $customer = shoppingAssistantCustomer($this->shop);
+    shoppingAssistantShownAt($customer, [$product->id], '2018-02-02 10:00:00');
+    shoppingAssistantOrderLine($customer, $product, '2018-02-03 10:00:00', 30);
+    shoppingAssistantShownAt(shoppingAssistantCustomer($this->shop), [$product->id], '2018-02-03 10:00:00');
+
+    $query = ['from' => '2018-02-01', 'to' => '2018-02-30', 'tab' => 'shops'];
+
+    $this->withoutVite();
+    $this->get(route('grp.websites.shopping_assistant.show', $query))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('tabs.navigation.conversations.number', 2)
+            ->where('tabs.navigation.shops.title', 'Shops / Budget')
+            ->where('shops.data', fn ($rows) => collect($rows)->pluck('domain')->contains($website->domain))
+            ->where('shops.data', function ($rows) use ($website) {
+                $row = collect($rows)->firstWhere('domain', $website->domain);
+
+                return $row['conversations'] === 2 && $row['customers'] === 2 && $row['orders'] === 1
+                    && (float) $row['revenue'] === 30.0 && (float) $row['conversion'] === 0.5 && array_key_exists('monthly', $row['budget']);
+            }));
+
+    $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.show', [$this->organisation->slug, $this->shop->slug, $website->slug, 'from' => '2018-02-01', 'to' => '2018-02-30']))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.shops')->where('tabs.navigation.conversations.number', 2));
+});
+
 test('the assistant is called Merlin unless the group sets a name, and a website\'s own name wins', function () {
     $website  = shoppingAssistantStorefront($this);
     $customer = shoppingAssistantCustomer($this->shop);

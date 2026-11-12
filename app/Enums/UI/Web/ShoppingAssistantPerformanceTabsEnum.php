@@ -18,6 +18,7 @@ enum ShoppingAssistantPerformanceTabsEnum: string
 
     case OVERVIEW      = 'overview';
     case CONVERSATIONS = 'conversations';
+    case SHOPS         = 'shops';
 
     public function blueprint(): array
     {
@@ -31,6 +32,11 @@ enum ShoppingAssistantPerformanceTabsEnum: string
                 'title'   => __('Conversations'),
                 'icon'    => 'fal fa-comments',
                 'tooltip' => __('Every conversation of the period with what was shown, clicked, added and ordered'),
+            ],
+            ShoppingAssistantPerformanceTabsEnum::SHOPS => [
+                'title'   => __('Shops / Budget'),
+                'icon'    => 'fal fa-store',
+                'tooltip' => __('Each website in the period: conversations, orders, revenue and conversion, with its AI budget this month'),
             ],
         };
     }

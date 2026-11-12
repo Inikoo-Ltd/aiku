@@ -11,6 +11,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import GoogleAdsMetric from "@/Components/DataDisplay/Dashboard/Widget/GoogleAdsMetric.vue"
 import TableShoppingAssistantConversations from "@/Components/Tables/Grp/Org/Web/TableShoppingAssistantConversations.vue"
+import TableShoppingAssistantWebsites from "@/Components/Tables/Grp/Org/Web/TableShoppingAssistantWebsites.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useCurrentTab } from "@/Composables/tab-change"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -127,6 +128,7 @@ const props = defineProps<{
     routes: { page: RouteRef; conversation: RouteRef }
     overview?: Overview
     conversations?: object
+    shops?: object
 }>()
 
 const locale = useLocaleStore()
@@ -694,7 +696,7 @@ const conversationsTable = computed(() => props.conversations)
                         <p v-for="line in card.lines" :key="line" class="mt-0.5 truncate text-xs text-gray-500" :title="line">{{ line }}</p>
                     </div>
                 </div>
-                <div v-if="budgetRows.length" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                <div v-if="budgetRows.length && filters.website_locked" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
                     <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("AI budget this month") }}</h3>
                     <table class="w-full text-sm">
                         <thead class="whitespace-nowrap text-xs text-gray-400">
@@ -1314,5 +1316,17 @@ const conversationsTable = computed(() => props.conversations)
             :routes="routes"
             :currency="currency"
             :costCurrency="costCurrency" />
+    </div>
+
+    <div v-else-if="currentTab === 'shops'">
+        <div v-if="!shops" class="space-y-2 p-4">
+            <div v-for="index in 6" :key="index" class="skeleton h-10 rounded" />
+        </div>
+        <TableShoppingAssistantWebsites
+            v-else
+            :data="shops"
+            tab="shops"
+            :currency="currency"
+            :conversationsUrl="(websiteId: number) => pageUrl({ ...filterQuery({ website: websiteId }), tab: 'conversations' })" />
     </div>
 </template>
