@@ -3019,6 +3019,38 @@ test('a line discounted after it was submitted is priced on its new factor', fun
     expect($totals['net_amount'])->toBe(55.75);
 });
 
+test('a line raised by staff after submission bills what it was quoted at, not the submitted unit net times the new quantity', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 8.48]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 1]
+    ));
+    $transaction->update([
+        'gross_amount'            => 8.48,
+        'net_amount'              => 8.06,
+        'quantity_bonus'          => 0,
+        'current_discount_factor' => 0.95,
+    ]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $deliveryNote->deliveryNoteItems()->delete();
+
+    $transaction->update(['quantity_ordered' => 6, 'gross_amount' => 50.88, 'net_amount' => 48.34]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(48.34);
+});
+
 test('shipping zone with territories wins over a catch all zone placed above it', function () {
     $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'catch all on top schema',

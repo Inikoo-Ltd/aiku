@@ -441,6 +441,11 @@ class GenerateInvoiceFromOrder extends OrgAction
          *
          * A line re-priced on purpose after submission - a discretionary discount, a correction -
          * has a factor that no longer matches the submitted one, and is calculated instead.
+         *
+         * So is a line whose quantity staff changed after submission (HELP-4666). UpdateTransaction
+         * quoted it on its new gross, and that is what the customer paid; the submitted unit net
+         * times the new quantity carries the submitted line's rounding onto every added unit
+         * (£8.06 x 6 = £48.36 where the customer was quoted and paid £48.34).
          */
         $sale = $loadedLine ? $loadedLine['sale'] : DB::table('transactions')->where('id', $transaction->id)->first([
             'current_discount_factor',
@@ -457,7 +462,8 @@ class GenerateInvoiceFromOrder extends OrgAction
         $submittedQuantity = (float)($sale?->submitted_quantity_ordered ?? 0) + (float)$transaction->quantity_bonus;
 
         if ($sale?->submitted_net_amount !== null && $submittedQuantity > 0
-            && (float)$sale->current_discount_factor === (float)$sale->submitted_discount_factor) {
+            && (float)$sale->current_discount_factor === (float)$sale->submitted_discount_factor
+            && (float)$sale->submitted_quantity_ordered === (float)$transaction->quantity_ordered) {
             $net = round((float)$sale->submitted_net_amount / $submittedQuantity * $quantityPicked, 2);
         } else {
             $net = $gross - discountAmountOffGross($gross, (float)($sale->current_discount_factor ?? 1));
