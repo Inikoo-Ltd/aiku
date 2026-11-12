@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\AgentGoodsReceipt;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateStage;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
 use App\Models\Procurement\AgentGoodsReceipt;
@@ -31,7 +32,7 @@ class CancelAgentGoodsReceipt extends OrgAction
 
     public function handle(AgentGoodsReceipt $receipt, ?User $user = null): AgentGoodsReceipt
     {
-        return DB::transaction(function () use ($receipt, $user) {
+        $receipt = DB::transaction(function () use ($receipt, $user) {
             $receipt = AgentGoodsReceipt::lockForUpdate()->findOrFail($receipt->id);
 
             if ($receipt->state === AgentGoodsReceiptStateEnum::CANCELLED) {
@@ -56,6 +57,10 @@ class CancelAgentGoodsReceipt extends OrgAction
 
             return $receipt;
         });
+
+        PurchaseOrderHydrateStage::make()->forPurchaseOrderIds($receipt->items()->pluck('purchase_order_id'));
+
+        return $receipt;
     }
 
     public function asController(Organisation $organisation, AgentGoodsReceipt $agentGoodsReceipt, ActionRequest $request): AgentGoodsReceipt

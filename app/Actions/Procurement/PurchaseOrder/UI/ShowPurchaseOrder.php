@@ -218,7 +218,7 @@ class ShowPurchaseOrder extends OrgAction
                         'title' => __('Purchase Order'),
                     ],
                     'afterTitle' => [
-                        'label' => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
+                        'label' => $purchaseOrder->displayState()['label'],
                     ],
                     'actions' => $this->arrangePageHeadActions([
                         $this->canEdit || $this->agentCanEdit ? [
@@ -372,7 +372,7 @@ class ShowPurchaseOrder extends OrgAction
                         ] : null,
                     ],
                     'second_block'     => [
-                        'state'                    => $purchaseOrder->state->labels()[$purchaseOrder->state->value],
+                        'state'                    => $purchaseOrder->displayState()['label'],
                         'delivery_state'           => PurchaseOrderDeliveryStateEnum::stateIcon()[$purchaseOrder->delivery_state->value],
                         'total_items'              => $purchaseOrder->number_purchase_order_transactions,
                         'total_delivery_items'     => $deliveryStats['total_delivery_items'],

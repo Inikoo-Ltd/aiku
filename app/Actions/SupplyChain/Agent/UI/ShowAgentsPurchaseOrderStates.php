@@ -41,13 +41,13 @@ class ShowAgentsPurchaseOrderStates extends OrgAction
             ->whereNull('purchase_orders.deleted_at')
             ->where(fn ($query) => self::wherePending($query))
             ->selectRaw(
-                "agents.slug, clients.slug as client, ($progress) as stage, ($age) as age,
+                "agents.slug, clients.slug as client, ($progress) as progress_stage, ($age) as age,
                 (purchase_orders.deposit_paid_at is not null) as has_deposit,
                 count(*) as number_purchase_orders,
                 coalesce(sum(purchase_orders.number_current_purchase_order_transactions), 0) as number_lines,
                 coalesce(sum(purchase_orders.cost_items * coalesce(purchase_orders.grp_exchange, 1)), 0) as amount"
             )
-            ->groupBy('agents.slug', 'clients.slug', 'stage', 'age', 'has_deposit')
+            ->groupBy('agents.slug', 'clients.slug', 'progress_stage', 'age', 'has_deposit')
             ->get();
 
         return [
@@ -74,7 +74,7 @@ class ShowAgentsPurchaseOrderStates extends OrgAction
             'figures' => $rows->map(fn ($row) => [
                 'agent'                  => $row->slug,
                 'client'                 => $row->client,
-                'stage'                  => $row->stage,
+                'stage'                  => $row->progress_stage,
                 'age'                    => $row->age,
                 'deposit'                => $row->has_deposit ? 'deposit' : 'no_deposit',
                 'number_purchase_orders' => (int) $row->number_purchase_orders,

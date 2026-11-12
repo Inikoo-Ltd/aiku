@@ -69,22 +69,22 @@ class ShowAgentOrdersBacklog extends OrgAction
             ->where('agent_id', $agent->id)
             ->whereNull('deleted_at')
             ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
-            ->selectRaw("organisation_id, ($progress) as stage, ($factoryStage) as factory_stage, count(*) as number, count(*) filter (where $inStock) as shared, count(*) filter (where submitted_at >= ?) as recent, coalesce(sum(number_current_purchase_order_transactions), 0) as lines", [$recentSince])
-            ->groupBy('organisation_id', 'stage', 'factory_stage')
+            ->selectRaw("organisation_id, ($progress) as progress_stage, ($factoryStage) as factory_stage, count(*) as number, count(*) filter (where $inStock) as shared, count(*) filter (where submitted_at >= ?) as recent, coalesce(sum(number_current_purchase_order_transactions), 0) as lines", [$recentSince])
+            ->groupBy('organisation_id', 'progress_stage', 'factory_stage')
             ->get();
 
         $factoryStages = [];
         $recent        = [];
         foreach ($purchaseOrders as $row) {
-            if (in_array($row->stage, self::PURCHASE_ORDER_STAGES['po_submitted'][0])) {
+            if (in_array($row->progress_stage, self::PURCHASE_ORDER_STAGES['po_submitted'][0])) {
                 $recent[$row->organisation_id] = ($recent[$row->organisation_id] ?? 0) + (int) $row->recent;
             }
-            if (in_array($row->stage, self::PURCHASE_ORDER_STAGES['po_in_factory'][0])) {
+            if (in_array($row->progress_stage, self::PURCHASE_ORDER_STAGES['po_in_factory'][0])) {
                 $factoryStages[$row->organisation_id][$row->factory_stage] = ($factoryStages[$row->organisation_id][$row->factory_stage] ?? 0) + (int) $row->number;
             }
         }
 
-        $purchaseOrders = $purchaseOrders->map(fn ($row) => [$row->organisation_id, collect(self::PURCHASE_ORDER_STAGES)->search(fn ($stage) => in_array($row->stage, $stage[0])), (int) $row->number, (int) $row->lines, (int) $row->shared]);
+        $purchaseOrders = $purchaseOrders->map(fn ($row) => [$row->organisation_id, collect(self::PURCHASE_ORDER_STAGES)->search(fn ($stage) => in_array($row->progress_stage, $stage[0])), (int) $row->number, (int) $row->lines, (int) $row->shared]);
 
         $shipments = DB::table('stock_deliveries')
             ->where('agent_id', $agent->id)

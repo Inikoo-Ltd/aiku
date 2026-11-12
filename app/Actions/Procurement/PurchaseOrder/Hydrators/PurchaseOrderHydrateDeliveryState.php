@@ -70,6 +70,14 @@ class PurchaseOrderHydrateDeliveryState implements ShouldBeUnique
      */
     public function handle(PurchaseOrder $purchaseOrder): bool
     {
+        $changed = $this->hydrateDeliveryState($purchaseOrder);
+        PurchaseOrderHydrateStage::run($purchaseOrder);
+
+        return $changed;
+    }
+
+    private function hydrateDeliveryState(PurchaseOrder $purchaseOrder): bool
+    {
         $quantityOnDelivery = StoreStockDeliveryFromPurchaseOrder::quantityOnDelivery();
         $itemStates         = StoreStockDeliveryFromPurchaseOrder::liveDeliveryItemsOfTransaction(DB::query())
             ->join('stock_deliveries', 'stock_deliveries.id', 'stock_delivery_items.stock_delivery_id')

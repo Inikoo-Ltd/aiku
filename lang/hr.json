@@ -8901,5 +8901,20 @@
     "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "Članstvo u programu :label imate do :date pa za linije proizvoda koje ih imaju vrijede cijene za članove. Narudžba fakturirana prije tog datuma produljuje vaše članstvo.",
     "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "Čim se jedna vaša narudžba fakturira, stječete članstvo u programu :label na :days dana, s cijenama za članove na linijama proizvoda koje ih imaju. Do tada se cijena za članove primjenjuje na liniju proizvoda ako je naručite u dovoljnoj količini odjednom.",
     "Until :date everyone gets member prices.": "Do :date cijene za članove vrijede za sve.",
-    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Za narudžbu od :amount ili više netko iz našeg tima može vas nazvati radi razgovora o njoj i procjene jesu li mogući bolji uvjeti."
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Za narudžbu od :amount ili više netko iz našeg tima može vas nazvati radi razgovora o njoj i procjene jesu li mogući bolji uvjeti.",
+    "Agreed": "Dogovoreno",
+    "PO Submitted": "Narudžba predana",
+    "Making It Happen": "U izradi",
+    "In warehouse": "U skladištu",
+    "Ready to Roll": "Spremno za polazak",
+    "Clean Hand Over": "Čista primopredaja",
+    "Homeward Bound": "Na putu kući",
+    "Counted & Costed": "Prebrojeno i obračunato",
+    "Terms agreed with the supplier": "Uvjeti dogovoreni s dobavljačem",
+    "In production at the supplier": "U proizvodnji kod dobavljača",
+    "Goods arrived at the agent warehouse": "Roba je stigla u skladište agenta",
+    "Final checks done": "Završne provjere obavljene",
+    "Available to ship": "Spremno za otpremu",
+    "Transit & arrival": "Prijevoz i dolazak",
+    "Booked into stock": "Uknjiženo na zalihu"
 }

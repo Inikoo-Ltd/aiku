@@ -12,6 +12,7 @@ namespace App\Actions\Procurement\PurchaseOrder;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateStage;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use RuntimeException;
@@ -38,6 +39,8 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
         if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->depositPayments()->exists()) {
             SyncPurchaseOrderDepositPaid::run($purchaseOrder);
         }
+
+        PurchaseOrderHydrateStage::run($purchaseOrder);
     }
 
     private function netAmountInOrderCurrency(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $transaction): float

@@ -9295,5 +9295,20 @@
     "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "Вие сте член на програмата :label до :date, затова получавате цени за членове за всички продуктови линии, които имат такива. Поръчка, фактурирана преди тази дата, удължава членството ви.",
     "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "След като една от поръчките ви бъде фактурирана, ставате член на програмата :label за :days дни с цени за членове за всички продуктови линии, които имат такива. Дотогава цената за членове важи за продуктова линия, когато поръчате достатъчно количество от нея наведнъж.",
     "Until :date everyone gets member prices.": "До :date всички получават цени за членове.",
-    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "При поръчка от :amount или повече някой от нашия екип може да ви се обади, за да я обсъдите и да видите дали са възможни по-добри условия."
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "При поръчка от :amount или повече някой от нашия екип може да ви се обади, за да я обсъдите и да видите дали са възможни по-добри условия.",
+    "Agreed": "Договорена",
+    "PO Submitted": "Поръчката е подадена",
+    "Making It Happen": "В изработка",
+    "In warehouse": "В склада",
+    "Ready to Roll": "Готова за път",
+    "Clean Hand Over": "Чисто предаване",
+    "Homeward Bound": "По пътя към нас",
+    "Counted & Costed": "Преброена и остойностена",
+    "Terms agreed with the supplier": "Условията са договорени с доставчика",
+    "In production at the supplier": "В производство при доставчика",
+    "Goods arrived at the agent warehouse": "Стоката пристигна в склада на агента",
+    "Final checks done": "Финалните проверки са направени",
+    "Available to ship": "Готова за изпращане",
+    "Transit & arrival": "Транспорт и пристигане",
+    "Booked into stock": "Заведена в наличност"
 }

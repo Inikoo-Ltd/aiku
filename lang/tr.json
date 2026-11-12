@@ -16304,5 +16304,19 @@
     "This order has nothing left but a deposit was paid on it: recover it before cancelling the order.": "Bu siparişte hiçbir şey kalmadı ancak kapora ödendi: siparişi iptal etmeden önce geri alın.",
     "the agent moved :quantity units of :code to :supplier (:reference), the supplier can not make them.": "acente :code ürününden :quantity birimi :supplier (:reference) tedarikçisine taşıdı, tedarikçi bunları üretemiyor.",
     "units": "birim",
-    "Cancel reason: :reason": "İptal nedeni: :reason"
+    "Cancel reason: :reason": "İptal nedeni: :reason",
+    "Agreed": "Anlaşıldı",
+    "PO Submitted": "Sipariş gönderildi",
+    "Making It Happen": "Üretimde",
+    "Ready to Roll": "Yola hazır",
+    "Clean Hand Over": "Temiz teslim",
+    "Homeward Bound": "Eve dönüş yolunda",
+    "Counted & Costed": "Sayıldı ve maliyetlendi",
+    "Terms agreed with the supplier": "Tedarikçiyle şartlar anlaşıldı",
+    "In production at the supplier": "Tedarikçide üretimde",
+    "Goods arrived at the agent warehouse": "Mallar acentenin deposuna ulaştı",
+    "Final checks done": "Son kontroller yapıldı",
+    "Available to ship": "Gönderime hazır",
+    "Transit & arrival": "Transit ve varış",
+    "Booked into stock": "Stoka alındı"
 }

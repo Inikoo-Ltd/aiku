@@ -12,6 +12,7 @@ namespace App\Actions\GoodsIn\StockDelivery;
 use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateItems;
 use App\Actions\GoodsIn\StockDelivery\Traits\HasStockDeliveryHydrators;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateDeliveryState;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
@@ -77,6 +78,7 @@ class RemovePurchaseOrderItemFromStockDelivery extends OrgAction
         }
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrder);
+        PurchaseOrderHydrateDeliveryState::run($purchaseOrder);
         StockDeliveriesHydrateItems::run($stockDelivery);
         $this->runStockDeliveryHydrators($stockDelivery);
 

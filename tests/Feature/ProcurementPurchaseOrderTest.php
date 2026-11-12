@@ -4756,3 +4756,90 @@ test('automatic paths still record stages on a submitted order, and a skip is ke
 
     PurchaseOrder::disableAuditing();
 });
+
+test('the stored stage follows the order through agreement, production, the agent warehouse and its container, and steps back when the container is undone', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
+
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
+    expect($purchaseOrder->refresh()->stage)->toBeNull();
+
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()->subDays(5)]);
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::SUBMITTED)
+        ->and($purchaseOrder->displayState()['label'])->toBe(__('Submitted'));
+
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CONFIRMED, 'confirmed_at' => now()->subDays(4), 'deposit_amount' => 0]);
+    $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::DEPOSIT_PAID)
+        ->and($purchaseOrder->displayState()['label'])->toBe(__('Agreed'));
+
+    $purchaseOrder->update(['production_started_at' => now()->subDays(3)]);
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::IN_PRODUCTION)
+        ->and($purchaseOrder->displayState()['label'])->toBe(__('Making It Happen'));
+
+    $receive = fn () => App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 100]],
+    ]);
+    $receipt = $receive();
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::IN_WAREHOUSE);
+
+    App\Actions\Procurement\AgentGoodsReceipt\CancelAgentGoodsReceipt::make()->handle($receipt);
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::IN_PRODUCTION);
+
+    $receive();
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::IN_WAREHOUSE);
+
+    $stockDelivery = App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), []);
+    $reachedInContainer = $purchaseOrder->refresh()->stage;
+    expect($reachedInContainer->position())->toBeGreaterThan(PurchaseOrderStageEnum::IN_WAREHOUSE->position());
+
+    $stockDelivery = DispatchStockDelivery::make()->action($stockDelivery->refresh());
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::HANDED_OVER);
+
+    App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms::make()->action($stockDelivery->refresh(), ['arrived_at' => now()->toDateString()]);
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::ARRIVED)
+        ->and($purchaseOrder->displayState()['label'])->toBe(__('Homeward Bound'));
+
+    App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms::make()->action($stockDelivery->refresh(), ['arrived_at' => null, 'reason' => 'Entered on the wrong container']);
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::HANDED_OVER);
+
+    App\Actions\GoodsIn\StockDelivery\UndispatchStockDelivery::make()->action($stockDelivery->refresh());
+    expect($purchaseOrder->refresh()->stage)->toBe($reachedInContainer);
+
+    App\Actions\GoodsIn\StockDelivery\RemovePurchaseOrderFromStockDelivery::make()->action($stockDelivery->refresh(), $purchaseOrder->refresh());
+    expect($purchaseOrder->refresh()->stage)->toBe(PurchaseOrderStageEnum::IN_WAREHOUSE)
+        ->and(PurchaseOrdersResource::make($purchaseOrder)->toArray(request())['state_label'])->toBe(PurchaseOrderStageEnum::labels()['in_warehouse']);
+
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CANCELLED, 'cancelled_at' => now()]);
+    expect($purchaseOrder->refresh()->stage)->toBeNull()
+        ->and($purchaseOrder->displayState()['label'])->toBe(PurchaseOrderStateEnum::labels()['cancelled']);
+});
+
+test('the stored stage steps back when a line is added to an order whose lines are all in a container, and a deleted order loses its stage', function () {
+    $agent    = StoreAgent::make()->action(group: $this->group, modelData: Agent::factory()->definition());
+    $orgAgent = StoreOrgAgent::make()->action($this->organisation, $agent, []);
+    App\Actions\SupplyChain\Agent\UpdateAgent::make()->action($agent, ['receives_goods_in_own_warehouse' => true]);
+
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this, $orgAgent);
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
+    $purchaseOrder->update(['state' => PurchaseOrderStateEnum::CONFIRMED, 'submitted_at' => now()->subDays(5), 'confirmed_at' => now()->subDays(4), 'deposit_amount' => 0, 'production_started_at' => now()->subDays(3)]);
+    $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+
+    App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt::make()->action($agent, [
+        'lines' => [['purchase_order_transaction_id' => $line->id, 'quantity' => 100]],
+    ]);
+    App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), []);
+    expect($purchaseOrder->refresh()->stage->position())->toBeGreaterThanOrEqual(PurchaseOrderStageEnum::READY->position());
+
+    $addedLine = StorePurchaseOrderTransaction::make()->action($purchaseOrder->refresh(), $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[1], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 50]);
+    $addedLine->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::CONFIRMED]);
+    App\Actions\Procurement\PurchaseOrderTransaction\UpdatePurchaseOrderTransaction::make()->action($addedLine->refresh(), ['quantity_ordered' => 60]);
+    expect($purchaseOrder->refresh()->stage->position())->toBeLessThan(PurchaseOrderStageEnum::READY->position());
+
+    $purchaseOrder->delete();
+    expect(PurchaseOrder::withTrashed()->find($purchaseOrder->id)->stage)->toBeNull();
+});

@@ -9,6 +9,8 @@
 namespace App\Models\Procurement;
 
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateStage;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionPriceQueryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionQuantityQueryStateEnum;
@@ -58,6 +60,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $reference
  * @property PurchaseOrderStateEnum $state
  * @property PurchaseOrderDeliveryStateEnum $delivery_state
+ * @property PurchaseOrderStageEnum|null $stage
  * @property string|null $notes
  * @property \Illuminate\Support\Carbon $date latest relevant date
  * @property string|null $in_process_at
@@ -185,6 +188,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
         'is_partner_rescue' => 'boolean',
         'state'           => PurchaseOrderStateEnum::class,
         'delivery_state' => PurchaseOrderDeliveryStateEnum::class,
+        'stage'           => PurchaseOrderStageEnum::class,
         'date'            => 'datetime',
         'deposit_paid_at' => 'datetime',
         'balance_paid_at' => 'datetime',
@@ -221,6 +225,52 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
     ];
 
     protected $guarded = [];
+
+    /**
+     * The order's own columns its stage is worked out from: any of them changing, by an action or a script, stores
+     * the stage again.
+     */
+    public const array STAGE_INPUTS = [
+        'state', 'delivery_state', 'data', 'stage_marks', 'deleted_at', 'agent_id',
+        'submitted_at', 'confirmed_at', 'settled_at', 'deposit_amount', 'deposit_paid_at', 'balance_paid_at',
+        'sample_required', 'sample_approved_at', 'production_started_at', 'approved_ready_at', 'produced_at',
+        'qc_passed_at', 'compliance_complete_at', 'handed_over_at', 'online_at',
+    ];
+
+    /**
+     * The state as people read it: while the order is open (submitted or agreed) its stage, so it reads In production
+     * or Clean Hand Over rather than Agreed for months; otherwise the state itself.
+     *
+     * @return array{value: string, label: string, icon: array}
+     */
+    public function displayState(): array
+    {
+        if ($this->stage && in_array($this->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
+            return [
+                'value' => $this->stage->value,
+                'label' => PurchaseOrderStageEnum::stateLabels()[$this->stage->value],
+                'icon'  => PurchaseOrderStageEnum::stateIcon()[$this->stage->value],
+            ];
+        }
+
+        return [
+            'value' => $this->state->value,
+            'label' => PurchaseOrderStateEnum::labels()[$this->state->value],
+            'icon'  => PurchaseOrderStateEnum::stateIcon()[$this->state->value],
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::created(fn (PurchaseOrder $purchaseOrder) => PurchaseOrderHydrateStage::run($purchaseOrder));
+        static::deleted(fn (PurchaseOrder $purchaseOrder) => PurchaseOrderHydrateStage::run($purchaseOrder));
+        static::restored(fn (PurchaseOrder $purchaseOrder) => PurchaseOrderHydrateStage::run($purchaseOrder));
+        static::updated(function (PurchaseOrder $purchaseOrder) {
+            if ($purchaseOrder->wasChanged(self::STAGE_INPUTS)) {
+                PurchaseOrderHydrateStage::run($purchaseOrder);
+            }
+        });
+    }
 
     public function getSlugOptions(): SlugOptions
     {

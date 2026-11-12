@@ -6970,5 +6970,20 @@
     "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "Участь у програмі :label діє для Вас до :date, тож Ви отримуєте ціни для учасників на всі лінійки товарів, де вони передбачені. Замовлення, за яким виставлено рахунок до цієї дати, продовжує Вашу участь.",
     "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "Щойно за одним із Ваших замовлень буде виставлено рахунок, Ви долучитеся до програми :label на :days дн. і отримуватимете ціни для учасників на всі лінійки товарів, де вони передбачені. До того часу ціна для учасників діє для лінійки товарів, якщо Ви замовляєте її в достатній кількості одразу.",
     "Until :date everyone gets member prices.": "До :date ціни для учасників діють для всіх.",
-    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Для замовлення на суму :amount або більше хтось із нашої команди може зателефонувати Вам, щоб обговорити його та з'ясувати, чи можливі кращі умови."
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Для замовлення на суму :amount або більше хтось із нашої команди може зателефонувати Вам, щоб обговорити його та з'ясувати, чи можливі кращі умови.",
+    "Agreed": "Погоджено",
+    "PO Submitted": "Замовлення надіслано",
+    "Making It Happen": "У виробництві",
+    "In warehouse": "На складі",
+    "Ready to Roll": "Готове до відправки",
+    "Clean Hand Over": "Чиста передача",
+    "Homeward Bound": "Дорогою додому",
+    "Counted & Costed": "Пораховано й прораховано",
+    "Terms agreed with the supplier": "Умови погоджено з постачальником",
+    "In production at the supplier": "У виробництві в постачальника",
+    "Goods arrived at the agent warehouse": "Товар прибув на склад агента",
+    "Final checks done": "Фінальні перевірки виконано",
+    "Available to ship": "Готове до відвантаження",
+    "Transit & arrival": "Транзит і прибуття",
+    "Booked into stock": "Оприбутковано на склад"
 }

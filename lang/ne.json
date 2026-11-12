@@ -23255,5 +23255,18 @@
     "Size is the amount in each container. Quantity is the number of containers.": "साइज भनेको प्रत्येक कन्टेनरमा भएको मात्रा हो। मात्रा भनेको कन्टेनरहरूको संख्या हो।",
     "Discounts that depend on the whole order are applied when the items are in the basket.": "सम्पूर्ण अर्डरमा निर्भर छुटहरू वस्तुहरू बास्केटमा भएपछि लागू हुन्छन्।",
     ":size sample": ":size नमुना",
-    "Cancel reason: :reason": "रद्द गर्नुको कारण: :reason"
+    "Cancel reason: :reason": "रद्द गर्नुको कारण: :reason",
+    "PO Submitted": "PO पेश गरिएको",
+    "Making It Happen": "निर्माण हुँदै",
+    "Ready to Roll": "हिँड्न तयार",
+    "Clean Hand Over": "सफा हस्तान्तरण",
+    "Homeward Bound": "घरतर्फ",
+    "Counted & Costed": "गनियो र लागत निकालियो",
+    "Terms agreed with the supplier": "आपूर्तिकर्तासँग सर्त तय",
+    "In production at the supplier": "आपूर्तिकर्ताकहाँ उत्पादनमा",
+    "Goods arrived at the agent warehouse": "सामान एजेन्टको गोदाममा आइपुग्यो",
+    "Final checks done": "अन्तिम जाँच सकियो",
+    "Available to ship": "पठाउन उपलब्ध",
+    "Transit & arrival": "ढुवानी र आगमन",
+    "Booked into stock": "स्टकमा दर्ता"
 }

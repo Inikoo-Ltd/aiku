@@ -26737,5 +26737,18 @@
     "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "Členství v programu :label máte do :date, takže u řad, které ceny pro členy mají, tyto ceny platí. Objednávka vyfakturovaná před tímto datem vaše členství prodlouží.",
     "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "Jakmile bude některá z vašich objednávek vyfakturována, získáte členství v programu :label na :days dní s cenami pro členy u řad, které je mají. Do té doby platí cena pro členy na řadu tehdy, když si z ní objednáte najednou dostatečné množství.",
     "Until :date everyone gets member prices.": "Do :date platí ceny pro členy pro všechny.",
-    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Při objednávce od :amount vám může zavolat někdo z našeho týmu kvůli rozhovoru o ní a posouzení, zda jsou možné lepší podmínky."
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Při objednávce od :amount vám může zavolat někdo z našeho týmu kvůli rozhovoru o ní a posouzení, zda jsou možné lepší podmínky.",
+    "PO Submitted": "Objednávka podána",
+    "Making It Happen": "Ve výrobě",
+    "Ready to Roll": "Připraveno k odeslání",
+    "Clean Hand Over": "Čisté předání",
+    "Homeward Bound": "Na cestě domů",
+    "Counted & Costed": "Spočítáno a naceněno",
+    "Terms agreed with the supplier": "Podmínky dohodnuty s dodavatelem",
+    "In production at the supplier": "Ve výrobě u dodavatele",
+    "Goods arrived at the agent warehouse": "Zboží dorazilo do skladu agenta",
+    "Final checks done": "Závěrečné kontroly hotové",
+    "Available to ship": "Připraveno k odeslání",
+    "Transit & arrival": "Přeprava a příjezd",
+    "Booked into stock": "Naskladněno"
 }

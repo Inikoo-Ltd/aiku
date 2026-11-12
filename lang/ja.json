@@ -1526,5 +1526,20 @@
     "Loading…": "読み込み中…",
     "Move": "移動",
     "units": "個",
-    "Cancel reason: :reason": "キャンセル理由: :reason"
+    "Cancel reason: :reason": "キャンセル理由: :reason",
+    "Agreed": "合意済み",
+    "PO Submitted": "発注提出済み",
+    "Making It Happen": "製造中",
+    "In warehouse": "倉庫内",
+    "Ready to Roll": "出発準備完了",
+    "Clean Hand Over": "クリーン引き渡し",
+    "Homeward Bound": "帰路",
+    "Counted & Costed": "検品・原価計算済み",
+    "Terms agreed with the supplier": "仕入先と条件合意済み",
+    "In production at the supplier": "仕入先で生産中",
+    "Goods arrived at the agent warehouse": "商品がエージェントの倉庫に到着",
+    "Final checks done": "最終チェック完了",
+    "Available to ship": "出荷可能",
+    "Transit & arrival": "輸送・到着",
+    "Booked into stock": "在庫に計上"
 }

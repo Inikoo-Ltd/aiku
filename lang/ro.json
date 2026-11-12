@@ -25759,5 +25759,18 @@
     "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "Sunteți membru al programului :label până la :date, deci beneficiați de prețuri pentru membri la toate gamele care au astfel de prețuri. O comandă facturată înainte de această dată vă prelungește calitatea de membru.",
     "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "De îndată ce o comandă de-a dvs. este facturată, deveniți membru al programului :label pentru :days zile, cu prețuri pentru membri la toate gamele care au astfel de prețuri. Până atunci, o gamă are prețul pentru membri dacă o comandați într-o cantitate suficientă dintr-o dată.",
     "Until :date everyone gets member prices.": "Până la :date, toți beneficiază de prețuri pentru membri.",
-    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Pentru o comandă de :amount sau mai mult, o persoană din echipa noastră vă poate suna pentru a discuta despre ea și a vedea dacă sunt posibile condiții mai bune."
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Pentru o comandă de :amount sau mai mult, o persoană din echipa noastră vă poate suna pentru a discuta despre ea și a vedea dacă sunt posibile condiții mai bune.",
+    "PO Submitted": "Comandă trimisă",
+    "Making It Happen": "În producție",
+    "Ready to Roll": "Gata de plecare",
+    "Clean Hand Over": "Predare curată",
+    "Homeward Bound": "Spre casă",
+    "Counted & Costed": "Numărată și costată",
+    "Terms agreed with the supplier": "Condiții convenite cu furnizorul",
+    "In production at the supplier": "În producție la furnizor",
+    "Goods arrived at the agent warehouse": "Marfa a ajuns în depozitul agentului",
+    "Final checks done": "Verificări finale făcute",
+    "Available to ship": "Disponibilă pentru expediere",
+    "Transit & arrival": "Tranzit și sosire",
+    "Booked into stock": "Înregistrată în stoc"
 }

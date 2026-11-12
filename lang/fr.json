@@ -26689,5 +26689,18 @@
     "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "Vous êtes membre du programme :label jusqu'au :date et bénéficiez donc des prix membre sur les collections qui en proposent. Une commande facturée avant cette date prolonge votre adhésion.",
     "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "Dès qu'une de vos commandes est facturée, vous devenez membre du programme :label pendant :days jours, avec les prix membre sur les collections qui en proposent. D'ici là, une collection est au prix membre lorsque vous en commandez une quantité suffisante en une seule fois.",
     "Until :date everyone gets member prices.": "Jusqu'au :date, tout le monde bénéficie des prix membre.",
-    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Pour une commande de :amount ou plus, une personne de notre équipe peut vous appeler afin d'en discuter et d'étudier de meilleures conditions."
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Pour une commande de :amount ou plus, une personne de notre équipe peut vous appeler afin d'en discuter et d'étudier de meilleures conditions.",
+    "PO Submitted": "Commande soumise",
+    "Making It Happen": "En fabrication",
+    "Ready to Roll": "Prête à partir",
+    "Clean Hand Over": "Remise propre",
+    "Homeward Bound": "En route vers nous",
+    "Counted & Costed": "Comptée et chiffrée",
+    "Terms agreed with the supplier": "Conditions convenues avec le fournisseur",
+    "In production at the supplier": "En production chez le fournisseur",
+    "Goods arrived at the agent warehouse": "Marchandise arrivée à l'entrepôt de l'agent",
+    "Final checks done": "Contrôles finaux effectués",
+    "Available to ship": "Prête à expédier",
+    "Transit & arrival": "Transit et arrivée",
+    "Booked into stock": "Entrée en stock"
 }
