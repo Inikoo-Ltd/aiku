@@ -33,6 +33,7 @@ use App\Models\Web\SeoContentSuggestion;
 use App\Models\Web\Webpage;
 use App\Events\BroadcastWebpageLinksChecked;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -760,6 +761,8 @@ test('the most visited pages of a completed site audit are reviewed by AI and sh
     $audit->update(['state' => CrawlStateEnum::FINISH, 'end_at' => now(), 'health_score' => 90]);
     $home = CrawlPage::create(['crawl_id' => $audit->id, 'url' => 'https://ecom.test/', 'url_hash' => md5('https://ecom.test/'), 'status_code' => 200, 'is_indexable' => true, 'link_depth' => 0, 'title' => 'Home']);
     CrawlPage::create(['crawl_id' => $audit->id, 'url' => 'https://ecom.test/quiet', 'url_hash' => md5('https://ecom.test/quiet'), 'status_code' => 200, 'is_indexable' => true, 'link_depth' => 1]);
+    DB::table('search_console_page_days')->where('website_id', $this->website->id)->delete();
+    DB::table('search_console_page_days')->insert(['website_id' => $this->website->id, 'webpage_id' => $this->webpage->id, 'date' => now()->toDateString(), 'page_url' => 'https://ecom.test/family', 'page_url_hash' => md5('https://ecom.test/family'), 'clicks' => 7]);
     Http::fake([
         'https://ecom.test/'  => Http::response(siteAuditHtml('Home')),
         'openrouter.ai/*'     => Http::response(['choices' => [['message' => ['content' => json_encode(['score' => 40, 'summary' => 'Clear offer, thin text.', 'findings' => [['priority' => 'high', 'area' => 'content', 'finding' => 'Only 20 words', 'fix' => 'Write a paragraph']]])]]], 'usage' => ['cost' => 0.05]]),
