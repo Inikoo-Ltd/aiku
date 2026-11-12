@@ -1412,3 +1412,26 @@ test('the STOP keywords are matched as the whole message only', function () {
         ->and(\App\Actions\Comms\WhatsappSubscriber\UnsubscribeWhatsappNumberFromMarketing::isStopRequest('stop it please'))->toBeFalse()
         ->and(\App\Actions\Comms\WhatsappSubscriber\UnsubscribeWhatsappNumberFromMarketing::isStopRequest(null))->toBeFalse();
 });
+
+test('a filtered WhatsApp campaign keeps customers with a WhatsApp marketing phone, an account phone or both, and drops those with neither', function () {
+    $marketingOnly = whatsappStopTestSubscriber($this->shop, ['phone' => null, 'marketing_whatsapp_phone' => '+4475007'.random_int(10000, 99999)]);
+    $accountOnly   = whatsappStopTestSubscriber($this->shop, ['phone' => '+4475008'.random_int(10000, 99999), 'marketing_whatsapp_phone' => null]);
+    $bothPhones    = whatsappStopTestSubscriber($this->shop, ['phone' => '+4475009'.random_int(10000, 99999), 'marketing_whatsapp_phone' => '+4475010'.random_int(10000, 99999)]);
+    $noPhone       = whatsappStopTestSubscriber($this->shop, ['phone' => null, 'marketing_whatsapp_phone' => null]);
+
+    $filters = ['registered_never_ordered' => ['value' => true]];
+
+    $filteredCustomerIds = \App\Actions\Comms\WhatsappCampaign\GetWhatsappCustomersQueryByRecipe::run($this->shop->id, $filters)
+        ->pluck('customers.id');
+
+    $audience = \App\Actions\Comms\WhatsappCampaign\GetWhatsappRecipientsQuery::run($this->shop, ['subscriber' => true], $filters)
+        ->get()
+        ->keyBy('customer_id');
+
+    expect($filteredCustomerIds)->toContain($marketingOnly->id, $accountOnly->id, $bothPhones->id)
+        ->and($filteredCustomerIds)->not->toContain($noPhone->id)
+        ->and($audience->get($marketingOnly->id)?->phone_number)->toBe($marketingOnly->marketing_whatsapp_phone)
+        ->and($audience->get($accountOnly->id)?->phone_number)->toBe($accountOnly->phone)
+        ->and($audience->get($bothPhones->id)?->phone_number)->toBe($bothPhones->marketing_whatsapp_phone)
+        ->and($audience->has($noPhone->id))->toBeFalse();
+});

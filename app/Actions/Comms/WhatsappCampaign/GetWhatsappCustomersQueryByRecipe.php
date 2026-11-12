@@ -53,7 +53,10 @@ class GetWhatsappCustomersQueryByRecipe
             $query->whereRaw('1 = 0');
         }
 
-        $query->whereNotNull('customers.phone');
+        $query->where(function (Builder $query) {
+            $query->whereNotNull('customers.marketing_whatsapp_phone')
+                ->orWhereNotNull('customers.phone');
+        });
         $query->whereNull('customers.deleted_at');
 
         (new FilterRegisteredNeverOrdered())->apply($query, $filters);
