@@ -60,6 +60,7 @@ struct RootView: View {
         permissionStore.clear()
         warehouseStore.reset()
         LocationsStore.shared.resetToSample()
+        InventoryFamiliesFeed.shared.reset()
         Task { await authStore.signOut() }
     }
 }
