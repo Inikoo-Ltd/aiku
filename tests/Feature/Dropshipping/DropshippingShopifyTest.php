@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Catalogue\Product\SyncProductOrgStocksFromTradeUnits;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Dropshipping\Bundle\StoreBundle;
@@ -1269,6 +1270,34 @@ test('nothing of ours is ever written to the listing of a variant the merchant a
 
     expect(ShopifyFake::$requests)->toBeEmpty()
         ->and($variantCreated)->toBeFalse();
+});
+
+test('a portfolio added while its product had no SKO tells the customer why it can not be sent, and gets its sku once the product has one (PRE-97)', function () {
+    Queue::fake();
+    $shopifyUser = shopifyProductChannel($this, 'product-without-sko');
+    $portfolio   = StorePortfolio::make()->action($shopifyUser->customerSalesChannel, $this->product, []);
+    $orgStock    = $this->product->orgStocks()->first();
+    $this->product->orgStocks()->detach();
+    $portfolio->update(['sku' => null]);
+
+    ShopifyFake::fake([]);
+
+    expect(StoreShopifyProductVariant::run($portfolio->refresh()))->toBe([false, StoreShopifyProductVariant::NO_SKU_MESSAGE])
+        ->and($portfolio->refresh()->errors_response['message'])->toBe(StoreShopifyProductVariant::NO_SKU_MESSAGE)
+        ->and($portfolio->sku)->toBeNull();
+
+    $orgStock->tradeUnits()->syncWithoutDetaching([$this->product->tradeUnits()->first()->id => ['quantity' => 1]]);
+    SyncProductOrgStocksFromTradeUnits::run($this->product->refresh());
+    $expectedSku = StorePortfolio::make()->getSKU($this->product->refresh());
+
+    expect($expectedSku)->not->toBeNull()
+        ->and($portfolio->refresh()->sku)->toBe($expectedSku);
+
+    $portfolio->update(['sku' => null]);
+
+    expect(StoreShopifyProductVariant::run($portfolio->refresh()))->toBe([false, 'No Shopify product ID found in portfolio'])
+        ->and($portfolio->refresh()->sku)->toBe($expectedSku)
+        ->and(ShopifyFake::$requests)->toBeEmpty();
 });
 
 test('editing only the price of a shopify portfolio does not overwrite the title and description in shopify', function () {
@@ -2685,10 +2714,14 @@ test('an upload is refused when the shopify store has a listing with the same sk
         ->and($message)->toBe('Could not check whether this product is already in Shopify, nothing was created to avoid a duplicate');
 
     $portfolio->update(['sku' => ' ']);
+    $orgStockPivots = $this->product->orgStocks()->get()->mapWithKeys(fn ($orgStock) => [$orgStock->id => collect($orgStock->pivot->getAttributes())->only(['quantity', 'trade_units_per_org_stock', 'divisor', 'dividend'])->all()])->all();
+    $this->product->orgStocks()->detach();
     ShopifyFake::fake(['getProductExistence' => ShopifyFake::graphql(['product' => null])]);
     [$stored, $message] = StoreShopifyProduct::run($portfolio->refresh());
+    $this->product->orgStocks()->sync($orgStockPivots);
     expect($stored)->toBeFalse()
-        ->and($message)->toBe('This product has no sku, so it can not be uploaded to Shopify')
+        ->and($message)->toBe(StoreShopifyProduct::NO_SKU_MESSAGE)
+        ->and($portfolio->refresh()->errors_response['message'])->toBe(StoreShopifyProduct::NO_SKU_MESSAGE)
         ->and(ShopifyFake::calls('productVariantsWithSku'))->toBe([]);
 });
 
