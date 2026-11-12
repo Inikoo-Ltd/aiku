@@ -26632,5 +26632,10 @@
     "Amount sent": "Gesendeter Betrag",
     "Counts on the order as": "Zählt für die Bestellung als",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Was die Zahlung in der Währung der Bestellung wert ist: Dieser Betrag wird vom noch zu zahlenden Betrag abgezogen",
-    "sent as :amount": "gesendet als :amount"
+    "sent as :amount": "gesendet als :amount",
+    "Assign to order jobs automatically": "Auftragsjobs automatisch zuweisen",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Wenn eine Bestellung ein Produkt mit diesem Schritt auf Zu produzieren setzt, geht der Job direkt an diesen Handwerker oder an den am wenigsten ausgelasteten Handwerker dieses Arbeitsbereichs, ein Job pro Bestellung. Leer lassen, um sie von Hand zuzuweisen.",
+    "Work area": "Arbeitsbereich",
+    "Choose an artisan or a work area of this production": "Wählen Sie einen Handwerker oder einen Arbeitsbereich dieser Produktion",
+    "Order :reference changed": "Bestellung :reference geändert"
 }

@@ -534,6 +534,7 @@ class ShowManufactureFloor extends OrgAction
             'artefact_family_id'  => $isCombined ? null : $task->jobOrderItem->artefact->artefact_family_id,
             'artefact_image'      => $isCombined || !$task->jobOrderItem->artefact->tradeUnit?->image_id ? null : $task->jobOrderItem->artefact->tradeUnit->imageSources(320, 320),
             'job_order_reference' => $members->map(fn (JobOrderItemTask $member) => $member->jobOrder->reference)->unique()->implode(', '),
+            'order_reference'     => $isCombined ? null : Arr::get($task->jobOrderItem->data, 'order'),
             'packing_slips_url'   => !$isCombined && Arr::has($task->jobOrderItem->data, 'fill') ? route('grp.org.productions.show.operations.job-orders.packing_slips', ['organisation' => $this->organisation->slug, 'production' => $this->production->slug, 'jobOrder' => $task->jobOrder->slug]) : null,
             'continued_from'      => Arr::has($task->jobOrder->data, 'carried_from') ? SettleShortJobOrderItemTask::baseReference($task->jobOrder) : null,
             'continued_in'        => $this->continuedIn($task),

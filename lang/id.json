@@ -23429,5 +23429,10 @@
     "Amount sent": "Jumlah yang dikirim",
     "Counts on the order as": "Dihitung pada pesanan sebagai",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Nilai pembayaran dalam mata uang pesanan: inilah yang dikurangkan dari sisa yang harus dibayar",
-    "sent as :amount": "dikirim sebagai :amount"
+    "sent as :amount": "dikirim sebagai :amount",
+    "Assign to order jobs automatically": "Tugaskan pekerjaan pesanan secara otomatis",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Saat pesanan memasukkan produk dengan langkah ini ke Untuk Diproduksi, pekerjaan langsung diberikan ke pengrajin ini, atau ke pengrajin paling senggang di area kerja ini, satu pekerjaan per pesanan. Kosongkan untuk menugaskannya secara manual.",
+    "Work area": "Area kerja",
+    "Choose an artisan or a work area of this production": "Pilih pengrajin atau area kerja produksi ini",
+    "Order :reference changed": "Pesanan :reference berubah"
 }

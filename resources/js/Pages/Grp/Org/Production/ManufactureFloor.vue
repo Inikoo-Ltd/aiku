@@ -80,6 +80,7 @@ interface FloorTask {
     artefact_family_id: number | null
     artefact_image: object | null
     job_order_reference: string
+    order_reference: string | null
     packing_slips_url: string | null
     continued_from: string | null
     continued_in: string | null
@@ -469,7 +470,7 @@ function startTask(task: FloorTask) {
                         <div class="text-sm text-gray-700 line-clamp-2">{{ task.artefact_name }}</div>
                     </div>
                     <div class="text-xs text-gray-500 mt-0.5 flex justify-between">
-                        <span>{{ task.task_name }} · {{ task.job_order_reference }}</span>
+                        <span>{{ task.task_name }} · {{ task.job_order_reference }}<template v-if="task.order_reference"> · {{ ctrans('Order :reference', { reference: task.order_reference }) }}</template></span>
                         <span class="tabular-nums">{{ packsLabel(task.quantity_made, task.pack_size) }}/{{ packsLabel(task.quantity_required, task.pack_size) }}<template v-if="task.unit"> {{ task.unit }}</template><template v-if="mixBatches(task)"> · {{ mixBatches(task) }}</template><template v-if="task.pack_size"> · {{ ctrans('packs of :size', { size: task.pack_size }) }}</template></span>
                     </div>
                     <div v-if="task.in_development?.length" class="text-xs font-medium text-violet-700 truncate">{{ ctrans('In development') }}</div>

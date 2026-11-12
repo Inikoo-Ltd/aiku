@@ -1548,5 +1548,11 @@
     "Amount sent": "送金額",
     "Counts on the order as": "注文への充当額",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "注文の通貨での支払い額：この金額が未払い残高から差し引かれます",
-    "sent as :amount": ":amount で送金"
+    "sent as :amount": ":amount で送金",
+    "Assign to order jobs automatically": "注文の作業を自動で割り当てる",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "この工程を含む商品を注文が「生産予定」に入れると、作業はこの職人、またはこの作業エリアで最も手の空いている職人に直接割り当てられます（注文ごとに1件）。手動で割り当てる場合は空欄にしてください。",
+    "Work area": "作業エリア",
+    "Choose an artisan or a work area of this production": "この生産の職人または作業エリアを選択してください",
+    "Order :reference changed": "注文 :reference が変更されました",
+    "Order :reference": "注文 :reference"
 }

@@ -25858,5 +25858,10 @@
     "Amount sent": "Suma trimisă",
     "Counts on the order as": "Contează pe comandă ca",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Cât valorează plata în moneda comenzii: aceasta este suma scăzută din restul de plată",
-    "sent as :amount": "trimis ca :amount"
+    "sent as :amount": "trimis ca :amount",
+    "Assign to order jobs automatically": "Atribuie automat lucrările comenzilor",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Când o comandă pune în De produs un produs cu acest pas, lucrarea merge direct la acest artizan sau la cel mai puțin ocupat artizan din această zonă de lucru, o lucrare pe comandă. Lăsați gol pentru a le atribui manual.",
+    "Work area": "Zonă de lucru",
+    "Choose an artisan or a work area of this production": "Alegeți un artizan sau o zonă de lucru a acestei producții",
+    "Order :reference changed": "Comanda :reference a fost modificată"
 }

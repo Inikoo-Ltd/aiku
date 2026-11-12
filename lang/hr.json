@@ -9002,5 +9002,11 @@
     "Amount sent": "Poslani iznos",
     "Counts on the order as": "Na narudžbi se računa kao",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Koliko uplata vrijedi u valuti narudžbe: taj se iznos oduzima od onoga što je preostalo za platiti",
-    "sent as :amount": "poslano kao :amount"
+    "sent as :amount": "poslano kao :amount",
+    "Assign to order jobs automatically": "Automatski dodijeli poslove narudžbi",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Kada narudžba stavi proizvod s ovim korakom u Za proizvodnju, posao ide izravno ovom obrtniku ili najmanje zauzetom obrtniku ovog radnog područja, jedan posao po narudžbi. Ostavite prazno za ručno dodjeljivanje.",
+    "Work area": "Radno područje",
+    "Choose an artisan or a work area of this production": "Odaberite obrtnika ili radno područje ove proizvodnje",
+    "Order :reference changed": "Narudžba :reference je promijenjena",
+    "Order :reference": "Narudžba :reference"
 }

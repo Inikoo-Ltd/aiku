@@ -22534,5 +22534,10 @@
     "Amount sent": "भेजी गई राशि",
     "Counts on the order as": "ऑर्डर पर इतना गिना जाएगा",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "ऑर्डर की मुद्रा में भुगतान का मूल्य: यही राशि शेष भुगतान में से घटाई जाती है",
-    "sent as :amount": ":amount के रूप में भेजा गया"
+    "sent as :amount": ":amount के रूप में भेजा गया",
+    "Assign to order jobs automatically": "ऑर्डर के कार्य अपने आप सौंपें",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "जब कोई ऑर्डर इस चरण वाले उत्पाद को उत्पादन हेतु में डालता है, तो कार्य सीधे इस कारीगर को, या इस कार्य क्षेत्र के सबसे कम व्यस्त कारीगर को जाता है, हर ऑर्डर के लिए एक कार्य। हाथ से सौंपने के लिए खाली छोड़ें।",
+    "Work area": "कार्य क्षेत्र",
+    "Choose an artisan or a work area of this production": "इस उत्पादन का कोई कारीगर या कार्य क्षेत्र चुनें",
+    "Order :reference changed": "ऑर्डर :reference बदला गया"
 }

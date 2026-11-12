@@ -11,11 +11,16 @@ namespace App\Actions\Production\ManufactureTask\UI;
 use App\Actions\OrgAction;
 use App\Enums\Fulfilment\Pallet\PalletTypeEnum;
 use App\Http\Resources\Fulfilment\PalletResource;
+use App\Enums\HumanResources\Employee\EmployeeStateEnum;
+use App\Models\HumanResources\Employee;
 use App\Models\Production\ManufactureTask;
+use App\Models\Production\WorkArea;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -122,6 +127,15 @@ class EditManufactureTask extends OrgAction
                                     'value'       => $manufactureTask->is_quantity_only,
                                     'required'    => true
                                 ],
+                                'auto_assign_to' => [
+                                    'type'        => 'select',
+                                    'label'       => __('Assign to order jobs automatically'),
+                                    'information' => __('When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.'),
+                                    'value'       => ($autoAssign = Arr::get($manufactureTask->data, 'auto_assign')) ? $autoAssign['type'].':'.$autoAssign['id'] : null,
+                                    'options'     => $this->autoAssignOptions($manufactureTask),
+                                    'searchable'  => true,
+                                    'required'    => false,
+                                ],
                                 'status' => [
                                     'type'     => 'toggle',
                                     'label'    => __('Active'),
@@ -154,6 +168,24 @@ class EditManufactureTask extends OrgAction
                 ],
             ]
         );
+    }
+
+    /** @return array<int, array{value: string, label: string}> */
+    private function autoAssignOptions(ManufactureTask $manufactureTask): array
+    {
+        $workAreas = WorkArea::where('production_id', $manufactureTask->production_id)->orderBy('name')->get();
+
+        return $workAreas
+            ->map(fn (WorkArea $workArea) => ['value' => 'work_area:'.$workArea->id, 'label' => __('Work area').': '.$workArea->name])
+            ->concat(
+                Employee::whereIn('id', DB::table('artisan_assignments')->where('artisanable_type', 'WorkArea')->whereIn('artisanable_id', $workAreas->pluck('id'))->select('employee_id'))
+                    ->where('state', EmployeeStateEnum::WORKING)
+                    ->orderBy('contact_name')
+                    ->get()
+                    ->map(fn (Employee $employee) => ['value' => 'employee:'.$employee->id, 'label' => $employee->contact_name])
+            )
+            ->values()
+            ->all();
     }
 
     public function inOrganisation(Organisation $organisation, ManufactureTask $manufactureTask, ActionRequest $request): ManufactureTask

@@ -9,10 +9,14 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateManufactureTa
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardAllowanceTypeEnum;
 use App\Enums\Production\ManufactureTask\ManufactureTaskOperativeRewardTermsEnum;
+use App\Models\HumanResources\Employee;
 use App\Models\Production\ManufactureTask;
+use App\Models\Production\WorkArea;
 use App\Models\Production\Production;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateManufactureTask extends OrgAction
@@ -23,6 +27,16 @@ class UpdateManufactureTask extends OrgAction
 
     public function handle(ManufactureTask $manufactureTask, array $modelData): ManufactureTask
     {
+        if (array_key_exists('auto_assign_to', $modelData)) {
+            $data = $manufactureTask->data ?? [];
+            if ($autoAssignTo = $this->autoAssignTarget($manufactureTask, $modelData['auto_assign_to'])) {
+                $data['auto_assign'] = $autoAssignTo;
+            } else {
+                unset($data['auto_assign']);
+            }
+            $modelData = Arr::except($modelData, 'auto_assign_to') + ['data' => $data];
+        }
+
         $manufactureTask = $this->update($manufactureTask, $modelData);
         if ($manufactureTask->wasChanged('operative_reward_terms') || $manufactureTask->wasChanged('operative_reward_allowance_type')) {
             GroupHydrateManufactureTasks::dispatch($manufactureTask->group);
@@ -30,6 +44,28 @@ class UpdateManufactureTask extends OrgAction
             ProductionHydrateManufactureTasks::dispatch($manufactureTask->production);
         }
         return $manufactureTask;
+    }
+
+    /**
+     * HELP-4670: lines of this step go straight to a job for this person, or for the least busy artisan of this work area
+     *
+     * @return array{type: string, id: int}|null
+     */
+    private function autoAssignTarget(ManufactureTask $manufactureTask, ?string $value): ?array
+    {
+        if (!$value) {
+            return null;
+        }
+
+        [$type, $id] = explode(':', $value);
+        $exists = $type === 'employee'
+            ? $id <= 32767 && Employee::where('id', $id)->where('organisation_id', $manufactureTask->organisation_id)->exists()
+            : WorkArea::where('id', $id)->where('production_id', $manufactureTask->production_id)->exists();
+        if (!$exists) {
+            throw ValidationException::withMessages(['auto_assign_to' => __('Choose an artisan or a work area of this production')]);
+        }
+
+        return ['type' => $type, 'id' => (int) $id];
     }
 
     public function authorize(ActionRequest $request): bool
@@ -79,6 +115,7 @@ class UpdateManufactureTask extends OrgAction
             'is_piece_rate'                     => ['sometimes', 'boolean'],
             'is_recorded_in_kg'                 => ['sometimes', 'boolean'],
             'is_quantity_only'                  => ['sometimes', 'boolean'],
+            'auto_assign_to'                    => ['sometimes', 'nullable', 'string', 'regex:/^(employee|work_area):\d{1,9}$/'],
         ];
     }
 

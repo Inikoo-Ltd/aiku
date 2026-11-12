@@ -9005,5 +9005,11 @@
     "Amount sent": "Elküldött összeg",
     "Counts on the order as": "A rendelésen ennyinek számít",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Amennyit a fizetés a rendelés pénznemében ér: ez vonódik le a még fizetendő összegből",
-    "sent as :amount": "elküldve mint :amount"
+    "sent as :amount": "elküldve mint :amount",
+    "Assign to order jobs automatically": "Rendelési munkák automatikus kiosztása",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Amikor egy rendelés ezzel a lépéssel rendelkező terméket tesz a Gyártandók közé, a munka egyenesen ehhez a kézműveshez, vagy ennek a munkaterületnek a legkevésbé leterhelt kézművesához kerül, rendelésenként egy munka. Hagyja üresen a kézi kiosztáshoz.",
+    "Work area": "Munkaterület",
+    "Choose an artisan or a work area of this production": "Válasszon kézművest vagy munkaterületet ebből a gyártásból",
+    "Order :reference changed": "A(z) :reference rendelés megváltozott",
+    "Order :reference": "Rendelés: :reference"
 }

@@ -16325,5 +16325,10 @@
     "Amount sent": "Gönderilen tutar",
     "Counts on the order as": "Siparişte şu tutar olarak sayılır",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Ödemenin sipariş para birimindeki değeri: kalan ödemeden düşülen tutar budur",
-    "sent as :amount": ":amount olarak gönderildi"
+    "sent as :amount": ":amount olarak gönderildi",
+    "Assign to order jobs automatically": "Sipariş işlerini otomatik ata",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Bir sipariş bu adımı içeren bir ürünü Üretilecekler'e koyduğunda iş doğrudan bu zanaatkâra veya bu çalışma alanının en az meşgul zanaatkârına gider, sipariş başına bir iş. Elle atamak için boş bırakın.",
+    "Work area": "Çalışma alanı",
+    "Choose an artisan or a work area of this production": "Bu üretimden bir zanaatkâr veya çalışma alanı seçin",
+    "Order :reference changed": "Sipariş :reference değişti"
 }

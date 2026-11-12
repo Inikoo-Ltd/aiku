@@ -9396,5 +9396,11 @@
     "Amount sent": "Изпратена сума",
     "Counts on the order as": "Зачита се по поръчката като",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Колко струва плащането във валутата на поръчката: това се приспада от оставащото за плащане",
-    "sent as :amount": "изпратено като :amount"
+    "sent as :amount": "изпратено като :amount",
+    "Assign to order jobs automatically": "Автоматично възлагане на задачи по поръчки",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Когато поръчка добави продукт с тази стъпка в „За производство“, задачата отива направо при този майстор или при най-малко натоварения майстор от тази работна зона, по една задача на поръчка. Оставете празно, за да ги възлагате ръчно.",
+    "Work area": "Работна зона",
+    "Choose an artisan or a work area of this production": "Изберете майстор или работна зона от това производство",
+    "Order :reference changed": "Поръчка :reference е променена",
+    "Order :reference": "Поръчка :reference"
 }

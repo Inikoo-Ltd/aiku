@@ -25739,5 +25739,10 @@
     "Amount sent": "汇出金额",
     "Counts on the order as": "计入订单的金额",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "该笔付款按订单币种计算的金额：将从待付金额中扣除",
-    "sent as :amount": "以 :amount 汇出"
+    "sent as :amount": "以 :amount 汇出",
+    "Assign to order jobs automatically": "自动分配订单任务",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "当订单把含有此工序的产品放入“待生产”时，任务会直接分给这位工匠，或分给该工作区最空闲的工匠，每个订单一个任务。留空则手动分配。",
+    "Work area": "工作区",
+    "Choose an artisan or a work area of this production": "请选择本生产的工匠或工作区",
+    "Order :reference changed": "订单 :reference 已更改"
 }

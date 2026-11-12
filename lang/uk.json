@@ -7071,5 +7071,11 @@
     "Amount sent": "Надіслана сума",
     "Counts on the order as": "Зараховується до замовлення як",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Скільки платіж вартий у валюті замовлення: саме це віднімається від залишку до сплати",
-    "sent as :amount": "надіслано як :amount"
+    "sent as :amount": "надіслано як :amount",
+    "Assign to order jobs automatically": "Автоматично призначати завдання замовлень",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Коли замовлення додає продукт із цим кроком до «На виробництво», завдання одразу йде цьому майстру або найменш завантаженому майстру цієї робочої зони, одне завдання на замовлення. Залиште порожнім, щоб призначати вручну.",
+    "Work area": "Робоча зона",
+    "Choose an artisan or a work area of this production": "Виберіть майстра або робочу зону цього виробництва",
+    "Order :reference changed": "Замовлення :reference змінено",
+    "Order :reference": "Замовлення :reference"
 }

@@ -2,7 +2,7 @@
 title: Kdo co vyrábí
 summary: Naučte aiku, kteří řemeslníci obvykle vyrábějí kterou kategorii nebo artefakt, aby se seznam To produce sám roztřídil na hromádky jednotlivých lidí. Doporučení, nikdy zámek.
 date: 2026-09-08
-source_date: 2026-10-05
+source_date: 2026-11-12
 tags: production, crafts, hr
 category: production
 series: Ordering from partners
@@ -45,6 +45,18 @@ Velký řádek lze rozdělit. V zakázce klikněte vedle množství řádku na *
 - Řádek ukazuje celkový postup všech svých částí a tabulku dílčích zakázek s cílem každého řemeslníka, hotovými kusy, stavem, časem a odměnou.
 - Stejným tlačítkem lze znovu otevřít okno a přesunout kusy nebo změnit jména. Část, kterou už někdo začal, nelze odstranit ani nastavit pod množství, které je již vyrobeno. První řádek vždy zůstává.
 - Jakmile bylo cokoli z řádku přijato do zásob, už ho nelze rozdělit.
+
+## Kroky, které si své zakázky na objednávku přiřazují samy
+
+Některou práci na objednávku dělá jeden člověk, například plnění olejů na objednávku. U takových kroků můžete plánovač úplně vynechat. Otevřete krok v **Factory → Operations → Tasks** (Továrna → Provoz → Úkoly), klikněte na **edit** a v poli **Assign to order jobs automatically** (Automaticky přiřazovat zakázkám na objednávku) vyberte jméno nebo pracovní oblast.
+
+- Když objednávka dá na To produce produkt s tímto krokem, aiku vytvoří zakázku hned: jednu zakázku na objednávku, se všemi řádky té objednávky pro daný krok.
+- Jméno dostane každou zakázku. Pracovní oblast dá každou zakázku nejméně vytíženému řemeslníkovi oblasti, který je dnes přihlášený nebo byl na tabletu za poslední týden. Pokud nikdo nevyhovuje, řádek čeká na To produce jako obvykle.
+- Na tabletu přicházejí zakázky od nejstarší objednávky a každý řádek ukazuje svou objednávku, takže řemeslník dokončí vždy jednu objednávku a ta může jít do skladu.
+- Pokud zákazník objednávku změní nebo zruší dřív, než někdo zakázku začne, zakázka se vrátí a vytvoří se znovu z nové objednávky. Jakmile ji někdo začal, zůstává, jak je.
+- Produkty vyráběné v šaržích o více než jednom kusu zůstávají na To produce pro plánovače, aby se malé objednávky mohly o šarži podělit.
+- Řádky doplnění zásob a řádky od partners se takto nikdy nepřiřazují.
+- Vymažte pole a vrátíte se k ručnímu přiřazování. Řádky, které už jsou na zakázce, si svou zakázku ponechají.
 
 ## Co to není
 

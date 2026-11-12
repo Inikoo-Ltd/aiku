@@ -9,6 +9,7 @@
 namespace App\Actions\Production\JobOrder;
 
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Actions\Production\PartnerShippingList\AssignToProduceLinesAutomatically;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
@@ -132,13 +133,29 @@ class FillToOrder
         }
     }
 
-    /** A customer's change to an order line follows to its fill line until the bottles are on a job */
+    /** A customer's change to an order line follows to its fill line until the bottles are on a job someone started (HELP-4670) */
     public function followOrderLine(Transaction $transaction, float $quantity): void
     {
         if (!$this->artefactFor($transaction->model)) {
             return;
         }
 
+        $order = $transaction->order;
+        if (!$order) {
+            $this->followOpenLines($transaction, $quantity);
+
+            return;
+        }
+
+        $takenBack  = rescue(fn () => AssignToProduceLinesAutomatically::make()->takeBackUntouched($order, [$transaction->id]), ['line_ids' => [], 'date' => null]);
+        $lastLineId = (int) PartnerShoppingListItem::where('transaction_id', $transaction->id)->max('id');
+        $this->followOpenLines($transaction, $quantity);
+        $newLineIds = PartnerShoppingListItem::where('transaction_id', $transaction->id)->where('id', '>', $lastLineId)->pluck('id')->all();
+        rescue(fn () => AssignToProduceLinesAutomatically::run($order, array_merge($takenBack['line_ids'], $newLineIds), $takenBack['date']));
+    }
+
+    private function followOpenLines(Transaction $transaction, float $quantity): void
+    {
         $lines = PartnerShoppingListItem::where('transaction_id', $transaction->id)
             ->where(fn ($query) => $query->where('state', ShoppingListItemStateEnum::OPEN)->orWhere('dismiss_reason', 'filled'))
             ->get();
@@ -174,6 +191,7 @@ class FillToOrder
     /** A cancelled order needs no bottles: its fill lines leave To Produce, and a job already filling them finishes without an order to send */
     public function dismissForCancelledOrder(Order $order): void
     {
+        rescue(fn () => AssignToProduceLinesAutomatically::make()->takeBackUntouched($order, $this->pendingLines($order)->pluck('transaction_id')->unique()->values()->all(), true));
         $this->pendingLines($order)->each(fn (PartnerShoppingListItem $line) => $line->update([
             'state'          => ShoppingListItemStateEnum::DISMISSED,
             'dismiss_reason' => 'order cancelled',

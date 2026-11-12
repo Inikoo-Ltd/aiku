@@ -1963,5 +1963,11 @@
     "Amount sent": "Nosūtītā summa",
     "Counts on the order as": "Pasūtījumā tiek ieskaitīts kā",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Cik maksājums ir vērts pasūtījuma valūtā: šī summa tiek atņemta no atlikušās maksājamās summas",
-    "sent as :amount": "nosūtīts kā :amount"
+    "sent as :amount": "nosūtīts kā :amount",
+    "Assign to order jobs automatically": "Automātiski piešķirt pasūtījumu darbus",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Kad pasūtījums ievieto produktu ar šo soli sadaļā Jāražo, darbs nonāk tieši pie šī amatnieka vai pie mazāk noslogotā šīs darba zonas amatnieka, viens darbs uz pasūtījumu. Atstājiet tukšu, lai piešķirtu manuāli.",
+    "Work area": "Darba zona",
+    "Choose an artisan or a work area of this production": "Izvēlieties šīs ražotnes amatnieku vai darba zonu",
+    "Order :reference changed": "Pasūtījums :reference mainīts",
+    "Order :reference": "Pasūtījums :reference"
 }

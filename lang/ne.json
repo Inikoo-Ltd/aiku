@@ -23275,5 +23275,10 @@
     "Amount sent": "पठाइएको रकम",
     "Counts on the order as": "अर्डरमा यति गनिन्छ",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "अर्डरको मुद्रामा भुक्तानीको मूल्य: तिर्न बाँकी रकमबाट यही घटाइन्छ",
-    "sent as :amount": ":amount को रूपमा पठाइएको"
+    "sent as :amount": ":amount को रूपमा पठाइएको",
+    "Assign to order jobs automatically": "अर्डरका काम आफैँ तोक्नुहोस्",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "जब कुनै अर्डरले यो चरण भएको उत्पादन उत्पादन गर्नुपर्नेमा राख्छ, काम सिधै यो कारीगरलाई, वा यो कार्य क्षेत्रका सबैभन्दा कम व्यस्त कारीगरलाई जान्छ, प्रति अर्डर एउटा काम। हातले तोक्न खाली छोड्नुहोस्।",
+    "Work area": "कार्य क्षेत्र",
+    "Choose an artisan or a work area of this production": "यो उत्पादनको कारीगर वा कार्य क्षेत्र छान्नुहोस्",
+    "Order :reference changed": "अर्डर :reference परिवर्तन भयो"
 }

@@ -2,7 +2,7 @@
 title: Kto co wykonuje
 summary: Naucz aiku, którzy rzemieślnicy zwykle wykonują daną kategorię lub wyrób, aby lista To produce sama się sortowała na stosy dla poszczególnych osób. Rekomendacja, nigdy blokada.
 date: 2026-09-08
-source_date: 2026-10-05
+source_date: 2026-11-12
 tags: production, crafts, hr
 category: production
 series: Ordering from partners
@@ -45,6 +45,18 @@ Dużą pozycję można podzielić. Na zleceniu produkcyjnym, obok ilości w pozy
 - Pozycja pokazuje łączny postęp wszystkich części oraz tabelę podzleceń z celem każdego rzemieślnika, wykonanymi sztukami, statusem, czasem i wynagrodzeniem.
 - Otwórz ten sam przycisk ponownie, aby przenieść sztuki lub zmienić osoby. Części, którą ktoś już rozpoczął, nie można usunąć ani ustawić poniżej tego, co już wykonano. Pierwszy wiersz zawsze zostaje.
 - Gdy cokolwiek z pozycji zostało już przyjęte na magazyn, nie można jej już dzielić.
+
+## Kroki, które same przypisują swoje zlecenia na zamówienie
+
+Niektóre prace na zamówienie wykonuje jedna osoba, na przykład napełnianie olejków na zamówienie. Dla takich kroków można w ogóle pominąć planistę. Otwórz krok w **Factory → Operations → Tasks** (Fabryka → Operacje → Zadania), kliknij **edit** i w polu **Assign to order jobs automatically** (Przypisuj automatycznie do zleceń na zamówienie) wybierz imię albo obszar roboczy.
+
+- Gdy zamówienie wrzuca na To produce produkt z takim krokiem, aiku od razu tworzy zlecenie: jedno zlecenie na zamówienie, ze wszystkimi pozycjami tego zamówienia dla kroku.
+- Imię dostaje wszystkie zlecenia. Obszar roboczy daje każde zlecenie najmniej obciążonemu rzemieślnikowi obszaru, który jest dziś zalogowany albo był na tablecie w ostatnim tygodniu. Jeśli nikt się nie nadaje, pozycja czeka na To produce jak zwykle.
+- Na tablecie zlecenia idą od najstarszego zamówienia, a każda pozycja pokazuje swoje zamówienie, więc rzemieślnik kończy jedno zamówienie na raz i może ono jechać do magazynu.
+- Jeśli klient zmieni lub anuluje zamówienie, zanim ktokolwiek zacznie zlecenie, zlecenie wraca i powstaje na nowo z nowego zamówienia. Gdy ktoś je zaczął, zostaje bez zmian.
+- Produkty robione w partiach większych niż jedna sztuka zostają na To produce dla planisty, żeby małe zamówienia mogły dzielić partię.
+- Pozycje uzupełnienia zapasów i pozycje od partners nigdy nie są tak przypisywane.
+- Wyczyść pole, aby wrócić do przypisywania ręcznie. Pozycje, które już są w zleceniu, zachowują swoje zlecenie.
 
 ## Czym to nie jest
 

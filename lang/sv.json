@@ -9839,5 +9839,11 @@
     "Amount sent": "Skickat belopp",
     "Counts on the order as": "Räknas på ordern som",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Vad betalningen är värd i orderns valuta: detta dras av från det som återstår att betala",
-    "sent as :amount": "skickat som :amount"
+    "sent as :amount": "skickat som :amount",
+    "Assign to order jobs automatically": "Tilldela orderjobb automatiskt",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "När en order lägger en produkt med detta steg på Att producera går jobbet direkt till denna hantverkare, eller till den minst upptagna hantverkaren i detta arbetsområde, ett jobb per order. Lämna tomt för att tilldela dem för hand.",
+    "Work area": "Arbetsområde",
+    "Choose an artisan or a work area of this production": "Välj en hantverkare eller ett arbetsområde i denna produktion",
+    "Order :reference changed": "Order :reference ändrad",
+    "Order :reference": "Order :reference"
 }

@@ -2,7 +2,7 @@
 title: Quién hace qué
 summary: Enseña a aiku qué artesanos hacen normalmente cada categoría o artefacto, para que la lista To produce se reparta sola en montones por persona. Una recomendación, nunca un candado.
 date: 2026-09-08
-source_date: 2026-10-05
+source_date: 2026-11-12
 tags: production, crafts, hr
 category: production
 series: Ordering from partners
@@ -45,6 +45,18 @@ Una línea grande se puede repartir. En la orden de trabajo, junto a la cantidad
 - La línea muestra el progreso total de todas sus partes, y una tabla de subtrabajos con el objetivo de cada artesano, las unidades hechas, el estado, el tiempo y la recompensa.
 - Abre el mismo botón otra vez para mover unidades o cambiar nombres. Una parte que alguien ya empezó no se puede quitar ni bajar por debajo de lo ya fabricado. La primera fila siempre se queda.
 - Cuando algo de la línea ya se ha recibido en stock, ya no se puede dividir.
+
+## Pasos que asignan solos sus trabajos por pedido
+
+Algunos trabajos los hace por pedido una sola persona, como llenar aceites por pedido. Para esos pasos puedes saltarte el planificador. Abre el paso en **Factory → Operations → Tasks** (Fábrica → Operaciones → Tareas), pulsa **edit** y elige un nombre o un área de trabajo en **Assign to order jobs automatically** (Asignar automáticamente a los trabajos por pedido).
+
+- Cuando un pedido pone en To produce un producto con ese paso, aiku crea el trabajo al instante: un trabajo por pedido, con todas las líneas de ese pedido para el paso.
+- Un nombre recibe todos los trabajos. Un área de trabajo da cada trabajo al artesano menos ocupado del área que ha fichado hoy o ha estado en la tablet en la última semana. Si nadie cumple, la línea espera en To produce como siempre.
+- En la tablet los trabajos llegan del pedido más antiguo al más nuevo, y cada línea muestra su pedido, así que el artesano termina un pedido cada vez y este puede pasar al almacén.
+- Si el cliente cambia o cancela el pedido antes de que nadie empiece el trabajo, el trabajo se devuelve y se vuelve a crear a partir del pedido nuevo. Una vez que alguien lo ha empezado, se queda como está.
+- Los productos que se fabrican en lotes de más de una unidad se quedan en To produce para el planificador, de modo que los pedidos pequeños puedan compartir un lote.
+- Las líneas de reposición y las de partners nunca se asignan así.
+- Vacía el campo para volver a asignar a mano. Las líneas que ya están en un trabajo conservan su trabajo.
 
 ## Lo que no es
 

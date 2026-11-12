@@ -2,7 +2,7 @@
 title: Cine face ce
 summary: Învață aiku care artizani fac de obicei fiecare categorie sau artefact, ca lista To produce să se ordoneze singură pe grămezile fiecăruia. O recomandare, niciodată o încuietoare.
 date: 2026-09-08
-source_date: 2026-10-05
+source_date: 2026-11-12
 tags: production, crafts, hr
 category: production
 series: Ordering from partners
@@ -45,6 +45,18 @@ O linie mare poate fi împărțită. Pe comanda de lucru, lângă cantitatea une
 - Linia arată progresul total al tuturor părților sale și un tabel cu sub-comenzile: ținta fiecărui artizan, unitățile făcute, starea, timpul și recompensa.
 - Apasă din nou același buton ca să muți unități sau să schimbi numele. O parte pe care cineva a început-o nu poate fi eliminată și nici redusă sub ce s-a făcut deja. Primul rând rămâne mereu.
 - Din momentul în care ceva din linie a fost recepționat în stoc, linia nu mai poate fi împărțită.
+
+## Pașii care își atribuie singuri comenzile de lucru pe comandă
+
+O parte din muncă o face pe comandă o singură persoană, de exemplu umplerea uleiurilor pe comandă. Pentru acești pași poți sări peste planificator. Deschide pasul în **Factory → Operations → Tasks (Fabrică → Operațiuni → Sarcini)**, apasă **edit** și alege un nume sau o zonă de lucru în **Assign to order jobs automatically (Atribuie automat comenzilor de lucru pe comandă)**.
+
+- Când o comandă pune pe To produce un produs cu acel pas, aiku creează comanda de lucru pe loc: o comandă de lucru pe comandă, cu toate liniile acelei comenzi pentru pas.
+- Un nume primește toate comenzile de lucru. O zonă de lucru dă fiecare comandă de lucru artizanului cel mai puțin ocupat din zonă, care e pontat azi sau a fost pe tabletă în ultima săptămână. Dacă nu se potrivește nimeni, linia așteaptă pe To produce ca de obicei.
+- Pe tabletă comenzile de lucru vin începând cu cea mai veche comandă, iar fiecare linie își arată comanda, așa că artizanul termină câte o comandă și aceasta poate pleca spre depozit.
+- Dacă clientul schimbă sau anulează comanda înainte ca cineva să înceapă comanda de lucru, aceasta se întoarce și se creează din nou din comanda nouă. Odată ce cineva a început-o, rămâne cum este.
+- Produsele făcute în loturi de mai mult de o unitate rămân pe To produce pentru planificator, ca să poată comenzile mici să împartă un lot.
+- Liniile de reaprovizionare și liniile de la partners nu se atribuie niciodată astfel.
+- Golește câmpul ca să revii la atribuirea manuală. Liniile care sunt deja pe o comandă de lucru își păstrează comanda.
 
 ## Ce nu este
 

@@ -26694,5 +26694,10 @@
     "Amount sent": "Odoslaná suma",
     "Counts on the order as": "Na objednávke sa počíta ako",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Hodnota platby v mene objednávky: táto suma sa odpočíta od toho, čo ostáva zaplatiť",
-    "sent as :amount": "odoslané ako :amount"
+    "sent as :amount": "odoslané ako :amount",
+    "Assign to order jobs automatically": "Automaticky prideľovať úlohy objednávok",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Keď objednávka pridá produkt s týmto krokom do Na výrobu, úloha ide rovno tomuto remeselníkovi alebo najmenej vyťaženému remeselníkovi tejto pracovnej oblasti, jedna úloha na objednávku. Nechajte prázdne, ak ich chcete prideľovať ručne.",
+    "Work area": "Pracovná oblasť",
+    "Choose an artisan or a work area of this production": "Vyberte remeselníka alebo pracovnú oblasť tejto výroby",
+    "Order :reference changed": "Objednávka :reference sa zmenila"
 }

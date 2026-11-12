@@ -9804,5 +9804,10 @@
     "Amount sent": "Verzonden bedrag",
     "Counts on the order as": "Telt op de bestelling als",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Wat de betaling waard is in de valuta van de bestelling: dit wordt afgetrokken van wat nog betaald moet worden",
-    "sent as :amount": "verzonden als :amount"
+    "sent as :amount": "verzonden als :amount",
+    "Assign to order jobs automatically": "Orderjobs automatisch toewijzen",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Wanneer een bestelling een product met deze stap op Te produceren zet, gaat de job direct naar deze vakman, of naar de minst drukke vakman van dit werkgebied, één job per bestelling. Laat leeg om ze met de hand toe te wijzen.",
+    "Work area": "Werkgebied",
+    "Choose an artisan or a work area of this production": "Kies een vakman of een werkgebied van deze productie",
+    "Order :reference changed": "Bestelling :reference gewijzigd"
 }

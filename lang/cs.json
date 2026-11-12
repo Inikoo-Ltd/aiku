@@ -26836,5 +26836,10 @@
     "Amount sent": "Odeslaná částka",
     "Counts on the order as": "Na objednávce se počítá jako",
     "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Hodnota platby v měně objednávky: tato částka se odečte od toho, co zbývá zaplatit",
-    "sent as :amount": "odesláno jako :amount"
+    "sent as :amount": "odesláno jako :amount",
+    "Assign to order jobs automatically": "Automaticky přidělovat úlohy objednávek",
+    "When an order puts a product with this step on To Produce, the job goes straight to this artisan, or to the least busy artisan of this work area, one job per order. Leave empty to assign them by hand.": "Když objednávka přidá produkt s tímto krokem do K výrobě, úloha jde rovnou tomuto řemeslníkovi, nebo nejméně vytíženému řemeslníkovi této pracovní oblasti, jedna úloha na objednávku. Ponechte prázdné, chcete-li je přidělovat ručně.",
+    "Work area": "Pracovní oblast",
+    "Choose an artisan or a work area of this production": "Vyberte řemeslníka nebo pracovní oblast této výroby",
+    "Order :reference changed": "Objednávka :reference se změnila"
 }
