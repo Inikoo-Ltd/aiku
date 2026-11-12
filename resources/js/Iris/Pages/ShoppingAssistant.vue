@@ -463,8 +463,12 @@ const handOver = async (offerMessageId: number | null, typed?: string) => {
         if (requestGeneration !== generation) {
             return
         }
+        const isNewConversation = conversation.value !== data.conversation
         conversation.value = data.conversation
         sessionStorage.setItem(shoppingAssistantConversationKey, data.conversation)
+        if (isNewConversation) {
+            loadHistory()
+        }
         if (offerMessageId !== null) {
             messages.value = messages.value.map((message) => message.id === offerMessageId && message.role === "assistant" ? { ...message, handed_over: true } : message)
         } else {
@@ -679,6 +683,54 @@ const sendOnEnter = (event: KeyboardEvent) => {
                             >
                                 {{ question }}
                             </button>
+                        </div>
+
+                        <div v-if="canTalkToAPerson" class="landing-talk">
+                            <div class="landing-talk-row">
+                                <span class="text-sm text-gray-600">{{ ctrans("Prefer a person?") }}</span>
+                                <button
+                                    type="button"
+                                    class="landing-chip landing-talk-button"
+                                    :aria-expanded="isTalkBoxOpen"
+                                    @click="isTalkBoxOpen = !isTalkBoxOpen"
+                                >
+                                    <FontAwesomeIcon icon="far fa-headset" fixed-width aria-hidden="true" />
+                                    {{ ctrans("Talk to a person") }}
+                                </button>
+                            </div>
+
+                            <div v-if="isTalkBoxOpen" class="chat-talk-box landing-talk-box">
+                                <label for="assistant-talk-to-a-person-landing" class="mb-1 block text-sm font-medium">
+                                    {{ ctrans("What would you like to ask our team?") }} <span class="text-red-500">*</span>
+                                </label>
+                                <Textarea id="assistant-talk-to-a-person-landing" v-model="talkDraft" rows="3" autoResize maxlength="1000" class="w-full" />
+                                <p v-if="talkError" class="mt-1 text-xs text-red-500">{{ talkError }}</p>
+                                <div class="mt-3 flex w-full gap-2">
+                                    <Button
+                                        type="tertiary"
+                                        class="shrink-0"
+                                        :label="ctrans('Cancel')"
+                                        :disabled="handingOver !== null"
+                                        @click="isTalkBoxOpen = false; talkError = ''"
+                                    >
+                                        <template #icon>
+                                            <FontAwesomeIcon icon="far fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </Button>
+                                    <Button
+                                        type="primary"
+                                        full
+                                        :label="ctrans('Send to our team')"
+                                        :loading="handingOver === 'link'"
+                                        :disabled="handingOver !== null"
+                                        @click="handOver(null, talkDraft)"
+                                    >
+                                        <template #icon>
+                                            <FontAwesomeIcon icon="far fa-paper-plane" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1272,6 +1324,29 @@ const sendOnEnter = (event: KeyboardEvent) => {
 
 .chat-header-talk:hover {
     border-color: var(--theme-color-4);
+}
+
+.landing-talk {
+    margin-top: 1rem;
+    max-width: 42rem;
+}
+
+.landing-talk-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.landing-talk-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.landing-talk-box {
+    margin-top: 0.75rem;
+    background-color: white;
 }
 
 .chat-talk-box {
