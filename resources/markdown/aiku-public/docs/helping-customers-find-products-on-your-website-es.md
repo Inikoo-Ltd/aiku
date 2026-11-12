@@ -1,8 +1,8 @@
 ---
 title: Ayudar a los clientes a encontrar productos en tu web
 summary: Dos interruptores en los ajustes de la web ayudan a los clientes profesionales a encontrar qué tener en stock. El asesor de gama responde una pregunta escrita en el cuadro de búsqueda con productos y un motivo para cada uno, y Keep exploring añade búsquedas relacionadas, familias y productos bajo cada búsqueda.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-12
+source_date: 2026-11-12
 tags: website, search, shop, crm
 category: marketing
 ---
@@ -61,6 +61,24 @@ Está hecho para cumplir estas reglas:
 - No dice nada sobre lo que compra ningún otro cliente, y no se muestran recuentos de compradores ni cifras de ventas.
 - Responde en el idioma de la tienda.
 
+### Mejores precios y pedidos grandes
+
+Cuando un cliente pide un mejor precio o un descuento, o dice que algo es demasiado caro, el asesor no negocia. Muestra productos más baratos del tipo que pidió y añade tres cosas calculadas con nuestros datos, nunca por la IA:
+
+- si el cliente es miembro de **Gold Reward** y hasta cuándo, o cómo hacerse miembro (un pedido facturado le hace miembro durante 30 días);
+- una amnistía de precios para miembros, cuando la tienda tiene una activa;
+- el importe de pedido a partir del cual nuestro equipo llama para hablar de mejores condiciones.
+
+Después pregunta cuánto piensa pedir. Cuando el pedido previsto llega a ese importe, el asesor lo pasa enseguida, incluso antes de que el cliente acepte la llamada, para que un pedido grande nunca se pierda. Ofrece la llamada, pregunta si usar el teléfono de su cuenta u otro y cuándo le viene bien, y añade la respuesta al mismo aviso. Nunca dice quién llamará ni promete un descuento.
+
+Cada aviso es una tarea de prioridad alta para el equipo de **atención al cliente** de la organización, enlazada al cliente, con el importe previsto, el teléfono, la mejor hora y un enlace a la conversación. Todo el equipo recibe el aviso en aiku. Los responsables de oportunidades de venta de la organización están en la tarea y reciben el aviso por email, Slack y notificación del navegador (cada uno puede cambiarlo en su perfil). Mientras nadie haya cogido la tarea, se les recuerda a las 4 horas y después una vez al día, en días laborables entre las 09:00 y las 18:00 de la zona horaria de la organización.
+
+Lo configuran los administradores del sistema en **Organisations**: se abre la organización, se pulsa **Edit** y se va a **Sales leads**.
+
+- **Sales leads manager** (responsable de oportunidades): quién recibe cada aviso. Si se deja vacío, lo reciben los supervisores de atención al cliente y, si no hay ninguno, todos los administradores de la organización. Conviene indicar un responsable para que los avisos lleguen a la persona adecuada y no a todos los administradores.
+- **Big order from (EUR)** (pedido grande desde): el importe de pedido previsto a partir del cual se ofrece la llamada, convertido a la moneda de cada tienda. Si se deja vacío son 2.000 EUR, más o menos el mayor de cada 100 pedidos.
+- **Sales leads Slack channel** (canal de Slack): dónde se publica cada aviso y sus recordatorios. El bot de aiku tiene que ser miembro del canal.
+
 ### Límites y qué se registra
 
 Cada cliente puede hacer 6 preguntas por minuto, 40 por hora y 120 al día. Una respuesta tarda unos segundos y la página espera. Cada respuesta es uso de IA de pago, así que activa el asesor donde quieras que los clientes lo usen.
@@ -109,6 +127,7 @@ Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se ab
 - **Conversion** (conversión) es la proporción de conversaciones seguidas de un pedido así. Deja fuera las conversaciones de los últimos 7 días, porque todavía pueden convertirse en pedidos. Una nota ámbar indica desde qué día las cifras aún no son definitivas.
 - **AI cost** (coste de IA), en total, por conversación y como proporción de los ingresos.
 - **AI budget this month** (presupuesto de IA de este mes) muestra, por cada web con el asesor activado, lo gastado frente a su presupuesto mensual. La barra se vuelve ámbar a partir del 80% y roja con **Paused until** (en pausa hasta) y la fecha cuando se agota el presupuesto.
+- **Big order leads** (pedidos grandes) lista los avisos del periodo, primero los abiertos: el cliente, el pedido previsto, si pidió una llamada, el estado de la tarea y quién la cogió. Un aviso que nadie ha cogido sale en ámbar con cuántos recordatorios se han enviado.
 
 **Funnel** (embudo) sigue las conversaciones paso a paso: productos mostrados, pulsados, añadidos a la cesta y pedidos, cada uno con su proporción respecto al paso anterior y respecto a todas las conversaciones. **Ordered** (pedidos) puede ser mayor que **Added to basket** (añadidos a la cesta), porque también cuenta productos que llegaron a la cesta de otra forma. El gráfico de al lado muestra los mismos pasos por día, o por semana en un periodo largo.
 

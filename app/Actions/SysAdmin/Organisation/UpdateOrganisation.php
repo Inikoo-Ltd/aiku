@@ -112,6 +112,19 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.staff_chat.crm_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_crm_backup_user_ids'))));
         }
 
+        if (Arr::has($modelData, 'sales_leads_manager_user_ids')) {
+            data_set($modelData, 'settings.sales_leads.manager_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'sales_leads_manager_user_ids') ?? [])));
+        }
+
+        if (Arr::has($modelData, 'sales_leads_threshold_eur')) {
+            $threshold = Arr::pull($modelData, 'sales_leads_threshold_eur');
+            data_set($modelData, 'settings.sales_leads.threshold_eur', is_numeric($threshold) && (float) $threshold > 0 ? (float) $threshold : null);
+        }
+
+        if (Arr::has($modelData, 'sales_leads_slack_channel')) {
+            data_set($modelData, 'settings.sales_leads.slack_channel', trim((string) Arr::pull($modelData, 'sales_leads_slack_channel')) ?: null);
+        }
+
         if (Arr::has($modelData, 'staff_chat_warehouse_backup_user_ids')) {
             data_set($modelData, 'settings.staff_chat.warehouse_backup_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'staff_chat_warehouse_backup_user_ids'))));
         }
@@ -418,6 +431,10 @@ class UpdateOrganisation extends OrgAction
             'staff_chat_warehouse_user_ids.*'        => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
             'staff_chat_crm_backup_user_ids'         => ['sometimes', 'array'],
             'staff_chat_crm_backup_user_ids.*'       => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
+            'sales_leads_manager_user_ids'          => ['sometimes', 'nullable', 'array', 'max:5'],
+            'sales_leads_manager_user_ids.*'         => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)->where('status', true)],
+            'sales_leads_threshold_eur'             => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000000'],
+            'sales_leads_slack_channel'             => ['sometimes', 'nullable', 'string', 'max:100'],
             'staff_chat_warehouse_backup_user_ids'   => ['sometimes', 'array'],
             'staff_chat_warehouse_backup_user_ids.*' => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)],
             'banned_countries'                      => ['sometimes', 'nullable', 'array'],

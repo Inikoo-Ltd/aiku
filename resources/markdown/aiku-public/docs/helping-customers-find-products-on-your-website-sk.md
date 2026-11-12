@@ -1,8 +1,8 @@
 ---
 title: Ako pomôcť zákazníkom nájsť produkty na vašom webe
 summary: Dva prepínače v nastaveniach webu pomáhajú obchodným zákazníkom zistiť, čo majú naskladniť. Poradca pre sortiment odpovedá na otázku napísanú do vyhľadávacieho poľa produktmi a dôvodom ku každému a Keep exploring pridáva pod každé vyhľadávanie súvisiace vyhľadávania, rodiny a produkty.
-date: 2026-11-10
-source_date: 2026-11-10
+date: 2026-11-12
+source_date: 2026-11-12
 tags: website, search, shop, crm
 category: marketing
 ---
@@ -61,6 +61,24 @@ Je postavený tak, aby dodržiaval tieto pravidlá:
 - Nič nehovorí o tom, čo kupuje ktorýkoľvek iný zákazník, a nezobrazujú sa počty kupujúcich ani predajné čísla.
 - Odpovedá v jazyku obchodu.
 
+### Lepšie ceny a veľké objednávky
+
+Keď zákazník žiada lepšiu cenu alebo zľavu, alebo povie, že je niečo príliš drahé, poradca nevyjednáva. Ukáže lacnejšie produkty takého druhu, aký hľadal, a pridá tri veci vypočítané z našich údajov, nikdy nie umelou inteligenciou:
+
+- či je zákazník členom programu **Gold Reward** a dokedy, alebo ako sa ním stane (vyfakturovaná objednávka z neho urobí člena na 30 dní);
+- amnestiu členských cien, keď v obchode prebieha;
+- výšku objednávky, od ktorej náš tím volá, aby sa dohodli lepšie podmienky.
+
+Potom sa opýta, koľko plánuje objednať. Keď plánovaná objednávka dosiahne túto výšku, poradca ju hneď odovzdá, ešte predtým, ako zákazník súhlasí s hovorom, takže sa veľká objednávka nikdy nestratí. Ponúkne hovor, opýta sa, či volať na telefón z účtu alebo na iný a kedy sa to hodí, a odpoveď pridá k tej istej príležitosti. Nikdy nepovie, kto zavolá, a nikdy nesľúbi zľavu.
+
+Každá príležitosť je úloha s vysokou prioritou pre tím **zákazníckeho servisu** organizácie, prepojená so zákazníkom, s plánovanou sumou, telefónom, najvhodnejším časom a odkazom na konverzáciu. Celý tím dostane upozornenie v aiku. Manažéri obchodných príležitostí organizácie sú na úlohe a dostanú upozornenie emailom, cez Slack a v prehliadači (každý si to môže zmeniť vo svojom profile). Kým si úlohu nikto nevzal, pripomenie sa im po 4 hodinách a potom raz denne, v pracovné dni medzi 09:00 a 18:00 v časovom pásme organizácie.
+
+Nastavujú to administrátori systému v **Organisations**: otvorte organizáciu, stlačte **Edit** a prejdite do časti **Sales leads**.
+
+- **Sales leads manager** (manažér obchodných príležitostí): kto dostane každú príležitosť. Ak je prázdne, dostanú ju vedúci zákazníckeho servisu a ak žiadni nie sú, všetci administrátori organizácie. Nastavte manažéra, aby príležitosti dostal správny človek, a nie všetci administrátori.
+- **Big order from (EUR)** (veľká objednávka od): plánovaná výška objednávky, od ktorej sa ponúka hovor, prepočítaná na menu každého obchodu. Ak je prázdne, je to 2 000 EUR, zhruba najväčšia zo 100 objednávok.
+- **Sales leads Slack channel** (kanál v Slacku): kam sa posiela každá príležitosť a jej pripomienky. Bot aiku musí byť členom kanála.
+
 ### Limity a čo sa zaznamenáva
 
 Každý zákazník sa môže opýtať 6 otázok za minútu, 40 za hodinu a 120 za deň. Odpoveď trvá niekoľko sekúnd a stránka na ňu čaká. Každá odpoveď je platené použitie AI, preto poradcu zapnite tam, kde chcete, aby ho zákazníci používali.
@@ -109,6 +127,7 @@ Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa t
 - **Conversion** (konverzia) je podiel konverzácií, po ktorých nasledovala takáto objednávka. Vynecháva konverzácie za posledných 7 dní, pretože sa z nich ešte môžu stať objednávky. Oranžová poznámka hovorí, od ktorého dňa čísla ešte nie sú konečné.
 - **AI cost** (náklady na AI), celkovo, na konverziu a ako podiel na tržbách.
 - **AI budget this month** (rozpočet na AI tento mesiac) ukazuje pri každom webe so zapnutým poradcom, koľko sa minulo z jeho mesačného rozpočtu. Pruh sa od 80% zafarbí na oranžovo a keď je rozpočet vyčerpaný, na červeno s **Paused until** (pozastavené do) a dátumom.
+- **Big order leads** (veľké objednávky) uvádza príležitosti obdobia, najprv otvorené: zákazníka, plánovanú objednávku, či žiadal hovor, stav úlohy a kto si ju vzal. Príležitosť, ktorú si nikto nevzal, je oranžová a ukazuje, koľko pripomienok odišlo.
 
 **Funnel** (lievik) sleduje konverzácie krok za krokom: produkty zobrazené, rozkliknuté, pridané do košíka a objednané, každý s podielom na predchádzajúcom kroku a na všetkých konverzáciách. **Ordered** (objednané) môže byť vyššie ako **Added to basket** (pridané do košíka), pretože počíta aj produkty, ktoré sa do košíka dostali inou cestou. Graf vedľa neho ukazuje rovnaké kroky po dňoch, alebo po týždňoch pri dlhom období.
 

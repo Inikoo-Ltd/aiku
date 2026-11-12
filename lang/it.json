@@ -12843,5 +12843,9 @@
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "La spedizione per il suo carrello attuale è di :amount tasse escluse. Cambia quando aggiunge o rimuove prodotti.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "La spedizione per il suo carrello attuale è gratuita. Può cambiare quando aggiunge o rimuove prodotti.",
     "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "La spedizione per il suo carrello attuale è ancora da confermare: il prezzo viene deciso in seguito, non è gratuita.",
-    "More about :name": "Scopri di più su :name"
+    "More about :name": "Scopri di più su :name",
+    "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "È socio del programma :label fino al :date, quindi ha i prezzi per i soci su tutte le gamme che li prevedono. Un ordine fatturato prima di quella data prolunga la sua iscrizione.",
+    "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "Quando un suo ordine viene fatturato, diventa socio del programma :label per :days giorni, con i prezzi per i soci su tutte le gamme che li prevedono. Fino ad allora, una gamma è a prezzo per i soci se ne ordina una quantità sufficiente in una sola volta.",
+    "Until :date everyone gets member prices.": "Fino al :date i prezzi per i soci sono validi per tutti.",
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Per un ordine di :amount o più, una persona del nostro team può chiamarla per parlarne e valutare se sono possibili condizioni migliori."
 }
