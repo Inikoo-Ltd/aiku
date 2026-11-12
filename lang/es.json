@@ -26723,5 +26723,6 @@
     "See :name’s picks for you": "Ver las sugerencias de :name para usted",
     "Not interested, thanks": "No me interesa, gracias",
     ":name remembers:": ":name recuerda:",
-    "Forget this": "Olvidar esto"
+    "Forget this": "Olvidar esto",
+    "1 product = :count SKO": "1 producto = :count SKO"
 }

@@ -26689,5 +26689,6 @@
     "See :name’s picks for you": "See :name’s picks for you",
     "Not interested, thanks": "Not interested, thanks",
     ":name remembers:": ":name remembers:",
-    "Forget this": "Forget this"
+    "Forget this": "Forget this",
+    "1 product = :count SKO": "1 product = :count SKO"
 }

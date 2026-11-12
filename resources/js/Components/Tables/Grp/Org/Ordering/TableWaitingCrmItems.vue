@@ -22,7 +22,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import axios from "axios"
 import { debounce } from "lodash-es"
-import { InputNumber } from "primevue"
+import { InputNumber, InputText } from "primevue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { notify } from "@kyvg/vue3-notification"
@@ -90,7 +90,7 @@ const selectedItem = ref<Record<string, any> | null>(null)
 const modalProducts = ref<any[]>([])
 const modalSearchQuery = ref('')
 const isModalProductsLoading = ref(false)
-const productQuantities = reactive<Record<number, { quantity: number; code: string; name: string; stock: number; units: number; image: any }>>({})
+const productQuantities = reactive<Record<number, { quantity: number; code: string; name: string; stock: number; units: number; skosPerProduct: number | null; image: any }>>({})
 const isSubmittingReplaceProduct = ref(false)
 
 /*
@@ -344,6 +344,7 @@ const fetchModalProducts = debounce(async () => {
                     name: product.name,
                     stock: productShelfStock(product),
                     units: productPackedIn(product),
+                    skosPerProduct: product.skos_per_product ?? null,
                     image: productImage(product),
                 }
             }
@@ -364,8 +365,21 @@ watch(modalSearchQuery, () => {
 const selectedProducts = computed(() =>
     Object.entries(productQuantities)
         .filter(([, p]) => p.quantity > 0)
-        .map(([id, p]) => ({ id: Number(id), code: p.code, name: p.name, quantity: p.quantity, units: p.units, image: p.image }))
+        .map(([id, p]) => ({ id: Number(id), code: p.code, name: p.name, quantity: p.quantity, units: p.units, skosPerProduct: p.skosPerProduct, image: p.image }))
 )
+
+/*
+ * The item being replaced is counted in SKO, a replacement product in products, and a product can
+ * hold several SKO (a pack of 3 boxes): 3 of it answer 9 missing SKO (HELP-4683). Spell the SKO
+ * out wherever a replacement quantity is shown; a product made of several stocks has no single count.
+ */
+const replacementSkoLabel = (quantity: number, skosPerProduct: number | null): string | null => {
+    if (isCutViewReplace.value) {
+        return null
+    }
+    const skos = (skosPerProduct ?? 0) * quantity
+    return skos > 0 && Math.abs(skos - Math.round(skos)) < 1e-6 ? ctrans(':count SKO', { count: String(Math.round(skos)) }) : null
+}
 
 const unselectProduct = (id: number) => {
     if (productQuantities[id]) {
@@ -377,7 +391,7 @@ interface SuccessContext {
     replacedItem: Record<string, any>
     replacedQuantity: number
     remainingQuantity: number
-    newProducts: { id: number; code: string; name: string; numerator: number; denominator: number; image: any }[]
+    newProducts: { id: number; code: string; name: string; numerator: number; denominator: number; skoLabel: string | null; image: any }[]
 }
 
 const isModalConfirmationSuccess = ref(false)
@@ -391,11 +405,12 @@ const submitReplaceProduct = () => {
     if (!submitRoute) return
     isSubmittingReplaceProduct.value = true
 
-    const snapshotSelectedProducts = selectedProducts.value.map(({ id, code, name, quantity, units, image }) => ({
+    const snapshotSelectedProducts = selectedProducts.value.map(({ id, code, name, quantity, units, skosPerProduct, image }) => ({
         id,
         code,
         name,
         image,
+        skoLabel: replacementSkoLabel(quantity, skosPerProduct),
         ...productQuantityFraction(quantity, units),
     }))
     const snapshotQuantityToReplace = quantityToReplace.value
@@ -428,11 +443,6 @@ const submitReplaceProduct = () => {
                 remainingQuantity: snapshotQuantityRemaining,
                 newProducts: snapshotSelectedProducts,
             }
-            notify({
-                title: ctrans("Success!"),
-                text: ctrans('Items :itemOld has been replaced', { itemOld: selectedItem.value?.org_stock_code ?? ''}),
-                type: "success",
-            })
             isModalConfirmationSuccess.value = true
         },
         onFinish: () => { isSubmittingReplaceProduct.value = false },
@@ -750,11 +760,10 @@ const submitSendBackWarehouse = () => {
                 </div>
                 <div class="relative">
                     <FontAwesomeIcon icon="fal fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" fixed-width />
-                    <input
+                    <InputText
                         v-model="modalSearchQuery"
-                        type="text"
                         :placeholder="ctrans('Search products...')"
-                        class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full !pl-9"
                     />
                 </div>
             </div>
@@ -801,6 +810,9 @@ const submitSendBackWarehouse = () => {
                                         <div v-if="productPackedIn(product) > 1" class="italic opacity-60 text-xs">
                                             ({{ ctrans('Pack of') }}: {{ productPackedIn(product) }})
                                         </div>
+                                        <div v-if="product.skos_per_product > 1 && Number.isInteger(product.skos_per_product)" class="italic opacity-60 text-xs">
+                                            {{ ctrans('1 product = :count SKO', { count: String(product.skos_per_product) }) }}
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -828,6 +840,12 @@ const submitSendBackWarehouse = () => {
                                         inputClass="w-28"
                                         showButtons
                                     />
+                                    <span
+                                        v-if="productQuantities[product.id]?.quantity > 0 && replacementSkoLabel(productQuantities[product.id].quantity, productQuantities[product.id].skosPerProduct)"
+                                        class="text-xs text-gray-500 whitespace-nowrap tabular-nums"
+                                    >
+                                        = {{ replacementSkoLabel(productQuantities[product.id].quantity, productQuantities[product.id].skosPerProduct) }}
+                                    </span>
                                     <span
                                         v-if="isProductOverStock(product)"
                                         v-tooltip="ctrans('Ordering over the available stock, the excess waits for the warehouse')"
@@ -861,6 +879,7 @@ const submitSendBackWarehouse = () => {
                             />
                             <span class="font-bold">{{ product.code }}</span>
                             <span class="opacity-70">×{{ productQuantityLabel(product.quantity, product.units) }}</span>
+                            <span v-if="replacementSkoLabel(product.quantity, product.skosPerProduct)" class="opacity-70">({{ replacementSkoLabel(product.quantity, product.skosPerProduct) }})</span>
                             <button
                                 type="button"
                                 @click="unselectProduct(product.id)"
@@ -1032,8 +1051,8 @@ const submitSendBackWarehouse = () => {
                             </div>
                         </div>
                         <div class="flex items-center justify-end gap-x-1 tabular-nums text-gray-500 shrink-0">
-                            <FractionDisplayFE :numerator="product.numerator" :denominator="product.denominator" />
-                            {{ ctrans('SKO') }}
+                            ×<FractionDisplayFE :numerator="product.numerator" :denominator="product.denominator" />
+                            <span v-if="product.skoLabel">({{ product.skoLabel }})</span>
                         </div>
                     </div>
                 </div>

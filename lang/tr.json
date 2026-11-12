@@ -16422,5 +16422,7 @@
     "Shopping assistant answers": "Alışveriş asistanının yanıtları",
     "Shopping assistant customer challenges": "Alışveriş asistanında müşterilerin engelleri",
     "Answers customers in the AI shopping assistant on the websites.": "Web sitelerindeki yapay zekâ alışveriş asistanında müşterileri yanıtlar.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Alışveriş asistanıyla biten konuşmaları okur ve müşterinin sipariş vermesini neyin engellediğini kaydeder."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Alışveriş asistanıyla biten konuşmaları okur ve müşterinin sipariş vermesini neyin engellediğini kaydeder.",
+    "1 product = :count SKO": "1 ürün = :count SKO",
+    ":count SKO": ":count SKO"
 }

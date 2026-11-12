@@ -26894,5 +26894,6 @@
     "See :name’s picks for you": "Zobrazit tipy od :name pro vás",
     "Not interested, thanks": "Nemám zájem, děkuji",
     ":name remembers:": ":name si pamatuje:",
-    "Forget this": "Zapomenout"
+    "Forget this": "Zapomenout",
+    "1 product = :count SKO": "1 produkt = :count SKO"
 }

@@ -9063,5 +9063,7 @@
     "See :name’s picks for you": "Tekintse meg az ajánlásokat, amelyeket :name válogatott Önnek",
     "Not interested, thanks": "Nem érdekel, köszönöm",
     ":name remembers:": ":name emlékszik:",
-    "Forget this": "Felejtse el"
+    "Forget this": "Felejtse el",
+    "1 product = :count SKO": "1 termék = :count SKO",
+    ":count SKO": ":count SKO"
 }

@@ -1647,5 +1647,7 @@
     "Shopping assistant answers": "ショッピングアシスタントの回答",
     "Shopping assistant customer challenges": "ショッピングアシスタントでの顧客の障壁",
     "Answers customers in the AI shopping assistant on the websites.": "ウェブサイトのAIショッピングアシスタントで顧客に回答します。",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "終了したショッピングアシスタントの会話を読み、顧客の注文を妨げた要因を記録します。"
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "終了したショッピングアシスタントの会話を読み、顧客の注文を妨げた要因を記録します。",
+    "1 product = :count SKO": "1 商品 = :count SKO",
+    ":count SKO": ":count SKO"
 }

@@ -13006,5 +13006,7 @@
     "See :name’s picks for you": "Scopra i consigli di :name per lei",
     "Not interested, thanks": "Non mi interessa, grazie",
     ":name remembers:": ":name ricorda:",
-    "Forget this": "Dimentica"
+    "Forget this": "Dimentica",
+    "1 product = :count SKO": "1 prodotto = :count SKO",
+    ":count SKO": ":count SKO"
 }

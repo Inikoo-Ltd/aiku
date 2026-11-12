@@ -22631,5 +22631,7 @@
     "Shopping assistant answers": "शॉपिंग असिस्टेंट के जवाब",
     "Shopping assistant customer challenges": "शॉपिंग असिस्टेंट में ग्राहकों की बाधाएँ",
     "Answers customers in the AI shopping assistant on the websites.": "वेबसाइटों पर AI शॉपिंग असिस्टेंट में ग्राहकों को जवाब देता है।",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "शॉपिंग असिस्टेंट की पूरी हुई बातचीत पढ़ता है और दर्ज करता है कि ग्राहक को ऑर्डर करने से क्या रोका।"
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "शॉपिंग असिस्टेंट की पूरी हुई बातचीत पढ़ता है और दर्ज करता है कि ग्राहक को ऑर्डर करने से क्या रोका।",
+    "1 product = :count SKO": "1 उत्पाद = :count SKO",
+    ":count SKO": ":count SKO"
 }

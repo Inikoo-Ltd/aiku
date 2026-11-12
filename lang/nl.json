@@ -9861,5 +9861,7 @@
     "See :name’s picks for you": "Bekijk de keuzes van :name voor jou",
     "Not interested, thanks": "Geen interesse, bedankt",
     ":name remembers:": ":name onthoudt:",
-    "Forget this": "Vergeten"
+    "Forget this": "Vergeten",
+    "1 product = :count SKO": "1 product = :count SKO",
+    ":count SKO": ":count SKO"
 }

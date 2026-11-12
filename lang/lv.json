@@ -2062,5 +2062,7 @@
     "Shopping assistant answers": "Iepirkšanās asistenta atbildes",
     "Shopping assistant customer challenges": "Klientu šķēršļi iepirkšanās asistentā",
     "Answers customers in the AI shopping assistant on the websites.": "Atbild klientiem AI iepirkšanās asistentā tīmekļa vietnēs.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Lasa pabeigtās sarunas ar iepirkšanās asistentu un pieraksta, kas klientam traucēja pasūtīt."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Lasa pabeigtās sarunas ar iepirkšanās asistentu un pieraksta, kas klientam traucēja pasūtīt.",
+    "1 product = :count SKO": "1 produkts = :count SKO",
+    ":count SKO": ":count SKO"
 }

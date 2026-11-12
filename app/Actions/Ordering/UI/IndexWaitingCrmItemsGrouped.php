@@ -32,10 +32,21 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
     public const string READY = 'ready';
     public const string WITH_WAREHOUSE = 'with_warehouse';
 
+    /**
+     * Only lines the picker left waiting hold the note back. Lines customer service released to the
+     * warehouse (a replacement, or an item sent back) are its own decisions, and hiding the note
+     * until they are picked hid every other missing item on it too (HELP-4683).
+     */
     public static function whereReadyToContactCustomer($query): void
     {
         $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING_BLOCKED->value)
-            ->where('delivery_notes.number_items_waiting_warehouse', 0);
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('delivery_note_items')
+                    ->whereColumn('delivery_note_items.delivery_note_id', 'delivery_notes.id')
+                    ->where('delivery_note_items.has_waiting_warehouse', true)
+                    ->whereNull('delivery_note_items.waiting_warehouse_released_at');
+            });
     }
 
     public function handle(Shop $shop, ?string $prefix = null): LengthAwarePaginator
@@ -71,10 +82,7 @@ class IndexWaitingCrmItemsGrouped extends OrgAction
                 if ($value === self::READY) {
                     static::whereReadyToContactCustomer($query);
                 } else {
-                    $query->where(function ($query) {
-                        $query->where('delivery_notes.state', DeliveryNoteStateEnum::HANDLING->value)
-                            ->orWhere('delivery_notes.number_items_waiting_warehouse', '>', 0);
-                    });
+                    $query->whereNot(fn ($query) => static::whereReadyToContactCustomer($query));
                 }
             },
             prefix: $prefix

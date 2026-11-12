@@ -21,6 +21,7 @@ use Illuminate\Support\Arr;
  * @property mixed $available_quantity
  * @property mixed $is_on_demand
  * @property mixed $shelf_quantity
+ * @property mixed $skos_per_product
  * @property mixed $price
  * @property mixed $state
  * @property mixed $created_at
@@ -85,6 +86,7 @@ class ProductsWebpageResource extends JsonResource
              */
             'packed_in'                     => $this->packed_in ? (int) $this->packed_in : null,
             'shelf_quantity'                => $this->shelf_quantity === null ? null : (int) $this->shelf_quantity,
+            'skos_per_product'              => $this->skos_per_product === null ? null : (float) $this->skos_per_product,
             'offers_data'                   => $this->offers_data,
             'discounted_price'              => $bestPercentageOff ? round($this->price * $bestPercentageOffOfferFactor, 2) : null,
             'discounted_price_per_unit'     => $pricePerUnitDiscounted,

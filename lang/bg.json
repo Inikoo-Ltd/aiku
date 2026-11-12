@@ -9454,5 +9454,7 @@
     "See :name’s picks for you": "Вижте предложенията от :name за вас",
     "Not interested, thanks": "Не ме интересува, благодаря",
     ":name remembers:": ":name помни:",
-    "Forget this": "Забрави това"
+    "Forget this": "Забрави това",
+    "1 product = :count SKO": "1 продукт = :count SKO",
+    ":count SKO": ":count SKO"
 }

@@ -7129,5 +7129,7 @@
     "See :name’s picks for you": "Переглянути пропозиції від :name для Вас",
     "Not interested, thanks": "Мене це не цікавить, дякую",
     ":name remembers:": ":name пам’ятає:",
-    "Forget this": "Забути це"
+    "Forget this": "Забути це",
+    "1 product = :count SKO": "1 продукт = :count SKO",
+    ":count SKO": ":count SKO"
 }

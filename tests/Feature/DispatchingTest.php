@@ -3295,7 +3295,12 @@ test('picking waiting warehouse and crm flow', function () {
     expect($sentBack->has_waiting_crm)->toBeFalse()
         ->and($sentBack->waiting_warehouse_released_at)->not->toBeNull();
 
-    $sentBack->update(['quantity_picked' => 5, 'quantity_waiting_warehouse' => 0, 'locked_at' => null]);
+    $sentBack->update(['quantity_picked' => 5, 'quantity_waiting_crm' => 0, 'quantity_waiting_warehouse' => 2, 'locked_at' => null]);
+    $partlyHeld = \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($sentBack->refresh(), $this->user, ['quantity' => 1]);
+    expect((float)$partlyHeld->quantity_waiting_warehouse)->toBe(1.0)
+        ->and($partlyHeld->waiting_warehouse_released_at)->not->toBeNull();
+
+    $sentBack->update(['quantity_picked' => 5, 'quantity_waiting_crm' => 0, 'quantity_waiting_warehouse' => 0, 'locked_at' => null]);
     $heldAgain = \App\Actions\Dispatching\Picking\SetAsWaitingCrm::make()->action($sentBack->refresh(), $this->user, ['quantity' => 1]);
     expect($heldAgain->waiting_warehouse_released_at)->toBeNull();
 });
@@ -5122,10 +5127,16 @@ test('pending orders waiting items list only orders the warehouse has finished b
     expect($waitingDeliveryNoteIds(null))->not->toContain($deliveryNote->id)
         ->and($waitingDeliveryNoteIds('with_warehouse'))->toContain($deliveryNote->id);
 
+    $item->update(['quantity_waiting_warehouse' => 1, 'waiting_warehouse_released_at' => null]);
     $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED, 'number_items_waiting_warehouse' => 1]);
     expect($waitingDeliveryNoteIds(null))->not->toContain($deliveryNote->id)
         ->and($waitingDeliveryNoteIds('with_warehouse'))->toContain($deliveryNote->id);
 
+    $item->update(['waiting_warehouse_released_at' => now()]);
+    expect($waitingDeliveryNoteIds(null))->toContain($deliveryNote->id)
+        ->and($waitingDeliveryNoteIds('with_warehouse'))->not->toContain($deliveryNote->id);
+
+    $item->update(['quantity_waiting_warehouse' => 0, 'waiting_warehouse_released_at' => null]);
     $deliveryNote->update(['number_items_waiting_warehouse' => 0]);
     expect($waitingDeliveryNoteIds(null))->toContain($deliveryNote->id)
         ->and($waitingDeliveryNoteIds('ready'))->toContain($deliveryNote->id)
@@ -5415,6 +5426,43 @@ test('a replacement added to a note nobody is picking waits for the warehouse', 
 
     expect($replacement->state)->toBe(DeliveryNoteItemStateEnum::HANDLING_BLOCKED)
         ->and($replacement->has_waiting_warehouse)->toBeTrue();
+});
+
+test('a note stays ready to contact the customer after one of its missing items is replaced', function () {
+    $settings = $this->organisation->settings;
+    data_set($settings, 'orders.allow_waiting', true);
+    $this->organisation->update(['settings' => $settings]);
+
+    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this, 0);
+    $item->update(['quantity_waiting_crm' => 2, 'locked_at' => null]);
+    $this->product2->orgStocks()->syncWithoutDetaching([$item->org_stock_id => ['quantity' => 1]]);
+    $deliveryNote->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+    \App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems::run($deliveryNote->id);
+
+    $isReady = function () use ($deliveryNote): bool {
+        $query = \App\Models\Dispatching\DeliveryNote::whereKey($deliveryNote->id);
+        \App\Actions\Ordering\UI\IndexWaitingCrmItemsGrouped::whereReadyToContactCustomer($query);
+
+        return $query->exists();
+    };
+
+    expect($isReady())->toBeTrue();
+
+    \App\Actions\Ordering\WaitingCrmItem\ReplaceWaitingCrmItemProduct::run($item->refresh(), $this->user, [
+        'quantity' => 1,
+        'products' => [['id' => $this->product2->id, 'quantity' => 1]],
+    ]);
+
+    $replacement = $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->orderByDesc('id')->first();
+
+    expect($replacement->has_waiting_warehouse)->toBeTrue()
+        ->and($replacement->waiting_warehouse_released_at)->not->toBeNull()
+        ->and((float)$item->refresh()->quantity_waiting_crm)->toBe(1.0)
+        ->and($isReady())->toBeTrue();
+
+    $replacement->update(['waiting_warehouse_released_at' => null]);
+
+    expect($isReady())->toBeFalse();
 });
 
 test('picking from waiting keeps the line at its discounted price', function () {

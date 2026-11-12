@@ -9060,5 +9060,7 @@
     "See :name’s picks for you": "Pogledajte prijedloge od :name za vas",
     "Not interested, thanks": "Ne zanima me, hvala",
     ":name remembers:": ":name pamti:",
-    "Forget this": "Zaboravi"
+    "Forget this": "Zaboravi",
+    "1 product = :count SKO": "1 proizvod = :count SKO",
+    ":count SKO": ":count SKO"
 }

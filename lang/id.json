@@ -23526,5 +23526,6 @@
     "Shopping assistant answers": "Jawaban asisten belanja",
     "Shopping assistant customer challenges": "Kendala pelanggan di asisten belanja",
     "Answers customers in the AI shopping assistant on the websites.": "Menjawab pelanggan di asisten belanja AI pada situs web.",
-    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Membaca percakapan asisten belanja yang sudah selesai dan mencatat apa yang menghalangi pelanggan untuk memesan."
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Membaca percakapan asisten belanja yang sudah selesai dan mencatat apa yang menghalangi pelanggan untuk memesan.",
+    "1 product = :count SKO": "1 produk = :count SKO"
 }

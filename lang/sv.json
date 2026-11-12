@@ -9897,5 +9897,7 @@
     "See :name’s picks for you": "Se tips från :name till dig",
     "Not interested, thanks": "Inget intresse, tack",
     ":name remembers:": ":name kommer ihåg:",
-    "Forget this": "Glöm detta"
+    "Forget this": "Glöm detta",
+    "1 product = :count SKO": "1 produkt = :count SKO",
+    ":count SKO": ":count SKO"
 }
