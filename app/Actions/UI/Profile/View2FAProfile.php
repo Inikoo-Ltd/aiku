@@ -20,6 +20,8 @@ class View2FAProfile
     use AsAction;
     use WithInertia;
 
+    public const string ISSUER = 'aiku';
+
     /**
      * @throws \PragmaRX\Google2FA\Exceptions\IncompatibleWithGoogleAuthenticatorException
      * @throws \PragmaRX\Google2FAQRCode\Exceptions\MissingQrCodeServiceException
@@ -33,11 +35,11 @@ class View2FAProfile
         }
 
         $google2fa = new Google2FA();
-        $secret    = $google2fa->generateSecretKey(32);
+        $secret    = $this->generateSecretKey();
 
         // Generate the QR
         $qrInline = $google2fa->getQRCodeInline(
-            'aiku',
+            self::ISSUER,
             $user->username,
             $secret,
             360
@@ -47,6 +49,16 @@ class View2FAProfile
             'qrUrl'     => $qrInline,
             'secretKey' => $secret
         ];
+    }
+
+    /**
+     * @throws \PragmaRX\Google2FA\Exceptions\IncompatibleWithGoogleAuthenticatorException
+     * @throws \PragmaRX\Google2FA\Exceptions\InvalidCharactersException
+     * @throws \PragmaRX\Google2FA\Exceptions\SecretKeyTooShortException
+     */
+    public function generateSecretKey(): string
+    {
+        return (new Google2FA())->generateSecretKey(32);
     }
 
     /**

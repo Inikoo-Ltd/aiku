@@ -81,24 +81,7 @@ use function Pest\Laravel\patchJson;
 use function Pest\Laravel\post;
 use function Pest\Laravel\postJson;
 
-function createMobileAppUser(Group $group, array $attributes = []): User
-{
-    $user = User::factory()->create(array_merge([
-        'group_id' => $group->id,
-        'password' => 'mobile-app-password',
-        'status'   => true,
-    ], $attributes));
-    $user->stats()->create();
-
-    return $user;
-}
-
-function postMobileLogin(array $body, array $headers = ['X-Aiku-App-Key' => 'mobile-test-key']): TestResponse
-{
-    config(['app.mobile_app_keys' => ['mobile-test-key']]);
-
-    return postJson(route('grp.api.mobile.login'), $body, $headers);
-}
+require_once __DIR__.'/../Support/MobileApiHelpers.php';
 
 /**
  * @return array{0: User, 1: Warehouse}
@@ -489,14 +472,16 @@ test('mobile login locks the one time password after five wrong codes', function
     postMobileLogin($body)->assertUnprocessable()->assertJsonValidationErrors(['one_time_password' => 'Too many wrong codes']);
 });
 
-test('mobile login sends a user who must use two factor but has not set it up to the web', function () {
+test('mobile login asks a user who must use two factor but has not set it up to set it up in the app', function () {
     $user = createMobileAppUser($this->group, ['is_two_factor_required' => true]);
 
     postMobileLogin([
         'username'    => $user->username,
         'password'    => 'mobile-app-password',
         'device_name' => 'Pixel 8 · Android 15',
-    ])->assertUnprocessable()->assertJsonValidationErrors(['username' => 'Set up two-factor authentication on the web first.']);
+    ])->assertUnprocessable()
+        ->assertJsonPath('code', 'two_factor_setup_required')
+        ->assertJsonValidationErrors(['one_time_password' => 'Set up two-factor authentication to continue.']);
 });
 
 test('mobile logout deletes the token it was called with', function () {
@@ -1457,4 +1442,31 @@ test('mobile empty locations removal is switched on and the removed links are li
     expect($rows->pluck('code'))->toContain($orgStock->code)
         ->and($rows->first()['location_code'])->toBe($empty->code)
         ->and($rows->first()['date'])->not->toBeNull();
+});
+
+test('the app profile shows the job title and the organisation of the current employment', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    [$employee, $user] = createClockingEmployeeUser($this->organisation);
+    $employee->update(['job_title' => 'Warehouse picker']);
+    Sanctum::actingAs($user, ['mobile']);
+
+    getJson(route('grp.api.mobile.profile'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.id', $user->id)
+        ->assertJsonPath('data.username', $user->username)
+        ->assertJsonPath('data.position', 'Warehouse picker')
+        ->assertJsonPath('data.job_title', 'Warehouse picker')
+        ->assertJsonPath('data.organisation.code', $this->organisation->code)
+        ->assertJsonPath('data.organisation.name', $this->organisation->name)
+        ->assertJsonMissingPath('data.salary');
+});
+
+test('the app profile of a user with no employment has no position or organisation', function () {
+    config(['app.mobile_app_keys' => ['mobile-test-key']]);
+    Sanctum::actingAs(createMobileAppUser($this->group), ['mobile']);
+
+    getJson(route('grp.api.mobile.profile'), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.organisation', null)
+        ->assertJsonPath('data.job_title', null);
 });

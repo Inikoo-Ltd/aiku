@@ -9,6 +9,7 @@
 
 namespace App\Actions\SysAdmin\UI\Auth;
 
+use App\Models\SysAdmin\User;
 use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -36,21 +37,25 @@ class ValidateAndSave2FA extends OrgAction
         }
 
         $authenticator = new Authenticator(request());
-        $google2fa = new Google2FA();
-        $secret = Arr::get($modelData, 'secret_key');
-        $otp = Arr::get($modelData, 'one_time_password');
-        $validated = $google2fa->verifyKey($secret, $otp);
-
-        if (!$validated) {
-            throw ValidationException::withMessages([
-                'one_time_password' => trans('Invalid OTP is given. Please check your Authenticator App'),
-            ]);
-        }
-        $request->user()->update(['google2fa_secret' => $secret]);
+        $this->saveVerifiedSecret($request->user(), Arr::get($modelData, 'secret_key'), Arr::get($modelData, 'one_time_password'));
 
         $authenticator->login();
 
         return Inertia::location(route('grp.dashboard.show'));
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function saveVerifiedSecret(User $user, string $secret, string $oneTimePassword): void
+    {
+        if (!(new Google2FA())->verifyKey($secret, $oneTimePassword)) {
+            throw ValidationException::withMessages([
+                'one_time_password' => trans('Invalid OTP is given. Please check your Authenticator App'),
+            ]);
+        }
+
+        $user->update(['google2fa_secret' => $secret]);
     }
 
     public function rules(): array

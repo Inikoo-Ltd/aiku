@@ -10,6 +10,9 @@
 use App\Actions\Api\Group\Auth\GetMobilePermissions;
 use App\Actions\Api\Group\Auth\LoginMobileApp;
 use App\Actions\Api\Group\Auth\LogoutMobileApp;
+use App\Actions\Api\Group\Auth\ResetMobilePassword;
+use App\Actions\Api\Group\Auth\SendMobilePasswordResetCode;
+use App\Actions\Api\Group\Auth\UpdateMobilePassword;
 use App\Actions\Api\Group\Clocking\CancelMobileAttendanceAdjustment;
 use App\Actions\Api\Group\Clocking\DownloadMobileClockingAttachment;
 use App\Actions\Api\Group\Clocking\GetMobileAttendanceAdjustments;
@@ -24,6 +27,7 @@ use App\Actions\Api\Group\Clocking\StoreMobileOvertimeRequest;
 use App\Actions\Api\Group\Clocking\UpdateMobileClockingNotes;
 use App\Actions\Api\Group\Clocking\UpdateMobileLeave;
 use App\Actions\Api\Group\Clocking\UpdateMobileOvertimeRequest;
+use App\Actions\Api\Group\GetMobileProfile;
 use App\Actions\Api\Group\GetMobileWarehouses;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\WorkSchedule\IndexShiftSchedules;
@@ -43,13 +47,17 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         return 'pong';
     })->name('ping');
 
-    Route::post('/login', LoginMobileApp::class)->name('login')->middleware('throttle:6,1');
+    Route::post('/login', LoginMobileApp::class)->name('login')->middleware('throttle:mobile-login');
     Route::post('/password/reset-link', PasswordResetLink::class)->name('password.reset_link')->middleware('throttle:6,1');
+    Route::post('/password/reset-code', SendMobilePasswordResetCode::class)->name('password.reset_code')->middleware('throttle:mobile-password-reset');
+    Route::post('/password/reset', ResetMobilePassword::class)->name('password.reset')->middleware('throttle:mobile-password-reset');
 
     Route::middleware(['auth:sanctum', 'ability:mobile'])->group(function () {
         Route::post('/logout', LogoutMobileApp::class)->name('logout');
+        Route::post('/password', UpdateMobilePassword::class)->name('password.update')->middleware('throttle:mobile-password-change');
         Route::get('/warehouses', GetMobileWarehouses::class)->name('warehouses');
         Route::get('/permissions', GetMobilePermissions::class)->name('permissions');
+        Route::get('/profile', GetMobileProfile::class)->name('profile');
 
         Route::prefix('clocking')->name('clocking.')->group(function () {
             Route::get('/', GetMobileClocking::class)->name('show');
