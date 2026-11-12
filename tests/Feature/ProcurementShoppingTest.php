@@ -1691,7 +1691,7 @@ test('goods the stock sheet or container list puts in the agent warehouse confir
     $imported = App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromSheet::run($this->agent, $purchaseOrder->organisation, 'sheet-id');
 
     expect($imported['rows'][0]['purchase_order_id'])->toBe($purchaseOrder->id)
-        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_PRODUCTION)
         ->and($purchaseOrder->production_started_at)->not->toBeNull()
         ->and($purchaseOrder->purchaseOrderTransactions()->value('state'))->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED);
 
@@ -1703,7 +1703,7 @@ test('goods the stock sheet or container list puts in the agent warehouse confir
     App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromContainerList::run($this->agent, $containerOrder->organisation, $containerList);
     unlink($containerList);
 
-    expect($containerOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+    expect($containerOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_PRODUCTION)
         ->and($containerOrder->production_started_at)->not->toBeNull();
 });
 
@@ -2191,7 +2191,7 @@ test('agent drafts are sent once every organisation is ready, or early with a re
 test('agent purchase orders board starts at submitted so the agent never sees a draft', function () {
     $board = App\Actions\Procurement\PurchaseOrder\UI\ShowAgentPurchaseOrdersBoard::make()->handle($this->orgAgent->agent);
 
-    expect(array_column($board['columns'], 'key'))->toBe(['submitted', 'confirmed', 'settled']);
+    expect(array_column($board['columns'], 'key'))->toBe([...PurchaseOrderStateEnum::openValues(), 'settled']);
 });
 
 test('UI agent drafts to send', function () {

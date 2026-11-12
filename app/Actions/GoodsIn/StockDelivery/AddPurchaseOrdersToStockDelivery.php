@@ -71,7 +71,7 @@ class AddPurchaseOrdersToStockDelivery extends OrgAction
             ->where('organisation_id', $stockDelivery->organisation_id)
             ->where('agent_id', $stockDelivery->agent_id)
             ->where('parent_type', 'OrgSupplier')
-            ->where('state', PurchaseOrderStateEnum::CONFIRMED)
+            ->whereIn('state', PurchaseOrderStateEnum::agreed())
             ->where('currency_id', $stockDelivery->currency_id)
             ->whereHas('purchaseOrderTransactions', $itemsAwaitingDelivery)
             ->whereDoesntHave('stockDeliveries', fn (Builder $deliveries) => $deliveries

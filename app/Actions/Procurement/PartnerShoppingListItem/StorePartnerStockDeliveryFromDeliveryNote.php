@@ -179,7 +179,7 @@ class StorePartnerStockDeliveryFromDeliveryNote
         }
 
         return $orgPartner->purchaseOrders()
-            ->where('state', PurchaseOrderStateEnum::CONFIRMED)
+            ->whereIn('state', PurchaseOrderStateEnum::agreed())
             ->whereRaw('reference ~* ?', ['-'.preg_quote($order->reference).'(-|$)'])
             ->first();
     }

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\SupplyChain;
 
+use App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -21,6 +22,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $number_supplier_products
  * @property int $number_purchase_orders
  * @property int $number_stock_deliveries
+ * @property string|null $agreement_status
+ * @property int|null $agreement_accepted_version
  */
 class SuppliersResource extends JsonResource
 {
@@ -37,7 +40,16 @@ class SuppliersResource extends JsonResource
             'number_purchase_orders'   => $this->number_purchase_orders,
             'number_stock_deliveries'  => $this->number_stock_deliveries,
             'open_incidents'           => (int) ($this->open_incidents ?? 0),
+            'agreement'                => $this->agreement(),
         ];
+    }
+
+    /**
+     * @return array{status: string, label: string, colour: string, icon: string}|null
+     */
+    protected function agreement(): ?array
+    {
+        return GetSupplierAgreementStatus::make()->badge($this->agreement_status ?? null, $this->agreement_accepted_version ?? null);
     }
 
     protected function getStatusIcon(): array

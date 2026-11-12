@@ -25732,5 +25732,7 @@
     "Final checks done": "最终检查已完成",
     "Available to ship": "可发货",
     "Transit & arrival": "运输与到达",
-    "Booked into stock": "已入库"
+    "Booked into stock": "已入库",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "处理中、已提交或已约定且尚未入库的采购订单",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "您已约定的采购订单，直到其集装箱发运为止：已约定、生产中、在您的仓库中、准备出发或已交接"
 }

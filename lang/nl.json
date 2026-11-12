@@ -9720,5 +9720,7 @@
     "Transit & arrival": "Transport & aankomst",
     "Booked into stock": "Op voorraad geboekt",
     "The :product is on order and expected between :from and :to.": "Het product :product is besteld en wordt verwacht tussen :from en :to.",
-    "Our purchasing team answered your question:": "Ons inkoopteam heeft je vraag beantwoord:"
+    "Our purchasing team answered your question:": "Ons inkoopteam heeft je vraag beantwoord:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Inkooporders in behandeling, ingediend of overeengekomen en nog niet ingeboekt",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Inkooporders die u bent overeengekomen, totdat hun container onderweg is: overeengekomen, in productie, in uw magazijn, klaar voor vertrek of overgedragen"
 }

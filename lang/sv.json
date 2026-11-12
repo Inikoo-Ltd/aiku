@@ -9755,5 +9755,7 @@
     "Transit & arrival": "Transport & ankomst",
     "Booked into stock": "Inbokad i lager",
     "The :product is on order and expected between :from and :to.": "Produkten :product är beställd och väntas komma mellan :from och :to.",
-    "Our purchasing team answered your question:": "Vårt inköpsteam har svarat på din fråga:"
+    "Our purchasing team answered your question:": "Vårt inköpsteam har svarat på din fråga:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Inköpsorder under arbete, skickade eller överenskomna och ännu inte inbokade i lager",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Inköpsorder som ni har kommit överens om, tills deras container är på väg: överenskomna, i produktion, i ert lager, redo att rulla eller överlämnade"
 }

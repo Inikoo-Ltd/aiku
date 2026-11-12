@@ -52,7 +52,7 @@ class IndexAgentSharedSuppliers extends OrgAction
                 ->whereNotNull('purchase_orders.agent_order_reference')
                 ->orWhere('purchase_orders.created_at', '>=', PurchaseOrder::AGENT_TRACKING_STARTED_AT))
             ->whereNotNull('purchase_orders.supplier_id')
-            ->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::openValues())
             ->whereNull('purchase_orders.deleted_at');
     }
 

@@ -23268,5 +23268,7 @@
     "Final checks done": "अन्तिम जाँच सकियो",
     "Available to ship": "पठाउन उपलब्ध",
     "Transit & arrival": "ढुवानी र आगमन",
-    "Booked into stock": "स्टकमा दर्ता"
+    "Booked into stock": "स्टकमा दर्ता",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "प्रक्रियामा, पेश गरिएका वा सहमत भएका र अझै स्टकमा दर्ता नभएका पर्चेज अर्डरहरू",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "तपाईंले सहमति गर्नुभएका पर्चेज अर्डरहरू, तिनको कन्टेनर बाटोमा नलागेसम्म: सहमत, निर्माण हुँदै, तपाईंको गोदाममा, हिँड्न तयार वा हस्तान्तरण भइसकेका"
 }

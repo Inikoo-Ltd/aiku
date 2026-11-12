@@ -124,7 +124,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
 
         if ($sourcePurchaseOrder->state === PurchaseOrderStateEnum::CANCELLED) {
             if (Arr::get($sourcePurchaseOrder->data, 'cancellation.source') !== UpdatePurchaseOrderStateToCancelled::SOURCE_MOVED
-                || !in_array(Arr::get($sourcePurchaseOrder->data, 'cancellation.state'), [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value], true)) {
+                || !in_array(Arr::get($sourcePurchaseOrder->data, 'cancellation.state'), PurchaseOrderStateEnum::openValues(), true)) {
                 return __(':reference was cancelled: order the item again instead', ['reference' => $sourcePurchaseOrder->reference]);
             }
 
@@ -133,7 +133,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
                 : null;
         }
 
-        if (!in_array($sourcePurchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
+        if (!in_array($sourcePurchaseOrder->state, PurchaseOrderStateEnum::open(), true)) {
             return __(':reference is :state: its items can no longer change', ['reference' => $sourcePurchaseOrder->reference, 'state' => PurchaseOrderStateEnum::labels()[$sourcePurchaseOrder->state->value] ?? $sourcePurchaseOrder->state->value]);
         }
 
@@ -205,7 +205,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
         $netAmount = round($quantity * (float) $transaction->unit_cost, 2);
 
         $transaction->update([
-            'state'            => PurchaseOrderTransactionStateEnum::from($purchaseOrder->state->value),
+            'state'            => $purchaseOrder->state->transactionState(),
             'quantity_ordered' => $quantity,
             'net_amount'       => $netAmount,
             'grp_net_amount'   => round($netAmount * (float) ($transaction->grp_exchange ?? 1), 2),

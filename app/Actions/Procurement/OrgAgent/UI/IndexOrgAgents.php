@@ -20,6 +20,7 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\DepositRequest;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -103,39 +104,28 @@ class IndexOrgAgents extends OrgAction
     }
 
     /**
-     * Where the open supplier orders placed through the agent are. Arrival at the agent's
-     * warehouse is not recorded yet, so it is not a stage.
+     * Where the open supplier orders placed through the agent are, by their state.
      *
      * @return array{stages: array<int, array{stage: string, label: string, orders: int, value: float}>, late: int, no_eta: int}
      */
     private function pipeline(OrgAgent $orgAgent): array
     {
-        $stage = "case
-            when state = 'in_process' then 'preparing'
-            when state = 'submitted' then 'submitted'
-            when delivery_state = 'ready_to_ship' then 'ready_to_ship'
-            when delivery_state = 'dispatched' then 'dispatched'
-            else 'confirmed' end";
-
         $rows = $this->agentPurchaseOrders($orgAgent)
-            ->whereIn('state', array_merge([PurchaseOrderStateEnum::IN_PROCESS->value], GetAgentSupplierPerformance::OPEN_STATES))
+            ->whereIn('state', PurchaseOrderStateEnum::liveValues())
             ->whereNotIn('delivery_state', GetAgentSupplierPerformance::CLOSED_DELIVERY_STATES)
             ->whereRaw("(data -> 'housekeeping') is null")
-            ->groupByRaw($stage)
-            ->selectRaw("$stage as stage, count(*) as orders,
+            ->groupBy('state')
+            ->selectRaw("state, count(*) as orders,
                 coalesce(sum(cost_total * coalesce(org_exchange, 1)), 0) as value,
                 count(*) filter (where state <> 'in_process' and estimated_received_at < now()) as late,
                 count(*) filter (where state <> 'in_process' and estimated_received_at is null) as no_eta")
             ->get()
-            ->keyBy('stage');
+            ->keyBy('state');
 
-        $labels = [
-            'preparing'     => __('Preparing'),
-            'submitted'     => __('Sent, not confirmed'),
-            'confirmed'     => __('Confirmed, producing'),
-            'ready_to_ship' => __('Ready to ship'),
-            'dispatched'    => __('In a container'),
-        ];
+        $labels = array_merge(
+            Arr::only(PurchaseOrderStateEnum::labels(), PurchaseOrderStateEnum::liveValues()),
+            [PurchaseOrderStateEnum::IN_PROCESS->value => __('Preparing'), PurchaseOrderStateEnum::SUBMITTED->value => __('Sent, not confirmed')]
+        );
 
         return [
             'stages' => collect($labels)
@@ -158,7 +148,7 @@ class IndexOrgAgents extends OrgAction
         $stateLabels = PurchaseOrderStateEnum::labels();
 
         return $this->agentPurchaseOrders($orgAgent)
-            ->whereIn('state', array_merge([PurchaseOrderStateEnum::IN_PROCESS->value], GetAgentSupplierPerformance::OPEN_STATES))
+            ->whereIn('state', PurchaseOrderStateEnum::liveValues())
             ->whereNotIn('delivery_state', GetAgentSupplierPerformance::CLOSED_DELIVERY_STATES)
             ->whereRaw("(data -> 'housekeeping') is null")
             ->selectRaw('slug, reference, state, number_current_purchase_order_transactions as lines,

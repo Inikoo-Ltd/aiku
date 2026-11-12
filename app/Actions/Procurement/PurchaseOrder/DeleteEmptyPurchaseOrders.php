@@ -76,7 +76,7 @@ class DeleteEmptyPurchaseOrders extends OrgAction
     private static function blockers(): array
     {
         return [
-            'state'    => "po.state not in ('in_process', 'submitted', 'confirmed')",
+            'state'    => 'po.state not in ('.PurchaseOrderStateEnum::liveSql().')',
             'items'    => "exists (
                 select 1 from purchase_order_transactions
                 where purchase_order_transactions.purchase_order_id = po.id
@@ -213,7 +213,7 @@ class DeleteEmptyPurchaseOrders extends OrgAction
                     return 0;
                 }
 
-                if (in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
+                if (in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)) {
                     UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder, source: UpdatePurchaseOrderStateToCancelled::SOURCE_EMPTIED);
 
                     return 1;

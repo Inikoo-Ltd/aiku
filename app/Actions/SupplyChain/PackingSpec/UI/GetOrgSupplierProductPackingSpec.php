@@ -190,7 +190,7 @@ class GetOrgSupplierProductPackingSpec
             ->where('purchase_order_transactions.supplier_product_id', $supplierProductId)
             ->where('purchase_order_transactions.quantity_ordered', '>', 0)
             ->where('purchase_order_transactions.state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)
-            ->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::live())
             ->when(
                 $agentId,
                 fn ($query) => $query->where('purchase_orders.agent_id', $agentId),

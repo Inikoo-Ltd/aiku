@@ -223,7 +223,7 @@ class PurchaseOrderTransactionResource extends JsonResource
 
         return $agentOrganisationId !== null
             && $this->viewingOrganisationId($request) === $agentOrganisationId
-            && in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            && in_array($purchaseOrder->state, PurchaseOrderStateEnum::open())
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
             && $request->user()?->authTo("procurement.$agentOrganisationId.edit")
             && !AskPurchaseOrderTransactionQuantityChange::isShipped($transaction);
@@ -233,7 +233,7 @@ class PurchaseOrderTransactionResource extends JsonResource
     {
         return $transaction->quantity_query_state === PurchaseOrderTransactionQuantityQueryStateEnum::PENDING
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
-            && in_array($transaction->purchaseOrder?->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            && in_array($transaction->purchaseOrder?->state, PurchaseOrderStateEnum::open())
             && $request->user()?->authTo("procurement.$transaction->organisation_id.edit");
     }
 
@@ -241,7 +241,7 @@ class PurchaseOrderTransactionResource extends JsonResource
     {
         return $isQuestionPending
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
-            && in_array($transaction->purchaseOrder?->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+            && in_array($transaction->purchaseOrder?->state, PurchaseOrderStateEnum::open(), true)
             && $request->user()?->authTo("procurement.$transaction->organisation_id.edit");
     }
 
@@ -274,7 +274,7 @@ class PurchaseOrderTransactionResource extends JsonResource
             ? max(0, min($awaiting, (float) $transaction->getAttribute('quantity_received_at_agent_warehouse') - $onContainers))
             : $awaiting;
 
-        $canAddToContainer = $purchaseOrder?->state === PurchaseOrderStateEnum::CONFIRMED
+        $canAddToContainer = $purchaseOrder?->state->isAgreed()
             && $transaction->state === PurchaseOrderTransactionStateEnum::CONFIRMED
             && $readyToShip > StoreStockDeliveryFromPurchaseOrder::QUANTITY_TOLERANCE
             && ($isAgentEditing || $canEdit);

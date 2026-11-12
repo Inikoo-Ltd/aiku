@@ -12,7 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
-use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateStage;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
 use App\Actions\SupplyChain\Supplier\WithSupplierJsonColumns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
@@ -103,9 +103,9 @@ class UpdateAgent extends OrgAction
 
         if ($agent->wasChanged('settings')) {
             PurchaseOrder::where('agent_id', $agent->id)
-                ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+                ->whereIn('state', PurchaseOrderStateEnum::open())
                 ->get()
-                ->each(fn (PurchaseOrder $purchaseOrder) => PurchaseOrderHydrateStage::dispatch($purchaseOrder)->delay($this->hydratorsDelay));
+                ->each(fn (PurchaseOrder $purchaseOrder) => PurchaseOrderHydrateState::dispatch($purchaseOrder)->delay($this->hydratorsDelay));
         }
 
         if ($agent->wasChanged('status')) {

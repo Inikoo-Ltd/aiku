@@ -133,11 +133,7 @@ class MergeSupplierProducts
     public function moveOpenLines(SupplierProduct $from, SupplierProduct $to, bool $fix = true): int
     {
         $openPurchaseOrderLines = PurchaseOrderTransaction::where('supplier_product_id', $from->id)
-            ->whereHas('purchaseOrder', fn ($query) => $query->whereIn('state', [
-                PurchaseOrderStateEnum::IN_PROCESS,
-                PurchaseOrderStateEnum::SUBMITTED,
-                PurchaseOrderStateEnum::CONFIRMED,
-            ]));
+            ->whereHas('purchaseOrder', fn ($query) => $query->whereIn('state', PurchaseOrderStateEnum::live()));
 
         $openDeliveryLines = StockDeliveryItem::where('supplier_product_id', $from->id)
             ->whereHas('stockDelivery', fn ($query) => $query->whereNotIn('state', [

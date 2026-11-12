@@ -53,7 +53,7 @@ class AskPurchaseOrderTransactionPriceChange extends OrgAction
 
         return $purchaseOrder !== null
             && $purchaseOrder->isAgentOrder()
-            && in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+            && in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
             && in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
             && !$purchaseOrder->hasProductionStarted();
     }

@@ -1956,5 +1956,7 @@
     "Final checks done": "Gala pārbaudes veiktas",
     "Available to ship": "Gatavs nosūtīšanai",
     "Transit & arrival": "Tranzīts un ierašanās",
-    "Booked into stock": "Iegrāmatots krājumos"
+    "Booked into stock": "Iegrāmatots krājumos",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Pirkuma pasūtījumi, kas ir procesā, iesniegti vai saskaņoti un vēl nav iegrāmatoti noliktavā",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Pirkuma pasūtījumi, kurus esat saskaņojis, līdz to konteiners ir ceļā: saskaņoti, ražošanā, jūsu noliktavā, gatavi ceļam vai nodoti"
 }

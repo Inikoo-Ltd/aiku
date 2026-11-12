@@ -105,7 +105,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
                     'quantity_ordered'        => $quantity,
                     'net_amount'              => round($agreedUnitCost * $quantity, 2),
                     'org_supplier_product_id' => $orgSupplierProduct->id,
-                    'state'                   => $isNewPurchaseOrder ? null : PurchaseOrderTransactionStateEnum::from($targetPurchaseOrder->state->value),
+                    'state'                   => $isNewPurchaseOrder ? null : $targetPurchaseOrder->state->transactionState(),
                 ], fn ($value) => $value !== null),
                 strict: false
             );
@@ -113,7 +113,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             if ($isNewPurchaseOrder) {
                 // ponytail: handle(), not action(): the packing spec check would stop a product created a moment ago
                 $targetPurchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->handle($targetPurchaseOrder);
-                if ($sourcePurchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED) {
+                if ($sourcePurchaseOrder->state->isAgreed()) {
                     $targetPurchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->handle($targetPurchaseOrder);
                 }
             }
@@ -176,7 +176,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
 
         return $purchaseOrder !== null
             && $purchaseOrder->isAgentOrder()
-            && in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+            && in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
             && in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
             && !$purchaseOrder->areLinesLockedByProduction()
             && $purchaseOrderTransaction->org_stock_id !== null
@@ -384,7 +384,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
      */
     private function cancelWhenEmpty(PurchaseOrder $purchaseOrder): bool
     {
-        if (!in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+        if (!in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
             || $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()) {
             return false;
         }

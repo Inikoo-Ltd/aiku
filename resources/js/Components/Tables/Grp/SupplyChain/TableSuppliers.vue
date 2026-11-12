@@ -10,6 +10,7 @@ import Table from "@/Components/Table/Table.vue"
 import { ctrans } from "@/Composables/useTrans"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import Icon from "@/Components/Icon.vue"
+import SupplierAgreementStatusBadge from "@/Components/Procurement/SupplierAgreementStatusBadge.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPersonDolly, faPeopleArrows, faArchive } from "@fal"
@@ -26,6 +27,7 @@ interface Supplier {
     number_supplier_products: number
     number_purchase_orders: number
     number_stock_deliveries: number
+    agreement: { status: string, label: string, colour: string, icon: string } | null
 }
 
 defineProps<{
@@ -62,6 +64,9 @@ function supplierRoute(supplier: Supplier) {
         </template>
         <template #cell(number_stock_deliveries)="{ item: supplier }">
             {{ locale.number(supplier.number_stock_deliveries) }}
+        </template>
+        <template #cell(agreement)="{ item: supplier }">
+            <SupplierAgreementStatusBadge v-if="supplier.agreement" :status="supplier.agreement" />
         </template>
     </Table>
 </template>

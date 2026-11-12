@@ -14,7 +14,6 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -78,9 +77,7 @@ class IndexAgentOrderLines extends OrgAction
             ->select('purchase_orders.id')
             ->where('purchase_orders.agent_id', $this->agent->id)
             ->whereNull('purchase_orders.deleted_at')
-            ->whereIn('purchase_orders.state', ['submitted', 'confirmed'])
-            ->whereIn(DB::raw(PurchaseOrderStageEnum::progressSql()), ShowAgentOrdersBacklog::PURCHASE_ORDER_STAGES[$this->stage][0])
-            ->when($this->factoryStage, fn ($query) => $query->whereRaw(PurchaseOrderStageEnum::factoryStageSql().' = ?', [$this->factoryStage]));
+            ->whereIn('purchase_orders.state', $this->factoryStage ? [$this->factoryStage] : ShowAgentOrdersBacklog::PURCHASE_ORDER_STAGES[$this->stage][0]);
 
         $purchaseOrderLines = DB::table('purchase_order_transactions')
             ->whereIn('purchase_order_transactions.purchase_order_id', $purchaseOrders)
@@ -147,7 +144,7 @@ class IndexAgentOrderLines extends OrgAction
         $this->stage = is_string($request->input('stage')) ? $request->input('stage') : '';
         abort_unless(isset(ShowAgentOrdersBacklog::PURCHASE_ORDER_STAGES[$this->stage]) || $this->isShipmentStage(), 404);
         $this->factoryStage = !$this->isShipmentStage() && is_string($request->input('factory')) ? $request->input('factory') : null;
-        abort_if($this->factoryStage && !isset(PurchaseOrderStageEnum::factoryStageLabels()[$this->factoryStage]), 404);
+        abort_if($this->factoryStage && !isset(ShowAgentOrdersBacklog::factoryStateLabels()[$this->factoryStage]), 404);
 
         return $this->handle();
     }
@@ -155,7 +152,7 @@ class IndexAgentOrderLines extends OrgAction
     public function htmlResponse(LengthAwarePaginator $rows, ActionRequest $request): Response
     {
         $stages = $this->isShipmentStage() ? ShowAgentOrdersBacklog::SHIPMENT_STAGES : ShowAgentOrdersBacklog::PURCHASE_ORDER_STAGES;
-        $title  = __($stages[$this->stage][1]).($this->factoryStage ? ': '.PurchaseOrderStageEnum::factoryStageLabels()[$this->factoryStage] : '');
+        $title  = __($stages[$this->stage][1]).($this->factoryStage ? ': '.ShowAgentOrdersBacklog::factoryStateLabels()[$this->factoryStage] : '');
 
         $organisationCounts = $this->joinProductRowDetails($this->lines(), 'lines')
             ->leftJoin('countries', 'countries.id', 'organisations.country_id')

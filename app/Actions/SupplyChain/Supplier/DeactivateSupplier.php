@@ -26,7 +26,7 @@ class DeactivateSupplier
     public function handle(Supplier $supplier): Supplier
     {
         $openOrders = $supplier->purchaseOrders()
-            ->whereIn('state', [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('state', PurchaseOrderStateEnum::live())
             ->pluck('reference');
 
         if ($openOrders->isNotEmpty()) {

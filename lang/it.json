@@ -12864,5 +12864,7 @@
     "Transit & arrival": "Transito e arrivo",
     "Booked into stock": "Registrato a magazzino",
     "The :product is on order and expected between :from and :to.": "Il prodotto :product è stato ordinato e se ne prevede l'arrivo tra il :from e il :to.",
-    "Our purchasing team answered your question:": "Il nostro ufficio acquisti ha risposto alla sua domanda:"
+    "Our purchasing team answered your question:": "Il nostro ufficio acquisti ha risposto alla sua domanda:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Ordini di acquisto in lavorazione, inviati o concordati e non ancora registrati a magazzino",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Ordini di acquisto che avete concordato, finché il loro container non è in viaggio: concordati, in lavorazione, nel vostro magazzino, pronti a partire o consegnati"
 }

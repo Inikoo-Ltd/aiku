@@ -11,6 +11,7 @@ namespace App\Actions\SupplyChain\SupplierShareLink\UI;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesFeedback;
 use App\Actions\Procurement\OrgAgent\UI\GetAgentSalesProducts;
 use App\Actions\Procurement\OrgAgent\UI\ShowAgentSales;
+use App\Actions\SupplyChain\SupplierAgreement\UI\GetSupplierPortalAgreement;
 use App\Actions\SupplyChain\SupplierPortalContact\UI\ShowSupplierPortalLogin;
 use App\Actions\SupplyChain\SupplierShareLink\LocateSupplierShareLinkView;
 use App\Actions\SupplyChain\SupplierShareLink\ResolveSupplierPortalProfile;
@@ -128,6 +129,10 @@ class ShowSupplierShare
                 ->additional(IndexSupplierPortalPriceChanges::make()->facets($supplier, 'price_changes')),
             'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
             'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
+            'agreement'            => GetSupplierPortalAgreement::make()->handle(
+                $supplier,
+                $token === null ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'agreement']) : route('grp.supplier_share.agreement.accept', $token)
+            ),
             'labels_print'         => $this->labelsPrint($token),
             'products_route'       => $token === null ? route('grp.supply-chain.suppliers.portal_preview.products', $supplier) : route('grp.supplier_share.products', $token),
             'product_websites_route' => $token === null

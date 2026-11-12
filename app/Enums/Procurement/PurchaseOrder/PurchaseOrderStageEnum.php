@@ -135,90 +135,11 @@ enum PurchaseOrderStageEnum: string
     }
 
     /**
-     * Open purchase orders whose goods the supplier is making: production recorded, quality check not passed yet
-     * and nothing ready to ship.
-     */
-    public static function inProductionSql(): string
-    {
-        return "(purchase_orders.state in ('submitted', 'confirmed')
-            and (purchase_orders.production_started_at is not null or purchase_orders.sample_approved_at is not null)
-            and purchase_orders.qc_passed_at is null
-            and purchase_orders.delivery_state in ('in_process', 'confirmed'))";
-    }
-
-    public const array PROGRESS_BUCKETS = ['draft', 'submitted', 'confirmed', 'at_factory', 'dispatched', 'arrived'];
-
-    /**
-     * Where an open purchase order is, as one bucket: being drafted, sent and not confirmed, confirmed, at the
-     * factory (deposit, production, quality check or hand over recorded), on the way, or arrived.
-     */
-    public static function progressSql(): string
-    {
-        return "case
-            when purchase_orders.state = 'in_process' then 'draft'
-            when purchase_orders.delivery_state in ('received', 'checked', 'placed') or purchase_orders.online_at is not null then 'arrived'
-            when purchase_orders.delivery_state = 'dispatched' then 'dispatched'
-            when purchase_orders.delivery_state = 'ready_to_ship' or purchase_orders.deposit_paid_at is not null or purchase_orders.production_started_at is not null
-                or purchase_orders.qc_passed_at is not null or purchase_orders.handed_over_at is not null then 'at_factory'
-            when purchase_orders.state = 'confirmed' then 'confirmed'
-            else 'submitted'
-        end";
-    }
-
-    /**
-     * Where an accepted purchase order is at the supplier, furthest step recorded wins: nothing yet, deposit paid,
-     * being made, or made (produced, QC passed, handed over or its shipment ready). Only meaningful for orders in the
-     * confirmed and at_factory progress buckets.
-     */
-    public static function factoryStageSql(): string
-    {
-        return "case
-            when purchase_orders.produced_at is not null or purchase_orders.qc_passed_at is not null or purchase_orders.handed_over_at is not null
-                or purchase_orders.delivery_state = 'ready_to_ship' then 'made'
-            when purchase_orders.production_started_at is not null or purchase_orders.sample_approved_at is not null then 'in_production'
-            when purchase_orders.deposit_paid_at is not null then 'deposit_paid'
-            else 'not_started'
-        end";
-    }
-
-    public static function factoryStageIcons(): array
-    {
-        return [
-            'not_started'   => 'fal fa-hourglass-start',
-            'deposit_paid'  => 'fal fa-hand-holding-usd',
-            'in_production' => 'fal fa-cogs',
-            'made'          => 'fal fa-clipboard-check',
-        ];
-    }
-
-    public static function factoryStageLabels(): array
-    {
-        return [
-            'not_started'   => __('Not started'),
-            'deposit_paid'  => __('Deposit paid'),
-            'in_production' => __('In production'),
-            'made'          => __('Made'),
-        ];
-    }
-
-    public static function progressLabels(): array
-    {
-        return [
-            'draft'      => __('Draft'),
-            'submitted'  => __('Sent, not agreed'),
-            'confirmed'  => __('Agreed'),
-            'at_factory' => __('Deposit, QC or handed over'),
-            'dispatched' => __('Dispatched'),
-            'arrived'    => __('Arrived'),
-        ];
-    }
-
-    /**
      * Open purchase orders whose expected date has gone by with no container booked for them.
      */
     public static function pastEtaSql(): string
     {
-        return "(purchase_orders.state in ('submitted', 'confirmed')
+        return '(purchase_orders.state in ('.PurchaseOrderStateEnum::openSql().")
             and purchase_orders.estimated_received_at is not null
             and purchase_orders.estimated_received_at < current_date
             and not exists (
@@ -252,35 +173,6 @@ enum PurchaseOrderStageEnum: string
             'handed_over'   => __('Clean Hand Over'),
             'arrived'       => __('Homeward Bound'),
             'received'      => __('Counted & Costed'),
-        ];
-    }
-
-    /**
-     * A stage's name where the order's state is shown: the stage name, except the first two, which read as the states
-     * they stand for.
-     */
-    public static function stateLabels(): array
-    {
-        return array_merge(self::labels(), [
-            'submitted'    => __('Submitted'),
-            'deposit_paid' => __('Agreed'),
-        ]);
-    }
-
-    /**
-     * How a stage shows where the order's state is shown (lists, PO heading), in the same shape as the state icons.
-     */
-    public static function stateIcon(): array
-    {
-        return [
-            'submitted'     => ['tooltip' => __('PO Submitted'), 'icon' => 'fal fa-paper-plane', 'class' => 'text-indigo-400', 'color' => 'indigo'],
-            'deposit_paid'  => ['tooltip' => __('Terms agreed with the supplier'), 'icon' => 'fal fa-check-circle', 'class' => 'text-gray-500', 'color' => 'gray'],
-            'in_production' => ['tooltip' => __('In production at the supplier'), 'icon' => 'fal fa-cogs', 'class' => 'text-amber-500', 'color' => 'amber'],
-            'in_warehouse'  => ['tooltip' => __('Goods arrived at the agent warehouse'), 'icon' => 'fal fa-boxes', 'class' => 'text-amber-600', 'color' => 'amber'],
-            'ready'         => ['tooltip' => __('Final checks done'), 'icon' => 'fal fa-clipboard-check', 'class' => 'text-teal-500', 'color' => 'teal'],
-            'handed_over'   => ['tooltip' => __('Available to ship'), 'icon' => 'fal fa-hands-helping', 'class' => 'text-teal-600', 'color' => 'teal'],
-            'arrived'       => ['tooltip' => __('Transit & arrival'), 'icon' => 'fal fa-truck-loading', 'class' => 'text-sky-500', 'color' => 'sky'],
-            'received'      => ['tooltip' => __('Booked into stock'), 'icon' => 'fal fa-check-double', 'class' => 'text-green-600', 'color' => 'green'],
         ];
     }
 

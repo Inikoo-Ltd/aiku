@@ -11,6 +11,7 @@ namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderReference;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Str;
@@ -92,7 +93,7 @@ class GetPurchaseOrderReferenceAvailability extends OrgAction
     {
         return [
             'reference'  => $purchaseOrder->reference,
-            'state'      => $purchaseOrder->trashed() ? __('Deleted') : $purchaseOrder->displayState()['label'],
+            'state'      => $purchaseOrder->trashed() ? __('Deleted') : PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value],
             'is_deleted' => $purchaseOrder->trashed(),
             'url'        => $purchaseOrder->trashed() || !$this->isVisible($purchaseOrder) ? null : $this->url($purchaseOrder),
         ];

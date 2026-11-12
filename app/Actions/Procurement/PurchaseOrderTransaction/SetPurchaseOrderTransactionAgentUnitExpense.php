@@ -40,7 +40,7 @@ class SetPurchaseOrderTransactionAgentUnitExpense extends OrgAction
     public static function isEditable(PurchaseOrderTransaction $purchaseOrderTransaction): bool
     {
         return $purchaseOrderTransaction->purchaseOrder?->isAgentOrder()
-            && in_array($purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+            && in_array($purchaseOrderTransaction->purchaseOrder->state, PurchaseOrderStateEnum::open(), true)
             && in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true);
     }
 

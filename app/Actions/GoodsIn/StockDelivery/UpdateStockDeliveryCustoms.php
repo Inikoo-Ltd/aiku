@@ -9,7 +9,7 @@
 namespace App\Actions\GoodsIn\StockDelivery;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateStage;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
 use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderCompliance;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
@@ -95,7 +95,7 @@ class UpdateStockDeliveryCustoms extends OrgAction
             EvaluateStockDeliveryCosting::run($stockDelivery);
         }
 
-        PurchaseOrderHydrateStage::make()->forStockDelivery($stockDelivery);
+        PurchaseOrderHydrateState::make()->forStockDelivery($stockDelivery);
 
         return $stockDelivery->refresh();
     }

@@ -252,7 +252,7 @@ class RepairSupplierProductsSupplier extends OrgAction
             ->join('purchase_orders', 'purchase_orders.id', 'purchase_order_transactions.purchase_order_id')
             ->join('supplier_products', 'supplier_products.id', 'purchase_order_transactions.supplier_product_id')
             ->whereIn('purchase_order_transactions.supplier_product_id', $supplierProducts->pluck('id'))
-            ->where('purchase_orders.state', PurchaseOrderStateEnum::CONFIRMED)
+            ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::agreed())
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('purchase_order_transactions.deleted_at')
             ->distinct()

@@ -26704,5 +26704,7 @@
     "Transit & arrival": "Transit et arrivée",
     "Booked into stock": "Entrée en stock",
     "The :product is on order and expected between :from and :to.": "Le produit :product est en commande et son arrivée est prévue entre le :from et le :to.",
-    "Our purchasing team answered your question:": "Notre service achats a répondu à votre question :"
+    "Our purchasing team answered your question:": "Notre service achats a répondu à votre question :",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Bons de commande en cours, soumis ou convenus et pas encore entrés en stock",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Bons de commande que vous avez convenus, jusqu'à ce que leur conteneur soit en route : convenus, en fabrication, dans votre entrepôt, prêts à partir ou remis"
 }

@@ -80,7 +80,7 @@ class AnswerPurchaseOrderTransactionQuantityChange extends OrgAction
     {
         if ($this->purchaseOrderTransaction->quantity_query_state !== PurchaseOrderTransactionQuantityQueryStateEnum::PENDING
             || !in_array($this->purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
-            || !in_array($this->purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])) {
+            || !in_array($this->purchaseOrderTransaction->purchaseOrder->state, PurchaseOrderStateEnum::open())) {
             $validator->errors()->add('answer', __('There is no new quantity waiting for an answer on this line'));
 
             return;

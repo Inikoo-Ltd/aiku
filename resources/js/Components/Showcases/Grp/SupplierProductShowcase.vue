@@ -664,9 +664,11 @@ const availabilityBadge = (isAvailable: boolean) =>
 
         <section class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <div class="flex gap-4">
-                <button v-if="data.product.image" type="button" class="h-28 w-28 shrink-0 cursor-zoom-in"
+                <button v-if="data.product.image" type="button"
+                    class="h-28 w-28 shrink-0 cursor-zoom-in overflow-hidden rounded border border-gray-200 bg-white p-2"
                     v-tooltip="ctrans('View image')" @click="openMainImageViewer">
-                    <Image :src="data.product.image" class="h-full w-full" />
+                    <Image :src="data.product.image" class="flex h-full w-full items-center justify-center"
+                        :style="{ height: 'auto', maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }" />
                 </button>
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
@@ -711,9 +713,10 @@ const availabilityBadge = (isAvailable: boolean) =>
                     <div v-for="(internalImage, index) in data.internal_images.images" :key="internalImage.id"
                         class="group relative h-16 w-16 overflow-hidden rounded border"
                         :class="internalImage.is_main ? 'border-gray-500' : 'border-gray-200'">
-                        <button type="button" class="h-full w-full cursor-zoom-in" v-tooltip="ctrans('View image')"
+                        <button type="button" class="h-full w-full cursor-zoom-in bg-white p-1" v-tooltip="ctrans('View image')"
                             @click="openImageViewer(index)">
-                            <Image :src="internalImage.image" class="h-full w-full" />
+                            <Image :src="internalImage.image" class="flex h-full w-full items-center justify-center"
+                                :style="{ height: 'auto', maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }" />
                         </button>
                         <button v-if="internalImage.detach_route" type="button"
                             class="absolute right-0.5 top-0.5 hidden rounded bg-white/90 px-1 text-xs text-red-500 group-hover:block"
@@ -902,7 +905,7 @@ const availabilityBadge = (isAvailable: boolean) =>
                             <div v-else-if="isSkoBarcodeNotNeeded(barcode)" class="flex h-14 items-center text-sm italic text-gray-400">{{ ctrans("Not needed") }}</div>
                             <button v-else-if="canEditBarcode(barcode)"
                                 type="button"
-                                class="flex h-14 max-w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-2 text-left text-sm text-gray-400 transition hover:border-[--app-accent] hover:text-[--app-accent]"
+                                class="flex h-14 max-w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-2 text-left text-sm text-gray-400 transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)]"
                                 @click="openBarcodeModal(barcode)">
                                 <Icon :data="{ icon: 'fal fa-plus' }" />
                                 {{ ctrans("Add barcode (type or scan it)") }}
@@ -914,7 +917,7 @@ const availabilityBadge = (isAvailable: boolean) =>
                             <button v-if="barcode.number && canEditBarcode(barcode)"
                                 type="button"
                                 v-tooltip="ctrans('Edit barcode')"
-                                class="shrink-0 text-gray-300 transition hover:text-[--app-accent]"
+                                class="shrink-0 text-gray-300 transition hover:text-[var(--app-accent)]"
                                 @click="openBarcodeModal(barcode)">
                                 <Icon :data="{ icon: 'fal fa-edit' }" />
                             </button>
@@ -933,7 +936,7 @@ const availabilityBadge = (isAvailable: boolean) =>
                                 <label class="inline-flex items-center gap-1.5">
                                     <span class="text-xs font-medium text-gray-500" v-tooltip="ctrans('Net weight')">{{ ctrans("NW") }}</span>
                                     <input v-model="cartonNetWeight" type="text" inputmode="decimal"
-                                        class="w-20 rounded-md border-gray-300 py-1 px-2 text-sm tabular-nums focus:border-[--app-accent] focus:ring-[--app-accent]"
+                                        class="w-20 rounded-md border-gray-300 py-1 px-2 text-sm tabular-nums focus:border-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                                         :class="isValidKilograms(cartonNetWeight) ? '' : 'border-red-400'"
                                         @keydown.enter="saveCartonWeights" />
                                     <span class="text-xs text-gray-400">kg</span>
@@ -941,13 +944,13 @@ const availabilityBadge = (isAvailable: boolean) =>
                                 <label class="inline-flex items-center gap-1.5">
                                     <span class="text-xs font-medium text-gray-500" v-tooltip="ctrans('Gross weight')">{{ ctrans("GW") }}</span>
                                     <input v-model="cartonGrossWeight" type="text" inputmode="decimal"
-                                        class="w-20 rounded-md border-gray-300 py-1 px-2 text-sm tabular-nums focus:border-[--app-accent] focus:ring-[--app-accent]"
+                                        class="w-20 rounded-md border-gray-300 py-1 px-2 text-sm tabular-nums focus:border-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                                         :class="isValidKilograms(cartonGrossWeight) ? '' : 'border-red-400'"
                                         @keydown.enter="saveCartonWeights" />
                                     <span class="text-xs text-gray-400">kg</span>
                                 </label>
                                 <button v-if="canSaveCartonWeights" type="button"
-                                    class="rounded border border-[--app-accent] bg-[--app-accent] px-2 py-1 text-xs text-[--app-accent-text] transition hover:opacity-80 disabled:cursor-wait disabled:opacity-60"
+                                    class="rounded border border-[var(--app-accent)] bg-[var(--app-accent)] px-2 py-1 text-xs text-[var(--app-accent-text)] transition hover:opacity-80 disabled:cursor-wait disabled:opacity-60"
                                     :disabled="isSavingCartonWeights"
                                     @click="saveCartonWeights">
                                     {{ ctrans("Save") }}

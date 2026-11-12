@@ -23,7 +23,7 @@ class RevertPurchaseOrderToSubmitted extends OrgAction
 
     public function handle(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
-        if ($purchaseOrder->state !== PurchaseOrderStateEnum::CONFIRMED) {
+        if (!$purchaseOrder->state->isAgreed()) {
             abort(422, __('Only confirmed purchase orders can be reverted to submitted'));
         }
 

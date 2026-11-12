@@ -210,7 +210,7 @@ class GetOrganisationStockCoverBuckets
             StockDeliveryStateEnum::BOOKING_IN->value,
         ]);
         $counted  = "'".StockDeliveryStateEnum::CHECKED->value."', '".StockDeliveryStateEnum::BOOKING_IN->value."'";
-        $ordered  = "'".PurchaseOrderStateEnum::SUBMITTED->value."', '".PurchaseOrderStateEnum::CONFIRMED->value."'";
+        $ordered  = PurchaseOrderStateEnum::openSql();
         $deadLines = "'".PurchaseOrderTransactionStateEnum::CANCELLED->value."', '".PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value."'";
         $onDelivery = StoreStockDeliveryFromPurchaseOrder::quantityOnDelivery()->toRawSql();
 
