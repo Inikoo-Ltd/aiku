@@ -64,6 +64,7 @@ use App\Models\SysAdmin\McpChange;
 use App\Models\SysAdmin\User;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Models\Web\Redirect;
+use App\Actions\Web\StaticWebsite\RevertStaticWebsiteChange;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -126,6 +127,7 @@ class RevertMcpChange
                 McpChangeTypeEnum::PRODUCTION_SETUP => $this->revertProductionSetup($target, $mcpChange->before),
                 McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->revertSupplierProductLinks($mcpChange),
                 McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->revertOrgStockAutoOrdering($mcpChange->before),
+                McpChangeTypeEnum::INFO_WEBSITE_CONTENT => RevertStaticWebsiteChange::run($mcpChange),
             };
 
             $mcpChange->update([

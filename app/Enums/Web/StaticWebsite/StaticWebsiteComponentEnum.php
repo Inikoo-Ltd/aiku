@@ -9,9 +9,10 @@
 namespace App\Enums\Web\StaticWebsite;
 
 use App\Enums\EnumHelperTrait;
+use App\Models\Web\StaticWebsiteComponent;
 
 /**
- * The parts every page of an info website shares. Each is the content of one element, found by the
+ * The parts the import takes out of every page of an info website. Each is the content of one element, found by the
  * attribute that identifies it; the element's own opening tag stays on the page, because its colour
  * classes follow the page's first section.
  */
@@ -40,6 +41,6 @@ enum StaticWebsiteComponentEnum: string
 
     public function marker(): string
     {
-        return '<!--aiku:component:'.$this->value.'-->';
+        return StaticWebsiteComponent::marker($this->value);
     }
 }

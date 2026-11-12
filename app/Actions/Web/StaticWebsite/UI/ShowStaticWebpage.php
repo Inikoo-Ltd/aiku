@@ -10,10 +10,10 @@ namespace App\Actions\Web\StaticWebsite\UI;
 
 use App\Actions\OrgAction;
 use App\Enums\UI\Web\StaticWebsitePartTabsEnum;
-use App\Enums\Web\StaticWebsite\StaticWebsiteComponentEnum;
 use App\Http\Resources\Web\StaticWebsiteSnapshotsResource;
 use App\Models\Web\StaticWebpage;
 use App\Models\Web\StaticWebsite;
+use App\Models\Web\StaticWebsiteComponent;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,13 +34,11 @@ class ShowStaticWebpage extends OrgAction
     {
         $staticWebsite = $webpage->staticWebsite;
         $html          = (string) $webpage->html;
-        $sharedParts   = collect(StaticWebsiteComponentEnum::cases())
-            ->filter(fn (StaticWebsiteComponentEnum $component) => str_contains($html, $component->marker()))
-            ->map(fn (StaticWebsiteComponentEnum $component) => [
-                'label' => $component === StaticWebsiteComponentEnum::HEADER ? __('Shared header') : __('Shared footer'),
-                'route' => ['name' => 'grp.marketing.info_websites.components.show', 'parameters' => [$staticWebsite->slug, $component->value]],
+        $sharedParts   = collect(StaticWebsiteComponent::codesIn($html))
+            ->map(fn (string $code) => [
+                'label' => StaticWebsiteComponent::labelFor($code),
+                'route' => ['name' => 'grp.marketing.info_websites.components.show', 'parameters' => [$staticWebsite->slug, $code]],
             ])
-            ->values()
             ->all();
 
         $snapshots = fn () => StaticWebsiteSnapshotsResource::collection(

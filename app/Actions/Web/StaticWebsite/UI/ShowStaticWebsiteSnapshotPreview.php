@@ -32,7 +32,7 @@ class ShowStaticWebsiteSnapshotPreview extends OrgAction
 
         if ($parent instanceof StaticWebsiteComponent) {
             $homepage = $staticWebsite->webpages()->orderByRaw("path = '/' desc")->orderBy('path')->value('html') ?? '';
-            $html     = RenderStaticWebpage::run($staticWebsite, $homepage, [$parent->code->value => $snapshot->compiled_layout]);
+            $html     = RenderStaticWebpage::run($staticWebsite, $homepage, [$parent->code => $snapshot->compiled_layout]);
         } else {
             $html = RenderStaticWebpage::run($staticWebsite, (string) $snapshot->compiled_layout);
         }

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Web\StaticWebsite;
 
-use App\Enums\Web\StaticWebsite\StaticWebsiteComponentEnum;
 use App\Models\Web\StaticWebpage;
 use App\Models\Web\StaticWebsite;
 use App\Models\Web\StaticWebsiteComponent;
@@ -52,8 +51,8 @@ class VerifyStaticWebsite
         $componentCodes = [];
         $staticWebsite->components()->orderBy('code')->each(function (StaticWebsiteComponent $component) use (&$result, &$pendingAssets, &$componentCodes, $forbiddenRegex) {
             $result['components']++;
-            $componentCodes[] = $component->code->value;
-            $where            = 'component:'.$component->code->value;
+            $componentCodes[] = $component->code;
+            $where            = 'component:'.$component->code;
 
             foreach ($this->forbiddenExcerpts($component->html, $forbiddenRegex) as $excerpt) {
                 $result['forbidden_references'][] = ['where' => $where, 'excerpt' => $excerpt];
@@ -76,10 +75,8 @@ class VerifyStaticWebsite
             foreach ($this->referencedAssets($html) as $asset) {
                 $pendingAssets[] = [$webpage->path, $asset];
             }
-            foreach (StaticWebsiteComponentEnum::cases() as $component) {
-                if (str_contains($html, $component->marker()) && !in_array($component->value, $componentCodes, true)) {
-                    $result['missing_components'][] = ['where' => $webpage->path, 'component' => $component->value];
-                }
+            foreach (array_diff(StaticWebsiteComponent::codesIn($html), $componentCodes) as $missingCode) {
+                $result['missing_components'][] = ['where' => $webpage->path, 'component' => $missingCode];
             }
             if (str_contains($html, '<form')) {
                 $result['pages_with_forms'][] = $webpage->path;

@@ -20,19 +20,27 @@ trait WithStaticWebsiteHtml
      */
     protected function findComponentElement(string $html, StaticWebsiteComponentEnum $component): ?array
     {
-        $attributeAt = strpos($html, $component->identifyingAttribute());
+        return $this->findElement($html, $component->tag(), $component->identifyingAttribute());
+    }
+
+    /**
+     * @return array{0: int, 1: int, 2: int}|null
+     */
+    protected function findElement(string $html, string $tag, string $identifyingAttribute): ?array
+    {
+        $attributeAt = strpos($html, $identifyingAttribute);
         if ($attributeAt === false) {
             return null;
         }
 
-        $openStart = strrpos(substr($html, 0, $attributeAt), '<'.$component->tag());
+        $openStart = strrpos(substr($html, 0, $attributeAt), '<'.$tag);
         $openEnd   = strpos($html, '>', $attributeAt);
         if ($openStart === false || $openEnd === false) {
             return null;
         }
         $openEnd++;
 
-        preg_match_all('#<(/?)'.$component->tag().'(?=[\s>/])#i', $html, $matches, PREG_OFFSET_CAPTURE, $openEnd);
+        preg_match_all('#<(/?)'.$tag.'(?=[\s>/])#i', $html, $matches, PREG_OFFSET_CAPTURE, $openEnd);
 
         $depth = 1;
         foreach ($matches[1] as $index => [$slash]) {

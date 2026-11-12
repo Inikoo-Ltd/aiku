@@ -33,6 +33,7 @@ enum SnapshotScopeEnum: string
     case COLLECTION = 'collection';
     case PRODUCT = 'product';
     case PRODUCTS = 'products';
+    case INFO_WEBSITE_PART = 'info_website_part';
 
     public static function labels(): array
     {
@@ -56,6 +57,7 @@ enum SnapshotScopeEnum: string
             'collection'                => __('Collection'),
             'product'                   => __('Product'),
             'products'                  => __('Products'),
+            'info_website_part'         => __('Info website shared part'),
         ];
     }
 }

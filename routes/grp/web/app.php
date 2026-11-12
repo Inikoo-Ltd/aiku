@@ -164,6 +164,7 @@ Route::middleware(
                 Route::get('webpages/{webpage:id}', App\Actions\Web\StaticWebsite\UI\ShowStaticWebpage::class)->name('webpages.show');
                 Route::get('components/{component:code}', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsiteComponent::class)->name('components.show');
                 Route::get('snapshots/{snapshot:id}/preview', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsiteSnapshotPreview::class)->name('snapshots.preview')->withoutScopedBindings();
+                Route::get('changes/{change}/preview', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsiteChangePreview::class)->name('changes.preview')->whereUuid('change')->withoutScopedBindings();
                 Route::get('preview/{path?}', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsitePreview::class)->where('path', '.*')->name('preview');
             });
         });

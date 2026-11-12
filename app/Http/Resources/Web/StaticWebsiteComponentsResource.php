@@ -27,19 +27,15 @@ class StaticWebsiteComponentsResource extends JsonResource
     {
         return [
             'id'              => $this->id,
-            'code'            => $this->code->value,
-            'label'           => match ($this->code->value) {
-                'header' => __('Header and menu'),
-                'footer' => __('Footer'),
-                default  => $this->code->value,
-            },
+            'code'            => $this->code,
+            'label'           => StaticWebsiteComponent::labelFor($this->code),
             'webpages_count'  => (int) $this->webpages_count,
             'snapshots_count' => $this->snapshots_count,
             'size'            => round($this->size / 1024).' KB',
             'updated_at'      => $this->updated_at,
             'route'           => [
                 'name'       => 'grp.marketing.info_websites.components.show',
-                'parameters' => [$this->static_website_slug, $this->code->value],
+                'parameters' => [$this->static_website_slug, $this->code],
             ],
         ];
     }

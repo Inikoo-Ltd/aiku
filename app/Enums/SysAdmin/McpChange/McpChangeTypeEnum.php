@@ -32,6 +32,7 @@ enum McpChangeTypeEnum: string
     case PRODUCTION_SETUP = 'production_setup';
     case SUPPLIER_PRODUCT_LINKS = 'supplier_product_links';
     case ORG_STOCK_AUTO_ORDERING = 'org_stock_auto_ordering';
+    case INFO_WEBSITE_CONTENT = 'info_website_content';
 
     public static function labels(): array
     {
@@ -54,6 +55,7 @@ enum McpChangeTypeEnum: string
             'production_setup'      => __('Factory location and work areas'),
             'supplier_product_links' => __('SKOs attached to suppliers'),
             'org_stock_auto_ordering' => __('SKOs kept out of order suggestions'),
+            'info_website_content'  => __('Info website pages and shared parts'),
         ];
     }
 
@@ -73,6 +75,7 @@ enum McpChangeTypeEnum: string
             McpChangeTypeEnum::CUSTOMER_SERVICE, McpChangeTypeEnum::CHAT_SPAM, McpChangeTypeEnum::CHAT_CLOSED => 'can_use_mcp_customer_service',
             McpChangeTypeEnum::TRADE_UNIT_PROPERTIES => 'can_use_mcp_goods',
             McpChangeTypeEnum::STOCK_LOCATIONS => 'can_use_mcp_locations',
+            McpChangeTypeEnum::INFO_WEBSITE_CONTENT => 'can_use_mcp_info_websites',
         };
     }
 

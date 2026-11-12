@@ -8,18 +8,17 @@
 
 namespace App\Models\Web;
 
-use App\Enums\Web\StaticWebsite\StaticWebsiteComponentEnum;
 use App\Models\Traits\HasStaticWebsiteSnapshots;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * A part every page of an info website shares, such as the header with its menu or the footer. Pages
- * hold a marker where it goes, so one change here reaches every page.
+ * A part every page of an info website shares, such as the header with its menu, the footer, or a part
+ * added later. Pages hold a marker where it goes, so one change here reaches every page using it.
  *
  * @property int $id
  * @property int $static_website_id
- * @property StaticWebsiteComponentEnum $code
+ * @property string $code
  * @property string $html
  * @property \Illuminate\Support\Carbon|null $crawled_at
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -31,7 +30,38 @@ class StaticWebsiteComponent extends Model
 {
     use HasStaticWebsiteSnapshots;
 
+    public const string CODE_PATTERN = '[a-z0-9]+(?:-[a-z0-9]+)*';
+
     protected $guarded = [];
+
+    public static function marker(string $code): string
+    {
+        return '<!--aiku:component:'.$code.'-->';
+    }
+
+    /**
+     * @return list<string> the codes of the shared parts a page's HTML asks for, in order
+     */
+    public static function codesIn(string $html): array
+    {
+        preg_match_all('/<!--aiku:component:('.self::CODE_PATTERN.')-->/', $html, $matches);
+
+        return array_values(array_unique($matches[1]));
+    }
+
+    public static function labelFor(string $code): string
+    {
+        return match ($code) {
+            'header' => __('Shared header'),
+            'footer' => __('Shared footer'),
+            default  => __('Shared part: :code', ['code' => $code]),
+        };
+    }
+
+    public function label(): string
+    {
+        return self::labelFor($this->code);
+    }
 
     public function getRouteKeyName(): string
     {
@@ -41,7 +71,6 @@ class StaticWebsiteComponent extends Model
     protected function casts(): array
     {
         return [
-            'code'       => StaticWebsiteComponentEnum::class,
             'crawled_at' => 'datetime',
         ];
     }

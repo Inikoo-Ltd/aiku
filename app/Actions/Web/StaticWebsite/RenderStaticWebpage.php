@@ -8,36 +8,41 @@
 
 namespace App\Actions\Web\StaticWebsite;
 
-use App\Enums\Web\StaticWebsite\StaticWebsiteComponentEnum;
 use App\Models\Web\StaticWebsite;
+use App\Models\Web\StaticWebsiteComponent;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * Puts the site's shared components back where a page holds their markers. A marker without a
- * component is left as the HTML comment it is, which verification reports.
+ * Puts the site's shared parts back where a page holds their markers. A marker without a part is left
+ * as the HTML comment it is, which verification reports.
  */
 class RenderStaticWebpage
 {
     use AsAction;
 
     /**
-     * @param array<string, string> $componentOverrides code => html, to show a page with an earlier version of a shared part
+     * @param array<string, string|null> $componentOverrides code => html to show instead of the saved one (null: as if the part did not exist)
      */
     public function handle(StaticWebsite $staticWebsite, string $html, array $componentOverrides = []): string
     {
-        if (!str_contains($html, '<!--aiku:component:')) {
+        $codes = StaticWebsiteComponent::codesIn($html);
+        if (!$codes) {
             return $html;
         }
 
-        $components = $staticWebsite->components()->toBase()->pluck('html', 'code')->merge($componentOverrides);
-
-        $replacements = [];
-        foreach (StaticWebsiteComponentEnum::cases() as $component) {
-            if ($components->has($component->value)) {
-                $replacements[$component->marker()] = $components->get($component->value);
+        $components = $staticWebsite->components()->whereIn('code', $codes)->toBase()->pluck('html', 'code')->all();
+        foreach ($componentOverrides as $code => $override) {
+            if ($override === null) {
+                unset($components[$code]);
+            } else {
+                $components[$code] = $override;
             }
         }
 
-        return strtr($html, $replacements);
+        return preg_replace_callback(
+            '/<!--aiku:component:('.StaticWebsiteComponent::CODE_PATTERN.')-->/',
+            fn (array $match) => $components[$match[1]] ?? $match[0],
+            $html
+        );
     }
 }

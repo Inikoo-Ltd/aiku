@@ -11,7 +11,6 @@ namespace App\Actions\Web\StaticWebsite\UI;
 use App\Actions\OrgAction;
 use App\Enums\UI\Web\StaticWebsitePartTabsEnum;
 use App\Enums\UI\Web\StaticWebsiteTabsEnum;
-use App\Enums\Web\StaticWebsite\StaticWebsiteComponentEnum;
 use App\Http\Resources\Web\StaticWebsiteSnapshotsResource;
 use App\Models\Web\StaticWebsite;
 use App\Models\Web\StaticWebsiteComponent;
@@ -34,8 +33,8 @@ class ShowStaticWebsiteComponent extends OrgAction
     public function htmlResponse(StaticWebsiteComponent $component, ActionRequest $request): Response
     {
         $staticWebsite = $component->staticWebsite;
-        $label         = $component->code === StaticWebsiteComponentEnum::HEADER ? __('Shared header') : __('Shared footer');
-        $usedBy        = $staticWebsite->webpages()->whereRaw('position(? in html) > 0', [$component->code->marker()])->count();
+        $label         = $component->label();
+        $usedBy        = $staticWebsite->webpages()->whereRaw('position(? in html) > 0', [StaticWebsiteComponent::marker($component->code)])->count();
 
         $snapshots = fn () => StaticWebsiteSnapshotsResource::collection(
             IndexStaticWebsiteSnapshots::make()->handle($component, StaticWebsitePartTabsEnum::SNAPSHOTS->value)
@@ -48,7 +47,7 @@ class ShowStaticWebsiteComponent extends OrgAction
                 'breadcrumbs' => ShowStaticWebsite::make()->getBreadcrumbs(
                     $staticWebsite,
                     ['route' => ['name' => 'grp.marketing.info_websites.show', 'parameters' => [$staticWebsite->slug, 'tab' => StaticWebsiteTabsEnum::COMPONENTS->value]], 'label' => __('Shared parts')],
-                    ['route' => ['name' => 'grp.marketing.info_websites.components.show', 'parameters' => [$staticWebsite->slug, $component->code->value]], 'label' => $label],
+                    ['route' => ['name' => 'grp.marketing.info_websites.components.show', 'parameters' => [$staticWebsite->slug, $component->code]], 'label' => $label],
                 ),
                 'pageHead'    => [
                     'title' => $label,

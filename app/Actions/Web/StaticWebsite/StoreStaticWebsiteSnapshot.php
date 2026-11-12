@@ -52,14 +52,19 @@ class StoreStaticWebsiteSnapshot
             /** @var Snapshot $snapshot */
             $snapshot = $model->snapshots()->create([
                 'group_id'        => $model->staticWebsite->group_id,
-                'scope'           => $model instanceof StaticWebpage ? SnapshotScopeEnum::WEBPAGE : SnapshotScopeEnum::from($model->code->value),
+                'scope'           => match (true) {
+                    $model instanceof StaticWebpage => SnapshotScopeEnum::WEBPAGE,
+                    $model->code === 'header'       => SnapshotScopeEnum::HEADER,
+                    $model->code === 'footer'       => SnapshotScopeEnum::FOOTER,
+                    default                         => SnapshotScopeEnum::INFO_WEBSITE_PART,
+                },
                 'builder'         => SnapshotBuilderEnum::STATIC_HTML,
                 'state'           => SnapshotStateEnum::LIVE,
                 'published_at'    => now(),
                 'checksum'        => $checksum,
                 'layout'          => $model instanceof StaticWebpage
                     ? ['path' => $model->path, 'title' => $model->title]
-                    : ['code' => $model->code->value],
+                    : ['code' => $model->code],
                 'compiled_layout' => $html,
                 'comment'         => $comment ? mb_substr($comment, 0, 255) : null,
                 'publisher_type'  => $user?->getMorphClass(),

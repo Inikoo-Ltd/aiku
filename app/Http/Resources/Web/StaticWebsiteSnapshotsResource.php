@@ -11,6 +11,7 @@ namespace App\Http\Resources\Web;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Helpers\Snapshot;
+use App\Models\Web\StaticWebsiteComponent;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -36,11 +37,7 @@ class StaticWebsiteSnapshotsResource extends JsonResource
             'state_icon'     => $isLive
                 ? ['tooltip' => __('What the website shows now'), 'icon' => 'fal fa-broadcast-tower', 'class' => 'text-green-600']
                 : ['tooltip' => __('Earlier version'), 'icon' => 'fal fa-history', 'class' => 'text-gray-400'],
-            'part'           => $this->webpage_path ?? match ($this->component_code) {
-                'header' => __('Shared header'),
-                'footer' => __('Shared footer'),
-                default  => $this->component_code,
-            },
+            'part'           => $this->webpage_path ?? StaticWebsiteComponent::labelFor((string) $this->component_code),
             'part_route'     => [
                 'name'       => $this->webpage_path !== null ? 'grp.marketing.info_websites.webpages.show' : 'grp.marketing.info_websites.components.show',
                 'parameters' => [$this->static_website_slug, $this->webpage_path !== null ? $this->parent_id : $this->component_code],
