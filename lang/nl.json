@@ -9839,5 +9839,10 @@
     "Helpful": "Nuttig",
     "Not helpful": "Niet nuttig",
     "Your feedback could not be saved, please try again.": "Je beoordeling kon niet worden opgeslagen, probeer het opnieuw.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name is een AI-assistent en kan fouten maken. Ons team kan deze gesprekken lezen om onze service te verbeteren; deel geen betaalgegevens."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name is een AI-assistent en kan fouten maken. Ons team kan deze gesprekken lezen om onze service te verbeteren; deel geen betaalgegevens.",
+    ":name report": ":name-rapport",
+    "Shopping assistant answers": "Antwoorden van de winkelassistent",
+    "Shopping assistant customer challenges": "Obstakels van klanten in de winkelassistent",
+    "Answers customers in the AI shopping assistant on the websites.": "Beantwoordt klanten in de AI-winkelassistent op de websites.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Leest afgeronde gesprekken met de winkelassistent en legt vast wat de klant van een bestelling weerhield."
 }

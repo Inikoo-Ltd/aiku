@@ -16417,5 +16417,10 @@
     "Your feedback could not be saved, please try again.": "Geri bildiriminiz kaydedilemedi, lütfen tekrar deneyin.",
     "Your own trade prices on every card": "Her kartta size özel toptan fiyatlar",
     "Your range advisor": "Ürün yelpazesi danışmanınız",
-    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "örn. York'ta küçük bir kristal ve hediyelik eşya mağazasıyız. Noel hediyeleri istiyoruz ve banyo & vücut bakımını denemek istiyoruz."
+    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "örn. York'ta küçük bir kristal ve hediyelik eşya mağazasıyız. Noel hediyeleri istiyoruz ve banyo & vücut bakımını denemek istiyoruz.",
+    ":name report": ":name raporu",
+    "Shopping assistant answers": "Alışveriş asistanının yanıtları",
+    "Shopping assistant customer challenges": "Alışveriş asistanında müşterilerin engelleri",
+    "Answers customers in the AI shopping assistant on the websites.": "Web sitelerindeki yapay zekâ alışveriş asistanında müşterileri yanıtlar.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Alışveriş asistanıyla biten konuşmaları okur ve müşterinin sipariş vermesini neyin engellediğini kaydeder."
 }

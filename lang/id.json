@@ -23521,5 +23521,10 @@
     "Your feedback could not be saved, please try again.": "Masukan Anda tidak dapat disimpan, silakan coba lagi.",
     "Your own trade prices on every card": "Harga grosir khusus Anda di setiap kartu",
     "Your range advisor": "Penasihat rangkaian produk Anda",
-    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "mis. Kami toko kristal dan hadiah kecil di York. Kami ingin menjual hadiah Natal dan mencoba produk mandi & perawatan tubuh."
+    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "mis. Kami toko kristal dan hadiah kecil di York. Kami ingin menjual hadiah Natal dan mencoba produk mandi & perawatan tubuh.",
+    ":name report": "Laporan :name",
+    "Shopping assistant answers": "Jawaban asisten belanja",
+    "Shopping assistant customer challenges": "Kendala pelanggan di asisten belanja",
+    "Answers customers in the AI shopping assistant on the websites.": "Menjawab pelanggan di asisten belanja AI pada situs web.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Membaca percakapan asisten belanja yang sudah selesai dan mencatat apa yang menghalangi pelanggan untuk memesan."
 }

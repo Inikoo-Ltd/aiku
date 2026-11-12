@@ -26824,5 +26824,10 @@
     "Helpful": "Utile",
     "Not helpful": "Pas utile",
     "Your feedback could not be saved, please try again.": "Votre avis n'a pas pu être enregistré, veuillez réessayer.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name est un assistant IA et peut se tromper. Notre équipe peut lire ces conversations pour améliorer notre service ; ne communiquez pas vos données de paiement."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name est un assistant IA et peut se tromper. Notre équipe peut lire ces conversations pour améliorer notre service ; ne communiquez pas vos données de paiement.",
+    ":name report": "Rapport :name",
+    "Shopping assistant answers": "Réponses de l'assistant d'achat",
+    "Shopping assistant customer challenges": "Obstacles des clients dans l'assistant d'achat",
+    "Answers customers in the AI shopping assistant on the websites.": "Répond aux clients dans l'assistant d'achat IA des sites web.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Lit les conversations terminées avec l'assistant d'achat et note ce qui a empêché le client de commander."
 }

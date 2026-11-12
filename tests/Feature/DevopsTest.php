@@ -441,7 +441,16 @@ it('records each ai call under its feature, rolls it into the ai time series and
             ->where('spend.calls_month', 2)
             ->where('models.0.label', 'GPT-4o-mini')
             ->has('calls.data', 2)
-            ->where('calls.data.0.prompt_tokens', 50));
+            ->where('calls.data.0.prompt_tokens', 50)
+            ->where('pageHead.actions', []));
+
+    App\Models\Helpers\AiTimeSeries::where('feature', 'DetectLanguageWithAI')->first()->replicate()->fill(['feature' => 'AskShoppingAssistant'])->save();
+
+    $this->get(route('grp.ai.features.show', ['feature' => 'AskShoppingAssistant']))
+        ->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->where('title', 'Shopping assistant answers')
+            ->where('pageHead.actions.0.label', 'Merlin report')
+            ->where('pageHead.actions.0.route.name', 'grp.websites.shopping_assistant.show'));
 
     $this->get(route('grp.ai.features.show', ['feature' => 'DetectLanguageWithAI', 'sort' => '-cost']))->assertOk();
 

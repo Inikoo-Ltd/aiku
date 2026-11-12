@@ -7107,5 +7107,10 @@
     "Helpful": "Корисно",
     "Not helpful": "Некорисно",
     "Your feedback could not be saved, please try again.": "Не вдалося зберегти Вашу оцінку, спробуйте ще раз.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name — це ШІ-асистент, який може помилятися. Наша команда може читати ці розмови, щоб покращувати обслуговування; не надсилайте платіжні дані."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name — це ШІ-асистент, який може помилятися. Наша команда може читати ці розмови, щоб покращувати обслуговування; не надсилайте платіжні дані.",
+    ":name report": "Звіт :name",
+    "Shopping assistant answers": "Відповіді асистента з покупок",
+    "Shopping assistant customer challenges": "Перешкоди клієнтів в асистенті з покупок",
+    "Answers customers in the AI shopping assistant on the websites.": "Відповідає клієнтам в AI-асистенті з покупок на вебсайтах.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Читає завершені розмови з асистентом з покупок і записує, що завадило клієнту замовити."
 }

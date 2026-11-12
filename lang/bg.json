@@ -9432,5 +9432,10 @@
     "Helpful": "Полезно",
     "Not helpful": "Неполезно",
     "Your feedback could not be saved, please try again.": "Оценката ви не можа да бъде запазена, моля, опитайте отново.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name е асистент с изкуствен интелект и може да греши. Нашият екип може да чете тези разговори, за да подобрява обслужването; моля, не споделяйте данни за плащане."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name е асистент с изкуствен интелект и може да греши. Нашият екип може да чете тези разговори, за да подобрява обслужването; моля, не споделяйте данни за плащане.",
+    ":name report": "Отчет на :name",
+    "Shopping assistant answers": "Отговори на асистента за пазаруване",
+    "Shopping assistant customer challenges": "Пречки пред клиентите в асистента за пазаруване",
+    "Answers customers in the AI shopping assistant on the websites.": "Отговаря на клиентите в AI асистента за пазаруване на уебсайтовете.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Чете приключилите разговори с асистента за пазаруване и записва какво е попречило на клиента да поръча."
 }

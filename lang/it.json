@@ -12984,5 +12984,10 @@
     "Helpful": "Utile",
     "Not helpful": "Non utile",
     "Your feedback could not be saved, please try again.": "Non è stato possibile salvare la sua valutazione, riprovi.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name è un assistente IA e può sbagliare. Il nostro personale può leggere queste conversazioni per migliorare il servizio; non condivida dati di pagamento."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name è un assistente IA e può sbagliare. Il nostro personale può leggere queste conversazioni per migliorare il servizio; non condivida dati di pagamento.",
+    ":name report": "Report di :name",
+    "Shopping assistant answers": "Risposte dell'assistente agli acquisti",
+    "Shopping assistant customer challenges": "Ostacoli dei clienti nell'assistente agli acquisti",
+    "Answers customers in the AI shopping assistant on the websites.": "Risponde ai clienti nell'assistente agli acquisti IA dei siti web.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Legge le conversazioni concluse con l'assistente agli acquisti e registra cosa ha impedito al cliente di ordinare."
 }

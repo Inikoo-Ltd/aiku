@@ -23367,5 +23367,10 @@
     "Your feedback could not be saved, please try again.": "तपाईंको प्रतिक्रिया सुरक्षित गर्न सकिएन, कृपया फेरि प्रयास गर्नुहोस्।",
     "Your own trade prices on every card": "हरेक कार्डमा तपाईंका आफ्नै व्यापारिक मूल्य",
     "Your range advisor": "तपाईंको रेन्ज सल्लाहकार",
-    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "जस्तै: हामी योर्कमा क्रिस्टल र उपहारको सानो पसल हौं। हामीलाई क्रिसमस उपहार चाहिन्छ र बाथ & बडी प्रयास गर्न चाहन्छौं।"
+    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "जस्तै: हामी योर्कमा क्रिस्टल र उपहारको सानो पसल हौं। हामीलाई क्रिसमस उपहार चाहिन्छ र बाथ & बडी प्रयास गर्न चाहन्छौं।",
+    ":name report": ":name प्रतिवेदन",
+    "Shopping assistant answers": "सपिङ सहायकका जवाफहरू",
+    "Shopping assistant customer challenges": "सपिङ सहायकमा ग्राहकका बाधाहरू",
+    "Answers customers in the AI shopping assistant on the websites.": "वेबसाइटहरूमा AI सपिङ सहायकमा ग्राहकहरूलाई जवाफ दिन्छ।",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "सपिङ सहायकका सकिएका कुराकानी पढ्छ र ग्राहकलाई अर्डर गर्न के ले रोक्यो भनेर रेकर्ड गर्छ।"
 }

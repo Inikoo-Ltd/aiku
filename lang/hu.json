@@ -9041,5 +9041,10 @@
     "Helpful": "Hasznos",
     "Not helpful": "Nem hasznos",
     "Your feedback could not be saved, please try again.": "Az értékelését nem sikerült menteni, kérjük, próbálja újra.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name egy MI-asszisztens, és tévedhet. Munkatársaink elolvashatják ezeket a beszélgetéseket szolgáltatásunk javítása érdekében; kérjük, ne adjon meg fizetési adatokat."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name egy MI-asszisztens, és tévedhet. Munkatársaink elolvashatják ezeket a beszélgetéseket szolgáltatásunk javítása érdekében; kérjük, ne adjon meg fizetési adatokat.",
+    ":name report": ":name jelentés",
+    "Shopping assistant answers": "A vásárlási asszisztens válaszai",
+    "Shopping assistant customer challenges": "Vásárlói akadályok a vásárlási asszisztensben",
+    "Answers customers in the AI shopping assistant on the websites.": "Válaszol a vásárlóknak a weboldalak AI vásárlási asszisztensében.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Elolvassa a vásárlási asszisztenssel lezárult beszélgetéseket, és rögzíti, mi akadályozta a vásárlót a rendelésben."
 }

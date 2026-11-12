@@ -26730,5 +26730,10 @@
     "Helpful": "Užitočné",
     "Not helpful": "Neužitočné",
     "Your feedback could not be saved, please try again.": "Vaše hodnotenie sa nepodarilo uložiť, skúste to znova.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name je asistent s umelou inteligenciou a môže sa mýliť. Náš tím môže tieto rozhovory čítať, aby sme zlepšili naše služby; nezdieľajte platobné údaje."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name je asistent s umelou inteligenciou a môže sa mýliť. Náš tím môže tieto rozhovory čítať, aby sme zlepšili naše služby; nezdieľajte platobné údaje.",
+    ":name report": "Prehľad :name",
+    "Shopping assistant answers": "Odpovede nákupného asistenta",
+    "Shopping assistant customer challenges": "Prekážky zákazníkov v nákupnom asistentovi",
+    "Answers customers in the AI shopping assistant on the websites.": "Odpovedá zákazníkom v AI nákupnom asistentovi na webových stránkach.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Číta dokončené rozhovory s nákupným asistentom a zaznamenáva, čo zákazníkovi bránilo v objednávke."
 }

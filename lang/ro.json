@@ -25894,5 +25894,10 @@
     "Helpful": "Util",
     "Not helpful": "Nu este util",
     "Your feedback could not be saved, please try again.": "Evaluarea dvs. nu a putut fi salvată, vă rugăm să încercați din nou.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name este un asistent AI și poate greși. Echipa noastră poate citi aceste conversații pentru a ne îmbunătăți serviciile; vă rugăm să nu comunicați date de plată."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name este un asistent AI și poate greși. Echipa noastră poate citi aceste conversații pentru a ne îmbunătăți serviciile; vă rugăm să nu comunicați date de plată.",
+    ":name report": "Raport :name",
+    "Shopping assistant answers": "Răspunsurile asistentului de cumpărături",
+    "Shopping assistant customer challenges": "Obstacolele clienților în asistentul de cumpărături",
+    "Answers customers in the AI shopping assistant on the websites.": "Răspunde clienților în asistentul de cumpărături AI de pe site-uri.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Citește conversațiile încheiate cu asistentul de cumpărături și notează ce l-a împiedicat pe client să comande."
 }

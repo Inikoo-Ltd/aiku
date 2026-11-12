@@ -25939,5 +25939,10 @@
     "Helpful": "Pomocne",
     "Not helpful": "Niepomocne",
     "Your feedback could not be saved, please try again.": "Nie udało się zapisać Twojej oceny, spróbuj ponownie.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name to asystent AI i może się mylić. Nasz zespół może czytać te rozmowy, aby ulepszać naszą obsługę; nie podawaj danych płatniczych."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name to asystent AI i może się mylić. Nasz zespół może czytać te rozmowy, aby ulepszać naszą obsługę; nie podawaj danych płatniczych.",
+    ":name report": "Raport :name",
+    "Shopping assistant answers": "Odpowiedzi asystenta zakupowego",
+    "Shopping assistant customer challenges": "Przeszkody klientów w asystencie zakupowym",
+    "Answers customers in the AI shopping assistant on the websites.": "Odpowiada klientom w asystencie zakupowym AI na stronach internetowych.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Czyta zakończone rozmowy z asystentem zakupowym i zapisuje, co powstrzymało klienta przed zamówieniem."
 }

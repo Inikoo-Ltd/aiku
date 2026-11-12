@@ -9,6 +9,7 @@
 namespace App\Actions\Web\ShoppingAssistant\UI;
 
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
@@ -105,7 +106,7 @@ class ShowShoppingAssistantConversation extends OrgAction
         $usdRate      = $report->usdRate($currencyCode);
         $amountColumn = $inShopCurrency ? 'net_amount' : 'grp_net_amount';
         $customer     = $conversation->customer;
-        $title        = __('AI Assistant');
+        $title        = GetShoppingAssistantSettings::name($conversation->website);
 
         $productOutcomes = collect($report->selectWithAttribution(
             DB::table('shopping_assistant_conversations')
@@ -217,7 +218,7 @@ class ShowShoppingAssistantConversation extends OrgAction
                 'pageHead'         => [
                     'title' => $customer?->name ?? $title,
                     'model' => $title,
-                    'icon'  => ['icon' => ['fal', 'fa-robot'], 'title' => $title],
+                    'icon'  => ['icon' => ['fal', 'fa-hat-wizard'], 'title' => $title],
                 ],
                 'currency'         => $currencyCode,
                 'cost_currency'    => $usdRate === null ? 'USD' : $currencyCode,

@@ -26666,5 +26666,10 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?",
     ":count loose pieces left, not in a full pack": ":count loose pieces left, not in a full pack",
     "Back, make the pack up": "Back, make the pack up",
-    "Yes, close with loose pieces": "Yes, close with loose pieces"
+    "Yes, close with loose pieces": "Yes, close with loose pieces",
+    ":name report": ":name report",
+    "Shopping assistant answers": "Shopping assistant answers",
+    "Shopping assistant customer challenges": "Shopping assistant customer challenges",
+    "Answers customers in the AI shopping assistant on the websites.": "Answers customers in the AI shopping assistant on the websites.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Reads finished shopping assistant conversations and records what stood between the customer and an order."
 }

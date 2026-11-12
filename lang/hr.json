@@ -9038,5 +9038,10 @@
     "Helpful": "Korisno",
     "Not helpful": "Nije korisno",
     "Your feedback could not be saved, please try again.": "Vašu ocjenu nije bilo moguće spremiti, pokušajte ponovno.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name je AI asistent i može pogriješiti. Naš tim može čitati ove razgovore kako bi poboljšao uslugu; ne dijelite podatke o plaćanju."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name je AI asistent i može pogriješiti. Naš tim može čitati ove razgovore kako bi poboljšao uslugu; ne dijelite podatke o plaćanju.",
+    ":name report": "Izvješće :name",
+    "Shopping assistant answers": "Odgovori asistenta za kupnju",
+    "Shopping assistant customer challenges": "Prepreke kupaca u asistentu za kupnju",
+    "Answers customers in the AI shopping assistant on the websites.": "Odgovara kupcima u AI asistentu za kupnju na web stranicama.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Čita završene razgovore s asistentom za kupnju i bilježi što je kupca spriječilo da naruči."
 }

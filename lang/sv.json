@@ -9875,5 +9875,10 @@
     "Helpful": "Hjälpsamt",
     "Not helpful": "Inte hjälpsamt",
     "Your feedback could not be saved, please try again.": "Ditt omdöme kunde inte sparas, försök igen.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name är en AI-assistent och kan göra misstag. Vår personal kan läsa dessa samtal för att förbättra vår service; dela inga betalningsuppgifter."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name är en AI-assistent och kan göra misstag. Vår personal kan läsa dessa samtal för att förbättra vår service; dela inga betalningsuppgifter.",
+    ":name report": ":name-rapport",
+    "Shopping assistant answers": "Shoppingassistentens svar",
+    "Shopping assistant customer challenges": "Kundernas hinder i shoppingassistenten",
+    "Answers customers in the AI shopping assistant on the websites.": "Svarar kunder i AI-shoppingassistenten på webbplatserna.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Läser avslutade samtal med shoppingassistenten och noterar vad som hindrade kunden från att beställa."
 }

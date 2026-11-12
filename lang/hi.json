@@ -22626,5 +22626,10 @@
     "Your feedback could not be saved, please try again.": "आपकी प्रतिक्रिया सहेजी नहीं जा सकी, कृपया दोबारा कोशिश करें।",
     "Your own trade prices on every card": "हर कार्ड पर आपकी अपनी ट्रेड कीमतें",
     "Your range advisor": "आपका रेंज सलाहकार",
-    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "जैसे: हम यॉर्क में क्रिस्टल और उपहारों की एक छोटी दुकान हैं। हमें क्रिसमस उपहार चाहिए और हम बाथ & बॉडी आज़माना चाहते हैं।"
+    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "जैसे: हम यॉर्क में क्रिस्टल और उपहारों की एक छोटी दुकान हैं। हमें क्रिसमस उपहार चाहिए और हम बाथ & बॉडी आज़माना चाहते हैं।",
+    ":name report": ":name रिपोर्ट",
+    "Shopping assistant answers": "शॉपिंग असिस्टेंट के जवाब",
+    "Shopping assistant customer challenges": "शॉपिंग असिस्टेंट में ग्राहकों की बाधाएँ",
+    "Answers customers in the AI shopping assistant on the websites.": "वेबसाइटों पर AI शॉपिंग असिस्टेंट में ग्राहकों को जवाब देता है।",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "शॉपिंग असिस्टेंट की पूरी हुई बातचीत पढ़ता है और दर्ज करता है कि ग्राहक को ऑर्डर करने से क्या रोका।"
 }

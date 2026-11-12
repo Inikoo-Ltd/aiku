@@ -2057,5 +2057,10 @@
     "Your feedback could not be saved, please try again.": "Jūsu atsauksmi neizdevās saglabāt, lūdzu, mēģiniet vēlreiz.",
     "Your own trade prices on every card": "Jūsu individuālās tirdzniecības cenas uz katras kartītes",
     "Your range advisor": "Jūsu sortimenta padomnieks",
-    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "piem., Mēs esam neliels kristālu un dāvanu veikals Jorkā. Vēlamies Ziemassvētku dāvanas un izmēģināt vannas un ķermeņa kopšanas produktus."
+    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "piem., Mēs esam neliels kristālu un dāvanu veikals Jorkā. Vēlamies Ziemassvētku dāvanas un izmēģināt vannas un ķermeņa kopšanas produktus.",
+    ":name report": ":name pārskats",
+    "Shopping assistant answers": "Iepirkšanās asistenta atbildes",
+    "Shopping assistant customer challenges": "Klientu šķēršļi iepirkšanās asistentā",
+    "Answers customers in the AI shopping assistant on the websites.": "Atbild klientiem AI iepirkšanās asistentā tīmekļa vietnēs.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Lasa pabeigtās sarunas ar iepirkšanās asistentu un pieraksta, kas klientam traucēja pasūtīt."
 }

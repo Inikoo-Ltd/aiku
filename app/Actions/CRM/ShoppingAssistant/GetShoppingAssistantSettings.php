@@ -54,6 +54,11 @@ class GetShoppingAssistantSettings
             ?: (string) config('services.shopping_assistant.name');
     }
 
+    public static function nameInGroup(int $groupId): string
+    {
+        return self::groupName($groupId) ?: (string) config('services.shopping_assistant.name');
+    }
+
     public static function groupName(int $groupId): string
     {
         return Cache::remember(self::groupNameCacheKey($groupId), 60, function () use ($groupId) {

@@ -8,7 +8,9 @@
 
 namespace App\Actions\Helpers\AI\UI;
 
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Actions\UI\WithInertia;
 use App\InertiaTable\InertiaTable;
 use App\Models\Helpers\AiTimeSeries;
@@ -24,6 +26,9 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowAiFeature extends OrgAction
 {
     use WithInertia;
+    use WithShopPpcPermissions;
+
+    public const array SHOPPING_ASSISTANT_FEATURES = ['AskShoppingAssistant', 'TagShoppingAssistantConversationChallenges'];
 
     public function authorize(ActionRequest $request): bool
     {
@@ -97,6 +102,18 @@ class ShowAiFeature extends OrgAction
                         'icon'  => ['fal', 'fa-robot'],
                         'title' => $title,
                     ],
+                    'actions' => in_array($feature, self::SHOPPING_ASSISTANT_FEATURES) && $this->canViewGroupShoppingAssistant($request->user()) ? [
+                        [
+                            'type'  => 'button',
+                            'style' => 'tertiary',
+                            'icon'  => ['fal', 'fa-hat-wizard'],
+                            'label' => __(':name report', ['name' => GetShoppingAssistantSettings::nameInGroup($this->group->id)]),
+                            'route' => [
+                                'name'       => 'grp.websites.shopping_assistant.show',
+                                'parameters' => [],
+                            ],
+                        ],
+                    ] : [],
                 ],
                 'description' => $dashboard->featureDescription($feature),
                 'spend'       => $dashboard->getFeatures($feature)[0] ?? null,

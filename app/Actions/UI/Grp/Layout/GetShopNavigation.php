@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp\Layout;
 
 use App\Models\Helpers\Ticket;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Chat\WithChatNavigation;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
@@ -574,8 +575,8 @@ class GetShopNavigation
             if ($shop->website && $shop->type === ShopTypeEnum::B2B && $user->hasAnyPermission(["websites-view.{$shop->organisation_id}", "web.$shop->id.view", "group-webmaster.view"])) {
                 $navigation["ai_salesman"] = [
                     "root"    => "grp.org.shops.show.ai_salesman.",
-                    "icon"    => ["fal", "fa-robot"],
-                    "label"   => __("AI Salesman"),
+                    "icon"    => ["fal", "fa-hat-wizard"],
+                    "label"   => GetShoppingAssistantSettings::name($shop->website),
                     "route"   => [
                         "name"       => "grp.org.shops.show.ai_salesman.show",
                         "parameters" => [$shop->organisation->slug, $shop->slug],

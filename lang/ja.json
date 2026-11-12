@@ -1642,5 +1642,10 @@
     "Your feedback could not be saved, please try again.": "フィードバックを保存できませんでした。もう一度お試しください。",
     "Your own trade prices on every card": "すべてのカードにお客様専用の卸価格を表示",
     "Your range advisor": "あなたの品揃えアドバイザー",
-    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "例: ヨークで小さなクリスタルとギフトのお店を営んでいます。クリスマスギフトと、バス & ボディを試してみたいです。"
+    "e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.": "例: ヨークで小さなクリスタルとギフトのお店を営んでいます。クリスマスギフトと、バス & ボディを試してみたいです。",
+    ":name report": ":nameのレポート",
+    "Shopping assistant answers": "ショッピングアシスタントの回答",
+    "Shopping assistant customer challenges": "ショッピングアシスタントでの顧客の障壁",
+    "Answers customers in the AI shopping assistant on the websites.": "ウェブサイトのAIショッピングアシスタントで顧客に回答します。",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "終了したショッピングアシスタントの会話を読み、顧客の注文を妨げた要因を記録します。"
 }

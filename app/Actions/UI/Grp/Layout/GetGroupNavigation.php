@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp\Layout;
 
 use App\Actions\Goods\ProductDevelopment\ProductDevelopmentAccess;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\Traits\Authorisations\WithShopPpcPermissions;
 use App\Models\Helpers\Ticket;
 use App\Models\SysAdmin\User;
@@ -106,7 +107,7 @@ class GetGroupNavigation
         }
 
         if ($user->hasGroupAccess()) {
-            $groupNavigation['website'] = $this->getWebsiteNavs($this->canViewGroupSeo($user), $this->canViewGroupShoppingAssistant($user));
+            $groupNavigation['website'] = $this->getWebsiteNavs($this->canViewGroupSeo($user), $this->canViewGroupShoppingAssistant($user) ? GetShoppingAssistantSettings::nameInGroup($user->group_id) : null);
         }
 
         if ($user->hasPermissionTo('group-overview')) {
@@ -611,7 +612,7 @@ class GetGroupNavigation
         ];
     }
 
-    private function getWebsiteNavs(bool $canViewGroupSeo, bool $canViewGroupShoppingAssistant): array
+    private function getWebsiteNavs(bool $canViewGroupSeo, ?string $shoppingAssistantName): array
     {
         return [
             'label'   => __('WebOps'),
@@ -674,11 +675,11 @@ class GetGroupNavigation
                         ]
                     ],
                     ]),
-                    ...(!$canViewGroupShoppingAssistant ? [] : [
+                    ...(!$shoppingAssistantName ? [] : [
                     [
-                        'label'   => __('AI Assistant'),
+                        'label'   => $shoppingAssistantName,
                         'tooltip' => __('What the AI shopping assistant did for sales on every website'),
-                        'icon'    => ['fal', 'fa-robot'],
+                        'icon'    => ['fal', 'fa-hat-wizard'],
                         'root'    => 'grp.websites.shopping_assistant.',
                         'route'   => [
                             'name'       => 'grp.websites.shopping_assistant.show',

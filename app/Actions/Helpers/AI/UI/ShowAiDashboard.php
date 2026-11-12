@@ -256,6 +256,8 @@ class ShowAiDashboard extends OrgAction
             'ReadStockDeliveryInvoice'               => __('Reads supplier invoices attached to stock deliveries.'),
             'SuggestPartnerShoppingList'             => __('Picks products for partner shopping lists from an instruction.'),
             'GenerateAppDeploymentChangeLog'         => __('Writes the change log of each deployment.'),
+            'AskShoppingAssistant'                   => __('Answers customers in the AI shopping assistant on the websites.'),
+            'TagShoppingAssistantConversationChallenges' => __('Reads finished shopping assistant conversations and records what stood between the customer and an order.'),
             default                                  => null,
         };
     }
@@ -287,6 +289,8 @@ class ShowAiDashboard extends OrgAction
             'ReadStockDeliveryInvoice'               => __('Supplier invoice reading'),
             'SuggestPartnerShoppingList'             => __('Partner shopping list suggestions'),
             'GenerateAppDeploymentChangeLog'         => __('Deployment change logs'),
+            'AskShoppingAssistant'                   => __('Shopping assistant answers'),
+            'TagShoppingAssistantConversationChallenges' => __('Shopping assistant customer challenges'),
             'Other'                                  => __('Other'),
             default                                  => ucfirst(strtolower(preg_replace('/(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/', ' ', $feature))),
         };

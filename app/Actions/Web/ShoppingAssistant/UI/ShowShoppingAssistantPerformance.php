@@ -11,6 +11,7 @@ namespace App\Actions\Web\ShoppingAssistant\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRestockQuestion;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead;
 use App\Actions\OrgAction;
@@ -399,7 +400,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-        $title         = $this->inShopMenu ? __('AI Salesman') : __('AI Assistant');
+        $title         = $this->assistantName();
         $websites      = $this->scopeWebsites($this->website);
         $filters       = $this->filters($request, $websites, (bool) $this->website);
         $report        = GetShoppingAssistantReport::make();
@@ -420,7 +421,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                 'breadcrumbs'      => $this->getBreadcrumbs($routeParameters),
                 'pageHead'         => array_filter([
                     'title'         => $title,
-                    'icon'          => ['icon' => ['fal', 'fa-robot'], 'title' => $title],
+                    'icon'          => ['icon' => ['fal', 'fa-hat-wizard'], 'title' => $title],
                     'model'         => $this->website?->name,
                     'subNavigation' => $this->website && !$this->inShopMenu ? $this->getWebsiteAnalyticsNavigation($this->website) : null,
                 ]),
@@ -467,9 +468,14 @@ class ShowShoppingAssistantPerformance extends OrgAction
         )->table($this->tableStructure((bool) $this->website));
     }
 
+    public function assistantName(): string
+    {
+        return $this->website ? GetShoppingAssistantSettings::name($this->website) : GetShoppingAssistantSettings::nameInGroup(group()->id);
+    }
+
     public function getBreadcrumbs(array $routeParameters): array
     {
-        $label = __('AI Assistant');
+        $label = $this->assistantName();
 
         if ($this->inShopMenu) {
             return array_merge(
@@ -478,7 +484,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => ['name' => 'grp.org.shops.show.ai_salesman.show', 'parameters' => $routeParameters],
-                        'label' => __('AI Salesman'),
+                        'label' => $label,
                     ],
                 ]]
             );

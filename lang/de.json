@@ -26668,5 +26668,10 @@
     "Helpful": "Hilfreich",
     "Not helpful": "Nicht hilfreich",
     "Your feedback could not be saved, please try again.": "Ihre Bewertung konnte nicht gespeichert werden, bitte versuchen Sie es erneut.",
-    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name ist ein KI-Assistent und kann Fehler machen. Unser Team kann diese Gespräche lesen, um unseren Service zu verbessern; bitte geben Sie keine Zahlungsdaten an."
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name ist ein KI-Assistent und kann Fehler machen. Unser Team kann diese Gespräche lesen, um unseren Service zu verbessern; bitte geben Sie keine Zahlungsdaten an.",
+    ":name report": ":name-Bericht",
+    "Shopping assistant answers": "Antworten des Einkaufsassistenten",
+    "Shopping assistant customer challenges": "Hürden der Kunden im Einkaufsassistenten",
+    "Answers customers in the AI shopping assistant on the websites.": "Beantwortet Kundenfragen im KI-Einkaufsassistenten auf den Websites.",
+    "Reads finished shopping assistant conversations and records what stood between the customer and an order.": "Liest abgeschlossene Gespräche mit dem Einkaufsassistenten und hält fest, was den Kunden von einer Bestellung abgehalten hat."
 }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\Web\Website\Analytics\TrackWebsiteVisitorActivity;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Helpers\WebsiteSearchLog;
@@ -74,13 +75,13 @@ trait WithWebsiteAnalyticsSubNavigation
                 ],
             ],
             [
-                "label"    => __("AI Assistant"),
+                "label"    => GetShoppingAssistantSettings::name($website),
                 "route"    => [
                     "name"       => "grp.org.shops.show.web.analytics.shopping_assistant.show",
                     "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
                 ],
                 "leftIcon" => [
-                    "icon"    => ["fal", "fa-robot"],
+                    "icon"    => ["fal", "fa-hat-wizard"],
                     "tooltip" => __("What the AI shopping assistant did for sales"),
                 ],
             ],

@@ -790,7 +790,7 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
 
     $this->withoutVite();
     $this->get(route('grp.websites.shopping_assistant.show', $query))->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Web/ShoppingAssistantPerformance', false)->where('filters.website_locked', false));
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('Org/Web/ShoppingAssistantPerformance', false)->where('filters.website_locked', false)->where('title', 'Merlin')->where('pageHead.icon.icon', ['fal', 'fa-hat-wizard']));
 
     $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'outcome' => 'ordered']))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
