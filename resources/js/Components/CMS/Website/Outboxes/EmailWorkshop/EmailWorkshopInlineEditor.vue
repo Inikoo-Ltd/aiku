@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import EditorV2 from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
+import type { ReadyMadeLink } from '@/Components/Forms/Fields/BubleTextEditor/linkHref'
 import { EmailModule, MODULE_TYPES, getModuleText, moduleTextToggles, setModuleText } from './emailWorkshopBlocks'
 import { buttonLinkStyle, isLinkUnderlined, modulePaddingStyle, responsiveContentStyle, styleToString } from './renderEmailHtml'
 
@@ -10,6 +11,7 @@ const props = defineProps<{
     isLinkUnderlined?: boolean
     isMobile?: boolean
     mergeTags?: Array<{ name: string, value: string }>
+    readyMadeLinks?: ReadyMadeLink[]
 }>()
 
 const emits = defineEmits<{
@@ -56,17 +58,17 @@ const buttonStyle = computed(() => buttonLinkStyle(props.module, props.isMobile)
 <template>
     <div class="email-inline-editor" :style="paddingStyle" @click.stop>
         <div v-if="module.type === MODULE_TYPES.heading" :style="[headingStyle, { '--email-link-decoration': linkDecoration }]" class="email-inline-text">
-            <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :linkUnderline="linkDecoration === 'underline'" />
+            <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" :linkUnderline="linkDecoration === 'underline'" />
         </div>
 
         <div v-else-if="module.type === MODULE_TYPES.button" :style="{ textAlign: buttonAlign }">
             <div :style="buttonStyle" class="email-inline-text">
-                <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" />
+                <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" />
             </div>
         </div>
 
         <div v-else :style="textBlockStyle" class="email-inline-text">
-            <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :linkUnderline="linkDecoration === 'underline'" />
+            <EditorV2 v-model="text" :toggle="toggles" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" :linkUnderline="linkDecoration === 'underline'" />
         </div>
     </div>
 </template>

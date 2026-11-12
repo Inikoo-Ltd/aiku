@@ -60,6 +60,7 @@ use App\Actions\Retina\CRM\StoreRetinaFavourite;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerComms;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
+use App\Actions\Retina\CRM\WhatsappOptIn\SubscribeRetinaCustomerToWhatsappNewsletter;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
 use App\Actions\Retina\Dropshipping\ApiToken\StoreCustomerToken;
@@ -225,6 +226,8 @@ Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilme
 Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->whereNumber('customerComms')->group(function () {
     Route::patch('update', UpdateRetinaCustomerComms::class)->name('update');
 });
+
+Route::post('whatsapp-newsletter/subscribe', SubscribeRetinaCustomerToWhatsappNewsletter::class)->name('whatsapp_newsletter.subscribe')->middleware('throttle:10,1');
 
 
 Route::name('appointment.')->prefix('appointment/{appointment:id}')->whereNumber('appointment')->group(function () {

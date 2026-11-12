@@ -9,7 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTimes, faCheck } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
-import { type LinkDialogValue, type LinkHrefFields, type LinkType, buildLinkHref, parseLinkHref } from "@/Components/Forms/Fields/BubleTextEditor/linkHref"
+import { type LinkDialogValue, type LinkHrefFields, type LinkType, type ReadyMadeLink, buildLinkHref, findReadyMadeLink, parseLinkHref } from "@/Components/Forms/Fields/BubleTextEditor/linkHref"
 
 library.add(faTimes, faCheck)
 
@@ -21,7 +21,11 @@ const props = defineProps<{
   currentTarget?: string | null
   underline?: boolean
   showUnderlineOption?: boolean
+  readyMadeLinks?: ReadyMadeLink[]
 }>()
+
+const READY_MADE = "ready_made"
+type DialogLinkType = LinkType | typeof READY_MADE
 const emit = defineEmits<{
   (e: "close"): void
   (e: "update", value: LinkDialogValue): void
@@ -40,20 +44,33 @@ watch(
   (val) => (visible.value = val)
 )
 
-const linkTypeOptions: Array<{ label: string, value: LinkType }> = [
+const linkTypeOptions = computed<Array<{ label: string, value: DialogLinkType }>>(() => [
+  ...(props.readyMadeLinks?.length ? [{ label: ctrans("Ready-made link"), value: READY_MADE as DialogLinkType }] : []),
   { label: ctrans("Open web page"), value: "web" },
   { label: ctrans("Send email"), value: "email" },
   { label: ctrans("Make a call"), value: "phone" },
   { label: ctrans("Send SMS"), value: "sms" },
-]
+])
+
+const currentReadyMadeLink = findReadyMadeLink(props.readyMadeLinks, props.currentUrl)
+const linkType = ref<DialogLinkType>(currentReadyMadeLink ? READY_MADE : fields.value.type)
+const readyMadeKey = ref<string | null>(currentReadyMadeLink?.key ?? props.readyMadeLinks?.[0]?.key ?? null)
+const isReadyMade = computed(() => linkType.value === READY_MADE)
+const selectedReadyMadeLink = computed(() => props.readyMadeLinks?.find((link) => link.key === readyMadeKey.value) ?? null)
+
+watch(linkType, (type) => {
+  if (type !== READY_MADE) {
+    fields.value.type = type
+  }
+})
 
 const targetOptions = [
   { label: ctrans("New page"), value: "_blank" },
   { label: ctrans("Same page"), value: "_self" },
 ]
 
-const href = computed(() => buildLinkHref(fields.value))
-const isWebLink = computed(() => fields.value.type === "web")
+const href = computed(() => isReadyMade.value ? selectedReadyMadeLink.value?.url ?? "" : buildLinkHref(fields.value))
+const isWebLink = computed(() => isReadyMade.value || fields.value.type === "web")
 
 function closeDialog() {
   visible.value = false
@@ -88,10 +105,17 @@ function update() {
     <form id="tiptap-link-dialog-form" class="flex flex-col gap-y-4" @submit.prevent="update">
       <div class="flex flex-col gap-y-1.5">
         <label for="link-dialog-type" class="text-sm text-gray-700">{{ ctrans("Link type") }}</label>
-        <Select v-model="fields.type" inputId="link-dialog-type" :options="linkTypeOptions" optionLabel="label" optionValue="value" class="w-full" />
+        <Select v-model="linkType" inputId="link-dialog-type" :options="linkTypeOptions" optionLabel="label" optionValue="value" class="w-full" />
       </div>
 
-      <div v-if="isWebLink" class="flex flex-col gap-y-1.5">
+      <div v-if="isReadyMade" class="flex flex-col gap-y-1.5">
+        <label for="link-dialog-ready-made" class="text-sm text-gray-700">{{ ctrans("Link") }}</label>
+        <Select v-model="readyMadeKey" inputId="link-dialog-ready-made" :options="readyMadeLinks" optionLabel="label" optionValue="key" class="w-full" />
+        <p v-if="selectedReadyMadeLink" class="break-all text-xs text-gray-500">{{ selectedReadyMadeLink.url }}</p>
+        <p class="text-xs text-gray-500">{{ ctrans("Tracking for this link is set automatically.") }}</p>
+      </div>
+
+      <div v-else-if="isWebLink" class="flex flex-col gap-y-1.5">
         <label for="link-dialog-url" class="text-sm text-gray-700">{{ ctrans("Url") }}</label>
         <InputText id="link-dialog-url" v-model="fields.url" class="w-full" placeholder="https://" autofocus />
       </div>

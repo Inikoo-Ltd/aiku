@@ -72,6 +72,28 @@ trait WithMailshotUtmLinks
     }
 
     /**
+     * @param array<int, array{key: string, label: string, url: string, host: string, path: string, anchor: string, utm: array<string, string>}> $readyMadeLinks
+     * @param array<int, string> $domains
+     * @return array{key: string, label: string, url: string, host: string, path: string, anchor: string, utm: array<string, string>}|null
+     */
+    protected function getReadyMadeLinkFor(string $url, array $readyMadeLinks, array $domains): ?array
+    {
+        $host     = Str::lower((string) parse_url($url, PHP_URL_HOST));
+        $path     = rtrim((string) parse_url($url, PHP_URL_PATH), '/');
+        $fragment = (string) parse_url($url, PHP_URL_FRAGMENT);
+
+        foreach ($readyMadeLinks as $readyMadeLink) {
+            $isOwnWebsite = $host === Str::lower($readyMadeLink['host']) || $this->isInternalLink($url, $domains);
+
+            if ($isOwnWebsite && $path === rtrim($readyMadeLink['path'], '/') && $fragment === $readyMadeLink['anchor']) {
+                return $readyMadeLink;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return array{0: string, 1: array<int, string>, 2: string}
      */
     protected function splitUrl(string $url): array

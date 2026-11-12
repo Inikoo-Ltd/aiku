@@ -75,7 +75,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 import TiptapLinkCustomDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapCustomLinkDialog.vue"
 import TiptapLinkDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapLinkDialog.vue"
-import type { LinkDialogValue } from "@/Components/Forms/Fields/BubleTextEditor/linkHref"
+import type { LinkDialogValue, ReadyMadeLink } from "@/Components/Forms/Fields/BubleTextEditor/linkHref"
 import TiptapVideoDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapVideoDialog.vue"
 import TiptapTableDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapTableDialog.vue"
 import TiptapImageDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapImageDialog.vue"
@@ -103,6 +103,7 @@ const props = withDefaults(defineProps<{
     routeGetInternalLink?: routeType
     mergeTags?: Array<{ name: string, value: string }>
     linkUnderline?: boolean
+    readyMadeLinks?: ReadyMadeLink[]
 }>(), {
     editable: true,
     type: 'Bubble',
@@ -1441,6 +1442,7 @@ onMounted(async () => {
             :current-target="currentLinkTargetInDialog"
             :underline="currentLinkUnderlineInDialog"
             :showUnderlineOption="typeof linkUnderline === 'boolean'"
+            :readyMadeLinks="readyMadeLinks"
             @close="() => { showLinkDialog = false; showDialog = false; }"
             @update="updateLink"
         />

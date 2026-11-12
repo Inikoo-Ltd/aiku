@@ -593,6 +593,14 @@ class EditWebsite extends OrgAction
                         'query'
                     ],
                 ],
+                'privacy_policy_url' => [
+                    'type'        => 'input',
+                    'label'       => __('WhatsApp privacy policy link'),
+                    'placeholder' => Website::DEFAULT_PRIVACY_POLICY_URL,
+                    'information' => __('Shown on the WhatsApp updates card of the Retina dashboard. Leave empty to use :url', ['url' => Website::DEFAULT_PRIVACY_POLICY_URL]),
+                    'value'       => Arr::get($website->settings, 'privacy_policy_url'),
+                    'required'    => false,
+                ],
 
             ]
         ];
