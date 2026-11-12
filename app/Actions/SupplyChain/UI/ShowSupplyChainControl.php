@@ -59,7 +59,7 @@ class ShowSupplyChainControl extends OrgAction
             ->leftJoin('currencies', 'currencies.id', 'purchase_orders.currency_id')
             ->where('purchase_orders.group_id', $this->group->id)
             ->where('purchase_orders.parent_type', 'OrgSupplier')
-            ->whereIn('purchase_orders.state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::openValues())
             ->whereNotIn('purchase_orders.delivery_state', self::DELIVERED_OR_CLOSED_STATES)
             ->whereRaw("(purchase_orders.data -> 'housekeeping') IS NULL");
     }
@@ -156,7 +156,7 @@ class ShowSupplyChainControl extends OrgAction
     private function agentScorecard(): array
     {
         $delivered = "('received','checked','placed')";
-        $open      = "purchase_orders.state in ('submitted','confirmed') and purchase_orders.delivery_state not in ('received','checked','placed','cancelled','not_received') and (purchase_orders.data -> 'housekeeping') is null";
+        $open      = 'purchase_orders.state in ('.PurchaseOrderStateEnum::openSql().") and purchase_orders.delivery_state not in ('received','checked','placed','cancelled','not_received') and (purchase_orders.data -> 'housekeeping') is null";
         $ageExpr   = 'EXTRACT(DAY FROM (now() - COALESCE(purchase_orders.estimated_received_at, purchase_orders.date, purchase_orders.submitted_at)))';
 
         $rows = DB::table('agents')
@@ -164,7 +164,7 @@ class ShowSupplyChainControl extends OrgAction
                 $join->on('purchase_orders.agent_id', '=', 'agents.id')
                     ->where('purchase_orders.parent_type', '=', 'OrgSupplier')
                     ->whereNull('purchase_orders.deleted_at')
-                    ->whereIn('purchase_orders.state', ['submitted', 'confirmed', 'settled']);
+                    ->whereIn('purchase_orders.state', [...PurchaseOrderStateEnum::openValues(), PurchaseOrderStateEnum::SETTLED->value]);
             })
             ->where('agents.group_id', $this->group->id)
             ->groupBy('agents.id', 'agents.code', 'agents.slug')

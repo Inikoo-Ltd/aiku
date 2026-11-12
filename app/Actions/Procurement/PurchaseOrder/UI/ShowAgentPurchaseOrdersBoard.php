@@ -39,9 +39,14 @@ class ShowAgentPurchaseOrdersBoard extends OrgAction
      * @var array<string, string> state => column the waiting time is measured from
      */
     private const array WAITING_SINCE = [
-        'submitted'  => 'submitted_at',
-        'confirmed'  => 'confirmed_at',
-        'settled'    => 'settled_at',
+        'submitted'     => 'submitted_at',
+        'confirmed'     => 'confirmed_at',
+        'in_production' => 'coalesce(production_started_at, confirmed_at)',
+        'in_warehouse'  => 'confirmed_at',
+        'ready'         => 'coalesce(qc_passed_at, confirmed_at)',
+        'handed_over'   => 'coalesce(handed_over_at, confirmed_at)',
+        'arrived'       => 'confirmed_at',
+        'settled'       => 'settled_at',
     ];
 
     public function handle(Agent $agent, ?int $supplierId = null, ?int $organisationId = null): array
@@ -56,10 +61,7 @@ class ShowAgentPurchaseOrdersBoard extends OrgAction
             ->where('purchase_orders.parent_type', 'OrgSupplier')
             ->whereNull('purchase_orders.deleted_at')
             ->where(function (Builder $query) {
-                $query->whereIn('purchase_orders.state', [
-                    PurchaseOrderStateEnum::SUBMITTED->value,
-                    PurchaseOrderStateEnum::CONFIRMED->value,
-                ])->orWhere(function (Builder $query) {
+                $query->whereIn('purchase_orders.state', PurchaseOrderStateEnum::openValues())->orWhere(function (Builder $query) {
                     $query->where('purchase_orders.state', PurchaseOrderStateEnum::SETTLED->value)
                         ->where('settled_at', '>=', now()->subDays(self::SETTLED_DAYS));
                 });

@@ -31,7 +31,6 @@ class GetAgentWarehouseStockPurchaseOrderLines extends OrgAction
     use WithAgentOrganisation;
     use WithProcurementAuthorisation;
 
-    public const array LINKABLE_ORDER_STATES = [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED];
 
     public const array LINKABLE_LINE_STATES = [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED];
 
@@ -44,7 +43,7 @@ class GetAgentWarehouseStockPurchaseOrderLines extends OrgAction
             ->where('purchase_orders.agent_id', $stock->agent_id)
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('purchase_order_transactions.deleted_at')
-            ->whereIn('purchase_orders.state', array_map(fn (PurchaseOrderStateEnum $state) => $state->value, self::LINKABLE_ORDER_STATES))
+            ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::openValues())
             ->whereIn('purchase_order_transactions.state', array_map(fn (PurchaseOrderTransactionStateEnum $state) => $state->value, self::LINKABLE_LINE_STATES));
     }
 

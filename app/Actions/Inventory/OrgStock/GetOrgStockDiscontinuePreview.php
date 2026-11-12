@@ -140,11 +140,7 @@ class GetOrgStockDiscontinuePreview extends OrgAction
             ->where('purchase_order_transactions.org_stock_id', $orgStock->id)
             ->whereNull('purchase_order_transactions.deleted_at')
             ->whereNotIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::CANCELLED->value, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value])
-            ->whereIn('purchase_orders.state', [
-                PurchaseOrderStateEnum::IN_PROCESS->value,
-                PurchaseOrderStateEnum::SUBMITTED->value,
-                PurchaseOrderStateEnum::CONFIRMED->value,
-            ])
+            ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::liveValues())
             ->distinct()
             ->orderBy('purchase_orders.reference')
             ->pluck('purchase_orders.reference')

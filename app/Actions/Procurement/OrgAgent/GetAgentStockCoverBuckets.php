@@ -243,11 +243,7 @@ class GetAgentStockCoverBuckets
         return "exists (select 1 from purchase_order_transactions pot
             join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
             where pot.org_stock_id = os.id and pot.deleted_at is null
-                and po.state in ('".implode("', '", [
-            PurchaseOrderStateEnum::IN_PROCESS->value,
-            PurchaseOrderStateEnum::SUBMITTED->value,
-            PurchaseOrderStateEnum::CONFIRMED->value,
-        ])."'))";
+                and po.state in (".PurchaseOrderStateEnum::liveSql()."))";
     }
 
     /**
@@ -258,11 +254,7 @@ class GetAgentStockCoverBuckets
         return "(select sum(pot.net_amount * coalesce(po.org_exchange, 1)) from purchase_order_transactions pot
             join purchase_orders po on po.id = pot.purchase_order_id and po.deleted_at is null
             where pot.org_stock_id = os.id and pot.deleted_at is null
-                and po.state in ('".implode("', '", [
-            PurchaseOrderStateEnum::IN_PROCESS->value,
-            PurchaseOrderStateEnum::SUBMITTED->value,
-            PurchaseOrderStateEnum::CONFIRMED->value,
-        ])."'))";
+                and po.state in (".PurchaseOrderStateEnum::liveSql()."))";
     }
 
     /**

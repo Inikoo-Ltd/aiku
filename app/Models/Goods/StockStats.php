@@ -38,6 +38,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_purchase_orders_state_in_process
  * @property int $number_purchase_orders_state_submitted
  * @property int $number_purchase_orders_state_confirmed
+ * @property int $number_purchase_orders_state_in_production
+ * @property int $number_purchase_orders_state_in_warehouse
+ * @property int $number_purchase_orders_state_ready
+ * @property int $number_purchase_orders_state_handed_over
+ * @property int $number_purchase_orders_state_arrived
  * @property int $number_purchase_orders_state_settled
  * @property int $number_purchase_orders_state_cancelled
  * @property int $number_purchase_orders_state_not_received

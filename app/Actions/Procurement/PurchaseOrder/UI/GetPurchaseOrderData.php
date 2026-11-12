@@ -110,7 +110,7 @@ class GetPurchaseOrderData
             ],
         ];
 
-        if (in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
+        if (in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)) {
             array_splice($blueprint, 1, 0, [
                 [
                     'title'  => __('Estimated process dates'),

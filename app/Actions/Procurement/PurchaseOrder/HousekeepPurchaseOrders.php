@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder;
 
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use Illuminate\Support\Facades\DB;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -33,7 +34,7 @@ class HousekeepPurchaseOrders
         return DB::table('purchase_orders')
             ->where(function ($query) {
                 $query->where(function ($open) {
-                    $open->whereIn('state', ['in_process', 'submitted', 'confirmed'])
+                    $open->whereIn('state', PurchaseOrderStateEnum::liveValues())
                         ->whereNotIn('delivery_state', ['received', 'checked', 'placed']);
                 })->orWhere(function ($settled) {
                     $settled->where('state', 'settled')

@@ -166,9 +166,9 @@ class GetAgentOrderCapacity
         $value      = 'cost_total * coalesce(org_exchange, 1)';
 
         $row = $this->sentOrders($orgAgent)
-            ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereIn('state', PurchaseOrderStateEnum::openValues())
             ->selectRaw("coalesce(sum($value) filter (where state = '".PurchaseOrderStateEnum::SUBMITTED->value."' and delivery_state in ($beingMade)), 0) as waiting,
-                coalesce(sum($value) filter (where state = '".PurchaseOrderStateEnum::CONFIRMED->value."' and delivery_state in ($beingMade)), 0) as being_made,
+                coalesce(sum($value) filter (where state in (".PurchaseOrderStateEnum::agreedSql().") and delivery_state in ($beingMade)), 0) as being_made,
                 coalesce(sum($value) filter (where delivery_state = '$dispatched'), 0) as on_the_way")
             ->first();
 
@@ -277,7 +277,7 @@ class GetAgentOrderCapacity
         $inboundOpenPoLines = (int) DB::table('purchase_order_transactions as pot')
             ->join('purchase_orders as po', 'po.id', 'pot.purchase_order_id')
             ->where('po.organisation_id', $orgAgent->organisation_id)
-            ->whereIn('po.state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereIn('po.state', PurchaseOrderStateEnum::openValues())
             ->whereNotIn('po.delivery_state', [
                 PurchaseOrderDeliveryStateEnum::RECEIVED->value,
                 PurchaseOrderDeliveryStateEnum::CHECKED->value,

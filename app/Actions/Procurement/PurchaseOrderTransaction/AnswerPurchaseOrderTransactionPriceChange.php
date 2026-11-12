@@ -88,7 +88,7 @@ class AnswerPurchaseOrderTransactionPriceChange extends OrgAction
     {
         if ($this->purchaseOrderTransaction->price_query_state !== PurchaseOrderTransactionPriceQueryStateEnum::PENDING
             || !in_array($this->purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
-            || !in_array($this->purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
+            || !in_array($this->purchaseOrderTransaction->purchaseOrder->state, PurchaseOrderStateEnum::open(), true)) {
             $validator->errors()->add('answer', __('There is no new price waiting for an answer on this line'));
         } elseif ($this->get('answer') !== PurchaseOrderTransactionPriceQueryStateEnum::REJECTED->value
             && (!AskPurchaseOrderTransactionPriceChange::isAskable($this->purchaseOrderTransaction) || AskPurchaseOrderTransactionQuantityChange::isShipped($this->purchaseOrderTransaction))) {

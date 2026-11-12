@@ -36,7 +36,7 @@ class AskPurchaseOrderTransactionQuantityChange extends OrgAction
 
     public static function isQuantityChangeable(PurchaseOrderTransaction $purchaseOrderTransaction): bool
     {
-        return in_array($purchaseOrderTransaction->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+        return in_array($purchaseOrderTransaction->purchaseOrder->state, PurchaseOrderStateEnum::open())
             && in_array($purchaseOrderTransaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
             && !self::isShipped($purchaseOrderTransaction);
     }

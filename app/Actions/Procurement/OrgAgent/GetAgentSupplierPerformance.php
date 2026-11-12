@@ -20,11 +20,6 @@ class GetAgentSupplierPerformance
 {
     use AsObject;
 
-    public const OPEN_STATES = [
-        PurchaseOrderStateEnum::SUBMITTED->value,
-        PurchaseOrderStateEnum::CONFIRMED->value,
-    ];
-
     public const CLOSED_DELIVERY_STATES = [
         PurchaseOrderDeliveryStateEnum::RECEIVED->value,
         PurchaseOrderDeliveryStateEnum::CHECKED->value,
@@ -82,7 +77,7 @@ class GetAgentSupplierPerformance
             ->where('po.agent_id', $orgAgent->agent_id)
             ->where('po.parent_type', 'OrgSupplier')
             ->whereNull('po.deleted_at')
-            ->whereIn('po.state', self::OPEN_STATES)
+            ->whereIn('po.state', PurchaseOrderStateEnum::openValues())
             ->whereNotIn('po.delivery_state', self::CLOSED_DELIVERY_STATES)
             ->whereRaw("(po.data -> 'housekeeping') is null")
             ->groupBy('po.supplier_id')

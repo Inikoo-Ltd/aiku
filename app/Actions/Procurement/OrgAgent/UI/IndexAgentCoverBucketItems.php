@@ -402,7 +402,7 @@ class IndexAgentCoverBucketItems extends OrgAction
      */
     public static function onOrderSql(string $product = 'osp', string $orgStockId = 'os.id'): string
     {
-        $openOrders       = "'".PurchaseOrderStateEnum::SUBMITTED->value."', '".PurchaseOrderStateEnum::CONFIRMED->value."'";
+        $openOrders       = PurchaseOrderStateEnum::openSql();
         $finishedDelivery = "'".implode("', '", [
             StockDeliveryStateEnum::BOOKED_IN->value,
             StockDeliveryStateEnum::PLACED->value,

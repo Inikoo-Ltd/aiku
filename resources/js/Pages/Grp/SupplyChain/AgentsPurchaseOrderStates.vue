@@ -55,8 +55,8 @@ const toggleClient = (key: string) => clientFilter.value = clientFilter.value.in
     : [...clientFilter.value, key]
 
 const excludeDrafts = ref(false)
-const matchesDraft = (row: FigureRow) => !excludeDrafts.value || row.stage !== 'draft'
-const shownStages = computed(() => props.stages.filter(stage => !excludeDrafts.value || stage.key !== 'draft'))
+const matchesDraft = (row: FigureRow) => !excludeDrafts.value || row.stage !== 'in_process'
+const shownStages = computed(() => props.stages.filter(stage => !excludeDrafts.value || stage.key !== 'in_process'))
 
 const matchesDeposit = (row: FigureRow) => !depositFilter.value || row.deposit === depositFilter.value
 const matchesAge = (row: FigureRow) => !ageFilter.value.length || ageFilter.value.includes(row.age)
@@ -137,7 +137,7 @@ const filters = computed(() => [
 const listHref = (agent: string | null, stage: string | null) => {
     const query = Object.fromEntries(Object.entries({
         'filter[agent]': agent,
-        'filter[stage]': stage ?? (excludeDrafts.value ? shownStages.value.map(shown => shown.key).join(',') : null),
+        'filter[state]': stage ?? (excludeDrafts.value ? shownStages.value.map(shown => shown.key).join(',') : null),
         'filter[deposit]': depositFilter.value,
         'filter[sent]': ageFilter.value.join(','),
         'filter[client]': clientFilter.value.join(','),

@@ -317,7 +317,12 @@ function previewDelete(candidates: JourneyRibbon[]): void {
 const stateLabels: Record<string, string> = {
     in_process: ctrans("In process"),
     submitted: ctrans("Submitted"),
-    confirmed: ctrans("Agreed")
+    confirmed: ctrans("Agreed"),
+    in_production: ctrans("Making It Happen"),
+    in_warehouse: ctrans("In warehouse"),
+    ready: ctrans("Ready to Roll"),
+    handed_over: ctrans("Clean Hand Over"),
+    arrived: ctrans("Homeward Bound")
 }
 
 function linesSummary(ribbon: JourneyRibbon): string {
