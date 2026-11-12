@@ -38,6 +38,7 @@ class ShoppingAssistantConversationsResource extends JsonResource
             'clicked'            => (int) $this->clicked,
             'added'              => (int) $this->added,
             'ordered'            => (bool) $this->ordered,
+            'handed_over'        => (bool) $this->handed_over,
             'revenue'            => (float) $this->revenue,
             'cost'               => (float) $this->cost_in_page_currency,
             'status'             => $this->status->value,

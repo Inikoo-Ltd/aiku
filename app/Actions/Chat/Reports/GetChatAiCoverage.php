@@ -138,6 +138,9 @@ class GetChatAiCoverage
     }
 
     /**
+     * Chats handed over by the AI shopping assistant are not CS-assistant coverage work (they
+     * would read as not worked overnight): they are reported on the AI Assistant report instead.
+     *
      * @param array<int, array{label: string, organisation_ids: ?array<int, int>, from: Carbon, to: Carbon}> $segments
      */
     private function chatSessionChats(Group $group, array $segments): Builder
@@ -149,6 +152,7 @@ class GetChatAiCoverage
             ->whereIn('chat_messages.sender_type', ['guest', 'user'])
             ->whereNull('chat_messages.deleted_at')
             ->whereNull('chat_sessions.deleted_at')
+            ->whereNull('chat_sessions.shopping_assistant_conversation_id')
             ->where(fn ($query) => $this->inSegments($query, $segments, 'chat_messages.created_at'))
             ->selectRaw('distinct on (chat_messages.chat_session_id) chat_messages.chat_session_id as session_id, chat_messages.id as message_id, chat_messages.created_at as at')
             ->orderBy('chat_messages.chat_session_id')

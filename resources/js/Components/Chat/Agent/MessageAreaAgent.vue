@@ -42,6 +42,7 @@ import SavedRepliesPicker from "@/Components/Chat/Agent/SavedRepliesPicker.vue"
 import type { ChatMessage, SessionAPI } from "@/types/Chat/chat"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ChatAiDraftBox from "@/Components/Chat/Agent/ChatAiDraftBox.vue"
+import ChatAssistantTranscript from "@/Components/Chat/Agent/ChatAssistantTranscript.vue"
 import Image from "@common/Components/Image.vue"
 import { faUser, faSpinner } from "@far"
 import BubbleChat from "@/Components/Chat/BubbleChat.vue"
@@ -1950,6 +1951,8 @@ const handleClickOutside = (e: MouseEvent) => {
                     </span>
                 </button>
             </div>
+
+            <ChatAssistantTranscript v-if="(chatSession as any)?.assistant_hand_over" :ulid="chatSession!.ulid" :base-url="baseUrl" :hand-over="(chatSession as any).assistant_hand_over" />
 
             <h2 v-if="emailSubject" class="px-1 pt-1 text-base font-semibold text-gray-900 break-words">{{ emailSubject }}</h2>
 

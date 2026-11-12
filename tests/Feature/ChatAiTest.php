@@ -763,6 +763,7 @@ test('the knowledge base splits pages into sections and keeps the notes staff wr
 
     $saved = \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, null, ['title' => 'Testers', 'body' => 'Diffuser testers are not available until the website variants are fixed.'], $this->user);
     \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, $saved, ['title' => 'Diffuser testers', 'body' => $saved->body]);
+    \Illuminate\Support\Facades\Http::fake(['*embeddings' => \Illuminate\Support\Facades\Http::response([], 500)]);
     \App\Actions\Chat\ChatSession\HydrateChatKnowledge::run($this->shop);
 
     expect($saved->refresh()->only(['title', 'is_manual', 'kind', 'created_by_user_id']))->toBe(['title' => 'Diffuser testers', 'is_manual' => true, 'kind' => 'note', 'created_by_user_id' => $this->user->id])

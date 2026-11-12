@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\CRM\Livechat;
 
+use App\Actions\Chat\ChatSession\GetChatAssistantTranscript;
 use App\Actions\Chat\UI\FlagChatAiSummary;
 use App\Enums\CRM\Livechat\ChatTopicEnum;
 use App\Enums\CRM\Livechat\ChatAssignmentStatusEnum;
@@ -87,6 +88,7 @@ class ChatSessionListResource extends JsonResource
             'claim' => \App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($this->resource),
             'promise' => \App\Actions\Chat\ChatSession\GetChatReplyPromise::forList($this->resource),
             'urgent'  => \App\Actions\Chat\ChatSession\FlagUrgentChatRequest::current($this->resource),
+            'assistant_hand_over' => GetChatAssistantTranscript::forList($this->resource),
             'labels'  => $this->relationLoaded('labels') ? $this->labels->map(fn ($label) => ['id' => $label->id, 'name' => $label->name, 'colour' => $label->colour])->values() : [],
             'waiting_until' => \App\Actions\Chat\ChatSession\WaitForCustomerReply::until($this->resource),
             'is_unanswered' => $this->last_visitor_message_at && (!$this->last_agent_message_at || $this->last_visitor_message_at > $this->last_agent_message_at),

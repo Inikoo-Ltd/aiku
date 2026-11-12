@@ -76,6 +76,13 @@ const customerHref = (customerRoute: { name: string; parameters: Record<string, 
             <span v-else />
         </template>
 
+        <template #cell(handed_over)="{ item }">
+            <span v-if="item.handed_over" class="whitespace-nowrap text-green-700">
+                <FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width :aria-label="ctrans('Handed over')" />
+            </span>
+            <span v-else />
+        </template>
+
         <template #cell(cost)="{ item }">
             <span class="whitespace-nowrap tabular-nums text-gray-600">{{ locale.currencyFormatUnitCost(costCurrency, item.cost ?? 0) }}</span>
         </template>

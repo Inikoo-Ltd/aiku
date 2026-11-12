@@ -89,6 +89,23 @@ Ak chcete odpovedať, napíšte odpoveď pre zákazníka do poznámky pri označ
 
 Nastavujú to administrátori systému v **Organisations**: otvorte organizáciu, stlačte **Edit** a prejdite do časti **Restock questions**. Prepínač **Ask purchasing when there is no reliable date** je predvolene zapnutý; vypnutý znamená, že poradca odpovedá len z našich objednávok. **Restock questions go to** určuje, kto ich dostane; ak je prázdne, dostanú ich nákupcovia organizácie.
 
+### Všeobecné otázky a odovzdanie človeku
+
+Okrem produktov asistent odpovedá na otázky o nákupe v obchode: platba, doručenie, vrátenie tovaru, objednávanie a zákaznícky účet. Odpovedá z vlastných stránok obchodu s pravidlami, z nastavení obchodu a z poznámok zákazníckeho servisu a overených faktov, ktoré sú uložené v nastaveniach chatu obchodu, a uvedie odkaz na stránku, ktorú použil. Nikdy neodpovedá zo všeobecných znalostí a číslo, napríklad dodaciu lehotu alebo poplatok, zopakuje len vtedy, keď je napísané v texte, ktorý použil.
+
+Keď si nie je istý alebo sa otázka týka vlastnej objednávky, faktúry či vrátenia peňazí zákazníka, nehádá. Povie to a ponúkne, že sa opýta tímu, jedným ťuknutím na tlačidlo pod odpoveďou. Na stránke asistenta je navyše stále odkaz **Talk to a person** (hovoriť s človekom).
+
+Čo sa stane po ťuknutí, závisí od okamihu a od webu:
+
+- V čase chatu, keď je niekto k dispozícii, sa otvorí chat v chatovom okne webu.
+- Inak otázka príde ako emailová konverzácia. Zákazníkovi sa povie, kedy sa tím vráti a že odpoveď príde emailom, a jeho odpoveď na tento email pristane v tej istej konverzácii.
+- Obchod bez pripojenej emailovej schránky dostane webový chat, na ktorý sa odpovie neskôr.
+- Web bez chatu aj bez emailovej schránky žiadneho človeka neponúka.
+
+Pre chatový tím: tieto chaty prichádzajú do bežnej schránky a upozornení, označené menom asistenta. Filter **From the AI assistant** (od AI asistenta) zobrazí len ich. Konverzácia asistenta so zákazníkom je navrchu chatu, takže vidíte, čo už bolo povedané. Ak bola odpoveď asistenta nesprávna, označte ju tam ako **Wrong answer** (nesprávna odpoveď). Tieto chaty sa nezapočítavajú do čísel o čase odpovede chatu a pokrytí AI; hlásia sa v reporte **AI Assistant**, ako je vysvetlené nižšie.
+
+Aby asistent odpovedal na viac vecí, otvorte report a pozrite sa na **Questions the assistant could not answer** (otázky, na ktoré asistent nevedel odpovedať). Pridajte v nastaveniach chatu obchodu poznámku, ktorá na niektorú z nich odpovedá, a asistent na ňu nabudúce odpovie, približne do hodiny.
+
 ### Limity a čo sa zaznamenáva
 
 Každý zákazník sa môže opýtať 6 otázok za minútu, 40 za hodinu a 120 za deň. Odpoveď trvá niekoľko sekúnd a stránka na ňu čaká. Každá odpoveď je platené použitie AI, preto poradcu zapnite tam, kde chcete, aby ho zákazníci používali.
@@ -148,6 +165,22 @@ Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa t
 **From the search box to a question** (od vyhľadávacieho poľa k otázke) ukazuje, koľko vyhľadávaní sa uskutočnilo s ponúkaným tlačidlom **Ask**, v koľkých z nich sa zobrazila ponuka opýtať sa a koľko konverzácií sa otvorilo z vyhľadávacieho poľa, pričom pod tým sú otázky odmietnuté limitmi alebo rozpočtom.
 
 Hlavné čísla a kroky lievika sú odkazy: otvoria konverzácie, ktoré za nimi stoja.
+
+### Všeobecné otázky a odovzdania
+
+V záložke **Overview** časť **General questions and passing to a person** (všeobecné otázky a odovzdanie človeku) ukazuje, ako asistent zvláda otázky o obchode a odovzdania človeku. Počítajú sa len konverzácie, ktoré vznikli po zavedení tejto funkcie. Každé číslo sa porovnáva s predchádzajúcim obdobím a každé je odkazom na konverzácie, ktoré za ním stoja.
+
+- **General questions** (všeobecné otázky) počíta odpovede o obchode (pravidlá, doručenie, vrátenie tovaru, účet) a **Answered by the assistant** (zodpovedal asistent) tie, na ktoré odpovedal sám, bez ponuky človeka.
+- **Passed to a person** (odovzdané človeku) počíta zákazníkov, ktorí ťukli na ponuku opýtať sa tímu. **Hand-over rate** (miera odovzdania) je tento počet na jednu všeobecnú otázku, pričom pod ním je podiel konverzácií, ktoré skončili odovzdaním.
+- **AI cost of these answers** (náklady na AI za tieto odpovede) sú náklady len na všeobecné odpovede. **Answers marked wrong** (odpovede označené ako nesprávne) počíta odpovede, ktoré chatový tím označil ako nesprávne.
+- **Answered from** (odpovedané z) ukazuje, z čoho odpovede vychádzali: stránky s pravidlami, nastavenia obchodu, návody, poznámky, overené fakty alebo naučené pravidlá, opisy rodín alebo naše vlastné údaje.
+- **Why a person was offered** (prečo sa ponúkol človek) porovnáva pre každý dôvod (nebol si istý odpoveďou, otázka o vlastnej objednávke, zákazník požiadal o človeka), koľkokrát sa človek ponúkol a koľko zákazníkov sa odovzdalo.
+- **How it reached the team** (ako sa to dostalo k tímu) rozdeľuje odovzdania na živý chat, emailový chat s odpoveďou neskôr a webový chat s odpoveďou neskôr.
+- **First reply from a person** (prvá odpoveď od človeka) ukazuje v čase chatu a mimo neho, koľko bolo odovzdaní, na koľko odpovedal človek a mediánovú čakaciu dobu na túto prvú odpoveď. Mimo času chatu čakanie zahŕňa noc.
+- **After passing to a person** (po odovzdaní človeku) ukazuje, na koľko sa odpovedalo, koľko chatov je uzavretých a koľko zákazníkov zadalo objednávku do 7 dní od odovzdania. Posúdiť sa dajú len odovzdania staršie ako 7 dní a číslo uvádza, koľko ich je.
+- **Questions the assistant could not answer** (otázky, na ktoré asistent nevedel odpovedať) uvádza, na čo sa zákazníci pýtali, keď si asistent nebol istý, s počtom opýtaní, jazykmi a posledným časom, a odkazom **Open** (otvoriť) na najnovšiu konverzáciu. Otázky sa zoskupujú len vtedy, keď sú slová rovnaké, takže dva spôsoby, ako sa opýtať na to isté, sa zobrazia ako dva riadky.
+
+V záložke **Conversations** stĺpec ukazuje, ktoré konverzácie boli odovzdané človeku, a prepis pod každou odpoveďou ukazuje, odkiaľ pochádza, kedy sa ponúkol človek a do akého chatu sa odovzdala.
 
 ### Záložka Conversations
 

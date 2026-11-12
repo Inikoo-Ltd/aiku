@@ -23,6 +23,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Chat\ChatSession\GetChatCustomerTimeline;
 use App\Actions\Chat\ChatSession\GetChatDashboardVisitors;
 use App\Actions\Chat\ChatSession\GetChatMessages;
+use App\Actions\Chat\ChatSession\GetChatReports;
 use App\Actions\Chat\ChatSession\GetChatSessions;
 use App\Http\Resources\CRM\Livechat\ChatSessionListResource;
 use App\Actions\Chat\ChatSession\GetChatStatus;
@@ -76,6 +77,8 @@ use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
+use function Pest\Laravel\postJson;
 
 require_once __DIR__.'/../Support/ChatHelpers.php';
 
@@ -1786,4 +1789,211 @@ test('staff can sort the chat list by date, newest or oldest first', function ()
 
     expect($order('oldest'))->toBe([$older, $newer])
         ->and($order('newest'))->toBe([$newer, $older]);
+});
+
+function assistantHandOverTestChat(\App\Models\Catalogue\Shop $shop, ?\App\Models\Catalogue\Product $product = null, array $handOver = []): array
+{
+    $customer     = createCustomer($shop);
+    $conversation = \App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation::run($customer, \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum::SEARCH);
+
+    $question = \App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage::create([
+        'shopping_assistant_conversation_id' => $conversation->id,
+        'role'                               => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum::CUSTOMER,
+        'body'                               => 'Can I return an opened candle?',
+    ]);
+    $answer = \App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage::create([
+        'shopping_assistant_conversation_id' => $conversation->id,
+        'role'                               => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum::ASSISTANT,
+        'body'                               => 'Returns are accepted within 14 days.',
+        'answer_kind'                        => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum::SHOP_ANSWER,
+        'sources'                            => [['id' => 1, 'kind' => 'policy', 'source_type' => 'webpage', 'source_id' => '1', 'title' => 'Returns policy', 'url' => 'https://shop.test/returns']],
+        'hand_over_offer'                    => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum::NOT_SURE,
+    ]);
+    $handedOverNote = \App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage::create([
+        'shopping_assistant_conversation_id' => $conversation->id,
+        'role'                               => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum::ASSISTANT,
+        'body'                               => 'I have passed this to the team.',
+        'flags'                              => ['handed_over'],
+    ]);
+
+    if ($product) {
+        \App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent::create([
+            'shopping_assistant_conversation_id' => $conversation->id,
+            'shopping_assistant_message_id'      => $answer->id,
+            'type'                               => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum::SHOWN,
+            'product_id'                         => $product->id,
+            'position'                           => 1,
+            'created_at'                         => now(),
+        ]);
+    }
+
+    $session = ChatSession::create([
+        'ulid'                                => (string) Str::ulid(),
+        'shop_id'                             => $shop->id,
+        'channel'                             => ChatChannelEnum::WEBSITE,
+        'status'                              => ChatSessionStatusEnum::WAITING,
+        'last_visitor_message_at'             => now(),
+        'shopping_assistant_conversation_id'  => $conversation->id,
+    ]);
+    ChatMessage::create([
+        'chat_session_id' => $session->id,
+        'message_type'    => ChatMessageTypeEnum::TEXT,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => 'Can I return an opened candle?',
+    ]);
+
+    $handOverRow = \App\Models\CRM\ShoppingAssistant\ShoppingAssistantHandOver::create(array_merge([
+        'shopping_assistant_conversation_id' => $conversation->id,
+        'customer_message_id'                => $question->id,
+        'offer_message_id'                   => $answer->id,
+        'chat_session_id'                    => $session->id,
+        'reason'                             => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum::NOT_SURE,
+        'route'                              => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverRouteEnum::LIVE_CHAT,
+        'in_hours'                           => true,
+        'agent_available'                    => true,
+        'question'                           => 'Can I return an opened candle?',
+        'created_at'                         => now(),
+    ], $handOver));
+
+    return [$session, $conversation, $answer, $question, $handedOverNote, $handOverRow];
+}
+
+function assistantHandOverTestUser(\App\Models\SysAdmin\User $like, array $permissions): \App\Models\SysAdmin\User
+{
+    $user = \App\Models\SysAdmin\User::factory()->create(['group_id' => $like->group_id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($user, $permissions);
+    test()->actingAs($user->refresh(), 'sanctum');
+
+    return $user;
+}
+
+test('the chat list marks a chat handed over by the AI shopping assistant and the from_assistant filter keeps only those', function () {
+    [$fromAssistant] = assistantHandOverTestChat($this->shop);
+    $ordinary        = noiseTestEmailSession($this->shop, 'ordinary-ini245b3a@example.com', 'Hello', 'Do you ship to Norway?');
+
+    $filters = ['shop_id' => $this->shop->id, 'statuses' => ['waiting', 'active'], 'limit' => 500];
+    $rows    = fn (array $extra) => collect(GetChatSessions::make()->handle($filters + $extra)->items());
+
+    $all = $rows([]);
+    expect($all->pluck('id'))->toContain($fromAssistant->id)->toContain($ordinary->id);
+
+    $marked = ChatSessionListResource::make($all->firstWhere('id', $fromAssistant->id))->resolve()['assistant_hand_over'];
+    expect($marked)->toMatchArray([
+        'reason'       => 'not_sure',
+        'reason_label' => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum::labels()['not_sure'],
+        'route'        => 'live_chat',
+        'route_label'  => \App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverRouteEnum::labels()['live_chat'],
+        'name'         => \App\Actions\Chat\ChatSession\GetChatAssistantTranscript::assistantName($this->shop->website),
+    ])
+        ->and(ChatSessionListResource::make($all->firstWhere('id', $ordinary->id))->resolve()['assistant_hand_over'])->toBeNull();
+
+    $only = $rows(['from_assistant' => 1]);
+    expect($only->pluck('id'))->toContain($fromAssistant->id)->not->toContain($ordinary->id)
+        ->and($only->every(fn ($session) => $session->shopping_assistant_conversation_id !== null))->toBeTrue();
+
+    $cross = fn (array $extra) => collect(\App\Actions\Chat\GetCrossChannelSessions::make()->handle($filters + $extra)['rows'])->pluck('session.id');
+    expect($cross([]))->toContain($fromAssistant->id)->toContain($ordinary->id)
+        ->and($cross(['from_assistant' => 1]))->toContain($fromAssistant->id)->not->toContain($ordinary->id)
+        ->and(collect(\App\Actions\Chat\GetCrossChannelSessions::make()->handle($filters + ['from_assistant' => 1])['rows'])->every(fn ($row) => $row['channel'] !== 'whatsapp'))->toBeTrue();
+});
+
+test('the assistant transcript is read by staff who may view the shop chat and is not found for an ordinary chat', function () {
+    [, $product]                                                   = createProduct($this->shop);
+    [$session, $conversation, $answer, $question, $handedOverNote] = assistantHandOverTestChat($this->shop, $product);
+    $ordinary                                                      = noiseTestEmailSession($this->shop, 'ordinary-ini245b3b@example.com', 'Hello', 'Do you ship to Norway?');
+    $shopId                                                        = $this->shop->id;
+    $url                                                           = fn (ChatSession $chat) => route('grp.api.chats.sessions.assistant_transcript', $chat->ulid);
+
+    \Illuminate\Support\Facades\Auth::forgetGuards();
+    getJson($url($session))->assertUnauthorized();
+
+    assistantHandOverTestUser($this->user, ["products.$shopId.view"]);
+    getJson($url($session))->assertForbidden();
+
+    assistantHandOverTestUser($this->user, ["chat.$shopId.view"]);
+    $queries = 0;
+    \Illuminate\Support\Facades\DB::listen(function () use (&$queries) {
+        $queries++;
+    });
+
+    $json = getJson($url($session))->assertOk()->json();
+
+    expect($queries)->toBeLessThan(14)
+        ->and($json['conversation'])->toBe($conversation->ulid)
+        ->and($json['assistant_name'])->toBe(\App\Actions\Chat\ChatSession\GetChatAssistantTranscript::assistantName($this->shop->website))
+        ->and($json['can_rate'])->toBeFalse()
+        ->and($json['hand_overs'])->toHaveCount(1)
+        ->and($json['hand_overs'][0])->toMatchArray(['reason' => 'not_sure', 'route' => 'live_chat', 'in_hours' => true, 'question' => 'Can I return an opened candle?'])
+        ->and(collect($json['messages'])->pluck('id')->all())->toBe([$question->id, $answer->id, $handedOverNote->id])
+        ->and($json['messages'][0])->toMatchArray(['role' => 'customer', 'answer_kind' => null, 'products' => [], 'staff_rating' => null])
+        ->and($json['messages'][1])->toMatchArray([
+            'role'            => 'assistant',
+            'answer_kind'     => 'shop_answer',
+            'sources'         => [['title' => 'Returns policy', 'url' => 'https://shop.test/returns']],
+            'products'        => [['code' => $product->code, 'name' => $product->name]],
+            'hand_over_offer' => 'not_sure',
+            'handed_over'     => false,
+        ])
+        ->and($json['messages'][2]['handed_over'])->toBeTrue();
+
+    getJson($url($ordinary))->assertNotFound();
+
+    assistantHandOverTestUser($this->user, ["chat.$shopId"]);
+    getJson($url($session))->assertOk()->assertJsonPath('can_rate', true);
+});
+
+test('staff mark an assistant answer as wrong and take the mark back, only where they may act on the chat', function () {
+    [$session, , $answer, $question]               = assistantHandOverTestChat($this->shop);
+    [$otherSession, , $otherAnswer]                = assistantHandOverTestChat($this->shop);
+    $shopId                                        = $this->shop->id;
+    $rate                                          = fn (ChatSession $chat, $message, ?string $rating) => postJson(
+        route('grp.api.chats.sessions.assistant_transcript.rating', [$chat->ulid, $message->id]),
+        ['rating' => $rating]
+    );
+
+    $viewer = assistantHandOverTestUser($this->user, ["chat.$shopId.view"]);
+    $rate($session, $answer, 'wrong')->assertForbidden();
+    expect($answer->fresh()->staff_rating)->toBeNull();
+
+    $agent = assistantHandOverTestUser($this->user, ["chat.$shopId"]);
+    $rate($session, $answer, 'wrong')->assertOk()->assertJsonPath('staff_rating', 'wrong');
+
+    $rated = $answer->fresh();
+    expect($rated->staff_rating)->toBe('wrong')
+        ->and($rated->staff_rated_by_user_id)->toBe($agent->id)
+        ->and($rated->staff_rated_at)->not->toBeNull();
+
+    $rate($session, $answer, 'right')->assertUnprocessable();
+    $rate($session, $question, 'wrong')->assertNotFound();
+    $rate($session, $otherAnswer, 'wrong')->assertNotFound();
+    expect($otherAnswer->fresh()->staff_rating)->toBeNull();
+
+    $rate($session, $answer, null)->assertOk()->assertJsonPath('staff_rating', null);
+
+    $undone = $answer->fresh();
+    expect($undone->staff_rating)->toBeNull()
+        ->and($undone->staff_rated_by_user_id)->toBeNull()
+        ->and($undone->staff_rated_at)->toBeNull();
+});
+
+test('the AI coverage and the chat reports leave out chats handed over by the assistant and show them with the from-assistant filter', function () {
+    $group    = $this->organisation->group;
+    $shopIds  = collect([$this->shop->id]);
+    $reports  = fn (bool $fromAssistant = false) => GetChatReports::make()->handle($shopIds, 'all', [], $fromAssistant);
+    $received = fn () => \App\Actions\Chat\Reports\GetChatAiCoverage::run($group, 'last_hour')['matrix']['received']['total'];
+
+    $defaultBefore   = $reports()['conversations'];
+    $assistantBefore = $reports(true)['conversations'];
+    $coverageBefore  = $received();
+
+    [$fromAssistant] = assistantHandOverTestChat($this->shop);
+    $ordinary        = noiseTestEmailSession($this->shop, 'ordinary-ini245b3c@example.com', 'Hello', 'Do you ship to Norway?');
+
+    expect($reports()['conversations'] - $defaultBefore)->toBe(1)
+        ->and($reports(true)['conversations'] - $assistantBefore)->toBe(1)
+        ->and($reports(true)['by_channel'])->not->toBeEmpty()
+        ->and($received() - $coverageBefore)->toBe(1);
+
+    $fromAssistant->delete();
+    $ordinary->delete();
 });

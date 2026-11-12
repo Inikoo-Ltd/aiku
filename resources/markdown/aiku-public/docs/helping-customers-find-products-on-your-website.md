@@ -89,6 +89,23 @@ To answer, write the answer for the customer in the note when you mark the task 
 
 System administrators set it up under **Organisations**: open the organisation, press **Edit** and go to **Restock questions**. The switch **Ask purchasing when there is no reliable date** is on by default; turned off, the advisor only answers from our orders. **Restock questions go to** chooses who gets them; left empty, they go to the organisation's buyers.
 
+### General questions and passing to a person
+
+Besides products, the assistant answers questions about buying from the shop: payment, delivery, returns, ordering and the customer's account. It answers from the shop's own policy pages, the shop settings, and the customer service notes and verified facts kept in the shop's chat settings, and it links the page it used. It never answers from general knowledge, and it only repeats a figure, such as a delivery time or a fee, when that figure is written in the text it used.
+
+When it is not sure, or the question is about the customer's own order, invoice or refund, it does not guess. It says so and offers to ask the team, with one tap on a button under the answer. A **Talk to a person** link is also on the assistant page at all times.
+
+What happens on the tap depends on the moment and on the website:
+
+- Inside chat hours, with someone available, a chat opens in the website's chat window.
+- Otherwise the question arrives as an email conversation. The customer is told when the team is back and that the answer comes by email, and their reply to that email lands in the same conversation.
+- A shop with no mailbox connected gets a website chat that is answered later.
+- A website with neither chat nor a mailbox offers no person.
+
+For the chat team: these chats arrive in the normal inbox and alerts, marked with the assistant's name. Use the filter **From the AI assistant** to see only them. The assistant's conversation with the customer is at the top of the chat, so you can see what was already said. If an answer of the assistant was wrong, mark it **Wrong answer** there. These chats are not counted in the chat reply-time and AI coverage figures; they are reported on the **AI Assistant** report instead (see below).
+
+To make the assistant answer more, open the report and look at **Questions the assistant could not answer**. Add a note that answers one of them in the shop's chat settings, and the assistant will answer it next time, within about an hour.
+
 ### Limits and what is recorded
 
 Each customer can ask 6 questions a minute, 40 an hour and 120 a day. An answer takes a few seconds, and the page waits for it. Every answer is paid AI usage, so turn the advisor on where you want customers to use it.
@@ -148,6 +165,22 @@ At the top you choose the dates and can narrow the figures by language, by where
 **From the search box to a question** shows how many searches were made with the **Ask** button on offer, in how many of them the offer to ask was shown, and how many conversations were opened from the search box, with the questions refused by the limits or by the budget under it.
 
 The main figures and the funnel steps are links: they open the conversations behind them.
+
+### General questions and hand-overs
+
+On the **Overview** tab, **General questions and passing to a person** shows how the assistant handles questions about the shop and the hand-overs to a person. Only conversations that came after this feature was added are counted. Each figure compares with the previous period, and each is a link to the conversations behind it.
+
+- **General questions** counts the answers about the shop (policies, delivery, returns, the account) and **Answered by the assistant** those it answered itself, without offering a person.
+- **Passed to a person** counts the customers who tapped the offer to ask the team. **Hand-over rate** is that count per general question, with the share of conversations that ended in a hand-over under it.
+- **AI cost of these answers** is the cost of the general answers only. **Answers marked wrong** counts the answers the chat team marked as wrong.
+- **Answered from** shows what the answers drew on: policy pages, shop settings, guides, notes, verified facts or learned rules, family descriptions, or our own data.
+- **Why a person was offered** compares, for each reason (not sure of the answer, a question about their own order, the customer asked for a person), how many times a person was offered with how many customers passed on.
+- **How it reached the team** splits the hand-overs into live chat, email chat answered later, and website chat answered later.
+- **First reply from a person** shows, for inside and outside chat hours, how many hand-overs there were, how many got a reply from a person, and the median wait for that first reply. Outside chat hours the wait includes the night.
+- **After passing to a person** shows how many were replied to, how many chats are closed, and how many customers placed an order within 7 days of the hand-over. Only hand-overs older than 7 days can be judged, and the figure says how many that is.
+- **Questions the assistant could not answer** lists what customers asked when the assistant was not sure, with how many times, the languages and the last time, and an **Open** link to the latest conversation. Questions are grouped only when the words are the same, so two ways of asking the same thing show as two lines.
+
+On the **Conversations** tab, a column shows which conversations were handed over to a person, and the transcript shows, under each answer, where it came from, when a person was offered, and the chat it was passed to.
 
 ### The Conversations tab
 

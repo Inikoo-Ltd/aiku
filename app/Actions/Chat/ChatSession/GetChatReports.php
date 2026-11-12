@@ -25,6 +25,10 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * was opened and never typed into. Everything below counts only sessions with a message from
  * the visitor, and first reply is the first agent message minus the first visitor message,
  * never last_agent_message_at.
+ *
+ * Chats the AI shopping assistant handed over are not counted in these figures: they would read
+ * as unanswered chats overnight and distort the reply time. Asking for fromAssistant shows only
+ * those chats (WhatsApp has none), so they can still be looked at on their own.
  */
 class GetChatReports
 {
@@ -57,11 +61,15 @@ class GetChatReports
 
     private const array OPEN_STATUSES = ['active', 'waiting', 'transferred'];
 
+    private bool $fromAssistant = false;
+
     /**
      * @param  Collection<int, int>  $shopIds
      */
-    public function handle(Collection $shopIds, string $interval, array $shopNames = []): array
+    public function handle(Collection $shopIds, string $interval, array $shopNames = [], bool $fromAssistant = false): array
     {
+        $this->fromAssistant = $fromAssistant;
+
         [$from, $to] = $this->range($interval, $this->oldestConversationAt($shopIds));
 
         $days   = (int) $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) + 1;
@@ -172,6 +180,7 @@ class GetChatReports
                     and s.noise_verdict is not null
                     and s.shop_id in (:shops)
                     and s.created_at between :from and :to
+                    {$source['assistant']}
                 group by 1
             ",
             $shopIds,
@@ -208,6 +217,7 @@ class GetChatReports
                     and s.suggested_customer_id is not null
                     and s.shop_id in (:shops)
                     and s.created_at between :from and :to
+                    {$source['assistant']}
                 group by 1
             ",
             $shopIds,
@@ -563,9 +573,29 @@ class GetChatReports
 
         $shops = $shopIds->map(fn ($id) => (int) $id)->implode(', ');
 
-        return collect(self::SOURCES)->flatMap(
+        return $this->sources()->flatMap(
             fn (array $source) => DB::select(str_replace(':shops', $shops, $sql($source)), $bindings)
         );
+    }
+
+    /**
+     * The sources with their assistant condition worked out: by default chats handed over by the
+     * AI shopping assistant are left out of the chat source (and so out of every figure that
+     * uses its where), with fromAssistant only they are all it counts and WhatsApp is skipped.
+     *
+     * @return Collection<string, array<string, string>>
+     */
+    private function sources(): Collection
+    {
+        return collect(self::SOURCES)
+            ->when($this->fromAssistant, fn (Collection $sources) => $sources->only('chat'))
+            ->map(function (array $source, string $name) {
+                $assistant = $name === 'chat'
+                    ? ' and s.shopping_assistant_conversation_id is '.($this->fromAssistant ? 'not null' : 'null')
+                    : '';
+
+                return [...$source, 'assistant' => $assistant, 'where' => $source['where'].$assistant];
+            });
     }
 
     /**
