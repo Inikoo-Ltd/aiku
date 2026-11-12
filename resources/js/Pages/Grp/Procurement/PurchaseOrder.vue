@@ -938,12 +938,15 @@ const pageHeadWrappedActionKeys = ["edit", "delete_purchase_order"]
 
 const stageActionKeys: Record<string, string[]> = {
 	submitted: ["undo_confirm_purchase_order", "cancel_purchase_order"],
+	deposit_paid: ["proforma_invoice"],
 	in_warehouse: ["packing_instructions"],
 	handed_over: ["new_stock_delivery"],
 	received: ["edit_estimated_delivery_date"],
 }
 
 const actionKeysInStageAndPageHead = ["cancel_purchase_order"]
+
+const stageDocumentActionKeys = ["packing_instructions", "proforma_invoice"]
 
 const uncheckedReceiptItems = computed(() => (props.agent_receiving?.lines ?? []).flatMap((line) =>
 	line.items.filter((item) => item.check_route && !item.is_checked)
@@ -1272,10 +1275,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	<p v-if="actionError" class="mx-4 mt-2 text-xs text-red-600">{{ actionError }}</p>
 
 	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :sample="stages.sample">
-		<template v-if="agent_money" #stage-deposit_paid>
+		<template v-if="agent_money && !stageActions.deposit_paid" #stage-deposit_paid>
 			<AgentPurchaseOrderMoney :money="agent_money" />
 		</template>
-		<template v-else-if="payments" #stage-deposit_paid>
+		<template v-else-if="payments && !stageActions.deposit_paid" #stage-deposit_paid>
 			<PurchaseOrderDepositPayments :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
 		</template>
 		<template v-if="agent_money" #check-balance>
@@ -1319,7 +1322,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<PingIcon class="!absolute -right-1 -top-1 text-[7px] text-amber-500" aria-hidden="true" />
 				</span>
 				<template v-for="action in actions" :key="action.key">
-					<a v-if="action.key === 'packing_instructions'" :href="route(action.route.name, action.route.parameters)" target="_blank">
+					<a v-if="stageDocumentActionKeys.includes(action.key)" :href="route(action.route.name, action.route.parameters)" target="_blank">
 						<Button type="tertiary" size="xs" full :label="action.label" :tooltip="action.tooltip">
 							<template #icon>
 								<FontAwesomeIcon :icon="action.icon" class="text-red-500" fixed-width aria-hidden="true" />
@@ -1345,6 +1348,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 							</template>
 						</Button>
 					</span>
+				</template>
+				<template v-if="stageKey === 'deposit_paid'">
+					<AgentPurchaseOrderMoney v-if="agent_money" :money="agent_money" />
+					<PurchaseOrderDepositPayments v-else-if="payments" :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
 				</template>
 			</div>
 		</template>

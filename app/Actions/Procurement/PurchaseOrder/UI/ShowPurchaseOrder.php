@@ -9,6 +9,7 @@
 namespace App\Actions\Procurement\PurchaseOrder\UI;
 
 use App\Actions\Procurement\PurchaseOrder\PdfPackingInstructions;
+use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderProformaInvoice;
 use App\Actions\SupplyChain\PackingSpec\GetPurchaseOrderPackingSpecGaps;
 use App\Events\BroadcastPurchaseOrderLastEdited;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
@@ -250,6 +251,19 @@ class ShowPurchaseOrder extends OrgAction
                                 ],
                             ],
                         ],
+                        PdfPurchaseOrderProformaInvoice::isAvailable($purchaseOrder) ? [
+                            'type'    => 'button',
+                            'style'   => 'tertiary',
+                            'label'   => __('Proforma Invoice'),
+                            'tooltip' => __('Proforma invoice of this order, to request the deposit or payment'),
+                            'target'  => '_blank',
+                            'icon'    => 'fal fa-file-pdf',
+                            'key'     => 'proforma_invoice',
+                            'route'   => [
+                                'name'       => 'grp.org.procurement.purchase_orders.proforma_invoice',
+                                'parameters' => ['organisation' => $this->organisation->slug, 'purchaseOrder' => $purchaseOrder->slug, 'filename' => PdfPurchaseOrderProformaInvoice::make()->filename($purchaseOrder)],
+                            ],
+                        ] : false,
                         in_array($purchaseOrder->parent_type, ['OrgAgent', 'OrgSupplier']) ? [
                             'type'    => 'button',
                             'style'   => 'tertiary',
