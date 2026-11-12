@@ -11,6 +11,11 @@ use App\Enums\CRM\Livechat\WhatsappTemplateTagEnum;
 use App\Models\CRM\Customer;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
+use App\Models\Catalogue\Product;
+use App\Models\Dispatching\Shipment;
+use App\Models\Ordering\Order;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -25,16 +30,17 @@ class ResolveWhatsappTemplateTags
 
     /**
      * @param  array<int, string>  $tags
+     * @param  array{product_ids?: array<int, int>, order_ids?: array<int, int>}  $context
      * @return array{values: array<int, string>, missing: array<int, string>}
      */
-    public function handle(MetaChatSession $metaChatSession, array $tags, ?ChatAgent $agent = null): array
+    public function handle(MetaChatSession $metaChatSession, array $tags, ?ChatAgent $agent = null, ?Order $order = null, array $context = []): array
     {
         $values  = [];
         $missing = [];
 
         foreach ($tags as $tag) {
             $case = WhatsappTemplateTagEnum::tryFrom($tag);
-            $value = $case ? $this->resolve($case, $metaChatSession, $agent) : null;
+            $value = $case ? $this->resolve($case, $metaChatSession, $agent, $order, $context) : null;
 
             if (blank($value)) {
                 $missing[] = $tag;
@@ -47,10 +53,15 @@ class ResolveWhatsappTemplateTags
         return ['values' => $values, 'missing' => $missing];
     }
 
-    protected function resolve(WhatsappTemplateTagEnum $tag, MetaChatSession $metaChatSession, ?ChatAgent $agent): ?string
+    /**
+     * A notification is about the order that triggered it, so a given order wins over the
+     * customer's latest one, which may already be a newer basket.
+     */
+    protected function resolve(WhatsappTemplateTagEnum $tag, MetaChatSession $metaChatSession, ?ChatAgent $agent, ?Order $order = null, array $context = []): ?string
     {
         $customer = $this->customer($metaChatSession);
         $shop     = $metaChatSession->shop;
+        $order    ??= $this->lastOrder($customer);
 
         return match ($tag) {
             WhatsappTemplateTagEnum::CUSTOMER_NAME          => $this->customerName($metaChatSession, $customer),
@@ -67,11 +78,11 @@ class ResolveWhatsappTemplateTags
             WhatsappTemplateTagEnum::SHOP_EMAIL => $shop?->email,
             WhatsappTemplateTagEnum::SHOP_PHONE => $shop?->phone,
 
-            WhatsappTemplateTagEnum::ORDER_NUMBER      => $this->lastOrder($customer)?->reference,
-            WhatsappTemplateTagEnum::ORDER_TOTAL       => $this->money($this->lastOrder($customer)?->total_amount, $shop),
-            WhatsappTemplateTagEnum::ORDER_DATE        => $this->lastOrder($customer)?->date?->format('j M Y'),
-            WhatsappTemplateTagEnum::ORDER_STATE       => Str::headline((string) $this->lastOrder($customer)?->state?->value),
-            WhatsappTemplateTagEnum::ORDER_ITEMS_COUNT => $this->lastOrder($customer)?->number_item_transactions,
+            WhatsappTemplateTagEnum::ORDER_NUMBER      => $this->orderReferences($context) ?? $order?->reference,
+            WhatsappTemplateTagEnum::ORDER_TOTAL       => $this->money($order?->total_amount, $shop),
+            WhatsappTemplateTagEnum::ORDER_DATE        => $order?->date?->format('j M Y'),
+            WhatsappTemplateTagEnum::ORDER_STATE       => Str::headline((string) $order?->state?->value),
+            WhatsappTemplateTagEnum::ORDER_ITEMS_COUNT => $order?->number_item_transactions,
 
             WhatsappTemplateTagEnum::INVOICE_NUMBER => $this->lastInvoice($customer)?->reference,
             WhatsappTemplateTagEnum::INVOICE_TOTAL  => $this->money($this->lastInvoice($customer)?->total_amount, $shop),
@@ -82,9 +93,77 @@ class ResolveWhatsappTemplateTags
             WhatsappTemplateTagEnum::DELIVERY_POSTCODE => $customer?->deliveryAddress?->postal_code,
             WhatsappTemplateTagEnum::DELIVERY_COUNTRY  => $customer?->deliveryAddress?->country?->name,
 
+            WhatsappTemplateTagEnum::PRODUCT_NAMES => $this->productNames($context),
+            WhatsappTemplateTagEnum::PRODUCT_COUNT => $this->products($context)->count() ?: null,
+            WhatsappTemplateTagEnum::PRODUCT_URL   => $this->products($context)->first()?->webpage?->getCanonicalUrl(),
+
+            WhatsappTemplateTagEnum::TRACKING_CARRIER => $this->carrierNames($order),
+            WhatsappTemplateTagEnum::TRACKING_NUMBER  => $this->trackingNumbers($order),
+            WhatsappTemplateTagEnum::TRACKING_URL     => $this->trackingUrls($order),
+
             WhatsappTemplateTagEnum::AGENT_NAME       => $agent?->user?->contact_name,
             WhatsappTemplateTagEnum::AGENT_FIRST_NAME => $this->firstWord($agent?->user?->contact_name),
         };
+    }
+
+    public const PRODUCT_NAMES_MAX_LENGTH = 400;
+
+    /**
+     * @param  array{product_ids?: array<int, int>}  $context
+     * @return Collection<int, Product>
+     */
+    protected function products(array $context): Collection
+    {
+        $productIds = array_values(array_unique(array_map('intval', Arr::get($context, 'product_ids', []))));
+
+        if (!$productIds) {
+            return collect();
+        }
+
+        return Product::whereIn('id', $productIds)->with('webpage')->get()
+            ->sortBy(fn (Product $product) => array_search($product->id, $productIds))
+            ->values();
+    }
+
+    /**
+     * A long list is cut on a whole name and closed with how many were left out, so the
+     * parameter stays well inside what WhatsApp accepts and never ends mid word.
+     *
+     * @param  array{product_ids?: array<int, int>}  $context
+     */
+    protected function productNames(array $context): ?string
+    {
+        $names = $this->products($context)->pluck('name')->filter()->values();
+
+        if ($names->isEmpty()) {
+            return null;
+        }
+
+        $shown = [];
+        foreach ($names as $name) {
+            if ($shown && mb_strlen(implode(', ', [...$shown, $name])) > self::PRODUCT_NAMES_MAX_LENGTH) {
+                break;
+            }
+            $shown[] = $name;
+        }
+
+        $left = $names->count() - count($shown);
+
+        return implode(', ', $shown).($left ? ' '.__('and :count more', ['count' => $left]) : '');
+    }
+
+    /**
+     * @param  array{order_ids?: array<int, int>}  $context
+     */
+    protected function orderReferences(array $context): ?string
+    {
+        $orderIds = array_values(array_unique(array_map('intval', Arr::get($context, 'order_ids', []))));
+
+        if (!$orderIds) {
+            return null;
+        }
+
+        return Order::whereIn('id', $orderIds)->orderBy('id')->pluck('reference')->filter()->implode(', ') ?: null;
     }
 
     protected function firstWord(?string $value): ?string
@@ -148,6 +227,47 @@ class ResolveWhatsappTemplateTags
         $domain = $metaChatSession->shop?->website?->domain;
 
         return $domain ? 'https://'.ltrim($domain, '/') : null;
+    }
+
+    /**
+     * @return Collection<int, Shipment>
+     */
+    protected function shipments(?Order $order): Collection
+    {
+        $deliveryNote = $order?->currentDeliveryNote();
+
+        return $deliveryNote ? $deliveryNote->shipments()->with('shipper')->get() : collect();
+    }
+
+    protected function carrierNames(?Order $order): ?string
+    {
+        return $this->shipments($order)
+            ->map(fn (Shipment $shipment) => $shipment->shipper?->trade_as ?: $shipment->shipper?->name)
+            ->filter()
+            ->unique()
+            ->implode(', ') ?: null;
+    }
+
+    protected function trackingNumbers(?Order $order): ?string
+    {
+        return $this->shipments($order)
+            ->flatMap(fn (Shipment $shipment) => $shipment->trackings ?: [$shipment->tracking])
+            ->filter()
+            ->unique()
+            ->implode(', ') ?: null;
+    }
+
+    /**
+     * WhatsApp refuses newlines in a parameter, so an order shipped in several parcels
+     * carries every link on one line.
+     */
+    protected function trackingUrls(?Order $order): ?string
+    {
+        return $this->shipments($order)
+            ->flatMap(fn (Shipment $shipment) => Arr::wrap($shipment->tracking_urls))
+            ->filter()
+            ->unique()
+            ->implode(' ') ?: null;
     }
 
     protected function lastOrder(?Customer $customer)

@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property int $id
- * @property int $whatsapp_campaign_id
+ * @property int|null $whatsapp_campaign_id
+ * @property int|null $whatsapp_bulk_run_id
  * @property int|null $meta_chat_message_id
  * @property int|null $whatsapp_delivery_channel_id
  * @property string $recipient_type Customer, MetaChatSession
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read WhatsappCampaign|null $whatsappCampaign
+ * @property-read WhatsappBulkRun|null $whatsappBulkRun
  * @property-read MetaChatMessage|null $metaChatMessage
  * @property-read WhatsappDeliveryChannel|null $deliveryChannel
  * @property-read Model|\Eloquent $recipient
@@ -42,6 +44,11 @@ class WhatsappRecipient extends Model
     public function whatsappCampaign(): BelongsTo
     {
         return $this->belongsTo(WhatsappCampaign::class);
+    }
+
+    public function whatsappBulkRun(): BelongsTo
+    {
+        return $this->belongsTo(WhatsappBulkRun::class);
     }
 
     public function metaChatMessage(): BelongsTo

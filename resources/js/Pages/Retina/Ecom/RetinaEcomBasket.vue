@@ -123,6 +123,11 @@ const props = defineProps<{
         label: string
         update_route: routeType
     }
+    whatsapp_notifications?: {
+        is_subscribed: boolean
+        label: string
+        update_route: routeType
+    } | null
     total_to_pay: string
     cart_gross_amount: number
     routes: {
@@ -232,6 +237,7 @@ const onSelectShipper = async (shipperId: number) => {
 const locale = inject('locale', aikuLocaleStructure)
 const screenType = inject<string>('screenType', 'desktop')
 const isWhatsAppOptInShown = !!props.whatsapp_newsletter && !props.whatsapp_newsletter.is_subscribed && !!props.whatsapp_newsletter.update_route.parameters.customerComms
+const isWhatsAppNotificationsOptInShown = !!props.whatsapp_notifications && !props.whatsapp_notifications.is_subscribed && !!props.whatsapp_notifications.update_route.parameters.customerComms
 
 const isModalProductListOpen = ref(false)
 const isModalUploadSpreadsheet = ref(false)
@@ -1063,6 +1069,16 @@ const onChangeInsurance = async (val: boolean) => {
             v-if="isWhatsAppOptInShown"
             :label="whatsapp_newsletter.label"
             :updateRoute="whatsapp_newsletter.update_route"
+        />
+
+        <WhatsAppNewsletterOptIn
+            v-if="isWhatsAppNotificationsOptInShown && whatsapp_notifications"
+            :label="whatsapp_notifications.label"
+            :updateRoute="whatsapp_notifications.update_route"
+            field="is_subscribed_to_whatsapp_notifications"
+            :payload="{ whatsapp_notifications_subscribed_origin: 'checkout' }"
+            inputId="opt_in_whatsapp_notifications_checkout"
+            :subscribedText="ctrans('Done. We will send your order updates to your WhatsApp.')"
         />
     </template>
     

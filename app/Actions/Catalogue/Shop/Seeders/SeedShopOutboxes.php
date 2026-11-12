@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop\Seeders;
 
 use App\Actions\Comms\Outbox\StoreOutbox;
 use App\Actions\Comms\Outbox\UpdateOutbox;
+use App\Actions\Comms\WhatsappOutbox\SeedShopWhatsappOutboxes;
 use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -69,6 +70,8 @@ class SeedShopOutboxes
                 $this->setEmailOngoingRuns($outbox, $case, $shop);
             }
         }
+
+        SeedShopWhatsappOutboxes::run($shop);
     }
 
     public string $commandSignature = 'shop:seed_outboxes';

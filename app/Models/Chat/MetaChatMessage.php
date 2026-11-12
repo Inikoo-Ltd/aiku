@@ -41,6 +41,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
+ * @property int|null $whatsapp_outbox_id
  */
 class MetaChatMessage extends Model implements HasMedia
 {

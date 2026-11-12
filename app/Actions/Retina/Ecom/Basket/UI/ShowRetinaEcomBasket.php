@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Actions\Ordering\PreOrder\GetBasketPreOrders;
 use App\Actions\Ordering\Order\GetOrderShippingOptions;
 use App\Actions\Iris\Basket\GetBasketBonusStockPreview;
@@ -262,6 +263,14 @@ class ShowRetinaEcomBasket extends RetinaAction
                         'parameters' => ['customerComms' => $this->customer->comms?->id],
                     ],
                 ],
+                'whatsapp_notifications' => SendCustomerNotificationWhatsapp::make()->canOfferOptIn($this->customer) ? [
+                    'is_subscribed' => (bool) $this->customer->comms?->is_subscribed_to_whatsapp_notifications,
+                    'label'         => __('Send me order updates (confirmation, dispatch and tracking) on WhatsApp.'),
+                    'update_route'  => [
+                        'name'       => 'retina.models.customer_comms.update',
+                        'parameters' => ['customerComms' => $this->customer->comms?->id],
+                    ],
+                ] : null,
                 'shipping_options'   => $order ? GetOrderShippingOptions::run($order) : null,
                 'select_shipper_route' => $order ? [
                     'name'       => 'retina.models.order.select_shipper',

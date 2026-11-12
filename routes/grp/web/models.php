@@ -185,6 +185,7 @@ use App\Actions\Comms\Outbox\AbandonedCheckout\SendAbandonedCheckoutReminder;
 use App\Actions\Comms\Outbox\PublishOutbox;
 use App\Actions\Comms\Outbox\StoreWorkshopOutboxTemplate;
 use App\Actions\Comms\Outbox\UpdateOutbox;
+use App\Actions\Comms\WhatsappOutbox\UpdateWhatsappOutbox;
 use App\Actions\Comms\Outbox\UpdateWorkshopOutbox;
 use App\Actions\Comms\OutboxHasSubscribers\DeleteOutboxHasSubscriber;
 use App\Actions\Comms\OutboxHasSubscribers\StoreManyOutboxHasSubscriber;
@@ -1574,6 +1575,8 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
         Route::post('mailshot/{mailshot:id}/schedule', SetMailshotAsScheduled::class)->name('mailshot.schedule')->withoutScopedBindings();
         Route::post('mailshot/{mailshot:id}/cancel-schedule', CancelMailshotSchedule::class)->name('mailshot.cancel-schedule')->withoutScopedBindings();
     });
+
+    Route::patch('whatsapp-outboxes/{whatsappOutbox:id}', [UpdateWhatsappOutbox::class, 'inShop'])->name('whatsapp_outboxes.update')->withoutScopedBindings();
 
     Route::name('mailshot.')->prefix('mailshot/{mailshot:id}')->group(function () {
         Route::patch('/workshop', UpdateWorkshopMailShot::class)->name('workshop.update')->withoutScopedBindings();

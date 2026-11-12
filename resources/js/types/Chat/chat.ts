@@ -3,7 +3,7 @@
 // --------------------------
 export interface LastMessage {
 	message?: string
-	sender_type: "guest" | "user" | "agent" | "system" | "system_campaign"
+	sender_type: "guest" | "user" | "agent" | "system" | "system_campaign" | "system_notification"
 	created_at?: string
 	created_at_timestamp?: number
 	is_read: boolean
@@ -216,7 +216,7 @@ export interface ChatMessage {
 	message_text: string
 	html_body?: string | null
 	message_type?: "text" | "image" | "file"
-	sender_type: "guest" | "user" | "agent" | "system" | "system_campaign"
+	sender_type: "guest" | "user" | "agent" | "system" | "system_campaign" | "system_notification"
 	created_at: string
 	is_read?: boolean
 	reactions?: ChatMessageReactionGroup[]

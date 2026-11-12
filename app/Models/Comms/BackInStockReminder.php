@@ -31,6 +31,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property string|null $source_id
+ * @property \Illuminate\Support\Carbon|null $email_notified_at
+ * @property \Illuminate\Support\Carbon|null $whatsapp_notified_at
  * @property-read Customer|null $customer
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
@@ -46,7 +48,9 @@ class BackInStockReminder extends Model
     use InShop;
 
     protected $casts = [
-        'un_reminded_at'  => 'datetime'
+        'un_reminded_at'       => 'datetime',
+        'email_notified_at'    => 'datetime',
+        'whatsapp_notified_at' => 'datetime',
     ];
 
     protected $guarded = [];

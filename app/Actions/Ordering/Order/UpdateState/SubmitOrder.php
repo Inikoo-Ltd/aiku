@@ -10,6 +10,8 @@ namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Ordering\Order\GetOrderInsertsWithoutArtwork;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
@@ -251,6 +253,7 @@ class SubmitOrder extends OrgAction
              * and a confirmation says the opposite of what they needed to hear (HELP-3116). */
             if ($order->pay_status == OrderPayStatusEnum::PAID || !$order->isPlacedOnAChannel()) {
                 SendNewOrderEmailToCustomer::dispatch($order->id);
+                SendCustomerNotificationWhatsapp::dispatch($order->customer, OutboxCodeEnum::ORDER_CONFIRMATION, $order);
             }
         }
 

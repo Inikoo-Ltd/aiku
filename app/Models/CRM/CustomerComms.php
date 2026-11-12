@@ -80,6 +80,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $whatsapp_newsletter_unsubscribed_author_id
  * @property string|null $whatsapp_newsletter_unsubscribed_origin_type EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)
  * @property string|null $whatsapp_newsletter_unsubscribed_origin_id
+ * @property bool $is_subscribed_to_whatsapp_notifications
+ * @property string|null $whatsapp_notifications_subscribed_at
+ * @property string|null $whatsapp_notifications_subscribed_origin
+ * @property string|null $whatsapp_notifications_unsubscribed_at
+ * @property string|null $whatsapp_notifications_unsubscribed_author_type Customer|User
+ * @property string|null $whatsapp_notifications_unsubscribed_author_id
+ * @property string|null $whatsapp_notifications_unsubscribed_origin_type
+ * @property string|null $whatsapp_notifications_unsubscribed_origin_id
  * @property-read \App\Models\CRM\Customer|null $customer
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newQuery()

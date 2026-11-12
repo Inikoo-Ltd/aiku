@@ -16,7 +16,9 @@ use App\Actions\Fulfilment\Fulfilment\UI\EditFulfilment;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Actions\Comms\WhatsappOutbox\UI\GetWhatsappOutboxesTab;
 use App\Enums\Comms\Outbox\OutboxTypeEnum;
+use App\Enums\UI\Mail\CustomerNotificationOutboxesTabsEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Http\Resources\Mail\OutboxesResource;
 use App\InertiaTable\InertiaTable;
@@ -43,6 +45,8 @@ class IndexOutboxes extends OrgAction
     use WithCommsSubNavigation;
 
     private Group|Shop|Organisation|PostRoom|Website|Fulfilment $parent;
+
+    private bool $hasChannelTabs = false;
 
 
     public function handle(Group|Shop|Organisation|PostRoom|OrgPostRoom|Website|Fulfilment $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
@@ -161,6 +165,10 @@ class IndexOutboxes extends OrgAction
     {
         $subNavigation = $this->getCommsNavigation($this->parent);
 
+        if ($this->hasChannelTabs && $this->parent instanceof Shop) {
+            return $this->channelTabsResponse($outboxes, $request, $subNavigation);
+        }
+
         return Inertia::render(
             'Comms/Outboxes',
             [
@@ -178,6 +186,40 @@ class IndexOutboxes extends OrgAction
 
             ]
         )->table($this->tableStructure($this->parent));
+    }
+
+    /**
+     * Customer notifications go out by email and, for customers who opted in, by WhatsApp,
+     * so the page shows one tab per channel over the same outboxes.
+     */
+    private function channelTabsResponse(LengthAwarePaginator $outboxes, ActionRequest $request, array $subNavigation): Response
+    {
+        $shop = $this->parent;
+
+        return Inertia::render(
+            'Comms/Outboxes',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'title'       => __('Outboxes'),
+                'pageHead'    => [
+                    'title'         => __('Outboxes'),
+                    'subNavigation' => $subNavigation,
+                ],
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => CustomerNotificationOutboxesTabsEnum::navigation(),
+                ],
+
+                CustomerNotificationOutboxesTabsEnum::EMAIL->value => OutboxesResource::collection($outboxes),
+
+                CustomerNotificationOutboxesTabsEnum::WHATSAPP->value => $this->tab == CustomerNotificationOutboxesTabsEnum::WHATSAPP->value
+                    ? fn () => GetWhatsappOutboxesTab::run($shop)
+                    : Inertia::optional(fn () => GetWhatsappOutboxesTab::run($shop)),
+            ]
+        )->table($this->tableStructure($this->parent, CustomerNotificationOutboxesTabsEnum::EMAIL->value));
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
@@ -228,10 +270,11 @@ class IndexOutboxes extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inShopCustomerNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
+        $this->parent              = $shop;
+        $this->hasChannelTabs      = true;
+        $this->initialisationFromShop($shop, $request)->withTab(CustomerNotificationOutboxesTabsEnum::values());
 
-        return $this->handle(parent: $shop, bucket: OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
+        return $this->handle(parent: $shop, prefix: CustomerNotificationOutboxesTabsEnum::EMAIL->value, bucket: OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
     }
 
     /** @noinspection PhpUnusedParameterInspection */

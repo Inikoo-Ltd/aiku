@@ -12,6 +12,8 @@ use App\Actions\Production\JobOrder\FillToOrder;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\ReusePicksFromCancelledDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
@@ -202,6 +204,7 @@ class SendOrderToWarehouse extends OrgAction
             ])) {
                 SendNewOrderEmailToSubscribers::dispatch($order->id);
                 SendNewOrderEmailToCustomer::dispatch($order->id);
+                SendCustomerNotificationWhatsapp::dispatch($order->customer, OutboxCodeEnum::ORDER_CONFIRMATION, $order);
             }
 
             return null;
@@ -312,6 +315,7 @@ class SendOrderToWarehouse extends OrgAction
         ])) {
             SendNewOrderEmailToSubscribers::dispatch($order->id);
             SendNewOrderEmailToCustomer::dispatch($order->id);
+            SendCustomerNotificationWhatsapp::dispatch($order->customer, OutboxCodeEnum::ORDER_CONFIRMATION, $order);
         }
 
         return $deliveryNote;

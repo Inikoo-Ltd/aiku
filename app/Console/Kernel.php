@@ -42,6 +42,8 @@ use App\Actions\Comms\Outbox\DueToReorder\RunDueToReorderEmailBulkRuns;
 use App\Actions\Comms\Outbox\LowStockInBasket\RunBasketLowStockEmailBulkRuns;
 use App\Actions\Comms\Outbox\NewCustomerPush\RunNewCustomerPushEmailBulkRuns;
 use App\Actions\Comms\Outbox\OutOfStockInOrder\RunOutOfStockInOrderEmailBulkRuns;
+use App\Actions\Comms\WhatsappBulkRun\RunWhatsappBulkRuns;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Actions\Ordering\CheckoutAbandonment\RunCheckoutAbandonmentScan;
 use App\Actions\Ordering\Order\SweepGoldRewardWindowBaskets;
 use App\Actions\Comms\Outbox\BasketOnOffer\RunBasketOnOfferEmailBulkRuns;
@@ -503,6 +505,15 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
+                $schedule->job(RunWhatsappBulkRuns::makeJob(OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION))->hourly()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunWhatsappOutOfStockInOrderBulkRuns',
+                ),
+                name: 'RunWhatsappOutOfStockInOrderBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
                 $schedule->command('run:current_stock_history')->twiceDailyAt(0, 22, 5)->onOneServer()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
                     monitorSlug: 'RunCurrentStockHistory',
                 ),
@@ -931,6 +942,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'BackToStockHydrateEmailBulkRuns',
                 ),
                 name: 'BackToStockHydrateEmailBulkRuns',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunWhatsappBulkRuns::makeJob(OutboxCodeEnum::OOS_NOTIFICATION))->dailyAt('15:05')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunWhatsappBackInStockBulkRuns',
+                ),
+                name: 'RunWhatsappBackInStockBulkRuns',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

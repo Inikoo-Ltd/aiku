@@ -18,7 +18,7 @@ import { formatWhatsappMarkup, stripPictureTokens } from "@/Composables/useWhats
 import { useCopyText } from "@/Composables/useCopyText"
 import FlagWrongButton from "@/Components/Chat/FlagWrongButton.vue"
 
-type SenderType = "guest" | "user" | "agent" | "system" | "system_campaign"
+type SenderType = "guest" | "user" | "agent" | "system" | "system_campaign" | "system_notification"
 type MessageStatus = "sending" | "sent" | "failed"
 type ViewerType = "user" | "agent"
 
@@ -241,7 +241,7 @@ const isMailedNotice = computed(() => !!props.mail && props.message.sender_type 
 
 const isFromViewer = computed(() => {
     if (props.viewerType === "agent") {
-        return ["agent", "system_campaign"].includes(props.message.sender_type) || isMailedNotice.value
+        return ["agent", "system_campaign", "system_notification"].includes(props.message.sender_type) || isMailedNotice.value
     }
 
     return ["user", "guest"].includes(props.message.sender_type)

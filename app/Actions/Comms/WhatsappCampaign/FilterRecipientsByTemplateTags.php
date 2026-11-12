@@ -112,7 +112,13 @@ class FilterRecipientsByTemplateTags
             /* Resolved from the agent handling a conversation. A campaign send has no agent,
                so these are missing for every recipient and the template can reach nobody. */
             WhatsappTemplateTagEnum::AGENT_NAME,
-            WhatsappTemplateTagEnum::AGENT_FIRST_NAME => $recipients->whereRaw('1 = 0'),
+            WhatsappTemplateTagEnum::AGENT_FIRST_NAME,
+            WhatsappTemplateTagEnum::TRACKING_CARRIER,
+            WhatsappTemplateTagEnum::TRACKING_NUMBER,
+            WhatsappTemplateTagEnum::TRACKING_URL,
+            WhatsappTemplateTagEnum::PRODUCT_NAMES,
+            WhatsappTemplateTagEnum::PRODUCT_COUNT,
+            WhatsappTemplateTagEnum::PRODUCT_URL => $recipients->whereRaw('1 = 0'),
         };
     }
 

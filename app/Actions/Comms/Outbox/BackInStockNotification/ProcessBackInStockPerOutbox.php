@@ -12,7 +12,6 @@ use App\Actions\Comms\EmailBulkRun\UpdateEmailBulkRunRecipientStoredAt;
 use App\Actions\Comms\Outbox\WithGenerateEmailBulkRuns;
 use App\Models\Comms\Outbox;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessBackInStockPerOutbox
@@ -31,35 +30,7 @@ class ProcessBackInStockPerOutbox
 
         $currentDateTime = Carbon::now()->utc();
 
-        // make customers as the main table
-        $baseQuery = DB::table('customers');
-        $baseQuery->join('back_in_stock_reminders', 'customers.id', '=', 'back_in_stock_reminders.customer_id');
-        $baseQuery->join('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
-        // select options
-        $baseQuery->select(
-            'customers.id',
-            'customers.email',
-            'customers.shop_id',
-            DB::raw('STRING_AGG(back_in_stock_reminders.id::TEXT, \',\' ORDER BY back_in_stock_reminders.id) AS reminder_ids'),
-            DB::raw('STRING_AGG(back_in_stock_reminders.product_id::TEXT, \',\' ORDER BY back_in_stock_reminders.product_id) AS product_ids')
-        );
-
-        // where conditions
-        $baseQuery->where('back_in_stock_reminders.shop_id', $outbox->shop_id);
-        $baseQuery->where('products.available_quantity', '>', 0);
-        $baseQuery->where('products.back_in_stock_since', '>', DB::raw('back_in_stock_reminders.created_at'));
-
-        $baseQuery->where('products.back_in_stock_since', '>=', $currentDateTime->copy()->subDays(7));
-
-        // check another customers condition
-        $baseQuery->whereNull('customers.deleted_at');
-        // check another product condition
-        $baseQuery->whereNull('products.deleted_at');
-        // order by customer id
-        $baseQuery->orderBy('customers.id');
-        $baseQuery->groupBy('customers.id');
-
-        // \Log::info($baseQuery->toRawSql());
+        $baseQuery = GetBackInStockCustomersQuery::run($outbox->shop_id, GetBackInStockCustomersQuery::EMAIL);
 
         $totalItems = (clone $baseQuery)->count();
 

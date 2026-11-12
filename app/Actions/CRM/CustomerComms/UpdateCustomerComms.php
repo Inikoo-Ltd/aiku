@@ -45,6 +45,11 @@ class UpdateCustomerComms extends OrgAction
             }
         }
 
+        if (Arr::get($modelData, 'is_subscribed_to_whatsapp_notifications') && !$customerComms->is_subscribed_to_whatsapp_notifications) {
+            $modelData['whatsapp_notifications_subscribed_at'] = now();
+            $modelData['whatsapp_notifications_unsubscribed_at'] = null;
+        }
+
         $this->update($customerComms, $modelData);
 
         $changes = Arr::except($customerComms->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -69,6 +74,8 @@ class UpdateCustomerComms extends OrgAction
             'is_subscribed_to_gold_reward_reminder' => ['sometimes', 'boolean'],
             'is_subscribed_to_whatsapp_newsletter' => ['sometimes', 'boolean'],
             'is_subscribed_to_review_reminder' => ['sometimes', 'boolean'],
+            'is_subscribed_to_whatsapp_notifications' => ['sometimes', 'boolean'],
+            'whatsapp_notifications_subscribed_origin' => ['sometimes', 'nullable', 'string', 'max:64'],
         ];
     }
 

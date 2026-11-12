@@ -79,12 +79,12 @@ const whoSaidIt = (line: ChatLine) => {
     if (line.sender) return line.sender
     if (line.sender_type === "agent") return ctrans("Agent")
     if (line.sender_type === "ai") return ctrans("Assistant")
-    if (line.sender_type === "system" || line.sender_type === "system_campaign") return ctrans("System")
+    if (line.sender_type === "system" || line.sender_type === "system_campaign" || line.sender_type === "system_notification") return ctrans("System")
 
     return props.source?.contact || session.value?.contact || ctrans("Customer")
 }
 
-const isFromUs = (line: ChatLine) => ["agent", "ai", "system", "system_campaign"].includes(line.sender_type)
+const isFromUs = (line: ChatLine) => ["agent", "ai", "system", "system_campaign", "system_notification"].includes(line.sender_type)
 </script>
 
 <template>

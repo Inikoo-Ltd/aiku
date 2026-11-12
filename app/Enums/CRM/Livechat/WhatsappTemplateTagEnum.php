@@ -54,6 +54,14 @@ enum WhatsappTemplateTagEnum: string
     case DELIVERY_POSTCODE = 'Delivery Postcode';
     case DELIVERY_COUNTRY = 'Delivery Country';
 
+    case PRODUCT_NAMES = 'Product Names';
+    case PRODUCT_COUNT = 'Product Count';
+    case PRODUCT_URL = 'Product Url';
+
+    case TRACKING_CARRIER = 'Tracking Carrier';
+    case TRACKING_NUMBER = 'Tracking Number';
+    case TRACKING_URL = 'Tracking Url';
+
     case AGENT_NAME = 'Agent Name';
     case AGENT_FIRST_NAME = 'Agent First Name';
 
@@ -105,6 +113,14 @@ enum WhatsappTemplateTagEnum: string
             self::DELIVERY_POSTCODE => 'DY4 7DJ',
             self::DELIVERY_COUNTRY  => 'United Kingdom',
 
+            self::PRODUCT_NAMES => 'Lavender Essential Oil 10ml, Rose Bath Bomb',
+            self::PRODUCT_COUNT => '2',
+            self::PRODUCT_URL   => 'https://www.ancientwisdom.biz/lavender-essential-oil-10ml',
+
+            self::TRACKING_CARRIER => 'DPD',
+            self::TRACKING_NUMBER  => '15501234567890',
+            self::TRACKING_URL     => 'https://track.dpdlocal.co.uk/parcels/15501234567890',
+
             self::AGENT_NAME       => 'Rhianne Cartledge',
             self::AGENT_FIRST_NAME => 'Rhianne',
         };
@@ -118,6 +134,8 @@ enum WhatsappTemplateTagEnum: string
             str_starts_with($this->value, 'Order')    => __('Order'),
             str_starts_with($this->value, 'Invoice')  => __('Invoice'),
             str_starts_with($this->value, 'Delivery') => __('Delivery'),
+            str_starts_with($this->value, 'Tracking') => __('Tracking'),
+            str_starts_with($this->value, 'Product')  => __('Product'),
             default                                   => __('Agent'),
         };
     }

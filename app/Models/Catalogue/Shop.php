@@ -43,6 +43,7 @@ use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
 use App\Models\Comms\TestEmailRecipient;
 use App\Models\Comms\WhatsappCampaign;
+use App\Models\Comms\WhatsappOutbox;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerEmailTemplate;
 use App\Models\CRM\Appointment;
@@ -233,6 +234,7 @@ use App\Models\HumanResources\WorkSchedule;
  * @property-read LaravelCollection<int, OrgPaymentServiceProvider> $orgPaymentServiceProviders
  * @property-read Organisation $organisation
  * @property-read LaravelCollection<int, Outbox> $outboxes
+ * @property-read LaravelCollection<int, WhatsappOutbox> $whatsappOutboxes
  * @property-read LaravelCollection<int, Packing> $packings
  * @property-read LaravelCollection<int, PaymentAccountShop> $paymentAccountShops
  * @property-read LaravelCollection<int, Payment> $payments
@@ -635,6 +637,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function outboxes(): HasMany
     {
         return $this->hasMany(Outbox::class);
+    }
+
+    public function whatsappOutboxes(): HasMany
+    {
+        return $this->hasMany(WhatsappOutbox::class);
     }
 
     public function offerCampaigns(): HasMany

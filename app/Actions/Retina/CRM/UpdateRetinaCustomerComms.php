@@ -38,6 +38,8 @@ class UpdateRetinaCustomerComms extends RetinaAction
             'is_subscribed_to_price_change_notification' => ['sometimes', 'boolean'],
             'is_subscribed_to_whatsapp_newsletter' => ['sometimes', 'boolean'],
             'is_subscribed_to_review_reminder' => ['sometimes', 'boolean'],
+            'is_subscribed_to_whatsapp_notifications' => ['sometimes', 'boolean'],
+            'whatsapp_notifications_subscribed_origin' => ['sometimes', 'nullable', 'string', 'in:checkout,account'],
         ];
     }
 

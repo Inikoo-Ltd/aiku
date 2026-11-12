@@ -355,7 +355,7 @@ class SendWhatsappDeliveryChannel
             return 0;
         }
 
-        foreach (WhatsappDeliveryChannel::where('state', WhatsappDeliveryChannelStateEnum::READY)->get() as $channel) {
+        foreach (WhatsappDeliveryChannel::where('state', WhatsappDeliveryChannelStateEnum::READY)->whereNotNull('whatsapp_campaign_id')->get() as $channel) {
             SendWhatsappDeliveryChannel::dispatch($channel->id);
         }
 

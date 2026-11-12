@@ -1435,3 +1435,185 @@ test('a filtered WhatsApp campaign keeps customers with a WhatsApp marketing pho
         ->and($audience->get($bothPhones->id)?->phone_number)->toBe($bothPhones->marketing_whatsapp_phone)
         ->and($audience->has($noPhone->id))->toBeFalse();
 });
+
+function whatsappOutboxTestSetup(
+    \App\Models\Catalogue\Shop $shop,
+    string $category = 'UTILITY',
+    \App\Enums\Comms\Outbox\OutboxCodeEnum $code = \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_CONFIRMATION,
+    string $body = 'Hi {{1}}, we have your order {{2}}.',
+    array $tags = ['Customer Name', 'Order Number']
+): array {
+    $channel = MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+
+    $shop->update(['settings' => array_merge($shop->settings ?? [], [
+        'whatsapp' => ['phone_number_id' => 'notify-'.Str::random(8), 'access_token' => 'notify-token'],
+    ])]);
+
+    \App\Actions\Comms\WhatsappOutbox\SeedShopWhatsappOutboxes::run($shop);
+
+    $template = MetaMessageTemplate::create([
+        'group_id'        => $shop->group_id,
+        'organisation_id' => $shop->organisation_id,
+        'shop_id'         => $shop->id,
+        'meta_channel_id' => $channel->id,
+        'template_id'     => 'notify-'.Str::random(10),
+        'name'            => 'order_confirmation_'.Str::lower(Str::random(6)),
+        'language'        => 'en_GB',
+        'status'          => 'APPROVED',
+        'category'        => $category,
+        'data'            => [
+            'components' => [['type' => 'BODY', 'text' => $body]],
+            'merge_tags' => ['body' => $tags],
+        ],
+    ]);
+
+    $whatsappOutbox = $shop->whatsappOutboxes()->where('code', $code->value)->firstOrFail();
+    $whatsappOutbox->update([
+        'state'                    => \App\Enums\Comms\Outbox\OutboxStateEnum::ACTIVE,
+        'meta_message_template_id' => $template->id,
+    ]);
+
+    $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    $customer->update(['phone' => null, 'marketing_whatsapp_phone' => '+4475011'.random_int(10000, 99999)]);
+
+    return [$whatsappOutbox->refresh(), $template, $customer->fresh()];
+}
+
+test('an order confirmation goes out on WhatsApp from its own WhatsApp outbox, whatever the email outbox state, only to customers who opted in', function () {
+    [, , $shop] = createOwnShop('whatsapp-outboxes');
+    [$whatsappOutbox, $template, $customer] = whatsappOutboxTestSetup($shop);
+    [, $product] = createProduct($shop);
+    $order = createOrder($customer, $product);
+
+    $shop->outboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_CONFIRMATION->value)
+        ->update(['state' => \App\Enums\Comms\Outbox\OutboxStateEnum::SUSPENDED->value]);
+
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.NOTIFY']]])]);
+
+    $notOptedIn = \App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp::run($customer, \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_CONFIRMATION, $order);
+
+    \App\Actions\CRM\CustomerComms\UpdateCustomerComms::run($customer->comms, ['is_subscribed_to_whatsapp_notifications' => true]);
+
+    $message = \App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp::run($customer->fresh(), \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_CONFIRMATION, $order);
+
+    expect($notOptedIn)->toBeNull()
+        ->and($customer->comms->fresh()->whatsapp_notifications_subscribed_at)->not->toBeNull()
+        ->and($message)->not->toBeNull()
+        ->and($message->sender_type)->toBe(ChatSenderTypeEnum::SYSTEM_NOTIFICATION)
+        ->and($message->whatsapp_outbox_id)->toBe($whatsappOutbox->id)
+        ->and($message->message_text)->toContain($order->reference)
+        ->and($whatsappOutbox->fresh()->last_sent_at)->not->toBeNull();
+
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/messages')
+        && Arr::get($request->data(), 'template.name') === $template->name
+        && Arr::get($request->data(), 'to') === ltrim($customer->marketing_whatsapp_phone, '+')
+        && Arr::get($request->data(), 'template.components.0.parameters.1.text') === $order->reference);
+});
+
+test('a suspended WhatsApp outbox sends nothing, and one cannot be activated with a marketing template', function () {
+    [, , $shop] = createOwnShop('whatsapp-outboxes');
+    [$whatsappOutbox, , $customer] = whatsappOutboxTestSetup($shop, 'MARKETING');
+    \App\Actions\CRM\CustomerComms\UpdateCustomerComms::run($customer->comms, ['is_subscribed_to_whatsapp_notifications' => true]);
+
+    Http::fake();
+
+    expect(\App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp::run($customer->fresh(), \App\Enums\Comms\Outbox\OutboxCodeEnum::ORDER_CONFIRMATION))->toBeNull();
+
+    $whatsappOutbox->update(['state' => \App\Enums\Comms\Outbox\OutboxStateEnum::SUSPENDED]);
+
+    expect(fn () => \App\Actions\Comms\WhatsappOutbox\UpdateWhatsappOutbox::make()->action($whatsappOutbox, ['state' => true]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    Http::assertNothingSent();
+});
+
+test('the WhatsApp tab lists the WhatsApp outboxes and each opens its own page', function () {
+    [$organisation, , $shop] = createOwnShop('whatsapp-outboxes');
+    [$whatsappOutbox] = whatsappOutboxTestSetup($shop);
+
+    $this->withoutExceptionHandling();
+
+    actingAs($this->user)
+        ->get(route('grp.org.shops.show.dashboard.comms.customer_notification_outboxes.index', [$organisation->slug, $shop->slug]).'?tab=whatsapp')
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Comms/Outboxes')
+            ->where('tabs.current', 'whatsapp')
+            ->has('tabs.navigation.email')
+            ->where('whatsapp.outboxes', fn ($outboxes) => collect($outboxes)->contains(fn ($row) => $row['slug'] === $whatsappOutbox->slug && $row['is_sending'] === true)));
+
+    actingAs($this->user)
+        ->get(route('grp.org.shops.show.dashboard.comms.whatsapp_outboxes.show', [$organisation->slug, $shop->slug, $whatsappOutbox->slug]))
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Comms/WhatsappOutbox')
+            ->where('showcase.code', 'order_confirmation')
+            ->where('showcase.is_sending', true)
+            ->has('tabs.navigation.messages'));
+});
+
+test('a back in stock WhatsApp bulk run sends to opted in customers only, in stored chunks, and keeps the reminders until the email has them too', function () {
+    [, , $shop] = createOwnShop('whatsapp-bulk-runs');
+    $shop->update(['is_aiku' => true]);
+
+    [$whatsappOutbox, , $optedIn] = whatsappOutboxTestSetup(
+        $shop,
+        code: \App\Enums\Comms\Outbox\OutboxCodeEnum::OOS_NOTIFICATION,
+        body: 'Hi {{1}}, back in stock: {{2}}.',
+        tags: ['Customer Name', 'Product Names']
+    );
+    \App\Actions\CRM\CustomerComms\UpdateCustomerComms::run($optedIn->comms, ['is_subscribed_to_whatsapp_notifications' => true]);
+
+    $notOptedIn = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    $notOptedIn->update(['marketing_whatsapp_phone' => '+4475012'.random_int(10000, 99999)]);
+
+    $shop->outboxes()->where('code', \App\Enums\Comms\Outbox\OutboxCodeEnum::OOS_NOTIFICATION->value)
+        ->update(['state' => \App\Enums\Comms\Outbox\OutboxStateEnum::ACTIVE->value, 'is_applicable' => true]);
+
+    [, $product] = createProduct($shop);
+    $product->update(['available_quantity' => 5, 'back_in_stock_since' => now()]);
+
+    $reminders = collect([$optedIn, $notOptedIn])->map(fn (Customer $customer) => \App\Models\Comms\BackInStockReminder::create([
+        'group_id'        => $shop->group_id,
+        'organisation_id' => $shop->organisation_id,
+        'shop_id'         => $shop->id,
+        'customer_id'     => $customer->id,
+        'product_id'      => $product->id,
+        'created_at'      => now()->subDay(),
+    ]));
+
+    Http::fake(['graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.BULK']]])]);
+
+    $bulkRun = \App\Actions\Comms\WhatsappBulkRun\PrepareWhatsappBulkRun::make()->handle($whatsappOutbox->id)->refresh();
+
+    $recipient = $bulkRun->recipients()->sole();
+
+    expect($bulkRun->recipients_count)->toBe(1)
+        ->and($bulkRun->deliveryChannels()->count())->toBe(1)
+        ->and($recipient->recipient_id)->toBe($optedIn->id)
+        ->and($recipient->metaChatMessage?->message_text)->toContain($product->name)
+        ->and($bulkRun->state)->toBe(\App\Enums\Comms\WhatsappBulkRun\WhatsappBulkRunStateEnum::SENT)
+        ->and($bulkRun->number_sent)->toBe(1)
+        ->and(\App\Models\Comms\BackInStockReminder::whereIn('id', $reminders->pluck('id'))->whereNotNull('whatsapp_notified_at')->count())->toBe(2);
+
+    \App\Actions\Comms\Outbox\BackInStockNotification\SettleBackInStockReminders::run(
+        $shop,
+        $reminders->pluck('id')->all(),
+        \App\Actions\Comms\Outbox\BackInStockNotification\GetBackInStockCustomersQuery::EMAIL
+    );
+
+    expect(\App\Models\Comms\BackInStockReminder::whereIn('id', $reminders->pluck('id'))->exists())->toBeFalse()
+        ->and(\App\Actions\Comms\WhatsappBulkRun\PrepareWhatsappBulkRun::make()->handle($whatsappOutbox->id))->toBeNull();
+});
+
+test('an out of stock in order WhatsApp outbox cannot be activated without hours between runs', function () {
+    [, , $shop] = createOwnShop('whatsapp-bulk-runs');
+    [$whatsappOutbox] = whatsappOutboxTestSetup($shop, code: \App\Enums\Comms\Outbox\OutboxCodeEnum::OOS_IN_ORDER_NOTIFICATION);
+    $whatsappOutbox->update(['state' => \App\Enums\Comms\Outbox\OutboxStateEnum::SUSPENDED, 'interval' => null]);
+
+    expect(fn () => \App\Actions\Comms\WhatsappOutbox\UpdateWhatsappOutbox::make()->action($whatsappOutbox, ['state' => true]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $updated = \App\Actions\Comms\WhatsappOutbox\UpdateWhatsappOutbox::make()->action($whatsappOutbox->refresh(), ['state' => true, 'interval' => 6]);
+
+    expect($updated->state)->toBe(\App\Enums\Comms\Outbox\OutboxStateEnum::ACTIVE)
+        ->and($updated->interval)->toBe(6);
+});

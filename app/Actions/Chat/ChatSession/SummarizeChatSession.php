@@ -27,7 +27,7 @@ class SummarizeChatSession
 
     private const array CUSTOMER_SENDERS = [ChatSenderTypeEnum::USER, ChatSenderTypeEnum::GUEST];
 
-    private const array IGNORED_SENDERS = [ChatSenderTypeEnum::SYSTEM, ChatSenderTypeEnum::SYSTEM_CAMPAIGN];
+    private const array IGNORED_SENDERS = [ChatSenderTypeEnum::SYSTEM, ChatSenderTypeEnum::SYSTEM_CAMPAIGN, ChatSenderTypeEnum::SYSTEM_NOTIFICATION];
 
     /**
      * Summarises and classifies what people said to each other. A conversation the customer
