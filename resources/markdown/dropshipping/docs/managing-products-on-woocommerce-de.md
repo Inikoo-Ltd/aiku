@@ -83,7 +83,7 @@ Ihre <b>Pricing Policy</b> in <b>Manage Sales Channel</b> legt den Preis von Pro
 Es gibt drei Wege, ein Produkt zu entfernen. Wählen Sie sorgfältig, denn die Totenkopf-Schaltfläche löscht das Produkt auch aus Ihrem WooCommerce-Shop.
 
 - Die Totenkopf-Schaltfläche in einer Produktzeile bittet um Bestätigung und entfernt das Produkt dann aus Ihrer Liste sowie, falls verknüpft, dauerhaft aus Ihrem WooCommerce-Shop. Es landet nicht im WooCommerce-Papierkorb.
-- <b>Unlink & Delete</b> (nach dem Anhaken von Produkten) entfernt die angehakten Produkte aus Ihrer Liste, behält sie aber in Ihrem WooCommerce-Shop. Sie sind nicht mehr verknüpft, daher aktualisieren wir ihren Lagerbestand nicht mehr.
+- <b>Unlink & Delete</b> (nach dem Anhaken von Produkten) entfernt die angehakten Produkte aus Ihrer Liste und löscht die verknüpften auch aus Ihrem WooCommerce-Shop. Wenn ein Produkt in Ihrem WooCommerce-Shop bleiben soll, verwenden Sie es nicht: nicht verknüpfte Produkte bleiben in Ihrem Shop.
 - <b>Unlink</b> (nach dem Anhaken von Produkten) behält die Produkte in Ihrer Liste und in WooCommerce, hebt aber die Verknüpfung auf. Wir aktualisieren ihren Lagerbestand nicht mehr. Sie können sie später erneut abgleichen.
 
 Löschen Sie ein verknüpftes Produkt selbst in WooCommerce, entfernen wir es auch aus Ihrer Liste.

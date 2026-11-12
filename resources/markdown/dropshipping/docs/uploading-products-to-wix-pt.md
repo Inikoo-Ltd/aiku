@@ -86,7 +86,7 @@ Não podes editar o nome, a descrição ou o preço de um produto Wix a partir d
 Para desvincular ou remover produtos, marca-os primeiro na lista:
 
 - <b>Unlink (N)</b> mantém o produto no Wix mas deixa de o ligar ao nosso. Deixamos de atualizar o seu stock e as suas encomendas deixam de nos chegar.
-- <b>Unlink & Delete (N)</b> desvincula os produtos e remove-os de <b>Meus Produtos</b>. Os produtos mantêm-se na tua loja Wix; apaga-os lá se já não os quiseres.
+- <b>Unlink & Delete (N)</b> remove os produtos de <b>Meus Produtos</b> e apaga também os ligados da tua loja Wix. Para manteres um produto na tua loja Wix, não o uses: os produtos não ligados mantêm-se na tua loja.
 
 O caixote na linha é diferente: remove esse produto de <b>Meus Produtos</b> e também o apaga da tua loja Wix.
 

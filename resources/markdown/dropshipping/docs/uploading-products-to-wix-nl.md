@@ -86,7 +86,7 @@ U kunt de naam, omschrijving of prijs van een Wix-product niet vanuit <b>Mijn pr
 Om producten te ontkoppelen of te verwijderen, vinkt u ze eerst aan in de lijst:
 
 - <b>Unlink (N)</b> houdt het product in Wix maar stopt met het koppelen ervan aan het onze. We stoppen met het bijwerken van zijn voorraad en zijn bestellingen bereiken ons niet meer.
-- <b>Unlink & Delete (N)</b> ontkoppelt de producten en verwijdert ze uit <b>Mijn producten</b>. De producten blijven in uw Wix-winkel staan; verwijder ze daar als u ze niet meer wilt.
+- <b>Unlink & Delete (N)</b> verwijdert de producten uit <b>Mijn producten</b> en verwijdert de gekoppelde producten ook uit uw Wix-winkel. Wilt u een product in uw Wix-winkel houden, gebruik het dan niet: niet-gekoppelde producten blijven in uw winkel staan.
 
 De prullenbak op een rij is anders: deze verwijdert dat product uit <b>Mijn producten</b> en ook uit uw Wix-winkel.
 

@@ -83,7 +83,7 @@ Votre <b>Pricing Policy</b> dans <b>Gérer le canal de vente</b> fixe le prix de
 Il y a trois façons de retirer un produit. Choisissez avec attention, car le bouton crâne supprime aussi le produit de votre boutique WooCommerce.
 
 - Le bouton crâne sur une ligne de produit demande confirmation, puis retire le produit de votre liste et, s'il est lié, le supprime définitivement de votre boutique WooCommerce. Il ne va pas dans la corbeille WooCommerce.
-- <b>Unlink & Delete</b> (après avoir coché des produits) retire les produits cochés de votre liste, mais les garde dans votre boutique WooCommerce. Ils ne sont plus liés, donc nous cessons de mettre à jour leur stock.
+- <b>Unlink & Delete</b> (après avoir coché des produits) retire les produits cochés de votre liste et supprime aussi les produits liés de votre boutique WooCommerce. Pour garder un produit dans votre boutique WooCommerce, ne l'utilisez pas : les produits non liés restent dans votre boutique.
 - <b>Dissocier</b> (après avoir coché des produits) garde les produits dans votre liste et dans WooCommerce, mais rompt le lien. Nous cessons de mettre à jour leur stock. Vous pouvez les associer à nouveau plus tard.
 
 Si vous supprimez un produit lié directement dans WooCommerce, nous le retirons aussi de votre liste.

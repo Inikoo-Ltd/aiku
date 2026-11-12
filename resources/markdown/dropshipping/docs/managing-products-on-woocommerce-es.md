@@ -83,7 +83,7 @@ Tu <b>Pricing Policy</b> en <b>Gestionar el canal de ventas</b> fija el precio d
 Hay tres formas de eliminar un producto. Elige con cuidado, porque el botón de calavera también borra el producto de tu tienda WooCommerce.
 
 - El botón de calavera en una fila te pide confirmar, y luego elimina el producto de tu lista y, si está enlazado, lo borra permanentemente de tu tienda WooCommerce. No va a la papelera de WooCommerce.
-- <b>Unlink & Delete</b> (tras marcar productos) elimina los productos marcados de tu lista, pero los mantiene en tu tienda WooCommerce. Ya no están enlazados, así que dejamos de actualizar su stock.
+- <b>Unlink & Delete</b> (tras marcar productos) elimina los productos marcados de tu lista y también borra los enlazados de tu tienda WooCommerce. Si quieres conservar un producto en tu tienda WooCommerce, no lo uses: los productos no enlazados se quedan en tu tienda.
 - <b>Desconectar</b> (tras marcar productos) mantiene los productos en tu lista y en WooCommerce, pero rompe el enlace. Dejamos de actualizar su stock. Puedes emparejarlos de nuevo más tarde.
 
 Si borras un producto enlazado en WooCommerce tú mismo, también lo eliminamos de tu lista.

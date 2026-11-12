@@ -86,7 +86,7 @@ Vous ne pouvez pas modifier le nom, la description ou le prix d'un produit Wix d
 Pour délier ou retirer des produits, cochez-les d'abord dans la liste :
 
 - <b>Unlink (N)</b> garde le produit dans Wix mais arrête de le lier au nôtre. Nous arrêtons de mettre son stock à jour et ses commandes cessent de nous parvenir.
-- <b>Unlink & Delete (N)</b> délie les produits et les retire de <b>Mes produits</b>. Les produits restent dans votre boutique Wix ; supprimez-les là-bas si vous n'en voulez plus.
+- <b>Unlink & Delete (N)</b> retire les produits de <b>Mes produits</b> et supprime aussi les produits liés de votre boutique Wix. Pour garder un produit dans votre boutique Wix, ne l'utilisez pas : les produits non liés restent dans votre boutique.
 
 La corbeille sur une ligne est différente : elle retire ce produit de <b>Mes produits</b> et le supprime aussi de votre boutique Wix.
 

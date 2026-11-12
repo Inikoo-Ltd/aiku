@@ -83,7 +83,7 @@ Uw <b>Pricing Policy</b> in <b>Manage Sales Channel</b> bepaalt de prijs van pro
 Er zijn drie manieren om een product te verwijderen. Kies zorgvuldig, want de doodshoofdknop verwijdert het product ook uit uw WooCommerce-winkel.
 
 - De doodshoofdknop op een productrij vraagt om bevestiging en verwijdert het product dan uit uw lijst en, als het gekoppeld is, permanent uit uw WooCommerce-winkel. Het gaat niet naar de WooCommerce-prullenbak.
-- <b>Unlink & Delete</b> (nadat u producten aanvinkt) verwijdert de aangevinkte producten uit uw lijst, maar houdt ze in uw WooCommerce-winkel. Ze zijn niet meer gekoppeld, dus wij stoppen met het bijwerken van hun voorraad.
+- <b>Unlink & Delete</b> (nadat u producten aanvinkt) verwijdert de aangevinkte producten uit uw lijst en verwijdert de gekoppelde producten ook uit uw WooCommerce-winkel. Wilt u een product in uw WooCommerce-winkel houden, gebruik het dan niet: niet-gekoppelde producten blijven in uw winkel staan.
 - <b>Unlink</b> (nadat u producten aanvinkt) houdt de producten in uw lijst en in WooCommerce, maar verbreekt de koppeling. Wij stoppen met het bijwerken van hun voorraad. U kunt ze later opnieuw matchen.
 
 Verwijdert u een gekoppeld product zelf in WooCommerce, dan verwijderen wij het ook uit uw lijst.

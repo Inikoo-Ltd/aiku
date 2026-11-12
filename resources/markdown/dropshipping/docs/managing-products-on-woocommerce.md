@@ -83,7 +83,7 @@ Your <b>Pricing Policy</b> in <b>Manage Sales Channel</b> sets the price of prod
 There are three ways to remove a product. Choose carefully, because the skull button also deletes the product from your WooCommerce store.
 
 - The skull button on a product row asks you to confirm, then removes the product from your list and, if it is linked, permanently deletes it from your WooCommerce store. It does not go to the WooCommerce trash.
-- <b>Unlink & Delete</b> (after you tick products) removes the ticked products from your list, but keeps them in your WooCommerce store. They are no longer linked, so we stop updating their stock.
+- <b>Unlink & Delete</b> (after you tick products) removes the ticked products from your list and deletes the linked ones from your WooCommerce store too. To keep a product in your WooCommerce store, do not use it: products that are not linked stay in your store.
 - <b>Unlink</b> (after you tick products) keeps the products in your list and in WooCommerce, but breaks the link. We stop updating their stock. You can match them again later.
 
 If you delete a linked product in WooCommerce yourself, we remove it from your list too.
