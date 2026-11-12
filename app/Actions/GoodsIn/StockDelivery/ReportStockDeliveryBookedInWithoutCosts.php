@@ -34,6 +34,8 @@ class ReportStockDeliveryBookedInWithoutCosts
             return 0;
         }
 
+        setPermissionsTeamId($stockDelivery->group_id);
+
         $roles = Role::whereIn('name', [
             "procurement-clerk-$stockDelivery->organisation_id",
             "procurement-supervisor-$stockDelivery->organisation_id",
