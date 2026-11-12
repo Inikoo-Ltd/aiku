@@ -1903,6 +1903,29 @@ test('UI show newsletter estimates its subscribed recipients', function (Shop $s
     expect($expected)->toBeGreaterThan(0);
 })->depends('outbox seeded when shop created');
 
+test('UI show newsletter in process has a workshop button in the page head', function (Shop $shop) {
+    $outbox   = $shop->outboxes()->where('type', OutboxCodeEnum::NEWSLETTER)->first();
+    $mailshot = StoreMailshot::make()->action($outbox, array_merge(
+        Mailshot::factory()->definition(),
+        ['type' => MailshotTypeEnum::NEWSLETTER]
+    ));
+
+    expect($mailshot->state)->toBe(MailshotStateEnum::IN_PROCESS);
+
+    $this->get(route('grp.org.shops.show.marketing.newsletters.show', [$shop->organisation, $shop, $mailshot->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('pageHead.actions', function ($actions) use ($shop, $mailshot) {
+            $workshopAction = collect($actions)->firstWhere('key', 'workshop');
+
+            return $workshopAction !== null
+                && $workshopAction['route']['name'] === 'grp.org.shops.show.marketing.newsletters.workshop'
+                && $workshopAction['route']['parameters'] === [
+                    'organisation' => $shop->organisation->slug,
+                    'shop'         => $shop->slug,
+                    'mailshot'     => $mailshot->slug,
+                ];
+        }));
+})->depends('outbox seeded when shop created');
+
 test('prepare mailshot second wave recipients skips when no parent', function (Mailshot $mailshot) {
     $orphan = $mailshot->replicate();
     $orphan->parent_mailshot_id     = null;
