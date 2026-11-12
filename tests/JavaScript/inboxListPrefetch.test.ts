@@ -218,3 +218,24 @@ test("a conversation's address opens on the list the last conversation opened on
 
 	assert.deepEqual([...store.keys()].sort(), ["inbox-first-list:aw:inbox", "inbox-first-list:aw:inbox:conversation", "inbox-first-list:home"])
 })
+
+test("a full load of an inbox asks for its list as the app starts, but not inside a frame", () => {
+	store.clear()
+	requests.length = 0
+	const noRouter = { on: () => {} } as any
+	location.href = "https://app.aiku.test/org/aw/chat/inbox"
+	rememberFirstList(url, params)
+
+	prefetchInboxListOnVisit(noRouter)
+	assert.deepEqual(requests, [{ url, params }])
+	assert.equal(takePrefetchedList(url, params).outcome, "prefetched")
+
+	Object.assign(globalThis.window, { self: {}, top: {} })
+	prefetchInboxListOnVisit(noRouter)
+	Object.assign(globalThis.window, { self: undefined, top: undefined })
+
+	location.href = "https://app.aiku.test/org/aw/shops/uk/orders"
+	prefetchInboxListOnVisit(noRouter)
+
+	assert.equal(requests.length, 1)
+})
