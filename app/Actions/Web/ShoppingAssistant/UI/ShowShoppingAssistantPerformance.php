@@ -11,6 +11,7 @@ namespace App\Actions\Web\ShoppingAssistant\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
+use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRestockQuestion;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
@@ -344,10 +345,11 @@ class ShowShoppingAssistantPerformance extends OrgAction
     }
 
     /**
-     * Big order leads the assistant passed to customer services in the period, open ones first, so
-     * one nobody has taken stays in sight on the report until it is done.
+     * What the assistant passed on to the team in the period, open ones first, so one nobody has
+     * taken stays in sight until it is done: big order leads (customer services) and restock
+     * questions (purchasing), with how the restock answer reached the customer.
      *
-     * @return array<int, array{reference: string, customer: ?string, website: ?string, amount: ?float, currency: ?string, agreed_to_call: bool, status: string, status_label: string, assignee: ?string, reminders: int, created_at: string, url: string}>
+     * @return array<int, array{reference: string, kind: string, customer: ?string, website: ?string, amount: ?float, currency: ?string, product: ?string, agreed_to_call: bool, answer_channel: ?string, status: string, status_label: string, assignee: ?string, reminders: int, created_at: string, url: string}>
      */
     private function salesLeads(array $filters): array
     {
@@ -355,7 +357,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
 
         return StaffTask::query()
             ->with('assignee:id,contact_name,username,nickname')
-            ->where('data->kind', StoreShoppingAssistantSalesLead::TASK_KIND)
+            ->whereIn('data->kind', [StoreShoppingAssistantSalesLead::TASK_KIND, StoreShoppingAssistantRestockQuestion::TASK_KIND])
             ->whereIn(DB::raw("(data->>'website_id')::int"), $filters['website_ids'] ?: [0])
             ->where('created_at', '>=', $filters['from']->startOfDay())
             ->where('created_at', '<=', $filters['to']->endOfDay())
@@ -365,6 +367,9 @@ class ShowShoppingAssistantPerformance extends OrgAction
             ->get()
             ->map(fn (StaffTask $task) => [
                 'reference'      => $task->reference,
+                'kind'           => data_get($task->data, 'kind') === StoreShoppingAssistantRestockQuestion::TASK_KIND ? 'restock' : 'big_order',
+                'product'        => data_get($task->data, 'product_name'),
+                'answer_channel' => data_get($task->data, 'answer_channel'),
                 'customer'       => data_get($task->data, 'customer_name'),
                 'website'        => $domains[(int) data_get($task->data, 'website_id')] ?? null,
                 'amount'         => is_numeric(data_get($task->data, 'amount')) ? (float) data_get($task->data, 'amount') : null,

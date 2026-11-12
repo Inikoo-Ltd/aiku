@@ -8919,5 +8919,7 @@
     "Final checks done": "Végső ellenőrzések kész",
     "Available to ship": "Szállításra kész",
     "Transit & arrival": "Szállítás és érkezés",
-    "Booked into stock": "Készletre véve"
+    "Booked into stock": "Készletre véve",
+    "The :product is on order and expected between :from and :to.": "Megrendelt termék: :product. Várható érkezés: :from és :to között.",
+    "Our purchasing team answered your question:": "Beszerzési csapatunk válaszolt a kérdésére:"
 }

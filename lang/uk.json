@@ -6985,5 +6985,7 @@
     "Final checks done": "Фінальні перевірки виконано",
     "Available to ship": "Готове до відвантаження",
     "Transit & arrival": "Транзит і прибуття",
-    "Booked into stock": "Оприбутковано на склад"
+    "Booked into stock": "Оприбутковано на склад",
+    "The :product is on order and expected between :from and :to.": "Товар :product замовлено. Очікується в період від :from до :to.",
+    "Our purchasing team answered your question:": "Відповідь нашого відділу закупівель на Ваше запитання:"
 }

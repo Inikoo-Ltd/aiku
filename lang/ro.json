@@ -25772,5 +25772,7 @@
     "Final checks done": "Verificări finale făcute",
     "Available to ship": "Disponibilă pentru expediere",
     "Transit & arrival": "Tranzit și sosire",
-    "Booked into stock": "Înregistrată în stoc"
+    "Booked into stock": "Înregistrată în stoc",
+    "The :product is on order and expected between :from and :to.": "Produsul :product a fost comandat și este așteptat între :from și :to.",
+    "Our purchasing team answered your question:": "Echipa noastră de achiziții a răspuns la întrebarea dvs.:"
 }

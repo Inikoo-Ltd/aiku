@@ -73,6 +73,12 @@ use Throwable;
  * organisation's customer services team (StoreShoppingAssistantSalesLead); the model never sees the
  * threshold and never promises a discount.
  *
+ * restock_information says when an out of stock product the customer names is expected back, from
+ * what is on order (GetProductRestockEstimate), as a sentence written here with a half-month window,
+ * only when the date is reliable. ask_purchasing_team, after the customer said yes, passes a
+ * restock question with no reliable answer to the organisation's purchasing people
+ * (StoreShoppingAssistantRestockQuestion); their answer reaches the customer by email.
+ *
  * dispatch_times and shipping_cost never give the model a figure: each returns a `fact`, a sentence
  * written here from our data in the shop's language, which AskShoppingAssistant puts under the
  * model's reply. Shipping is read from the customer's own basket, where the system has already
@@ -227,6 +233,24 @@ class GetShoppingAssistantTools
                 ['planned_amount', 'customer_agreed_to_call']
             ),
             $this->tool(
+                'restock_information',
+                'When an out of stock product is expected back. Use it whenever the customer asks when a product will be back in stock, restocked or delivered again, or when new stock or new designs of a product arrive. A sentence with the expected period, from our orders, is added under your reply by the system when we have a reliable date; you get no dates. Returns no products.',
+                [
+                    'query' => ['type' => 'string', 'description' => 'The product the customer asked about, by name or code, in their words.'],
+                ],
+                ['query']
+            ),
+            $this->tool(
+                'ask_purchasing_team',
+                'Pass a stock question we cannot answer to our purchasing team, who reply to the customer by email. Use it only after restock_information gave no reliable date and the customer said yes to an answer from the purchasing team. Returns no products.',
+                [
+                    'query'                    => ['type' => 'string', 'description' => 'The product the question is about, by name or code; leave it empty when the question is not about one product.'],
+                    'question'                 => ['type' => 'string', 'description' => 'The customer\'s question in one sentence, in English.'],
+                    'customer_agreed'          => ['type' => 'boolean', 'description' => 'True only when the customer said yes to an answer from the purchasing team.'],
+                ],
+                ['question', 'customer_agreed']
+            ),
+            $this->tool(
                 'clear_conversation',
                 'Clear this conversation when the customer asks to delete, clear or forget it. The page then tells them it was cleared. Returns no products.',
                 []
@@ -276,6 +300,8 @@ class GetShoppingAssistantTools
                 'clear_conversation'             => $this->clearConversation($conversation),
                 'better_price_options'           => $this->betterPriceOptions($customer, $conversation->language_code),
                 'big_order_lead'                 => $this->bigOrderLead($conversation, $arguments),
+                'restock_information'            => $this->restockInformation($customer, $arguments, $conversation->language_code),
+                'ask_purchasing_team'            => $this->askPurchasingTeam($conversation, $customer, $arguments),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
@@ -847,6 +873,96 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => implode(' ', $facts),
         ];
+    }
+
+    /**
+     * The out of stock products the customer most likely means: the one whose code they typed, else
+     * the closest matches by meaning that cannot be ordered now.
+     *
+     * @return Collection<int, Product>
+     */
+    private function outOfStockMatches(Customer $customer, string $query): Collection
+    {
+        if ($query === '') {
+            return collect();
+        }
+
+        return $this->productsByCode($customer, $query)
+            ->concat(SearchCatalogueByMeaning::run($customer->shop, $query, $customer, 6, false))
+            ->filter(fn (Product $product) => $product->available_quantity <= 0)
+            ->unique('id')
+            ->take(self::MAX_OUT_OF_STOCK)
+            ->values();
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string, names?: array<int, string>}
+     */
+    private function restockInformation(Customer $customer, array $arguments, string $locale): array
+    {
+        $query    = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        $products = (new EloquentCollection($this->outOfStockMatches($customer, $query)->all()))->loadMissing('family');
+        $followUp = StoreShoppingAssistantRestockQuestion::isOn($customer->organisation) && StoreShoppingAssistantRestockQuestion::recipientsOf($customer->organisation)->isNotEmpty();
+        $date     = fn ($moment) => $moment->locale($locale)->isoFormat('LL') ?: $moment->locale('en')->isoFormat('LL');
+        $facts    = [];
+        $items    = [];
+
+        foreach ($products as $product) {
+            $estimate = GetProductRestockEstimate::run($product);
+            if ($estimate['status'] === 'expected') {
+                $expected = $estimate['date'];
+                [$from, $to] = $expected->day <= 15 ? [$expected->startOfMonth(), $expected->setDay(15)] : [$expected->setDay(16), $expected->endOfMonth()];
+                $facts[] = __('The :product is on order and expected between :from and :to.', ['product' => $product->name, 'from' => $date($from), 'to' => $date($to)], $locale);
+            }
+            $items[] = ['name' => $product->name, 'family' => $product->family?->name, 'status' => $estimate['status'] === 'expected' ? 'expected' : 'no_reliable_date'];
+        }
+
+        $result = [
+            'content'  => [
+                'out_of_stock_products'    => $items,
+                'purchasing_follow_up'     => $followUp,
+                'note'                     => match (true) {
+                    $items === []                                                   => 'No out of stock product matches. If they named a product, it may be in stock: check with search_products.',
+                    $followUp                                                       => 'Sentences with the expected periods are added under your reply: never repeat their dates. For a product with no_reliable_date, say we do not have a reliable date and ask whether they would like our purchasing team to get back to them by email; call ask_purchasing_team only after they say yes. Never guess a date.',
+                    default                                                         => 'Sentences with the expected periods are added under your reply: never repeat their dates. For a product with no_reliable_date, say we do not have a reliable date and suggest similar products in stock. Never guess a date.',
+                },
+            ],
+            'products' => [],
+            'error'    => null,
+            'names'    => $products->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all(),
+        ];
+        if ($facts) {
+            $result['fact'] = implode(' ', $facts);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string}
+     */
+    private function askPurchasingTeam(ShoppingAssistantConversation $conversation, Customer $customer, array $arguments): array
+    {
+        if (!filter_var($arguments['customer_agreed'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return $this->error('Ask the customer first whether they want an answer from our purchasing team; call this only after they say yes.');
+        }
+
+        $question = is_string($arguments['question'] ?? null) ? trim($arguments['question']) : '';
+        if ($question === '') {
+            return $this->error('question must be the customer\'s question in one sentence.');
+        }
+
+        $query   = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        $product = $this->outOfStockMatches($customer, $query)->first();
+        $result  = StoreShoppingAssistantRestockQuestion::run($conversation, $product, $question);
+
+        return ['content' => ['passed_on' => $result['status'] !== 'off', 'note' => $result['status'] === 'off'
+            ? 'Our purchasing team does not take these questions in this shop: say we have no reliable date and suggest similar products in stock.'
+            : 'Passed on. Say in one sentence that our purchasing team will reply by email, without promising when or what they will say.'], 'products' => [], 'error' => null];
     }
 
     private function shopHasMemberPrices(Customer $customer): bool

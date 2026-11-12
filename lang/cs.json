@@ -26750,5 +26750,7 @@
     "Final checks done": "Závěrečné kontroly hotové",
     "Available to ship": "Připraveno k odeslání",
     "Transit & arrival": "Přeprava a příjezd",
-    "Booked into stock": "Naskladněno"
+    "Booked into stock": "Naskladněno",
+    "The :product is on order and expected between :from and :to.": "Produkt :product je objednán. Dodání se očekává v období od :from do :to.",
+    "Our purchasing team answered your question:": "Odpověď našeho nákupního týmu na vaši otázku:"
 }

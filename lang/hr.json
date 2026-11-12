@@ -8916,5 +8916,7 @@
     "Final checks done": "Završne provjere obavljene",
     "Available to ship": "Spremno za otpremu",
     "Transit & arrival": "Prijevoz i dolazak",
-    "Booked into stock": "Uknjiženo na zalihu"
+    "Booked into stock": "Uknjiženo na zalihu",
+    "The :product is on order and expected between :from and :to.": "Proizvod :product je naručen. Isporuka se očekuje od :from do :to.",
+    "Our purchasing team answered your question:": "Odgovor našeg tima za nabavu na vaše pitanje:"
 }

@@ -85,6 +85,9 @@ const props = defineProps<{
     budgets: { website: string; monthly: number; spent: number; paused: boolean; resumes_on: string }[]
     sales_leads?: {
         reference: string
+        kind: "big_order" | "restock"
+        product: string | null
+        answer_channel: string | null
         customer: string | null
         website: string | null
         amount: number | null
@@ -203,6 +206,14 @@ const budgetRows = computed(() =>
 )
 
 const salesLeads = computed(() => props.sales_leads ?? [])
+const leadContact = (lead: { kind: string; agreed_to_call: boolean; answer_channel: string | null }) =>
+    lead.kind === "big_order"
+        ? (lead.agreed_to_call ? ctrans("Asked for a call") : ctrans("Call not agreed yet"))
+        : lead.answer_channel === "email"
+            ? ctrans("Answer emailed")
+            : lead.answer_channel === "customer_services"
+                ? ctrans("Answer passed to customer services")
+                : ctrans("Waiting for an answer")
 const leadStatusClass = (lead: { status: string; assignee: string | null }) =>
     lead.status === "done" ? "text-green-700" : lead.status === "cancelled" ? "text-gray-500" : lead.assignee ? "text-gray-700" : "text-amber-700"
 
@@ -603,15 +614,16 @@ const conversationsTable = computed(() => props.conversations)
                     </table>
                 </div>
                 <div v-if="salesLeads.length" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
-                    <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("Big order leads") }}</h3>
+                    <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("Passed on to the team") }}</h3>
                     <table class="w-full text-sm">
                         <thead class="whitespace-nowrap text-xs text-gray-400">
                             <tr>
                                 <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Task") }}</th>
+                                <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Type") }}</th>
                                 <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Customer") }}</th>
                                 <th v-if="!filters.website_locked" class="pb-1 pr-3 text-left font-medium">{{ ctrans("Website") }}</th>
-                                <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Planned order") }}</th>
-                                <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("Call") }}</th>
+                                <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("About") }}</th>
+                                <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("Customer contact") }}</th>
                                 <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("Status") }}</th>
                                 <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("Taken by") }}</th>
                                 <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Received") }}</th>
@@ -622,10 +634,13 @@ const conversationsTable = computed(() => props.conversations)
                                 <td class="whitespace-nowrap py-1 pr-3">
                                     <a :href="lead.url" class="text-gray-700 underline decoration-gray-300 underline-offset-4 hover:text-gray-900">{{ lead.reference }}</a>
                                 </td>
+                                <td class="whitespace-nowrap py-1 pr-3 text-xs text-gray-600">{{ lead.kind === "restock" ? ctrans("Restock question") : ctrans("Big order") }}</td>
                                 <td class="max-w-[16rem] truncate py-1 pr-3 text-gray-700" :title="lead.customer ?? ''">{{ lead.customer }}</td>
                                 <td v-if="!filters.website_locked" class="whitespace-nowrap py-1 pr-3 text-gray-500">{{ lead.website }}</td>
-                                <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-900">{{ lead.amount === null ? "" : money(lead.amount, lead.currency ?? currency) }}</td>
-                                <td class="whitespace-nowrap py-1 pl-4 text-xs text-gray-600">{{ lead.agreed_to_call ? ctrans("Asked for a call") : ctrans("Not yet") }}</td>
+                                <td class="max-w-[16rem] truncate py-1 pl-4 text-gray-900" :class="lead.kind === 'big_order' ? 'tabular-nums' : ''" :title="lead.product ?? ''">
+                                    {{ lead.kind === "big_order" ? (lead.amount === null ? "" : money(lead.amount, lead.currency ?? currency)) : lead.product }}
+                                </td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-xs text-gray-600">{{ leadContact(lead) }}</td>
                                 <td class="whitespace-nowrap py-1 pl-4 text-xs">
                                     <span :class="leadStatusClass(lead)">{{ lead.status_label }}</span>
                                     <span v-if="lead.status === 'todo' && !lead.assignee && lead.reminders > 0" class="ml-1 text-amber-700">· {{ ctrans("reminded :count times", { count: lead.reminders }) }}</span>

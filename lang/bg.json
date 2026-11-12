@@ -9310,5 +9310,7 @@
     "Final checks done": "Финалните проверки са направени",
     "Available to ship": "Готова за изпращане",
     "Transit & arrival": "Транспорт и пристигане",
-    "Booked into stock": "Заведена в наличност"
+    "Booked into stock": "Заведена в наличност",
+    "The :product is on order and expected between :from and :to.": "Продуктът :product е поръчан и се очаква между :from и :to.",
+    "Our purchasing team answered your question:": "Нашият екип по снабдяване отговори на въпроса ви:"
 }

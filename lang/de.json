@@ -26546,5 +26546,7 @@
     "Final checks done": "Abschlussprüfungen erledigt",
     "Available to ship": "Versandbereit",
     "Transit & arrival": "Transport & Ankunft",
-    "Booked into stock": "Eingelagert"
+    "Booked into stock": "Eingelagert",
+    "The :product is on order and expected between :from and :to.": "Das Produkt :product ist bestellt und wird zwischen dem :from und dem :to erwartet.",
+    "Our purchasing team answered your question:": "Unser Einkaufsteam hat Ihre Frage beantwortet:"
 }

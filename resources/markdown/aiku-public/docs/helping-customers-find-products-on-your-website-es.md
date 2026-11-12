@@ -79,6 +79,16 @@ Lo configuran los administradores del sistema en **Organisations**: se abre la o
 - **Big order from (EUR)** (pedido grande desde): el importe de pedido previsto a partir del cual se ofrece la llamada, convertido a la moneda de cada tienda. Si se deja vacío son 2.000 EUR, más o menos el mayor de cada 100 pedidos.
 - **Sales leads Slack channel** (canal de Slack): dónde se publica cada aviso y sus recordatorios. El bot de aiku tiene que ser miembro del canal.
 
+### Cuándo vuelve un producto
+
+Cuando un cliente pregunta cuándo vuelve un producto agotado, el asesor mira lo que hay pedido. Solo da un periodo cuando la fecha es fiable: una entrega en camino con fecha prevista aún por llegar, o un pedido hecho en los últimos 9 meses cuya llegada prevista aún no ha pasado. Dice "previsto entre el 1 y el 15 de diciembre", nunca un día exacto ni una cantidad. Muchos pedidos no tienen fecha prevista y algunos antiguos nunca se cerraron, así que a menudo no hay fecha fiable.
+
+Entonces el asesor lo dice y ofrece que nuestro equipo de compras se ponga en contacto con el cliente. Solo si el cliente acepta, la pregunta se convierte en una tarea para las personas de compras de la organización, enlazada al producto, con el cliente, su pregunta y lo que muestran nuestros pedidos. Reciben el aviso por email, Slack y notificación del navegador, y un recordatorio mientras nadie la coja, como los pedidos grandes.
+
+Para responder, escriba la respuesta para el cliente en la nota al marcar la tarea como hecha (o como último mensaje de la tarea antes de marcarla). Se traduce al idioma del cliente, se añade a su conversación con el asesor y se le envía con el email de notificación de chat de la tienda, con un enlace a la conversación. En una tienda donde ese email no está activado, atención al cliente recibe una tarea para enviar la respuesta. Si la tarea se marca como hecha sin respuesta, no se envía nada y la tarea lo indica.
+
+Lo configuran los administradores del sistema en **Organisations**: se abre la organización, se pulsa **Edit** y se va a **Restock questions**. El interruptor **Ask purchasing when there is no reliable date** está activado por defecto; desactivado, el asesor solo responde con nuestros pedidos. **Restock questions go to** elige quién las recibe; si se deja vacío, van a los compradores de la organización.
+
 ### Límites y qué se registra
 
 Cada cliente puede hacer 6 preguntas por minuto, 40 por hora y 120 al día. Una respuesta tarda unos segundos y la página espera. Cada respuesta es uso de IA de pago, así que activa el asesor donde quieras que los clientes lo usen.
@@ -127,7 +137,7 @@ Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se ab
 - **Conversion** (conversión) es la proporción de conversaciones seguidas de un pedido así. Deja fuera las conversaciones de los últimos 7 días, porque todavía pueden convertirse en pedidos. Una nota ámbar indica desde qué día las cifras aún no son definitivas.
 - **AI cost** (coste de IA), en total, por conversación y como proporción de los ingresos.
 - **AI budget this month** (presupuesto de IA de este mes) muestra, por cada web con el asesor activado, lo gastado frente a su presupuesto mensual. La barra se vuelve ámbar a partir del 80% y roja con **Paused until** (en pausa hasta) y la fecha cuando se agota el presupuesto.
-- **Big order leads** (pedidos grandes) lista los avisos del periodo, primero los abiertos: el cliente, el pedido previsto, si pidió una llamada, el estado de la tarea y quién la cogió. Un aviso que nadie ha cogido sale en ámbar con cuántos recordatorios se han enviado.
+- **Passed on to the team** (pasado al equipo) lista los pedidos grandes y las preguntas de reposición del periodo, primero los abiertos: el cliente, el pedido previsto o el producto, si pidió una llamada o cómo le llegó la respuesta, el estado de la tarea y quién la cogió. Lo que nadie ha cogido sale en ámbar con cuántos recordatorios se han enviado.
 
 **Funnel** (embudo) sigue las conversaciones paso a paso: productos mostrados, pulsados, añadidos a la cesta y pedidos, cada uno con su proporción respecto al paso anterior y respecto a todas las conversaciones. **Ordered** (pedidos) puede ser mayor que **Added to basket** (añadidos a la cesta), porque también cuenta productos que llegaron a la cesta de otra forma. El gráfico de al lado muestra los mismos pasos por día, o por semana en un periodo largo.
 

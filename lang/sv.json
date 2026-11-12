@@ -9753,5 +9753,7 @@
     "Final checks done": "Slutkontroller klara",
     "Available to ship": "Redo att skickas",
     "Transit & arrival": "Transport & ankomst",
-    "Booked into stock": "Inbokad i lager"
+    "Booked into stock": "Inbokad i lager",
+    "The :product is on order and expected between :from and :to.": "Produkten :product är beställd och väntas komma mellan :from och :to.",
+    "Our purchasing team answered your question:": "Vårt inköpsteam har svarat på din fråga:"
 }

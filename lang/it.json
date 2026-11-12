@@ -12862,5 +12862,7 @@
     "Final checks done": "Controlli finali fatti",
     "Available to ship": "Pronto per la spedizione",
     "Transit & arrival": "Transito e arrivo",
-    "Booked into stock": "Registrato a magazzino"
+    "Booked into stock": "Registrato a magazzino",
+    "The :product is on order and expected between :from and :to.": "Il prodotto :product è stato ordinato e se ne prevede l'arrivo tra il :from e il :to.",
+    "Our purchasing team answered your question:": "Il nostro ufficio acquisti ha risposto alla sua domanda:"
 }

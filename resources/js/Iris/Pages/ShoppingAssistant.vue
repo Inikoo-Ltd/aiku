@@ -265,7 +265,16 @@ const send = async (text: string) => {
     }
 }
 
+const conversationFromLink = (): string | null => {
+    const fromLink = new URLSearchParams(window.location.search).get("conversation")
+    return fromLink && /^[0-9A-Za-z]{26}$/.test(fromLink) ? fromLink : null
+}
+
 const restoreThenAsk = async () => {
+    const linked = conversationFromLink()
+    if (linked) {
+        sessionStorage.setItem(shoppingAssistantConversationKey, linked)
+    }
     const savedConversation = sessionStorage.getItem(shoppingAssistantConversationKey)
     if (savedConversation) {
         conversation.value = savedConversation

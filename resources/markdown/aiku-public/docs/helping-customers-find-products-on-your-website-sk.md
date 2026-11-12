@@ -79,6 +79,16 @@ Nastavujú to administrátori systému v **Organisations**: otvorte organizáciu
 - **Big order from (EUR)** (veľká objednávka od): plánovaná výška objednávky, od ktorej sa ponúka hovor, prepočítaná na menu každého obchodu. Ak je prázdne, je to 2 000 EUR, zhruba najväčšia zo 100 objednávok.
 - **Sales leads Slack channel** (kanál v Slacku): kam sa posiela každá príležitosť a jej pripomienky. Bot aiku musí byť členom kanála.
 
+### Kedy bude produkt opäť na sklade
+
+Keď sa zákazník pýta, kedy sa vypredaný produkt vráti, poradca sa pozrie, čo je objednané. Obdobie uvedie len vtedy, keď je dátum spoľahlivý: dodávka na ceste s očakávaným dátumom, ktorý ešte nenastal, alebo objednávka z posledných 9 mesiacov, ktorej očakávaný príchod ešte nenastal. Povie „očakáva sa medzi 1. a 15. decembrom“, nikdy presný deň ani množstvo. Mnohé objednávky nemajú očakávaný dátum a niektoré staré neboli nikdy uzavreté, takže spoľahlivý dátum často nie je.
+
+Vtedy to poradca povie a ponúkne, že sa zákazníkovi ozve náš nákupný tím. Len ak zákazník súhlasí, otázka sa stane úlohou pre ľudí z nákupu v organizácii, prepojenou s produktom, so zákazníkom, jeho otázkou a tým, čo ukazujú naše objednávky. Dostanú upozornenie emailom, cez Slack a v prehliadači a pripomienku, kým si úlohu nikto nevezme, rovnako ako pri veľkých objednávkach.
+
+Ak chcete odpovedať, napíšte odpoveď pre zákazníka do poznámky pri označení úlohy ako hotovej (alebo ako poslednú správu v úlohe pred jej označením). Preloží sa do jazyka zákazníka, pridá sa do jeho konverzácie s poradcom a pošle sa mu emailom upozornenia na chat obchodu s odkazom na konverzáciu. V obchode, kde tento email nie je zapnutý, dostane zákaznícky servis úlohu poslať odpoveď. Ak sa úloha označí ako hotová bez odpovede, nič sa nepošle a úloha to uvedie.
+
+Nastavujú to administrátori systému v **Organisations**: otvorte organizáciu, stlačte **Edit** a prejdite do časti **Restock questions**. Prepínač **Ask purchasing when there is no reliable date** je predvolene zapnutý; vypnutý znamená, že poradca odpovedá len z našich objednávok. **Restock questions go to** určuje, kto ich dostane; ak je prázdne, dostanú ich nákupcovia organizácie.
+
 ### Limity a čo sa zaznamenáva
 
 Každý zákazník sa môže opýtať 6 otázok za minútu, 40 za hodinu a 120 za deň. Odpoveď trvá niekoľko sekúnd a stránka na ňu čaká. Každá odpoveď je platené použitie AI, preto poradcu zapnite tam, kde chcete, aby ho zákazníci používali.
@@ -127,7 +137,7 @@ Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa t
 - **Conversion** (konverzia) je podiel konverzácií, po ktorých nasledovala takáto objednávka. Vynecháva konverzácie za posledných 7 dní, pretože sa z nich ešte môžu stať objednávky. Oranžová poznámka hovorí, od ktorého dňa čísla ešte nie sú konečné.
 - **AI cost** (náklady na AI), celkovo, na konverziu a ako podiel na tržbách.
 - **AI budget this month** (rozpočet na AI tento mesiac) ukazuje pri každom webe so zapnutým poradcom, koľko sa minulo z jeho mesačného rozpočtu. Pruh sa od 80% zafarbí na oranžovo a keď je rozpočet vyčerpaný, na červeno s **Paused until** (pozastavené do) a dátumom.
-- **Big order leads** (veľké objednávky) uvádza príležitosti obdobia, najprv otvorené: zákazníka, plánovanú objednávku, či žiadal hovor, stav úlohy a kto si ju vzal. Príležitosť, ktorú si nikto nevzal, je oranžová a ukazuje, koľko pripomienok odišlo.
+- **Passed on to the team** (odovzdané tímu) uvádza veľké objednávky a otázky na doplnenie zásob za obdobie, najprv otvorené: zákazníka, plánovanú objednávku alebo produkt, či žiadal hovor alebo ako sa k nemu dostala odpoveď, stav úlohy a kto si ju vzal. Čo si nikto nevzal, je oranžové a ukazuje, koľko pripomienok odišlo.
 
 **Funnel** (lievik) sleduje konverzácie krok za krokom: produkty zobrazené, rozkliknuté, pridané do košíka a objednané, každý s podielom na predchádzajúcom kroku a na všetkých konverzáciách. **Ordered** (objednané) môže byť vyššie ako **Added to basket** (pridané do košíka), pretože počíta aj produkty, ktoré sa do košíka dostali inou cestou. Graf vedľa neho ukazuje rovnaké kroky po dňoch, alebo po týždňoch pri dlhom období.
 

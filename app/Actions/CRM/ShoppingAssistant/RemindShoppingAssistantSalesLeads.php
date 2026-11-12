@@ -17,9 +17,9 @@ use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
- * A big order lead nobody has taken (no assignee, still to do) after
- * services.shopping_assistant.sales_lead_reminder_hours is raised again to the organisation's sales
- * leads managers and its Slack channel, then once a day until someone takes it or it is closed.
+ * A big order lead or a restock question nobody has taken (no assignee, still to do) after
+ * services.shopping_assistant.sales_lead_reminder_hours is raised again to whoever it went to (sales
+ * leads managers and the Slack channel, or the restock question recipients), then once a day until someone takes it or it is closed.
  * Reminders go out only on working days between 09:00 and 18:00 in the organisation's time zone,
  * so a lead from a Friday night is raised on Monday morning rather than at 03:00 on Saturday.
  *
@@ -32,7 +32,7 @@ class RemindShoppingAssistantSalesLeads
 
     public string $commandSignature = 'shopping-assistant:remind-sales-leads';
 
-    public string $commandDescription = 'Raise again the big order leads from the AI shopping assistant that nobody has taken';
+    public string $commandDescription = 'Raise again the big order leads and restock questions from the AI shopping assistant that nobody has taken';
 
     public const int WORKDAY_STARTS = 9;
 
@@ -43,7 +43,7 @@ class RemindShoppingAssistantSalesLeads
         $reminded = 0;
         $dueBy    = now()->subHours((int) config('services.shopping_assistant.sales_lead_reminder_hours'));
 
-        StaffTask::where('data->kind', StoreShoppingAssistantSalesLead::TASK_KIND)
+        StaffTask::whereIn('data->kind', [StoreShoppingAssistantSalesLead::TASK_KIND, StoreShoppingAssistantRestockQuestion::TASK_KIND])
             ->where('status', StaffTaskStatusEnum::TODO->value)
             ->whereNull('assignee_id')
             ->where('created_at', '<=', $dueBy)
@@ -59,7 +59,9 @@ class RemindShoppingAssistantSalesLeads
                     return;
                 }
 
-                AlertShoppingAssistantSalesLead::run($task, true);
+                data_get($task->data, 'kind') === StoreShoppingAssistantRestockQuestion::TASK_KIND
+                    ? AlertShoppingAssistantRestockQuestion::run($task, true)
+                    : AlertShoppingAssistantSalesLead::run($task, true);
                 $task->update(['data' => [...$task->data, 'reminded_at' => now()->toIso8601String(), 'reminders' => (int) data_get($task->data, 'reminders', 0) + 1]]);
                 $reminded++;
             });

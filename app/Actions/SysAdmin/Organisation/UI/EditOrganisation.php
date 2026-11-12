@@ -250,6 +250,27 @@ class EditOrganisation extends OrgAction
                             ],
                         ],
                     ],
+                    [
+                        "label"  => __("Restock questions"),
+                        "icon"   => "fal fa-box-open",
+                        "fields" => [
+                            "restock_questions_enabled" => [
+                                "type"        => "toggle",
+                                "label"       => __("Ask purchasing when there is no reliable date"),
+                                "information" => __("When a customer asks the AI shopping assistant when an out of stock product is coming back and our orders give no reliable date, it offers to have our purchasing team get back to them. The answer purchasing writes on the task is sent to the customer by email in their language."),
+                                "value"       => (bool) Arr::get($organisation->settings, "restock_questions.enabled", true),
+                            ],
+                            "restock_questions_user_ids" => [
+                                "type"        => "multiselect-tags",
+                                "label"       => __("Restock questions go to"),
+                                "information" => __("Leave empty to send them to the buyers of the organisation."),
+                                "options"     => $staffOptions,
+                                "labelProp"   => "name",
+                                "valueProp"   => "id",
+                                "value"       => Arr::get($organisation->settings, "restock_questions.user_ids", []),
+                            ],
+                        ],
+                    ],
                 ],
                 "args" => [
                     "updateRoute" => [

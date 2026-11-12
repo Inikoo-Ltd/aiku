@@ -79,6 +79,16 @@ System administrators set it up under **Organisations**: open the organisation, 
 - **Big order from (EUR)**: the planned order size from which a call is offered, converted to each shop's currency. Left empty it is 2,000 EUR, about the largest 1 in 100 orders.
 - **Sales leads Slack channel**: where each lead and its reminders are posted. The aiku bot must be a member of the channel.
 
+### When a product is back in stock
+
+When a customer asks when an out of stock product is coming back, the advisor looks at what is on order for it. It gives a period only when the date is reliable: a delivery on its way with an expected date still ahead, or an order placed in the last 9 months whose expected arrival is still ahead. It says "expected between 1 and 15 December", never an exact day or a quantity. Many orders have no expected date, and some old ones were never closed, so often there is no reliable date.
+
+Then the advisor says so and offers to have our purchasing team get back to the customer. Only if the customer says yes, the question becomes a task for the organisation's purchasing people, linked to the product, with the customer, their question and what our orders show. They are told by email, Slack and browser notification and reminded while nobody has taken it, like the big order leads.
+
+To answer, write the answer for the customer in the note when you mark the task done (or as the last message of the task before marking it done). It is translated into the customer's language, added to their conversation with the advisor and emailed to them with the shop's chat notification email, with a link back to the conversation. In a shop where that email is not switched on, customer services gets a task to send the answer instead. If the task is marked done with no answer, nothing is sent and the task says so.
+
+System administrators set it up under **Organisations**: open the organisation, press **Edit** and go to **Restock questions**. The switch **Ask purchasing when there is no reliable date** is on by default; turned off, the advisor only answers from our orders. **Restock questions go to** chooses who gets them; left empty, they go to the organisation's buyers.
+
 ### Limits and what is recorded
 
 Each customer can ask 6 questions a minute, 40 an hour and 120 a day. An answer takes a few seconds, and the page waits for it. Every answer is paid AI usage, so turn the advisor on where you want customers to use it.
@@ -127,7 +137,7 @@ At the top you choose the dates and can narrow the figures by language, by where
 - **Conversion** is the share of conversations followed by such an order. It leaves out conversations of the last 7 days, because they can still turn into orders. An amber note says from which day the figures are not final yet.
 - **AI cost**, in total, per conversation and as a share of the revenue.
 - **AI budget this month** shows, for each website with the advisor on, what has been spent against its monthly budget. The bar turns amber from 80% and red with **Paused until** and the date when the budget is used up.
-- **Big order leads** lists the leads of the period, open ones first: the customer, the planned order, whether they asked for a call, the task's status and who took it. A lead nobody has taken is amber and shows how many reminders went out.
+- **Passed on to the team** lists the big order leads and restock questions of the period, open ones first: the customer, the planned order or the product, whether they asked for a call or how the answer reached them, the task's status and who took it. One nobody has taken is amber and shows how many reminders went out.
 
 **Funnel** follows the conversations step by step: products shown, clicked, added to basket and ordered, each with its share of the step before and of all conversations. **Ordered** can be higher than **Added to basket**, as it also counts products that reached the basket another way. The chart next to it shows the same steps by day, or by week for a long period.
 

@@ -9718,5 +9718,7 @@
     "Final checks done": "Eindcontroles gedaan",
     "Available to ship": "Klaar voor verzending",
     "Transit & arrival": "Transport & aankomst",
-    "Booked into stock": "Op voorraad geboekt"
+    "Booked into stock": "Op voorraad geboekt",
+    "The :product is on order and expected between :from and :to.": "Het product :product is besteld en wordt verwacht tussen :from en :to.",
+    "Our purchasing team answered your question:": "Ons inkoopteam heeft je vraag beantwoord:"
 }
