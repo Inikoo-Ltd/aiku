@@ -9699,5 +9699,9 @@
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "De verzending voor je huidige winkelmandje is :amount exclusief belasting. Dit verandert als je producten toevoegt of verwijdert.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "De verzending voor je huidige winkelmandje is gratis. Dit kan veranderen als je producten toevoegt of verwijdert.",
     "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "De verzending voor je huidige winkelmandje moet nog worden bevestigd: de prijs wordt later bepaald, het is niet gratis.",
-    "More about :name": "Meer over :name"
+    "More about :name": "Meer over :name",
+    "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "Je bent tot :date lid van :label en krijgt daarom ledenprijzen op alle productlijnen waarvoor die gelden. Een bestelling die voor die datum is gefactureerd, houdt je lidmaatschap actief.",
+    "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "Zodra een bestelling van jou is gefactureerd, ben je :days dagen lid van :label, met ledenprijzen op alle productlijnen waarvoor die gelden. Tot die tijd geldt de ledenprijs voor een productlijn als je er in één keer genoeg van bestelt.",
+    "Until :date everyone gets member prices.": "Tot :date krijgt iedereen ledenprijzen.",
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Bij een bestelling van :amount of meer kan iemand van ons team je bellen om het erover te hebben en te kijken of betere voorwaarden mogelijk zijn."
 }

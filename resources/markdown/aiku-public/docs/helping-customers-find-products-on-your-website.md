@@ -1,7 +1,7 @@
 ---
 title: Helping customers find products on your website
 summary: Two switches in the website settings help trade customers find what to stock. The range advisor answers a question typed in the search box with products and a reason for each, and Keep exploring adds related searches, families and products under every search.
-date: 2026-11-10
+date: 2026-11-12
 tags: website, search, shop, crm
 category: marketing
 help_routes: grp.org.shops.show.web.websites.edit, grp.org.shops.show.web.analytics.shopping_assistant, grp.websites.shopping_assistant
@@ -61,6 +61,24 @@ It is built to keep to these rules:
 - It says nothing about what any other customer buys, and no buyer counts or sales figures are shown.
 - It answers in the language of the shop.
 
+### Better prices and big orders
+
+When a customer asks for a better price or a discount, or says something is too expensive, the advisor does not bargain. It shows lower-priced products of the kind they asked for and adds three things worked out from our data, never by the AI:
+
+- whether the customer is a **Gold Reward** member and until when, or how they become one (an invoiced order makes them a member for 30 days);
+- a member-price amnesty, when one is running in the shop;
+- the order size from which our team calls to talk about better terms.
+
+It then asks how much they plan to order. When the planned order reaches that size, the advisor passes it on at once, even before the customer says yes to a call, so a big order is never lost. It offers the call, asks whether to use the phone number on their account or another one and when suits them, and adds the answer to the same lead. It never says who will call and never promises a discount.
+
+Each lead is a high priority task for the **customer services** team of the organisation, linked to the customer, with the planned amount, the phone number, the best time and a link to the conversation. Everyone in the team is told in aiku. The organisation's sales leads managers are on the task and are told by email, Slack and browser notification (each can change this on their profile). While nobody has taken the task, they are reminded after 4 hours and then once a day, on working days between 09:00 and 18:00 in the organisation's time zone.
+
+System administrators set it up under **Organisations**: open the organisation, press **Edit** and go to **Sales leads**.
+
+- **Sales leads manager**: who is told about every lead. Left empty, the customer services supervisors are told, and when there are none, every administrator of the organisation. Set a manager so the leads reach the right person rather than every administrator.
+- **Big order from (EUR)**: the planned order size from which a call is offered, converted to each shop's currency. Left empty it is 2,000 EUR, about the largest 1 in 100 orders.
+- **Sales leads Slack channel**: where each lead and its reminders are posted. The aiku bot must be a member of the channel.
+
 ### Limits and what is recorded
 
 Each customer can ask 6 questions a minute, 40 an hour and 120 a day. An answer takes a few seconds, and the page waits for it. Every answer is paid AI usage, so turn the advisor on where you want customers to use it.
@@ -109,6 +127,7 @@ At the top you choose the dates and can narrow the figures by language, by where
 - **Conversion** is the share of conversations followed by such an order. It leaves out conversations of the last 7 days, because they can still turn into orders. An amber note says from which day the figures are not final yet.
 - **AI cost**, in total, per conversation and as a share of the revenue.
 - **AI budget this month** shows, for each website with the advisor on, what has been spent against its monthly budget. The bar turns amber from 80% and red with **Paused until** and the date when the budget is used up.
+- **Big order leads** lists the leads of the period, open ones first: the customer, the planned order, whether they asked for a call, the task's status and who took it. A lead nobody has taken is amber and shows how many reminders went out.
 
 **Funnel** follows the conversations step by step: products shown, clicked, added to basket and ordered, each with its share of the step before and of all conversations. **Ordered** can be higher than **Added to basket**, as it also counts products that reached the basket another way. The chart next to it shows the same steps by day, or by week for a long period.
 

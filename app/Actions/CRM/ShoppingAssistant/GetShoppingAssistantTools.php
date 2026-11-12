@@ -17,6 +17,7 @@ use App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales;
 use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
+use App\Actions\Tasks\GetAikuAssistant;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -30,7 +31,9 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -62,6 +65,13 @@ use Throwable;
  * this conversation, or found by a tool in the same turn, and not yet in the basket, through the storefront's own bulk add, so stock,
  * visibility and order limits are checked the same way. clear_conversation hides the conversation
  * from the customer for good; the record stays for staff.
+ *
+ * better_price_options and big_order_lead serve a customer who wants a better price. The first
+ * adds sentences written here: the customer's Gold Reward membership and until when, how to get it,
+ * a member-price amnesty running in the shop, and the order size from which our team calls to talk
+ * about terms. The second saves a planned order of at least that size as a lead for the
+ * organisation's customer services team (StoreShoppingAssistantSalesLead); the model never sees the
+ * threshold and never promises a discount.
  *
  * dispatch_times and shipping_cost never give the model a figure: each returns a `fact`, a sentence
  * written here from our data in the shop's language, which AskShoppingAssistant puts under the
@@ -199,6 +209,24 @@ class GetShoppingAssistantTools
                 []
             ),
             $this->tool(
+                'better_price_options',
+                'What can lower the price for this customer. Use it whenever the customer asks for a better price, a discount, a deal or a special price, or says something is too expensive. Sentences about their Gold Reward membership, any member-price offer running now, and the order size from which our team calls to discuss better terms are added under your reply by the system; you get no figures or dates. Returns no products.',
+                []
+            ),
+            $this->tool(
+                'big_order_lead',
+                'Pass on to our team a big order the customer plans. Use it whenever the customer says how much they plan to order (or would order for a better price), and again when they answer whether they want a call, with their phone or a good time. The system decides whether the amount is big enough for a call. Returns no products.',
+                [
+                    'planned_amount'          => ['type' => 'number', 'description' => 'The order value the customer said they plan, as a plain number ("about 3k" is 3000).'],
+                    'currency'                => ['type' => 'string', 'description' => 'ISO code of the currency the customer meant (EUR, GBP, PLN...), when they said one; otherwise leave it out.'],
+                    'customer_agreed_to_call' => ['type' => 'boolean', 'description' => 'True only when the customer has said yes to a call from our team in this conversation.'],
+                    'phone'                   => ['type' => 'string', 'description' => 'A phone number the customer gave in this conversation, exactly as written; leave it out to use the one on their account.'],
+                    'best_time'               => ['type' => 'string', 'description' => 'When the customer said suits them for a call, in their words.'],
+                    'details'                 => ['type' => 'string', 'description' => 'In one sentence, what they plan to order and what they asked for.'],
+                ],
+                ['planned_amount', 'customer_agreed_to_call']
+            ),
+            $this->tool(
                 'clear_conversation',
                 'Clear this conversation when the customer asks to delete, clear or forget it. The page then tells them it was cleared. Returns no products.',
                 []
@@ -246,6 +274,8 @@ class GetShoppingAssistantTools
                 'save_shop_type'                 => $this->saveShopType($conversation, $customer, $arguments),
                 'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments, $foundProductIds),
                 'clear_conversation'             => $this->clearConversation($conversation),
+                'better_price_options'           => $this->betterPriceOptions($customer, $conversation->language_code),
+                'big_order_lead'                 => $this->bigOrderLead($conversation, $arguments),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
@@ -761,6 +791,99 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => $fact,
         ];
+    }
+
+    /**
+     * The Gold Reward rule is the storefront's (HasGrData::getGrData): a member was invoiced within
+     * the shop's interval, or has an extension; membership lasts until the later of the two. Member
+     * prices are per-range volume offers and not every range has one (about 90% in most shops on
+     * 12 Nov 2026, none in Aroma), so the sentences say "wherever a range has them", and a shop with
+     * none says nothing about Gold Reward.
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact: string}
+     */
+    private function betterPriceOptions(Customer $customer, string $locale): array
+    {
+        $shop      = $customer->shop;
+        $offers    = $shop->offers_data ?? [];
+        $facts     = [];
+        $date      = fn ($moment) => Carbon::parse($moment)->locale($locale)->isoFormat('LL') ?: Carbon::parse($moment)->locale('en')->isoFormat('LL');
+        $hasGr     = Arr::get($offers, 'gr.active') && $this->shopHasMemberPrices($customer);
+        $isMember  = false;
+
+        if ($hasGr) {
+            $interval    = (int) Arr::get($offers, 'gr.interval', 30);
+            $label       = (string) (Arr::get($offers, 'gr.label') ?: __('Gold Reward', [], $locale));
+            $memberUntil = collect([
+                $customer->last_invoiced_at && $customer->last_invoiced_at->copy()->addDays($interval)->isFuture() ? $customer->last_invoiced_at->copy()->addDays($interval) : null,
+                $customer->hasActiveGrExtension() ? $customer->gr_extended_until : null,
+            ])->filter()->max();
+
+            $isMember = $memberUntil !== null;
+            $facts[]  = $isMember
+                ? __('You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.', ['label' => $label, 'date' => $date($memberUntil)], $locale)
+                : __('Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.', ['label' => $label, 'days' => $interval], $locale);
+
+            if (Arr::get($offers, 'gr.amnesty') && Arr::get($offers, 'gr.amnesty_until') && Carbon::parse(Arr::get($offers, 'gr.amnesty_until'))->isFuture()) {
+                $facts[] = __('Until :date everyone gets member prices.', ['date' => $date(Arr::get($offers, 'gr.amnesty_until'))], $locale);
+            }
+        }
+
+        $offersCalls = StoreShoppingAssistantSalesLead::offersCalls($customer->organisation, GetAikuAssistant::run($customer->group_id));
+        if ($offersCalls) {
+            $threshold = StoreShoppingAssistantSalesLead::make()->threshold($customer->organisation, $shop->currency);
+            $facts[]   = __('For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.', ['amount' => Number::currency($threshold, $shop->currency->code, $locale, 0)], $locale);
+        }
+
+        return [
+            'content'  => [
+                'gold_reward'  => $hasGr ? ($isMember ? 'member' : 'not_member') : 'not_offered',
+                'calls_offered' => $offersCalls,
+                'note'         => $offersCalls
+                    ? 'Sentences with the details are added under your reply: never repeat their figures or dates. In one or two sentences: say you cannot change prices yourself, offer lower-priced options of what they asked for (search_products with sort cheapest), and ask how much they plan to order. Never promise a discount.'
+                    : 'Sentences with the details are added under your reply: never repeat their figures or dates. In one or two sentences: say you cannot change prices yourself and offer lower-priced options of what they asked for (search_products with sort cheapest). Calls from our team are not offered in this shop: do not offer one or ask how much they plan to order. Never promise a discount.',
+            ],
+            'products' => [],
+            'error'    => null,
+            'fact'     => implode(' ', $facts),
+        ];
+    }
+
+    private function shopHasMemberPrices(Customer $customer): bool
+    {
+        return DB::table('offers')
+            ->join('offer_campaigns', 'offer_campaigns.id', '=', 'offers.offer_campaign_id')
+            ->where('offers.shop_id', $customer->shop_id)
+            ->where('offer_campaigns.type', 'volume-discount')
+            ->where('offers.status', true)
+            ->where('offers.state', 'active')
+            ->where('offers.trigger_type', 'ProductCategory')
+            ->exists();
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string}
+     */
+    private function bigOrderLead(ShoppingAssistantConversation $conversation, array $arguments): array
+    {
+        if (!is_numeric($arguments['planned_amount'] ?? null) || (float) $arguments['planned_amount'] <= 0) {
+            return $this->error('planned_amount must be a positive number.');
+        }
+
+        $agreed = filter_var($arguments['customer_agreed_to_call'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $text   = fn (string $key) => is_string($arguments[$key] ?? null) ? $arguments[$key] : null;
+        $result = StoreShoppingAssistantSalesLead::run($conversation, (float) $arguments['planned_amount'], $text('currency'), $agreed, $text('phone'), $text('best_time'), $text('details'));
+
+        $note = match (true) {
+            $result['status'] === 'not_offered'     => 'Calls from our team are not offered in this shop: do not offer one or say the order was passed on. Offer lower-priced options and what better_price_options says.',
+            $result['status'] === 'below_threshold' => 'Below the order size for a call: do not offer one. Offer lower-priced options and what better_price_options says.',
+            !$agreed                                => 'Passed on to our team. Ask in one short sentence whether they would like a call from our team to talk about better terms, on the phone number in their account or another one, and when suits them. Call big_order_lead again with their answer.',
+            default                                 => 'Passed on to our team. Say in one sentence that a member of our team will call them, without naming anyone, giving a time we did not agree, or promising a discount.',
+        };
+
+        return ['content' => ['qualifies' => in_array($result['status'], ['created', 'updated'], true), 'note' => $note], 'products' => [], 'error' => null];
     }
 
     /**

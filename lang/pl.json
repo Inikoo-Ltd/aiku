@@ -25800,5 +25800,9 @@
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Wysyłka dla obecnego koszyka wynosi :amount bez podatku. Zmienia się przy dodawaniu lub usuwaniu produktów.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "Wysyłka dla obecnego koszyka jest bezpłatna. Może się to zmienić przy dodawaniu lub usuwaniu produktów.",
     "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Wysyłka dla obecnego koszyka wymaga jeszcze potwierdzenia: cena zostanie ustalona później, nie jest bezpłatna.",
-    "More about :name": "Więcej o: :name"
+    "More about :name": "Więcej o: :name",
+    "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "Twoje członkostwo w programie :label trwa do :date, więc na wszystkie serie, które je mają, obowiązują ceny dla członków. Zamówienie zafakturowane przed tą datą przedłuża członkostwo.",
+    "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "Gdy któreś z Twoich zamówień zostanie zafakturowane, zyskasz członkostwo w programie :label na :days dni, z cenami dla członków na wszystkie serie, które je mają. Do tego czasu seria jest objęta ceną dla członków, gdy zamówisz jej odpowiednio dużo naraz.",
+    "Until :date everyone gets member prices.": "Do :date ceny dla członków obowiązują wszystkich.",
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Przy zamówieniu na kwotę :amount lub wyższą ktoś z naszego zespołu może do Ciebie zadzwonić, aby je omówić i sprawdzić, czy możliwe są lepsze warunki."
 }

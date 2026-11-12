@@ -13,6 +13,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
+use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
@@ -27,6 +28,7 @@ use App\Models\Accounting\PaymentAccount;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Validation\ValidationException;
 use Sentry;
 use Throwable;
 
@@ -102,33 +104,7 @@ class PayMatchedBankTransactions
                 return 'decided again: '.$state->value;
             }
 
-            $bankFee = round($matchData['owed'] - $matchData['received'], 2);
-
-            $bankFeeAccount = PaymentAccount::where('organisation_id', $bankConnection->organisation_id)
-                ->where('type', PaymentAccountTypeEnum::BANK_FEE)
-                ->find($bankConnection->settings['bank_fee_payment_account_id'] ?? 0);
-            if ($bankFee > 0 && !$bankFeeAccount) {
-                return 'no bank fee account';
-            }
-
-            $payment = $this->recordPayment($order, $paymentAccount, $matchData['received'], $bankTransaction->reference, $bankTransaction);
-
-            $bankFeePayment = null;
-            if ($bankFee > 0) {
-                $bankFeePayment = $this->recordPayment($order, $bankFeeAccount, $bankFee, __('Bank fee absorbed on :reference', ['reference' => $order->reference]), $bankTransaction);
-            }
-
-            $bankTransaction->update([
-                'payment_id'          => $payment->id,
-                'bank_fee_payment_id' => $bankFeePayment?->id,
-                'match_data'          => array_merge($bankTransaction->match_data, array_filter([
-                    'paid_at'           => now()->toIso8601String(),
-                    'bank_fee_absorbed' => max($bankFee, 0),
-                    'payer_sent'        => $bankTransaction->fee_amount !== null ? round((float)$bankTransaction->amount + (float)$bankTransaction->fee_amount, 2) : null,
-                ], fn ($value) => $value !== null)),
-            ]);
-
-            return $order;
+            return $this->recordLine($bankConnection, $bankTransaction, $order, $paymentAccount, $matchData['received'], round($matchData['owed'] - $matchData['received'], 2), []);
         });
 
         if (!$paid instanceof Order) {
@@ -138,6 +114,94 @@ class PayMatchedBankTransactions
         $this->afterPayment($paid);
 
         return 'paid';
+    }
+
+    /**
+     * A person chose the order for a bank line that was not paid automatically. The payment is the money received;
+     * when $absorbBankFee and the transfer is short by no more than the matcher's fee tolerance, the shortfall is
+     * absorbed as a bank fee; a bigger shortfall (a part payment) stays owed on the order.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
+     */
+    public function payToOrder(BankTransaction $bankTransaction, Order $order, bool $absorbBankFee, string $paidBy): void
+    {
+        $paid = DB::transaction(function () use ($bankTransaction, $order, $absorbBankFee, $paidBy) {
+            $bankTransaction = BankTransaction::lockForUpdate()->findOrFail($bankTransaction->id);
+            $order           = Order::lockForUpdate()->findOrFail($order->id);
+            $bankConnection  = $bankTransaction->bankConnection;
+
+            $problem = match (true) {
+                $bankTransaction->payment_id !== null => __('This bank payment is already recorded on an order'),
+                $bankTransaction->direction !== BankTransactionDirectionEnum::IN || $bankTransaction->status !== BankTransactionStatusEnum::BOOKED => __('Only money received and booked by the bank can pay an order'),
+                $order->organisation_id !== $bankTransaction->organisation_id => __('The order belongs to another organisation'),
+                $order->currency_id !== $bankTransaction->currency_id => __('The order is in another currency'),
+                $order->state === OrderStateEnum::CANCELLED => __('The order is cancelled'),
+                $order->state === OrderStateEnum::CREATING => __('The order is still in the basket: wait until it is submitted'),
+                $order->amountStillToPay() <= 0.01 => __('The order owes nothing'),
+                default => null,
+            };
+            $paymentAccount = $problem ? null : $this->paymentAccount($bankConnection, $bankTransaction);
+            if (!$problem && !$paymentAccount) {
+                $problem = __('No payment account is set for :currency on this bank connection', ['currency' => $bankTransaction->currency->code]);
+            }
+            if ($problem) {
+                throw ValidationException::withMessages(['order' => $problem]);
+            }
+
+            $received = round((float)$bankTransaction->amount, 2);
+            $short    = round($order->amountStillToPay() - $received, 2);
+            $bankFee  = $absorbBankFee && $short > 0 && $short <= MatchBankTransactions::make()->feeTolerance($order->amountStillToPay(), $bankTransaction) ? $short : 0;
+
+            $paid = $this->recordLine($bankConnection, $bankTransaction, $order, $paymentAccount, $received, $bankFee, [
+                'paid_by'    => $paidBy,
+                'reason'     => null,
+                'owed'       => round($order->amountStillToPay(), 2),
+                'received'   => $received,
+                'difference' => round($received - $order->amountStillToPay(), 2),
+            ]);
+            if (!$paid instanceof Order) {
+                throw ValidationException::withMessages(['order' => __('This organisation has no bank fee account yet: pay without absorbing the fee')]);
+            }
+
+            return $paid;
+        });
+
+        $this->afterPayment($paid);
+    }
+
+    /**
+     * @param array<string, mixed> $extraMatchData
+     */
+    private function recordLine(BankConnection $bankConnection, BankTransaction $bankTransaction, Order $order, PaymentAccount $paymentAccount, float $received, float $bankFee, array $extraMatchData): Order|string
+    {
+        $bankFeeAccount = PaymentAccount::where('organisation_id', $bankConnection->organisation_id)
+            ->where('type', PaymentAccountTypeEnum::BANK_FEE)
+            ->find($bankConnection->settings['bank_fee_payment_account_id'] ?? 0);
+        if ($bankFee > 0 && !$bankFeeAccount) {
+            return 'no bank fee account';
+        }
+
+        $payment = $this->recordPayment($order, $paymentAccount, $received, $bankTransaction->reference, $bankTransaction);
+
+        $bankFeePayment = null;
+        if ($bankFee > 0) {
+            $bankFeePayment = $this->recordPayment($order, $bankFeeAccount, $bankFee, __('Bank fee absorbed on :reference', ['reference' => $order->reference]), $bankTransaction);
+        }
+
+        $bankTransaction->update([
+            'match_state'         => BankTransactionMatchStateEnum::MATCHED,
+            'order_id'            => $order->id,
+            'payment_id'          => $payment->id,
+            'bank_fee_payment_id' => $bankFeePayment?->id,
+            'match_data'          => array_merge($bankTransaction->match_data, $extraMatchData, array_filter([
+                'paid_at'           => now()->toIso8601String(),
+                'bank_fee_absorbed' => max($bankFee, 0),
+                'payer_sent'        => $bankTransaction->fee_amount !== null ? round((float)$bankTransaction->amount + (float)$bankTransaction->fee_amount, 2) : null,
+            ], fn ($value) => $value !== null)),
+        ]);
+
+        return $order;
     }
 
     private function paymentAccount(BankConnection $bankConnection, BankTransaction $bankTransaction): ?PaymentAccount

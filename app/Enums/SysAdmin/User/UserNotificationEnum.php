@@ -37,6 +37,7 @@ enum UserNotificationEnum: string
     case GOOGLE_ADS_CLICK_CAPTURE_DROP = 'google_ads_click_capture_drop';
     case MANUFACTURE_PAYROLL_CHANGED = 'manufacture_payroll_changed';
     case MANUFACTURE_OVERTIME_REMINDER = 'manufacture_overtime_reminder';
+    case SALES_LEAD = 'sales_lead';
 
     public const array PRODUCT_DEVELOPMENT_EVENTS = [
         self::PRODUCT_DEVELOPMENT_TASK,
@@ -90,6 +91,7 @@ enum UserNotificationEnum: string
             self::MANUFACTURE_PAYROLL_CHANGED   => __('The production manager changes a week already locked for payroll'),
             self::MANUFACTURE_OVERTIME_REMINDER => __('On Monday, the overtime of last week nobody has approved or rejected yet, before payroll locks'),
             self::PURCHASE_ORDER_MINIMUM_POKE   => __('Another organisation asks me to add to my draft to reach a supplier minimum (email and Slack come grouped every 15 minutes)'),
+            self::SALES_LEAD                    => __('A customer of my organisation asks the AI assistant for a call about a big order, and when nobody has taken it yet'),
         };
     }
 
@@ -109,6 +111,10 @@ enum UserNotificationEnum: string
 
         if ($this === self::GOOGLE_ADS_CLICK_CAPTURE_DROP || $this === self::MANUFACTURE_PAYROLL_CHANGED || $this === self::MANUFACTURE_OVERTIME_REMINDER || in_array($this, self::PROCUREMENT_EVENTS, true)) {
             return ['email'];
+        }
+
+        if ($this === self::SALES_LEAD) {
+            return self::CHANNELS;
         }
 
         if (in_array($this, self::PRODUCT_DEVELOPMENT_EVENTS, true)) {
@@ -150,6 +156,7 @@ enum UserNotificationEnum: string
             self::GOOGLE_ADS_CLICK_CAPTURE_DROP => 'fal fa-chart-line-down',
             self::MANUFACTURE_PAYROLL_CHANGED   => 'fal fa-lock',
             self::MANUFACTURE_OVERTIME_REMINDER => 'fal fa-user-clock',
+            self::SALES_LEAD                    => 'fal fa-phone-alt',
         };
     }
 

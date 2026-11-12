@@ -160,6 +160,14 @@ class ShowAccountingDashboard extends OrgAction
 
 
                         ],
+                        [
+                            'name'  => __('Bank fees'),
+                            'icon'  => ['fal', 'fa-percent'],
+                            'route' => [
+                                'name'       => 'grp.org.accounting.bank_fees.index',
+                                'parameters' => $parameters
+                            ],
+                        ],
                     ]
                 ]
 

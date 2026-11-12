@@ -25755,5 +25755,9 @@
     "Shipping for your current basket is :amount before tax. It changes as you add or remove products.": "Transportul pentru coșul actual este :amount fără taxe. Se modifică atunci când adăugați sau eliminați produse.",
     "Shipping for your current basket is free. It can change as you add or remove products.": "Transportul pentru coșul actual este gratuit. Se poate modifica atunci când adăugați sau eliminați produse.",
     "Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.": "Transportul pentru coșul actual urmează să fie confirmat: prețul se stabilește ulterior, nu este gratuit.",
-    "More about :name": "Mai multe despre :name"
+    "More about :name": "Mai multe despre :name",
+    "You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.": "Sunteți membru al programului :label până la :date, deci beneficiați de prețuri pentru membri la toate gamele care au astfel de prețuri. O comandă facturată înainte de această dată vă prelungește calitatea de membru.",
+    "Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.": "De îndată ce o comandă de-a dvs. este facturată, deveniți membru al programului :label pentru :days zile, cu prețuri pentru membri la toate gamele care au astfel de prețuri. Până atunci, o gamă are prețul pentru membri dacă o comandați într-o cantitate suficientă dintr-o dată.",
+    "Until :date everyone gets member prices.": "Până la :date, toți beneficiază de prețuri pentru membri.",
+    "For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.": "Pentru o comandă de :amount sau mai mult, o persoană din echipa noastră vă poate suna pentru a discuta despre ea și a vedea dacă sunt posibile condiții mai bune."
 }

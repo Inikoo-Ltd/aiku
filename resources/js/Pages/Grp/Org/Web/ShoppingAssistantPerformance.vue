@@ -83,6 +83,20 @@ const props = defineProps<{
     cost_currency?: string
     attribution_days: number
     budgets: { website: string; monthly: number; spent: number; paused: boolean; resumes_on: string }[]
+    sales_leads?: {
+        reference: string
+        customer: string | null
+        website: string | null
+        amount: number | null
+        currency: string | null
+        agreed_to_call: boolean
+        status: string
+        status_label: string
+        assignee: string | null
+        reminders: number
+        created_at: string
+        url: string
+    }[]
     routes: { page: RouteRef; conversation: RouteRef }
     overview?: Overview
     conversations?: object
@@ -116,7 +130,7 @@ const pageUrl = (query: Record<string, any>) => route(props.routes.page.name, { 
 
 const visit = (query: Record<string, any>, tab: string) =>
     router.get(pageUrl({ ...query, tab }), {}, {
-        only: ["tabs", "filters", "budgets", tab],
+        only: ["tabs", "filters", "budgets", "sales_leads", tab],
         preserveState: true,
         preserveScroll: true,
         onStart: () => (isLoading.value = true),
@@ -187,6 +201,10 @@ const budgetRows = computed(() =>
         return { ...budget, width: Math.min(100, used * 100), warning: !budget.paused && used >= 0.8 }
     })
 )
+
+const salesLeads = computed(() => props.sales_leads ?? [])
+const leadStatusClass = (lead: { status: string; assignee: string | null }) =>
+    lead.status === "done" ? "text-green-700" : lead.status === "cancelled" ? "text-gray-500" : lead.assignee ? "text-gray-700" : "text-amber-700"
 
 const kpis = computed(() => props.overview?.kpis ?? {})
 const kpi = (key: string): Metric => kpis.value[key] ?? { value: 0, previous: null }
@@ -580,6 +598,40 @@ const conversationsTable = computed(() => props.conversations)
                                     <span v-if="budget.paused" class="text-red-600">{{ ctrans("Paused until :date", { date: shortDate(budget.resumes_on) }) }}</span>
                                     <span v-else-if="budget.warning" class="text-amber-700">{{ ctrans("80% used") }}</span>
                                 </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-if="salesLeads.length" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                    <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("Big order leads") }}</h3>
+                    <table class="w-full text-sm">
+                        <thead class="whitespace-nowrap text-xs text-gray-400">
+                            <tr>
+                                <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Task") }}</th>
+                                <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Customer") }}</th>
+                                <th v-if="!filters.website_locked" class="pb-1 pr-3 text-left font-medium">{{ ctrans("Website") }}</th>
+                                <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Planned order") }}</th>
+                                <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("Call") }}</th>
+                                <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("Status") }}</th>
+                                <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("Taken by") }}</th>
+                                <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Received") }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="lead in salesLeads" :key="lead.reference">
+                                <td class="whitespace-nowrap py-1 pr-3">
+                                    <a :href="lead.url" class="text-gray-700 underline decoration-gray-300 underline-offset-4 hover:text-gray-900">{{ lead.reference }}</a>
+                                </td>
+                                <td class="max-w-[16rem] truncate py-1 pr-3 text-gray-700" :title="lead.customer ?? ''">{{ lead.customer }}</td>
+                                <td v-if="!filters.website_locked" class="whitespace-nowrap py-1 pr-3 text-gray-500">{{ lead.website }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-900">{{ lead.amount === null ? "" : money(lead.amount, lead.currency ?? currency) }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-xs text-gray-600">{{ lead.agreed_to_call ? ctrans("Asked for a call") : ctrans("Not yet") }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-xs">
+                                    <span :class="leadStatusClass(lead)">{{ lead.status_label }}</span>
+                                    <span v-if="lead.status === 'todo' && !lead.assignee && lead.reminders > 0" class="ml-1 text-amber-700">· {{ ctrans("reminded :count times", { count: lead.reminders }) }}</span>
+                                </td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-xs text-gray-600">{{ lead.assignee ?? ctrans("Nobody yet") }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-right text-xs tabular-nums text-gray-500">{{ shortDate(lead.created_at) }}</td>
                             </tr>
                         </tbody>
                     </table>
