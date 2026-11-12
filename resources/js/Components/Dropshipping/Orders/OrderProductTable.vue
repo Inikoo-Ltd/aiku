@@ -74,6 +74,8 @@ const props = defineProps<{
     scrollOnMobile?: boolean
 }>()
 
+const showsShopStock = computed(() => props.state === 'creating')
+
 const { pendingProductIds } = useProductAvailabilityLive((update) => {
     const rows = Array.isArray(props.data) ? props.data : props.data?.data ?? []
     rows.filter(row => row.product_id === update.product_id).forEach(row => {
@@ -575,14 +577,14 @@ const isOffersData = (offersData: any): boolean => {
                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500 mr-1" fixed-width aria-hidden="true" />
                         {{ ctrans('Repacked since ordered') }}: {{ item.product_units }} → {{ item.units_changed_to }}
                     </div>
-                    <div v-if="item.model_type === 'Product' && !item.is_on_demand && item.available_quantity !== undefined && item.available_quantity < 1">
+                    <div v-if="showsShopStock && item.model_type === 'Product' && !item.is_on_demand && item.available_quantity !== undefined && item.available_quantity < 1">
                         <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
                         <LoadingIcon v-if="pendingProductIds.has(item.product_id)" v-tooltip="ctrans('Recalculating availability')" class="ml-1 text-xs text-gray-400" />
                     </div>
                     <div v-else-if="item.model_type === 'Product'" class="text-gray-500 italic text-xs">
                         <template v-if="item.is_on_demand && item.shelf_quantity != null">{{ ctrans("Stock: :quantity on the shelf, made on demand", { quantity: locale.number(item.shelf_quantity) }) }}</template>
                         <template v-else-if="item.is_on_demand">{{ ctrans("Made on demand") }}</template>
-                        <template v-else>{{ ctrans("Stock: :quantity available", { quantity: locale.number(item.available_quantity || 0) }) }}</template>
+                        <template v-else-if="showsShopStock">{{ ctrans("Stock: :quantity available", { quantity: locale.number(item.available_quantity || 0) }) }}</template>
                         <LoadingIcon v-if="pendingProductIds.has(item.product_id)" v-tooltip="ctrans('Recalculating availability')" class="not-italic ml-1 text-gray-400" />
                         <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
                             <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-1" fixed-width aria-hidden="true" />

@@ -31,6 +31,8 @@ const props = defineProps<{
     readonly?: boolean
 }>()
 
+const showsShopStock = computed(() => props.state === 'creating')
+
 
 const locale = inject('locale', retinaLayoutStructure)
 
@@ -100,14 +102,14 @@ const debounceUpdateQuantity = debounce(
                 <div>
                     <div>{{ item.asset_name }}{{ basketSizeSuffix(item.asset_name, item.size_label) }}</div>
 
-                    <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
+                    <div v-if="showsShopStock && typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
                         <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
                     </div>
                     <div v-else class="text-gray-500 italic text-xs">
-                        {{ ctrans('Stock :xquantityx available', {
+                        <template v-if="showsShopStock">{{ ctrans('Stock :xquantityx available', {
                             xquantityx: locale.number(item.available_quantity ||
                                 0)
-                        }) }}
+                        }) }}</template>
                         <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
                             <FontAwesomeIcon icon="fal fa-repeat" class="text-sky-500 not-italic ml-2"
                                 fixed-width aria-hidden="true" />
@@ -236,16 +238,16 @@ const debounceUpdateQuantity = debounce(
                             {{ item.asset_name }}{{ basketSizeSuffix(item.asset_name, item.size_label) }}
                         </p>
 
-                        <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1"
+                        <div v-if="showsShopStock && typeof item.available_quantity !== 'undefined' && item.available_quantity < 1"
                             class="mt-1">
                             <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
                         </div>
 
                         <div v-else class="mt-1 text-xs italic text-gray-500">
 
-                            {{ ctrans('Stock :xquantityx available', {
+                            <template v-if="showsShopStock">{{ ctrans('Stock :xquantityx available', {
                                 xquantityx: locale.number(item.available_quantity || 0)
-                            }) }}
+                            }) }}</template>
 
                             <span v-if="item.is_follow_on" v-tooltip="ctrans('Follow on from a previous order')">
                                 <FontAwesomeIcon icon="fal fa-repeat" class="ml-2 text-sky-500" fixed-width />
