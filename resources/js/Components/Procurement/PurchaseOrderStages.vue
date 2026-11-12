@@ -12,8 +12,8 @@ import Textarea from "primevue/textarea"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle } from "@fal"
-library.add(faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle)
+import { faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle, faLock, faForward } from "@fal"
+library.add(faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle, faLock, faForward)
 
 interface Step {
     key: string
@@ -30,7 +30,15 @@ interface Mark {
     skipped: string[]
     planned?: boolean
     suggested?: string | null
-    confirms_order?: boolean
+    blocked?: string | null
+}
+
+interface Skip {
+    key: string
+    label: string
+    description: string
+    skipped: { at: string, by: string | null, reason: string } | null
+    blocked: string | null
 }
 
 interface Check {
@@ -38,6 +46,7 @@ interface Check {
     label: string
     done: boolean
     date: string | null
+    skipped?: boolean
 }
 
 interface Evidence {
@@ -68,14 +77,16 @@ interface Stage {
     checks?: Check[] | null
     evidence: Evidence[]
     marks: Mark[]
+    skips?: Skip[]
 }
 
 const props = defineProps<{
     stages: Stage[]
     route: routeType
     uploadRoute?: routeType | null
-    deposit?: { not_needed: boolean, route: routeType } | null
-    sample?: { required: boolean, approved: boolean, override_reason: string | null, route: routeType | null } | null
+    skipRoute?: routeType | null
+    deposit?: { not_needed: boolean, agrees?: boolean, route: routeType } | null
+    sample?: { required: boolean, approved: boolean, override_reason: string | null, skipped?: boolean, route: routeType | null } | null
 }>()
 
 const slots = useSlots()
@@ -128,7 +139,7 @@ async function setDepositNotNeeded(notNeeded: boolean) {
     depositError.value = null
     try {
         await axios.patch(route(props.deposit.route.name, props.deposit.route.parameters), { deposit_amount: notNeeded ? 0 : null })
-        router.reload({ only: ["stages"] })
+        router.reload()
     } catch (error: any) {
         depositError.value = error?.response?.data?.message || ctrans("Something went wrong")
     } finally {
@@ -211,10 +222,6 @@ const markTooltips: Record<string, { record: string, edit: string }> = {
 }
 
 function markTooltip(mark: Mark) {
-    if (mark.confirms_order && mark.field === "production_started_at") {
-        return ctrans("Click once the supplier has accepted this order and started making it: it confirms the order and records the date production started")
-    }
-
     const tooltip = markTooltips[mark.field]
     if (tooltip) {
         return ctrans(mark.date ? tooltip.edit : tooltip.record)
@@ -288,6 +295,34 @@ const needsReason = computed(() => {
     return isPast || editing.value.skipped.length > 0
 })
 
+const skipping = ref<{ skip: Skip, skipped: boolean } | null>(null)
+const skipReason = ref("")
+const savingSkip = ref(false)
+const skipErrors = ref<Record<string, string>>({})
+
+function openSkip(skip: Skip, skipped: boolean) {
+    skipping.value = { skip, skipped }
+    skipReason.value = ""
+    skipErrors.value = {}
+}
+
+function saveSkip() {
+    if (!skipping.value || !props.skipRoute) {
+        return
+    }
+    router.patch(route(props.skipRoute.name, props.skipRoute.parameters), {
+        key: skipping.value.skip.key,
+        skipped: skipping.value.skipped,
+        reason: skipReason.value.trim(),
+    }, {
+        preserveScroll: true,
+        onStart: () => savingSkip.value = true,
+        onFinish: () => savingSkip.value = false,
+        onError: (error) => skipErrors.value = error,
+        onSuccess: () => skipping.value = null,
+    })
+}
+
 function save() {
     if (!editing.value) {
         return
@@ -319,33 +354,34 @@ function save() {
     <div class="border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
         {{ ctrans(phaseLabels[group.phase] ?? group.phase) }}
     </div>
-    <div class="grid flex-1 gap-px bg-gray-200" :class="groupGridClass(group.stages.length)">
+    <div class="grid flex-1 auto-rows-[auto_1fr] gap-px bg-gray-200" :class="groupGridClass(group.stages.length)">
         <div
             v-for="stage in group.stages"
             :key="stage.key"
-            class="p-3 text-sm"
-            :class="[
-                stage.current ? '' : '',
-                stage.unpaid ? 'bg-amber-50' : stage.reached && !stage.not_required ? 'bg-green-50' : 'bg-white',
-            ]"
+            class="row-span-2 grid grid-rows-subgrid gap-0 p-3 text-sm"
+            :class="stage.unpaid ? 'bg-amber-50' : stage.reached && !stage.not_required ? 'bg-green-50' : 'bg-white'"
         >
-            <div class="flex items-center gap-2 font-medium" :class="stage.reached ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
-                <FontAwesomeIcon v-if="stage.not_required" icon="fal fa-minus-circle" class="text-gray-400" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else-if="stage.unpaid" icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else-if="stage.reached" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
-                <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
-                {{ stage.label }}
+            <div class="min-h-9">
+                <div class="flex items-center gap-2 font-medium" :class="stage.reached ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
+                    <FontAwesomeIcon v-if="stage.not_required" icon="fal fa-minus-circle" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else-if="stage.unpaid" icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else-if="stage.reached" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
+                    <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
+                    {{ stage.label }}
+                </div>
+                <div v-if="stage.caption" class="text-xs text-gray-400 italic">{{ stage.caption }}</div>
             </div>
-            <div v-if="stage.caption" class="text-xs text-gray-400 italic">{{ stage.caption }}</div>
 
+            <div>
             <div class="mt-1 tabular-nums" :class="stage.date ? 'text-gray-700' : 'text-gray-400'">
                 <template v-if="stage.not_required">{{ ctrans("Not required") }}</template>
                 <template v-else-if="stage.unpaid"><span class="text-amber-700">{{ ctrans("Not paid") }}</span></template>
                 <template v-else-if="stage.date">{{ formatDate(stage.date) }}</template>
                 <template v-else-if="stage.reached">{{ ctrans("Not recorded") }}</template>
                 <template v-else>-</template>
-                <span v-if="stage.by" class="text-xs text-gray-500"> · {{ stage.by }}</span>
+                <span v-if="stage.by && stage.key !== 'submitted'" class="text-xs text-gray-500"> · {{ stage.by }}</span>
             </div>
+            <div v-if="stage.by && stage.key === 'submitted'" class="text-xs text-gray-500">{{ ctrans("Submitted by :name", { name: stage.by }) }}</div>
 
             <div v-if="!stage.reached && stage.expected" class="mt-0.5 w-fit cursor-help text-xs tabular-nums" :class="stage.days_late ? 'text-red-600' : 'text-gray-500'" v-tooltip="stage.expected_note">
                 {{ ctrans("Expected :date", { date: formatDate(stage.expected) as string }) }}
@@ -380,10 +416,10 @@ function save() {
                         check.done ? 'border-green-200 bg-green-50 text-green-700' : 'border-gray-200 bg-gray-50 text-gray-500',
                         hasCheckDetail(check) ? 'cursor-pointer hover:border-[var(--app-accent-muted)] hover:bg-[var(--app-accent-soft)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-accent)]' : '',
                     ]"
-                    v-tooltip="check.date ? formatDate(check.date) : ctrans('Not done yet')"
+                    v-tooltip="check.skipped ? ctrans('Skipped :date', { date: formatDate(check.date) as string }) : check.date ? formatDate(check.date) : ctrans('Not done yet')"
                     @click="hasCheckDetail(check) && (openedCheck = check)"
                 >
-                    <FontAwesomeIcon :icon="check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon :icon="check.skipped ? 'fal fa-forward' : check.done ? 'fal fa-check' : 'fal fa-circle'" fixed-width aria-hidden="true" />
                     {{ check.label }}
                 </component>
             </div>
@@ -405,7 +441,15 @@ function save() {
 
             <div v-if="stage.marks.length" class="mt-2 flex flex-col gap-1">
                 <template v-for="mark in stage.marks" :key="mark.field">
+                    <span v-if="mark.blocked" class="block" v-tooltip="mark.blocked">
+                        <Button type="tertiary" size="xs" full disabled :label="markLabel(mark)">
+                            <template #icon>
+                                <FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </template>
+                        </Button>
+                    </span>
                     <Button
+                        v-else
                         type="tertiary"
                         size="xs"
                         full
@@ -419,7 +463,7 @@ function save() {
                     </Button>
                     <Button
                         v-if="mark.date && clearLabels[mark.field]"
-                        type="tertiary"
+                        type="negative"
                         size="xs"
                         full
                         :label="ctrans(clearLabels[mark.field].label)"
@@ -427,9 +471,40 @@ function save() {
                         @click="openClear(mark)"
                     >
                         <template #icon>
-                            <FontAwesomeIcon icon="fal fa-undo" class="text-amber-600" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon icon="fal fa-undo" fixed-width aria-hidden="true" />
                         </template>
                     </Button>
+                </template>
+            </div>
+
+            <div v-if="stage.skips?.length" class="mt-2 flex flex-col gap-1">
+                <template v-for="skip in stage.skips" :key="skip.key">
+                    <div v-if="skip.skipped" class="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-medium text-amber-800">{{ skip.label }}</span>
+                            <button v-if="skipRoute" type="button" class="text-gray-500 hover:text-gray-800" v-tooltip="ctrans('Undo :skip', { skip: skip.label })" @click="openSkip(skip, false)">
+                                <FontAwesomeIcon icon="fal fa-undo" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
+                        <div class="text-gray-600">
+                            {{ ctrans("Skipped") }} {{ formatDate(skip.skipped.at) }}<template v-if="skip.skipped.by"> · {{ skip.skipped.by }}</template>
+                        </div>
+                        <div class="text-gray-700">{{ skip.skipped.reason }}</div>
+                    </div>
+                    <template v-else-if="skipRoute">
+                        <span v-if="skip.blocked" class="block" v-tooltip="skip.blocked">
+                            <Button type="tertiary" size="xs" full disabled :label="skip.label">
+                                <template #icon>
+                                    <FontAwesomeIcon icon="fal fa-lock" class="text-gray-400" fixed-width aria-hidden="true" />
+                                </template>
+                            </Button>
+                        </span>
+                        <Button v-else type="tertiary" size="xs" full :label="skip.label" :tooltip="skip.description" @click="openSkip(skip, true)">
+                            <template #icon>
+                                <FontAwesomeIcon icon="fal fa-forward" class="text-amber-600" fixed-width aria-hidden="true" />
+                            </template>
+                        </Button>
+                    </template>
                 </template>
             </div>
 
@@ -438,13 +513,15 @@ function save() {
                     type="tertiary"
                     size="xs"
                     full
-                    :label="deposit.not_needed ? ctrans('Deposit needed after all') : ctrans('No deposit needed')"
-                    :tooltip="deposit.not_needed ? ctrans('Click to ask for a deposit again, if the supplier wants one before production') : ctrans('Click to mark this order as needing no deposit, when the supplier starts production without one')"
+                    :label="deposit.not_needed && !deposit.agrees ? ctrans('Deposit needed after all') : ctrans('No deposit needed')"
+                    :tooltip="deposit.agrees
+                        ? ctrans('Click when the supplier agreed the terms and starts without a deposit: the order becomes Agreed and its next stage opens')
+                        : deposit.not_needed ? ctrans('Click to ask for a deposit again, if the supplier wants one before production') : ctrans('Click to mark this order as needing no deposit, when the supplier starts production without one')"
                     :loading="savingDeposit"
-                    @click="setDepositNotNeeded(!deposit.not_needed)"
+                    @click="setDepositNotNeeded(deposit.agrees || !deposit.not_needed)"
                 >
                     <template #icon>
-                        <FontAwesomeIcon :icon="deposit.not_needed ? 'fal fa-undo' : 'fal fa-ban'" :class="deposit.not_needed ? 'text-gray-500' : 'text-amber-600'" fixed-width aria-hidden="true" />
+                        <FontAwesomeIcon :icon="deposit.not_needed && !deposit.agrees ? 'fal fa-undo' : 'fal fa-ban'" :class="deposit.not_needed && !deposit.agrees ? 'text-gray-500' : 'text-amber-600'" fixed-width aria-hidden="true" />
                     </template>
                 </Button>
                 <p v-if="depositError" class="mt-1 text-xs text-red-600">{{ depositError }}</p>
@@ -452,11 +529,12 @@ function save() {
 
             <div v-if="stage.key === 'in_production' && sample?.required" class="mt-2 space-y-1 text-xs">
                 <p v-if="sample.approved" class="text-green-700">{{ ctrans("Sample approved: the goods can ship") }}</p>
+                <p v-else-if="sample.skipped" class="text-amber-700">{{ ctrans("Sample skipped: the goods can ship") }}</p>
                 <p v-else-if="sample.override_reason" class="text-amber-700">
                     {{ ctrans("Ships without an approved sample") }}: <span class="text-gray-700">{{ sample.override_reason }}</span>
                 </p>
                 <p v-else class="text-amber-700">{{ ctrans("Sample required: the goods can't ship until it is approved") }}</p>
-                <template v-if="sample.route">
+                <template v-if="sample.route && !sample.skipped">
                     <Button
                         v-if="!sample.approved && !sample.override_reason"
                         type="tertiary"
@@ -484,6 +562,7 @@ function save() {
             </div>
 
             <slot :name="`stage-${stage.key}`" :stage="stage" />
+            </div>
         </div>
     </div>
     </section>
@@ -544,10 +623,6 @@ function save() {
                 <p v-if="markNotes[editing.field]" class="-mt-3 text-xs text-gray-400 italic">{{ ctrans(markNotes[editing.field]) }}</p>
             </template>
 
-            <p v-if="editing?.confirms_order && !isClearing" class="text-gray-600">
-                {{ ctrans("Saving also confirms this purchase order: work on it means the supplier accepted it.") }}
-            </p>
-
             <label v-if="!isClearing" class="block space-y-1">
                 <span class="block text-xs text-gray-500">{{ ctrans("Date") }}</span>
                 <DatePicker v-model="date" dateFormat="yy-mm-dd" :maxDate="editing?.planned ? undefined : new Date()" showIcon showButtonBar class="w-full" />
@@ -583,6 +658,34 @@ function save() {
                     <FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
                 </template>
             </Button>
+        </template>
+    </Dialog>
+
+    <Dialog
+        :visible="!!skipping"
+        modal
+        :header="skipping ? (skipping.skipped ? skipping.skip.label : ctrans('Undo :skip', { skip: skipping.skip.label })) : undefined"
+        :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }"
+        @update:visible="(visible: boolean) => !visible && (skipping = null)"
+    >
+        <div v-if="skipping" class="space-y-3 text-sm">
+            <p class="text-gray-600">{{ skipping.skipped ? skipping.skip.description : ctrans("The step is asked for again, as if it had never been skipped.") }}</p>
+            <label class="block space-y-1">
+                <span class="block text-xs text-gray-500">{{ ctrans("Reason (kept in the order's history)") }} <span class="text-red-500">*</span></span>
+                <Textarea v-model="skipReason" rows="3" autoResize class="w-full" />
+                <span v-if="skipErrors.reason" class="block text-xs text-red-600">{{ skipErrors.reason }}</span>
+            </label>
+            <span v-if="skipErrors.key" class="block text-xs text-red-600">{{ skipErrors.key }}</span>
+        </div>
+        <template #footer>
+            <div class="flex w-full gap-2">
+                <Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="skipping = null">
+                    <template #icon><FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <Button type="primary" full :label="skipping?.skipped ? ctrans('Skip') : ctrans('Undo')" :loading="savingSkip" :disabled="!skipReason.trim()" @click="saveSkip">
+                    <template #icon><FontAwesomeIcon :icon="skipping?.skipped ? 'fal fa-forward' : 'fal fa-undo'" fixed-width aria-hidden="true" /></template>
+                </Button>
+            </div>
         </template>
     </Dialog>
     </div>

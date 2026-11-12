@@ -14,6 +14,7 @@ import ManufactureWorkingCard from '@/Components/ManufactureWorkingCard.vue'
 import TrialRunBrief, { type TrialRunBriefData } from '@/Components/Production/TrialRunBrief.vue'
 import TrialRunFormulation from '@/Components/Production/TrialRunFormulation.vue'
 import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import Image from '@common/Components/Image.vue'
 import { capitalize } from '@/Composables/capitalize'
@@ -28,6 +29,7 @@ interface NonProductiveActivity {
     value: string
     label: string
     job_orders: { id: number, label: string }[] | null
+    needs_reason?: boolean
 }
 
 interface FloorStep {
@@ -180,14 +182,16 @@ const startError = computed(() => (page.props.errors as Record<string, string> |
 const breakError = computed(() => (page.props.errors as Record<string, string> | undefined)?.break)
 const activityError = computed(() => {
     const errors = page.props.errors as Record<string, string> | undefined
-    return errors?.activity_type ?? errors?.job_order_id
+    return errors?.activity_type ?? errors?.job_order_id ?? errors?.reason
 })
 
 const pendingActivity = ref<NonProductiveActivity | null>(null)
 const activityJobOrderId = ref<number | null>(null)
+const activityReason = ref('')
 
 function chooseActivity(activity: NonProductiveActivity) {
     pendingActivity.value = activity
+    activityReason.value = ''
     activityJobOrderId.value = activity.job_orders?.length === 1 ? activity.job_orders[0].id : null
 }
 
@@ -196,7 +200,7 @@ function startActivity() {
     processing.value = true
     router.post(
         route(props.non_productive.route.name, props.non_productive.route.parameters),
-        { activity_type: pendingActivity.value.value, job_order_id: activityJobOrderId.value },
+        { activity_type: pendingActivity.value.value, job_order_id: activityJobOrderId.value, reason: activityReason.value.trim() || null },
         { preserveScroll: true, onSuccess: () => pendingActivity.value = null, onFinish: () => processing.value = false }
     )
 }
@@ -557,11 +561,12 @@ function startTask(task: FloorTask) {
                 <div v-if="pendingActivity" class="w-full max-w-5xl rounded-lg border border-gray-300 bg-gray-50 p-4">
                     <div class="text-2xl">{{ ctrans('Start :activity', { activity: pendingActivity.label }) }}</div>
                     <div class="mt-3 flex flex-wrap items-center gap-3">
-                        <Select v-model="activityJobOrderId" :options="pendingActivity.job_orders ?? non_productive.job_orders" optionLabel="label" optionValue="id"
+                        <InputText v-if="pendingActivity.needs_reason" v-model="activityReason" maxlength="255" autofocus :placeholder="ctrans('What is it for?')" :aria-label="ctrans('What is it for?')" class="min-w-[20rem] flex-1 text-xl" />
+                        <Select v-else v-model="activityJobOrderId" :options="pendingActivity.job_orders ?? non_productive.job_orders" optionLabel="label" optionValue="id"
                             filter :showClear="!pendingActivity.job_orders" :placeholder="pendingActivity.job_orders ? ctrans('Pick the job order') : ctrans('General, no job order')"
                             class="min-w-[20rem] flex-1 text-xl" />
                         <button type="button" class="rounded-lg bg-[var(--app-accent)] text-[var(--app-accent-text)] text-xl font-semibold px-8 py-4 disabled:opacity-40"
-                            :disabled="processing || (!!pendingActivity.job_orders && !activityJobOrderId)" @click="startActivity">
+                            :disabled="processing || (!!pendingActivity.job_orders && !activityJobOrderId) || (!!pendingActivity.needs_reason && !activityReason.trim())" @click="startActivity">
                             {{ ctrans('START') }}
                         </button>
                         <button type="button" class="rounded-lg border border-gray-300 bg-white text-gray-700 text-xl font-semibold px-6 py-4"
@@ -569,7 +574,7 @@ function startTask(task: FloorTask) {
                             {{ ctrans('Cancel') }}
                         </button>
                     </div>
-                    <div class="mt-2 text-sm text-gray-500">{{ pendingActivity.job_orders ? ctrans('Pick the job order whose machine you are cleaning') : ctrans('Pick the job order this is for, or leave it empty for general setup or end-of-day cleaning') }}</div>
+                    <div class="mt-2 text-sm text-gray-500">{{ pendingActivity.needs_reason ? ctrans('Say what the development work is for, for example the order it belongs to') : pendingActivity.job_orders ? ctrans('Pick the job order whose machine you are cleaning') : ctrans('Pick the job order this is for, or leave it empty for general setup or end-of-day cleaning') }}</div>
                 </div>
 
                 <div v-else class="w-full max-w-5xl flex items-center gap-3">

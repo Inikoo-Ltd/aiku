@@ -4,6 +4,8 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,11 +24,14 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -47,6 +52,9 @@ import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.HeaderIconButton
 import io.aiku.droid.ui.components.StatusBadge
 import io.aiku.droid.ui.components.Tone
+import io.aiku.droid.ui.components.animateFocusProgress
+import io.aiku.droid.ui.components.focusHalo
+import io.aiku.droid.ui.components.rememberTabIndication
 import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
@@ -270,7 +278,13 @@ internal fun SegmentTabs(
                 modifier = Modifier
                     .weight(1f)
                     .height(segmentHeight + 8.dp)
-                    .selectable(selected = isSelected, role = Role.Tab, onClick = { onSelect(index) })
+                    .selectable(
+                        selected = isSelected,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = rememberTabIndication(cornerRadius = 8.dp),
+                        role = Role.Tab,
+                        onClick = { onSelect(index) },
+                    )
                     .padding(vertical = 4.dp),
             ) {
                 Box(
@@ -309,6 +323,9 @@ internal fun PlainTextField(
     minHeight: Dp = 46.dp,
 ) {
     val colors = LocalAikuColors.current
+    val fieldInteraction = remember { MutableInteractionSource() }
+    val isFieldFocused by fieldInteraction.collectIsFocusedAsState()
+    val fieldFocusProgress = animateFocusProgress(isFieldFocused)
 
     BasicTextField(
         value = value,
@@ -317,6 +334,7 @@ internal fun PlainTextField(
         minLines = if (isMultiLine) 2 else 1,
         textStyle = TextStyle(fontFamily = Inter, fontSize = 15.sp, color = colors.text),
         cursorBrush = SolidColor(colors.primary),
+        interactionSource = fieldInteraction,
         modifier = modifier.fillMaxWidth(),
         decorationBox = { inner ->
             Box(
@@ -324,9 +342,10 @@ internal fun PlainTextField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = minHeight)
+                    .focusHalo(progress = fieldFocusProgress, color = colors.focus, cornerRadius = 8.dp)
                     .clip(ControlShape)
                     .background(colors.surface)
-                    .border(1.dp, colors.borderStrong, ControlShape)
+                    .border(1.dp, lerp(colors.borderStrong, colors.focus, fieldFocusProgress), ControlShape)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
             ) {
                 if (value.isEmpty() && placeholder != null) {

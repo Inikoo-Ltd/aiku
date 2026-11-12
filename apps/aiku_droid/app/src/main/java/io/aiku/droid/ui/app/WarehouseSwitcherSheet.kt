@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,9 +71,20 @@ internal fun WarehouseSwitcherSheet(
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(28.dp).clip(RoundedCornerShape(6.dp)).background(colors.nav),
+                            modifier = Modifier
+                                .heightIn(min = 28.dp)
+                                .widthIn(min = 28.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(colors.nav)
+                                .padding(horizontal = 6.dp),
                         ) {
-                            Text(text = initialsOf(organisation.name), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.onNav)
+                            Text(
+                                text = organisation.code.uppercase().ifBlank { initialsOf(organisation.name) },
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.onNav,
+                                maxLines = 1,
+                            )
                         }
                         Text(text = organisation.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.text, modifier = Modifier.weight(1f))
                         Text(

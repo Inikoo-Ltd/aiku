@@ -56,7 +56,7 @@ const activeProduct = ref<ProductResource | null>(
     props.variants.find((variant: ProductResource) => variant.id === props.selectedProductId) ?? props.variants[0] ?? null
 )
 
-const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder(props.variants as any[]))
+const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder(props.variants as any[], (variant: any) => offerPercentageOff(variant)))
 
 const displayMode = computed(() => variantDisplayMode(layout?.iris?.product_variant_setting, {
     sizesTable: props.variants.length > 1 && props.variantAxisCount === 1,
@@ -465,6 +465,7 @@ const onCancel = () => {
                 <div class="mt-4">
                     <EcomAddToBasketv2 v-if="isOrderable(activeProduct)" :key="activeProduct.id" ref="_ladderBasket"
                         v-model:product="activeProduct" :customerData="ladderCustomerData[activeProduct.id]" holdQuantity
+                        :specialOfferPercentageOff="offerPercentageOff(activeProduct)"
                         :sizeLabel="activeProduct.size_resolved ? activeProduct.size_label : null" />
                     <div v-else class="text-sm text-red-600">{{ ctrans('Out of stock') }}</div>
                 </div>

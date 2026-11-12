@@ -283,7 +283,7 @@ const pricePerLitre = (product: SizeProduct): number | null =>
     product.size_litres ? roundMoney(containerPrice(product) / Number(product.size_litres)) : null
 
 const tierSteps = (product: SizeProduct) =>
-    props.isLoggedIn ? stepSteps(product).filter((step) => Number(step.percentage_off) > 0) : []
+    props.isLoggedIn ? stepSteps(product).filter((step) => Number(step.percentage_off) > Math.max(0, offerPercentageOff(product))) : []
 
 const tiersLabel = (product: SizeProduct): string =>
     tierSteps(product)

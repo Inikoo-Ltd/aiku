@@ -1,0 +1,455 @@
+import Foundation
+import Testing
+@testable import Aiku
+
+@MainActor
+struct LocationsAPITests {
+    private struct RoutedTransport: HTTPTransport {
+        let responses: [String: String]
+
+        func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+            let path = request.url!.path.replacingOccurrences(of: "/app/api/", with: "")
+            guard let body = responses[path] else {
+                return (Data(), HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!)
+            }
+            return (Data(body.utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+    }
+
+    private static let locationJSON = #"""
+    {"id":7,"slug":"a-03-02","code":"A-03-02","status":"operational","area":{"id":3,"code":"A","name":"Picking"},
+     "allow_stocks":true,"allow_fulfilment":false,"allow_dropshipping":true,"is_goods_out":false,"keep_empty_org_stocks":true,
+     "max_weight":120,"max_volume":1.2,"number_org_stock_slots":3,"number_empty_stock_slots":1,"number_pallets":0,
+     "stock_value":288.5,"audited_at":"2026-10-28T09:15:00+00:00"
+    """#
+
+    private static let responses: [String: String] = [
+        "mobile/warehouses": #"{"data":[{"id":1,"slug":"ed","code":"ED","name":"Europa Drive","organisation":{"id":1,"slug":"aw","name":"AW UK"},"can":{"view_locations":true,"edit_locations":false}},{"id":4,"slug":"par","code":"PAR","name":"Paris","organisation":{"id":2,"slug":"es","name":"AW Europe"},"can":{"view_locations":false,"edit_locations":false}}]}"#,
+        "mobile/warehouses/1/locations-overview": #"{"data":{"warehouse":{"id":1,"code":"ED","name":"Europa Drive"},"number_areas":1,"number_locations":40,"number_locations_operational":40,"number_locations_broken":0,"number_locations_empty":10,"number_locations_partially_empty":5,"stock_value":1000,"empty_locations_removal":{"enabled":false,"can_edit":true,"last_change":{"by":"Raul","at":"2026-11-02T06:30:00.000000Z"},"to_remove":661,"removed_last_7_days":12,"max_per_run":200}}}"#,
+        "mobile/warehouses/1/empty-location-org-stocks": #"{"data":[{"id":91403,"date":null,"slug":"jbb-gift","code":"JBB-Gift","name":"JBB Gift Boxes (empty)","location_slug":"1x13","location_code":"1X13"}],"meta":{"current_page":1,"last_page":2,"per_page":1,"total":2}}"#,
+        "mobile/warehouses/1/removed-empty-location-org-stocks": #"{"data":[{"id":501,"date":"2026-11-10T08:00:00.000000Z","slug":"eo-13","code":"EO-13","name":null,"location_slug":"0a1","location_code":"0A1"}],"meta":{"current_page":1,"last_page":1,"per_page":50,"total":1}}"#,
+        "mobile/warehouses/1/empty-locations-removal": #"{"data":{"enabled":true,"can_edit":true,"last_change":{"by":"andi","at":"2026-11-11T08:00:00+00:00"},"to_remove":661,"removed_last_7_days":12,"max_per_run":200}}"#,
+        "mobile/warehouses/1/areas": #"{"data":[{"id":3,"code":"A","name":"Picking","picking_position":1.5,"number_locations":40,"number_locations_broken":0,"number_empty_locations":10,"stock_value":1000}]}"#,
+        "mobile/warehouses/1/locations": #"{"data":["# + locationJSON + #"}],"meta":{"current_page":1,"last_page":1,"per_page":100,"total":1}}"#,
+        "mobile/locations/7": #"{"data":"# + locationJSON + #","org_stocks":[{"id":5,"code":"SKO-00733","name":"Bath bomb","slug":"sko-00733","sku_value":null,"type":"picking","picking_priority":1,"value":"288.50","dropshipping_pipe":null,"quantity":"30","notes":null,"location_org_stock_id":11,"packed_at":null,"packed_by":null,"packed_quantity":null,"un_numbers":[],"is_packed":false,"default_wholesale_picking_location":true,"default_dropshipping_picking_location":false,"min_stock":"12","max_stock":48,"replenishment_stock":null,"audited_at":null}]}}"#,
+    ]
+
+    private func warehouse(_ id: Int) async -> MobileWarehouse? {
+        try? await client().fetchWarehouses().first { $0.id == id }
+    }
+
+    private func isolatedDefaults() -> UserDefaults {
+        let name = "aiku.tests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        return defaults
+    }
+
+    private func client(_ responses: [String: String] = Self.responses) -> APIClient {
+        APIClient(
+            configuration: AppConfiguration(apiBaseURL: URL(string: "https://app.aiku.test/app/api")!, mobileAppKey: "key"),
+            transport: RoutedTransport(responses: responses),
+            tokenProvider: { "1|tok" }
+        )
+    }
+
+    @Test func locationsQueryOnlySendsTheFiltersInUse() {
+        let request = client().makeRequest(for: .mobileLocations(warehouseID: 1, query: MobileLocationsQuery(search: " A-03 ", areaID: 3, occupancy: .partiallyEmpty)))
+        let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+
+        #expect(request.url?.path == "/app/api/mobile/warehouses/1/locations")
+        #expect(items.contains(URLQueryItem(name: "q", value: "A-03")))
+        #expect(items.contains(URLQueryItem(name: "area_id", value: "3")))
+        #expect(items.contains(URLQueryItem(name: "occupancy", value: "partially_empty")))
+        #expect(request.value(forHTTPHeaderField: "X-Aiku-App-Key") == "key")
+    }
+
+    @Test func remoteLocationMapsToTheScreenModel() async throws {
+        let detail = try await client().fetchLocation(id: 7)
+        let location = LocationsLocation(remote: detail)
+
+        #expect(location.code == "A-03-02")
+        #expect(location.areaCode == "A")
+        #expect(location.scopes == [.stocks, .dropshipping])
+        #expect(location.neverRemoveEmptySkos)
+        #expect(location.maxWeightKg == 120)
+        #expect(location.auditedOn != nil)
+        #expect(location.slots.count == 1)
+        #expect(location.slots.first?.skoReference == "SKO-00733")
+        #expect(location.slots.first?.quantity == 30)
+        #expect(location.slots.first?.type == .picking)
+        #expect(location.slots.first?.roles == [.wholesale])
+        #expect(location.slots.first?.minStock == 12)
+    }
+
+    @Test func listRowsUseServerSlotCountsBeforeTheDetailLoads() async throws {
+        let page = try await client().fetchLocations(warehouseID: 1, query: MobileLocationsQuery())
+        let location = LocationsLocation(remote: try #require(page.data.first))
+
+        #expect(location.slots.isEmpty)
+        #expect(location.slotSummary == "3 slots, 1 empty")
+        #expect(location.isPartiallyEmpty)
+        #expect(location.stockValue == 288.5)
+    }
+
+    @Test func storeLoadsWarehouseAreasAndFirstPage() async {
+        let store = LocationsStore()
+
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+
+        #expect(store.source == .remote)
+        #expect(store.loadError == nil)
+        #expect(store.remoteWarehouse?.code == "ED")
+        #expect(store.warehouse.summary.locationCount == 40)
+        #expect(store.warehouse.areas.map(\.code) == ["A"])
+        #expect(store.warehouse.areas.first?.remoteID == 3)
+        #expect(store.warehouse.areas.first?.pickingOrder == 2)
+        #expect(store.warehouse.locations.map(\.code) == ["A-03-02"])
+        #expect(store.count(for: .all) == 1)
+        #expect(store.count(for: .empty) == 10)
+    }
+
+    @Test func storeKeepsLoadedSkosWhenTheListReloads() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+
+        await store.loadLocation(code: "A-03-02", apiClient: client())
+        await store.reloadList(apiClient: client())
+
+        #expect(store.warehouse.location(code: "A-03-02")?.slots.count == 1)
+    }
+
+    @Test func storeRefusesAWarehouseWithoutLocationAccess() async {
+        let store = LocationsStore()
+
+        await store.loadRemote(for: 291, warehouse: await warehouse(4), apiClient: client())
+
+        #expect(store.source == .sample)
+        #expect(store.loadError == "You don’t have access to locations in Paris.")
+    }
+
+    @Test func warehouseStorePrefersAWarehouseWithLocationAccessThenRemembersTheChoice() async {
+        let defaults = isolatedDefaults()
+        let first = WarehouseStore(defaults: defaults)
+
+        await first.load(for: 291, apiClient: client())
+        #expect(first.selected?.code == "ED")
+
+        first.select(4)
+        let reopened = WarehouseStore(defaults: defaults)
+        await reopened.load(for: 291, apiClient: client())
+
+        #expect(reopened.selected?.code == "PAR")
+    }
+
+    @Test func warehouseStoreIgnoresAWarehouseItCannotList() async {
+        let store = WarehouseStore(defaults: isolatedDefaults())
+        await store.load(for: 291, apiClient: client())
+
+        store.select(99)
+
+        #expect(store.selectedID == 1)
+    }
+
+    @Test func warehouseSheetGroupsRealWarehousesByOrganisation() async throws {
+        let warehouses = try await client().fetchWarehouses()
+        let organisations = ShellWarehouseDirectory.organisations(from: warehouses)
+
+        #expect(organisations.map(\.name) == ["AW UK", "AW Europe"])
+        #expect(organisations.map(\.initials) == ["AU", "AE"])
+        #expect(organisations.first?.warehouses.first?.remoteID == 1)
+        #expect(ShellWarehouseDirectory.choice(organisation: organisations[1], warehouse: organisations[1].warehouses[0]).warehouseID == 4)
+    }
+
+    private struct PagedTransport: HTTPTransport {
+        let base: [String: String]
+
+        func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+            let components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)
+            let path = request.url!.path.replacingOccurrences(of: "/app/api/", with: "")
+            let page = components?.queryItems?.first { $0.name == "page" }?.value ?? "1"
+            let body: String?
+            if path == "mobile/warehouses/1/locations" {
+                body = Self.page(Int(page) ?? 1)
+            } else {
+                body = base[path]
+            }
+            guard let body else {
+                return (Data(), HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!)
+            }
+            return (Data(body.utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+
+        static func page(_ number: Int) -> String {
+            let code = number == 1 ? "A-01" : "A-02"
+            return #"{"data":[{"id":"# + "\(number)" + #","slug":"x","code":""# + code + #"","status":"operational","area":{"id":3,"code":"A","name":"Picking"},"allow_stocks":true,"allow_fulfilment":false,"allow_dropshipping":false,"is_goods_out":false,"keep_empty_org_stocks":false,"max_weight":null,"max_volume":null,"number_org_stock_slots":1,"number_empty_stock_slots":0,"number_pallets":0,"stock_value":0,"audited_at":null}],"meta":{"current_page":"# + "\(number)" + #","last_page":2,"per_page":1,"total":2}}"#
+        }
+    }
+
+    private func pagedClient() -> APIClient {
+        APIClient(
+            configuration: AppConfiguration(apiBaseURL: URL(string: "https://app.aiku.test/app/api")!, mobileAppKey: "key"),
+            transport: PagedTransport(base: Self.responses),
+            tokenProvider: { "1|tok" }
+        )
+    }
+
+    @Test func storeLoadsTheNextPageUntilTheLastOne() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: pagedClient())
+
+        #expect(store.warehouse.locations.map(\.code) == ["A-01"])
+        #expect(store.hasMorePages)
+
+        await store.loadNextPage(apiClient: pagedClient())
+
+        #expect(store.warehouse.locations.map(\.code) == ["A-01", "A-02"])
+        #expect(store.currentPage == 2)
+        #expect(!store.hasMorePages)
+
+        await store.loadNextPage(apiClient: pagedClient())
+        #expect(store.warehouse.locations.count == 2)
+    }
+
+    @Test func changingTheTabStartsAgainFromTheFirstPage() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: pagedClient())
+        await store.loadNextPage(apiClient: pagedClient())
+
+        store.listTab = .partiallyEmpty
+        await store.reloadList(apiClient: pagedClient())
+
+        #expect(store.currentPage == 1)
+        #expect(store.warehouse.locations.map(\.code) == ["A-01"])
+        #expect(store.hasMorePages)
+    }
+
+    @Test func switchingTabsNeverShowsTheTotalOfAnotherTab() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        #expect(store.count(for: .all) == 1)
+
+        store.listTab = .empty
+
+        #expect(store.count(for: .empty) == 10)
+        #expect(store.count(for: .all) == 1)
+    }
+
+    @Test func searchingHidesCountsThatAreNotKnownYet() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+
+        store.listQuery = "A-03"
+
+        #expect(store.count(for: .all) == nil)
+        #expect(store.count(for: .empty) == nil)
+
+        await store.reloadList(apiClient: client())
+
+        #expect(store.count(for: .all) == 1)
+        #expect(store.count(for: .empty) == nil)
+    }
+
+    @Test func areaTitleDropsACodeThatOnlyRepeatsTheName() {
+        let area = LocationsArea(remote: MobileWarehouseArea(id: 1, code: "0-picking", name: "0 Picking", pickingPosition: 1, numberLocations: 89, numberEmptyLocations: 0, stockValue: 0))
+
+        #expect(area.title == "0 Picking")
+        #expect(area.filterTitle == "0 Picking")
+        #expect(area.subtitle == "Picking order 1 · 89 locations · 0 empty")
+    }
+
+    @Test func areaWithoutAPickingPositionSaysSo() {
+        let area = LocationsArea(remote: MobileWarehouseArea(id: 3, code: "01-storage", name: "01 Storage", pickingPosition: nil, numberLocations: 144, numberEmptyLocations: 0, stockValue: 0))
+
+        #expect(area.pickingOrder == nil)
+        #expect(area.subtitle == "No picking order · 144 locations · 0 empty")
+    }
+
+    @Test func areaTitleKeepsADistinctCodeAndShowsStockValue() {
+        let area = LocationsArea(remote: MobileWarehouseArea(id: 2, code: "A", name: "Picking", pickingPosition: 2, numberLocations: 412, numberEmptyLocations: 12, stockValue: 96_400))
+
+        #expect(area.title == "Area A · Picking")
+        #expect(area.subtitle == "Picking order 2 · 412 locations · 12 empty · stock value 96,400")
+    }
+
+    @Test func overviewFillsTheEmptyLocationRemovalPanel() async {
+        let store = LocationsStore()
+
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+
+        #expect(store.warehouse.summary.toRemoveNow == 661)
+        #expect(store.warehouse.summary.removedLastWeek == 12)
+        #expect(store.warehouse.autoRemoval.isOn == false)
+        #expect(store.warehouse.autoRemoval.canEdit)
+        #expect(store.warehouse.autoRemoval.changedBy == "Raul")
+        #expect(store.warehouse.autoRemoval.changedOn != nil)
+    }
+
+    @Test func autoRemovalWithoutAChangeSaysSo() {
+        let removal = LocationsAutoRemoval(remote: MobileEmptyLocationsRemoval(enabled: false, canEdit: false, lastChange: nil, toRemove: 0, removedLast7Days: 0, maxPerRun: 200))
+
+        #expect(removal.detail == "Not changed yet")
+        #expect(!removal.canEdit)
+    }
+
+    @Test func switchingAutoRemovalSavesItOnTheServer() async throws {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+
+        try await store.setRemoteAutoRemoval(true, by: "andi", apiClient: client())
+
+        #expect(store.warehouse.autoRemoval.isOn)
+        #expect(store.warehouse.autoRemoval.changedBy == "andi")
+    }
+
+    @Test func autoRemovalGoesBackWhenTheServerRefuses() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        var refusing = Self.responses
+        refusing["mobile/warehouses/1/empty-locations-removal"] = nil
+
+        await #expect(throws: (any Error).self) {
+            try await store.setRemoteAutoRemoval(true, by: "andi", apiClient: client(refusing))
+        }
+        #expect(store.warehouse.autoRemoval.isOn == false)
+        #expect(store.warehouse.autoRemoval.changedBy == "Raul")
+    }
+
+    @Test func autoRemovalRequestSendsTheSwitchAsPatch() throws {
+        let request = client().makeRequest(for: .mobileEmptyLocationsRemoval(warehouseID: 1, enabled: true))
+        let body = try JSONSerialization.jsonObject(with: try #require(request.httpBody)) as? [String: Bool]
+
+        #expect(request.httpMethod == "PATCH")
+        #expect(request.url?.path == "/app/api/mobile/warehouses/1/empty-locations-removal")
+        #expect(body == ["enabled": true])
+    }
+
+    @Test func removedListAsksForTheWebRemovalLog() {
+        let request = client().makeRequest(for: .mobileEmptyLocationSlots(warehouseID: 1, kind: LocationsEmptySlotsKind.removedLastWeek.remoteKind, search: " 0A ", page: 2, perPage: 50))
+        let items = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+
+        #expect(request.url?.path == "/app/api/mobile/warehouses/1/removed-empty-location-org-stocks")
+        #expect(!items.contains { $0.name == "days" })
+        #expect(items.contains(URLQueryItem(name: "q", value: "0A")))
+        #expect(items.contains(URLQueryItem(name: "page", value: "2")))
+    }
+
+    @Test func toRemoveFeedLoadsSlotsAndKnowsThereIsMore() async {
+        let feed = LocationsEmptySlotsFeed(kind: .toRemove)
+
+        await feed.reload(LocationsEmptySlotsRequest(warehouseID: 1, search: ""), apiClient: client())
+
+        #expect(feed.loadError == nil)
+        #expect(feed.total == 2)
+        #expect(feed.hasMorePages)
+        #expect(feed.slots.first == LocationsEmptySlot(id: 91403, skoReference: "JBB-Gift", name: "JBB Gift Boxes (empty)", locationCode: "1X13", removedOn: nil))
+    }
+
+    @Test func removedFeedReadsTheRemovalDate() async {
+        let feed = LocationsEmptySlotsFeed(kind: .removedLastWeek)
+
+        await feed.reload(LocationsEmptySlotsRequest(warehouseID: 1, search: ""), apiClient: client())
+
+        #expect(feed.slots.map(\.locationCode) == ["0A1"])
+        #expect(feed.slots.first?.removedOn != nil)
+        #expect(feed.slots.first?.name == "")
+        #expect(!feed.hasMorePages)
+    }
+
+    @Test func filterSendsEveryChoiceToTheServer() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        var filter = LocationsFilter()
+        filter.areas = ["A"]
+        filter.statuses = [.operational]
+        filter.scopes = [.stocks, .dropshipping]
+        filter.occupancies = [.empty, .neverRemoveEmptySkos]
+        filter.sort = .stockValue
+        store.listFilter = filter
+
+        let items = store.remoteQuery(for: store.listRequestKey, page: 1).queryItems
+
+        #expect(items.filter { $0.name == "area_ids[]" }.map(\.value) == ["3"])
+        #expect(items.filter { $0.name == "statuses[]" }.map(\.value) == ["operational"])
+        #expect(items.filter { $0.name == "scopes[]" }.map(\.value) == ["dropshipping", "stocks"])
+        #expect(items.filter { $0.name == "occupancies[]" }.map(\.value) == ["empty", "keep_empty_org_stocks"])
+        #expect(items.contains(URLQueryItem(name: "sort", value: "-stock_value")))
+        #expect(!items.contains { $0.name == "area_id" })
+    }
+
+    @Test func severalAreasAreAllSent() {
+        let query = MobileLocationsQuery(areaIDs: [9, 3])
+
+        #expect(query.queryItems.filter { $0.name == "area_ids[]" }.map(\.value) == ["3", "9"])
+    }
+
+    @Test func remoteListShowsWhatTheServerReturnedNotEveryLoadedLocation() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        store.warehouse.locations.append(LocationsLocation(remote: MobileLocation(
+            id: 99, code: "Z-99", status: "operational", area: nil, allowStocks: true, allowFulfilment: false, allowDropshipping: false,
+            isGoodsOut: false, keepEmptyOrgStocks: false, maxWeight: nil, maxVolume: nil, numberOrgStockSlots: 0, numberEmptyStockSlots: 0,
+            numberPallets: 0, stockValue: 0, auditedAt: nil, orgStocks: nil
+        )))
+
+        #expect(store.listedLocations.map(\.code) == ["A-03-02"])
+    }
+
+    @Test func filterSheetCountComesFromTheServer() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        var filter = LocationsFilter()
+        filter.areas = ["A"]
+
+        #expect(await store.resultCount(for: filter, apiClient: client()) == 1)
+        #expect(await store.resultCount(for: filter, apiClient: client([:])) == nil)
+    }
+
+    @Test func detailShowsLoadingUntilItsSkosArrive() async throws {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        let listed = try #require(store.warehouse.location(code: "A-03-02"))
+
+        #expect(store.isWaitingForSkos(in: listed))
+
+        await store.loadLocation(code: "A-03-02", apiClient: client())
+
+        #expect(!store.isWaitingForSkos(in: try #require(store.warehouse.location(code: "A-03-02"))))
+    }
+
+    @Test func detailStopsLoadingWhenTheServerFails() async throws {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        var failing = Self.responses
+        failing["mobile/locations/7"] = nil
+
+        await store.loadLocation(code: "A-03-02", apiClient: client(failing))
+
+        #expect(!store.isWaitingForSkos(in: try #require(store.warehouse.location(code: "A-03-02"))))
+        #expect(store.loadError != nil)
+    }
+
+    @Test func scannedBarcodeFindsTheLocationWhateverTheCase() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+
+        #expect(await store.locationMatching(scannedCode: " a-03-02 ", apiClient: client())?.code == "A-03-02")
+    }
+
+    @Test func scannedBarcodeIsLookedUpOnTheServerWhenNotLoaded() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        store.warehouse.locations = []
+
+        #expect(await store.locationMatching(scannedCode: "a-03-02", apiClient: client())?.code == "A-03-02")
+        #expect(store.warehouse.location(code: "A-03-02") != nil)
+    }
+
+    @Test func scannedBarcodeWithoutAnExactMatchFindsNothing() async {
+        let store = LocationsStore()
+        await store.loadRemote(for: 291, warehouse: await warehouse(1), apiClient: client())
+        store.warehouse.locations = []
+
+        #expect(await store.locationMatching(scannedCode: "A-03", apiClient: client()) == nil)
+    }
+}

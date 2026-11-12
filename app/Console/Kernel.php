@@ -28,6 +28,7 @@ use App\Actions\Catalogue\Shop\External\Shopify\RetryShippingShopifyOrders;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixOrdersAllShops;
 use App\Actions\Catalogue\Shop\External\Wix\GetWixProductsAllShops;
 use App\Actions\Comms\Mailshot\RunMailshotScheduled;
+use App\Actions\Web\Webpage\RunScheduledWebpagePublishes;
 use App\Actions\Comms\WhatsappCampaign\RunWhatsappCampaignScheduled;
 use App\Actions\Comms\Mailshot\RunMailshotAbTestVariants;
 use App\Actions\Comms\Mailshot\RunMailshotSecondWave;
@@ -123,6 +124,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('accounting:refresh-payment-methods-dashboard')->everySixHours()->onOneServer()->withoutOverlapping()->runInBackground();
         $schedule->command('accounting:refresh-invoice-countries-dashboard')->everySixHours()->onOneServer()->withoutOverlapping()->runInBackground();
         $schedule->command('procurement:send-minimum-poke-digests')->everyFifteenMinutes()->onOneServer()->withoutOverlapping();
+        $schedule->command('bank-connections:sync')->everyFifteenMinutes()->onOneServer()->withoutOverlapping(60)->runInBackground();
         $schedule->command('staff-tasks:remind-due')->hourly()->onOneServer();
         $schedule->command('product-developments:remind')->dailyAt('08:00')->timezone('Europe/London')->onOneServer();
         $schedule->command('appointments:close-past')->everyFifteenMinutes()->onOneServer()->withoutOverlapping();
@@ -431,6 +433,15 @@ class Kernel extends ConsoleKernel
                     monitorSlug: 'RunMailshotScheduled',
                 ),
                 name: 'RunMailshotScheduled',
+                type: 'job',
+                scheduledAt: now()->format('H:i')
+            );
+
+            $this->logSchedule(
+                $schedule->job(RunScheduledWebpagePublishes::makeJob())->everyMinute()->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                    monitorSlug: 'RunScheduledWebpagePublishes',
+                ),
+                name: 'RunScheduledWebpagePublishes',
                 type: 'job',
                 scheduledAt: now()->format('H:i')
             );

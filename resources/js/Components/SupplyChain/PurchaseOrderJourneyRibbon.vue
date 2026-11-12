@@ -61,6 +61,7 @@ export interface JourneyRibbon {
     route: routeType | null
     segments: JourneySegment[]
     state?: string
+    skipped_stages?: string[]
     is_deletable?: boolean
     delete_blockers?: DeleteBlocker[]
     extra_costs?: number | null
@@ -227,14 +228,34 @@ function cellTitle(segment: JourneySegment): string {
     if (segment.days_overdue) {
         parts.push(ctrans(":days days overdue", { days: segment.days_overdue }))
     }
-    if (isMarkable(segment)) {
+    const blocked = blockedReason(segment)
+    if (props.canMark && segment.mark_column !== null && blocked) {
+        parts.push(blocked)
+    } else if (isMarkable(segment)) {
         parts.push(ctrans("Click to mark done"))
     }
     return parts.join("\n")
 }
 
+/* Stages go strictly in order (INI-239): a submitted order agrees its terms first, then only the stage after the last one done takes a mark */
+function blockedReason(segment: JourneySegment): string | null {
+    if (segment.done_at) {
+        return null
+    }
+    if (props.ribbon.state === "submitted") {
+        return ctrans("Agree the terms first: pay the deposit or mark No deposit needed")
+    }
+    const index = props.ribbon.segments.indexOf(segment)
+    const isPassed = (candidate: JourneySegment) => ["done", "skipped"].includes(candidate.state)
+        || ["submitted", "deposit_paid"].includes(candidate.key)
+        || !!props.ribbon.skipped_stages?.includes(candidate.key)
+    const lastPassed = props.ribbon.segments.reduce((last, candidate, candidateIndex) => isPassed(candidate) ? candidateIndex : last, -1)
+    const open = props.ribbon.segments[lastPassed + 1]
+    return open && index > lastPassed + 1 ? ctrans("Finish :stage first", { stage: open.label }) : null
+}
+
 function isMarkable(segment: JourneySegment): boolean {
-    return props.canMark && segment.mark_column !== null
+    return props.canMark && segment.mark_column !== null && !blockedReason(segment)
 }
 </script>
 

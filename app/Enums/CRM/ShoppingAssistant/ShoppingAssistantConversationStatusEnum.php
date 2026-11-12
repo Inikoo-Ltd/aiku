@@ -17,4 +17,5 @@ enum ShoppingAssistantConversationStatusEnum: string
     case OPEN = 'open';
     case HANDED_OVER = 'handed_over';
     case CLOSED = 'closed';
+    case CLEARED = 'cleared';
 }

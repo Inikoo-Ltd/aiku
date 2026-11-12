@@ -164,6 +164,21 @@ class ManufactureTaskSession extends Model implements Auditable
     /**
      * Preparation and cleaning: timed and paid at the base rate, with no step, quantity or target.
      */
+    /**
+     * Another open or finished session of the worker running at any moment between the two times.
+     */
+    public static function overlapping(int $userId, Carbon $startedAt, Carbon $endedAt, ?int $exceptId = null): ?self
+    {
+        return self::where('user_id', $userId)
+            ->when($exceptId, fn ($query) => $query->whereKeyNot($exceptId))
+            ->whereIn('state', [ManufactureTaskSessionStateEnum::OPEN, ManufactureTaskSessionStateEnum::CLOSED])
+            ->where('started_at', '<', $endedAt)
+            ->where(fn ($query) => $query->whereNull('ended_at')->orWhere('ended_at', '>', $startedAt))
+            ->with(['manufactureTask', 'jobOrder'])
+            ->orderBy('started_at')
+            ->first();
+    }
+
     public function isNonProductive(): bool
     {
         return $this->job_order_item_task_id === null;
@@ -187,7 +202,11 @@ class ManufactureTaskSession extends Model implements Auditable
 
     public function activityLabel(): string
     {
-        return ManufactureTaskSessionActivityTypeEnum::labels()[$this->activity_type->value];
+        $label = ManufactureTaskSessionActivityTypeEnum::labels()[$this->activity_type->value];
+
+        return $this->activity_type == ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT && $this->non_productive_reason
+            ? $label.' · '.$this->non_productive_reason
+            : $label;
     }
 
     public function breakSecondsUntil(Carbon $until): int

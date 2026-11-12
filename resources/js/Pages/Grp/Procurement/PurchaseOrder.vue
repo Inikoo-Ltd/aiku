@@ -74,7 +74,7 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faPlus as falPlus } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faExternalLink, faPlus as falPlus } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
@@ -143,7 +143,7 @@ const props = defineProps < {
         date: string | null
         number_purchase_orders: number
     }[]
-    stages?: { stages: InstanceType<typeof PurchaseOrderStages>["$props"]["stages"]; route: routeType; upload_route: routeType | null; deposit: InstanceType<typeof PurchaseOrderStages>["$props"]["deposit"]; sample: InstanceType<typeof PurchaseOrderStages>["$props"]["sample"] } | null
+    stages?: { stages: InstanceType<typeof PurchaseOrderStages>["$props"]["stages"]; route: routeType; upload_route: routeType | null; skip_route?: routeType | null; deposit: InstanceType<typeof PurchaseOrderStages>["$props"]["deposit"]; sample: InstanceType<typeof PurchaseOrderStages>["$props"]["sample"] } | null
     ready_checks?: { packing: ReadyCheckItems; qc: ReadyCheckItems } | null
     stage_containers?: { containers: InstanceType<typeof PurchaseOrderStageContainers>["$props"]["containers"]; items_to_add: InstanceType<typeof PurchaseOrderStageContainers>["$props"]["itemsToAdd"] } | null
     agent_receiving?: InstanceType<typeof AgentPurchaseOrderGoodsReceipts>["$props"]["receiving"] | null
@@ -964,6 +964,8 @@ const stageActionKeys: Record<string, string[]> = {
 	received: ["edit_estimated_delivery_date"],
 }
 
+const actionKeysInStageAndPageHead = ["cancel_purchase_order"]
+
 const uncheckedReceiptItems = computed(() => (props.agent_receiving?.lines ?? []).flatMap((line) =>
 	line.items.filter((item) => item.check_route && !item.is_checked)
 ))
@@ -1023,7 +1025,7 @@ function runStageAction(action: Action) {
 }
 
 const pageHeadWithGroupedActions = computed<PageHeadingTypes>(() => {
-	const actionsInStages = Object.values(stageActions.value).flat().map((action) => action.key)
+	const actionsInStages = Object.values(stageActions.value).flat().map((action) => action.key).filter((key) => !actionKeysInStageAndPageHead.includes(key))
 	const actions: Action[] = (props.pageHead.actions ?? []).filter(Boolean).filter((action: Action) => !actionsInStages.includes(action.key))
 	const actionsByKey = Object.fromEntries(actions.map((action) => [action.key, action]))
 	const placedGroupKeys = new Set<string>()
@@ -1284,7 +1286,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	</PageHeading>
 	<p v-if="actionError" class="mx-4 mt-2 text-xs text-red-600">{{ actionError }}</p>
 
-	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :deposit="stages.deposit" :sample="stages.sample">
+	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :sample="stages.sample">
 		<template v-if="agent_money" #stage-deposit_paid>
 			<AgentPurchaseOrderMoney :money="agent_money" />
 		</template>
@@ -1335,7 +1337,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<a v-if="action.key === 'packing_instructions'" :href="route(action.route.name, action.route.parameters)" target="_blank">
 						<Button type="tertiary" size="xs" full :label="action.label" :tooltip="action.tooltip">
 							<template #icon>
-								<FontAwesomeIcon :icon="action.icon" class="text-gray-500" fixed-width aria-hidden="true" />
+								<FontAwesomeIcon :icon="action.icon" class="text-red-500" fixed-width aria-hidden="true" />
+							</template>
+							<template #iconRight>
+								<FontAwesomeIcon :icon="faExternalLink" class="text-gray-400" fixed-width aria-hidden="true" />
 							</template>
 						</Button>
 					</a>

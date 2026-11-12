@@ -5,6 +5,8 @@ namespace App\Actions\Procurement\PurchaseOrderTransaction;
 use App\Actions\Traits\Authorisations\WithPurchaseOrderAgentEditAuthorisation;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
+use App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToCancelled;
 use App\Actions\Procurement\PurchaseOrder\NotifyBuyerOfAgentStageChange;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryFromPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions;
@@ -24,11 +26,11 @@ class CancelPurchaseOrderTransaction extends OrgAction
     use WithPurchaseOrderAgentEditAuthorisation;
     use WithActionUpdate;
 
-    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, ?string $reason = null): PurchaseOrderTransaction
+    public function handle(PurchaseOrderTransaction $purchaseOrderTransaction, ?string $reason = null, bool $cancelEmptyOrder = true): PurchaseOrderTransaction
     {
         $purchaseOrder = $purchaseOrderTransaction->purchaseOrder;
 
-        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction, $reason) {
+        $purchaseOrderTransaction = DB::transaction(function () use ($purchaseOrder, $purchaseOrderTransaction, $reason, $cancelEmptyOrder) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->first();
             $purchaseOrderTransaction->refresh();
 
@@ -68,12 +70,27 @@ class CancelPurchaseOrderTransaction extends OrgAction
                 ]);
             }
 
+            if ($cancelEmptyOrder && $this->isLeftEmpty($purchaseOrder)) {
+                UpdatePurchaseOrderStateToCancelled::make()->handle($purchaseOrder, source: UpdatePurchaseOrderStateToCancelled::SOURCE_EMPTIED);
+            }
+
             return $purchaseOrderTransaction;
         });
 
         PurchaseOrderHydrateTransactions::dispatch($purchaseOrderTransaction->purchaseOrder)->delay($this->hydratorsDelay);
 
         return $purchaseOrderTransaction;
+    }
+
+    /**
+     * An order whose last live line was cancelled has nothing left to order, so it is cancelled too, unless money or goods
+     * hang off it (a deposit, a payment, goods at the agent, a live delivery) and someone has to settle them first.
+     */
+    public function isLeftEmpty(PurchaseOrder $purchaseOrder): bool
+    {
+        return in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+            && !$purchaseOrder->purchaseOrderTransactions()->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)->exists()
+            && DeleteEmptyPurchaseOrders::deletableIds($purchaseOrder->group, [$purchaseOrder->id]) === [$purchaseOrder->id];
     }
 
     public function asController(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $purchaseOrderTransaction, ActionRequest $request): PurchaseOrderTransaction
@@ -102,14 +119,17 @@ class CancelPurchaseOrderTransaction extends OrgAction
         ];
     }
 
-    public function action(PurchaseOrderTransaction $purchaseOrderTransaction, int $hydratorsDelay = 0): PurchaseOrderTransaction
+    /**
+     * Moving lines to another supplier and undoing a move settle an emptied order themselves, so they pass $cancelEmptyOrder false.
+     */
+    public function action(PurchaseOrderTransaction $purchaseOrderTransaction, int $hydratorsDelay = 0, bool $cancelEmptyOrder = true): PurchaseOrderTransaction
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
 
         $this->initialisation($purchaseOrderTransaction->organisation, []);
 
-        return $this->handle($purchaseOrderTransaction);
+        return $this->handle($purchaseOrderTransaction, cancelEmptyOrder: $cancelEmptyOrder);
     }
 
     public function jsonResponse(PurchaseOrderTransaction $purchaseOrderTransaction): PurchaseOrderTransactionResource

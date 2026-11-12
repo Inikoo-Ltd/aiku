@@ -11,7 +11,7 @@ import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo } from "@far"
+import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck } from "@far"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
@@ -25,7 +25,7 @@ import {
     shoppingAssistantQuestionKey,
     useShoppingAssistant,
 } from "@/Iris/Composables/useShoppingAssistant"
-library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo)
+library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck)
 
 type Card = ProductResource & {
     assistant_reason: string
@@ -40,6 +40,8 @@ type Message =
         body: string
         created_at: string
         follow_ups: string[]
+        basket_added?: number[]
+        links?: { label: string, url: string }[]
         groups: { must_haves: Card[], add_ons: Card[] }
     }
 
@@ -72,6 +74,10 @@ const isPending = ref(false)
 const isRestoring = ref(false)
 const errorMessage = ref("")
 const draft = ref("")
+const notice = ref("")
+const cardsVersion = ref(0)
+const addingTo = ref<number | null>(null)
+const addErrors = ref<Record<number, string>>({})
 
 const latestAssistantId = computed(() => [...messages.value].reverse().find((message) => message.role === "assistant")?.id ?? null)
 
@@ -119,11 +125,63 @@ const fetchConversation = async (after?: number): Promise<{ pending: boolean, ha
     if (requestGeneration !== generation) {
         return null
     }
+    if (data.status === "cleared") {
+        forgetConversation()
+        notice.value = ctrans("This conversation has been cleared and will not be shown to you again.")
+        return null
+    }
     const known = new Set(messages.value.map((message) => message.id))
     const incoming: Message[] = (data.messages ?? []).filter((message: Message) => !known.has(message.id))
     messages.value = [...messages.value, ...incoming].sort((first, second) => first.id - second.id)
+    if (after && incoming.some((message) => message.role === "assistant" && message.basket_added?.length)) {
+        await refreshBasket()
+    }
 
     return { pending: !!data.pending, hasNewAnswer: incoming.some((message) => message.role === "assistant") }
+}
+
+const refreshBasket = async () => {
+    const id = conversation.value
+    if (!id) {
+        return
+    }
+    const requestGeneration = generation
+    layout?.reload_handle?.()
+    const { data } = await axios.get(showUrl(id))
+    if (requestGeneration !== generation) {
+        return
+    }
+    messages.value = data.messages ?? []
+    cardsVersion.value++
+}
+
+const notInBasket = (message: AssistantMessage): Card[] =>
+    [...(message.groups?.must_haves ?? []), ...(message.groups?.add_ons ?? [])].filter((card: any) => !card.quantity_ordered)
+
+const BASKET_LINES_PER_REQUEST = 20
+
+const addAllToBasket = async (message: AssistantMessage) => {
+    const cards = notInBasket(message)
+    if (!cards.length || addingTo.value !== null) {
+        return
+    }
+    addingTo.value = message.id
+    addErrors.value = { ...addErrors.value, [message.id]: "" }
+    try {
+        for (let start = 0; start < cards.length; start += BASKET_LINES_PER_REQUEST) {
+            const { data } = await axios.post(route("iris.models.transactions.store"), {
+                lines: cards.slice(start, start + BASKET_LINES_PER_REQUEST).map((card) => ({ product_id: card.id, quantity: 1 })),
+            })
+            if (data.failed) {
+                addErrors.value = { ...addErrors.value, [message.id]: ctrans("Some products could not be added to your basket.") }
+            }
+        }
+    } catch {
+        addErrors.value = { ...addErrors.value, [message.id]: ctrans("Could not add the products. Please try again.") }
+    } finally {
+        await refreshBasket().catch(() => {})
+        addingTo.value = null
+    }
 }
 
 const lastMessageId = () => messages.value[messages.value.length - 1]?.id
@@ -174,6 +232,7 @@ const send = async (text: string) => {
         return
     }
     errorMessage.value = ""
+    notice.value = ""
     isPending.value = true
     const requestGeneration = generation
     try {
@@ -324,6 +383,10 @@ const goToLogin = () => {
                         <div class="min-w-0 flex-1">
                             <p class="whitespace-pre-line text-sm">{{ message.body }}</p>
 
+                            <p v-for="link in message.links ?? []" :key="link.url" class="mt-2 text-sm">
+                                <a :href="link.url" class="assistant-link">{{ ctrans("More about :name", { name: link.label }) }}</a>
+                            </p>
+
                             <template v-for="tabs in [groupTabs(message)]" :key="message.id">
                                 <Tabs v-if="tabs.length" :value="tabs[0].key" class="mt-3">
                                     <TabList v-if="tabs.length > 1">
@@ -332,7 +395,7 @@ const goToLogin = () => {
                                     <TabPanels>
                                         <TabPanel v-for="tab in tabs" :key="tab.key" :value="tab.key">
                                             <div class="assistant-grid">
-                                                <div v-for="card in tab.cards" :key="card.id" @click.capture="(event) => recordClick(event, card)">
+                                                <div v-for="card in tab.cards" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, card)">
                                                     <p class="mb-1 text-xs text-gray-600">{{ card.assistant_reason }}</p>
                                                     <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
                                                         <RenderProduct :code="productCardCode" :product="card"
@@ -348,6 +411,21 @@ const goToLogin = () => {
                                         </TabPanel>
                                     </TabPanels>
                                 </Tabs>
+                                <div v-if="tabs.length" class="mt-3 flex flex-wrap items-center gap-2">
+                                    <Button
+                                        type="tertiary"
+                                        size="xs"
+                                        :label="notInBasket(message).length ? ctrans('Add all to basket') : ctrans('All in your basket')"
+                                        :disabled="!notInBasket(message).length || addingTo !== null"
+                                        :loading="addingTo === message.id"
+                                        @click="addAllToBasket(message)"
+                                    >
+                                        <template #icon>
+                                            <FontAwesomeIcon :icon="notInBasket(message).length ? 'far fa-shopping-basket' : 'far fa-check'" class="text-green-600" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </Button>
+                                    <p v-if="addErrors[message.id]" class="text-xs text-red-500">{{ addErrors[message.id] }}</p>
+                                </div>
                             </template>
 
                             <div v-if="message.id === latestAssistantId && message.follow_ups?.length" class="mt-4 flex flex-wrap gap-2">
@@ -381,6 +459,8 @@ const goToLogin = () => {
                     </div>
                 </div>
             </div>
+
+            <p v-if="notice" class="mt-6 text-sm text-gray-600">{{ notice }}</p>
 
             <div class="mt-6">
                 <div class="flex gap-2">
@@ -441,6 +521,11 @@ const goToLogin = () => {
     padding: 0.625rem 0.875rem;
     border-radius: 1rem 1rem 0.25rem 1rem;
     background-color: color-mix(in srgb, var(--theme-color-0) 10%, white);
+}
+
+.assistant-link {
+    color: var(--theme-color-0);
+    text-decoration: underline;
 }
 
 .assistant-grid {

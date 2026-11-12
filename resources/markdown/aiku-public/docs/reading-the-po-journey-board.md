@@ -1,7 +1,7 @@
 ---
 title: Reading the PO Overview
 summary: For buyers and management — how every open purchase order becomes one ribbon, what each colour and date means, where the targets come from, how to mark the stages nobody else records, and how to find the orders that need you.
-date: 2026-11-03
+date: 2026-11-11
 tags: procurement, supply-chain, agents
 category: procurement
 help_routes: grp.supply-chain.dashboard
@@ -32,7 +32,7 @@ The board uses the same stages as the purchase order page, plus a last column fo
 | Stage | Done when |
 |---|---|
 | 1 PO Launch | The order is sent to the supplier or agent. This is day zero. A draft is not sent. |
-| 2 Deposit & Go | The supplier has the deposit. |
+| 2 Agreement | The terms are agreed with the supplier: the deposit is paid, or the order is marked No deposit needed. The order then reads Agreed. |
 | 3 Making It Happen | The supplier starts making the goods. The sample is approved before that, on new products. |
 | 4 Ready to Roll | The goods are made and the quality check is approved. The final checks (balance, packing, QC, compliance) show under the stage. |
 | 5 Clean Hand Over (CHO) | The agent has passed the goods on. What that means depends on the agent, see below. A dispatched shipment always completes it. |
@@ -76,7 +76,11 @@ The system sees for itself when an order is sent, when goods leave and are recei
 
 Until any of these is marked on an order, its cells stay blank and the order is followed on shipping and arrival only. Once one is marked, the order waits at the next unmarked stage, so start from the first one and keep going.
 
-To mark a stage, click its cell, check the date and click **Mark done**. **Clear** removes a date entered by mistake. Stages go in order: a date more than a day in the past, a stage marked before the one before it, or clearing a date asks for a reason, which is kept in the order's history with who made the change.
+To mark a stage, click its cell, check the date and click **Mark done**. **Clear** removes a date entered by mistake. A date more than a day in the past, or clearing a date, asks for a reason, which is kept in the order's history with who made the change.
+
+**Stages go strictly in order.** While an order is Submitted only Agreement can be done, and nothing after it can be marked: pointing at a later cell says to agree the terms first. From Agreed on, only the stage the order is at can be marked; a later cell says which stage to finish first. The automatic steps (goods receipts, container lists, payments, dispatched and received shipments) are never held back.
+
+**Skipping a step.** So that an order never gets stuck, each stage has a skip button on the order page: **Sample skipped**, **Shipped direct** (not through the agent's warehouse), **QC skipped**, **Compliance skipped** and **Handed over without checks**. A skip asks for a reason, shows on the stage as Skipped with who, when and why, goes to the order's history, and can be undone. Agents can skip QC on their own orders; the other skips are for AW staff.
 
 ## Filters and numbers
 
@@ -86,7 +90,7 @@ Each row shows the order's value in pounds at today's exchange rate and its **Ag
 
 <aside class="wayfinder">
 <b>Where to click in aiku</b><br>
-<b>Supply Chain</b> in the left menu opens the board. <b>PO Overview</b> in the top menu brings you back to it; <b>Overview</b> next to it has the supply chain cards and shopping lists. Click a cell to mark a stage; a date more than a day in the past, a stage marked before the one before it, or clearing a date asks for a reason, kept in the order's history. Click the order reference to open the order. Per agent, how Clean Hand Over is done, the final checks shown on Ready to Roll, and each stage's name, description and days: <b>Supply Chain → Agents →</b> the agent <b>→ Edit</b>, section <b>PO journey</b>. A field left empty uses the standard wording or days.
+<b>Supply Chain</b> in the left menu opens the board. <b>PO Overview</b> in the top menu brings you back to it; <b>Overview</b> next to it has the supply chain cards and shopping lists. Click a cell to mark a stage; only the stage the order is at can be marked, and a date more than a day in the past or clearing a date asks for a reason, kept in the order's history. Skips are on the order page. Click the order reference to open the order. Per agent, how Clean Hand Over is done, the final checks shown on Ready to Roll, and each stage's name, description and days: <b>Supply Chain → Agents →</b> the agent <b>→ Edit</b>, section <b>PO journey</b>. A field left empty uses the standard wording or days.
 </aside>
 
 <aside class="wayfinder">

@@ -14,6 +14,7 @@ use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Helpers\Snapshot\StoreWebpageSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Web\Webpage\Traits\WithTrimmedWebpageUrl;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Web\Website\Layouts\FetchUsedDepartmentDescriptionWebBlock;
 use App\Actions\Web\Website\Layouts\FetchUsedFamiliesOverviewWebBlock;
@@ -51,6 +52,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class StoreWebpage extends OrgAction
 {
     use WithWebpageHydrators;
+    use WithTrimmedWebpageUrl;
     use AsAction;
     use WithNoStrictRules;
     use WithStoreWebpage;
@@ -315,6 +317,11 @@ class StoreWebpage extends OrgAction
         }
 
         return $request->user()->authTo("web.{$this->shop->id}.edit");
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->trimSlashesFromUrl();
     }
 
     public function rules(): array

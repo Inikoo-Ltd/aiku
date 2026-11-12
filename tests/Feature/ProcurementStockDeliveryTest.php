@@ -729,7 +729,7 @@ test('UI index purchase orders for supplier shows supplier-specific columns and 
             ->where('queryBuilderProps.default.elementGroups.state.elements', [
                 'in_process'   => [__('In process'), 11],
                 'submitted'    => [__('Submitted'), 12],
-                'confirmed'    => [__('Confirmed'), 13],
+                'confirmed'    => [__('Agreed'), 13],
                 'settled'      => [__('Settled'), 14],
                 'cancelled'    => [__('Cancelled'), 15],
                 'not_received' => [__('Not Received'), 16],
@@ -3544,6 +3544,7 @@ describe('supplier deposits', function () {
 
         \Illuminate\Support\Facades\Notification::fake();
         actingAs($this->adminGuest->getUser());
+        $purchaseOrder->refresh()->updateQuietly(['production_started_at' => now()->subDays(10)]);
         $this->patch(route('grp.models.purchase-order.stage', $purchaseOrder->id), ['field' => 'qc_passed_at', 'date' => now($purchaseOrder->organisation->timezone?->name)->toDateString(), 'reason' => 'QC done at the supplier'])->assertSessionHasNoErrors();
         \Illuminate\Support\Facades\Notification::assertSentTo($accountingClerk, \App\Notifications\PurchaseOrderBalanceDueNotification::class);
         actingAs($accountingClerk);

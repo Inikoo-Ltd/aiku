@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\ShoppingAssistant\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
 use App\Actions\OrgAction;
@@ -51,10 +52,16 @@ class ShowShoppingAssistantPerformance extends OrgAction
 
     private ?Website $website = null;
 
+    private bool $inShopMenu = false;
+
     public function authorize(ActionRequest $request): bool
     {
         if ($this->asAction) {
             return true;
+        }
+
+        if ($this->inShopMenu) {
+            return $request->user()->authTo(["websites-view.{$this->organisation->id}", "web.{$this->shop->id}.view", 'group-webmaster.view']);
         }
 
         return $this->website ? $this->authorizeWebsiteRoute($request) : $this->canViewGroupShoppingAssistant($request->user());
@@ -74,6 +81,23 @@ class ShowShoppingAssistantPerformance extends OrgAction
         $this->initialisationFromShop($shop, $request)->withTab(ShoppingAssistantPerformanceTabsEnum::values());
 
         return $request;
+    }
+
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): ActionRequest
+    {
+        abort_unless($shop->website, 404);
+        $this->forShopMenu($shop->website);
+        $this->initialisationFromShop($shop, $request)->withTab(ShoppingAssistantPerformanceTabsEnum::values());
+
+        return $request;
+    }
+
+    public function forShopMenu(Website $website): static
+    {
+        $this->website    = $website;
+        $this->inShopMenu = true;
+
+        return $this;
     }
 
     public function forWebsite(Website $website): static
@@ -323,7 +347,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-        $title         = __('AI Assistant');
+        $title         = $this->inShopMenu ? __('AI Salesman') : __('AI Assistant');
         $websites      = $this->scopeWebsites($this->website);
         $filters       = $this->filters($request, $websites, (bool) $this->website);
         $report        = GetShoppingAssistantReport::make();
@@ -331,7 +355,11 @@ class ShowShoppingAssistantPerformance extends OrgAction
         $usdRate       = $report->usdRate($currencyCode);
         $amountColumn  = $inShopCurrency ? 'net_amount' : 'grp_net_amount';
         $routeParameters = $request->route()->originalParameters();
-        $routePrefix   = $this->website ? 'grp.org.shops.show.web.analytics.shopping_assistant.' : 'grp.websites.shopping_assistant.';
+        $routePrefix   = match (true) {
+            $this->inShopMenu       => 'grp.org.shops.show.ai_salesman.',
+            (bool) $this->website   => 'grp.org.shops.show.web.analytics.shopping_assistant.',
+            default                 => 'grp.websites.shopping_assistant.',
+        };
 
         return Inertia::render(
             'Org/Web/ShoppingAssistantPerformance',
@@ -342,7 +370,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                     'title'         => $title,
                     'icon'          => ['icon' => ['fal', 'fa-robot'], 'title' => $title],
                     'model'         => $this->website?->name,
-                    'subNavigation' => $this->website ? $this->getWebsiteAnalyticsNavigation($this->website) : null,
+                    'subNavigation' => $this->website && !$this->inShopMenu ? $this->getWebsiteAnalyticsNavigation($this->website) : null,
                 ]),
                 'tabs'             => [
                     'current'    => $this->tab,
@@ -388,6 +416,19 @@ class ShowShoppingAssistantPerformance extends OrgAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         $label = __('AI Assistant');
+
+        if ($this->inShopMenu) {
+            return array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                [[
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => ['name' => 'grp.org.shops.show.ai_salesman.show', 'parameters' => $routeParameters],
+                        'label' => __('AI Salesman'),
+                    ],
+                ]]
+            );
+        }
 
         if ($this->website) {
             return array_merge(

@@ -1,5 +1,16 @@
 package io.aiku.droid.ui.clocking
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.mlkit.vision.MlKitAnalyzer
+import androidx.camera.view.CameraController
+import androidx.camera.view.LifecycleCameraController
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,13 +32,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,14 +49,15 @@ import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -55,13 +70,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 import io.aiku.droid.R
+import io.aiku.droid.data.api.QrClocking
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.LocalToasts
 import io.aiku.droid.ui.components.ToastKind
-import io.aiku.droid.ui.components.fakeData
+import io.aiku.droid.ui.components.animateFocusProgress
+import io.aiku.droid.ui.navigation.ClockingErrorRoute
 import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.theme.Inter
+import java.time.ZoneId
 import kotlinx.coroutines.delay
 
 private const val SUCCESS_AUTO_CLOSE_MILLIS = 6000L
@@ -75,21 +101,79 @@ private val ViewfinderLineInset = 24.dp
 
 @Composable
 fun ClockScanQrScreen() {
-    var isScanned by rememberSaveable { mutableStateOf(false) }
+    val clocking = LocalClocking.current
+    val navigator = LocalAppNavigator.current
+    val state by clocking.state.collectAsStateWithLifecycle()
+    val scan = state.scan
+    val refusedFallback = stringResource(R.string.clocking_scan_refused_fallback)
+    val failedMessage = (scan as? ClockingScanState.Failed)?.let { stringResource(R.string.clocking_scan_server_error, it.statusCode) }
 
-    if (isScanned) {
-        ClockScanSuccess()
+    LaunchedEffect(scan) {
+        val errorRoute = when (scan) {
+            is ClockingScanState.Refused -> ClockingErrorRoute(
+                kind = ClockingErrorKind.QrInvalid.key,
+                message = scan.message.ifBlank { refusedFallback },
+                scanned = scan.qrCode,
+            )
+            ClockingScanState.Offline -> ClockingErrorRoute(kind = ClockingErrorKind.Offline.key)
+            is ClockingScanState.Failed -> ClockingErrorRoute(kind = ClockingErrorKind.QrInvalid.key, message = failedMessage)
+            else -> null
+        }
+        if (errorRoute != null) {
+            clocking.restartScan()
+            navigator.switchSection(errorRoute)
+        }
+    }
+
+    when (scan) {
+        is ClockingScanState.Recorded -> ClockScanSuccess(
+            result = scan.result,
+            zone = state.zone,
+            noteState = state.note,
+            canEditNotes = state.status?.canEditNotes == true,
+        )
+        else -> ClockScanCamera(isSending = scan is ClockingScanState.Sending, onScanned = clocking::clockInWithQr)
+    }
+}
+
+private fun isCameraAllowed(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+
+@Composable
+private fun ClockScanCamera(isSending: Boolean, onScanned: (String) -> Unit) {
+    val context = LocalContext.current
+    var isAllowed by remember { mutableStateOf(isCameraAllowed(context)) }
+    var isRefused by rememberSaveable { mutableStateOf(false) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        isAllowed = granted
+        isRefused = !granted
+    }
+
+    LaunchedEffect(Unit) {
+        if (!isAllowed && !isRefused) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+    LifecycleResumeEffect(Unit) {
+        if (isCameraAllowed(context)) {
+            isAllowed = true
+            isRefused = false
+        }
+        onPauseOrDispose { }
+    }
+
+    if (isRefused && !isAllowed) {
+        ClockingErrorScreen(error = ClockingErrorKind.CameraBlocked, message = null, scanned = null)
     } else {
-        ClockScanViewfinder(onScanned = { isScanned = true })
+        ClockScanViewfinder(showCamera = isAllowed, isSending = isSending, onScanned = onScanned)
     }
 }
 
 @Composable
-private fun ClockScanViewfinder(onScanned: () -> Unit) {
+private fun ClockScanViewfinder(showCamera: Boolean, isSending: Boolean, onScanned: (String) -> Unit) {
     val camera = rememberClockingDarkColors()
     val navigator = LocalAppNavigator.current
     val closeDescription = stringResource(R.string.clocking_scan_close_camera)
-    val simulateDescription = stringResource(R.string.clocking_scan_simulate)
 
     Column(modifier = Modifier.fillMaxSize().background(camera.background)) {
         Row(
@@ -119,26 +203,14 @@ private fun ClockScanViewfinder(onScanned: () -> Unit) {
                 Icon(painter = painterResource(R.drawable.ic_ui_close), contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
             }
         }
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .drawBehind {
-                    drawRect(
-                        brush = Brush.radialGradient(
-                            colors = listOf(camera.border, camera.background),
-                            center = Offset(size.width / 2, size.height * 0.4f),
-                            radius = maxOf(size.width, size.height) * 0.6f,
-                        ),
-                    )
-                },
-        ) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth().background(camera.border)) {
+            if (showCamera) {
+                ClockScanCameraPreview(onScanned = onScanned, modifier = Modifier.fillMaxSize())
+            }
             Box(
                 modifier = Modifier
                     .align(BiasAlignment(horizontalBias = 0f, verticalBias = VIEWFINDER_VERTICAL_BIAS))
                     .size(ViewfinderFrameSize)
-                    .clickable(role = Role.Button, onClickLabel = simulateDescription, onClick = onScanned)
-                    .semantics { contentDescription = simulateDescription }
                     .drawBehind {
                         val stroke = ViewfinderBracketStroke.toPx()
                         val arm = ViewfinderBracketArm.toPx()
@@ -174,6 +246,22 @@ private fun ClockScanViewfinder(onScanned: () -> Unit) {
                         )
                     },
             )
+            if (isSending) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 24.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(camera.background.copy(alpha = 0.8f))
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                ) {
+                    CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                    Text(text = stringResource(R.string.clocking_scan_checking), fontSize = 14.sp, color = Color.White)
+                }
+            }
         }
         Text(
             text = stringResource(R.string.clocking_scan_hint),
@@ -189,13 +277,64 @@ private fun ClockScanViewfinder(onScanned: () -> Unit) {
 }
 
 @Composable
-private fun ClockScanSuccess() {
+private fun ClockScanCameraPreview(onScanned: (String) -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnScanned by rememberUpdatedState(onScanned)
+    val controller = remember(context) { LifecycleCameraController(context) }
+
+    DisposableEffect(controller, lifecycleOwner) {
+        val executor = ContextCompat.getMainExecutor(context)
+        val scanner = BarcodeScanning.getClient(BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build())
+        var hasScanned = false
+
+        controller.cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+        controller.setEnabledUseCases(CameraController.IMAGE_ANALYSIS)
+        controller.setImageAnalysisAnalyzer(
+            executor,
+            MlKitAnalyzer(listOf(scanner), ImageAnalysis.COORDINATE_SYSTEM_ORIGINAL, executor) { result ->
+                val code = result.getValue(scanner)?.firstNotNullOfOrNull { barcode -> barcode.rawValue?.takeIf { it.isNotBlank() } }
+                if (code != null && !hasScanned) {
+                    hasScanned = true
+                    controller.clearImageAnalysisAnalyzer()
+                    currentOnScanned(code)
+                }
+            },
+        )
+        controller.bindToLifecycle(lifecycleOwner)
+
+        onDispose {
+            controller.clearImageAnalysisAnalyzer()
+            controller.unbind()
+            scanner.close()
+        }
+    }
+
+    AndroidView(
+        factory = { viewContext ->
+            PreviewView(viewContext).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+                this.controller = controller
+            }
+        },
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun ClockScanSuccess(result: QrClocking, zone: ZoneId, noteState: ClockingNoteState, canEditNotes: Boolean) {
+    val clocking = LocalClocking.current
     val light = rememberClockingLightColors()
     val navigator = LocalAppNavigator.current
     val toasts = LocalToasts.current
     val noteSaved = stringResource(R.string.clocking_scan_note_saved)
+    val noteNotSaved = stringResource(
+        if (noteState == ClockingNoteState.Failed(ClockingProblem.Offline)) R.string.clocking_scan_note_offline else R.string.clocking_scan_note_failed,
+    )
     val noteLabel = stringResource(R.string.clocking_scan_note)
     var note by rememberSaveable { mutableStateOf("") }
+    var isNoteFocused by remember { mutableStateOf(false) }
+    val noteFocusProgress = animateFocusProgress(isNoteFocused)
     var isClosed by remember { mutableStateOf(false) }
     val close = {
         if (!isClosed) {
@@ -203,11 +342,29 @@ private fun ClockScanSuccess() {
             navigator.back()
         }
     }
+    val title = when {
+        result.clocking.isClockOut -> stringResource(R.string.clocking_status_clocked_out)
+        result.clocking.isClockIn -> stringResource(R.string.clocking_status_clocked_in)
+        else -> stringResource(R.string.clocking_scan_recorded)
+    }
+    val workingStart = scheduleTime(result.workingHours?.start)
+    val workingEnd = scheduleTime(result.workingHours?.end)
+    val isWaitingForUser = note.isNotEmpty() || isNoteFocused || noteState != ClockingNoteState.Idle
 
-    LaunchedEffect(note.isEmpty()) {
-        if (note.isEmpty()) {
+    LaunchedEffect(isWaitingForUser) {
+        if (!isWaitingForUser) {
             delay(SUCCESS_AUTO_CLOSE_MILLIS)
             close()
+        }
+    }
+    LaunchedEffect(noteState) {
+        when (noteState) {
+            ClockingNoteState.Saved -> {
+                toasts.show(noteSaved, ToastKind.Success)
+                close()
+            }
+            is ClockingNoteState.Failed -> toasts.show(noteNotSaved, ToastKind.Error)
+            else -> Unit
         }
     }
 
@@ -223,36 +380,31 @@ private fun ClockScanSuccess() {
                 .padding(24.dp)
                 .semantics { liveRegion = LiveRegionMode.Polite },
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.fakeData().padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                Icon(painter = painterResource(R.drawable.ic_ui_check), contentDescription = null, tint = Color.White, modifier = Modifier.size(88.dp))
+            Icon(painter = painterResource(R.drawable.ic_ui_check), contentDescription = null, tint = Color.White, modifier = Modifier.size(88.dp))
+            Text(text = title, fontSize = 34.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+            Text(
+                text = clockingTime(result.clocking.clockedAt, zone, withSeconds = true) ?: stringResource(R.string.clocking_no_value),
+                fontSize = 44.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+            if (result.isVisiting) {
                 Text(
-                    text = stringResource(if (ClockingScanIsClockOutSample) R.string.clocking_status_clocked_out else R.string.clocking_status_clocked_in),
-                    fontSize = 34.sp,
-                    fontWeight = FontWeight.Bold,
+                    text = stringResource(R.string.clocking_scan_visiting),
+                    fontSize = 16.sp,
+                    lineHeight = 22.sp,
                     color = Color.White,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .widthIn(max = 300.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White.copy(alpha = 0.16f))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
                 )
-                Text(text = CLOCKING_SCAN_TIME_SAMPLE, fontSize = 44.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                if (ClockingScanIsVisitingSample) {
-                    Text(
-                        text = stringResource(R.string.clocking_scan_visiting),
-                        fontSize = 16.sp,
-                        lineHeight = 22.sp,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .widthIn(max = 300.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color.White.copy(alpha = 0.16f))
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                    )
-                }
+            }
+            if (workingStart != null && workingEnd != null) {
                 Text(
-                    text = stringResource(R.string.clocking_scan_working_hours, CLOCKING_SCAN_WORKING_HOURS_SAMPLE),
+                    text = stringResource(R.string.clocking_scan_working_hours, stringResource(R.string.clocking_range, workingStart, workingEnd)),
                     fontSize = 16.sp,
                     color = light.successSoft,
                     textAlign = TextAlign.Center,
@@ -262,27 +414,31 @@ private fun ClockScanSuccess() {
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.widthIn(max = 320.dp).fillMaxWidth().padding(top = 12.dp),
             ) {
-                BasicTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    singleLine = true,
-                    textStyle = TextStyle(fontFamily = Inter, fontSize = 15.sp, color = light.text),
-                    cursorBrush = SolidColor(light.primary),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .clip(ControlShape)
-                        .background(Color.White)
-                        .semantics { contentDescription = noteLabel },
-                    decorationBox = { inner ->
-                        Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(horizontal = 14.dp)) {
-                            if (note.isEmpty()) {
-                                Text(text = stringResource(R.string.clocking_scan_note_placeholder), fontSize = 15.sp, color = light.textQuaternary, maxLines = 1)
+                if (canEditNotes) {
+                    BasicTextField(
+                        value = note,
+                        onValueChange = { note = it },
+                        singleLine = true,
+                        textStyle = TextStyle(fontFamily = Inter, fontSize = 15.sp, color = light.text),
+                        cursorBrush = SolidColor(light.primary),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clip(ControlShape)
+                            .background(Color.White)
+                            .border(2.dp, light.focus.copy(alpha = noteFocusProgress), ControlShape)
+                            .onFocusChanged { isNoteFocused = it.isFocused }
+                            .semantics { contentDescription = noteLabel },
+                        decorationBox = { inner ->
+                            Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(horizontal = 14.dp)) {
+                                if (note.isEmpty()) {
+                                    Text(text = stringResource(R.string.clocking_scan_note_placeholder), fontSize = 15.sp, color = light.textQuaternary, maxLines = 1)
+                                }
+                                inner()
                             }
-                            inner()
-                        }
-                    },
-                )
+                        },
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     Box(
                         contentAlignment = Alignment.Center,
@@ -295,24 +451,32 @@ private fun ClockScanSuccess() {
                     ) {
                         Text(text = stringResource(R.string.clocking_scan_close), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                     }
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                            .clip(ControlShape)
-                            .background(Color.White)
-                            .clickable(
-                                role = Role.Button,
-                                onClick = {
-                                    if (note.isNotBlank()) {
-                                        toasts.show(noteSaved, ToastKind.Success)
-                                    }
-                                    close()
-                                },
-                            ),
-                    ) {
-                        Text(text = stringResource(R.string.clocking_scan_save_note), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = light.success)
+                    if (canEditNotes) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = 48.dp)
+                                .clip(ControlShape)
+                                .background(Color.White)
+                                .clickable(
+                                    role = Role.Button,
+                                    enabled = noteState != ClockingNoteState.Saving,
+                                    onClick = {
+                                        if (note.isBlank()) {
+                                            close()
+                                        } else {
+                                            clocking.saveNote(clockingId = result.clocking.id, note = note)
+                                        }
+                                    },
+                                ),
+                        ) {
+                            if (noteState == ClockingNoteState.Saving) {
+                                CircularProgressIndicator(color = light.success, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                            } else {
+                                Text(text = stringResource(R.string.clocking_scan_save_note), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = light.success)
+                            }
+                        }
                     }
                 }
                 Text(

@@ -1,16 +1,21 @@
 package io.aiku.droid.ui.components
 
+import android.os.SystemClock
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -36,12 +41,17 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -65,6 +75,7 @@ import io.aiku.droid.ui.theme.LocalAikuColors
 
 private const val SAMPLE_MY_WORK_COUNT = 6
 private const val SAMPLE_INBOX_COUNT = 3
+private const val TAB_HANDOFF_WINDOW_MS = 1500L
 
 @Composable
 fun warehouseKicker(extra: String? = null): String {
@@ -142,6 +153,28 @@ fun FooterStatus(title: String, modifier: Modifier = Modifier, body: String? = n
 
 data class SectionTabItem(val label: String, val isActive: Boolean, val onClick: () -> Unit)
 
+class TabHandoff {
+    private var key: String? = null
+    private var offset = 0
+    private var handedAt = 0L
+
+    fun hand(key: String, offset: Int) {
+        this.key = key
+        this.offset = offset
+        handedAt = SystemClock.uptimeMillis()
+    }
+
+    fun take(key: String): Int? {
+        if (this.key != key) {
+            return null
+        }
+        this.key = null
+        return if (SystemClock.uptimeMillis() - handedAt < TAB_HANDOFF_WINDOW_MS) offset else null
+    }
+}
+
+val LocalTabHandoff = staticCompositionLocalOf { TabHandoff() }
+
 @Composable
 fun AppHeader(
     title: String,
@@ -157,52 +190,54 @@ fun AppHeader(
     val colors = LocalAikuColors.current
     val navigator = LocalAppNavigator.current
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.nav)
-            .statusBarsPadding()
-            .padding(top = 8.dp, bottom = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(horizontal = 16.dp),
+    CompositionLocalProvider(LocalIndication provides rememberNavFocusIndication()) {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .background(colors.nav)
+                .statusBarsPadding()
+                .padding(top = 8.dp, bottom = if (tabs.isNotEmpty() && below == null) 0.dp else 12.dp),
+            verticalArrangement = Arrangement.spacedBy(if (tabs.isNotEmpty()) 4.dp else 12.dp),
         ) {
-            if (showBack) {
-                HeaderIconButton(
-                    icon = R.drawable.ic_ui_back,
-                    description = stringResource(R.string.nav_back),
-                    onClick = onBack ?: navigator::back,
-                    iconSize = 24.dp,
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = if (showBack) 0.dp else 4.dp)
-                    .then(if (isSample) Modifier.fakeData(cornerRadius = 6.dp).padding(horizontal = 4.dp) else Modifier),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
             ) {
-                if (kicker != null) {
-                    Text(text = kicker, fontSize = 12.sp, color = colors.onNavSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (showBack) {
+                    HeaderIconButton(
+                        icon = R.drawable.ic_ui_back,
+                        description = stringResource(R.string.nav_back),
+                        onClick = onBack ?: navigator::back,
+                        iconSize = 24.dp,
+                    )
                 }
-                Text(
-                    text = title,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onNav,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = if (showBack) 0.dp else 4.dp)
+                        .then(if (isSample) Modifier.fakeData(cornerRadius = 6.dp).padding(horizontal = 4.dp) else Modifier),
+                ) {
+                    if (kicker != null) {
+                        Text(text = kicker, fontSize = 12.sp, color = colors.onNavSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text(
+                        text = title,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onNav,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                actions()
             }
-            actions()
-        }
-        if (tabs.isNotEmpty()) {
-            SectionTabs(tabs = tabs)
-        }
-        if (below != null) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = below)
+            if (tabs.isNotEmpty()) {
+                SectionTabs(tabs = tabs)
+            }
+            if (below != null) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = below)
+            }
         }
     }
 }
@@ -210,29 +245,53 @@ fun AppHeader(
 @Composable
 fun SectionTabs(tabs: List<SectionTabItem>, modifier: Modifier = Modifier) {
     val colors = LocalAikuColors.current
-    val pill = RoundedCornerShape(999.dp)
+    val bar = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
+    val handoff = LocalTabHandoff.current
+    val key = tabs.joinToString("|") { it.label }
+    val handedOffset = remember(key) { handoff.take(key) }
+    val scrollState = rememberScrollState(handedOffset ?: 0)
 
     Row(
-        modifier = modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(scrollState)
+            .padding(horizontal = 8.dp),
     ) {
         tabs.forEach { tab ->
-            Box(
-                contentAlignment = Alignment.Center,
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .height(36.dp)
-                    .clip(pill)
-                    .background(if (tab.isActive) colors.navActive else Color.White.copy(alpha = 0.12f))
-                    .then(if (tab.isActive) Modifier.border(1.dp, colors.navRing, pill) else Modifier)
-                    .selectable(selected = tab.isActive, role = Role.Tab, onClick = tab.onClick)
-                    .padding(horizontal = 12.dp),
+                    .height(44.dp)
+                    .width(IntrinsicSize.Max)
+                    .selectable(
+                        selected = tab.isActive,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = rememberNavFocusIndication(cornerRadius = 8.dp, bottomInset = 5.dp),
+                        role = Role.Tab,
+                        onClick = {
+                            if (!tab.isActive) {
+                                handoff.hand(key, scrollState.value)
+                            }
+                            tab.onClick()
+                        },
+                    ),
             ) {
-                Text(
-                    text = tab.label,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (tab.isActive) colors.navAccent else colors.onNav,
-                    maxLines = 1,
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                    Text(
+                        text = tab.label,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (tab.isActive) colors.navAccent else colors.onNavSecondary,
+                        maxLines = 1,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                        .height(3.dp)
+                        .clip(bar)
+                        .background(if (tab.isActive) colors.navAccent else Color.Transparent),
                 )
             }
         }
@@ -321,6 +380,9 @@ fun SearchScanField(
     val colors = LocalAikuColors.current
     val navigator = LocalAppNavigator.current
     val scanDescription = stringResource(R.string.nav_scan)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    val focusProgress = animateFocusProgress(isFocused)
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -328,9 +390,10 @@ fun SearchScanField(
         modifier = modifier
             .fillMaxWidth()
             .height(46.dp)
+            .focusHalo(progress = focusProgress, color = colors.focus, cornerRadius = 8.dp)
             .clip(ControlShape)
             .background(colors.surface)
-            .border(1.dp, colors.borderStrong, ControlShape)
+            .border(1.dp, lerp(colors.borderStrong, colors.focus, focusProgress), ControlShape)
             .padding(start = 14.dp, end = 6.dp),
     ) {
         Icon(painter = painterResource(R.drawable.ic_ui_search), contentDescription = null, tint = colors.textQuaternary, modifier = Modifier.size(20.dp))
@@ -340,6 +403,7 @@ fun SearchScanField(
             singleLine = true,
             textStyle = TextStyle(fontFamily = Inter, fontSize = 15.sp, color = colors.text),
             cursorBrush = SolidColor(colors.primary),
+            interactionSource = interactionSource,
             modifier = Modifier.weight(1f).semantics { contentDescription = placeholder },
             decorationBox = { inner ->
                 Box(contentAlignment = Alignment.CenterStart) {
@@ -392,23 +456,25 @@ fun MainBar(active: MainTab?, modifier: Modifier = Modifier) {
     val navigator = LocalAppNavigator.current
     val showScan = LocalWarehouses.current.isNotEmpty()
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.nav)
-            .navigationBarsPadding()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-    ) {
-        BarTab(BarItem(MainTab.Home, R.string.tab_home, R.drawable.ic_ui_home), isActive = active == MainTab.Home, onClick = { navigator.openTab(MainTab.Home) })
-        BarTab(BarItem(MainTab.MyWork, R.string.tab_my_work, R.drawable.ic_ui_my_work, SAMPLE_MY_WORK_COUNT), isActive = active == MainTab.MyWork, onClick = { navigator.openTab(MainTab.MyWork) })
-        if (showScan) {
-            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                ScanTabButton(onClick = { navigator.openTab(MainTab.Scan) })
+    CompositionLocalProvider(LocalIndication provides rememberNavFocusIndication()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier
+                .fillMaxWidth()
+                .background(colors.nav)
+                .navigationBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+        ) {
+            BarTab(BarItem(MainTab.Home, R.string.tab_home, R.drawable.ic_ui_home), isActive = active == MainTab.Home, onClick = { navigator.openTab(MainTab.Home) })
+            BarTab(BarItem(MainTab.MyWork, R.string.tab_my_work, R.drawable.ic_ui_my_work, SAMPLE_MY_WORK_COUNT), isActive = active == MainTab.MyWork, onClick = { navigator.openTab(MainTab.MyWork) })
+            if (showScan) {
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    ScanTabButton(onClick = { navigator.openTab(MainTab.Scan) })
+                }
             }
+            BarTab(BarItem(MainTab.Inbox, R.string.tab_inbox, R.drawable.ic_ui_inbox, SAMPLE_INBOX_COUNT), isActive = active == MainTab.Inbox, onClick = { navigator.openTab(MainTab.Inbox) })
+            BarTab(BarItem(MainTab.Menu, R.string.tab_menu, R.drawable.ic_ui_menu), isActive = active == MainTab.Menu, onClick = { navigator.openTab(MainTab.Menu) })
         }
-        BarTab(BarItem(MainTab.Inbox, R.string.tab_inbox, R.drawable.ic_ui_inbox, SAMPLE_INBOX_COUNT), isActive = active == MainTab.Inbox, onClick = { navigator.openTab(MainTab.Inbox) })
-        BarTab(BarItem(MainTab.Menu, R.string.tab_menu, R.drawable.ic_ui_menu), isActive = active == MainTab.Menu, onClick = { navigator.openTab(MainTab.Menu) })
     }
 }
 
@@ -426,7 +492,13 @@ private fun RowScope.BarTab(item: BarItem, isActive: Boolean, onClick: () -> Uni
             .clip(shape)
             .background(if (isActive) colors.navActive else Color.Transparent)
             .then(if (isActive) Modifier.border(1.dp, colors.navRing, shape) else Modifier)
-            .selectable(selected = isActive, role = Role.Tab, onClick = onClick),
+            .selectable(
+                selected = isActive,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = rememberNavFocusIndication(cornerRadius = 8.dp),
+                role = Role.Tab,
+                onClick = onClick,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {

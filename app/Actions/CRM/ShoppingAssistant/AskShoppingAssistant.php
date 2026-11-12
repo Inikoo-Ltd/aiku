@@ -33,15 +33,22 @@ use Throwable;
  * and each one that fires is recorded in the assistant message's flags:
  *
  * - dropped_unknown_product: a presented id that no tool returned in this turn and that was not
- *   shown earlier in this conversation is dropped. A product sits in one group only, at most 4 per group.
+ *   shown earlier in this conversation is dropped. A product sits in one group only, at most 12 per group.
  * - dropped_unavailable_product: every presented id is checked again at answer time and dropped
  *   when it is no longer live, in stock, priced and visible to the customer.
  * - reply_replaced_number: prices, discounts and stock never come from the AI. The reply may only
  *   contain numbers (digits with an optional decimal part) that the customer wrote in this
- *   conversation, or a size written exactly as in the name of a product found or shown in it
- *   ("190g", "50mm"); otherwise the whole reply becomes the fixed fallback. A currency sign on its own is allowed:
+ *   conversation, or a size or percentage written exactly as in the name of a product found or shown
+ *   in it, or of its family ("190g", "50mm", "100% Cotton"); otherwise the whole reply becomes the fixed fallback. A currency sign on its own is allowed:
  *   "£600" after the customer wrote "600 pounds" is an echo, and a price is caught by its number.
  *   Follow-ups breaking the same rule are all dropped.
+ * - A turn that called clear_conversation always answers with the fixed cleared sentence, no products
+ *   and no follow-ups; one that added to the basket and lost its reply to a rule above says so with a
+ *   fixed sentence instead of the product fallback.
+ * - Dispatch times and shipping cost are never written by the AI: the tool's sentence, built from our
+ *   data, is put under the reply after the number rule has been applied to the AI's own words.
+ * - A family the model read about with family_information is linked under the answer by the page,
+ *   from the family ids stored with that tool call; the model never writes a URL.
  * - model_unavailable: an HTTP failure, an empty or unreadable answer, or a content filter stop
  *   gives the fallback with no products. The customer message is stored first, so it is never lost.
  * - model_call_limit: no final answer within services.shopping_assistant.max_model_calls calls.
@@ -50,6 +57,12 @@ use Throwable;
  * assistant's with the names and ids of the products shown with it) and the new customer message.
  * Earlier tool results are not replayed. The customer's contact name and email are never sent.
  *
+ * Prompt caching: every call asks the provider to cache the prompt up to its last block, so the
+ * second and later calls of a turn, and a follow-up within five minutes, pay a tenth for the tools,
+ * the system prompt and the messages they repeat. The first call of a turn pays a quarter more.
+ *
+ * ponytail: one automatic cache point; split the system prompt into a shared part and a customer
+ * part with their own cache points if traffic grows enough for customers to share a cache.
  * ponytail: no streaming; on the storefront the turn runs in a queued job and the page polls for the stored answer.
  * ponytail: replay capped at 12 messages; summarise older turns if conversations grow long.
  * ponytail: the reply language is the shop's and is named in the prompt but not checked; add a
@@ -110,7 +123,7 @@ class AskShoppingAssistant
 
         $flags          = $turn['flags'];
         $knownProductIds = $conversation->events()->where('type', ShoppingAssistantEventTypeEnum::SHOWN)->pluck('product_id')->merge(array_keys($turn['found']))->unique();
-        $productNames    = Product::whereIn('id', $knownProductIds)->pluck('name')->implode("\n");
+        $productNames    = Product::whereIn('id', $knownProductIds)->with('family:id,name')->get()->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->merge($turn['names'])->filter()->unique()->implode("\n");
         $customerText    = $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::CUSTOMER)->pluck('body')->implode("\n");
         $groups         = ['must_haves' => collect(), 'add_ons' => collect()];
         $reply          = '';
@@ -128,6 +141,18 @@ class AskShoppingAssistant
                     $reply   = '';
                 }
             }
+        }
+
+        if ($turn['cleared']) {
+            $reply     = __('This conversation has been cleared and will not be shown to you again.', [], $conversation->language_code);
+            $groups    = ['must_haves' => collect(), 'add_ons' => collect()];
+            $followUps = [];
+        } elseif ($reply === '' && $turn['basket']) {
+            $reply = __('I have added the products to your basket.', [], $conversation->language_code);
+        }
+
+        if ($turn['facts'] && !$turn['cleared']) {
+            $reply = trim($reply."\n\n".implode("\n", array_unique($turn['facts'])));
         }
 
         $hasProducts = collect($groups)->contains(fn (Collection $products) => $products->isNotEmpty());
@@ -218,11 +243,11 @@ class AskShoppingAssistant
      * throws or is killed later keeps what it spent; the assistant message gets the turn's totals only
      * for display, and the conversation is never raised again at the end of the turn.
      *
-     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
+     * @return array{answer: ?array<string, mixed>, found: array<int, array{id: int, reason_code: string, reason: ?string}>, names: array<int, string>, basket: array<int, int>, facts: array<int, string>, families: array<int, int>, cleared: bool, tool_calls: array<int, array{name: string, arguments: mixed, product_ids: array<int>, error: ?string, ms: int}>, flags: array<int, string>, model_calls: int, prompt_tokens: int, completion_tokens: int, cost: float, call_ids: array<int, int>}
      */
     private function runModel(ShoppingAssistantConversation $conversation, ?Customer $customer, ShoppingAssistantMessage $customerMessage, string $message, string $model): array
     {
-        $turn = ['answer' => null, 'found' => [], 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
+        $turn = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'families' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
 
         if (!$customer) {
             $turn['flags'][] = 'model_unavailable';
@@ -303,19 +328,25 @@ class AskShoppingAssistant
 
                 $result = $arguments === null
                     ? ['content' => ['error' => 'The arguments were not a JSON object.'], 'products' => [], 'error' => 'invalid_arguments']
-                    : $tools->execute($conversation, $name, $arguments);
+                    : $tools->execute($conversation, $name, $arguments, array_keys($turn['found']));
 
                 foreach ($result['products'] as $product) {
                     $turn['found'][$product['id']] ??= $product;
                 }
+                $turn['names']   = array_merge($turn['names'], $result['names'] ?? []);
+                $turn['basket']  = array_merge($turn['basket'], $result['basket'] ?? []);
+                $turn['cleared'] = $turn['cleared'] || !empty($result['cleared']);
+                if (isset($result['fact'])) {
+                    $turn['facts'][] = $result['fact'];
+                }
 
-                $turn['tool_calls'][] = [
+                $turn['tool_calls'][] = array_merge([
                     'name'        => $name,
                     'arguments'   => $arguments ?? data_get($toolCall, 'function.arguments'),
                     'product_ids' => array_column($result['products'], 'id'),
                     'error'       => $result['error'],
                     'ms'          => (int) round((hrtime(true) - $toolStart) / 1e6),
-                ];
+                ], isset($result['basket']) ? ['added_product_ids' => $result['basket']] : [], isset($result['families']) ? ['family_ids' => $result['families']] : []);
 
                 $messages[] = [
                     'role'         => 'tool',
@@ -372,6 +403,7 @@ class AskShoppingAssistant
                     'tools'       => $tools,
                     'tool_choice' => 'auto',
                     'max_tokens'  => 4000,
+                    'cache_control' => ['type' => 'ephemeral'],
                 ]);
         } catch (Throwable $exception) {
             Log::warning('Shopping assistant model call failed: '.$exception->getMessage());
@@ -485,13 +517,13 @@ class AskShoppingAssistant
     }
 
     /**
-     * A size written as in a product's name ("190g", "50mm", "10 ml") is taken out of the text first;
+     * A size or percentage written as in a product or family name ("190g", "50mm", "10 ml", "41x31cm", "1.5-2kg", "100%") is taken out of the text first;
      * every number left must be one the customer wrote, so "£10" or "120 shops" never passes on the
      * strength of "10 ml" or "120g" in a name.
      */
     public function onlyGivenNumbers(string $text, string $customerText, string $productNames = ''): bool
     {
-        preg_match_all('/\d+(?:[.,]\d+)?\s?\p{L}+/u', $productNames, $sizes);
+        preg_match_all('/\d+(?:[.,]\d+)?(?:\s?[x\-–]\s?\d+(?:[.,]\d+)?)*\s?(?:\p{L}+|%)/iu', $productNames, $sizes);
         foreach (array_unique($sizes[0]) as $size) {
             $text = preg_replace('/(?<![\d.,£€$])'.preg_quote($size, '/').'(?![\p{L}\d])/iu', ' ', $text);
         }
@@ -569,6 +601,9 @@ class AskShoppingAssistant
             ->pluck('product_categories.name')
             ->implode(', ') ?: 'none yet';
 
+        $usualPerGroup = GetShoppingAssistantTools::USUAL_PER_GROUP;
+        $maxPerGroup   = GetShoppingAssistantTools::MAX_PER_GROUP;
+
         return <<<PROMPT
 You are the range advisor for trade customers of $shopName, a wholesaler. You help a retailer find products for their shop.
 
@@ -583,8 +618,11 @@ Reply in $language.
 Rules:
 - Only recommend products returned by the tools, by their ids, through present_products.
 - Never state prices, discounts, stock quantities, delivery times or how many shops buy something.
+- When the customer asks how quickly orders are dispatched, call dispatch_times; when they ask what shipping costs, call shipping_cost. The system adds the sentence with the real figure under your reply: write one short lead-in with no figure, and never promise a delivery date.
 - Never mention other customers.
-- Do not invent product claims beyond the product and family names.
+- Do not invent product claims beyond the product and family names and what family_information returns.
+- When the customer asks about a range or a product instead of asking for products (what it is, why it is special, what makes it different, how it is used), find it with search_products, call family_information with its family_id and answer from that description. Show no products in that answer unless they asked to see them: the page links to the family page. You cannot explain or compare prices: say the price is on each product card.
+- When the customer says something is expensive or asks why it costs what it does, say what the description shows they get for it (quality, size, what is included), never that it is the market price or cheaper or dearer than elsewhere, and offer to show lower-priced options of the same kind, which you find with search_products and sort cheapest.
 - Each product comes with a why line. When you say why you suggest something, say no more than its why line says: write "shops like yours" only when the why line says so, and "shops in your area" when that is what it says.
 - What the customer orders is only what is listed above. Do not say what else they stock or sell.
 - If the customer says what kind of shop they run and the shop type is not known yet, call save_shop_type once.
@@ -593,6 +631,15 @@ Rules:
 - Keep the reply to two or three short sentences.
 - In present_products, put products that fit the request or sell well for similar shops in must_haves, and complementary or previously ordered ones in add_ons.
 - Do not paste tool results or product ids into the reply text.
+- Show up to $usualPerGroup products in each group. When the customer asks for more or a wider selection, search with a higher limit and show up to $maxPerGroup in each group, leaving out what you already showed.
+- When the customer asks you to put products in their basket, call add_to_basket, then say in one or two sentences what was added, without counts. You cannot remove products or change quantities: they do that on the product cards or in the basket.
+- When the customer asks to delete, clear or forget this conversation, call clear_conversation and answer with one short sentence.
+- A product marked exact_code_match is the one whose code the customer typed: present it first and do not say you could not find it.
+- For Christmas, festive or seasonal requests, call best_sellers_last_christmas as well as search_products, and mix both in your answer.
+- Products marked family_code_match belong to the family whose code the customer typed: present them and do not say you could not find it.
+- When search_products returns matched_families, the customer typed that family's code: that is the range they mean, even when none of its products is listed. Never say you could not tell what they meant; use its family_id with family_information for questions about it, and say so plainly if none of its products can be shown right now.
+- When the customer asks for the cheapest or the most expensive products, call search_products with sort (and an empty query when they mean the whole website), say the products are ordered by price, and still never state a price.
+- Products under out_of_stock in a search_products result can never be presented. Mention one only when it is the product the customer asked for (an exact_code_match, or clearly the item they named): say by its name that it is out of stock right now, never that we do not have it, and offer the closest alternatives. Otherwise ignore them.
 PROMPT;
     }
 

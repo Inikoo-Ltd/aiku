@@ -399,6 +399,34 @@ test('retina api dropshipping order submit', function () {
         ->and($response->json('data.pay_status'))->toBe($order->pay_status->value);
 });
 
+test('retina api dispatch test order is staging only, own orders only, and refuses unpaid orders', function () {
+    createAdminGuest($this->group);
+    Sanctum::actingAs($this->dropshippingChannel, ['retina', 'retina:read', 'retina:write']);
+
+    $client = StoreCustomerClient::make()->action($this->dropshippingChannel, CustomerClient::factory()->definition());
+    $order  = StoreOrder::make()->action($client, [
+        'platform_id'               => $this->dropshippingChannel->platform_id,
+        'customer_sales_channel_id' => $this->dropshippingChannel->id,
+    ]);
+    $order->update(['pay_status' => OrderPayStatusEnum::UNPAID]);
+
+    patchJson(route('retina.api.dropshipping.order.dispatch_test', $order))
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'The order is not paid');
+
+    $order->update(['pay_status' => OrderPayStatusEnum::PAID]);
+    app()->detectEnvironment(fn () => 'production');
+    try {
+        patchJson(route('retina.api.dropshipping.order.dispatch_test', $order))->assertNotFound();
+    } finally {
+        app()->detectEnvironment(fn () => 'testing');
+    }
+
+    DB::table('orders')->where('id', $order->id)->update(['customer_id' => $this->fulfilmentCustomer->id]);
+    patchJson(route('retina.api.dropshipping.order.dispatch_test', $order))->assertNotFound();
+    expect($order->refresh()->state)->toBe(OrderStateEnum::CREATING);
+});
+
 // ---- Dropshipping: products & portfolios ----
 
 test('retina api dropshipping index products', function () {
@@ -522,6 +550,11 @@ test('retina api my products lists each product with its department, sub departm
         ->and($row)->toHaveKeys(['description', 'description_extra', 'customer_product_name', 'customer_description'])
         ->and($row['description'])->toBe($product->description)
         ->and($row['description_extra'])->toBe($product->description_extra);
+
+    $shown = getJson(route('retina.api.dropshipping.products.my_product.show', $portfolioId))->assertOk()->json('data');
+    foreach (['description', 'description_extra', 'department_slug', 'department_name', 'sub_department_slug', 'sub_department_name', 'family_slug', 'family_name'] as $field) {
+        expect($shown[$field])->toBe($row[$field]);
+    }
 
     deleteJson(route('retina.api.dropshipping.products.my_product.delete', $portfolioId))->assertOk();
 });

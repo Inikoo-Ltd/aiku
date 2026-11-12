@@ -1,8 +1,8 @@
 ---
 title: Leer el PO Overview
 summary: Para compradores y dirección — cómo cada pedido de compra abierto se convierte en una franja, qué significa cada color y cada fecha, de dónde vienen los plazos previstos, cómo marcar las etapas que nadie más registra, y cómo encontrar los pedidos que necesitan tu atención.
-date: 2026-11-03
-source_date: 2026-11-03
+date: 2026-11-11
+source_date: 2026-11-11
 tags: procurement, supply-chain, agents
 category: procurement
 series: PO journey
@@ -32,7 +32,7 @@ El panel usa las mismas etapas que la página del pedido de compra, más una úl
 | Etapa | Completado cuando |
 |---|---|
 | 1 PO Launch (lanzamiento del pedido) | El pedido se envía al proveedor o al agente. Este es el día cero. Un borrador no cuenta como enviado. |
-| 2 Deposit & Go (depósito y arranque) | El proveedor tiene el depósito. |
+| 2 Agreement (acuerdo) | Las condiciones están acordadas con el proveedor: el depósito está pagado, o el pedido se marca como **No deposit needed** (no hace falta depósito). El pedido pasa entonces a Agreed (acordado). |
 | 3 Making It Happen (manos a la obra) | El proveedor empieza a fabricar la mercancía. La muestra se aprueba antes, en los productos nuevos. |
 | 4 Ready to Roll (listo para salir) | La mercancía está fabricada y el control de calidad está aprobado. Las comprobaciones finales (saldo, embalaje, QC, cumplimiento normativo) se muestran bajo la etapa. |
 | 5 Clean Hand Over, CHO (entrega limpia) | El agente ha pasado la mercancía. Lo que eso significa depende del agente, ver más abajo. Un envío despachado siempre la completa. |
@@ -76,7 +76,11 @@ El sistema ve por sí solo cuándo se envía un pedido, cuándo la mercancía sa
 
 Hasta que se marque alguna de estas en un pedido, sus celdas quedan en blanco y el pedido solo se sigue por el envío y la llegada. En cuanto se marca una, el pedido queda a la espera de la siguiente etapa sin marcar, así que empieza por la primera y sigue en orden.
 
-Para marcar una etapa, haz clic en su celda, comprueba la fecha y pulsa **Mark done**. **Clear** elimina una fecha introducida por error. Las etapas van en orden: una fecha de más de un día en el pasado, una etapa marcada antes de la anterior o borrar una fecha pide un motivo, que queda guardado en el historial del pedido junto con quién hizo el cambio.
+Para marcar una etapa, haz clic en su celda, comprueba la fecha y pulsa **Mark done**. **Clear** elimina una fecha introducida por error. Una fecha de más de un día en el pasado, o borrar una fecha, pide un motivo, que queda guardado en el historial del pedido junto con quién hizo el cambio.
+
+**Las etapas van estrictamente en orden.** Mientras un pedido está Submitted (enviado), solo se puede hacer Agreement, y no se puede marcar nada posterior: al señalar una celda posterior, indica que primero hay que acordar las condiciones. Desde Agreed, solo se puede marcar la etapa en la que está el pedido; una celda posterior indica qué etapa hay que terminar primero. Los pasos automáticos (recepciones de mercancía, listas de contenedores, pagos, envíos despachados y recibidos) nunca se bloquean.
+
+**Omitir un paso.** Para que un pedido nunca se quede atascado, cada etapa tiene un botón de omisión en la página del pedido: **Sample skipped** (muestra omitida), **Shipped direct** (enviado directo, sin pasar por el almacén del agente), **QC skipped** (control de calidad omitido), **Compliance skipped** (cumplimiento omitido) y **Handed over without checks** (entregado sin comprobaciones). Una omisión pide un motivo, se muestra en la etapa como Skipped (omitido) con quién, cuándo y por qué, pasa al historial del pedido y se puede deshacer. Los agentes pueden omitir el control de calidad en sus propios pedidos; las demás omisiones son para el personal de AW.
 
 ## Filtros y cifras
 
@@ -86,7 +90,7 @@ Cada fila muestra el valor del pedido en libras al tipo de cambio de hoy y su **
 
 <aside class="wayfinder">
 <b>Dónde pulsar en aiku</b><br>
-<b>Supply Chain</b> en el menú de la izquierda abre el panel. <b>PO Overview</b> en el menú superior te devuelve a él; <b>Overview</b>, al lado, tiene las tarjetas de supply chain y las listas de la compra. Haz clic en una celda para marcar una etapa; una fecha de más de un día en el pasado, una etapa marcada antes de la anterior o borrar una fecha pide un motivo, que queda guardado en el historial del pedido. Haz clic en la referencia del pedido para abrirlo. Por agente, cómo se hace Clean Hand Over, las comprobaciones finales que se muestran en Ready to Roll, y el nombre, la descripción y los días de cada etapa: <b>Supply Chain → Agents →</b> el agente <b>→ Edit</b>, sección <b>PO journey</b>. Un campo que se deja vacío usa el texto o los días estándar.
+<b>Supply Chain</b> en el menú de la izquierda abre el panel. <b>PO Overview</b> en el menú superior te devuelve a él; <b>Overview</b>, al lado, tiene las tarjetas de supply chain y las listas de la compra. Haz clic en una celda para marcar una etapa; solo se puede marcar la etapa en la que está el pedido, y una fecha de más de un día en el pasado o borrar una fecha pide un motivo, que queda guardado en el historial del pedido. Las omisiones están en la página del pedido. Haz clic en la referencia del pedido para abrirlo. Por agente, cómo se hace Clean Hand Over, las comprobaciones finales que se muestran en Ready to Roll, y el nombre, la descripción y los días de cada etapa: <b>Supply Chain → Agents →</b> el agente <b>→ Edit</b>, sección <b>PO journey</b>. Un campo que se deja vacío usa el texto o los días estándar.
 </aside>
 
 <aside class="wayfinder">

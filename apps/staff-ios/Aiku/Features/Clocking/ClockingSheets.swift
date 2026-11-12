@@ -71,76 +71,148 @@ struct ClockingWorkplaceSheet: View {
 }
 
 struct ClockingAdjustmentSheet: View {
-    let day: ClockingDay
-    let onSubmit: (ClockingEventKind, String, String) -> ClockingAdjustmentError?
-    let onCancel: () -> Void
-    @State private var kind: ClockingEventKind
-    @State private var time: String
+    let store: ClockingStore
+    let fixedDate: String?
+    let onClose: (Bool) -> Void
+    @State private var date: Date
+    @State private var hasCheckIn = true
+    @State private var hasCheckOut = true
+    @State private var checkIn: Date
+    @State private var checkOut: Date
     @State private var reason = ""
     @State private var error: ClockingAdjustmentError?
+    @State private var isSending = false
 
-    init(
-        day: ClockingDay,
-        onSubmit: @escaping (ClockingEventKind, String, String) -> ClockingAdjustmentError?,
-        onCancel: @escaping () -> Void
-    ) {
-        self.day = day
-        self.onSubmit = onSubmit
-        self.onCancel = onCancel
-        let initialKind: ClockingEventKind = day.events.isEmpty ? .clockIn : .clockOut
-        _kind = State(initialValue: initialKind)
-        _time = State(initialValue: Self.shiftTime(day.shift, for: initialKind))
+    init(store: ClockingStore, fixedDate: String?, onClose: @escaping (Bool) -> Void) {
+        self.store = store
+        self.fixedDate = fixedDate
+        self.onClose = onClose
+        let initialDate = fixedDate.flatMap(Self.date(from:)) ?? Calendar.current.startOfDay(for: .now)
+        _date = State(initialValue: initialDate)
+        _checkIn = State(initialValue: Self.time(hour: 8, minute: 0))
+        _checkOut = State(initialValue: Self.time(hour: 17, minute: 0))
     }
+
+    private var dateText: String { ClockingMapper.dayString(date, in: .current) }
+    private var recorded: ClockingDay? { store.recordedDay(on: dateText) }
+    private var startText: String? { hasCheckIn ? Self.hhmm(checkIn) : nil }
+    private var endText: String? { hasCheckOut ? Self.hhmm(checkOut) : nil }
 
     var body: some View {
-        SheetScaffold(title: "Clocking adjustment · \(day.shortTitle)", subtitle: "Your manager checks it and corrects the timesheet in Aiku") {
-            VStack(alignment: .leading, spacing: 6) {
-                FieldLabel("Missing clocking")
-                SegmentedControl(options: [ClockingEventKind.clockIn, .clockOut], selection: kindBinding) { option in
-                    option == .clockIn ? "Clock in" : "Clock out"
+        SheetScaffold(
+            title: recorded == nil ? "Clocking adjustment" : "Request timesheet correction",
+            subtitle: "Your manager checks it and corrects the timesheet in Aiku"
+        ) {
+            VStack(spacing: 0) {
+                if fixedDate == nil {
+                    DatePicker("Date", selection: $date, in: dateRange, displayedComponents: .date)
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 52)
+                        .accessibilityIdentifier("clocking.adjustment.date")
+                } else {
+                    KeyValueRow("Date", recorded?.title ?? dateText)
+                }
+                if let recorded {
+                    RowDivider()
+                    KeyValueRow("Recorded", recorded.rangeLabel)
                 }
             }
-            VStack(alignment: .leading, spacing: 6) {
-                AikuTextField(
-                    kind == .clockOut ? "Time you left" : "Time you arrived",
-                    text: $time,
-                    placeholder: "16:30",
-                    error: error == .invalidTime ? error?.message : nil,
-                    keyboard: .numbersAndPunctuation
-                )
-                Text(kind == .clockOut ? "Your shift ended \(Self.shiftTime(day.shift, for: .clockOut))" : "Your shift started \(Self.shiftTime(day.shift, for: .clockIn))")
-                    .font(.aiku(13))
-                    .foregroundStyle(AikuColor.text3)
+            .font(.aiku(15))
+            .foregroundStyle(AikuColor.text)
+            .tint(AikuColor.primary)
+            .cardSurface()
+            VStack(spacing: 0) {
+                timeRow("Check-in time", isOn: $hasCheckIn, time: $checkIn)
+                RowDivider()
+                timeRow("Check-out time", isOn: $hasCheckOut, time: $checkOut)
             }
-            AikuTextField(
-                "Reason",
-                text: $reason,
-                placeholder: "Forgot to clock out at the door",
-                error: error == .missingReason ? error?.message : nil
-            )
+            .cardSurface()
+            Text("Fill in check-in, check-out, or both.")
+                .font(.aiku(13))
+                .foregroundStyle(AikuColor.text3)
+            AikuTextArea("Reason", text: $reason, placeholder: "Please explain what happened")
+            ForEach(store.adjustments(for: dateText)) { request in
+                InlineAlert(tone: request.tone, icon: .bell, title: "Already requested · \(request.statusLabel ?? request.status ?? "")", message: request.summary)
+            }
+            if let error {
+                InlineAlert(tone: .danger, title: "Can’t send this request", message: error.message)
+            }
         } footer: {
-            AikuButton("Request adjustment") {
-                error = onSubmit(kind, time, reason)
+            AikuButton("Submit request", isLoading: isSending) {
+                isSending = true
+                Task {
+                    switch await store.requestAdjustment(date: dateText, start: startText, end: endText, reason: reason) {
+                    case .success:
+                        onClose(true)
+                    case .failure(let failure):
+                        error = failure
+                    }
+                    isSending = false
+                }
             }
             .accessibilityIdentifier("clocking.adjustment.request")
-            AikuButton("Cancel", kind: .tertiary, size: .small, action: onCancel)
+            AikuButton("Cancel", kind: .tertiary, size: .small) { onClose(false) }
+        }
+        .onChange(of: dateText, initial: true) { _, _ in
+            error = nil
+            prefillFromRecorded()
         }
     }
 
-    private var kindBinding: Binding<ClockingEventKind> {
-        Binding {
-            kind
-        } set: { newKind in
-            if time == Self.shiftTime(day.shift, for: kind) {
-                time = Self.shiftTime(day.shift, for: newKind)
+    private var dateRange: ClosedRange<Date> {
+        let today = Calendar.current.startOfDay(for: .now)
+        let earliest = Self.date(from: store.earliestAdjustmentDate) ?? today
+        return earliest...today
+    }
+
+    private func timeRow(_ title: String, isOn: Binding<Bool>, time: Binding<Date>) -> some View {
+        HStack(spacing: 12) {
+            Toggle(isOn: isOn) {
+                Text(title)
+                    .font(.aiku(15, .semibold))
+                    .foregroundStyle(AikuColor.text)
             }
-            kind = newKind
+            .tint(AikuColor.primary)
+            .fixedSize()
+            Spacer(minLength: 8)
+            if isOn.wrappedValue {
+                DatePicker(title, selection: time, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+                    .tint(AikuColor.primary)
+            } else {
+                Text("Not changed")
+                    .font(.aiku(13))
+                    .foregroundStyle(AikuColor.text4)
+            }
         }
+        .padding(.horizontal, 14)
+        .frame(minHeight: 56)
     }
 
-    static func shiftTime(_ shift: String, for kind: ClockingEventKind) -> String {
-        let parts = shift.components(separatedBy: " – ")
-        guard parts.count == 2 else { return "" }
-        return kind == .clockIn ? parts[0] : parts[1]
+    private func prefillFromRecorded() {
+        guard let recorded else { return }
+        checkIn = recorded.firstIn.map { Self.time(seconds: $0) } ?? Self.time(hour: 8, minute: 0)
+        checkOut = recorded.lastOut.map { Self.time(seconds: $0) } ?? Self.time(hour: 17, minute: 0)
+        hasCheckIn = true
+        hasCheckOut = true
+    }
+
+    static func date(from text: String) -> Date? {
+        let parts = text.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        return Calendar.current.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+    }
+
+    static func time(hour: Int, minute: Int) -> Date {
+        Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: .now) ?? .now
+    }
+
+    static func time(seconds: Int) -> Date {
+        time(hour: seconds / 3600, minute: (seconds % 3600) / 60)
+    }
+
+    static func hhmm(_ date: Date) -> String {
+        let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
     }
 }

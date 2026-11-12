@@ -240,6 +240,11 @@ test('storefront loads GTM from the Google tag gateway path when the website has
         ->assertSee("var gtmId = 'GTM-TEST123';", false)
         ->assertSee('window.dataLayer = window.gtmDataLayer = window.dataLayer || [];', false);
 
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn($this->website);
+    $this->withoutVite()->followingRedirects()->get('http://'.$this->website->domain.'/app/login')->assertOk()
+        ->assertSee('"/gtg/gtm.js?id="', false)
+        ->assertDontSee('"https://www.googletagmanager.com/gtm.js?id="', false);
+
     expect(fn () => \App\Actions\Web\Website\UpdateWebsite::make()->action($this->website, ['google_tag_gateway_path' => '/gtg/"><script>']))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
 });

@@ -2,30 +2,45 @@
 
 namespace App\Actions\Catalogue\Shop\External\Wix;
 
+use App\Actions\Accounting\Invoice\UpdateInvoiceDate;
+use App\Actions\Helpers\Ticket\StoreTicket;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrderShippingEngineAsManual;
+use App\Actions\Ordering\Order\UpdateState\DispatchOrder;
+use App\Actions\Ordering\Order\UpdateState\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
+use App\Actions\Production\JobOrder\FillToOrder;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
+use App\Enums\Helpers\Ticket\TicketModuleEnum;
+use App\Enums\Helpers\Ticket\TicketTypeEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Ticket;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\SalesChannel;
+use App\Models\Procurement\PartnerShoppingListItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class StoreOrderFromWix extends OrgAction
 {
     /**
+     * With $fulfilledAt the order was already sent from Wix: it comes in invoiced and dispatched on that date,
+     * without a delivery note, bottles to fill or a fulfilment sent back to Wix. Its stock is adjusted by hand.
+     *
      * @throws \Throwable
      */
-    public function handle(Shop $shop, array $wixOrder): ?Order
+    public function handle(Shop $shop, array $wixOrder, ?string $fulfilledAt = null): ?Order
     {
         $externalId = Arr::get($wixOrder, 'id');
 
@@ -40,21 +55,19 @@ class StoreOrderFromWix extends OrgAction
         $result = $this->processWixLineItems($shop, $wixOrder);
 
         if (!empty($result['errors']) || empty($result['transactions'])) {
-            if (Cache::add($this->skippedOrderReportKey($shop, $externalId), true, now()->addDay())) {
-                \Sentry\withScope(function ($scope) use ($shop, $wixOrder, $result) {
-                    $scope->setContext('wix_order', [
-                        'shop'   => $shop->slug,
-                        'number' => Arr::get($wixOrder, 'number'),
-                        'errors' => $result['errors'],
-                    ]);
-                    \Sentry\captureMessage('Wix order skipped ('.$shop->slug.')');
-                });
-            }
+            $this->reportSkippedOrder(
+                $shop,
+                $wixOrder,
+                $result['errors'] ? array_column($result['errors'], 'message') : [__('The order has no products')],
+                collect($result['errors'])->contains(fn (array $error) => !$error['product_code']) ? __('Aiku only imports Wix products that have a SKU. Give each product above its SKU in Wix (the Aiku product code). The product sync at 12:00 and 17:00 UTC then adds it, and the order is imported within 15 minutes. Orders older than :days days are not looked for.', [
+                    'days' => (int) Arr::get($shop->settings, 'wix.order_from_days', 30),
+                ]) : null
+            );
 
             return null;
         }
 
-        return DB::transaction(function () use ($shop, $wixOrder, $externalId, $result) {
+        return DB::transaction(function () use ($shop, $wixOrder, $externalId, $result, $fulfilledAt) {
             $customer = StoreCustomerFromWix::run($shop, $wixOrder);
             $address  = StoreCustomerFromWix::make()->getFormattedAddress($wixOrder);
 
@@ -105,6 +118,10 @@ class StoreOrderFromWix extends OrgAction
                 $order = UpdateOrderShippingEngineAsManual::run($order, ['shipping_amount' => $shippingAmount]);
             }
 
+            if ($fulfilledAt) {
+                return $this->closeOrderFulfilledInWix($order, $fulfilledAt);
+            }
+
             if ($warehouse = $shop->organisation->warehouses()->first()) {
                 SendOrderToWarehouse::make()->action($order, [
                     'warehouse_id' => $warehouse->id
@@ -115,12 +132,52 @@ class StoreOrderFromWix extends OrgAction
         });
     }
 
-    /**
-     * Every poll offers the same order again until its products exist, so a skipped order is reported once a day.
-     */
-    public function skippedOrderReportKey(Shop $shop, string $wixOrderId): string
+    public function closeOrderFulfilledInWix(Order $order, string $fulfilledAt): Order
     {
-        return 'wix-order-skipped:'.$shop->id.':'.$wixOrderId;
+        FillToOrder::make()->pendingLines($order)->each(fn (PartnerShoppingListItem $line) => $line->update([
+            'state'          => ShoppingListItemStateEnum::DISMISSED,
+            'dismiss_reason' => 'fulfilled in Wix',
+            'dismissed_at'   => now(),
+        ]));
+
+        $order = FinaliseOrder::make()->action($order->refresh(), true);
+
+        UpdateInvoiceDate::run($order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->firstOrFail(), ['date' => $fulfilledAt]);
+
+        return DispatchOrder::make()->action($order, null, $fulfilledAt, repair: true);
+    }
+
+    /**
+     * Every poll offers the same order again until it can be imported, so one ticket is raised per Wix order,
+     * whatever its status, and the order comes in by itself once the cause is fixed.
+     *
+     * @param array<int, string> $problems
+     */
+    public function reportSkippedOrder(Shop $shop, array $wixOrder, array $problems, ?string $howToFix = null): ?Ticket
+    {
+        $externalId = (string) Arr::get($wixOrder, 'id');
+
+        if (Ticket::where('shop_id', $shop->id)->where('data->wix_order_id', $externalId)->exists()) {
+            return null;
+        }
+
+        $reference = $this->getOrderReference($shop, $wixOrder);
+
+        return rescue(fn () => StoreTicket::make()->action($shop->group, [
+            'subject'         => __('Wix order :reference was not imported into Aiku', ['reference' => $reference]),
+            'description'     => implode("\n", [
+                __('Wix order :number of :shop was not imported, so it has no order or delivery note in Aiku:', ['number' => Arr::get($wixOrder, 'number'), 'shop' => $shop->name]),
+                ...array_map(fn (string $problem) => '- '.$problem, $problems),
+                ...($howToFix ? ['', $howToFix] : []),
+            ]),
+            'type'            => TicketTypeEnum::HELP->value,
+            'kind'            => TicketKindEnum::BUG->value,
+            'module'          => TicketModuleEnum::DROPSHIPPING->value,
+            'priority'        => ChatPriorityEnum::HIGH->value,
+            'organisation_id' => $shop->organisation_id,
+            'shop_id'         => $shop->id,
+            'data'            => ['wix_order_id' => $externalId],
+        ]));
     }
 
     /**
@@ -137,10 +194,17 @@ class StoreOrderFromWix extends OrgAction
             $product = $this->findProduct($shop, $lineItem);
 
             if (!$product?->currentHistoricProduct) {
+                $sku  = Arr::get($lineItem, 'physicalProperties.sku');
+                $name = trim(Arr::get($lineItem, 'productName.original', '').' '.$this->getLineOptions($lineItem));
+
                 $errors[] = [
-                    'product_code' => Arr::get($lineItem, 'physicalProperties.sku', 'NO SKU'),
-                    'product_name' => Arr::get($lineItem, 'productName.original', 'NO NAME'),
-                    'message'      => $product ? 'Product has no historic asset' : 'Product not found in catalogue',
+                    'product_code' => $sku,
+                    'product_name' => $name,
+                    'message'      => match (true) {
+                        (bool) $product => __(':name (:sku) has no price history in Aiku', ['name' => $name, 'sku' => $product->code]),
+                        !$sku           => __(':name has no SKU in Wix', ['name' => $name]),
+                        default         => __(':name: SKU :sku is not a product of this shop in Aiku', ['name' => $name, 'sku' => $sku]),
+                    },
                 ];
 
                 continue;
@@ -160,6 +224,19 @@ class StoreOrderFromWix extends OrgAction
             'transactions' => $transactions,
             'errors'       => $errors,
         ];
+    }
+
+    /**
+     * The options the buyer chose (size, colour), as Wix shows them on the order, e.g. "(10ml)".
+     */
+    public function getLineOptions(array $lineItem): string
+    {
+        $options = collect(Arr::get($lineItem, 'descriptionLines', []))
+            ->map(fn (array $line) => Arr::get($line, 'plainText.original') ?? Arr::get($line, 'colorInfo.original'))
+            ->filter()
+            ->implode(', ');
+
+        return $options ? "($options)" : '';
     }
 
     /**

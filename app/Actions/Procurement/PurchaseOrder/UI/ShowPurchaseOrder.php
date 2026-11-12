@@ -256,7 +256,7 @@ class ShowPurchaseOrder extends OrgAction
                             'label'   => __('Packing instructions'),
                             'tooltip' => __('One page per product for the packers. Print a single product from the box icon next to its code.'),
                             'target'  => '_blank',
-                            'icon'    => 'fal fa-box-open',
+                            'icon'    => 'fal fa-file-pdf',
                             'key'     => 'packing_instructions',
                             'route'   => [
                                 'name'       => 'grp.org.procurement.purchase_orders.packing_instructions',
@@ -478,8 +478,8 @@ class ShowPurchaseOrder extends OrgAction
                     : Inertia::optional(fn () => DispatchedEmailsInOrderResource::collection(IndexDispatchedEmailsInOrder::run(parent: $purchaseOrder, prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))),
 
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))
-                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value))),
+                    fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value, auditScope: $this->historyAuditScope($purchaseOrder)))
+                    : Inertia::optional(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder, PurchaseOrderTabsEnum::HISTORY->value, auditScope: $this->historyAuditScope($purchaseOrder)))),
             ]
         )->table(
             $draftOrgAgent
@@ -495,7 +495,7 @@ class ShowPurchaseOrder extends OrgAction
             ->table(IndexPurchaseOrderComplianceDocuments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::COMPLIANCE->value))
             ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))
             ->table(IndexDispatchedEmailsInOrder::make()->tableStructure(prefix: PurchaseOrderTabsEnum::DISPATCHED_EMAILS->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: PurchaseOrderTabsEnum::HISTORY->value, withRecordColumn: true));
     }
 
     private function isAgentViewingOwnOrder(PurchaseOrder $purchaseOrder): bool
@@ -889,9 +889,18 @@ class ShowPurchaseOrder extends OrgAction
             $buyerCanEdit       => array_keys(PurchaseOrderStageEnum::MARKABLE_FIELDS),
             default             => [],
         };
+        $skippableKeys = match (true) {
+            $this->agentCanEdit => PurchaseOrderStageEnum::AGENT_SKIPPABLE,
+            $buyerCanEdit       => array_keys(PurchaseOrderStageEnum::SKIPS),
+            default             => [],
+        };
 
         return [
-            'stages'       => GetPurchaseOrderStages::make()->forUi($purchaseOrder, $markableFields),
+            'stages'       => GetPurchaseOrderStages::make()->forUi($purchaseOrder, $markableFields, $skippableKeys),
+            'skip_route'   => $skippableKeys ? [
+                'name'       => 'grp.models.purchase-order.skip_stage',
+                'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+            ] : null,
             'route'        => [
                 'name'       => 'grp.models.purchase-order.stage',
                 'parameters' => ['purchaseOrder' => $purchaseOrder->id],
@@ -919,6 +928,7 @@ class ShowPurchaseOrder extends OrgAction
             'required'        => $purchaseOrder->sample_required,
             'approved'        => $purchaseOrder->sample_approved_at !== null,
             'override_reason' => $purchaseOrder->sample_override_reason,
+            'skipped'         => $purchaseOrder->stageSkip('sample') !== null,
             'route'           => $buyerCanEdit ? [
                 'name'       => 'grp.models.purchase-order.update',
                 'parameters' => ['purchaseOrder' => $purchaseOrder->id],
@@ -928,11 +938,14 @@ class ShowPurchaseOrder extends OrgAction
 
     /**
      * Some suppliers start production without a deposit: the buyer or the agent can say so on an agent order
-     * while nothing is paid and no deposit amount is set, and take it back the same way.
+     * while nothing is paid and no deposit amount is set, and take it back the same way. While the order is submitted
+     * it is how the terms are agreed without a deposit, on any supplier order, even one already set to no deposit.
      */
     private function getDepositChoice(PurchaseOrder $purchaseOrder, bool $buyerCanEdit): ?array
     {
-        if (!$purchaseOrder->isAgentOrder() || !($buyerCanEdit || $this->agentCanEdit)
+        $agrees = $purchaseOrder->state === PurchaseOrderStateEnum::SUBMITTED;
+
+        if ((!$purchaseOrder->isAgentOrder() && !$agrees) || !($buyerCanEdit || $this->agentCanEdit)
             || $purchaseOrder->deposit_paid_at !== null
             || (float) $purchaseOrder->deposit_amount > 0
             || $purchaseOrder->depositPayments()->exists()) {
@@ -941,6 +954,7 @@ class ShowPurchaseOrder extends OrgAction
 
         return [
             'not_needed' => $purchaseOrder->deposit_amount !== null,
+            'agrees'     => $agrees,
             'route'      => [
                 'name'       => 'grp.models.purchase-order.update',
                 'parameters' => ['purchaseOrder' => $purchaseOrder->id],
@@ -1555,5 +1569,24 @@ class ShowPurchaseOrder extends OrgAction
 
                 return (float)$row->expenses * (float)$rate;
             });
+    }
+
+    private function historyAuditScope(PurchaseOrder $purchaseOrder): array
+    {
+        return [
+            [
+                'type'   => $purchaseOrder->getMorphClass(),
+                'labels' => [$purchaseOrder->id => $purchaseOrder->reference],
+                'shops'  => null,
+            ],
+            [
+                'type'   => 'PurchaseOrderTransaction',
+                'labels' => $purchaseOrder->purchaseOrderTransactions()->with('orgStock:id,code')->get(['id', 'org_stock_id'])
+                    ->mapWithKeys(fn ($transaction) => [$transaction->id => $transaction->orgStock?->code ?? '#'.$transaction->id])
+                    ->union(collect($purchaseOrder->data['removed_transactions'] ?? [])->map(fn ($code) => __(':code (removed)', ['code' => $code])))
+                    ->all(),
+                'shops'  => null,
+            ],
+        ];
     }
 }

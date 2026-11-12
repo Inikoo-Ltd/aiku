@@ -42,6 +42,7 @@ defineProps<{
     data: object
     filterOptions?: { organisation?: FilterOption[]; supplier?: FilterOption[] }
     purchase_orders_import?: { preview_route: routeType; import_route: routeType; order_columns: { heading: string; organisation: string }[] } | null
+    oneRowPerPurchaseOrder?: boolean
 }>()
 
 const isImportDialogOpen = ref(false)
@@ -79,7 +80,7 @@ watch([organisation, supplier], () => {
         <PillFilterBar :label="ctrans('AW company')" :options="filterOptions.organisation" :selected="organisation" @select="(value) => (organisation = value)" />
         <PillFilterBar v-if="filterOptions.supplier?.length" dropdown :label="ctrans('Supplier')" :options="filterOptions.supplier" :selected="supplier" @select="(value) => (supplier = value)" />
     </div>
-    <TablePurchaseOrders :data="data" />
+    <TablePurchaseOrders :data="data" :oneRowPerPurchaseOrder="oneRowPerPurchaseOrder" />
     <SupplierPurchaseOrdersImportDialog
         v-if="purchase_orders_import"
         v-model:visible="isImportDialogOpen"

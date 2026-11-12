@@ -109,7 +109,7 @@ const tabs = computed<{ key: Tab; label: string; count: number; tooltip?: string
     { key: "open", label: ctrans("Open"), count: summary.value.open, tooltip: ctrans("Every order not completed yet: In process (not sent to the supplier yet), Submitted and Confirmed, plus orders already received whose products are not online yet") },
     { key: "in_process", label: ctrans("In process"), count: summary.value.in_process, tooltip: ctrans("Orders still being prepared, not sent to the supplier yet") },
     { key: "submitted", label: ctrans("Submitted"), count: summary.value.submitted, tooltip: ctrans("Orders sent to the supplier, not confirmed by them yet") },
-    { key: "confirmed", label: ctrans("Confirmed"), count: summary.value.confirmed, tooltip: ctrans("Orders the supplier has confirmed, not received yet") },
+    { key: "confirmed", label: ctrans("Agreed"), count: summary.value.confirmed, tooltip: ctrans("Orders whose terms the supplier agreed, not received yet") },
     { key: "needs_action", label: ctrans("Needs action"), count: summary.value.needs_action, tooltip: ctrans("Open orders whose current stage is overdue, or due within the next 3 days (at risk)") },
     { key: "import", label: ctrans("Import"), count: summary.value.import, tooltip: ctrans("Orders submitted to suppliers outside our customs area (UK, or EU for EU organisations), not yet completed. Orders still in process are left out") },
     { key: "completed", label: ctrans("Completed"), count: summary.value.completed, tooltip: ctrans("Orders that have gone through every stage, up to their products being online") }
@@ -317,7 +317,7 @@ function previewDelete(candidates: JourneyRibbon[]): void {
 const stateLabels: Record<string, string> = {
     in_process: ctrans("In process"),
     submitted: ctrans("Submitted"),
-    confirmed: ctrans("Confirmed")
+    confirmed: ctrans("Agreed")
 }
 
 function linesSummary(ribbon: JourneyRibbon): string {

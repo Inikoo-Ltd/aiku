@@ -42,6 +42,7 @@ import { Navigation, Thumbs } from 'swiper/modules'
 // import AvailableVolOfferLabel from "@/Components/Utils/Iris/AvailableVolOfferLabel.vue"
 import DiscountByType from "@/Components/Utils/Label/DiscountByType.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import { activeSpecialOfferPercentageOff } from "@/Composables/stepDiscountAgainstOffer"
 import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLabel.vue"
 import { getBestOffer as getBestOfferfromComposable } from "@/Composables/useOffers"
 import ReviewsIris from "@/Iris/Components/IrisBlocks/ReviewsIris.vue"
@@ -164,6 +165,14 @@ const bestOffer = computed(() => {
   return getBestOffer(props.product?.offers_data)
 })
 
+const specialOfferPercentageOff = computed<number>(() =>
+    activeSpecialOfferPercentageOff(
+        bestOffer.value,
+        props.product?.offers_data,
+        Boolean(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)
+    )
+)
+
 const _desktopAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
 const _mobileAddToBasket = ref<InstanceType<typeof EcomAddToBasketv2> | null>(null)
 
@@ -202,7 +211,14 @@ const onSelectStepQuantityMobile = async (quantity: number) => {
 
 const patchVariantCustomerData = inject<((productId: number, patch: Record<string, any>) => void) | null>("patchVariantCustomerData", null)
 
-const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder((props.listProducts ?? []) as any[]))
+const ladderOptions = computed<LadderOption[]>(() => buildPriceLadder(
+    (props.listProducts ?? []) as any[],
+    (item: any) => activeSpecialOfferPercentageOff(
+        getBestOffer(item.offers_data),
+        item.offers_data,
+        Boolean(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)
+    )
+))
 
 const currentSizeLabel = computed<string | null>(() => {
     const listed = (props.listProducts ?? []).find((item: any) => item.id === product.value.id) as any
@@ -472,7 +488,7 @@ onMounted(async () => {
                 <StepDiscountOffer
                     v-else-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
                     class="mt-3"
-                    :stepDiscount="product.step_discount"
+                    :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff"
                     :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
                     :originalPrice="product.price"
                     :unit="product.unit"
@@ -487,7 +503,7 @@ onMounted(async () => {
                 <div class="mt-4 flex gap-2 mb-6">
                     <!-- ONLY show when NOT coming soon -->
                     <div v-if="(product.status !== 'coming-soon' || product.pre_order) && layout?.iris?.is_logged_in" class="w-full">
-                        <EcomAddToBasketv2 v-if="product.stock || product.pre_order" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData"
+                        <EcomAddToBasketv2 v-if="product.stock || product.pre_order" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData" :specialOfferPercentageOff="specialOfferPercentageOff"
                             :key="keyCustomer" :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                         <div v-else>
@@ -791,7 +807,7 @@ onMounted(async () => {
         <StepDiscountOffer
             v-else-if="layout?.iris?.is_logged_in && product.stock && !product.is_coming_soon && product.step_discount?.steps?.length"
             class="mt-4"
-            :stepDiscount="product.step_discount"
+            :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff"
             :currencyCode="product.currency_code ?? layout?.iris?.currency?.code"
             :originalPrice="product.price"
             :unit="product.unit"
@@ -808,7 +824,7 @@ onMounted(async () => {
                 v-if="layout?.iris?.is_logged_in && ((product.stock && product.status !== 'coming-soon') || product.pre_order)"
                 ref="_mobileAddToBasket"
                 v-model:product="product"
-                :customerData="customerData"
+                :customerData="customerData" :specialOfferPercentageOff="specialOfferPercentageOff"
                 :holdQuantity="showPriceLadder" :sizeLabel="currentSizeLabel"
                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
             />

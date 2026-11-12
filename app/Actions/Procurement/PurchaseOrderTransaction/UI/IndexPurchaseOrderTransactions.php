@@ -234,8 +234,8 @@ class IndexPurchaseOrderTransactions extends OrgAction
     }
 
     /**
-     * The moves to or from another supplier stored on each line, with the name of who moved the units and the slug of
-     * the other purchase order so the label can link to it.
+     * The moves to or from another supplier stored on each line, with the name of who moved the units (and who undid the
+     * move) and the slug of the other purchase order so the label can link to it.
      *
      * @return Closure(PurchaseOrderTransaction): array{from: array<string, mixed>|null, to: list<array<string, mixed>>}
      */
@@ -247,17 +247,19 @@ class IndexPurchaseOrderTransactions extends OrgAction
         ]));
 
         $userNames = $moves->isEmpty() ? collect() : DB::table('users')
-            ->whereIn('id', $moves->pluck('by')->filter()->unique())
+            ->whereIn('id', $moves->pluck('by')->merge($moves->pluck('undone_by'))->filter()->unique())
             ->selectRaw('id, coalesce(contact_name, username) as name')
             ->pluck('name', 'id');
 
         $purchaseOrderSlugs = $moves->isEmpty() ? collect() : DB::table('purchase_orders')
             ->whereIn('id', $moves->pluck('purchase_order_id')->filter()->unique())
+            ->whereNull('deleted_at')
             ->pluck('slug', 'id');
 
         $withDetails = fn (array $move) => array_merge($move, [
-            'by_name' => $userNames->get(Arr::get($move, 'by')),
-            'slug'    => $purchaseOrderSlugs->get(Arr::get($move, 'purchase_order_id')),
+            'by_name'        => $userNames->get(Arr::get($move, 'by')),
+            'undone_by_name' => $userNames->get(Arr::get($move, 'undone_by')),
+            'slug'           => $purchaseOrderSlugs->get(Arr::get($move, 'purchase_order_id')),
         ]);
 
         return fn (PurchaseOrderTransaction $transaction) => [

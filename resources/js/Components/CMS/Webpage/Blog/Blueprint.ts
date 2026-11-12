@@ -114,5 +114,11 @@ export default {
 			key: ["properties","text"],
 			type: "textProperty",
 		},
+		{
+			name: "Script",
+			key: ["script"],
+			type: "script",
+			information: "HTML and scripts shown after the article. Keep the article text in the content: search engines may not read what a script draws.",
+		},
 	],
 }

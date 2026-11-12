@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Webpage\Traits\WithWebpageUrlSearch;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
@@ -34,6 +35,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexSubDepartmentWebpages extends OrgAction
 {
     use WithWebAuthorisation;
+    use WithWebpageUrlSearch;
     use WithWebpageSubNavigation;
 
     private Website $website;
@@ -84,6 +86,7 @@ class IndexSubDepartmentWebpages extends OrgAction
                 $value = strip_tags($value);
                 $query->whereAnyWordStartWith('webpages.code', $value)
                     ->orWhereAnyWordStartWith('webpages.url', $value);
+                $this->orWhereCanonicalUrlEndsWithSearchedPath($query, $value);
             });
         });
 

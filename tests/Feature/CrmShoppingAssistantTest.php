@@ -162,7 +162,7 @@ test('a shopping assistant turn runs a data tool, presents its products and logs
             ['shown', $addOn->id, 'add_ons', 1, 'used_to_order', $reasonText, $message->id],
         ]);
 
-    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat/completions') && str_contains($request['messages'][0]['content'], 'Reply in '.$language.'.'));
+    Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat/completions') && str_contains($request['messages'][0]['content'], 'Reply in '.$language.'.') && $request['cache_control'] === ['type' => 'ephemeral']);
     Http::assertNotSent(fn (Request $request) => str_contains($request->body(), 'Zelda') || str_contains($request->body(), 'Quillfeather') || str_contains($request->body(), $email));
 });
 
@@ -439,7 +439,7 @@ test('the answer job stores the assistant reply and the conversation returns it 
         ->and(array_keys($response->json()))->toBe(['conversation', 'status', 'pending', 'messages'])
         ->and($messages)->toHaveCount(2)
         ->and(array_keys($messages[0]))->toBe(['id', 'role', 'body', 'created_at'])
-        ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'groups'])
+        ->and(array_keys($messages[1]))->toBe(['id', 'role', 'body', 'created_at', 'follow_ups', 'basket_added', 'links', 'groups'])
         ->and($messages[1]['role'])->toBe('assistant')
         ->and($messages[1]['body'])->toBe('Worth bringing back.')
         ->and($messages[1]['follow_ups'])->toBe(['Anything new?'])
@@ -821,6 +821,16 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
 
     $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [...$websiteParameters, $ordered->ulid]))->assertOk();
     $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [...$websiteParameters, $elsewhere->ulid]))->assertNotFound();
+
+    $shopParameters = [$this->organisation->slug, $this->shop->slug];
+    $this->get(route('grp.org.shops.show.ai_salesman.show', [...$shopParameters, ...$query]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('filters.website_locked', true)
+            ->where('routes.conversation.name', 'grp.org.shops.show.ai_salesman.conversations.show')
+            ->missing('pageHead.subNavigation')
+            ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->sort()->values()->all() === collect([$ordered->ulid, $clicked->ulid])->sort()->values()->all()));
+    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $ordered->ulid]))->assertOk();
+    $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $elsewhere->ulid]))->assertNotFound();
 });
 
 function shoppingAssistantSpend(Website $website, float $cost, ?string $createdAt = null, ShoppingAssistantEntryPointEnum $entryPoint = ShoppingAssistantEntryPointEnum::SEARCH): void
@@ -1213,4 +1223,315 @@ test('the assistant report counts what Keep exploring offered, was seen and clic
             'rate_limit' => ['value' => 2, 'previous' => 0],
             'budget'     => ['value' => 0, 'previous' => 1],
         ]);
+});
+
+test('the assistant search finds a product by its code typed loosely, and names an out of stock one apart without offering it', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $suffix   = Str::lower(Str::random(5));
+    $word     = 'zorb'.$suffix;
+    $inStock  = shoppingAssistantProduct($this->product);
+    $soldOut  = shoppingAssistantProduct($this->product);
+    $inStock->update(['code' => 'Zq'.$suffix.'A-04']);
+    $soldOut->update(['code' => 'Zq'.$suffix.'-29', 'name' => ucfirst($word).' Tote Bag (41x31cm)', 'available_quantity' => 0]);
+    DB::table('products')->whereIn('id', [$inStock->id, $soldOut->id])->update(['is_in_website' => true]);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 0 : 1 => 1.0]);
+    Http::fake([
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('search_products', ['query' => $word.' bag'])]], 'tool_calls'))
+            ->push(shoppingAssistantPresent(['reply' => 'The '.$soldOut->name.' is out of stock right now, but this one is close.', 'must_haves' => [$inStock->id, $soldOut->id]])),
+        '*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $found        = $tools->execute($conversation, 'search_products', ['query' => 'zq'.$suffix.'a 04']);
+    $missing      = $tools->execute($conversation, 'search_products', ['query' => 'do you have zq'.$suffix.' -29']);
+    $byName       = $tools->execute($conversation, 'search_products', ['query' => $word.' bag']);
+    $turn         = AskShoppingAssistant::run($conversation, $word.' bag');
+
+    expect($found['error'])->toBeNull()
+        ->and($found['content']['products'][0])->toMatchArray(['id' => $inStock->id, 'exact_code_match' => true])
+        ->and($found['products'][0]['id'])->toBe($inStock->id)
+        ->and(collect($missing['products'])->pluck('id')->all())->not->toContain($soldOut->id)
+        ->and($missing['content']['out_of_stock'][0])->toBe(['name' => $soldOut->name, 'family' => $soldOut->family->name, 'exact_code_match' => true])
+        ->and($missing['content']['out_of_stock'][0])->not->toHaveKey('id')
+        ->and($byName['content']['out_of_stock'][0])->toBe(['name' => $soldOut->name, 'family' => $soldOut->family->name])
+        ->and(collect($byName['products'])->pluck('id')->all())->toContain($inStock->id)->not->toContain($soldOut->id)
+        ->and($turn['reply'])->toBe('The '.$soldOut->name.' is out of stock right now, but this one is close.')
+        ->and($turn['message']->flags)->toBe(['dropped_unknown_product'])
+        ->and($turn['groups']['must_haves']->pluck('id')->all())->toBe([$inStock->id]);
+});
+
+test('the shopping assistant reply may repeat a percentage or size from a product or family name, and the code the customer typed', function () {
+    $assistant = AskShoppingAssistant::make();
+    $names     = "Iconic Classic Tote Bag - Zodiac Sun - Black 6oz (40x36cm)\nNomad Sari 100% Indian Cotton Tote Bags";
+
+    expect($assistant->onlyGivenNumbers('I couldn\'t find an exact match for "iconic -29", but here are the Iconic tote bags from the Nomad Sari 100% Indian Cotton Tote Bags range.', 'iconic -29', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Save 10% on the 100% cotton bags.', 'iconic -29', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('The Zodiac Sun tote (40x36cm) in 6oz cotton is a good pick.', 'tote bags', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('It is 40 pounds for 36.', 'tote bags', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('I added the Himalayan Salt Lamp - Apx 1.5-2kg to your basket.', 'salt lamps', 'Himalayan Salt Lamp - Apx 1.5-2kg'))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('It weighs 1.5 kilos and costs 2.', 'salt lamps', 'Himalayan Salt Lamp - Apx 1.5-2kg'))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('These are 100 pounds.', 'iconic -29', $names))->toBeFalse();
+});
+
+test('the assistant adds the products it showed to the basket when asked, one of each, leaving lines already there, and shows up to twelve products per group', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $new      = shoppingAssistantLiveProduct($this->product);
+    $held     = shoppingAssistantLiveProduct($this->product);
+    $notShown = shoppingAssistantLiveProduct($this->product);
+    $many     = collect(range(1, 13))->map(fn () => shoppingAssistantProduct($this->product));
+    $shown    = shoppingAssistantShown($customer, [$new->id, $held->id]);
+    $conversation = $shown->conversation;
+
+    $heldLine = \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make()->handle($customer, [['product_id' => $held->id, 'quantity' => 3]])['lines'][0]['transaction_id'];
+    $many->each(fn (Product $product) => shoppingAssistantStoppedOrdering($customer, $product));
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('add_to_basket', ['product_ids' => [$new->id, $held->id, $notShown->id]])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'I have put 2 of them in your basket.']))
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('products_they_stopped_ordering', ['limit' => 24])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'Here is a wider selection.', 'must_haves' => $many->pluck('id')->all()]))]);
+
+    $turn   = AskShoppingAssistant::run($conversation, 'add them to my basket');
+    $basket = DB::table('transactions')->where('order_id', $customer->refresh()->current_order_in_basket_id)->where('model_type', 'Product')->whereNull('deleted_at')->pluck('quantity_ordered', 'model_id')->map(fn ($quantity) => (int) $quantity)->all();
+    $added  = ShoppingAssistantEvent::where('shopping_assistant_conversation_id', $conversation->id)->where('type', ShoppingAssistantEventTypeEnum::ADDED)->get();
+
+    expect($turn['reply'])->toBe(__('I have added the products to your basket.', [], $conversation->language_code))
+        ->and($turn['message']->flags)->toBe(['reply_replaced_number'])
+        ->and($turn['message']->tool_calls[0]['added_product_ids'])->toBe([$new->id])
+        ->and($basket)->toBe([$held->id => 3, $new->id => 1])
+        ->and($added->pluck('product_id')->all())->toBe([$new->id])
+        ->and($added->first()->shopping_assistant_message_id)->toBe($shown->id)
+        ->and($heldLine)->toBeInt();
+
+    $messages = $this->actingAs($webUser, 'retina')->getJson('http://'.$website->domain.'/json/shopping-assistant/'.$conversation->ulid)->assertOk()->json('messages');
+
+    expect(collect($messages)->last()['basket_added'])->toBe([$new->id])
+        ->and(GetShoppingAssistantTools::make()->execute($conversation, 'add_to_basket', ['product_ids' => [$notShown->id]])['error'])->not->toBeNull()
+        ->and(GetShoppingAssistantTools::make()->execute($conversation, 'add_to_basket', ['product_ids' => [$notShown->id]], [$notShown->id])['basket'])->toBe([$notShown->id]);
+
+    $wider = AskShoppingAssistant::run($conversation->fresh(), 'I need a bigger selection');
+
+    expect($wider['groups']['must_haves'])->toHaveCount(GetShoppingAssistantTools::MAX_PER_GROUP)
+        ->and(GetShoppingAssistantTools::MAX_PER_GROUP)->toBe(12);
+});
+
+test('a customer who asks to delete the conversation gets the fixed cleared answer, cannot open or continue it, and staff still see it', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $product  = shoppingAssistantLiveProduct($this->product);
+    $shown    = shoppingAssistantShown($customer, [$product->id]);
+    $conversation = $shown->conversation;
+    $url      = 'http://'.$website->domain.'/json/shopping-assistant/';
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('clear_conversation', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'All deleted for good.', 'must_haves' => [$product->id], 'follow_ups' => ['Anything else?']]))]);
+
+    $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, 'delete this conversation');
+    $turn            = AskShoppingAssistant::make()->answer($conversation, $customerMessage);
+    $conversation->refresh();
+
+    expect($turn['reply'])->toBe(__('This conversation has been cleared and will not be shown to you again.', [], $conversation->language_code))
+        ->and($turn['groups']['must_haves'])->toBeEmpty()
+        ->and($turn['follow_ups'])->toBe([])
+        ->and($conversation->status->value)->toBe('cleared')
+        ->and($conversation->messages()->count())->toBe(4)
+        ->and($conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::CUSTOMER)->latest('id')->value('body'))->toBe('delete this conversation')
+        ->and(\App\Http\Resources\Web\ShoppingAssistantConversationsResource::statusLabel($conversation->status))->toBe(__('Cleared by customer'))
+        ->and(json_encode(GetShoppingAssistantTools::make()->definitions()))->not->toContain('"properties":[]');
+
+    $this->actingAs($webUser, 'retina')->getJson($url.$conversation->ulid.'?after='.$customerMessage->id)->assertOk()->assertJsonPath('status', 'cleared');
+    $this->actingAs($webUser, 'retina')->getJson($url.$conversation->ulid)->assertNotFound();
+    $this->actingAs($webUser, 'retina')->postJson($url.'ask', ['message' => 'Still there?', 'conversation' => $conversation->ulid])->assertNotFound();
+});
+
+test('the assistant search finds the products of a family by its code or the start of it, and orders matches by price when asked', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $suffix   = Str::lower(Str::random(6));
+    $word     = 'vex'.$suffix;
+    $family   = $this->product->family;
+    $original = DB::table('product_categories')->where('id', $family->id)->first(['code', 'is_in_website']);
+    [$cheap, $mid, $dear] = collect([2, 10, 30])->map(function (int $price) use ($word) {
+        $product = shoppingAssistantProduct($this->product);
+        $product->update(['name' => ucfirst($word).' lamp '.$price, 'price' => $price]);
+
+        return $product;
+    })->all();
+    DB::table('products')->whereIn('id', [$cheap->id, $mid->id, $dear->id])->update(['is_in_website' => true]);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 0 : 1 => 1.0]);
+    Http::fake(['*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()])]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $familyIds    = fn (array $result) => Product::whereIn('id', array_column($result['products'], 'id'))->pluck('family_id')->unique()->values()->all();
+
+    DB::table('product_categories')->where('id', $family->id)->update(['code' => 'Zf'.$suffix, 'is_in_website' => true]);
+    try {
+        $byCode  = $tools->execute($conversation, 'search_products', ['query' => 'zf'.$suffix]);
+        $byStart = $tools->execute($conversation, 'search_products', ['query' => 'zf'.substr($suffix, 0, 4)]);
+    } finally {
+        DB::table('product_categories')->where('id', $family->id)->update((array) $original);
+    }
+
+    $cheapest = $tools->execute($conversation, 'search_products', ['query' => $word.' lamp', 'sort' => 'cheapest']);
+    $dearest  = $tools->execute($conversation, 'search_products', ['query' => $word.' lamp', 'sort' => 'most_expensive']);
+    $whole    = $tools->execute($conversation, 'search_products', ['query' => '', 'sort' => 'cheapest', 'limit' => 3]);
+    $prices   = Product::whereIn('id', array_column($whole['products'], 'id'))->pluck('price', 'id');
+
+    expect($byCode['content']['products'])->not->toBeEmpty()
+        ->and(collect($byCode['content']['products'])->every(fn (array $item) => ($item['family_code_match'] ?? false) === true))->toBeTrue()
+        ->and($familyIds($byCode))->toBe([$family->id])
+        ->and($byCode['content']['matched_families'])->toBe([['family_id' => $family->id, 'name' => $family->name]])
+        ->and($byStart['content']['products'])->not->toBeEmpty()
+        ->and(Product::find($byStart['products'][0]['id'])->family_id)->toBe($family->id)
+        ->and(collect($byStart['content']['products'])->contains(fn (array $item) => isset($item['family_code_match'])))->toBeFalse()
+        ->and(array_column($cheapest['products'], 'id'))->toBe([$cheap->id, $mid->id, $dear->id])
+        ->and(array_column($dearest['products'], 'id'))->toBe([$dear->id, $mid->id, $cheap->id])
+        ->and($cheapest['content']['note'])->toContain('lowest first')
+        ->and(json_encode($cheapest['content']))->not->toContain('price":')
+        ->and($whole['products'])->toHaveCount(3)
+        ->and(collect($whole['products'])->map(fn (array $product) => (float) $prices[$product['id']])->all())->toBe(collect($whole['products'])->map(fn (array $product) => (float) $prices[$product['id']])->sort()->values()->all())
+        ->and($tools->execute($conversation, 'search_products', ['query' => ''])['error'])->not->toBeNull();
+});
+
+test('the assistant offers what sold mostly in the run-up to last Christmas, leaving out all-year sellers, thin sales, products launched that year and products out of stock', function () {
+    $season   = \App\Actions\CRM\RangeAdvisor\GetChristmasBestSellers::make()->season();
+    $inSeason = $season[0]->addDays(10)->toDateTimeString();
+    $offSeason = $season[1]->subMonths(8)->toDateTimeString();
+    $seasonal = shoppingAssistantProduct($this->product);
+    $allYear  = shoppingAssistantProduct($this->product);
+    $thin     = shoppingAssistantProduct($this->product);
+    $soldOut  = shoppingAssistantProduct($this->product);
+    $launched = shoppingAssistantProduct($this->product);
+    $buyers   = collect(range(1, 5))->map(fn () => shoppingAssistantCustomer($this->shop));
+    DB::table('products')->whereIn('id', [$seasonal->id, $allYear->id, $thin->id, $soldOut->id])->update(['created_at' => $season[0]->subYears(3)]);
+    DB::table('products')->where('id', $launched->id)->update(['created_at' => $season[0]->addDays(5)]);
+
+    foreach ($buyers as $buyer) {
+        shoppingAssistantOrderLine($buyer, $seasonal, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $launched, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $soldOut, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $allYear, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $allYear, $offSeason, 20);
+    }
+    shoppingAssistantOrderLine($buyers->first(), $seasonal, $offSeason, 20);
+    shoppingAssistantOrderLine($buyers->first(), $thin, $inSeason, 20);
+    $soldOut->update(['available_quantity' => 0]);
+    Illuminate\Support\Facades\Cache::forget('range_advisor:christmas_best_sellers:'.$this->shop->id.':'.$season[1]->year);
+
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $result       = GetShoppingAssistantTools::make()->execute($conversation, 'best_sellers_last_christmas', ['limit' => 24]);
+    $ids          = array_column($result['products'], 'id');
+
+    expect($result['error'])->toBeNull()
+        ->and($ids)->toContain($seasonal->id)
+        ->and($ids)->not->toContain($allYear->id, $thin->id, $soldOut->id, $launched->id)
+        ->and(collect($result['products'])->firstWhere('id', $seasonal->id)['reason_code'])->toBe('sold_last_christmas')
+        ->and(collect($result['content']['products'])->firstWhere('id', $seasonal->id)['why'])->toBe('Sold well last Christmas')
+        ->and(array_keys($result['content']['products'][0]))->toBe(['id', 'name', 'family', 'family_id', 'why']);
+
+    Illuminate\Support\Facades\Cache::forget('range_advisor:christmas_best_sellers:'.$this->shop->id.':'.$season[1]->year);
+});
+
+test('dispatch times and shipping cost are answered with a sentence built from our data under the reply, never with a figure written by the AI', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $buyer    = shoppingAssistantCustomer($this->shop);
+    shoppingAssistantStorefront($this);
+    $product  = shoppingAssistantLiveProduct($this->product);
+    collect(range(1, 60))->each(fn () => shoppingAssistantOrderLine($buyer, $product, now()->subDays(4)->toDateTimeString(), 10));
+    DB::table('orders')->where('customer_id', $buyer->id)->update(['state' => 'dispatched', 'dispatched_at' => now()->subDays(4)->addHours(50)]);
+    Illuminate\Support\Facades\Cache::forget('shopping_assistant:dispatch_days:'.$this->shop->id);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $locale       = $conversation->language_code;
+    $dispatch     = $tools->execute($conversation, 'dispatch_times', []);
+    $emptyBasket  = $tools->execute($conversation, 'shipping_cost', []);
+
+    \App\Actions\Iris\Basket\StoreEcomBasketTransactions::make()->handle($customer, [['product_id' => $product->id, 'quantity' => 2]]);
+    $basket = DB::table('orders')->where('customer_id', $customer->id)->where('state', 'creating');
+    $basket->update(['shipping_engine' => 'auto', 'is_shipping_tbc' => false, 'shipping_amount' => 7.5]);
+    $priced = $tools->execute($conversation, 'shipping_cost', []);
+    $basket->update(['shipping_amount' => 0]);
+    $free = $tools->execute($conversation, 'shipping_cost', []);
+    $basket->update(['is_shipping_tbc' => true]);
+    $toBeConfirmed = $tools->execute($conversation, 'shipping_cost', []);
+    $basket->update(['is_shipping_tbc' => false, 'shipping_amount' => 7.5]);
+
+    expect($dispatch['fact'])->toBe(__('Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.', ['days' => 3], $locale))
+        ->and(json_encode($dispatch['content']))->not->toMatch('/\d/')
+        ->and($emptyBasket)->not->toHaveKey('fact')
+        ->and($emptyBasket['content']['available'])->toBeFalse()
+        ->and($priced['fact'])->toContain(Illuminate\Support\Number::currency(7.5, $this->shop->currency->code))
+        ->and(json_encode($priced['content']))->not->toMatch('/\d/')
+        ->and($free['fact'])->toBe(__('Shipping for your current basket is free. It can change as you add or remove products.', [], $locale))
+        ->and($toBeConfirmed['fact'])->toBe(__('Shipping for your current basket is still to be confirmed: the price is decided later, it is not free.', [], $locale));
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('dispatch_times', [])]], 'tool_calls'))
+        ->push(shoppingAssistantModelReply(['content' => 'We send orders out quickly.'], 'stop'))
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('shipping_cost', [])]], 'tool_calls'))
+        ->push(shoppingAssistantModelReply(['content' => 'It will be about £5 and arrive in 2 days.'], 'stop'))]);
+
+    $first  = AskShoppingAssistant::run($conversation, 'How fast do you dispatch?');
+    $second = AskShoppingAssistant::run($conversation->fresh(), 'How much is shipping?');
+
+    expect($first['reply'])->toBe("We send orders out quickly.\n\n".$dispatch['fact'])
+        ->and($first['message']->flags)->toBeNull()
+        ->and($second['reply'])->toBe($priced['fact'])
+        ->and($second['message']->flags)->toBe(['reply_replaced_number'])
+        ->and($second['message']->body)->not->toContain('£5');
+
+    Illuminate\Support\Facades\Cache::forget('shopping_assistant:dispatch_days:'.$this->shop->id);
+});
+
+test('a question about a range is answered from the family description, with no products and a link to the family page', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $product  = shoppingAssistantLiveProduct($this->product);
+    $family   = $product->family;
+    $before   = DB::table('product_categories')->where('id', $family->id)->first(['webpage_id', 'description', 'is_in_website', 'state']);
+
+    DB::table('webpages')->where('id', $product->webpage->id)->update(['canonical_url' => 'https://www.example.test/ranges/oils']);
+    DB::table('product_categories')->where('id', $family->id)->update(['webpage_id' => $product->webpage->id, 'description' => '<p>Pure oils, tested for purity.</p><p>Sold in 50ml bottles.</p>', 'is_in_website' => true, 'state' => 'in_process']);
+
+    try {
+        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH, ['web_user_id' => $webUser->id]);
+        $tools        = GetShoppingAssistantTools::make();
+        $information  = $tools->execute($conversation, 'family_information', ['family_id' => $family->id]);
+
+        Http::fake(['*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('family_information', ['family_id' => $family->id])]], 'tool_calls'))
+            ->push(shoppingAssistantModelReply(['content' => 'They are pure oils, tested for purity, in 50ml bottles. Prices are on each product card.'], 'stop'))]);
+
+        $turn  = AskShoppingAssistant::run($conversation, 'why are these oils special and expensive?');
+        $last  = collect($this->actingAs($webUser, 'retina')->getJson('http://'.$website->domain.'/json/shopping-assistant/'.$conversation->ulid)->assertOk()->json('messages'))->last();
+
+        expect($information['error'])->toBeNull()
+            ->and($information['content']['family'])->toBe($family->name)
+            ->and($information['content']['description'])->toBe('Pure oils, tested for purity. Sold in 50ml bottles.')
+            ->and($information['families'])->toBe([$family->id])
+            ->and($tools->execute($conversation, 'family_information', ['family_id' => 0])['error'])->not->toBeNull()
+            ->and($turn['reply'])->toBe('They are pure oils, tested for purity, in 50ml bottles. Prices are on each product card.')
+            ->and($turn['message']->flags)->toBeNull()
+            ->and($turn['groups']['must_haves'])->toBeEmpty()
+            ->and($turn['message']->tool_calls[0]['family_ids'])->toBe([$family->id])
+            ->and($last['links'])->toHaveCount(1)
+            ->and($last['links'][0]['label'])->toBe($family->name)
+            ->and($last['links'][0]['url'])->toEndWith('/ranges/oils')
+            ->and($last['groups'])->toBe(['must_haves' => [], 'add_ons' => []]);
+    } finally {
+        DB::table('product_categories')->where('id', $family->id)->update((array) $before);
+    }
 });

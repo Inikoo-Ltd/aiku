@@ -312,6 +312,27 @@ test('a shop administrator manages its chats without being an agent', function (
         ->and(CloseChatSession::make()->getCurrentAgent($session))->not->toBeNull();
 });
 
+test('a chat manager with an agent profile is listed on the CRM agents page, HELP-4658', function () {
+    $this->withoutVite();
+    setPermissionsTeamId($this->user->group_id);
+
+    $admin = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $admin->assignRole(RolesEnum::getRoleName(RolesEnum::SHOP_ADMIN->value, $this->shop));
+    $agent = ChatAgent::create([
+        'user_id'              => $admin->id,
+        'max_concurrent_chats' => 5,
+        'language_id'          => 68,
+        'is_online'            => false,
+        'is_available'         => false,
+        'current_chat_count'   => 0,
+    ]);
+
+    actingAs($this->user);
+    get(route('grp.org.chat.agents.show', $this->organisation->slug))
+        ->assertOk()
+        ->assertInertia(fn ($page) => expect(collect($page->toArray()['props']['data']['data'])->pluck('id'))->toContain($agent->id));
+});
+
 test('a customer service supervisor works chat as an agent and supervises it', function () {
     $session = ChatSession::create([
         'ulid'             => (string) \Illuminate\Support\Str::ulid(),

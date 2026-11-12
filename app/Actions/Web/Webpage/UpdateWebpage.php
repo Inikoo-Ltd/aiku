@@ -14,6 +14,7 @@ use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageSeo;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\Traits\WithTrimmedWebpageUrl;
 use App\Actions\Web\Webpage\Traits\WithWebpageHydrators;
 use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateHasLiveWebpage;
@@ -41,6 +42,7 @@ class UpdateWebpage extends OrgAction
     use WithNoStrictRules;
     use WithImageSeo;
     use WithWebpageHydrators;
+    use WithTrimmedWebpageUrl;
 
     private Webpage $webpage;
 
@@ -194,6 +196,8 @@ class UpdateWebpage extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
+        $this->trimSlashesFromUrl();
+
         $seoImageUrl = trim((string) $this->get('seo_image_url', ''));
         if ($seoImageUrl !== '' && !preg_match('/^[a-z][a-z0-9+.-]*:\/\//i', $seoImageUrl)) {
             $this->set('seo_image_url', 'https://'.$seoImageUrl);

@@ -8,6 +8,8 @@
 
 namespace App\Actions\Traits\Authorisations;
 
+use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -22,10 +24,15 @@ trait WithArtisanClockingEditAuthorisation
             return true;
         }
 
-        return $request->user()->authTo([
-            "human-resources.{$this->organisation->id}.edit",
-            "org-supervisor.{$this->organisation->id}.human-resources",
-            "accounting.{$this->organisation->id}.edit",
+        return static::canEditClockings($request->user(), $this->organisation);
+    }
+
+    public static function canEditClockings(User $user, Organisation $organisation): bool
+    {
+        return $user->authTo([
+            "human-resources.{$organisation->id}.edit",
+            "org-supervisor.{$organisation->id}.human-resources",
+            "accounting.{$organisation->id}.edit",
         ]);
     }
 }

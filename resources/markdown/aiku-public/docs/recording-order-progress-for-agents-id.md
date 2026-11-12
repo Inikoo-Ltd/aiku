@@ -10,7 +10,7 @@ order: 2
 ---
 
 <aside class="tldr">
-Untuk agen koordinasi. Perusahaan pembeli mengikuti setiap pesanan melalui delapan tahap: PO Launch (pesanan diluncurkan), Deposit & Go (deposit dibayar, jalan), Making It Happen (barang diproduksi), Ready to Roll (siap berangkat), Clean Hand Over (serah terima bersih), Homeward Bound (dalam perjalanan pulang), Counted & Costed (dihitung dan dihitung biayanya) dan Mission Complete (selesai). Tahap 1 sampai 5 adalah bagian pekerjaan Anda. Ia bisa melihat sendiri kapan barang dikirim dan kapan barang tiba, tetapi tidak bisa melihat apa yang terjadi di pihak pemasok. Bagian itu berasal dari Anda: pada setiap pesanan ke pemasok, Anda mencatat kapan deposit dibayar, kapan produksi dimulai, kapan produksi selesai, tanggal yang Anda perkirakan barang siap, dan hari Anda menyerahkan barang kepada agen pengiriman. Catat setiap tanggal pada hari kejadiannya. Sisi pembeli dijelaskan di <a href="/docs/reading-the-po-journey-board">reading the PO journey board</a> (bahasa Inggris).
+Untuk agen koordinasi. Perusahaan pembeli mengikuti setiap pesanan melalui delapan tahap: PO Launch (pesanan diluncurkan), Agreement (kesepakatan), Making It Happen (barang diproduksi), Ready to Roll (siap berangkat), Clean Hand Over (serah terima bersih), Homeward Bound (dalam perjalanan pulang), Counted & Costed (dihitung dan dihitung biayanya) dan Mission Complete (selesai). Tahap 1 sampai 5 adalah bagian pekerjaan Anda. Ia bisa melihat sendiri kapan barang dikirim dan kapan barang tiba, tetapi tidak bisa melihat apa yang terjadi di pihak pemasok. Bagian itu berasal dari Anda: pada setiap pesanan ke pemasok, Anda mencatat kapan deposit dibayar, kapan produksi dimulai, kapan produksi selesai, tanggal yang Anda perkirakan barang siap, dan hari Anda menyerahkan barang kepada agen pengiriman. Catat setiap tanggal pada hari kejadiannya. Sisi pembeli dijelaskan di <a href="/docs/reading-the-po-journey-board">reading the PO journey board</a> (bahasa Inggris).
 </aside>
 
 ## Mengapa tanggal Anda penting
@@ -41,7 +41,22 @@ Clean Hand Over adalah saat pekerjaan Anda pada sebuah pesanan selesai. Artinya 
 
 Pengiriman yang sudah diberangkatkan selalu menyelesaikan tahap ini. Perusahaan pembeli juga dapat memberi sebuah tahap namanya sendiri untuk Anda, misalnya "Sent to forwarder": nama itu tampil di pesanan.
 
-Tahap berjalan berurutan. Catat setiap tanggal pada hari kejadiannya. Tanggal yang lebih dari satu hari di masa lalu, tahap yang dicatat sebelum tahap sebelumnya, atau tanggal yang Anda hapus akan meminta alasan dari Anda. Alasan itu disimpan di riwayat pesanan beserta nama Anda, sehingga pembeli dapat melihat mengapa.
+## Tahap berjalan berurutan
+
+Tahap berjalan benar-benar berurutan, satu demi satu:
+
+- **Selama pesanan berstatus Submitted** (dikirim), hanya tahap 2, Agreement, yang dapat diselesaikan: deposit dibayar, atau pesanan ditandai **No deposit needed** (tidak perlu deposit). Salah satunya menyepakati ketentuan dan pesanan tampil sebagai **Agreed** (disepakati). Sampai saat itu semua tombol berikutnya berwarna abu-abu, dan menunjuk tombol itu menjelaskan apa yang harus dilakukan lebih dulu.
+- **Mulai dari Agreed**, hanya tombol tahap yang sedang dikerjakan pesanan, beserta tahap-tahap sebelumnya, yang aktif. Tahap berikutnya tetap abu-abu sampai tahap sebelumnya selesai, dan menunjuknya menyebutkan tahap yang harus diselesaikan lebih dulu.
+- Langkah otomatis tidak pernah ditahan: goods receipt, daftar kontainer, pembayaran, dan kontainer yang diberangkatkan mencatat apa yang terjadi, apa pun tahapnya.
+
+Catat setiap tanggal pada hari kejadiannya. Tanggal yang lebih dari satu hari di masa lalu, atau tanggal yang Anda hapus, akan meminta alasan dari Anda. Alasan itu disimpan di riwayat pesanan beserta nama Anda, sehingga pembeli dapat melihat mengapa.
+
+## Saat sebuah langkah tidak terjadi
+
+Pesanan tidak pernah tersangkut pada langkah yang tidak dikerjakan untuknya: setiap tahap punya tombol lewati. Melewati meminta alasan singkat, tampil pada tahap sebagai **Skipped** (dilewati) beserta siapa, kapan, dan mengapa, masuk ke riwayat pesanan, dan dapat dibatalkan.
+
+- **QC skipped** (QC dilewati) adalah milik Anda: pada Ready to Roll, saat tidak ada pemeriksaan mutu untuk pesanan itu, sehingga Anda dapat mencatat **Handed over** tanpa menunggunya.
+- Lewati lainnya milik perusahaan pembeli: **Sample skipped** (sampel dilewati), **Shipped direct** (barang tidak melalui gudang Anda), **Compliance skipped** (kepatuhan dilewati) dan **Handed over without checks** (diserahkan tanpa pemeriksaan).
 
 ## Apa yang dicatat oleh perusahaan pembeli
 
@@ -49,7 +64,7 @@ Ada tanggal-tanggal yang tidak bisa Anda masukkan sendiri, dan ini memang diseng
 
 - **Sample approved** (sampel disetujui). Pembeli menyetujui sampel. Hanya untuk produk baru; pesanan ulang tidak memiliki sampel.
 - **Approved ready date** (tanggal siap yang disetujui). Pembeli menyetujui tanggal yang Anda usulkan. Sejak saat itu tanggalnya terkunci, dan tanggal itu menetapkan target: pemeriksaan mutu jatuh tempo pada hari itu, dan serah terima bersih dalam tujuh hari sesudahnya.
-- **QC passed** (QC lulus). Pembeli mengonfirmasinya, biasanya berdasarkan bukti mutu dari Anda. Persetujuan QC melepaskan pembayaran pelunasan: sebelum itu, membayar pelunasan akan meminta alasan.
+- **QC passed** (QC lulus). Pembeli mengonfirmasinya, biasanya berdasarkan bukti mutu dari Anda. Persetujuan QC melepaskan pembayaran pelunasan: sebelum itu, membayar pelunasan akan meminta alasan. Jika tidak ada pemeriksaan mutu, Anda menandai **QC skipped** sebagai gantinya, beserta alasannya.
 - **Compliance pack complete** (paket kepatuhan lengkap).
 
 <a href="/docs/your-clean-handover-score-id">Skor Serah Terima Bersih</a> Anda dihitung dari tanggal-tanggal ini dan dari tanggal serah terima yang Anda catat. Tanggal serah terima adalah bagian yang Anda catat sendiri, jadi catatlah hari barang benar-benar sampai di agen pengiriman. Pembeli melihat siapa yang mencatatnya dan kapan, dapat memeriksanya terhadap tanda terima agen pengiriman, dan dapat mengoreksinya; koreksi disimpan di riwayat pesanan beserta alasannya.
@@ -97,10 +112,10 @@ Jika pesanan dibatalkan karena kesalahan, atau perusahaan pembeli ternyata tetap
 
 <aside class="wayfinder">
 <b>Di mana mengekliknya di aiku</b><br>
-Masuk → <b>Purchase Orders</b> (Pesanan Pembelian) → buka pesanan. Setiap pesanan pembelian ditujukan kepada salah satu pemasok Anda. Tahap-tahapnya ada di bagian atas halaman: gunakan tombol <b>Production started</b>, <b>Production done</b> dan, jika Anda menyerahkan barang kepada agen pengiriman, <b>Handed over</b> di sana. Deposit dicatat dengan <b>Pay deposit</b> di panel pembayaran. Lalu buka <b>Edit</b>: <b>Proposed ready date</b> dan <b>Agent's order number</b> ada di bagian <b>Clean handover</b>.
+Masuk → <b>Purchase Orders</b> (Pesanan Pembelian) → buka pesanan. Setiap pesanan pembelian ditujukan kepada salah satu pemasok Anda. Tahap-tahapnya ada di bagian atas halaman: gunakan tombol <b>Production started</b>, <b>Production done</b>, <b>QC skipped</b> dan, jika Anda menyerahkan barang kepada agen pengiriman, <b>Handed over</b> di sana. Tombol abu-abu milik tahap berikutnya: tunjuk untuk melihat apa yang harus dilakukan lebih dulu. Deposit dicatat dengan <b>Pay deposit</b> di panel pembayaran. Lalu buka <b>Edit</b>: <b>Proposed ready date</b> dan <b>Agent's order number</b> ada di bagian <b>Clean handover</b>.
 </aside>
 
 <aside class="wayfinder">
 <b>Izin yang Anda perlukan</b><br>
-Akun masuk untuk organisasi agen Anda. Anda hanya dapat menandai tahap milik Anda sendiri, pada pesanan Anda sendiri: produksi dimulai, produksi selesai dan diserahkan pada tahap, deposit sebagai pembayaran, serta tanggal siap yang diusulkan dan nomor pesanan Anda di halaman edit. Persetujuan sampel, tanggal siap yang disetujui, QC, dan kepatuhan tidak terbuka bagi Anda, karena dicatat oleh perusahaan pembeli.
+Akun masuk untuk organisasi agen Anda. Anda hanya dapat menandai tahap milik Anda sendiri, pada pesanan Anda sendiri: produksi dimulai, produksi selesai dan diserahkan pada tahap, QC skipped, deposit sebagai pembayaran, serta tanggal siap yang diusulkan dan nomor pesanan Anda di halaman edit. Persetujuan sampel, tanggal siap yang disetujui, QC, dan kepatuhan tidak terbuka bagi Anda, karena dicatat oleh perusahaan pembeli.
 </aside>

@@ -171,6 +171,7 @@ struct PillTabs: View {
                 }
                 .padding(.horizontal, 16)
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
             .padding(.horizontal, -16)
             .onAppear {
                 if let selectedID {

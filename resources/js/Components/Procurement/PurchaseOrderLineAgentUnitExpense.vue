@@ -9,6 +9,7 @@ import { ref, watch } from "vue"
 import { router } from "@inertiajs/vue3"
 import InputNumber from "primevue/inputnumber"
 import { ctrans } from "@/Composables/useTrans"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { routeType } from "@/types/route"
 
@@ -60,11 +61,13 @@ function save() {
 				v-bind="locale.unitCostInputOptions(item.net_currency)"
 				:min="0"
 				:disabled="saving"
+				:placeholder="locale.currencyFormatUnitCost(item.net_currency, 0)"
 				size="small"
 				inputClass="!w-28 !py-0.5 !text-xs"
 				@blur="save"
 				@keydown.enter="save"
 			/>
+			<LoadingIcon v-if="saving" class="text-gray-400" />
 		</label>
 		<div v-if="error" class="text-red-600">{{ error }}</div>
 	</div>

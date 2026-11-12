@@ -25,6 +25,7 @@ return [
         'allegro_users', 'amazon_users', 'ebay_users', 'magento_users', 'shopify_users', 'tiktok_users', 'wix_users', 'woo_commerce_users',
         'shopify_user_has_fulfilments', 'tiktok_user_has_*', 'wc_user_has_products',
         'shipper_accounts', 'carrier_rate_cards', 'staff_messages', 'staff_message_*', 'email_archive_messages',
+        'bank_connections', 'bank_transactions',
         'telescope_*', 'migrations', 'pg_stat_statements*',
     ],
 

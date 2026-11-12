@@ -12,6 +12,7 @@ use App\Actions\Traits\WithVarnishBan;
 use App\Actions\Web\Website\Cloudflare\PurgeCloudflareWebsitePages;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -134,9 +135,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 
     protected function getWebpageTypeBlog(Webpage $webpage): string
     {
-        $blogCategory = $webpage->getBlogCategory();
-
-        return ($blogCategory ? str_replace('_', '-', $blogCategory->value).'/' : 'blog/').$webpage->url;
+        return WebpageSubTypeEnum::blogUrlPrefix($webpage->getBlogCategory()).$webpage->url;
     }
 
     protected function getWebpageTypeCatalogue(Webpage $webpage): string

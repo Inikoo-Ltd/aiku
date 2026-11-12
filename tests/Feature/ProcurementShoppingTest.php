@@ -1666,6 +1666,47 @@ test('the goods receipt is the record that holds: it replaces the stock sheet ro
         ->and($imported['warnings'])->toBe(["Moving Stock: $supplierProduct->code imported, but already received through $receipt->reference on another purchase order: check it is not the same goods"]);
 });
 
+test('goods the stock sheet or container list puts in the agent warehouse confirm their submitted order and mark it in production', function () {
+    [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
+    $supplierProduct = $orgSupplierProduct->supplierProduct;
+
+    $submittedOrder = function (string $reference) use ($orgSupplier, $supplierProduct) {
+        $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+        $line          = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 100]);
+        $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now(), 'production_started_at' => null, 'reference' => $reference]);
+        $line->updateQuietly(['state' => PurchaseOrderTransactionStateEnum::SUBMITTED]);
+
+        return $purchaseOrder;
+    };
+
+    $purchaseOrder = $submittedOrder('AWIndo-902-UK');
+    $sheetLine     = '"'.implode('","', array_replace(array_fill(0, 30, ''), [2 => $supplierProduct->code, 7 => '100', 26 => 'PO-902 UK'])).'"';
+    Illuminate\Support\Facades\Http::fake(fn (Illuminate\Http\Client\Request $request) => Illuminate\Support\Facades\Http::response(
+        str_contains($request->url(), 'htmlview') ? '{name: "Packed Already"}' : implode("\n", ['"header"', $sheetLine])
+    ));
+
+    App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromSheet::run($this->agent, $purchaseOrder->organisation, 'sheet-id', true);
+    expect($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SUBMITTED);
+
+    $imported = App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromSheet::run($this->agent, $purchaseOrder->organisation, 'sheet-id');
+
+    expect($imported['rows'][0]['purchase_order_id'])->toBe($purchaseOrder->id)
+        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and($purchaseOrder->production_started_at)->not->toBeNull()
+        ->and($purchaseOrder->purchaseOrderTransactions()->value('state'))->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED);
+
+    App\Models\Procurement\AgentWarehouseStock::where('supplier_product_id', $supplierProduct->id)->delete();
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SETTLED]);
+    $containerOrder = $submittedOrder('AWChina-903-SK');
+
+    $containerList = writeChinaContainerList('SK AWChina-903.xlsx', [[$supplierProduct->code, 50, 2, true]]);
+    App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromContainerList::run($this->agent, $containerOrder->organisation, $containerList);
+    unlink($containerList);
+
+    expect($containerOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+        ->and($containerOrder->production_started_at)->not->toBeNull();
+});
+
 test('agent order in warehouse stage follows its goods receipts, checks and packing', function () {
     [$orgSupplier, $orgSupplierProduct] = createAgentOrgSupplierWithProduct($this);
     $supplierProduct = $orgSupplierProduct->supplierProduct;

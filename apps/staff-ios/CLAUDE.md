@@ -17,7 +17,7 @@ Most screens still run on sample data so developers can see each screen before i
 
 - Each area keeps its sample data and its `@Observable` store in `Features/<Area>/Models/` (Foundation only, no SwiftUI).
 - When a screen is wired to real data, remove the sample data it no longer uses.
-- Wired to the API so far: sign in, sign out, profile and permissions.
+- Wired to the API so far: sign in, sign out, profile, permissions, and Clocking (status, timesheets, QR clocking with camera and location, adjustment requests, clocking notes, leave list and leave requests) through `mobile/clocking`.
 
 ## Backend
 

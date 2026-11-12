@@ -14,9 +14,18 @@ struct LocationsDetailView: View {
     @Environment(AppRouter.self) private var router
     @Environment(ToastCenter.self) private var toasts
     @State private var store = LocationsStore.shared
+    @Environment(\.apiClient) private var apiClient
     @State private var sheet: LocationsDetailSheet?
 
     var body: some View {
+        locationContent
+            .task(id: code) {
+                await store.loadLocation(code: code, apiClient: apiClient)
+            }
+    }
+
+    @ViewBuilder
+    private var locationContent: some View {
         if let location = store.warehouse.locationOrFallback(code: code) {
             content(location)
         } else {
@@ -54,6 +63,16 @@ struct LocationsDetailView: View {
                 }
                 SectionHeading("Location actions")
                 actions
+            } else if store.isWaitingForSkos(in: location) {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Loading SKOs…")
+                        .font(.aiku(13))
+                        .foregroundStyle(AikuColor.text3)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Loading SKOs")
             } else if location.pallets.isEmpty {
                 HelperText("No SKOs in this location.")
             }

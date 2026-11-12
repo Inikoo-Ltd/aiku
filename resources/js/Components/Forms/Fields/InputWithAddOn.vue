@@ -6,6 +6,7 @@
 
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureInputWithAddOn from '@/Components/Pure/PureInputWithAddOn.vue'
 import { faDollarSign } from '@far'
@@ -14,7 +15,7 @@ import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faSpinnerThird } from '@fad'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faDollarSign)
 
-defineProps<{
+const props = defineProps<{
     form: any,
     fieldName: string,
     options?: any,
@@ -23,6 +24,10 @@ defineProps<{
         leftAddOn?: {
             icon?: string | string[],
             label?: string,
+            labelFrom?: {
+                field: string,
+                options: Record<string, string>,
+            },
         }
         rightAddOn?: {
             icon?: string | string[],
@@ -31,6 +36,14 @@ defineProps<{
         readonly?: boolean;
     }
 }>()
+
+const leftAddOn = computed(() => {
+    const leftAddOnData = props.fieldData?.leftAddOn
+    const labelFrom = leftAddOnData?.labelFrom
+    const labelOfSelectedValue = labelFrom ? labelFrom.options?.[props.form[labelFrom.field]] : null
+
+    return labelOfSelectedValue ? { ...leftAddOnData, label: labelOfSelectedValue } : leftAddOnData
+})
 </script>
 
 <template>
@@ -41,6 +54,7 @@ defineProps<{
             @update:modelValue="() => form.errors[fieldName] = null"
             :inputName="fieldName"
             v-bind="fieldData"
+            :leftAddOn="leftAddOn"
             :isError="form.errors[fieldName]"
         >
             <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">

@@ -68,6 +68,8 @@ use App\Models\Traits\HasSearch;
  * @property \Illuminate\Support\Carbon|null $locked_at
  * @property int|null $locked_by_user_id
  * @property array<array-key, mixed>|null $lock_data
+ * @property \Illuminate\Support\Carbon|null $publish_scheduled_at
+ * @property int|null $publish_scheduled_by_user_id
  * @property WebpageStateEnum $state
  * @property WebpageTypeEnum $type
  * @property WebpageSubTypeEnum $sub_type
@@ -187,6 +189,7 @@ class Webpage extends Model implements Auditable, HasMedia
         'is_different_when_logged_in' => 'boolean',
         'locked_at'                   => 'datetime',
         'lock_data'                   => 'array',
+        'publish_scheduled_at'        => 'datetime',
     ];
 
     protected $attributes = [
@@ -226,7 +229,13 @@ class Webpage extends Model implements Auditable, HasMedia
     protected array $auditInclude = [
         'code',
         'title',
+        'description',
+        'breadcrumb_label',
         'url',
+        'index_page',
+        'follow_link',
+        'seo_image_id',
+        'seo_image_url',
         'state',
         'ready_at',
         'live_at',
@@ -236,11 +245,29 @@ class Webpage extends Model implements Auditable, HasMedia
         'locked_at',
         'locked_by_user_id',
         'lock_data',
+        'publish_scheduled_at',
+        'publish_scheduled_by_user_id',
     ];
 
     public function lockedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'locked_by_user_id');
+    }
+
+    public function publishScheduledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'publish_scheduled_by_user_id');
+    }
+
+    /**
+     * Blogs made from a mailshot are published with the layout the Beefree editor sends from the
+     * browser, so they can not be published by the scheduler.
+     */
+    public function canBeScheduledForPublishing(): bool
+    {
+        return $this->type == WebpageTypeEnum::BLOG
+            && $this->sub_type != WebpageSubTypeEnum::MAILSHOT
+            && $this->state != WebpageStateEnum::CLOSED;
     }
 
     public function isLocked(): bool

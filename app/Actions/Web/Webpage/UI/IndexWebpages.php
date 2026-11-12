@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage\UI;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\Web\Webpage\Traits\WithWebpageUrlSearch;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
 use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
@@ -38,6 +39,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexWebpages extends OrgAction
 {
     use WithWebAuthorisation;
+    use WithWebpageUrlSearch;
     use WithWebpageSubNavigation;
 
     private Group|Organisation|Website|Fulfilment|Webpage $parent;
@@ -315,6 +317,7 @@ class IndexWebpages extends OrgAction
                 $value = strip_tags($value);
                 $query->whereAnyWordStartWith('webpages.code', $value)
                     ->orWhereAnyWordStartWith('webpages.url', $value);
+                $this->orWhereCanonicalUrlEndsWithSearchedPath($query, $value);
             });
         });
 

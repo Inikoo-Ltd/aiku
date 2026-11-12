@@ -1,7 +1,34 @@
 import SwiftUI
 
+struct ScreenRefreshAction {
+    let action: @MainActor () async -> Void
+}
+
+extension EnvironmentValues {
+    @Entry var screenRefresh: ScreenRefreshAction?
+}
+
+extension View {
+    func screenRefreshable(_ action: @escaping @MainActor () async -> Void) -> some View {
+        environment(\.screenRefresh, ScreenRefreshAction(action: action))
+    }
+}
+
+private struct ContentRefresh: ViewModifier {
+    let refresh: ScreenRefreshAction?
+
+    func body(content: Content) -> some View {
+        if let refresh {
+            content.refreshable { await refresh.action() }
+        } else {
+            content
+        }
+    }
+}
+
 struct ScreenScaffold<Header: View, Content: View, Footer: View>: View {
     @Environment(ToastCenter.self) private var toasts
+    @Environment(\.screenRefresh) private var screenRefresh
     var showsTabBar = true
     var scrolls = true
     var spacing: CGFloat = 14
@@ -38,6 +65,7 @@ struct ScreenScaffold<Header: View, Content: View, Footer: View>: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .scrollDismissesKeyboard(.interactively)
+                .modifier(ContentRefresh(refresh: screenRefresh))
             } else {
                 content
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

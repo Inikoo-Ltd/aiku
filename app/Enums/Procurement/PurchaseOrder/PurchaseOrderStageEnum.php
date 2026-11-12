@@ -40,10 +40,56 @@ enum PurchaseOrderStageEnum: string
         'approved_ready_at'      => self::IN_PRODUCTION,
         'produced_at'            => self::READY,
         'handed_over_at'         => self::HANDED_OVER,
-        'compliance_complete_at' => self::ARRIVED,
+        'compliance_complete_at' => self::READY,
         'production_started_at'  => self::IN_PRODUCTION,
         'qc_passed_at'           => self::READY,
     ];
+
+    /**
+     * What a person may skip, with the stage it belongs to, so an order in strict stage order never gets stuck. Shipped
+     * direct, QC skipped and Handed over without checks pass their stage; Sample skipped and Compliance skipped stand in
+     * for that step wherever it is asked for.
+     */
+    public const array SKIPS = [
+        'sample'       => self::IN_PRODUCTION,
+        'in_warehouse' => self::IN_WAREHOUSE,
+        'qc'           => self::READY,
+        'compliance'   => self::READY,
+        'handed_over'  => self::HANDED_OVER,
+    ];
+
+    /**
+     * Agents skip only QC, on their own orders, so Ready to Roll never waits on the buyer to record a check that was not done.
+     */
+    public const array AGENT_SKIPPABLE = ['qc'];
+
+    public const array STAGE_PASSING_SKIPS = [
+        'in_warehouse' => self::IN_WAREHOUSE,
+        'qc'           => self::READY,
+        'handed_over'  => self::HANDED_OVER,
+    ];
+
+    public static function skipLabels(): array
+    {
+        return [
+            'sample'       => __('Sample skipped'),
+            'in_warehouse' => __('Shipped direct'),
+            'qc'           => __('QC skipped'),
+            'compliance'   => __('Compliance skipped'),
+            'handed_over'  => __('Handed over without checks'),
+        ];
+    }
+
+    public static function skipDescriptions(): array
+    {
+        return [
+            'sample'       => __('No sample is approved for this order: the later checks stop asking for it.'),
+            'in_warehouse' => __('The goods do not go through the agent\'s warehouse: the order moves on to Ready to Roll.'),
+            'qc'           => __('No quality check is done for this order: Ready to Roll counts as passed.'),
+            'compliance'   => __('No compliance check is done for this order before it ships.'),
+            'handed_over'  => __('The goods are handed over before every Ready to Roll check is done.'),
+        ];
+    }
 
     /**
      * Dates that plan ahead rather than record what happened: they may be in the future.
@@ -159,8 +205,8 @@ enum PurchaseOrderStageEnum: string
     {
         return [
             'draft'      => __('Draft'),
-            'submitted'  => __('Sent, not confirmed'),
-            'confirmed'  => __('Confirmed'),
+            'submitted'  => __('Sent, not agreed'),
+            'confirmed'  => __('Agreed'),
             'at_factory' => __('Deposit, QC or handed over'),
             'dispatched' => __('Dispatched'),
             'arrived'    => __('Arrived'),
@@ -198,8 +244,8 @@ enum PurchaseOrderStageEnum: string
     public static function labels(): array
     {
         return [
-            'submitted'     => __('PO Launch'),
-            'deposit_paid'  => __('Deposit & Go'),
+            'submitted'     => __('PO Submitted'),
+            'deposit_paid'  => __('Agreement'),
             'in_production' => __('Making It Happen'),
             'in_warehouse'  => __('In warehouse'),
             'ready'         => __('Ready to Roll'),
@@ -213,7 +259,7 @@ enum PurchaseOrderStageEnum: string
     {
         return [
             'submitted'     => __('Day Zero'),
-            'deposit_paid'  => __('Payment agreed'),
+            'deposit_paid'  => __('Terms and deposit agreed'),
             'in_production' => __('Production'),
             'in_warehouse'  => __('Goods arrived at the agent warehouse, checked and packed'),
             'ready'         => __('Final checks'),
@@ -229,6 +275,7 @@ enum PurchaseOrderStageEnum: string
     public static function captions(): array
     {
         return [
+            'deposit_paid'  => __('Terms agreed with the supplier'),
             'in_production' => __('In production at the supplier'),
             'handed_over'   => __('Available to ship'),
         ];
@@ -238,7 +285,7 @@ enum PurchaseOrderStageEnum: string
     {
         return [
             'submitted_at'           => __('Submitted'),
-            'confirmed_at'           => __('Accepted'),
+            'confirmed_at'           => __('Agreed'),
             'deposit_paid_at'        => __('Deposit paid'),
             'sample_approved_at'     => __('Sample approved'),
             'production_started_at'  => __('Production started'),
@@ -285,13 +332,13 @@ enum PurchaseOrderStageEnum: string
     public function steps(): array
     {
         return match ($this) {
-            self::SUBMITTED     => ['confirmed_at'],
+            self::SUBMITTED     => [],
             self::DEPOSIT_PAID  => [],
             self::IN_PRODUCTION => ['sample_approved_at', 'proposed_ready_at', 'approved_ready_at'],
             self::IN_WAREHOUSE  => ['warehouse_arrived_at', 'warehouse_checked_at', 'warehouse_packed_at'],
-            self::READY         => ['produced_at', 'balance_paid_at'],
+            self::READY         => ['produced_at', 'balance_paid_at', 'compliance_complete_at'],
             self::HANDED_OVER   => [],
-            self::ARRIVED       => ['dispatched_at', 'arrived_at', 'customs_released_at', 'compliance_complete_at'],
+            self::ARRIVED       => ['dispatched_at', 'arrived_at', 'customs_released_at'],
             self::RECEIVED      => ['checked_at', 'placed_at', 'online_at'],
         };
     }

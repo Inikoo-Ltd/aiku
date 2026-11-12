@@ -6,7 +6,9 @@ struct RootView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(AuthStore.self) private var authStore
     @Environment(Session.self) private var session
+    @Environment(\.apiClient) private var apiClient
     private let theme = ThemeStore.shared
+    private let warehouseStore = WarehouseStore.shared
 
     var body: some View {
         Group {
@@ -30,6 +32,15 @@ struct RootView: View {
                 session.apply(profile)
             }
         }
+        .task(id: authStore.profile?.id) {
+            guard let userID = authStore.profile?.id, userID > 0 else { return }
+            await warehouseStore.load(for: userID, apiClient: apiClient)
+            if let warehouse = warehouseStore.selected {
+                session.profile.warehouseName = warehouse.name
+                session.profile.warehouseCode = warehouse.code
+                session.profile.organisation = warehouse.organisation.name
+            }
+        }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             Task {
@@ -46,6 +57,8 @@ struct RootView: View {
 
     private func signOut() {
         permissionStore.clear()
+        warehouseStore.reset()
+        LocationsStore.shared.resetToSample()
         Task { await authStore.signOut() }
     }
 }

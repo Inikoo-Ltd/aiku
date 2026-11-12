@@ -513,6 +513,9 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'delete_blockers'   => null,
             'extra_costs'       => round((float) $row->cost_extra + (float) $row->cost_shipping + (float) $row->cost_duties + (float) $row->cost_tax, 2) ?: null,
             'state'             => $row->state,
+            'skipped_stages'    => collect(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::STAGE_PASSING_SKIPS)
+                ->filter(fn ($stage, string $key) => Arr::has($data, "stage_skips.$key"))
+                ->map(fn ($stage) => $stage->value)->values()->all(),
             'lines'             => (int) $row->draft_lines,
             'cancelled_lines'   => (int) $row->draft_cancelled_lines,
             'pending_price_changes' => (int) $row->pending_price_changes,

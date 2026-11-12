@@ -21,7 +21,7 @@ class ShowApiPortfolio extends RetinaApiAction
      */
     public function handle(Portfolio $portfolio): Portfolio
     {
-        return $portfolio->load('item');
+        return $portfolio->load(['item.department', 'item.subDepartment', 'item.family']);
     }
 
     public function asController(Portfolio $portfolio, ActionRequest $request): Portfolio

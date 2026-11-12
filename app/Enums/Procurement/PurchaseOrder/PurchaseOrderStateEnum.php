@@ -27,7 +27,7 @@ enum PurchaseOrderStateEnum: string
         return [
             'in_process'   => __('In process'),
             'submitted'    => __('Submitted'),
-            'confirmed'    => __('Confirmed'),
+            'confirmed'    => __('Agreed'),
             'settled'      => __('Settled'),
             'cancelled'    => __('Cancelled'),
             'not_received' => __('Not Received'),
@@ -58,7 +58,7 @@ enum PurchaseOrderStateEnum: string
                 ],
             ],
             'confirmed'    => [
-                'tooltip' => __('Confirmed'),
+                'tooltip' => __('Terms agreed with the supplier'),
                 'icon'    => 'fal fa-check-circle',
                 'class'   => 'text-gray-500',
                 'color'   => 'gray',

@@ -26,16 +26,27 @@ use Lorisleiva\Actions\ActionRequest;
 use OwenIt\Auditing\Events\AuditCustom;
 
 /**
- * Records the date of a purchase order stage. Stages go in order: skipping one, completing a stage without its
- * gate, backdating or clearing a date needs a reason, written to the order's history. Any stage past submitted
- * means the supplier took the order, so a submitted order is confirmed, unless a price or quantity change is still unanswered.
- * Agents mark only their own stages, on their own orders.
+ * Records the date of a purchase order stage. A person (the PO page and the PO journey board, gated()) marks only the
+ * stage the order is at or an earlier one: a submitted order first needs its terms agreed (deposit paid or no deposit
+ * needed), and a later stage waits for the one before it to be done or skipped (INI-239). Completing a stage without
+ * its gate, backdating or clearing a date needs a reason, written to the order's history. Automatic paths (goods
+ * receipts, container lists) are not gated, and their mark of a stage past submitted still confirms a submitted order,
+ * unless a price or quantity change is still unanswered. Agents mark only their own stages, on their own orders.
  */
 class MarkPurchaseOrderStage extends OrgAction
 {
     private PurchaseOrder $purchaseOrder;
 
     private bool $actingAsAgent = false;
+
+    private bool $gated = false;
+
+    public function gated(): static
+    {
+        $this->gated = true;
+
+        return $this;
+    }
 
     public function authorize(ActionRequest $request): bool
     {
@@ -157,6 +168,16 @@ class MarkPurchaseOrderStage extends OrgAction
             return;
         }
 
+        if ($this->gated && $this->get('date') !== null && $this->purchaseOrder->{$this->get('field')} === null) {
+            $stages  = GetPurchaseOrderStages::run($this->purchaseOrder);
+            $blocked = GetPurchaseOrderStages::make()->blockedReason($this->purchaseOrder, PurchaseOrderStageEnum::MARKABLE_FIELDS[$this->get('field')], $stages);
+            if ($blocked) {
+                $validator->errors()->add('field', $blocked);
+
+                return;
+            }
+        }
+
         $reasons = $this->reasonsNeeded($this->purchaseOrder, $this->get('field'), $this->get('date'));
         if ($reasons && !trim((string) $this->get('reason'))) {
             $validator->errors()->add('reason', __('Give a reason: :reasons', ['reasons' => implode('; ', $reasons)]));
@@ -174,6 +195,7 @@ class MarkPurchaseOrderStage extends OrgAction
 
     public function asController(PurchaseOrder $purchaseOrder, ActionRequest $request): PurchaseOrder
     {
+        $this->gated         = true;
         $this->purchaseOrder = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, $request);
 

@@ -357,6 +357,7 @@ class EditCustomer extends OrgAction
                         'reference' => AnonymiseCustomer::confirmationText($customer),
                         'orders'    => $customer->orders()->whereNotIn('state', [OrderStateEnum::CANCELLED, OrderStateEnum::CREATING])->count(),
                         'invoices'  => $customer->invoices()->count(),
+                        'owes_money' => in_array('owes_money', AnonymiseCustomer::erasureHoldReasons($customer)),
                         'route'     => [
                             'name'       => 'grp.models.customer.anonymise',
                             'parameters' => ['customer' => $customer->id],

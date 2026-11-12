@@ -58,6 +58,7 @@ import GRAmnestyPriceLabel from "@/Components/Utils/Iris/Family/GRAmnestyPriceLa
 import ProfitCalculationList from "@/Components/Utils/Iris/ProfitCalculationList.vue"
 import StepDiscountOffer from "@/Components/CMS/Webpage/Product1/StepDiscountOffer.vue"
 import { getBestOffer } from "@/Composables/useOffers"
+import { activeSpecialOfferPercentageOff } from "@/Composables/stepDiscountAgainstOffer"
 import { Popover } from "primevue"
 
 library.add(
@@ -205,6 +206,10 @@ const bestOffer = computed(() => getBestOffer(offersData.value))
 
 const isGoldRewardCustomer = computed(() =>
     Boolean(layout?.user?.gr_data?.customer_is_gr || layout?.user?.gr_data?.amnesty)
+)
+
+const specialOfferPercentageOff = computed<number>(() =>
+    activeSpecialOfferPercentageOff(bestOffer.value, offersData.value, isGoldRewardCustomer.value)
 )
 
 const isPurchasable = computed(() => Boolean(product.value?.stock && !product.value?.is_coming_soon))
@@ -508,7 +513,7 @@ onMounted(async () => {
                 <!-- Section: Step discount (buy more, save more) -->
                 <StepDiscountOffer
                     v-if="layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
-                    class="mt-3" :stepDiscount="product.step_discount"
+                    class="mt-3" :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff"
                     :currencyCode="product.currency_code ?? currency?.code" :originalPrice="product.price"
                     :unit="product.unit" :quantity="orderedQuantity" :isSubmitting="isDesktopStepSyncing"
                     @selectQuantity="onSelectStepQuantityDesktop" />
@@ -518,7 +523,7 @@ onMounted(async () => {
                 <div class="flex gap-2 mt-4 mb-4">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
-                        <EcomAddToBasketv2 v-if="product.stock > 0 || product.pre_order" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"  class="button-basket"/>
+                        <EcomAddToBasketv2 v-if="product.stock > 0 || product.pre_order" ref="_desktopAddToBasket" v-model:product="product" :customerData="customerData" :specialOfferPercentageOff="specialOfferPercentageOff" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"  class="button-basket"/>
                         <ButtonOutOfStock v-else :product="product" />
                     </div>
 
@@ -833,7 +838,7 @@ onMounted(async () => {
             <!-- Section: Step discount (buy more, save more) -->
             <StepDiscountOffer
                 v-if="layout?.iris?.is_logged_in && isPurchasable && product.step_discount?.steps?.length"
-                :stepDiscount="product.step_discount" :currencyCode="product.currency_code ?? currency?.code"
+                :stepDiscount="product.step_discount" :specialOfferPercentageOff="specialOfferPercentageOff" :currencyCode="product.currency_code ?? currency?.code"
                 :originalPrice="product.price" :unit="product.unit" :quantity="orderedQuantity"
                 :isSubmitting="isMobileStepSyncing" @selectQuantity="onSelectStepQuantityMobile" />
 
@@ -860,7 +865,7 @@ onMounted(async () => {
 
             <!-- ADD TO CART -->
             <PreOrderInfo v-if="layout?.iris?.is_logged_in && product.pre_order && !(product.stock > 0)" class="mb-3" :preOrder="customerData?.pre_order ?? product.pre_order" :stock="product.stock" />
-            <EcomAddToBasketv2 v-if="product.stock > 0 || (product.pre_order && layout?.iris?.is_logged_in)" ref="_mobileAddToBasket" v-model:product="product" :customerData="customerData" :key="keyCustomer" class="w-full button-basket" />
+            <EcomAddToBasketv2 v-if="product.stock > 0 || (product.pre_order && layout?.iris?.is_logged_in)" ref="_mobileAddToBasket" v-model:product="product" :customerData="customerData" :specialOfferPercentageOff="specialOfferPercentageOff" :key="keyCustomer" class="w-full button-basket" />
             <ButtonOutOfStock v-else :product="product" />
 
             <!-- DOWNLOAD -->

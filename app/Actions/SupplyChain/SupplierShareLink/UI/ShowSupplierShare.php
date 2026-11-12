@@ -116,6 +116,7 @@ class ShowSupplierShare
             'needs_code'           => false,
             'company'              => $this->company($supplier),
             'agent'                => $this->agent($supplier),
+            'owner'                => GetSupplierPortalDetails::make()->owner($supplier),
             'summary'              => Inertia::defer(fn () => GetSupplierPortalSummary::make()->handle($supplier)),
             'details'              => Inertia::defer(fn () => GetSupplierPortalDetails::make()->handle($supplier), 'details'),
             'valuation'            => $valuation->valuation($supplier),

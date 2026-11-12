@@ -26,7 +26,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 /**
  * Replaces an agent's warehouse stock for one organisation, except the goods received line by line on the In production page, with the Moving Stock and Packed tabs of its stock spreadsheet (HELP-3960).
  * The In Production tab holds what the suppliers are still making, so the open purchase order of each of its lines is marked
- * as in production instead (HELP-4025).
+ * as in production instead (HELP-4025). Goods in the warehouse mark their open order as in production too, as a goods
+ * receipt does, so it no longer reads submitted once the agent holds its goods.
  */
 class ImportAgentWarehouseStocksFromSheet
 {
@@ -131,14 +132,18 @@ class ImportAgentWarehouseStocksFromSheet
         }
 
         if (!$dryRun) {
-            DB::transaction(function () use ($agent, $organisation, $rows) {
+            $imported = DB::transaction(function () use ($agent, $organisation, $rows) {
                 DB::table('agents')->where('id', $agent->id)->lockForUpdate()->value('id');
                 $receipts = $this->goodsReceiptsByProductAndOrder($agent, $organisation);
                 $rows     = array_values(array_filter($rows, fn (array $row) => !$receipts->has("{$row['supplier_product_id']}|{$row['purchase_order_id']}")));
 
                 AgentWarehouseStock::where('agent_id', $agent->id)->where('organisation_id', $organisation->id)->whereNull('purchase_order_transaction_id')->delete();
                 AgentWarehouseStock::insert($rows);
+
+                return $rows;
             });
+
+            ImportAgentWarehouseStocksFromContainerList::make()->markOrdersOfStockInProduction($imported, "$agent->code stock spreadsheet: goods in the agent warehouse");
         }
 
         return ['rows' => $rows, 'unmatched' => $unmatched, 'in_production' => $inProduction, 'warnings' => $warnings];

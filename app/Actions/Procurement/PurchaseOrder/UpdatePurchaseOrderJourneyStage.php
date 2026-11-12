@@ -36,7 +36,7 @@ class UpdatePurchaseOrderJourneyStage extends OrgAction
 
     public function handle(PurchaseOrder $order, array $modelData): PurchaseOrder
     {
-        return MarkPurchaseOrderStage::make()->action($order, [
+        return MarkPurchaseOrderStage::make()->gated()->action($order, [
             'field'  => PurchaseOrderJourneyStageEnum::from($modelData['stage'])->markColumn(),
             'date'   => $modelData['date'],
             'reason' => Arr::get($modelData, 'reason'),
