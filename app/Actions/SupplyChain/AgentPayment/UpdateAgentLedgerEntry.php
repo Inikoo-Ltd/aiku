@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\AgentPayment;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderPaidFromAgentLedger;
 use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
 use App\Models\GoodsIn\StockDelivery;
@@ -36,6 +37,7 @@ class UpdateAgentLedgerEntry extends OrgAction
     {
         $purchaseOrder   = ($purchaseOrderId = Arr::get($modelData, 'purchase_order_id')) ? PurchaseOrder::findOrFail($purchaseOrderId) : null;
         $formerContainer = $agentPayment->stock_delivery_id;
+        $paidDatesBefore = SyncPurchaseOrderPaidFromAgentLedger::ledgerDatesFor([$agentPayment->purchase_order_id, $purchaseOrder?->id]);
 
         $date = Arr::get($modelData, 'date');
 
@@ -55,6 +57,8 @@ class UpdateAgentLedgerEntry extends OrgAction
         StockDelivery::whereIn('id', array_filter(array_unique([$formerContainer, $agentPayment->stock_delivery_id])))
             ->get()
             ->each(fn (StockDelivery $stockDelivery) => SyncAgentInvoiceChargesFromLedger::run($stockDelivery));
+
+        SyncPurchaseOrderPaidFromAgentLedger::runForOrders($paidDatesBefore);
 
         return $agentPayment;
     }

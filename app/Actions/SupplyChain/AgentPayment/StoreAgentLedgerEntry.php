@@ -10,6 +10,7 @@ namespace App\Actions\SupplyChain\AgentPayment;
 
 use App\Actions\Helpers\Media\SaveModelAttachment;
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderPaidFromAgentLedger;
 use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
@@ -47,6 +48,7 @@ class StoreAgentLedgerEntry extends OrgAction
         $purchaseOrder = ($purchaseOrderId = Arr::get($modelData, 'purchase_order_id')) ? PurchaseOrder::findOrFail($purchaseOrderId) : null;
         $stockDelivery = ($stockDeliveryId = Arr::get($modelData, 'stock_delivery_id')) ? StockDelivery::findOrFail($stockDeliveryId) : null;
         $originalAmount = $type === AgentPaymentTypeEnum::TRANSFER_RECEIVED ? Arr::get($modelData, 'original_amount') : null;
+        $paidDatesBefore = SyncPurchaseOrderPaidFromAgentLedger::ledgerDatesFor([$purchaseOrder?->id]);
 
         $receipt = Arr::get($modelData, 'receipt');
         $media   = $receipt ? SaveModelAttachment::make()->action($purchaseOrder ?? $stockDelivery ?? $agent, [
@@ -79,6 +81,10 @@ class StoreAgentLedgerEntry extends OrgAction
 
         if ($stockDelivery) {
             SyncAgentInvoiceChargesFromLedger::run($stockDelivery);
+        }
+
+        if ($type->isSupplierPayment()) {
+            SyncPurchaseOrderPaidFromAgentLedger::runForOrders($paidDatesBefore);
         }
 
         return $entry;

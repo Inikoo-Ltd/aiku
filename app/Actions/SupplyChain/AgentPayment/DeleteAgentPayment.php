@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\AgentPayment;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderPaidFromAgentLedger;
 use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
 use App\Models\SupplyChain\AgentPayment;
@@ -23,6 +24,8 @@ class DeleteAgentPayment extends OrgAction
 
     public function handle(AgentPayment $agentPayment): AgentPayment
     {
+        $paidDatesBefore = $agentPayment->type->isSupplierPayment() ? SyncPurchaseOrderPaidFromAgentLedger::ledgerDatesFor([$agentPayment->purchase_order_id]) : [];
+
         DB::transaction(function () use ($agentPayment) {
             $agentPayment->delete();
 
@@ -37,6 +40,8 @@ class DeleteAgentPayment extends OrgAction
         if ($agentPayment->stockDelivery) {
             SyncAgentInvoiceChargesFromLedger::run($agentPayment->stockDelivery);
         }
+
+        SyncPurchaseOrderPaidFromAgentLedger::runForOrders($paidDatesBefore);
 
         return $agentPayment;
     }

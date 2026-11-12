@@ -42,6 +42,7 @@ use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolum
 use App\Actions\Procurement\PurchaseOrderTransaction\UI\IndexPurchaseOrderTransactions;
 use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
+use App\Actions\SupplyChain\DepositRequest\GetAgentMoneyRequestLines;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
@@ -1105,31 +1106,112 @@ class ShowPurchaseOrder extends OrgAction
             return null;
         }
 
-        $requested = DB::table('deposit_request_items')
+        $requestLines = DB::table('deposit_request_items')
             ->join('deposit_requests', 'deposit_requests.id', 'deposit_request_items.deposit_request_id')
             ->where('deposit_request_items.purchase_order_id', $purchaseOrder->id)
-            ->where('deposit_requests.state', '!=', DepositRequestStateEnum::CANCELLED->value)
-            ->sum('deposit_request_items.amount');
-        $paidToSuppliers = DB::table('agent_payments')
-            ->where('purchase_order_id', $purchaseOrder->id)
-            ->whereIn('type', AgentPaymentTypeEnum::supplierPaymentValues())
-            ->whereNull('deleted_at')
-            ->sum('amount');
-        $goods = round((float) $purchaseOrder->cost_items, 2);
-        $paid  = round((float) $paidToSuppliers, 2);
+            ->whereNotIn('deposit_requests.state', [DepositRequestStateEnum::CANCELLED->value, DepositRequestStateEnum::REJECTED->value])
+            ->orderBy('deposit_requests.requested_at')
+            ->orderBy('deposit_request_items.id')
+            ->get(['deposit_request_items.id', 'deposit_request_items.kind', 'deposit_request_items.amount', 'deposit_request_items.paid_at', 'deposit_requests.id as request_id', 'deposit_requests.reference', 'deposit_requests.state', 'deposit_requests.requested_at']);
+        $supplierPayments = DB::table('agent_payments')
+            ->leftJoin('media', 'media.id', 'agent_payments.media_id')
+            ->where('agent_payments.purchase_order_id', $purchaseOrder->id)
+            ->whereIn('agent_payments.type', AgentPaymentTypeEnum::supplierPaymentValues())
+            ->whereNull('agent_payments.deleted_at')
+            ->orderBy('agent_payments.date')
+            ->orderBy('agent_payments.id')
+            ->get(['agent_payments.id', 'agent_payments.type', 'agent_payments.date', 'agent_payments.amount', 'agent_payments.reference', 'media.ulid as receipt']);
+
+        $goods     = round((float) $purchaseOrder->cost_items, 2);
+        $requested = round((float) $requestLines->sum('amount'), 2);
+        $received  = round((float) $requestLines->whereNotNull('paid_at')->sum('amount'), 2);
+        $paid      = round((float) $supplierPayments->sum('amount'), 2);
+        $held      = max(0, round($received - $paid, 2));
+        $toPay     = max(0, round($goods - $paid, 2));
+        $typeLabels  = AgentPaymentTypeEnum::labels();
+        $stateLabels = DepositRequestStateEnum::labels();
 
         return [
             'currency_code'     => $purchaseOrder->currency->code,
             'goods'             => $goods,
-            'requested'         => round((float) $requested, 2),
+            'requested'         => $requested,
+            'received'          => $received,
             'paid_to_suppliers' => $paid,
-            'to_pay'            => max(0, round($goods - $paid, 2)),
+            'held'              => $held,
+            'to_pay'            => $toPay,
+            'requests'          => $requestLines->map(fn (object $line) => [
+                'id'           => $line->id,
+                'number'       => '#'.$line->request_id,
+                'reference'    => $line->reference ?: '#'.$line->request_id,
+                'kind'         => $line->kind,
+                'amount'       => round((float) $line->amount, 2),
+                'state'        => $line->state,
+                'state_label'  => $stateLabels[$line->state] ?? $line->state,
+                'requested_at' => $line->requested_at,
+                'paid_at'      => $line->paid_at,
+            ])->values()->all(),
+            'supplier_payments' => $supplierPayments->map(fn (object $payment) => [
+                'id'        => $payment->id,
+                'date'      => $payment->date,
+                'type'      => $typeLabels[$payment->type] ?? $payment->type,
+                'amount'    => round((float) $payment->amount, 2),
+                'reference' => $payment->reference,
+                'receipt'   => $payment->receipt,
+            ])->values()->all(),
             'route'             => $this->agentMoneyRoute($purchaseOrder),
+            'requests_route'    => $this->agentMoneyRequestsRoute($purchaseOrder),
+            'pay_form'          => $this->agentPaySupplierForm($purchaseOrder, $paid, $held, $toPay),
         ];
     }
 
     /**
-     * @return array{name: string, parameters: array<string, mixed>, label: string}|null
+     * @return array{name: string, parameters: array<string, mixed>}|null
+     */
+    private function agentMoneyRequestsRoute(PurchaseOrder $purchaseOrder): ?array
+    {
+        if (!$this->isAgentViewingOwnOrder($purchaseOrder)) {
+            return null;
+        }
+
+        return [
+            'name'       => 'grp.org.agent.accounting.deposit_requests.index',
+            'parameters' => ['organisation' => $this->organisation->slug, 'filter' => ['global' => $purchaseOrder->reference]],
+        ];
+    }
+
+    /**
+     * The agent records what it paid the supplier for this order as a line of its ledger, with the receipt. It is
+     * offered what it holds for the order, or what is still owed when it pays ahead of the client's money.
+     */
+    private function agentPaySupplierForm(PurchaseOrder $purchaseOrder, float $paid, float $held, float $toPay): ?array
+    {
+        if (!$this->agentCanEdit || $toPay <= 0) {
+            return null;
+        }
+
+        $typeLabels = AgentPaymentTypeEnum::labels();
+        $supplier   = $purchaseOrder->supplier_id ? DB::table('suppliers')->where('id', $purchaseOrder->supplier_id)->first(['name', 'advance_percentage']) : null;
+        $depositPercentage = $supplier?->advance_percentage !== null ? (float) $supplier->advance_percentage : GetAgentMoneyRequestLines::DEFAULT_ADVANCE_PERCENTAGE;
+        $depositLabel      = $typeLabels[AgentPaymentTypeEnum::SUPPLIER_DEPOSIT->value].' ('.rtrim(rtrim(number_format($depositPercentage, 2, '.', ''), '0'), '.').'%)';
+
+        return [
+            'store_route'       => [
+                'name'       => 'grp.models.agent.ledger_entry.store',
+                'parameters' => ['agent' => $purchaseOrder->agent_id],
+            ],
+            'organisation_id'   => $purchaseOrder->organisation_id,
+            'purchase_order_id' => $purchaseOrder->id,
+            'supplier_name'     => $supplier?->name,
+            'types'             => collect([AgentPaymentTypeEnum::SUPPLIER_DEPOSIT, AgentPaymentTypeEnum::SUPPLIER_BALANCE, AgentPaymentTypeEnum::SUPPLIER_PAYMENT])
+                ->map(fn (AgentPaymentTypeEnum $type) => ['value' => $type->value, 'label' => $type === AgentPaymentTypeEnum::SUPPLIER_DEPOSIT ? $depositLabel : $typeLabels[$type->value]])
+                ->all(),
+            'default_type'      => $paid > 0 ? AgentPaymentTypeEnum::SUPPLIER_BALANCE->value : AgentPaymentTypeEnum::SUPPLIER_DEPOSIT->value,
+            'default_amount'    => $held > 0 ? min($held, $toPay) : $toPay,
+        ];
+    }
+
+    /**
+     * @return array{name: string, parameters: array<string, mixed>, label: string, tooltip?: string}|null
      */
     private function agentMoneyRoute(PurchaseOrder $purchaseOrder): ?array
     {
@@ -1138,6 +1220,7 @@ class ShowPurchaseOrder extends OrgAction
                 'name'       => 'grp.org.agent.accounting.deposit_requests.create',
                 'parameters' => ['organisation' => $this->organisation->slug, 'client' => $purchaseOrder->organisation->slug, 'purchase_order' => $purchaseOrder->id],
                 'label'      => __('Request money'),
+                'tooltip'    => __('Request money from :client for this order', ['client' => $purchaseOrder->organisation->name]),
             ] : null;
         }
 
