@@ -58,11 +58,9 @@ class UpdateSupplier extends OrgAction
             return true;
         }
 
-        if (!$this->supplier->agent_id) {
-            foreach ($this->supplier->orgSuppliers()->pluck('organisation_id') as $organisationId) {
-                if ($request->user()->authTo("procurement.{$organisationId}.edit")) {
-                    return true;
-                }
+        foreach ($this->supplier->orgSuppliers()->pluck('organisation_id') as $organisationId) {
+            if ($request->user()->authTo("procurement.{$organisationId}.edit")) {
+                return true;
             }
         }
 
