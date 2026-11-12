@@ -1,0 +1,23 @@
+{
+    "aw-freedom.com": {
+        "source": "https://www.aw-freedom.com",
+        "exclude": []
+    },
+    "aw.gifts": {
+        "source": "https://www.aw.gifts",
+        "exclude": []
+    },
+    "nomadsari.com": {
+        "source": "https://www.nomadsari.com",
+        "exclude": ["/blank"]
+    },
+    "fontReplacements": {
+        "acumin-pro": { "family": "Archivo" },
+        "freight-text-pro": { "family": "Crimson Text", "sizeAdjust": "104.5%" },
+        "minerva-modern": { "family": "Cormorant Garamond", "sizeAdjust": "95%" }
+    },
+    "forbiddenHosts": ["squarespace.com", "squarespace-cdn.com", "sqspcdn.com", "typekit.net", "squarestylist"],
+    "droppedFontHosts": ["use.typekit.net", "p.typekit.net", "assets.squarespace.com/universal/fonts"],
+    "keptScriptHosts": ["translate.google.com", "www.youtube.com", "player.vimeo.com"],
+    "keptInlineScriptMarkers": ["googleTranslateElementInit", "GoogleLanguages"]
+}

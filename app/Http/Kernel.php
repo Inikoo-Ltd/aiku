@@ -43,6 +43,7 @@ use App\Http\Middleware\ResetUserPasswordMiddleware;
 use App\Http\Middleware\ResolveShopifyShopDomain;
 use App\Http\Middleware\ResetWebUserPasswordMiddleware;
 use App\Http\Middleware\RetinaAuthenticate;
+use App\Http\Middleware\ServeStaticWebsite;
 use App\Http\Middleware\SetWebsiteLocale;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\HandleInertiaGrpRequests;
@@ -90,6 +91,7 @@ class Kernel extends HttpKernel
         //AddFrameOptionsHeader::class, // add individually to retina, iris. etc. except pupil
         AddSentryBrowserProfilingHeader::class,
         AcceptClientHintsMiddleware::class,
+        ServeStaticWebsite::class,
     ];
 
     protected $middlewareGroups = [

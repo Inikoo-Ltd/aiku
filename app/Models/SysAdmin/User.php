@@ -10,6 +10,7 @@ namespace App\Models\SysAdmin;
 
 use App\Audits\Redactors\PasswordRedactor;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Enums\SysAdmin\User\UserAuthTypeEnum;
 use App\Models\Analytics\UserRequest;
 use App\Models\Catalogue\Shop;
@@ -91,6 +92,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $can_use_mcp_sql
  * @property bool $can_use_mcp_discontinue
  * @property bool $can_use_mcp_web
+ * @property-read bool $can_use_mcp_info_websites
  * @property bool $can_use_mcp_procurement
  * @property bool $can_use_mcp_production
  * @property bool $can_use_mcp_place_orders
@@ -328,6 +330,17 @@ class User extends Authenticatable implements HasMedia, Auditable, PasskeyUser
     }
 
     private ?string $resolvedTimezoneName = null;
+
+    /**
+     * Who may change info websites through their AI assistant. For now only group administrators;
+     * group webmasters are to follow, by widening this one rule.
+     */
+    public function getCanUseMcpInfoWebsitesAttribute(): bool
+    {
+        setPermissionsTeamId($this->group_id);
+
+        return $this->hasRole(RolesEnum::GROUP_ADMIN->value);
+    }
 
     /**
      * The timezone this user's clock should be shown in: their own choice when they

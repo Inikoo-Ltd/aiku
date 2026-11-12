@@ -8,11 +8,14 @@
 import { computed, ref } from 'vue'
 import { Deferred, Head, Link } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
+import Tabs from '@/Components/Navigation/Tabs.vue'
+import TableStaticWebsites from '@/Components/Tables/Grp/Org/Web/TableStaticWebsites.vue'
+import { useCurrentTab, useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
 import { ctrans, ctransChoice } from '@/Composables/useTrans'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronDown, faChevronRight, faHashtag } from '@fal'
+import { faChevronDown, faChevronRight, faChevronUp, faGlobe, faHashtag, faTachometerAltFast } from '@fal'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useLocaleStore } from '@/Stores/locale'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -27,6 +30,11 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     intervals: Intervals
     settings: Settings
+    tabs: {
+        current: string
+        navigation: object
+    }
+    info_websites?: object
     overview?: {
         scope: 'group' | 'organisation'
         children_label: string
@@ -115,7 +123,10 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 
-const money = (value: number) => locale.currencyFormat(props.overview?.currency_code ?? '', value)
+const currentTab = useCurrentTab(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab, ['overview'])
+
+const money =(value: number) => locale.currencyFormat(props.overview?.currency_code ?? '', value)
 /* A column with one fractional figure in it carries the decimals on every figure: 2 beside 34.83
    reads as a different kind of number, when it is the same count arrived at without a split order. */
 const count = (value: number, decimals = false) =>
@@ -176,7 +187,7 @@ const toggleGroup = (key: string) => {
     }
     closedGroups.value = { ...closedGroups.value, [key]: !closedGroups.value[key] }
 }
-library.add(faChevronDown, faChevronRight, faHashtag)
+library.add(faChevronDown, faChevronRight, faChevronUp, faGlobe, faHashtag, faTachometerAltFast)
 const chevron = (key: string) => isOpen(key) ? 'fal fa-chevron-down' : 'fal fa-chevron-right'
 
 const groupedChannels = computed(() => {
@@ -366,6 +377,13 @@ const socialMediaHref = computed(() => route().current()?.startsWith('grp.market
             </Link>
         </template>
     </PageHeading>
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+
+    <div v-if="currentTab === 'info_websites'" class="px-4">
+        <TableStaticWebsites v-if="info_websites" :data="info_websites" tab="info_websites" />
+    </div>
+
+    <template v-else>
     <div class="pt-3">
         <DashboardSettings
             :intervals="intervals"
@@ -381,12 +399,12 @@ const socialMediaHref = computed(() => route().current()?.startsWith('grp.market
         <Deferred data="overview">
             <template #fallback>
                 <div class="space-y-4">
-                    <div class="h-4 w-2/3 animate-pulse rounded bg-gray-100" />
+                    <div class="skeleton h-4 w-2/3 rounded" />
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div v-for="card in 4" :key="card" class="h-24 animate-pulse rounded-xl bg-gray-100 ring-1 ring-gray-200" />
+                        <div v-for="card in 4" :key="card" class="skeleton h-24 rounded-xl" />
                     </div>
-                    <div class="h-64 animate-pulse rounded-xl bg-gray-100 ring-1 ring-gray-200" />
-                    <div class="h-40 animate-pulse rounded-xl bg-gray-100 ring-1 ring-gray-200" />
+                    <div class="skeleton h-64 rounded-xl" />
+                    <div class="skeleton h-40 rounded-xl" />
                 </div>
             </template>
         <div class="flex items-start justify-between gap-4">
@@ -462,10 +480,10 @@ const socialMediaHref = computed(() => route().current()?.startsWith('grp.market
                         {{ ctrans('ads, searches, mailshots and referring sites') }} · {{ measuredSince }}
                     </span>
                 </div>
-                <button type="button" @click="showChannelDetail = !showChannelDetail"
-                        class="shrink-0 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-md px-2 py-1">
-                    {{ showChannelDetail ? ctrans('Collapse') : ctrans('Expand') }}
-                </button>
+                <Button type="tertiary" size="xs" class="shrink-0"
+                        :icon="showChannelDetail ? 'fal fa-chevron-up' : 'fal fa-chevron-down'"
+                        :label="showChannelDetail ? ctrans('Collapse') : ctrans('Expand')"
+                        @click="showChannelDetail = !showChannelDetail" />
             </div>
 
             <table class="mt-4 w-full text-xs">
@@ -830,7 +848,7 @@ const socialMediaHref = computed(() => route().current()?.startsWith('grp.market
                         class="border-b border-gray-50 text-gray-600">
                         <td class="py-2 pr-2">
                             <Link :href="route(child.route.name, child.route.parameters)"
-                                  class="text-gray-700 hover:text-indigo-600">
+                                  class="text-gray-700 hover:text-[var(--app-accent)]">
                                 {{ child.name }}
                             </Link>
                         </td>
@@ -910,4 +928,5 @@ const socialMediaHref = computed(() => route().current()?.startsWith('grp.market
         </div>
         </Deferred>
     </div>
+    </template>
 </template>
