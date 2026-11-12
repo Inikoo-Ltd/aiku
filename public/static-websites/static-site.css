@@ -1,0 +1,31 @@
+.preFade,
+.preScale,
+.preSlide,
+.preClip,
+.preFlex {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+}
+
+.plyr:has(video[data-static-video-pending]) .plyr__controls,
+.plyr:has(video[data-static-video-pending]) .plyr__control--overlaid,
+.plyr:has(video[data-static-video-pending][poster]) .plyr__poster {
+    display: none !important;
+}
+
+video[data-static-video-pending] {
+    object-fit: cover;
+}
+
+.static-site-form-notice {
+    margin: 1em 0 0;
+    font-size: 0.9em;
+    opacity: 0.85;
+}
+
+.header-actions-action--cart,
+.header-menu-cart,
+.showOnMobile .cart-link {
+    display: none !important;
+}

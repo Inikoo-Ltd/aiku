@@ -158,6 +158,9 @@ Route::middleware(
             Route::get('/channels/{channelType}', [App\Actions\UI\Marketing\ShowAggregatedMarketingChannel::class, 'inGroup'])->name('channels.show');
             Route::get('/social-media', [App\Actions\UI\Marketing\ShowSocialMediaDashboard::class, 'inGroup'])->name('social_media.dashboard');
             Route::get('/social-media/export', [App\Actions\UI\Marketing\ExportSocialMediaPosts::class, 'inGroup'])->name('social_media.export');
+            Route::get('/info-websites/{staticWebsite}/preview/{path?}', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsitePreview::class)
+                ->where('path', '.*')
+                ->name('info_websites.preview');
         });
     Route::prefix("org/{organisation}")
         ->name("org.")

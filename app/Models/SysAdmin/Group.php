@@ -101,6 +101,7 @@ use App\Models\Traits\HasImage;
 use App\Models\Web\Banner;
 use App\Models\Web\ExternalLink;
 use App\Models\Web\Redirect;
+use App\Models\Web\StaticWebsite;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
@@ -692,6 +693,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function websites(): HasMany
     {
         return $this->hasMany(Website::class);
+    }
+
+    public function staticWebsites(): HasMany
+    {
+        return $this->hasMany(StaticWebsite::class);
     }
 
     public function webpages(): HasMany

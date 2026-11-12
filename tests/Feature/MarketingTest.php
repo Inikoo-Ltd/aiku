@@ -4867,3 +4867,292 @@ describe('mailshot link address', function () {
         App\Actions\Comms\Mailshot\UpdateMailshotUrlUtm::make()->action($mailshot, ['url' => 'https://awgifts.test/a', 'new_url' => 'https://awgifts.test/b']);
     })->throws(Illuminate\Validation\ValidationException::class);
 });
+
+describe('info websites on the aggregated marketing dashboard', function () {
+    beforeEach(function () {
+        list(
+            $this->organisation,
+            $this->user,
+            $this->shop
+        ) = createShop();
+
+        Illuminate\Support\Facades\Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
+        Pest\Laravel\actingAs($this->user);
+
+        $this->infoDomain = 'info-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(10)).'.test';
+    });
+
+    it('stores an info website in the group, without a shop, on a clean domain', function () {
+        $staticWebsite = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
+            'domain'     => 'https://www.'.strtoupper($this->infoDomain).'/home',
+            'name'       => 'Freedom Fund',
+            'source_url' => 'https://www.'.$this->infoDomain,
+        ]);
+
+        expect($staticWebsite->domain)->toBe($this->infoDomain)
+            ->and($staticWebsite->group_id)->toBe($this->organisation->group_id)
+            ->and($staticWebsite->state)->toBe(App\Enums\Web\StaticWebsite\StaticWebsiteStateEnum::IN_PROCESS)
+            ->and($staticWebsite->slug)->not->toBeEmpty()
+            ->and($staticWebsite->getAttributes())->not->toHaveKey('shop_id');
+    });
+
+    it('refuses a domain a shop website is already served on', function () {
+        $website = $this->shop->website ?? App\Actions\Web\Website\StoreWebsite::make()->action($this->shop, App\Models\Web\Website::factory()->definition());
+
+        App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
+            'domain' => $website->domain,
+            'name'   => 'Clash',
+        ]);
+    })->throws(Illuminate\Validation\ValidationException::class);
+
+    it('lists the info websites with their page count on the info websites tab', function () {
+        $staticWebsite = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
+            'domain' => $this->infoDomain,
+            'name'   => 'Freedom Fund',
+        ]);
+        $staticWebsite->webpages()->createMany([
+            ['path' => '/', 'title' => 'Home'],
+            ['path' => '/our-story', 'title' => 'Our story'],
+        ]);
+
+        $response = Pest\Laravel\get(route('grp.marketing.dashboard', ['tab' => 'info_websites']));
+
+        $response->assertOk()->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Org/Marketing/AggregatedMarketingDashboard')
+            ->where('tabs.current', 'info_websites')
+            ->has('tabs.navigation.overview')
+            ->has('tabs.navigation.info_websites')
+            ->missing('overview')
+            ->where('info_websites.data', fn ($rows) => collect($rows)->contains(
+                fn ($row) => $row['domain'] === $this->infoDomain
+                    && $row['webpages_count'] === 2
+                    && $row['url'] === 'https://www.'.$this->infoDomain
+                    && str_contains($row['preview_url'], '/marketing/info-websites/')
+                    && $row['state'] === 'in_process'
+            ))
+            ->etc());
+    });
+
+    it('opens the organisation dashboard on the overview, still deferred, without loading the info websites', function () {
+        $response = Pest\Laravel\get(route('grp.org.marketing.dashboard', [$this->organisation->slug]));
+
+        $response->assertOk()->assertInertia(fn (Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Org/Marketing/AggregatedMarketingDashboard')
+            ->where('tabs.current', 'overview')
+            ->has('tabs.navigation.info_websites')
+            ->missing('info_websites')
+            ->etc());
+
+        expect(collect($response->original->getData()['page']['deferredProps'] ?? [])->flatten()->all())->toContain('overview');
+    });
+});
+
+describe('importing a frozen info website', function () {
+    beforeEach(function () {
+        list($this->organisation) = createShop();
+
+        Illuminate\Support\Facades\Storage::fake(config('media-library.disk_name'));
+
+        $this->staticWebsite = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
+            'domain' => 'frozen-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(10)).'.test',
+            'name'   => 'Frozen info website',
+        ]);
+
+        $this->bundle = storage_path('framework/testing/static-websites/'.$this->staticWebsite->domain);
+        Illuminate\Support\Facades\File::ensureDirectoryExists($this->bundle.'/assets');
+        Illuminate\Support\Facades\File::ensureDirectoryExists($this->bundle.'/pages');
+        Illuminate\Support\Facades\File::put($this->bundle.'/assets/site.css', 'body{background:url(/_assets/background.png)}');
+        Illuminate\Support\Facades\File::put($this->bundle.'/assets/background.png', 'png');
+        Illuminate\Support\Facades\File::put($this->bundle.'/pages/home.html', '<!DOCTYPE html><html><head><link rel="stylesheet" href="/_assets/site.css"></head><body>Home</body></html>');
+        Illuminate\Support\Facades\File::put($this->bundle.'/pages/our-story.html', '<!DOCTYPE html><html><body><form></form>Our story</body></html>');
+        Illuminate\Support\Facades\File::put($this->bundle.'/pages.json', json_encode([
+            'domain'    => $this->staticWebsite->domain,
+            'source'    => 'https://www.'.$this->staticWebsite->domain,
+            'frozen_at' => now()->subDay()->toIso8601String(),
+            'pages'     => [
+                ['path' => '/', 'source_url' => 'https://www.'.$this->staticWebsite->domain.'/', 'title' => 'Home', 'description' => 'The home page', 'file' => 'pages/home.html'],
+                ['path' => '/our-story', 'source_url' => 'https://www.'.$this->staticWebsite->domain.'/our-story', 'title' => 'Our story', 'description' => null, 'file' => 'pages/our-story.html'],
+            ],
+        ]));
+    });
+
+    afterEach(function () {
+        Illuminate\Support\Facades\File::deleteDirectory($this->bundle);
+    });
+
+    it('stores every page and puts the assets on the media disk under the domain', function () {
+        $summary = App\Actions\Web\StaticWebsite\ImportStaticWebsite::run($this->staticWebsite, $this->bundle);
+
+        $disk = Illuminate\Support\Facades\Storage::disk(config('media-library.disk_name'));
+        $home = $this->staticWebsite->webpages()->where('path', '/')->first();
+
+        expect($summary['pages_created'])->toBe(2)
+            ->and($summary['assets_uploaded'])->toBe(2)
+            ->and($home->title)->toBe('Home')
+            ->and($home->html)->toContain('/_assets/site.css')
+            ->and($home->crawled_at)->not->toBeNull()
+            ->and($this->staticWebsite->refresh()->crawled_at)->not->toBeNull()
+            ->and($disk->exists('static-websites/'.$this->staticWebsite->domain.'/site.css'))->toBeTrue()
+            ->and($disk->exists('static-websites/'.$this->staticWebsite->domain.'/background.png'))->toBeTrue();
+    });
+
+    it('keeps a page edited in Aiku after the import unless forced', function () {
+        App\Actions\Web\StaticWebsite\ImportStaticWebsite::run($this->staticWebsite, $this->bundle);
+        $this->staticWebsite->webpages()->where('path', '/our-story')->first()->update(['html' => '<p>Edited by the UK team</p>']);
+
+        $summary = App\Actions\Web\StaticWebsite\ImportStaticWebsite::run($this->staticWebsite, $this->bundle);
+
+        expect($summary['pages_skipped_as_edited'])->toBe(['/our-story'])
+            ->and($summary['pages_updated'])->toBe(1)
+            ->and($this->staticWebsite->webpages()->where('path', '/our-story')->value('html'))->toBe('<p>Edited by the UK team</p>');
+
+        App\Actions\Web\StaticWebsite\ImportStaticWebsite::run($this->staticWebsite, $this->bundle, force: true);
+
+        expect($this->staticWebsite->webpages()->where('path', '/our-story')->value('html'))->toContain('Our story');
+    });
+
+    it('passes verification once nothing points at the old host, and lists the forms to replace', function () {
+        App\Actions\Web\StaticWebsite\ImportStaticWebsite::run($this->staticWebsite, $this->bundle);
+
+        $result = App\Actions\Web\StaticWebsite\VerifyStaticWebsite::run($this->staticWebsite);
+
+        expect($result['pages'])->toBe(2)
+            ->and($result['assets_checked'])->toBe(2)
+            ->and($result['forbidden_references'])->toBeEmpty()
+            ->and($result['missing_assets'])->toBeEmpty()
+            ->and($result['pages_with_forms'])->toBe(['/our-story']);
+    });
+
+    it('fails verification on a squarespace reference or a missing asset', function () {
+        App\Actions\Web\StaticWebsite\ImportStaticWebsite::run($this->staticWebsite, $this->bundle);
+        $this->staticWebsite->webpages()->where('path', '/')->first()->update([
+            'html' => '<img src="https://images.squarespace-cdn.com/logo.png"><img src="/_assets/gone.png">',
+        ]);
+
+        $result = App\Actions\Web\StaticWebsite\VerifyStaticWebsite::run($this->staticWebsite);
+
+        expect($result['forbidden_references'])->toHaveCount(1)
+            ->and($result['forbidden_references'][0]['where'])->toBe('/')
+            ->and(collect($result['missing_assets'])->pluck('asset')->all())->toBe(['gone.png']);
+    });
+
+    it('refuses a bundle frozen for another domain', function () {
+        $other = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
+            'domain' => 'other-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(10)).'.test',
+            'name'   => 'Other',
+        ]);
+
+        App\Actions\Web\StaticWebsite\ImportStaticWebsite::run($other, $this->bundle);
+    })->throws(RuntimeException::class);
+});
+
+describe('serving an info website on its own domain', function () {
+    beforeEach(function () {
+        list($this->organisation, $this->user) = createShop();
+
+        Illuminate\Support\Facades\Storage::fake(config('media-library.disk_name'));
+
+        $this->staticWebsite = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->organisation->group, [
+            'domain' => 'served-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(10)).'.test',
+            'name'   => 'Served info website',
+        ]);
+        $this->staticWebsite->webpages()->createMany([
+            ['path' => '/', 'title' => 'Home', 'html' => '<!DOCTYPE html><html><head><title>Home</title><link rel="stylesheet" href="/_assets/site.css"></head><body><h1>Welcome home</h1><a href="/our-story">Our story</a><a href="https://example.org/elsewhere">Elsewhere</a></body></html>'],
+            ['path' => '/our-story', 'title' => 'Our story', 'html' => '<!DOCTYPE html><html><head><title>Our story</title></head><body><h1>How it started</h1></body></html>'],
+        ]);
+        Illuminate\Support\Facades\Storage::disk(config('media-library.disk_name'))->put($this->staticWebsite->assetStoragePath('site.css'), 'body{color:#222}');
+
+        App\Actions\Web\StaticWebsite\LaunchStaticWebsite::run($this->staticWebsite);
+
+        $this->www = 'https://www.'.$this->staticWebsite->domain;
+    });
+
+    it('serves the stored page with the runtime that replaces the old host scripts', function () {
+        $response = Pest\Laravel\get($this->www.'/our-story/');
+
+        $response->assertOk()
+            ->assertHeader('X-AIKU-STATIC-WEBSITE', (string) $this->staticWebsite->id)
+            ->assertSee('How it started')
+            ->assertSee('/static-websites/static-site.css?v=', false)
+            ->assertSee('/static-websites/static-site.js?v=', false);
+
+        expect($response->headers->get('Cache-Control'))->toContain('public')
+            ->and($response->headers->has('Set-Cookie'))->toBeFalse();
+    });
+
+    it('sends the bare domain to the www address, keeping the path and query', function () {
+        Pest\Laravel\get('https://'.$this->staticWebsite->domain.'/our-story?ref=old')
+            ->assertStatus(301)
+            ->assertRedirect($this->www.'/our-story?ref=old');
+    });
+
+    it('serves frozen assets for a year and nothing outside them', function () {
+        $asset = Pest\Laravel\get($this->www.'/_assets/site.css');
+
+        $asset->assertOk()->assertSee('body{color:#222}', false);
+        expect($asset->headers->get('Content-Type'))->toStartWith('text/css')
+            ->and($asset->headers->get('Cache-Control'))->toContain('immutable');
+
+        Pest\Laravel\get($this->www.'/_assets/missing.png')->assertNotFound();
+        Pest\Laravel\get($this->www.'/_assets/..%2F..%2F.env')->assertNotFound();
+    });
+
+    it('answers an unknown page with a not found page', function () {
+        Pest\Laravel\get($this->www.'/no-such-page')->assertNotFound()->assertSee('Page not found');
+    });
+
+    it('builds robots.txt and sitemap.xml from the stored pages', function () {
+        Pest\Laravel\get($this->www.'/robots.txt')->assertOk()->assertSee('Sitemap: '.$this->www.'/sitemap.xml', false);
+
+        Pest\Laravel\get($this->www.'/sitemap.xml')->assertOk()
+            ->assertSee('<loc>'.$this->www.'/</loc>', false)
+            ->assertSee('<loc>'.$this->www.'/our-story</loc>', false);
+    });
+
+    it('leaves the domain to the rest of Aiku while the info website is not live', function () {
+        $this->staticWebsite->update(['state' => App\Enums\Web\StaticWebsite\StaticWebsiteStateEnum::IN_PROCESS]);
+
+        $response = Pest\Laravel\get($this->www.'/our-story');
+
+        expect($response->headers->has('X-AIKU-STATIC-WEBSITE'))->toBeFalse()
+            ->and($response->getContent())->not->toContain('How it started');
+    });
+
+    it('previews a stored page inside Aiku, sandboxed, with its links and assets kept in the preview', function () {
+        Pest\Laravel\actingAs($this->user);
+
+        $response = Pest\Laravel\get(route('grp.marketing.info_websites.preview', [$this->staticWebsite->slug]));
+
+        $previewRoot = route('grp.marketing.info_websites.preview', [$this->staticWebsite->slug]);
+        $assetUrl    = route('static_website_preview_asset', [$this->staticWebsite->slug, 'site.css']);
+
+        $response->assertOk()
+            ->assertSee('Welcome home')
+            ->assertSee('href="'.$assetUrl.'"', false)
+            ->assertSee('href="'.$previewRoot.'/our-story"', false)
+            ->assertSee('href="https://example.org/elsewhere"', false)
+            ->assertSee('/static-websites/static-site.js?v=', false);
+
+        expect($response->headers->get('Content-Security-Policy'))->toStartWith('sandbox')
+            ->and($response->headers->get('Content-Security-Policy'))->not->toContain('allow-same-origin')
+            ->and($response->getContent())->not->toContain('"/_assets/');
+    });
+
+    it('keeps the preview behind the Aiku login', function () {
+        Pest\Laravel\get(route('grp.marketing.info_websites.preview', [$this->staticWebsite->slug]))->assertRedirect();
+    });
+
+    it('serves the preview assets publicly so the sandboxed page can load its fonts', function () {
+        $response = Pest\Laravel\get(route('static_website_preview_asset', [$this->staticWebsite->slug, 'site.css']));
+
+        $response->assertOk()->assertSee('body{color:#222}', false);
+        expect($response->headers->get('Access-Control-Allow-Origin'))->toBe('*');
+    });
+
+    it('refuses to launch while a page still points at the old host', function () {
+        $this->staticWebsite->update(['state' => App\Enums\Web\StaticWebsite\StaticWebsiteStateEnum::IN_PROCESS]);
+        $this->staticWebsite->webpages()->where('path', '/')->update(['html' => '<img src="https://images.squarespace-cdn.com/logo.png">']);
+
+        App\Actions\Web\StaticWebsite\LaunchStaticWebsite::run($this->staticWebsite);
+    })->throws(RuntimeException::class);
+});
