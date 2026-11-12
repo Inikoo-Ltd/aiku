@@ -18,7 +18,7 @@ import Textarea from "primevue/textarea"
 import { useConfirm } from "primevue/useconfirm"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBook, faCheck, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt } from "@fal"
+import { faBook, faCheck, faCheckCircle, faAdjust, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt } from "@fal"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -29,7 +29,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faBook, faCheck, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
+library.add(faBook, faCheck, faCheckCircle, faAdjust, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
 
 interface Wallet {
 	organisation_id: number
@@ -63,6 +63,7 @@ interface EntryRow {
 	original_currency_code: string | null
 	supplier_code: string | null
 	purchase_order: { reference: string; route: routeType } | null
+	funded_orders: { reference: string; route: routeType; amount: number; received: number; paid: number; status: "used" | "partly" | "unused" }[]
 	stock_delivery: { reference: string; route: routeType } | null
 	reference: string | null
 	notes: string | null
@@ -358,6 +359,22 @@ const confirmRemove = (row: EntryRow) =>
 				</Link>
 				<span v-if="item.org_stock_code" class="whitespace-nowrap text-gray-700">{{ item.org_stock_code }}</span>
 				<span v-if="item.notes" class="text-xs text-gray-400">{{ item.notes }}</span>
+			</div>
+			<div v-if="item.funded_orders?.length" class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+				<span
+					v-for="order in item.funded_orders"
+					:key="order.reference"
+					class="inline-flex items-center gap-1 whitespace-nowrap"
+					v-tooltip="order.status === 'used'
+						? ctrans('Paid to the supplier: :paid', { paid: money(item.currency_code, order.paid) })
+						: order.status === 'partly'
+							? ctrans('Paid to the supplier: :paid of :received received', { paid: money(item.currency_code, order.paid), received: money(item.currency_code, order.received) })
+							: ctrans('Not paid to the supplier yet')">
+					<FontAwesomeIcon v-if="order.status === 'used'" icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-else-if="order.status === 'partly'" icon="fal fa-adjust" class="text-amber-600" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-else icon="fal fa-circle" class="text-gray-300" fixed-width aria-hidden="true" />
+					<Link :href="route(order.route.name, order.route.parameters)" class="secondaryLink">{{ order.reference }}</Link>
+				</span>
 			</div>
 			<div v-if="item.needs_review" class="mt-1 inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">
 				<FontAwesomeIcon icon="fal fa-exclamation-triangle" fixed-width aria-hidden="true" />
