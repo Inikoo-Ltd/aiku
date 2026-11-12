@@ -18,7 +18,8 @@ import Textarea from "primevue/textarea"
 import { useConfirm } from "primevue/useconfirm"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBook, faCheck, faCheckCircle, faAdjust, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt } from "@fal"
+import { faBook, faCheck, faCheckCircle, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt } from "@fal"
+import { faCheckCircle as fasCheckCircle } from "@fas"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
@@ -29,7 +30,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from "@/types/route"
 
-library.add(faBook, faCheck, faCheckCircle, faAdjust, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
+library.add(faBook, faCheck, faCheckCircle, fasCheckCircle, faCircle, faExclamationTriangle, faPaperclip, faPencil, faPlus, faShippingFast, faTimes, faTrashAlt)
 
 interface Wallet {
 	organisation_id: number
@@ -370,8 +371,8 @@ const confirmRemove = (row: EntryRow) =>
 						: order.status === 'partly'
 							? ctrans('Paid to the supplier: :paid of :received received', { paid: money(item.currency_code, order.paid), received: money(item.currency_code, order.received) })
 							: ctrans('Not paid to the supplier yet')">
-					<FontAwesomeIcon v-if="order.status === 'used'" icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
-					<FontAwesomeIcon v-else-if="order.status === 'partly'" icon="fal fa-adjust" class="text-amber-600" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-if="order.status === 'used'" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
+					<FontAwesomeIcon v-else-if="order.status === 'partly'" icon="fal fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
 					<FontAwesomeIcon v-else icon="fal fa-circle" class="text-gray-300" fixed-width aria-hidden="true" />
 					<Link :href="route(order.route.name, order.route.parameters)" class="secondaryLink">{{ order.reference }}</Link>
 				</span>
@@ -400,7 +401,7 @@ const confirmRemove = (row: EntryRow) =>
 		</template>
 
 		<template #cell(reference)="{ item }">
-			<span class="whitespace-nowrap">{{ item.reference }}</span>
+			<span class="inline-block max-w-xs whitespace-normal break-words align-top">{{ item.reference }}</span>
 			<a v-if="item.receipt" :href="route('grp.media.download', { id: item.receipt })" target="_blank" class="ml-2 text-gray-500 hover:text-gray-800" :title="ctrans('Receipt')">
 				<FontAwesomeIcon icon="fal fa-paperclip" fixed-width aria-hidden="true" />
 			</a>
