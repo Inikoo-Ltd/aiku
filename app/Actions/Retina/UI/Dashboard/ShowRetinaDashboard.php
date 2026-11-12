@@ -11,6 +11,8 @@ namespace App\Actions\Retina\UI\Dashboard;
 use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -55,11 +57,30 @@ class ShowRetinaDashboard extends RetinaAction
         return Inertia::render($inertiaPage, $props);
     }
 
-    public function asController(ActionRequest $request): Response
+    public function asController(ActionRequest $request): Response|RedirectResponse
     {
         $this->initialisation($request);
 
+        if ($this->dismissedWhatsappOptInCampaign($request)) {
+            return redirect()->route('retina.sysadmin.email.edit', Arr::only($request->query(), ['utm_source', 'utm_medium', 'utm_campaign']));
+        }
+
         return $this->handle($request);
+    }
+
+    /**
+     * A WhatsApp opt-in campaign link lands on the dashboard card; a customer who chose Not interested
+     * no longer has that card, so the link goes to Email management, which shows the same card. The
+     * query (utm) is kept, and the browser keeps the #whatsapp-updates anchor through the redirect.
+     */
+    private function dismissedWhatsappOptInCampaign(ActionRequest $request): bool
+    {
+        $comms = $this->customer?->comms;
+
+        return $request->query('utm_campaign') === MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->campaign()
+            && $this->shop?->type === ShopTypeEnum::B2B
+            && $comms?->whatsapp_newsletter_opt_in_dismissed_at
+            && !$comms->is_subscribed_to_whatsapp_newsletter;
     }
 
     public function inPupil(ActionRequest $request): Response

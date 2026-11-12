@@ -259,6 +259,10 @@ test('Not interested hides the dashboard WhatsApp card for good, while Email man
     expect($this->customer->comms->fresh()->whatsapp_newsletter_opt_in_dismissed_at)->not->toBeNull()
         ->and(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website, dismissible: true))->toBeNull();
 
+    $this->get('/app/dashboard?utm_campaign=whatsapp_optin&utm_source=newsletter')
+        ->assertRedirect(route('retina.sysadmin.email.edit', ['utm_campaign' => 'whatsapp_optin', 'utm_source' => 'newsletter']));
+    $this->get('/app/dashboard')->assertOk();
+
     $this->get(route('retina.sysadmin.email.edit'))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')
             ->where('formData.blueprint.1.fields.whatsapp_optin.optin.is_subscribed', false)
