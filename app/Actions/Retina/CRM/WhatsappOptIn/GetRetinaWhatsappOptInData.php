@@ -7,12 +7,8 @@
 
 namespace App\Actions\Retina\CRM\WhatsappOptIn;
 
-use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
-use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -37,7 +33,7 @@ class GetRetinaWhatsappOptInData
             'suggested_phone'      => $knownWhatsappPhone ? null : $this->getSuggestedPhone($customer->phone),
             'default_country'      => $customer->address?->country_code,
             'consent_text'         => SubscribeRetinaCustomerToWhatsappNewsletter::consentText($customer),
-            'privacy_policy_url'   => $this->getPrivacyPolicyUrl($website),
+            'privacy_policy_url'   => $website->getPrivacyPolicyUrl(),
             'subscribe_route'      => [
                 'name'       => 'retina.models.whatsapp_newsletter.subscribe',
                 'parameters' => [],
@@ -77,13 +73,4 @@ class GetRetinaWhatsappOptInData
         return SubscribeRetinaCustomerToWhatsappNewsletter::normalisePhone($raw);
     }
 
-    protected function getPrivacyPolicyUrl(Website $website): ?string
-    {
-        $canonicalUrl = Webpage::where('website_id', $website->id)
-            ->where('sub_type', WebpageSubTypeEnum::PRIVACY)
-            ->where('state', WebpageStateEnum::LIVE)
-            ->value('canonical_url');
-
-        return $canonicalUrl ? ShowIrisWebpage::make()->getEnvironmentUrl($canonicalUrl) : null;
-    }
 }

@@ -148,6 +148,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.welcome_message", Arr::pull($modelData, "welcome_message"));
         }
 
+        if (Arr::has($modelData, "privacy_policy_url")) {
+            data_set($modelData, "settings.privacy_policy_url", Arr::pull($modelData, "privacy_policy_url") ?: null);
+        }
+
         if (Arr::has($modelData, 'title_recommender')) {
             data_set($modelData, 'settings.recommender_web_block.title', Arr::pull($modelData, 'title_recommender'));
         }
@@ -311,6 +315,7 @@ class UpdateWebsite extends OrgAction
             'data_contact_options_panel.*.url'           => ['sometimes', 'nullable', 'string', 'max:2000'],
             'description_has_overview'                   => ['sometimes', 'boolean'],
             'welcome_message'                            => ['sometimes', 'nullable', 'string'],
+            'privacy_policy_url'                         => ['sometimes', 'nullable', 'string', 'max:2048', 'url:http,https'],
             'company_name_label'                         => ['sometimes', 'nullable', 'string'],
             'company_name_placeholder'                   => ['sometimes', 'nullable', 'string'],
             'tax_number_is_required'                     => ['sometimes', 'nullable', 'boolean'],

@@ -22,7 +22,7 @@ export interface WhatsappOptInData {
     suggested_phone: string | null
     default_country: string | null
     consent_text: string
-    privacy_policy_url: string | null
+    privacy_policy_url: string
     subscribe_route: routeType
     unsubscribe_route: routeType
 }
@@ -293,7 +293,6 @@ onMounted(() => {
                         <p id="whatsapp-optin-helper" class="ml-8 mt-1 text-xs text-gray-600">
                             {{ ctrans("Unsubscribe at any time in your dashboard or by replying STOP.") }}
                             <a
-                                v-if="data.privacy_policy_url"
                                 :href="data.privacy_policy_url"
                                 target="_blank"
                                 rel="noopener"

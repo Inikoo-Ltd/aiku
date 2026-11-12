@@ -36,6 +36,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -196,6 +197,8 @@ class Website extends Model implements Auditable, HasMedia
      * Settings the storefront renders from cache; a change to any of them has to invalidate
      * it or visitors keep the old behaviour for hours while the admin UI shows the new value.
      */
+    public const DEFAULT_PRIVACY_POLICY_URL = 'https://aw-advantage.com/whatsapp-messaging-terms-of-service-privacy-policy-data-deletion';
+
     private const IRIS_CACHED_SETTINGS = [
         'google_tag_id',
         'google_tag_gateway_path',
@@ -539,6 +542,11 @@ class Website extends Model implements Auditable, HasMedia
         }
 
         return $scheme.'://'.$this->domain;
+    }
+
+    public function getPrivacyPolicyUrl(): string
+    {
+        return Arr::get($this->settings, 'privacy_policy_url') ?: self::DEFAULT_PRIVACY_POLICY_URL;
     }
 
     public function getTermsAndConditionsUrl(): ?string

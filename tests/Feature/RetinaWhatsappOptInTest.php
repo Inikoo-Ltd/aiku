@@ -13,12 +13,14 @@ use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\Web\Website\WebsiteStateEnum;
 use App\Models\Comms\WhatsappSubscriber;
 use App\Models\CRM\Customer;
+use App\Models\Web\Website;
 use Illuminate\Support\Facades\Config;
 use Inertia\Testing\AssertableInertia;
 
@@ -137,6 +139,47 @@ test('the card knows the subscribed number so only the tick is needed next time'
     expect($data['is_subscribed'])->toBeTrue()
         ->and($data['whatsapp_phone'])->toBe('+447700900123')
         ->and($data['suggested_phone'])->toBeNull();
+});
+
+test('the card links the privacy policy set on the website, or the default one', function () {
+    $original = $this->website->settings;
+
+    UpdateWebsite::make()->action($this->website, ['privacy_policy_url' => null]);
+    expect(GetRetinaWhatsappOptInData::run($this->customer, $this->website->refresh())['privacy_policy_url'])
+        ->toBe(Website::DEFAULT_PRIVACY_POLICY_URL)
+        ->toBe('https://aw-advantage.com/whatsapp-messaging-terms-of-service-privacy-policy-data-deletion');
+
+    UpdateWebsite::make()->action($this->website, ['privacy_policy_url' => 'https://www.example.com/privacy']);
+    expect(GetRetinaWhatsappOptInData::run($this->customer, $this->website->refresh())['privacy_policy_url'])
+        ->toBe('https://www.example.com/privacy');
+
+    UpdateWebsite::make()->action($this->website, ['privacy_policy_url' => '']);
+    expect($this->website->refresh()->getPrivacyPolicyUrl())->toBe(Website::DEFAULT_PRIVACY_POLICY_URL);
+
+    $this->website->update(['settings' => $original]);
+});
+
+test('saving the privacy policy link keeps the other website settings', function () {
+    $original = $this->website->settings;
+
+    UpdateWebsite::make()->action($this->website, ['welcome_message' => '<p>Welcome back</p>', 'return_policy' => 'Thirty days']);
+    UpdateWebsite::make()->action($this->website->refresh(), ['privacy_policy_url' => 'https://www.example.com/privacy']);
+
+    $settings = $this->website->refresh()->settings;
+
+    expect($settings['privacy_policy_url'])->toBe('https://www.example.com/privacy')
+        ->and($settings['welcome_message'])->toBe('<p>Welcome back</p>')
+        ->and($settings['return_policy'])->toBe('Thirty days')
+        ->and(collect($original ?? [])->except(['privacy_policy_url', 'welcome_message', 'return_policy'])->all())
+        ->toBe(collect($settings)->except(['privacy_policy_url', 'welcome_message', 'return_policy'])->all());
+
+    $this->website->update(['settings' => $original]);
+});
+
+test('the privacy policy link must be a web address', function () {
+    expect(fn () => UpdateWebsite::make()->action($this->website, ['privacy_policy_url' => 'javascript:alert(1)']))
+        ->toThrow(Illuminate\Validation\ValidationException::class)
+        ->and($this->website->refresh()->getPrivacyPolicyUrl())->not->toContain('javascript');
 });
 
 test('a national account phone is not suggested', function () {
