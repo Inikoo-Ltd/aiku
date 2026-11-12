@@ -183,17 +183,17 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
     }
 
     /**
-     * The order the move emptied and cancelled goes back to the state and costs it had.
+     * The order the move emptied and cancelled goes back to the state it had.
      */
     private function reopen(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         $cancellation = Arr::get($purchaseOrder->data, 'cancellation', []);
 
-        $purchaseOrder->update(array_merge(Arr::only(Arr::get($cancellation, 'costs', []), ['cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax']), [
+        $purchaseOrder->update([
             'state'        => $cancellation['state'],
             'cancelled_at' => null,
             'data'         => Arr::except($purchaseOrder->data ?? [], 'cancellation'),
-        ]));
+        ]);
 
         MarkPurchaseOrderStage::auditOverride($purchaseOrder, 'state', PurchaseOrderStateEnum::CANCELLED->value, $cancellation['state'], __('Move undone'));
 
