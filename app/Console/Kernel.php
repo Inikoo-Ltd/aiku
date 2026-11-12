@@ -1743,7 +1743,7 @@ class Kernel extends ConsoleKernel
             );
 
             $this->logSchedule(
-                $schedule->command('masters:competitor-prices')->weeklyOn(0, '02:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
+                $schedule->command('masters:competitor-prices')->dailyAt('02:00')->timezone('UTC')->onOneServer()->withoutOverlapping()->sentryMonitor(
                     monitorSlug: 'ResearchCompetitorPrices',
                 ),
                 name: 'ResearchCompetitorPrices',

@@ -9,9 +9,11 @@
 namespace App\Actions\Masters\Competitor;
 
 use App\Actions\Helpers\AI\AskToAi;
+use App\Actions\Masters\MasterAsset\GenerateMasterAssetPriceTips;
 use App\Enums\Masters\Competitor\CompetitorStatusEnum;
 use App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetPriceTipStatusEnum;
+use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\Competitor;
 use App\Models\Masters\CompetitorProduct;
 use App\Models\Masters\MasterAsset;
@@ -369,8 +371,10 @@ PROMPT;
     }
 
     /**
-     * ponytail: weekly, only products with an open price tip (or the codes asked for), 20 products
-     * per browser session; widen to every product once the matches prove useful.
+     * ponytail: daily, a seventh of the products each day so every one is read once a week without a
+     * Sunday burst on the competitor's website (HELP-4686); only products with an open price tip (or the
+     * codes asked for), 20 per browser session. A master shop left out of price tips (Aroma) never has
+     * one, so all its main products are read; widen the others once the matches prove useful.
      */
     public function asCommand(Command $command): int
     {
@@ -399,7 +403,12 @@ PROMPT;
                 ->when(
                     $command->option('product'),
                     fn ($query, $codes) => $query->whereIn('code', $codes),
-                    fn ($query) => $query->whereHas('priceTips', fn ($query) => $query->where('status', MasterAssetPriceTipStatusEnum::OPEN))
+                    fn ($query) => $query->whereRaw('master_assets.id % 7 = ?', [now()->dayOfWeek])
+                        ->when(
+                            in_array($competitor->masterShop->slug, GenerateMasterAssetPriceTips::EXCLUDED_MASTER_SHOPS, true),
+                            fn ($query) => $query->where('is_main', true)->where('type', MasterAssetTypeEnum::PRODUCT),
+                            fn ($query) => $query->whereHas('priceTips', fn ($query) => $query->where('status', MasterAssetPriceTipStatusEnum::OPEN))
+                        )
                 )
                 ->pluck('id');
 

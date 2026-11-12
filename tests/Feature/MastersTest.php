@@ -5725,6 +5725,22 @@ describe('competitor prices, HELP-3605', function () {
 
         expect(array_keys(get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->slug]))->viewData('page')['props']['tabs']['navigation']))->not->toContain('price_checks');
     });
+
+    test('a master shop left out of price tips has every product read once a week, a seventh each day, HELP-4686', function () {
+        \Illuminate\Support\Facades\Queue::fake();
+        $this->travelTo(now()->startOfWeek(\Carbon\CarbonInterface::SUNDAY)->addDays($this->competitorMasterAsset->id % 7));
+        \App\Models\Masters\MasterShop::where('slug', 'aroma')->update(['slug' => 'aroma-'.uniqid()]);
+        $this->competitorMasterShop->updateQuietly(['slug' => 'aroma']);
+
+        $this->artisan('masters:competitor-prices', ['--competitor' => $this->competitor->id])->assertSuccessful();
+
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::assertPushed(fn ($action, array $parameters) => $parameters[1] === [$this->competitorMasterAsset->id]);
+
+        \Illuminate\Support\Facades\Queue::fake();
+        $this->travel(1)->days();
+        $this->artisan('masters:competitor-prices', ['--competitor' => $this->competitor->id])->assertSuccessful();
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::assertNotPushed();
+    });
 });
 
 test('the seo title, meta description and url typed on a family edit page reach its webpage', function () {
