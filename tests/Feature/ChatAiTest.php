@@ -1401,7 +1401,9 @@ test('Polish rewrites a staff reply but keeps pictures, merge fields, links and 
     [$masked, $tokens] = $polish->mask($original);
 
     expect($tokens)->toBe(['[image:abc-1]', 'https://example.com/p?a_b=1', 'cs@shop.com', '{first_name}'])
-        ->and($masked)->toBe('hola Ana, tu pedido 123456 sale mañana, total 45.90 €. mira ⟦1⟧ y ⟦2⟧ o escribe a ⟦3⟧ ⟦4⟧');
+        ->and($masked)->toBe('hola Ana, tu pedido 123456 sale mañana, total 45.90 €. mira ⟦1⟧ y ⟦2⟧ o escribe a ⟦3⟧ ⟦4⟧')
+        ->and($polish->mask('Paga aquí: *https://pay.checkout.com/link/pl_WMgxYICK-AN_* o _mira www.shop.test/p_'))->toBe(['Paga aquí: *⟦1⟧* o _mira ⟦2⟧_', ['https://pay.checkout.com/link/pl_WMgxYICK-AN_', 'www.shop.test/p']])
+        ->and($polish->mask('_Paga aquí_: https://pay.checkout.com/link/pl_X_.'))->toBe(['_Paga aquí_: ⟦1⟧.', ['https://pay.checkout.com/link/pl_X_']]);
 
     $reply  = fn (string $text) => ['choices' => [['message' => ['content' => json_encode(['text' => $text])]]]];
     $jev    = fn (float $meaning) => ['answers' => [

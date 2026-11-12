@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\WritingQuality;
 
+use App\Actions\Comms\Mailbox\SendChatMessageByGmail;
 use App\Actions\Helpers\AI\AskJev;
 use App\Actions\Helpers\AI\Traits\WithAIGateway;
 use App\Models\SysAdmin\User;
@@ -149,16 +150,28 @@ class PolishWriting
     }
 
     /**
+     * A link is protected up to where the email and the chat window end it, so the * _ or ~
+     * closing bold, italic or strikethrough around it stays in the text beside its opening one.
+     *
      * @return array{0: string, 1: array<int, string>}
      */
     public function mask(string $text): array
     {
-        $tokens = [];
-        $masked = preg_replace_callback(self::PROTECTED_PATTERN, function (array $match) use (&$tokens) {
-            $tokens[] = $match[0];
+        $tokens    = [];
+        $processed = '';
+        $cursor    = 0;
+        $masked    = preg_replace_callback(self::PROTECTED_PATTERN, function (array $match) use (&$tokens, &$processed, &$cursor, $text) {
+            [$whole, $offset] = $match[0];
+            $processed       .= substr($text, $cursor, $offset - $cursor);
+            $cursor           = $offset + strlen($whole);
+            $isLink           = preg_match('/^(?:https?:\/\/|www\.)/i', $whole) === 1;
+            $token            = $isLink ? SendChatMessageByGmail::bareLinkUrl($whole, Str::afterLast($processed, "\n"), Str::before(substr($text, $cursor), "\n")) : $whole;
+            $tokens[]         = $token;
+            $placed           = '⟦'.count($tokens).'⟧'.substr($whole, strlen($token));
+            $processed       .= $placed;
 
-            return '⟦'.count($tokens).'⟧';
-        }, $text);
+            return $placed;
+        }, $text, flags: PREG_OFFSET_CAPTURE);
 
         return [(string) $masked, $tokens];
     }
