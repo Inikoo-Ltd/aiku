@@ -16,6 +16,7 @@ struct LocationsRemoteLoading: ViewModifier {
                 }
                 return
             }
+            store.beginRemoteLoad()
             await warehouseStore.load(for: userID, apiClient: apiClient)
             if let warehouse = warehouseStore.selected {
                 session.profile.warehouseName = warehouse.name

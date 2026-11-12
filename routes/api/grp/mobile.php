@@ -40,6 +40,7 @@ use App\Actions\Api\Group\Locations\RemoveMobileLocationOrgStocks;
 use App\Actions\Api\Group\Locations\UpdateMobileLocationOrgStock;
 use App\Actions\Api\Group\Locations\IndexMobileEmptyLocationOrgStocks;
 use App\Actions\Api\Group\Locations\IndexMobileLocations;
+use App\Actions\Api\Group\Locations\IndexMobileLocationStockMovements;
 use App\Actions\Api\Group\Locations\IndexMobileRemovedEmptyLocationOrgStocks;
 use App\Actions\Api\Group\Locations\IndexMobileWarehouseAreas;
 use App\Actions\Api\Group\Locations\ShowMobileLocation;
@@ -94,6 +95,7 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         Route::get('/warehouses/{warehouse:id}/removed-empty-location-org-stocks', IndexMobileRemovedEmptyLocationOrgStocks::class)->name('warehouses.removed_empty_location_org_stocks');
         Route::patch('/warehouses/{warehouse:id}/empty-locations-removal', UpdateMobileEmptyLocationsRemoval::class)->name('warehouses.empty_locations_removal.update');
         Route::get('/locations/{location:id}', ShowMobileLocation::class)->name('locations.show');
+        Route::get('/locations/{location:id}/stock-movements', IndexMobileLocationStockMovements::class)->name('locations.stock_movements');
         Route::post('/locations/{location:id}/audit', AuditMobileLocation::class)->name('locations.audit');
         Route::post('/locations/{location:id}/move-all', MoveAllMobileLocationOrgStocks::class)->name('locations.move_all');
         Route::post('/locations/{location:id}/move-some', MoveSomeMobileLocationOrgStocks::class)->name('locations.move_some');

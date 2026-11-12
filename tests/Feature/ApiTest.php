@@ -1597,3 +1597,35 @@ test('mobile move some, move all and remove use the web location actions', funct
         ->assertUnprocessable()
         ->assertJsonValidationErrors('location_id');
 });
+
+test('mobile location stock movements are the web movements tab, newest first', function () {
+    [$user, $warehouse] = actingAsMobileWarehouseUser($this->group, RolesEnum::STOCK_CONTROLLER);
+    [, $stocked] = createMobileLocationsFixture($warehouse);
+    $link = $stocked->locationOrgStocks()->with('orgStock')->first();
+
+    postJson(route('grp.api.mobile.locations.audit', $stocked->id), ['counts' => [[
+        'location_org_stock_id' => $link->id,
+        'quantity'              => 28,
+        'reason'                => OrgStockMovementReasonEnum::COUNT_SHORT->value,
+    ]]], ['X-Aiku-App-Key' => 'mobile-test-key'])->assertOk();
+
+    getJson(route('grp.api.mobile.locations.stock_movements', $stocked->id), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.0.type', OrgStockMovementTypeEnum::AUDIT->value)
+        ->assertJsonPath('data.0.reason', OrgStockMovementReasonEnum::COUNT_SHORT->value)
+        ->assertJsonPath('data.0.org_stock_code', $link->orgStock->code)
+        ->assertJsonPath('data.0.user_name', $user->contact_name ?: $user->username)
+        ->assertJsonPath('meta.total', OrgStockMovement::where('location_id', $stocked->id)->count());
+});
+
+test('mobile location detail lists its pallets and its movements need location access', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    [, $stocked] = createMobileLocationsFixture($warehouse);
+
+    getJson(route('grp.api.mobile.locations.show', $stocked->id), ['X-Aiku-App-Key' => 'mobile-test-key'])
+        ->assertOk()
+        ->assertJsonPath('data.pallets', []);
+
+    Sanctum::actingAs(createMobileAppUser($this->group), ['mobile']);
+    getJson(route('grp.api.mobile.locations.stock_movements', $stocked->id), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
+});
