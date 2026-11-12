@@ -233,7 +233,6 @@ class PurchaseOrderTransactionResource extends JsonResource
         return $transaction->quantity_query_state === PurchaseOrderTransactionQuantityQueryStateEnum::PENDING
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
             && in_array($transaction->purchaseOrder?->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
-            && $this->viewingOrganisationId($request) === $transaction->organisation_id
             && $request->user()?->authTo("procurement.$transaction->organisation_id.edit");
     }
 
@@ -242,7 +241,6 @@ class PurchaseOrderTransactionResource extends JsonResource
         return $isQuestionPending
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED], true)
             && in_array($transaction->purchaseOrder?->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
-            && $this->viewingOrganisationId($request) === $transaction->organisation_id
             && $request->user()?->authTo("procurement.$transaction->organisation_id.edit");
     }
 
