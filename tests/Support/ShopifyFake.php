@@ -36,7 +36,7 @@ class ShopifyFake
 
     private static array $replies = [];
 
-    private static ?int $fakedFactory = null;
+    private static ?\WeakReference $fakedFactory = null;
 
     public static function fake(array $replies): void
     {
@@ -53,10 +53,10 @@ class ShopifyFake
 
         Http::preventStrayRequests();
 
-        if (self::$fakedFactory === spl_object_id(Http::getFacadeRoot())) {
+        if (self::$fakedFactory?->get() === Http::getFacadeRoot()) {
             return;
         }
-        self::$fakedFactory = spl_object_id(Http::getFacadeRoot());
+        self::$fakedFactory = \WeakReference::create(Http::getFacadeRoot());
 
         Http::fake(function (Request $request) {
             $operation = self::operation($request);
