@@ -9,7 +9,7 @@ import axios from "axios"
 import { router } from "@inertiajs/vue3"
 import { takeVisitStart } from "@/Composables/visitTiming"
 
-type Measure = "inbox_open" | "inbox_page" | "conversation_open" | "conversation_fetch" | "reply_sent" | "freeze" | "slow_frame"
+type Measure = "inbox_open" | "inbox_page" | "conversation_open" | "conversation_fetch" | "reply_sent" | "freeze" | "slow_frame" | "inbox_load"
 
 type Sample = {
 	measure: Measure
@@ -211,6 +211,52 @@ export const startFreezeRecording = (pageName: () => string | null) => {
 }
 
 /**
+ * Where a full load of the inbox spent its time in the browser (INI-230), as one inbox_load sample:
+ * the HTML's first and last byte, the document ready, the long tasks before the page was drawn
+ * (asked for buffered, so the ones from before the app started count too; freeze leaves them out),
+ * and the scripts it needed: bytes over the network, files, and files that came from the cache.
+ * The app's own start is what is left between dom and the sample's duration.
+ */
+const recordFullLoad = (drawnAt: number) => {
+	const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined
+
+	if (!navigation || typeof PerformanceObserver === "undefined" || !PerformanceObserver.supportedEntryTypes?.includes("longtask")) {
+		return
+	}
+
+	const scripts = (performance.getEntriesByType("resource") as PerformanceResourceTiming[])
+		.filter((entry) => entry.startTime < drawnAt && new URL(entry.name).pathname.endsWith(".js"))
+
+	const bootTasks: PerformanceEntry[] = []
+	const observer = new PerformanceObserver((list) => bootTasks.push(...list.getEntries()))
+	observer.observe({ type: "longtask", buffered: true })
+
+	setTimeout(() => {
+		bootTasks.push(...observer.takeRecords())
+		observer.disconnect()
+
+		const beforeDrawn = bootTasks.filter((task) => task.startTime < drawnAt)
+		const parts = {
+			response:   navigation.responseStart,
+			html:       navigation.responseEnd,
+			dom:        navigation.domContentLoadedEventEnd,
+			boot_ms:    beforeDrawn.reduce((total, task) => total + task.duration, 0),
+			boot_tasks: beforeDrawn.length,
+			js_kb:      scripts.reduce((total, entry) => total + entry.transferSize, 0) / 1024,
+			js_files:   scripts.length,
+			js_cached:  scripts.filter((entry) => entry.transferSize === 0 && entry.decodedBodySize > 0).length,
+		}
+
+		record({
+			measure:      "inbox_load",
+			duration_ms:  drawnAt,
+			is_full_load: true,
+			source:       Object.entries(parts).map(([name, value]) => `${name}=${Math.round(value)}`).join(" "),
+		}, 0)
+	}, 1000)
+}
+
+/**
  * How long the Customer Inbox makes the person in front of it wait (INI-145). The server's share
  * is in NightOwl; this adds what only the browser sees: downloading and starting the page, painting
  * the list and the conversation. Freezes are recorded app-wide by startFreezeRecording. Samples are
@@ -261,6 +307,10 @@ export const useInboxTimings = () => {
 		// is what is left of inbox_open.
 		if (opened) {
 			record({ measure: "inbox_page", duration_ms: performance.now() - opened.at, is_full_load: opened.isFullLoad }, opened.at)
+		}
+
+		if (opened?.isFullLoad) {
+			recordFullLoad(performance.now())
 		}
 
 		return {

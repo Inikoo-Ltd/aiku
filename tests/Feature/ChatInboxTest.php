@@ -2235,25 +2235,26 @@ test('the inbox speed measured in the browser is stored for the person who waite
             ['measure' => 'conversation_fetch', 'duration_ms' => 61, 'channel' => 'whatsapp', 'is_full_load' => true],
             ['measure' => 'slow_frame', 'duration_ms' => 480, 'render_ms' => 120, 'source' => 'Promise.then vendor-vue.js:5120 flushJobs 340'],
             ['measure' => 'freeze', 'duration_ms' => 300, 'render_ms' => 99, 'source' => 'ignored', 'page' => 'Org/Dispatching/DeliveryNote'],
+            ['measure' => 'inbox_load', 'duration_ms' => 940, 'is_full_load' => true, 'source' => 'response=210 html=260 dom=610 boot_ms=380 boot_tasks=3 js_kb=1450 js_files=42 js_cached=30'],
         ],
     ])->assertNoContent();
 
     $stored = DB::table('chat_inbox_timings')->where('id', '>', $before)->orderBy('id')->get();
 
-    expect($stored->pluck('measure')->all())->toBe(['inbox_open', 'conversation_open', 'reply_sent', 'freeze', 'inbox_page', 'conversation_fetch', 'slow_frame', 'freeze'])
-        ->and($stored->pluck('duration_ms')->all())->toBe([1834, 412, 7311, 260, 950, 61, 480, 300])
-        ->and($stored->pluck('channel')->all())->toBe([null, 'email', 'website', null, null, 'whatsapp', null, null])
-        ->and($stored->pluck('is_full_load')->all())->toBe([true, null, null, null, true, null, null, null])
-        ->and($stored->pluck('render_ms')->all())->toBe([null, null, null, null, null, null, 120, null])
-        ->and($stored->pluck('source')->all())->toBe(['list:prefetched', null, null, null, null, null, 'Promise.then vendor-vue.js:5120 flushJobs 340', null])
-        ->and($stored->pluck('page')->all())->toBe([null, null, null, null, null, null, null, 'Org/Dispatching/DeliveryNote'])
+    expect($stored->pluck('measure')->all())->toBe(['inbox_open', 'conversation_open', 'reply_sent', 'freeze', 'inbox_page', 'conversation_fetch', 'slow_frame', 'freeze', 'inbox_load'])
+        ->and($stored->pluck('duration_ms')->all())->toBe([1834, 412, 7311, 260, 950, 61, 480, 300, 940])
+        ->and($stored->pluck('channel')->all())->toBe([null, 'email', 'website', null, null, 'whatsapp', null, null, null])
+        ->and($stored->pluck('is_full_load')->all())->toBe([true, null, null, null, true, null, null, null, true])
+        ->and($stored->pluck('render_ms')->all())->toBe([null, null, null, null, null, null, 120, null, null])
+        ->and($stored->pluck('source')->all())->toBe(['list:prefetched', null, null, null, null, null, 'Promise.then vendor-vue.js:5120 flushJobs 340', null, 'response=210 html=260 dom=610 boot_ms=380 boot_tasks=3 js_kb=1450 js_files=42 js_cached=30'])
+        ->and($stored->pluck('page')->all())->toBe([null, null, null, null, null, null, null, 'Org/Dispatching/DeliveryNote', null])
         ->and($stored->pluck('user_id')->unique()->all())->toBe([$this->user->id]);
 
     actingAs($this->user)->postJson(route('grp.chat.inbox_timings.store'), [
         'samples' => [['measure' => 'page_load', 'duration_ms' => 10]],
     ])->assertUnprocessable();
 
-    expect(DB::table('chat_inbox_timings')->where('id', '>', $before)->count())->toBe(8);
+    expect(DB::table('chat_inbox_timings')->where('id', '>', $before)->count())->toBe(9);
 });
 
 test('a colleague searching their own list finds the conversations somebody else on the shop dealt with', function () {
