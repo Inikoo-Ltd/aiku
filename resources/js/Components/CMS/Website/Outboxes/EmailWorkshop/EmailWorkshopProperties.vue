@@ -9,6 +9,7 @@ import EmailWorkshopField from './EmailWorkshopField.vue'
 import EmailWorkshopPadding from './EmailWorkshopPadding.vue'
 import EmailWorkshopSection from './EmailWorkshopSection.vue'
 import EmailWorkshopColumns from './EmailWorkshopColumns.vue'
+import EmailWorkshopReadyMadeLink, { type ReadyMadeLink } from './EmailWorkshopReadyMadeLink.vue'
 import { ctrans } from '@/Composables/useTrans'
 import { routeType } from '@/types/route'
 import {
@@ -28,6 +29,7 @@ const props = defineProps<{
     imagesUploadRoute?: routeType
     imageCategories?: Array<{ key: string, label: string, route: routeType }>
     mergeTags?: Array<{ name: string, value: string }>
+    readyMadeLinks?: ReadyMadeLink[]
     textRevision?: number
     videoThumbnailState?: 'loading' | 'error'
 }>()
@@ -448,7 +450,7 @@ const contentSectionTitle = computed(() => ({
             <EmailWorkshopSection :title="contentSectionTitle">
                 <template v-if="moduleType === MODULE_TYPES.heading">
                     <div class="my-2 rounded border border-gray-300 px-2 py-1.5 text-[13px]">
-                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" :linkUnderline="moduleLinkUnderline" />
+                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" :linkUnderline="moduleLinkUnderline" />
                     </div>
                     <EmailWorkshopField v-model="descriptor.heading.title" type="select" :options="headingLevelOptions" :label="ctrans('Title')" />
                     <EmailWorkshopField v-model="descriptor.heading.style['font-family']" type="select" :options="inheritableFontOptions" :label="ctrans('Font')" />
@@ -463,7 +465,7 @@ const contentSectionTitle = computed(() => ({
 
                 <template v-else-if="moduleType === MODULE_TYPES.paragraph">
                     <div class="my-2 rounded border border-gray-300 px-2 py-1.5 text-[13px]">
-                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" :linkUnderline="moduleLinkUnderline" />
+                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" :linkUnderline="moduleLinkUnderline" />
                     </div>
                     <EmailWorkshopField v-model="descriptor.paragraph.style['font-family']" type="select" :options="inheritableFontOptions" :label="ctrans('Font')" />
                     <EmailWorkshopField v-model="descriptor.paragraph.style['font-size']" type="px" :label="ctrans('Font size')" />
@@ -479,7 +481,7 @@ const contentSectionTitle = computed(() => ({
 
                 <template v-else-if="moduleType === MODULE_TYPES.text">
                     <div class="my-2 rounded border border-gray-300 px-2 py-1.5 text-[13px]">
-                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" :linkUnderline="moduleLinkUnderline" />
+                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" :linkUnderline="moduleLinkUnderline" />
                     </div>
                     <EmailWorkshopField v-model="descriptor.text.style['font-family']" type="select" :options="inheritableFontOptions" :label="ctrans('Font')" />
                     <EmailWorkshopField v-model="descriptor.text.style['font-size']" type="px" :label="ctrans('Font size')" />
@@ -495,7 +497,7 @@ const contentSectionTitle = computed(() => ({
 
                 <template v-else-if="moduleType === MODULE_TYPES.list">
                     <div class="my-2 rounded border border-gray-300 px-2 py-1.5 text-[13px]">
-                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" :linkUnderline="moduleLinkUnderline" />
+                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" :linkUnderline="moduleLinkUnderline" />
                     </div>
                     <EmailWorkshopField v-model="listType" type="select" :options="listTypeOptions" :label="ctrans('List type')" />
                     <EmailWorkshopField v-model="listMarkerType" type="select" :options="listMarkerOptions" :label="ctrans('Marker style')" />
@@ -525,14 +527,16 @@ const contentSectionTitle = computed(() => ({
                     <EmailWorkshopField v-model="imageAlignment" type="align" :label="ctrans('Align')" />
                     <EmailWorkshopField v-model="descriptor.image.alt" :label="ctrans('Alternate text')" />
                     <EmailWorkshopField v-model="descriptor.image.href" :label="ctrans('Image link')" />
+                    <EmailWorkshopReadyMadeLink v-model="descriptor.image.href" :readyMadeLinks="readyMadeLinks ?? []" />
                     <EmailWorkshopField v-model="moduleStyle['border-radius']" type="px" :label="ctrans('Border radius')" />
                 </template>
 
                 <template v-else-if="moduleType === MODULE_TYPES.button">
                     <div class="my-2 rounded border border-gray-300 px-2 py-1.5 text-[13px]">
-                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" />
+                        <EditorV2 :key="`${module.uuid}-${textRevision}-${localTextRevision}`" v-model="moduleText" :toggle="moduleTextToggles(module)" :mergeTags="mergeTags" :readyMadeLinks="readyMadeLinks" />
                     </div>
                     <EmailWorkshopField v-model="descriptor.button.href" :label="ctrans('Link')" />
+                    <EmailWorkshopReadyMadeLink v-model="descriptor.button.href" :readyMadeLinks="readyMadeLinks ?? []" />
                     <EmailWorkshopField v-model="descriptor.button.style['background-color']" type="color" :label="ctrans('Background color')" />
                     <EmailWorkshopField v-model="descriptor.button.style.color" type="color" :label="ctrans('Text color')" />
                     <EmailWorkshopField v-model="descriptor.button.style['font-family']" type="select" :options="inheritableFontOptions" :label="ctrans('Font')" />

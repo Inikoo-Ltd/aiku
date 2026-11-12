@@ -49,6 +49,7 @@ const props = withDefaults(defineProps<{
     snapshot: any
     unpublished_layout?: any
     mergeTags: Array<any>
+    readyMadeLinks?: Array<{ key: string, label: string, url: string }>
     socialIcons?: Record<string, string>
     mergeContents?: Array<any> | null
     organisationSlug: string
@@ -1025,7 +1026,7 @@ defineExpose({
                                                         </div>
                                                         <EmailWorkshopTableEditor v-else-if="selectedModuleUuid === module.uuid && isTableModule(module)" :module="module" />
                                                         <EmailWorkshopInlineEditor v-else-if="isInlineEditing(module)" :key="`${module.uuid}-${editorRevision}-${canvasTextRevision}`"
-                                                            :module="module" :linkColor="bodyLinkColor" :isLinkUnderlined="isBodyLinkUnderlined" :isMobile="device === 'mobile'" :mergeTags="editorMergeTags"
+                                                            :module="module" :linkColor="bodyLinkColor" :isLinkUnderlined="isBodyLinkUnderlined" :isMobile="device === 'mobile'" :mergeTags="editorMergeTags" :readyMadeLinks="readyMadeLinks"
                                                             @edited="scheduleTextSync('panel')" />
                                                         <EmailWorkshopPlaceholder v-else-if="modulePlaceholder(module)" :placeholder="modulePlaceholder(module)!" />
                                                         <div v-else class="pointer-events-none" v-html="modulePreviewHtml(row, column, module)" />
@@ -1110,7 +1111,7 @@ defineExpose({
                         </div>
                         <div class="min-h-0 flex-1 overflow-y-auto">
                             <EmailWorkshopProperties :module="selectedModule" :row="selectedModule ? null : selectedRow" :body="email.page.body" :rows="email.page.rows"
-                                :imagesUploadRoute="imagesUploadRoute" :imageCategories="imageCategories" :mergeTags="editorMergeTags" :textRevision="editorRevision + panelTextRevision"
+                                :imagesUploadRoute="imagesUploadRoute" :imageCategories="imageCategories" :mergeTags="editorMergeTags" :readyMadeLinks="readyMadeLinks" :textRevision="editorRevision + panelTextRevision"
                                 :videoThumbnailState="selectedModule ? videoThumbnailStates[selectedModule.uuid!] : undefined"
                                 @textEdited="scheduleTextSync('canvas')"
                                 @replaceDynamicContent="openDynamicContentPicker(selectedModule!)" />

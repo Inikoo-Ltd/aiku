@@ -16,6 +16,7 @@ import PhoneField from "@/Components/Forms/Fields/Phone.vue"
 import { routeType } from "@/types/route"
 
 export interface WhatsappOptInData {
+    anchor_id: string
     is_subscribed: boolean
     whatsapp_phone: string | null
     suggested_phone: string | null
@@ -30,7 +31,7 @@ const props = defineProps<{
     data: WhatsappOptInData
 }>()
 
-const ANCHOR_ID = "whatsapp-updates"
+const ANCHOR_ID = props.data.anchor_id
 
 const cardEl = ref<HTMLElement | null>(null)
 const headingEl = ref<HTMLElement | null>(null)
@@ -130,14 +131,68 @@ const changeNumber = () => {
     form.consent = false
 }
 
+const CARD_GAP_BELOW_HEADER = 16
+const REALIGN_DELAYS_MS = [150, 600, 1500]
+const USER_SCROLL_EVENTS = ["wheel", "touchstart", "keydown", "mousedown"] as const
+
+const stickyHeaderHeight = (): number => {
+    let height = 0
+    document.querySelectorAll<HTMLElement>(".sticky, .fixed").forEach((element) => {
+        if (cardEl.value && element.contains(cardEl.value)) {
+            return
+        }
+        const style = getComputedStyle(element)
+        const rect = element.getBoundingClientRect()
+        const isTopBar = (style.position === "sticky" || style.position === "fixed") && parseFloat(style.top) === 0
+        const isHeaderSized = rect.height > 0 && rect.height < window.innerHeight / 2 && rect.width > window.innerWidth / 2
+        if (isTopBar && isHeaderSized) {
+            height = Math.max(height, rect.height)
+        }
+    })
+    return height
+}
+
+const alignCardBelowHeader = () => {
+    if (!cardEl.value) {
+        return
+    }
+    cardEl.value.style.scrollMarginTop = `${stickyHeaderHeight() + CARD_GAP_BELOW_HEADER}px`
+    cardEl.value.scrollIntoView({ behavior: "auto", block: "start" })
+}
+
 onMounted(() => {
     if (window.location.hash !== `#${ANCHOR_ID}`) {
         return
     }
+
+    let hasUserScrolled = false
+    const stopRealigning = () => {
+        hasUserScrolled = true
+        USER_SCROLL_EVENTS.forEach((eventName) => window.removeEventListener(eventName, stopRealigning))
+    }
+    USER_SCROLL_EVENTS.forEach((eventName) => window.addEventListener(eventName, stopRealigning, { passive: true }))
+
+    const focusHeadingUnlessFocusMoved = () => {
+        if (!document.activeElement || document.activeElement === document.body) {
+            headingEl.value?.focus({ preventScroll: true })
+        }
+    }
+
+    const realignUnlessUserScrolled = () => {
+        if (!hasUserScrolled) {
+            alignCardBelowHeader()
+            focusHeadingUnlessFocusMoved()
+        }
+    }
+
     nextTick(() => {
-        const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-        cardEl.value?.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" })
-        headingEl.value?.focus({ preventScroll: true })
+        alignCardBelowHeader()
+        focusHeadingUnlessFocusMoved()
+        REALIGN_DELAYS_MS.forEach((delay) => window.setTimeout(realignUnlessUserScrolled, delay))
+        if (document.readyState !== "complete") {
+            window.addEventListener("load", realignUnlessUserScrolled, { once: true })
+        }
+        window.setTimeout(stopRealigning, REALIGN_DELAYS_MS[REALIGN_DELAYS_MS.length - 1] + 100)
     })
 })
 </script>

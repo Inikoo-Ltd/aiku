@@ -28,10 +28,11 @@ class InjectUtmToEmailLinks
             return $emailHtmlBody;
         }
 
-        $settings  = GetMailshotUtmSettings::run($mailshot);
-        $overrides = $this->getUtmOverrides($mailshot);
+        $settings       = GetMailshotUtmSettings::run($mailshot);
+        $overrides      = $this->getUtmOverrides($mailshot);
+        $readyMadeLinks = GetMailshotReadyMadeLinks::run($mailshot);
 
-        if (!$settings['is_enabled'] && $overrides === []) {
+        if (!$settings['is_enabled'] && $overrides === [] && $readyMadeLinks === []) {
             return $emailHtmlBody;
         }
 
@@ -40,7 +41,7 @@ class InjectUtmToEmailLinks
 
         return preg_replace_callback(
             self::ANCHOR_PATTERN,
-            function (array $matches) use ($settings, $overrides, $domains, &$counters) {
+            function (array $matches) use ($settings, $overrides, $readyMadeLinks, $domains, &$counters) {
                 $anchor = $matches[0];
                 $url    = $this->getAnchorUrl($anchor);
 
@@ -48,9 +49,13 @@ class InjectUtmToEmailLinks
                     return $anchor;
                 }
 
-                $parameters = $this->isInternalLink($url, $domains)
-                    ? $this->getParameters($url, $this->getContentLabel($anchor, $counters), $settings, $overrides)
-                    : $this->getUtmOverrideFor($url, $overrides);
+                $readyMadeLink = $this->getReadyMadeLinkFor($url, $readyMadeLinks, $domains);
+
+                $parameters = match (true) {
+                    $readyMadeLink !== null => $this->getReadyMadeParameters($url, $readyMadeLink, $this->getContentLabel($anchor, $counters), $settings, $overrides),
+                    $this->isInternalLink($url, $domains) => $this->getParameters($url, $this->getContentLabel($anchor, $counters), $settings, $overrides),
+                    default => $this->getUtmOverrideFor($url, $overrides),
+                };
 
                 return $parameters === [] ? $anchor : $this->tagAnchorLinks($anchor, $parameters);
             },
@@ -69,6 +74,22 @@ class InjectUtmToEmailLinks
 
         return array_filter(
             array_merge($parameters, $this->getUtmOverrideFor($url, $overrides)),
+            fn ($value) => filled($value)
+        );
+    }
+
+    /**
+     * @param array{key: string, label: string, url: string, host: string, path: string, anchor: string, utm: array<string, string>} $readyMadeLink
+     * @return array<string, string>
+     */
+    private function getReadyMadeParameters(string $url, array $readyMadeLink, string $contentLabel, array $settings, array $overrides): array
+    {
+        $parameters = $settings['is_enabled']
+            ? array_merge($settings['parameters'], [MailshotUtmParameterEnum::CONTENT->value => $contentLabel])
+            : Arr::only($settings['parameters'], [MailshotUtmParameterEnum::SOURCE->value, MailshotUtmParameterEnum::MEDIUM->value]);
+
+        return array_filter(
+            array_merge($parameters, $readyMadeLink['utm'], $this->getUtmOverrideFor($url, $overrides)),
             fn ($value) => filled($value)
         );
     }

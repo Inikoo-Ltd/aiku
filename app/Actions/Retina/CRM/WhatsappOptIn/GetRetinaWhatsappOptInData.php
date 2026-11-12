@@ -8,6 +8,7 @@
 namespace App\Actions\Retina\CRM\WhatsappOptIn;
 
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
+use App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Models\CRM\Customer;
@@ -30,6 +31,7 @@ class GetRetinaWhatsappOptInData
         $knownWhatsappPhone = $this->getKnownWhatsappPhone($customer);
 
         return [
+            'anchor_id'            => MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->anchor(),
             'is_subscribed'        => (bool)$comms->is_subscribed_to_whatsapp_newsletter,
             'whatsapp_phone'       => $knownWhatsappPhone,
             'suggested_phone'      => $knownWhatsappPhone ? null : $this->getSuggestedPhone($customer->phone),
