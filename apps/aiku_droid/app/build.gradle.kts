@@ -46,6 +46,7 @@ android {
         versionName = "0.1.0"
 
         buildConfigField("String", "AIKU_APP_KEY", localProperty("aiku.appKey").asBuildConfigString())
+        buildConfigField("String", "SENTRY_DSN", localProperty("aiku.sentryDsn").asBuildConfigString())
     }
 
     buildTypes {
@@ -91,6 +92,7 @@ dependencies {
     implementation(libs.androidx.camera.mlkit.vision)
     implementation(libs.mlkit.barcode.scanning)
     implementation(libs.zxing.core)
+    implementation(libs.sentry.android)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)

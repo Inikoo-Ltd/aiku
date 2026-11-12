@@ -174,6 +174,22 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinutes(10, 10)->by('supplier-share-verify:'.$request->ip());
         });
 
+        RateLimiter::for('mobile-login', function (Request $request) {
+            $username = $request->input('username');
+
+            return Limit::perMinute(6)->by('mobile-login:'.$request->ip().':'.(is_string($username) ? mb_strtolower(trim($username)) : ''));
+        });
+
+        RateLimiter::for('mobile-password-change', function (Request $request) {
+            return Limit::perMinute(6)->by('mobile-password-change:'.($request->user()?->id ?? $request->ip()));
+        });
+
+        RateLimiter::for('mobile-password-reset', function (Request $request) {
+            $login = $request->input('login');
+
+            return Limit::perMinute(6)->by('mobile-password-reset:'.$request->route()?->getName().':'.$request->ip().':'.(is_string($login) ? mb_strtolower(trim($login)) : ''));
+        });
+
         RateLimiter::for('kiosk', function (Request $request) {
             return Limit::perMinute(600)->by($request->ip());
         });

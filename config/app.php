@@ -314,6 +314,7 @@ return [
         ],
     ],
     'mobile_app_keys' => array_values(array_filter(array_map('trim', explode(',', (string) env('MOBILE_APP_KEYS', ''))))),
+    'mobile_two_factor' => (bool) env('MOBILE_TWO_FACTOR', true),
 
     'master'  => env('MASTER_SERVER', true),
     'slave'   => env('SLAVE_SERVER', true),

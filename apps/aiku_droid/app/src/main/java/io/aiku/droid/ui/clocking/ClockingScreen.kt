@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -49,12 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.EncodeHintType
-import com.google.zxing.common.BitMatrix
 import com.google.zxing.oned.Code128Writer
-import com.google.zxing.qrcode.QRCodeWriter
-import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import io.aiku.droid.R
 import io.aiku.droid.data.api.ClockingSession
 import io.aiku.droid.data.api.ClockingStatus
@@ -66,6 +60,8 @@ import io.aiku.droid.ui.components.ButtonStyle
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.ControlShape
 import io.aiku.droid.ui.components.InlineAlert
+import io.aiku.droid.ui.components.QrCode
+import io.aiku.droid.ui.components.qrMatrixOf
 import io.aiku.droid.ui.components.SkeletonListCard
 import io.aiku.droid.ui.components.SkeletonStatCard
 import io.aiku.droid.ui.components.Tone
@@ -83,7 +79,6 @@ import java.util.Locale
 import kotlin.math.floor
 
 private const val BARCODE_QUIET_ZONE_MODULES = 10
-private const val QR_QUIET_ZONE_MODULES = 2
 private val MethodTabsShape = RoundedCornerShape(12.dp)
 private val MethodTabShape = RoundedCornerShape(8.dp)
 
@@ -610,7 +605,6 @@ private fun ClockingBarcodeMethod(code: String?) {
 
 @Composable
 private fun ClockingCameraQrMethod(code: String?) {
-    val colors = LocalAikuColors.current
     val light = rememberClockingLightColors()
     val description = stringResource(R.string.clocking_camera_qr_description)
     val matrix = remember(code) { code?.let { qrMatrixOf(it) } }
@@ -620,35 +614,14 @@ private fun ClockingCameraQrMethod(code: String?) {
         return
     }
     ClockingPersonalCodeCard(helper = stringResource(R.string.clocking_camera_qr_helper)) {
-        Canvas(
+        QrCode(
+            matrix = matrix,
+            description = description,
+            ink = light.text,
+            paper = Color.White,
             modifier = Modifier
                 .widthIn(max = 200.dp)
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(ControlShape)
-                .background(Color.White)
-                .border(1.dp, colors.border, ControlShape)
-                .semantics { contentDescription = description },
-        ) {
-            val cell = floor(size.width / matrix.width).coerceAtLeast(1f)
-            val inset = (size.width - cell * matrix.width) / 2
-            for (y in 0 until matrix.height) {
-                for (x in 0 until matrix.width) {
-                    if (matrix[x, y]) {
-                        drawRect(color = light.text, topLeft = Offset(inset + x * cell, inset + y * cell), size = Size(cell, cell))
-                    }
-                }
-            }
-        }
+                .fillMaxWidth(),
+        )
     }
 }
-
-private fun qrMatrixOf(code: String): BitMatrix? = runCatching {
-    QRCodeWriter().encode(
-        code,
-        BarcodeFormat.QR_CODE,
-        0,
-        0,
-        mapOf(EncodeHintType.MARGIN to QR_QUIET_ZONE_MODULES, EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.M),
-    )
-}.getOrNull()

@@ -30,7 +30,17 @@
     </plurals>
     <string name="profile_notifications">Notifications</string>
     <string name="profile_version">Version</string>
+    <string name="profile_security">Security</string>
+    <string name="profile_change_password">Change password</string>
     <string name="profile_sign_out">Log out</string>
+
+    <string name="profile_password_intro">Choose a new password for your Aiku account. Other phones signed in to your account will be signed out; this one stays signed in.</string>
+    <string name="profile_password_current">Current password</string>
+    <string name="profile_password_current_required">Enter your current password.</string>
+    <string name="profile_password_saving">Changing…</string>
+    <string name="profile_password_changed">Password changed.</string>
+    <string name="profile_password_failed_title">Couldn\'t change your password</string>
+    <string name="profile_password_offline_body">Changing your password needs internet — check Wi-Fi and try again.</string>
 
     <string name="profile_appearance_kicker">My profile · Personal settings</string>
     <string name="profile_mode">Mode</string>

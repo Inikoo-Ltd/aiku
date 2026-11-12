@@ -1295,3 +1295,120 @@ test('typing a different Phone Number ID by hand drops the mode and token an Emb
 
     $this->shop->update(['settings' => $original]);
 });
+
+test('an agent starts a chat on the main phone or the WhatsApp marketing phone of a customer', function () {
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer->update(['phone' => '+447500000301', 'marketing_whatsapp_phone' => '+447500000302']);
+
+    $main = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'customer_id' => $customer->id, 'phone_source' => StoreMetaChatSession::PHONE_SOURCE_MAIN]);
+    $whatsapp = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'customer_id' => $customer->id, 'phone_source' => StoreMetaChatSession::PHONE_SOURCE_MARKETING_WHATSAPP]);
+    $default = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'customer_id' => $customer->id]);
+
+    expect($main->phone_number)->toBe('+447500000301')
+        ->and($whatsapp->phone_number)->toBe('+447500000302')
+        ->and($whatsapp->customer_id)->toBe($customer->id)
+        ->and($whatsapp->id)->not->toBe($main->id)
+        ->and($default->id)->toBe($main->id);
+});
+
+test('an agent can start a chat with a customer who only has a WhatsApp marketing phone', function () {
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+    $customer->update(['phone' => null, 'marketing_whatsapp_phone' => '+447500000303']);
+
+    $session = StoreMetaChatSession::run(['shop_id' => $this->shop->id, 'customer_id' => $customer->id, 'phone_source' => StoreMetaChatSession::PHONE_SOURCE_MAIN]);
+
+    expect($session->phone_number)->toBe('+447500000303')
+        ->and($session->customer_id)->toBe($customer->id);
+});
+
+function whatsappStopTestInbound(\App\Models\Catalogue\Shop $shop, string $phoneNumberId, string $digits, string $text): void
+{
+    \App\Actions\Chat\Whatsapp\StoreIncomingWhatsappMessage::make()->handle([
+        'metadata' => ['phone_number_id' => $phoneNumberId],
+        'contacts' => [['profile' => ['name' => 'Stop Contact']]],
+        'messages' => [['id' => 'wamid.stop-'.Str::random(10), 'from' => $digits, 'type' => 'text', 'text' => ['body' => $text]]],
+    ]);
+}
+
+function whatsappStopTestNumber(\App\Models\Catalogue\Shop $shop): ?array
+{
+    $original = $shop->settings;
+    $shop->update(['settings' => array_merge($original ?? [], ['whatsapp' => ['phone_number_id' => 'stop-'.Str::random(8)]])]);
+
+    return $original;
+}
+
+function whatsappStopTestSubscriber(\App\Models\Catalogue\Shop $shop, array $phones): Customer
+{
+    $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    $customer->update($phones);
+    \App\Actions\CRM\CustomerComms\UpdateCustomerComms::run($customer->comms, ['is_subscribed_to_whatsapp_newsletter' => true]);
+
+    return $customer->fresh();
+}
+
+test('replying STOP from the WhatsApp marketing phone unsubscribes the customer from WhatsApp marketing', function () {
+    Bus::fake();
+    Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $original = whatsappStopTestNumber($this->shop);
+
+    $digits   = '4475003'.random_int(10000, 99999);
+    $customer = whatsappStopTestSubscriber($this->shop, ['phone' => '+447500000401', 'marketing_whatsapp_phone' => '+'.$digits]);
+
+    whatsappStopTestInbound($this->shop, $this->shop->settings['whatsapp']['phone_number_id'], $digits, ' stop ');
+
+    $comms = $customer->comms->fresh();
+
+    expect($comms->is_subscribed_to_whatsapp_newsletter)->toBeFalse()
+        ->and($comms->whatsapp_newsletter_unsubscribed_at)->not->toBeNull()
+        ->and($comms->whatsapp_newsletter_unsubscribed_origin_type)->toBe('MetaChatSession')
+        ->and(\App\Models\Comms\WhatsappSubscriber::where('parent_type', 'Customer')->where('parent_id', $customer->id)->exists())->toBeFalse()
+        ->and(MetaChatSession::where('phone_number', '+'.$digits)->sole()->messages()->count())->toBe(1);
+
+    $this->shop->update(['settings' => $original]);
+});
+
+test('replying STOP from the main phone unsubscribes a customer without a WhatsApp marketing phone', function () {
+    Bus::fake();
+    Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $original = whatsappStopTestNumber($this->shop);
+
+    $digits   = '4475004'.random_int(10000, 99999);
+    $customer = whatsappStopTestSubscriber($this->shop, ['phone' => '+'.$digits, 'marketing_whatsapp_phone' => null]);
+
+    whatsappStopTestInbound($this->shop, $this->shop->settings['whatsapp']['phone_number_id'], $digits, 'UNSUBSCRIBE');
+
+    expect($customer->comms->fresh()->is_subscribed_to_whatsapp_newsletter)->toBeFalse();
+
+    $this->shop->update(['settings' => $original]);
+});
+
+test('a message that only mentions stop does not unsubscribe, and the main phone of a customer with a WhatsApp marketing phone is ignored', function () {
+    Bus::fake();
+    Event::fake([\App\Events\BroadcastRealtimeMetaChat::class, \App\Events\BroadcastMetaChatListEvent::class]);
+    MetaChannel::firstOrCreate(['code' => 'whatsapp'], ['name' => 'WhatsApp']);
+    $original = whatsappStopTestNumber($this->shop);
+
+    $mainDigits = '4475005'.random_int(10000, 99999);
+    $customer   = whatsappStopTestSubscriber($this->shop, ['phone' => '+'.$mainDigits, 'marketing_whatsapp_phone' => '+4475006'.random_int(10000, 99999)]);
+
+    whatsappStopTestInbound($this->shop, $this->shop->settings['whatsapp']['phone_number_id'], $mainDigits, 'Please do not stop my order');
+    expect($customer->comms->fresh()->is_subscribed_to_whatsapp_newsletter)->toBeTrue();
+
+    MetaChatSession::where('phone_number', '+'.$mainDigits)->update(['customer_id' => null]);
+    whatsappStopTestInbound($this->shop, $this->shop->settings['whatsapp']['phone_number_id'], $mainDigits, 'STOP');
+    expect($customer->comms->fresh()->is_subscribed_to_whatsapp_newsletter)->toBeTrue();
+
+    $this->shop->update(['settings' => $original]);
+});
+
+test('the STOP keywords are matched as the whole message only', function () {
+    expect(\App\Actions\Comms\WhatsappSubscriber\UnsubscribeWhatsappNumberFromMarketing::isStopRequest('Stop!'))->toBeTrue()
+        ->and(\App\Actions\Comms\WhatsappSubscriber\UnsubscribeWhatsappNumberFromMarketing::isStopRequest('stop promotions'))->toBeTrue()
+        ->and(\App\Actions\Comms\WhatsappSubscriber\UnsubscribeWhatsappNumberFromMarketing::isStopRequest('stop it please'))->toBeFalse()
+        ->and(\App\Actions\Comms\WhatsappSubscriber\UnsubscribeWhatsappNumberFromMarketing::isStopRequest(null))->toBeFalse();
+});

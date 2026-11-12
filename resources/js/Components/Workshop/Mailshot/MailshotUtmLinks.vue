@@ -25,6 +25,7 @@ interface UtmLink {
     roles: string[]
     is_internal: boolean
     is_tracking_redirect: boolean
+    ready_made: { key: string, label: string, utm: Record<string, string> } | null
 }
 
 interface UtmSettings {
@@ -68,7 +69,15 @@ const isTagged = (link: UtmLink) => Object.keys(link.utm).length > 0
 const overriddenCount = computed(() => links.value.filter(isTagged).length)
 
 const automaticParameters = computed<Record<string, string>>(() => {
-    if (!settings.value?.is_enabled || !selectedLink.value?.is_internal) return {}
+    const readyMade = selectedLink.value?.ready_made
+
+    if (!settings.value || !selectedLink.value?.is_internal) return {}
+
+    if (!settings.value.is_enabled) {
+        return readyMade
+            ? { utm_source: settings.value.source, utm_medium: settings.value.medium, ...readyMade.utm }
+            : {}
+    }
 
     return {
         utm_source: settings.value.source,
@@ -76,6 +85,7 @@ const automaticParameters = computed<Record<string, string>>(() => {
         utm_campaign: settings.value.campaign,
         utm_id: settings.value.campaign_id,
         utm_content: selectedLink.value?.roles[0] ?? '',
+        ...(readyMade?.utm ?? {}),
     }
 })
 
@@ -202,9 +212,10 @@ const saveOverride = async () => {
 }
 
 const placeholderFor = (field: UtmField) => {
+    const automaticValue = automaticParameters.value[field.name]
+    if (automaticValue) return automaticValue
     if (!settings.value?.is_enabled || !selectedLink.value?.is_internal) return ''
-    if (field.name === 'utm_content') return selectedLink.value?.roles[0] ?? ''
-    if (field.name === 'utm_term') return ''
+    if (field.name === 'utm_content' || field.name === 'utm_term') return ''
 
     return field.placeholder
 }
@@ -228,7 +239,7 @@ watch(() => props.isOpen, isOpen => {
                     </p>
                 </div>
                 <button v-if="links.length" type="button" @click="loadLinks" :disabled="isLoading"
-                    class="shrink-0 text-sm text-gray-500 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded px-2 py-1 disabled:opacity-50">
+                    class="shrink-0 text-sm text-gray-500 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)] rounded px-2 py-1 disabled:opacity-50">
                     <FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
                     {{ ctrans('Reload links') }}
                 </button>
@@ -252,7 +263,7 @@ watch(() => props.isOpen, isOpen => {
                     <div>
                         <div class="text-sm font-medium text-gray-800">{{ ctrans('Tag links automatically') }}</div>
                         <p class="text-xs text-gray-500 mt-0.5">
-                            {{ ctrans('Turn this off to send your links untouched, apart from the ones you set by hand below.') }}
+                            {{ ctrans('Turn this off to send your links untouched, apart from ready-made links and the ones you set by hand below.') }}
                         </p>
                     </div>
                     <Toggle v-model="settings.is_enabled" size="md" @update:modelValue="saveSettings" />
@@ -298,12 +309,15 @@ watch(() => props.isOpen, isOpen => {
                     </div>
                     <div class="max-h-40 md:max-h-96 overflow-y-auto pr-1 space-y-1">
                         <button v-for="link in links" :key="link.url" type="button" @click="selectedUrl = link.url"
-                            class="w-full text-left px-3 py-2 rounded-md text-sm truncate focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            class="w-full text-left px-3 py-2 rounded-md text-sm truncate focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
                             :class="selectedUrl === link.url ? 'bg-gray-800 text-white' : 'text-gray-700 hover:bg-gray-100'"
                             :title="link.url">
                             <span v-if="!link.is_internal"
                                 class="mr-1.5 text-[10px] uppercase rounded px-1 py-0.5"
                                 :class="selectedUrl === link.url ? 'bg-gray-600 text-gray-100' : 'bg-gray-100 text-gray-600'">{{ ctrans('ext') }}</span>
+                            <span v-if="link.ready_made"
+                                class="mr-1.5 text-[10px] uppercase rounded px-1 py-0.5"
+                                :class="selectedUrl === link.url ? 'bg-gray-600 text-gray-100' : 'bg-gray-100 text-gray-600'">{{ ctrans('ready-made') }}</span>
                             <span v-if="isTagged(link)" class="mr-1.5 text-xs"
                                 :class="selectedUrl === link.url ? 'text-emerald-300' : 'text-emerald-600'"
                                 :aria-label="ctrans('Set by hand')">●</span>
@@ -317,6 +331,11 @@ watch(() => props.isOpen, isOpen => {
                         {{ ctrans('Used by') }}:
                         <span v-for="role in selectedLink.roles" :key="role"
                             class="inline-block bg-gray-100 text-gray-700 rounded px-1.5 py-0.5 mr-1 font-mono">{{ role }}</span>
+                    </div>
+
+                    <div v-if="selectedLink?.ready_made"
+                        class="mb-3 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-md p-2">
+                        {{ ctrans('Ready-made link: :label. Its campaign is set automatically. Anything you type here still wins.', { label: selectedLink.ready_made.label }) }}
                     </div>
 
                     <div v-if="selectedLink && !selectedLink.is_internal"

@@ -13,7 +13,9 @@ use App\Actions\Comms\Email\GetEmailWebsiteTheme;
 use App\Actions\Helpers\Gallery\Json\IndexShopGalleryImages;
 use App\Actions\Comms\Email\GetEmailSocialIcons;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
+use App\Actions\Comms\Mailshot\GetMailshotReadyMadeLinks;
 use App\Actions\OrgAction;
+use Illuminate\Support\Arr;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithMarketingAuthorisation;
 use App\Models\Catalogue\Shop;
@@ -264,6 +266,9 @@ class ShowMailshotWorkshop extends OrgAction
                     'method' => 'post'
                 ],
                 'mergeTags' => GetMailshotMergeTags::run(),
+                'readyMadeLinks' => collect(GetMailshotReadyMadeLinks::run($mailshot))
+                    ->map(fn (array $link) => Arr::only($link, ['key', 'label', 'url']))
+                    ->all(),
                 'mergeContents' => GetMailshotMergeContents::run(),
                 'status' => $email->outbox->state,
                 'socialIcons' => GetEmailSocialIcons::run($this->organisation->group),

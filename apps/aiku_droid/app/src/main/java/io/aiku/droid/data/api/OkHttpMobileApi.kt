@@ -38,6 +38,7 @@ class OkHttpMobileApi(
                 password = credentials.password,
                 deviceName = credentials.deviceName,
                 oneTimePassword = credentials.oneTimePassword,
+                twoFactorSetupToken = credentials.twoFactorSetupToken,
             ),
         )
 
@@ -50,13 +51,43 @@ class OkHttpMobileApi(
         execute(post("$mobileApiUrl/logout", body = "{}", bearerToken = token))
     }
 
-    override suspend fun sendPasswordResetLink(email: String): PasswordResetResult {
-        val body = AuthResponses.json.encodeToString(PasswordResetRequest(email))
+    override suspend fun requestPasswordResetCode(login: String): PasswordResult =
+        password("$mobileApiUrl/password/reset-code", AuthResponses.json.encodeToString(PasswordResetCodeRequest(login)), bearerToken = null)
 
-        return execute(post("$mobileApiUrl/password/reset-link", body, bearerToken = null))
-            ?.let { (statusCode, responseBody) -> AuthResponses.parsePasswordReset(statusCode, responseBody) }
-            ?: PasswordResetResult.Unreachable
+    override suspend fun resetPassword(reset: PasswordReset): PasswordResult {
+        val body = AuthResponses.json.encodeToString(
+            PasswordResetRequest(
+                login = reset.login,
+                code = reset.code,
+                password = reset.password,
+                passwordConfirmation = reset.passwordConfirmation,
+            ),
+        )
+
+        return password("$mobileApiUrl/password/reset", body, bearerToken = null)
     }
+
+    override suspend fun changePassword(token: String, change: PasswordChange): PasswordResult {
+        val body = AuthResponses.json.encodeToString(
+            PasswordChangeRequest(
+                currentPassword = change.currentPassword,
+                password = change.password,
+                passwordConfirmation = change.passwordConfirmation,
+            ),
+        )
+
+        return password("$mobileApiUrl/password", body, bearerToken = token)
+    }
+
+    private suspend fun password(url: String, body: String, bearerToken: String?): PasswordResult =
+        execute(post(url, body, bearerToken))
+            ?.let { (statusCode, responseBody) -> AuthResponses.parsePassword(statusCode, responseBody) }
+            ?: PasswordResult.Unreachable
+
+    override suspend fun profile(token: String): ProfileResult =
+        execute(get("$mobileApiUrl/profile", token))
+            ?.let { (statusCode, responseBody) -> AuthResponses.parseProfile(statusCode, responseBody) }
+            ?: ProfileResult.Unavailable
 
     override suspend fun warehouses(token: String): WarehousesResult =
         execute(Request.Builder().url("$mobileApiUrl/warehouses").get().header("Authorization", "Bearer $token").build())

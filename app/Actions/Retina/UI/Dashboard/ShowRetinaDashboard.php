@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\UI\Dashboard;
 
+use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Inertia\Inertia;
@@ -48,6 +49,7 @@ class ShowRetinaDashboard extends RetinaAction
         if ($this->shop->type === ShopTypeEnum::B2B && !$this->asPupil) {
             $customer          = $this->customer;
             $props['insights'] = Inertia::defer(fn () => GetRetinaB2BDashboardInsights::run($customer));
+            $props['whatsapp_optin'] = GetRetinaWhatsappOptInData::run($customer, $this->website);
         }
 
         return Inertia::render($inertiaPage, $props);

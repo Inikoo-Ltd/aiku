@@ -26,19 +26,25 @@ class GetMailshotUrls extends OrgAction
 
     public function handle(Mailshot $mailshot): array
     {
-        $settings  = GetMailshotUtmSettings::run($mailshot);
-        $overrides = $this->getUtmOverrides($mailshot);
-        $domains   = $this->getWebsiteDomains($mailshot);
+        $settings       = GetMailshotUtmSettings::run($mailshot);
+        $overrides      = $this->getUtmOverrides($mailshot);
+        $domains        = $this->getWebsiteDomains($mailshot);
+        $readyMadeLinks = GetMailshotReadyMadeLinks::run($mailshot);
         $roles     = $this->getContentLabelsByUrl($mailshot->email?->unpublishedSnapshot?->compiled_layout ?: $mailshot->email?->liveSnapshot?->compiled_layout, $domains);
 
         $links = collect($this->extractUrls($mailshot->email?->unpublishedSnapshot?->layout ?? []))
-            ->map(fn (string $url) => [
-                'url'                  => $url,
-                'utm'                  => $this->getUtmOverrideFor($url, $overrides),
-                'roles'                => Arr::get($roles, $url, []),
-                'is_internal'          => $this->isInternalLink($url, $domains),
-                'is_tracking_redirect' => $this->isTrackingRedirect($url),
-            ])
+            ->map(function (string $url) use ($overrides, $roles, $domains, $readyMadeLinks) {
+                $readyMadeLink = $this->getReadyMadeLinkFor($url, $readyMadeLinks, $domains);
+
+                return [
+                    'url'                  => $url,
+                    'utm'                  => $this->getUtmOverrideFor($url, $overrides),
+                    'roles'                => Arr::get($roles, $url, []),
+                    'is_internal'          => $readyMadeLink !== null || $this->isInternalLink($url, $domains),
+                    'is_tracking_redirect' => $this->isTrackingRedirect($url),
+                    'ready_made'           => $readyMadeLink ? Arr::only($readyMadeLink, ['key', 'label', 'utm']) : null,
+                ];
+            })
             ->values()
             ->all();
 

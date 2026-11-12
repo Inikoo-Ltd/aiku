@@ -19,6 +19,9 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.AikuDroid">
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

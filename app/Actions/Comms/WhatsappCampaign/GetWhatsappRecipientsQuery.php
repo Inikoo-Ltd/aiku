@@ -217,6 +217,10 @@ class GetWhatsappRecipientsQuery
             ));
     }
 
+    private const CUSTOMER_MARKETING_PHONE = 'coalesce(customers.marketing_whatsapp_phone, customers.phone)';
+
+    private const SUBSCRIBER_PHONE = 'coalesce(customers.marketing_whatsapp_phone, customers.phone, meta_chat_sessions.phone_number)';
+
     /**
      * whatsapp_subscribers carries no phone of its own, it is resolved through the
      * polymorphic parent using the morph aliases registered in AppServiceProvider.
@@ -237,9 +241,9 @@ class GetWhatsappRecipientsQuery
 
         $this->whereCustomerPassesFilter($query, 'customers.id', $filteredCustomerIds);
 
-        return $this->wherePhoneSendable($query, 'coalesce(customers.phone, meta_chat_sessions.phone_number)')
+        return $this->wherePhoneSendable($query, self::SUBSCRIBER_PHONE)
             ->select($this->branchColumns(
-                'coalesce(customers.phone, meta_chat_sessions.phone_number)',
+                self::SUBSCRIBER_PHONE,
                 'coalesce(customers.contact_name, meta_chat_sessions.guest_identifier)',
                 [
                     'customer_id'          => DB::raw('customers.id as customer_id'),
@@ -260,8 +264,8 @@ class GetWhatsappRecipientsQuery
 
         $this->whereCustomerPassesFilter($query, 'customers.id', $filteredCustomerIds);
 
-        return $this->wherePhoneSendable($query, 'customers.phone')
-            ->select($this->branchColumns('customers.phone', 'customers.contact_name', [
+        return $this->wherePhoneSendable($query, self::CUSTOMER_MARKETING_PHONE)
+            ->select($this->branchColumns(self::CUSTOMER_MARKETING_PHONE, 'customers.contact_name', [
                 'customer_id'   => DB::raw('customers.id as customer_id'),
                 'created_at'    => DB::raw('customers.created_at as created_at'),
                 'is_subscriber' => DB::raw('true as is_subscriber'),

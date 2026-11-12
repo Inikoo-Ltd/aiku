@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -147,6 +149,7 @@ import io.aiku.droid.ui.navigation.AreasRoute
 import io.aiku.droid.ui.navigation.AskCrmRoute
 import io.aiku.droid.ui.navigation.BookedInRoute
 import io.aiku.droid.ui.navigation.BookingInRoute
+import io.aiku.droid.ui.navigation.ChangePasswordRoute
 import io.aiku.droid.ui.navigation.ClockScanQrRoute
 import io.aiku.droid.ui.navigation.ClockingAdjustmentsRoute
 import io.aiku.droid.ui.navigation.ClockingCalendarRoute
@@ -247,7 +250,10 @@ import io.aiku.droid.ui.navigation.TrolleysRoute
 import io.aiku.droid.ui.navigation.WarehouseDashboardRoute
 import io.aiku.droid.ui.navigation.WarehouseOverviewRoute
 import io.aiku.droid.ui.profile.AppearanceScreen
+import io.aiku.droid.ui.profile.ChangePasswordScreen
+import io.aiku.droid.ui.profile.ChangePasswordViewModel
 import io.aiku.droid.ui.profile.LanguageScreen
+import io.aiku.droid.ui.profile.ProfileDetailsViewModel
 import io.aiku.droid.ui.profile.ProfileScreen
 import io.aiku.droid.ui.scan.ScanResultScreen
 import io.aiku.droid.ui.search.SearchScreen
@@ -269,10 +275,14 @@ import io.aiku.droid.ui.theme.Appearance
 fun SignedInApp(container: AppContainer, session: StaffSession) {
     val warehousesViewModel: WarehousesViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { WarehousesViewModel(container.warehouseApi, container.authApi, container.sessions, container.settings) }
+            initializer {
+                WarehousesViewModel(container.warehouseApi, container.authApi, container.sessions, container.settings, container.warehouseCache)
+            }
         },
     )
     val state by warehousesViewModel.state.collectAsStateWithLifecycle()
+
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { warehousesViewModel.refresh() }
 
     when (val current = state) {
         WarehousesUiState.Loading -> LoadingScreen()
@@ -288,24 +298,18 @@ fun SignedInApp(container: AppContainer, session: StaffSession) {
                 AikuButton(text = stringResource(R.string.sign_out), onClick = warehousesViewModel::signOut, style = ButtonStyle.Outline, modifier = Modifier.fillMaxWidth())
             }
         }
-        WarehousesUiState.NoWarehouses -> WarehouseApp(
-            container = container,
-            session = session,
-            warehouses = emptyList(),
-            selected = null,
-            onSelectWarehouse = warehousesViewModel::select,
-            onSignOut = warehousesViewModel::signOut,
-            onSignInAgain = warehousesViewModel::signInAgain,
-        )
-        is WarehousesUiState.Ready -> WarehouseApp(
-            container = container,
-            session = session,
-            warehouses = current.warehouses,
-            selected = current.selected,
-            onSelectWarehouse = warehousesViewModel::select,
-            onSignOut = warehousesViewModel::signOut,
-            onSignInAgain = warehousesViewModel::signInAgain,
-        )
+        WarehousesUiState.NoWarehouses, is WarehousesUiState.Ready -> {
+            val ready = current as? WarehousesUiState.Ready
+            WarehouseApp(
+                container = container,
+                session = session,
+                warehouses = ready?.warehouses.orEmpty(),
+                selected = ready?.selected,
+                onSelectWarehouse = warehousesViewModel::select,
+                onSignOut = warehousesViewModel::signOut,
+                onSignInAgain = warehousesViewModel::signInAgain,
+            )
+        }
     }
 }
 
@@ -388,7 +392,7 @@ private fun WarehouseApp(
         LocalTabHandoff provides remember { TabHandoff() },
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            AppNavHost(navController)
+            AppNavHost(navController, container)
             ToastHost(
                 state = toasts,
                 modifier = Modifier
@@ -415,7 +419,7 @@ private fun WarehouseApp(
 }
 
 @Composable
-private fun AppNavHost(navController: NavHostController) {
+private fun AppNavHost(navController: NavHostController, container: AppContainer) {
     NavHost(
         navController = navController,
         startDestination = HomeRoute,
@@ -431,9 +435,26 @@ private fun AppNavHost(navController: NavHostController) {
         composable<MenuRoute> { MenuScreen() }
         composable<SearchRoute> { SearchScreen() }
         composable<WarehouseDashboardRoute> { WarehouseDashboardScreen() }
-        composable<ProfileRoute> { ProfileScreen() }
+        composable<ProfileRoute> {
+            val profileDetailsViewModel: ProfileDetailsViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { ProfileDetailsViewModel(container.authApi, container.sessions) }
+                },
+            )
+            val profileDetails by profileDetailsViewModel.profile.collectAsStateWithLifecycle()
+            ProfileScreen(details = profileDetails)
+        }
         composable<AppearanceRoute> { AppearanceScreen() }
         composable<LanguageRoute> { LanguageScreen() }
+        composable<ChangePasswordRoute> {
+            val changePasswordViewModel: ChangePasswordViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { ChangePasswordViewModel(container.authApi, container.sessions) }
+                },
+            )
+            val changePasswordState by changePasswordViewModel.state.collectAsStateWithLifecycle()
+            ChangePasswordScreen(state = changePasswordState, actions = changePasswordViewModel)
+        }
         composable<SyncQueueRoute> { SyncQueueScreen() }
         composable<ResolveConflictsRoute> { ResolveConflictsScreen() }
         composable<ConflictRoute> { entry -> entry.toRoute<ConflictRoute>().let { route -> ConflictScreen(route.reference) } }

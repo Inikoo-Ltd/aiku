@@ -9,6 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { Link, Deferred } from "@inertiajs/vue3";
 import B2BDashboardInsights from "@/Components/Retina/Dashboard/B2BDashboardInsights.vue"
+import WhatsAppDashboardOptIn, { type WhatsappOptInData } from "@/Components/Retina/Dashboard/WhatsAppDashboardOptIn.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { textReplaceVariables } from "@/Composables/Workshop"
 
@@ -18,6 +19,7 @@ const props = defineProps<{
     data: {}
     welcome_message: string
     insights?: Record<string, any>
+    whatsapp_optin?: WhatsappOptInData | null
 }>()
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -133,6 +135,8 @@ const hasTags = computed(() => userCustomerTags.value.length > 0)
 
             </div>
         </div>
+
+        <WhatsAppDashboardOptIn v-if="whatsapp_optin" :data="whatsapp_optin" />
 
         <!-- <div>
             <h1 class="text-4xl mb-4">{{ ctrans("Hello") }}, <span class="font-bold">{{ data?.customer?.contact_name }}</span>!</h1>

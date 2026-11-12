@@ -9,8 +9,10 @@ import io.aiku.droid.data.api.HrApi
 import io.aiku.droid.data.api.OkHttpMobileApi
 import io.aiku.droid.data.api.WarehouseApi
 import io.aiku.droid.data.session.DeviceSessionRepository
+import io.aiku.droid.data.session.DeviceWarehouseCache
 import io.aiku.droid.data.session.KeystoreCipher
 import io.aiku.droid.data.session.SessionRepository
+import io.aiku.droid.data.session.WarehouseCache
 import io.aiku.droid.data.settings.DeviceSettings
 
 class AppContainer(context: Context) {
@@ -32,9 +34,16 @@ class AppContainer(context: Context) {
 
     val hrApi: HrApi = mobileApi
 
+    private val sessionCipher = KeystoreCipher(SESSION_KEY_ALIAS)
+
     val sessions: SessionRepository = DeviceSessionRepository(
         preferences = context.getSharedPreferences(SESSION_PREFERENCES, Context.MODE_PRIVATE),
-        cipher = KeystoreCipher(SESSION_KEY_ALIAS),
+        cipher = sessionCipher,
+    )
+
+    val warehouseCache: WarehouseCache = DeviceWarehouseCache(
+        preferences = context.getSharedPreferences(PERMISSIONS_PREFERENCES, Context.MODE_PRIVATE),
+        cipher = sessionCipher,
     )
 
     val settings = DeviceSettings(context.getSharedPreferences(SETTINGS_PREFERENCES, Context.MODE_PRIVATE))
@@ -44,9 +53,16 @@ class AppContainer(context: Context) {
         .joinToString(" ")
         .take(MAX_DEVICE_NAME_LENGTH)
 
+    init {
+        if (sessions.session.value == null) {
+            warehouseCache.clear()
+        }
+    }
+
     private companion object {
         const val SESSION_PREFERENCES = "aiku_session"
         const val SETTINGS_PREFERENCES = "aiku_settings"
+        const val PERMISSIONS_PREFERENCES = "aiku_permissions"
         const val SESSION_KEY_ALIAS = "aiku_session_key"
         const val MAX_DEVICE_NAME_LENGTH = 100
     }
