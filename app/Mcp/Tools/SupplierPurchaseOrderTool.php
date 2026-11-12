@@ -220,7 +220,7 @@ class SupplierPurchaseOrderTool extends Tool
                 'lines'     => $preparedLines->map(fn ($transaction) => [
                     'code'  => $transaction->supplierProduct?->code,
                     'units' => (float) $transaction->quantity_ordered,
-                    'cost'  => round((float) $transaction->net_amount, 2).' '.$transaction->supplierProduct?->currency?->code,
+                    'cost'  => round((float) $transaction->net_amount, 2).' '.$transaction->currencyCodeIn($beingPrepared),
                 ])->values()->all(),
                 'total_in_organisation_currency' => $preparedTotal,
             ] : null,

@@ -99,6 +99,7 @@ class UpdatePurchaseOrderTransaction extends OrgAction
         ];
         if (! $this->strict) {
             $rules['net_amount'] = ['sometimes', 'numeric'];
+            $rules['currency_id'] = ['sometimes', 'integer', 'exists:currencies,id'];
             $rules['state'] = ['sometimes', Rule::enum(PurchaseOrderTransactionStateEnum::class)];
             $rules['delivery_state'] = ['sometimes', 'nullable', Rule::enum(PurchaseOrderTransactionDeliveryStateEnum::class)];
             $rules = $this->noStrictUpdateRules($rules);

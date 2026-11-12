@@ -68,7 +68,7 @@ class PdfPurchaseOrderProformaInvoice extends OrgAction
             'images'          => null,
             'agreedTerms'     => GetPurchaseOrderAgreedTerms::make()->forMany(collect([$purchaseOrder]), forDocument: true)[$purchaseOrder->id] ?? collect(),
             'depositAmount'   => (float) $purchaseOrder->deposit_amount,
-            'totals'          => $lines->groupBy(fn ($transaction) => $transaction->supplierProduct?->currency?->code ?? $purchaseOrder->currency->code)
+            'totals'          => $lines->groupBy(fn ($transaction) => $transaction->currencyCodeIn($purchaseOrder))
                 ->map(fn ($transactions) => $transactions->sum(fn ($transaction) => (float) $transaction->net_amount)),
         ];
     }

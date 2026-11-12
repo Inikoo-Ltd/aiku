@@ -76,6 +76,7 @@ class StorePurchaseOrderTransaction extends OrgAction
             $rules['delivery_state'] = ['sometimes', 'required', Rule::enum(PurchaseOrderTransactionDeliveryStateEnum::class)];
             $rules['submitted_at'] = ['sometimes', 'required', 'date'];
             $rules['net_amount'] = ['sometimes', 'numeric'];
+            $rules['currency_id'] = ['sometimes', 'integer', 'exists:currencies,id'];
             $rules['org_exchange'] = ['sometimes', 'numeric'];
             $rules['grp_exchange'] = ['sometimes', 'numeric'];
 

@@ -42,26 +42,30 @@ class CalculatePurchaseOrderTotalAmounts extends OrgAction
     public function itemsNet(PurchaseOrder $purchaseOrder): float
     {
         return (float) $purchaseOrder->purchaseOrderTransactions()
-            ->with('supplierProduct.currency')
+            ->with('currency')
             ->get()
             ->sum(fn (PurchaseOrderTransaction $transaction) => $this->netAmountInOrderCurrency($purchaseOrder, $transaction));
     }
 
+    /**
+     * A line keeps the currency its amount is in, which is not always the order's: a line made in aiku is priced from
+     * its supplier product. A line without one is in the order's currency.
+     */
     private function netAmountInOrderCurrency(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $transaction): float
     {
-        $netAmount       = (float) $transaction->net_amount;
-        $supplierProduct = $transaction->supplierProduct;
+        $netAmount = (float) $transaction->net_amount;
+        $currency  = $transaction->currency;
 
-        if (!$supplierProduct || $supplierProduct->currency_id === $purchaseOrder->currency_id) {
+        if (!$currency || $currency->id === $purchaseOrder->currency_id) {
             return $netAmount;
         }
 
-        $rate = GetHistoricCurrencyExchange::run($supplierProduct->currency, $purchaseOrder->currency, $purchaseOrder->date)
-            ?? GetCurrencyExchange::run($supplierProduct->currency, $purchaseOrder->currency);
+        $rate = GetHistoricCurrencyExchange::run($currency, $purchaseOrder->currency, $purchaseOrder->date)
+            ?? GetCurrencyExchange::run($currency, $purchaseOrder->currency);
 
         if ($rate === null) {
             throw new RuntimeException(
-                "No exchange rate found from {$supplierProduct->currency->code} to {$purchaseOrder->currency->code} for purchase order {$purchaseOrder->reference}"
+                "No exchange rate found from {$currency->code} to {$purchaseOrder->currency->code} for purchase order {$purchaseOrder->reference}"
             );
         }
 

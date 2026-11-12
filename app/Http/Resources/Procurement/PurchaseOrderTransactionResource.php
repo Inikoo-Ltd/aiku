@@ -73,7 +73,7 @@ class PurchaseOrderTransactionResource extends JsonResource
             'minimum_carton_order' => $supplierProduct?->minimum_carton_order ? (int) $supplierProduct->minimum_carton_order : null,
 
             'net_amount'           => $transaction->net_amount,
-            'net_currency'         => $transaction->purchaseOrder?->currency?->code ?? $supplierProduct?->currency?->code,
+            'net_currency'         => $transaction->purchaseOrder ? $transaction->currencyCodeIn($transaction->purchaseOrder) : $transaction->currency?->code,
             'org_net_amount'       => $transaction->org_net_amount,
             'org_currency'         => $transaction->organisation?->currency?->code,
             'org_exchange'         => $transaction->org_exchange,

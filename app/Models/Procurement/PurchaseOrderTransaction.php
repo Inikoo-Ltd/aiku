@@ -12,6 +12,7 @@ use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliv
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionPriceQueryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionQuantityQueryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
+use App\Models\Helpers\Currency;
 use App\Models\Inventory\OrgStock;
 use App\Models\SupplyChain\AgentSupplierPurchaseOrder;
 use App\Models\SupplyChain\HistoricSupplierProduct;
@@ -58,6 +59,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $deleted_at
  * @property string|null $source_id
  * @property int|null $agent_supplier_purchase_order_id
+ * @property int|null $currency_id
+ * @property-read Currency|null $currency
  * @property-read AgentSupplierPurchaseOrder|null $agentSupplierPurchaseOrder
  * @property-read \App\Models\SysAdmin\Group|null $group
  * @property-read HistoricSupplierProduct|null $historicSupplierProduct
@@ -119,6 +122,18 @@ class PurchaseOrderTransaction extends Model implements Auditable
     public function supplierProduct(): BelongsTo
     {
         return $this->belongsTo(SupplierProduct::class);
+    }
+
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class);
+    }
+
+    public function currencyCodeIn(PurchaseOrder $purchaseOrder): ?string
+    {
+        return $this->currency_id && $this->currency_id !== $purchaseOrder->currency_id
+            ? $this->currency?->code
+            : $purchaseOrder->currency?->code;
     }
 
     public function orgSupplierProduct(): BelongsTo

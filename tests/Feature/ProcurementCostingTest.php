@@ -4802,7 +4802,7 @@ test('the purchase order costs repair clears extras, puts items a costed deliver
         'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::CASH,
     ]);
 
-    $otherCurrency->purchaseOrderTransactions()->firstOrFail()->supplierProduct->updateQuietly(['currency_id' => \App\Models\Helpers\Currency::where('id', '!=', $otherCurrency->currency_id)->value('id')]);
+    $otherCurrency->purchaseOrderTransactions()->firstOrFail()->updateQuietly(['currency_id' => Currency::where('id', '!=', $otherCurrency->currency_id)->value('id')]);
     $itemsUnconverted = (float) $otherCurrency->cost_items;
     $otherCurrency->updateQuietly(['cost_extra' => 10, 'cost_total' => $itemsUnconverted + 40 + 10]);
 
@@ -4839,4 +4839,76 @@ test('the purchase order costs repair clears extras, puts items a costed deliver
         ->and((float) $paid->cost_items)->toBe(4743776.0)
         ->and($paid->data)->not->toHaveKey(RepairPurchaseOrderCosts::SNAPSHOT_KEY)
         ->and($repair(false)->keys()->all())->toBe([$paid->id]);
+});
+
+test('a purchase order line keeps the currency its amount is in, so the order items and total stay converted whatever happens to its product later (INI-247)', function () {
+    [, $order]  = pricedAgentPurchaseOrders($this, 1);
+    $firstLine  = $order->purchaseOrderTransactions()->firstOrFail();
+    $product    = $firstLine->supplierProduct;
+    $other      = Currency::where('id', '!=', $order->currency_id)->whereIn('code', ['USD', 'EUR', 'INR'])->firstOrFail();
+    $date       = '2019-04-11';
+    $hydrate    = fn () => \App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions::run($order->refresh());
+    $amounts    = fn () => array_map(fn ($amount) => round((float) $amount, 2), $order->refresh()->only(['cost_items', 'cost_total']));
+    $bothEqual  = fn (float $amount) => ['cost_items' => round($amount, 2), 'cost_total' => round($amount, 2)];
+
+    foreach ([$order->currency_id => 2.5, $other->id => 10] as $currencyId => $exchange) {
+        DB::table('currency_exchanges')->upsert(
+            ['currency_id' => $currencyId, 'date' => $date, 'exchange' => $exchange, 'source' => 'M', 'created_at' => now(), 'updated_at' => now()],
+            ['currency_id', 'date'],
+            ['exchange']
+        );
+    }
+    $rate = GetHistoricCurrencyExchange::run($other, $order->currency, Carbon::parse($date));
+    $order->updateQuietly(['date' => $date]);
+
+    expect($rate)->not->toBe(1.0)
+        ->and($firstLine->currency_id)->toBe($order->currency_id);
+
+    $product->updateQuietly(['currency_id' => $other->id, 'cost' => 12.5]);
+    $otherCurrencyLine = StorePurchaseOrderTransaction::make()->action(
+        $order->refresh(),
+        $product->historicSupplierProduct,
+        $this->orgStocks[1] ?? $this->orgStocks[0],
+        array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10])
+    );
+
+    expect($otherCurrencyLine->currency_id)->toBe($other->id)
+        ->and((float) $otherCurrencyLine->net_amount)->toBe(125.0)
+        ->and($firstLine->refresh()->currency_id)->toBe($order->currency_id)
+        ->and($amounts())->toBe($bothEqual(125 + 125 * $rate));
+
+    $hydrate();
+    expect($amounts())->toBe($bothEqual(125 + 125 * $rate));
+
+    $rewritten = [];
+    PurchaseOrder::updating(function (PurchaseOrder $updating) use (&$rewritten) {
+        $rewritten = array_merge($rewritten, array_keys($updating->getDirty()));
+    });
+    $hydrate();
+    expect($rewritten)->not->toContain('cost_items')->not->toContain('cost_total');
+
+    $product->updateQuietly(['currency_id' => $order->currency_id, 'deleted_at' => now()]);
+    CalculatePurchaseOrderTotalAmounts::run($order->refresh());
+    $hydrate();
+    expect($amounts())->toBe($bothEqual(125 + 125 * $rate));
+    $product->updateQuietly(['currency_id' => $other->id, 'deleted_at' => null]);
+
+    $fetchedLine = StorePurchaseOrderTransaction::make()->action(
+        $order->refresh(),
+        $product->historicSupplierProduct,
+        $this->orgStocks[0],
+        ['quantity_ordered' => 5, 'net_amount' => 50, 'currency_id' => $order->currency_id],
+        strict: false
+    );
+
+    expect($fetchedLine->currency_id)->toBe($order->currency_id);
+    $hydrate();
+    expect($amounts())->toBe($bothEqual(125 + 125 * $rate + 50));
+
+    $order->updateQuietly(['date' => '2019-04-12', 'cost_items' => 999, 'cost_total' => 999]);
+    \App\Actions\Helpers\CurrencyExchange\FetchCurrencyExchange::shouldRun()->andThrow(new Exception('provider down'));
+
+    $hydrate();
+    expect($amounts())->toBe($bothEqual(999))
+        ->and($order->number_purchase_order_transactions)->toBe(3);
 });

@@ -78,7 +78,9 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             $supplierProduct        = $orgSupplierProduct->supplierProduct;
             $historicSupplierProduct = ($isSameSupplier ? $purchaseOrderTransaction->historicSupplierProduct : null) ?? $supplierProduct->historicSupplierProduct;
             // ponytail: agents' suppliers share the agent's currency; a supplier in another currency is refused rather than converted
-            if ($purchaseOrderTransaction->supplierProduct && $supplierProduct->currency_id !== $purchaseOrderTransaction->supplierProduct->currency_id) {
+            $lineCurrencyId     = $purchaseOrderTransaction->currency_id ?? $sourcePurchaseOrder->currency_id;
+            $keepsOwnUnitCost   = $supplierProduct->id === $purchaseOrderTransaction->supplier_product_id && $purchaseOrderTransaction->unit_cost !== null;
+            if (!$keepsOwnUnitCost && $supplierProduct->currency_id !== $lineCurrencyId) {
                 throw ValidationException::withMessages(['org_supplier_id' => __(':supplier sells in another currency: cancel the line and order it from them instead', ['supplier' => $orgSupplier->supplier->name])]);
             }
 
@@ -104,6 +106,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
                 array_filter([
                     'quantity_ordered'        => $quantity,
                     'net_amount'              => round($agreedUnitCost * $quantity, 2),
+                    'currency_id'             => $lineCurrencyId,
                     'org_supplier_product_id' => $orgSupplierProduct->id,
                     'state'                   => $isNewPurchaseOrder ? null : $targetPurchaseOrder->state->transactionState(),
                 ], fn ($value) => $value !== null),

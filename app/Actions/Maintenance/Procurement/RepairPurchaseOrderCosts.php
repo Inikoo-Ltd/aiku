@@ -29,7 +29,7 @@ use Throwable;
  * data.costs_before_extras_cleared. An order whose items would change is left alone and listed when it has deposit
  * payments, because deposits and agent money are reckoned from its items, when its lines carry no amounts or when
  * they can not be added up. An order with lines in another currency than its own only loses its extras, taken off
- * its total: its items are stored unconverted and are not this repair's to change. Deleted orders are left as they
+ * its total: its items are not this repair's to change. Deleted orders are left as they
  * are: the agent orders split per supplier are kept deleted with what Aurora had. Every order is listed in the CSV
  * before anything is written, and nothing is written without --apply.
  */
@@ -84,8 +84,7 @@ class RepairPurchaseOrderCosts
                 exists(select 1 from purchase_order_deposit_payments payments where payments.purchase_order_id = po.id and payments.deleted_at is null) as has_payments,
                 exists(
                     select 1 from purchase_order_transactions lines
-                    join supplier_products on supplier_products.id = lines.supplier_product_id
-                    where lines.purchase_order_id = po.id and supplier_products.currency_id <> po.currency_id
+                    where lines.purchase_order_id = po.id and lines.currency_id <> po.currency_id
                 ) as has_foreign_lines
             from purchase_orders po
             join organisations on organisations.id = po.organisation_id

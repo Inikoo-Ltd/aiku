@@ -4422,6 +4422,7 @@ test('moving part of a line puts it on the other supplier open order at the same
     expect($result['moved']->purchase_order_id)->toBe($openOrder->id)
         ->and($result['moved']->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
         ->and($result['moved']->org_supplier_product_id)->toBe($toProduct->id)
+        ->and($result['moved']->currency_id)->toBe($line->currency_id)
         ->and($result['moved']->price_query_state)->toBeNull()
         ->and((float) $result['moved']->net_amount)->toBe(round($unitCost * 10, 2))
         ->and($line->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)

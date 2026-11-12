@@ -116,6 +116,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
         $query = QueryBuilder::for(PurchaseOrderTransaction::class);
         $query->with([
             'purchaseOrder.currency',
+            'currency',
             'supplierProduct.currency',
             'supplierProduct.supplier',
             'supplierProduct.image',

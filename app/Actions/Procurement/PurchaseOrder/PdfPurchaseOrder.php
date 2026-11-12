@@ -123,7 +123,7 @@ class PdfPurchaseOrder extends OrgAction
             'images'          => $this->withImages ? $this->lineImages($lines) : null,
             'agreedTerms'     => $this->agreedTerms[$purchaseOrder->id] ?? collect(),
             'agreedNotes'     => $this->agreedNotes[$purchaseOrder->id] ?? collect(),
-            'totals'          => $lines->groupBy(fn ($transaction) => $transaction->supplierProduct?->currency?->code ?? $purchaseOrder->currency->code)
+            'totals'          => $lines->groupBy(fn ($transaction) => $transaction->currencyCodeIn($purchaseOrder))
                 ->map(fn ($transactions) => $transactions->sum(fn ($transaction) => (float)$transaction->net_amount)),
         ];
     }
