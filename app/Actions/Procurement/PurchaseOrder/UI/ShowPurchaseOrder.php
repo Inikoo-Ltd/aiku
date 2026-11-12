@@ -292,6 +292,17 @@ class ShowPurchaseOrder extends OrgAction
                         },
                     ]),
                 ],
+                'rename_reference'         => $this->canEdit || $this->agentCanEdit ? [
+                    'availability_route' => [
+                        'name'       => 'grp.json.purchase_order.reference_availability',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                    'update_route'       => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.purchase-order.reference.update',
+                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                    ],
+                ] : null,
                 'upload_excel'             => $uploadExcel ? $this->uploadExcel($purchaseOrder) : null,
                 'submit_problems'          => Inertia::optional(fn () => $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS && SendPartnerPurchaseOrderToSeller::appliesTo($purchaseOrder)
                     ? SendPartnerPurchaseOrderToSeller::make()->submitProblems($purchaseOrder, $request->user())

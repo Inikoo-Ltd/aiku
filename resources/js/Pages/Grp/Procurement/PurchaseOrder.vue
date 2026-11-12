@@ -50,6 +50,7 @@ import PurchaseOrderPayments from "@/Components/Procurement/PurchaseOrderPayment
 import PurchaseOrderDepositPayments, { type PurchaseOrderPaymentsData } from "@/Components/Procurement/PurchaseOrderDepositPayments.vue"
 import AgentPurchaseOrderMoney, { type AgentPurchaseOrderMoneyData } from "@/Components/Procurement/AgentPurchaseOrderMoney.vue"
 import PurchaseOrderStages from "@/Components/Procurement/PurchaseOrderStages.vue"
+import PurchaseOrderReferenceTitle, { type RenameReference } from "@/Components/Procurement/PurchaseOrderReferenceTitle.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import PurchaseOrderStageContainers from "@/Components/Procurement/PurchaseOrderStageContainers.vue"
 import PurchaseOrderReadyCheckItems, { type ReadyCheckItems } from "@/Components/Procurement/PurchaseOrderReadyCheckItems.vue"
@@ -121,6 +122,7 @@ const props = defineProps < {
     data: {
         data: {
             id: number
+            slug: string
             state: string
             state_label: string
             is_partner?: boolean
@@ -259,6 +261,7 @@ const props = defineProps < {
 	attachmentRoutes: { attachRoute: routeType; detachRoute: routeType }
 	attachmentScopes: { name: string; code: string }[]
 	history?: {}
+    rename_reference?: RenameReference | null
     upload_excel?: {
         title: { label: string, information: string }
         progressDescription: string
@@ -1067,6 +1070,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 <template>
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHeadWithGroupedActions">
+		<template #title>
+			<PurchaseOrderReferenceTitle :reference="pageHead.title" :slug="data.data.slug" :rename-reference="rename_reference ?? null" />
+		</template>
 		<template #afterTitle2>
 			<span v-if="lastEdit" class="text-xs font-normal text-gray-500">
 				{{ ctrans("Last edited by :user on :date", { user: lastEdit.user ?? "?", date: useFormatTime(lastEdit.at, { formatTime: "short-datetime" }) }) }}
