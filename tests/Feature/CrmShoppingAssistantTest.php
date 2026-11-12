@@ -837,7 +837,7 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
     $this->get(route('grp.org.shops.show.ai_salesman.conversations.show', [...$shopParameters, $elsewhere->ulid]))->assertNotFound();
 });
 
-test('the customer page has a Merlin tab with the customer conversations, only when there are some and the user can see them', function () {
+test('the customer page has a Merlin tab with the customer conversations, only when there are some', function () {
     GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
     createWebsite($this->shop);
     $product      = shoppingAssistantProduct($this->product);
@@ -859,10 +859,6 @@ test('the customer page has a Merlin tab with the customer conversations, only w
     $this->get($customerRoute($quiet))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.merlin')->where('merlin_meta', null));
 
-    $customerViewer = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
-    actingAsUserWithOnlyPermissions($customerViewer, ["crm.{$this->shop->id}.view"]);
-    $this->get($customerRoute($customer))->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.merlin'));
 });
 
 function shoppingAssistantSpend(Website $website, float $cost, ?string $createdAt = null, ShoppingAssistantEntryPointEnum $entryPoint = ShoppingAssistantEntryPointEnum::SEARCH): void

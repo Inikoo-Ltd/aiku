@@ -27,6 +27,7 @@ use App\Http\Resources\Web\ShoppingAssistantConversationsResource;
 use App\Http\Resources\Web\ShoppingAssistantWebsitesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Tasks\StaffTask;
@@ -256,14 +257,20 @@ class ShowShoppingAssistantPerformance extends OrgAction
             ->join('shops', 'shops.id', '=', 'shopping_assistant_conversations.shop_id')
             ->join('organisations', 'organisations.id', '=', 'shopping_assistant_conversations.organisation_id');
 
-        $report->applyScope($query->getEloquentBuilder(), $filters, $filters['from']->startOfDay(), $filters['to']->endOfDay());
+        if ($customerId = $filters['customer_id'] ?? null) {
+            $query->where('shopping_assistant_conversations.customer_id', $customerId)
+                ->where('shopping_assistant_conversations.entry_point', '!=', ShoppingAssistantEntryPointEnum::COMMAND->value);
+        } else {
+            $report->applyScope($query->getEloquentBuilder(), $filters, $filters['from']->startOfDay(), $filters['to']->endOfDay());
+        }
 
         $eventCount = fn (string $type) => "(select count(*) from shopping_assistant_events events where events.shopping_assistant_conversation_id = shopping_assistant_conversations.id and events.type = '$type') as $type";
 
-        if ($generalCondition = $report->generalFilterCondition($filters['general'])) {
+        if ($generalCondition = $report->generalFilterCondition($filters['general'] ?? null)) {
             $query->whereRaw($generalCondition);
         }
 
+        $filters['outcome'] ??= null;
         if ($filters['outcome'] === 'ordered') {
             [$orderedSql, $orderedBindings] = $report->attributionSql(
                 $report->conversationsQuery($filters, $filters['from']->startOfDay(), $filters['to']->endOfDay()),
@@ -324,16 +331,36 @@ class ShowShoppingAssistantPerformance extends OrgAction
         return $conversations;
     }
 
-    public function tableStructure(bool $websiteLocked, string $prefix = ShoppingAssistantPerformanceTabsEnum::CONVERSATIONS->value): Closure
+    /**
+     * Every conversation of the customer with the assistant (Merlin tab of the customer page), in the shop's currency.
+     */
+    public function customerConversations(Customer $customer, string $prefix): LengthAwarePaginator
     {
-        return function (InertiaTable $table) use ($websiteLocked, $prefix) {
+        $currencyCode = $customer->shop->currency->code;
+
+        return $this->conversationsTable(['customer_id' => $customer->id], 'net_amount', GetShoppingAssistantReport::make()->usdRate($currencyCode), $prefix);
+    }
+
+    public static function customerHasConversations(Customer $customer): bool
+    {
+        return ShoppingAssistantConversation::where('customer_id', $customer->id)
+            ->where('entry_point', '!=', ShoppingAssistantEntryPointEnum::COMMAND->value)
+            ->exists();
+    }
+
+    public function tableStructure(bool $websiteLocked, string $prefix = ShoppingAssistantPerformanceTabsEnum::CONVERSATIONS->value, bool $customerLocked = false): Closure
+    {
+        return function (InertiaTable $table) use ($websiteLocked, $prefix, $customerLocked) {
             $table
                 ->name($prefix)
                 ->pageName($prefix.'Page')
                 ->withGlobalSearch()
                 ->withLabelRecord([__('conversation'), __('conversations')])
-                ->column(key: 'created_at', label: __('Started'), canBeHidden: false, sortable: true)
-                ->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, searchable: true);
+                ->column(key: 'created_at', label: __('Started'), canBeHidden: false, sortable: true);
+
+            if (!$customerLocked) {
+                $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, searchable: true);
+            }
 
             if (!$websiteLocked) {
                 $table->column(key: 'website', label: __('Website'), canBeHidden: false);

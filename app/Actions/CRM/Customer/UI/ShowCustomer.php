@@ -36,6 +36,9 @@ use App\Actions\Retina\UI\Dashboard\GetRetinaB2BDashboardInsights;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\CRM\CustomerDropshippingTabsEnum;
 use App\Enums\UI\CRM\CustomerTabsEnum;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
+use App\Actions\Web\ShoppingAssistant\UI\ShowShoppingAssistantPerformance;
+use App\Http\Resources\Web\ShoppingAssistantConversationsResource;
 use App\Actions\CRM\Customer\GetCustomerCommunications;
 use App\Http\Resources\Accounting\CreditTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -106,6 +109,10 @@ class ShowCustomer extends OrgAction
         }
         if ($customer->shop->type != ShopTypeEnum::B2B) {
             unset($navigation[CustomerTabsEnum::RETINA_DASHBOARD->value]);
+        }
+        $canSeeMerlin = $tabs === CustomerTabsEnum::class && $this->canSeeMerlin($customer, $request);
+        if (!$canSeeMerlin) {
+            unset($navigation[CustomerTabsEnum::MERLIN->value]);
         }
         $webUsersMeta = $this->getWebUserMeta($customer, $request);
 
@@ -302,6 +309,15 @@ class ShowCustomer extends OrgAction
                     fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
                     : Inertia::optional(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
 
+                CustomerTabsEnum::MERLIN->value => $canSeeMerlin ? ($this->tab == CustomerTabsEnum::MERLIN->value ?
+                    fn () => ShoppingAssistantConversationsResource::collection(ShowShoppingAssistantPerformance::make()->customerConversations($customer, CustomerTabsEnum::MERLIN->value))
+                    : Inertia::optional(fn () => ShoppingAssistantConversationsResource::collection(ShowShoppingAssistantPerformance::make()->customerConversations($customer, CustomerTabsEnum::MERLIN->value)))) : null,
+                'merlin_meta' => $canSeeMerlin ? [
+                    'routes'        => ['conversation' => ['name' => 'grp.org.shops.show.ai_salesman.conversations.show', 'parameters' => ['organisation' => $customer->organisation->slug, 'shop' => $customer->shop->slug]]],
+                    'currency'      => $customer->shop->currency->code,
+                    'cost_currency' => GetShoppingAssistantReport::make()->usdRate($customer->shop->currency->code) === null ? 'USD' : $customer->shop->currency->code,
+                ] : null,
+
                 $tabs::OFFERS->value   => $this->tab == $tabs::OFFERS->value ?
                     fn () => OffersResource::collection(IndexOffers::run($customer, $tabs::OFFERS->value))
                     : Inertia::optional(fn () => OffersResource::collection(IndexOffers::run($customer, $tabs::OFFERS->value))),
@@ -317,7 +333,8 @@ class ShowCustomer extends OrgAction
         ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
         ->table(IndexOffers::make()->tableStructure(parent: $customer, prefix: $tabs::OFFERS->value))
         ->table(IndexRetinaApiRequests::make()->tableStructure($tabs::API_REQUESTS->value))
-        ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value, model: $customer));
+        ->table(IndexHistory::make()->tableStructure($tabs::HISTORY->value, model: $customer))
+        ->table(ShowShoppingAssistantPerformance::make()->tableStructure(websiteLocked: true, prefix: CustomerTabsEnum::MERLIN->value, customerLocked: true));
     }
 
 
@@ -525,6 +542,16 @@ class ShowCustomer extends OrgAction
                 ]
             ]
         };
+    }
+
+    /**
+     * Merlin tab: the customer talked to the AI shopping assistant and the user can open its conversations.
+     */
+    private function canSeeMerlin(Customer $customer, ActionRequest $request): bool
+    {
+        return $customer->shop->website
+            && $request->user()->authTo(["websites-view.{$customer->organisation_id}", "web.{$customer->shop_id}.view", 'group-webmaster.view'])
+            && ShowShoppingAssistantPerformance::customerHasConversations($customer);
     }
 
     private function getRetinaDashboard(Customer $customer): ?array

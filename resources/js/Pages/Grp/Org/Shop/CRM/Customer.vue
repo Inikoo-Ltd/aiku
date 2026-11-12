@@ -33,7 +33,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans } from "@/Composables/useTrans"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute, faBrowser } from "@fal"
+import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPaperclip, faPaperPlane, faStickyNote, faTags, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute, faBrowser, faHatWizard } from "@fal"
 import { routeType } from "@/types/route"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue"
@@ -42,6 +42,7 @@ import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import type { CustomerEmailTemplate } from "@/Components/Chat/EmailCustomerDialog.vue"
 import TableOffers from "@/Components/Shop/Offers/TableOffers.vue"
+import TableShoppingAssistantConversations from "@/Components/Tables/Grp/Org/Web/TableShoppingAssistantConversations.vue"
 import ModalCreateCustomerOffers from "@/Components/Offers/ModalCreateCustomerOffers.vue"
 import ModalCreateCustomerProductFromArtefact from "@/Components/CRM/ModalCreateCustomerProductFromArtefact.vue"
 import SelectableCardGrid from "@/Components/Utils/SelectableCardGrid.vue"
@@ -50,7 +51,7 @@ import LoadingOverlay from "@/Components/Utils/LoadingOverlay.vue"
 import UpcomingTransactionsPanel from "@/Components/CRM/UpcomingTransactionsPanel.vue"
 import StaffTaskPanel from "@/Components/Tasks/StaffTaskPanel.vue"
 
-library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute, faBrowser)
+library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart, faQuestionCircle, faLightbulbOn, faRoute, faBrowser, faHatWizard)
 
 const EmailCustomerDialog = defineAsyncComponent(() => import("@/Components/Chat/EmailCustomerDialog.vue"))
 
@@ -107,6 +108,8 @@ const props = defineProps<{
     credit_transactions?: {}
     payments?: {}
     offers?: {}
+    merlin?: {}
+    merlin_meta?: { routes: { conversation: routeType }, currency: string, cost_currency: string } | null
     notes?: Record<string, any> | null
     updateRoute: routeType
     shop_data: {
@@ -231,7 +234,17 @@ const layout = inject('layout')
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
 
+    <TableShoppingAssistantConversations
+        v-if="currentTab === 'merlin' && merlin_meta"
+        :data="props.merlin"
+        :tab="currentTab"
+        :routes="merlin_meta.routes"
+        :currency="merlin_meta.currency"
+        :costCurrency="merlin_meta.cost_currency"
+    />
+
     <component
+        v-else
         :is="component"
         :data="props[currentTab as keyof typeof props]"
         :tab="currentTab"
