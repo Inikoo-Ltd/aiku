@@ -11,7 +11,6 @@ namespace App\Actions\Procurement\PurchaseOrder\UI;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\SysAdmin\Organisation;
@@ -30,8 +29,7 @@ class GetAgentIncomingPurchaseOrdersCount extends OrgAction
 
     public static function whereIncoming(Builder $query): Builder
     {
-        return $query->where('purchase_orders.state', PurchaseOrderStateEnum::SUBMITTED)
-            ->whereRaw(PurchaseOrderStageEnum::progressSql()." = 'submitted'");
+        return $query->where('purchase_orders.state', PurchaseOrderStateEnum::SUBMITTED);
     }
 
     /** @return array{count: int, channel: string} */

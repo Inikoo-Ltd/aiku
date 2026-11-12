@@ -168,7 +168,7 @@ class GetSupplierOrderCapacity
         $inboundOpenPoLines = (int) DB::table('purchase_order_transactions as pot')
             ->join('purchase_orders as po', 'po.id', 'pot.purchase_order_id')
             ->where('po.organisation_id', $orgSupplier->organisation_id)
-            ->whereIn('po.state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereIn('po.state', PurchaseOrderStateEnum::openValues())
             ->whereNotIn('po.delivery_state', [
                 PurchaseOrderDeliveryStateEnum::RECEIVED->value,
                 PurchaseOrderDeliveryStateEnum::CHECKED->value,

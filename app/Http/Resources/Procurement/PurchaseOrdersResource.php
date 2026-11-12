@@ -45,10 +45,8 @@ class PurchaseOrdersResource extends JsonResource
             'reference'         => $this->reference,
             'agent_order_reference' => $this->agent_order_reference,
             'state'             => $this->state,
-            'stage'             => $this->stage?->value,
-            'display_state'     => $this->resource->displayState()['value'],
-            'state_label'       => $this->resource->displayState()['label'],
-            'state_icon'        => $this->resource->displayState()['icon'],
+            'state_label'       => PurchaseOrderStateEnum::labels()[$this->state->value],
+            'state_icon'        => PurchaseOrderStateEnum::stateIcon()[$this->state->value],
             'parent_type'       => $this->parent_type,
             'parent_name'       => $this->parent_name,
             'parent_slug'       => $this->parent->slug,
@@ -79,7 +77,7 @@ class PurchaseOrdersResource extends JsonResource
      */
     private function isWithoutDeposit(): bool
     {
-        return in_array($this->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)
+        return in_array($this->state, PurchaseOrderStateEnum::open(), true)
             && $this->deposit_paid_at === null
             && !GetPurchaseOrderStages::make()->depositNotRequired($this->resource);
     }

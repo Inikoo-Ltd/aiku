@@ -127,6 +127,7 @@ const props = defineProps < {
             state_label: string
             is_partner?: boolean
         }
+            line_state: string
     }
    	timelines: {
 		[key: string]: TSTimeline
@@ -1375,7 +1376,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	<div v-else-if="timelines" class="py-2 border-b border-gray-300">
 		<Timeline
 			:options="timelines"
-			:state="props.data.data.state"
+			:state="props.data.data.line_state"
 			:slidesPerView="6"
 			:format-time="'MMMM d yyyy, HH:mm'"
 		/>
@@ -1686,7 +1687,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:key="currentTab"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
-			:state="data.data.state"
+			:state="data.data.line_state"
 			:updateRoute="routes.updateOrderRoute"
 			:storeRoute="currentTab === 'notes' && note_form?.can_write !== false ? note_store_route : undefined"
 			:agreement="currentTab === 'notes' ? note_form : undefined"

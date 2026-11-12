@@ -151,7 +151,7 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
             ->first();
         $old = $audit?->old_values ?? [];
 
-        if (!$audit || !in_array($old['state'] ?? null, [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value], true)
+        if (!$audit || !in_array($old['state'] ?? null, PurchaseOrderStateEnum::openValues(), true)
             || ($purchaseOrder->created_at && $audit->created_at && $audit->created_at->lt($purchaseOrder->created_at))) {
             return $unknown;
         }
@@ -202,7 +202,7 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
         return [
             'state'      => $state,
             'costs'      => $costs,
-            'lines'      => $restorable->mapWithKeys(fn (PurchaseOrderTransaction $transaction) => [$transaction->id => ['id' => $transaction->id, 'state' => $state]])->all(),
+            'lines'      => $restorable->mapWithKeys(fn (PurchaseOrderTransaction $transaction) => [$transaction->id => ['id' => $transaction->id, 'state' => PurchaseOrderStateEnum::from($state)->transactionState()->value]])->all(),
             'totals'     => [],
             'source'     => $source,
             'cost_total' => $costTotal,
@@ -272,7 +272,7 @@ class UpdatePurchaseOrderStateFromCancelled extends OrgAction
 
         return PurchaseOrder::where('organisation_id', $purchaseOrder->organisation_id)
             ->whereKeyNot($purchaseOrder->id)
-            ->whereIn('state', [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('state', PurchaseOrderStateEnum::live())
             ->when($purchaseOrder->cancelled_at, fn ($query, $cancelledAt) => $query->where('created_at', '>=', $cancelledAt))
             ->whereHas('purchaseOrderTransactions', fn ($query) => $query->whereIn('supplier_product_id', $supplierProductIds)->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED))
             ->orderBy('id')

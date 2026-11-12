@@ -218,7 +218,7 @@ class ShowPurchaseOrder extends OrgAction
                         'title' => __('Purchase Order'),
                     ],
                     'afterTitle' => [
-                        'label' => $purchaseOrder->displayState()['label'],
+                        'label' => PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value],
                     ],
                     'actions' => $this->arrangePageHeadActions([
                         $this->canEdit || $this->agentCanEdit ? [
@@ -315,7 +315,7 @@ class ShowPurchaseOrder extends OrgAction
                 'ready_checks'             => fn () => $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS ? null : GetPurchaseOrderReadyChecks::run($purchaseOrder, $this->agentCanEdit),
                 'stage_containers'         => fn () => $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS ? null : GetPurchaseOrderContainers::run($purchaseOrder, $this->organisation, $request),
                 'agent_receiving'          => fn () => $this->isAgentViewingOwnOrder($purchaseOrder) ? GetPurchaseOrderGoodsReceipts::run($purchaseOrder, $this->agentCanEdit) : null,
-                'open_agent_deliveries'    => $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
+                'open_agent_deliveries'    => $purchaseOrder->state->isAgreed()
                     ? StoreStockDeliveryFromPurchaseOrder::openAgentDeliveries($purchaseOrder)
                         ->map(fn (StockDelivery $stockDelivery) => [
                             'id'                     => $stockDelivery->id,
@@ -327,7 +327,7 @@ class ShowPurchaseOrder extends OrgAction
                 'deposits'                 => $purchaseOrder->isAgentOrder() ? $this->getDeposits($purchaseOrder) : null,
                 'agent_money'              => $agentMoney = ConfirmPurchaseOrderPayment::acceptsPayments($purchaseOrder) ? $this->getAgentMoney($purchaseOrder) : null,
                 'payments'                 => !$agentMoney && ConfirmPurchaseOrderPayment::acceptsPayments($purchaseOrder) ? $this->getPayments($purchaseOrder, $request) : null,
-                'delivery_items'            => $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED
+                'delivery_items'            => $purchaseOrder->state->isAgreed()
                     ? $purchaseOrder->purchaseOrderTransactions()
                         ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
                         ->with(['supplierProduct:id,code,name', 'orgStock:id,code,name', 'orgStock.tradeUnits.image'])
@@ -383,7 +383,7 @@ class ShowPurchaseOrder extends OrgAction
                         ] : null,
                     ],
                     'second_block'     => [
-                        'state'                    => $purchaseOrder->displayState()['label'],
+                        'state'                    => PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value],
                         'delivery_state'           => PurchaseOrderDeliveryStateEnum::stateIcon()[$purchaseOrder->delivery_state->value],
                         'total_items'              => $purchaseOrder->number_purchase_order_transactions,
                         'total_delivery_items'     => $deliveryStats['total_delivery_items'],
@@ -737,7 +737,8 @@ class ShowPurchaseOrder extends OrgAction
                     ],
                 ],
             ],
-            PurchaseOrderStateEnum::CONFIRMED => [
+            PurchaseOrderStateEnum::CONFIRMED, PurchaseOrderStateEnum::IN_PRODUCTION, PurchaseOrderStateEnum::IN_WAREHOUSE,
+            PurchaseOrderStateEnum::READY, PurchaseOrderStateEnum::HANDED_OVER, PurchaseOrderStateEnum::ARRIVED => [
                 [
                     'label'   => __('Delivery date'),
                     'tooltip' => __('Change estimated delivery date'),
@@ -1127,7 +1128,7 @@ class ShowPurchaseOrder extends OrgAction
     private function agentMoneyRoute(PurchaseOrder $purchaseOrder): ?array
     {
         if ($this->isAgentViewingOwnOrder($purchaseOrder)) {
-            return $this->agentCanEdit && in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true) ? [
+            return $this->agentCanEdit && in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true) ? [
                 'name'       => 'grp.org.agent.accounting.deposit_requests.create',
                 'parameters' => ['organisation' => $this->organisation->slug, 'client' => $purchaseOrder->organisation->slug, 'purchase_order' => $purchaseOrder->id],
                 'label'      => __('Request money'),

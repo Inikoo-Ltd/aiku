@@ -66,7 +66,7 @@ class StorePurchaseOrderChase extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!in_array($this->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])) {
+        if (!in_array($this->purchaseOrder->state, PurchaseOrderStateEnum::open())) {
             $validator->errors()->add('channel', __('Only an open purchase order is chased'));
         }
     }

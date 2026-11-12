@@ -34,7 +34,7 @@ class SendComplianceDocumentsReminders
     {
         $sent = 0;
 
-        PurchaseOrder::whereIn('state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+        PurchaseOrder::whereIn('state', PurchaseOrderStateEnum::open())
             ->where('parent_type', '!=', 'OrgPartner')
             ->whereNotNull('buyer_id')
             ->with('buyer')

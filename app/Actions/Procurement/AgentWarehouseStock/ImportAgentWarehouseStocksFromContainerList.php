@@ -136,7 +136,7 @@ class ImportAgentWarehouseStocksFromContainerList
 
     public function markInProduction(PurchaseOrder $purchaseOrder, string $reason, ?string $date = null): void
     {
-        if ($purchaseOrder->production_started_at || !in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])) {
+        if ($purchaseOrder->production_started_at || !in_array($purchaseOrder->state, PurchaseOrderStateEnum::open())) {
             return;
         }
 

@@ -42,7 +42,7 @@ class ShowSupplierShoppingDashboard extends OrgAction
         return DB::table('purchase_orders')
             ->where('parent_type', 'OrgSupplier')
             ->where('parent_id', $orgSupplier->id)
-            ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
+            ->whereIn('state', PurchaseOrderStateEnum::openValues())
             ->whereNotIn('delivery_state', [
                 PurchaseOrderDeliveryStateEnum::RECEIVED->value,
                 PurchaseOrderDeliveryStateEnum::CHECKED->value,

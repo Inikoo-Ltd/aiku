@@ -92,7 +92,7 @@ class GetAgentMoneyRequestLines
      */
     private function orders(Agent $agent, Organisation $client, int $currencyId, ?int $purchaseOrderId): array
     {
-        $openStates = [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value];
+        $openStates = PurchaseOrderStateEnum::openValues();
 
         $requested = DB::table('deposit_request_items')
             ->join('deposit_requests', 'deposit_requests.id', 'deposit_request_items.deposit_request_id')

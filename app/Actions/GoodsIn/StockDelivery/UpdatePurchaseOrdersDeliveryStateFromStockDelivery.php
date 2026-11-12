@@ -74,7 +74,7 @@ class UpdatePurchaseOrdersDeliveryStateFromStockDelivery
             ->where('state', PurchaseOrderTransactionStateEnum::CONFIRMED)
             ->exists();
 
-        if (!$isAwaitingDelivery && $purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED) {
+        if (!$isAwaitingDelivery && $purchaseOrder->state->isAgreed()) {
             $purchaseOrder->update([
                 'state'      => PurchaseOrderStateEnum::SETTLED,
                 'settled_at' => now(),

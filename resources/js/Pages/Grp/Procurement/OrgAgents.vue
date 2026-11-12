@@ -167,7 +167,7 @@ const openOrdersValue = (agent: AgentCard) =>
 	itemsOf(agent, "purchase_order").reduce((total, item) => total + (item.value ?? 0), 0)
 
 const readyToShip = (agent: AgentCard) =>
-	agent.pipeline.stages.find((stage) => stage.stage === "ready_to_ship")
+	agent.pipeline.stages.find((stage) => stage.stage === "ready")
 
 const itemsOf = (agent: AgentCard, type: CurrentItem["type"]) =>
 	agent.current
@@ -422,7 +422,7 @@ const toggle = (agent: AgentCard, section: string) => {
 							<tbody class="divide-y divide-gray-100">
 								<tr
 									v-for="stage in agent.pipeline.stages.filter(
-										(stage) => stage.stage !== 'ready_to_ship'
+										(stage) => stage.stage !== 'ready'
 									)"
 									:key="stage.stage">
 									<td class="px-2 py-1 text-gray-600">{{ stage.label }}</td>

@@ -152,11 +152,7 @@ class RepairOrgSupplierProductsSupplierDrift
 
         return !OrgStockHasOrgSupplierProduct::where('org_supplier_product_id', $orgSupplierProduct->id)->exists()
             && !PurchaseOrderTransaction::where('org_supplier_product_id', $orgSupplierProduct->id)
-                ->whereHas('purchaseOrder', fn ($query) => $query->whereIn('state', [
-                    PurchaseOrderStateEnum::IN_PROCESS,
-                    PurchaseOrderStateEnum::SUBMITTED,
-                    PurchaseOrderStateEnum::CONFIRMED,
-                ]))
+                ->whereHas('purchaseOrder', fn ($query) => $query->whereIn('state', PurchaseOrderStateEnum::live()))
                 ->exists()
             && !StockDeliveryItem::where('org_supplier_product_id', $orgSupplierProduct->id)
                 ->whereHas('stockDelivery', fn ($query) => $query->whereNotIn('state', [
@@ -179,11 +175,7 @@ class RepairOrgSupplierProductsSupplierDrift
                 ->update(['org_supplier_product_id' => $twin->id]);
 
             PurchaseOrderTransaction::where('org_supplier_product_id', $drifted->id)
-                ->whereHas('purchaseOrder', fn ($query) => $query->whereIn('state', [
-                    PurchaseOrderStateEnum::IN_PROCESS,
-                    PurchaseOrderStateEnum::SUBMITTED,
-                    PurchaseOrderStateEnum::CONFIRMED,
-                ]))
+                ->whereHas('purchaseOrder', fn ($query) => $query->whereIn('state', PurchaseOrderStateEnum::live()))
                 ->update(['org_supplier_product_id' => $twin->id]);
 
             StockDeliveryItem::where('org_supplier_product_id', $drifted->id)

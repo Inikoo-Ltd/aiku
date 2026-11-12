@@ -82,6 +82,10 @@ class UpdatePurchaseOrder extends OrgAction
             }
         }
 
+        if ($this->keepsStateReached($purchaseOrder, $modelData)) {
+            unset($modelData['state']);
+        }
+
         $purchaseOrder = $this->update($purchaseOrder, $modelData, ['data']);
 
         if ($this->isDepositWaived($purchaseOrder, $modelData) && MarkPurchaseOrderStage::confirmsOrder($purchaseOrder, now()) && !$purchaseOrder->isWaitingForLineAnswers()) {
@@ -93,6 +97,17 @@ class UpdatePurchaseOrder extends OrgAction
         }
 
         return $purchaseOrder;
+    }
+
+    /**
+     * A fetch or a repair that only knows an order as agreed leaves the state of an order already past it alone.
+     */
+    private function keepsStateReached(PurchaseOrder $purchaseOrder, array $modelData): bool
+    {
+        $state = Arr::get($modelData, 'state');
+        $state = $state instanceof PurchaseOrderStateEnum ? $state : PurchaseOrderStateEnum::tryFrom((string) $state);
+
+        return $state === PurchaseOrderStateEnum::CONFIRMED && $purchaseOrder->state->isAgreed();
     }
 
     /**

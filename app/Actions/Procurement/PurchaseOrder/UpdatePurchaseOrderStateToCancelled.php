@@ -43,11 +43,11 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
         return DB::transaction(function () use ($purchaseOrder, $reason, $source) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
 
-            if (!in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])) {
+            if (!in_array($purchaseOrder->state, PurchaseOrderStateEnum::open())) {
                 abort(422, __('Only submitted or confirmed purchase orders can be cancelled'));
             }
 
-            if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()) {
+            if ($purchaseOrder->state->isAgreed() && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()) {
                 abort(422, __('A confirmed purchase order with stock deliveries cannot be cancelled'));
             }
 

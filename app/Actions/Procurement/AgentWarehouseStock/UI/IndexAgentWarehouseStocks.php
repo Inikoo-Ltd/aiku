@@ -216,7 +216,7 @@ class IndexAgentWarehouseStocks extends OrgAction
                 return __('Imported from the stock spreadsheet, no purchase order');
             }
 
-            return $row['purchase_order_state'] === PurchaseOrderStateEnum::CONFIRMED->value
+            return in_array($row['purchase_order_state'], PurchaseOrderStateEnum::agreedValues(), true)
                 ? __('Imported from the stock spreadsheet: linked to :order, but not to its :code line', ['order' => $row['purchase_order_reference'], 'code' => $row['code']])
                 : __('Imported from the stock spreadsheet: linked to :order (:state), but not to its :code line', [
                     'order' => $row['purchase_order_reference'],
@@ -226,7 +226,7 @@ class IndexAgentWarehouseStocks extends OrgAction
         }
 
         $purchaseOrder = $transaction->purchaseOrder;
-        if ($purchaseOrder->state !== PurchaseOrderStateEnum::CONFIRMED) {
+        if (!$purchaseOrder->state->isAgreed()) {
             return __('PO is :state, not confirmed', [
                 'state' => mb_strtolower(PurchaseOrderStateEnum::labels()[$purchaseOrder->state->value] ?? $purchaseOrder->state->value),
             ]);

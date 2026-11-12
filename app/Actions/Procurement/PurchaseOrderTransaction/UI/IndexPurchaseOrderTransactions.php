@@ -52,7 +52,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
     use WithProcurementAuthorisation;
     protected function showDeliveryState(PurchaseOrder $purchaseOrder): bool
     {
-        return in_array($purchaseOrder->state, [PurchaseOrderStateEnum::CONFIRMED, PurchaseOrderStateEnum::SETTLED], true)
+        return ($purchaseOrder->state->isAgreed() || $purchaseOrder->state === PurchaseOrderStateEnum::SETTLED)
             && $purchaseOrder->stockDeliveries()->exists();
     }
 
@@ -389,7 +389,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
                     ->column(key: 'volume', label: __('CBM'), canBeHidden: false)
                     ->column(key: 'amount', label: __('Amount'), canBeHidden: false);
 
-                if (in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
+                if (in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true)) {
                     $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, align: 'right');
                 }
             }

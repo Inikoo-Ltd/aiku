@@ -71,7 +71,7 @@ class PurchaseOrderHydrateDeliveryState implements ShouldBeUnique
     public function handle(PurchaseOrder $purchaseOrder): bool
     {
         $changed = $this->hydrateDeliveryState($purchaseOrder);
-        PurchaseOrderHydrateStage::run($purchaseOrder);
+        PurchaseOrderHydrateState::run($purchaseOrder);
 
         return $changed;
     }
