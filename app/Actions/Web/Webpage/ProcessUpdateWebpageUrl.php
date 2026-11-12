@@ -16,8 +16,10 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Web\Redirect;
 use App\Models\Web\Webpage;
 use Cache;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessUpdateWebpageUrl
@@ -51,7 +53,7 @@ class ProcessUpdateWebpageUrl
         UpdateWebpageCanonicalUrl::run($webpage);
         BreakWebpageCache::run($webpage);
 
-        if ($webpage->state == WebpageStateEnum::LIVE) {
+        if ($webpage->state == WebpageStateEnum::LIVE && $this->needsRedirect($webpage, $oldUrl)) {
             StoreRedirectFromWebsite::make()->action($webpage->website, [
                 'from_url' => $oldUrl,
                 'to_url'   => $webpage->id,
@@ -59,5 +61,20 @@ class ProcessUpdateWebpageUrl
         }
     }
 
+    /**
+     * A URL changed only by its slashes ("/page" back to "page") is the same address, and an old
+     * address that already redirects keeps its redirect: storing either again fails validation.
+     */
+    private function needsRedirect(Webpage $webpage, string $oldUrl): bool
+    {
+        $oldPath = trim($oldUrl, " /");
 
+        if ($oldPath === '' || $oldPath === trim($webpage->url, " /")) {
+            return false;
+        }
+
+        return !Redirect::where('website_id', $webpage->website_id)
+            ->where('from_path', Arr::last(explode('/', $oldPath)))
+            ->exists();
+    }
 }

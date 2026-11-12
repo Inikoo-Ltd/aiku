@@ -18,6 +18,11 @@ use App\Models\CRM\AppointmentType;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use Illuminate\Validation\ValidationException;
 use App\Services\GoogleCalendar\GoogleCalendarClient;
+use App\Services\GoogleCalendar\ReleaseWhenGoogleCalendarRateLimited;
+use App\Actions\CRM\AppointmentBlock\SyncAppointmentBlockGoogleCalendarEvent;
+use GuzzleHttp\Psr7\Response as Psr7Response;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -358,4 +363,48 @@ test('the calendar sync command runs and an event at the same moment in another 
             ['summary' => 'Visit', 'description' => "Accepted\nhttp://app.aiku.test/appointments/1", 'status' => 'confirmed', 'start' => ['dateTime' => '2026-11-02T12:00:00+00:00'], 'end' => ['dateTime' => '2026-11-02T13:00:00+00:00']],
             ['summary' => 'Visit', 'description' => "Accepted\nhttps://app.aiku.test/appointments/1", 'status' => 'confirmed', 'start' => ['dateTime' => '2026-11-02T12:00:00+00:00'], 'end' => ['dateTime' => '2026-11-02T13:00:00+00:00']],
         ))->toBeTrue();
+});
+
+test('a calendar write google refuses for going too fast goes back on the queue instead of failing', function () {
+    $job = new class () {
+        public ?int $releasedFor = null;
+
+        public function release(int $delay): void
+        {
+            $this->releasedFor = $delay;
+        }
+    };
+
+    $refusal = fn (int $status, array $error) => new RequestException(new Response(new Psr7Response($status, [], json_encode(['error' => $error]))));
+    $middleware = new ReleaseWhenGoogleCalendarRateLimited();
+
+    $middleware->handle($job, fn () => throw $refusal(403, ['errors' => [['domain' => 'usageLimits', 'reason' => 'rateLimitExceeded']]]));
+
+    expect($job->releasedFor)->toBeBetween(60, 120)
+        ->and(fn () => $middleware->handle($job, fn () => throw $refusal(403, ['errors' => [['reason' => 'forbidden']]])))->toThrow(RequestException::class)
+        ->and(SyncAppointmentGoogleCalendarEvent::make()->getJobMiddleware()[0])->toBeInstanceOf(ReleaseWhenGoogleCalendarRateLimited::class)
+        ->and(SyncAppointmentBlockGoogleCalendarEvent::make()->getJobMiddleware()[0])->toBeInstanceOf(ReleaseWhenGoogleCalendarRateLimited::class);
+});
+
+test('connecting the shop calendar spreads the writes of its upcoming appointments one a second', function () {
+    Queue::fake();
+    ($this->fakeGoogle)();
+
+    $appointmentType = ($this->appointmentType)();
+    foreach ([10, 11, 12] as $hour) {
+        StoreAppointment::make()->action($this->shop, [
+            'appointment_type_id' => $appointmentType->id,
+            'starts_at'           => now($this->shop->timezone?->name ?? 'UTC')->addDays(9)->format('Y-m-d')." $hour:00",
+            'contact_name'        => 'Calendar visitor '.Str::random(6),
+        ]);
+    }
+
+    CallbackShopGoogleCalendar::make()->handle($this->shop, 'oauth-code', ['shop_id' => $this->shop->id, 'user_id' => $this->user->id, 'return' => '/']);
+
+    $delays = Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === SyncAppointmentGoogleCalendarEvent::class)
+        ->map(fn ($job) => $job->delay->getTimestamp())
+        ->unique();
+
+    expect($delays->count())->toBe(Queue::pushed(JobDecorator::class, fn ($job) => $job->displayName() === SyncAppointmentGoogleCalendarEvent::class)->count())
+        ->and($delays->count())->toBeGreaterThanOrEqual(3);
 });

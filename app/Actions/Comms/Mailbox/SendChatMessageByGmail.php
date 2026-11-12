@@ -645,34 +645,25 @@ class SendChatMessageByGmail
 
             return "\0".(count($links) - 1)."\0";
         }, $text) ?? $text;
-        $source = $text;
-        $text   = preg_replace_callback('/\b(?:https?:\/\/|www\.)[^\s<>"]+/iu', function (array $match) use (&$links, $source): string {
+        $processed = '';
+        $cursor    = 0;
+        $source    = $text;
+        $text      = preg_replace_callback(self::BARE_LINK, function (array $match) use (&$links, &$processed, &$cursor, $source): string {
             [$whole, $offset] = $match[0];
-            $lineBefore       = preg_replace('/\b(?:https?:\/\/|www\.)[^\s<>"]+/iu', '', Str::afterLast(substr($source, 0, $offset), "\n")) ?? '';
-            $url              = preg_replace('/[.,;:!?\'")\]*_~]+$/u', '', $whole) ?? $whole;
-            while (strlen($whole) > strlen($url)) {
-                $next = $whole[strlen($url)];
-                $isOwnBracket = $next === ')' && substr_count($url, '(') > substr_count($url, ')');
-                $isUnopenedMarker = str_contains('*_~', $next) && ! preg_match('/(?:^|[^\w*_~])'.preg_quote($next, '/').'(?=\S)/u', $lineBefore);
-                if (! $isOwnBracket && ! $isUnopenedMarker) {
-                    break;
-                }
-                $url .= $next;
-            }
-            $links[] = ['url' => $url, 'label' => $url];
+            $processed       .= substr($source, $cursor, $offset - $cursor);
+            $cursor           = $offset + strlen($whole);
+            $url              = self::bareLinkUrl($whole, Str::afterLast($processed, "\n"), Str::before(substr($source, $cursor), "\n"));
+            $links[]          = ['url' => $url, 'label' => $url];
+            $placed           = "\0".(count($links) - 1)."\0".substr($whole, strlen($url));
+            $processed       .= $placed;
 
-            return "\0".(count($links) - 1)."\0".substr($whole, strlen($url));
+            return $placed;
         }, $text, flags: PREG_OFFSET_CAPTURE) ?? $text;
 
         $html = preg_replace('/```([\s\S]+?)```/u', '<code style="font-family:monospace">$1</code>', e($text)) ?? e($text);
 
-        foreach (['__' => 'u', '*' => 'strong', '_' => 'em', '~' => 's'] as $marker => $tag) {
-            $m    = preg_quote($marker, '/');
-            $html = preg_replace(
-                "/(^|[^\\w{$m}]){$m}([^\\s{$m}][^{$m}\\n]*[^\\s{$m}]|[^\\s{$m}]){$m}(?![\\w{$m}])/u",
-                "\$1<{$tag}>\$2</{$tag}>",
-                $html
-            ) ?? $html;
+        foreach (self::MARKER_TAGS as $marker => $tag) {
+            $html = preg_replace(self::markerPattern($marker), "\$1<{$tag}>\$2</{$tag}>", $html) ?? $html;
         }
 
         $html = preg_replace_callback('/\0(\d+)\0/', function (array $match) use ($links): string {
@@ -683,6 +674,62 @@ class SendChatMessageByGmail
         }, $html) ?? $html;
 
         return nl2br($html);
+    }
+
+    private const array MARKER_TAGS = ['__' => 'u', '*' => 'strong', '_' => 'em', '~' => 's'];
+
+    private const string BARE_LINK = '/(?<![^\W_])(?:https?:\/\/|www\.)[^\s<>"]+/iu';
+
+    private static function markerPattern(string $marker): string
+    {
+        $m = preg_quote($marker, '/');
+
+        return "/(^|[^\\w{$m}]){$m}([^\\s{$m}][^{$m}\\n]*[^\\s{$m}]|[^\\s{$m}]){$m}(?![\\w{$m}])/u";
+    }
+
+    /**
+     * Where a bare link ends. Trailing punctuation stays outside it, except a closing bracket
+     * the link itself opened and a trailing *, _ or ~: Checkout.com payment links end in _.
+     * A trailing marker closes formatting only when that formatting is still open before the
+     * link on its line and nothing after the link closes it; where more trail than that, the
+     * last ones close and those before them belong to the link. linkEnd in useWhatsappMarkup.ts
+     * must stay in step; PolishWriting protects links by this same rule.
+     */
+    public static function bareLinkUrl(string $whole, string $lineBefore, string $lineAfter): string
+    {
+        $url         = preg_replace('/[.,;:!?\'")\]*_~]+$/u', '', $whole) ?? $whole;
+        $open        = self::looseMarkers($lineBefore."\0", '/(?<![\w*_~])[*_~]+(?=[^\s*_~])/u');
+        $closedLater = self::looseMarkers("\0".(preg_replace(self::BARE_LINK, "\0", $lineAfter) ?? $lineAfter), '/(?<=[^\s*_~])[*_~]+(?![\w*_~])/u');
+
+        while (strlen($whole) > strlen($url)) {
+            $next         = $whole[strlen($url)];
+            $isOwnBracket = $next === ')' && substr_count($url, '(') > substr_count($url, ')');
+            $closing      = max(0, ($open[$next] ?? 0) - ($closedLater[$next] ?? 0));
+            $isOwnMarker  = str_contains('*_~', $next) && substr_count($whole, $next, strlen($url)) > $closing;
+            if (! $isOwnBracket && ! $isOwnMarker) {
+                break;
+            }
+            $url .= $next;
+        }
+
+        return $url;
+    }
+
+    /**
+     * How many of each marker character stand where the pattern looks, once the formatting
+     * that opens and closes within the stretch of line is taken out.
+     *
+     * @return array<string, int>
+     */
+    private static function looseMarkers(string $stretch, string $pattern): array
+    {
+        foreach (array_keys(self::MARKER_TAGS) as $marker) {
+            $stretch = preg_replace(self::markerPattern($marker), '$1$2', $stretch) ?? $stretch;
+        }
+
+        preg_match_all($pattern, $stretch, $markers);
+
+        return array_count_values(str_split(implode('', $markers[0])));
     }
 
     /**

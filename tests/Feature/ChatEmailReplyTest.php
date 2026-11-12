@@ -660,6 +660,35 @@ test('formatting an agent picks reaches the customer as html beside the readable
         ->and($markupToHtml('Ref ABC_01: https://pay.checkout.com/link/pl_A_ or https://pay.checkout.com/link/pl_B_'))->toBe('Ref ABC_01: <a href="https://pay.checkout.com/link/pl_A_" target="_blank" rel="noopener noreferrer">https://pay.checkout.com/link/pl_A_</a> or <a href="https://pay.checkout.com/link/pl_B_" target="_blank" rel="noopener noreferrer">https://pay.checkout.com/link/pl_B_</a>')
         ->and($markupToHtml('_see https://shop.test/p_'))->toBe('<em>see <a href="https://shop.test/p" target="_blank" rel="noopener noreferrer">https://shop.test/p</a></em>');
 
+    $link = fn (string $url) => '<a href="'.$url.'" target="_blank" rel="noopener noreferrer">'.$url.'</a>';
+    $pay  = 'https://pay.checkout.com/link/pl_WMgxYICK-AN_';
+
+    expect($markupToHtml('*https://pay.checkout.com/link/pl_B*'))->toBe('<strong>'.$link('https://pay.checkout.com/link/pl_B').'</strong>')
+        ->and($markupToHtml('Pay here: *https://pay.checkout.com/link/pl_B*'))->toBe('Pay here: <strong>'.$link('https://pay.checkout.com/link/pl_B').'</strong>')
+        ->and($markupToHtml('~https://pay.checkout.com/link/pl_S~'))->toBe('<s>'.$link('https://pay.checkout.com/link/pl_S').'</s>')
+        ->and($markupToHtml('_https://pay.checkout.com/link/pl_AbC_'))->toBe('<em>'.$link('https://pay.checkout.com/link/pl_AbC').'</em>')
+        ->and($markupToHtml('__https://www.shop.test/gpsr__'))->toBe('<u>'.$link('https://www.shop.test/gpsr').'</u>')
+        ->and($markupToHtml("Pay here: *{$pay}*"))->toBe('Pay here: <strong>'.$link($pay).'</strong>')
+        ->and($markupToHtml("Pay here: _{$pay}_"))->toBe('Pay here: <em>'.$link($pay).'</em>')
+        ->and($markupToHtml("Pay here: __{$pay}__"))->toBe('Pay here: <u>'.$link($pay).'</u>')
+        ->and($markupToHtml("Pay here: ~{$pay}~"))->toBe('Pay here: <s>'.$link($pay).'</s>')
+        ->and($markupToHtml("Pay here: *_{$pay}_*"))->toBe('Pay here: <strong><em>'.$link($pay).'</em></strong>')
+        ->and($markupToHtml("Pay here: __*{$pay}*__"))->toBe('Pay here: <u><strong>'.$link($pay).'</strong></u>')
+        ->and($markupToHtml("Pay here: ___{$pay}___"))->toBe('Pay here: ___'.$link($pay).'___')
+        ->and($markupToHtml('_Pay here_: https://pay.checkout.com/link/pl_X_'))->toBe('<em>Pay here</em>: '.$link('https://pay.checkout.com/link/pl_X_'))
+        ->and($markupToHtml('*Pay here*: https://pay.checkout.com/link/pl_X*'))->toBe('<strong>Pay here</strong>: '.$link('https://pay.checkout.com/link/pl_X*'))
+        ->and($markupToHtml('~old~ https://pay.checkout.com/link/pl_X~'))->toBe('<s>old</s> '.$link('https://pay.checkout.com/link/pl_X~'))
+        ->and($markupToHtml('_see https://a.test/x_ then https://pay.checkout.com/link/pl_X_'))->toBe('<em>see '.$link('https://a.test/x').'</em> then '.$link('https://pay.checkout.com/link/pl_X_'))
+        ->and($markupToHtml("*see https://a.test/x or {$pay}*"))->toBe('<strong>see '.$link('https://a.test/x').' or '.$link($pay).'</strong>')
+        ->and($markupToHtml("_Pay at {$pay} before Friday_"))->toBe('<em>Pay at '.$link($pay).' before Friday</em>')
+        ->and($markupToHtml("__Pay at {$pay} before Friday__\r\nThanks"))->toBe('<u>Pay at '.$link($pay)." before Friday</u><br />\r\nThanks")
+        ->and($markupToHtml("*_Pay at {$pay} before Friday_*"))->toBe('<strong><em>Pay at '.$link($pay).' before Friday</em></strong>')
+        ->and($markupToHtml("_Pay at {$pay}_ or call _today_"))->toBe('<em>Pay at '.$link($pay).'</em> or call <em>today</em>')
+        ->and($markupToHtml('*Pay at https://shop.test/p* or call *today*'))->toBe('<strong>Pay at '.$link('https://shop.test/p').'</strong> or call <strong>today</strong>')
+        ->and($markupToHtml("Hi *Anna*, pay at {$pay}, thanks"))->toBe('Hi <strong>Anna</strong>, pay at '.$link($pay).', thanks')
+        ->and($markupToHtml('See https://en.wikipedia.org/wiki/Soap_(disambiguation).'))->toBe('See '.$link('https://en.wikipedia.org/wiki/Soap_(disambiguation)').'.')
+        ->and($markupToHtml('xhttps://shop.test/p and awww.shop.test'))->toBe('xhttps://shop.test/p and awww.shop.test');
+
     $settings          = $this->shop->settings ?? [];
     $settings['gmail'] = ['email' => 'care@shop.test', 'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt')];
     $this->shop->update(['settings' => $settings]);
