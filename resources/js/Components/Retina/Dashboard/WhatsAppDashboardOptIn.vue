@@ -6,13 +6,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from "vue"
 import { router, useForm } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons"
-import { faCheck, faSpinner } from "@fortawesome/free-solid-svg-icons"
+import { faCheck } from "@fortawesome/free-solid-svg-icons"
 import { Checkbox } from "primevue"
 import { ctrans } from "@/Composables/useTrans"
 import PhoneField from "@/Components/Forms/Fields/Phone.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { routeType } from "@/types/route"
 
 export interface WhatsappOptInData {
@@ -40,6 +40,7 @@ const isChangingNumber = ref(false)
 const isUsingKnownNumber = computed(() => !!props.data.whatsapp_phone && !isChangingNumber.value)
 const isEditingSubscription = ref(false)
 const isUnsubscribing = ref(false)
+const requestError = ref("")
 
 const utm = (() => {
     if (typeof window === "undefined") {
@@ -68,6 +69,7 @@ const showForm = computed(() => !props.data.is_subscribed || isEditingSubscripti
 
 const submit = () => {
     form.clearErrors()
+    requestError.value = ""
 
     let phone: string | null = props.data.whatsapp_phone
     if (!isUsingKnownNumber.value) {
@@ -96,11 +98,7 @@ const submit = () => {
             },
             onError: (errors) => {
                 if (!errors.phone && !errors.consent) {
-                    notify({
-                        title: ctrans("Something went wrong."),
-                        text: ctrans("We could not save your WhatsApp preference, please try again."),
-                        type: "error",
-                    })
+                    requestError.value = ctrans("We could not save your WhatsApp preference, please try again.")
                 }
             },
         })
@@ -112,14 +110,13 @@ const unsubscribe = () => {
         { is_subscribed_to_whatsapp_newsletter: false },
         {
             preserveScroll: true,
-            onStart: () => (isUnsubscribing.value = true),
+            onStart: () => {
+                isUnsubscribing.value = true
+                requestError.value = ""
+            },
             onFinish: () => (isUnsubscribing.value = false),
             onError: () => {
-                notify({
-                    title: ctrans("Something went wrong."),
-                    text: ctrans("We could not update your WhatsApp preference, please try again."),
-                    type: "error",
-                })
+                requestError.value = ctrans("We could not update your WhatsApp preference, please try again.")
             },
         }
     )
@@ -216,15 +213,16 @@ onMounted(() => {
                     tabindex="-1"
                     class="text-xl font-semibold text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-800 focus-visible:ring-offset-2 rounded"
                 >
-                    {{ ctrans("Stay in the know on WhatsApp") }}
+                    {{ ctrans("Your updates, on WhatsApp") }}
                 </h2>
                 <p class="mt-1 text-sm text-gray-700">
-                    {{ ctrans("New arrivals, restocks and special offers, straight to your phone.") }}
+                    {{ ctrans("Stay informed about your orders and membership, get restock alerts, and receive occasional offers, all in one place.") }}
                 </p>
                 <ul class="mt-3 flex flex-wrap gap-2" :aria-label="ctrans('What you will receive')">
-                    <li class="rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-medium text-green-800">{{ ctrans("New arrivals") }}</li>
+                    <li class="rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-medium text-green-800">{{ ctrans("Order updates") }}</li>
+                    <li class="rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-medium text-green-800">{{ ctrans("Membership updates") }}</li>
                     <li class="rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-medium text-green-800">{{ ctrans("Restocks") }}</li>
-                    <li class="rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-medium text-green-800">{{ ctrans("Special offers") }}</li>
+                    <li class="rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-medium text-green-800">{{ ctrans("Occasional offers") }}</li>
                 </ul>
 
                 <div v-if="!showForm" class="mt-5" role="status">
@@ -248,6 +246,7 @@ onMounted(() => {
                             {{ ctrans("Unsubscribe") }}
                         </button>
                     </div>
+                    <p v-if="requestError" class="mt-1 text-xs text-red-600" role="alert">{{ requestError }}</p>
                 </div>
 
                 <form v-else class="mt-5 max-w-2xl" novalidate @submit.prevent="submit">
@@ -263,7 +262,7 @@ onMounted(() => {
 
                     <div v-else>
                         <p class="mb-1 block text-sm font-medium text-gray-900">
-                            {{ ctrans("Your WhatsApp number") }}
+                            {{ ctrans("Your WhatsApp number") }} <span class="text-red-500">*</span>
                         </p>
                         <div class="bg-white rounded-md mb-6">
                             <PhoneField
@@ -307,18 +306,20 @@ onMounted(() => {
                             class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-green-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-green-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-800 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                             :disabled="form.processing"
                         >
-                            <FontAwesomeIcon :icon="form.processing ? faSpinner : faWhatsapp" :spin="form.processing" fixed-width aria-hidden="true" />
-                            {{ ctrans("Subscribe to WhatsApp updates") }}
+                            <LoadingIcon v-if="form.processing" />
+                            <FontAwesomeIcon v-else :icon="faWhatsapp" fixed-width aria-hidden="true" />
+                            {{ ctrans("Keep me updated on WhatsApp") }}
                         </button>
                         <button
                             v-if="data.is_subscribed"
                             type="button"
                             class="min-h-11 text-sm text-gray-700 underline hover:text-gray-900"
-                            @click="isEditingSubscription = false; isChangingNumber = false; form.clearErrors()"
+                            @click="isEditingSubscription = false; isChangingNumber = false; requestError = ''; form.clearErrors()"
                         >
                             {{ ctrans("Cancel") }}
                         </button>
                     </div>
+                    <p v-if="requestError" class="mt-2 text-xs text-red-600" role="alert">{{ requestError }}</p>
                 </form>
             </div>
         </div>

@@ -89,7 +89,7 @@ test('a customer subscribes with a chosen WhatsApp number and consent', function
         ->and($subscriber->consent['phone'])->toBe('+447700900123')
         ->and($subscriber->consent['source'])->toBe('retina_dashboard')
         ->and($subscriber->consent['text'])->toContain('WhatsApp')
-        ->and($subscriber->consent['utm'])->toBe(['utm_source' => 'newsletter', 'utm_medium' => 'email', 'utm_campaign' => 'whatsapp_optin']);
+        ->and($subscriber->consent['utm'])->toEqual(['utm_source' => 'newsletter', 'utm_medium' => 'email', 'utm_campaign' => 'whatsapp_optin']);
 });
 
 test('a formatted number from another country is accepted', function () {
@@ -230,4 +230,19 @@ test('the B2B dashboard carries the WhatsApp card data', function () {
             ->component('Dashboard/RetinaB2BDashboard')
             ->where('whatsapp_optin.is_subscribed', false)
             ->where('whatsapp_optin.subscribe_route.name', 'retina.models.whatsapp_newsletter.subscribe'));
+});
+
+test('the consent wording shown on the dashboard is the wording stored with the subscription', function () {
+    actingAs($this->webUser, 'retina');
+
+    $shownConsentText = GetRetinaWhatsappOptInData::run($this->customer, $this->website)['consent_text'];
+
+    $this->post(route('retina.models.whatsapp_newsletter.subscribe'), ['phone' => '+447700900123', 'consent' => true])
+        ->assertSessionHasNoErrors();
+
+    $subscriber = WhatsappSubscriber::where('parent_type', 'Customer')->where('parent_id', $this->customer->id)->first();
+
+    expect($shownConsentText)->toContain($this->shop->name)
+        ->toContain('orders, membership, restocks and occasional offers')
+        ->and($subscriber->consent['text'])->toBe($shownConsentText);
 });

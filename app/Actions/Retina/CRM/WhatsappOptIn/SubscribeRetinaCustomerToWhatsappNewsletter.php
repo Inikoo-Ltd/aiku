@@ -27,7 +27,7 @@ class SubscribeRetinaCustomerToWhatsappNewsletter extends RetinaAction
 
     public static function consentText(Customer $customer): string
     {
-        return __('Yes, I would like to receive marketing updates from :brand on WhatsApp.', [
+        return __('Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.', [
             'brand' => $customer->shop->name,
         ]);
     }
