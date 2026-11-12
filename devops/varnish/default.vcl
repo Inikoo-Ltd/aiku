@@ -275,6 +275,14 @@ sub vcl_recv {
         return (pass);
     }
 
+    # The Cloudflare edge adds Last-Modified to the logged-out copy it keeps, so a browser
+    # that stored that copy revalidates it after login. A 304 here would make it show its
+    # logged-out page to a logged-in customer: they always get the full page.
+    if (req.http.X-Logged-Status == "In") {
+        unset req.http.If-Modified-Since;
+        unset req.http.If-None-Match;
+    }
+
     return (hash);
 }
 
