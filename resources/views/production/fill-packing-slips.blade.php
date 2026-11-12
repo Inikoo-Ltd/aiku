@@ -13,17 +13,17 @@
     <div style="font-size: 20pt; font-weight: bold;">{{ $slip['order']->reference }}</div>
     <div style="font-size: 13pt; margin-top: 2mm;">{{ $slip['order']->shop->name }}</div>
     <div style="margin-top: 2mm;">{{ __('Customer') }}: <b>{{ $slip['order']->customer?->name }}</b></div>
-    @if($slip['order']->deliveryAddress?->contact_name || $slip['order']->deliveryAddress?->organization)
-        <div>{{ __('Deliver to') }}: {{ collect([$slip['order']->deliveryAddress->contact_name, $slip['order']->deliveryAddress->organization])->filter()->implode(', ') }}</div>
+    @if($slip['deliver_to'])
+        <div>{{ __('Deliver to') }}: <b>{{ $slip['deliver_to'] }}</b></div>
     @endif
     <div style="margin-top: 2mm; font-size: 9pt; color: #555;">{{ __('Filled on :job_order', ['job_order' => $jobOrder->reference]) }} · {{ __('Printed') }}: {{ $printedAt }}</div>
 
     <table class="items" width="100%" style="margin-top: 5mm; border-collapse: collapse;">
         <thead>
         <tr>
-            <td style="width: 35%;">{{ __('Code') }}</td>
+            <td style="width: 33%;">{{ __('Code') }}</td>
             <td>{{ __('Description') }}</td>
-            <td style="width: 15%; text-align: right;">{{ __('Quantity') }}</td>
+            <td style="width: 22%; text-align: right; white-space: nowrap;">{{ __('Quantity') }}</td>
         </tr>
         </thead>
         <tbody>
