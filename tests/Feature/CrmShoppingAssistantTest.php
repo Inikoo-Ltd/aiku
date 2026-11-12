@@ -31,6 +31,7 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantConversationStatusEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Models\Catalogue\Product;
@@ -2631,4 +2632,47 @@ test('an offer of a person declared with an empty reply is still offered', funct
         ->and($message->flags)->toBeNull()
         ->and($result['follow_ups'])->toBe(['What should I reorder?'])
         ->and(collect($result['groups'])->every->isEmpty())->toBeTrue();
+});
+
+test('the assistant landing page sends the assistant name and the range size rounded down for its headline', function () {
+    $website = shoppingAssistantStorefront($this);
+    $page    = fn () => $this->withoutVite()->get('http://'.$website->domain.'/assistant')->assertOk();
+
+    $this->shop->stats->update(['number_products_status_for_sale' => 9016]);
+    $page()->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('ShoppingAssistant', false)
+        ->where('assistant_name', 'Ava')
+        ->where('products_in_range', 9000)
+        ->where('example_products', fn ($products) => collect($products)->count() <= 3 && collect($products)->every(fn ($product) => filled($product['name']) && filled($product['image']))));
+
+    $this->shop->stats->update(['number_products_status_for_sale' => 480]);
+    $page()->assertInertia(fn (AssertableInertia $page) => $page->where('products_in_range', 400));
+
+    $this->shop->stats->update(['number_products_status_for_sale' => 60]);
+    $page()->assertInertia(fn (AssertableInertia $page) => $page->where('products_in_range', null));
+});
+
+test('the assistant page lists the signed-in customer\'s own conversations by their first question, newest first, without cleared ones', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $url      = 'http://'.$website->domain.'/json/shopping-assistant/conversations';
+
+    $older   = shoppingAssistantShownAt($customer, [], now()->subDay()->toDateTimeString());
+    $newer   = shoppingAssistantShown($customer, [])->conversation;
+    $cleared = shoppingAssistantShown($customer, [])->conversation;
+    $cleared->update(['status' => ShoppingAssistantConversationStatusEnum::CLEARED]);
+    $someoneElses = shoppingAssistantShown(shoppingAssistantCustomer($this->shop), [])->conversation;
+
+    $older->update(['last_message_at' => now()->subDay()]);
+    $newer->update(['last_message_at' => now()]);
+
+    $listed = $this->actingAs($webUser, 'retina')->getJson($url)->assertOk()->json('conversations');
+
+    expect(collect($listed)->pluck('conversation')->all())->toBe([$newer->ulid, $older->ulid])
+        ->and($listed[0]['title'])->toBe('Ideas please')
+        ->and(collect($listed)->pluck('conversation'))->not->toContain($cleared->ulid, $someoneElses->ulid);
+
+    UpdateWebsite::make()->action($website, ['shopping_assistant_enabled' => false]);
+    $this->actingAs($webUser, 'retina')->getJson($url)->assertNotFound();
 });

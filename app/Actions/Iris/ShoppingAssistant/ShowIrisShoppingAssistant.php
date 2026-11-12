@@ -8,8 +8,11 @@
 
 namespace App\Actions\Iris\ShoppingAssistant;
 
+use App\Actions\CRM\RangeAdvisor\GetChristmasBestSellers;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\IrisAction;
 use App\Actions\Web\Website\Layouts\FetchUsedProductsWebBlock;
+use App\Models\Catalogue\Product;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,6 +31,44 @@ class ShowIrisShoppingAssistant extends IrisAction
         return Inertia::render('ShoppingAssistant', [
             'web_block_family'      => data_get($this->website->liveProductsSnapshot?->layout, 'data'),
             'web_block_family_code' => FetchUsedProductsWebBlock::run($this->website),
+            'products_in_range'     => $this->productsInRange(),
+            'assistant_name'        => GetShoppingAssistantSettings::name($this->website),
+            'example_products'      => $this->exampleProducts(),
         ]);
+    }
+
+    /**
+     * Three of the shop's own products for the landing page example, the same pick the advisor makes
+     * for a Christmas gifts question: sold well last Christmas, live, in stock and with a photo.
+     * Empty when the shop has none, and the example then shows plain placeholders.
+     *
+     * @return array<int, array{name: string, image: array<string, mixed>|null}>
+     */
+    private function exampleProducts(): array
+    {
+        return GetChristmasBestSellers::run($this->shop, null, 12)
+            ->filter(fn (Product $product) => $product->image_id)
+            ->take(3)
+            ->map(fn (Product $product) => [
+                'name'  => $product->name,
+                'image' => $product->imageSources(240, 240),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Products for sale rounded down to the 500 (to the 100 below 500), as the landing page says "9,000+ products";
+     * null for a small range, where a rounded figure would undersell it.
+     */
+    private function productsInRange(): ?int
+    {
+        $productsForSale = (int) $this->shop->stats?->number_products_status_for_sale;
+
+        if ($productsForSale < 100) {
+            return null;
+        }
+
+        return intdiv($productsForSale, 500) * 500 ?: intdiv($productsForSale, 100) * 100;
     }
 }
