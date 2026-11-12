@@ -37,7 +37,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 /**
  * The supplier of an order through an agent can not make a product: the agent gives all or part of the line to another
- * supplier of the same agent. The line lands on that supplier's open order of the same agent order in the same state, or
+ * supplier of the same agent. The line lands on that supplier's open order of the same agent order in any state up to Agreed, or
  * on a new one named after the source order with the new supplier's code, at the
  * price the buyer agreed; a different supplier price is asked to the buyer with the usual price question.
  * The agent can also move the line to another order of the same supplier: it keeps its product and price.
@@ -278,8 +278,9 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
     }
 
     /**
-     * Supplier orders in the same state that can still take lines: same agent and currency, not in production,
-     * nothing on a delivery, never the source order. Any of them takes the line when the user types its reference.
+     * Supplier orders that can still take lines: in process, submitted or agreed whatever the source order's state, same
+     * agent and currency, not in production, nothing on a delivery, never the source order. Any of them takes the line
+     * when the user types its reference, and the line takes that order's state.
      *
      * @return EloquentBuilder<PurchaseOrder>
      */
@@ -289,7 +290,7 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             ->where('organisation_id', $sourcePurchaseOrder->organisation_id)
             ->whereKeyNot($sourcePurchaseOrder->id)
             ->where('parent_type', 'OrgSupplier')
-            ->where('state', $sourcePurchaseOrder->state)
+            ->whereIn('state', self::statesTakingMovedLines())
             ->where('agent_id', $sourcePurchaseOrder->agent_id)
             ->where('currency_id', $sourcePurchaseOrder->currency_id)
             ->whereNull('production_started_at')
@@ -297,6 +298,14 @@ class MovePurchaseOrderTransactionToSupplier extends OrgAction
             ->whereNull('produced_at')
             ->whereDoesntHave('stockDeliveries', fn (EloquentBuilder $deliveries) => $deliveries->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED))
             ->orderBy('id');
+    }
+
+    /**
+     * @return array<int, PurchaseOrderStateEnum>
+     */
+    public static function statesTakingMovedLines(): array
+    {
+        return [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED];
     }
 
     /**

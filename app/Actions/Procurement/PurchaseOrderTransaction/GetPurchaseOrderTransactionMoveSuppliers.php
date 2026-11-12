@@ -50,7 +50,7 @@ class GetPurchaseOrderTransactionMoveSuppliers extends OrgAction
             ->where('parent_type', 'OrgSupplier')
             ->whereIn('parent_id', $orgSupplierIds)
             ->where('agent_id', $purchaseOrder->agent_id)
-            ->whereIn('state', [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('state', MovePurchaseOrderTransactionToSupplier::statesTakingMovedLines())
             ->orderBy('id')
             ->get(['id', 'parent_id', 'reference', 'state', 'number_purchase_order_transactions'])
             ->groupBy('parent_id');

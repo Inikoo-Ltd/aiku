@@ -339,7 +339,7 @@ function submit() {
 							<template v-if="unsettledPurchaseOrderOf(option)">
 								<span
 									v-if="cannotTakeLines(option)"
-									v-tooltip="ctrans('This order can not take these items: it is in another state, in production or already has a delivery')"
+									v-tooltip="ctrans('This order can not take these items: it is in another currency, in production or already has a delivery')"
 									class="ml-auto shrink-0 whitespace-nowrap text-xs text-gray-400"
 								>
 									{{ ctrans("Can not take these items") }}
