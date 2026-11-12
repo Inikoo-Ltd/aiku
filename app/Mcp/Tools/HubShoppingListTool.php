@@ -37,7 +37,7 @@ use Laravel\Mcp\Server\Tool;
  * Submitting the basket and changing lines already sent are orders: they also need
  * can_use_mcp_place_orders.
  */
-#[Description('Shows, fills and submits the shopping list (the basket) an organisation sends to the manufacturing hub. Plan the quantities with hub-order-planning-tool first. Without lines, sent_lines or submit it only shows the list (draft and sent lines). With lines it sets the quantity (in SKOs) of each SKO code as a draft in the basket: a SKO already in the basket gets the new quantity, not an extra one. The hub does not see drafts until the basket is submitted. The hub makes whole production batches only, so each quantity is raised to the next multiple of whole batches (open_lines shows what was saved); breaking a batch is only possible by a person on the shopping list page. Lines the hub cannot take are reported as skipped with the reason. remove takes the drafts of those SKO codes out of the basket (lines already sent are orders: change them with sent_lines). do_not_auto_order sets, per SKO of the buying organisation, whether it is kept out of suggested quantities from the hub, partners and suppliers for good (true) or suggested again (false); it does not stop ordering it by name. remove and do_not_auto_order are logged in the AI changes log and can be reverted there. For users enrolled to place orders: submit=true sends every draft to the hub, which starts producing it; sent_lines changes the quantity of lines already sent that the hub has not started (can_still_change in open_lines). Changing a sent line is dangerous: the hub may already be planning materials and batches around it. The first call is refused with that warning; tell the user, and only after they insist call again with accept ["change_submitted"]. Orders cannot be undone from the AI changes log. Only write after the user confirmed the codes, quantities and the submit in their own words, passing their request text.')]
+#[Description('Shows, fills and submits the shopping list (the basket) an organisation sends to the manufacturing hub. Plan the quantities with hub-order-planning-tool first. Without lines, sent_lines or submit it only shows the list (draft and sent lines). With lines it sets the quantity (in SKOs) of each SKO code as a draft in the basket: a SKO already in the basket gets the new quantity, not an extra one. The hub does not see drafts until the basket is submitted. The hub makes whole production batches only, so each quantity is raised to the next multiple of whole batches (open_lines shows what was saved); breaking a batch is only possible by a person on the shopping list page. Lines the hub cannot take are reported as skipped with the reason. remove takes the drafts of those SKO codes out of the basket (lines already sent are orders: change them with sent_lines). do_not_auto_order sets, per SKO of the buying organisation, whether it is kept out of suggested quantities from the hub, partners and suppliers for good (true) or suggested again (false); it does not stop ordering it by name. remove and do_not_auto_order are logged in the AI changes log and can be reverted there. For users enrolled to place orders: submit=true sends every draft to the hub, which starts producing it; sent_lines changes the quantity of lines already sent that the hub has not started (can_still_change in open_lines); quantity 0 takes the line off the list. Changing a sent line is dangerous: the hub may already be planning materials and batches around it. The first call is refused with that warning; tell the user, and only after they insist call again with accept ["change_submitted"]. Orders cannot be undone from the AI changes log. Only write after the user confirmed the codes, quantities and the submit in their own words, passing their request text.')]
 class HubShoppingListTool extends Tool
 {
     use WithMcpPermissions;
@@ -58,7 +58,7 @@ class HubShoppingListTool extends Tool
             'do_not_auto_order.*.value' => ['required', 'boolean'],
             'sent_lines'            => ['sometimes', 'array', 'min:1', 'max:200'],
             'sent_lines.*.sko'      => ['required', 'string'],
-            'sent_lines.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'sent_lines.*.quantity' => ['required', 'numeric', 'min:0'],
             'submit'                => ['sometimes', 'boolean'],
             'accept'                => ['sometimes', 'array'],
             'accept.*'              => ['string'],
@@ -260,7 +260,11 @@ class HubShoppingListTool extends Tool
                 }
 
                 try {
-                    UpdatePartnerShoppingListItem::make()->action($item, ['quantity' => $line['quantity']]);
+                    if ((float) $line['quantity'] == 0) {
+                        DeletePartnerShoppingListItem::make()->action($item);
+                    } else {
+                        UpdatePartnerShoppingListItem::make()->action($item, ['quantity' => $line['quantity']]);
+                    }
                 } catch (HttpException $exception) {
                     return $exception->getMessage();
                 }
@@ -388,7 +392,7 @@ class HubShoppingListTool extends Tool
             ]))->description('Keep SKOs of the buying organisation out of order suggestions from the hub, partners and suppliers, or let them back in'),
             'sent_lines'   => $schema->array()->items($schema->object([
                 'sko'      => $schema->string()->description('SKO code')->required(),
-                'quantity' => $schema->number()->description('New SKO quantity of the line already sent')->required(),
+                'quantity' => $schema->number()->description('New SKO quantity of the line already sent; 0 removes the line')->required(),
             ]))->description('Users enrolled to place orders only, dangerous: change the quantity of lines already sent to the hub that it has not started. Needs accept ["change_submitted"]'),
             'submit'       => $schema->boolean()->description('Users enrolled to place orders only: send every draft in the basket to the hub, after the lines are saved'),
             'accept'       => $schema->array()->items($schema->string())->description('Warnings the user accepted after being told, e.g. ["change_submitted"]'),
