@@ -10,6 +10,7 @@ use App\Actions\CRM\Appointment\Json\GetAppointmentActionOptions;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexOpenAgentContainersOfPurchaseOrder;
 use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveryAttachmentsJson;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexRecentPurchaseOrderTransactionUploads;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderReferenceAvailability;
 use App\Actions\Procurement\PartnerShoppingListItem\UI\IndexRecentPartnerShoppingListUploads;
 use App\Actions\Helpers\Gallery\Json\IndexShopGalleryImages;
 use App\Actions\Helpers\Ticket\Json\GetRecentlyUpdatedTickets;
@@ -287,6 +288,7 @@ Route::get('org-partner/{orgPartner}/shopping-list-org-stocks', IndexPartnerShop
 Route::get('org-supplier/{orgSupplier}/purchase-order/{purchaseOrder}/org-supplier-products', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgSupplier'])->name('org-supplier.org-supplier-products');
 Route::get('org-partner/{orgPartner}/purchase-order/{purchaseOrder}/org-stocks', [IndexPurchaseOrderOrgSupplierProducts::class, 'inOrgPartner'])->name('org-partner.purchase-order-org-stocks');
 Route::get('purchase-order-transaction-recent-uploads/{purchaseOrder:id}', IndexRecentPurchaseOrderTransactionUploads::class)->name('purchase_order.transaction.recent_uploads');
+Route::get('purchase-order/{purchaseOrder:id}/reference-availability', GetPurchaseOrderReferenceAvailability::class)->name('purchase_order.reference_availability');
 Route::get('purchase-order/{purchaseOrder:id}/open-agent-containers', IndexOpenAgentContainersOfPurchaseOrder::class)->name('purchase_order.open_agent_containers');
 Route::get('stock-delivery/{stockDelivery:id}/attachments', IndexStockDeliveryAttachmentsJson::class)->name('stock_delivery.attachments');
 Route::get('partner-shopping-list-recent-uploads/{orgPartner:id}', IndexRecentPartnerShoppingListUploads::class)->name('org_partner.shopping_list.recent_uploads');
