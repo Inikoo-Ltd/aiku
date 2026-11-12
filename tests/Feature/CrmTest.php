@@ -86,6 +86,7 @@ use App\Actions\CRM\Prospect\UpdateProspectEmailUnsubscribed;
 use App\Actions\Comms\Email\SendResetPasswordEmail;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\HydrateWebUser;
+use App\Actions\CRM\WebUser\Hydrators\WebUserHydrateWebUserRequests;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Maintenance\CRM\RepairTaxNumbersGuessedAsAustralia;
@@ -339,6 +340,10 @@ test('soft deleted web user does not block its email and username', function (Cu
         ->and($newWebUser->id)->not->toBe($webUser->id);
 })->depends('create web user');
 
+
+test('web user request stats of a web user deleted before the hydrator ran are skipped', function () {
+    expect(fn () => WebUserHydrateWebUserRequests::run((int) WebUser::withTrashed()->max('id') + 1000))->not->toThrow(Throwable::class);
+});
 
 test('create prospect', function () {
     $shop      = $this->shop;

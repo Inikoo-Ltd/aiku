@@ -6,6 +6,7 @@ use App\Enums\CRM\Appointment\AppointmentStateEnum;
 use App\Enums\CRM\AppointmentType\AppointmentTypeMeetingModeEnum;
 use App\Models\CRM\Appointment;
 use App\Services\GoogleCalendar\GoogleCalendarClient;
+use App\Services\GoogleCalendar\ReleaseWhenGoogleCalendarRateLimited;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -23,7 +24,14 @@ class SyncAppointmentGoogleCalendarEvent
 
     public string $jobQueue = 'low-priority';
 
-    public int $jobTries = 3;
+    public int $jobTries = 10;
+
+    public int $jobMaxExceptions = 3;
+
+    public function getJobMiddleware(): array
+    {
+        return [new ReleaseWhenGoogleCalendarRateLimited()];
+    }
 
     public static function dispatchFor(Appointment $appointment): void
     {

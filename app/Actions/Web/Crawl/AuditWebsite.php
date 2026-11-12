@@ -25,6 +25,7 @@ use App\Services\SiteAudit\CustomExtraction;
 use App\Services\SiteAudit\RichResultsTest;
 use App\Services\SiteAudit\RobotsTxt;
 use App\Services\SiteAudit\SerpPixelWidth;
+use GuzzleHttp\Psr7\Uri;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -35,6 +36,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -527,7 +529,9 @@ class AuditWebsite implements ShouldBeUnique
 
     /**
      * Asks each external link and image for its headers only, following redirects. A status that
-     * means the site refuses bots (401, 403, 405, 429) is asked again with a normal request.
+     * means the site refuses bots (401, 403, 405, 429) is asked again with a normal request. A link
+     * whose address cannot be a URL (page text pasted into an href) is recorded with that error
+     * instead of asked, since building the request would throw and end the whole audit.
      *
      * @param  array<int, array{url: string, kind: string}>  $resources
      */
@@ -540,10 +544,22 @@ class AuditWebsite implements ShouldBeUnique
             ->timeout(20)
             ->send($method, $resource['url']);
 
-        $responses = Http::pool(fn (Pool $pool) => array_map(fn (array $resource) => $request($pool, $resource, 'HEAD'), $resources));
+        $responses   = [];
+        $requestable = [];
+
+        foreach ($resources as $resource) {
+            try {
+                new Uri($resource['url']);
+                $requestable[] = $resource;
+            } catch (InvalidArgumentException $exception) {
+                $responses[$resource['url']] = $exception;
+            }
+        }
+
+        $responses = [...$responses, ...Http::pool(fn (Pool $pool) => array_map(fn (array $resource) => $request($pool, $resource, 'HEAD'), $requestable))];
 
         $retry = array_values(array_filter(
-            $resources,
+            $requestable,
             fn (array $resource) => !($responses[$resource['url']] ?? null) instanceof Response || in_array($responses[$resource['url']]->status(), self::UNCHECKABLE_STATUSES, true)
         ));
 

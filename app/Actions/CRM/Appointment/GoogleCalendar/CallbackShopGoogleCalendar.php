@@ -52,7 +52,7 @@ class CallbackShopGoogleCalendar extends OrgAction
             ->whereIn('state', AppointmentStateEnum::holdingSlot())
             ->where('ends_at', '>', now())
             ->pluck('id')
-            ->each(fn (int $appointmentId) => SyncAppointmentGoogleCalendarEvent::dispatch($appointmentId));
+            ->each(fn (int $appointmentId, int $index) => SyncAppointmentGoogleCalendarEvent::dispatch($appointmentId)->delay(now()->addSeconds($index)));
 
         return $shop;
     }

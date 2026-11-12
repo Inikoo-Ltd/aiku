@@ -13,6 +13,7 @@ use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Redirect;
+use Illuminate\Support\Str;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use App\Http\Resources\Web\WebpagesResource;
@@ -123,6 +124,22 @@ test('renaming a blog url refreshes its canonical url and only redirects the old
 
     expect($live->refresh()->canonical_url)->toEndWith('/live-blog-renamed')
         ->and(Redirect::where('website_id', $this->website->id)->where('from_path', 'live-blog-old')->value('to_webpage_id'))->toBe($live->id);
+});
+
+test('a blog url changed only by its slashes, or renamed back to an old url that already redirects, is not redirected again', function () {
+    $slug = 'slash-blog-'.Str::lower(Str::random(6));
+    $live = createBlogWebpage($this->website, 'Slash blog', ['url' => $slug]);
+
+    ProcessUpdateWebpageUrl::run($live, '/'.$slug);
+
+    expect(Redirect::where('website_id', $this->website->id)->where('from_path', $slug)->exists())->toBeFalse();
+
+    $live->update(['url' => $slug.'-renamed']);
+    ProcessUpdateWebpageUrl::run($live, $slug);
+    $live->update(['url' => $slug.'-again']);
+    ProcessUpdateWebpageUrl::run($live, '/'.$slug.'/');
+
+    expect(Redirect::where('website_id', $this->website->id)->where('from_path', $slug)->count())->toBe(1);
 });
 
 test('back office blog list shows the published date the website shows', function () {
