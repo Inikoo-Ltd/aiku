@@ -250,3 +250,29 @@ test('a sku composition change asks the masters department to check the masters 
     expect($openMasterTask()->sole()->id)->toBe($task->id)
         ->and($task->refresh()->data['subtasks'])->toHaveCount(2);
 });
+
+test('a product whose trade units change takes its media from the new trade unit, not the one it had loaded before', function () {
+    $oldTradeUnit = TradeUnit::find($this->tradeUnitId);
+    $newTradeUnit = TradeUnit::find($this->otherTradeUnitId);
+    $oldTradeUnit->updateQuietly(['video_url' => 'https://example.com/old-trade-unit']);
+    $newTradeUnit->updateQuietly(['video_url' => 'https://example.com/new-trade-unit']);
+
+    [, $seed] = createProduct($this->shop);
+    $product  = \App\Actions\Catalogue\Product\StoreProduct::make()->action(
+        $seed->family,
+        array_merge(\App\Models\Catalogue\Product::factory()->definition(), [
+            'code'        => 'TUM'.substr(uniqid(), -8),
+            'price'       => 10,
+            'trade_units' => [
+                ['id' => $oldTradeUnit->id, 'quantity' => 1],
+                ['id' => $newTradeUnit->id, 'quantity' => 1],
+            ],
+        ])
+    );
+    $product->updateQuietly(['master_product_id' => null, 'not_follow_master_media' => false]);
+    $product->load('tradeUnits');
+
+    \App\Actions\Catalogue\Product\SyncProductTradeUnits::run($product, [['id' => $newTradeUnit->id, 'quantity' => 1]]);
+
+    expect($product->refresh()->video_url)->toBe('https://example.com/new-trade-unit');
+});
