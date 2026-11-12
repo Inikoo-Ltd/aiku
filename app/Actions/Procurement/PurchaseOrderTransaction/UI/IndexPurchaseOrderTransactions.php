@@ -118,6 +118,7 @@ class IndexPurchaseOrderTransactions extends OrgAction
             'purchaseOrder.currency',
             'supplierProduct.currency',
             'supplierProduct.supplier',
+            'supplierProduct.image',
             'orgSupplierProduct.orgSupplier',
             'organisation.currency',
             'orgStock.tradeUnits.image',
