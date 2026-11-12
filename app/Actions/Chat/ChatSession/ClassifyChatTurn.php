@@ -54,7 +54,7 @@ class ClassifyChatTurn
      * claim check run on the same message at the same time, and whichever comes first asks Jev
      * for the other.
      *
-     * @return array{branch: string|null, answers: array<string, mixed>, urgent: string|null, closing: float, claim: bool, ds_kind: string|null}|null null when there is nothing to read or Jev could not be asked
+     * @return array{branch: string|null, answers: array<string, mixed>, urgent: string|null, closing: float, claim: bool, names_items: bool, ds_kind: string|null}|null null when there is nothing to read or Jev could not be asked
      */
     public static function forSession(ChatSession|MetaChatSession $chatSession): ?array
     {
@@ -121,7 +121,7 @@ class ClassifyChatTurn
     }
 
     /**
-     * @return array{branch: string|null, answers: array<string, mixed>, urgent: string|null, closing: float, claim: bool, ds_kind: string|null}|null null when Jev could not be asked
+     * @return array{branch: string|null, answers: array<string, mixed>, urgent: string|null, closing: float, claim: bool, names_items: bool, ds_kind: string|null}|null null when Jev could not be asked
      */
     public function handle(ChatSession|MetaChatSession $chatSession, string $customerWrote, string $weSaid, ?int $customerMessageId = null): ?array
     {
@@ -137,13 +137,16 @@ class ClassifyChatTurn
         $second  = $branch === 'problem' ? (AskJev::make()->handle($state, self::problemRound()) ?? []) : [];
         $answers = array_merge($first, $second);
 
+        $claim = $branch === 'problem' && in_array(Arr::get($answers, 'problem_kind.choice'), self::CLAIM_KINDS, true);
+
         $turn = [
-            'branch'  => $branch,
-            'answers' => $answers,
-            'urgent'  => self::urgent($answers),
-            'closing' => (float) Arr::get($answers, 'act.probabilities.closing', 0),
-            'claim'   => $branch === 'problem' && in_array(Arr::get($answers, 'problem_kind.choice'), self::CLAIM_KINDS, true),
-            'ds_kind' => $isDropship ? self::dsKind($answers) : null,
+            'branch'      => $branch,
+            'answers'     => $answers,
+            'urgent'      => self::urgent($answers),
+            'closing'     => (float) Arr::get($answers, 'act.probabilities.closing', 0),
+            'claim'       => $claim,
+            'names_items' => $claim && self::yes($answers, 'names_items') >= 0.5,
+            'ds_kind'     => $isDropship ? self::dsKind($answers) : null,
         ];
 
         $reading = $chatSession->shop
@@ -272,6 +275,11 @@ class ClassifyChatTurn
                 'charged_wrongly' => 'A charge, invoice, balance or status looks wrong',
                 'other'           => 'Something else',
             ]),
+            'names_items'  => self::noul(
+                'Does the customer say which products are affected and how many of each?',
+                'They name the products (by name, code or description) and give the quantities affected, such as "2 of the 6 Moonstone candles arrived broken"',
+                'They do not say which products, or not how many of them'
+            ),
         ];
     }
 

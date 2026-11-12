@@ -706,8 +706,11 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
         ?? createOrder($this->customer, Product::where('shop_id', $this->shop->id)->first() ?? createProduct($this->shop)[1]);
     $digits = preg_replace('/\D/', '', $order->reference);
 
+    $modelSays = '{"claim": true}';
     \Illuminate\Support\Facades\Http::fake([
-        'api.openai.com/*' => \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => '{"claim": true}']]]]),
+        'api.openai.com/*' => function () use (&$modelSays) {
+            return \Illuminate\Support\Facades\Http::response(['choices' => [['message' => ['content' => $modelSays]]]]);
+        },
         '*'                => \Illuminate\Support\Facades\Http::response(['messages' => [['id' => 'wamid.claim']]]),
     ]);
     \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-26 11:00', 'Europe/London'));
@@ -758,6 +761,54 @@ test('a customer reporting a problem out of hours is asked for exactly the detai
     $session->update(['last_agent_message_at' => now()->addMinute()]);
     expect(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($session->refresh()))->toBeNull()
         ->and(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList(noiseTestWhatsappSession($this->shop, '+447500000005', 'Hi')))->toBeNull();
+
+    // PRE-98: items and quantities already named are not asked for again.
+    $modelSays = '{"claim": true, "names_items": true}';
+    $named     = noiseTestWhatsappSession($this->shop->fresh(), '+447500000006', "Order $digits: I ordered 2x6 Moonstone candles and only 1x6 arrived");
+
+    expect($reply->handle($named))->toBeTrue();
+    $asked = $named->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->latest('id')->first();
+    expect($asked->message_text)->toContain('photos of the items')
+        ->and($asked->message_text)->not->toContain('which items are affected and how many')
+        ->and($asked->message_text)->not->toContain('your order number');
+
+    $complete = noiseTestWhatsappSession($this->shop->fresh(), '+447500000007', "Order $digits: I ordered 2x6 Moonstone candles and only 1x6 arrived");
+    $complete->messages()->create([
+        'meta_channel_id' => $complete->meta_channel_id,
+        'message_type'    => ChatMessageTypeEnum::IMAGE,
+        'sender_type'     => ChatSenderTypeEnum::GUEST,
+        'message_text'    => '',
+    ]);
+
+    expect($reply->handle($complete))->toBeTrue();
+    $closed = $complete->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->sole()->message_text;
+    expect($closed)->toContain('We are closed')
+        ->and($closed)->not->toContain('please send us')
+        ->and(data_get($complete->refresh()->metadata, \App\Actions\Chat\ChatSession\SendOutOfHoursReply::CLAIM_KEY))->not->toBeNull()
+        ->and(\App\Actions\Chat\ChatSession\GetChatClaimDetails::forList($complete))->toBe(['order_reference' => $order->reference, 'photos' => 1])
+        ->and($reply->handle($complete))->toBeFalse();
+
+    $jevNames = 0.9;
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('handle')->andReturnUsing(function (array $state, array $questions) use (&$jevNames) {
+        return isset($questions['problem_kind']) ? [
+            'problem_kind' => ['type' => 'choice', 'choice' => 'missing', 'probabilities' => ['missing' => 0.95]],
+            'names_items'  => ['type' => 'noul', 'noul' => $jevNames],
+        ] : [
+            'problem'              => ['type' => 'noul', 'noul' => 0.95],
+            'about_existing_order' => ['type' => 'noul', 'noul' => 0.95],
+            'wants_something'      => ['type' => 'noul', 'noul' => 0.9],
+            'act'                  => ['type' => 'choice', 'choice' => 'asking', 'probabilities' => ['asking' => 0.9]],
+        ];
+    });
+
+    $byJev = noiseTestWhatsappSession($this->shop->fresh(), '+447500000008', "Order $digits: only 1x6 of the 2x6 Moonstone candles arrived");
+    expect($reply->handle($byJev))->toBeTrue()
+        ->and($byJev->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->latest('id')->first()->message_text)->not->toContain('which items are affected and how many');
+
+    $jevNames = 0.2;
+    $vague    = noiseTestWhatsappSession($this->shop->fresh(), '+447500000009', "Order $digits: some candles are missing from my parcel");
+    expect($reply->handle($vague))->toBeTrue()
+        ->and($vague->messages()->where('sender_type', ChatSenderTypeEnum::SYSTEM)->latest('id')->first()->message_text)->toContain('which items are affected and how many');
 
     outOfHoursTestCleanUp($schedule);
 });
