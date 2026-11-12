@@ -91,7 +91,7 @@ class EnrichCrawlPages
                 'cls', round(vitals.cls::numeric, 3)
             ))
             FROM (".$samples->toSql().') AS vitals
-            WHERE crawl_pages.crawl_id = ? AND crawl_pages.webpage_id = vitals.webpage_id',
+            WHERE crawl_pages.crawl_id = ? AND crawl_pages.webpage_id = vitals.webpage_id AND crawl_pages.status_code = 200',
             [...$samples->getBindings(), $crawl->id]
         );
     }
