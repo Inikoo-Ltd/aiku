@@ -13,8 +13,8 @@ import Textarea from "primevue/textarea"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle, faLock, faForward } from "@fal"
-library.add(faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faMinusCircle, faExclamationCircle, faLock, faForward)
+import { faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faExclamationCircle, faLock, faForward } from "@fal"
+library.add(faCheck, faCircle, faCheckCircle, faPencil, faTimes, faTruck, faPaperclip, faUpload, faBan, faUndo, faExclamationCircle, faLock, faForward)
 
 interface Step {
     key: string
@@ -126,6 +126,8 @@ const groupGridClass = (count: number): string => {
     }
     return `grid-cols-2 md:grid-cols-4 ${wideColumns[count] ?? "xl:grid-cols-7"}`
 }
+
+const isComplete = (stage: Stage): boolean => stage.reached || !!stage.not_required
 
 const hasCheckDetail = (check: Check) => !!slots[`check-${check.key}`]
 
@@ -362,13 +364,12 @@ function save() {
             v-for="stage in group.stages"
             :key="stage.key"
             class="row-span-2 grid grid-rows-subgrid gap-0 p-3 text-sm"
-            :class="stage.unpaid ? 'bg-amber-50' : stage.reached && !stage.not_required ? 'bg-green-50' : 'bg-white'"
+            :class="stage.unpaid ? 'bg-amber-50' : isComplete(stage) ? 'bg-green-50' : 'bg-white'"
         >
             <div class="min-h-9">
-                <div class="flex items-center gap-2 font-medium" :class="stage.reached ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
-                    <FontAwesomeIcon v-if="stage.not_required" icon="fal fa-minus-circle" class="text-gray-400" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else-if="stage.unpaid" icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else-if="stage.reached" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
+                <div class="flex items-center gap-2 font-medium" :class="isComplete(stage) ? 'text-gray-800' : 'text-gray-400'" v-tooltip="stage.description">
+                    <FontAwesomeIcon v-if="stage.unpaid" icon="fal fa-exclamation-circle" class="text-amber-600" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else-if="isComplete(stage)" icon="fas fa-check-circle" class="text-green-600" fixed-width aria-hidden="true" />
                     <span v-else class="w-4 text-center tabular-nums">{{ stage.number }}</span>
                     {{ stage.label }}
                 </div>
@@ -377,7 +378,7 @@ function save() {
 
             <div>
             <div class="mt-1 tabular-nums" :class="stage.date ? 'text-gray-700' : 'text-gray-400'">
-                <template v-if="stage.not_required">{{ ctrans("Not required") }}</template>
+                <template v-if="stage.not_required"><span class="text-green-700">{{ ctrans("Not required") }}</span></template>
                 <template v-else-if="stage.unpaid"><span class="text-amber-700">{{ ctrans("Not paid") }}</span></template>
                 <template v-else-if="stage.date">{{ formatDate(stage.date) }}</template>
                 <template v-else-if="stage.reached">{{ ctrans("Not recorded") }}</template>
