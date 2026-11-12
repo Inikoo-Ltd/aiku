@@ -17,6 +17,8 @@ class AddressHydrateUsage implements ShouldBeUnique
 {
     use AsAction;
 
+    public bool $jobDeleteWhenMissingModels = true;
+
     public function getJobUniqueId(Address $address): string
     {
         return $address->id;
