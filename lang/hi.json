@@ -22529,5 +22529,10 @@
     "Transit & arrival": "परिवहन और आगमन",
     "Booked into stock": "स्टॉक में दर्ज",
     "Purchase orders in process, submitted or agreed and not booked in yet": "प्रक्रिया में, सबमिट या तय किए गए खरीद ऑर्डर जो अभी स्टॉक में दर्ज नहीं हुए",
-    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "वे खरीद ऑर्डर जिन पर आप सहमत हुए, जब तक उनका कंटेनर रवाना नहीं होता: तय, निर्माण जारी, आपके गोदाम में, रवाना होने को तैयार या सुपुर्द"
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "वे खरीद ऑर्डर जिन पर आप सहमत हुए, जब तक उनका कंटेनर रवाना नहीं होता: तय, निर्माण जारी, आपके गोदाम में, रवाना होने को तैयार या सुपुर्द",
+    "Currency the payment was sent in": "जिस मुद्रा में भुगतान भेजा गया",
+    "Amount sent": "भेजी गई राशि",
+    "Counts on the order as": "ऑर्डर पर इतना गिना जाएगा",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "ऑर्डर की मुद्रा में भुगतान का मूल्य: यही राशि शेष भुगतान में से घटाई जाती है",
+    "sent as :amount": ":amount के रूप में भेजा गया"
 }

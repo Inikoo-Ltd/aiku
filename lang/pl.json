@@ -25898,5 +25898,10 @@
     "We could not update your WhatsApp preference, please try again.": "Nie udało się zaktualizować Twojego ustawienia WhatsApp, spróbuj ponownie.",
     "We could not save your WhatsApp preference, please try again later.": "Nie udało się zapisać Twojego ustawienia WhatsApp, spróbuj ponownie później.",
     "Please enter a valid mobile number including the country code.": "Wpisz prawidłowy numer telefonu komórkowego wraz z numerem kierunkowym kraju.",
-    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Tak, chcę otrzymywać wiadomości WhatsApp od sklepu :brand dotyczące moich zamówień, członkostwa, ponownej dostępności produktów i okazjonalnych ofert."
+    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Tak, chcę otrzymywać wiadomości WhatsApp od sklepu :brand dotyczące moich zamówień, członkostwa, ponownej dostępności produktów i okazjonalnych ofert.",
+    "Currency the payment was sent in": "Waluta, w której wysłano płatność",
+    "Amount sent": "Wysłana kwota",
+    "Counts on the order as": "Liczy się w zamówieniu jako",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Ile płatność jest warta w walucie zamówienia: ta kwota jest odejmowana od tego, co pozostało do zapłaty",
+    "sent as :amount": "wysłano jako :amount"
 }

@@ -26629,5 +26629,10 @@
     "We could not update your WhatsApp preference, please try again.": "We could not update your WhatsApp preference, please try again.",
     "We could not save your WhatsApp preference, please try again later.": "We could not save your WhatsApp preference, please try again later.",
     "Please enter a valid mobile number including the country code.": "Please enter a valid mobile number including the country code.",
-    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers."
+    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.",
+    "Currency the payment was sent in": "Currency the payment was sent in",
+    "Amount sent": "Amount sent",
+    "Counts on the order as": "Counts on the order as",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "What the payment is worth in the currency of the order: this is what is taken off what is left to pay",
+    "sent as :amount": "sent as :amount"
 }

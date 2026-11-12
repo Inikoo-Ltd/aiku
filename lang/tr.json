@@ -16320,5 +16320,10 @@
     "Transit & arrival": "Transit ve varış",
     "Booked into stock": "Stoka alındı",
     "Purchase orders in process, submitted or agreed and not booked in yet": "İşlemde, gönderilmiş veya anlaşılmış ve henüz stoğa alınmamış satın alma siparişleri",
-    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Anlaştığınız satın alma siparişleri, konteynerleri yola çıkana kadar: anlaşıldı, üretimde, deponuzda, yola hazır veya teslim edildi"
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Anlaştığınız satın alma siparişleri, konteynerleri yola çıkana kadar: anlaşıldı, üretimde, deponuzda, yola hazır veya teslim edildi",
+    "Currency the payment was sent in": "Ödemenin gönderildiği para birimi",
+    "Amount sent": "Gönderilen tutar",
+    "Counts on the order as": "Siparişte şu tutar olarak sayılır",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Ödemenin sipariş para birimindeki değeri: kalan ödemeden düşülen tutar budur",
+    "sent as :amount": ":amount olarak gönderildi"
 }

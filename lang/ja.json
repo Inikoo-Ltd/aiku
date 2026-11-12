@@ -1543,5 +1543,10 @@
     "Transit & arrival": "輸送・到着",
     "Booked into stock": "在庫に計上",
     "Purchase orders in process, submitted or agreed and not booked in yet": "処理中、送信済み、または合意済みで、まだ入庫されていない発注書",
-    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "合意済みの発注書（コンテナが出発するまで）：合意済み、製造中、貴社倉庫内、出発準備完了、または引き渡し済み"
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "合意済みの発注書（コンテナが出発するまで）：合意済み、製造中、貴社倉庫内、出発準備完了、または引き渡し済み",
+    "Currency the payment was sent in": "支払いを送金した通貨",
+    "Amount sent": "送金額",
+    "Counts on the order as": "注文への充当額",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "注文の通貨での支払い額：この金額が未払い残高から差し引かれます",
+    "sent as :amount": ":amount で送金"
 }

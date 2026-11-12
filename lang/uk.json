@@ -7066,5 +7066,10 @@
     "We could not update your WhatsApp preference, please try again.": "Не вдалося оновити Ваші налаштування WhatsApp, будь ласка, спробуйте ще раз.",
     "We could not save your WhatsApp preference, please try again later.": "Не вдалося зберегти Ваші налаштування WhatsApp, будь ласка, спробуйте пізніше.",
     "Please enter a valid mobile number including the country code.": "Будь ласка, введіть дійсний номер мобільного з кодом країни.",
-    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Так, я погоджуюся отримувати повідомлення в WhatsApp від магазину :brand про мої замовлення, членство, товари, що знову в наявності, та періодичні пропозиції."
+    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Так, я погоджуюся отримувати повідомлення в WhatsApp від магазину :brand про мої замовлення, членство, товари, що знову в наявності, та періодичні пропозиції.",
+    "Currency the payment was sent in": "Валюта, у якій надіслано платіж",
+    "Amount sent": "Надіслана сума",
+    "Counts on the order as": "Зараховується до замовлення як",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Скільки платіж вартий у валюті замовлення: саме це віднімається від залишку до сплати",
+    "sent as :amount": "надіслано як :amount"
 }

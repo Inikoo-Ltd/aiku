@@ -9391,5 +9391,10 @@
     "We could not update your WhatsApp preference, please try again.": "Не успяхме да актуализираме предпочитанието Ви за WhatsApp, моля, опитайте отново.",
     "We could not save your WhatsApp preference, please try again later.": "Не успяхме да запазим предпочитанието Ви за WhatsApp, моля, опитайте отново по-късно.",
     "Please enter a valid mobile number including the country code.": "Моля, въведете валиден мобилен номер, включително кода на държавата.",
-    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Да, желая да получавам съобщения във WhatsApp от магазина :brand относно моите поръчки, членството ми, ново зареждане на продукти и оферти от време на време."
+    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Да, желая да получавам съобщения във WhatsApp от магазина :brand относно моите поръчки, членството ми, ново зареждане на продукти и оферти от време на време.",
+    "Currency the payment was sent in": "Валута, в която е изпратено плащането",
+    "Amount sent": "Изпратена сума",
+    "Counts on the order as": "Зачита се по поръчката като",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Колко струва плащането във валутата на поръчката: това се приспада от оставащото за плащане",
+    "sent as :amount": "изпратено като :amount"
 }

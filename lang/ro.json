@@ -25853,5 +25853,10 @@
     "We could not update your WhatsApp preference, please try again.": "Nu am putut actualiza preferința dvs. WhatsApp, vă rugăm să încercați din nou.",
     "We could not save your WhatsApp preference, please try again later.": "Nu am putut salva preferința dvs. WhatsApp, vă rugăm să încercați mai târziu.",
     "Please enter a valid mobile number including the country code.": "Vă rugăm să introduceți un număr de mobil valid, cu prefixul de țară.",
-    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Da, doresc să primesc mesaje WhatsApp de la :brand despre comenzile mele, calitatea mea de membru, reaprovizionările și ofertele ocazionale."
+    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Da, doresc să primesc mesaje WhatsApp de la :brand despre comenzile mele, calitatea mea de membru, reaprovizionările și ofertele ocazionale.",
+    "Currency the payment was sent in": "Moneda în care a fost trimisă plata",
+    "Amount sent": "Suma trimisă",
+    "Counts on the order as": "Contează pe comandă ca",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Cât valorează plata în moneda comenzii: aceasta este suma scăzută din restul de plată",
+    "sent as :amount": "trimis ca :amount"
 }

@@ -23424,5 +23424,10 @@
     "Transit & arrival": "Transit & kedatangan",
     "Booked into stock": "Masuk stok",
     "Purchase orders in process, submitted or agreed and not booked in yet": "Pesanan pembelian dalam proses, diajukan, atau disepakati dan belum dibukukan ke stok",
-    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Pesanan pembelian yang Anda sepakati, sampai kontainernya dalam perjalanan: disepakati, sedang dibuat, di gudang Anda, siap berangkat, atau sudah diserahterimakan"
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Pesanan pembelian yang Anda sepakati, sampai kontainernya dalam perjalanan: disepakati, sedang dibuat, di gudang Anda, siap berangkat, atau sudah diserahterimakan",
+    "Currency the payment was sent in": "Mata uang pengiriman pembayaran",
+    "Amount sent": "Jumlah yang dikirim",
+    "Counts on the order as": "Dihitung pada pesanan sebagai",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Nilai pembayaran dalam mata uang pesanan: inilah yang dikurangkan dari sisa yang harus dibayar",
+    "sent as :amount": "dikirim sebagai :amount"
 }

@@ -9000,5 +9000,10 @@
     "We could not update your WhatsApp preference, please try again.": "Nem sikerült frissítenünk a WhatsApp-beállítást, kérjük, próbálja újra.",
     "We could not save your WhatsApp preference, please try again later.": "Nem sikerült elmentenünk a WhatsApp-beállítást, kérjük, próbálja újra később.",
     "Please enter a valid mobile number including the country code.": "Kérjük, érvényes mobilszámot adjon meg az országhívó számmal együtt.",
-    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Igen, szeretnék WhatsApp-üzeneteket kapni a(z) :brand webáruháztól a rendeléseimről, a tagságomról, az újra készleten lévő termékekről és alkalmi ajánlatokról."
+    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Igen, szeretnék WhatsApp-üzeneteket kapni a(z) :brand webáruháztól a rendeléseimről, a tagságomról, az újra készleten lévő termékekről és alkalmi ajánlatokról.",
+    "Currency the payment was sent in": "A fizetés küldésének pénzneme",
+    "Amount sent": "Elküldött összeg",
+    "Counts on the order as": "A rendelésen ennyinek számít",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Amennyit a fizetés a rendelés pénznemében ér: ez vonódik le a még fizetendő összegből",
+    "sent as :amount": "elküldve mint :amount"
 }

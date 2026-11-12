@@ -3640,6 +3640,55 @@ describe('supplier deposits', function () {
             ->and($purchaseOrder->depositPayments()->count())->toBe(1)
             ->and((float) $purchaseOrder->deposit_amount)->toBe(300.0);
     });
+
+    test('a payment sent in the organisation currency keeps what was sent beside what it counts for on the order (HELP-4668)', function () {
+        $purchaseOrder = $this->depositPurchaseOrder;
+        $statement     = fn (string $name) => \Illuminate\Http\UploadedFile::fake()->createWithContent($name, '%PDF-1.4 '.$name.' '.Str::random(12));
+        $confirmRoute  = route('grp.models.purchase-order.payment.confirm', $purchaseOrder->id);
+        $payment       = fn (array $overrides = []) => array_merge(['amount' => 100, 'paid_at' => date('Y-m-d'), 'method' => 'bank_transfer', 'bank_statement' => $statement('sent.pdf')], $overrides);
+
+        StorePurchaseOrderTransaction::make()->action(
+            $purchaseOrder,
+            $this->depositOrgSupplierProduct->supplierProduct->historicSupplierProduct,
+            $this->orgStocks[0],
+            array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10])
+        );
+        $organisationCurrencyId = $this->organisation->currency_id;
+        $orderCurrency          = Currency::where('id', '!=', $organisationCurrencyId)->orderBy('id')->firstOrFail();
+        $unrelatedCurrency      = Currency::whereNotIn('id', [$organisationCurrencyId, $orderCurrency->id])->whereNotIn('code', ['USD', 'EUR'])->orderBy('id')->firstOrFail();
+        $dollars                = Currency::where('code', 'USD')->firstOrFail();
+        $expectedCurrencyIds    = collect([$orderCurrency->id, $organisationCurrencyId, $dollars->id, Currency::where('code', 'EUR')->firstOrFail()->id])->unique()->values()->all();
+        $purchaseOrder->refresh()->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'currency_id' => $orderCurrency->id, 'qc_passed_at' => now(), 'deposit_amount' => null, 'deposit_paid_at' => null]);
+        $totalToPay = \App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder);
+        expect($totalToPay)->toBeGreaterThan(200.0);
+
+        $this->post($confirmRoute, $payment(['original_currency_id' => $unrelatedCurrency->id, 'original_amount' => 20]))->assertSessionHasErrors('original_currency_id');
+        $this->post($confirmRoute, $payment(['original_currency_id' => $organisationCurrencyId]))->assertSessionHasErrors('original_amount');
+        expect($purchaseOrder->depositPayments()->count())->toBe(0);
+
+        $this->post($confirmRoute, $payment(['original_currency_id' => $orderCurrency->id, 'original_amount' => 20]))->assertRedirect()->assertSessionHasNoErrors();
+        $this->post($confirmRoute, $payment(['amount' => $totalToPay - 100, 'original_currency_id' => $organisationCurrencyId, 'original_amount' => 12.345, 'bank_statement' => $statement('euros.pdf')]))->assertRedirect()->assertSessionHasNoErrors();
+
+        $deposits = $purchaseOrder->depositPayments()->orderBy('id')->get();
+        expect($deposits)->toHaveCount(2)
+            ->and($deposits[0]->original_amount)->toBeNull()
+            ->and($deposits[0]->original_currency_id)->toBeNull()
+            ->and((float) $deposits[1]->amount)->toBe(round($totalToPay - 100, 2))
+            ->and($deposits[1]->currency_id)->toBe($orderCurrency->id)
+            ->and((float) $deposits[1]->original_amount)->toBe(12.35)
+            ->and($deposits[1]->original_currency_id)->toBe($organisationCurrencyId)
+            ->and(\App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::leftToPay($purchaseOrder->refresh()))->toBe(0.0)
+            ->and($purchaseOrder->balance_paid_at)->not->toBeNull();
+
+        $this->withoutVite();
+        $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('payments.currencies', fn ($currencies) => collect($currencies)->pluck('id')->all() === $expectedCurrencyIds)
+                ->where('payments.deposits.0.original_amount', null)
+                ->where('payments.deposits.1.original_amount', fn ($amount) => (float) $amount === 12.35)
+                ->where('payments.deposits.1.original_currency_code', $this->organisation->currency->code)
+                ->etc());
+    });
 });
 
 test('port arrival, customs release and a corrected received date follow the stage rules', function () {

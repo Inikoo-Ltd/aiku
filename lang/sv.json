@@ -9834,5 +9834,10 @@
     "We could not update your WhatsApp preference, please try again.": "Vi kunde inte uppdatera din WhatsApp-inställning, försök igen.",
     "We could not save your WhatsApp preference, please try again later.": "Vi kunde inte spara din WhatsApp-inställning, försök igen senare.",
     "Please enter a valid mobile number including the country code.": "Ange ett giltigt mobilnummer med landskod.",
-    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Ja, jag vill ta emot WhatsApp-meddelanden från :brand om mina order, mitt medlemskap, varor som kommer tillbaka i lager och enstaka erbjudanden."
+    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Ja, jag vill ta emot WhatsApp-meddelanden från :brand om mina order, mitt medlemskap, varor som kommer tillbaka i lager och enstaka erbjudanden.",
+    "Currency the payment was sent in": "Valuta som betalningen skickades i",
+    "Amount sent": "Skickat belopp",
+    "Counts on the order as": "Räknas på ordern som",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Vad betalningen är värd i orderns valuta: detta dras av från det som återstår att betala",
+    "sent as :amount": "skickat som :amount"
 }

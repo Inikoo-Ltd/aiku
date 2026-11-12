@@ -8997,5 +8997,10 @@
     "We could not update your WhatsApp preference, please try again.": "Nismo mogli ažurirati vašu WhatsApp postavku, pokušajte ponovno.",
     "We could not save your WhatsApp preference, please try again later.": "Nismo mogli spremiti vašu WhatsApp postavku, pokušajte ponovno kasnije.",
     "Please enter a valid mobile number including the country code.": "Unesite važeći broj mobitela s pozivnim brojem države.",
-    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Da, želim primati WhatsApp poruke tvrtke :brand o svojim narudžbama, članstvu, ponovnoj dostupnosti proizvoda i povremenim ponudama."
+    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Da, želim primati WhatsApp poruke tvrtke :brand o svojim narudžbama, članstvu, ponovnoj dostupnosti proizvoda i povremenim ponudama.",
+    "Currency the payment was sent in": "Valuta u kojoj je uplata poslana",
+    "Amount sent": "Poslani iznos",
+    "Counts on the order as": "Na narudžbi se računa kao",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Koliko uplata vrijedi u valuti narudžbe: taj se iznos oduzima od onoga što je preostalo za platiti",
+    "sent as :amount": "poslano kao :amount"
 }

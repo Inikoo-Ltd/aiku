@@ -1241,6 +1241,12 @@ class ShowPurchaseOrder extends OrgAction
         return [
             'can_confirm'   => ConfirmPurchaseOrderPayment::canConfirm($purchaseOrder, $request->user()),
             'currency_code' => $purchaseOrder->currency?->code,
+            'currencies'    => ConfirmPurchaseOrderPayment::paymentCurrencies($purchaseOrder)->map(fn (Currency $currency) => [
+                'id'   => $currency->id,
+                'code' => $currency->code,
+                'name' => $currency->name,
+                'rate' => $purchaseOrder->currency && !in_array($currency->id, [$purchaseOrder->currency_id, $purchaseOrder->organisation->currency_id], true) ? GetCurrencyExchange::run($currency, $purchaseOrder->currency) : null,
+            ])->all(),
             'methods'       => PurchaseOrderPaymentMethodEnum::options(),
             'total'         => $totalToPay,
             'paid'          => $paid,
@@ -1248,7 +1254,7 @@ class ShowPurchaseOrder extends OrgAction
             'balance_awaits_qc' => ConfirmPurchaseOrderPayment::balanceAwaitsQc($purchaseOrder),
             'paid_at'       => $purchaseOrder->deposit_paid_at,
             'deposits'      => $purchaseOrder->depositPayments()
-                ->with(['bankStatement:id,ulid,file_name', 'createdBy:id,contact_name,username'])
+                ->with(['bankStatement:id,ulid,file_name', 'createdBy:id,contact_name,username', 'originalCurrency:id,code'])
                 ->orderBy('date')
                 ->orderBy('id')
                 ->get()
@@ -1256,6 +1262,8 @@ class ShowPurchaseOrder extends OrgAction
                     'id'             => $payment->id,
                     'date'           => $payment->date->toDateString(),
                     'amount'         => (float) $payment->amount,
+                    'original_amount'        => $payment->original_amount !== null ? (float) $payment->original_amount : null,
+                    'original_currency_code' => $payment->originalCurrency?->code,
                     'method'         => PurchaseOrderPaymentMethodEnum::labels()[$payment->method->value] ?? $payment->method->value,
                     'reference'      => $payment->reference,
                     'paid_by'        => $payment->createdBy?->contact_name ?: $payment->createdBy?->username,

@@ -23270,5 +23270,10 @@
     "Transit & arrival": "ढुवानी र आगमन",
     "Booked into stock": "स्टकमा दर्ता",
     "Purchase orders in process, submitted or agreed and not booked in yet": "प्रक्रियामा, पेश गरिएका वा सहमत भएका र अझै स्टकमा दर्ता नभएका पर्चेज अर्डरहरू",
-    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "तपाईंले सहमति गर्नुभएका पर्चेज अर्डरहरू, तिनको कन्टेनर बाटोमा नलागेसम्म: सहमत, निर्माण हुँदै, तपाईंको गोदाममा, हिँड्न तयार वा हस्तान्तरण भइसकेका"
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "तपाईंले सहमति गर्नुभएका पर्चेज अर्डरहरू, तिनको कन्टेनर बाटोमा नलागेसम्म: सहमत, निर्माण हुँदै, तपाईंको गोदाममा, हिँड्न तयार वा हस्तान्तरण भइसकेका",
+    "Currency the payment was sent in": "भुक्तानी पठाइएको मुद्रा",
+    "Amount sent": "पठाइएको रकम",
+    "Counts on the order as": "अर्डरमा यति गनिन्छ",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "अर्डरको मुद्रामा भुक्तानीको मूल्य: तिर्न बाँकी रकमबाट यही घटाइन्छ",
+    "sent as :amount": ":amount को रूपमा पठाइएको"
 }

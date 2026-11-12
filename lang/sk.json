@@ -26689,5 +26689,10 @@
     "We could not update your WhatsApp preference, please try again.": "Nepodarilo sa nám aktualizovať vaše nastavenie WhatsApp, skúste to prosím znova.",
     "We could not save your WhatsApp preference, please try again later.": "Nepodarilo sa nám uložiť vaše nastavenie WhatsApp, skúste to prosím neskôr.",
     "Please enter a valid mobile number including the country code.": "Zadajte prosím platné číslo mobilu vrátane predvoľby krajiny.",
-    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Áno, chcem dostávať správy na WhatsApp od obchodu :brand o svojich objednávkach, členstve, opätovnej dostupnosti produktov a občasných ponukách."
+    "Yes, I would like to receive WhatsApp messages from :brand about my orders, membership, restocks and occasional offers.": "Áno, chcem dostávať správy na WhatsApp od obchodu :brand o svojich objednávkach, členstve, opätovnej dostupnosti produktov a občasných ponukách.",
+    "Currency the payment was sent in": "Mena, v ktorej bola platba odoslaná",
+    "Amount sent": "Odoslaná suma",
+    "Counts on the order as": "Na objednávke sa počíta ako",
+    "What the payment is worth in the currency of the order: this is what is taken off what is left to pay": "Hodnota platby v mene objednávky: táto suma sa odpočíta od toho, čo ostáva zaplatiť",
+    "sent as :amount": "odoslané ako :amount"
 }
