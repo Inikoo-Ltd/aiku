@@ -25774,5 +25774,7 @@
     "Transit & arrival": "Tranzit și sosire",
     "Booked into stock": "Înregistrată în stoc",
     "The :product is on order and expected between :from and :to.": "Produsul :product a fost comandat și este așteptat între :from și :to.",
-    "Our purchasing team answered your question:": "Echipa noastră de achiziții a răspuns la întrebarea dvs.:"
+    "Our purchasing team answered your question:": "Echipa noastră de achiziții a răspuns la întrebarea dvs.:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Comenzi de achiziție în curs, plasate sau convenite și încă neînregistrate în stoc",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Comenzi de achiziție pe care le-ați convenit, până când containerul lor este pe drum: convenite, în producție, în depozitul dvs., gata de plecare sau predate"
 }

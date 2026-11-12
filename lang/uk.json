@@ -6987,5 +6987,7 @@
     "Transit & arrival": "Транзит і прибуття",
     "Booked into stock": "Оприбутковано на склад",
     "The :product is on order and expected between :from and :to.": "Товар :product замовлено. Очікується в період від :from до :to.",
-    "Our purchasing team answered your question:": "Відповідь нашого відділу закупівель на Ваше запитання:"
+    "Our purchasing team answered your question:": "Відповідь нашого відділу закупівель на Ваше запитання:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Замовлення на закупівлю в роботі, надіслані або погоджені, які ще не оприбутковано",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Замовлення на закупівлю, які ви погодили, доки їхній контейнер не в дорозі: погоджені, у виробництві, на вашому складі, готові до відправки або передані"
 }

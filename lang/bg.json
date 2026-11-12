@@ -9312,5 +9312,7 @@
     "Transit & arrival": "Транспорт и пристигане",
     "Booked into stock": "Заведена в наличност",
     "The :product is on order and expected between :from and :to.": "Продуктът :product е поръчан и се очаква между :from и :to.",
-    "Our purchasing team answered your question:": "Нашият екип по снабдяване отговори на въпроса ви:"
+    "Our purchasing team answered your question:": "Нашият екип по снабдяване отговори на въпроса ви:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Поръчки за покупка в процес, изпратени или договорени, които още не са заприходени",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Поръчки за покупка, които сте договорили, докато контейнерът им не тръгне: договорени, в изработка, във вашия склад, готови за път или предадени"
 }

@@ -25505,5 +25505,7 @@
     "Transit & arrival": "Trânsito e chegada",
     "Booked into stock": "Registado em stock",
     "The :product is on order and expected between :from and :to.": "O produto :product está encomendado e é esperado entre :from e :to.",
-    "Our purchasing team answered your question:": "A nossa equipa de compras respondeu à sua pergunta:"
+    "Our purchasing team answered your question:": "A nossa equipa de compras respondeu à sua pergunta:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Ordens de compra em processamento, submetidas ou acordadas e ainda não registadas em stock",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Ordens de compra que acordou, até o respetivo contentor estar a caminho: acordadas, em produção, no seu armazém, prontas para partir ou entregues"
 }
