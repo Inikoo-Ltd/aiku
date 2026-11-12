@@ -1629,3 +1629,30 @@ test('mobile location detail lists its pallets and its movements need location a
     Sanctum::actingAs(createMobileAppUser($this->group), ['mobile']);
     getJson(route('grp.api.mobile.locations.stock_movements', $stocked->id), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
 });
+
+test('mobile SKO families come from the web families table with the state counts', function () {
+    [, $warehouse] = actingAsMobileWarehouseUser($this->group, RolesEnum::STOCK_CONTROLLER);
+    $stockFamily    = \App\Actions\Goods\StockFamily\StoreStockFamily::make()->action($warehouse->group, \App\Models\Goods\StockFamily::factory()->definition());
+    $orgStockFamily = \App\Actions\Inventory\OrgStockFamily\StoreOrgStockFamily::make()->action($warehouse->organisation, $stockFamily, []);
+    $orgStockFamily->update(['state' => \App\Enums\Inventory\OrgStockFamily\OrgStockFamilyStateEnum::ACTIVE]);
+    $headers = ['X-Aiku-App-Key' => 'mobile-test-key'];
+
+    $rows = collect(getJson(route('grp.api.mobile.warehouses.org_stock_families', [$warehouse->id, 'state' => 'active', 'q' => $orgStockFamily->code]), $headers)
+        ->assertOk()
+        ->assertJsonStructure(['data', 'meta' => ['total'], 'counts' => ['in_process', 'active', 'discontinuing', 'discontinued']])
+        ->json('data'));
+
+    expect($rows->firstWhere('code', $orgStockFamily->code))->toMatchArray(['id' => $orgStockFamily->id, 'state' => 'active']);
+
+    getJson(route('grp.api.mobile.warehouses.org_stock_families.skos', [$warehouse->id, $orgStockFamily->id]), $headers)
+        ->assertOk()
+        ->assertJsonPath('family.id', $orgStockFamily->id)
+        ->assertJsonPath('family.code', $orgStockFamily->code);
+});
+
+test('mobile SKO families need inventory view rights', function () {
+    [, $warehouse] = actingAsMobileLocationsViewer($this->group);
+    Sanctum::actingAs(createMobileAppUser($this->group), ['mobile']);
+
+    getJson(route('grp.api.mobile.warehouses.org_stock_families', $warehouse->id), ['X-Aiku-App-Key' => 'mobile-test-key'])->assertForbidden();
+});

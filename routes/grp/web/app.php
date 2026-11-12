@@ -158,6 +158,15 @@ Route::middleware(
             Route::get('/channels/{channelType}', [App\Actions\UI\Marketing\ShowAggregatedMarketingChannel::class, 'inGroup'])->name('channels.show');
             Route::get('/social-media', [App\Actions\UI\Marketing\ShowSocialMediaDashboard::class, 'inGroup'])->name('social_media.dashboard');
             Route::get('/social-media/export', [App\Actions\UI\Marketing\ExportSocialMediaPosts::class, 'inGroup'])->name('social_media.export');
+            Route::prefix('info-websites/{staticWebsite}')->name('info_websites.')->scopeBindings()->group(function () {
+                Route::get('', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsite::class)->name('show');
+                Route::get('webpages', App\Actions\Web\StaticWebsite\UI\IndexStaticWebpages::class)->name('webpages.index');
+                Route::get('webpages/{webpage:id}', App\Actions\Web\StaticWebsite\UI\ShowStaticWebpage::class)->name('webpages.show');
+                Route::get('components/{component:code}', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsiteComponent::class)->name('components.show');
+                Route::get('snapshots/{snapshot:id}/preview', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsiteSnapshotPreview::class)->name('snapshots.preview')->withoutScopedBindings();
+                Route::get('changes/{change}/preview', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsiteChangePreview::class)->name('changes.preview')->whereUuid('change')->withoutScopedBindings();
+                Route::get('preview/{path?}', App\Actions\Web\StaticWebsite\UI\ShowStaticWebsitePreview::class)->where('path', '.*')->name('preview');
+            });
         });
     Route::prefix("org/{organisation}")
         ->name("org.")

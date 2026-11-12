@@ -222,6 +222,20 @@ enum InventoryFamilyState: String, CaseIterable, Hashable, Sendable {
     case discontinuing
     case discontinued
 
+    var remoteValue: String {
+        switch self {
+        case .active: "active"
+        case .inProcess: "in_process"
+        case .discontinuing: "discontinuing"
+        case .discontinued: "discontinued"
+        }
+    }
+
+    init?(remoteValue: String) {
+        guard let state = Self.allCases.first(where: { $0.remoteValue == remoteValue }) else { return nil }
+        self = state
+    }
+
     var title: String {
         switch self {
         case .active: "Active"
@@ -239,12 +253,20 @@ struct InventoryFamily: Identifiable, Hashable, Sendable {
     var skoCount: Int
     var stockValueLabel: String
     var coverWeeks: Int
+    var remoteID: Int? = nil
+    var coverMonths: Double? = nil
 
     var id: String { code }
 
-    var title: String { "\(code) · \(name)" }
+    var title: String { name.isEmpty || name == code ? code : "\(code) · \(name)" }
 
-    var subtitle: String { "\(skoCount) SKOs · stock value \(stockValueLabel) · cover \(coverWeeks) weeks" }
+    var coverLabel: String {
+        guard remoteID != nil else { return "\(coverWeeks) weeks" }
+        guard let coverMonths else { return "–" }
+        return "\(coverMonths.formatted(.number.precision(.fractionLength(0...1)))) mo"
+    }
+
+    var subtitle: String { "\(skoCount) SKOs · stock value \(stockValueLabel) · cover \(coverLabel)" }
 
     func matches(search: String) -> Bool {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)

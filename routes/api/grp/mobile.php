@@ -31,6 +31,8 @@ use App\Actions\Api\Group\GetMobileProfile;
 use App\Actions\Api\Group\GetMobileWarehouses;
 use App\Actions\HumanResources\ClockingMachine\ValidateClockingMachineQrCode;
 use App\Actions\HumanResources\WorkSchedule\IndexShiftSchedules;
+use App\Actions\Api\Group\Inventory\IndexMobileOrgStockFamilies;
+use App\Actions\Api\Group\Inventory\IndexMobileOrgStockFamilySkos;
 use App\Actions\Api\Group\Locations\AuditMobileLocation;
 use App\Actions\Api\Group\Locations\GetMobileLocationsOverview;
 use App\Actions\Api\Group\Locations\GetMobileStockMovementReasons;
@@ -90,6 +92,8 @@ Route::middleware(VerifyMobileAppKey::class)->group(function () {
         });
         Route::get('/warehouses/{warehouse:id}/locations-overview', GetMobileLocationsOverview::class)->name('warehouses.locations_overview');
         Route::get('/warehouses/{warehouse:id}/areas', IndexMobileWarehouseAreas::class)->name('warehouses.areas');
+        Route::get('/warehouses/{warehouse:id}/org-stock-families', IndexMobileOrgStockFamilies::class)->name('warehouses.org_stock_families');
+        Route::get('/warehouses/{warehouse:id}/org-stock-families/{orgStockFamily:id}/skos', IndexMobileOrgStockFamilySkos::class)->name('warehouses.org_stock_families.skos')->withoutScopedBindings();
         Route::get('/warehouses/{warehouse:id}/locations', IndexMobileLocations::class)->name('warehouses.locations');
         Route::get('/warehouses/{warehouse:id}/empty-location-org-stocks', IndexMobileEmptyLocationOrgStocks::class)->name('warehouses.empty_location_org_stocks');
         Route::get('/warehouses/{warehouse:id}/removed-empty-location-org-stocks', IndexMobileRemovedEmptyLocationOrgStocks::class)->name('warehouses.removed_empty_location_org_stocks');

@@ -4334,3 +4334,139 @@ describe('customer service tools', function () {
         expect($staffNote->refresh()->status)->toBe('active');
     });
 });
+
+function infoWebsiteToolJson(Laravel\Mcp\Server\Testing\TestResponse $response): array
+{
+    $raw = (fn () => $this->response->toArray())->call($response);
+
+    return json_decode($raw['result']['content'][0]['text'] ?? '{}', true) ?? [];
+}
+
+describe('changing info websites through the assistant', function () {
+    beforeEach(function () {
+        Illuminate\Support\Facades\Storage::fake(config('media-library.disk_name'));
+        $this->user->assignRole(App\Enums\SysAdmin\Authorisation\RolesEnum::GROUP_ADMIN->value);
+
+        $this->staticWebsite = App\Actions\Web\StaticWebsite\StoreStaticWebsite::make()->action($this->group, [
+            'domain' => 'mcp-'.Illuminate\Support\Str::lower(Illuminate\Support\Str::random(10)).'.test',
+            'name'   => 'Info website for the assistant',
+        ]);
+        $page = fn (string $body) => '<!DOCTYPE html><html><head><title>Old title</title><meta name="description" content="Old description"><link rel="canonical" href="https://www.example.test/"></head><body>'
+            .'<header id="header" class="header"><!--aiku:component:header--></header>'
+            .'<main id="page"><article class="sections" id="sections">'.$body.'</article></main>'
+            .'<footer class="sections" id="footer-sections"><!--aiku:component:footer--></footer></body></html>';
+        $this->staticWebsite->webpages()->createMany([
+            ['path' => '/', 'title' => 'Home', 'html' => $page('<h1>Welcome</h1><p>We ship from Sheffield.</p>')],
+            ['path' => '/about', 'title' => 'About', 'html' => $page('<h1>About us</h1><p>Founded in 1995.</p><a href="/">Home</a>')],
+        ]);
+        $this->staticWebsite->components()->createMany([
+            ['code' => 'header', 'html' => '<nav><a href="/about">About</a></nav>'],
+            ['code' => 'footer', 'html' => '<p>Contact us</p><p>Contact us</p>'],
+        ]);
+    });
+
+    afterEach(function () {
+        $this->user->removeRole(App\Enums\SysAdmin\Authorisation\RolesEnum::GROUP_ADMIN->value);
+    });
+
+    it('is for group administrators only', function () {
+        $guest = guestWithoutPositions($this->group);
+        $guest->getUser()->update(['can_use_mcp' => true]);
+
+        AikuServer::actingAs($guest->getUser())->tool(App\Mcp\Tools\InfoWebsitesTool::class, [])
+            ->assertHasErrors(['Info websites can only be changed by group administrators for now. Do not retry; nothing was changed.']);
+    });
+
+    it('reads the pages and finds the exact html to quote', function () {
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitesTool::class, ['website' => $this->staticWebsite->domain])
+            ->assertOk()->assertSee('/about');
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitesTool::class, [
+            'website' => $this->staticWebsite->domain,
+            'page'    => '/',
+            'find'    => 'Sheffield',
+        ])->assertOk()->assertSee('We ship from Sheffield.');
+    });
+
+    it('previews without saving, saves only the confirmed change, logs it and reverts it', function () {
+        $before = $this->staticWebsite->webpages()->where('path', '/')->value('html');
+
+        $preview = infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitePreviewTool::class, [
+            'website'   => $this->staticWebsite->domain,
+            'operation' => 'update_page',
+            'page'      => '/',
+            'title'     => 'New home',
+            'edits'     => [['action' => 'replace', 'find' => '<p>We ship from Sheffield.</p>', 'html' => '<p>We ship from Sheffield and Bratislava.</p>']],
+        ]));
+
+        expect($preview['saved'])->toBeFalse()
+            ->and($preview['edits'][0]['after'])->toBe('We ship from Sheffield and Bratislava.')
+            ->and($this->staticWebsite->webpages()->where('path', '/')->value('html'))->toBe($before);
+
+        $saved = infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsiteWriteTool::class, [
+            'change_id'    => $preview['change_id'],
+            'request_text' => 'Yes, save it',
+        ]));
+
+        $home = $this->staticWebsite->webpages()->where('path', '/')->first();
+        expect($saved['saved'])->toBeTrue()
+            ->and($home->html)->toContain('Sheffield and Bratislava')
+            ->and($home->html)->toContain('<title>New home</title>')
+            ->and($home->title)->toBe('New home')
+            ->and($home->snapshots()->latest('id')->value('comment'))->toContain('Yes, save it');
+
+        $mcpChange = App\Models\SysAdmin\McpChange::find($saved['change_log_id']);
+        expect($mcpChange->type)->toBe(App\Enums\SysAdmin\McpChange\McpChangeTypeEnum::INFO_WEBSITE_CONTENT)
+            ->and($mcpChange->request_text)->toBe('Yes, save it');
+
+        App\Actions\SysAdmin\McpChange\RevertMcpChange::run($mcpChange, $this->user);
+
+        expect($home->refresh()->html)->toBe($before)
+            ->and($home->title)->toBe('Home');
+    });
+
+    it('refuses a change when the page moved after the preview, and a preview used twice', function () {
+        $preview = infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitePreviewTool::class, [
+            'website' => $this->staticWebsite->domain, 'operation' => 'update_page', 'page' => '/about', 'title' => 'About Ancient Wisdom',
+        ]));
+
+        $about = $this->staticWebsite->webpages()->where('path', '/about')->first();
+        $about->update(['html' => $about->html.'<!-- changed elsewhere -->']);
+
+        AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsiteWriteTool::class, ['change_id' => $preview['change_id'], 'request_text' => 'yes'])
+            ->assertHasErrors();
+
+        expect($about->refresh()->title)->toBe('About');
+    });
+
+    it('refuses scripts, quotes that are not unique and deleting the home page', function () {
+        $preview = fn (array $arguments) => AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitePreviewTool::class, array_merge(['website' => $this->staticWebsite->domain], $arguments));
+
+        $preview(['operation' => 'update_page', 'page' => '/', 'edits' => [['action' => 'insert_after', 'find' => '<h1>Welcome</h1>', 'html' => '<script>alert(1)</script>']]])->assertHasErrors();
+        $preview(['operation' => 'update_component', 'component' => 'footer', 'edits' => [['action' => 'replace', 'find' => '<p>Contact us</p>', 'html' => '<p>Call us</p>']]])->assertHasErrors();
+        $preview(['operation' => 'delete_page', 'page' => '/'])->assertHasErrors();
+    });
+
+    it('creates a page from a template and a shared part shown on every page, then removes them', function () {
+        $write = fn (array $preview) => infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsiteWriteTool::class, ['change_id' => $preview['change_id'], 'request_text' => 'yes']));
+        $preview = fn (array $arguments) => infoWebsiteToolJson(AikuServer::actingAs($this->user)->tool(App\Mcp\Tools\InfoWebsitePreviewTool::class, array_merge(['website' => $this->staticWebsite->domain], $arguments)));
+
+        $write($preview(['operation' => 'create_page', 'path' => '/christmas', 'title' => 'Christmas', 'from_page' => '/about', 'content_html' => '<h1>Christmas range</h1>']));
+        $christmas = $this->staticWebsite->webpages()->where('path', '/christmas')->first();
+
+        expect($christmas->html)->toContain('<h1>Christmas range</h1>')
+            ->and($christmas->html)->not->toContain('Founded in 1995')
+            ->and($christmas->html)->toContain('<!--aiku:component:header-->')
+            ->and($christmas->html)->toContain('href="https://www.'.$this->staticWebsite->domain.'/christmas"');
+
+        $write($preview(['operation' => 'create_component', 'component' => 'announcement', 'html' => '<div>Free delivery</div>']));
+        expect($this->staticWebsite->webpages()->whereRaw('position(? in html) > 0', ['<!--aiku:component:announcement-->'])->count())->toBe(3);
+
+        $write($preview(['operation' => 'delete_component', 'component' => 'announcement']));
+        $write($preview(['operation' => 'delete_page', 'page' => '/christmas']));
+
+        expect($this->staticWebsite->components()->where('code', 'announcement')->exists())->toBeFalse()
+            ->and($this->staticWebsite->webpages()->whereRaw('position(? in html) > 0', ['<!--aiku:component:announcement-->'])->count())->toBe(0)
+            ->and($this->staticWebsite->webpages()->where('path', '/christmas')->exists())->toBeFalse();
+    });
+});

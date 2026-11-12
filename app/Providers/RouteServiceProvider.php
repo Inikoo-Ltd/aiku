@@ -19,6 +19,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 use App\Actions\Helpers\Images\RedirectImageShortUrl;
 use App\Actions\Helpers\Images\ServeWebsiteShortImage;
 use App\Actions\UI\Grp\ShowGrpRoutesScript;
+use App\Actions\Web\StaticWebsite\UI\ShowStaticWebsitePreviewAsset;
 use App\Models\HumanResources\Leave;
 
 class RouteServiceProvider extends ServiceProvider
@@ -44,6 +45,11 @@ class RouteServiceProvider extends ServiceProvider
         Route::domain('app.'.config('app.domain'))
             ->get('grp-routes.js', ShowGrpRoutesScript::class)
             ->name('grp.routes_script');
+
+        Route::domain('app.'.config('app.domain'))
+            ->get('static-website-preview/{staticWebsite}/_assets/{asset}', ShowStaticWebsitePreviewAsset::class)
+            ->where('asset', '[A-Za-z0-9._-]+')
+            ->name('static_website_preview_asset');
 
         Route::middleware('grp')
             ->domain('app.'.config('app.domain'))
