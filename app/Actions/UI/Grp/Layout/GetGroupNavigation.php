@@ -571,6 +571,14 @@ class GetGroupNavigation
                             'name' => 'grp.supply-chain.supplier_portal_activity.index',
                         ]
                     ],
+                    [
+                        'label' => __('Supplier Agreement'),
+                        'icon'  => ['fal', 'fa-file-signature'],
+                        'root'  => 'grp.supply-chain.supplier_agreement.',
+                        'route' => [
+                            'name' => 'grp.supply-chain.supplier_agreement.index',
+                        ]
+                    ],
 
                 ]
             ]

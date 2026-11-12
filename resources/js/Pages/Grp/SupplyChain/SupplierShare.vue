@@ -5,6 +5,7 @@ import InputText from "primevue/inputtext"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SalesDashboard from "@/Components/Procurement/SalesDashboard.vue"
 import SupplierPortalDetails from "@/Components/Procurement/SupplierPortalDetails.vue"
+import SupplierPortalAgreement, { type PortalAgreement } from "@/Components/Procurement/SupplierPortalAgreement.vue"
 import TableSupplierPortalPurchaseOrders from "@/Components/Tables/Grp/SupplyChain/TableSupplierPortalPurchaseOrders.vue"
 import SupplierPortalPriceChanges from "@/Components/Procurement/SupplierPortalPriceChanges.vue"
 import SupplierPortalPurchaseOrderStages from "@/Components/Procurement/SupplierPortalPurchaseOrderStages.vue"
@@ -24,9 +25,9 @@ import SupplierPortalPurchaseOrderDialog from "@/Components/Procurement/Supplier
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart, faComputerClassic } from "@fas"
-import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye } from "@fal"
+import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye, faFileSignature } from "@fal"
 
-library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye)
+library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye, faFileSignature)
 
 defineOptions({ layout: (_h: unknown, page: unknown) => page })
 
@@ -66,6 +67,7 @@ const props = defineProps<{
 	products_route?: string
 	product_websites_route?: string
 	purchase_order_route?: string
+	agreement?: PortalAgreement | null
 }>()
 
 const code = ref("")
@@ -248,6 +250,17 @@ onMounted(() => {
 			</header>
 			<div class="mx-auto flex flex-col gap-4 p-4 lg:gap-6 lg:p-8" :class="fullWidthTabs.includes(tab) ? 'max-w-none' : 'max-w-6xl'">
 
+				<button
+					v-if="tab === 'home' && agreement?.must_accept"
+					type="button"
+					class="flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm"
+					:class="agreement.status.status === 'outdated' ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-red-200 bg-red-50 text-red-900'"
+					@click="go('agreement')">
+					<FontAwesomeIcon icon="fal fa-file-signature" fixed-width aria-hidden="true" />
+					<span class="flex-1">{{ agreement.status.status === 'outdated' ? ctrans("There is a new version of the Supplier Agreement to accept.") : ctrans("Please read and accept the Supplier Agreement.") }}</span>
+					<span class="whitespace-nowrap font-medium underline">{{ ctrans("Open") }}</span>
+				</button>
+
 				<SupplierPortalHome
 					v-if="tab === 'home'"
 					:supplier="supplier"
@@ -287,6 +300,7 @@ onMounted(() => {
 					:currency="details?.currency ?? company?.currency ?? null" />
 
 				<template v-else>
+					<SupplierPortalAgreement v-if="tab === 'agreement' && agreement" :agreement="agreement" :preview="preview" />
 					<SupplierPortalDetails v-if="loadedDetails && forms" :details="loadedDetails" :forms="forms" :submitted="submitted ?? null" :section="tab as 'products' | 'agreement' | 'grow'" :initial-form-type="formType" :initial-search="productSearch" :labels-print="labels_print" :products-route="products_route" :product-websites-route="product_websites_route" />
 					<div v-else class="skeleton h-40 rounded-lg" />
 				</template>

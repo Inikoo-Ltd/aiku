@@ -8,6 +8,7 @@
 
 namespace App\Models\Procurement;
 
+use App\Actions\SupplyChain\SupplierAgreement\StampPurchaseOrderSupplierAgreement;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
@@ -70,6 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $not_received_at
  * @property int|null $agent_id
  * @property int|null $supplier_id
+ * @property int|null $supplier_agreement_acceptance_id
  * @property int|null $partner_id
  * @property float|null $gross_weight
  * @property float|null $net_weight
@@ -237,6 +239,7 @@ class PurchaseOrder extends Model implements Auditable, HasMedia
 
     protected static function booted(): void
     {
+        static::saving(fn (PurchaseOrder $purchaseOrder) => StampPurchaseOrderSupplierAgreement::run($purchaseOrder));
         static::created(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->state && PurchaseOrderHydrateState::run($purchaseOrder));
         static::restored(fn (PurchaseOrder $purchaseOrder) => PurchaseOrderHydrateState::run($purchaseOrder));
         static::updated(function (PurchaseOrder $purchaseOrder) {

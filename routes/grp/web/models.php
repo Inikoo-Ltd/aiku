@@ -6,6 +6,9 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
+use App\Actions\SupplyChain\SupplierAgreement\PublishSupplierAgreementVersion;
+use App\Actions\SupplyChain\SupplierAgreement\StoreSupplierAgreementVersion;
+use App\Actions\SupplyChain\SupplierAgreement\UpdateSupplierAgreementVersion;
 use App\Actions\Goods\ProductDevelopment\MoveProductDevelopmentToNextStage;
 use App\Actions\Goods\ProductDevelopment\StoreProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\StoreProductDevelopmentComment;
@@ -2001,6 +2004,9 @@ Route::post('supplier-product/{supplierProduct:id}/agreed-term', [StoreSupplierA
 Route::post('agent/{agent:id}/agreed-term', [StoreSupplierAgreedTerm::class, 'inAgent'])->name('agent.agreed_term.store');
 Route::patch('agent/{agent:id}/packing-spec-cut-off', UpdateAgentPackingSpecCutOff::class)->name('agent.packing_spec_cut_off.update');
 Route::patch('supplier-agreed-term/{supplierAgreedTerm:id}/withdraw', [WithdrawSupplierAgreedTerm::class, 'withdraw'])->name('supplier_agreed_term.withdraw');
+Route::post('supplier-agreement-versions', StoreSupplierAgreementVersion::class)->name('supplier_agreement_version.store');
+Route::patch('supplier-agreement-versions/{supplierAgreementVersion:id}', UpdateSupplierAgreementVersion::class)->name('supplier_agreement_version.update');
+Route::post('supplier-agreement-versions/{supplierAgreementVersion:id}/publish', PublishSupplierAgreementVersion::class)->name('supplier_agreement_version.publish');
 
 Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->group(function () {
     Route::post('note', [StoreProcurementNote::class, 'inStockDelivery'])->name('note.store');
