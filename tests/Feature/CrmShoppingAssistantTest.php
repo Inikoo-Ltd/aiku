@@ -796,7 +796,9 @@ test('the group AI assistant report is only for group-wide viewers, a shop webma
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->all() === [$ordered->ulid])
             ->where('conversations.data.0.ordered', true)
-            ->where('conversations.data.0.revenue', fn ($revenue) => (float) $revenue === 30.0));
+            ->where('conversations.data.0.revenue', fn ($revenue) => (float) $revenue === 30.0)
+            ->where('conversations.data.0.status', 'open')
+            ->where('conversations.data.0.entry_point', fn ($entryPoint) => is_string($entryPoint)));
 
     $this->get(route('grp.websites.shopping_assistant.show', [...$query, 'outcome' => 'clicked']))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('conversations.data', fn ($rows) => collect($rows)->pluck('ulid')->all() === [$clicked->ulid]));

@@ -339,16 +339,13 @@ class ShowShoppingAssistantPerformance extends OrgAction
             }
 
             $table
-                ->column(key: 'entry_point', label: __('Opened from'), canBeHidden: false)
                 ->column(key: 'first_question', label: __('First question'), canBeHidden: false)
                 ->column(key: 'messages_count', label: __('Messages'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'shown', label: __('Shown'), canBeHidden: false, align: 'right')
                 ->column(key: 'clicked', label: __('Clicked'), canBeHidden: false, align: 'right')
                 ->column(key: 'added', label: __('Added'), canBeHidden: false, align: 'right')
                 ->column(key: 'ordered', label: __('Ordered'), canBeHidden: false)
-                ->column(key: 'handed_over', label: __('Handed over'), canBeHidden: false)
                 ->column(key: 'cost', label: __('AI cost'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'status_label', label: __('Status'), canBeHidden: false)
                 ->defaultSort('-created_at');
         };
     }
