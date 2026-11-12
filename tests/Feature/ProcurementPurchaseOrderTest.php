@@ -4843,3 +4843,44 @@ test('the stored stage steps back when a line is added to an order whose lines a
     $purchaseOrder->delete();
     expect(PurchaseOrder::withTrashed()->find($purchaseOrder->id)->stage)->toBeNull();
 });
+
+test('a line goods-in counted as not received is marked not received once its delivery is placed, so the order settles, and waits again if the delivery is unreceived', function () {
+    $supplier    = StoreSupplier::make()->action(parent: $this->group, modelData: Supplier::factory()->definition());
+    $orgSupplier = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->first();
+
+    $historicSupplierProduct = StoreOrgSupplierProduct::make()->action($orgSupplier, StoreSupplierProduct::make()->action($supplier, [
+        'code'             => 'SHORT-PO',
+        'name'             => 'Short delivery',
+        'cost'             => 10,
+        'stock_id'         => $this->stocks[0]->id,
+        'units_per_pack'   => 1,
+        'units_per_carton' => 10,
+    ]))->supplierProduct->historicSupplierProduct;
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $arrived       = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[0], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10]));
+    $missing       = StorePurchaseOrderTransaction::make()->action($purchaseOrder, $historicSupplierProduct, $this->orgStocks[1], array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 20]));
+    $purchaseOrder = UpdatePurchaseOrderStateToSubmitted::make()->action($purchaseOrder->refresh());
+    $purchaseOrder = UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+
+    $stockDelivery = StoreStockDeliveryFromPurchaseOrder::make()->action($purchaseOrder->refresh(), []);
+    $stockDelivery->items()->where('org_stock_id', $this->orgStocks[0]->id)->update(['state' => StockDeliveryItemStateEnum::PLACED]);
+    $stockDelivery->items()->where('org_stock_id', $this->orgStocks[1]->id)->update(['state' => StockDeliveryItemStateEnum::NOT_RECEIVED]);
+
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::CHECKED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery->refresh());
+    expect($missing->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::PLACED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery->refresh());
+    expect($arrived->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::SETTLED)
+        ->and($missing->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::NOT_RECEIVED)
+        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::SETTLED);
+
+    $stockDelivery->update(['state' => StockDeliveryStateEnum::DISPATCHED]);
+    UpdatePurchaseOrdersDeliveryStateFromStockDelivery::run($stockDelivery->refresh());
+    expect($missing->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($arrived->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
+        ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED);
+});
