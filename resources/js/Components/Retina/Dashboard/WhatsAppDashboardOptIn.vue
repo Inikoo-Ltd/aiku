@@ -137,7 +137,7 @@ const USER_SCROLL_EVENTS = ["wheel", "touchstart", "keydown", "mousedown"] as co
 
 const stickyHeaderHeight = (): number => {
     let height = 0
-    document.querySelectorAll<HTMLElement>(".sticky, .fixed").forEach((element) => {
+    document.querySelectorAll<HTMLElement>("[class*='sticky'], [class*='fixed']").forEach((element) => {
         if (cardEl.value && element.contains(cardEl.value)) {
             return
         }

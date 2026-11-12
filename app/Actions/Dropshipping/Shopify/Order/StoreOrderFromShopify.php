@@ -158,7 +158,7 @@ class StoreOrderFromShopify extends OrgAction
                         ]
                     ],
                     'platform_order_id'         => Arr::get($modelData, 'id'),
-                    'shipping_notes'            => $this->getMerchantRequestMessages($modelData),
+                    'shipping_notes'            => $this->getShippingNotes($modelData, $deliveryAddress),
                     'customer_notes'            => Str::limit(trim((string) Arr::get($modelData, 'order.note')), 4000, '') ?: null,
                 ]);
 
@@ -285,6 +285,29 @@ class StoreOrderFromShopify extends OrgAction
      * warehouse though they say nothing about the parcel (HELP-4341).
      */
     private const string AUTOMATION_MESSAGE_PATTERN = "/^(Triggered by rule |We're unable to ship this order due to customer's default shipping template)/i";
+
+    /**
+     * TikTok hides the buyer's address on the orders it ships itself and passes them to Shopify
+     * like that, so the parcel would go nowhere. AW never ships those (HELP-4568), and the warehouse
+     * stops picking on the shipping note, as it does for direct TikTok orders (PRE-96).
+     */
+    protected function getShippingNotes(array $modelData, array $deliveryAddress): ?string
+    {
+        $notes = collect([
+            $this->hasMaskedDeliveryAddress($deliveryAddress)
+                ? __('TikTok hid the delivery address because this order is shipped by TikTok. Do not send it until the full delivery address is on the order.')
+                : null,
+            $this->getMerchantRequestMessages($modelData),
+        ])->filter()->implode("\n");
+
+        return Str::limit($notes, 4000, '') ?: null;
+    }
+
+    protected function hasMaskedDeliveryAddress(array $deliveryAddress): bool
+    {
+        return str_contains((string) Arr::get($deliveryAddress, 'address_line_1'), '**')
+            || str_contains((string) Arr::get($deliveryAddress, 'postal_code'), '**');
+    }
 
     /**
      * What the merchant wrote when requesting fulfilment (a pickup point, "dispatch asap") is an
