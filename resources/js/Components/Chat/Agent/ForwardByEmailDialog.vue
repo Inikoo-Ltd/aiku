@@ -117,7 +117,7 @@ watch(visible, (isVisible) => {
                     <pre v-else class="max-h-72 overflow-y-auto whitespace-pre-wrap break-words px-3 py-2 font-sans text-xs leading-relaxed text-gray-700">{{ preview }}</pre>
                 </div>
                 <p class="text-[11px] leading-snug text-gray-400">
-                    {{ ctrans("Files are not attached, only named in the forwarded text.") }}
+                    {{ ctrans("Files go with it as attachments; a kind of file email cannot carry is only named.") }}
                 </p>
             </div>
 

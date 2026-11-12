@@ -1963,6 +1963,58 @@ test('forwarding a conversation by email sends it from the shop mailbox as Fwd: 
         ->toBe(\App\Actions\Chat\ChatSession\ForwardChatSessionByEmail::forwardedBlock($session));
 });
 
+test('forwarding a conversation by email attaches its files and only names a kind email cannot carry', function () {
+    Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class, \App\Actions\Comms\Mailbox\SendChatMessageByGmail::class]);
+
+    $settings          = $this->shop->settings ?? [];
+    $settings['gmail'] = [
+        'email'         => 'care@shop.test',
+        'refresh_token' => \Illuminate\Support\Facades\Crypt::encryptString('rt'),
+        'history_id'    => '1',
+    ];
+    $this->shop->update(['settings' => $settings]);
+
+    \Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/token' => \Illuminate\Support\Facades\Http::response(['access_token' => 'at']),
+        'gmail.googleapis.com/*'      => \Illuminate\Support\Facades\Http::response([]),
+    ]);
+
+    $session = ChatSession::create([
+        'ulid'        => (string) Str::ulid(),
+        'status'      => ChatSessionStatusEnum::ACTIVE,
+        'language_id' => 68,
+        'priority'    => ChatPriorityEnum::NORMAL,
+        'shop_id'     => $this->shop->id,
+        'channel'     => ChatChannelEnum::EMAIL,
+        'metadata'    => ['email_subject' => 'Paid out cash on delivery', 'email' => 'courier@example.com'],
+    ]);
+
+    $agentUser = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    makeChatWorker($agentUser, $this->shop);
+
+    $message = $session->messages()->create([
+        'message_text' => 'Statement attached',
+        'message_type' => ChatMessageTypeEnum::TEXT,
+        'sender_type'  => ChatSenderTypeEnum::GUEST,
+    ]);
+    \App\Actions\Chat\ChatSession\SendChatMessage::make()->processMessageAttachments($message, [
+        \Illuminate\Http\UploadedFile::fake()->createWithContent('statement.pdf', "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n"),
+        \Illuminate\Http\UploadedFile::fake()->createWithContent('payload.exe', "MZ\x90\x00\x03\x00\x00\x00\x04\x00\x00\x00\xff\xff\x00\x00".str_repeat("\x00", 48)."PE\x00\x00"),
+        \Illuminate\Http\UploadedFile::fake()->createWithContent('lost.pdf', "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n"),
+    ]);
+    $lost = $message->fresh()->attachedFiles()->firstWhere('name', 'lost.pdf');
+    \Illuminate\Support\Facades\Storage::disk($lost->disk)->delete($lost->getPathRelativeToRoot());
+
+    actingAs($agentUser);
+    $forwarded = \App\Actions\Chat\ChatSession\ForwardChatSessionByEmail::make()->handle($session, $agentUser, ['email' => 'accounts@example.com']);
+
+    $sent = $forwarded->messages()->where('sender_type', ChatSenderTypeEnum::AGENT->value)->sole();
+
+    expect($sent->attachedFiles()->pluck('name')->all())->toBe(['statement.pdf'])
+        ->and($sent->message_text)->toContain('Attachments: statement.pdf')
+        ->and($sent->message_text)->toContain('Attachments not forwarded: payload.exe, lost.pdf');
+});
+
 test('an email conversation moved to another shop still replies from the original mailbox in its thread, and mail on that thread still finds it', function () {
     Bus::fake([\App\Actions\Chat\ChatSession\ProcessChatMessageSideEffects::class, TranslateChatMessage::class]);
 
