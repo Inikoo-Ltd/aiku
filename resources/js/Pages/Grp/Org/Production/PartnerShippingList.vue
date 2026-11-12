@@ -155,7 +155,7 @@ function createJobOrders(ids: number[] = Object.keys(selected).map(Number), empl
     )
 }
 
-type BoardItem = { id: number, is_fill?: boolean, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
+type BoardItem = { id: number, unit_name?: string | null, is_fill?: boolean, shop_name?: string | null, customer_name?: string | null, order_reference?: string | null, batch_size?: number | null, packed_in?: number | null, order_quantum?: number | null, is_hitchhiker?: boolean, stock_code: string, stock_name: string, state: string, quantity: number, quantity_to_produce: number | null, maker: string | null, maker_id: number | null, maker_is_auto?: boolean, artefact_department_id?: number | null, preparing_at: string | null, kind?: "item" | "mix", artefact_id?: number, job_order_id?: number | null, job_order_state?: string | null, job_order_reference?: string | null, job_order_artisan?: string | null, job_order_hold_reason?: string | null, current_steps?: { name: string, artisans: (string | null)[] }[], job_order_sub_jobs?: { reference: string, artisan: string | null, quantity: number }[], stock_available?: number | null, stock_promised?: number | null, buyer_code?: string | null, published_labels?: PublishedLabel[], batch_code?: string | null, run_batch_code?: string | null, run_expiry?: string | null, label_expiry_date?: string | null, pipeline?: { pending_booking: number, in_production: number, job_orders: string[] } }
 
 function artisansOf(item: BoardItem): string[] {
     if (item.current_steps?.length) return [...new Set(item.current_steps.flatMap(step => step.artisans.map(artisan => artisan ?? "")))]
@@ -622,7 +622,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                 v-if="item.batch_size"
                                 class="rounded bg-[var(--app-accent-soft)] px-1.5 py-px text-[var(--app-accent-strong)]"
                                 :title="ctrans('Batch of :batch units, packed in :packed', { batch: item.batch_size ?? 0, packed: item.packed_in ?? 1 })">
-                                {{ ctransChoice("makes :count unit|makes :count units", jobUnits(item)) }}
+                                {{ item.unit_name ? ctrans("makes :count :unit", { count: jobUnits(item), unit: item.unit_name }) : ctransChoice("makes :count unit|makes :count units", jobUnits(item)) }}
                             </span>
                         </label>
                     </div>
@@ -859,7 +859,7 @@ function jobOrderHref(item: { job_order_slug: string }) {
                                     @mousedown.stop
                                     @change="updatePreparingQuantity(item, $event)" />
                             </template>
-                            <span v-else-if="item.job_order_quantity" class="text-[var(--app-accent)]" :title="ctrans('Making :count units', { count: item.job_order_quantity })">→ {{ useLocaleStore().number(Number(item.job_order_quantity) / (Number(item.packed_in) || 1)) }} {{ ctrans("SKO") }} ({{ ctransChoice(":number unit|:number units", Number(item.job_order_quantity), { number: useLocaleStore().number(Number(item.job_order_quantity)) }) }})</span>
+                            <span v-else-if="item.job_order_quantity" class="text-[var(--app-accent)]" :title="ctrans('Making :count units', { count: item.job_order_quantity })">→ {{ useLocaleStore().number(Number(item.job_order_quantity) / (Number(item.packed_in) || 1)) }} {{ ctrans("SKO") }} ({{ item.unit_name ? `${useLocaleStore().number(Number(item.job_order_quantity))} ${item.unit_name}` : ctransChoice(":number unit|:number units", Number(item.job_order_quantity), { number: useLocaleStore().number(Number(item.job_order_quantity)) }) }})</span>
                             <span v-else-if="item.quantity_to_produce && Number(item.quantity_to_produce) !== Number(item.quantity)" class="text-[var(--app-accent)]" :title="ctrans('Making :count SKO', { count: item.quantity_to_produce })">→ {{ useLocaleStore().number(Number(item.quantity_to_produce)) }} {{ ctrans("SKO") }}</span>
                         </span>
                     </div>

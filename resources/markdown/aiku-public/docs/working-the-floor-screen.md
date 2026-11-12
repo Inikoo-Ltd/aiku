@@ -1,7 +1,7 @@
 ---
 title: Working the floor screen
 summary: The artisan's guide - the My tasks screen, the job list that updates on its own, START and DONE, what to press when you made fewer than asked, and taking a break.
-date: 2026-11-03
+date: 2026-11-12
 tags: production, floor, artisan
 category: production
 help_routes: grp.org.productions.show.floor
@@ -46,9 +46,15 @@ A row with a green ▶ and a time is the one you are working on, and when you st
 
 Made everything that was asked? That is it. The task closes, the job order is finished and the warehouse is told there is something to put away - see [Putting away finished production](/docs/putting-away-finished-production).
 
+## What the numbers count
+
+Every quantity on the screen says what it counts: *0 / 120 bags*, *0 / 96 kg*. The name of a piece comes from the product: a manager sets it as **Unit name** on the edit page of the artefact, or of its family for every product in it. Without one the screen says *pieces*. The box where you type is a question with the same word, **How many bags did you make?**, so the number you type matches what the screen asked for. A product called "Box of 3" whose making is counted in single bags shows bags, not boxes.
+
 ## Steps counted in packs
 
-Some steps, packing above all, are counted in packs and not in single pieces: a tray of 8 bath bombs counts as 1. The screen then says **Counted in PACKS of 8** in amber, and the box is called **Packs of 8 made**. Type how many full packs you filled: for 56 bath bombs in 7 trays type 7, not 56. Under the box the screen shows what your number means, *7 packs of 8 = 56 × ABB-06a*, and the confirmation shows it again. Only whole packs are accepted; the one exception is the exact number still to do, which you fill by tapping the big number. When a manager has to authorise extra, the window shows the extra in packs and in pieces before they approve.
+Some steps, packing above all, are counted in packs and not in single pieces: a tray of 8 bath bombs counts as 1. The screen then shows both, *0 / 7 trays of 8 (56 bath bombs)*, says **Counted in trays of 8 (1 = 8 bath bombs of ABB-06a)** in amber, and asks **How many trays of 8 did you make?**. Type how many full packs you filled: for 56 bath bombs in 7 trays type 7, not 56. Under the box the screen shows what your number means, *7 trays of 8 = 56 bath bombs of ABB-06a*, and the confirmation shows it again. Only whole packs are accepted; the one exception is the exact number still to do, which you fill by tapping the big number. When a manager has to authorise extra, the window shows the extra in packs and in pieces before they approve.
+
+What a pack is called is set on the recipe step: **Counted in** on the step of the artefact's recipe (trays, boxes). Left empty, it uses **Pack name** on the edit page of the artefact's family, which covers every product in it, and without that the screen says *packs*.
 
 ## When you made fewer than asked
 

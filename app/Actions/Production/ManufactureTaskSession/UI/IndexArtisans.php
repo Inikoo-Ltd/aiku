@@ -115,7 +115,7 @@ class IndexArtisans extends OrgAction
             ->when($preparationReason == 'none', fn ($query) => $query->whereNull('preparation_reason_id'))
             ->when($preparationReason && $preparationReason != 'none', fn ($query) => $query->where('preparation_reason_id', (int) $preparationReason))
             ->when($workAreaId, fn ($query) => $query->whereIn('employee_id', GetArtisanWorkAreas::make()->employeeIds($production, (int) $workAreaId)))
-            ->with(['user', 'employee', 'manufactureTask', 'underTargetReviewer', 'timeEditor', 'jobOrderItemTask.jobOrderItem.artefact', 'jobOrderItemTask.jobOrderItem.tasks.manufactureTask', 'jobOrderItemTask.jobOrder', 'jobOrder', 'preparationReason', 'movedInto.manufactureTask', 'movedPreparation'])
+            ->with(['user', 'employee', 'manufactureTask', 'underTargetReviewer', 'timeEditor', 'jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact.artefactFamily', 'jobOrderItemTask.jobOrderItem.tasks.manufactureTask', 'jobOrderItemTask.jobOrder', 'jobOrder', 'preparationReason', 'movedInto.manufactureTask', 'movedPreparation'])
             ->orderByDesc('ended_at')
             ->get();
 
@@ -178,6 +178,9 @@ class IndexArtisans extends OrgAction
             'break_minutes'       => (int)$session->break_minutes,
             'quantity_made'       => (float)$session->quantity_made,
             'pack_size'           => $packSizes[$session->jobOrderItemTask->artefact_manufacture_task_id] ?? null,
+            'unit'                => $session->jobOrderItemTask->unit(),
+            'unit_name'           => $session->is_combined ? null : $session->jobOrderItemTask->unitName(),
+            'piece_name'          => $session->is_combined ? null : $session->jobOrderItemTask->pieceName(),
             'correct_route'       => $canCorrect($session) ? [
                 'name'       => 'grp.models.manufacture-task-session.correct',
                 'parameters' => ['manufactureTaskSession' => $session->id],

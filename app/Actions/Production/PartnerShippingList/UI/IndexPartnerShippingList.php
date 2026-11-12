@@ -26,6 +26,7 @@ use App\Actions\Production\JobOrder\StoreManualJobOrder;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Models\Production\Artefact;
 use App\Models\Production\ArtefactLabel;
 use App\Models\Production\Production;
 use App\Models\SysAdmin\Organisation;
@@ -195,6 +196,7 @@ class IndexPartnerShippingList extends OrgAction
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',
                 'artefacts.recommended_batch_size as batch_size',
+                DB::raw(Artefact::UNIT_NAME_SQL.' as unit_name'),
                 'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',
@@ -346,6 +348,7 @@ class IndexPartnerShippingList extends OrgAction
                 'artefacts.id as artefact_id',
                 'artefacts.code as artefact_code',
                 'artefacts.recommended_batch_size as batch_size',
+                DB::raw(Artefact::UNIT_NAME_SQL.' as unit_name'),
                 'org_stocks.id as org_stock_id',
                 'org_stocks.packed_in',
                 'org_stocks.quantity_available as stock_available',

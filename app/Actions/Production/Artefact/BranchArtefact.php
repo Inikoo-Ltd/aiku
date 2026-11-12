@@ -45,6 +45,7 @@ class BranchArtefact extends OrgAction
 
             $branch->update([
                 'branched_from_id' => $artefact->id,
+                'settings'         => array_merge($branch->settings ?? [], array_filter(['unit_name' => data_get($artefact->settings, 'unit_name')])),
                 'data'             => array_merge($branch->data ?? [], [
                     'branch' => [
                         'user_id' => $user?->id,
@@ -61,9 +62,9 @@ class BranchArtefact extends OrgAction
     }
 
     /**
-     * The recipe as SetArtefactsRecipe takes it, plus each step's mix batch, which it does not set.
+     * The recipe as SetArtefactsRecipe takes it, plus each step's mix batch and unit name, which it does not set.
      *
-     * @return array<int, array{manufacture_task_id: int, label: string|null, waits_for: array<int, int>|null, position: int, units_per_artefact: string, standard_rate: string|null, blocks_later_steps: bool, mix_batch_kg: string|null, raw_materials: array<int, array{raw_material_id: int, quantity_per_unit: string}>}>
+     * @return array<int, array{manufacture_task_id: int, label: string|null, waits_for: array<int, int>|null, position: int, units_per_artefact: string, standard_rate: string|null, blocks_later_steps: bool, mix_batch_kg: string|null, unit_name: string|null, raw_materials: array<int, array{raw_material_id: int, quantity_per_unit: string}>}>
      */
     public static function recipeOf(Artefact $artefact): array
     {
@@ -83,6 +84,7 @@ class BranchArtefact extends OrgAction
                 'standard_rate'       => $step->standard_rate,
                 'blocks_later_steps'  => (bool) $step->blocks_later_steps,
                 'mix_batch_kg'        => $step->mix_batch_kg,
+                'unit_name'           => $step->unit_name,
                 'raw_materials'       => RecipeStepRawMaterial::where('artefact_manufacture_task_id', $step->id)
                     ->orderBy('id')
                     ->get(['raw_material_id', 'quantity_per_unit'])
@@ -110,7 +112,7 @@ class BranchArtefact extends OrgAction
 
         $copied = $to->recipeSteps()->get()->keyBy(fn (ArtefactManufactureTask $step) => $step->stepKey());
         foreach ($steps as $step) {
-            $copied->get(ArtefactManufactureTask::key($step['manufacture_task_id'], $step['label']))?->update(['mix_batch_kg' => $step['mix_batch_kg']]);
+            $copied->get(ArtefactManufactureTask::key($step['manufacture_task_id'], $step['label']))?->update(['mix_batch_kg' => $step['mix_batch_kg'], 'unit_name' => $step['unit_name']]);
         }
     }
 

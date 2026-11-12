@@ -54,6 +54,7 @@ interface RecipeRow {
     code: string
     name: string
     label: string | null
+    unit_name: string | null
     step_name: string
     waits_for: number[] | null
     task_standard_rate: number | string | null
@@ -109,6 +110,7 @@ const unitsDraft = ref<Record<number, number>>({})
 const rateDraft = ref<Record<number, number | null>>({})
 const fromDraft = ref<Record<number, Date | null>>({})
 const labelDraft = ref<Record<number, string>>({})
+const unitNameDraft = ref<Record<number, string>>({})
 const chosenWaitsFor = ref<Record<number, number[]>>({})
 const quantityDraft = ref<Record<string, number>>({})
 
@@ -127,6 +129,7 @@ function syncDraftsWithRecipe() {
         rateDraft.value[row.step_id] = row.standard_rate === null ? null : Number(row.standard_rate)
         fromDraft.value[row.step_id] = null
         labelDraft.value[row.step_id] = row.label ?? ''
+        unitNameDraft.value[row.step_id] = row.unit_name ?? ''
         newRawMaterialQuantity.value[row.step_id] ??= 1
         row.raw_materials.forEach(material => {
             quantityDraft.value[materialKey(row.step_id, material.raw_material_id)] = Number(material.quantity_per_unit)
@@ -149,6 +152,7 @@ const hasUnsavedChanges = () => processing.value || rawMaterialProcessing.value 
         || !isSameNumber(rateDraft.value[row.step_id] || null, row.standard_rate)
         || fromDraft.value[row.step_id] !== null
         || (labelDraft.value[row.step_id] ?? '').trim() !== (row.label ?? '')
+        || (unitNameDraft.value[row.step_id] ?? '').trim() !== (row.unit_name ?? '')
         || row.raw_materials.some(material => !isSameNumber(quantityDraft.value[materialKey(row.step_id, material.raw_material_id)], material.quantity_per_unit)))
 
 const warnBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -290,6 +294,14 @@ async function commitLabel(row: RecipeRow) {
     if (label === (row.label ?? '')) return
 
     attachStep(row, { label: label || null })
+}
+
+async function commitUnitName(row: RecipeRow) {
+    await nextTick()
+    const unitName = (unitNameDraft.value[row.step_id] ?? '').trim()
+    if (unitName === (row.unit_name ?? '')) return
+
+    attachStep(row, { unit_name: unitName || null })
 }
 
 type WaitsForMode = 'default' | 'chosen' | 'none'
@@ -488,6 +500,24 @@ function detachRawMaterial(stepId: number, rawMaterialId: number) {
                         inputClass="w-24"
                         @blur="commitStep(row)"
                         @keyup.enter="commitStep(row)" />
+                </label>
+
+                <label v-if="!row.is_recorded_in_kg" class="block">
+                    <span class="mb-1 flex items-center gap-1 text-xs text-gray-500">
+                        {{ ctrans('Counted in') }}
+                        <InformationIcon :information="Number(row.units_per_artefact) < 1
+                            ? ctrans('What one unit of this step is called on the tablet, e.g. boxes: artisans see 40 boxes of 3 (120 bags). Empty uses the pack name of the family, else packs.')
+                            : ctrans('What this step counts, shown after its quantities on the tablet, e.g. bags. Empty uses the unit name of the artefact or its family.')" />
+                    </span>
+                    <InputText
+                        v-model="unitNameDraft[row.step_id]"
+                        size="small"
+                        class="w-28"
+                        maxlength="32"
+                        :placeholder="Number(row.units_per_artefact) < 1 ? ctrans('e.g. boxes') : ctrans('e.g. bags')"
+                        :disabled="processing"
+                        @blur="commitUnitName(row)"
+                        @keyup.enter="commitUnitName(row)" />
                 </label>
 
                 <label v-if="row.is_recorded_in_kg" class="block">

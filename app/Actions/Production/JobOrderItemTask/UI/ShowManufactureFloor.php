@@ -113,7 +113,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openSession = ManufactureTaskSession::where('user_id', $user->id)
             ->where('state', ManufactureTaskSessionStateEnum::OPEN)
-            ->with(['jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask', 'jobOrder'])
+            ->with(['jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact.tradeUnit.image', 'jobOrderItemTask.jobOrderItem.artefact.artefactFamily', 'jobOrderItemTask.jobOrderItem.employee', 'jobOrderItemTask.jobOrder.employee', 'manufactureTask', 'jobOrder'])
             ->first();
         $shiftEndPause    = $openSession?->shiftEndPause();
         $shiftEndPausedAt = $shiftEndPause?->started_at ?? $openSession?->left_open_after_shift_at;
@@ -134,7 +134,7 @@ class ShowManufactureFloor extends OrgAction
 
         $openTasks = JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-            ->with(['recipeStep.rawMaterials', 'recipeStep.artefact.recipeSteps.manufactureTask', 'recipeStep.artefact.recipeSteps.rawMaterials', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.tradeUnit.image', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
+            ->with(['recipeStep.rawMaterials', 'recipeStep.artefact.recipeSteps.manufactureTask', 'recipeStep.artefact.recipeSteps.rawMaterials', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.artefactFamily', 'jobOrderItem.artefact.tradeUnit.image', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans', 'employee'])
             ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
             ->join('job_order_items', 'job_order_items.id', '=', 'job_order_item_tasks.job_order_item_id')
             ->live()
@@ -503,6 +503,8 @@ class ShowManufactureFloor extends OrgAction
                 'unit'              => $step->unit(),
                 'mix_batch_kg'      => $step->mixBatchKg(),
                 'pack_size'         => $this->packSize(collect([$step])),
+                'unit_name'         => $step->unitName(),
+                'piece_name'        => $step->pieceName(),
                 'blocked_by_step'   => $step->blockingStep($steps)?->stepName(),
                 'worked_by'         => $closedWork->map(fn (array $work) => $work['user']->contact_name ?: $work['user']->username)->unique()->values()->all(),
                 'working_on_by'     => $step->sessions->where('state', ManufactureTaskSessionStateEnum::OPEN)->map($userName)->values()->all(),
@@ -545,6 +547,8 @@ class ShowManufactureFloor extends OrgAction
             'quantity_made'       => (float)$members->sum('quantity_made'),
             'pack_size'           => $this->packSize($members),
             'unit'                => $task->unit(),
+            'unit_name'           => $this->sameFor($members, fn (JobOrderItemTask $member) => $member->unitName()),
+            'piece_name'          => $this->sameFor($members, fn (JobOrderItemTask $member) => $member->pieceName()),
             'kg_per_unit'         => $task->isRecordedInKg() ? $this->kgPerUnit($members) : null,
             'mix_batch_kg'        => JobOrderItemTask::sharedMixBatchKg($members),
             'mix_pool'            => $this->mixPool($task),
@@ -631,6 +635,16 @@ class ShowManufactureFloor extends OrgAction
     /**
      * @param Collection<int, JobOrderItemTask> $members
      */
+    private function sameFor(Collection $members, callable $value): ?string
+    {
+        $values = $members->map($value)->unique();
+
+        return $values->count() == 1 ? $values->first() : null;
+    }
+
+    /**
+     * @param Collection<int, JobOrderItemTask> $members
+     */
     private function kgPerUnit(Collection $members): ?float
     {
         $kgPerUnit = $members->map(fn (JobOrderItemTask $member) => $member->unitsPerArtefact())->unique();
@@ -662,7 +676,7 @@ class ShowManufactureFloor extends OrgAction
         $membersByCombinedTask = JobOrderItemTask::whereIn('combined_task_id', $combinedTaskIds)
             ->live()
             ->orderBy('id')
-            ->with(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks.manufactureTask', 'jobOrderItem.jobOrder.employee', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans'])
+            ->with(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.artefactFamily', 'jobOrderItem.tasks.manufactureTask', 'jobOrderItem.jobOrder.employee', 'jobOrderItem.employee', 'jobOrder.employee', 'manufactureTask.artisans'])
             ->get()
             ->groupBy('combined_task_id');
 

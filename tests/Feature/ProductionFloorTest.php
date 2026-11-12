@@ -771,6 +771,62 @@ test('a step counted in packs says so on the floor and takes whole packs only', 
     expect($task->refresh()->packSize())->toBeNull();
 });
 
+test('the floor names what a step counts: the artefact or family unit, and a pack step its own', function () {
+    $suffix     = rand(1000, 9999);
+    $department = \App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment::make()->action($this->production, ['code' => 'UND'.$suffix, 'name' => 'Unit names']);
+    $family     = \App\Actions\Production\ArtefactFamily\StoreArtefactFamily::make()->action($department, ['code' => 'UNF'.$suffix, 'name' => 'Bath salts']);
+    \App\Actions\Production\ArtefactFamily\UpdateArtefactFamily::make()->action($family, ['unit_name' => ' bags ']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNA'.$suffix, 'name' => 'Box of 3 bath salt', 'artefact_family_id' => $family->id]);
+    $packing  = stepTestManufactureTask($this->production, 'UNP'.$suffix, 'Packing');
+    $artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $packing->id               => ['position' => 2, 'units_per_artefact' => 0.3333],
+    ]);
+    $boxingStepId = $artefact->recipeSteps()->where('manufacture_task_id', $packing->id)->value('id');
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxingStepId, 'position' => 2, 'units_per_artefact' => 0.3333, 'unit_name' => ' boxes ']);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 120]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    $boxing = $item->tasks()->where('manufacture_task_id', $packing->id)->first();
+
+    expect($family->refresh()->data['unit_name'])->toBe('bags')
+        ->and($making->unitName())->toBeNull()
+        ->and($making->pieceName())->toBe('bags')
+        ->and($boxing->unitName())->toBe('boxes')
+        ->and($boxing->packSize())->toBe(3)
+        ->and((float) $boxing->quantity_required)->toBe(40.0)
+        ->and(Artefact::whereKey($artefact->id)->selectRaw(Artefact::UNIT_NAME_SQL.' as unit_name')->value('unit_name'))->toBe('bags');
+
+    $session = StartManufactureTaskSession::make()->action(auth()->user(), $making);
+    get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('open_session.task.piece_name', 'bags')->where('open_session.task.unit_name', null)->etc());
+    CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 120]);
+
+    \App\Actions\Production\Artefact\UpdateArtefact::make()->action($artefact->refresh(), ['unit_name' => 'bars']);
+    expect($boxing->refresh()->pieceName())->toBe('bars')
+        ->and(Artefact::whereKey($artefact->id)->selectRaw(Artefact::UNIT_NAME_SQL.' as unit_name')->value('unit_name'))->toBe('bars');
+
+    \App\Actions\Production\Artefact\UpdateArtefact::make()->action($artefact->refresh(), ['unit_name' => '']);
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxing->artefact_manufacture_task_id, 'position' => 2, 'units_per_artefact' => 0.3333, 'unit_name' => '']);
+    expect($boxing->refresh()->pieceName())->toBe('bags')
+        ->and($boxing->unitName())->toBeNull();
+
+    \App\Actions\Production\ArtefactFamily\UpdateArtefactFamily::make()->action($family->refresh(), ['pack_name' => 'trays']);
+    expect($boxing->refresh()->unitName())->toBe('trays')
+        ->and($making->refresh()->unitName())->toBeNull();
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxing->artefact_manufacture_task_id, 'position' => 2, 'units_per_artefact' => 0.3333, 'unit_name' => 'boxes']);
+    expect($boxing->refresh()->unitName())->toBe('boxes');
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxing->artefact_manufacture_task_id, 'position' => 2, 'units_per_artefact' => 0.5]);
+    expect(ArtefactManufactureTask::find($boxing->artefact_manufacture_task_id)->unit_name)->toBe('boxes');
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxing->artefact_manufacture_task_id, 'position' => 2, 'units_per_artefact' => 1]);
+    expect(ArtefactManufactureTask::find($boxing->artefact_manufacture_task_id)->unit_name)->toBeNull();
+
+    $artefact->recipeSteps()->where('manufacture_task_id', $this->manufactureTask->id)->update(['units_per_artefact' => 12]);
+    expect($making->refresh()->pieceName())->toBeNull();
+});
+
 test('a supervisor corrects an entry typed too high and the grown job shrinks back', function () {
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 0.125],

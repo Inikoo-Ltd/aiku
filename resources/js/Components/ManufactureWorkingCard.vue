@@ -8,7 +8,7 @@
 import { router, usePage } from '@inertiajs/vue3'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ctrans } from '@/Composables/useTrans'
-import { packsLabel } from '@/Composables/packs'
+import { countLabel, packCount, pieceWord, unitWord } from '@/Composables/packs'
 import Dialog from 'primevue/dialog'
 import Password from 'primevue/password'
 import InputText from 'primevue/inputtext'
@@ -37,6 +37,8 @@ const props = defineProps<{
             quantity_required: number
             pack_size?: number | null
             unit?: string | null
+            unit_name?: string | null
+            piece_name?: string | null
             kg_per_unit?: number | null
             mix_batch_kg?: number | null
             continued_from?: string | null
@@ -348,11 +350,11 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
                     @click="quantityMade = remainingBatches !== null && mixBatch ? Math.round(remainingBatches * mixBatch * 1000) / 1000 : remaining"
                 >
                     <span v-if="remainingBatches !== null" class="text-7xl font-semibold tabular-nums text-[var(--app-accent-strong)]">{{ ctrans(':batches × :size kg', { batches: remainingBatches, size: mixBatch ?? 0 }) }}</span>
-                    <span v-else class="text-7xl font-semibold tabular-nums text-[var(--app-accent-strong)]">{{ packsLabel(remaining, packSize) }}</span>
-                    <span class="ml-3 text-xl text-gray-500"><template v-if="unit">{{ unit }} </template>{{ ctrans('to do') }} · {{ packsLabel(session.task.quantity_made, packSize) }} / {{ packsLabel(session.task.quantity_required, packSize) }}</span>
+                    <span v-else class="text-7xl font-semibold tabular-nums text-[var(--app-accent-strong)]">{{ packCount(remaining, packSize) }}</span>
+                    <span class="ml-3 text-xl text-gray-500">{{ ctrans(':unit to do', { unit: unitWord(session.task) }) }} · {{ packCount(session.task.quantity_made, packSize) }} / {{ packCount(session.task.quantity_required, packSize) }}</span>
                 </button>
                 <div v-if="packSize" class="mt-2 text-2xl font-semibold text-amber-700">
-                    {{ ctrans('Counted in PACKS of :size (1 pack = :size × :code)', { size: packSize, code: session.task.artefact_code ?? '' }) }}
+                    {{ ctrans('Counted in :unit (1 = :size :pieces of :code)', { unit: unitWord(session.task), size: packSize, pieces: pieceWord(session.task), code: session.task.artefact_code ?? '' }) }}
                 </div>
             </div>
             <div v-if="!isQuantityOnly" class="text-right">
@@ -395,8 +397,8 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
             <div class="mt-2 flex flex-wrap gap-x-6 text-lg text-gray-700">
                 <span>{{ ctrans('Step') }}: <b>{{ session.task.task_name }}</b></span>
                 <span v-if="!isQuantityOnly">{{ ctrans('Time logged') }}: <b class="tabular-nums">{{ timeLogged }}</b></span>
-                <span>{{ ctrans('Quantity made') }}: <b class="tabular-nums">{{ quantityMade }}<template v-if="unit"> {{ unit }}</template></b>
-                    <b v-if="packSize" class="text-amber-700"> {{ ctrans('packs of :size = :pieces × :code', { size: packSize, pieces: inPieces(quantityMade ?? 0), code: session.task.artefact_code ?? '' }) }}</b>
+                <span>{{ ctrans('Quantity made') }}: <b class="tabular-nums">{{ quantityMade }} {{ unitWord(session.task) }}</b>
+                    <b v-if="packSize" class="text-amber-700"> = {{ inPieces(quantityMade ?? 0) }} {{ pieceWord(session.task) }}</b>
                 </span>
             </div>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
@@ -413,7 +415,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
 
         <div v-else-if="!askOutcome && !shiftEndQuestion" class="mt-6 flex items-end gap-4">
             <div>
-                <label class="block text-lg text-gray-600 mb-1">{{ mixBatch ? ctrans('Batches of :size kg made', { size: mixBatch }) : packSize ? ctrans('Packs of :size made', { size: packSize }) : unit ? ctrans('Kg made') : ctrans('Quantity made') }}</label>
+                <label class="block text-lg text-gray-600 mb-1">{{ mixBatch ? ctrans('Batches of :size kg made', { size: mixBatch }) : unit ? ctrans('Kg made') : ctrans('How many :unit did you make?', { unit: unitWord(session.task) }) }}</label>
                 <input
                     v-if="mixBatch"
                     type="number" min="0" inputmode="numeric" step="1"
@@ -447,8 +449,8 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
 
         <div v-if="packSize && quantityMade !== null && !confirming && !askOutcome" class="mt-4 text-2xl" :class="notWholePacks ? 'text-red-700' : 'text-gray-700'">
             {{ notWholePacks
-                ? ctrans('Whole packs only: enter how many full packs of :size, not single pieces', { size: packSize })
-                : ctrans(':packs packs of :size = :pieces × :code', { packs: quantityMade, size: packSize, pieces: inPieces(quantityMade), code: session.task.artefact_code ?? '' }) }}
+                ? ctrans('Whole :unit only, not single :pieces', { unit: unitWord(session.task), pieces: pieceWord(session.task) })
+                : ctrans(':count = :pieces :piece of :code', { count: countLabel(quantityMade, session.task), pieces: inPieces(quantityMade), piece: pieceWord(session.task), code: session.task.artefact_code ?? '' }) }}
         </div>
 
         <div v-if="kgInUnits !== null && !confirming && !askOutcome" class="mt-4 text-2xl text-gray-700">
@@ -462,10 +464,10 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
         <Dialog v-model:visible="askManager" modal :closable="!processing" :header="rateWarning && !surplus ? ctrans('Manager authorisation required') : ctrans('Manager authorisation required for overproduction')" class="w-[32rem] max-w-[95vw]" @hide="rateWarning = null">
             <div v-if="rateWarning" class="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-center text-xl font-semibold text-amber-800">{{ rateWarning }}</div>
             <div v-if="surplus" class="text-center text-lg text-gray-600">
-                {{ ctrans('Target') }} <b>{{ remaining }}</b> · {{ ctrans('Made') }} <b>{{ quantityMade }}</b> · {{ ctrans('Surplus') }} <b class="text-amber-600">+{{ surplus }}</b>
+                {{ ctrans('Target') }} <b>{{ remaining }}</b> · {{ ctrans('Made') }} <b>{{ quantityMade }}</b> · {{ ctrans('Surplus') }} <b class="text-amber-600">+{{ surplus }}</b> {{ unitWord(session.task) }}
             </div>
             <div v-if="packSize && surplus" class="mt-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-center text-xl font-semibold text-amber-800">
-                {{ ctrans('+:surplus packs of :size = :pieces × :code extra, approve?', { surplus, size: packSize, pieces: inPieces(surplus), code: session.task.artefact_code ?? '' }) }}
+                {{ ctrans('+:count = :pieces :piece of :code extra, approve?', { count: countLabel(surplus, session.task), pieces: inPieces(surplus), piece: pieceWord(session.task), code: session.task.artefact_code ?? '' }) }}
             </div>
 
             <div v-if="managerError" class="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-red-700">{{ managerError }}</div>

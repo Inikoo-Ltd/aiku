@@ -2,7 +2,7 @@
 title: Lucrul cu ecranul de fabrică
 summary: Ghidul meșteșugarului - ecranul Sarcinile mele, lista de sarcini care se actualizează singură, START și DONE, ce apeși dacă ai făcut mai puțin decât ți s-a cerut, și cum iei o pauză.
 date: 2026-11-03
-source_date: 2026-11-03
+source_date: 2026-11-12
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -46,9 +46,15 @@ Un rând cu ▶ verde și o oră e cel la care lucrezi, și ora la care l-ai în
 
 Ai făcut tot ce ți s-a cerut? Gata. Sarcina se închide, ordinul de lucru e terminat și depozitul e anunțat că are ceva de pus la locul lui - vezi [Punerea la loc a producției terminate](/docs/putting-away-finished-production-ro).
 
+## Ce numără cifrele
+
+Fiecare cantitate de pe ecran spune ce numără: <i>0 / 120 bags</i>, <i>0 / 96 kg</i>. Numele unei bucăți vine de la produs: un manager îl setează în <b>Unit name</b> (numele unității) pe pagina de editare a artefactului sau a familiei lui, pentru toate produsele din ea. Fără nume, ecranul spune <i>pieces</i>. Căsuța în care scrii este o întrebare cu același cuvânt, <b>How many bags did you make?</b> (câte pungi ai făcut?), așa că numărul pe care îl scrii se potrivește cu ce a întrebat ecranul. Un produs numit "Box of 3", a cărui fabricare se numără în pungi singure, arată pungi, nu cutii.
+
 ## Pași care se numără în pachete
 
-Unii pași, mai ales ambalarea, se numără în pachete și nu în bucăți: o tavă cu 8 bile de baie se numără ca 1. Ecranul arată atunci <b>Counted in PACKS of 8</b> (se numără în PACHETE de 8) în chihlimbar, iar căsuța se numește <b>Packs of 8 made</b> (pachete de 8 făcute). Scrie câte pachete pline ai umplut: pentru 56 de bile de baie în 7 tăvi scrie 7, nu 56. Sub căsuță ecranul arată ce înseamnă numărul tău, <i>7 packs of 8 = 56 × ABB-06a</i>, iar confirmarea îl arată din nou. Se acceptă doar pachete întregi; singura excepție este numărul exact rămas de făcut, pe care îl completezi atingând numărul mare. Când un manager trebuie să autorizeze surplusul, fereastra arată surplusul în pachete și în bucăți înainte de aprobare.
+Unii pași, mai ales ambalarea, se numără în pachete și nu în bucăți: o tavă cu 8 bile de baie se numără ca 1. Ecranul arată atunci ambele, <i>0 / 7 trays of 8 (56 bath bombs)</i>, scrie în chihlimbar <b>Counted in trays of 8 (1 = 8 bath bombs of ABB-06a)</b> (se numără în tăvi de 8) și întreabă <b>How many trays of 8 did you make?</b> (câte tăvi de 8 ai făcut?). Scrie câte pachete pline ai umplut: pentru 56 de bile de baie în 7 tăvi scrie 7, nu 56. Sub căsuță ecranul arată ce înseamnă numărul tău, <i>7 trays of 8 = 56 bath bombs of ABB-06a</i>, iar confirmarea îl arată din nou. Se acceptă doar pachete întregi; singura excepție este numărul exact rămas de făcut, pe care îl completezi atingând numărul mare. Când un manager trebuie să autorizeze surplusul, fereastra arată surplusul în pachete și în bucăți înainte de aprobare.
+
+Cum se numește un pachet se stabilește la pasul din rețetă: <b>Counted in</b> (se numără în) la pasul din rețeta artefactului (tăvi, cutii). Dacă rămâne gol, se folosește <b>Pack name</b> (numele pachetului) de pe pagina de editare a familiei artefactului, care se aplică tuturor produselor ei, iar fără el ecranul spune <i>packs</i>.
 
 ## Când ai făcut mai puțin decât ți s-a cerut
 

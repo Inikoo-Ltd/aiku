@@ -185,6 +185,10 @@ class ShowOperationsDashboard extends OrgAction
                                 'continued_from'      => Arr::has($openSession->jobOrderItemTask->jobOrder->data, 'carried_from') ? SettleShortJobOrderItemTask::baseReference($openSession->jobOrderItemTask->jobOrder) : null,
                                 'quantity_made'       => (float)$openSession->jobOrderItemTask->combinedGroup()->sum('quantity_made'),
                                 'quantity_required'   => (float)$openSession->jobOrderItemTask->combinedGroup()->sum('quantity_required'),
+                                'unit'                => $openSession->jobOrderItemTask->unit(),
+                                'pack_size'           => $openSession->is_combined ? null : $openSession->jobOrderItemTask->packSize(),
+                                'unit_name'           => $openSession->is_combined ? null : $openSession->jobOrderItemTask->unitName(),
+                                'piece_name'          => $openSession->is_combined ? null : $openSession->jobOrderItemTask->pieceName(),
                             ],
                             'carry'       => $openSession->is_combined ? null : SettleShortJobOrderItemTask::make()->preview($openSession->jobOrderItemTask),
                             'close_route' => [
@@ -231,7 +235,7 @@ class ShowOperationsDashboard extends OrgAction
                         ]),
                     'queue'       => JobOrderItemTask::where('job_order_item_tasks.production_id', $production->id)
                         ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE)
-                        ->with(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.tasks.manufactureTask', 'jobOrder', 'manufactureTask'])
+                        ->with(['recipeStep', 'jobOrderItem.artefact.manufactureTasks', 'jobOrderItem.artefact.artefactFamily', 'jobOrderItem.tasks.manufactureTask', 'jobOrder', 'manufactureTask'])
                         ->live()
                         ->join('job_orders', 'job_orders.id', '=', 'job_order_item_tasks.job_order_id')
                         ->where('job_orders.state', JobOrderStateEnum::CONFIRMED)
@@ -252,6 +256,9 @@ class ShowOperationsDashboard extends OrgAction
                             'quantity_made'       => (float)$task->quantity_made,
                             'quantity_required'   => (float)$task->quantity_required,
                             'unit'                => $task->unit(),
+                            'pack_size'           => $task->packSize(),
+                            'unit_name'           => $task->unitName(),
+                            'piece_name'          => $task->pieceName(),
                             'mix_batch_kg'        => $task->mixBatchKg(),
                             'blocked_by_step'     => $task->blockingStep($task->jobOrderItem->tasks)?->stepName(),
                             'start_route'         => [

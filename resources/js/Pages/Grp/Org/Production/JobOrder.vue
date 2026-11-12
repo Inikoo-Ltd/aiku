@@ -9,6 +9,7 @@ import { Head, router } from "@inertiajs/vue3"
 import { ref, computed, watch } from "vue"
 import axios from "axios"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
+import { progressLabel } from "@/Composables/packs"
 import { mixBatchesLabel } from "@/Composables/mixBatches"
 import Modal from "@/Components/Utils/Modal.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -69,6 +70,9 @@ interface ItemTask {
     quantity_made: number
     quantity_rejected: number
     unit: string | null
+    pack_size: number | null
+    unit_name: string | null
+    piece_name: string | null
     mix_batch_kg: number | null
     combined_with: string | null
     owners: { id: number, sub_job: string | null, owner_id: number | null, owner: string | null, only_for: number[], can_assign: boolean }[]
@@ -663,7 +667,7 @@ function receiveIntoStock() {
                         </span>
                     </div>
                     <div class="tabular-nums text-gray-600">
-                        {{ task.quantity_made }} / {{ task.quantity_required }}<template v-if="task.unit"> {{ task.unit }}</template>
+                        {{ progressLabel(task.quantity_made, task.quantity_required, task) }}
                         <span v-if="mixBatchesLabel(task.quantity_required, task.mix_batch_kg)" class="ml-1 text-gray-500">· {{ mixBatchesLabel(task.quantity_required, task.mix_batch_kg) }}</span>
                         <span v-if="task.quantity_rejected" class="text-red-500 ml-1">({{ task.quantity_rejected }} {{ ctrans('rejected') }})</span>
                     </div>

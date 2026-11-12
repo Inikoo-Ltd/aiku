@@ -84,6 +84,22 @@ class EditArtefactFamily extends OrgAction
                                     'information' => __('Shows the Maintenance button on the manufacture floor for job orders of its artefacts, paid at band 2.'),
                                     'value'       => (bool) data_get($artefactFamily->data, 'needs_machine_maintenance', false),
                                 ],
+                                'unit_name' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Unit name'),
+                                    'information' => __('What one artefact of this family is called on the manufacture floor, shown after every quantity (e.g. bags, bars, bottles). An artefact can set its own.'),
+                                    'placeholder' => __('e.g. bags'),
+                                    'value'       => data_get($artefactFamily->data, 'unit_name'),
+                                    'required'    => false
+                                ],
+                                'pack_name' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Pack name'),
+                                    'information' => __('What one pack is called on the manufacture floor for steps of this family counted in packs (e.g. boxes, trays): artisans see 40 boxes of 3 (120 bags). A recipe step can set its own; empty shows packs.'),
+                                    'placeholder' => __('e.g. boxes'),
+                                    'value'       => data_get($artefactFamily->data, 'pack_name'),
+                                    'required'    => false
+                                ],
                             ]
                         ]
                     ],

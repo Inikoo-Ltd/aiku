@@ -88,7 +88,7 @@ class ShowJobOrder extends OrgAction
         $isOpen          = in_array($jobOrder->state, JobOrderStateEnum::open());
         $currencySymbol  = $this->organisation->currency->symbol;
         $allItems        = $jobOrder->jobOrderItems()
-            ->with(['artefact.orgStock', 'artefact.manufactureTasks', 'tasks.manufactureTask.artisans', 'tasks.sessions.user', 'tasks.sessionShares.session.user', 'employee', 'tasks.employee'])
+            ->with(['artefact.orgStock', 'artefact.artefactFamily', 'artefact.manufactureTasks', 'tasks.recipeStep', 'tasks.manufactureTask.artisans', 'tasks.sessions.user', 'tasks.sessionShares.session.user', 'employee', 'tasks.employee'])
             ->orderBy('id')
             ->get();
         $allItems->each(function (JobOrderItem $item) use ($jobOrder) {
@@ -277,6 +277,9 @@ class ShowJobOrder extends OrgAction
                     'quantity_rejected' => (float)$tasks->sum('quantity_rejected'),
                     'unit'              => $task->unit(),
                     'mix_batch_kg'      => $task->mixBatchKg(),
+                    'pack_size'         => $task->packSize(),
+                    'unit_name'         => $task->unitName(),
+                    'piece_name'        => $task->pieceName(),
                     'combined_with'     => $this->combinedWith($tasks),
                     'owners'            => $tasks->map(fn (JobOrderItemTask $stepTask) => [
                         'id'          => $stepTask->id,

@@ -2,7 +2,7 @@
 title: Trabajar la pantalla de planta
 summary: La guía del artesano - la pantalla Mis tareas, la lista de trabajos que se actualiza sola, START y DONE, qué pulsar cuando hiciste menos de lo pedido, y tomarte un descanso.
 date: 2026-11-03
-source_date: 2026-11-03
+source_date: 2026-11-12
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -46,9 +46,15 @@ Una fila con una ▶ verde y una hora es la que estás trabajando, y cuándo la 
 
 ¿Hiciste todo lo que se pedía? Eso es todo. La tarea se cierra, la orden de trabajo termina y se avisa al almacén de que hay algo que guardar - ver [Guardar la producción terminada](/docs/putting-away-finished-production-es).
 
+## Qué cuentan los números
+
+Cada cantidad en la pantalla dice qué cuenta: <i>0 / 120 bags</i>, <i>0 / 96 kg</i>. El nombre de la pieza viene del producto: un encargado lo pone en <b>Unit name</b> (Nombre de la unidad) en la página de edición del artefacto, o de su familia para todos los productos que contiene. Sin nombre, la pantalla dice <i>pieces</i>. La casilla donde escribes es una pregunta con la misma palabra, <b>How many bags did you make?</b> (¿Cuántas bolsas hiciste?), así que el número que escribes coincide con lo que preguntó la pantalla. Un producto llamado "Box of 3" cuya fabricación se cuenta en bolsas sueltas muestra bolsas, no cajas.
+
 ## Pasos que se cuentan en paquetes
 
-Algunos pasos, sobre todo el empaquetado, se cuentan en paquetes y no en piezas sueltas: una bandeja de 8 bombas de baño cuenta como 1. La pantalla dice entonces <b>Counted in PACKS of 8</b> (Se cuenta en PAQUETES de 8) en ámbar, y la casilla se llama <b>Packs of 8 made</b> (Paquetes de 8 hechos). Escribe cuántos paquetes completos llenaste: para 56 bombas de baño en 7 bandejas escribe 7, no 56. Debajo de la casilla la pantalla muestra lo que significa tu número, <i>7 packs of 8 = 56 × ABB-06a</i>, y la confirmación lo muestra otra vez. Solo se aceptan paquetes enteros; la única excepción es el número exacto que queda por hacer, que se rellena tocando el número grande. Cuando un encargado tiene que autorizar el exceso, la ventana muestra el exceso en paquetes y en piezas antes de aprobar.
+Algunos pasos, sobre todo el empaquetado, se cuentan en paquetes y no en piezas sueltas: una bandeja de 8 bombas de baño cuenta como 1. La pantalla muestra entonces las dos cosas, <i>0 / 7 trays of 8 (56 bath bombs)</i>, dice en ámbar <b>Counted in trays of 8 (1 = 8 bath bombs of ABB-06a)</b> (Se cuenta en bandejas de 8) y pregunta <b>How many trays of 8 did you make?</b> (¿Cuántas bandejas de 8 hiciste?). Escribe cuántos paquetes completos llenaste: para 56 bombas de baño en 7 bandejas escribe 7, no 56. Debajo de la casilla la pantalla muestra lo que significa tu número, <i>7 trays of 8 = 56 bath bombs of ABB-06a</i>, y la confirmación lo muestra otra vez. Solo se aceptan paquetes enteros; la única excepción es el número exacto que queda por hacer, que se rellena tocando el número grande. Cuando un encargado tiene que autorizar el exceso, la ventana muestra el exceso en paquetes y en piezas antes de aprobar.
+
+Cómo se llama un paquete se define en el paso de la receta: <b>Counted in</b> (Se cuenta en) en el paso de la receta del artefacto (bandejas, cajas). Si está vacío, usa <b>Pack name</b> (Nombre del paquete) en la página de edición de la familia del artefacto, que vale para todos sus productos, y sin él la pantalla dice <i>packs</i>.
 
 ## Cuando hiciste menos de lo pedido
 
