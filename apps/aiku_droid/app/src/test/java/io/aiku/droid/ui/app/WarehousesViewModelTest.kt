@@ -4,14 +4,18 @@ import io.aiku.droid.data.api.AuthApi
 import io.aiku.droid.data.api.LoginCredentials
 import io.aiku.droid.data.api.LoginResult
 import io.aiku.droid.data.api.OrganisationSummary
-import io.aiku.droid.data.api.PasswordResetResult
+import io.aiku.droid.data.api.PasswordChange
+import io.aiku.droid.data.api.PasswordReset
+import io.aiku.droid.data.api.PasswordResult
 import io.aiku.droid.data.api.WarehouseAbilities
 import io.aiku.droid.data.api.WarehouseAccess
 import io.aiku.droid.data.api.WarehouseApi
 import io.aiku.droid.data.api.WarehousesResult
 import io.aiku.droid.data.session.SessionRepository
 import io.aiku.droid.data.session.StaffSession
+import io.aiku.droid.data.session.WarehouseCache
 import io.aiku.droid.data.settings.WarehouseSelection
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +38,7 @@ class WarehousesViewModelTest {
     private val second = warehouse(2, "Second Warehouse")
     private val sessions = InMemorySessions(StaffSession(token = "7|abc", userId = 42, username = "picker", displayName = "Ana"))
     private val selection = InMemorySelection()
+    private val cache = InMemoryCache()
 
     @Before
     fun useTestMainDispatcher() {
@@ -88,7 +93,7 @@ class WarehousesViewModelTest {
     @Test
     fun `signing in again after an expired session loads the warehouses of the new login`() {
         val api = FakeWarehouseApi(WarehousesResult.SessionExpired)
-        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
 
         viewModel.signInAgain()
         assertEquals(WarehousesUiState.Loading, viewModel.state.value)
@@ -105,8 +110,138 @@ class WarehousesViewModelTest {
         assertEquals(WarehousesUiState.ServerError(502), viewModelReturning(WarehousesResult.ServerError(502)).state.value)
     }
 
+    @Test
+    fun `every successful load is kept in the cache for the signed in user`() {
+        viewModelReturning(WarehousesResult.Loaded(listOf(main, second)))
+
+        assertEquals(listOf(main, second), cache.read(42))
+    }
+
+    @Test
+    fun `opening without a connection uses the cached warehouses of the same user`() {
+        cache.save(42, listOf(second))
+
+        val viewModel = viewModelReturning(WarehousesResult.Unreachable)
+
+        assertEquals(WarehousesUiState.Ready(listOf(second), second), viewModel.state.value)
+    }
+
+    @Test
+    fun `the cached warehouses of another user are never used`() {
+        cache.save(99, listOf(second))
+
+        val viewModel = viewModelReturning(WarehousesResult.Unreachable)
+
+        assertEquals(WarehousesUiState.Offline, viewModel.state.value)
+    }
+
+    @Test
+    fun `signing out clears the cache`() {
+        val viewModel = viewModelReturning(WarehousesResult.Loaded(listOf(main)))
+        assertNotNull(cache.read(42))
+
+        viewModel.signOut()
+
+        assertNull(sessions.session.value)
+        assertNull(cache.read(42))
+        assertEquals(WarehousesUiState.Loading, viewModel.state.value)
+    }
+
+    @Test
+    fun `an expired session clears the cache`() {
+        cache.save(42, listOf(main))
+
+        viewModelReturning(WarehousesResult.SessionExpired)
+
+        assertNull(cache.read(42))
+    }
+
+    @Test
+    fun `returning to the foreground refreshes quietly, dropping a lost warehouse and adding a new one`() {
+        val api = FakeWarehouseApi(WarehousesResult.Loaded(listOf(main, second)))
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+        val third = warehouse(3, "Third Warehouse")
+        val gate = CompletableDeferred<Unit>()
+        api.gate = gate
+        api.result = WarehousesResult.Loaded(listOf(main, third))
+
+        viewModel.refresh()
+
+        assertEquals(WarehousesUiState.Ready(listOf(main, second), main), viewModel.state.value)
+
+        viewModel.refresh()
+        assertEquals(2, api.calls)
+
+        gate.complete(Unit)
+
+        assertEquals(WarehousesUiState.Ready(listOf(main, third), main), viewModel.state.value)
+        assertEquals(listOf(main, third), cache.read(42))
+    }
+
+    @Test
+    fun `losing the chosen warehouse on a refresh falls back to the first one left`() {
+        selection.selectedWarehouseId = 2
+        val api = FakeWarehouseApi(WarehousesResult.Loaded(listOf(main, second)))
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+
+        api.result = WarehousesResult.Loaded(listOf(main))
+        viewModel.refresh()
+
+        assertEquals(WarehousesUiState.Ready(listOf(main), main), viewModel.state.value)
+        assertEquals(1L, selection.selectedWarehouseId)
+    }
+
+    @Test
+    fun `a refresh that fails keeps showing the current warehouses`() {
+        val api = FakeWarehouseApi(WarehousesResult.Loaded(listOf(main, second)))
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+
+        api.result = WarehousesResult.Unreachable
+        viewModel.refresh()
+        api.result = WarehousesResult.ServerError(503)
+        viewModel.refresh()
+
+        assertEquals(WarehousesUiState.Ready(listOf(main, second), main), viewModel.state.value)
+        assertEquals(3, api.calls)
+    }
+
+    @Test
+    fun `a refresh that finds the session expired asks to sign in again and clears the cache`() {
+        val api = FakeWarehouseApi(WarehousesResult.Loaded(listOf(main)))
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+
+        api.result = WarehousesResult.SessionExpired
+        viewModel.refresh()
+
+        assertEquals(WarehousesUiState.SessionExpired, viewModel.state.value)
+        assertNull(cache.read(42))
+    }
+
+    @Test
+    fun `returning to the foreground from the offline screen loads again`() {
+        val api = FakeWarehouseApi(WarehousesResult.Unreachable)
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+        assertEquals(WarehousesUiState.Offline, viewModel.state.value)
+
+        api.result = WarehousesResult.Loaded(listOf(main))
+        viewModel.refresh()
+
+        assertEquals(WarehousesUiState.Ready(listOf(main), main), viewModel.state.value)
+    }
+
+    @Test
+    fun `a user who gains a warehouse on a refresh leaves the no access state`() {
+        val api = FakeWarehouseApi(WarehousesResult.Loaded(emptyList()))
+        val viewModel = WarehousesViewModel(api, FakeAuthApi(), sessions, selection, cache)
+
+        api.result = WarehousesResult.Loaded(listOf(second))
+        viewModel.refresh()
+
+        assertEquals(WarehousesUiState.Ready(listOf(second), second), viewModel.state.value)
+    }
+
     private fun viewModelReturning(result: WarehousesResult) =
-        WarehousesViewModel(FakeWarehouseApi(result), FakeAuthApi(), sessions, selection)
+        WarehousesViewModel(FakeWarehouseApi(result), FakeAuthApi(), sessions, selection, cache)
 
     private fun warehouse(id: Long, name: String) = WarehouseAccess(
         id = id,
@@ -118,13 +253,23 @@ class WarehousesViewModelTest {
     )
 
     private class FakeWarehouseApi(var result: WarehousesResult) : WarehouseApi {
-        override suspend fun warehouses(token: String) = result
+        var gate: CompletableDeferred<Unit>? = null
+        var calls = 0
+
+        override suspend fun warehouses(token: String): WarehousesResult {
+            calls++
+            val answer = result
+            gate?.await()
+            return answer
+        }
     }
 
     private class FakeAuthApi : AuthApi {
         override suspend fun login(credentials: LoginCredentials): LoginResult = LoginResult.Unreachable
         override suspend fun logout(token: String) = Unit
-        override suspend fun sendPasswordResetLink(email: String): PasswordResetResult = PasswordResetResult.Unreachable
+        override suspend fun requestPasswordResetCode(login: String): PasswordResult = PasswordResult.Unreachable
+        override suspend fun resetPassword(reset: PasswordReset): PasswordResult = PasswordResult.Unreachable
+        override suspend fun changePassword(token: String, change: PasswordChange): PasswordResult = PasswordResult.Unreachable
     }
 
     private class InMemorySessions(initial: StaffSession) : SessionRepository {
@@ -140,5 +285,19 @@ class WarehousesViewModelTest {
 
     private class InMemorySelection : WarehouseSelection {
         override var selectedWarehouseId: Long? = null
+    }
+
+    private class InMemoryCache : WarehouseCache {
+        private var entry: Pair<Long, List<WarehouseAccess>>? = null
+
+        override fun read(userId: Long): List<WarehouseAccess>? = entry?.takeIf { it.first == userId }?.second
+
+        override fun save(userId: Long, warehouses: List<WarehouseAccess>) {
+            entry = userId to warehouses
+        }
+
+        override fun clear() {
+            entry = null
+        }
     }
 }

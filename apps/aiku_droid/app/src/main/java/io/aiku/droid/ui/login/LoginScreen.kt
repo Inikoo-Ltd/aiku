@@ -1,5 +1,13 @@
 package io.aiku.droid.ui.login
 
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipDescription
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.os.PersistableBundle
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -40,7 +48,10 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
@@ -55,6 +66,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -64,10 +78,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -75,27 +86,38 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import io.aiku.droid.R
+import io.aiku.droid.data.api.TwoFactorSetup
 import io.aiku.droid.ui.UiMessage
 import io.aiku.droid.ui.asText
 import io.aiku.droid.ui.components.AikuFocusIndication
+import io.aiku.droid.ui.components.QrCode
 import io.aiku.droid.ui.components.animateFocusProgress
 import io.aiku.droid.ui.components.focusHalo
+import io.aiku.droid.ui.components.qrMatrixOf
 import io.aiku.droid.ui.theme.AikuDroidTheme
 import io.aiku.droid.ui.theme.Bitter
 import io.aiku.droid.ui.theme.Caveat
+import io.aiku.droid.ui.theme.DeepSeaLight
 import io.aiku.droid.ui.theme.Inter
 import io.aiku.droid.ui.theme.LocalAikuColors
+import kotlinx.coroutines.launch
 
 private val CardShape = RoundedCornerShape(12.dp)
 private val ControlShape = RoundedCornerShape(6.dp)
 private val ControlHeight = 48.dp
+private val LinkHeight = 44.dp
+private val CodeTextStyle = TextStyle(fontFamily = Inter, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.3.em)
 
 private const val AIKU_EMAIL_LINK = "mailto:hello@aiku.io"
+private const val SETUP_KEY_GROUP = 4
+private const val SECONDS_PER_MINUTE = 60
 
 @Composable
 fun LoginScreen(
@@ -104,6 +126,8 @@ fun LoginScreen(
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalAikuColors.current
+
+    BackHandler(enabled = state.step != LoginStep.Credentials, onBack = actions::backToCredentials)
 
     Box(modifier = modifier.fillMaxSize().background(colors.background)) {
         Image(
@@ -187,11 +211,18 @@ private fun LoginCard(
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         state.alert?.let { AlertBox(it) }
+        state.notice?.let { notice ->
+            NoticeBox(
+                message = notice,
+                hint = stringResource(R.string.reset_no_email_hint).takeIf { state.step == LoginStep.PasswordResetCode },
+            )
+        }
         when (state.step) {
             LoginStep.Credentials -> CredentialsStep(state, actions)
             LoginStep.OneTimePassword -> OneTimePasswordStep(state, actions)
+            LoginStep.TwoFactorSetup -> TwoFactorSetupStep(state, actions)
             LoginStep.PasswordReset -> PasswordResetStep(state, actions)
-            LoginStep.PasswordResetSent -> PasswordResetSentStep(state, actions)
+            LoginStep.PasswordResetCode -> PasswordResetCodeStep(state, actions)
         }
     }
 }
@@ -321,21 +352,17 @@ private fun OneTimePasswordStep(state: LoginUiState, actions: LoginActions) {
     )
 
     LabelledField(label = stringResource(R.string.otp_label), isEnabled = isEnabled, error = state.oneTimePasswordError) {
-        AikuInput(
+        OneTimeCodeInput(
             value = state.oneTimePassword,
             onValueChange = actions::onOneTimePasswordChange,
-            placeholder = stringResource(R.string.otp_placeholder),
             isError = state.oneTimePasswordError != null,
             isEnabled = isEnabled,
-            textStyle = TextStyle(fontFamily = Inter, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.3.em),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
+            imeAction = ImeAction.Done,
             keyboardActions = KeyboardActions(onDone = {
                 keyboard?.hide()
                 actions.verifyOneTimePassword()
             }),
-            modifier = Modifier
-                .focusRequester(codeFocus)
-                .semantics { contentType = ContentType.SmsOtpCode },
+            modifier = Modifier.focusRequester(codeFocus),
         )
     }
 
@@ -353,21 +380,178 @@ private fun OneTimePasswordStep(state: LoginUiState, actions: LoginActions) {
 }
 
 @Composable
+private fun TwoFactorSetupStep(state: LoginUiState, actions: LoginActions) {
+    val setup = state.twoFactorSetup ?: return
+    val keyboard = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
+    val isEnabled = !state.isSubmitting
+    var isAuthenticatorMissing by remember(setup.otpauthUrl) { mutableStateOf(false) }
+
+    StepHeading(
+        iconResource = R.drawable.ic_shield_check,
+        title = stringResource(R.string.two_factor_title),
+        description = stringResource(R.string.two_factor_description),
+    )
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        TertiaryButton(
+            text = stringResource(R.string.two_factor_open_app),
+            iconResource = R.drawable.ic_shield_check,
+            onClick = { isAuthenticatorMissing = !openAuthenticator(context, setup.otpauthUrl) },
+        )
+        if (isAuthenticatorMissing) {
+            HintBox(text = stringResource(R.string.two_factor_no_app))
+        }
+    }
+
+    SetupKeyPanel(setup = setup)
+
+    LabelledField(label = stringResource(R.string.otp_label), isEnabled = isEnabled, error = state.oneTimePasswordError) {
+        OneTimeCodeInput(
+            value = state.oneTimePassword,
+            onValueChange = actions::onOneTimePasswordChange,
+            isError = state.oneTimePasswordError != null,
+            isEnabled = isEnabled,
+            imeAction = ImeAction.Done,
+            keyboardActions = KeyboardActions(onDone = {
+                keyboard?.hide()
+                actions.verifyOneTimePassword()
+            }),
+        )
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        PrimaryButton(
+            text = stringResource(if (state.isSubmitting) R.string.otp_verifying else R.string.otp_verify),
+            isLoading = state.isSubmitting,
+            onClick = {
+                keyboard?.hide()
+                actions.verifyOneTimePassword()
+            },
+        )
+        TertiaryButton(text = stringResource(R.string.back_to_sign_in), onClick = actions::backToCredentials)
+    }
+}
+
+@Composable
+private fun SetupKeyPanel(setup: TwoFactorSetup) {
+    val colors = LocalAikuColors.current
+    val matrix = remember(setup.otpauthUrl) { qrMatrixOf(setup.otpauthUrl) }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surfaceMuted, ControlShape)
+            .border(1.dp, colors.border, ControlShape)
+            .padding(14.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.two_factor_other_phone),
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+            color = colors.textTertiary,
+            textAlign = TextAlign.Center,
+        )
+        if (matrix != null) {
+            QrCode(
+                matrix = matrix,
+                description = stringResource(R.string.two_factor_qr_description),
+                ink = DeepSeaLight.text,
+                paper = DeepSeaLight.surface,
+                modifier = Modifier
+                    .widthIn(max = 184.dp)
+                    .fillMaxWidth(),
+            )
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(text = stringResource(R.string.two_factor_key_label), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = colors.textTertiary)
+            Text(
+                text = groupedSetupKey(setup.secret),
+                fontFamily = Inter,
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.08.em,
+                color = colors.text,
+                textAlign = TextAlign.Center,
+            )
+        }
+        CopyKeyButton(secret = setup.secret)
+    }
+}
+
+@Composable
+private fun CopyKeyButton(secret: String) {
+    val colors = LocalAikuColors.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    val clipLabel = stringResource(R.string.two_factor_key_clip_label)
+    var isCopied by remember(secret) { mutableStateOf(false) }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .heightIn(min = LinkHeight)
+            .clip(ControlShape)
+            .background(colors.surface)
+            .border(1.dp, colors.borderStrong, ControlShape)
+            .clickable(role = Role.Button) {
+                scope.launch {
+                    clipboard.setClipEntry(ClipEntry(sensitiveClip(clipLabel, secret)))
+                    isCopied = true
+                }
+            }
+            .padding(horizontal = 14.dp),
+    ) {
+        Icon(
+            painter = painterResource(if (isCopied) R.drawable.ic_ui_check else R.drawable.ic_ui_clipboard),
+            contentDescription = null,
+            tint = if (isCopied) colors.success else colors.textSecondary,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = stringResource(if (isCopied) R.string.two_factor_key_copied else R.string.two_factor_copy_key),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = colors.textSecondary,
+        )
+    }
+}
+
+private fun groupedSetupKey(secret: String): String = secret.filterNot(Char::isWhitespace).chunked(SETUP_KEY_GROUP).joinToString(" ")
+
+private fun sensitiveClip(label: String, text: String): ClipData = ClipData.newPlainText(label, text).apply {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        description.extras = PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
+    }
+}
+
+private fun openAuthenticator(context: Context, otpauthUrl: String): Boolean = try {
+    context.startActivity(Intent(Intent.ACTION_VIEW, otpauthUrl.toUri()))
+    true
+} catch (exception: ActivityNotFoundException) {
+    false
+}
+
+@Composable
 private fun PasswordResetStep(state: LoginUiState, actions: LoginActions) {
     val keyboard = LocalSoftwareKeyboardController.current
-    val emailFocus = remember { FocusRequester() }
+    val loginFocus = remember { FocusRequester() }
     val isEnabled = !state.isSubmitting
 
-    LaunchedEffect(Unit) { emailFocus.requestFocus() }
+    LaunchedEffect(Unit) { loginFocus.requestFocus() }
 
-    ResetHeading()
+    ResetHeading(title = stringResource(R.string.reset_title), description = stringResource(R.string.reset_description))
 
-    LabelledField(label = stringResource(R.string.reset_email_label), isEnabled = isEnabled, error = state.resetEmailError) {
+    LabelledField(label = stringResource(R.string.reset_login_label), isEnabled = isEnabled, error = state.resetLoginError) {
         AikuInput(
-            value = state.resetEmail,
-            onValueChange = actions::onResetEmailChange,
-            placeholder = stringResource(R.string.reset_email_placeholder),
-            isError = state.resetEmailError != null,
+            value = state.resetLogin,
+            onValueChange = actions::onResetLoginChange,
+            placeholder = stringResource(R.string.reset_login_placeholder),
+            isError = state.resetLoginError != null,
             isEnabled = isEnabled,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.None,
@@ -377,10 +561,10 @@ private fun PasswordResetStep(state: LoginUiState, actions: LoginActions) {
             ),
             keyboardActions = KeyboardActions(onSend = {
                 keyboard?.hide()
-                actions.sendPasswordResetLink()
+                actions.sendPasswordResetCode()
             }),
             modifier = Modifier
-                .focusRequester(emailFocus)
+                .focusRequester(loginFocus)
                 .semantics { contentType = ContentType.Username + ContentType.EmailAddress },
         )
     }
@@ -391,7 +575,7 @@ private fun PasswordResetStep(state: LoginUiState, actions: LoginActions) {
             isLoading = state.isSubmitting,
             onClick = {
                 keyboard?.hide()
-                actions.sendPasswordResetLink()
+                actions.sendPasswordResetCode()
             },
         )
         if (isEnabled) {
@@ -401,72 +585,120 @@ private fun PasswordResetStep(state: LoginUiState, actions: LoginActions) {
 }
 
 @Composable
-private fun PasswordResetSentStep(state: LoginUiState, actions: LoginActions) {
-    val colors = LocalAikuColors.current
+private fun PasswordResetCodeStep(state: LoginUiState, actions: LoginActions) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    val isEnabled = !state.isSubmitting
+    val submit = {
+        keyboard?.hide()
+        actions.resetPassword()
+    }
 
-    ResetHeading()
+    ResetHeading(title = stringResource(R.string.reset_code_title), description = stringResource(R.string.reset_code_description))
 
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.successSoft, ControlShape)
-            .padding(12.dp)
-            .semantics { liveRegion = LiveRegionMode.Polite },
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_feedback_check),
-            contentDescription = null,
-            tint = colors.success,
-            modifier = Modifier.size(20.dp),
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        LabelledField(label = stringResource(R.string.reset_code_label), isEnabled = isEnabled, error = state.resetCodeError) {
+            OneTimeCodeInput(
+                value = state.resetCode,
+                onValueChange = actions::onResetCodeChange,
+                isError = state.resetCodeError != null,
+                isEnabled = isEnabled,
+                imeAction = ImeAction.Next,
+            )
+        }
+        ResendCode(state = state, actions = actions)
+    }
+
+    LabelledField(label = stringResource(R.string.password_new), isEnabled = isEnabled, error = state.newPasswordError) {
+        NewPasswordInput(
+            value = state.newPassword,
+            onValueChange = actions::onNewPasswordChange,
+            isVisible = state.isNewPasswordVisible,
+            onToggleVisibility = actions::onNewPasswordVisibilityToggle,
+            isError = state.newPasswordError != null,
+            isEnabled = isEnabled,
+            imeAction = ImeAction.Next,
         )
-        Text(
-            text = resetSentMessage(state.resetEmail.trim()),
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            fontWeight = FontWeight.Normal,
-            color = colors.textSecondary,
+    }
+
+    LabelledField(label = stringResource(R.string.password_confirm), isEnabled = isEnabled, error = state.newPasswordConfirmationError) {
+        NewPasswordInput(
+            value = state.newPasswordConfirmation,
+            onValueChange = actions::onNewPasswordConfirmationChange,
+            isVisible = state.isNewPasswordConfirmationVisible,
+            onToggleVisibility = actions::onNewPasswordConfirmationVisibilityToggle,
+            isError = state.newPasswordConfirmationError != null,
+            isEnabled = isEnabled,
+            imeAction = ImeAction.Done,
+            keyboardActions = KeyboardActions(onDone = { submit() }),
         )
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        PrimaryButton(text = stringResource(R.string.back_to_sign_in), isLoading = false, onClick = actions::backToCredentials)
-        RememberedItLink(onClick = actions::backToCredentials)
+        PrimaryButton(
+            text = stringResource(if (state.isSubmitting) R.string.reset_saving else R.string.reset_save),
+            isLoading = state.isSubmitting,
+            onClick = submit,
+        )
+        if (isEnabled) {
+            RememberedItLink(onClick = actions::backToCredentials)
+        }
     }
 }
 
 @Composable
-private fun ResetHeading() {
+private fun ResendCode(state: LoginUiState, actions: LoginActions) {
+    val colors = LocalAikuColors.current
+    val cooldown = state.resendCooldownSeconds
+
+    when {
+        cooldown > 0 -> Text(
+            text = stringResource(R.string.reset_resend_wait, cooldown / SECONDS_PER_MINUTE, cooldown % SECONDS_PER_MINUTE),
+            fontSize = 13.sp,
+            color = colors.textQuaternary,
+            modifier = Modifier
+                .heightIn(min = LinkHeight)
+                .padding(vertical = 13.dp),
+        )
+        state.isResetCodeUsedUp -> Box(modifier = Modifier.padding(top = 8.dp)) {
+            TertiaryButton(
+                text = stringResource(if (state.isResending) R.string.reset_sending else R.string.reset_new_code),
+                iconResource = R.drawable.ic_ui_mail,
+                onClick = actions::resendPasswordResetCode,
+            )
+        }
+        else -> Text(
+            text = stringResource(if (state.isResending) R.string.reset_sending else R.string.reset_resend),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = colors.link,
+            modifier = Modifier
+                .heightIn(min = LinkHeight)
+                .clip(ControlShape)
+                .clickable(enabled = !state.isResending, role = Role.Button, onClick = actions::resendPasswordResetCode)
+                .padding(vertical = 13.dp),
+        )
+    }
+}
+
+@Composable
+private fun ResetHeading(title: String, description: String) {
     val colors = LocalAikuColors.current
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
-            text = stringResource(R.string.reset_title),
+            text = title,
             fontSize = 20.sp,
             lineHeight = 28.sp,
             fontWeight = FontWeight.Bold,
             color = colors.text,
         )
         Text(
-            text = stringResource(R.string.reset_description),
+            text = description,
             fontSize = 14.sp,
             lineHeight = 20.sp,
             fontWeight = FontWeight.Normal,
             color = colors.textTertiary,
         )
-    }
-}
-
-@Composable
-private fun resetSentMessage(account: String): AnnotatedString {
-    val message = stringResource(R.string.reset_sent_description, account)
-    val start = message.indexOf(account)
-
-    return buildAnnotatedString {
-        append(message)
-        if (account.isNotEmpty() && start >= 0) {
-            addStyle(SpanStyle(fontWeight = FontWeight.Bold), start, start + account.length)
-        }
     }
 }
 
@@ -478,9 +710,9 @@ private fun RememberedItLink(onClick: () -> Unit) {
         fontStyle = FontStyle.Italic,
         color = LocalAikuColors.current.textTertiary,
         modifier = Modifier
-            .heightIn(min = 32.dp)
+            .heightIn(min = LinkHeight)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(vertical = 7.dp),
+            .padding(vertical = 13.dp),
     )
 }
 
@@ -570,6 +802,104 @@ private fun AlertBox(alert: LoginAlert) {
             alert.body?.let { Text(text = it.asText(), fontSize = 13.sp, lineHeight = 18.sp, color = colors.danger) }
         }
     }
+}
+
+@Composable
+private fun NoticeBox(message: UiMessage, hint: String?) {
+    val colors = LocalAikuColors.current
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.successSoft, ControlShape)
+            .padding(12.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_feedback_check),
+            contentDescription = null,
+            tint = colors.success,
+            modifier = Modifier.size(20.dp),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(text = message.asText(), fontSize = 14.sp, lineHeight = 20.sp, color = colors.textSecondary)
+            if (hint != null) {
+                Text(text = hint, fontSize = 13.sp, lineHeight = 18.sp, color = colors.textTertiary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HintBox(text: String) {
+    val colors = LocalAikuColors.current
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.warnSoft, ControlShape)
+            .border(1.dp, colors.warnBorder, ControlShape)
+            .padding(12.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_alert_triangle),
+            contentDescription = null,
+            tint = colors.warn,
+            modifier = Modifier.padding(top = 1.dp).size(18.dp),
+        )
+        Text(text = text, fontSize = 13.sp, lineHeight = 18.sp, color = colors.warnInk)
+    }
+}
+
+@Composable
+private fun OneTimeCodeInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean,
+    isEnabled: Boolean,
+    imeAction: ImeAction,
+    modifier: Modifier = Modifier,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+) {
+    AikuInput(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = stringResource(R.string.otp_placeholder),
+        isError = isError,
+        isEnabled = isEnabled,
+        textStyle = CodeTextStyle,
+        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.NumberPassword, imeAction = imeAction),
+        keyboardActions = keyboardActions,
+        modifier = modifier.semantics { contentType = ContentType.SmsOtpCode },
+    )
+}
+
+@Composable
+private fun NewPasswordInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isVisible: Boolean,
+    onToggleVisibility: () -> Unit,
+    isError: Boolean,
+    isEnabled: Boolean,
+    imeAction: ImeAction,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+) {
+    AikuInput(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = stringResource(R.string.login_password_placeholder),
+        isError = isError,
+        isEnabled = isEnabled,
+        visualTransformation = if (isVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Password, imeAction = imeAction),
+        keyboardActions = keyboardActions,
+        trailing = { PasswordVisibilityToggle(isVisible = isVisible, isEnabled = isEnabled, onToggle = onToggleVisibility) },
+        modifier = Modifier.semantics { contentType = ContentType.NewPassword },
+    )
 }
 
 @Composable
@@ -692,11 +1022,12 @@ private fun PrimaryButton(text: String, isLoading: Boolean, onClick: () -> Unit)
 }
 
 @Composable
-private fun TertiaryButton(text: String, onClick: () -> Unit) {
+private fun TertiaryButton(text: String, onClick: () -> Unit, iconResource: Int? = null) {
     val colors = LocalAikuColors.current
 
-    Box(
-        contentAlignment = Alignment.Center,
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .height(ControlHeight)
@@ -704,6 +1035,10 @@ private fun TertiaryButton(text: String, onClick: () -> Unit) {
             .border(1.dp, colors.borderStrong, ControlShape)
             .clickable(role = Role.Button, onClick = onClick),
     ) {
+        if (iconResource != null) {
+            Icon(painter = painterResource(iconResource), contentDescription = null, tint = colors.link, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+        }
         Text(text = text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.textSecondary)
     }
 }
@@ -750,13 +1085,29 @@ private object PreviewLoginActions : LoginActions {
     override fun onPasswordVisibilityToggle() = Unit
     override fun onRememberMeChange(value: Boolean) = Unit
     override fun onOneTimePasswordChange(value: String) = Unit
-    override fun onResetEmailChange(value: String) = Unit
+    override fun onResetLoginChange(value: String) = Unit
+    override fun onResetCodeChange(value: String) = Unit
+    override fun onNewPasswordChange(value: String) = Unit
+    override fun onNewPasswordConfirmationChange(value: String) = Unit
+    override fun onNewPasswordVisibilityToggle() = Unit
+    override fun onNewPasswordConfirmationVisibilityToggle() = Unit
     override fun signIn() = Unit
     override fun verifyOneTimePassword() = Unit
     override fun openPasswordReset() = Unit
-    override fun sendPasswordResetLink() = Unit
+    override fun sendPasswordResetCode() = Unit
+    override fun resendPasswordResetCode() = Unit
+    override fun resetPassword() = Unit
     override fun backToCredentials() = Unit
 }
+
+private val PreviewTwoFactorSetup = TwoFactorSetup(
+    setupToken = "preview",
+    secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+    otpauthUrl = "otpauth://totp/Aiku:alex.morgan?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=Aiku",
+    issuer = "Aiku",
+    account = "alex.morgan",
+    expiresInSeconds = 600,
+)
 
 @Preview(showSystemUi = true)
 @Composable
@@ -785,10 +1136,32 @@ private fun RejectedPreview() {
 
 @Preview(showSystemUi = true)
 @Composable
+private fun PasswordChangedPreview() {
+    AikuDroidTheme {
+        LoginScreen(
+            state = LoginUiState(username = "alex.morgan", notice = UiMessage.FromResource(R.string.reset_done)),
+            actions = PreviewLoginActions,
+        )
+    }
+}
+
+@Preview(showSystemUi = true)
+@Composable
 private fun OneTimePasswordPreview() {
     AikuDroidTheme {
         LoginScreen(
             state = LoginUiState(step = LoginStep.OneTimePassword, username = "alex.morgan", password = "secret"),
+            actions = PreviewLoginActions,
+        )
+    }
+}
+
+@Preview(showSystemUi = true, heightDp = 1200)
+@Composable
+private fun TwoFactorSetupPreview() {
+    AikuDroidTheme {
+        LoginScreen(
+            state = LoginUiState(step = LoginStep.TwoFactorSetup, username = "alex.morgan", password = "secret", twoFactorSetup = PreviewTwoFactorSetup),
             actions = PreviewLoginActions,
         )
     }
@@ -802,12 +1175,17 @@ private fun PasswordResetPreview() {
     }
 }
 
-@Preview(showSystemUi = true)
+@Preview(showSystemUi = true, heightDp = 1100)
 @Composable
-private fun PasswordResetSentPreview() {
+private fun PasswordResetCodePreview() {
     AikuDroidTheme {
         LoginScreen(
-            state = LoginUiState(step = LoginStep.PasswordResetSent, resetEmail = "alex.morgan"),
+            state = LoginUiState(
+                step = LoginStep.PasswordResetCode,
+                resetLogin = "alex.morgan",
+                resendCooldownSeconds = RESEND_COOLDOWN_SECONDS,
+                notice = UiMessage.FromResource(R.string.reset_code_sent),
+            ),
             actions = PreviewLoginActions,
         )
     }

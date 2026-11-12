@@ -19,7 +19,7 @@ Most screens are still skeletons built on sample data, so developers can see how
 
 - The app talks to aiku only through the staff API, never the database.
 - Mobile routes sit under `/app/api/mobile`. They need the `X-Aiku-App-Key` header and a Sanctum bearer token with the `mobile` ability.
-- The backend skips two-factor checks when `APP_ENV=local`, so the code step only appears against staging or production. The unit tests cover it.
+- Two-factor follows the backend's `MOBILE_TWO_FACTOR` switch: on by default in every environment, local included. A developer can set `MOBILE_TWO_FACTOR=false` in their local `.env`. An account that must use two-factor but has none sets it up in the app at sign-in (authenticator link, QR code or setup key).
 - `GET /app/api/mobile/warehouses` lists the warehouses the user is authorised in (`authorisedWarehouses`). Each carries a `can` block computed with the same `authTo` permission checks the web uses:
   - `view_locations`, `edit_locations`
   - `view_inventory`, `move_stock`
@@ -68,6 +68,7 @@ Most screens are still skeletons built on sample data, so developers can see how
 - `aiku.appKey`: one of the backend's `MOBILE_APP_KEYS`. Without it every mobile route answers 404.
 - `aiku.devCaCertPath`: the Valet CA that signs the local site, e.g. `//wsl.localhost/Ubuntu/home/<user>/.valet/CA/LaravelValetCASelfSigned.pem`. Debug builds trust it on top of the system CAs.
 - `aiku.apiBaseUrl`: optional, default `https://app.aiku.test`.
+- `aiku.sentryDsn`: the key (DSN) of the `aiku-droid` Sentry project in INIKOO LTD. Both debug and release builds read it. When it is empty, crash reporting is off. Reports carry no personal data; the user is identified only by their numeric id, and screenshots and view hierarchies are off.
 - `aiku.devHostAddress`: the emulator's route to the host, default `10.0.2.2`. With the backend in WSL set it to `wsl`, and the build asks `wsl.exe hostname -I` for the current WSL address: the emulator cannot reach WSL through `10.0.2.2`. Use the PC's LAN address for a physical device.
 
 Release builds use `https://app.aiku.io` and none of the development settings.
