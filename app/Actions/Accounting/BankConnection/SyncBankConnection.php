@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\BankConnection;
 
 use App\Actions\Accounting\BankConnection\Wise\SyncWiseBankConnection;
+use App\Actions\Accounting\BankTransaction\MatchBankTransactions;
 use App\Enums\Accounting\BankConnection\BankConnectionProviderEnum;
 use App\Enums\Accounting\BankConnection\BankConnectionStateEnum;
 use App\Models\Accounting\BankConnection;
@@ -80,6 +81,12 @@ class SyncBankConnection
             'last_error'     => null,
             'sync_data'      => array_merge($bankConnection->sync_data, ['last_result' => $result]),
         ]);
+
+        try {
+            MatchBankTransactions::run($bankConnection);
+        } catch (Throwable $exception) {
+            Sentry::captureException($exception);
+        }
 
         return $result;
     }

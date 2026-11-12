@@ -9,6 +9,8 @@
 namespace App\Models\Accounting;
 
 use App\Enums\Accounting\BankTransaction\BankTransactionDirectionEnum;
+use App\Enums\Accounting\BankTransaction\BankTransactionMatchStateEnum;
+use App\Models\Ordering\Order;
 use App\Enums\Accounting\BankTransaction\BankTransactionStatusEnum;
 use App\Models\Helpers\Currency;
 use App\Models\SysAdmin\Organisation;
@@ -36,6 +38,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon $booked_at
  * @property \Illuminate\Support\Carbon|null $provider_updated_at
  * @property array<string, mixed> $data
+ * @property BankTransactionMatchStateEnum|null $match_state
+ * @property int|null $order_id
+ * @property int|null $payment_id
+ * @property array<string, mixed> $match_data
+ * @property \Illuminate\Support\Carbon|null $matched_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read BankConnection $bankConnection
@@ -48,7 +55,8 @@ class BankTransaction extends Model
     protected $guarded = [];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'       => '{}',
+        'match_data' => '{}',
     ];
 
     protected function casts(): array
@@ -59,7 +67,20 @@ class BankTransaction extends Model
             'data'                => 'array',
             'booked_at'           => 'datetime',
             'provider_updated_at' => 'datetime',
+            'match_state'         => BankTransactionMatchStateEnum::class,
+            'match_data'          => 'array',
+            'matched_at'          => 'datetime',
         ];
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class);
     }
 
     public function bankConnection(): BelongsTo

@@ -131,12 +131,7 @@ class SyncWiseBankConnection
 
         foreach ($legs as $suffix => $leg) {
             [$direction, $value] = $leg;
-            BankTransaction::updateOrCreate(
-                [
-                    'bank_connection_id'      => $bankConnection->id,
-                    'provider_transaction_id' => $activity['id'].$suffix,
-                ],
-                [
+            $values = [
                     'group_id'            => $bankConnection->group_id,
                     'organisation_id'     => $bankConnection->organisation_id,
                     'provider_type'       => $activity['type'] ?? null,
@@ -155,9 +150,36 @@ class SyncWiseBankConnection
                     'booked_at'           => Carbon::parse($activity['createdOn']),
                     'provider_updated_at' => Carbon::parse($activity['updatedOn']),
                     'data'                => array_filter(['activity' => $activity, 'transfer' => $transfer, 'parser_version' => self::PARSER_VERSION]),
-                ]
-            );
+            ];
+
+            $stored = BankTransaction::where('bank_connection_id', $bankConnection->id)->where('provider_transaction_id', $activity['id'].$suffix)->first();
+            if ($stored) {
+                $stored->update(array_merge($values, $this->decisionNoLongerValid($stored, $values) ? self::FORGET_DECISION : []));
+            } else {
+                BankTransaction::create(array_merge($values, [
+                    'bank_connection_id'      => $bankConnection->id,
+                    'provider_transaction_id' => $activity['id'].$suffix,
+                ]));
+            }
         }
+    }
+
+    private const array FORGET_DECISION = ['match_state' => null, 'order_id' => null, 'match_data' => [], 'matched_at' => null];
+
+    /**
+     * A matching decision is taken on the line as it was; when the bank changes what matters, it is taken again, unless the
+     * line already paid something.
+     */
+    private function decisionNoLongerValid(BankTransaction $stored, array $values): bool
+    {
+        if ($stored->match_state === null || $stored->payment_id !== null) {
+            return false;
+        }
+
+        return $stored->status !== $values['status']
+            || $stored->currency_id !== $values['currency_id']
+            || $stored->reference !== $values['reference']
+            || abs((float)$stored->amount - (float)$values['amount']) > 0.001;
     }
 
     /**
