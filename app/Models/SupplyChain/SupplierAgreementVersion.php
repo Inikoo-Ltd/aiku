@@ -39,7 +39,7 @@ class SupplierAgreementVersion extends Model
 {
     use InGroup;
 
-    public const array FROZEN_FIELDS = ['version', 'title', 'body', 'change_summary', 'requires_reacceptance', 'published_at'];
+    public const array FROZEN_FIELDS = ['group_id', 'version', 'title', 'body', 'change_summary', 'requires_reacceptance', 'published_at'];
 
     protected $guarded = [];
 
@@ -56,8 +56,12 @@ class SupplierAgreementVersion extends Model
     protected static function booted(): void
     {
         static::updating(function (SupplierAgreementVersion $version) {
-            if ($version->getOriginal('state') !== SupplierAgreementVersionStateEnum::DRAFT && $version->isDirty(self::FROZEN_FIELDS)) {
+            $wasDraft = $version->getOriginal('state') === SupplierAgreementVersionStateEnum::DRAFT;
+            if (!$wasDraft && ($version->isDirty(self::FROZEN_FIELDS) || $version->state === SupplierAgreementVersionStateEnum::DRAFT)) {
                 throw new LogicException('A published supplier agreement version cannot be edited');
+            }
+            if ($version->getOriginal('state') === SupplierAgreementVersionStateEnum::RETIRED && $version->state !== SupplierAgreementVersionStateEnum::RETIRED) {
+                throw new LogicException('A retired supplier agreement version cannot be published again');
             }
         });
         static::deleting(function (SupplierAgreementVersion $version) {

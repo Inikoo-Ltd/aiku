@@ -15,7 +15,8 @@ use Lorisleiva\Actions\Concerns\AsObject;
 /**
  * The agreement applies to orders accepted after the supplier accepted it (clause 11), so when an order to a supplier
  * is confirmed it keeps the acceptance in force at that moment. Called from the purchase order model, so every way an
- * order gets its confirmation date (the agent or buyer confirming, a stage marked, a deposit paid) stamps it. Orders
+ * order gets its confirmation date (the agent or buyer confirming, a stage marked, a deposit paid) stamps it, and a
+ * confirmation date moved back (a deposit recorded late) takes the acceptance in force on that earlier date. Orders
  * through an agent or to one of our own organisations name no single supplier and are not stamped.
  */
 class StampPurchaseOrderSupplierAgreement
@@ -34,7 +35,7 @@ class StampPurchaseOrderSupplierAgreement
             return;
         }
 
-        if (!$purchaseOrder->supplier_id || $purchaseOrder->getOriginal('confirmed_at') !== null) {
+        if (!$purchaseOrder->supplier_id) {
             return;
         }
 

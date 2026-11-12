@@ -14,6 +14,7 @@ use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierAgreementAcceptance;
 use App\Models\SupplyChain\SupplierAgreementVersion;
 use App\Models\SupplyChain\SupplierShareLink;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -79,17 +80,21 @@ class AcceptSupplierAgreement
             return back();
         }
 
-        $this->handle($link->supplier, $current, [
-            'supplier_legal_name'        => trim($validated['supplier_legal_name']),
-            'authorised_person'          => trim($validated['authorised_person']),
-            'position'                   => trim($validated['position']),
-            'supplier_share_link_id'     => $link->id,
-            'supplier_portal_profile_id' => ResolveSupplierPortalProfile::make()->handle($link, $request)->id,
-            'ip'                         => $request->ip(),
-            'country_code'               => mb_substr(strtoupper((string) $request->header('CF-IPCountry')), 0, 2) ?: null,
-            'user_agent'                 => mb_substr((string) $request->userAgent(), 0, 1000) ?: null,
-            'locale'                     => ShowSupplierPortalLogin::language($request),
-        ]);
+        try {
+            $this->handle($link->supplier, $current, [
+                'supplier_legal_name'        => trim($validated['supplier_legal_name']),
+                'authorised_person'          => trim($validated['authorised_person']),
+                'position'                   => trim($validated['position']),
+                'supplier_share_link_id'     => $link->id,
+                'supplier_portal_profile_id' => ResolveSupplierPortalProfile::make()->handle($link, $request)->id,
+                'ip'                         => $request->ip(),
+                'country_code'               => mb_substr(strtoupper((string) $request->header('CF-IPCountry')), 0, 2) ?: null,
+                'user_agent'                 => mb_substr((string) $request->userAgent(), 0, 1000) ?: null,
+                'locale'                     => ShowSupplierPortalLogin::language($request),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            return back();
+        }
 
         return back();
     }

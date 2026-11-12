@@ -690,3 +690,30 @@ test('INI-238 once a version is published every staff page shows the status, age
     actingAsUserWithOnlyPermissions($supervisor, ["org-supervisor.{$this->organisation->id}.procurement", "procurement.{$this->organisation->id}.view", "procurement.{$this->organisation->id}.edit"]);
     $this->get(route('grp.supply-chain.supplier_agreement.index'))->assertOk()->assertInertia(fn ($page) => $page->where('can_edit', true));
 });
+
+test('INI-238 a published version never goes back to draft, a supplier accepts a version once, and an order confirmed on an earlier date keeps the acceptance in force then', function () {
+    [$supplier, , $token] = portalSupplier($this);
+    $orgSupplier          = $supplier->orgSuppliers()->where('organisation_id', $this->organisation->id)->firstOrFail();
+    $version              = publishSupplierAgreement($this);
+
+    expect(fn () => $version->update(['state' => 'draft']))->toThrow(LogicException::class)
+        ->and(fn () => DB::table('supplier_agreement_versions')->where('id', $version->id)->update(['state' => 'draft']))->toThrow(\Illuminate\Database\QueryException::class);
+
+    $this->travel(-10)->days();
+    Auth::logout();
+    acceptSupplierAgreement($this, $token, $version)->assertSessionHasNoErrors();
+    $this->travelBack();
+    acceptSupplierAgreement($this, $token, $version)->assertSessionHasNoErrors();
+    expect(\App\Models\SupplyChain\SupplierAgreementAcceptance::where('supplier_id', $supplier->id)->count())->toBe(1)
+        ->and(fn () => \App\Actions\SupplyChain\SupplierAgreement\AcceptSupplierAgreement::make()->handle($supplier, $version, [
+            'supplier_legal_name' => 'X', 'authorised_person' => 'Y', 'position' => 'Z',
+        ]))->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+
+    $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, PurchaseOrder::factory()->definition());
+    $purchaseOrder->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'submitted_at' => now()]);
+    $purchaseOrder = \App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToConfirmed::make()->action($purchaseOrder->refresh());
+    expect($purchaseOrder->supplier_agreement_acceptance_id)->not->toBeNull();
+
+    $purchaseOrder->update(['confirmed_at' => now()->subDays(20)]);
+    expect($purchaseOrder->refresh()->supplier_agreement_acceptance_id)->toBeNull();
+});
