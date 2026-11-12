@@ -58,3 +58,8 @@ test('product availability takes a stock change that arrives while it recounts',
     expect(actionsUniqueUntilProcessing())->toContain(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::class)
         ->and(\App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity::makeUniqueJob(new \App\Models\Catalogue\Product()))->toBeInstanceOf(BoundedUniqueUntilProcessingJobDecorator::class);
 });
+
+test('bursty product stock and shopify match jobs stay off the default queue', function () {
+    expect((new \App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity())->jobQueue)->toBe('stock-control')
+        ->and((new \App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct())->jobQueue)->toBe('shopify');
+});

@@ -45,16 +45,6 @@ class EditOrgSupplier extends OrgAction
         return $this->handle($orgSupplier);
     }
 
-    protected function ownsSupplierAgent(OrgSupplier $orgSupplier): bool
-    {
-        return (bool) ($orgSupplier->supplier->agent && $orgSupplier->supplier->agent->organisation_id === $this->organisation->id);
-    }
-
-    protected function canEditSupplier(OrgSupplier $orgSupplier): bool
-    {
-        return !$orgSupplier->supplier->agent_id || $this->ownsSupplierAgent($orgSupplier);
-    }
-
     public function htmlResponse(OrgSupplier $orgSupplier, ActionRequest $request): Response
     {
         $supplier = $orgSupplier->supplier;
@@ -79,22 +69,13 @@ class EditOrgSupplier extends OrgAction
             ],
         ];
 
-        $blueprint = $this->canEditSupplier($orgSupplier)
-            ? $this->supplierEditSections($supplier)
-            : [$statusSection];
+        $blueprint   = [...$this->supplierEditSections($supplier), $statusSection];
+        $updateRoute = [
+            'name' => 'grp.models.supplier.update',
+            'parameters' => $supplier->id,
+        ];
 
-        if ($this->canEditSupplier($orgSupplier) && !$supplier->agent_id) {
-            $blueprint[] = $statusSection;
-        }
-
-        $updateRoute = $this->canEditSupplier($orgSupplier)
-            ? [
-                'name' => 'grp.models.supplier.update',
-                'parameters' => $supplier->id,
-            ]
-            : $orgSupplierUpdateRoute;
-
-        if ($this->canEditSupplier($orgSupplier) && $request->user()->authTo('supply-chain.edit')) {
+        if ($request->user()->authTo('supply-chain.edit')) {
             $blueprint[] = $this->supplierAgentSection($supplier);
         }
 

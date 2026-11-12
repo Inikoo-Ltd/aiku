@@ -17,6 +17,8 @@ use App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales;
 use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
+use App\Actions\Tasks\GetAikuAssistant;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
@@ -29,7 +31,9 @@ use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -49,13 +53,31 @@ use Throwable;
  *
  * Every product a tool returns is live, in stock, priced and visible to the customer. search_products
  * also names, apart and without ids, the products asked for that are out of stock, so the customer
- * hears "out of stock" rather than "not found"; they can never be presented.
+ * hears "out of stock" rather than "not found"; they can never be presented. A code typed for a product
+ * we no longer sell names that product apart, without an id, and the meaning search runs on its name
+ * instead of the code, so the alternatives are like the old product rather than a guess from the code.
+ *
+ * The best-seller tools take an optional kind of product ("soap"): only best sellers among the close
+ * matches of a meaning search for it are kept, so "your best-selling soaps" is answerable.
  * present_products is never executed: AskShoppingAssistant reads its arguments as the final answer.
  *
  * add_to_basket puts one of each product in the customer's basket, only products already shown in
  * this conversation, or found by a tool in the same turn, and not yet in the basket, through the storefront's own bulk add, so stock,
  * visibility and order limits are checked the same way. clear_conversation hides the conversation
  * from the customer for good; the record stays for staff.
+ *
+ * better_price_options and big_order_lead serve a customer who wants a better price. The first
+ * adds sentences written here: the customer's Gold Reward membership and until when, how to get it,
+ * a member-price amnesty running in the shop, and the order size from which our team calls to talk
+ * about terms. The second saves a planned order of at least that size as a lead for the
+ * organisation's customer services team (StoreShoppingAssistantSalesLead); the model never sees the
+ * threshold and never promises a discount.
+ *
+ * restock_information says when an out of stock product the customer names is expected back, from
+ * what is on order (GetProductRestockEstimate), as a sentence written here with a half-month window,
+ * only when the date is reliable. ask_purchasing_team, after the customer said yes, passes a
+ * restock question with no reliable answer to the organisation's purchasing people
+ * (StoreShoppingAssistantRestockQuestion); their answer reaches the customer by email.
  *
  * dispatch_times and shipping_cost never give the model a figure: each returns a `fact`, a sentence
  * written here from our data in the shop's language, which AskShoppingAssistant puts under the
@@ -89,6 +111,10 @@ class GetShoppingAssistantTools
 
     private const float PRICE_SORT_MARGIN = 0.12;
 
+    private const int KIND_POOL = 600;
+
+    private const float KIND_MARGIN = 0.06;
+
     private const array SEGMENT_REASON_CODES = [
         RebuildRangeAdvisorSales::LEVEL_TYPE_AREA    => 'similar_shops_area',
         RebuildRangeAdvisorSales::LEVEL_TYPE_COUNTRY => 'similar_shops_country',
@@ -112,6 +138,11 @@ class GetShoppingAssistantTools
             'description' => 'How many products to return, default '.self::DEFAULT_LIMIT.'.',
         ];
 
+        $kind = [
+            'type'        => 'string',
+            'description' => 'Only when the customer asks about one kind of product or one range ("soap", "tarot cards", "solid soap loaves"): in their words, to get only the best sellers of that kind.',
+        ];
+
         $productIds = fn (string $description) => [
             'type'        => 'array',
             'items'       => ['type' => 'integer'],
@@ -132,13 +163,13 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'best_sellers_for_similar_shops',
-                'Best sellers among the shops closest to this customer: the same kind of shop when we know theirs, otherwise every shop, nearby first. Each product\'s why says exactly which shops it is about. Use it when the customer asks what sells well, wants ideas, or is starting or refreshing their range. Returns products with id, name, family and why.',
-                ['limit' => $limit]
+                'Best sellers among the shops closest to this customer: the same kind of shop when we know theirs, otherwise every shop, nearby first. Each product\'s why says exactly which shops it is about. Use it when the customer asks what sells well, wants ideas, or is starting or refreshing their range; with kind when they ask for the best sellers of one kind of product. Returns the top of the ranking, best first, not a full list. Returns products with id, name, family and why.',
+                ['kind' => $kind, 'limit' => $limit]
             ),
             $this->tool(
                 'best_sellers_last_christmas',
-                'Products that sold mostly in the run-up to last Christmas (September to December) in this shop, whether or not their name says Christmas. These are our sales to retailers, not this customer\'s own sales: say they sold well last Christmas, never that they sold in the customer\'s shop. Use it whenever the customer asks about Christmas, festive or seasonal stock, Christmas gifts, a Christmas stall or fair, or what sells at Christmas. Returns products with id, name, family and why.',
-                ['limit' => $limit]
+                'Products that sold mostly in the run-up to last Christmas (September to December) in this shop, whether or not their name says Christmas. These are our sales to retailers, not this customer\'s own sales: say they sold well last Christmas, never that they sold in the customer\'s shop. Use it whenever the customer asks about Christmas, festive or seasonal stock, Christmas gifts, a Christmas stall or fair, or what sells at Christmas; with kind when they ask about one kind of product. Returns the top of the ranking, best first, not a full list. Returns products with id, name, family and why.',
+                ['kind' => $kind, 'limit' => $limit]
             ),
             $this->tool(
                 'missing_from_range',
@@ -184,13 +215,49 @@ class GetShoppingAssistantTools
                 []
             ),
             $this->tool(
+                'better_price_options',
+                'What can lower the price for this customer. Use it whenever the customer asks for a better price, a discount, a deal or a special price, or says something is too expensive. Sentences about their Gold Reward membership, any member-price offer running now, and the order size from which our team calls to discuss better terms are added under your reply by the system; you get no figures or dates. Returns no products.',
+                []
+            ),
+            $this->tool(
+                'big_order_lead',
+                'Pass on to our team a big order the customer plans. Use it whenever the customer says how much they plan to order (or would order for a better price), and again when they answer whether they want a call, with their phone or a good time. The system decides whether the amount is big enough for a call. Returns no products.',
+                [
+                    'planned_amount'          => ['type' => 'number', 'description' => 'The order value the customer said they plan, as a plain number ("about 3k" is 3000).'],
+                    'currency'                => ['type' => 'string', 'description' => 'ISO code of the currency the customer meant (EUR, GBP, PLN...), when they said one; otherwise leave it out.'],
+                    'customer_agreed_to_call' => ['type' => 'boolean', 'description' => 'True only when the customer has said yes to a call from our team in this conversation.'],
+                    'phone'                   => ['type' => 'string', 'description' => 'A phone number the customer gave in this conversation, exactly as written; leave it out to use the one on their account.'],
+                    'best_time'               => ['type' => 'string', 'description' => 'When the customer said suits them for a call, in their words.'],
+                    'details'                 => ['type' => 'string', 'description' => 'In one sentence, what they plan to order and what they asked for.'],
+                ],
+                ['planned_amount', 'customer_agreed_to_call']
+            ),
+            $this->tool(
+                'restock_information',
+                'When an out of stock product is expected back. Use it whenever the customer asks when a product will be back in stock, restocked or delivered again, or when new stock or new designs of a product arrive. A sentence with the expected period, from our orders, is added under your reply by the system when we have a reliable date; you get no dates. Returns no products.',
+                [
+                    'query' => ['type' => 'string', 'description' => 'The product the customer asked about, by name or code, in their words.'],
+                ],
+                ['query']
+            ),
+            $this->tool(
+                'ask_purchasing_team',
+                'Pass a stock question we cannot answer to our purchasing team, who reply to the customer by email. Use it only after restock_information gave no reliable date and the customer said yes to an answer from the purchasing team. Returns no products.',
+                [
+                    'query'                    => ['type' => 'string', 'description' => 'The product the question is about, by name or code; leave it empty when the question is not about one product.'],
+                    'question'                 => ['type' => 'string', 'description' => 'The customer\'s question in one sentence, in English.'],
+                    'customer_agreed'          => ['type' => 'boolean', 'description' => 'True only when the customer said yes to an answer from the purchasing team.'],
+                ],
+                ['question', 'customer_agreed']
+            ),
+            $this->tool(
                 'clear_conversation',
                 'Clear this conversation when the customer asks to delete, clear or forget it. The page then tells them it was cleared. Returns no products.',
                 []
             ),
             $this->tool(
                 self::PRESENT_PRODUCTS,
-                'Give your final answer with products. Use only ids returned by the other tools. Call it once, as your last step, whenever you show products.',
+                'Give your final answer. Call it once, as your last step, every time: also when you show no products, ask a question or decline (leave must_haves and add_ons empty), so the customer always gets follow_ups to tap. Use only ids returned by the other tools.',
                 [
                     'reply'      => ['type' => 'string', 'description' => 'Two or three short sentences for the customer, with no ids, prices, discounts, stock or numbers.'],
                     'must_haves' => $productIds('Ids of products that fit the request or sell well for similar shops, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
@@ -199,7 +266,7 @@ class GetShoppingAssistantTools
                         'type'        => 'array',
                         'items'       => ['type' => 'string'],
                         'maxItems'    => self::MAX_FOLLOW_UPS,
-                        'description' => 'At most '.self::MAX_FOLLOW_UPS.' short questions the customer could ask next.',
+                        'description' => 'Two or three short questions the customer could ask next, about products you can find for them. Always give them, also when you decline or show nothing.',
                     ],
                 ],
                 ['reply']
@@ -225,12 +292,16 @@ class GetShoppingAssistantTools
             return match ($name) {
                 'search_products'                => $this->searchProducts($customer, $arguments, $conversation->language_code),
                 'best_sellers_for_similar_shops' => $this->bestSellers($customer, $arguments, $conversation->language_code),
+                'best_sellers_last_christmas'    => $this->christmasBestSellers($customer, $arguments, $conversation->language_code),
                 'missing_from_range'             => $this->missingFromRange($customer, $arguments, $conversation->language_code),
-                'best_sellers_last_christmas'    => $this->productsResult($customer, GetChristmasBestSellers::run($customer->shop, $customer, $this->limit($arguments)), fn () => 'sold_last_christmas', $conversation->language_code),
                 'products_they_stopped_ordering' => $this->stoppedOrdering($customer, $arguments, $conversation->language_code),
                 'save_shop_type'                 => $this->saveShopType($conversation, $customer, $arguments),
                 'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments, $foundProductIds),
                 'clear_conversation'             => $this->clearConversation($conversation),
+                'better_price_options'           => $this->betterPriceOptions($customer, $conversation->language_code),
+                'big_order_lead'                 => $this->bigOrderLead($conversation, $arguments),
+                'restock_information'            => $this->restockInformation($customer, $arguments, $conversation->language_code),
+                'ask_purchasing_team'            => $this->askPurchasingTeam($conversation, $customer, $arguments),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
@@ -277,9 +348,10 @@ class GetShoppingAssistantTools
             return $this->error('query must be a non-empty string.');
         }
 
-        $limit     = $this->limit($arguments);
-        $inStock   = fn (Product $product) => $product->available_quantity > 0;
-        $byCode    = $query === '' ? collect() : $this->productsByCode($customer, $query);
+        $limit        = $this->limit($arguments);
+        $inStock      = fn (Product $product) => $product->available_quantity > 0;
+        $byCode       = $query === '' ? collect() : $this->productsByCode($customer, $query);
+        $discontinued = $byCode->isEmpty() && $query !== '' ? $this->discontinuedByCode($customer, $query) : collect();
         $byFamily  = $query === '' ? ['products' => collect(), 'exact' => false, 'families' => []] : $this->productsByFamilyCode($customer, $query, $limit);
         $codeIds   = $byCode->pluck('id')->flip();
         $familyIds = $byFamily['exact'] ? $byFamily['products']->pluck('id')->flip() : collect();
@@ -298,7 +370,7 @@ class GetShoppingAssistantTools
             return $result;
         }
 
-        $nearest = SearchCatalogueByMeaning::run($customer->shop, $query, $customer, $limit + self::MAX_OUT_OF_STOCK, false);
+        $nearest = SearchCatalogueByMeaning::run($customer->shop, $discontinued->isNotEmpty() ? $discontinued->first()->name : $query, $customer, $limit + self::MAX_OUT_OF_STOCK, false);
 
         $outOfStock = (new EloquentCollection($byCode->concat($nearest->take(self::MAX_OUT_OF_STOCK))->reject($inStock)->unique('id')->take(self::MAX_OUT_OF_STOCK)->all()))->loadMissing('family');
 
@@ -313,9 +385,92 @@ class GetShoppingAssistantTools
             $result['content']['matched_families'] = $byFamily['families'];
         }
         if ($outOfStock->isNotEmpty()) {
-            $result['names']                   = $outOfStock->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all();
             $result['content']['out_of_stock'] = $outOfStock->map(fn (Product $product) => array_filter(['name' => $product->name, 'family' => $product->family?->name, 'exact_code_match' => isset($codeIds[$product->id])]))->values()->all();
         }
+        if ($discontinued->isNotEmpty()) {
+            $result['content']['discontinued'] = $discontinued->map(fn (Product $product) => array_filter(['name' => $product->name, 'family' => $product->family?->name]))->values()->all();
+            $result['content']['note']         = 'The code the customer typed is a product we no longer sell, listed under discontinued. Say by its name that it has been discontinued, never guess what else the code could be, and present the products returned, which are the closest to it.';
+        }
+        $named = $outOfStock->concat($discontinued);
+        if ($named->isNotEmpty()) {
+            $result['names'] = $named->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all();
+        }
+
+        return $result;
+    }
+
+    /**
+     * A product of this shop whose code the customer typed and that has been discontinued, when no
+     * other product of the shop still uses that code. One made for another customer is never named.
+     *
+     * @return EloquentCollection<int, Product>
+     */
+    private function discontinuedByCode(Customer $customer, string $query): EloquentCollection
+    {
+        $candidates = $this->codeCandidates($query)->filter(fn (string $candidate) => preg_match('/\d/', $candidate) && preg_match('/[a-z]/', $candidate))->values();
+
+        if ($candidates->isEmpty()) {
+            return new EloquentCollection();
+        }
+
+        return Product::query()
+            ->where('products.shop_id', $customer->shop_id)
+            ->where('products.state', ProductStateEnum::DISCONTINUED->value)
+            ->where('products.is_minion_variant', false)
+            ->whereIn(DB::raw("lower(regexp_replace(products.code, '[^A-Za-z0-9]', '', 'g'))"), $candidates->all())
+            ->whereNotExists(fn ($query) => $query->from('products as live')
+                ->where('live.shop_id', $customer->shop_id)
+                ->where('live.state', '!=', ProductStateEnum::DISCONTINUED->value)
+                ->whereNull('live.deleted_at')
+                ->whereRaw("lower(regexp_replace(live.code, '[^A-Za-z0-9]', '', 'g')) = lower(regexp_replace(products.code, '[^A-Za-z0-9]', '', 'g'))"))
+            ->visibleToCustomer($customer->id)
+            ->with('family')
+            ->limit(self::MAX_OUT_OF_STOCK)
+            ->get();
+    }
+
+    /**
+     * Ids of the products of a kind ("soap"), for the best-seller tools: those within KIND_MARGIN of the
+     * closest match. On the UK catalogue (12 Nov 2026) that kept 181 for soap, 130 for candles, 8 for
+     * tarot cards, none reaching the pool; the wider price-sort margin let in room sprays for soap.
+     * Null when the search gave nothing at all (the embedding call failed), so the tool reports an
+     * error instead of telling the customer that none of that kind sells.
+     *
+     * @return ?array<int, int>
+     */
+    private function productIdsOfKind(Customer $customer, string $kind): ?array
+    {
+        $nearest = SearchCatalogueByMeaning::run($customer->shop, $kind, $customer, self::KIND_POOL);
+        if ($nearest->isEmpty()) {
+            return null;
+        }
+        $best = (float) $nearest->min('distance');
+
+        return $nearest->filter(fn (Product $product) => (float) $product->distance <= $best + self::KIND_MARGIN)->pluck('id')->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     */
+    private function kindOf(array $arguments): string
+    {
+        return is_string($arguments['kind'] ?? null) ? trim($arguments['kind']) : '';
+    }
+
+    /**
+     * @param  array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}  $result
+     *
+     * @return array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}
+     */
+    private function withKindNote(array $result, string $kind): array
+    {
+        if ($kind === '') {
+            return $result;
+        }
+
+        $result['content']['note'] = $result['products']
+            ? 'Only the best sellers matching "'.$kind.'", best first. This is the top of the ranking, not every product of that kind: never say you checked a full list.'
+            : 'None of the products matching "'.$kind.'" is among the best sellers. Say so plainly, and offer to show the matching products, which you find with search_products.';
 
         return $result;
     }
@@ -430,13 +585,41 @@ class GetShoppingAssistantTools
      */
     private function bestSellers(Customer $customer, array $arguments, string $locale): array
     {
-        $products = GetSegmentBestSellers::run($customer->shop, $customer->shop_type?->value, data_get($customer->location, 0), [
+        $kind     = $this->kindOf($arguments);
+        $options  = [
             'customer' => $customer,
             'area'     => RebuildRangeAdvisorSales::areaOf($customer),
             'limit'    => $this->limit($arguments),
-        ])['items'];
+        ];
+        if ($kind !== '') {
+            $options['product_ids'] = $this->productIdsOfKind($customer, $kind);
+            if ($options['product_ids'] === null) {
+                return $this->error('The search for "'.$kind.'" failed. Use search_products instead.');
+            }
+        }
 
-        return $this->productsResult($customer, $products, $this->segmentReasonCode(...), $locale);
+        $products = $kind !== '' && !$options['product_ids']
+            ? collect()
+            : GetSegmentBestSellers::run($customer->shop, $customer->shop_type?->value, data_get($customer->location, 0), $options)['items'];
+
+        return $this->withKindNote($this->productsResult($customer, $products, $this->segmentReasonCode(...), $locale), $kind);
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}
+     */
+    private function christmasBestSellers(Customer $customer, array $arguments, string $locale): array
+    {
+        $kind = $this->kindOf($arguments);
+        $ids  = $kind !== '' ? $this->productIdsOfKind($customer, $kind) : null;
+        if ($kind !== '' && $ids === null) {
+            return $this->error('The search for "'.$kind.'" failed. Use search_products instead.');
+        }
+        $products = GetChristmasBestSellers::run($customer->shop, $customer, $this->limit($arguments), $ids);
+
+        return $this->withKindNote($this->productsResult($customer, $products, fn () => 'sold_last_christmas', $locale), $kind);
     }
 
     /**
@@ -634,6 +817,189 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => $fact,
         ];
+    }
+
+    /**
+     * The Gold Reward rule is the storefront's (HasGrData::getGrData): a member was invoiced within
+     * the shop's interval, or has an extension; membership lasts until the later of the two. Member
+     * prices are per-range volume offers and not every range has one (about 90% in most shops on
+     * 12 Nov 2026, none in Aroma), so the sentences say "wherever a range has them", and a shop with
+     * none says nothing about Gold Reward.
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact: string}
+     */
+    private function betterPriceOptions(Customer $customer, string $locale): array
+    {
+        $shop      = $customer->shop;
+        $offers    = $shop->offers_data ?? [];
+        $facts     = [];
+        $date      = fn ($moment) => Carbon::parse($moment)->locale($locale)->isoFormat('LL') ?: Carbon::parse($moment)->locale('en')->isoFormat('LL');
+        $hasGr     = Arr::get($offers, 'gr.active') && $this->shopHasMemberPrices($customer);
+        $isMember  = false;
+
+        if ($hasGr) {
+            $interval    = (int) Arr::get($offers, 'gr.interval', 30);
+            $label       = (string) (Arr::get($offers, 'gr.label') ?: __('Gold Reward', [], $locale));
+            $memberUntil = collect([
+                $customer->last_invoiced_at && $customer->last_invoiced_at->copy()->addDays($interval)->isFuture() ? $customer->last_invoiced_at->copy()->addDays($interval) : null,
+                $customer->hasActiveGrExtension() ? $customer->gr_extended_until : null,
+            ])->filter()->max();
+
+            $isMember = $memberUntil !== null;
+            $facts[]  = $isMember
+                ? __('You are a :label member until :date, so you get member prices wherever a range has them. An order invoiced before then keeps your membership going.', ['label' => $label, 'date' => $date($memberUntil)], $locale)
+                : __('Once an order of yours is invoiced you become a :label member for :days days, with member prices wherever a range has them. Until then, a range is at member price when you order enough of it at once.', ['label' => $label, 'days' => $interval], $locale);
+
+            if (Arr::get($offers, 'gr.amnesty') && Arr::get($offers, 'gr.amnesty_until') && Carbon::parse(Arr::get($offers, 'gr.amnesty_until'))->isFuture()) {
+                $facts[] = __('Until :date everyone gets member prices.', ['date' => $date(Arr::get($offers, 'gr.amnesty_until'))], $locale);
+            }
+        }
+
+        $offersCalls = StoreShoppingAssistantSalesLead::offersCalls($customer->organisation, GetAikuAssistant::run($customer->group_id));
+        if ($offersCalls) {
+            $threshold = StoreShoppingAssistantSalesLead::make()->threshold($customer->organisation, $shop->currency);
+            $facts[]   = __('For an order of :amount or more, a member of our team can call you to talk about it and see whether better terms are possible.', ['amount' => Number::currency($threshold, $shop->currency->code, $locale, 0)], $locale);
+        }
+
+        return [
+            'content'  => [
+                'gold_reward'  => $hasGr ? ($isMember ? 'member' : 'not_member') : 'not_offered',
+                'calls_offered' => $offersCalls,
+                'note'         => $offersCalls
+                    ? 'Sentences with the details are added under your reply: never repeat their figures or dates. In one or two sentences: say you cannot change prices yourself, offer lower-priced options of what they asked for (search_products with sort cheapest), and ask how much they plan to order. Never promise a discount.'
+                    : 'Sentences with the details are added under your reply: never repeat their figures or dates. In one or two sentences: say you cannot change prices yourself and offer lower-priced options of what they asked for (search_products with sort cheapest). Calls from our team are not offered in this shop: do not offer one or ask how much they plan to order. Never promise a discount.',
+            ],
+            'products' => [],
+            'error'    => null,
+            'fact'     => implode(' ', $facts),
+        ];
+    }
+
+    /**
+     * The out of stock products the customer most likely means: the one whose code they typed, else
+     * the closest matches by meaning that cannot be ordered now.
+     *
+     * @return Collection<int, Product>
+     */
+    private function outOfStockMatches(Customer $customer, string $query): Collection
+    {
+        if ($query === '') {
+            return collect();
+        }
+
+        return $this->productsByCode($customer, $query)
+            ->concat(SearchCatalogueByMeaning::run($customer->shop, $query, $customer, 6, false))
+            ->filter(fn (Product $product) => $product->available_quantity <= 0)
+            ->unique('id')
+            ->take(self::MAX_OUT_OF_STOCK)
+            ->values();
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string, names?: array<int, string>}
+     */
+    private function restockInformation(Customer $customer, array $arguments, string $locale): array
+    {
+        $query    = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        $products = (new EloquentCollection($this->outOfStockMatches($customer, $query)->all()))->loadMissing('family');
+        $followUp = StoreShoppingAssistantRestockQuestion::isOn($customer->organisation) && StoreShoppingAssistantRestockQuestion::recipientsOf($customer->organisation)->isNotEmpty();
+        $date     = fn ($moment) => $moment->locale($locale)->isoFormat('LL') ?: $moment->locale('en')->isoFormat('LL');
+        $facts    = [];
+        $items    = [];
+
+        foreach ($products as $product) {
+            $estimate = GetProductRestockEstimate::run($product);
+            if ($estimate['status'] === 'expected') {
+                $expected = $estimate['date'];
+                [$from, $to] = $expected->day <= 15 ? [$expected->startOfMonth(), $expected->setDay(15)] : [$expected->setDay(16), $expected->endOfMonth()];
+                $facts[] = __('The :product is on order and expected between :from and :to.', ['product' => $product->name, 'from' => $date($from), 'to' => $date($to)], $locale);
+            }
+            $items[] = ['name' => $product->name, 'family' => $product->family?->name, 'status' => $estimate['status'] === 'expected' ? 'expected' : 'no_reliable_date'];
+        }
+
+        $result = [
+            'content'  => [
+                'out_of_stock_products'    => $items,
+                'purchasing_follow_up'     => $followUp,
+                'note'                     => match (true) {
+                    $items === []                                                   => 'No out of stock product matches. If they named a product, it may be in stock: check with search_products.',
+                    $followUp                                                       => 'Sentences with the expected periods are added under your reply: never repeat their dates. For a product with no_reliable_date, say we do not have a reliable date and ask whether they would like our purchasing team to get back to them by email; call ask_purchasing_team only after they say yes. Never guess a date.',
+                    default                                                         => 'Sentences with the expected periods are added under your reply: never repeat their dates. For a product with no_reliable_date, say we do not have a reliable date and suggest similar products in stock. Never guess a date.',
+                },
+            ],
+            'products' => [],
+            'error'    => null,
+            'names'    => $products->flatMap(fn (Product $product) => [$product->name, $product->family?->name])->filter()->values()->all(),
+        ];
+        if ($facts) {
+            $result['fact'] = implode(' ', $facts);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string}
+     */
+    private function askPurchasingTeam(ShoppingAssistantConversation $conversation, Customer $customer, array $arguments): array
+    {
+        if (!filter_var($arguments['customer_agreed'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return $this->error('Ask the customer first whether they want an answer from our purchasing team; call this only after they say yes.');
+        }
+
+        $question = is_string($arguments['question'] ?? null) ? trim($arguments['question']) : '';
+        if ($question === '') {
+            return $this->error('question must be the customer\'s question in one sentence.');
+        }
+
+        $query   = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        $product = $this->outOfStockMatches($customer, $query)->first();
+        $result  = StoreShoppingAssistantRestockQuestion::run($conversation, $product, $question);
+
+        return ['content' => ['passed_on' => $result['status'] !== 'off', 'note' => $result['status'] === 'off'
+            ? 'Our purchasing team does not take these questions in this shop: say we have no reliable date and suggest similar products in stock.'
+            : 'Passed on. Say in one sentence that our purchasing team will reply by email, without promising when or what they will say.'], 'products' => [], 'error' => null];
+    }
+
+    private function shopHasMemberPrices(Customer $customer): bool
+    {
+        return DB::table('offers')
+            ->join('offer_campaigns', 'offer_campaigns.id', '=', 'offers.offer_campaign_id')
+            ->where('offers.shop_id', $customer->shop_id)
+            ->where('offer_campaigns.type', 'volume-discount')
+            ->where('offers.status', true)
+            ->where('offers.state', 'active')
+            ->where('offers.trigger_type', 'ProductCategory')
+            ->exists();
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string}
+     */
+    private function bigOrderLead(ShoppingAssistantConversation $conversation, array $arguments): array
+    {
+        if (!is_numeric($arguments['planned_amount'] ?? null) || (float) $arguments['planned_amount'] <= 0) {
+            return $this->error('planned_amount must be a positive number.');
+        }
+
+        $agreed = filter_var($arguments['customer_agreed_to_call'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $text   = fn (string $key) => is_string($arguments[$key] ?? null) ? $arguments[$key] : null;
+        $result = StoreShoppingAssistantSalesLead::run($conversation, (float) $arguments['planned_amount'], $text('currency'), $agreed, $text('phone'), $text('best_time'), $text('details'));
+
+        $note = match (true) {
+            $result['status'] === 'not_offered'     => 'Calls from our team are not offered in this shop: do not offer one or say the order was passed on. Offer lower-priced options and what better_price_options says.',
+            $result['status'] === 'below_threshold' => 'Below the order size for a call: do not offer one. Offer lower-priced options and what better_price_options says.',
+            !$agreed                                => 'Passed on to our team. Ask in one short sentence whether they would like a call from our team to talk about better terms, on the phone number in their account or another one, and when suits them. Call big_order_lead again with their answer.',
+            default                                 => 'Passed on to our team. Say in one sentence that a member of our team will call them, without naming anyone, giving a time we did not agree, or promising a discount.',
+        };
+
+        return ['content' => ['qualifies' => in_array($result['status'], ['created', 'updated'], true), 'note' => $note], 'products' => [], 'error' => null];
     }
 
     /**

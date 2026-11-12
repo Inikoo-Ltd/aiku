@@ -38,7 +38,9 @@ class GetSegmentBestSellers
     ];
 
     /**
-     * @param  array{kind?: 'product'|'family', sort?: 'customers'|'reorder_rate'|'revenue', limit?: int, customer?: ?\App\Models\CRM\Customer, exclude_product_ids?: array<int>, area?: ?string}  $options
+     * product_ids keeps only those products (kind product), e.g. the ones matching what the customer asked for.
+     *
+     * @param  array{kind?: 'product'|'family', sort?: 'customers'|'reorder_rate'|'revenue', limit?: int, customer?: ?\App\Models\CRM\Customer, exclude_product_ids?: array<int>, product_ids?: array<int>, area?: ?string}  $options
      *
      * @return array{segment: ?array{level: string, shop_type: ?string, country_code: ?string, area: ?string, region: ?string, customers: int}, items: Collection}
      */
@@ -65,7 +67,8 @@ class GetSegmentBestSellers
                 : $this->recommendableProducts($shop, $options['customer'] ?? null)
                     ->select('products.*')
                     ->join('segment_product_sales', 'segment_product_sales.product_id', '=', 'products.id')
-                    ->whereNotIn('products.id', array_merge($options['exclude_product_ids'] ?? [], $items->pluck('id')->all()));
+                    ->whereNotIn('products.id', array_merge($options['exclude_product_ids'] ?? [], $items->pluck('id')->all()))
+                    ->when(isset($options['product_ids']), fn ($query) => $query->whereIn('products.id', $options['product_ids']));
 
             $found = $this->rankedBySegment($query, $shop, $segment, $options['sort'] ?? 'customers')
                 ->limit($limit - $items->count())

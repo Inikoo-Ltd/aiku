@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithSupplyChainEditAuthorisation;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\Procurement\OrgAgent\UpdateOrgAgent;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateStage;
 use App\Actions\SupplyChain\Supplier\WithSupplierJsonColumns;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
@@ -19,6 +20,8 @@ use App\Actions\SysAdmin\Organisation\UpdateOrganisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Models\Procurement\PurchaseOrder;
 use App\Http\Resources\SupplyChain\AgentsResource;
 use App\Models\SupplyChain\Agent;
 use App\Rules\IUnique;
@@ -96,6 +99,13 @@ class UpdateAgent extends OrgAction
 
         if ($leavingContainer) {
             $agent->update(['data' => Arr::except($agent->data, self::CONTAINER_ONLY_FIELDS)]);
+        }
+
+        if ($agent->wasChanged('settings')) {
+            PurchaseOrder::where('agent_id', $agent->id)
+                ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+                ->get()
+                ->each(fn (PurchaseOrder $purchaseOrder) => PurchaseOrderHydrateStage::dispatch($purchaseOrder)->delay($this->hydratorsDelay));
         }
 
         if ($agent->wasChanged('status')) {

@@ -11,6 +11,8 @@ export interface PurchaseOrder {
     provider_type: string,
     number: string
     state: string
+    stage?: string | null
+    display_state?: string
     status: string
     created_at: string
     updated_at: string

@@ -12,6 +12,7 @@ use App\Actions\Production\JobOrder\FillToOrder;
 use App\Actions\Ordering\PreOrder\HydratePreOrderReservedStock;
 use App\Enums\Ordering\PreOrder\PreOrderStateEnum;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\Accounting\Payment\CancelPayment;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
@@ -97,6 +98,15 @@ class CancelOrder extends OrgAction
 
             ReopenPartnerShoppingListItemsOfTransactions::run($order->transactions()->pluck('id')->all());
             FillToOrder::make()->dismissForCancelledOrder($order);
+
+            /** A bank fee we absorbed was never received, so it is cancelled rather than given back */
+            $bankFeePayments = $order->absorbedBankFeePayments();
+            foreach ($bankFeePayments as $bankFeePayment) {
+                CancelPayment::make()->handle($bankFeePayment);
+            }
+            if ($bankFeePayments->isNotEmpty()) {
+                $order->refresh();
+            }
 
             /** A cancelled pre-order may keep its deposit (HELP-3432): only the rest goes back */
             $refundAmount = round(min((float)$order->payment_amount, (float)Arr::get($modelData, 'refund_amount', $order->payment_amount)), 2);

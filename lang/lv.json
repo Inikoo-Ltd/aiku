@@ -1940,5 +1940,21 @@
     "Supplier": "Piegādātājs",
     "Units per carton": "Vienības kastē",
     "units": "vienības",
-    "Cancel reason: :reason": "Atcelšanas iemesls: :reason"
+    "Cancel reason: :reason": "Atcelšanas iemesls: :reason",
+    "Submitted": "Nosūtīts",
+    "Agreed": "Saskaņots",
+    "PO Submitted": "Pasūtījums nosūtīts",
+    "Making It Happen": "Ražošanā",
+    "In warehouse": "Noliktavā",
+    "Ready to Roll": "Gatavs ceļam",
+    "Clean Hand Over": "Tīra nodošana",
+    "Homeward Bound": "Ceļā mājup",
+    "Counted & Costed": "Saskaitīts un izcenots",
+    "Terms agreed with the supplier": "Nosacījumi saskaņoti ar piegādātāju",
+    "In production at the supplier": "Ražošanā pie piegādātāja",
+    "Goods arrived at the agent warehouse": "Prece ieradusies aģenta noliktavā",
+    "Final checks done": "Gala pārbaudes veiktas",
+    "Available to ship": "Gatavs nosūtīšanai",
+    "Transit & arrival": "Tranzīts un ierašanās",
+    "Booked into stock": "Iegrāmatots krājumos"
 }

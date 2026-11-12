@@ -32,7 +32,7 @@ class GetArtefactDevelopmentProposal
     /**
      * @return array{
      *     artefact_id: int, code: string, development_started_at: ?string, recipe_changed_at: ?string, last_run_at: ?string,
-     *     is_idle: bool, is_ready: bool, is_overdue: bool, kept: ?array<string, mixed>, steps: array<int, array<string, mixed>>
+     *     is_idle: bool, is_ready: bool, is_overdue: bool, kept: ?array<string, mixed>, open_feedback: ?array{reference: string, lines: array<int, string>}, steps: array<int, array<string, mixed>>
      * }
      */
     public function handle(Artefact $artefact, bool $withSessions = false): array
@@ -52,7 +52,8 @@ class GetArtefactDevelopmentProposal
             ->max('manufacture_task_sessions.ended_at');
 
         $isIdle  = !$lastRunAt || Carbon::parse($lastRunAt)->lt(now()->subWeeks($settings['idle_weeks']));
-        $isReady = $artefact->is_in_development && $steps->contains('is_ready', true);
+        $isReady      = $artefact->is_in_development && $steps->contains('is_ready', true);
+        $feedbackTask = StoreArtefactDevelopmentFeedback::openTaskFor($artefact);
 
         return [
             'artefact_id'            => $artefact->id,
@@ -64,6 +65,10 @@ class GetArtefactDevelopmentProposal
             'is_ready'               => $isReady,
             'is_overdue'             => $isReady && !$isIdle,
             'kept'                   => $kept,
+            'open_feedback'          => $feedbackTask ? [
+                'reference' => $feedbackTask->reference,
+                'lines'     => collect($feedbackTask->data['subtasks'] ?? [])->pluck('title')->all(),
+            ] : null,
             'steps'                  => $steps->all(),
         ];
     }

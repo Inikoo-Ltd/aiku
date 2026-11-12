@@ -122,7 +122,7 @@ sudo -u staging php8.4 "$APP_DIR/artisan" horizon:clear 2>/dev/null || true
 sudo -u staging php8.4 "$APP_DIR/artisan" search -r
 
 log "8/9 sync media from prod (incremental; --delete mirrors prod)"
-sudo -u staging rsync -aH --delete -e "ssh -o BatchMode=yes" "$MEDIA_SRC" /home/staging/aiku/shared/storage/media/
+sudo -u staging rsync -aH --delete --delete-excluded --exclude='*.[jJ][pP][gG]' --exclude='*.[jJ][pP][eE][gG]' --exclude='*.[pP][nN][gG]' --exclude='*.[gG][iI][fF]' --exclude='*.[wW][eE][bB][pP]' -e "ssh -o BatchMode=yes" "$MEDIA_SRC" /home/staging/aiku/shared/storage/media/
 
 log "9/9 start app"
 supervisorctl start octane horizon

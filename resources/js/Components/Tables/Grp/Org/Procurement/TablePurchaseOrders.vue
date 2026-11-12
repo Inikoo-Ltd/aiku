@@ -61,9 +61,10 @@ function sharedValue(purchaseOrders: PurchaseOrder[], key: keyof PurchaseOrder) 
 function agentOrderStates(purchaseOrders: PurchaseOrder[]): AgentOrderState[] {
 	const states = new Map<string, AgentOrderState>()
 	purchaseOrders.forEach((purchaseOrder) => {
-		const state = states.get(purchaseOrder.state) ?? { label: purchaseOrder.state_label, icon: purchaseOrder.state_icon, count: 0 }
+		const key = purchaseOrder.display_state ?? purchaseOrder.state
+		const state = states.get(key) ?? { label: purchaseOrder.state_label, icon: purchaseOrder.state_icon, count: 0 }
 		state.count++
-		states.set(purchaseOrder.state, state)
+		states.set(key, state)
 	})
 
 	return [...states.values()]

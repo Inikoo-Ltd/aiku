@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\AgentGoodsReceipt;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateStage;
 use App\Actions\Procurement\PurchaseOrder\MarkPurchaseOrderStage;
 use App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromContainerList;
 use App\Actions\Procurement\AgentWarehouseStock\UI\IndexAgentProductsInProduction;
@@ -176,6 +177,7 @@ class StoreAgentGoodsReceipt extends OrgAction
         });
 
         UploadAgentGoodsReceiptAttachments::make()->saveFiles($receipt, Arr::get($modelData, 'attachments', []));
+        PurchaseOrderHydrateStage::make()->forPurchaseOrderIds($receipt->items()->pluck('purchase_order_id'));
 
         return $receipt;
     }

@@ -1535,3 +1535,508 @@ test('a question about a range is answered from the family description, with no 
         DB::table('product_categories')->where('id', $family->id)->update((array) $before);
     }
 });
+
+test('a code typed for a discontinued product names it apart without an id and searches by its name for the closest products', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $suffix       = Str::lower(Str::random(5));
+    $word         = 'quorl'.$suffix;
+    $alternative  = shoppingAssistantProduct($this->product);
+    $discontinued = shoppingAssistantProduct($this->product);
+    $exclusive    = shoppingAssistantProduct($this->product);
+    $alternative->update(['name' => ucfirst($word).' Fragrance Oil 10ml']);
+    $discontinued->update(['code' => 'Zd'.$suffix.'-03', 'name' => 'Pure '.ucfirst($word).' Oil 250g', 'state' => ProductStateEnum::DISCONTINUED, 'is_for_sale' => false, 'available_quantity' => 0]);
+    $exclusive->update(['code' => 'Zx'.$suffix.'-01', 'state' => ProductStateEnum::DISCONTINUED, 'is_for_sale' => false]);
+    DB::table('product_has_exclusive_customers')->insert(['product_id' => $exclusive->id, 'customer_id' => shoppingAssistantCustomer($this->shop)->id, 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('products')->where('id', $alternative->id)->update(['is_in_website' => true]);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 0 : 1 => 1.0]);
+    Http::fake([
+        '*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $result       = $tools->execute($conversation, 'search_products', ['query' => 'ZD'.$suffix.'-03']);
+    $other        = $tools->execute($conversation, 'search_products', ['query' => 'zx'.$suffix.'01']);
+
+    expect($result['error'])->toBeNull()
+        ->and($result['content']['discontinued'])->toBe([['name' => $discontinued->name, 'family' => $discontinued->family->name]])
+        ->and($result['content']['note'])->toContain('discontinued')
+        ->and(collect($result['products'])->pluck('id')->all())->toContain($alternative->id)->not->toContain($discontinued->id)
+        ->and($result['names'])->toContain($discontinued->name)
+        ->and($other['content'])->not->toHaveKey('discontinued')
+        ->and(AskShoppingAssistant::make()->onlyGivenNumbers('The '.$discontinued->name.' has been discontinued.', 'ZD'.$suffix.'-03', $discontinued->name))->toBeTrue();
+});
+
+test('the assistant prompt lists the families ordered in the last 12 months apart from those only ordered before, and asks for follow-ups on every answer', function () {
+    $customer   = shoppingAssistantCustomer($this->shop);
+    $department = $this->shop->productCategories()->where('type', \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::DEPARTMENT)->first();
+    $oldFamily  = \App\Actions\Catalogue\ProductCategory\StoreProductCategory::make()->action($department, array_merge(\App\Models\Catalogue\ProductCategory::factory()->definition(), ['type' => \App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum::FAMILY->value, 'name' => 'Rudraksha Old '.Str::random(5)]));
+    $oldProduct = shoppingAssistantProduct($this->product);
+    $oldProduct->update(['family_id' => $oldFamily->id]);
+    shoppingAssistantStoppedOrdering($customer, $oldProduct->fresh());
+    DB::table('customer_product_purchases')->insert([
+        'customer_id' => $customer->id, 'shop_id' => $customer->shop_id, 'product_id' => $this->product->id, 'family_id' => $this->product->family_id,
+        'orders' => 2, 'orders_12m' => 2, 'quantity_12m' => 4, 'spend_12m' => 40, 'first_ordered_at' => now()->subMonths(5), 'last_ordered_at' => now()->subMonth(),
+    ]);
+
+    Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantModelReply(['content' => 'I can only help with products.'], 'stop'))]);
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'when do I pay?');
+
+    $request = Http::recorded()->first()[0];
+    $prompt  = $request['messages'][0]['content'];
+    $present = collect($request['tools'])->firstWhere('function.name', 'present_products');
+
+    expect($prompt)->toContain('Product families they ordered most in the last 12 months: '.$this->product->family->name."\n")
+        ->and($prompt)->toContain('Product families they used to order but not in the last 12 months: '.$oldFamily->name."\n")
+        ->and($prompt)->toContain('Always finish with present_products')
+        ->and($present['function']['description'])->toContain('also when you show no products')
+        ->and(collect($request['tools'])->firstWhere('function.name', 'best_sellers_last_christmas')['function']['parameters']['properties'])->toHaveKey('kind');
+});
+
+test('the reply may echo an amount the customer wrote in any usual format, but no other amount', function () {
+    $assistant = AskShoppingAssistant::make();
+
+    expect($assistant->onlyGivenNumbers('Thank you, I have passed your £3,000 order on to our team.', 'I would order about 3000 pounds'))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Your planned order of 3,000 is big enough for a call.', 'maybe 3k for Christmas'))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Ihre Bestellung über 3000 € geben wir weiter.', 'ich würde 3.000 € bestellen'))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Votre commande de 3 000 € est transmise.', 'environ 3000 euros'))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Your £3,500 order is passed on.', 'I would order about 3000 pounds'))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('It costs £4.50 each.', 'I would order about 3000 pounds'))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('A 1.5 kg bag for your 600 budget.', 'budget of 600 and 1,5 kg bags'))->toBeTrue();
+});
+
+test('the reply may say how many products the answer shows right before the kind of product, never as a price, stock or buyer count', function () {
+    $assistant = AskShoppingAssistant::make();
+    $asked     = 'suggest 20 bestselling soaps';
+    $names     = "Lemon Sherbet Whipped Soap 120g\nSliced Soap Loaf (13pcs) - Coconut Dream\nKerzen Lavendel";
+    $counts    = [10, 6, 16];
+
+    expect($assistant->onlyGivenNumbers('That comes to 16 soaps, not 20, because these are all the matches.', $asked, $names, $counts))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Hier sind 10 Kerzen.', $asked, $names, $counts))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('That comes to 16 soaps, not 20.', $asked, $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Here are 10 must-haves and 6 add-ons.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Only 6 left in stock.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('6 shops near you buy it.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Cuestan 6 euros.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Tylko 6 zł za sztukę.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Each one is only £16.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Ces savons coûtent 16 € pièce.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Save 16% on these.', $asked, $names, $counts))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Only 16.50 each.', $asked, $names, $counts))->toBeFalse();
+});
+
+test('the Christmas best sellers can be narrowed to one kind of product, and say so when none of that kind sold', function () {
+    $season   = \App\Actions\CRM\RangeAdvisor\GetChristmasBestSellers::make()->season();
+    $inSeason = $season[0]->addDays(10)->toDateTimeString();
+    $suffix   = Str::lower(Str::random(5));
+    $soapWord = 'sapon'.$suffix;
+    $candleWord = 'cerul'.$suffix;
+    $soap     = shoppingAssistantProduct($this->product);
+    $other    = shoppingAssistantProduct($this->product);
+    $candle   = shoppingAssistantProduct($this->product);
+    $soap->update(['name' => ucfirst($soapWord).' Whipped Soap']);
+    $candle->update(['name' => ucfirst($candleWord).' Candle']);
+    DB::table('products')->whereIn('id', [$soap->id, $other->id, $candle->id])->update(['created_at' => $season[0]->subYears(3), 'is_in_website' => true]);
+    foreach (range(1, 5) as $ignored) {
+        $buyer = shoppingAssistantCustomer($this->shop);
+        shoppingAssistantOrderLine($buyer, $soap, $inSeason, 20);
+        shoppingAssistantOrderLine($buyer, $other, $inSeason, 20);
+    }
+    $cacheKey = 'range_advisor:christmas_best_sellers:'.$this->shop->id.':'.$season[1]->year;
+    Illuminate\Support\Facades\Cache::forget($cacheKey);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [match (true) {
+        str_contains(mb_strtolower($text), $soapWord)   => 0,
+        str_contains(mb_strtolower($text), $candleWord) => 1,
+        default                                         => 2,
+    } => 1.0]);
+    Http::fake([
+        '*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->reject(fn ($text) => str_contains($text, 'brokenkind'))->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $all          = $tools->execute($conversation, 'best_sellers_last_christmas', ['limit' => 24]);
+    $soaps        = $tools->execute($conversation, 'best_sellers_last_christmas', ['kind' => $soapWord, 'limit' => 24]);
+    $candles      = $tools->execute($conversation, 'best_sellers_last_christmas', ['kind' => $candleWord]);
+    $failed       = $tools->execute($conversation, 'best_sellers_for_similar_shops', ['kind' => 'brokenkind']);
+
+    expect(array_column($all['products'], 'id'))->toContain($soap->id, $other->id)
+        ->and($all['content'])->not->toHaveKey('note')
+        ->and(array_column($soaps['products'], 'id'))->toBe([$soap->id])
+        ->and($soaps['content']['note'])->toContain('not every product of that kind')
+        ->and($candles['products'])->toBe([])
+        ->and($candles['content']['note'])->toStartWith('None of the products matching')
+        ->and($failed['error'])->toContain('failed')
+        ->and($failed['products'])->toBe([]);
+
+    Illuminate\Support\Facades\Cache::forget($cacheKey);
+});
+
+test('a basket add sent together with the final answer still runs, an answer written before a basket add that fell short is asked again, and a count needs a number in the question', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $first    = shoppingAssistantProduct($this->product);
+    $second   = shoppingAssistantProduct($this->product);
+    $first->update(['name' => 'Quartz Tarot Deck']);
+    $second->update(['name' => 'Moon Tarot Deck']);
+    $shown = shoppingAssistantShown($customer, [$first->id, $second->id]);
+
+    $addAndPresent = fn (string $reply) => shoppingAssistantModelReply(['tool_calls' => [
+        shoppingAssistantToolCall('add_to_basket', ['product_ids' => [$first->id, $second->id]], 'call_add'),
+        shoppingAssistantToolCall('present_products', ['reply' => $reply, 'follow_ups' => ['Show me more like these']], 'call_present'),
+    ]], 'tool_calls');
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push($addAndPresent('Both are in your basket now.'))
+        ->push($addAndPresent('I have added both to your basket.'))
+        ->push(shoppingAssistantPresent(['reply' => 'Both were already in your basket.']))
+        ->push(shoppingAssistantPresent(['reply' => 'Here are 2 tarot decks.', 'must_haves' => [$first->id, $second->id]]))
+        ->push(shoppingAssistantPresent(['reply' => 'Here are 2 tarot decks.', 'must_haves' => [$first->id, $second->id]]))]);
+
+    $conversation = $shown->conversation;
+    $added        = AskShoppingAssistant::run($conversation, 'add them to my basket');
+    $again        = AskShoppingAssistant::run($conversation, 'add them again please');
+    $asked        = AskShoppingAssistant::run($conversation, 'show me 5 decks');
+    $notAsked     = AskShoppingAssistant::run($conversation, 'show me some decks');
+
+    expect(collect($added['message']->tool_calls)->pluck('name')->all())->toBe(['add_to_basket', 'present_products'])
+        ->and(collect($added['message']->tool_calls)->firstWhere('name', 'add_to_basket')['added_product_ids'])->toEqualCanonicalizing([$first->id, $second->id])
+        ->and($added['reply'])->toBe('Both are in your basket now.')
+        ->and($added['message']->model_calls)->toBe(1)
+        ->and($added['follow_ups'])->toBe(['Show me more like these'])
+        ->and($again['reply'])->toBe('Both were already in your basket.')
+        ->and($again['message']->model_calls)->toBe(2)
+        ->and(collect($again['message']->tool_calls)->pluck('error')->all())->toBe([null, 'answered_before_results', null])
+        ->and($asked['reply'])->toBe('Here are 2 tarot decks.')
+        ->and($notAsked['message']->flags)->toBe(['reply_replaced_number']);
+});
+
+test('better price options say from our data whether the customer is a Gold Reward member and until when, how to become one, and from what order size our team calls', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    $this->shop->update(['offers_data' => [...($this->shop->offers_data ?? []), 'gr' => ['active' => true, 'interval' => 30]]]);
+    $this->organisation->update(['settings' => [...($this->organisation->settings ?? []), 'sales_leads' => ['threshold_eur' => 2000, 'manager_user_ids' => [$this->user->id]]]]);
+    $memberPrices = fn () => GetShoppingAssistantTools::make()->execute(StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND), 'better_price_options', []);
+    DB::table('offers')->where('shop_id', $this->shop->id)->whereIn('offer_campaign_id', DB::table('offer_campaigns')->where('type', 'volume-discount')->select('id'))->update(['status' => false]);
+    $withoutMemberPrices = $memberPrices();
+    $suffix   = Str::lower(Str::random(6));
+    $ids      = ['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id];
+    $campaign = DB::table('offer_campaigns')->insertGetId([...$ids, 'slug' => 'vol-'.$suffix, 'code' => 'VOL'.$suffix, 'name' => 'Volume', 'type' => 'volume-discount', 'data' => '{}', 'settings' => '{}']);
+    DB::table('offers')->insert([...$ids, 'offer_campaign_id' => $campaign, 'slug' => 'gr-'.$suffix, 'code' => 'GR'.$suffix, 'name' => 'Volume Discount/GR', 'type' => 'Category Quantity Ordered Order Interval', 'trigger_type' => 'ProductCategory', 'trigger_id' => $this->product->family_id, 'state' => 'active', 'status' => true, 'trigger_data' => '{}', 'data' => '{}', 'settings' => '{}', 'source_data' => '{}']);
+    $member    = shoppingAssistantCustomer($this->shop);
+    $notMember = shoppingAssistantCustomer($this->shop);
+    $member->update(['last_invoiced_at' => now()->subDays(10)]);
+    $notMember->update(['last_invoiced_at' => now()->subDays(90)]);
+    $tools = GetShoppingAssistantTools::make();
+
+    $asMember    = $tools->execute(StartShoppingAssistantConversation::run($member->fresh(), ShoppingAssistantEntryPointEnum::COMMAND), 'better_price_options', []);
+    $asNotMember = $tools->execute(StartShoppingAssistantConversation::run($notMember->fresh(), ShoppingAssistantEntryPointEnum::COMMAND), 'better_price_options', []);
+    $memberUntil = now()->addDays(20)->locale('en')->isoFormat('LL');
+
+    expect($asMember['content']['gold_reward'])->toBe('member')
+        ->and($asMember['fact'])->toContain('member until '.$memberUntil)
+        ->and($asMember['fact'])->toContain('a member of our team can call you')
+        ->and($asMember['fact'])->toContain('2,000')
+        ->and($asMember['content'])->not->toHaveKey('threshold')
+        ->and($asNotMember['content']['gold_reward'])->toBe('not_member')
+        ->and($asNotMember['fact'])->toContain('for 30 days')
+        ->and($asMember['fact'])->toContain('wherever a range has them')
+        ->and($withoutMemberPrices['content']['gold_reward'])->toBe('not_offered')
+        ->and($withoutMemberPrices['fact'])->not->toContain('Gold Reward')
+        ->and($withoutMemberPrices['fact'])->toContain('can call you');
+});
+
+test('a planned big order becomes one high priority customer services task for the customer, tells the sales leads manager, and a later answer is added to it; a small one is not passed on', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    Illuminate\Support\Facades\Notification::fake();
+    $manager = createAdminGuest($this->organisation->group)->getUser();
+    $this->organisation->update(['settings' => [...($this->organisation->settings ?? []), 'sales_leads' => ['manager_user_ids' => [$manager->id], 'threshold_eur' => 2000]]]);
+    createWebsite($this->shop);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+
+    $small   = $tools->execute($conversation, 'big_order_lead', ['planned_amount' => 1500, 'customer_agreed_to_call' => false]);
+    $offered = $tools->execute($conversation, 'big_order_lead', ['planned_amount' => 3000, 'customer_agreed_to_call' => false, 'details' => 'Christmas stock for two shops']);
+    $agreed  = $tools->execute($conversation, 'big_order_lead', ['planned_amount' => 3000, 'customer_agreed_to_call' => true, 'phone' => '+44 7700 900123', 'best_time' => 'mornings']);
+    $tasks   = App\Models\Tasks\StaffTask::where('data->kind', App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead::TASK_KIND)->where('model_id', $customer->id)->get();
+    $task    = $tasks->first();
+
+    expect($small['content']['qualifies'])->toBeFalse()
+        ->and($offered['content']['qualifies'])->toBeTrue()
+        ->and($offered['content']['note'])->toContain('Ask in one short sentence whether they would like a call')
+        ->and($agreed['content']['note'])->toContain('will call them')
+        ->and($tasks)->toHaveCount(1)
+        ->and($task->department)->toBe('customer-services')
+        ->and($task->model_type)->toBe('Customer')
+        ->and($task->priority->value)->toBe('high')
+        ->and($task->data['organisation_id'])->toBe($customer->organisation_id)
+        ->and((float) $task->data['amount'])->toBe(3000.0)
+        ->and($task->data['agreed_to_call'])->toBeTrue()
+        ->and($task->data['phone'])->toBe('+44 7700 900123')
+        ->and($task->description)->toContain('asked for a call to discuss terms')
+        ->and($task->description)->toContain('mornings')
+        ->and($task->description)->toContain('Christmas stock for two shops')
+        ->and($task->description)->toContain('/analytics/ai-assistant/conversations/'.$conversation->ulid)
+        ->and($task->collaborators()->pluck('users.id')->all())->toContain($manager->id);
+    Illuminate\Support\Facades\Notification::assertSentTo($manager, App\Notifications\ShoppingAssistantSalesLeadNotification::class, fn ($notification) => !$notification->isReminder);
+
+    $mail  = (string) (new App\Notifications\ShoppingAssistantSalesLeadNotification($task))->toMail($manager)->render();
+    $slack = json_encode(App\Actions\CRM\ShoppingAssistant\AlertShoppingAssistantSalesLead::make()->slackMessage($task, true)->toArray());
+    expect($mail)->toContain($task->reference)->toContain('Christmas stock for two shops')
+        ->and($slack)->toContain($task->reference)->toContain('Nobody has called');
+});
+
+test('a big order lead nobody has taken is raised again to the manager in working hours, once a day, and not once someone takes it', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    Illuminate\Support\Facades\Notification::fake();
+    $manager = createAdminGuest($this->organisation->group)->getUser();
+    $this->organisation->update(['settings' => [...($this->organisation->settings ?? []), 'sales_leads' => ['manager_user_ids' => [$manager->id]]]]);
+    $timezone = $this->organisation->timezone?->name ?? 'UTC';
+    $customer = shoppingAssistantCustomer($this->shop);
+
+    Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 05:00', $timezone));
+    $task = App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 5000, null, true)['task'];
+    $remind = function () use ($task) {
+        App\Actions\CRM\ShoppingAssistant\RemindShoppingAssistantSalesLeads::run();
+
+        return (int) data_get($task->fresh()->data, 'reminders', 0);
+    };
+
+    Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 08:30', $timezone));
+    $beforeWork = $remind();
+    Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 10:00', $timezone));
+    $first = $remind();
+    Carbon::setTestNow(CarbonImmutable::parse('2030-01-09 15:00', $timezone));
+    $sameDay = $remind();
+    Carbon::setTestNow(CarbonImmutable::parse('2030-01-10 10:30', $timezone));
+    $nextDay = $remind();
+    $task->update(['assignee_id' => $manager->id]);
+    Carbon::setTestNow(CarbonImmutable::parse('2030-01-11 11:00', $timezone));
+    $taken = $remind();
+    Carbon::setTestNow();
+
+    expect([$beforeWork, $first, $sameDay, $nextDay, $taken])->toBe([0, 1, 1, 2, 2]);
+    Illuminate\Support\Facades\Notification::assertSentTo($manager, App\Notifications\ShoppingAssistantSalesLeadNotification::class, fn ($notification) => $notification->isReminder);
+});
+
+test('the sales leads manager, threshold and Slack channel are organisation settings, and the AI assistant report lists the leads', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    Illuminate\Support\Facades\Notification::fake();
+    $manager = createAdminGuest($this->organisation->group)->getUser();
+
+    App\Actions\SysAdmin\Organisation\UpdateOrganisation::make()->action($this->organisation, [
+        'sales_leads_manager_user_ids' => [$manager->id],
+        'sales_leads_threshold_eur'    => '2500',
+        'sales_leads_slack_channel'    => ' #sales-leads ',
+    ]);
+    $settings = $this->organisation->fresh()->settings['sales_leads'];
+
+    $customer = shoppingAssistantCustomer($this->shop);
+    $website  = createWebsite($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['website_id' => $website->id]);
+    $task = App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead::run($conversation, 2600, 'EUR', false)['task'];
+
+    $this->withoutVite();
+    $this->get(route('grp.websites.shopping_assistant.show', ['from' => now()->subDay()->toDateString(), 'to' => now()->toDateString()]))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('sales_leads', fn ($leads) => collect($leads)->contains(fn ($lead) => $lead['reference'] === $task->reference && $lead['agreed_to_call'] === false && $lead['assignee'] === null)));
+
+    expect($settings['manager_user_ids'])->toBe([$manager->id])
+        ->and((float) $settings['threshold_eur'])->toBe(2500.0)
+        ->and($settings['slack_channel'])->toBe('#sales-leads');
+});
+
+test('a follow-up with a number nobody gave is dropped alone, and the prompt asks for the form of address the storefront uses', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantPresent(['reply' => 'I cannot change prices myself.', 'follow_ups' => ['Show me the 10ml oils', 'What sells well in shops like mine?']]))]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'es']);
+    $turn   = AskShoppingAssistant::run($conversation->fresh(), 'better price please');
+    $prompt = Http::recorded()->first()[0]['messages'][0]['content'];
+
+    expect($turn['follow_ups'])->toBe(['What sells well in shops like mine?'])
+        ->and($prompt)->toContain('addressing the customer formally, with "usted"');
+});
+
+test('a lead goes to the sales leads managers, else the customer services supervisors, else the org admins, and calls are offered only when one of them exists', function () {
+    GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
+    Illuminate\Support\Facades\Notification::fake();
+    $lead      = App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead::class;
+    $assistant = App\Actions\Tasks\GetAikuAssistant::run($this->organisation->group_id);
+    $manager   = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $supervisorPositions = DB::table('job_positions')->where('department', 'customer-services')->where('code', 'like', '%-m')->where(fn ($query) => $query->whereNull('organisation_id')->orWhere('organisation_id', $this->organisation->id))->pluck('id');
+    DB::table('job_positions')->whereIn('id', $supervisorPositions)->update(['department' => 'customer-services-off']);
+    $orgAdminRole = DB::table('roles')->where('name', 'org-admin-'.$this->organisation->id)->value('id');
+    $orgAdmins    = User::whereIn('id', DB::table('model_has_roles')->where('role_id', $orgAdminRole)->where('model_type', 'User')->select('model_id'))->where('status', true)->pluck('id')->sort()->values()->all();
+    $withManager  = fn (array $ids) => $this->organisation->update(['settings' => [...($this->organisation->fresh()->settings ?? []), 'sales_leads' => ['manager_user_ids' => $ids]]]);
+
+    $withManager([$manager->id]);
+    $toManager = $lead::managersOf($this->organisation->fresh(), $assistant)->pluck('id')->all();
+    $withManager([]);
+    $toOrgAdmins = $lead::managersOf($this->organisation->fresh(), $assistant)->pluck('id')->sort()->values()->all();
+    $offeredWithOrgAdmins = $lead::offersCalls($this->organisation->fresh(), $assistant);
+
+    DB::table('roles')->where('id', $orgAdminRole)->update(['name' => 'org-admin-off-'.$this->organisation->id]);
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+    $options      = GetShoppingAssistantTools::make()->execute($conversation, 'better_price_options', []);
+    $nobody       = GetShoppingAssistantTools::make()->execute($conversation, 'big_order_lead', ['planned_amount' => 50000, 'customer_agreed_to_call' => true]);
+    DB::table('roles')->where('id', $orgAdminRole)->update(['name' => 'org-admin-'.$this->organisation->id]);
+    DB::table('job_positions')->whereIn('id', $supervisorPositions)->update(['department' => 'customer-services']);
+
+    expect($toManager)->toBe([$manager->id])
+        ->and($orgAdmins)->not->toBeEmpty()
+        ->and($toOrgAdmins)->toBe($orgAdmins)
+        ->and($offeredWithOrgAdmins)->toBeTrue()
+        ->and($options['content']['calls_offered'])->toBeFalse()
+        ->and($options['fact'])->not->toContain('can call you')
+        ->and($nobody['content']['qualifies'])->toBeFalse()
+        ->and($nobody['content']['note'])->toContain('not offered in this shop');
+});
+
+function shoppingAssistantOrgStock(object $test): App\Models\Inventory\OrgStock
+{
+    $stock = App\Actions\Goods\Stock\StoreStock::make()->action($test->organisation->group, array_merge(App\Models\Goods\Stock::factory()->definition(), ['state' => App\Enums\Goods\Stock\StockStateEnum::ACTIVE]));
+
+    return App\Actions\Inventory\OrgStock\StoreOrgStock::make()->action($test->organisation, $stock);
+}
+
+function shoppingAssistantProductOn(object $test, array $orgStockIds): Product
+{
+    $product = shoppingAssistantProduct($test->product);
+    $product->update(['available_quantity' => 0, 'code' => 'Rs'.Str::lower(Str::random(6)).'-01']);
+    DB::table('product_has_org_stocks')->where('product_id', $product->id)->delete();
+    foreach ($orgStockIds as $orgStockId) {
+        DB::table('product_has_org_stocks')->insert(['product_id' => $product->id, 'org_stock_id' => $orgStockId, 'quantity' => 1, 'created_at' => now(), 'updated_at' => now()]);
+    }
+
+    return $product->fresh();
+}
+
+function shoppingAssistantPurchaseOrderLine(object $test, int $orgStockId, ?string $submittedAt, ?string $estimatedReceivedAt, string $state = 'submitted'): void
+{
+    $ids   = ['group_id' => $test->organisation->group_id, 'organisation_id' => $test->organisation->id];
+    $token = Str::lower(Str::random(8));
+    $poId  = DB::table('purchase_orders')->insertGetId([...$ids, 'slug' => 'po-'.$token, 'parent_type' => 'OrgSupplier', 'parent_id' => 1, 'parent_code' => 'SUP', 'parent_name' => 'Supplier', 'reference' => 'PO'.$token, 'date' => now(), 'currency_id' => $test->shop->currency_id, 'cost_data' => '{}', 'data' => '{}', 'state' => $state, 'submitted_at' => $submittedAt, 'estimated_received_at' => $estimatedReceivedAt]);
+    DB::table('purchase_order_transactions')->insert([...$ids, 'purchase_order_id' => $poId, 'org_stock_id' => $orgStockId, 'data' => '{}', 'quantity_ordered' => 10]);
+}
+
+test('a restock date comes only from a recent open order or a delivery on its way with a date still ahead, and a product of several stocks waits for the last', function () {
+    $recent  = shoppingAssistantOrgStock($this);
+    $old     = shoppingAssistantOrgStock($this);
+    $noDate  = shoppingAssistantOrgStock($this);
+    $onItsWay = shoppingAssistantOrgStock($this);
+    $nothing = shoppingAssistantOrgStock($this);
+
+    shoppingAssistantPurchaseOrderLine($this, $recent->id, now()->subMonth()->toDateTimeString(), now()->addDays(20)->toDateTimeString());
+    shoppingAssistantPurchaseOrderLine($this, $recent->id, now()->subMonth()->toDateTimeString(), now()->subDays(5)->toDateTimeString());
+    shoppingAssistantPurchaseOrderLine($this, $old->id, now()->subMonths(14)->toDateTimeString(), now()->addDays(10)->toDateTimeString());
+    shoppingAssistantPurchaseOrderLine($this, $noDate->id, now()->subWeeks(2)->toDateTimeString(), null, 'confirmed');
+    $ids        = ['group_id' => $this->organisation->group_id, 'organisation_id' => $this->organisation->id];
+    $token      = Str::lower(Str::random(8));
+    $deliveryId = DB::table('stock_deliveries')->insertGetId([...$ids, 'slug' => 'sd-'.$token, 'parent_type' => 'OrgSupplier', 'parent_id' => 1, 'parent_code' => 'SUP', 'parent_name' => 'Supplier', 'reference' => 'SD'.$token, 'date' => now(), 'currency_id' => $this->shop->currency_id, 'cost_data' => '{}', 'data' => json_encode(['estimated_receiving_date' => now()->addDays(10)->toDateString()]), 'state' => 'dispatched']);
+    DB::table('stock_delivery_items')->insert([...$ids, 'stock_delivery_id' => $deliveryId, 'org_stock_id' => $onItsWay->id, 'data' => '{}', 'unit_quantity' => 5]);
+
+    $estimate = fn (array $orgStocks) => App\Actions\CRM\ShoppingAssistant\GetProductRestockEstimate::run(shoppingAssistantProductOn($this, array_map(fn ($orgStock) => $orgStock->id, $orgStocks)));
+
+    expect($estimate([$recent]))->toMatchArray(['status' => 'expected'])
+        ->and($estimate([$recent])['date']->toDateString())->toBe(now()->addDays(20)->toDateString())
+        ->and($estimate([$old])['status'])->toBe('not_on_order')
+        ->and($estimate([$noDate])['status'])->toBe('on_order_no_date')
+        ->and($estimate([$nothing])['status'])->toBe('not_on_order')
+        ->and($estimate([$onItsWay])['date']->toDateString())->toBe(now()->addDays(10)->toDateString())
+        ->and($estimate([$onItsWay, $recent])['date']->toDateString())->toBe(now()->addDays(20)->toDateString())
+        ->and($estimate([$recent, $noDate])['status'])->toBe('on_order_no_date');
+});
+
+test('the assistant gives a half-month window for a reliable restock date, and passes a question with no reliable date to purchasing only after the customer says yes and while the organisation has it on', function () {
+    Illuminate\Support\Facades\Notification::fake();
+    $buyer = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $this->organisation->update(['settings' => [...($this->organisation->settings ?? []), 'restock_questions' => ['enabled' => true, 'user_ids' => [$buyer->id]]]]);
+    $withDate    = shoppingAssistantOrgStock($this);
+    $withoutDate = shoppingAssistantOrgStock($this);
+    $arrives     = now()->addDays(40);
+    shoppingAssistantPurchaseOrderLine($this, $withDate->id, now()->subMonth()->toDateTimeString(), $arrives->toDateTimeString());
+    $expected = shoppingAssistantProductOn($this, [$withDate->id]);
+    $unknown  = shoppingAssistantProductOn($this, [$withoutDate->id]);
+
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $dated        = $tools->execute($conversation, 'restock_information', ['query' => $expected->code]);
+    $undated      = $tools->execute($conversation, 'restock_information', ['query' => $unknown->code]);
+    $notYet       = $tools->execute($conversation, 'ask_purchasing_team', ['query' => $unknown->code, 'question' => 'When is it back?', 'customer_agreed' => false]);
+    $asked        = $tools->execute($conversation, 'ask_purchasing_team', ['query' => $unknown->code, 'question' => 'When is it back?', 'customer_agreed' => true]);
+    $askedAgain   = $tools->execute($conversation, 'ask_purchasing_team', ['query' => $unknown->code, 'question' => 'Any news?', 'customer_agreed' => true]);
+    $tasks        = App\Models\Tasks\StaffTask::where('data->kind', App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRestockQuestion::TASK_KIND)->where('data->customer_id', $conversation->customer_id)->get();
+
+    $this->organisation->update(['settings' => [...$this->organisation->fresh()->settings, 'restock_questions' => ['enabled' => false]]]);
+    $off = $tools->execute($conversation->fresh(), 'restock_information', ['query' => $unknown->code]);
+
+    $from = ($arrives->day <= 15 ? $arrives->copy()->startOfMonth() : $arrives->copy()->setDay(16))->locale('en')->isoFormat('LL');
+    expect($dated['fact'])->toContain('is on order and expected between '.$from)
+        ->and($dated['content']['out_of_stock_products'][0]['status'])->toBe('expected')
+        ->and($dated['content'])->not->toHaveKey('date')
+        ->and($undated)->not->toHaveKey('fact')
+        ->and($undated['content']['out_of_stock_products'][0]['status'])->toBe('no_reliable_date')
+        ->and($undated['content']['purchasing_follow_up'])->toBeTrue()
+        ->and($notYet['error'])->not->toBeNull()
+        ->and($asked['content']['passed_on'])->toBeTrue()
+        ->and($askedAgain['content']['passed_on'])->toBeTrue()
+        ->and($tasks)->toHaveCount(1)
+        ->and($tasks->first()->department)->toBe('products')
+        ->and($tasks->first()->model_type)->toBe('Product')
+        ->and($tasks->first()->model_id)->toBe($unknown->id)
+        ->and($tasks->first()->data['estimate'])->toBe('not_on_order')
+        ->and($off['content']['purchasing_follow_up'])->toBeFalse();
+    Illuminate\Support\Facades\Notification::assertSentTo($buyer, App\Notifications\ShoppingAssistantRestockQuestionNotification::class);
+});
+
+test('the answer purchasing writes when marking a restock question done reaches the customer by email where the shop can send it, else through a customer services task, and nothing is sent without an answer', function () {
+    createWebsite($this->shop);
+    Illuminate\Support\Facades\Notification::fake();
+    $buyer = User::factory()->create(['group_id' => $this->organisation->group_id, 'status' => true]);
+    $this->organisation->update(['settings' => [...($this->organisation->settings ?? []), 'restock_questions' => ['enabled' => true, 'user_ids' => [$buyer->id]]]]);
+    $product = shoppingAssistantProductOn($this, [shoppingAssistantOrgStock($this)->id]);
+    $ask     = function () use ($product) {
+        $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+
+        return [$conversation, App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRestockQuestion::run($conversation, $product, 'When is it back?')['task']];
+    };
+    $outbox = fn (string $state) => DB::table('outboxes')->where('shop_id', $this->shop->id)->where('code', 'chat_notification_to_customer')->update(['state' => $state]);
+
+    $outbox('in_process');
+    [$relayed, $relayedTask] = $ask();
+    App\Actions\Tasks\UpdateStaffTask::run($relayedTask, $buyer, ['status' => 'done', 'note' => 'It is back in the first week of December.']);
+
+    [$unanswered, $unansweredTask] = $ask();
+    App\Actions\Tasks\UpdateStaffTask::run($unansweredTask, $buyer, ['status' => 'done']);
+
+    [$fromThread, $fromThreadTask] = $ask();
+    App\Actions\Chat\Staff\SendStaffMessage::run($fromThreadTask->conversation, $buyer, ['body' => 'Next container lands on 3 December.']);
+    App\Actions\Tasks\UpdateStaffTask::run($fromThreadTask, $buyer, ['status' => 'done']);
+
+    $hasOutbox = DB::table('outboxes')->where('shop_id', $this->shop->id)->where('code', 'chat_notification_to_customer')->exists();
+    $outbox('active');
+    Illuminate\Support\Facades\Queue::fake();
+    [$emailed, $emailedTask] = $ask();
+    $emailedTask->update(['status' => 'done']);
+    $channel = App\Actions\CRM\ShoppingAssistant\FollowUpShoppingAssistantRestockQuestion::run($emailedTask->fresh(), $buyer, 'Back next week.');
+
+    $answer = fn ($conversation) => $conversation->messages()->where('role', 'assistant')->latest('id')->value('body');
+    expect($relayedTask->fresh()->data['answer_channel'])->toBe('customer_services')
+        ->and($answer($relayed))->toContain('It is back in the first week of December.')
+        ->and(App\Models\Tasks\StaffTask::where('data->kind', 'shopping_assistant_restock_answer_relay')->where('data->restock_task_id', $relayedTask->id)->value('department'))->toBe('customer-services')
+        ->and($unansweredTask->fresh()->data)->not->toHaveKey('answer_sent_at')
+        ->and($unanswered->messages()->where('role', 'assistant')->count())->toBe(0)
+        ->and($unansweredTask->conversation->messages()->latest('id')->value('body'))->toContain('Nothing was sent to the customer')
+        ->and($answer($fromThread))->toContain('Next container lands on 3 December.')
+        ->and($channel)->toBe($hasOutbox ? 'email' : 'customer_services')
+        ->and($answer($emailed))->toContain('Back next week.');
+    if ($hasOutbox) {
+        App\Actions\Comms\Email\SendChatNotificationToCustomer::assertPushed(fn ($action, array $parameters) => str_contains($parameters[1]['chat_link'], '/assistant?conversation='.$emailed->ulid) && str_contains($parameters[1]['chat_message'], 'Back next week.'));
+    }
+});

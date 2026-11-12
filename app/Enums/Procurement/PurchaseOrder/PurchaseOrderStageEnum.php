@@ -255,6 +255,35 @@ enum PurchaseOrderStageEnum: string
         ];
     }
 
+    /**
+     * A stage's name where the order's state is shown: the stage name, except the first two, which read as the states
+     * they stand for.
+     */
+    public static function stateLabels(): array
+    {
+        return array_merge(self::labels(), [
+            'submitted'    => __('Submitted'),
+            'deposit_paid' => __('Agreed'),
+        ]);
+    }
+
+    /**
+     * How a stage shows where the order's state is shown (lists, PO heading), in the same shape as the state icons.
+     */
+    public static function stateIcon(): array
+    {
+        return [
+            'submitted'     => ['tooltip' => __('PO Submitted'), 'icon' => 'fal fa-paper-plane', 'class' => 'text-indigo-400', 'color' => 'indigo'],
+            'deposit_paid'  => ['tooltip' => __('Terms agreed with the supplier'), 'icon' => 'fal fa-check-circle', 'class' => 'text-gray-500', 'color' => 'gray'],
+            'in_production' => ['tooltip' => __('In production at the supplier'), 'icon' => 'fal fa-cogs', 'class' => 'text-amber-500', 'color' => 'amber'],
+            'in_warehouse'  => ['tooltip' => __('Goods arrived at the agent warehouse'), 'icon' => 'fal fa-boxes', 'class' => 'text-amber-600', 'color' => 'amber'],
+            'ready'         => ['tooltip' => __('Final checks done'), 'icon' => 'fal fa-clipboard-check', 'class' => 'text-teal-500', 'color' => 'teal'],
+            'handed_over'   => ['tooltip' => __('Available to ship'), 'icon' => 'fal fa-hands-helping', 'class' => 'text-teal-600', 'color' => 'teal'],
+            'arrived'       => ['tooltip' => __('Transit & arrival'), 'icon' => 'fal fa-truck-loading', 'class' => 'text-sky-500', 'color' => 'sky'],
+            'received'      => ['tooltip' => __('Booked into stock'), 'icon' => 'fal fa-check-double', 'class' => 'text-green-600', 'color' => 'green'],
+        ];
+    }
+
     public static function descriptions(): array
     {
         return [

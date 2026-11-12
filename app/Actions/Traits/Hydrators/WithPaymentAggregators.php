@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits\Hydrators;
 
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentServiceProvider;
@@ -19,11 +20,17 @@ trait WithPaymentAggregators
 {
     public function paidAmounts(OrgPaymentServiceProvider|PaymentAccount|PaymentServiceProvider|Group|Organisation|Shop $model, string $currencyField): array
     {
-        $successfullyPaidAmount = $model->payments()
+        $moneyReceived = fn () => $model->payments()
+            ->when(!$model instanceof PaymentAccount, fn ($query) => $query->whereNotIn(
+                'payments.payment_account_id',
+                PaymentAccount::where('type', PaymentAccountTypeEnum::BANK_FEE)->select('id')
+            ));
+
+        $successfullyPaidAmount = $moneyReceived()
             ->where('payments.type', 'payment')
             ->where('status', 'success')
             ->sum($currencyField);
-        $refundedAmount         = $model->payments()
+        $refundedAmount         = $moneyReceived()
             ->where('payments.type', 'refund')
             ->where('status', 'success')
             ->sum($currencyField);

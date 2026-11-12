@@ -18,6 +18,8 @@ use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromAdjustment;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromCharge;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShipping;
+use App\Actions\Accounting\Payment\CancelPayment;
+use App\Models\Accounting\BankTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
@@ -199,7 +201,33 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             $totalPaid = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->whereNot('payments.state', PaymentStateEnum::CANCELLED)->sum('payments.amount');
 
+            /** A bank fee we absorbed was never received: it is never credited back, and it is cut to what the
+             * invoice still needs once the money received is known against the final total */
+            $absorbedBankFees = $order->absorbedBankFeePayments();
+            $totalPaid -= $absorbedBankFees->sum('amount');
             $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
+            $bankFeeStillNeeded = round(min((float)$absorbedBankFees->sum('amount'), max(0, -$amountToCredit)), 2);
+
+            if ($absorbedBankFees->isNotEmpty() && $bankFeeStillNeeded < round((float)$absorbedBankFees->sum('amount'), 2)) {
+                $bankFeeAccount   = $absorbedBankFees->first()->paymentAccount;
+                $bankFeeLineIds   = BankTransaction::whereIn('bank_fee_payment_id', $absorbedBankFees->pluck('id'))->pluck('id');
+                foreach ($absorbedBankFees as $absorbedBankFee) {
+                    CancelPayment::make()->handle($absorbedBankFee);
+                }
+                $order->refresh();
+                if ($bankFeeStillNeeded > 0) {
+                    $bankFeePayment = StorePayment::make()->action($order->customer, $bankFeeAccount, [
+                        'amount'    => $bankFeeStillNeeded,
+                        'reference' => $absorbedBankFees->first()->reference,
+                        'status'    => PaymentStatusEnum::SUCCESS,
+                        'state'     => PaymentStateEnum::COMPLETED,
+                        'data'      => $absorbedBankFees->first()->data,
+                    ]);
+                    AttachPaymentToOrder::make()->action($order, $bankFeePayment, []);
+                    BankTransaction::whereIn('id', $bankFeeLineIds)->update(['bank_fee_payment_id' => $bankFeePayment->id]);
+                    $order->refresh();
+                }
+            }
 
             $hasPaymentSettledAtInvoicing = $order->payments()
                 ->where('payments.status', PaymentStatusEnum::SUCCESS)
@@ -238,7 +266,8 @@ class GenerateInvoiceFromOrder extends OrgAction
             $order->refresh();
 
             foreach ($order->payments as $payment) {
-                if ($payment->status == PaymentStatusEnum::SUCCESS) {
+                $isCancelledBankFee = $payment->state === PaymentStateEnum::CANCELLED && $payment->paymentAccount->type === PaymentAccountTypeEnum::BANK_FEE;
+                if ($payment->status == PaymentStatusEnum::SUCCESS && !$isCancelledBankFee) {
                     $invoice->payments()->attach($payment);
                 }
             }

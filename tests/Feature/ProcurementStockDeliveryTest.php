@@ -4119,3 +4119,17 @@ test('the shipment CBM of a purchase order counts its items as the container pag
     expect((float) collect($shipments)->firstWhere('reference', $stockDelivery->reference)['cbm'])->toEqual(2.0)
         ->and((float) $containerPage['volume'])->toEqual(2.0);
 });
+
+test('procurement is told about a delivery booked in without costs from a queue worker that has no permissions team set', function () {
+    Notification::fake();
+    $user = $this->adminGuest->getUser();
+    setPermissionsTeamId($this->group->id);
+    $user->assignRole("procurement-clerk-{$this->organisation->id}");
+    $stockDelivery = createStockDeliveryWithItems($this, 'NO-COSTS-QUEUE', [10]);
+    setPermissionsTeamId(null);
+
+    expect(\App\Actions\GoodsIn\StockDelivery\ReportStockDeliveryBookedInWithoutCosts::run($stockDelivery, ['Shipping']))->toBeGreaterThan(0);
+    Notification::assertSentTo($user, \App\Notifications\StockDeliveryBookedInWithoutCostsNotification::class);
+
+    $user->removeRole("procurement-clerk-{$this->organisation->id}");
+});

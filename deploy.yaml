@@ -37,6 +37,7 @@ hosts:
     environment: 'staging'
     deploy_path: '~/aiku'
     branch: staging
+    keep_releases: 3
     labels:
       env: staging
   helio:
@@ -48,6 +49,7 @@ hosts:
     environment: 'staging'
     deploy_path: '~/aiku'
     branch: staging
+    keep_releases: 3
     labels:
       env: staging
 tasks:

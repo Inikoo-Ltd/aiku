@@ -39,6 +39,12 @@ In **Settings**, **Who reviews** chooses the people who get the task (the produc
 
 Nobody chosen in **Who reviews** means no task is sent; the tab says so.
 
+## Feedback from the floor
+
+On the tablet, every job of a product in development says **Product in development: the steps and timings are still being worked out**, and the job list marks it **In development**. The artisan can press **Send feedback**, before starting or while working, and tick what is wrong: **A step is missing**, **A step is not needed**, **Steps in the wrong order**, **A material or packaging is missing or wrong**, with an optional comment.
+
+Each product has one task for its feedback, **Feedback from the floor on …**, for the first person chosen in **Who reviews** (the production manager). Every feedback is added to it as a line and a message. While that task is open, the product shows **Floor feedback open** on the tab, and **Review** lists the feedback and does not let you save its targets: fix the recipe, then close the task. You can still keep the product on development. Adding or taking a step off the recipe starts its timing again, as above.
+
 ## Deciding
 
 Press **Review** on a product. For each step you see the proposed target, the sessions counted and those left out (with why), and the targets of similar steps in the factory for comparison. Then:

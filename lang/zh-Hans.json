@@ -25719,5 +25719,18 @@
     "Name the assistant shows to customers": "向客户显示的助手名称",
     "Assistant name": "助手名称",
     "Shows related searches, families and products under the search results": "在搜索结果下方显示相关搜索、产品系列和产品",
-    "Keep exploring suggestions on the search page": "搜索页面“继续探索”推荐"
+    "Keep exploring suggestions on the search page": "搜索页面“继续探索”推荐",
+    "PO Submitted": "采购单已提交",
+    "Making It Happen": "生产中",
+    "Ready to Roll": "准备出发",
+    "Clean Hand Over": "干净交接",
+    "Homeward Bound": "回程途中",
+    "Counted & Costed": "已清点并核算成本",
+    "Terms agreed with the supplier": "已与供应商商定条款",
+    "In production at the supplier": "供应商生产中",
+    "Goods arrived at the agent warehouse": "货物已到达代理仓库",
+    "Final checks done": "最终检查已完成",
+    "Available to ship": "可发货",
+    "Transit & arrival": "运输与到达",
+    "Booked into stock": "已入库"
 }
