@@ -83,7 +83,7 @@ class FillToOrder
     /**
      * One packing slip per order the job fills, so the bottles wait with their order (HELP-4638).
      *
-     * @return Collection<int, array{order: Order, lines: Collection<int, array{code: string, name: string, quantity: float}>}>
+     * @return Collection<int, array{order: Order, deliver_to: string, lines: Collection<int, array{code: string, name: string, quantity: float}>}>
      */
     public function slips(JobOrder $jobOrder): Collection
     {
@@ -96,8 +96,9 @@ class FillToOrder
             ->filter()
             ->groupBy(fn (array $row) => $row['transaction']->order_id)
             ->map(fn (Collection $rows) => [
-                'order' => $rows->first()['transaction']->order,
-                'lines' => $rows->groupBy(fn (array $row) => $row['transaction']->id)
+                'order'      => $rows->first()['transaction']->order,
+                'deliver_to' => $this->deliverTo($rows->first()['transaction']->order),
+                'lines'      => $rows->groupBy(fn (array $row) => $row['transaction']->id)
                     ->map(fn (Collection $sameLine) => [
                         'code'     => $sameLine->first()['transaction']->model?->code ?? '',
                         'name'     => $sameLine->first()['transaction']->model?->name ?? '',
@@ -106,6 +107,18 @@ class FillToOrder
                     ->values(),
             ])
             ->values();
+    }
+
+    /** The delivery name the order's delivery note will carry: the address itself holds no name */
+    public function deliverTo(Order $order): string
+    {
+        $sendOrderToWarehouse = SendOrderToWarehouse::make();
+
+        return collect([$sendOrderToWarehouse->getCompanyName($order), $sendOrderToWarehouse->getContactName($order)])
+            ->map(fn (?string $name) => trim((string) $name))
+            ->filter()
+            ->unique()
+            ->implode(', ');
     }
 
     /** Bottles filled for an order are on their way to the customer: taking the work back would leave the order picked without them */

@@ -39,7 +39,7 @@ class PdfFillPackingSlips extends OrgAction
         $pdf = PDF::loadView('production.fill-packing-slips', [
             'jobOrder'  => $jobOrder,
             'slips'     => $slips,
-            'printedAt' => now()->format('j M Y H:i'),
+            'printedAt' => now($jobOrder->organisation->timezone?->name ?? config('app.timezone'))->format('j M Y H:i'),
         ], [], ['format' => 'A5']);
 
         return response($pdf->output(), 200)

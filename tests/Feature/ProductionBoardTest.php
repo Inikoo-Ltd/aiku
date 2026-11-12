@@ -1948,6 +1948,12 @@ test('a fill line shows on the board as the bottles for its order and shop, and 
         ->and($slips[0]['order']->id)->toBe($order->id)
         ->and($slips[0]['lines']->all())->toBe([['code' => $product->code, 'name' => $product->name, 'quantity' => 3.0]]);
 
+    $order->update(['company_name' => 'Slip Company Ltd', 'contact_name' => 'Slip Contact']);
+    $slips = \App\Actions\Production\JobOrder\FillToOrder::make()->slips($jobOrder);
+    expect($slips[0]['deliver_to'])->toBe('Slip Company Ltd, Slip Contact')
+        ->and(view('production.fill-packing-slips', ['jobOrder' => $jobOrder, 'slips' => $slips, 'printedAt' => 'now'])->render())
+        ->toContain('Deliver to')->toContain('Slip Company Ltd, Slip Contact');
+
     get(route('grp.org.productions.show.operations.job-orders.packing_slips', [...$routeParameters, $jobOrder->slug]))
         ->assertOk()
         ->assertHeader('Content-Type', 'application/pdf');
