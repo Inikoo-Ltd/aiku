@@ -51,6 +51,10 @@ class UpdateOrder extends OrgAction
     {
         $this->guardCustomerShipperLock($order, $modelData);
 
+        if ($this->strict && Arr::has($modelData, 'sales_channel_id') && Arr::get($modelData, 'sales_channel_id') != $order->sales_channel_id) {
+            StoreOrder::ensureRechargeOnlyForPartners($order->customer, Arr::get($modelData, 'sales_channel_id'));
+        }
+
         if (Arr::get($modelData, 'collection_address_id') && $order->shop->collection_address_id) {
             $modelData['collection_address_id'] = $order->shop->collection_address_id;
         }

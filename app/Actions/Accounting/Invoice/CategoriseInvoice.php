@@ -85,6 +85,7 @@ class CategoriseInvoice extends OrgAction
                 InvoiceCategoryTypeEnum::IN_SALES_CHANNEL => $this->inHaystack($invoiceCategory, 'sales_channel_ids', $invoice->sales_channel_id),
                 InvoiceCategoryTypeEnum::IN_SALES_CHANNEL_SHOP => $this->salesChannelShop($invoice, $invoiceCategory),
                 InvoiceCategoryTypeEnum::IN_SHOP_OR_IN_SALES_CHANNEL_SHOP => $this->inShopOrSalesChannelShop($invoice, $invoiceCategory),
+                InvoiceCategoryTypeEnum::SERVICES_TO_PARTNER => $this->servicesToPartner($invoice, $invoiceCategory),
             };
 
 
@@ -158,6 +159,30 @@ class CategoriseInvoice extends OrgAction
         }
 
         if (in_array($invoice->shop_id, $shopsIdsForChannelsIds) && in_array($invoice->sales_channel_id, $salesChannelsIds)) {
+            return $invoiceCategory;
+        }
+
+        return null;
+    }
+
+    /**
+     * An invoice is categorised as it is stored, before its lines are, so until it has lines it is
+     * judged by the lines of its order. Lines without amount do not count.
+     */
+    protected function servicesToPartner(Invoice|Order $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
+    {
+        if (!$invoice->as_organisation_id) {
+            return null;
+        }
+
+        $lines = $invoice instanceof Invoice ? $invoice->invoiceTransactions() : $invoice->transactions();
+        if ($invoice instanceof Invoice && $invoice->order && !$lines->exists()) {
+            $lines = $invoice->order->transactions();
+        }
+
+        $modelTypes = $lines->where('net_amount', '!=', 0)->distinct()->pluck('model_type');
+
+        if ($modelTypes->isNotEmpty() && $modelTypes->every(fn ($modelType) => $modelType === 'Service')) {
             return $invoiceCategory;
         }
 

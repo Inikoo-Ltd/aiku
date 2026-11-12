@@ -149,6 +149,7 @@ class StoreOrder extends OrgAction
 
         if ($this->strict) {
             $this->ensureNotPartnerOrderToHub($orderCustomer, $shop, Arr::get($modelData, 'sales_channel_id'));
+            self::ensureRechargeOnlyForPartners($orderCustomer, Arr::get($modelData, 'sales_channel_id'));
         }
 
         $isRe = $orderCustomer?->is_re ?? false;
@@ -318,6 +319,24 @@ class StoreOrder extends OrgAction
                 'hub'      => $shop->organisation->name,
             ]),
         ]);
+    }
+
+    /**
+     * The Recharge channel is what the group bills a partner organisation for services with, and its
+     * invoices are categorised as services to a partner. Marketplace shipping refunds and insurance put
+     * on it for Faire left the Faire figures (HELP-4665).
+     */
+    public static function ensureRechargeOnlyForPartners(?Customer $customer, ?int $salesChannelId): void
+    {
+        if (!$salesChannelId || $customer?->as_organisation_id) {
+            return;
+        }
+
+        if (SalesChannel::where('id', $salesChannelId)->where('code', 'recharge')->exists()) {
+            throw ValidationException::withMessages([
+                'sales_channel_id' => __('Recharge is only for orders to partner organisations'),
+            ]);
+        }
     }
 
     private function ensureNotPartnerOrderToHub(?Customer $customer, Shop $shop, ?int $salesChannelId): void

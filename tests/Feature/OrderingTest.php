@@ -7630,3 +7630,30 @@ test('a line that breaks without a validation error fails on its own row while t
         ->and($result['lines'][1]['status'])->toBe('added')
         ->and(Transaction::where('model_type', 'Product')->where('model_id', $broken->id)->count())->toBe(0);
 });
+
+test('the recharge sales channel is refused on orders of customers that are not partner organisations', function () {
+    $group    = $this->organisation->group;
+    $recharge = $group->salesChannels()->where('code', 'recharge')->first()
+        ?? \App\Actions\Ordering\SalesChannel\StoreSalesChannel::make()->action($group, [
+            'code' => 'recharge',
+            'name' => 'Recharge',
+            'type' => SalesChannelTypeEnum::MARKETPLACE,
+        ]);
+    SeedSalesChannels::run($group);
+    $other = SalesChannel::where('group_id', $group->id)->where('type', SalesChannelTypeEnum::OTHER)->first();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    expect(fn () => StoreOrder::make()->action($customer, ['sales_channel_id' => $recharge->id]))->toThrow(ValidationException::class);
+
+    $order = StoreOrder::make()->action($customer, ['sales_channel_id' => $other->id]);
+    expect(fn () => UpdateOrder::make()->action($order, ['sales_channel_id' => $recharge->id]))->toThrow(ValidationException::class)
+        ->and($order->refresh()->sales_channel_id)->toBe($other->id);
+
+    DB::table('customers')->where('id', $customer->id)->update(['as_organisation_id' => $this->organisation->id]);
+    $customer->refresh();
+    $order->refresh();
+
+    expect(UpdateOrder::make()->action($order, ['sales_channel_id' => $recharge->id])->sales_channel_id)->toBe($recharge->id)
+        ->and(StoreOrder::make()->action($customer, ['sales_channel_id' => $recharge->id])->sales_channel_id)->toBe($recharge->id);
+});
