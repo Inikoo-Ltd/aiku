@@ -8,7 +8,7 @@
 
 namespace App\Actions\GoodsIn\StockDelivery\Hydrators;
 
-use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersCostFromStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersCostedFromStockDelivery;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Models\GoodsIn\StockDelivery;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -44,6 +44,6 @@ class StockDeliveriesHydrateCosts implements ShouldBeUnique
             'cost_total'    => $totals->cost_total,
         ]);
 
-        UpdatePurchaseOrdersCostFromStockDelivery::run($stockDelivery);
+        UpdatePurchaseOrdersCostedFromStockDelivery::run($stockDelivery);
     }
 }

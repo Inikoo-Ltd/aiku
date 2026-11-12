@@ -29,6 +29,8 @@ While it is in process:
 
 Once you have added everything you want, press **Submit**. This sends the order onward and moves it to **Submitted**.
 
+A purchase order's total is the goods ordered from the supplier. Shipping, duty and other extra costs are not on the order: they are entered on the stock delivery, where the goods are costed.
+
 ## Suppliers who sell in another unit
 
 Some suppliers quote and invoice in a unit that is not ours - incense by the **kg** that we count in 500 g bags, for example. On the supplier product's **Edit** page, set **Supplier sells in** (kg, g, litre, metre, pack, set, dozen or piece) and **Our units in one supplier unit** (2 for a 500 g bag sold by the kg, 0.2 for a 5 kg pack sold by the kg). If you choose kg or g and leave the number empty, aiku works it out from the weight of the trade unit, and the field's help text warns you when the number you typed does not match that weight.
@@ -58,7 +60,7 @@ A purchase order moves through a short, deliberate chain:
 
 From here the order settles on its own as its stock deliveries progress - there's nothing further to click on the purchase order itself. It ends up **Settled** once everything has arrived, or **Not Received**/**Cancelled** if it didn't work out.
 
-A cancelled order can be brought back with **Undo cancel** on its page. The order and its lines go back to Submitted or Confirmed, whichever they were, with their amounts and the extra, shipping, duties and tax costs they had. You give a reason and confirm the supplier, agent or partner knows the order is back on; who did it, when and why show in the order's **History**. If the same products are already on an order raised after the cancellation, the dialog lists those orders so nothing is bought twice. **Undo cancel** is greyed out, with the reason on hover, when the order was cancelled because its lines were moved to another supplier or because it was left empty, when a product on it is discontinued or no longer available, or when it has a stock delivery that is not cancelled. For orders cancelled before **Undo cancel** existed, the extra and tax costs were not kept: the dialog shows the old total and asks for them, and the two must add up to what the order had. An old order with no record of what it had before cancelling can not be brought back.
+A cancelled order can be brought back with **Undo cancel** on its page. The order and its lines go back to Submitted or Confirmed, whichever they were, with the amounts they had. You give a reason and confirm the supplier, agent or partner knows the order is back on; who did it, when and why show in the order's **History**. If the same products are already on an order raised after the cancellation, the dialog lists those orders so nothing is bought twice. **Undo cancel** is greyed out, with the reason on hover, when the order was cancelled because its lines were moved to another supplier or because it was left empty, when a product on it is discontinued or no longer available, or when it has a stock delivery that is not cancelled. An old order with no record of what it had before cancelling can not be brought back.
 
 ## The stock delivery: recording what arrived
 

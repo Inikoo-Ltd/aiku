@@ -209,8 +209,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 {$this->deliveryColumns()}, containers.container_lines, containers.lines_on_containers, containers.last_on_container_at,
                 coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at,
                 draft_lines.lines as draft_lines, draft_lines.cancelled_lines as draft_cancelled_lines,
-                draft_lines.pending_price_changes,
-                po.cost_extra, po.cost_shipping, po.cost_duties, po.cost_tax
+                draft_lines.pending_price_changes
             from purchase_orders po
             {$this->sharedJoins()}
             left join currencies on currencies.id = po.currency_id
@@ -512,7 +511,6 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'is_in_process'     => $row->state === 'in_process',
             'is_deletable'      => null,
             'delete_blockers'   => null,
-            'extra_costs'       => round((float) $row->cost_extra + (float) $row->cost_shipping + (float) $row->cost_duties + (float) $row->cost_tax, 2) ?: null,
             'state'             => $row->state,
             'skipped_stages'    => collect(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::STAGE_PASSING_SKIPS)
                 ->filter(fn ($stage, string $key) => Arr::has($data, "stage_skips.$key"))
