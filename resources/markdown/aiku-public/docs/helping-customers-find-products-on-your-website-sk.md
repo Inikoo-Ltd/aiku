@@ -166,6 +166,10 @@ Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa t
 
 Hlavné čísla a kroky lievika sú odkazy: otvoria konverzácie, ktoré za nimi stoja.
 
+**Answer ratings by customers** počíta odpovede, ktoré zákazníci označili palcom pod odpoveďou ako užitočné alebo neužitočné, v porovnaní s predchádzajúcim obdobím. Obe čísla sú odkazy na konverzácie, ktoré za nimi stoja.
+
+**Customer challenges to act on** je zoznam úloh pre nákup, produkt a webmasterov. Každú noc AI prečíta každú konverzáciu, v ktorej dve hodiny nepribudla správa, a zapíše, čo zákazníkovi bránilo v objednávke: produkt, ktorý nepredávame, niečo vypredané, cena, minimálna objednávka alebo veľkosť kartónu, doprava alebo doručenie, problém s webom alebo čokoľvek iné, čo zákazník opísal. Obyčajná otázka nie je prekážka. Štítky počítajú konverzácie každého druhu a otvárajú ich. Tabuľka uvádza 20 najčastejšie spomínaných vecí, pri každej počet konverzácií, príklad vlastnými slovami zákazníka a odkaz **Open** na najnovšiu konverzáciu. Konverzácie o tej istej veci v rôznych jazykoch sú spojené do jedného riadku. Dnešná konverzácia sa prečíta v noci; riadok nad tabuľkou hovorí, koľko ich čaká. Vyhľadávania bez výsledkov sú v **Search on the website**.
+
 ### Všeobecné otázky a odovzdania
 
 V záložke **Overview** časť **General questions and passing to a person** (všeobecné otázky a odovzdanie človeku) ukazuje, ako asistent zvláda otázky o obchode a odovzdania človeku. Počítajú sa len konverzácie, ktoré vznikli po zavedení tejto funkcie. Každé číslo sa porovnáva s predchádzajúcim obdobím a každé je odkazom na konverzácie, ktoré za ním stoja.
@@ -186,4 +190,12 @@ V záložke **Conversations** stĺpec ukazuje, ktoré konverzácie boli odovzdan
 
 Jeden riadok na konverzáciu: kedy začala, zákazník, odkiaľ sa otvorila, prvá otázka, počet správ, zobrazené, rozkliknuté a pridané produkty, či nasledovala objednávka a na akú sumu, a náklady na AI. Hľadajte podľa zákazníka alebo podľa slov otázky.
 
-Kliknite na prvú otázku a prečítajte si konverzáciu. Pod každou odpoveďou vidíte produkty, ktoré zobrazila, s uvedeným dôvodom, ktoré zákazník rozklikol, pridal a objednal, a ponúknuté ďalšie otázky. Konverzácie sú len pre zamestnancov: otvoriť ich môžu len ľudia, ktorí vidia web v aiku.
+Kliknite na prvú otázku a prečítajte si konverzáciu. Pod každou odpoveďou vidíte produkty, ktoré zobrazila, s uvedeným dôvodom, ktoré zákazník rozklikol, pridal a objednal, ponúknuté ďalšie otázky a hodnotenie zákazníka. Prekážky nájdené v konverzácii sú uvedené hore. Konverzácie sú len pre zamestnancov: otvoriť ich môžu len ľudia, ktorí vidia web v aiku.
+
+## Týždenný súhrn a ako dlho sa konverzácie uchovávajú
+
+Každý pondelok ráno (britského času) príde e-mail ľuďom vybraným v **Sysadmin → Settings → AI shopping assistant → Weekly summary to**. Pokrýva pondelok až nedeľu predchádzajúceho týždňa za všetky weby v porovnaní s týždňom pred ním: konverzácie, zákazníkov, objednávky a tržby po zobrazení produktov, náklady na AI, hodnotenia odpovedí, odovzdania človeku, najčastejšie prekážky zákazníkov a vyhľadávania bez výsledkov, s odkazom na prehľad. Citáty zákazníkov v e-maile nie sú; prečítate si ich v prehľade. Ak nie je nikto vybraný, e-mail sa neodošle.
+
+Pod políčkom, kam píšu, zákazníci vidia, že asistent je AI a môže sa mýliť, že naši zamestnanci môžu konverzácie čítať a že nemajú zdieľať platobné údaje.
+
+To, čo zákazníci napísali a čo dostali ako odpoveď, sa uchováva 24 mesiacov od poslednej správy konverzácie, alebo toľko mesiacov, koľko je nastavené v **Keep conversation texts for (months)** v tých istých nastaveniach. Potom sa texty každú noc vymažú spolu s príkladmi citátov pri prekážkach a otázkami odmietnutými pre limity. Čísla zostávajú, takže prehľad tieto konverzácie, ich produkty, objednávky a náklady naďalej počíta. Anonymizácia zákazníka vymaže jeho konverzácie okamžite. Vymazaná konverzácia to uvádza v hornej časti svojej stránky.

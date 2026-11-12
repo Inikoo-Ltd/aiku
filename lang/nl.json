@@ -9835,5 +9835,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces gemaakt = :packs verpakkingen van :size + :loose los. Nog :more maken voor :next verpakkingen, of afronden op :whole en :loose los laten?",
     ":count loose pieces left, not in a full pack": "Nog :count losse stuks, niet in een volle verpakking",
     "Back, make the pack up": "Terug, verpakking aanvullen",
-    "Yes, close with loose pieces": "Ja, afsluiten met losse stuks"
+    "Yes, close with loose pieces": "Ja, afsluiten met losse stuks",
+    "Helpful": "Nuttig",
+    "Not helpful": "Niet nuttig",
+    "Your feedback could not be saved, please try again.": "Je beoordeling kon niet worden opgeslagen, probeer het opnieuw.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name is een AI-assistent en kan fouten maken. Ons team kan deze gesprekken lezen om onze service te verbeteren; deel geen betaalgegevens."
 }

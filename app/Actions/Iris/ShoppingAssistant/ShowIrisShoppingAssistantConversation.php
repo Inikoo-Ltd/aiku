@@ -49,7 +49,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
         $messages = $conversation->messages()
             ->when($after, fn ($query) => $query->where('id', '>', $after))
             ->orderBy('id')
-            ->get(['id', 'role', 'body', 'follow_ups', 'tool_calls', 'hand_over_offer', 'sources', 'created_at']);
+            ->get(['id', 'role', 'body', 'follow_ups', 'tool_calls', 'hand_over_offer', 'sources', 'feedback', 'created_at']);
 
         $handedOverOfferIds = $conversation->handOvers()
             ->whereIn('offer_message_id', $messages->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->pluck('id'))
@@ -99,6 +99,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                         ->unique('url')->values()->all();
                     $data['hand_over_offer'] = $message->hand_over_offer?->value;
                     $data['handed_over']     = $handedOverOfferIds->has($message->id);
+                    $data['feedback']        = $message->feedback;
                     $data['groups']     = array_fill_keys(AskShoppingAssistant::GROUPS, []);
 
                     foreach ($events->where('shopping_assistant_message_id', $message->id) as $event) {
@@ -149,6 +150,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
         $after = Arr::get($this->validatedData, 'after');
 
         abort_if($conversation->status === ShoppingAssistantConversationStatusEnum::CLEARED && $after === null, 404);
+        abort_if($conversation->wiped_at !== null, 404);
 
         return $this->handle($conversation, $after === null ? null : (int) $after);
     }

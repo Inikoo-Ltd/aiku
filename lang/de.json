@@ -26664,5 +26664,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces gemacht = :packs Packungen à :size + :loose lose. :more mehr für :next Packungen machen oder bei :whole abschließen und :loose lose lassen?",
     ":count loose pieces left, not in a full pack": ":count lose Stücke übrig, nicht in einer vollen Packung",
     "Back, make the pack up": "Zurück, Packung auffüllen",
-    "Yes, close with loose pieces": "Ja, mit losen Stücken schließen"
+    "Yes, close with loose pieces": "Ja, mit losen Stücken schließen",
+    "Helpful": "Hilfreich",
+    "Not helpful": "Nicht hilfreich",
+    "Your feedback could not be saved, please try again.": "Ihre Bewertung konnte nicht gespeichert werden, bitte versuchen Sie es erneut.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name ist ein KI-Assistent und kann Fehler machen. Unser Team kann diese Gespräche lesen, um unseren Service zu verbessern; bitte geben Sie keine Zahlungsdaten an."
 }

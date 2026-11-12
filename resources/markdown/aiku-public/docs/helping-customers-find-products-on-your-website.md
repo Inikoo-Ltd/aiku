@@ -166,6 +166,10 @@ At the top you choose the dates and can narrow the figures by language, by where
 
 The main figures and the funnel steps are links: they open the conversations behind them.
 
+**Answer ratings by customers** counts the answers customers marked helpful or not helpful with the thumbs under each answer, against the previous period. Both are links to the conversations behind them.
+
+**Customer challenges to act on** is the action list for buying, product and webmasters. Every night, AI reads each conversation that has been quiet for two hours and notes what stood between the customer and an order: a product we do not sell, something out of stock, the price, a minimum order or carton size, shipping or delivery, a problem with the website, or anything else they described. A plain question is not a challenge. The badges count the conversations of each kind and open them. The table lists the 20 things mentioned most, each with how many conversations, an example in the customer's own words and an **Open** link to the latest conversation. Conversations about the same thing in different languages are grouped on one line. A conversation of today is read tonight; the line above the table says how many are waiting. Searches with no results are in **Search on the website**.
+
 ### General questions and hand-overs
 
 On the **Overview** tab, **General questions and passing to a person** shows how the assistant handles questions about the shop and the hand-overs to a person. Only conversations that came after this feature was added are counted. Each figure compares with the previous period, and each is a link to the conversations behind it.
@@ -186,5 +190,13 @@ On the **Conversations** tab, a column shows which conversations were handed ove
 
 One row per conversation: when it started, the customer, where it was opened from, the first question, the number of messages, the products shown, clicked and added, whether an order followed and for how much, and the AI cost. Search by customer or by the words of a question.
 
-Click the first question to read the conversation. Under each answer you see the products it showed with the reason given, which ones the customer clicked, added and ordered, and the follow-up questions offered. Conversations are for staff only: only people who can see the website in aiku can open them.
+Click the first question to read the conversation. Under each answer you see the products it showed with the reason given, which ones the customer clicked, added and ordered, the follow-up questions offered and the customer's rating. The challenges found in the conversation are listed at the top. Conversations are for staff only: only people who can see the website in aiku can open them.
+
+## Weekly summary and how long conversations are kept
+
+Every Monday morning (UK time) an email goes to the people chosen in **Sysadmin → Settings → AI shopping assistant → Weekly summary to**. It covers Monday to Sunday of the week before for all websites, compared with the week before that: conversations, customers, orders and revenue after being shown, AI cost, answer ratings, hand-overs, the top customer challenges and the searches with no results, with a link to the report. Quotes from customers are not put in the email; open the report to read them. If nobody is chosen, no email is sent.
+
+Customers see under the box where they type that the assistant is AI and can make mistakes, that our staff may read the conversations, and that they should not share payment details.
+
+What customers wrote and were told is kept for 24 months after the conversation's last message, or for the number of months set in **Keep conversation texts for (months)** in the same settings. After that the texts are wiped every night, together with the example quotes of the challenges and the questions refused by the limits. The figures stay, so the report still counts those conversations, their products, orders and cost. Anonymising a customer wipes their conversations at once. A wiped conversation says so at the top of its page.
 

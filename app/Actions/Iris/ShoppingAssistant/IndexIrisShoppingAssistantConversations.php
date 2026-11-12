@@ -36,6 +36,7 @@ class IndexIrisShoppingAssistantConversations extends IrisAction
             ->where('customer_id', $customer->id)
             ->where('website_id', $this->website->id)
             ->where('status', '!=', ShoppingAssistantConversationStatusEnum::CLEARED)
+            ->whereNull('wiped_at')
             ->addSelect([
                 'ulid',
                 'last_message_at',

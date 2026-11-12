@@ -33,6 +33,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/Components/Procurement/** | .ai/rules/procurement.md |
 | app/Actions/Production/** | .ai/rules/production.md |
 | app/Actions/Iris/Reviews/** | .ai/rules/reviews.md |
+| app/Actions/CRM/ShoppingAssistant/** | .ai/rules/shopping-assistant.md |
 | app/Actions/SupplyChain/** | .ai/rules/supply-chain.md |
 | tests/** | .ai/rules/tests.md |
 | app/Mcp/Tools/CustomerService* | .ai/rules/tools.md |

@@ -67,6 +67,13 @@ type Overview = {
         ai_cost: Metric
         gaps: { question: string; count: number; languages: string[]; last_asked_at: string; conversation: string }[]
     }
+    feedback?: Record<"current" | "previous", { answers: number; up: number; down: number }>
+    challenges?: {
+        tagged: number
+        untagged: number
+        by_type: { type: string; label: string; conversations: number }[]
+        top: { type: string; label: string; topic: string; conversations: number; quote: string | null; conversation: string }[]
+    }
 }
 
 type FilterKey = "website" | "language" | "entry_point" | "shop_type" | "country"
@@ -233,6 +240,9 @@ const generalLabels: Record<string, string> = {
     replied: ctrans("a person replied after passing"),
     closed: ctrans("chat closed after passing"),
     ordered: ctrans("ordered after passing to a person"),
+    thumbs_up: ctrans("an answer rated helpful"),
+    thumbs_down: ctrans("an answer rated not helpful"),
+    challenges: ctrans("a customer challenge"),
 }
 
 const generalFilterLabel = (value: string | null): string => {
@@ -245,6 +255,7 @@ const generalFilterLabel = (value: string | null): string => {
     if (prefix === "reason") return ctrans("passed to a person: :reason", { reason: general?.by_reason.find((row) => row.reason === suffix)?.label ?? plain })
     if (prefix === "offer") return ctrans("offered a person: :reason", { reason: general?.by_reason.find((row) => row.reason === suffix)?.label ?? plain })
     if (prefix === "route") return ctrans("passed to a person by :route", { route: general?.by_route.find((row) => row.route === suffix)?.label ?? plain })
+    if (prefix === "challenge") return ctrans("customer challenge: :type", { type: props.overview?.challenges?.by_type.find((row) => row.type === suffix)?.label ?? plain })
     return value
 }
 
@@ -592,6 +603,9 @@ const assistantReach = computed(() => {
         }
     })
 })
+
+const feedback = computed(() => props.overview?.feedback ?? null)
+const challenges = computed(() => props.overview?.challenges ?? null)
 
 const refusals = computed(() => ({
     rateLimit: props.overview?.refusals?.rate_limit?.value ?? 0,
@@ -963,6 +977,66 @@ const conversationsTable = computed(() => props.conversations)
                     <p v-if="refusals.rateLimit > 0 || refusals.budget > 0" class="mt-2 text-xs text-gray-500">
                         {{ ctrans("Questions refused: :rate_limit by the rate limit, :budget by the budget", { rate_limit: locale.number(refusals.rateLimit), budget: locale.number(refusals.budget) }) }}
                     </p>
+                </div>
+
+                <div v-if="feedback" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                    <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("Answer ratings by customers") }}</h3>
+                    <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                        <span>
+                            <span class="text-gray-500">{{ ctrans("Helpful") }}</span>
+                            <Link v-if="feedback.current.up" :href="conversationsUrl(undefined, 'thumbs_up')" class="primaryLink ml-2 tabular-nums">{{ locale.number(feedback.current.up) }}</Link>
+                            <span v-else class="ml-2 tabular-nums text-gray-400">0</span>
+                            <span class="ml-1 text-xs text-gray-400">{{ ctrans("previous period :count", { count: locale.number(feedback.previous.up) }) }}</span>
+                        </span>
+                        <span>
+                            <span class="text-gray-500">{{ ctrans("Not helpful") }}</span>
+                            <Link v-if="feedback.current.down" :href="conversationsUrl(undefined, 'thumbs_down')" class="primaryLink ml-2 tabular-nums">{{ locale.number(feedback.current.down) }}</Link>
+                            <span v-else class="ml-2 tabular-nums text-gray-400">0</span>
+                            <span class="ml-1 text-xs text-gray-400">{{ ctrans("previous period :count", { count: locale.number(feedback.previous.down) }) }}</span>
+                        </span>
+                        <span class="text-xs text-gray-500">{{ ctrans(":count answers given", { count: locale.number(feedback.current.answers) }) }}</span>
+                    </div>
+                </div>
+
+                <div v-if="challenges" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                    <h3 class="text-sm font-semibold text-gray-700">{{ ctrans("Customer challenges to act on") }}</h3>
+                    <p class="mb-2 text-xs text-gray-500">
+                        {{ ctrans("What stood between customers and an order, read by AI from each conversation once it went quiet. :tagged conversations read, :untagged waiting for tonight's run.", { tagged: locale.number(challenges.tagged), untagged: locale.number(challenges.untagged) }) }}
+                    </p>
+                    <div v-if="challenges.by_type.length" class="mb-3 flex flex-wrap gap-2">
+                        <Link
+                            v-for="row in challenges.by_type"
+                            :key="row.type"
+                            :href="conversationsUrl(undefined, `challenge:${row.type}`)"
+                            class="rounded-full border border-gray-200 px-2.5 py-0.5 text-xs text-gray-700 hover:bg-gray-50"
+                        >
+                            {{ row.label }} <span class="tabular-nums text-gray-500">{{ locale.number(row.conversations) }}</span>
+                        </Link>
+                    </div>
+                    <table v-if="challenges.top.length" class="w-full text-sm">
+                        <thead class="whitespace-nowrap text-xs text-gray-400">
+                            <tr>
+                                <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("Type") }}</th>
+                                <th class="pb-1 pr-3 text-left font-medium">{{ ctrans("What") }}</th>
+                                <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Conversations") }}</th>
+                                <th class="pb-1 pl-4 text-left font-medium">{{ ctrans("Example") }}</th>
+                                <th class="pb-1 pl-4 text-left font-medium" />
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="row in challenges.top" :key="`${row.type}-${row.topic}`">
+                                <td class="whitespace-nowrap py-1 pr-3 text-xs text-gray-500">{{ row.label }}</td>
+                                <td class="py-1 pr-3 text-gray-900">{{ row.topic }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-900">{{ locale.number(row.conversations) }}</td>
+                                <td class="break-words py-1 pl-4 text-xs italic text-gray-600">{{ row.quote ? `“${row.quote}”` : "" }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-xs">
+                                    <Link :href="transcriptUrl(row.conversation)" class="primaryLink">{{ ctrans("Open") }}</Link>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p v-else class="py-2 text-xs text-gray-400">{{ ctrans("No challenges found in this period") }}</p>
+                    <p class="mt-2 text-xs text-gray-500">{{ ctrans("Searches with no results are in the search section below.") }}</p>
                 </div>
                 <p v-if="showMaturityNote" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
                     {{ ctrans("Conversations after :date can still turn into orders: orders, revenue and conversion for them are not final.", { date: shortDate(overview.mature_until) }) }}

@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\UI\ShowSysAdminDashboard;
 use App\Actions\SysAdmin\WithSysAdminAuthorization;
 use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\User;
 use App\Support\Forms\SesConfigurationBlueprint;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -160,6 +161,27 @@ class EditGroupSettings extends OrgAction
                                 'information' => __('The name customers see on every website that has not set its own. Left empty: :name', ['name' => config('services.shopping_assistant.name')]),
                                 'value'       => Arr::get($group->settings, 'shopping_assistant.name'),
                                 'placeholder' => config('services.shopping_assistant.name'),
+                                'required'    => false,
+                            ],
+                            'shopping_assistant_weekly_summary_user_ids' => [
+                                'type'        => 'multiselect-tags',
+                                'label'       => __('Weekly summary to'),
+                                'information' => __('Emailed every Monday: conversations, orders, revenue, AI cost and the top customer challenges of the week before, with a link to the report. Only group administrators and group webmasters receive it. Left empty: nobody.'),
+                                'options'     => User::where('group_id', $group->id)
+                                    ->where('status', true)
+                                    ->orderBy('contact_name')
+                                    ->get(['id', 'contact_name', 'username', 'nickname'])
+                                    ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                                'labelProp'   => 'name',
+                                'valueProp'   => 'id',
+                                'value'       => Arr::get($group->settings, 'shopping_assistant.weekly_summary_user_ids', []),
+                            ],
+                            'shopping_assistant_retention_months' => [
+                                'type'        => 'input',
+                                'label'       => __('Keep conversation texts for (months)'),
+                                'information' => __('After this, what customers wrote and were told is wiped and only the figures stay. Anonymising a customer wipes theirs at once. Left empty: :months', ['months' => config('services.shopping_assistant.retention_months')]),
+                                'value'       => Arr::get($group->settings, 'shopping_assistant.retention_months'),
+                                'placeholder' => (string) config('services.shopping_assistant.retention_months'),
                                 'required'    => false,
                             ],
                         ],

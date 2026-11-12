@@ -26820,5 +26820,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces faits = :packs paquets de :size + :loose à l'unité. En faire :more de plus pour :next paquets, ou terminer à :whole et laisser :loose à l'unité ?",
     ":count loose pieces left, not in a full pack": ":count pièces à l'unité restantes, hors paquet complet",
     "Back, make the pack up": "Retour, compléter le paquet",
-    "Yes, close with loose pieces": "Oui, clôturer avec des pièces à l'unité"
+    "Yes, close with loose pieces": "Oui, clôturer avec des pièces à l'unité",
+    "Helpful": "Utile",
+    "Not helpful": "Pas utile",
+    "Your feedback could not be saved, please try again.": "Votre avis n'a pas pu être enregistré, veuillez réessayer.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name est un assistant IA et peut se tromper. Notre équipe peut lire ces conversations pour améliorer notre service ; ne communiquez pas vos données de paiement."
 }

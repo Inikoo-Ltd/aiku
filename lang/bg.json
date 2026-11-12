@@ -9428,5 +9428,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces направени = :packs опаковки по :size + :loose единични. Направете още :more за :next опаковки или приключете на :whole и оставете :loose единични?",
     ":count loose pieces left, not in a full pack": ":count единични броя остават, извън пълна опаковка",
     "Back, make the pack up": "Назад, допълнете опаковката",
-    "Yes, close with loose pieces": "Да, затвори с единични броя"
+    "Yes, close with loose pieces": "Да, затвори с единични броя",
+    "Helpful": "Полезно",
+    "Not helpful": "Неполезно",
+    "Your feedback could not be saved, please try again.": "Оценката ви не можа да бъде запазена, моля, опитайте отново.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name е асистент с изкуствен интелект и може да греши. Нашият екип може да чете тези разговори, за да подобрява обслужването; моля, не споделяйте данни за плащане."
 }

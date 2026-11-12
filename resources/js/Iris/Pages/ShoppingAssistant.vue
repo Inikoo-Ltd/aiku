@@ -12,6 +12,8 @@ import TabPanel from "primevue/tabpanel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faSparkles, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset } from "@far"
+import { faThumbsUp, faThumbsDown } from "@far"
+import { faThumbsUp as fasThumbsUp, faThumbsDown as fasThumbsDown } from "@fas"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
@@ -26,7 +28,7 @@ import {
     shoppingAssistantQuestionKey,
     useShoppingAssistant,
 } from "@/Iris/Composables/useShoppingAssistant"
-library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faSparkles, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset)
+library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faSparkles, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
 
 type Card = ProductResource & {
     assistant_reason: string
@@ -45,6 +47,7 @@ type Message =
         links?: { label: string, url: string }[]
         hand_over_offer?: string | null
         handed_over?: boolean
+        feedback?: "up" | "down" | null
         groups: { must_haves: Card[], add_ons: Card[] }
     }
 
@@ -140,6 +143,28 @@ const historyUrl = () => jsonUrl("iris.json.shopping_assistant.index", {}, "/jso
 const showUrl = (id: string) => jsonUrl("iris.json.shopping_assistant.show", { conversation: id }, `/json/shopping-assistant/${id}`)
 const handOverUrl = () => jsonUrl("iris.json.shopping_assistant.hand_over", {}, "/json/shopping-assistant/hand-over")
 const eventsUrl = (id: string) => jsonUrl("iris.json.shopping_assistant.events.store", { conversation: id }, `/json/shopping-assistant/${id}/events`)
+const feedbackUrl = (id: string) => jsonUrl("iris.json.shopping_assistant.feedback.store", { conversation: id }, `/json/shopping-assistant/${id}/feedback`)
+
+const feedbackErrors = ref<Record<number, string>>({})
+
+const setFeedback = async (message: AssistantMessage, value: "up" | "down") => {
+    if (!conversation.value) {
+        return
+    }
+    const previous = message.feedback ?? null
+    const next = previous === value ? null : value
+    const apply = (feedback: "up" | "down" | null) => {
+        messages.value = messages.value.map((item) => item.id === message.id && item.role === "assistant" ? { ...item, feedback } : item)
+    }
+    apply(next)
+    feedbackErrors.value = { ...feedbackErrors.value, [message.id]: "" }
+    try {
+        await axios.post(feedbackUrl(conversation.value), { message_id: message.id, feedback: next })
+    } catch {
+        apply(previous)
+        feedbackErrors.value = { ...feedbackErrors.value, [message.id]: ctrans("Your feedback could not be saved, please try again.") }
+    }
+}
 
 const POLL_INTERVAL_MS = 1500
 const POLL_LIMIT_MS = 150_000
@@ -655,6 +680,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
                         <p v-if="errorMessage" class="mt-2 text-xs text-red-500">{{ errorMessage }}</p>
                         <p v-if="notice" class="mt-2 text-sm text-gray-600">{{ notice }}</p>
+                        <p class="mt-2 text-xs text-gray-500">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
 
                         <div class="landing-chips">
                             <button
@@ -905,6 +931,32 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                     </Button>
                                     <p v-if="handOverErrors[message.id]" class="mt-1 text-xs text-red-500">{{ handOverErrors[message.id] }}</p>
                                 </div>
+
+                                <div class="mt-2 flex items-center gap-1">
+                                    <Button
+                                        type="tertiary"
+                                        size="xs"
+                                        :tooltip="ctrans('Helpful')"
+                                        :aria-pressed="message.feedback === 'up'"
+                                        @click="setFeedback(message, 'up')"
+                                    >
+                                        <template #icon>
+                                            <FontAwesomeIcon :icon="message.feedback === 'up' ? 'fas fa-thumbs-up' : 'far fa-thumbs-up'" :class="message.feedback === 'up' ? 'text-green-600' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </Button>
+                                    <Button
+                                        type="tertiary"
+                                        size="xs"
+                                        :tooltip="ctrans('Not helpful')"
+                                        :aria-pressed="message.feedback === 'down'"
+                                        @click="setFeedback(message, 'down')"
+                                    >
+                                        <template #icon>
+                                            <FontAwesomeIcon :icon="message.feedback === 'down' ? 'fas fa-thumbs-down' : 'far fa-thumbs-down'" :class="message.feedback === 'down' ? 'text-red-500' : 'text-gray-400'" fixed-width aria-hidden="true" />
+                                        </template>
+                                    </Button>
+                                    <p v-if="feedbackErrors[message.id]" class="text-xs text-red-500">{{ feedbackErrors[message.id] }}</p>
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -980,6 +1032,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </div>
                     <p v-if="errorMessage" class="mt-1 text-xs text-red-500">{{ errorMessage }}</p>
                     <p v-else class="chat-composer-hint">{{ ctrans("Enter to send, Shift + Enter for a new line.") }}</p>
+                    <p class="chat-composer-hint">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
                 </div>
             </section>
         </div>

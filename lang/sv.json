@@ -9871,5 +9871,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces gjorda = :packs förpackningar à :size + :loose lösa. Gör :more till för :next förpackningar, eller avsluta på :whole och lämna :loose lösa?",
     ":count loose pieces left, not in a full pack": ":count lösa styck kvar, inte i en full förpackning",
     "Back, make the pack up": "Tillbaka, fyll på förpackningen",
-    "Yes, close with loose pieces": "Ja, stäng med lösa styck"
+    "Yes, close with loose pieces": "Ja, stäng med lösa styck",
+    "Helpful": "Hjälpsamt",
+    "Not helpful": "Inte hjälpsamt",
+    "Your feedback could not be saved, please try again.": "Ditt omdöme kunde inte sparas, försök igen.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name är en AI-assistent och kan göra misstag. Vår personal kan läsa dessa samtal för att förbättra vår service; dela inga betalningsuppgifter."
 }

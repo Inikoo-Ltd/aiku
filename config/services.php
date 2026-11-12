@@ -168,6 +168,8 @@ return [
         'monthly_budget'   => 30,
         'sales_lead_threshold_eur'  => 2000,
         'sales_lead_reminder_hours' => 4,
+        'retention_months'          => 24,
+        'challenges_model'          => env('SHOPPING_ASSISTANT_CHALLENGES_MODEL', 'anthropic/claude-haiku-5.5'),
     ],
     'product_development_artwork_check' => [
         'model' => env('PRODUCT_DEVELOPMENT_ARTWORK_CHECK_MODEL', 'anthropic/claude-opus-5.5'),

@@ -64,13 +64,15 @@ class FollowUpShoppingAssistantRestockQuestion
         $translated = $this->translate($answer, $locale);
         $message    = __('Our purchasing team answered your question:', [], $locale)."\n\n".$translated;
 
-        $conversation->messages()->create([
-            'role'  => ShoppingAssistantMessageRoleEnum::ASSISTANT,
-            'body'  => $message,
-            'model' => 'purchasing-team',
-            'flags' => ['purchasing_answer'],
-        ]);
-        $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
+        if (!$conversation->wiped_at) {
+            $conversation->messages()->create([
+                'role'  => ShoppingAssistantMessageRoleEnum::ASSISTANT,
+                'body'  => $message,
+                'model' => 'purchasing-team',
+                'flags' => ['purchasing_answer'],
+            ]);
+            $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
+        }
 
         $emailIsOn = $customer->shop->outboxes()
             ->where('code', OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER->value)

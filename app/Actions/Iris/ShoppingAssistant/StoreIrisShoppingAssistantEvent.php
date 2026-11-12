@@ -60,7 +60,7 @@ class StoreIrisShoppingAssistantEvent extends IrisAction
 
         $customerId = $this->signedInCustomerId();
         abort_unless(
-            $customerId && $conversation->customer_id === $customerId && $conversation->website_id === $this->website->id && GetShoppingAssistantSettings::run($this->website, $conversation->customer),
+            $customerId && $conversation->customer_id === $customerId && $conversation->website_id === $this->website->id && $conversation->wiped_at === null && GetShoppingAssistantSettings::run($this->website, $conversation->customer),
             404
         );
 

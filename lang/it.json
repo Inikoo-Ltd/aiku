@@ -12980,5 +12980,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces fatti = :packs confezioni da :size + :loose sfusi. Farne altri :more per :next confezioni, o finire a :whole e lasciare :loose sfusi?",
     ":count loose pieces left, not in a full pack": "Restano :count pezzi sfusi, non in una confezione completa",
     "Back, make the pack up": "Indietro, completa la confezione",
-    "Yes, close with loose pieces": "Sì, chiudi con pezzi sfusi"
+    "Yes, close with loose pieces": "Sì, chiudi con pezzi sfusi",
+    "Helpful": "Utile",
+    "Not helpful": "Non utile",
+    "Your feedback could not be saved, please try again.": "Non è stato possibile salvare la sua valutazione, riprovi.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name è un assistente IA e può sbagliare. Il nostro personale può leggere queste conversazioni per migliorare il servizio; non condivida dati di pagamento."
 }

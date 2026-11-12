@@ -26726,5 +26726,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces vyrobených = :packs balení po :size + :loose voľných. Vyrobiť ešte :more na :next balení, alebo dokončiť na :whole a nechať :loose voľných?",
     ":count loose pieces left, not in a full pack": "Zostáva :count voľných kusov mimo plného balenia",
     "Back, make the pack up": "Späť, doplniť balenie",
-    "Yes, close with loose pieces": "Áno, uzavrieť s voľnými kusmi"
+    "Yes, close with loose pieces": "Áno, uzavrieť s voľnými kusmi",
+    "Helpful": "Užitočné",
+    "Not helpful": "Neužitočné",
+    "Your feedback could not be saved, please try again.": "Vaše hodnotenie sa nepodarilo uložiť, skúste to znova.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name je asistent s umelou inteligenciou a môže sa mýliť. Náš tím môže tieto rozhovory čítať, aby sme zlepšili naše služby; nezdieľajte platobné údaje."
 }

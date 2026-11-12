@@ -166,6 +166,10 @@ Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se ab
 
 Las cifras principales y los pasos del embudo son enlaces: abren las conversaciones que hay detrás.
 
+**Answer ratings by customers** cuenta las respuestas que los clientes marcaron como útiles o no útiles con los pulgares que hay bajo cada respuesta, frente al periodo anterior. Las dos cifras son enlaces a las conversaciones que hay detrás.
+
+**Customer challenges to act on** es la lista de tareas para compras, producto y webmasters. Cada noche, la IA lee cada conversación que lleva dos horas sin mensajes y anota qué se interpuso entre el cliente y un pedido: un producto que no vendemos, algo agotado, el precio, el pedido mínimo o el tamaño de la caja, el envío o la entrega, un problema con la web, o cualquier otra cosa que el cliente describió. Una simple pregunta no es un obstáculo. Las etiquetas cuentan las conversaciones de cada tipo y las abren. La tabla muestra las 20 cosas más mencionadas, cada una con cuántas conversaciones, un ejemplo con las palabras del propio cliente y un enlace **Open** a la conversación más reciente. Las conversaciones sobre lo mismo en distintos idiomas se agrupan en una sola línea. Una conversación de hoy se lee esta noche; la línea sobre la tabla dice cuántas están esperando. Las búsquedas sin resultados están en **Search on the website**.
+
 ### Preguntas generales y traspasos
 
 En la pestaña **Overview**, **General questions and passing to a person** (preguntas generales y paso a una persona) muestra cómo trata el asistente las preguntas sobre la tienda y los traspasos a una persona. Solo se cuentan las conversaciones posteriores a la llegada de esta función. Cada cifra se compara con el periodo anterior y cada una es un enlace a las conversaciones que hay detrás.
@@ -186,4 +190,12 @@ En la pestaña **Conversations**, una columna muestra qué conversaciones se pas
 
 Una fila por conversación: cuándo empezó, el cliente, desde dónde se abrió, la primera pregunta, el número de mensajes, los productos mostrados, pulsados y añadidos, si siguió un pedido y por cuánto, y el coste de IA. Busca por cliente o por las palabras de una pregunta.
 
-Haz clic en la primera pregunta para leer la conversación. Bajo cada respuesta ves los productos que mostró con el motivo dado, cuáles pulsó, añadió y pidió el cliente, y las preguntas de seguimiento que se ofrecieron. Las conversaciones son solo para el personal: solo las personas que pueden ver la web en aiku pueden abrirlas.
+Haz clic en la primera pregunta para leer la conversación. Bajo cada respuesta ves los productos que mostró con el motivo dado, cuáles pulsó, añadió y pidió el cliente, las preguntas de seguimiento que se ofrecieron y la valoración del cliente. Arriba aparecen los obstáculos encontrados en la conversación. Las conversaciones son solo para el personal: solo las personas que pueden ver la web en aiku pueden abrirlas.
+
+## Resumen semanal y cuánto tiempo se guardan las conversaciones
+
+Cada lunes por la mañana (hora del Reino Unido) se envía un correo a las personas elegidas en **Sysadmin → Settings → AI shopping assistant → Weekly summary to**. Cubre de lunes a domingo de la semana anterior para todas las webs, comparado con la semana previa: conversaciones, clientes, pedidos e ingresos tras mostrar los productos, coste de IA, valoraciones de las respuestas, traspasos a una persona, los principales obstáculos de los clientes y las búsquedas sin resultados, con un enlace al informe. El correo no incluye citas de clientes; abre el informe para leerlas. Si no hay nadie elegido, no se envía ningún correo.
+
+Bajo la casilla donde escriben, los clientes ven que el asistente es una IA y puede equivocarse, que nuestro personal puede leer las conversaciones y que no deben compartir datos de pago.
+
+Lo que los clientes escribieron y lo que se les respondió se guarda durante 24 meses desde el último mensaje de la conversación, o durante los meses indicados en **Keep conversation texts for (months)** en los mismos ajustes. Después, cada noche se borran los textos, junto con las citas de ejemplo de los obstáculos y las preguntas rechazadas por los límites. Las cifras se mantienen, así que el informe sigue contando esas conversaciones, sus productos, pedidos y coste. Anonimizar a un cliente borra sus conversaciones al momento. Una conversación borrada lo indica en la parte superior de su página.

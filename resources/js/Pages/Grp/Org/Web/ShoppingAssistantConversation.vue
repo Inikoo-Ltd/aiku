@@ -40,6 +40,7 @@ type Message = {
     hand_over_offer_label?: string | null
     hand_over?: { route_label: string | null; in_hours: boolean | null; chat_route: RouteRef | null } | null
     wrong?: { by: string | null; at: string | null } | null
+    feedback?: "up" | "down" | null
     flags?: string[]
     actions?: string[]
     latency_ms?: number | null
@@ -70,6 +71,8 @@ const props = defineProps<{
         completion_tokens: number
         cost: number | null
         model: string | null
+        wiped_at: string | null
+        challenges: { label: string; topic: string; quote: string | null }[]
     }
     messages: Message[]
 }>()
@@ -133,6 +136,15 @@ const detailLine = (message: Message) =>
                 <dd class="whitespace-nowrap text-gray-800" :class="item.value ? '' : 'text-gray-400'">{{ item.value || "—" }}</dd>
             </div>
         </dl>
+        <div v-if="conversation.challenges.length" class="mt-3 flex flex-wrap gap-2">
+            <span v-for="challenge in conversation.challenges" :key="`${challenge.label}-${challenge.topic}`" class="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800" :title="challenge.quote ?? undefined">
+                <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
+                {{ challenge.label }}: {{ challenge.topic }}
+            </span>
+        </div>
+        <p v-if="conversation.wiped_at" class="mt-2 text-xs text-gray-500">
+            {{ ctrans("The texts of this conversation were wiped on :date; only its figures are kept.", { date: formatDate(conversation.wiped_at) }) }}
+        </p>
     </div>
 
     <div class="mx-auto max-w-4xl space-y-4 p-4">
@@ -146,7 +158,9 @@ const detailLine = (message: Message) =>
 
             <div v-else class="w-full max-w-[90%]">
                 <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                    <div v-if="visibleFlags(message).length || message.answer_kind_label || message.hand_over_offer_label || message.hand_over || message.wrong" class="mb-1.5 flex flex-wrap gap-1">
+                    <div v-if="visibleFlags(message).length || message.answer_kind_label || message.hand_over_offer_label || message.hand_over || message.wrong || message.feedback" class="mb-1.5 flex flex-wrap gap-1">
+                        <span v-if="message.feedback === 'up'" class="inline-flex items-center gap-1 rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-800">{{ ctrans("Customer: helpful") }}</span>
+                        <span v-if="message.feedback === 'down'" class="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-800">{{ ctrans("Customer: not helpful") }}</span>
                         <span v-if="message.answer_kind_label" class="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{{ message.answer_kind_label }}</span>
                         <span v-if="message.hand_over_offer_label" class="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">
                             <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />

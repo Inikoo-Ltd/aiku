@@ -9037,5 +9037,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces kész = :packs csomag :size darabos + :loose különálló. Készítsen még :more darabot :next csomaghoz, vagy fejezze be :whole darabnál, és :loose különálló marad?",
     ":count loose pieces left, not in a full pack": ":count különálló darab maradt, nincs teljes csomagban",
     "Back, make the pack up": "Vissza, kiegészítem a csomagot",
-    "Yes, close with loose pieces": "Igen, lezárás különálló darabokkal"
+    "Yes, close with loose pieces": "Igen, lezárás különálló darabokkal",
+    "Helpful": "Hasznos",
+    "Not helpful": "Nem hasznos",
+    "Your feedback could not be saved, please try again.": "Az értékelését nem sikerült menteni, kérjük, próbálja újra.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name egy MI-asszisztens, és tévedhet. Munkatársaink elolvashatják ezeket a beszélgetéseket szolgáltatásunk javítása érdekében; kérjük, ne adjon meg fizetési adatokat."
 }

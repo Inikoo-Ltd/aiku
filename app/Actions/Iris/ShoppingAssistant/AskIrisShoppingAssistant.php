@@ -73,6 +73,7 @@ class AskIrisShoppingAssistant extends IrisAction
                 ->where('customer_id', $customer->id)
                 ->where('website_id', $this->website->id)
                 ->where('status', ShoppingAssistantConversationStatusEnum::OPEN)
+                ->whereNull('wiped_at')
                 ->first();
             abort_unless($conversation, 404);
         }

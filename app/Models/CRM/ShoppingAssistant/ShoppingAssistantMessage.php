@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $cost
  * @property int|null $latency_ms
  * @property string|null $feedback
+ * @property \Illuminate\Support\Carbon|null $feedback_at
  * @property ShoppingAssistantAnswerKindEnum|null $answer_kind
  * @property string|null $source_kind
  * @property array<int, array{id: int, kind: string, source_type: string, source_id: ?string, title: string, url: ?string}>|null $sources
@@ -59,6 +60,7 @@ class ShoppingAssistantMessage extends Model
             'sources'         => 'array',
             'hand_over_offer' => ShoppingAssistantHandOverReasonEnum::class,
             'staff_rated_at'  => 'datetime',
+            'feedback_at'     => 'datetime',
         ];
     }
 

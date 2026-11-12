@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantChallengeTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
@@ -176,6 +177,7 @@ class ShowShoppingAssistantConversation extends OrgAction
                     'by' => $message->staff_rated_by_user_id ? $raters->get($message->staff_rated_by_user_id)?->chatName() : null,
                     'at' => $message->staff_rated_at?->toIso8601String(),
                 ] : null,
+                'feedback'   => $message->feedback,
                 'flags'      => $message->flags ?? [],
                 'actions'    => collect($message->tool_calls)->map(fn ($toolCall) => match ($toolCall['name'] ?? null) {
                     'add_to_basket'      => __('Added to the basket when the customer asked: :products', ['products' => collect($toolCall['added_product_ids'] ?? [])->map(fn ($id) => $addedCodes[$id] ?? null)->filter()->implode(', ') ?: __('nothing new')]),
@@ -245,6 +247,16 @@ class ShowShoppingAssistantConversation extends OrgAction
                     'completion_tokens' => (int) $conversation->completion_tokens,
                     'cost'              => (float) $conversation->cost * ($usdRate ?? 1),
                     'model'             => $conversation->model,
+                    'wiped_at'          => $conversation->wiped_at?->toIso8601String(),
+                    'challenges'        => DB::table('shopping_assistant_challenges')
+                        ->where('shopping_assistant_conversation_id', $conversation->id)
+                        ->orderBy('id')
+                        ->get(['type', 'topic', 'quote'])
+                        ->map(fn ($challenge) => [
+                            'label' => ShoppingAssistantChallengeTypeEnum::labels()[$challenge->type] ?? $challenge->type,
+                            'topic' => $challenge->topic,
+                            'quote' => $challenge->quote,
+                        ])->all(),
                 ],
                 'messages'         => $messages,
             ]

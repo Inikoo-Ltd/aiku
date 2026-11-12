@@ -7103,5 +7103,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces зроблено = :packs упаковок по :size + :loose поштучно. Зробити ще :more на :next упаковок чи завершити на :whole і залишити :loose поштучно?",
     ":count loose pieces left, not in a full pack": "Залишилось :count штук поза повною упаковкою",
     "Back, make the pack up": "Назад, доповнити упаковку",
-    "Yes, close with loose pieces": "Так, закрити зі штуками поза упаковкою"
+    "Yes, close with loose pieces": "Так, закрити зі штуками поза упаковкою",
+    "Helpful": "Корисно",
+    "Not helpful": "Некорисно",
+    "Your feedback could not be saved, please try again.": "Не вдалося зберегти Вашу оцінку, спробуйте ще раз.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name — це ШІ-асистент, який може помилятися. Наша команда може читати ці розмови, щоб покращувати обслуговування; не надсилайте платіжні дані."
 }

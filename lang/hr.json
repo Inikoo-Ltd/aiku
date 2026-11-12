@@ -9034,5 +9034,9 @@
     ":pieces made = :packs packs of :size + :loose loose. Make :more more for :next packs, or finish at :whole and leave :loose loose?": ":pieces napravljeno = :packs pakiranja po :size + :loose pojedinačnih. Napravite još :more za :next pakiranja ili završite na :whole i ostavite :loose pojedinačnih?",
     ":count loose pieces left, not in a full pack": "Ostalo je :count pojedinačnih komada izvan punog pakiranja",
     "Back, make the pack up": "Natrag, dopuni pakiranje",
-    "Yes, close with loose pieces": "Da, zatvori s pojedinačnim komadima"
+    "Yes, close with loose pieces": "Da, zatvori s pojedinačnim komadima",
+    "Helpful": "Korisno",
+    "Not helpful": "Nije korisno",
+    "Your feedback could not be saved, please try again.": "Vašu ocjenu nije bilo moguće spremiti, pokušajte ponovno.",
+    ":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.": ":name je AI asistent i može pogriješiti. Naš tim može čitati ove razgovore kako bi poboljšao uslugu; ne dijelite podatke o plaćanju."
 }
