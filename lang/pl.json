@@ -25819,5 +25819,7 @@
     "Transit & arrival": "Transport i przybycie",
     "Booked into stock": "Przyjęte na stan",
     "The :product is on order and expected between :from and :to.": "Produkt :product jest zamówiony. Dostawa spodziewana w terminie od :from do :to.",
-    "Our purchasing team answered your question:": "Odpowiedź naszego działu zakupów na Twoje pytanie:"
+    "Our purchasing team answered your question:": "Odpowiedź naszego działu zakupów na Twoje pytanie:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Zamówienia zakupu w trakcie, złożone lub uzgodnione i jeszcze nieprzyjęte na stan",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Zamówienia zakupu, które uzgodniono, dopóki ich kontener nie jest w drodze: uzgodnione, w realizacji, w Twoim magazynie, gotowe do drogi lub przekazane"
 }

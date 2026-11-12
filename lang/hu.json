@@ -8921,5 +8921,7 @@
     "Transit & arrival": "Szállítás és érkezés",
     "Booked into stock": "Készletre véve",
     "The :product is on order and expected between :from and :to.": "Megrendelt termék: :product. Várható érkezés: :from és :to között.",
-    "Our purchasing team answered your question:": "Beszerzési csapatunk válaszolt a kérdésére:"
+    "Our purchasing team answered your question:": "Beszerzési csapatunk válaszolt a kérdésére:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Folyamatban lévő, beküldött vagy megállapodott, még be nem vételezett beszerzési rendelések",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Azok a beszerzési rendelések, amelyekről megállapodott, amíg a konténerük úton nincs: megállapodva, gyártás alatt, az Ön raktárában, indulásra készen vagy átadva"
 }

@@ -10,6 +10,7 @@ namespace App\Actions\Procurement\SupplierAgreedTerm\UI;
 
 use App\Actions\Procurement\SupplierAgreedTerm\GetEffectiveSupplierAgreedTerms;
 use App\Actions\Procurement\WithAgreedTermsAuthorisation;
+use App\Actions\SupplyChain\SupplierAgreement\GetSupplierAgreementStatus;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteCategoryEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteIncidentOutcomeEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteIncidentTypeEnum;
@@ -17,6 +18,7 @@ use App\Enums\Procurement\ProcurementNote\ProcurementNoteSeverityEnum;
 use App\Enums\Procurement\ProcurementNote\ProcurementNoteVisibilityEnum;
 use App\Enums\Procurement\SupplierAgreedTerm\SupplierAgreedTermTypeEnum;
 use App\Enums\Procurement\SupplierAgreedTerm\SupplierAgreedTermValueTypeEnum;
+use App\Enums\SupplyChain\SupplierAgreement\SupplierAgreementStatusEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Http\Resources\Procurement\ProcurementNoteResource;
 use App\Http\Resources\Procurement\SupplierAgreedTermResource;
@@ -78,6 +80,7 @@ class GetAgreement
             )->resolve(),
             'open_incidents' => (clone $notes)->where('category', ProcurementNoteCategoryEnum::INCIDENT)->where('incident_outcome', ProcurementNoteIncidentOutcomeEnum::OPEN)->count(),
             'suppliers'      => $subject instanceof Agent ? $this->suppliersWithWarnings($subject, $organisation, $forAgent) : null,
+            'supplier_agreement' => $this->supplierAgreement($subject, $forAgent),
             'can_write'      => $canWrite,
             'is_supervisor'  => $canWrite && $this->isProcurementSupervisor($user, $subject->group),
             'user_id'        => $user->id,
@@ -127,6 +130,50 @@ class GetAgreement
                 'organisation_id' => null,
             ] : null,
         ];
+    }
+
+    /**
+     * Where a supplier stands with the group's Supplier Agreement with every acceptance it made, or for an agent each
+     * of its active suppliers' status, the ones still to accept first.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function supplierAgreement(Supplier|SupplierProduct|Agent $subject, bool $forAgent = false): ?array
+    {
+        $statuses = GetSupplierAgreementStatus::make();
+
+        if ($subject instanceof Supplier) {
+            $status = $statuses->handle($subject);
+            if (!$status) {
+                return null;
+            }
+
+            return $forAgent
+                ? collect($status)->only(['status', 'label', 'colour', 'icon', 'accepted_version', 'accepted_at', 'current_version', 'newer_version_to_read'])->all()
+                : [...$status, 'history' => $statuses->history($subject)];
+        }
+
+        if ($subject instanceof Agent) {
+            $suppliers = Supplier::where('agent_id', $subject->id)->where('status', true)->orderBy('code')->get(['id', 'slug', 'code', 'name', 'group_id']);
+            $byId      = $statuses->forSuppliers($subject->group_id, $suppliers->pluck('id'));
+            if ($byId === []) {
+                return null;
+            }
+
+            $rows = $suppliers->map(fn (Supplier $supplier) => [
+                'code' => $supplier->code,
+                'name' => $supplier->name,
+                'slug' => $forAgent ? null : $supplier->slug,
+                ...collect($byId[$supplier->id])->except($forAgent ? ['authorised_person', 'position'] : [])->all(),
+            ])->sortBy(fn (array $row) => [$row['status'] === SupplierAgreementStatusEnum::ACCEPTED->value ? 1 : 0, $row['code']])->values();
+
+            return [
+                'suppliers'     => $rows->all(),
+                'not_accepted'  => $rows->where('status', '!=', SupplierAgreementStatusEnum::ACCEPTED->value)->count(),
+            ];
+        }
+
+        return null;
     }
 
     /**

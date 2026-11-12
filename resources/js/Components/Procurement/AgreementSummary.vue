@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHandshake, faInfoCircle, faExclamationTriangle, faThumbtack, faPrint } from '@fal'
 import { faExclamationCircle } from '@fas'
 import { noteCategoryClass, noteSeverityIcon } from '@/Components/Procurement/procurementNoteColours'
+import SupplierAgreementAcceptances from '@/Components/Procurement/SupplierAgreementAcceptances.vue'
 
 library.add(faHandshake, faInfoCircle, faExclamationTriangle, faThumbtack, faPrint, faExclamationCircle)
 
@@ -38,6 +39,7 @@ defineProps<{
         open_incidents: number
         print_route?: { name: string, parameters: object } | null
         suppliers?: { code: string, name: string, warnings: number, open_incidents: number }[] | null
+        supplier_agreement?: object | null
     }
     showLevel?: boolean
 }>()
@@ -113,5 +115,7 @@ defineProps<{
                 </tbody>
             </table>
         </div>
+
+        <SupplierAgreementAcceptances v-if="agreement.supplier_agreement" :supplierAgreement="agreement.supplier_agreement" />
     </section>
 </template>

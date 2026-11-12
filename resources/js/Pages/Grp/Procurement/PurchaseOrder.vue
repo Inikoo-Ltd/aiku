@@ -17,6 +17,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
 import AgreementSummary from "@/Components/Procurement/AgreementSummary.vue"
+import SupplierAgreementStatusBadge from "@/Components/Procurement/SupplierAgreementStatusBadge.vue"
 import PackingSpecGaps from "@/Components/Procurement/PackingSpecGaps.vue"
 import AgreedTermDifferences from "@/Components/Procurement/AgreedTermDifferences.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
@@ -165,7 +166,20 @@ const props = defineProps < {
         image_full: { original_url: string; download_url: string } | null
     }[]
     submit_problems?: SubmitProblem[]
-	agreement: { terms: object[], notes: object[], open_incidents: number, must_acknowledge: boolean }
+	agreement: {
+		terms: object[]
+		notes: object[]
+		open_incidents: number
+		must_acknowledge: boolean
+		supplier_agreement_status: {
+			status: string
+			label: string
+			colour: string
+			icon: string
+			warning: string | null
+			order_acceptance: { version: number, accepted_at: string, authorised_person: string } | null
+		} | null
+	}
 	agreed_term_differences?: InstanceType<typeof AgreedTermDifferences>["$props"]["differences"] | null
 	packing_spec_gaps?: InstanceType<typeof PackingSpecGaps>["$props"]["gaps"] | null
     tabs: {
@@ -1075,6 +1089,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			<PurchaseOrderReferenceTitle :reference="pageHead.title" :slug="data.data.slug" :rename-reference="rename_reference ?? null" />
 		</template>
 		<template #afterTitle2>
+			<SupplierAgreementStatusBadge v-if="agreement.supplier_agreement_status" v-tooltip="ctrans('Supplier Agreement')" :status="agreement.supplier_agreement_status" />
 			<span v-if="lastEdit" class="text-xs font-normal text-gray-500">
 				{{ ctrans("Last edited by :user on :date", { user: lastEdit.user ?? "?", date: useFormatTime(lastEdit.at, { formatTime: "short-datetime" }) }) }}
 			</span>
@@ -1617,6 +1632,20 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	</div>
 
 	<AspoDepositsChecklist v-if="deposits" :deposits="deposits" />
+
+	<div v-if="agreement.supplier_agreement_status?.warning || agreement.supplier_agreement_status?.order_acceptance" class="px-4 pt-4">
+		<p v-if="agreement.supplier_agreement_status.warning" class="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+			<SupplierAgreementStatusBadge :status="agreement.supplier_agreement_status" />
+			<span>{{ ctrans("This supplier has not accepted the current Supplier Agreement. The order can still be sent.") }}</span>
+		</p>
+		<p v-if="agreement.supplier_agreement_status.order_acceptance" class="mt-1 text-xs text-gray-500">
+			{{ ctrans("Confirmed under Supplier Agreement v:version, accepted by :person on :date", {
+				version: agreement.supplier_agreement_status.order_acceptance.version,
+				person: agreement.supplier_agreement_status.order_acceptance.authorised_person,
+				date: useFormatTime(agreement.supplier_agreement_status.order_acceptance.accepted_at),
+			}) }}
+		</p>
+	</div>
 
 	<div v-if="agreement.terms.length || agreement.notes.length || agreement.open_incidents" class="px-4 pt-4">
 		<AgreementSummary :agreement="agreement" showLevel />

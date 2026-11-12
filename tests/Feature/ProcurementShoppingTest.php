@@ -1703,7 +1703,7 @@ test('goods the stock sheet or container list puts in the agent warehouse confir
     App\Actions\Procurement\AgentWarehouseStock\ImportAgentWarehouseStocksFromContainerList::run($this->agent, $containerOrder->organisation, $containerList);
     unlink($containerList);
 
-    expect($containerOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::CONFIRMED)
+    expect($containerOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::IN_PRODUCTION)
         ->and($containerOrder->production_started_at)->not->toBeNull();
 });
 

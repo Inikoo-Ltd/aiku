@@ -26610,5 +26610,7 @@
     "Transit & arrival": "Preprava a príchod",
     "Booked into stock": "Naskladnené",
     "The :product is on order and expected between :from and :to.": "Produkt :product je objednaný. Dodanie sa očakáva od :from do :to.",
-    "Our purchasing team answered your question:": "Odpoveď nášho nákupného tímu na vašu otázku:"
+    "Our purchasing team answered your question:": "Odpoveď nášho nákupného tímu na vašu otázku:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Nákupné objednávky rozpracované, predložené alebo dohodnuté, ktoré ešte nie sú naskladnené",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Nákupné objednávky, ktoré ste dohodli, kým ich kontajner nie je na ceste: dohodnuté, vo výrobe, vo vašom sklade, pripravené na cestu alebo odovzdané"
 }

@@ -7,6 +7,7 @@
  *  Version 4.0
  */
 
+use App\Actions\SupplyChain\SupplierAgreement\AcceptSupplierAgreement;
 use App\Actions\Comms\Unsubscribe\UnsubscribeMailshot;
 use App\Actions\Helpers\Redirects\RedirectUnsubscribe;
 use App\Actions\Helpers\Redirects\ShowUnsubscribeError;
@@ -48,6 +49,7 @@ Route::prefix('supplier-share/{token}')->as('supplier_share.')->where(['token' =
         Route::post('submissions/{type}', StoreSupplierPortalSubmission::class)->middleware('throttle:supplier-portal-submit')->where('type', '[a-z_]+')->name('submit');
         Route::post('submissions/{submission}/update', [StoreSupplierPortalSubmission::class, 'inSubmission'])->middleware('throttle:supplier-portal-submit')->whereNumber('submission')->name('submission.update');
         Route::post('profile', UpdateSupplierPortalProfile::class)->middleware('throttle:supplier-portal-submit')->name('profile.update');
+        Route::post('agreement', AcceptSupplierAgreement::class)->middleware('throttle:supplier-portal-submit')->name('agreement.accept');
         Route::get('search', SearchSupplierPortal::class)->name('search');
         Route::get('products', IndexSupplierPortalProducts::class)->name('products');
         Route::get('products/{supplierProduct}/websites', GetSupplierPortalProductWebsites::class)->whereNumber('supplierProduct')->name('product_websites');

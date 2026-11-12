@@ -8918,5 +8918,7 @@
     "Transit & arrival": "Prijevoz i dolazak",
     "Booked into stock": "Uknjiženo na zalihu",
     "The :product is on order and expected between :from and :to.": "Proizvod :product je naručen. Isporuka se očekuje od :from do :to.",
-    "Our purchasing team answered your question:": "Odgovor našeg tima za nabavu na vaše pitanje:"
+    "Our purchasing team answered your question:": "Odgovor našeg tima za nabavu na vaše pitanje:",
+    "Purchase orders in process, submitted or agreed and not booked in yet": "Narudžbenice u obradi, poslane ili dogovorene, koje još nisu zaprimljene na zalihu",
+    "Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over": "Narudžbenice koje ste dogovorili, dok njihov kontejner nije na putu: dogovorene, u izradi, u vašem skladištu, spremne za polazak ili predane"
 }

@@ -730,7 +730,12 @@ test('UI index purchase orders for supplier shows supplier-specific columns and 
                 'in_process'   => [__('In process'), 11],
                 'submitted'    => [__('Submitted'), 12],
                 'confirmed'    => [__('Agreed'), 13],
-                'settled'      => [__('Settled'), 14],
+                'in_production' => [__('Making It Happen'), 0],
+                'in_warehouse' => [__('In warehouse'), 0],
+                'ready'        => [__('Ready to Roll'), 0],
+                'handed_over'  => [__('Clean Hand Over'), 0],
+                'arrived'      => [__('Homeward Bound'), 0],
+                'settled'      => [__('Counted & Costed'), 14],
                 'cancelled'    => [__('Cancelled'), 15],
                 'not_received' => [__('Not Received'), 16],
             ])
