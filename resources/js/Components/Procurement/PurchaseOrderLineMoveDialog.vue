@@ -70,7 +70,7 @@ const productFields = ["code", "name", "cost", "units_per_carton"]
 
 const suppliers = ref<SupplierOption[]>([])
 const isFetching = ref(false)
-const onlySuppliersWithProducts = ref(true)
+const onlySuppliersWithProducts = ref(false)
 const orgSupplierId = ref<number | null>(null)
 const purchaseOrderReference = ref("")
 const referenceSuggestions = ref<string[]>([])
@@ -85,14 +85,14 @@ const typedReference = computed(() => purchaseOrderReference.value.trim())
 const joinsOpenOrder = computed(() => !!supplier.value && supplier.value.open_purchase_orders.some((reference) => reference.toLowerCase() === typedReference.value.toLowerCase()))
 
 const sellsEveryProduct = (option: SupplierOption) => option.products_count === props.items.length
+const sellsSomeProducts = (option: SupplierOption) => option.products_count > 0 && !sellsEveryProduct(option)
 const supplierOptions = computed(() =>
 	suppliers.value
 		.filter((option) => !onlySuppliersWithProducts.value || sellsEveryProduct(option))
+		.sort((first, second) => second.products_count - first.products_count)
 		.map((option) => ({
 			...option,
-			label: !onlySuppliersWithProducts.value && isMany.value && option.products_count
-				? `${option.code} ${option.name} (${ctrans("sells :count of :total", { count: option.products_count, total: props.items.length })})`
-				: `${option.code} ${option.name}`,
+			label: `${option.code} ${option.name}`,
 		}))
 )
 
@@ -155,7 +155,7 @@ watch(visible, async (isVisible) => {
 
 	orgSupplierId.value = null
 	purchaseOrderReference.value = ""
-	onlySuppliersWithProducts.value = true
+	onlySuppliersWithProducts.value = false
 	errors.value = {}
 	lines.value = Object.fromEntries(props.items.map((item) => [item.id, {
 		quantity: ordered(item),
@@ -243,7 +243,27 @@ function submit() {
 							: ctrans('The agent has no other supplier')"
 					:class="fieldFocusClass"
 					fluid
-				/>
+				>
+					<template #option="{ option }">
+						<div class="flex w-full min-w-0 items-center gap-2">
+							<span class="whitespace-nowrap font-medium">{{ option.code }}</span>
+							<span class="truncate text-gray-500">{{ option.name }}</span>
+							<span
+								v-if="sellsEveryProduct(option)"
+								class="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700"
+							>
+								<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+								{{ isMany ? ctrans("Has all products") : ctrans("Has this product") }}
+							</span>
+							<span
+								v-else-if="sellsSomeProducts(option)"
+								class="ml-auto shrink-0 whitespace-nowrap rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+							>
+								{{ ctrans("Has :count of :total", { count: option.products_count, total: items.length }) }}
+							</span>
+						</div>
+					</template>
+				</Select>
 				<label class="flex cursor-pointer items-center gap-2 text-xs text-gray-600 w-fit">
 					<Checkbox v-model="onlySuppliersWithProducts" binary size="small" />
 					{{ isMany
