@@ -13,6 +13,7 @@ use App\Actions\Chat\Whatsapp\HandleWhatsappWebhook;
 use App\Actions\Chat\Whatsapp\VerifyWhatsappWebhook;
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\CRM\Customer\GoogleAds\CallbackShopGoogleAds;
+use App\Actions\Catalogue\Shop\GoogleMerchant\CallbackShopGoogleMerchant;
 use App\Actions\CRM\TrafficSource\ReceiveTrafficSourceCostWebhook;
 use App\Actions\Dropshipping\Allegro\User\AuthenticateAllegroAccount;
 use App\Actions\Dropshipping\Wix\Webhooks\HandleWixAppInstanceInstalled;
@@ -54,6 +55,7 @@ Route::name('webhooks.')->group(function () {
 });
 
 Route::get('google-ads/callback', CallbackShopGoogleAds::class)->name('google_ads.callback');
+Route::get('google-merchant/callback', CallbackShopGoogleMerchant::class)->name('google_merchant.callback');
 Route::get('google-tag-manager/callback', CallbackGoogleTagManager::class)->name('google_tag_manager.callback');
 
 Route::middleware('verify.shopify.webhook')->prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
