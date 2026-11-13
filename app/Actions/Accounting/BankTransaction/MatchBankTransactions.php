@@ -199,7 +199,7 @@ class MatchBankTransactions
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'another bank line is already matched to this order'])];
         }
 
-        if ($difference > $this->feeTolerance($owed, $bankTransaction)) {
+        if ($difference > $this->overpayTolerance($owed, $bankTransaction)) {
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'pays more than owed'])];
         }
         if (-$difference > $this->feeTolerance($owed, $bankTransaction)) {
@@ -227,29 +227,37 @@ class MatchBankTransactions
 
     public const float DEFAULT_FEE_CEILING_EUR = 15;
 
-    /** @var array<string, float> */
-    private array $feeCeilings = [];
+    public const float OVERPAY_CEILING_EUR = 5;
+
+    /** @var array<int, float> */
+    private array $euroRates = [];
 
     /**
      * Banks take small fees off incoming transfers (0.2-0.8% seen on Wise): accept up to 1% short, never more than the
-     * connection's ceiling (15 EUR by default) in the line's currency. A line short by more goes to review. The same
-     * tolerance lets a transfer rounded up (whole forints) pay the order on its own; the few cents extra stay on it.
+     * connection's ceiling (15 EUR by default) in the line's currency. A line short by more goes to review.
      */
     public function feeTolerance(float $owed, BankTransaction $bankTransaction): float
     {
-        return round(min($owed * 0.01, $this->feeCeiling($bankTransaction)), 2);
+        $ceilingEur = (float)($bankTransaction->bankConnection->settings['fee_ceiling_eur'] ?? self::DEFAULT_FEE_CEILING_EUR);
+
+        return round(min($owed * 0.01, $ceilingEur * $this->euroRate($bankTransaction)), 2);
     }
 
-    private function feeCeiling(BankTransaction $bankTransaction): float
+    /**
+     * A transfer rounded up (whole forints) pays the order on its own when it is over by at most 0.5%, never more
+     * than 5 EUR in the line's currency; the extra stays on the order. A bigger overpayment goes to review.
+     */
+    public function overpayTolerance(float $owed, BankTransaction $bankTransaction): float
     {
-        $key = $bankTransaction->bank_connection_id.':'.$bankTransaction->currency_id;
+        return round(min($owed * 0.005, self::OVERPAY_CEILING_EUR * $this->euroRate($bankTransaction)), 2);
+    }
 
-        return $this->feeCeilings[$key] ??= (function () use ($bankTransaction) {
-            $ceilingEur = (float)($bankTransaction->bankConnection->settings['fee_ceiling_eur'] ?? self::DEFAULT_FEE_CEILING_EUR);
-            $euro       = Currency::where('code', 'EUR')->firstOrFail();
-            $rate       = $bankTransaction->currency_id === $euro->id ? 1.0 : GetCurrencyExchange::run($euro, $bankTransaction->currency);
+    private function euroRate(BankTransaction $bankTransaction): float
+    {
+        return $this->euroRates[$bankTransaction->currency_id] ??= (function () use ($bankTransaction) {
+            $euro = Currency::where('code', 'EUR')->firstOrFail();
 
-            return $rate ? $ceilingEur * $rate : 0.0;
+            return (float)($bankTransaction->currency_id === $euro->id ? 1.0 : GetCurrencyExchange::run($euro, $bankTransaction->currency));
         })();
     }
 
