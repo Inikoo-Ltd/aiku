@@ -8,6 +8,8 @@
 
 namespace App\Actions\Traits\Authorisations;
 
+use App\Models\Inventory\Warehouse;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithDispatchingAuthorisation
@@ -19,7 +21,12 @@ trait WithDispatchingAuthorisation
             return true;
         }
 
-        return $request->user()->authTo(["dispatching.{$this->warehouse->id}.view", "fulfilment.{$this->warehouse->id}.view"]);
+        return self::canViewDispatching($request->user(), $this->warehouse);
 
+    }
+
+    public static function canViewDispatching(User $user, Warehouse $warehouse): bool
+    {
+        return $user->authTo(["dispatching.$warehouse->id.view", "fulfilment.$warehouse->id.view"]);
     }
 }

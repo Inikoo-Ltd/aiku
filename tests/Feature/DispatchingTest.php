@@ -188,6 +188,8 @@ use function Pest\Laravel\getJson;
 use function Pest\Laravel\patch;
 use function Pest\Laravel\post;
 
+require_once __DIR__.'/../Support/DispatchingHelpers.php';
+
 beforeAll(function () {
     loadDB();
 });
@@ -1347,19 +1349,6 @@ it('nullifies delivery note tracking number when no shipments exist', function (
     expect($deliveryNote->tracking_number)->toBeNull();
 });
 
-function makeDeliveryNote($ctx): DeliveryNote
-{
-    return StoreDeliveryNote::make()->action($ctx->order, [
-        'reference'        => 'DN'.Str::random(6),
-        'state'            => DeliveryNoteStateEnum::UNASSIGNED,
-        'email'            => 'test@email.com',
-        'phone'            => '+62081353890000',
-        'date'             => date('Y-m-d'),
-        'delivery_address' => new Address(Address::factory()->definition()),
-        'warehouse_id'     => $ctx->warehouse->id,
-    ]);
-}
-
 function makeOrgStock($ctx)
 {
     $stock = StoreStock::make()->action($ctx->group, Stock::factory()->definition());
@@ -1616,63 +1605,6 @@ test('UI delivery notes in customer group and org stock', function () {
     get(route('grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show.delivery_notes', [$this->organisation->slug, $this->warehouse->slug, $orgStock->slug]))->assertOk();
     get(route('grp.overview.ordering.delivery_notes.index'))->assertOk();
 });
-
-function freshSubmittedOrder($ctx)
-{
-    $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($ctx->customer, [
-        'reference'        => 'O'.Str::random(8),
-        'date'             => date('Y-m-d'),
-        'customer_id'      => $ctx->customer->id,
-        'delivery_address' => new Address(Address::factory()->definition()),
-        'billing_address'  => new Address(Address::factory()->definition()),
-    ]);
-    StoreTransaction::make()->action($order, $ctx->product->historicAsset, Transaction::factory()->definition());
-
-    return SubmitOrder::make()->action($order);
-}
-
-function giveParcelDimensions(DeliveryNote $deliveryNote): void
-{
-    $deliveryNote->update(['parcels' => [['weight' => 1, 'dimensions' => [30, 20, 10]]]]);
-}
-
-function handlingDeliveryNoteWithPicking($ctx, int $pickedQuantity = 10): array
-{
-    $order        = freshSubmittedOrder($ctx);
-    $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $ctx->warehouse->id]);
-    $deliveryNote->deliveryNoteItems()->delete();
-
-    $stock       = StoreStock::make()->action($ctx->group, Stock::factory()->definition());
-    $stock       = UpdateStock::make()->action($stock, ['state' => StockStateEnum::ACTIVE]);
-    $orgStock    = StoreOrgStock::make()->action($ctx->organisation, $stock);
-    $transaction = $order->transactions()->first();
-
-    $deliveryNoteItem = StoreDeliveryNoteItem::make()->action($deliveryNote, [
-        'delivery_note_id'  => $deliveryNote->id,
-        'org_stock_id'      => $orgStock->id,
-        'transaction_id'    => $transaction->id,
-        'quantity_required' => 10,
-    ]);
-
-    $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $ctx->user);
-    $deliveryNote = StartHandlingDeliveryNote::make()->action($deliveryNote, $ctx->user);
-
-    $location         = StoreLocation::make()->action($ctx->warehouse, Location::factory()->definition());
-    $locationOrgStock = StoreLocationOrgStock::make()->action(
-        orgStock: $deliveryNoteItem->orgStock,
-        location: $location,
-        modelData: ['quantity' => 100, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
-        strict: false
-    );
-
-    StorePicking::make()->action($deliveryNoteItem, $ctx->user, [
-        'picker_user_id'        => $ctx->user->id,
-        'location_org_stock_id' => $locationOrgStock->id,
-        'quantity'              => $pickedQuantity,
-    ]);
-
-    return [$deliveryNote->refresh(), $deliveryNoteItem->refresh()];
-}
 
 test('delivery note lifecycle to picked and packing and finalise dispatch', function () {
     [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
@@ -1969,23 +1901,6 @@ test('intrastat export redo works a year of dispatches at a time', function () {
         ['2026-01-01', '2026-02-01'],
     ]);
 });
-
-function finalisedDeliveryNote($ctx): array
-{
-    [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($ctx);
-    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
-    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $ctx->user);
-    giveParcelDimensions($item->deliveryNote);
-    StorePacking::make()->action($item->refresh(), $ctx->user, []);
-    $deliveryNote = UpdateDeliveryNoteStatePacked::make()->action($deliveryNote->refresh(), $ctx->user);
-
-    $shipper = StoreShipper::make()->action($ctx->organisation, ['code' => 'SH'.Str::random(4), 'name' => 'Sh', 'trade_as' => 'sh']);
-    StoreShipment::make()->action($deliveryNote, $shipper, ['tracking' => 'TRK'.Str::random(4)]);
-
-    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\FinaliseDeliveryNote::make()->action($deliveryNote->refresh());
-
-    return [$deliveryNote->refresh(), $item->refresh()];
-}
 
 test('repacking a finalised delivery note returns it and its order to finalised without a second invoice', function () {
     [$deliveryNote] = finalisedDeliveryNote($this);
@@ -3747,28 +3662,6 @@ test('cancelling the last unpacked note of a picking session finishes it and fre
     expect($pickingSession->refresh()->state)->toBe(PickingSessionStateEnum::PACKING_FINISHED)
         ->and($trolley->refresh()->picking_session_id)->toBeNull();
 });
-
-function apiShipper($ctx, string $apiShipper)
-{
-    return StoreShipper::make()->action($ctx->organisation, [
-        'code'        => strtoupper(Str::random(5)),
-        'name'        => $apiShipper.' carrier',
-        'trade_as'    => $apiShipper,
-        'api_shipper' => $apiShipper,
-    ]);
-}
-
-function deliveryNoteForShipping($ctx): DeliveryNote
-{
-    $deliveryNote = makeDeliveryNote($ctx);
-    $deliveryNote->update([
-        'parcels' => [
-            ['weight' => 2, 'dimensions' => [10, 20, 30]],
-        ],
-    ]);
-
-    return $deliveryNote->refresh();
-}
 
 test('carrier api apc-gb success', function () {
     Config::set('app.sandbox.shipper_apc_token', 'test-token');

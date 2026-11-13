@@ -28,6 +28,7 @@ class IndexDeliveryNotes extends OrgAction
     use WithDispatchingAuthorisation;
     use IsDeliveryNotesIndex;
 
+    public const array CHANNELS_WITHOUT_PICKING_SESSIONS = ['b2b', 'external', self::PARTNERS_CHANNEL];
 
     private string $shopType;
 
@@ -67,7 +68,7 @@ class IndexDeliveryNotes extends OrgAction
         }
 
         $isQueueBucket = in_array($this->bucket, ['unassigned', 'queued'], true);
-        $isHiddenShop  = !in_array($this->shopType, ['b2b', 'external', self::PARTNERS_CHANNEL], true);
+        $isHiddenShop  = !in_array($this->shopType, self::CHANNELS_WITHOUT_PICKING_SESSIONS, true);
 
         $todo = $isQueueBucket && $isHiddenShop && $this->warehouse->canBeWorkedInBy(request()->user());
 

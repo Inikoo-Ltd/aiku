@@ -82,7 +82,7 @@ class StoreNotPickPicking extends OrgAction
      * amount the picking screen prints on the button, so pressing it twice cannot claim the
      * quantity twice the way subtracting only the picks did.
      */
-    private function outstandingQuantity(DeliveryNoteItem $deliveryNoteItem): float
+    public function outstandingQuantity(DeliveryNoteItem $deliveryNoteItem): float
     {
         $outstanding = (float)$deliveryNoteItem->quantity_required
             - (float)$deliveryNoteItem->quantity_picked
