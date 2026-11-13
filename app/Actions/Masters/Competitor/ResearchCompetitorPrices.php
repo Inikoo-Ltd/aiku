@@ -419,7 +419,7 @@ PROMPT;
         $hrefs    = array_column($page['links'] ?? [], 'href');
 
         return collect(is_array($products) ? $products : [])
-            ->filter(fn ($product) => is_array($product) && in_array($product['url'] ?? null, $hrefs, true) && filled($product['name'] ?? null))
+            ->filter(fn ($product) => is_array($product) && in_array($product['url'] ?? null, $hrefs, true) && filled($product['name'] ?? null) && static::isProductLink($product['url'], $page))
             ->map(fn ($product) => [
                 'url'           => $product['url'],
                 'name'          => mb_substr((string) $product['name'], 0, 500),
@@ -431,6 +431,19 @@ PROMPT;
             ->take(3)
             ->values()
             ->all();
+    }
+
+    /**
+     * A product is saved by its link, so a link that is not a product page would merge different products into one
+     * row (HELP-4686 QA: The Soap Kitchen's results all linked to its homepage, and 10 of our products were matched
+     * to one row named after the last of them). The homepage and the results page itself are never a product.
+     */
+    public static function isProductLink(string $url, array $page): bool
+    {
+        $withoutQuery = fn (?string $link) => rtrim(strtok((string) $link, '?#'), '/');
+
+        return trim((string) parse_url($url, PHP_URL_PATH), '/') !== ''
+            && !in_array($withoutQuery($url), [$withoutQuery($page['url'] ?? null), $withoutQuery($page['final_url'] ?? null)], true);
     }
 
     private function save(Competitor $competitor, MasterAsset $masterAsset, string $searchWords, array $candidate): void

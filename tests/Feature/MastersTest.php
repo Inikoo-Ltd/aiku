@@ -5785,6 +5785,25 @@ describe('competitor prices, HELP-3605', function () {
             ->and($product->barcode)->toBe('23416048');
     });
 
+    test('a search result whose link is the homepage or the results page is not saved, so different products never share a row, HELP-4686', function () {
+        $page = [
+            'url'       => 'https://rival.example.com/?s=Lime',
+            'final_url' => 'https://rival.example.com/search/Lime/',
+            'links'     => [
+                ['href' => 'https://rival.example.com/', 'text' => 'Home'],
+                ['href' => 'https://rival.example.com/search/Lime', 'text' => 'Results'],
+                ['href' => 'https://rival.example.com/lime-essential-oil/', 'text' => 'Lime Essential Oil'],
+            ],
+        ];
+        $answer = json_encode(['products' => [
+            ['url' => 'https://rival.example.com/', 'name' => 'Lime Essential Oil, Distilled', 'price' => 3.5, 'units' => 1, 'same_item' => true],
+            ['url' => 'https://rival.example.com/search/Lime', 'name' => 'Lime Essential Oil', 'price' => 3.5, 'units' => 1, 'same_item' => true],
+            ['url' => 'https://rival.example.com/lime-essential-oil/', 'name' => 'Lime Essential Oil', 'price' => 3.5, 'units' => 1, 'same_item' => true],
+        ]]);
+
+        expect(array_column(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::candidates($answer, $page), 'url'))->toBe(['https://rival.example.com/lime-essential-oil/']);
+    });
+
     test('a competitor is searched with our name without its size, pack, label or codes, HELP-4686', function () {
         $query = fn (string $name) => \App\Actions\Masters\Competitor\ResearchCompetitorPrices::searchQuery($name);
 
