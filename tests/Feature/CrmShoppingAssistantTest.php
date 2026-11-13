@@ -3039,6 +3039,8 @@ test('on a dropshipping shop the assistant is on, coaches and sells with the cus
         expect($prompt)->toContain('dropshipping advisor and salesperson')
             ->and($prompt)->toContain('Their sales channels with us: Shopify store "Moon Gifts", has our products, no orders yet, connection problem')
             ->and($prompt)->toContain('Dropshipping coaching and selling:')
+            ->and($prompt)->toContain('Never explain how to connect a store they already have connected')
+            ->and($prompt)->toContain('suggest opening another they do not have yet')
             ->and($prompt)->not->toContain('call add_to_basket')
             ->and($prompt)->not->toContain('big_order_lead')
             ->and($toolNames)->not->toContain('add_to_basket')
