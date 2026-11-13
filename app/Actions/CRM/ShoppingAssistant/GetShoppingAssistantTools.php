@@ -19,6 +19,8 @@ use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
 use App\Actions\Tasks\GetAikuAssistant;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
+use App\Helpers\NaturalLanguage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeSourceEnum;
@@ -79,6 +81,10 @@ use Throwable;
  * products_on_offer lists the products whose card discount is a sale running now (a category-offers
  * campaign such as Black Friday, never member prices), optionally of one kind; the model never gets a
  * sale name or a percentage.
+ *
+ * product_documents gives one product's public documents (SDS, IFRA, allergen declaration...) as
+ * download links under the reply, and its CPNP number and ingredients as a sentence written here,
+ * the same documents and details the product page shows.
  *
  * restock_information says when an out of stock product the customer names is expected back, from
  * what is on order (GetProductRestockEstimate), as a sentence written here with a half-month window,
@@ -229,6 +235,14 @@ class GetShoppingAssistantTools
                 ['family_id']
             ),
             $this->tool(
+                'product_documents',
+                'The public documents of one product and its compliance details: SDS (safety data sheet), IFRA certificate, allergen declaration, declaration of conformity, CPSR, test reports and how-to-use guides, plus its CPNP number, ingredients and countries of origin. Use it whenever the customer asks for any of these, for a product or a kind of product. The download links, the CPNP number and the ingredients are added under your reply by the system; you get only which documents exist. Returns no products.',
+                [
+                    'query' => ['type' => 'string', 'description' => 'The product the customer asked about, by name or code, in their words.'],
+                ],
+                ['query']
+            ),
+            $this->tool(
                 'dispatch_times',
                 'How quickly this shop dispatches orders, from the last 30 days. Use it when the customer asks how fast orders are sent, dispatched or shipped out. The sentence with the figure is added under your reply by the system; you get no figure. Returns no products.',
                 []
@@ -346,6 +360,7 @@ class GetShoppingAssistantTools
                 'ask_purchasing_team'            => $this->askPurchasingTeam($conversation, $customer, $arguments),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
+                'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
                 default                          => $this->error("Unknown tool $name."),
@@ -990,6 +1005,75 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => implode(' ', $facts),
         ];
+    }
+
+    /**
+     * The documents and compliance details the website shows on a product page, for the product whose
+     * code the customer typed, else the closest by meaning (in stock or not): only public scopes, the
+     * same rule as the product page (HasWebBlockProductAttachments), and ingredients and CPNP only for
+     * a product of one trade unit. Links and the CPNP number and ingredients, which hold digits, go
+     * under the reply as written here; the model gets only which documents exist.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string, documents?: array<int, array{label: string, media: string}>, names?: array<int, string>}
+     */
+    private function productDocuments(Customer $customer, array $arguments, string $locale): array
+    {
+        $query = is_string($arguments['query'] ?? null) ? trim($arguments['query']) : '';
+        if ($query === '') {
+            return $this->error('query must be the product the customer asked about.');
+        }
+
+        $byCode  = $this->productsByCode($customer, $query);
+        $matches = $byCode->isNotEmpty() ? $byCode : SearchCatalogueByMeaning::run($customer->shop, $query, $customer, 3, false);
+        /** @var ?Product $product */
+        $product = $matches->first();
+
+        if (!$product) {
+            return ['content' => ['product' => null, 'note' => 'No product matches. Ask which product they mean.'], 'products' => [], 'error' => null];
+        }
+
+        $documents = DB::table('model_has_attachments')
+            ->join('media', 'media.id', '=', 'model_has_attachments.media_id')
+            ->where('model_has_attachments.model_type', 'Product')
+            ->where('model_has_attachments.model_id', $product->id)
+            ->whereIn('model_has_attachments.scope', TradeAttachmentScopeEnum::publicScopes())
+            ->orderBy('model_has_attachments.scope')
+            ->get(['model_has_attachments.scope', 'media.ulid'])
+            ->map(fn ($document) => ['label' => __(TradeAttachmentScopeEnum::labels()[$document->scope] ?? $document->scope, [], $locale).' · '.$product->name, 'media' => $document->ulid, 'kind' => TradeAttachmentScopeEnum::labels()[$document->scope] ?? $document->scope])
+            ->values();
+
+        $singleTradeUnit = $product->is_single_trade_unit || $product->tradeUnits()->count() <= 1;
+        $details         = array_filter([
+            $singleTradeUnit && filled($product->cpnp_number) ? __('CPNP Number', [], $locale).': '.$product->cpnp_number : null,
+            $singleTradeUnit && filled($product->marketing_ingredients) ? __('Ingredients', [], $locale).': '.trim(strip_tags((string) $product->marketing_ingredients)) : null,
+        ]);
+        $countries = array_values(array_filter(array_map(fn (string $code) => NaturalLanguage::make()->country(trim($code))['name'] ?? null, explode(',', (string) $product->country_of_origin))));
+
+        $result = [
+            'content'   => [
+                'product'              => $product->name,
+                'exact_code_match'     => $byCode->isNotEmpty(),
+                'documents'            => $documents->pluck('kind')->unique()->values()->all(),
+                'has_cpnp_number'      => $singleTradeUnit && filled($product->cpnp_number),
+                'has_ingredients'      => $singleTradeUnit && filled($product->marketing_ingredients),
+                'countries_of_origin'  => $countries,
+                'other_close_products' => $matches->slice(1)->pluck('name')->values()->all(),
+                'note'                 => $documents->isEmpty() && !$details
+                    ? 'We have no public documents for this product online. Say so by its name, and offer a person (answer_kind offer_person, offer_reason not_sure) if they need a document.'
+                    : 'Say by the product name which of these we have: the download links and the CPNP number and ingredients are added under your reply, so never write a link or a number. Each product page lists its documents too. If the product may not be the one they meant, name other_close_products and ask.',
+            ],
+            'products'  => [],
+            'error'     => null,
+            'documents' => $documents->map(fn (array $document) => ['label' => $document['label'], 'media' => $document['media']])->all(),
+            'names'     => [$product->name],
+        ];
+        if ($details) {
+            $result['fact'] = $product->name.' – '.implode('. ', $details);
+        }
+
+        return $result;
     }
 
     /**

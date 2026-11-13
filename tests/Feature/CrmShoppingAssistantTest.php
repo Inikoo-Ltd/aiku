@@ -1614,6 +1614,38 @@ test('a question about a range is answered from the family description, with no 
     }
 });
 
+test('a question about a product\'s SDS or CPNP gets its public documents as links and its CPNP number and ingredients written by us, never private documents', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $product  = shoppingAssistantProduct($this->product);
+    $code     = 'Sds'.Str::lower(Str::random(5)).'-01';
+    DB::table('products')->where('id', $product->id)->update(['code' => $code, 'is_single_trade_unit' => true, 'cpnp_number' => '4433221', 'marketing_ingredients' => 'Aqua, CI 77491']);
+    $sds     = createAttachedMedia('Product', $product->id, 'sds');
+    $private = createAttachedMedia('Product', $product->id, 'sds_private');
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH, ['web_user_id' => $webUser->id]);
+    $documents    = GetShoppingAssistantTools::make()->execute($conversation, 'product_documents', ['query' => $code]);
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('product_documents', ['query' => $code])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'We have the safety data sheet for '.$product->name.', linked below.', 'answer_kind' => 'products']))]);
+
+    $turn = AskShoppingAssistant::run($conversation, 'can I have the SDS and CPNP of '.$code.'?');
+    $last = collect($this->actingAs($webUser, 'retina')->getJson('http://'.$website->domain.'/json/shopping-assistant/'.$conversation->ulid)->assertOk()->json('messages'))->last();
+
+    expect($documents['error'])->toBeNull()
+        ->and($documents['content']['documents'])->toBe(['SDS'])
+        ->and($documents['content']['exact_code_match'])->toBeTrue()
+        ->and(json_encode($documents['content']))->not->toContain('4433221')->not->toContain('77491')
+        ->and(collect($documents['documents'])->pluck('media')->all())->toBe([$sds->ulid])
+        ->and($documents['fact'])->toContain('4433221')->toContain('Aqua, CI 77491')
+        ->and($turn['message']->flags)->toBeNull()
+        ->and($turn['reply'])->toContain('We have the safety data sheet')->toContain('4433221')
+        ->and(collect($last['links'])->pluck('url')->all())->toContain(route('iris.iris_attachment', ['media' => $sds->ulid]))
+        ->and(collect($last['links'])->pluck('url')->implode(' '))->not->toContain($private->ulid);
+});
+
 test('a code typed for a discontinued product names it apart without an id and searches by its name for the closest products', function () {
     $customer     = shoppingAssistantCustomer($this->shop);
     $suffix       = Str::lower(Str::random(5));
@@ -1669,6 +1701,7 @@ test('the assistant prompt lists the families ordered in the last 12 months apar
     expect($prompt)->toContain('Product families they ordered most in the last 12 months: '.$this->product->family->name."\n")
         ->and($prompt)->toContain('Product families they used to order but not in the last 12 months: '.$oldFamily->name."\n")
         ->and($prompt)->toContain('Always finish with present_products')
+        ->and($prompt)->toContain('When the customer writes to you in another language, answer them in their language and ask, once, whether they would rather carry on in their language')
         ->and($present['function']['description'])->toContain('also when you show no products')
         ->and(collect($request['tools'])->firstWhere('function.name', 'best_sellers_last_christmas')['function']['parameters']['properties'])->toHaveKey('kind');
 });
