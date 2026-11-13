@@ -236,7 +236,7 @@ class GetShoppingAssistantTools
             ),
             $this->tool(
                 'ask_our_team',
-                'Pass a question about buying from us that the shop_information texts and the other tools do not answer (samples, a discount code, a document that is not online, a special request) to the person in our team who answers them. Not for the customer\'s own orders, invoices or deliveries, and not when they ask for a person. Returns whether it was passed on and whether the answer can still appear in this conversation within minutes. Returns no products.',
+                'Ask a person in our team, whenever you are in doubt, a question our texts, family descriptions and product documents do not clearly answer: about buying from us (samples, a discount code, a document that is not online, a special request) or about our products (how to use one, whether it suits a purpose, safety, other sizes or colours). Better to ask than to guess: their answer is kept so you can answer it yourself next time. Not for the customer\'s own orders, invoices or deliveries, and not when they ask for a person. Returns whether it was passed on and whether the answer can still appear in this conversation within minutes. Returns no products.',
                 [
                     'question' => ['type' => 'string', 'description' => 'The customer\'s question in one sentence, in English.'],
                 ],
