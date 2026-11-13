@@ -273,3 +273,47 @@ test('Not interested hides the dashboard WhatsApp card for good, while Email man
     expect($this->customer->comms->fresh()->whatsapp_newsletter_opt_in_dismissed_at)->toBeNull()
         ->and(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website, dismissible: true)['is_subscribed'])->toBeTrue();
 });
+
+test('the WhatsApp opt-in is offered to wholesale and dropshipping shops only', function () {
+    expect(GetRetinaWhatsappOptInData::isOfferedIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::B2B])))->toBeTrue()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::DROPSHIPPING])))->toBeTrue()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::FULFILMENT])))->toBeFalse()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn(null))->toBeFalse()
+        ->and(App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->isAvailableIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::DROPSHIPPING])))->toBeTrue()
+        ->and(App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->isAvailableIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::FULFILMENT])))->toBeFalse();
+});
+
+test('the dropshipping dashboard carries the WhatsApp card and a dismissed customer is sent to email management', function () {
+    $shopData = App\Models\Catalogue\Shop::factory()->definition();
+    data_set($shopData, 'type', ShopTypeEnum::DROPSHIPPING);
+    $shop = App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, $shopData);
+
+    $website = createWebsite($shop);
+    if ($website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($website);
+    }
+
+    $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    $customer->update(['status' => CustomerStatusEnum::APPROVED]);
+    $webUser = createWebUser($customer);
+
+    DetectWebsiteFromDomain::mock()
+        ->shouldReceive('handle')
+        ->with('localhost')
+        ->andReturn($website);
+
+    actingAs($webUser, 'retina');
+
+    $this->get(route('retina.dashboard.show'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Dashboard/RetinaDropshippingDashboard')
+            ->where('whatsapp_optin.is_subscribed', false)
+            ->where('whatsapp_optin.anchor_id', 'whatsapp-updates')
+            ->where('whatsapp_optin.dismiss_route.name', 'retina.models.whatsapp_newsletter.dismiss'));
+
+    $customer->comms->update(['whatsapp_newsletter_opt_in_dismissed_at' => now(), 'is_subscribed_to_whatsapp_newsletter' => false]);
+
+    $this->get('/app/dashboard?utm_campaign=whatsapp_optin&utm_source=newsletter')
+        ->assertRedirect(route('retina.sysadmin.email.edit', ['utm_campaign' => 'whatsapp_optin', 'utm_source' => 'newsletter']));
+});

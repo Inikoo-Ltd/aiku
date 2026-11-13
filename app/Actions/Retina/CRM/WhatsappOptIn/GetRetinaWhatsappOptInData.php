@@ -7,7 +7,9 @@
 
 namespace App\Actions\Retina\CRM\WhatsappOptIn;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,13 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetRetinaWhatsappOptInData
 {
     use AsObject;
+
+    public const array OFFERED_IN_SHOP_TYPES = [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING];
+
+    public static function isOfferedIn(?Shop $shop): bool
+    {
+        return $shop !== null && in_array($shop->type, self::OFFERED_IN_SHOP_TYPES, true);
+    }
 
     /**
      * On the dashboard ($dismissible) the card offers Not interested and is not shown again once

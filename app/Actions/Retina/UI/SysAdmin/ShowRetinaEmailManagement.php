@@ -10,7 +10,6 @@ namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,7 +35,7 @@ class ShowRetinaEmailManagement extends RetinaAction
     {
 
         $customer      = $request->user()->customer;
-        $whatsappOptIn = $this->shop?->type === ShopTypeEnum::B2B ? GetRetinaWhatsappOptInData::run($customer, $this->website) : null;
+        $whatsappOptIn = GetRetinaWhatsappOptInData::isOfferedIn($this->shop) ? GetRetinaWhatsappOptInData::run($customer, $this->website) : null;
 
         return Inertia::render(
             'EditModel',
