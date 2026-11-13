@@ -96,7 +96,7 @@ class ReopenStockDeliveryCosting extends OrgAction
             $stockDelivery->isCustomEvent  = false;
             $stockDelivery->auditCustomOld = $stockDelivery->auditCustomNew = [];
 
-            UpdatePurchaseOrdersCostFromStockDelivery::run($stockDelivery);
+            UpdatePurchaseOrdersCostedFromStockDelivery::run($stockDelivery);
         });
 
         return $stockDelivery->refresh();

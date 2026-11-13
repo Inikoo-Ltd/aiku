@@ -34,6 +34,12 @@ class UpdateArtefactFamily extends OrgAction
             data_set($modelData, 'data.needs_machine_maintenance', (bool) Arr::pull($modelData, 'needs_machine_maintenance'));
         }
 
+        foreach (['unit_name', 'pack_name'] as $name) {
+            if (Arr::has($modelData, $name)) {
+                data_set($modelData, "data.$name", trim((string) Arr::pull($modelData, $name)) ?: null);
+            }
+        }
+
         $artefactFamily = $this->update($artefactFamily, $modelData, ['data']);
 
         /* The artefacts follow their family: a family only ever sits in one department. */
@@ -80,6 +86,8 @@ class UpdateArtefactFamily extends OrgAction
             'name'                   => ['sometimes', 'required', 'string', 'max:255'],
             'description'            => ['sometimes', 'nullable', 'string', 'max:1024'],
             'needs_machine_maintenance' => ['sometimes', 'boolean'],
+            'unit_name'                 => ['sometimes', 'nullable', 'string', 'max:32'],
+            'pack_name'                 => ['sometimes', 'nullable', 'string', 'max:32'],
             'artefact_department_id' => [
                 'sometimes',
                 'required',

@@ -19,11 +19,13 @@ import TaxNumberDisplay from "@/Components/UI/TaxNumberDisplay.vue"
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { textReplaceVariables } from "@/Composables/Workshop"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import WhatsAppDashboardOptIn, { type WhatsappOptInData } from "@/Components/Retina/Dashboard/WhatsAppDashboardOptIn.vue"
 
 library.add(faReceipt, faArrowRight, faUser, faBuilding, faEnvelope, faPhone, faExternalLinkSquare)
 
 const props = defineProps<{
     welcome_message : string
+    whatsapp_optin?: WhatsappOptInData | null
     data: {
         customer: {}
         channels: {}[]
@@ -174,6 +176,8 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
 
                     </div>
 
+                    <WhatsAppDashboardOptIn v-if="whatsapp_optin" :data="whatsapp_optin" class="mb-8" />
+
                     <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
                         {{ ctrans("Your channels summary") }}
                     </h1>
@@ -270,6 +274,8 @@ const selectedManualChannelSlug = ref(props.data?.shortcut?.order?.manual_data?.
             </div>
 
             <div v-else class="mx-auto max-w-2xl lg:mx-0 lg:shrink-0 lg:pt-8">
+
+                <WhatsAppDashboardOptIn v-if="whatsapp_optin" :data="whatsapp_optin" class="mb-8" />
 
                 <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
                     {{ ctrans("Manage your orders and products") }}

@@ -25,6 +25,8 @@ use App\Actions\GoodsIn\StockDelivery\UI\IndexStockDeliveries;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\StoreStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCost;
+use App\Actions\GoodsIn\StockDelivery\UpdatePurchaseOrdersCostedFromStockDelivery;
+use App\Actions\GoodsIn\StockDelivery\Hydrators\StockDeliveriesHydrateCosts;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryCost;
 use App\Actions\GoodsIn\StockDelivery\RepairStockDeliveryCostings;
 use App\Actions\GoodsIn\StockDelivery\GetStockDeliveriesCostingReminder;
@@ -730,7 +732,12 @@ test('UI index purchase orders for supplier shows supplier-specific columns and 
                 'in_process'   => [__('In process'), 11],
                 'submitted'    => [__('Submitted'), 12],
                 'confirmed'    => [__('Agreed'), 13],
-                'settled'      => [__('Settled'), 14],
+                'in_production' => [__('Making It Happen'), 0],
+                'in_warehouse' => [__('In warehouse'), 0],
+                'ready'        => [__('Ready to Roll'), 0],
+                'handed_over'  => [__('Clean Hand Over'), 0],
+                'arrived'      => [__('Homeward Bound'), 0],
+                'settled'      => [__('Counted & Costed'), 14],
                 'cancelled'    => [__('Cancelled'), 15],
                 'not_received' => [__('Not Received'), 16],
             ])
@@ -2322,19 +2329,16 @@ test('UI edit org supplier relationship (not owned)', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.org.procurement.org_suppliers.edit', [$this->organisation->slug, $this->orgSupplier->slug]));
 
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('EditModel')
-            ->has(
-                'formData',
-                fn (AssertableInertia $page) => $page
-                    ->where('args.updateRoute.name', 'grp.models.org_supplier.update')
-                    ->has('blueprint.0.fields.status')
-                    ->where('blueprint.1.fields.purchase_order_reference_format.updateRoute.name', 'grp.models.org_supplier.update')
-                    ->has('blueprint.1.fields.purchase_order_last_number')
-                    ->etc()
-            );
-    });
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('EditModel')
+        ->where('formData.args.updateRoute.name', 'grp.models.supplier.update')
+        ->where('formData.blueprint', function ($blueprint) {
+            $fields = collect($blueprint)->flatMap(fn ($section) => $section['fields'] ?? []);
+
+            return $fields['status']['updateRoute']['name'] === 'grp.models.org_supplier.update'
+                && $fields['purchase_order_reference_format']['updateRoute']['name'] === 'grp.models.org_supplier.update'
+                && $fields->has('purchase_order_last_number');
+        }));
 });
 
 test('UI create org supplier picker page', function () {
@@ -2845,6 +2849,47 @@ describe('stock delivery costing checklist', function () {
 
         UpdateStockDeliveryCost::make()->action($shipping, ['received_at' => null]);
         expect($stockDelivery->refresh()->is_costed)->toBeFalse();
+    });
+
+    test('costing a delivery leaves the amounts of its purchase orders as ordered and only tells them they are costed (INI-236)', function () {
+        $stockDelivery  = $this->costingStockDelivery;
+        $orgSupplier    = OrgSupplier::first();
+        $costFields     = ['cost_items', 'cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax', 'cost_total'];
+        $purchaseOrders = collect([300, 700])->map(function (int $ordered) use ($orgSupplier, $stockDelivery) {
+            $purchaseOrder = StorePurchaseOrder::make()->action($orgSupplier, array_merge(PurchaseOrder::factory()->definition(), ['reference' => 'INI-236-'.uniqid()]), strict: false);
+            $purchaseOrder->updateQuietly(['cost_items' => $ordered, 'cost_total' => $ordered]);
+            $stockDelivery->purchaseOrders()->syncWithoutDetaching([$purchaseOrder->id]);
+
+            return $purchaseOrder->refresh();
+        });
+        $asOrdered = $purchaseOrders->mapWithKeys(fn (PurchaseOrder $purchaseOrder) => [$purchaseOrder->id => $purchaseOrder->only($costFields)]);
+        $current   = fn () => $purchaseOrders->mapWithKeys(fn (PurchaseOrder $purchaseOrder) => [$purchaseOrder->id => $purchaseOrder->refresh()->only($costFields)]);
+        $costed    = fn () => $purchaseOrders->map(fn (PurchaseOrder $purchaseOrder) => $purchaseOrder->refresh()->is_costed)->all();
+
+        $stockDelivery->updateQuietly([
+            'state'         => StockDeliveryStateEnum::PLACED,
+            'placed_at'     => now(),
+            'is_costed'     => true,
+            'cost_items'    => 1000,
+            'cost_shipping' => 200,
+            'cost_extra'    => 50,
+            'cost_total'    => 1250,
+        ]);
+        UpdatePurchaseOrdersCostedFromStockDelivery::run($stockDelivery->refresh());
+
+        expect($costed())->toBe([true, true])
+            ->and($current()->all())->toEqual($asOrdered->all());
+
+        StockDeliveriesHydrateCosts::run($stockDelivery);
+
+        expect($costed())->toBe([true, true])
+            ->and($current()->all())->toEqual($asOrdered->all());
+
+        $stockDelivery->updateQuietly(['is_costed' => false]);
+        UpdatePurchaseOrdersCostedFromStockDelivery::run($stockDelivery);
+
+        expect($costed())->toBe([false, false])
+            ->and($current()->all())->toEqual($asOrdered->all());
     });
 
     test('the agent or supplier invoice waiting for its invoice takes an estimate that lets put-away through until the real invoice replaces it', function () {
@@ -3511,7 +3556,7 @@ describe('supplier deposits', function () {
         $totalToPay = \App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder);
         expect($totalToPay)->toBe(round((float) $purchaseOrder->cost_items, 2))
             ->and($totalToPay)->toBeGreaterThan(400.0)
-            ->and(round((float) $purchaseOrder->cost_total, 2))->toBe($totalToPay + 150);
+            ->and(round((float) $purchaseOrder->cost_total, 2))->toBe($totalToPay);
 
         $this->post($confirmRoute, $payment())->assertSessionHasErrors('paid_at');
 
@@ -3591,6 +3636,55 @@ describe('supplier deposits', function () {
             ->and($purchaseOrder->balance_paid_at)->toBeNull()
             ->and($purchaseOrder->depositPayments()->count())->toBe(1)
             ->and((float) $purchaseOrder->deposit_amount)->toBe(300.0);
+    });
+
+    test('a payment sent in the organisation currency keeps what was sent beside what it counts for on the order (HELP-4668)', function () {
+        $purchaseOrder = $this->depositPurchaseOrder;
+        $statement     = fn (string $name) => \Illuminate\Http\UploadedFile::fake()->createWithContent($name, '%PDF-1.4 '.$name.' '.Str::random(12));
+        $confirmRoute  = route('grp.models.purchase-order.payment.confirm', $purchaseOrder->id);
+        $payment       = fn (array $overrides = []) => array_merge(['amount' => 100, 'paid_at' => date('Y-m-d'), 'method' => 'bank_transfer', 'bank_statement' => $statement('sent.pdf')], $overrides);
+
+        StorePurchaseOrderTransaction::make()->action(
+            $purchaseOrder,
+            $this->depositOrgSupplierProduct->supplierProduct->historicSupplierProduct,
+            $this->orgStocks[0],
+            array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10])
+        );
+        $organisationCurrencyId = $this->organisation->currency_id;
+        $orderCurrency          = Currency::where('id', '!=', $organisationCurrencyId)->orderBy('id')->firstOrFail();
+        $unrelatedCurrency      = Currency::whereNotIn('id', [$organisationCurrencyId, $orderCurrency->id])->whereNotIn('code', ['USD', 'EUR'])->orderBy('id')->firstOrFail();
+        $dollars                = Currency::where('code', 'USD')->firstOrFail();
+        $expectedCurrencyIds    = collect([$orderCurrency->id, $organisationCurrencyId, $dollars->id, Currency::where('code', 'EUR')->firstOrFail()->id])->unique()->values()->all();
+        $purchaseOrder->refresh()->updateQuietly(['state' => PurchaseOrderStateEnum::SUBMITTED, 'currency_id' => $orderCurrency->id, 'qc_passed_at' => now(), 'deposit_amount' => null, 'deposit_paid_at' => null]);
+        $totalToPay = \App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::totalToPay($purchaseOrder);
+        expect($totalToPay)->toBeGreaterThan(200.0);
+
+        $this->post($confirmRoute, $payment(['original_currency_id' => $unrelatedCurrency->id, 'original_amount' => 20]))->assertSessionHasErrors('original_currency_id');
+        $this->post($confirmRoute, $payment(['original_currency_id' => $organisationCurrencyId]))->assertSessionHasErrors('original_amount');
+        expect($purchaseOrder->depositPayments()->count())->toBe(0);
+
+        $this->post($confirmRoute, $payment(['original_currency_id' => $orderCurrency->id, 'original_amount' => 20]))->assertRedirect()->assertSessionHasNoErrors();
+        $this->post($confirmRoute, $payment(['amount' => $totalToPay - 100, 'original_currency_id' => $organisationCurrencyId, 'original_amount' => 12.345, 'bank_statement' => $statement('euros.pdf')]))->assertRedirect()->assertSessionHasNoErrors();
+
+        $deposits = $purchaseOrder->depositPayments()->orderBy('id')->get();
+        expect($deposits)->toHaveCount(2)
+            ->and($deposits[0]->original_amount)->toBeNull()
+            ->and($deposits[0]->original_currency_id)->toBeNull()
+            ->and((float) $deposits[1]->amount)->toBe(round($totalToPay - 100, 2))
+            ->and($deposits[1]->currency_id)->toBe($orderCurrency->id)
+            ->and((float) $deposits[1]->original_amount)->toBe(12.35)
+            ->and($deposits[1]->original_currency_id)->toBe($organisationCurrencyId)
+            ->and(\App\Actions\Procurement\PurchaseOrder\SyncPurchaseOrderDepositPaid::leftToPay($purchaseOrder->refresh()))->toBe(0.0)
+            ->and($purchaseOrder->balance_paid_at)->not->toBeNull();
+
+        $this->withoutVite();
+        $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('payments.currencies', fn ($currencies) => collect($currencies)->pluck('id')->all() === $expectedCurrencyIds)
+                ->where('payments.deposits.0.original_amount', null)
+                ->where('payments.deposits.1.original_amount', fn ($amount) => (float) $amount === 12.35)
+                ->where('payments.deposits.1.original_currency_code', $this->organisation->currency->code)
+                ->etc());
     });
 });
 

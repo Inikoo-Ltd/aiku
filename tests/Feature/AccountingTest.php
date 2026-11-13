@@ -22,6 +22,7 @@ use App\Actions\Accounting\Invoice\ISDocInvoice;
 use App\Actions\Accounting\Invoice\OmegaInvoice;
 use App\Actions\Accounting\Invoice\OmegaManyInvoice;
 use App\Actions\Accounting\Invoice\PayInvoice;
+use App\Actions\Accounting\Invoice\CategoriseInvoice;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\StoreRefund;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
@@ -4606,4 +4607,51 @@ test('cost of goods sold report splits an Aurora pick across shops by revenue an
     get(route('grp.org.reports.cogs.export', [$this->organisation->slug, 'start_date' => '2001-03-01', 'end_date' => '2001-03-31']))->assertOk();
     get(route('grp.org.reports.cogs', [$this->organisation->slug]))->assertOk()
         ->assertInertia(fn ($page) => $page->component('Org/Reports/CostOfGoodsSoldReport'));
+});
+
+test('services to partner invoice category takes partner invoices whose lines are all services, judged by the order lines until the invoice has its own', function () {
+    $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
+        'name'        => 'Services to partners',
+        'state'       => InvoiceCategoryStateEnum::ACTIVE,
+        'type'        => InvoiceCategoryTypeEnum::SERVICES_TO_PARTNER,
+        'currency_id' => $this->organisation->currency_id,
+        'priority'    => 10000,
+    ]);
+
+    $service = \App\Actions\Billables\Service\StoreService::make()->action($this->shop, [
+        'price' => 250,
+        'unit'  => 'job',
+        'code'  => 'PARTNER-SER-'.uniqid(),
+        'name'  => 'Partner recharge',
+        'state' => \App\Enums\Billables\Service\ServiceStateEnum::ACTIVE,
+    ]);
+    $product = createProduct($this->shop)[1];
+
+    $customer = \App\Actions\CRM\Customer\StoreCustomer::make()->action($this->shop, \App\Models\CRM\Customer::factory()->definition());
+    DB::table('customers')->where('shop_id', $this->shop->id)->where('as_organisation_id', $this->organisation->id)->update(['as_organisation_id' => null]);
+    DB::table('customers')->where('id', $customer->id)->update(['as_organisation_id' => $this->organisation->id]);
+    $customer->refresh();
+
+    $categoriser = CategoriseInvoice::make();
+
+    $order = StoreOrder::make()->action($customer, []);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $service->historicAsset, ['quantity_ordered' => 1, 'gross_amount' => 250, 'net_amount' => 250]);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->historicAsset, ['quantity_ordered' => 0, 'gross_amount' => 0, 'net_amount' => 0]);
+    expect($categoriser->getInvoiceCategory($order->refresh())?->id)->toBe($invoiceCategory->id);
+
+    $invoice = StoreInvoice::make()->action($order, Invoice::factory()->definition());
+    expect($invoice->as_organisation_id)->toBe($this->organisation->id)
+        ->and($invoice->invoice_category_id)->toBe($invoiceCategory->id);
+
+    $mixedOrder = StoreOrder::make()->action($customer, []);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($mixedOrder, $service->historicAsset, ['quantity_ordered' => 1, 'gross_amount' => 250, 'net_amount' => 250]);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($mixedOrder, $product->historicAsset, ['quantity_ordered' => 2, 'gross_amount' => 20, 'net_amount' => 20]);
+    expect($categoriser->getInvoiceCategory($mixedOrder->refresh())?->id)->not->toBe($invoiceCategory->id);
+
+    DB::table('customers')->where('id', $customer->id)->update(['as_organisation_id' => null]);
+    $notPartnerOrder = StoreOrder::make()->action($customer->refresh(), []);
+    \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($notPartnerOrder, $service->historicAsset, ['quantity_ordered' => 1, 'gross_amount' => 250, 'net_amount' => 250]);
+    expect($categoriser->getInvoiceCategory($notPartnerOrder->refresh())?->id)->not->toBe($invoiceCategory->id);
+
+    $invoiceCategory->update(['state' => InvoiceCategoryStateEnum::CLOSED]);
 });

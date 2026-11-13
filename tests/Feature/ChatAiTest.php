@@ -763,6 +763,7 @@ test('the knowledge base splits pages into sections and keeps the notes staff wr
 
     $saved = \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, null, ['title' => 'Testers', 'body' => 'Diffuser testers are not available until the website variants are fixed.'], $this->user);
     \App\Actions\Chat\UpdateShopChatKnowledgeNote::make()->handle($this->shop, $saved, ['title' => 'Diffuser testers', 'body' => $saved->body]);
+    \Illuminate\Support\Facades\Http::fake(['*embeddings' => \Illuminate\Support\Facades\Http::response([], 500)]);
     \App\Actions\Chat\ChatSession\HydrateChatKnowledge::run($this->shop);
 
     expect($saved->refresh()->only(['title', 'is_manual', 'kind', 'created_by_user_id']))->toBe(['title' => 'Diffuser testers', 'is_manual' => true, 'kind' => 'note', 'created_by_user_id' => $this->user->id])
@@ -975,7 +976,9 @@ test('jev reads the customer in one round, and asks what went wrong only when th
         'openrouter.ai/api/alpha/decisions' => \Illuminate\Support\Facades\Http::sequence()
             ->push(['answers' => $asking])
             ->push(['answers' => array_merge($asking, ['problem' => $noul(0.9), 'about_existing_order' => $noul(0.9)])])
-            ->push(['answers' => ['problem_kind' => $choice('damaged', 0.9)]])
+            ->push(['answers' => ['problem_kind' => $choice('damaged', 0.9), 'names_items' => $noul(0.9)]])
+            ->push(['answers' => array_merge($asking, ['problem' => $noul(0.9), 'about_existing_order' => $noul(0.9)])])
+            ->push(['answers' => ['problem_kind' => $choice('missing', 0.9), 'names_items' => $noul(0.2)]])
             ->push([], 500),
     ]);
 
@@ -997,7 +1000,12 @@ test('jev reads the customer in one round, and asks what went wrong only when th
     $damaged = $classify('Two candles arrived broken');
     expect($damaged['branch'])->toBe('problem')
         ->and($damaged['claim'])->toBeTrue()
+        ->and($damaged['names_items'])->toBeTrue()
         ->and($session->refresh()->metadata['ai_turn']['answers']['problem_kind']['choice'])->toBe('damaged');
+
+    $missing = $classify('Some of my order is missing');
+    expect($missing['claim'])->toBeTrue()
+        ->and($missing['names_items'])->toBeFalse();
 
     expect($classify('Anything'))->toBeNull();
 
@@ -1012,10 +1020,10 @@ test('jev reads the customer in one round, and asks what went wrong only when th
         ->and(\App\Actions\Chat\ChatSession\ClassifyChatTurn::branch(['act' => $choice('closing', 0.9)] + $onlyReports))->toBeNull();
 
     $asked = \Illuminate\Support\Facades\Http::recorded()->map(fn (array $pair) => array_keys($pair[0]->data()['questions']))->values();
-    expect($asked)->toHaveCount(4)
+    expect($asked)->toHaveCount(6)
         ->and($asked[0])->toContain('wants_something', 'request', 'act')
         ->and($asked[0])->not->toContain('subject')
-        ->and($asked[2])->toBe(['problem_kind']);
+        ->and($asked[2])->toBe(['problem_kind', 'names_items']);
 
     $session->forceDelete();
 });

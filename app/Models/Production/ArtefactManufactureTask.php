@@ -21,6 +21,7 @@ use Illuminate\Support\Collection;
  * @property float|null $mix_batch_kg
  * @property bool $blocks_later_steps
  * @property string|null $label
+ * @property string|null $unit_name
  * @property array<int, int>|null $waits_for
  * @property-read \App\Models\Production\Artefact|null $artefact
  * @property-read \App\Models\Production\ManufactureTask|null $manufactureTask

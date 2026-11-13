@@ -89,7 +89,7 @@ test('a customer subscribes with a chosen WhatsApp number and consent', function
         ->and($subscriber->consent['phone'])->toBe('+447700900123')
         ->and($subscriber->consent['source'])->toBe('retina_dashboard')
         ->and($subscriber->consent['text'])->toContain('WhatsApp')
-        ->and($subscriber->consent['utm'])->toBe(['utm_source' => 'newsletter', 'utm_medium' => 'email', 'utm_campaign' => 'whatsapp_optin']);
+        ->and($subscriber->consent['utm'])->toEqual(['utm_source' => 'newsletter', 'utm_medium' => 'email', 'utm_campaign' => 'whatsapp_optin']);
 });
 
 test('a formatted number from another country is accepted', function () {
@@ -230,4 +230,90 @@ test('the B2B dashboard carries the WhatsApp card data', function () {
             ->component('Dashboard/RetinaB2BDashboard')
             ->where('whatsapp_optin.is_subscribed', false)
             ->where('whatsapp_optin.subscribe_route.name', 'retina.models.whatsapp_newsletter.subscribe'));
+});
+
+test('the consent wording shown on the dashboard is the wording stored with the subscription', function () {
+    actingAs($this->webUser, 'retina');
+
+    $shownConsentText = GetRetinaWhatsappOptInData::run($this->customer, $this->website)['consent_text'];
+
+    $this->post(route('retina.models.whatsapp_newsletter.subscribe'), ['phone' => '+447700900123', 'consent' => true])
+        ->assertSessionHasNoErrors();
+
+    $subscriber = WhatsappSubscriber::where('parent_type', 'Customer')->where('parent_id', $this->customer->id)->first();
+
+    expect($shownConsentText)->toContain($this->shop->name)
+        ->toContain('orders, membership, restocks and occasional offers')
+        ->and($subscriber->consent['text'])->toBe($shownConsentText);
+});
+
+test('Not interested hides the dashboard WhatsApp card for good, while Email management still offers the opt-in', function () {
+    $this->customer->comms->update(['whatsapp_newsletter_opt_in_dismissed_at' => null]);
+    actingAs($this->webUser, 'retina');
+
+    expect(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website, dismissible: true)['dismiss_route']['name'])->toBe('retina.models.whatsapp_newsletter.dismiss')
+        ->and(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website)['dismiss_route'])->toBeNull();
+
+    $this->post(route('retina.models.whatsapp_newsletter.dismiss'))->assertRedirect();
+
+    expect($this->customer->comms->fresh()->whatsapp_newsletter_opt_in_dismissed_at)->not->toBeNull()
+        ->and(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website, dismissible: true))->toBeNull();
+
+    $this->get('/app/dashboard?utm_campaign=whatsapp_optin&utm_source=newsletter')
+        ->assertRedirect(route('retina.sysadmin.email.edit', ['utm_campaign' => 'whatsapp_optin', 'utm_source' => 'newsletter']));
+    $this->get('/app/dashboard')->assertOk();
+
+    $this->get(route('retina.sysadmin.email.edit'))->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('EditModel')
+            ->where('formData.blueprint.1.fields.whatsapp_optin.optin.is_subscribed', false)
+            ->where('formData.blueprint.1.fields.whatsapp_optin.optin.dismiss_route', null));
+
+    $this->post(route('retina.models.whatsapp_newsletter.subscribe'), ['phone' => '+44 7700 900123', 'consent' => true])->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($this->customer->comms->fresh()->whatsapp_newsletter_opt_in_dismissed_at)->toBeNull()
+        ->and(GetRetinaWhatsappOptInData::run($this->customer->fresh(), $this->website, dismissible: true)['is_subscribed'])->toBeTrue();
+});
+
+test('the WhatsApp opt-in is offered to wholesale and dropshipping shops only', function () {
+    expect(GetRetinaWhatsappOptInData::isOfferedIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::B2B])))->toBeTrue()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::DROPSHIPPING])))->toBeTrue()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::FULFILMENT])))->toBeFalse()
+        ->and(GetRetinaWhatsappOptInData::isOfferedIn(null))->toBeFalse()
+        ->and(App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->isAvailableIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::DROPSHIPPING])))->toBeTrue()
+        ->and(App\Enums\Comms\Mailshot\MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->isAvailableIn(new App\Models\Catalogue\Shop(['type' => ShopTypeEnum::FULFILMENT])))->toBeFalse();
+});
+
+test('the dropshipping dashboard carries the WhatsApp card and a dismissed customer is sent to email management', function () {
+    $shopData = App\Models\Catalogue\Shop::factory()->definition();
+    data_set($shopData, 'type', ShopTypeEnum::DROPSHIPPING);
+    $shop = App\Actions\Catalogue\Shop\StoreShop::make()->action($this->organisation, $shopData);
+
+    $website = createWebsite($shop);
+    if ($website->state != WebsiteStateEnum::LIVE) {
+        LaunchWebsite::make()->action($website);
+    }
+
+    $customer = StoreCustomer::make()->action($shop, Customer::factory()->definition());
+    $customer->update(['status' => CustomerStatusEnum::APPROVED]);
+    $webUser = createWebUser($customer);
+
+    DetectWebsiteFromDomain::mock()
+        ->shouldReceive('handle')
+        ->with('localhost')
+        ->andReturn($website);
+
+    actingAs($webUser, 'retina');
+
+    $this->get(route('retina.dashboard.show'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Dashboard/RetinaDropshippingDashboard')
+            ->where('whatsapp_optin.is_subscribed', false)
+            ->where('whatsapp_optin.anchor_id', 'whatsapp-updates')
+            ->where('whatsapp_optin.dismiss_route.name', 'retina.models.whatsapp_newsletter.dismiss'));
+
+    $customer->comms->update(['whatsapp_newsletter_opt_in_dismissed_at' => now(), 'is_subscribed_to_whatsapp_newsletter' => false]);
+
+    $this->get('/app/dashboard?utm_campaign=whatsapp_optin&utm_source=newsletter')
+        ->assertRedirect(route('retina.sysadmin.email.edit', ['utm_campaign' => 'whatsapp_optin', 'utm_source' => 'newsletter']));
 });

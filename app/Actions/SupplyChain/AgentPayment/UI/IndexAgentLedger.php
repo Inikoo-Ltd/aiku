@@ -18,6 +18,7 @@ use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\SupplyChain\AgentPayment\AgentPaymentTypeEnum;
+use App\Enums\SupplyChain\AspoDeposit\DepositRequestStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\GoodsIn\StockDelivery;
 use App\Models\GoodsIn\StockDeliveryItem;
@@ -223,11 +224,67 @@ class IndexAgentLedger extends OrgAction
         return $this->handle($agent);
     }
 
+    /**
+     * A transfer that pays a money request funds the orders on it. Each order shows whether the agent has passed that
+     * money on: everything received for it from the client is paid to the supplier (used), part of it (partly), or none.
+     *
+     * @return array<int, list<array{reference: string, route: array{name: string, parameters: array<int, string>}, amount: float, received: float, paid: float, status: string}>>
+     */
+    private function fundedOrders(LengthAwarePaginator $entries): array
+    {
+        $requestIds = collect($entries->items())->pluck('deposit_request_id')->filter()->unique()->values();
+        if ($requestIds->isEmpty()) {
+            return [];
+        }
+
+        $lines = DB::table('deposit_request_items')
+            ->join('purchase_orders', 'purchase_orders.id', 'deposit_request_items.purchase_order_id')
+            ->whereIn('deposit_request_items.deposit_request_id', $requestIds)
+            ->orderBy('deposit_request_items.id')
+            ->get(['deposit_request_items.deposit_request_id', 'deposit_request_items.purchase_order_id', 'deposit_request_items.amount', 'purchase_orders.reference', 'purchase_orders.slug']);
+
+        $orderIds = $lines->pluck('purchase_order_id')->unique()->values();
+        $received = DB::table('deposit_request_items')
+            ->join('deposit_requests', 'deposit_requests.id', 'deposit_request_items.deposit_request_id')
+            ->whereIn('deposit_request_items.purchase_order_id', $orderIds)
+            ->whereNotNull('deposit_request_items.paid_at')
+            ->whereNotIn('deposit_requests.state', [DepositRequestStateEnum::CANCELLED->value, DepositRequestStateEnum::REJECTED->value])
+            ->groupBy('deposit_request_items.purchase_order_id')
+            ->selectRaw('deposit_request_items.purchase_order_id, sum(deposit_request_items.amount) as total')
+            ->pluck('total', 'purchase_order_id');
+        $paid = DB::table('agent_payments')
+            ->whereIn('purchase_order_id', $orderIds)
+            ->whereIn('type', AgentPaymentTypeEnum::supplierPaymentValues())
+            ->whereNull('deleted_at')
+            ->groupBy('purchase_order_id')
+            ->selectRaw('purchase_order_id, sum(amount) as total')
+            ->pluck('total', 'purchase_order_id');
+
+        return $lines->groupBy('deposit_request_id')->map(fn (Collection $requestLines) => $requestLines->map(function (object $line) use ($received, $paid) {
+            $orderReceived = round((float) ($received[$line->purchase_order_id] ?? 0), 2);
+            $orderPaid     = round((float) ($paid[$line->purchase_order_id] ?? 0), 2);
+
+            return [
+                'reference' => $line->reference,
+                'route'     => ['name' => 'grp.org.agent.purchase_orders.show', 'parameters' => [$this->organisation->slug, $line->slug]],
+                'amount'    => round((float) $line->amount, 2),
+                'received'  => $orderReceived,
+                'paid'      => $orderPaid,
+                'status'    => match (true) {
+                    $orderPaid > 0 && $orderPaid >= $orderReceived - 0.005 => 'used',
+                    $orderPaid > 0 => 'partly',
+                    default => 'unused',
+                },
+            ];
+        })->values()->all())->all();
+    }
+
     public function htmlResponse(LengthAwarePaginator $entries, ActionRequest $request): Response
     {
         $user    = $request->user();
         $clients = $this->clients($this->agent);
         $canEdit = $user->authTo("procurement.{$this->organisation->id}.edit");
+        $fundedOrders = $this->fundedOrders($entries);
 
         return Inertia::render(
             'Org/Procurement/AgentLedger',
@@ -288,6 +345,7 @@ class IndexAgentLedger extends OrgAction
                         'reference' => $entry->purchase_order_reference,
                         'route'     => ['name' => 'grp.org.agent.purchase_orders.show', 'parameters' => [$this->organisation->slug, $entry->purchase_order_slug]],
                     ] : null,
+                    'funded_orders'          => $entry->deposit_request_id ? ($fundedOrders[$entry->deposit_request_id] ?? []) : [],
                     'stock_delivery'         => $entry->stock_delivery_slug ? [
                         'reference' => $entry->stock_delivery_reference,
                         'route'     => ['name' => 'grp.org.agent.stock_deliveries.show', 'parameters' => [$this->organisation->slug, $entry->stock_delivery_slug]],
@@ -326,7 +384,7 @@ class IndexAgentLedger extends OrgAction
             ->whereIn('organisation_id', $clients->pluck('id'))
             ->trackedThroughAgent()
             ->where(fn ($query) => $query
-                ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+                ->whereIn('state', PurchaseOrderStateEnum::open())
                 ->orWhere(fn ($query) => $query->where('state', PurchaseOrderStateEnum::SETTLED)->where('date', '>=', now()->subMonths(6))))
             ->orderByDesc('date')
             ->get(['id', 'organisation_id', 'reference', 'parent_code'])

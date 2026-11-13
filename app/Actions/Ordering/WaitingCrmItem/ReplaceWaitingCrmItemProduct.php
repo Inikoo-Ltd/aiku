@@ -144,9 +144,16 @@ class ReplaceWaitingCrmItemProduct extends OrgAction
                                     'state' => DeliveryNoteItemStateEnum::HANDLING,
                                 ]);
                             } else {
+                                /*
+                                 * Released by customer service like a line sent back to the
+                                 * warehouse (HELP-4683): it goes first in the warehouse's list, and
+                                 * the note stays ready to contact the customer about its other
+                                 * missing items instead of vanishing from that list until it is picked.
+                                 */
                                 $replacementDeliveryNoteItem->update([
-                                    'state'                      => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
-                                    'quantity_waiting_warehouse' => $quantity,
+                                    'state'                         => DeliveryNoteItemStateEnum::HANDLING_BLOCKED,
+                                    'quantity_waiting_warehouse'    => $quantity,
+                                    'waiting_warehouse_released_at' => now(),
                                 ]);
                                 DeliveryNoteHydrateWaitingItems::run($replacementDeliveryNoteItem->delivery_note_id);
                             }

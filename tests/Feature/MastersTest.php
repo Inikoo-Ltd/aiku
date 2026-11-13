@@ -5044,7 +5044,7 @@ describe('competitor prices, HELP-3605', function () {
 
         $fakeBrowserAndAi(['login_error' => null, 'cookies' => [], 'pages' => []], []);
         \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
-        \Illuminate\Support\Facades\Process::assertRan(fn (\Illuminate\Process\PendingProcess $process) => in_array('https://rival.example.com/search?q='.urlencode('Cuenco cantor de latón 10cm'), json_decode($process->input, true)['urls'] ?? [], true));
+        \Illuminate\Support\Facades\Process::assertRan(fn (\Illuminate\Process\PendingProcess $process) => in_array('https://rival.example.com/search?q='.urlencode('Cuenco cantor de latón'), json_decode($process->input, true)['urls'] ?? [], true));
 
         $this->competitor->update(['language_id' => \App\Models\Helpers\Language::where('code', 'en')->value('id')]);
         expect($ourName())->toBe('Brass singing bowl 10cm')
@@ -5724,6 +5724,68 @@ describe('competitor prices, HELP-3605', function () {
             ->and($props['price_checks']['data'][1]['change'])->toBeNull();
 
         expect(array_keys(get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->slug]))->viewData('page')['props']['tabs']['navigation']))->not->toContain('price_checks');
+    });
+
+    test('a Shopify product sold in sizes takes the price of the size closest to ours, and the search tracking comes off its link, HELP-4686', function () {
+        $link = 'https://rival.example.com/products/brass-bowl?_pos=1&_sid=2ecabfc31&_ss=r';
+        \Illuminate\Support\Facades\Process::fake(['*' => \Illuminate\Support\Facades\Process::result(json_encode([
+            'login_error' => null,
+            'cookies'     => [],
+            'pages'       => [[
+                'url'     => 'https://rival.example.com/search?q=Brass',
+                'status'  => 200,
+                'blocked' => false,
+                'text'    => 'Brass bowl Choose options',
+                'links'   => [['href' => $link, 'text' => 'Brass bowl']],
+            ]],
+        ]))]);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'openrouter.ai/*'                         => \Illuminate\Support\Facades\Http::sequence()
+                ->push(['choices' => [['message' => ['content' => json_encode(['products' => [['url' => $link, 'name' => 'Brass bowl', 'price' => null, 'units' => 1, 'minimum_order' => null, 'same_item' => true]]])]]]])
+                ->push(['choices' => [['message' => ['content' => json_encode(['size' => 1, 'units' => 2])]]]]),
+            'rival.example.com/products/brass-bowl.js' => \Illuminate\Support\Facades\Http::response(['variants' => [
+                ['id' => 501, 'title' => '5cm', 'price' => 900],
+                ['id' => 502, 'title' => '10cm', 'price' => 1600],
+            ]]),
+        ]);
+
+        expect(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]))->toBe(1);
+
+        $product = \App\Models\Masters\CompetitorProduct::where('competitor_id', $this->competitor->id)->sole();
+        expect($product->url)->toBe('https://rival.example.com/products/brass-bowl?variant=502')
+            ->and($product->name)->toBe('Brass bowl 10cm')
+            ->and((float) $product->price)->toBe(16.0)
+            ->and((float) $product->units)->toBe(2.0)
+            ->and(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::withoutSearchWords($link, 'Brass'))->toBe('https://rival.example.com/products/brass-bowl');
+    });
+
+    test('a competitor is searched with our name without its size, pack, label or codes, HELP-4686', function () {
+        $query = fn (string $name) => \App\Actions\Masters\Competitor\ResearchCompetitorPrices::searchQuery($name);
+
+        expect($query('10ml Basil Essential Oil White Label'))->toBe('Basil Essential Oil')
+            ->and($query('Banana Fragrance Oil 10ml - White Label'))->toBe('Banana Fragrance Oil')
+            ->and($query('12x Boxed Citronella Eden Essential Oil - 10ml'))->toBe('Boxed Citronella Eden Essential Oil')
+            ->and($query('Lily of the Valley   FOI-126550'))->toBe('Lily of the Valley')
+            ->and($query('Citronella Essential Oil (KG)'))->toBe('Citronella Essential Oil')
+            ->and($query('1kg'))->toBe('1kg')
+            ->and(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::withoutSearchWords('https://rival.example.com/p/oil?q=Basil+Essential+Oil', '10ml Basil Essential Oil White Label'))->toBe('https://rival.example.com/p/oil');
+    });
+
+    test('a master shop left out of price tips has every product read once a week, a seventh each day, HELP-4686', function () {
+        \Illuminate\Support\Facades\Queue::fake();
+        $this->travelTo(now()->startOfWeek(\Carbon\CarbonInterface::SUNDAY)->addDays($this->competitorMasterAsset->id % 7));
+        \App\Models\Masters\MasterShop::where('slug', 'aroma')->update(['slug' => 'aroma-'.uniqid()]);
+        $this->competitorMasterShop->updateQuietly(['slug' => 'aroma']);
+
+        $this->artisan('masters:competitor-prices', ['--competitor' => $this->competitor->id])->assertSuccessful();
+
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::assertPushed(fn ($action, array $parameters) => $parameters[1] === [$this->competitorMasterAsset->id]);
+
+        \Illuminate\Support\Facades\Queue::fake();
+        $this->travel(1)->days();
+        $this->artisan('masters:competitor-prices', ['--competitor' => $this->competitor->id])->assertSuccessful();
+        \App\Actions\Masters\Competitor\ResearchCompetitorPrices::assertNotPushed();
     });
 });
 

@@ -7,8 +7,17 @@ import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCheck } from "@fas"
+import { faSearch, faTachometerAlt, faUser, faComments, faTerminal, faUserHeadset } from "@fal"
 
-library.add(faCheck)
+library.add(faCheck, faSearch, faTachometerAlt, faUser, faComments, faTerminal, faUserHeadset)
+
+const entryPointIcons: Record<string, object> = {
+    search: faSearch,
+    panel: faTachometerAlt,
+    profile: faUser,
+    chat: faComments,
+    command: faTerminal,
+}
 
 const props = defineProps<{
     data: object
@@ -32,24 +41,22 @@ const customerHref = (customerRoute: { name: string; parameters: Record<string, 
         </template>
 
         <template #cell(customer_name)="{ item }">
-            <Link v-if="customerHref(item.customer_route)" :href="customerHref(item.customer_route) ?? ''" class="primaryLink">{{ item.customer_name }}</Link>
-            <span v-else-if="item.customer_name">{{ item.customer_name }}</span>
+            <Link v-if="customerHref(item.customer_route)" :href="customerHref(item.customer_route) ?? ''" class="secondaryLink inline-block max-w-40 truncate align-bottom" :title="item.customer_name">{{ item.customer_name }}</Link>
+            <span v-else-if="item.customer_name" class="inline-block max-w-40 truncate align-bottom" :title="item.customer_name">{{ item.customer_name }}</span>
             <span v-else class="text-gray-400">{{ ctrans("Guest") }}</span>
-            <div v-if="item.customer_reference" class="whitespace-nowrap text-xs text-gray-500">{{ item.customer_reference }}</div>
         </template>
 
         <template #cell(website)="{ item }">
             <span class="whitespace-nowrap text-gray-600">{{ item.website }}</span>
         </template>
 
-        <template #cell(entry_point)="{ item }">
-            <span class="whitespace-nowrap">{{ item.entry_point_label ?? item.entry_point }}</span>
-        </template>
-
         <template #cell(first_question)="{ item }">
-            <Link :href="conversationHref(item.ulid)" class="primaryLink line-clamp-2 max-w-md" :title="item.first_question">
-                {{ item.first_question || ctrans("(no question)") }}
-            </Link>
+            <div class="flex max-w-md items-start gap-2">
+                <FontAwesomeIcon :icon="entryPointIcons[item.entry_point] ?? faTerminal" class="mt-1 shrink-0 text-gray-400" fixed-width v-tooltip="item.entry_point_label" :aria-label="item.entry_point_label" />
+                <span class="line-clamp-2">{{ item.first_question || ctrans("(no question)") }}</span>
+                <FontAwesomeIcon v-if="item.handed_over" :icon="faUserHeadset" class="mt-1 shrink-0 text-green-600" fixed-width v-tooltip="ctrans('Handed over')" :aria-label="ctrans('Handed over')" />
+                <span v-if="item.status === 'open'" class="mt-1.5 inline-block size-2 shrink-0 rounded-full bg-green-500" v-tooltip="ctrans('Open')" :aria-label="ctrans('Open')" />
+            </div>
         </template>
 
         <template #cell(messages_count)="{ item }">

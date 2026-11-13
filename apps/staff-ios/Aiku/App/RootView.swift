@@ -34,6 +34,7 @@ struct RootView: View {
         }
         .task(id: authStore.profile?.id) {
             guard let userID = authStore.profile?.id, userID > 0 else { return }
+            LocationsStore.shared.beginRemoteLoad()
             await warehouseStore.load(for: userID, apiClient: apiClient)
             if let warehouse = warehouseStore.selected {
                 session.profile.warehouseName = warehouse.name
@@ -59,6 +60,7 @@ struct RootView: View {
         permissionStore.clear()
         warehouseStore.reset()
         LocationsStore.shared.resetToSample()
+        InventoryFamiliesFeed.shared.reset()
         Task { await authStore.signOut() }
     }
 }

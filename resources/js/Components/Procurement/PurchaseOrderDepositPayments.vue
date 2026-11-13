@@ -23,6 +23,8 @@ export interface DepositPayment {
 	id: number
 	date: string
 	amount: number
+	original_amount?: number | null
+	original_currency_code?: string | null
 	method: string
 	reference: string | null
 	paid_by: string | null
@@ -34,6 +36,7 @@ export interface DepositPayment {
 export interface PurchaseOrderPaymentsData {
 	can_confirm: boolean
 	currency_code: string | null
+	currencies?: { id: number; code: string; name: string; rate?: number | null }[]
 	methods: { name: string; code: string }[]
 	total: number
 	paid: number
@@ -82,10 +85,17 @@ const isLoading = ref(false)
 
 const isPayDialogOpen = ref(false)
 const payError = ref<string | null>(null)
-const form = ref<{ amount: number | null; paid_at: Date | null; method: string; reference: string; file: File | null; reason: string }>({ amount: null, paid_at: new Date(), method: "bank_transfer", reference: "", file: null, reason: "" })
+const currencies = computed(() => props.payments.currencies ?? [])
+const orderCurrencyId = computed(() => currencies.value.find((currency) => currency.code === props.payments.currency_code)?.id ?? null)
+const emptyForm = () => ({ amount: null as number | null, currency_id: orderCurrencyId.value, original_amount: null as number | null, paid_at: new Date() as Date | null, method: "bank_transfer", reference: "", file: null as File | null, reason: "" })
+const form = ref(emptyForm())
+const sentCurrency = computed(() => currencies.value.find((currency) => currency.id === form.value.currency_id) ?? null)
+const isSentInOtherCurrency = computed(() => !!sentCurrency.value && sentCurrency.value.id !== orderCurrencyId.value)
+const isCountedAmountTyped = ref(false)
 
 const openPayDialog = () => {
-	form.value = { amount: null, paid_at: new Date(), method: "bank_transfer", reference: "", file: null, reason: "" }
+	form.value = emptyForm()
+	isCountedAmountTyped.value = false
 	percent.value = null
 	payError.value = null
 	isPayDialogOpen.value = true
@@ -99,13 +109,32 @@ const percent = ref<number | null>(null)
 const typedValue = (event: InputNumberInputEvent) => (typeof event.value === "number" ? event.value : null)
 
 const onAmountTyped = (amount: number | null) => {
+	isCountedAmountTyped.value = amount !== null
+	setAmount(amount)
+}
+
+const setAmount = (amount: number | null) => {
 	form.value.amount = amount
 	percent.value = amount !== null && canPayByPercent.value ? roundTo2Decimals((amount / props.payments.total) * 100) : null
 }
 
 const onPercentTyped = (typedPercent: number | null) => {
+	isCountedAmountTyped.value = typedPercent !== null
 	percent.value = typedPercent
 	form.value.amount = typedPercent !== null ? Math.min(roundTo2Decimals((props.payments.total * typedPercent) / 100), props.payments.left) : null
+}
+
+const sentToOrderRate = computed(() => (sentCurrency.value?.code === props.orgCurrencyCode && props.orgRate ? 1 / props.orgRate : Number(sentCurrency.value?.rate) || null))
+
+const onSentAmountTyped = (sentAmount: number | null) => {
+	form.value.original_amount = sentAmount
+	if (isCountedAmountTyped.value || !sentToOrderRate.value) return
+	setAmount(sentAmount !== null ? Math.min(roundTo2Decimals(sentAmount * sentToOrderRate.value), props.payments.left) : null)
+}
+
+const onCurrencyChanged = () => {
+	form.value.original_amount = null
+	if (!isCountedAmountTyped.value) setAmount(null)
 }
 
 const needsStatement = computed(() => form.value.method !== "cash")
@@ -116,6 +145,7 @@ const canSubmit = computed(
 	() =>
 		!!form.value.amount &&
 		form.value.amount <= props.payments.left &&
+		(!isSentInOtherCurrency.value || !!form.value.original_amount) &&
 		!!form.value.paid_at &&
 		!!form.value.method &&
 		(!needsStatement.value || !!form.value.file) &&
@@ -128,6 +158,8 @@ const confirmPayment = () => {
 		route(props.payments.confirm_route.name, props.payments.confirm_route.parameters),
 		{
 			amount: form.value.amount,
+			original_currency_id: isSentInOtherCurrency.value ? form.value.currency_id : null,
+			original_amount: isSentInOtherCurrency.value ? form.value.original_amount : null,
 			paid_at: toIsoDate(form.value.paid_at as Date),
 			method: form.value.method,
 			reference: form.value.reference || null,
@@ -205,6 +237,7 @@ const undoPayment = () => {
 					<span class="tabular-nums font-medium text-gray-700">{{ money(payment.amount) }}</span>
 				</div>
 				<div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-gray-400">
+					<span v-if="payment.original_amount && payment.original_currency_code">{{ ctrans("sent as :amount", { amount: String(locale.currencyFormat(payment.original_currency_code, payment.original_amount)) }) }}</span>
 					<span>{{ [payment.method, payment.reference].filter(Boolean).join(" · ") }}</span>
 					<a
 						v-if="payment.bank_statement"
@@ -244,10 +277,18 @@ const undoPayment = () => {
 				</div>
 			</template>
 			<div class="space-y-3">
+				<label v-if="currencies.length > 1" class="block text-sm">
+					<span class="text-gray-600">{{ ctrans("Currency the payment was sent in") }} <span class="text-red-500">*</span></span>
+					<Select v-model="form.currency_id" :options="currencies" optionValue="id" :optionLabel="(currency: { code: string; name: string }) => `${currency.code} · ${currency.name}`" class="mt-1 w-full" :class="fieldFocusClass" @change="onCurrencyChanged" />
+				</label>
+				<label v-if="isSentInOtherCurrency" class="block text-sm">
+					<span class="text-gray-600">{{ ctrans("Amount sent") }} <span class="text-red-500">*</span></span>
+					<InputNumber :modelValue="form.original_amount" @update:modelValue="onSentAmountTyped" @input="(event: InputNumberInputEvent) => onSentAmountTyped(typedValue(event))" v-bind="locale.currencyInputOptions(sentCurrency?.code)" :min="0" class="mt-1 w-full" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-full' } } }" />
+				</label>
 				<div class="block text-sm">
 					<div class="flex gap-2">
 						<label class="min-w-0 flex-1">
-							<span class="text-gray-600">{{ ctrans("Amount") }} <span class="text-red-500">*</span></span>
+							<span class="text-gray-600" v-tooltip="isSentInOtherCurrency ? ctrans('What the payment is worth in the currency of the order: this is what is taken off what is left to pay') : undefined">{{ isSentInOtherCurrency ? ctrans("Counts on the order as") : ctrans("Amount") }} <span class="text-red-500">*</span></span>
 							<InputNumber :modelValue="form.amount" @update:modelValue="onAmountTyped" @input="(event: InputNumberInputEvent) => onAmountTyped(typedValue(event))" v-bind="locale.currencyInputOptions(payments.currency_code)" :min="0" :max="payments.left" class="mt-1 w-full" :class="fieldFocusClass" :pt="{ pcInputText: { root: { class: '!w-full' } } }" />
 						</label>
 						<label v-if="canPayByPercent" class="w-28 shrink-0">
@@ -259,7 +300,7 @@ const undoPayment = () => {
 						</label>
 					</div>
 					<span class="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-gray-400">
-						<span v-if="orgMoney(form.amount)">{{ orgMoney(form.amount) }} ·</span>
+						<span v-if="!isSentInOtherCurrency && orgMoney(form.amount)">{{ orgMoney(form.amount) }} ·</span>
 						<button
 							type="button"
 							class="cursor-pointer underline decoration-dotted underline-offset-2 hover:text-[var(--app-accent)]"
@@ -295,16 +336,18 @@ const undoPayment = () => {
 				<p v-if="payError" class="text-xs text-red-600">{{ payError }}</p>
 			</div>
 			<template #footer>
-				<Button type="tertiary" :label="ctrans('Cancel')" @click="isPayDialogOpen = false">
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
-				<Button type="secondary" full :label="ctrans('Confirm payment')" :disabled="!canSubmit" :loading="isLoading" @click="confirmPayment">
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-check" class="text-green-600" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
+				<div class="flex w-full gap-2">
+					<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isPayDialogOpen = false">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button type="primary" full :label="ctrans('Confirm payment')" :disabled="!canSubmit" :loading="isLoading" @click="confirmPayment">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-check" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
 			</template>
 		</Dialog>
 
@@ -313,21 +356,23 @@ const undoPayment = () => {
 				<span class="text-sm font-semibold text-gray-900">{{ ctrans("Undo payment") }}</span>
 			</template>
 			<label class="block text-sm">
-				<span class="text-gray-600">{{ ctrans("Why is this payment taken back? (kept in the order's history)") }}</span>
+				<span class="text-gray-600">{{ ctrans("Why is this payment taken back? (kept in the order's history)") }} <span class="text-red-500">*</span></span>
 				<Textarea v-model="undoReason" rows="2" autoResize maxlength="500" autofocus class="mt-1 w-full" :class="fieldFocusClass" />
 			</label>
 			<p v-if="undoError" class="mt-2 text-xs text-red-600">{{ undoError }}</p>
 			<template #footer>
-				<Button type="tertiary" :label="ctrans('Cancel')" @click="paymentToUndo = null">
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
-				<Button type="tertiary" :label="ctrans('Undo payment')" :disabled="!undoReason.trim()" :loading="undoingPaymentId !== null" @click="undoPayment">
-					<template #icon>
-						<FontAwesomeIcon icon="fal fa-undo" class="text-amber-500" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
+				<div class="flex w-full gap-2">
+					<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="paymentToUndo = null">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button type="tertiary" full :label="ctrans('Undo payment')" :disabled="!undoReason.trim()" :loading="undoingPaymentId !== null" @click="undoPayment">
+						<template #icon>
+							<FontAwesomeIcon icon="fal fa-undo" class="text-amber-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
 			</template>
 		</Dialog>
 	</div>

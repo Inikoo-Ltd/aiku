@@ -37,9 +37,9 @@ class AttachManufactureTaskToArtefact extends OrgAction
             'position'           => $modelData['position'] ?? 1,
             'units_per_artefact' => $modelData['units_per_artefact'] ?? 1,
         ];
-        foreach (['mix_batch_kg', 'blocks_later_steps', 'label', 'waits_for'] as $field) {
+        foreach (['mix_batch_kg', 'blocks_later_steps', 'label', 'waits_for', 'unit_name'] as $field) {
             if (array_key_exists($field, $modelData)) {
-                $step[$field] = $field == 'label' ? self::cleanLabel($modelData[$field]) : $modelData[$field];
+                $step[$field] = in_array($field, ['label', 'unit_name']) ? self::cleanLabel($modelData[$field]) : $modelData[$field];
             }
         }
 
@@ -48,6 +48,9 @@ class AttachManufactureTaskToArtefact extends OrgAction
         $recipeStep = self::existingStep($artefact, $modelData);
         if ($recipeStep) {
             $previousLabel = $recipeStep->label;
+            if (!array_key_exists('unit_name', $step) && $this->countsDifferently($recipeStep->units_per_artefact, $step['units_per_artefact'])) {
+                $step['unit_name'] = null;
+            }
             $recipeStep->update($step);
             if ($recipeStep->wasChanged('label')) {
                 $this->followLabel($recipeStep, $previousLabel);
@@ -84,6 +87,15 @@ class AttachManufactureTaskToArtefact extends OrgAction
     {
         JobOrderItemTask::where('artefact_manufacture_task_id', $recipeStep->id)->update(['label' => $recipeStep->label]);
         ArtefactStepTarget::ofStep($recipeStep->artefact_id, $recipeStep->manufacture_task_id, $previousLabel)->update(['label' => $recipeStep->label]);
+    }
+
+    /**
+     * A step's unit name says what it counts (HELP-4672): packs below 1 per artefact, one artefact at 1, parts above.
+     * Moving between these makes the old name wrong ("boxes" on a step now counted in bags), so it is cleared.
+     */
+    private function countsDifferently(float|string|null $from, float|string|null $to): bool
+    {
+        return ((float) $from <=> 1) !== ((float) $to <=> 1);
     }
 
     public static function cleanLabel(?string $label): ?string
@@ -124,6 +136,7 @@ class AttachManufactureTaskToArtefact extends OrgAction
             'is_new_step'         => ['sometimes', 'boolean'],
             'step_id'             => ['sometimes', 'nullable', 'integer', Rule::exists('artefacts_manufacture_tasks', 'id')->where('artefact_id', $this->artefact->id)],
             'label'               => ['sometimes', 'nullable', 'string', 'max:64'],
+            'unit_name'           => ['sometimes', 'nullable', 'string', 'max:32'],
             'waits_for'           => ['sometimes', 'nullable', 'array'],
             'waits_for.*'         => ['integer', 'distinct', Rule::exists('artefacts_manufacture_tasks', 'id')->where('artefact_id', $this->artefact->id)],
             'effective_from'      => ['sometimes', 'nullable', 'date_format:Y-m-d'],
@@ -215,7 +228,7 @@ class AttachManufactureTaskToArtefact extends OrgAction
             return true;
         }
 
-        if ($request->has('standard_rate') || $request->has('effective_from') || $request->has('mix_batch_kg') || $request->has('blocks_later_steps') || $request->filled('label') || $request->has('waits_for')) {
+        if ($request->has('standard_rate') || $request->has('effective_from') || $request->has('mix_batch_kg') || $request->has('blocks_later_steps') || $request->filled('label') || $request->has('waits_for') || $request->has('unit_name')) {
             return $request->user()->authTo(["org-supervisor.{$this->organisation->id}", "productions_rd.{$this->production->id}.edit"]);
         }
 

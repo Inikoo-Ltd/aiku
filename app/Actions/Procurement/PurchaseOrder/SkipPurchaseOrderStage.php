@@ -88,7 +88,7 @@ class SkipPurchaseOrderStage extends OrgAction
             return;
         }
 
-        if (!in_array($this->purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])) {
+        if (!in_array($this->purchaseOrder->state, PurchaseOrderStateEnum::open())) {
             $validator->errors()->add('key', __('Only an open order skips its stages'));
 
             return;

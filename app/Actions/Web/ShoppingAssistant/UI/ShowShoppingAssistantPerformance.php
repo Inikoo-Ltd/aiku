@@ -11,6 +11,7 @@ namespace App\Actions\Web\ShoppingAssistant\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRestockQuestion;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantSalesLead;
 use App\Actions\OrgAction;
@@ -23,8 +24,10 @@ use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Enums\UI\Web\ShoppingAssistantPerformanceTabsEnum;
 use App\Http\Resources\Web\ShoppingAssistantConversationsResource;
+use App\Http\Resources\Web\ShoppingAssistantWebsitesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Tasks\StaffTask;
@@ -162,6 +165,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
             'shop_type'     => $pick('shop_type', CustomerShopTypeEnum::values()),
             'country'       => $pick('country', array_column($options['countries'], 'value')),
             'outcome'       => $pick('outcome', self::OUTCOMES),
+            'general'       => GetShoppingAssistantReport::make()->validGeneralFilter($request->query('general')),
             'website_ids'   => $websiteIds,
             'search_website_ids' => $language
                 ? DB::table('websites')->join('shops', 'shops.id', '=', 'websites.shop_id')->join('languages', 'languages.id', '=', 'shops.language_id')
@@ -214,6 +218,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
             ShoppingAssistantEntryPointEnum::PROFILE->value => __('Profile'),
             ShoppingAssistantEntryPointEnum::SEARCH->value  => __('Search'),
             ShoppingAssistantEntryPointEnum::CHAT->value    => __('Chat'),
+            ShoppingAssistantEntryPointEnum::PANEL->value   => __('Range Advisor panel'),
             default                                         => __('Command line'),
         };
     }
@@ -252,10 +257,20 @@ class ShowShoppingAssistantPerformance extends OrgAction
             ->join('shops', 'shops.id', '=', 'shopping_assistant_conversations.shop_id')
             ->join('organisations', 'organisations.id', '=', 'shopping_assistant_conversations.organisation_id');
 
-        $report->applyScope($query->getEloquentBuilder(), $filters, $filters['from']->startOfDay(), $filters['to']->endOfDay());
+        if ($customerId = $filters['customer_id'] ?? null) {
+            $query->where('shopping_assistant_conversations.customer_id', $customerId)
+                ->where('shopping_assistant_conversations.entry_point', '!=', ShoppingAssistantEntryPointEnum::COMMAND->value);
+        } else {
+            $report->applyScope($query->getEloquentBuilder(), $filters, $filters['from']->startOfDay(), $filters['to']->endOfDay());
+        }
 
         $eventCount = fn (string $type) => "(select count(*) from shopping_assistant_events events where events.shopping_assistant_conversation_id = shopping_assistant_conversations.id and events.type = '$type') as $type";
 
+        if ($generalCondition = $report->generalFilterCondition($filters['general'] ?? null)) {
+            $query->whereRaw($generalCondition);
+        }
+
+        $filters['outcome'] ??= null;
         if ($filters['outcome'] === 'ordered') {
             [$orderedSql, $orderedBindings] = $report->attributionSql(
                 $report->conversationsQuery($filters, $filters['from']->startOfDay(), $filters['to']->endOfDay()),
@@ -284,6 +299,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
             ->selectRaw($eventCount('shown'))
             ->selectRaw($eventCount('clicked'))
             ->selectRaw($eventCount('added'))
+            ->selectRaw('exists (select 1 from shopping_assistant_hand_overs where shopping_assistant_hand_overs.shopping_assistant_conversation_id = shopping_assistant_conversations.id) as handed_over')
             ->defaultSort('-created_at')
             ->allowedSorts([
                 AllowedSort::field('created_at', 'shopping_assistant_conversations.created_at'),
@@ -315,23 +331,42 @@ class ShowShoppingAssistantPerformance extends OrgAction
         return $conversations;
     }
 
-    public function tableStructure(bool $websiteLocked, string $prefix = ShoppingAssistantPerformanceTabsEnum::CONVERSATIONS->value): Closure
+    /**
+     * Every conversation of the customer with the assistant (Merlin tab of the customer page), in the shop's currency.
+     */
+    public function customerConversations(Customer $customer, string $prefix): LengthAwarePaginator
     {
-        return function (InertiaTable $table) use ($websiteLocked, $prefix) {
+        $currencyCode = $customer->shop->currency->code;
+
+        return $this->conversationsTable(['customer_id' => $customer->id], 'net_amount', GetShoppingAssistantReport::make()->usdRate($currencyCode), $prefix);
+    }
+
+    public static function customerHasConversations(Customer $customer): bool
+    {
+        return ShoppingAssistantConversation::where('customer_id', $customer->id)
+            ->where('entry_point', '!=', ShoppingAssistantEntryPointEnum::COMMAND->value)
+            ->exists();
+    }
+
+    public function tableStructure(bool $websiteLocked, string $prefix = ShoppingAssistantPerformanceTabsEnum::CONVERSATIONS->value, bool $customerLocked = false): Closure
+    {
+        return function (InertiaTable $table) use ($websiteLocked, $prefix, $customerLocked) {
             $table
                 ->name($prefix)
                 ->pageName($prefix.'Page')
                 ->withGlobalSearch()
                 ->withLabelRecord([__('conversation'), __('conversations')])
-                ->column(key: 'created_at', label: __('Started'), canBeHidden: false, sortable: true)
-                ->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, searchable: true);
+                ->column(key: 'created_at', label: __('Started'), canBeHidden: false, sortable: true);
+
+            if (!$customerLocked) {
+                $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, searchable: true);
+            }
 
             if (!$websiteLocked) {
                 $table->column(key: 'website', label: __('Website'), canBeHidden: false);
             }
 
             $table
-                ->column(key: 'entry_point', label: __('Opened from'), canBeHidden: false)
                 ->column(key: 'first_question', label: __('First question'), canBeHidden: false)
                 ->column(key: 'messages_count', label: __('Messages'), canBeHidden: false, sortable: true, align: 'right')
                 ->column(key: 'shown', label: __('Shown'), canBeHidden: false, align: 'right')
@@ -339,8 +374,97 @@ class ShowShoppingAssistantPerformance extends OrgAction
                 ->column(key: 'added', label: __('Added'), canBeHidden: false, align: 'right')
                 ->column(key: 'ordered', label: __('Ordered'), canBeHidden: false)
                 ->column(key: 'cost', label: __('AI cost'), canBeHidden: false, sortable: true, align: 'right')
-                ->column(key: 'status_label', label: __('Status'), canBeHidden: false)
                 ->defaultSort('-created_at');
+        };
+    }
+
+    /**
+     * One row per website of the page with the assistant on or a conversation in the period: the
+     * period's conversations, customers, orders, revenue, conversion and AI cost (US dollars), and
+     * this month's AI budget.
+     */
+    public function shopsTable(array $filters, string $amountColumn, string $prefix = ShoppingAssistantPerformanceTabsEnum::SHOPS->value): LengthAwarePaginator
+    {
+        $report = GetShoppingAssistantReport::make();
+        $from   = $filters['from']->startOfDay();
+        $to     = $filters['to']->endOfDay();
+
+        $stats = $report->conversationsQuery($filters, $from, $to);
+        $stats->columns = null;
+        $stats->selectRaw('shopping_assistant_conversations.website_id, count(*) as conversations, count(distinct shopping_assistant_conversations.customer_id) as customers, coalesce(sum(shopping_assistant_conversations.cost), 0) as cost')
+            ->groupBy('shopping_assistant_conversations.website_id');
+
+        [$attributedSql, $attributedBindings] = $report->attributionSql(
+            $report->conversationsQuery($filters, $from, $to)->addSelect('shopping_assistant_conversations.website_id'),
+            $amountColumn,
+            <<<'SQL'
+            select convs.website_id,
+                count(distinct convs.id) filter (where exists (select 1 from matches where matches.conversation_id = convs.id)) as ordered_conversations,
+                count(distinct lines.order_id) as orders,
+                coalesce(sum(lines.amount), 0) as revenue
+            from convs
+            left join lines on lines.conversation_id = convs.id
+            group by convs.website_id
+            SQL
+        );
+
+        InertiaTable::updateQueryBuilderParameters($prefix);
+
+        $query = QueryBuilder::for(Website::class)
+            ->join('shops', 'shops.id', '=', 'websites.shop_id')
+            ->join('organisations', 'organisations.id', '=', 'websites.organisation_id')
+            ->leftJoinSub($stats, 'stats', 'stats.website_id', '=', 'websites.id')
+            ->leftJoin(DB::raw("($attributedSql) as attributed"), 'attributed.website_id', '=', 'websites.id')
+            ->whereIn('websites.id', $filters['website_ids'] ?: [0])
+            ->where(fn ($query) => $query->whereRaw("websites.settings->'shopping_assistant'->>'enabled' = 'true'")->orWhereNotNull('stats.website_id'));
+        $query->getQuery()->addBinding($attributedBindings, 'join');
+
+        $websites = $query
+            ->select([
+                'websites.id',
+                'websites.domain',
+                'websites.slug',
+                'websites.settings',
+                'shops.slug as shop_slug',
+                'organisations.slug as organisation_slug',
+            ])
+            ->selectRaw('coalesce(stats.conversations, 0) as conversations')
+            ->selectRaw('coalesce(stats.customers, 0) as customers')
+            ->selectRaw('coalesce(stats.cost, 0) as cost')
+            ->selectRaw('coalesce(attributed.orders, 0) as orders')
+            ->selectRaw('coalesce(attributed.revenue, 0) as revenue')
+            ->selectRaw('coalesce(attributed.ordered_conversations::numeric / nullif(stats.conversations, 0), 0) as conversion')
+            ->defaultSort('domain')
+            ->allowedSorts([
+                AllowedSort::field('domain', 'websites.domain'),
+                ...collect(['conversations', 'customers', 'orders', 'revenue', 'conversion', 'cost'])->map(fn (string $column) => AllowedSort::field($column))->all(),
+            ])
+            ->allowedFilters([AllowedFilter::callback('global', fn ($query, $value) => $query->whereRaw('websites.domain ilike ?', ["%$value%"]))])
+            ->withPaginator($prefix, tableName: request()->route()?->getName())
+            ->withQueryString();
+
+        $websites->getCollection()->each(fn (Website $website) => $website->setAttribute('budget', GetShoppingAssistantBudget::run($website)));
+
+        return $websites;
+    }
+
+    public function shopsTableStructure(string $prefix = ShoppingAssistantPerformanceTabsEnum::SHOPS->value): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            $table
+                ->name($prefix)
+                ->pageName($prefix.'Page')
+                ->withGlobalSearch()
+                ->withLabelRecord([__('website'), __('websites')])
+                ->column(key: 'domain', label: __('Website'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'conversations', label: __('Conversations'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'customers', label: __('Customers'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'orders', label: __('Orders'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'revenue', label: __('Revenue'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'conversion', label: __('Conversion'), tooltip: __('Conversations followed by an order of a product the assistant showed'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'cost', label: __('AI cost'), canBeHidden: false, sortable: true, align: 'right')
+                ->column(key: 'budget', label: __('AI budget this month'), canBeHidden: false)
+                ->defaultSort('domain');
         };
     }
 
@@ -392,7 +516,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-        $title         = $this->inShopMenu ? __('AI Salesman') : __('AI Assistant');
+        $title         = $this->assistantName();
         $websites      = $this->scopeWebsites($this->website);
         $filters       = $this->filters($request, $websites, (bool) $this->website);
         $report        = GetShoppingAssistantReport::make();
@@ -413,13 +537,13 @@ class ShowShoppingAssistantPerformance extends OrgAction
                 'breadcrumbs'      => $this->getBreadcrumbs($routeParameters),
                 'pageHead'         => array_filter([
                     'title'         => $title,
-                    'icon'          => ['icon' => ['fal', 'fa-robot'], 'title' => $title],
+                    'icon'          => ['icon' => ['fal', 'fa-hat-wizard'], 'title' => $title],
                     'model'         => $this->website?->name,
                     'subNavigation' => $this->website && !$this->inShopMenu ? $this->getWebsiteAnalyticsNavigation($this->website) : null,
                 ]),
                 'tabs'             => [
                     'current'    => $this->tab,
-                    'navigation' => ShoppingAssistantPerformanceTabsEnum::navigation(),
+                    'navigation' => $this->navigation($filters),
                 ],
                 'filters'          => [
                     'from'           => $filters['from']->toDateString(),
@@ -432,6 +556,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                     'shop_type'      => $filters['shop_type'],
                     'country'        => $filters['country'],
                     'outcome'        => $filters['outcome'],
+                    'general'        => $filters['general'],
                     'website_locked' => $filters['website_locked'],
                     'options'        => $filters['options'],
                 ],
@@ -455,13 +580,38 @@ class ShowShoppingAssistantPerformance extends OrgAction
                     ShoppingAssistantPerformanceTabsEnum::CONVERSATIONS,
                     fn () => ShoppingAssistantConversationsResource::collection($this->conversationsTable($filters, $amountColumn, $usdRate))
                 ),
+                ShoppingAssistantPerformanceTabsEnum::SHOPS->value => $this->tabProp(
+                    ShoppingAssistantPerformanceTabsEnum::SHOPS,
+                    fn () => ShoppingAssistantWebsitesResource::collection($this->shopsTable($filters, $amountColumn))
+                ),
             ]
-        )->table($this->tableStructure((bool) $this->website));
+        )->table($this->tableStructure((bool) $this->website))->table($this->shopsTableStructure());
+    }
+
+    /**
+     * The tabs with the period's conversation count on Conversations; Shops / Budget only on the group page.
+     */
+    private function navigation(array $filters): array
+    {
+        $navigation = $this->website
+            ? ShoppingAssistantPerformanceTabsEnum::navigationExcept([ShoppingAssistantPerformanceTabsEnum::SHOPS])
+            : ShoppingAssistantPerformanceTabsEnum::navigation();
+
+        $navigation[ShoppingAssistantPerformanceTabsEnum::CONVERSATIONS->value]['number'] = GetShoppingAssistantReport::make()
+            ->conversationsQuery($filters, $filters['from']->startOfDay(), $filters['to']->endOfDay())
+            ->count();
+
+        return $navigation;
+    }
+
+    public function assistantName(): string
+    {
+        return $this->website ? GetShoppingAssistantSettings::name($this->website) : GetShoppingAssistantSettings::nameInGroup(group()->id);
     }
 
     public function getBreadcrumbs(array $routeParameters): array
     {
-        $label = __('AI Assistant');
+        $label = $this->assistantName();
 
         if ($this->inShopMenu) {
             return array_merge(
@@ -470,7 +620,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => ['name' => 'grp.org.shops.show.ai_salesman.show', 'parameters' => $routeParameters],
-                        'label' => __('AI Salesman'),
+                        'label' => $label,
                     ],
                 ]]
             );

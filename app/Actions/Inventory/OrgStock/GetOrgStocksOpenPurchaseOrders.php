@@ -42,10 +42,7 @@ class GetOrgStocksOpenPurchaseOrders
             })
             ->where('purchase_orders.organisation_id', $organisationId)
             ->when($exceptPurchaseOrderId, fn ($query) => $query->where('purchase_orders.id', '!=', $exceptPurchaseOrderId))
-            ->whereIn('purchase_orders.state', [
-                PurchaseOrderStateEnum::SUBMITTED->value,
-                PurchaseOrderStateEnum::CONFIRMED->value,
-            ])
+            ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::openValues())
             ->whereNull('purchase_orders.deleted_at')
             ->whereNull('purchase_order_transactions.deleted_at')
             ->whereNotIn('purchase_order_transactions.state', [PurchaseOrderTransactionStateEnum::CANCELLED->value, PurchaseOrderTransactionStateEnum::NOT_RECEIVED->value])

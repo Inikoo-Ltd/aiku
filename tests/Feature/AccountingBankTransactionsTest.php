@@ -405,6 +405,14 @@ test('auto-pay records the money received and absorbs the bank fee, only for lin
     expect(fn () => DB::transaction(fn () => RefundPaymentToBalance::lockForRefund($paidLine->bankFeePayment, null, 0.5)))
         ->toThrow(ValidationException::class);
 
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    $paymentsBefore = $order->payments()->count();
+    foreach ([99.5, 100] as $amount) {
+        post(route('grp.models.order.payment.store', [$order->id, $bankAccount->id]), ['amount' => $amount, 'status' => 'success', 'state' => 'completed'])
+            ->assertSessionHasErrors('amount');
+    }
+    expect($order->payments()->count())->toBe($paymentsBefore);
+
     $topUp = $line('p2', $order, 0.50, now()->addMinutes(2));
     MatchBankTransactions::run($bankConnection);
     expect($topUp->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
@@ -509,7 +517,7 @@ test('invoicing an order paid with an absorbed bank fee leaves its stored pay st
     $customer       = createCustomer($this->shop);
     [, $product]    = createProduct($this->shop);
     $order          = bankMatchingOrder($customer, 0);
-    $transaction = StoreTransaction::make()->action($order, $product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 10]));
+    $transaction = StoreTransaction::make()->action($order, $product->historicAsset, array_merge(Transaction::factory()->definition(), ['quantity_ordered' => 100]));
     $order->refresh();
     $order->updateQuietly(['state' => OrderStateEnum::SUBMITTED]);
 
@@ -542,7 +550,7 @@ test('invoicing an order paid with an absorbed bank fee leaves its stored pay st
     MatchBankTransactions::run($bankConnection);
     expect(PayMatchedBankTransactions::run($bankConnection))->toBe(['paid' => 1]);
 
-    $transaction->updateQuietly(['quantity_ordered' => 5]);
+    $transaction->updateQuietly(['quantity_ordered' => 1]);
     $invoice = GenerateInvoiceFromOrder::make()->action($order->refresh());
 
     expect((float)$invoice->total_amount)->toBeLessThan($received);
@@ -603,6 +611,13 @@ test('staff record a bank payment from the review queue on the order they name, 
     expect($partPayment->refresh()->bank_fee_payment_id)->toBeNull()
         ->and((float)$partOrder->refresh()->payment_amount)->toBe(50.0);
 
+    actingAs(createAdminGuest($this->organisation->group)->getUser());
+    post(route('grp.models.order.payment.store', [$partOrder->id, $bankAccount->id]), ['amount' => 60, 'status' => 'success', 'state' => 'completed'])
+        ->assertSessionHasErrors('amount');
+    post(route('grp.models.order.payment.store', [$partOrder->id, $bankAccount->id]), ['amount' => 50, 'status' => 'success', 'state' => 'completed'])
+        ->assertSessionHasNoErrors();
+    expect((float)$partOrder->refresh()->payment_amount)->toBe(100.0);
+
     $basket = bankMatchingOrder(createCustomer($this->shop), 30);
     $basket->updateQuietly(['state' => OrderStateEnum::CREATING]);
     expect(fn () => PayBankTransactionToOrder::make()->handle($line('q5', 30), ['order_reference' => $basket->reference]))
@@ -640,13 +655,23 @@ test('staff record a bank payment from the review queue on the order they name, 
     actingAs(createAdminGuest($this->organisation->group)->getUser());
     Config::set('inertia.pages.paths', [resource_path('js/Pages/Grp')]);
 
+    $old = $line('q9', 75);
+    $old->update(['booked_at' => now()->subYears(3), 'match_state' => BankTransactionMatchStateEnum::REVIEW, 'match_data' => ['reason' => 'order cancelled']]);
+
     get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('Org/Accounting/BankTransactionsToReview')
             ->where('canEdit', true)
+            ->where('period', '90d')
             ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($toReview->id)
+                && !collect($rows)->pluck('id')->contains($old->id)
                 && !collect($rows)->pluck('id')->contains($paid->id)
                 && !collect($rows)->pluck('id')->contains($payout->id)));
+
+    get(route('grp.org.accounting.bank_review.index', [$this->organisation->slug, 'period' => 'all']))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('period', 'all')
+            ->where('data.data', fn ($rows) => collect($rows)->pluck('id')->contains($old->id)));
 });
 
 test('order numbers are read from bank references as whole words', function () {

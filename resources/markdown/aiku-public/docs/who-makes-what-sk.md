@@ -2,7 +2,7 @@
 title: Kto čo vyrába
 summary: Naučte aiku, ktorí remeselníci zvyčajne vyrábajú ktorú kategóriu alebo artefakt, aby sa zoznam To produce sám roztriedil do hromádok pre jednotlivých ľudí. Odporúčanie, nikdy zámok.
 date: 2026-09-08
-source_date: 2026-10-05
+source_date: 2026-11-12
 tags: production, crafts, hr
 category: production
 help_routes: grp.org.productions.show.crafts.artefact_departments, grp.org.productions.show.crafts.artefacts
@@ -46,6 +46,18 @@ Veľký riadok sa dá zdieľať. Na zákazke výroby kliknite vedľa množstva r
 - Riadok ukazuje celkový postup všetkých častí a tabuľku podzákaziek s cieľom každého remeselníka, hotovými kusmi, stavom, časom a odmenou.
 - Rovnaké tlačidlo otvorte znova, ak chcete presunúť kusy alebo zmeniť mená. Časť, ktorú už niekto začal, sa nedá odstrániť ani znížiť pod už vyrobené množstvo. Prvý riadok zostáva vždy.
 - Keď bolo čokoľvek z riadku už prijaté do skladu, riadok sa už nedá rozdeliť.
+
+## Kroky, ktoré si svoje zákazky na objednávku priraďujú samy
+
+Niektorú prácu na objednávku robí jeden človek, napríklad plnenie olejov na objednávku. Pri takýchto krokoch môžete plánovač úplne preskočiť. Otvorte krok v **Factory → Operations → Tasks** (Továreň → Prevádzka → Úlohy), kliknite na **edit** a v poli **Assign to order jobs automatically** (Automaticky priraďovať zákazkám na objednávku) vyberte meno alebo pracovnú oblasť.
+
+- Keď objednávka dá na To produce produkt s týmto krokom, aiku vytvorí zákazku hneď: jednu zákazku na objednávku, so všetkými riadkami tejto objednávky pre daný krok.
+- Meno dostane každú zákazku. Pracovná oblasť dá každú zákazku najmenej vyťaženému remeselníkovi oblasti, ktorý je dnes prihlásený alebo bol na tablete za posledný týždeň. Ak nikto nevyhovuje, riadok čaká na To produce ako zvyčajne.
+- Na tablete prichádzajú zákazky od najstaršej objednávky a každý riadok ukazuje svoju objednávku, takže remeselník dokončí vždy jednu objednávku a tá môže ísť do skladu.
+- Ak zákazník objednávku zmení alebo zruší skôr, než niekto zákazku začne, zákazka sa vráti a vytvorí sa znova z novej objednávky. Keď ju niekto začal, zostáva tak, ako je.
+- Produkty vyrábané v šaržiach viac ako jedného kusa zostávajú na To produce pre plánovača, aby sa malé objednávky mohli podeliť o šaržu.
+- Riadky doplnenia zásob a riadky od partners sa takto nikdy nepriraďujú.
+- Vymažte pole a vrátite sa k ručnému priraďovaniu. Riadky, ktoré už sú na zákazke, si svoju zákazku ponechajú.
 
 ## Čím to nie je
 

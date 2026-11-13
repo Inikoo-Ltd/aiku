@@ -29,25 +29,28 @@ class IndexSupplierPortalPurchaseOrders
     use AsObject;
 
     /**
-     * @var array<string, list<string>>
+     * @return array<string, list<string>>
      */
-    private const array STATES = [
-        'open'      => [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value],
-        'received'  => [PurchaseOrderStateEnum::SETTLED->value],
-        'cancelled' => [PurchaseOrderStateEnum::CANCELLED->value, PurchaseOrderStateEnum::NOT_RECEIVED->value],
-    ];
+    private static function states(): array
+    {
+        return [
+            'open'      => PurchaseOrderStateEnum::openValues(),
+            'received'  => [PurchaseOrderStateEnum::SETTLED->value],
+            'cancelled' => [PurchaseOrderStateEnum::CANCELLED->value, PurchaseOrderStateEnum::NOT_RECEIVED->value],
+        ];
+    }
 
     public function sent(Supplier $supplier): Builder
     {
         return PurchaseOrder::query()
             ->where('purchase_orders.parent_type', 'OrgSupplier')
             ->whereIn('purchase_orders.parent_id', DB::table('org_suppliers')->where('supplier_id', $supplier->id)->select('id'))
-            ->whereIn('purchase_orders.state', array_merge(...array_values(self::STATES)));
+            ->whereIn('purchase_orders.state', array_merge(...array_values(self::states())));
     }
 
     public function openCount(Supplier $supplier): int
     {
-        return $this->sent($supplier)->whereIn('purchase_orders.state', self::STATES['open'])->count();
+        return $this->sent($supplier)->whereIn('purchase_orders.state', self::states()['open'])->count();
     }
 
     /**
@@ -60,7 +63,7 @@ class IndexSupplierPortalPurchaseOrders
         $labels = ['open' => __('Open'), 'received' => __('Received'), 'cancelled' => __('Cancelled')];
 
         return [
-            'facets'        => ['state' => collect(self::STATES)->map(fn (array $states, string $key) => [
+            'facets'        => ['state' => collect(self::states())->map(fn (array $states, string $key) => [
                 'value' => $key,
                 'label' => $labels[$key],
                 'count' => $this->sent($supplier)->whereIn('purchase_orders.state', $states)->count(),
@@ -73,7 +76,7 @@ class IndexSupplierPortalPurchaseOrders
     {
         $state = request()->input(($prefix ? $prefix.'_' : '').'facets.state');
 
-        return array_key_exists((string) $state, self::STATES) ? $state : null;
+        return array_key_exists((string) $state, self::states()) ? $state : null;
     }
 
     public function handle(Supplier $supplier, ?string $prefix = null): LengthAwarePaginator
@@ -91,7 +94,7 @@ class IndexSupplierPortalPurchaseOrders
             ->leftJoin('currencies', 'currencies.id', 'purchase_orders.currency_id');
 
         if ($state = $this->selectedState($prefix)) {
-            $query->whereIn('purchase_orders.state', self::STATES[$state]);
+            $query->whereIn('purchase_orders.state', self::states()[$state]);
         }
 
         return $query

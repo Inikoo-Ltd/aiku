@@ -27,7 +27,7 @@ The range advisor is an assistant that suggests which products a retailer should
 In **AI shopping assistant** there are three fields:
 
 - **AI shopping assistant** turns it on for this website.
-- **Assistant name** is the name customers see, up to 30 characters. Left empty, the website uses the name set for the whole group, which is "Aura" unless someone changed it in **Sysadmin → Settings → AI shopping assistant**. Change it there to rename the advisor on every website that has no name of its own.
+- **Assistant name** is the name customers see, up to 30 characters. Left empty, the website uses the name set for the whole group, which is "Merlin" unless someone changed it in **Sysadmin → Settings → AI shopping assistant**. Change it there to rename the advisor on every website that has no name of its own.
 - **Monthly AI budget** is the most the website may spend on answers in a calendar month, in US dollars. Left empty, it is US$30. The small "i" next to it shows what has been spent this month.
 
 Before you turn it on for a shop for the first time, ask the help desk to prepare that shop's catalogue for it. The advisor finds products by meaning, not only by the words in the name, and that needs a one-off preparation of the shop's products.
@@ -47,6 +47,19 @@ Before you turn it on for a shop for the first time, ask the help desk to prepar
 - Under the answer, buttons with follow-up questions, a box to type another question, and **Start a new conversation**.
 
 Normal searches by word or product code are not changed and are not slowed down.
+
+### The ready-made panel
+
+Logged-in customers also have the advisor inside their account: an **Ask <name>** card on the account dashboard, next to their details and the WhatsApp updates, to ask a question straight away, and its **See <name>'s picks for you** link opens the advisor inside the account, with the same conversation, history and panel as the storefront's advisor page. On the advisor page, before they ask anything, a panel headed "<name> noticed" shows up to four tabs of products, all in stock and at the customer's own prices:
+
+- **Missing from your range**: what shops like theirs buy most that they have never bought, from the families they already buy from. A customer with no orders yet sees **Best sellers for shops like yours** instead.
+- **Forgotten favourites**: products they used to order but have not ordered for a year.
+- **Starter packs**: up to three families they have never bought from, each with three or four of its best sellers and an **Add pack to basket** button.
+- **New for your shop**: new arrivals, those that shops like theirs already buy first.
+
+A tab with nothing in it is not shown. Each list has **Add all to basket**. When we do not know the customer's shop type, the panel asks them to tell the advisor, which then saves it. Which tabs were looked at, the products clicked and what was added to the basket are recorded, one panel record per customer and day.
+
+The advisor also remembers lasting facts the customer tells it about their shop, such as being a florist, also selling online, or not wanting incense, and starts every later conversation knowing them. They show on the panel as "<name> remembers" with a **Forget this** link that clears them, and they are wiped when the customer is anonymised. It never keeps figures. It may open a conversation with one short personal touch from what it knows, such as the customer's first name or the time of day where they are; with staff accounts that touch may be a light joke.
 
 ### What it knows and what it never says
 
@@ -89,6 +102,23 @@ To answer, write the answer for the customer in the note when you mark the task 
 
 System administrators set it up under **Organisations**: open the organisation, press **Edit** and go to **Restock questions**. The switch **Ask purchasing when there is no reliable date** is on by default; turned off, the advisor only answers from our orders. **Restock questions go to** chooses who gets them; left empty, they go to the organisation's buyers.
 
+### General questions and passing to a person
+
+Besides products, the assistant answers questions about buying from the shop: payment, delivery, returns, ordering and the customer's account. It answers from the shop's own policy pages, the shop settings, and the customer service notes and verified facts kept in the shop's chat settings, and it links the page it used. It never answers from general knowledge, and it only repeats a figure, such as a delivery time or a fee, when that figure is written in the text it used.
+
+When it is not sure, or the question is about the customer's own order, invoice or refund, it does not guess. It says so and offers to ask the team, with one tap on a button under the answer. A **Talk to a person** link is also on the assistant page at all times.
+
+What happens on the tap depends on the moment and on the website:
+
+- Inside chat hours, with someone available, a chat opens in the website's chat window.
+- Otherwise the question arrives as an email conversation. The customer is told when the team is back and that the answer comes by email, and their reply to that email lands in the same conversation.
+- A shop with no mailbox connected gets a website chat that is answered later.
+- A website with neither chat nor a mailbox offers no person.
+
+For the chat team: these chats arrive in the normal inbox and alerts, marked with the assistant's name. Use the filter **From the AI assistant** to see only them. The assistant's conversation with the customer is at the top of the chat, so you can see what was already said. If an answer of the assistant was wrong, mark it **Wrong answer** there. These chats are not counted in the chat reply-time and AI coverage figures; they are reported on the **AI Assistant** report instead (see below).
+
+To make the assistant answer more, open the report and look at **Questions the assistant could not answer**. Add a note that answers one of them in the shop's chat settings, and the assistant will answer it next time, within about an hour.
+
 ### Limits and what is recorded
 
 Each customer can ask 6 questions a minute, 40 an hour and 120 a day. An answer takes a few seconds, and the page waits for it. Every answer is paid AI usage, so turn the advisor on where you want customers to use it.
@@ -127,7 +157,7 @@ Each search records which suggestions were offered and whether the block came in
 
 Go to **Website** in the shop menu, then **Analytics** in the top menu and **AI Assistant**. The page reports one website. People who look after every website of the group also find it under **WebOps → AI Assistant**, for all websites together and with a website filter.
 
-At the top you choose the dates and can narrow the figures by language, by where the conversation was opened from (search box, profile page or chat box), by shop type and by country. Every figure is compared with the period of the same length just before, which the line under the filters names. Conversations by staff accounts are left out.
+At the top you choose the dates and can narrow the figures by language, by where the conversation was opened from (search box, profile page, chat box or Range Advisor panel; the panel's figures only show when you choose it), by shop type and by country. Every figure is compared with the period of the same length just before, which the line under the filters names. Conversations by staff accounts are left out.
 
 ### The Overview tab
 
@@ -149,9 +179,37 @@ At the top you choose the dates and can narrow the figures by language, by where
 
 The main figures and the funnel steps are links: they open the conversations behind them.
 
+**Answer ratings by customers** counts the answers customers marked helpful or not helpful with the thumbs under each answer, against the previous period. Both are links to the conversations behind them.
+
+**Customer challenges to act on** is the action list for buying, product and webmasters. Every night, AI reads each conversation that has been quiet for two hours and notes what stood between the customer and an order: a product we do not sell, something out of stock, the price, a minimum order or carton size, shipping or delivery, a problem with the website, or anything else they described. A plain question is not a challenge. The badges count the conversations of each kind and open them. The table lists the 20 things mentioned most, each with how many conversations, an example in the customer's own words and an **Open** link to the latest conversation. Conversations about the same thing in different languages are grouped on one line. A conversation of today is read tonight; the line above the table says how many are waiting. Searches with no results are in **Search on the website**.
+
+### General questions and hand-overs
+
+On the **Overview** tab, **General questions and passing to a person** shows how the assistant handles questions about the shop and the hand-overs to a person. Only conversations that came after this feature was added are counted. Each figure compares with the previous period, and each is a link to the conversations behind it.
+
+- **General questions** counts the answers about the shop (policies, delivery, returns, the account) and **Answered by the assistant** those it answered itself, without offering a person.
+- **Passed to a person** counts the customers who tapped the offer to ask the team. **Hand-over rate** is that count per general question, with the share of conversations that ended in a hand-over under it.
+- **AI cost of these answers** is the cost of the general answers only. **Answers marked wrong** counts the answers the chat team marked as wrong.
+- **Answered from** shows what the answers drew on: policy pages, shop settings, guides, notes, verified facts or learned rules, family descriptions, or our own data.
+- **Why a person was offered** compares, for each reason (not sure of the answer, a question about their own order, the customer asked for a person), how many times a person was offered with how many customers passed on.
+- **How it reached the team** splits the hand-overs into live chat, email chat answered later, and website chat answered later.
+- **First reply from a person** shows, for inside and outside chat hours, how many hand-overs there were, how many got a reply from a person, and the median wait for that first reply. Outside chat hours the wait includes the night.
+- **After passing to a person** shows how many were replied to, how many chats are closed, and how many customers placed an order within 7 days of the hand-over. Only hand-overs older than 7 days can be judged, and the figure says how many that is.
+- **Questions the assistant could not answer** lists what customers asked when the assistant was not sure, with how many times, the languages and the last time, and an **Open** link to the latest conversation. Questions are grouped only when the words are the same, so two ways of asking the same thing show as two lines.
+
+On the **Conversations** tab, a column shows which conversations were handed over to a person, and the transcript shows, under each answer, where it came from, when a person was offered, and the chat it was passed to.
+
 ### The Conversations tab
 
 One row per conversation: when it started, the customer, where it was opened from, the first question, the number of messages, the products shown, clicked and added, whether an order followed and for how much, and the AI cost. Search by customer or by the words of a question.
 
-Click the first question to read the conversation. Under each answer you see the products it showed with the reason given, which ones the customer clicked, added and ordered, and the follow-up questions offered. Conversations are for staff only: only people who can see the website in aiku can open them.
+Click the first question to read the conversation. Under each answer you see the products it showed with the reason given, which ones the customer clicked, added and ordered, the follow-up questions offered and the customer's rating. The challenges found in the conversation are listed at the top. Conversations are for staff only: only people who can see the website in aiku can open them.
+
+## Weekly summary and how long conversations are kept
+
+Every Monday morning (UK time) an email goes to the people chosen in **Sysadmin → Settings → AI shopping assistant → Weekly summary to**. It covers Monday to Sunday of the week before for all websites, compared with the week before that: conversations, customers, orders and revenue after being shown, AI cost, answer ratings, hand-overs, the top customer challenges and the searches with no results, with a link to the report. Quotes from customers are not put in the email; open the report to read them. If nobody is chosen, no email is sent.
+
+Customers see under the box where they type that the assistant is AI and can make mistakes, that our staff may read the conversations, and that they should not share payment details.
+
+What customers wrote and were told is kept for 24 months after the conversation's last message, or for the number of months set in **Keep conversation texts for (months)** in the same settings. After that the texts are wiped every night, together with the example quotes of the challenges and the questions refused by the limits. The figures stay, so the report still counts those conversations, their products, orders and cost. Anonymising a customer wipes their conversations at once. A wiped conversation says so at the top of its page.
 

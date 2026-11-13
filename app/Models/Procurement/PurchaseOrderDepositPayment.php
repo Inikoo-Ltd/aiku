@@ -23,6 +23,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon $date
  * @property string $amount
  * @property int $currency_id
+ * @property string|null $original_amount
+ * @property int|null $original_currency_id
  * @property PurchaseOrderPaymentMethodEnum $method
  * @property string|null $reference
  * @property int|null $media_id
@@ -56,6 +58,14 @@ class PurchaseOrderDepositPayment extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    /**
+     * The currency the money was sent in, when it is not the purchase order's: amount stays what it counts for on the order.
+     */
+    public function originalCurrency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class, 'original_currency_id');
     }
 
     public function bankStatement(): BelongsTo

@@ -13,7 +13,8 @@ class AddFrameOptionsHeader
         $response = $next($request);
 
         if (!app()->environment('local')) {
-            $response->headers->set('Content-Security-Policy', "frame-ancestors 'self' https://app.aiku.io;");
+            $policy = $response->headers->get('Content-Security-Policy');
+            $response->headers->set('Content-Security-Policy', ($policy ? rtrim($policy, '; ').'; ' : '')."frame-ancestors 'self' https://app.aiku.io;");
         }
 
         return $response;

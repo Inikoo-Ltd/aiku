@@ -33,6 +33,7 @@ use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\UpcomingTransaction\UpdateUpcomingTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Procurement\PartnerShoppingListItem\EnsurePartnerOrderPackedInMatches;
+use App\Actions\Production\PartnerShippingList\AssignToProduceLinesAutomatically;
 use App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -235,6 +236,7 @@ class SubmitOrder extends OrgAction
         }
 
         StoreToProduceItemsFromOrder::run($order);
+        DB::afterCommit(fn () => rescue(fn () => AssignToProduceLinesAutomatically::run($order)));
 
         $this->orderHydrators($order);
         $this->orderHandlingHydrators($order, $oldState);

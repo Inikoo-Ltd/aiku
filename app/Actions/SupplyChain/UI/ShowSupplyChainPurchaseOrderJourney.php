@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Procurement\PurchaseOrder\DeleteEmptyPurchaseOrders;
 use App\Actions\UI\WithInertia;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderJourneyStageEnum;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
@@ -113,7 +114,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 'completed'        => $anyTab->where('status', 'completed')->count(),
                 'in_process'       => $open->where('is_in_process', true)->count(),
                 'submitted'        => $open->where('state', 'submitted')->count(),
-                'confirmed'        => $open->where('state', 'confirmed')->count(),
+                'confirmed'        => $open->whereIn('state', PurchaseOrderStateEnum::agreedValues())->count(),
                 'needs_action'     => $open->whereIn('status', ['overdue', 'at_risk'])->count(),
                 'import'           => $open->where('is_import', true)->count(),
             ],
@@ -208,8 +209,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                 {$this->deliveryColumns()}, containers.container_lines, containers.lines_on_containers, containers.last_on_container_at,
                 coalesce(delivery.estimated_arrival, po.estimated_received_at::date::text) as estimated_received_at,
                 draft_lines.lines as draft_lines, draft_lines.cancelled_lines as draft_cancelled_lines,
-                draft_lines.pending_price_changes,
-                po.cost_extra, po.cost_shipping, po.cost_duties, po.cost_tax
+                draft_lines.pending_price_changes
             from purchase_orders po
             {$this->sharedJoins()}
             left join currencies on currencies.id = po.currency_id
@@ -303,7 +303,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
                             and purchase_order_transactions.price_query_state = 'pending'
                     ) as pending_price_changes
                 from purchase_order_transactions
-                where po.state in ('in_process', 'submitted', 'confirmed')
+                where po.state in (".PurchaseOrderStateEnum::liveSql().")
                     and purchase_order_transactions.purchase_order_id = po.id
                     and purchase_order_transactions.deleted_at is null
             ) draft_lines on true";
@@ -341,7 +341,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             and po.deleted_at is null
             and (po.data -> 'housekeeping') is null
             and (
-                po.state in ('in_process', 'submitted', 'confirmed')
+                po.state in (".PurchaseOrderStateEnum::liveSql().")
                 or (po.state = 'settled' and po.delivery_state in ('received', 'checked'))
                 or (
                     po.state = 'settled' and po.delivery_state = 'placed'
@@ -511,7 +511,6 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
             'is_in_process'     => $row->state === 'in_process',
             'is_deletable'      => null,
             'delete_blockers'   => null,
-            'extra_costs'       => round((float) $row->cost_extra + (float) $row->cost_shipping + (float) $row->cost_duties + (float) $row->cost_tax, 2) ?: null,
             'state'             => $row->state,
             'skipped_stages'    => collect(\App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum::STAGE_PASSING_SKIPS)
                 ->filter(fn ($stage, string $key) => Arr::has($data, "stage_skips.$key"))
@@ -674,7 +673,7 @@ class ShowSupplyChainPurchaseOrderJourney extends OrgAction
         return match ($tab) {
             'in_process'   => $ribbon['is_in_process'] && $ribbon['status'] !== 'completed',
             'submitted'    => $ribbon['state'] === 'submitted' && $ribbon['status'] !== 'completed',
-            'confirmed'    => $ribbon['state'] === 'confirmed' && $ribbon['status'] !== 'completed',
+            'confirmed'    => in_array($ribbon['state'], PurchaseOrderStateEnum::agreedValues(), true) && $ribbon['status'] !== 'completed',
             'needs_action' => in_array($ribbon['status'], ['overdue', 'at_risk']),
             'import'       => $ribbon['is_import'] && $ribbon['status'] !== 'completed',
             'completed'    => $ribbon['status'] === 'completed',

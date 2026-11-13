@@ -13,6 +13,7 @@ import { PageHeadingTypes } from "@/types/PageHeading"
 import Chart from "primevue/chart"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import TicketsCreatedInterval from "@/Components/Tickets/TicketsCreatedInterval.vue"
+import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import DashboardWidgetBox from "@/Components/DataDisplay/Dashboard/Widget/DashboardWidgetBox.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -88,6 +89,7 @@ const props = defineProps<{
 	pageHead: PageHeadingTypes
 	intervals: Record<string, string>
 	showShops: boolean
+	fromAssistant?: boolean
 	conversationsRoute: { name: string; parameters: Record<string, string> } | null
 	stats: {
 		interval: string
@@ -381,6 +383,20 @@ const topicColumns = [
 	{ key: "median_reply_minutes", label: ctrans("Median reply") },
 ]
 
+const chatSourceOptions = [
+	{ label: ctrans("All chats"), value: "all" },
+	{ label: ctrans("From the AI assistant"), value: "assistant" },
+]
+
+const chatSource = computed({
+	get: () => (props.fromAssistant ? "assistant" : "all"),
+	set: (value: string) => {
+		if ((value === "assistant") !== !!props.fromAssistant) {
+			router.reload({ data: { from_assistant: value === "assistant" ? 1 : 0 }, preserveScroll: true })
+		}
+	},
+})
+
 const sortedTopics = computed(() => sortRows(props.stats.by_topic, "topics"))
 const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 </script>
@@ -395,6 +411,7 @@ const sortedShops = computed(() => sortRows(props.stats.by_shop, "shops"))
 				:options="intervals"
 				:selected="stats.interval"
 				storage-key="chat-reports-interval" />
+			<SegmentedToggle v-model="chatSource" :options="chatSourceOptions" :aria-label="ctrans('Chats')" />
 			<span class="text-xs text-gray-400">{{ stats.from }} → {{ stats.to }}</span>
 		</div>
 

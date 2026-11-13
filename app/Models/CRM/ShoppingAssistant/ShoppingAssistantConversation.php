@@ -41,6 +41,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $model
  * @property \Illuminate\Support\Carbon|null $handed_over_at
  * @property \Illuminate\Support\Carbon|null $last_message_at
+ * @property \Illuminate\Support\Carbon|null $challenges_checked_at
+ * @property \Illuminate\Support\Carbon|null $wiped_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Customer|null $customer
@@ -67,6 +69,8 @@ class ShoppingAssistantConversation extends Model
             'cost'            => 'decimal:6',
             'handed_over_at'  => 'datetime',
             'last_message_at' => 'datetime',
+            'challenges_checked_at' => 'datetime',
+            'wiped_at'              => 'datetime',
         ];
     }
 
@@ -88,6 +92,11 @@ class ShoppingAssistantConversation extends Model
     public function events(): HasMany
     {
         return $this->hasMany(ShoppingAssistantEvent::class);
+    }
+
+    public function handOvers(): HasMany
+    {
+        return $this->hasMany(ShoppingAssistantHandOver::class);
     }
 
     /**

@@ -21,6 +21,7 @@ enum SnapshotBuilderEnum: string
     case AIKU_BANNERS_V1 = 'aiku-banners-v1';
     case AIKU_ANNOUNCEMENT_V1 = 'aiku-announcement-v1';
     case AIKU_WEBSITE_DIALOG_V1 = 'aiku-website-dialog-v1';
+    case STATIC_HTML = 'static-html';
 
 
     public static function labels(): array
@@ -33,6 +34,7 @@ enum SnapshotBuilderEnum: string
             'aiku-banners-v1'    => __('Aiku Banners V1'),
             'aiku-announcement-v1'    => __('Aiku Announcement V1'),
             'aiku-website-dialog-v1'  => __('Aiku Website Dialog V1'),
+            'static-html'             => __('Info website HTML'),
         ];
     }
 

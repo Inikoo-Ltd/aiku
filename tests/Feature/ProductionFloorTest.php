@@ -771,6 +771,62 @@ test('a step counted in packs says so on the floor and takes whole packs only', 
     expect($task->refresh()->packSize())->toBeNull();
 });
 
+test('the floor names what a step counts: the artefact or family unit, and a pack step its own', function () {
+    $suffix     = rand(1000, 9999);
+    $department = \App\Actions\Production\ArtefactDepartment\StoreArtefactDepartment::make()->action($this->production, ['code' => 'UND'.$suffix, 'name' => 'Unit names']);
+    $family     = \App\Actions\Production\ArtefactFamily\StoreArtefactFamily::make()->action($department, ['code' => 'UNF'.$suffix, 'name' => 'Bath salts']);
+    \App\Actions\Production\ArtefactFamily\UpdateArtefactFamily::make()->action($family, ['unit_name' => ' bags ']);
+    $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'UNA'.$suffix, 'name' => 'Box of 3 bath salt', 'artefact_family_id' => $family->id]);
+    $packing  = stepTestManufactureTask($this->production, 'UNP'.$suffix, 'Packing');
+    $artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $packing->id               => ['position' => 2, 'units_per_artefact' => 0.3333],
+    ]);
+    $boxingStepId = $artefact->recipeSteps()->where('manufacture_task_id', $packing->id)->value('id');
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxingStepId, 'position' => 2, 'units_per_artefact' => 0.3333, 'unit_name' => ' boxes ']);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => 120]);
+    ConfirmJobOrder::make()->action($jobOrder);
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    $boxing = $item->tasks()->where('manufacture_task_id', $packing->id)->first();
+
+    expect($family->refresh()->data['unit_name'])->toBe('bags')
+        ->and($making->unitName())->toBeNull()
+        ->and($making->pieceName())->toBe('bags')
+        ->and($boxing->unitName())->toBe('boxes')
+        ->and($boxing->packSize())->toBe(3)
+        ->and((float) $boxing->quantity_required)->toBe(40.0)
+        ->and(Artefact::whereKey($artefact->id)->selectRaw(Artefact::UNIT_NAME_SQL.' as unit_name')->value('unit_name'))->toBe('bags');
+
+    $session = StartManufactureTaskSession::make()->action(auth()->user(), $making);
+    get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('open_session.task.piece_name', 'bags')->where('open_session.task.unit_name', null)->etc());
+    CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 120]);
+
+    \App\Actions\Production\Artefact\UpdateArtefact::make()->action($artefact->refresh(), ['unit_name' => 'bars']);
+    expect($boxing->refresh()->pieceName())->toBe('bars')
+        ->and(Artefact::whereKey($artefact->id)->selectRaw(Artefact::UNIT_NAME_SQL.' as unit_name')->value('unit_name'))->toBe('bars');
+
+    \App\Actions\Production\Artefact\UpdateArtefact::make()->action($artefact->refresh(), ['unit_name' => '']);
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxing->artefact_manufacture_task_id, 'position' => 2, 'units_per_artefact' => 0.3333, 'unit_name' => '']);
+    expect($boxing->refresh()->pieceName())->toBe('bags')
+        ->and($boxing->unitName())->toBeNull();
+
+    \App\Actions\Production\ArtefactFamily\UpdateArtefactFamily::make()->action($family->refresh(), ['pack_name' => 'trays']);
+    expect($boxing->refresh()->unitName())->toBe('trays')
+        ->and($making->refresh()->unitName())->toBeNull();
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxing->artefact_manufacture_task_id, 'position' => 2, 'units_per_artefact' => 0.3333, 'unit_name' => 'boxes']);
+    expect($boxing->refresh()->unitName())->toBe('boxes');
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxing->artefact_manufacture_task_id, 'position' => 2, 'units_per_artefact' => 0.5]);
+    expect(ArtefactManufactureTask::find($boxing->artefact_manufacture_task_id)->unit_name)->toBe('boxes');
+    AttachManufactureTaskToArtefact::make()->action($artefact, ['manufacture_task_id' => $packing->id, 'step_id' => $boxing->artefact_manufacture_task_id, 'position' => 2, 'units_per_artefact' => 1]);
+    expect(ArtefactManufactureTask::find($boxing->artefact_manufacture_task_id)->unit_name)->toBeNull();
+
+    $artefact->recipeSteps()->where('manufacture_task_id', $this->manufactureTask->id)->update(['units_per_artefact' => 12]);
+    expect($making->refresh()->pieceName())->toBeNull();
+});
+
 test('a supervisor corrects an entry typed too high and the grown job shrinks back', function () {
     $this->artefact->manufactureTasks()->sync([
         $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 0.125],
@@ -1645,4 +1701,79 @@ test('INI-220 the floor runs the same number of queries however many tasks are o
 
     $repeated = $after->countBy()->filter(fn (int $times, string $sql) => $times > ($before->countBy()[$sql] ?? 0))->map(fn (int $times, string $sql) => $times.' vs '.($before->countBy()[$sql] ?? 0));
     expect($after->count())->toBe($before->count(), $repeated->map(fn ($n, $sql) => $n.'  '.substr($sql, 0, 300))->implode("\n"));
+});
+
+test('a job finished short is closed in whole packs and the floor is warned of the loose pieces it leaves, while a carried job keeps its part pack for the next part', function () {
+    $packing = stepTestManufactureTask($this->production, 'LPK', 'Packing');
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+        $packing->id               => ['position' => 2, 'units_per_artefact' => 0.0625],
+    ]);
+    $orgStockId = $this->artefact->org_stock_id;
+    if (!$this->artefact->orgStock) {
+        $orgStock = createOrgStocks($this->organisation, [createStocks($this->group)[0]])[0];
+        Artefact::where('org_stock_id', $orgStock->id)->update(['org_stock_id' => null]);
+        $this->artefact->update(['org_stock_id' => $orgStock->id]);
+    }
+    $packedIn = $this->artefact->refresh()->orgStock->packed_in;
+    $this->artefact->orgStock->update(['packed_in' => 16]);
+    $user = $this->guest->getUser();
+
+    $newLine = function () {
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 352]);
+        ConfirmJobOrder::make()->action($jobOrder);
+
+        return $item;
+    };
+
+    $item   = $newLine();
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    $session = StartManufactureTaskSession::make()->action($user, $making);
+    expect(fn () => CloseManufactureTaskSession::make()->action($session, ['quantity_made' => 309, 'outcome' => 'complete']))
+        ->toThrow(ValidationException::class, '309 made = 19 packs of 16 + 5 loose. Make 11 more for 20 packs, or finish at 304 and leave 5 loose?');
+
+    CloseManufactureTaskSession::make()->action($session->refresh(), ['quantity_made' => 309, 'outcome' => 'complete', 'loose_confirmed' => true]);
+    $item->refresh();
+    expect($item->quantity)->toBe(304)
+        ->and((float) $item->tasks()->where('manufacture_task_id', $packing->id)->value('quantity_required'))->toBe(19.0)
+        ->and($making->refresh()->state)->toBe(JobOrderItemTaskStateEnum::DONE)
+        ->and($item->loosePieces())->toBe(5);
+
+    actingAs($user);
+    get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $item->jobOrder->slug]))
+        ->assertInertia(fn (AssertableInertia $page) => $page->where('items.0.loose_pieces', 5)->etc());
+    $card = collect(get(route('grp.org.productions.show.to_produce.index', [$this->organisation->slug, $this->production->slug]))->assertOk()->viewData('page')['props']['groups'])
+        ->flatMap(fn ($lane) => $lane['items'])
+        ->first(fn ($boardItem) => data_get($boardItem, 'job_order_id') === $item->job_order_id);
+    expect(data_get($card, 'loose_pieces'))->toBe(5);
+
+    \App\Actions\Production\ManufactureTaskSession\CorrectManufactureTaskSessionQuantity::make()->action($session->refresh(), ['quantity_made' => 304], 'Supervisor');
+    expect($item->refresh()->loosePieces())->toBe(0);
+
+    $item   = $newLine();
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making), ['quantity_made' => 309, 'outcome' => 'carry_over']);
+    $item->refresh();
+    $carriedItem = JobOrder::find($item->data['carried_to'])->jobOrderItems()->first();
+    expect($item->quantity)->toBe(309)
+        ->and($item->loosePieces())->toBe(0)
+        ->and($carriedItem->quantity)->toBe(43);
+
+    $item = $newLine();
+    StoreJobOrderItem::make()->action($item->jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 32]);
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making), ['quantity_made' => 309, 'outcome' => 'complete']);
+    expect($item->refresh()->quantity)->toBe(309)
+        ->and($item->sharesPacks())->toBeTrue()
+        ->and($item->loosePieces())->toBe(0);
+
+    $item   = $newLine();
+    $making = $item->tasks()->where('manufacture_task_id', $this->manufactureTask->id)->first();
+    CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $making), ['quantity_made' => 10, 'outcome' => 'complete']);
+    expect($item->refresh()->quantity)->toBe(10);
+
+    $this->artefact->orgStock->update(['packed_in' => $packedIn]);
+    $this->artefact->update(['org_stock_id' => $orgStockId]);
+    $this->artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
 });

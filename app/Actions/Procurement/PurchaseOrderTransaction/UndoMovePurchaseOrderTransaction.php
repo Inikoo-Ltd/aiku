@@ -102,7 +102,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
         $movedFrom = Arr::get($movedTransaction->data, 'moved_from');
 
         if (!$movedFrom) {
-            return __('This item was not moved from another supplier');
+            return __('This item was not moved from another order');
         }
 
         if (Arr::get($movedFrom, 'undone_at')) {
@@ -124,7 +124,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
 
         if ($sourcePurchaseOrder->state === PurchaseOrderStateEnum::CANCELLED) {
             if (Arr::get($sourcePurchaseOrder->data, 'cancellation.source') !== UpdatePurchaseOrderStateToCancelled::SOURCE_MOVED
-                || !in_array(Arr::get($sourcePurchaseOrder->data, 'cancellation.state'), [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value], true)) {
+                || !in_array(Arr::get($sourcePurchaseOrder->data, 'cancellation.state'), PurchaseOrderStateEnum::openValues(), true)) {
                 return __(':reference was cancelled: order the item again instead', ['reference' => $sourcePurchaseOrder->reference]);
             }
 
@@ -133,7 +133,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
                 : null;
         }
 
-        if (!in_array($sourcePurchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true)) {
+        if (!in_array($sourcePurchaseOrder->state, PurchaseOrderStateEnum::open(), true)) {
             return __(':reference is :state: its items can no longer change', ['reference' => $sourcePurchaseOrder->reference, 'state' => PurchaseOrderStateEnum::labels()[$sourcePurchaseOrder->state->value] ?? $sourcePurchaseOrder->state->value]);
         }
 
@@ -183,17 +183,17 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
     }
 
     /**
-     * The order the move emptied and cancelled goes back to the state and costs it had.
+     * The order the move emptied and cancelled goes back to the state it had.
      */
     private function reopen(PurchaseOrder $purchaseOrder): PurchaseOrder
     {
         $cancellation = Arr::get($purchaseOrder->data, 'cancellation', []);
 
-        $purchaseOrder->update(array_merge(Arr::only(Arr::get($cancellation, 'costs', []), ['cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax']), [
+        $purchaseOrder->update([
             'state'        => $cancellation['state'],
             'cancelled_at' => null,
             'data'         => Arr::except($purchaseOrder->data ?? [], 'cancellation'),
-        ]));
+        ]);
 
         MarkPurchaseOrderStage::auditOverride($purchaseOrder, 'state', PurchaseOrderStateEnum::CANCELLED->value, $cancellation['state'], __('Move undone'));
 
@@ -205,7 +205,7 @@ class UndoMovePurchaseOrderTransaction extends OrgAction
         $netAmount = round($quantity * (float) $transaction->unit_cost, 2);
 
         $transaction->update([
-            'state'            => PurchaseOrderTransactionStateEnum::from($purchaseOrder->state->value),
+            'state'            => $purchaseOrder->state->transactionState(),
             'quantity_ordered' => $quantity,
             'net_amount'       => $netAmount,
             'grp_net_amount'   => round($netAmount * (float) ($transaction->grp_exchange ?? 1), 2),

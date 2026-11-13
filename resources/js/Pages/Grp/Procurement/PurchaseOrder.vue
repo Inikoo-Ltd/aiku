@@ -17,6 +17,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import ProcurementOrderData from "@/Components/Procurement/ProcurementOrderData.vue"
 import AgreementSummary from "@/Components/Procurement/AgreementSummary.vue"
+import SupplierAgreementStatusBadge from "@/Components/Procurement/SupplierAgreementStatusBadge.vue"
 import PackingSpecGaps from "@/Components/Procurement/PackingSpecGaps.vue"
 import AgreedTermDifferences from "@/Components/Procurement/AgreedTermDifferences.vue"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
@@ -42,7 +43,6 @@ import Textarea from "primevue/textarea"
 import ConfirmDialog from "primevue/confirmdialog"
 import DatePicker from "primevue/datepicker"
 import Dialog from "primevue/dialog"
-import InputNumber from "primevue/inputnumber"
 import Select from "primevue/select"
 import StaffTaskDialog from "@/Components/Tasks/StaffTaskDialog.vue"
 import AspoDepositsChecklist from "@/Components/Procurement/AspoDepositsChecklist.vue"
@@ -57,6 +57,7 @@ import PurchaseOrderReadyCheckItems, { type ReadyCheckItems } from "@/Components
 import PurchaseOrderSampleRequired, { type PurchaseOrderSample } from "@/Components/Procurement/PurchaseOrderSampleRequired.vue"
 import AgentPurchaseOrderGoodsReceipts from "@/Components/Procurement/AgentPurchaseOrderGoodsReceipts.vue"
 import AgentReceiveGoodsButton from "@/Components/Procurement/AgentReceiveGoodsButton.vue"
+import PurchaseOrderPullLinesDialog from "@/Components/Procurement/PurchaseOrderPullLinesDialog.vue"
 import PingIcon from "@/Components/Utils/PingIcon.vue"
 import ZoomableImage from "@/Components/Utils/ZoomableImage.vue"
 import ButtonDownloadWithOptions from "@/Components/Utils/ButtonDownloadWithOptions.vue"
@@ -76,12 +77,12 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Icon from "@/Components/Icon.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faExternalLink, faPlus as falPlus } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faWeight, faCube, faShoppingCart, faStickyNote, faShip, faBox, faHandHoldingBox, faPaperPlane, faExclamationTriangle, faClipboardList, faPeopleArrows, faCalendarAlt, faDownload, faSearch, faChevronDown, faChevronRight, faTimes, faBan, faThLarge, faList, faFileExcel, faCheckDouble, faBoxOpen, faClipboardCheck, faCubes, faUndo, faCheck, faExternalLink, faExchange, faPlus as falPlus } from "@fal"
 import { faArrowCircleDown, faArrowCircleLeft, faArrowCircleRight, faBars, faExclamationCircle, faInventory, faPencil, faShare, faTruck } from "@fas"
 import { faPlus } from "@far"
 
 library.add(
-	faDownload, faChevronDown, faChevronRight, faBan, faCheckDouble, faBoxOpen, faCubes, falPlus,
+	faDownload, faChevronDown, faChevronRight, faBan, faCheckDouble, faBoxOpen, faCubes, falPlus, faExchange,
 	faIdCardAlt,
 	faEnvelope,
 	faPhone,
@@ -126,6 +127,7 @@ const props = defineProps < {
             state: string
             state_label: string
             is_partner?: boolean
+            line_state: string
         }
     }
    	timelines: {
@@ -164,7 +166,20 @@ const props = defineProps < {
         image_full: { original_url: string; download_url: string } | null
     }[]
     submit_problems?: SubmitProblem[]
-	agreement: { terms: object[], notes: object[], open_incidents: number, must_acknowledge: boolean }
+	agreement: {
+		terms: object[]
+		notes: object[]
+		open_incidents: number
+		must_acknowledge: boolean
+		supplier_agreement_status: {
+			status: string
+			label: string
+			colour: string
+			icon: string
+			warning: string | null
+			order_acceptance: { version: number, accepted_at: string, authorised_person: string } | null
+		} | null
+	}
 	agreed_term_differences?: InstanceType<typeof AgreedTermDifferences>["$props"]["differences"] | null
 	packing_spec_gaps?: InstanceType<typeof PackingSpecGaps>["$props"]["gaps"] | null
     tabs: {
@@ -227,10 +242,6 @@ const props = defineProps < {
             org_currency: string | null
             org_exchange: number | string | null
             items: number | string | null
-            extra: number | string | null
-            shipping: number | string | null
-            duties: number | string | null
-            tax: number | string | null
             total: number | string
             org_items: number | string
             estimated_expenses?: number
@@ -342,17 +353,9 @@ const orgPerOrder = computed(() => {
 	return Number(org_exchange) || null
 })
 
-const costRows = computed(() => {
-	const { items, extra, shipping, duties, tax } = props.box_stats.third_block
-
-	return [
-		{ key: "items", label: ctrans("Items"), amount: Number(items) || 0, alwaysShown: true },
-		{ key: "extra", label: ctrans("Extra costs"), amount: Number(extra) || 0, alwaysShown: false },
-		{ key: "shipping", label: ctrans("Shipping"), amount: Number(shipping) || 0, alwaysShown: false },
-		{ key: "duties", label: ctrans("Duties"), amount: Number(duties) || 0, alwaysShown: false },
-		{ key: "tax", label: ctrans("Tax"), amount: Number(tax) || 0, alwaysShown: false },
-	].filter(row => row.alwaysShown || row.amount !== 0)
-})
+const costRows = computed(() => [
+	{ key: "items", label: ctrans("Items"), amount: Number(props.box_stats.third_block.items) || 0 },
+])
 
 const costBlocks = computed(() => {
 	const { currency, org_currency, total, org_items } = props.box_stats.third_block
@@ -396,8 +399,6 @@ const costBlocks = computed(() => {
 	return sameCurrency ? [supplierBlock] : [supplierBlock, organisationBlock]
 })
 
-const showExtraCosts = ref(false)
-
 const paymentsOrgRate = computed(() => {
 	const { currency, org_currency } = props.box_stats.third_block
 
@@ -405,28 +406,13 @@ const paymentsOrgRate = computed(() => {
 })
 
 const summaryGroups = computed(() => {
-	const { items, extra, shipping, duties, tax, total, currency, org_currency, org_items } = props.box_stats.third_block
+	const { items, total, currency, org_currency, org_items } = props.box_stats.third_block
 	const inOrgCurrency = org_currency && org_currency !== currency
 	const orgMoney = (amount: number) => (inOrgCurrency ? locale.currencyFormat(org_currency, amount) : undefined)
 	const rate = Number(orgPerOrder.value) || 0
-	const net = (Number(items) || 0) + (Number(extra) || 0) + (Number(shipping) || 0) + (Number(duties) || 0)
 
 	return [
 		[{ label: ctrans("Items"), quantity: props.box_stats.second_block.total_items, price_total: Number(items) || 0, information: orgMoney(Number(org_items) || 0) }],
-		[
-			{ label: ctrans("Extra costs, shipping and duties"), price_total: (Number(extra) || 0) + (Number(shipping) || 0) + (Number(duties) || 0), slot_name: "extra_costs" },
-			...(showExtraCosts.value
-				? [
-					{ label: ctrans("Extra costs"), price_total: Number(extra) || 0, label_class: "pl-5" },
-					{ label: ctrans("Shipping"), price_total: Number(shipping) || 0, label_class: "pl-5" },
-					{ label: ctrans("Duties"), price_total: Number(duties) || 0, label_class: "pl-5" },
-				]
-				: []),
-		],
-		[
-			{ label: ctrans("Net"), price_total: net },
-			{ label: ctrans("Tax"), price_total: Number(tax) || 0 },
-		],
 		[{ label: ctrans("Total"), price_total: Number(total) || 0, information: inOrgCurrency ? `${orgMoney(Number(total) * rate)} · ${moneyTable.value.rateLabel}` : undefined }],
 		...(Number(props.box_stats.third_block.estimated_expenses) > 0
 			? [[
@@ -466,6 +452,7 @@ const moneyTable = computed(() => {
 
 const currentTab = ref(props.tabs.current)
 const isModalUploadExcel = ref(false)
+const isPullLinesDialogOpen = ref(false)
 
 const currentLevel = ref<OrderingLevel>(props.data.data.is_partner ? "skos" : "cartons")
 
@@ -680,31 +667,22 @@ const undoCancelDialogAction = ref<any>(null)
 const undoCancelLoading = ref(false)
 const undoCancelReason = ref("")
 const undoCancelConfirmationText = ref("")
-const undoCancelCosts = ref<Record<string, number | null>>({})
 const undoCancelErrors = ref<Record<string, string>>({})
-const costLabels: Record<string, string> = {
-	cost_extra: ctrans("Extra costs"),
-	cost_shipping: ctrans("Shipping"),
-	cost_duties: ctrans("Duties"),
-	cost_tax: ctrans("Tax"),
-}
 const isUndoCancelReady = computed(() =>
 	["yes", cancelConfirmationWord.value].includes(undoCancelConfirmationText.value.trim().toLowerCase())
 	&& !!undoCancelReason.value.trim()
-	&& (undoCancelDialogAction.value?.missing_costs ?? []).every((field: string) => undoCancelCosts.value[field] !== null && undoCancelCosts.value[field] !== undefined)
 )
 
 const confirmUndoCancelPurchaseOrder = (action: any) => {
 	undoCancelReason.value = ""
 	undoCancelConfirmationText.value = ""
 	undoCancelErrors.value = {}
-	undoCancelCosts.value = Object.fromEntries((action.missing_costs ?? []).map((field: string) => [field, null]))
 	undoCancelDialogAction.value = action
 }
 
 const undoCancelPurchaseOrder = () => {
 	const action = undoCancelDialogAction.value
-	router.patch(route(action.route.name, action.route.parameters), { counterparty_informed: "yes", reason: undoCancelReason.value.trim(), ...undoCancelCosts.value }, {
+	router.patch(route(action.route.name, action.route.parameters), { counterparty_informed: "yes", reason: undoCancelReason.value.trim() }, {
 		onStart: () => { undoCancelLoading.value = true },
 		onFinish: () => { undoCancelLoading.value = false },
 		onSuccess: () => { undoCancelDialogAction.value = null },
@@ -962,12 +940,15 @@ const pageHeadWrappedActionKeys = ["edit", "delete_purchase_order"]
 
 const stageActionKeys: Record<string, string[]> = {
 	submitted: ["undo_confirm_purchase_order", "cancel_purchase_order"],
+	deposit_paid: ["proforma_invoice"],
 	in_warehouse: ["packing_instructions"],
 	handed_over: ["new_stock_delivery"],
 	received: ["edit_estimated_delivery_date"],
 }
 
 const actionKeysInStageAndPageHead = ["cancel_purchase_order"]
+
+const stageDocumentActionKeys = ["packing_instructions", "proforma_invoice"]
 
 const uncheckedReceiptItems = computed(() => (props.agent_receiving?.lines ?? []).flatMap((line) =>
 	line.items.filter((item) => item.check_route && !item.is_checked)
@@ -1074,6 +1055,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			<PurchaseOrderReferenceTitle :reference="pageHead.title" :slug="data.data.slug" :rename-reference="rename_reference ?? null" />
 		</template>
 		<template #afterTitle2>
+			<SupplierAgreementStatusBadge v-if="agreement.supplier_agreement_status" v-tooltip="ctrans('Supplier Agreement')" :status="agreement.supplier_agreement_status" />
 			<span v-if="lastEdit" class="text-xs font-normal text-gray-500">
 				{{ ctrans("Last edited by :user on :date", { user: lastEdit.user ?? "?", date: useFormatTime(lastEdit.at, { formatTime: "short-datetime" }) }) }}
 			</span>
@@ -1164,6 +1146,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 				:icon="action.icon"
 				:tooltip="action.tooltip"
 				@click="() => openProductListModal(action)"
+			/>
+		</template>
+
+		<template #button-pull-from-other-order="{ action }">
+			<Button
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				:tooltip="action.tooltip"
+				@click="() => isPullLinesDialogOpen = true"
 			/>
 		</template>
 
@@ -1295,10 +1287,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	<p v-if="actionError" class="mx-4 mt-2 text-xs text-red-600">{{ actionError }}</p>
 
 	<PurchaseOrderStages v-if="stages" :stages="stages.stages" :route="stages.route" :uploadRoute="stages.upload_route" :skipRoute="stages.skip_route" :deposit="stages.deposit" :sample="stages.sample">
-		<template v-if="agent_money" #stage-deposit_paid>
+		<template v-if="agent_money && !stageActions.deposit_paid" #stage-deposit_paid>
 			<AgentPurchaseOrderMoney :money="agent_money" />
 		</template>
-		<template v-else-if="payments" #stage-deposit_paid>
+		<template v-else-if="payments && !stageActions.deposit_paid" #stage-deposit_paid>
 			<PurchaseOrderDepositPayments :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
 		</template>
 		<template v-if="agent_money" #check-balance>
@@ -1342,7 +1334,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<PingIcon class="!absolute -right-1 -top-1 text-[7px] text-amber-500" aria-hidden="true" />
 				</span>
 				<template v-for="action in actions" :key="action.key">
-					<a v-if="action.key === 'packing_instructions'" :href="route(action.route.name, action.route.parameters)" target="_blank">
+					<a v-if="stageDocumentActionKeys.includes(action.key)" :href="route(action.route.name, action.route.parameters)" target="_blank">
 						<Button type="tertiary" size="xs" full :label="action.label" :tooltip="action.tooltip">
 							<template #icon>
 								<FontAwesomeIcon :icon="action.icon" class="text-red-500" fixed-width aria-hidden="true" />
@@ -1369,13 +1361,17 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 						</Button>
 					</span>
 				</template>
+				<template v-if="stageKey === 'deposit_paid'">
+					<AgentPurchaseOrderMoney v-if="agent_money" :money="agent_money" />
+					<PurchaseOrderDepositPayments v-else-if="payments" :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
+				</template>
 			</div>
 		</template>
 	</PurchaseOrderStages>
 	<div v-else-if="timelines" class="py-2 border-b border-gray-300">
 		<Timeline
 			:options="timelines"
-			:state="props.data.data.state"
+			:state="props.data.data.line_state"
 			:slidesPerView="6"
 			:format-time="'MMMM d yyyy, HH:mm'"
 		/>
@@ -1599,16 +1595,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 								aria-hidden="true" />
 						</span>
 					</div>
-					<OrderSummary :order_summary="summaryGroups" :currency_code="box_stats.third_block.currency ?? ''">
-						<template #cell_extra_costs_1="{ fieldSummary }">
-							<dt class="col-span-3">
-								<button type="button" class="flex items-center gap-1.5 text-left leading-none hover:text-gray-800" :aria-expanded="showExtraCosts" @click="showExtraCosts = !showExtraCosts">
-									<FontAwesomeIcon :icon="showExtraCosts ? 'fal fa-chevron-down' : 'fal fa-chevron-right'" class="w-3.5 text-gray-400" aria-hidden="true" />
-									{{ fieldSummary.label }}
-								</button>
-							</dt>
-						</template>
-					</OrderSummary>
+					<OrderSummary :order_summary="summaryGroups" :currency_code="box_stats.third_block.currency ?? ''" />
 					<PurchaseOrderPayments v-if="payments" :payments="payments" :org-currency-code="box_stats.third_block.org_currency" :org-rate="paymentsOrgRate" />
 				</section>
 			</div>
@@ -1616,6 +1603,20 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 	</div>
 
 	<AspoDepositsChecklist v-if="deposits" :deposits="deposits" />
+
+	<div v-if="agreement.supplier_agreement_status?.warning || agreement.supplier_agreement_status?.order_acceptance" class="px-4 pt-4">
+		<p v-if="agreement.supplier_agreement_status.warning" class="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+			<SupplierAgreementStatusBadge :status="agreement.supplier_agreement_status" />
+			<span>{{ ctrans("This supplier has not accepted the current Supplier Agreement. The order can still be sent.") }}</span>
+		</p>
+		<p v-if="agreement.supplier_agreement_status.order_acceptance" class="mt-1 text-xs text-gray-500">
+			{{ ctrans("Confirmed under Supplier Agreement v:version, accepted by :person on :date", {
+				version: agreement.supplier_agreement_status.order_acceptance.version,
+				person: agreement.supplier_agreement_status.order_acceptance.authorised_person,
+				date: useFormatTime(agreement.supplier_agreement_status.order_acceptance.accepted_at),
+			}) }}
+		</p>
+	</div>
 
 	<div v-if="agreement.terms.length || agreement.notes.length || agreement.open_incidents" class="px-4 pt-4">
 		<AgreementSummary :agreement="agreement" showLevel />
@@ -1686,7 +1687,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			:key="currentTab"
 			:data="props[currentTab as keyof typeof props]"
 			:tab="currentTab"
-			:state="data.data.state"
+			:state="data.data.line_state"
 			:updateRoute="routes.updateOrderRoute"
 			:storeRoute="currentTab === 'notes' && note_form?.can_write !== false ? note_store_route : undefined"
 			:agreement="currentTab === 'notes' ? note_form : undefined"
@@ -1825,22 +1826,6 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					</ul>
 					<p>{{ ctrans("Bringing this order back may order them twice.") }}</p>
 				</div>
-			</div>
-			<div v-if="undoCancelDialogAction.missing_costs?.length" class="flex flex-col gap-2">
-				<p class="text-sm text-gray-700">
-					{{ ctrans("This order was cancelled before its costs were kept. Enter them again.") }}
-					<template v-if="undoCancelDialogAction.cost_total !== null">
-						{{ ctrans("Its total before cancelling was :total.", { total: locale.currencyFormat(undoCancelDialogAction.currency_code ?? "", undoCancelDialogAction.cost_total) }) }}
-					</template>
-				</p>
-				<p v-if="undoCancelDialogAction.cost_gap !== null" class="text-sm font-medium text-gray-700">
-					{{ ctrans("Extra costs and tax must add up to :amount.", { amount: locale.currencyFormat(undoCancelDialogAction.currency_code ?? "", undoCancelDialogAction.cost_gap) }) }}
-				</p>
-				<label v-for="field in undoCancelDialogAction.missing_costs" :key="field" class="flex flex-col gap-1 text-sm font-medium text-gray-700">
-					<span>{{ costLabels[field] }} <span class="text-red-500">*</span></span>
-					<InputNumber v-model="undoCancelCosts[field]" @update:modelValue="() => { delete undoCancelErrors[field]; delete undoCancelErrors.cost_tax }" mode="currency" :currency="undoCancelDialogAction.currency_code ?? 'USD'" :min="0" :minFractionDigits="2" :maxFractionDigits="2" fluid />
-					<span v-if="undoCancelErrors[field]" class="text-xs text-red-600">{{ undoCancelErrors[field] }}</span>
-				</label>
 			</div>
 			<label for="purchase-order-undo-cancel-reason" class="flex flex-col gap-1 text-sm font-medium text-gray-700">
 				<span>{{ ctrans("Reason") }} <span class="text-red-500">*</span></span>
@@ -2124,6 +2109,8 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 			/>
 		</template>
 	</Dialog>
+
+	<PurchaseOrderPullLinesDialog v-model:visible="isPullLinesDialogOpen" :purchase-order-id="data.data.id" />
 
 	<UploadExcel
 		v-if="props.upload_excel"

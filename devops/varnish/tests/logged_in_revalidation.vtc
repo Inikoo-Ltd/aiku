@@ -1,0 +1,39 @@
+varnishtest "HELP-4671 a logged-in browser revalidating its logged-out copy gets the full page"
+server s1 {
+    rxreq
+    expect req.http.X-Logged-Status == "Out"
+    txresp -hdr "x-aiku-website: 7" -hdr "x-aiku-webpage: 42" -hdr "X-Is-Diff: Y" -hdr "Content-Type: text/html" -hdr "Last-Modified: Wed, 01 Jan 2020 00:00:00 GMT" -body "out"
+    rxreq
+    expect req.http.X-Logged-Status == "In"
+    txresp -hdr "x-aiku-website: 7" -hdr "x-aiku-webpage: 42" -hdr "X-Is-Diff: Y" -hdr "Content-Type: text/html" -hdr "ETag: \"in\"" -hdr "Last-Modified: Wed, 01 Jan 2020 00:00:00 GMT" -body "in"
+} -start
+
+varnish v1 -vcl {
+__VCL__
+} -start
+
+client c1 {
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150"
+    rxresp
+    expect resp.status == 200
+    expect resp.body == "out"
+
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150" -hdr "Cookie: iris_vua=1" -hdr "If-Modified-Since: Fri, 01 Jan 2021 00:00:00 GMT"
+    rxresp
+    expect resp.status == 200
+    expect resp.body == "in"
+
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150" -hdr "Cookie: iris_vua=1" -hdr "If-Modified-Since: Fri, 01 Jan 2021 00:00:00 GMT"
+    rxresp
+    expect resp.status == 200
+    expect resp.body == "in"
+
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150" -hdr "Cookie: iris_vua=1" -hdr "If-None-Match: \"in\""
+    rxresp
+    expect resp.status == 200
+    expect resp.body == "in"
+
+    txreq -url /p -hdr "User-Agent: Mozilla/5.0 Chrome/150" -hdr "If-Modified-Since: Fri, 01 Jan 2021 00:00:00 GMT"
+    rxresp
+    expect resp.status == 304
+} -run

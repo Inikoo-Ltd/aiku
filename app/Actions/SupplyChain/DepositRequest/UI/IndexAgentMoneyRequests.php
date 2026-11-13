@@ -76,14 +76,8 @@ class IndexAgentMoneyRequests extends OrgAction
             ->allowedSorts(['requested_at', 'reference'])
             ->allowedFilters([AllowedFilter::callback('global', fn ($query, $value) => $query->where(fn ($query) => $query
                 ->whereAnyWordStartWith('deposit_requests.reference', $value)
-                ->orWhereExists(fn ($exists) => $exists->from('deposit_request_items')
-                    ->join('purchase_orders', 'purchase_orders.id', 'deposit_request_items.purchase_order_id')
-                    ->whereColumn('deposit_request_items.deposit_request_id', 'deposit_requests.id')
-                    ->where(fn ($match) => $match->whereAnyWordStartWith('purchase_orders.reference', $value)->orWhereAnyWordStartWith('purchase_orders.agent_order_reference', $value)))
-                ->orWhereExists(fn ($exists) => $exists->from('deposit_request_items')
-                    ->join('stock_deliveries', 'stock_deliveries.id', 'deposit_request_items.stock_delivery_id')
-                    ->whereColumn('deposit_request_items.deposit_request_id', 'deposit_requests.id')
-                    ->where(fn ($match) => $match->whereAnyWordStartWith('stock_deliveries.reference', $value)))))])
+                ->orWhereHas('items.purchaseOrder', fn ($match) => $match->where(fn ($match) => $match->whereAnyWordStartWith('purchase_orders.reference', $value)->orWhereAnyWordStartWith('purchase_orders.agent_order_reference', $value)))
+                ->orWhereHas('items.stockDelivery', fn ($match) => $match->whereAnyWordStartWith('stock_deliveries.reference', $value))))])
             ->withPaginator($prefix, tableName: request()->route()?->getName())
             ->withQueryString();
     }

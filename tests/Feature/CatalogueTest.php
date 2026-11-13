@@ -1864,7 +1864,14 @@ test('shop products json carries the outer size from the stock, not the product 
     $multi = collect(\App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop)->items())
         ->firstWhere('id', $product->id);
 
-    expect($multi->packed_in)->toBeNull();
+    expect($multi->packed_in)->toBeNull()
+        ->and($multi->skos_per_product)->toBeNull();
+
+    $product->orgStocks()->sync([$orgStock->id => ['quantity' => 3]]);
+    $pack = collect(\App\Actions\Catalogue\Product\Json\GetProductsInShop::make()->handle($shop)->items())
+        ->firstWhere('id', $product->id);
+
+    expect((float) $pack->skos_per_product)->toBe(3.0);
 });
 
 test('an on-demand stock never caps a product, and the shop products json reports what is on the shelf', function () {

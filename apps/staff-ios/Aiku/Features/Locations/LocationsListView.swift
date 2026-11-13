@@ -27,7 +27,7 @@ struct LocationsListView: View {
                 HStack(spacing: 6) {
                     ForEach(LocationsListTab.allCases, id: \.self) { tab in
                         LocationsListTabPill(
-                            title: store.count(for: tab).map { "\(tab.title) \($0.locationsGrouped)" } ?? tab.title,
+                            title: store.pillTitle(for: tab),
                             isSelected: store.listTab == tab
                         ) {
                             store.listTab = tab

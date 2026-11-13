@@ -77,11 +77,7 @@ class DiscontinueDeadOrgSupplierProducts
                 ->whereNull('po.deleted_at')
                 ->where(fn (Builder $query) => $query
                     ->whereRaw('coalesce(po.submitted_at, po.date, po.created_at) >= ?', [now()->subMonths(self::MONTHS_WITHOUT_ORDERS)])
-                    ->orWhereIn('po.state', [
-                        PurchaseOrderStateEnum::IN_PROCESS->value,
-                        PurchaseOrderStateEnum::SUBMITTED->value,
-                        PurchaseOrderStateEnum::CONFIRMED->value,
-                    ])));
+                    ->orWhereIn('po.state', PurchaseOrderStateEnum::liveValues())));
     }
 
     /**

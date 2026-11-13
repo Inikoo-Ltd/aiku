@@ -15,6 +15,7 @@ use App\Actions\Procurement\OrgAgent\PrepareAgentPurchaseOrders;
 use App\Actions\Procurement\OrgAgent\GetAgentSupplierPerformance;
 use App\Actions\Procurement\OrgAgent\WithAgentShoppingSubNavigation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemPriorityEnum;
 use App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum;
 use App\Models\Procurement\OrgAgent;
@@ -44,7 +45,7 @@ class ShowAgentShoppingDashboard extends OrgAction
             ->where('po.agent_id', $orgAgent->agent_id)
             ->where('po.parent_type', 'OrgSupplier')
             ->whereNull('po.deleted_at')
-            ->whereIn('po.state', GetAgentSupplierPerformance::OPEN_STATES)
+            ->whereIn('po.state', PurchaseOrderStateEnum::openValues())
             ->whereNotIn('po.delivery_state', GetAgentSupplierPerformance::CLOSED_DELIVERY_STATES)
             ->whereRaw("(po.data -> 'housekeeping') is null")
             ->selectRaw("po.id, po.slug, po.reference, po.state, po.delivery_state, po.estimated_received_at,

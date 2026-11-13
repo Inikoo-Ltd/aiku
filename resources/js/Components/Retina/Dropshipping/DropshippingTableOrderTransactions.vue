@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, inject, onBeforeUnmount } from 'vue'
+import { ref, reactive, inject, onBeforeUnmount, computed } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
@@ -43,6 +43,8 @@ const props = defineProps<{
   fetchRoute?: routeType
   routesProductsListModification? : routeType
 }>()
+
+const showsShopStock = computed(() => props.state === 'creating')
 
 const layout = inject("layout", {});
 const locale = inject('locale', {})
@@ -284,11 +286,11 @@ defineExpose({
       <template #cell(asset_name)="{ item }">
         <div>
           <div xclass="item.offers_data ? 'text-pink-600' : ''">{{ item.asset_name }}</div>
-          <div v-if="item.available_quantity !== undefined && item.available_quantity < 1">
-            <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
+          <div v-if="showsShopStock && item.available_quantity !== undefined && item.available_quantity < 1">
+            <Tag :label="ctrans('Out of stock')" no-hover-color :theme="7" size="xxs" />
           </div>
-          <div v-else class="text-gray-500 italic text-xs">
-            Stock: {{ locale.number(item.available_quantity || 0) }} available
+          <div v-else-if="showsShopStock" class="text-gray-500 italic text-xs">
+            {{ ctrans("Stock: :quantity available", { quantity: locale.number(item.available_quantity || 0) }) }}
           </div>
           
             <Discount v-if="Object.keys(item.offers_data || {})?.length" :offers_data="item.offers_data" />

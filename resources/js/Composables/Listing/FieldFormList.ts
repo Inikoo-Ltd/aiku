@@ -88,6 +88,7 @@ import OrderedSelectList from '@/Components/Forms/Fields/OrderedSelectList.vue'
 import BarcodeChoice from '@/Components/Forms/Fields/BarcodeChoice.vue'
 import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
 import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSubscribetion.vue'
+import WrapperWhatsappOptIn from '@/Components/Forms/Fields/WrapperWhatsappOptIn.vue'
 import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
 import TagsCustomer from "@/Components/Forms/Fields/TagsCustomer.vue";
 import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue";
@@ -231,6 +232,7 @@ export const componentsList: { [key: string]: Component } = {
     'tags-customer': TagsCustomer,
     'retina-tags-customer': RetinaTagsCustomer,
     'email_subscriptions': WrapperEmailSubscribetion,
+    'whatsapp_optin': WrapperWhatsappOptIn,
     'set_json_by_form': InputJsonByForm,
     'list-selector-trade-unit': ListSelectorTradeUnit,
     'trade-units-for-stock': TradeUnitsForStock,

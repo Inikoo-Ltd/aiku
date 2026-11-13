@@ -2,7 +2,7 @@
 title: Praca z ekranem hali
 summary: Przewodnik dla rzemieślnika - ekran Moje zadania, lista zadań, która sama się aktualizuje, START i DONE, co nacisnąć, gdy zrobiłeś mniej niż było trzeba, oraz robienie przerwy.
 date: 2026-11-03
-source_date: 2026-11-03
+source_date: 2026-11-12
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -46,9 +46,15 @@ Wiersz z zieloną strzałką ▶ i godziną to ten, nad którym pracujesz, oraz 
 
 Zrobiłeś wszystko, co było zamówione? To tyle. Zadanie się zamyka, zlecenie produkcyjne jest zakończone, a magazyn dostaje informację, że jest coś do odłożenia - zobacz [Odkładanie gotowej produkcji](/docs/putting-away-finished-production-pl).
 
+## Co liczą liczby
+
+Każda ilość na ekranie mówi, co liczy: *0 / 120 bags*, *0 / 96 kg*. Nazwa sztuki pochodzi z produktu: kierownik ustawia ją jako **Unit name** (Nazwa jednostki) na stronie edycji artefaktu albo jego rodziny, dla wszystkich produktów w niej. Bez nazwy ekran mówi *pieces*. Pole, w którym wpisujesz, jest pytaniem z tym samym słowem, **How many bags did you make?** (Ile woreczków zrobiłeś?), więc wpisana liczba zgadza się z tym, o co pytał ekran. Produkt o nazwie "Box of 3", którego wykonanie liczy się w pojedynczych woreczkach, pokazuje woreczki, a nie pudełka.
+
 ## Kroki liczone w opakowaniach
 
-Niektóre kroki, przede wszystkim pakowanie, liczy się w opakowaniach, a nie w pojedynczych sztukach: tacka z 8 kulami do kąpieli liczy się jako 1. Ekran pokazuje wtedy na bursztynowo **Counted in PACKS of 8** (Liczone w OPAKOWANIACH po 8), a pole nazywa się **Packs of 8 made** (Wykonane opakowania po 8). Wpisz, ile pełnych opakowań napełniłeś: dla 56 kul na 7 tackach wpisz 7, nie 56. Pod polem ekran pokazuje, co oznacza twoja liczba, *7 packs of 8 = 56 × ABB-06a*, a potwierdzenie pokazuje to jeszcze raz. Przyjmowane są tylko całe opakowania; jedynym wyjątkiem jest dokładna liczba pozostała do zrobienia, którą wpisujesz, dotykając dużej liczby. Gdy kierownik musi zatwierdzić nadwyżkę, okno pokazuje ją w opakowaniach i w sztukach przed zatwierdzeniem.
+Niektóre kroki, przede wszystkim pakowanie, liczy się w opakowaniach, a nie w pojedynczych sztukach: tacka z 8 kulami do kąpieli liczy się jako 1. Ekran pokazuje wtedy jedno i drugie, *0 / 7 trays of 8 (56 bath bombs)*, na bursztynowo pisze **Counted in trays of 8 (1 = 8 bath bombs of ABB-06a)** (Liczone w tackach po 8) i pyta **How many trays of 8 did you make?** (Ile tacek po 8 zrobiłeś?). Wpisz, ile pełnych opakowań napełniłeś: dla 56 kul na 7 tackach wpisz 7, nie 56. Pod polem ekran pokazuje, co oznacza twoja liczba, *7 trays of 8 = 56 bath bombs of ABB-06a*, a potwierdzenie pokazuje to jeszcze raz. Przyjmowane są tylko całe opakowania; jedynym wyjątkiem jest dokładna liczba pozostała do zrobienia, którą wpisujesz, dotykając dużej liczby. Gdy kierownik musi zatwierdzić nadwyżkę, okno pokazuje ją w opakowaniach i w sztukach przed zatwierdzeniem.
+
+Jak nazywa się opakowanie, ustawia się w kroku receptury: **Counted in** (Liczone w) w kroku receptury artefaktu (tacki, pudełka). Gdy puste, używana jest **Pack name** (Nazwa opakowania) ze strony edycji rodziny artefaktu, obowiązująca dla wszystkich jej produktów, a bez niej ekran mówi *packs*.
 
 ## Gdy zrobiłeś mniej niż było zamówione
 

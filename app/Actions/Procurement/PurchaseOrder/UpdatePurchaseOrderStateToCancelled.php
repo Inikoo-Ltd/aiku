@@ -35,7 +35,7 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
     public const string SOURCE_EMPTIED = 'emptied';
 
     /**
-     * Keeps in data.cancellation what cancelling wipes (state, costs, the live lines and their states) so
+     * Keeps in data.cancellation what cancelling wipes (state, the live lines, their states and amounts) so
      * UpdatePurchaseOrderStateFromCancelled can bring the order back.
      */
     public function handle(PurchaseOrder $purchaseOrder, ?string $reason = null, string $source = self::SOURCE_USER): PurchaseOrder
@@ -43,26 +43,16 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
         return DB::transaction(function () use ($purchaseOrder, $reason, $source) {
             $purchaseOrder = PurchaseOrder::whereKey($purchaseOrder->id)->lockForUpdate()->firstOrFail();
 
-            if (!in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])) {
+            if (!in_array($purchaseOrder->state, PurchaseOrderStateEnum::open())) {
                 abort(422, __('Only submitted or confirmed purchase orders can be cancelled'));
             }
 
-            if ($purchaseOrder->state === PurchaseOrderStateEnum::CONFIRMED && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()) {
+            if ($purchaseOrder->state->isAgreed() && $purchaseOrder->stockDeliveries()->where('stock_deliveries.state', '!=', StockDeliveryStateEnum::CANCELLED)->exists()) {
                 abort(422, __('A confirmed purchase order with stock deliveries cannot be cancelled'));
             }
 
             $cancellation = [
                 'state'        => $purchaseOrder->state->value,
-                'costs'        => [
-                    'cost_extra'    => (float) $purchaseOrder->cost_extra,
-                    'cost_shipping' => (float) $purchaseOrder->cost_shipping,
-                    'cost_duties'   => (float) $purchaseOrder->cost_duties,
-                    'cost_tax'      => (float) $purchaseOrder->cost_tax,
-                ],
-                'totals'       => [
-                    'cost_items' => (float) $purchaseOrder->cost_items,
-                    'cost_total' => (float) $purchaseOrder->cost_total,
-                ],
                 'transactions' => $purchaseOrder->purchaseOrderTransactions()
                     ->where('state', '!=', PurchaseOrderTransactionStateEnum::CANCELLED)
                     ->get(['id', 'state', 'net_amount', 'grp_net_amount', 'org_net_amount'])
@@ -89,13 +79,9 @@ class UpdatePurchaseOrderStateToCancelled extends OrgAction
             ]);
 
             $purchaseOrder = $this->update($purchaseOrder, [
-                'state'         => PurchaseOrderStateEnum::CANCELLED,
-                'cancelled_at'  => now(),
-                'cost_extra'    => 0,
-                'cost_shipping' => 0,
-                'cost_duties'   => 0,
-                'cost_tax'      => 0,
-                'data'          => array_merge($purchaseOrder->data ?? [], ['cancellation' => $cancellation]),
+                'state'        => PurchaseOrderStateEnum::CANCELLED,
+                'cancelled_at' => now(),
+                'data'         => array_merge($purchaseOrder->data ?? [], ['cancellation' => $cancellation]),
             ]);
 
             if ($reason) {

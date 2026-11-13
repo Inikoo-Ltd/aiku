@@ -86,7 +86,7 @@ Sie können Name, Beschreibung oder Preis eines Wix-Produkts nicht aus <b>Meine 
 Um Produkte zu unlinken oder zu entfernen, kreuzen Sie sie zuerst in der Liste an:
 
 - <b>Unlink (N)</b> behält das Produkt in Wix, beendet aber die Verknüpfung mit unserem. Wir stellen die Bestandsaktualisierung ein, und seine Bestellungen erreichen uns nicht mehr.
-- <b>Unlink & Delete (N)</b> unlinkt die Produkte und entfernt sie aus <b>Meine Produkte</b>. Die Produkte bleiben in Ihrem Wix-Shop; löschen Sie sie dort, wenn Sie sie nicht mehr wollen.
+- <b>Unlink & Delete (N)</b> entfernt die Produkte aus <b>Meine Produkte</b> und löscht die verknüpften auch aus Ihrem Wix-Shop. Wenn ein Produkt in Ihrem Wix-Shop bleiben soll, verwenden Sie es nicht: nicht verknüpfte Produkte bleiben in Ihrem Shop.
 
 Der Papierkorb in einer Zeile ist anders: Er entfernt dieses Produkt aus <b>Meine Produkte</b> und löscht es auch aus Ihrem Wix-Shop.
 

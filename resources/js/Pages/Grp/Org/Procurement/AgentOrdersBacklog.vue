@@ -13,9 +13,9 @@ import { ctrans } from "@/Composables/useTrans"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTasks, faPaperPlane, faWarehouseAlt, faIndustryAlt, faBoxOpen, faPallet, faShip, faTruckLoading, faPlane, faShippingFast, faHourglassStart, faHandHoldingUsd, faCogs, faClipboardCheck } from "@fal"
+import { faTasks, faPaperPlane, faWarehouseAlt, faIndustryAlt, faBoxOpen, faPallet, faShip, faTruckLoading, faPlane, faShippingFast, faCheckCircle, faCogs, faBoxes, faClipboardCheck, faHandsHelping } from "@fal"
 
-library.add(faTasks, faPaperPlane, faWarehouseAlt, faIndustryAlt, faBoxOpen, faPallet, faShip, faTruckLoading, faPlane, faShippingFast, faHourglassStart, faHandHoldingUsd, faCogs, faClipboardCheck)
+library.add(faTasks, faPaperPlane, faWarehouseAlt, faIndustryAlt, faBoxOpen, faPallet, faShip, faTruckLoading, faPlane, faShippingFast, faCheckCircle, faCogs, faBoxes, faClipboardCheck, faHandsHelping)
 
 interface RouteTarget {
     name: string

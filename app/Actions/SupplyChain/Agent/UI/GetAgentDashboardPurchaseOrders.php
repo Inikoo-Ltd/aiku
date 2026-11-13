@@ -11,7 +11,6 @@ namespace App\Actions\SupplyChain\Agent\UI;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderDeliveryStateEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
@@ -37,7 +36,7 @@ class GetAgentDashboardPurchaseOrders
         $groupToAgentExchange = GetCurrencyExchange::run($organisation->group->currency, $organisation->currency);
         $currency             = $groupToAgentExchange ? $organisation->currency->code : $organisation->group->currency->code;
         $toAgentCurrency      = 'grp_exchange * '.(float) ($groupToAgentExchange ?: 1);
-        $sent     = [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value];
+        $sent     = PurchaseOrderStateEnum::openValues();
 
         $openPurchaseOrders = fn (): Builder => DB::table('purchase_orders')
             ->where('purchase_orders.agent_id', $agent->id)
@@ -45,7 +44,8 @@ class GetAgentDashboardPurchaseOrders
             ->whereNull('purchase_orders.deleted_at')
             ->whereIn('purchase_orders.state', $sent);
 
-        $inProduction = PurchaseOrderStageEnum::inProductionSql();
+        $inProduction        = "purchase_orders.state = '".PurchaseOrderStateEnum::IN_PRODUCTION->value."'";
+        $agreedNoContainer = 'purchase_orders.state in ('.PurchaseOrderStateEnum::agreedSql().") and purchase_orders.delivery_state = '".PurchaseOrderDeliveryStateEnum::IN_PROCESS->value."'";
 
         $summary = $openPurchaseOrders()->selectRaw(
             "count(*) as open_count,
@@ -58,8 +58,8 @@ class GetAgentDashboardPurchaseOrders
             count(*) filter (where estimated_received_at >= now() and estimated_received_at < now() + interval '14 days') as due_soon,
             count(*) filter (where {$inProduction}) as in_production,
             coalesce(sum(cost_items * {$toAgentCurrency}) filter (where {$inProduction}), 0) as in_production_value,
-            count(*) filter (where state = 'confirmed' and delivery_state = 'in_process') as confirmed_without_container,
-            coalesce(sum(cost_items * {$toAgentCurrency}) filter (where state = 'confirmed' and delivery_state = 'in_process'), 0) as confirmed_without_container_value"
+            count(*) filter (where {$agreedNoContainer}) as confirmed_without_container,
+            coalesce(sum(cost_items * {$toAgentCurrency}) filter (where {$agreedNoContainer}), 0) as confirmed_without_container_value"
         )->first();
 
         $inProductionProducts = $openPurchaseOrders()
@@ -115,7 +115,7 @@ class GetAgentDashboardPurchaseOrders
                     'overdue'                     => $purchaseOrdersRoute(['elements[attention]' => 'past_expected_date', 'sort' => 'date']),
                     'in_production'               => $purchaseOrdersRoute(['elements[attention]' => 'in_production', 'sort' => 'date']),
                     'confirmed_without_container' => $purchaseOrdersRoute([
-                        'elements[state]'          => PurchaseOrderStateEnum::CONFIRMED->value,
+                        'elements[state]'          => implode(',', PurchaseOrderStateEnum::agreedValues()),
                         'elements[delivery_state]' => PurchaseOrderDeliveryStateEnum::IN_PROCESS->value,
                     ]),
                 ],

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Procurement\PurchaseOrder\Hydrators;
 
+use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
 use App\Actions\Procurement\PurchaseOrder\Traits\WithPurchaseOrderWeightAndVolume;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
@@ -15,6 +16,7 @@ use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Throwable;
 
 class PurchaseOrderHydrateTransactions implements ShouldBeUnique
 {
@@ -60,10 +62,31 @@ class PurchaseOrderHydrateTransactions implements ShouldBeUnique
 
         $weightAndVolume = $this->getPurchaseOrderWeightAndVolume($purchaseOrder);
 
-        $stats['cost_items'] = $purchaseOrder->purchaseOrderTransactions()->sum('net_amount');
+        $itemsNet = $this->itemsNet($purchaseOrder);
+        foreach ($itemsNet === null ? [] : ['cost_items', 'cost_total'] as $field) {
+            if (abs($itemsNet - (float) $purchaseOrder->{$field}) > 0.005 || $purchaseOrder->{$field} === null) {
+                $stats[$field] = $itemsNet;
+            }
+        }
         $stats['gross_weight'] = Arr::get($weightAndVolume, 'gross_weight');
         $stats['net_weight'] = Arr::get($weightAndVolume, 'net_weight');
 
         $purchaseOrder->update($stats);
+    }
+
+    /**
+     * The same items amount CalculatePurchaseOrderTotalAmounts stores, so the two never disagree. It is stored only
+     * when it differs from what the order has. When a line in another currency can not be converted the amounts are
+     * left as they are.
+     */
+    private function itemsNet(PurchaseOrder $purchaseOrder): ?float
+    {
+        try {
+            return round(CalculatePurchaseOrderTotalAmounts::make()->itemsNet($purchaseOrder), 2);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return null;
+        }
     }
 }

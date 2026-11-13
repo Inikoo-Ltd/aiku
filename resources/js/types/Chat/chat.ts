@@ -137,6 +137,13 @@ export interface Contact {
 	noise?: { label: string; note: string | null; source: string | null; automatic: boolean } | null
 	promise?: { at: string; overdue: boolean } | null
 	urgent?: "cancel_order" | "change_address" | "delivery_instruction" | null
+	assistant_hand_over?: {
+		reason: string
+		reason_label: string
+		route: string
+		route_label: string
+		name: string
+	} | null
 	is_highlighted?: boolean
 	has_attachments?: boolean
 	labels?: Array<{ id: number; name: string; colour: string }>

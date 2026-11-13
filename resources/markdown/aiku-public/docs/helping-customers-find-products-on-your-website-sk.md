@@ -27,7 +27,7 @@ Poradca pre sortiment je asistent, ktorý navrhuje, aké produkty by mal predajc
 V sekcii **AI shopping assistant** sú tri polia:
 
 - **AI shopping assistant** ho zapína pre tento web.
-- **Assistant name** (názov asistenta) je meno, ktoré zákazníci vidia, najviac 30 znakov. Ak ostane prázdne, web použije názov nastavený pre celú skupinu, ktorým je „Aura", pokiaľ ho niekto nezmenil v **Sysadmin → Settings → AI shopping assistant**. Zmeňte ho tam a poradca sa premenuje na každom webe, ktorý nemá vlastný názov.
+- **Assistant name** (názov asistenta) je meno, ktoré zákazníci vidia, najviac 30 znakov. Ak ostane prázdne, web použije názov nastavený pre celú skupinu, ktorým je „Merlin", pokiaľ ho niekto nezmenil v **Sysadmin → Settings → AI shopping assistant**. Zmeňte ho tam a poradca sa premenuje na každom webe, ktorý nemá vlastný názov.
 - **Monthly AI budget** (mesačný rozpočet na AI) je najviac, koľko môže web minúť na odpovede v kalendárnom mesiaci, v amerických dolároch. Ak ostane prázdny, je to US$30. Malé „i" vedľa neho ukazuje, koľko sa tento mesiac minulo.
 
 Skôr než ho prvýkrát zapnete pre obchod, požiadajte help desk, aby preň pripravil katalóg obchodu. Poradca nachádza produkty podľa významu, nielen podľa slov v názve, a to si vyžaduje jednorazovú prípravu produktov obchodu.
@@ -47,6 +47,19 @@ Skôr než ho prvýkrát zapnete pre obchod, požiadajte help desk, aby preň pr
 - Pod odpoveďou sú tlačidlá s ďalšími otázkami, pole na napísanie ďalšej otázky a **Start a new conversation** (Začať novú konverzáciu).
 
 Bežné vyhľadávania podľa slova alebo kódu produktu sa nemenia a nespomaľujú.
+
+### Panel s návrhmi
+
+Prihlásení zákazníci majú poradcu aj vo svojom účte: kartu **Opýtajte sa asistenta: <meno>** na úvodnej stránke účtu vedľa svojich údajov a noviniek cez WhatsApp, kde sa môžu hneď opýtať, a jej odkaz na návrhy otvorí poradcu priamo v účte s rovnakou konverzáciou, históriou a panelom ako stránka poradcu v obchode. Na stránke poradcu ešte predtým, ako sa na niečo opýtajú, panel s nadpisom "Postrehy od <meno>" ukáže až štyri karty produktov, všetky skladom a za ceny daného zákazníka:
+
+- **Chýba vo vašom sortimente**: čo obchody ako ich kupujú najviac a oni to nikdy nekúpili, z rodín, z ktorých už nakupujú. Zákazník ešte bez objednávok namiesto toho vidí **Najpredávanejšie v obchodoch, ako je váš**.
+- **Zabudnuté obľúbené**: produkty, ktoré objednávali, ale rok ich neobjednali.
+- **Štartovacie balenia**: až tri rodiny, z ktorých nikdy nenakupovali, každá s tromi alebo štyrmi najpredávanejšími produktmi a tlačidlom **Pridať balenie do košíka**.
+- **Novinky pre váš obchod**: novinky, najprv tie, ktoré už kupujú obchody ako ich.
+
+Prázdna karta sa nezobrazí. Každý zoznam má **Pridať všetko do košíka**. Keď nepoznáme typ obchodu zákazníka, panel ho vyzve, aby ho povedal poradcovi, ktorý ho uloží. Zaznamená sa, ktoré karty si pozrel, na ktoré produkty klikol a čo pridal do košíka, jeden záznam panelu na zákazníka a deň.
+
+Poradca si tiež pamätá trvalé fakty, ktoré mu zákazník povie o svojom obchode, napríklad že je kvetinárstvo, že predáva aj online alebo že nechce kadidlo, a každú ďalšiu konverzáciu začína s ich znalosťou. Na paneli sa zobrazujú ako "<meno> si pamätá" s odkazom **Zabudnúť**, ktorý ich vymaže, a pri anonymizácii zákazníka sa zmažú. Nikdy si neukladá čísla. Konverzáciu môže otvoriť krátkym osobným dotykom z toho, čo vie, napríklad krstným menom zákazníka alebo dennou dobou u neho; pri účtoch zamestnancov to môže byť ľahký žart.
 
 ### Čo vie a čo nikdy nepovie
 
@@ -89,6 +102,23 @@ Ak chcete odpovedať, napíšte odpoveď pre zákazníka do poznámky pri označ
 
 Nastavujú to administrátori systému v **Organisations**: otvorte organizáciu, stlačte **Edit** a prejdite do časti **Restock questions**. Prepínač **Ask purchasing when there is no reliable date** je predvolene zapnutý; vypnutý znamená, že poradca odpovedá len z našich objednávok. **Restock questions go to** určuje, kto ich dostane; ak je prázdne, dostanú ich nákupcovia organizácie.
 
+### Všeobecné otázky a odovzdanie človeku
+
+Okrem produktov asistent odpovedá na otázky o nákupe v obchode: platba, doručenie, vrátenie tovaru, objednávanie a zákaznícky účet. Odpovedá z vlastných stránok obchodu s pravidlami, z nastavení obchodu a z poznámok zákazníckeho servisu a overených faktov, ktoré sú uložené v nastaveniach chatu obchodu, a uvedie odkaz na stránku, ktorú použil. Nikdy neodpovedá zo všeobecných znalostí a číslo, napríklad dodaciu lehotu alebo poplatok, zopakuje len vtedy, keď je napísané v texte, ktorý použil.
+
+Keď si nie je istý alebo sa otázka týka vlastnej objednávky, faktúry či vrátenia peňazí zákazníka, nehádá. Povie to a ponúkne, že sa opýta tímu, jedným ťuknutím na tlačidlo pod odpoveďou. Na stránke asistenta je navyše stále odkaz **Talk to a person** (hovoriť s človekom).
+
+Čo sa stane po ťuknutí, závisí od okamihu a od webu:
+
+- V čase chatu, keď je niekto k dispozícii, sa otvorí chat v chatovom okne webu.
+- Inak otázka príde ako emailová konverzácia. Zákazníkovi sa povie, kedy sa tím vráti a že odpoveď príde emailom, a jeho odpoveď na tento email pristane v tej istej konverzácii.
+- Obchod bez pripojenej emailovej schránky dostane webový chat, na ktorý sa odpovie neskôr.
+- Web bez chatu aj bez emailovej schránky žiadneho človeka neponúka.
+
+Pre chatový tím: tieto chaty prichádzajú do bežnej schránky a upozornení, označené menom asistenta. Filter **From the AI assistant** (od AI asistenta) zobrazí len ich. Konverzácia asistenta so zákazníkom je navrchu chatu, takže vidíte, čo už bolo povedané. Ak bola odpoveď asistenta nesprávna, označte ju tam ako **Wrong answer** (nesprávna odpoveď). Tieto chaty sa nezapočítavajú do čísel o čase odpovede chatu a pokrytí AI; hlásia sa v reporte **AI Assistant**, ako je vysvetlené nižšie.
+
+Aby asistent odpovedal na viac vecí, otvorte report a pozrite sa na **Questions the assistant could not answer** (otázky, na ktoré asistent nevedel odpovedať). Pridajte v nastaveniach chatu obchodu poznámku, ktorá na niektorú z nich odpovedá, a asistent na ňu nabudúce odpovie, približne do hodiny.
+
 ### Limity a čo sa zaznamenáva
 
 Každý zákazník sa môže opýtať 6 otázok za minútu, 40 za hodinu a 120 za deň. Odpoveď trvá niekoľko sekúnd a stránka na ňu čaká. Každá odpoveď je platené použitie AI, preto poradcu zapnite tam, kde chcete, aby ho zákazníci používali.
@@ -127,7 +157,7 @@ Každé vyhľadávanie zaznamenáva, ktoré návrhy sa ponúkli a či sa blok do
 
 Prejdite na **Website** v menu obchodu, potom na **Analytics** (analytika) v hornom menu a na **AI Assistant** (AI asistent). Stránka hlási jeden web. Ľudia, ktorí spravujú všetky weby skupiny, ju nájdu aj v **WebOps → AI Assistant**, pre všetky weby spolu a s filtrom webu.
 
-Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa toho, odkiaľ sa konverzácia otvorila (vyhľadávacie pole, stránka profilu alebo chatové okno), podľa typu obchodu a podľa krajiny. Každé číslo sa porovnáva s obdobím rovnakej dĺžky bezprostredne predtým, ktoré pomenúva riadok pod filtrami. Konverzácie zamestnaneckých účtov sa vynechávajú.
+Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa toho, odkiaľ sa konverzácia otvorila (vyhľadávacie pole, stránka profilu, chatové okno alebo panel poradcu pre sortiment; čísla panelu sa ukážu, len keď ho vyberiete), podľa typu obchodu a podľa krajiny. Každé číslo sa porovnáva s obdobím rovnakej dĺžky bezprostredne predtým, ktoré pomenúva riadok pod filtrami. Konverzácie zamestnaneckých účtov sa vynechávajú.
 
 ### Záložka Overview
 
@@ -149,8 +179,36 @@ Navrchu si vyberiete dátumy a môžete zúžiť čísla podľa jazyka, podľa t
 
 Hlavné čísla a kroky lievika sú odkazy: otvoria konverzácie, ktoré za nimi stoja.
 
+**Answer ratings by customers** počíta odpovede, ktoré zákazníci označili palcom pod odpoveďou ako užitočné alebo neužitočné, v porovnaní s predchádzajúcim obdobím. Obe čísla sú odkazy na konverzácie, ktoré za nimi stoja.
+
+**Customer challenges to act on** je zoznam úloh pre nákup, produkt a webmasterov. Každú noc AI prečíta každú konverzáciu, v ktorej dve hodiny nepribudla správa, a zapíše, čo zákazníkovi bránilo v objednávke: produkt, ktorý nepredávame, niečo vypredané, cena, minimálna objednávka alebo veľkosť kartónu, doprava alebo doručenie, problém s webom alebo čokoľvek iné, čo zákazník opísal. Obyčajná otázka nie je prekážka. Štítky počítajú konverzácie každého druhu a otvárajú ich. Tabuľka uvádza 20 najčastejšie spomínaných vecí, pri každej počet konverzácií, príklad vlastnými slovami zákazníka a odkaz **Open** na najnovšiu konverzáciu. Konverzácie o tej istej veci v rôznych jazykoch sú spojené do jedného riadku. Dnešná konverzácia sa prečíta v noci; riadok nad tabuľkou hovorí, koľko ich čaká. Vyhľadávania bez výsledkov sú v **Search on the website**.
+
+### Všeobecné otázky a odovzdania
+
+V záložke **Overview** časť **General questions and passing to a person** (všeobecné otázky a odovzdanie človeku) ukazuje, ako asistent zvláda otázky o obchode a odovzdania človeku. Počítajú sa len konverzácie, ktoré vznikli po zavedení tejto funkcie. Každé číslo sa porovnáva s predchádzajúcim obdobím a každé je odkazom na konverzácie, ktoré za ním stoja.
+
+- **General questions** (všeobecné otázky) počíta odpovede o obchode (pravidlá, doručenie, vrátenie tovaru, účet) a **Answered by the assistant** (zodpovedal asistent) tie, na ktoré odpovedal sám, bez ponuky človeka.
+- **Passed to a person** (odovzdané človeku) počíta zákazníkov, ktorí ťukli na ponuku opýtať sa tímu. **Hand-over rate** (miera odovzdania) je tento počet na jednu všeobecnú otázku, pričom pod ním je podiel konverzácií, ktoré skončili odovzdaním.
+- **AI cost of these answers** (náklady na AI za tieto odpovede) sú náklady len na všeobecné odpovede. **Answers marked wrong** (odpovede označené ako nesprávne) počíta odpovede, ktoré chatový tím označil ako nesprávne.
+- **Answered from** (odpovedané z) ukazuje, z čoho odpovede vychádzali: stránky s pravidlami, nastavenia obchodu, návody, poznámky, overené fakty alebo naučené pravidlá, opisy rodín alebo naše vlastné údaje.
+- **Why a person was offered** (prečo sa ponúkol človek) porovnáva pre každý dôvod (nebol si istý odpoveďou, otázka o vlastnej objednávke, zákazník požiadal o človeka), koľkokrát sa človek ponúkol a koľko zákazníkov sa odovzdalo.
+- **How it reached the team** (ako sa to dostalo k tímu) rozdeľuje odovzdania na živý chat, emailový chat s odpoveďou neskôr a webový chat s odpoveďou neskôr.
+- **First reply from a person** (prvá odpoveď od človeka) ukazuje v čase chatu a mimo neho, koľko bolo odovzdaní, na koľko odpovedal človek a mediánovú čakaciu dobu na túto prvú odpoveď. Mimo času chatu čakanie zahŕňa noc.
+- **After passing to a person** (po odovzdaní človeku) ukazuje, na koľko sa odpovedalo, koľko chatov je uzavretých a koľko zákazníkov zadalo objednávku do 7 dní od odovzdania. Posúdiť sa dajú len odovzdania staršie ako 7 dní a číslo uvádza, koľko ich je.
+- **Questions the assistant could not answer** (otázky, na ktoré asistent nevedel odpovedať) uvádza, na čo sa zákazníci pýtali, keď si asistent nebol istý, s počtom opýtaní, jazykmi a posledným časom, a odkazom **Open** (otvoriť) na najnovšiu konverzáciu. Otázky sa zoskupujú len vtedy, keď sú slová rovnaké, takže dva spôsoby, ako sa opýtať na to isté, sa zobrazia ako dva riadky.
+
+V záložke **Conversations** stĺpec ukazuje, ktoré konverzácie boli odovzdané človeku, a prepis pod každou odpoveďou ukazuje, odkiaľ pochádza, kedy sa ponúkol človek a do akého chatu sa odovzdala.
+
 ### Záložka Conversations
 
 Jeden riadok na konverzáciu: kedy začala, zákazník, odkiaľ sa otvorila, prvá otázka, počet správ, zobrazené, rozkliknuté a pridané produkty, či nasledovala objednávka a na akú sumu, a náklady na AI. Hľadajte podľa zákazníka alebo podľa slov otázky.
 
-Kliknite na prvú otázku a prečítajte si konverzáciu. Pod každou odpoveďou vidíte produkty, ktoré zobrazila, s uvedeným dôvodom, ktoré zákazník rozklikol, pridal a objednal, a ponúknuté ďalšie otázky. Konverzácie sú len pre zamestnancov: otvoriť ich môžu len ľudia, ktorí vidia web v aiku.
+Kliknite na prvú otázku a prečítajte si konverzáciu. Pod každou odpoveďou vidíte produkty, ktoré zobrazila, s uvedeným dôvodom, ktoré zákazník rozklikol, pridal a objednal, ponúknuté ďalšie otázky a hodnotenie zákazníka. Prekážky nájdené v konverzácii sú uvedené hore. Konverzácie sú len pre zamestnancov: otvoriť ich môžu len ľudia, ktorí vidia web v aiku.
+
+## Týždenný súhrn a ako dlho sa konverzácie uchovávajú
+
+Každý pondelok ráno (britského času) príde e-mail ľuďom vybraným v **Sysadmin → Settings → AI shopping assistant → Weekly summary to**. Pokrýva pondelok až nedeľu predchádzajúceho týždňa za všetky weby v porovnaní s týždňom pred ním: konverzácie, zákazníkov, objednávky a tržby po zobrazení produktov, náklady na AI, hodnotenia odpovedí, odovzdania človeku, najčastejšie prekážky zákazníkov a vyhľadávania bez výsledkov, s odkazom na prehľad. Citáty zákazníkov v e-maile nie sú; prečítate si ich v prehľade. Ak nie je nikto vybraný, e-mail sa neodošle.
+
+Pod políčkom, kam píšu, zákazníci vidia, že asistent je AI a môže sa mýliť, že naši zamestnanci môžu konverzácie čítať a že nemajú zdieľať platobné údaje.
+
+To, čo zákazníci napísali a čo dostali ako odpoveď, sa uchováva 24 mesiacov od poslednej správy konverzácie, alebo toľko mesiacov, koľko je nastavené v **Keep conversation texts for (months)** v tých istých nastaveniach. Potom sa texty každú noc vymažú spolu s príkladmi citátov pri prekážkach a otázkami odmietnutými pre limity. Čísla zostávajú, takže prehľad tieto konverzácie, ich produkty, objednávky a náklady naďalej počíta. Anonymizácia zákazníka vymaže jeho konverzácie okamžite. Vymazaná konverzácia to uvádza v hornej časti svojej stránky.

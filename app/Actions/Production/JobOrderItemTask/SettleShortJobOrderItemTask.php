@@ -28,14 +28,17 @@ class SettleShortJobOrderItemTask
 
     /**
      * Closes the job order item at what was actually made. With $carryOver the shortfall
-     * is re-issued as a new confirmed job order for the same artisan.
+     * is re-issued as a new confirmed job order for the same artisan, and a part pack made here
+     * joins the carried part's packs. Finished here on a line that packs alone, it closes in whole
+     * packs and the pieces past the last full pack stay on the line as loose pieces (HELP-4673).
      */
     public function handle(JobOrderItemTask $jobOrderItemTask, bool $carryOver): ?JobOrder
     {
         return DB::transaction(function () use ($jobOrderItemTask, $carryOver) {
             $item             = $jobOrderItemTask->jobOrderItem;
             $madeArtefacts      = (int) $jobOrderItemTask->artefactsIn();
-            $remainingArtefacts = max(0, $item->quantity - $madeArtefacts);
+            $closedAt           = $carryOver || $item->sharesPacks() ? $madeArtefacts : self::wholePacks($madeArtefacts, $item->artefact->packedIn());
+            $remainingArtefacts = max(0, $item->quantity - $closedAt);
 
             if ($madeArtefacts < 1) {
                 if ($carryOver) {
@@ -46,10 +49,10 @@ class SettleShortJobOrderItemTask
                 ]);
             }
 
-            $item->update(['quantity' => $madeArtefacts]);
+            $item->update(['quantity' => $closedAt]);
             $isCarried = $carryOver && $remainingArtefacts > 0;
             foreach ($item->tasks as $task) {
-                $required = min((float) $task->quantity_required, $task->requiredFor($madeArtefacts));
+                $required = min((float) $task->quantity_required, $task->requiredFor($closedAt));
                 if ($isCarried && ShareMixPool::poolKey($task)) {
                     $task->update(['quantity_required' => $required]);
                     CalculateJobOrderItemTaskQuantities::run($task);
@@ -83,7 +86,7 @@ class SettleShortJobOrderItemTask
             CreditOrderWorkToJobOrderItem::run($carriedItem);
             ConfirmJobOrder::make()->action($carried);
 
-            $this->carryLines($original, $carried, $item, $madeArtefacts);
+            $this->carryLines($original, $carried, $item, $closedAt);
 
             return $carried;
         });
@@ -114,6 +117,12 @@ class SettleShortJobOrderItemTask
             'units_per_artefact' => $jobOrderItemTask->unitsPerArtefact(),
             'quantity'           => (int) $jobOrderItemTask->jobOrderItem->quantity,
         ];
+    }
+
+    /** Pieces made, down to whole packs; less than one pack stays as it is, a job is never closed at nothing. */
+    public static function wholePacks(int $pieces, int $packedIn): int
+    {
+        return $pieces >= $packedIn ? intdiv($pieces, $packedIn) * $packedIn : $pieces;
     }
 
     public static function baseReference(JobOrder $jobOrder): string

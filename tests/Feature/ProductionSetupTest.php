@@ -615,7 +615,7 @@ test('UI edit artefact', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 10)
+            ->has('formData.blueprint.0.fields', 11)
             ->has('pageHead')
             ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });
@@ -689,7 +689,7 @@ test('UI edit manufacture task', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 7)
+            ->has('formData.blueprint.0.fields', 8)
             ->has('pageHead')
             ->where('breadcrumbs', fn ($breadcrumbs) => collect($breadcrumbs)->last()['type'] === 'editingModel');
     });

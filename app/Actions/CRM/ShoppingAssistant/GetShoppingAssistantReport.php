@@ -10,7 +10,11 @@ namespace App\Actions\CRM\ShoppingAssistant;
 
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Search\RecordWebsiteSearchClick;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantChallengeTypeEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverRouteEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Helpers\Currency;
 use Carbon\CarbonImmutable;
@@ -119,6 +123,109 @@ class GetShoppingAssistantReport
             'search'          => $this->search($filters, $from, $to, $previousFrom, $previousTo),
             'assistant_reach' => $this->assistantReach($filters, $from, $to, $previousFrom, $previousTo),
             'refusals'        => $this->refusals($filters, $from, $to, $previousFrom, $previousTo),
+            'general'         => $this->general($filters, $from, $to, $previousFrom, $previousTo, $usdRate ?? 1.0),
+            'feedback'        => [
+                'current'  => $this->feedback($filters, $from, $to),
+                'previous' => $this->feedback($filters, $previousFrom, $previousTo),
+            ],
+            'challenges'      => $this->challenges($filters, $from, $to),
+        ];
+    }
+
+    /**
+     * Thumbs up and down the customers gave to answers of the conversations in scope.
+     *
+     * @param  Filters  $filters
+     *
+     * @return array{answers: int, up: int, down: int}
+     */
+    private function feedback(array $filters, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $conversations = $this->conversationsQuery($filters, $from, $to);
+
+        $row = DB::selectOne(
+            <<<SQL
+            with convs as ({$conversations->toSql()})
+            select count(*) as answers,
+                count(*) filter (where messages.feedback = 'up') as up,
+                count(*) filter (where messages.feedback = 'down') as down
+            from shopping_assistant_messages messages
+            join convs on convs.id = messages.shopping_assistant_conversation_id
+            where messages.role = 'assistant'
+            SQL,
+            $conversations->getBindings()
+        );
+
+        return ['answers' => (int) $row->answers, 'up' => (int) $row->up, 'down' => (int) $row->down];
+    }
+
+    /**
+     * What stood between customers and an order, as tagged by TagShoppingAssistantConversationChallenges.
+     * by_type counts conversations; top groups the same (type, topic) across conversations and keeps
+     * the latest quote and conversation as the example.
+     *
+     * @param  Filters  $filters
+     *
+     * @return array{tagged: int, untagged: int, by_type: array<int, array{type: string, label: string, conversations: int}>, top: array<int, array{type: string, label: string, topic: string, conversations: int, quote: ?string, conversation: string}>}
+     */
+    public function challenges(array $filters, CarbonImmutable $from, CarbonImmutable $to, int $limit = 20): array
+    {
+        $conversations = $this->conversationsQuery($filters, $from, $to);
+        $labels        = ShoppingAssistantChallengeTypeEnum::labels();
+
+        $coverage = DB::selectOne(
+            <<<SQL
+            with convs as ({$conversations->toSql()})
+            select count(*) filter (where conversations.challenges_checked_at is not null) as tagged,
+                count(*) filter (where conversations.challenges_checked_at is null and conversations.wiped_at is null) as untagged
+            from convs
+            join shopping_assistant_conversations conversations on conversations.id = convs.id
+            SQL,
+            $conversations->getBindings()
+        );
+
+        $byType = DB::select(
+            <<<SQL
+            with convs as ({$conversations->toSql()})
+            select challenges.type, count(distinct challenges.shopping_assistant_conversation_id) as conversations
+            from shopping_assistant_challenges challenges
+            join convs on convs.id = challenges.shopping_assistant_conversation_id
+            group by challenges.type
+            order by 2 desc
+            SQL,
+            $conversations->getBindings()
+        );
+
+        $top = DB::select(
+            <<<SQL
+            with convs as ({$conversations->toSql()})
+            select challenges.type, challenges.topic,
+                count(distinct challenges.shopping_assistant_conversation_id) as conversations,
+                (array_agg(challenges.quote order by challenges.created_at desc) filter (where challenges.quote is not null))[1] as quote,
+                (array_agg(conversations.ulid order by challenges.created_at desc))[1] as conversation
+            from shopping_assistant_challenges challenges
+            join convs on convs.id = challenges.shopping_assistant_conversation_id
+            join shopping_assistant_conversations conversations on conversations.id = challenges.shopping_assistant_conversation_id
+            where challenges.topic <> ''
+            group by challenges.type, challenges.topic
+            order by 3 desc, max(challenges.created_at) desc
+            limit ?
+            SQL,
+            [...$conversations->getBindings(), $limit]
+        );
+
+        return [
+            'tagged'   => (int) $coverage->tagged,
+            'untagged' => (int) $coverage->untagged,
+            'by_type'  => array_map(fn ($row) => ['type' => $row->type, 'label' => $labels[$row->type] ?? $row->type, 'conversations' => (int) $row->conversations], $byType),
+            'top'      => array_map(fn ($row) => [
+                'type'            => $row->type,
+                'label'           => $labels[$row->type] ?? $row->type,
+                'topic'           => $row->topic,
+                'conversations'   => (int) $row->conversations,
+                'quote'           => $row->quote,
+                'conversation'    => $row->conversation,
+            ], $top),
         ];
     }
 
@@ -129,6 +236,7 @@ class GetShoppingAssistantReport
 
     /**
      * The conversations the report counts. The caller has joined `customers` on the conversation's customer.
+     * Range Advisor panel days have no messages, so they only count when that entry point is chosen.
      *
      * @param  Filters  $filters
      */
@@ -142,6 +250,7 @@ class GetShoppingAssistantReport
             ->whereRaw('coalesce(customers.is_staff, false) = false')
             ->when($filters['language'], fn ($query, $language) => $query->where('shopping_assistant_conversations.language_code', $language))
             ->when($filters['entry_point'], fn ($query, $entryPoint) => $query->where('shopping_assistant_conversations.entry_point', $entryPoint))
+            ->when(!$filters['entry_point'], fn ($query) => $query->where('shopping_assistant_conversations.entry_point', '!=', ShoppingAssistantEntryPointEnum::PANEL->value))
             ->when($filters['shop_type'], fn ($query, $shopType) => $query->where('customers.shop_type', $shopType))
             ->when($filters['country'], fn ($query, $country) => $query->whereRaw("customers.location->>0 = ?", [$country]));
     }
@@ -169,6 +278,8 @@ class GetShoppingAssistantReport
      * Runs $select after the CTEs `convs` (the conversations of $conversations), `matches` (every order
      * line attributed to a conversation of convs) and `lines` (each attributed line once, for the
      * earliest conversation of the customer that showed it, kept when that conversation is in convs).
+     * A conversation wins over a Range Advisor panel day that showed the same product, even an earlier
+     * one, so the default report (which leaves panel days out) never loses a line the chat showed.
      *
      * @param  array<int, mixed>  $selectBindings
      *
@@ -193,20 +304,20 @@ class GetShoppingAssistantReport
         $sql = <<<SQL
             with convs as ({$conversations->toSql()}),
             customer_conversations as (
-                select customer_conversations.id, customer_conversations.customer_id
+                select customer_conversations.id, customer_conversations.customer_id, customer_conversations.entry_point = ? as is_panel
                 from shopping_assistant_conversations customer_conversations
                 where customer_conversations.customer_id in (select convs.customer_id from convs)
                     and customer_conversations.entry_point <> ?
             ),
             first_shown as (
-                select events.shopping_assistant_conversation_id as conversation_id, customer_conversations.customer_id, events.product_id, min(events.created_at) as shown_at
+                select events.shopping_assistant_conversation_id as conversation_id, customer_conversations.customer_id, customer_conversations.is_panel, events.product_id, min(events.created_at) as shown_at
                 from shopping_assistant_events events
                 join customer_conversations on customer_conversations.id = events.shopping_assistant_conversation_id
                 where events.type = 'shown'
-                group by events.shopping_assistant_conversation_id, customer_conversations.customer_id, events.product_id
+                group by events.shopping_assistant_conversation_id, customer_conversations.customer_id, customer_conversations.is_panel, events.product_id
             ),
             all_matches as (
-                select first_shown.conversation_id, first_shown.product_id, first_shown.shown_at, transactions.id as transaction_id,
+                select first_shown.conversation_id, first_shown.is_panel, first_shown.product_id, first_shown.shown_at, transactions.id as transaction_id,
                     transactions.order_id, transactions.customer_id, transactions.family_id, transactions.submitted_at, transactions.{$amountColumn} as amount
                 from first_shown
                 join transactions on transactions.customer_id = first_shown.customer_id
@@ -225,7 +336,7 @@ class GetShoppingAssistantReport
             ),
             lines as (
                 select * from (
-                    select distinct on (all_matches.transaction_id) * from all_matches order by all_matches.transaction_id, all_matches.shown_at, all_matches.conversation_id
+                    select distinct on (all_matches.transaction_id) * from all_matches order by all_matches.transaction_id, all_matches.is_panel, all_matches.shown_at, all_matches.conversation_id
                 ) earliest
                 where earliest.conversation_id in (select convs.id from convs)
             )
@@ -234,6 +345,7 @@ class GetShoppingAssistantReport
 
         return [$sql, [
             ...$conversations->getBindings(),
+            ShoppingAssistantEntryPointEnum::PANEL->value,
             ShoppingAssistantEntryPointEnum::COMMAND->value,
             $this->attributionDays(),
             ...$this->notOrderedStates(),
@@ -350,14 +462,14 @@ class GetShoppingAssistantReport
                 select convs.customer_id, count(*) as conversations,
                     exists (
                         select 1 from shopping_assistant_conversations earlier
-                        where earlier.customer_id = convs.customer_id and earlier.created_at < ? and earlier.entry_point <> ?
+                        where earlier.customer_id = convs.customer_id and earlier.created_at < ? and earlier.entry_point not in (?, ?)
                     ) as earlier
                 from convs
                 where convs.customer_id is not null
                 group by convs.customer_id
             ) per_customer
             SQL,
-            [...$conversations->getBindings(), $from->toIso8601String(), ShoppingAssistantEntryPointEnum::COMMAND->value]
+            [...$conversations->getBindings(), $from->toIso8601String(), ShoppingAssistantEntryPointEnum::COMMAND->value, ShoppingAssistantEntryPointEnum::PANEL->value]
         );
 
         $aov = $this->averageOrderValues($conversations, $filters, $from, $to, $amountColumn);
@@ -667,6 +779,453 @@ class GetShoppingAssistantReport
         return collect([StoreShoppingAssistantRefusal::RATE_LIMIT, StoreShoppingAssistantRefusal::BUDGET])
             ->mapWithKeys(fn (string $reason) => [$reason => ['value' => (int) ($current[$reason] ?? 0), 'previous' => (int) ($previous[$reason] ?? 0)]])
             ->all();
+    }
+
+    /**
+     * Drill-down values of the Conversations tab's `general` filter that stand alone; the others carry
+     * a value after a colon (kind:, source:, reason:, offer:, route:).
+     */
+    public const array GENERAL_FILTERS = ['questions', 'answered', 'offered', 'handed_over', 'wrong', 'gap', 'in_hours', 'after_hours', 'replied', 'closed', 'ordered', 'thumbs_up', 'thumbs_down', 'challenges'];
+
+    /**
+     * @return array<string, string>
+     */
+    public static function sourceLabels(): array
+    {
+        return [
+            'policy'    => __('Policy pages'),
+            'shop_fact' => __('Shop settings'),
+            'guide'     => __('Guides'),
+            'note'      => __('Staff notes'),
+            'verified'  => __('Verified facts'),
+            'learned'   => __('Learned rules'),
+        ];
+    }
+
+    /**
+     * The `general` filter value when the page offers it, else null (an unknown value is dropped).
+     */
+    public function validGeneralFilter(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        if (in_array($value, self::GENERAL_FILTERS, true)) {
+            return $value;
+        }
+
+        [$prefix, $suffix] = array_pad(explode(':', $value, 2), 2, '');
+
+        $allowed = match ($prefix) {
+            'kind'   => ShoppingAssistantAnswerKindEnum::general(),
+            'reason', 'offer' => ShoppingAssistantHandOverReasonEnum::values(),
+            'route'  => ShoppingAssistantHandOverRouteEnum::values(),
+            'challenge' => ShoppingAssistantChallengeTypeEnum::values(),
+            default  => null,
+        };
+
+        if ($prefix === 'source') {
+            return preg_match('/^[a-z_]{1,32}$/', $suffix) ? $value : null;
+        }
+
+        return $allowed !== null && in_array($suffix, $allowed, true) ? $value : null;
+    }
+
+    /**
+     * "A general question": an assistant message whose answer_kind is one of
+     * ShoppingAssistantAnswerKindEnum::general(). Messages from before the feature have no answer_kind
+     * and are not counted.
+     */
+    public function generalQuestionCondition(string $alias): string
+    {
+        return "{$alias}.role = 'assistant' and {$alias}.answer_kind in ({$this->quoted(ShoppingAssistantAnswerKindEnum::general())})";
+    }
+
+    /**
+     * A general question the assistant answered itself: shop knowledge, a family description or its own data.
+     */
+    public function answeredQuestionCondition(string $alias): string
+    {
+        $kinds = [
+            ShoppingAssistantAnswerKindEnum::SHOP_ANSWER->value,
+            ShoppingAssistantAnswerKindEnum::FAMILY_DESCRIPTION->value,
+            ShoppingAssistantAnswerKindEnum::TOOL->value,
+        ];
+
+        return "{$alias}.role = 'assistant' and {$alias}.answer_kind in ({$this->quoted($kinds)})";
+    }
+
+    /**
+     * When a person first answered the chat of a hand-over: the earliest undeleted message of the chat
+     * from an agent after the hand-over.
+     */
+    public function firstHumanReplySql(string $handOver): string
+    {
+        return "(select min(chat_replies.created_at) from chat_messages chat_replies where chat_replies.chat_session_id = {$handOver}.chat_session_id and chat_replies.sender_type = 'agent' and chat_replies.deleted_at is null and chat_replies.created_at > {$handOver}.created_at)";
+    }
+
+    public function chatClosedCondition(string $handOver): string
+    {
+        return "exists (select 1 from chat_sessions closed_chats where closed_chats.id = {$handOver}.chat_session_id and closed_chats.status in ('closed', 'resolved'))";
+    }
+
+    /**
+     * A hand-over old enough to judge whether the customer ordered afterwards: older than the attribution window.
+     */
+    public function handOverMatureCondition(string $handOver): string
+    {
+        return "{$handOver}.created_at <= now() - make_interval(days => {$this->attributionDays()})";
+    }
+
+    /**
+     * The customer of the hand-over's conversation submitted an order (not cancelled, not deleted, the
+     * same conditions as the report's order values) within the attribution window after the hand-over.
+     */
+    public function orderedAfterHandOverCondition(string $handOver): string
+    {
+        return "exists (select 1 from orders after_orders join shopping_assistant_conversations ordered_conversations on ordered_conversations.id = {$handOver}.shopping_assistant_conversation_id where after_orders.customer_id = ordered_conversations.customer_id and after_orders.submitted_at >= {$handOver}.created_at and after_orders.submitted_at < {$handOver}.created_at + make_interval(days => {$this->attributionDays()}) and after_orders.deleted_at is null and after_orders.state not in ({$this->quoted($this->notOrderedStates())}))";
+    }
+
+    /**
+     * The correlated condition on `shopping_assistant_conversations` that keeps the conversations behind
+     * one figure of the general questions section; null for a value the page does not offer. The figures
+     * and this drill-down are built from the same fragments above.
+     */
+    public function generalFilterCondition(?string $filter): ?string
+    {
+        $filter = $this->validGeneralFilter($filter);
+        if ($filter === null) {
+            return null;
+        }
+
+        $conversation = 'shopping_assistant_conversations.id';
+        $message      = fn (string $condition) => "exists (select 1 from shopping_assistant_messages filter_messages where filter_messages.shopping_assistant_conversation_id = {$conversation} and {$condition})";
+        $handOver     = fn (string $condition = 'true') => "exists (select 1 from shopping_assistant_hand_overs filter_hand_overs where filter_hand_overs.shopping_assistant_conversation_id = {$conversation} and {$condition})";
+
+        [$prefix, $suffix] = array_pad(explode(':', $filter, 2), 2, '');
+
+        return match (true) {
+            $filter === 'questions'   => $message($this->generalQuestionCondition('filter_messages')),
+            $filter === 'answered'    => $message($this->answeredQuestionCondition('filter_messages')),
+            $filter === 'offered'     => $message("filter_messages.role = 'assistant' and filter_messages.hand_over_offer is not null"),
+            $filter === 'handed_over' => $handOver(),
+            $filter === 'wrong'       => $message("filter_messages.role = 'assistant' and filter_messages.staff_rating = 'wrong'"),
+            $filter === 'gap'         => $message("filter_messages.role = 'assistant' and filter_messages.hand_over_offer = 'not_sure'"),
+            $filter === 'in_hours'    => $handOver('filter_hand_overs.in_hours = true'),
+            $filter === 'after_hours' => $handOver('filter_hand_overs.in_hours = false'),
+            $filter === 'replied'     => $handOver($this->firstHumanReplySql('filter_hand_overs').' is not null'),
+            $filter === 'closed'      => $handOver($this->chatClosedCondition('filter_hand_overs')),
+            $filter === 'ordered'     => $handOver($this->handOverMatureCondition('filter_hand_overs').' and '.$this->orderedAfterHandOverCondition('filter_hand_overs')),
+            $prefix === 'kind'        => $message("filter_messages.role = 'assistant' and filter_messages.answer_kind = '{$suffix}'"),
+            $prefix === 'source'      => $message("filter_messages.role = 'assistant' and filter_messages.answer_kind = 'shop_answer' and filter_messages.source_kind = '{$suffix}'"),
+            $prefix === 'offer'       => $message("filter_messages.role = 'assistant' and filter_messages.hand_over_offer = '{$suffix}'"),
+            $prefix === 'reason'      => $handOver("filter_hand_overs.reason = '{$suffix}'"),
+            $prefix === 'route'       => $handOver("filter_hand_overs.route = '{$suffix}'"),
+            $filter === 'thumbs_up'   => $message("filter_messages.role = 'assistant' and filter_messages.feedback = 'up'"),
+            $filter === 'thumbs_down' => $message("filter_messages.role = 'assistant' and filter_messages.feedback = 'down'"),
+            $filter === 'challenges'  => "exists (select 1 from shopping_assistant_challenges filter_challenges where filter_challenges.shopping_assistant_conversation_id = {$conversation})",
+            $prefix === 'challenge'   => "exists (select 1 from shopping_assistant_challenges filter_challenges where filter_challenges.shopping_assistant_conversation_id = {$conversation} and filter_challenges.type = '{$suffix}')",
+            default                   => null,
+        };
+    }
+
+    /**
+     * @param  array<int, string>  $values  trusted literals (enum values, constants)
+     */
+    private function quoted(array $values): string
+    {
+        return implode(', ', array_map(fn (string $value) => "'{$value}'", $values));
+    }
+
+    /**
+     * How the assistant handles general questions about the shop and hand-overs to a person (INI-245), for
+     * exactly the conversations of the report's scope in the period, and where a figure is a
+     * {value, previous} pair, in the previous period too.
+     *
+     * - questions: general questions, the assistant messages whose answer_kind is shop_answer,
+     *   family_description, tool or offer_person. Messages from before the feature have no answer_kind and are not counted.
+     * - answered: general questions the assistant answered itself (shop_answer, family_description, tool).
+     * - by_source: what the self-answered questions drew on: the source_kind of shop answers, family descriptions, our own data.
+     * - offers: assistant messages that offered a person (hand_over_offer set); by_reason splits them by
+     *   reason next to the hand-overs that really happened for that reason.
+     * - hand_overs: rows of shopping_assistant_hand_overs, one per customer who tapped "ask the team"; by_route splits them.
+     * - rate_per_question: hand_overs per general question; rate_per_conversation: conversations with a hand-over per conversation.
+     * - first_reply: the wait between a hand-over and the first message from a person in its chat, in
+     *   chat hours and outside them, with the median of the replied ones. Raw clock time: outside chat
+     *   hours the wait includes the night, which is why the two are shown apart.
+     * - outcomes: of the hand-overs, how many were replied to by a person, how many chats are closed
+     *   or resolved, and how many customers placed an order within the attribution days after the
+     *   hand-over; only hand-overs older than that window can be judged (ordered_base).
+     * - wrong_answers: assistant answers the chat team marked wrong.
+     * - ai_cost: the cost of the general-question answers, in the page currency like the other cost figures.
+     * - gaps: the questions behind "not sure" offers, the knowledge the assistant lacks. Grouped by the
+     *   exact text (lower case, spaces collapsed, cut to 300 characters); grouping by meaning is a later ticket.
+     *
+     * @param  Filters  $filters
+     */
+    private function general(array $filters, CarbonImmutable $from, CarbonImmutable $to, CarbonImmutable $previousFrom, CarbonImmutable $previousTo, float $usdRate): array
+    {
+        $current  = $this->generalFigures($filters, $from, $to);
+        $previous = $this->generalFigures($filters, $previousFrom, $previousTo);
+        $pair     = fn (callable $figure) => ['value' => $figure($current), 'previous' => $figure($previous)];
+        $rate     = fn (int $numerator, int $denominator) => $denominator > 0 ? $numerator / $denominator : null;
+
+        $handOverRows = collect($current['hand_over_rows']);
+        $reasonLabels = ShoppingAssistantHandOverReasonEnum::labels();
+        $routeLabels  = ShoppingAssistantHandOverRouteEnum::labels();
+        $offered      = $current['offered_by_reason'];
+
+        $firstReply = function (bool $inHours) use ($handOverRows, $current) {
+            $rows = $handOverRows->filter(fn (array $row) => $row['in_hours'] === $inHours);
+
+            return [
+                'hand_overs'     => $rows->sum('hand_overs'),
+                'replied'        => $rows->sum('replied'),
+                'median_minutes' => $current['median_minutes'][(int) $inHours] ?? null,
+            ];
+        };
+
+        return [
+            'questions'             => $pair(fn (array $period) => $period['questions']),
+            'answered'              => $pair(fn (array $period) => $period['answered']),
+            'by_source'             => $this->generalBySource($filters, $from, $to),
+            'offers'                => $pair(fn (array $period) => $period['offers']),
+            'by_reason'             => array_map(fn (string $reason) => [
+                'reason'     => $reason,
+                'label'      => $reasonLabels[$reason],
+                'offered'    => (int) ($offered[$reason] ?? 0),
+                'handed_over' => (int) $handOverRows->where('reason', $reason)->sum('hand_overs'),
+            ], ShoppingAssistantHandOverReasonEnum::values()),
+            'hand_overs'            => $pair(fn (array $period) => $period['hand_overs']),
+            'by_route'              => array_map(fn (string $route) => [
+                'route'      => $route,
+                'label'      => $routeLabels[$route],
+                'hand_overs' => (int) $handOverRows->where('route', $route)->sum('hand_overs'),
+            ], ShoppingAssistantHandOverRouteEnum::values()),
+            'rate_per_question'     => [
+                'value'    => $rate($current['hand_overs'], $current['questions']),
+                'previous' => $rate($previous['hand_overs'], $previous['questions']),
+            ],
+            'rate_per_conversation' => [
+                'value'    => $rate($current['conversations_with_hand_over'], $current['conversations']),
+                'previous' => $rate($previous['conversations_with_hand_over'], $previous['conversations']),
+            ],
+            'first_reply'           => ['in_hours' => $firstReply(true), 'after_hours' => $firstReply(false)],
+            'outcomes'              => [
+                'hand_overs'   => $current['hand_overs'],
+                'replied'      => (int) $handOverRows->sum('replied'),
+                'closed'       => (int) $handOverRows->sum('closed'),
+                'ordered'      => (int) $handOverRows->sum('ordered'),
+                'ordered_base' => (int) $handOverRows->sum('mature'),
+            ],
+            'wrong_answers'         => $pair(fn (array $period) => $period['wrong']),
+            'ai_cost'               => $pair(fn (array $period) => $period['cost'] * $usdRate),
+            'gaps'                  => $this->generalGaps($filters, $from, $to),
+        ];
+    }
+
+    /**
+     * @param  Filters  $filters
+     *
+     * @return array{questions: int, answered: int, offers: int, wrong: int, cost: float, conversations: int, conversations_with_hand_over: int, hand_overs: int, offered_by_reason: array<string, int>, hand_over_rows: array<int, array{reason: string, route: string, in_hours: bool, hand_overs: int, replied: int, closed: int, mature: int, ordered: int}>, median_minutes: array<int, float>}
+     */
+    private function generalFigures(array $filters, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $conversations = $this->conversationsQuery($filters, $from, $to);
+        $bindings      = $conversations->getBindings();
+
+        $general  = $this->generalQuestionCondition('msgs');
+        $answered = $this->answeredQuestionCondition('msgs');
+
+        $totals = DB::selectOne(
+            <<<SQL
+            with convs as ({$conversations->toSql()}),
+            msgs as (
+                select shopping_assistant_messages.* from shopping_assistant_messages
+                join convs on convs.id = shopping_assistant_messages.shopping_assistant_conversation_id
+                where shopping_assistant_messages.role = 'assistant'
+            )
+            select
+                (select count(*) from convs) as conversations,
+                (select count(distinct hand_overs.shopping_assistant_conversation_id) from shopping_assistant_hand_overs hand_overs join convs on convs.id = hand_overs.shopping_assistant_conversation_id) as conversations_with_hand_over,
+                count(*) filter (where {$general}) as questions,
+                count(*) filter (where {$answered}) as answered,
+                count(*) filter (where msgs.hand_over_offer is not null) as offers,
+                count(*) filter (where msgs.staff_rating = 'wrong') as wrong,
+                coalesce(sum(msgs.cost) filter (where {$general}), 0) as cost
+            from msgs
+            SQL,
+            $bindings
+        );
+
+        $offered = DB::select(
+            <<<SQL
+            with convs as ({$conversations->toSql()})
+            select shopping_assistant_messages.hand_over_offer as reason, count(*) as offered
+            from shopping_assistant_messages
+            join convs on convs.id = shopping_assistant_messages.shopping_assistant_conversation_id
+            where shopping_assistant_messages.role = 'assistant' and shopping_assistant_messages.hand_over_offer is not null
+            group by 1
+            SQL,
+            $bindings
+        );
+
+        $reply   = $this->firstHumanReplySql('hos');
+        $closed  = $this->chatClosedCondition('hos');
+        $mature  = $this->handOverMatureCondition('hos');
+        $ordered = $this->orderedAfterHandOverCondition('hos');
+
+        $handOvers = DB::select(
+            <<<SQL
+            with convs as ({$conversations->toSql()}),
+            hos as (
+                select shopping_assistant_hand_overs.* from shopping_assistant_hand_overs
+                join convs on convs.id = shopping_assistant_hand_overs.shopping_assistant_conversation_id
+            )
+            select hos.reason, hos.route, hos.in_hours, count(*) as hand_overs,
+                count(*) filter (where {$reply} is not null) as replied,
+                count(*) filter (where {$closed}) as closed,
+                count(*) filter (where {$mature}) as mature,
+                count(*) filter (where {$mature} and {$ordered}) as ordered
+            from hos
+            group by 1, 2, 3
+            SQL,
+            $bindings
+        );
+
+        $medians = DB::select(
+            <<<SQL
+            with convs as ({$conversations->toSql()}),
+            hos as (
+                select shopping_assistant_hand_overs.* from shopping_assistant_hand_overs
+                join convs on convs.id = shopping_assistant_hand_overs.shopping_assistant_conversation_id
+            )
+            select hos.in_hours, percentile_cont(0.5) within group (order by extract(epoch from ({$reply} - hos.created_at)) / 60) as median_minutes
+            from hos
+            where {$reply} is not null
+            group by 1
+            SQL,
+            $bindings
+        );
+
+        $handOverRows = array_map(fn ($row) => [
+            'reason'     => (string) $row->reason,
+            'route'      => (string) $row->route,
+            'in_hours'   => (bool) $row->in_hours,
+            'hand_overs' => (int) $row->hand_overs,
+            'replied'    => (int) $row->replied,
+            'closed'     => (int) $row->closed,
+            'mature'     => (int) $row->mature,
+            'ordered'    => (int) $row->ordered,
+        ], $handOvers);
+
+        return [
+            'questions'                    => (int) $totals->questions,
+            'answered'                     => (int) $totals->answered,
+            'offers'                       => (int) $totals->offers,
+            'wrong'                        => (int) $totals->wrong,
+            'cost'                         => (float) $totals->cost,
+            'conversations'                => (int) $totals->conversations,
+            'conversations_with_hand_over' => (int) $totals->conversations_with_hand_over,
+            'hand_overs'                   => array_sum(array_column($handOverRows, 'hand_overs')),
+            'offered_by_reason'            => collect($offered)->mapWithKeys(fn ($row) => [(string) $row->reason => (int) $row->offered])->all(),
+            'hand_over_rows'               => $handOverRows,
+            'median_minutes'               => collect($medians)->mapWithKeys(fn ($row) => [(int) (bool) $row->in_hours => (float) $row->median_minutes])->all(),
+        ];
+    }
+
+    /**
+     * @param  Filters  $filters
+     *
+     * @return array<int, array{key: string, label: string, answers: int, general: string}>
+     */
+    private function generalBySource(array $filters, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $conversations = $this->conversationsQuery($filters, $from, $to);
+        $answered      = $this->answeredQuestionCondition('shopping_assistant_messages');
+
+        $rows = DB::select(
+            <<<SQL
+            with convs as ({$conversations->toSql()})
+            select shopping_assistant_messages.answer_kind, shopping_assistant_messages.source_kind, count(*) as answers
+            from shopping_assistant_messages
+            join convs on convs.id = shopping_assistant_messages.shopping_assistant_conversation_id
+            where {$answered}
+            group by 1, 2
+            SQL,
+            $conversations->getBindings()
+        );
+
+        $sourceLabels = self::sourceLabels();
+        $kindLabels   = ShoppingAssistantAnswerKindEnum::labels();
+
+        return collect($rows)
+            ->map(function ($row) use ($sourceLabels, $kindLabels) {
+                if ($row->answer_kind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER->value && $row->source_kind !== null) {
+                    return ['key' => "source:{$row->source_kind}", 'label' => $sourceLabels[$row->source_kind] ?? $row->source_kind, 'answers' => (int) $row->answers, 'general' => "source:{$row->source_kind}"];
+                }
+
+                if ($row->answer_kind === ShoppingAssistantAnswerKindEnum::SHOP_ANSWER->value) {
+                    return ['key' => 'source:none', 'label' => __('Other'), 'answers' => (int) $row->answers, 'general' => 'kind:shop_answer'];
+                }
+
+                $label = $row->answer_kind === ShoppingAssistantAnswerKindEnum::FAMILY_DESCRIPTION->value ? __('Family descriptions') : $kindLabels[$row->answer_kind];
+
+                return ['key' => "kind:{$row->answer_kind}", 'label' => $label, 'answers' => (int) $row->answers, 'general' => "kind:{$row->answer_kind}"];
+            })
+            ->groupBy('key')
+            ->map(fn ($group) => [...$group->first(), 'answers' => $group->sum('answers')])
+            ->filter(fn (array $row) => $row['answers'] > 0)
+            ->sortByDesc('answers')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  Filters  $filters
+     *
+     * @return array<int, array{question: string, count: int, languages: array<int, string>, last_asked_at: string, conversation: string}>
+     */
+    private function generalGaps(array $filters, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $conversations = $this->conversationsQuery($filters, $from, $to);
+
+        $rows = DB::select(
+            <<<SQL
+            with convs as ({$conversations->toSql()}),
+            offers as (
+                select shopping_assistant_messages.id, shopping_assistant_messages.created_at, gap_conversations.language_code, gap_conversations.ulid,
+                    (select questions.body from shopping_assistant_messages questions
+                        where questions.shopping_assistant_conversation_id = shopping_assistant_messages.shopping_assistant_conversation_id
+                            and questions.role = 'customer' and questions.id < shopping_assistant_messages.id
+                        order by questions.id desc limit 1) as question
+                from shopping_assistant_messages
+                join convs on convs.id = shopping_assistant_messages.shopping_assistant_conversation_id
+                join shopping_assistant_conversations gap_conversations on gap_conversations.id = convs.id
+                where shopping_assistant_messages.role = 'assistant' and shopping_assistant_messages.hand_over_offer = 'not_sure'
+            )
+            select left(lower(trim(regexp_replace(offers.question, '\s+', ' ', 'g'))), 300) as question,
+                count(*) as asked,
+                string_agg(distinct offers.language_code, ',') as languages,
+                max(offers.created_at) as last_asked_at,
+                (array_agg(offers.ulid order by offers.created_at desc, offers.id desc))[1] as conversation
+            from offers
+            where trim(coalesce(offers.question, '')) <> ''
+            group by 1
+            order by asked desc, last_asked_at desc
+            limit 20
+            SQL,
+            $conversations->getBindings()
+        );
+
+        return array_map(fn ($row) => [
+            'question'      => (string) $row->question,
+            'count'         => (int) $row->asked,
+            'languages'     => $row->languages ? explode(',', $row->languages) : [],
+            'last_asked_at' => CarbonImmutable::parse($row->last_asked_at)->toIso8601String(),
+            'conversation'  => (string) $row->conversation,
+        ], $rows);
     }
 
     /**

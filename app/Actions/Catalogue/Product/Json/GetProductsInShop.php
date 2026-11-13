@@ -52,6 +52,11 @@ class GetProductsInShop extends OrgAction
                 ->selectRaw('case when count(*) = 1 then max(org_stocks.packed_in) end')
                 ->whereColumn('product_has_org_stocks.product_id', 'products.id'),
             'packed_in'
+        )->selectSub(
+            DB::table('product_has_org_stocks')
+                ->selectRaw('case when count(*) = 1 then max(product_has_org_stocks.quantity) end')
+                ->whereColumn('product_has_org_stocks.product_id', 'products.id'),
+            'skos_per_product'
         )->selectSub(ProductHydrateAvailableQuantity::shelfQuantityQuery(), 'shelf_quantity');
 
         return $queryBuilder->defaultSort('-id')

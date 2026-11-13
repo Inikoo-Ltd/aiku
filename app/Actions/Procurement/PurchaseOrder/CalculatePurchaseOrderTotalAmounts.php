@@ -12,52 +12,60 @@ namespace App\Actions\Procurement\PurchaseOrder;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\OrgAction;
-use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateStage;
+use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderTransaction;
 use RuntimeException;
 
 class CalculatePurchaseOrderTotalAmounts extends OrgAction
 {
+    /**
+     * A purchase order carries only what is ordered from the supplier, so its total is its items. Freight, duty
+     * and every other landed cost live on the stock delivery, where they are costed.
+     */
     public function handle(PurchaseOrder $purchaseOrder): void
     {
-        $itemsNet = $purchaseOrder->purchaseOrderTransactions()
-            ->with('supplierProduct.currency')
-            ->get()
-            ->sum(fn (PurchaseOrderTransaction $transaction) => $this->netAmountInOrderCurrency($purchaseOrder, $transaction));
-
-        $extras = (float) $purchaseOrder->cost_extra
-            + (float) $purchaseOrder->cost_shipping
-            + (float) $purchaseOrder->cost_duties
-            + (float) $purchaseOrder->cost_tax;
+        $itemsNet = $this->itemsNet($purchaseOrder);
 
         $purchaseOrder->update([
             'cost_items' => $itemsNet,
-            'cost_total' => $itemsNet + $extras,
+            'cost_total' => $itemsNet,
         ]);
 
         if ($purchaseOrder->wasChanged('cost_items') && $purchaseOrder->depositPayments()->exists()) {
             SyncPurchaseOrderDepositPaid::run($purchaseOrder);
         }
 
-        PurchaseOrderHydrateStage::run($purchaseOrder);
+        PurchaseOrderHydrateState::run($purchaseOrder);
     }
 
+    public function itemsNet(PurchaseOrder $purchaseOrder): float
+    {
+        return (float) $purchaseOrder->purchaseOrderTransactions()
+            ->with('currency')
+            ->get()
+            ->sum(fn (PurchaseOrderTransaction $transaction) => $this->netAmountInOrderCurrency($purchaseOrder, $transaction));
+    }
+
+    /**
+     * A line keeps the currency its amount is in, which is not always the order's: a line made in aiku is priced from
+     * its supplier product. A line without one is in the order's currency.
+     */
     private function netAmountInOrderCurrency(PurchaseOrder $purchaseOrder, PurchaseOrderTransaction $transaction): float
     {
-        $netAmount       = (float) $transaction->net_amount;
-        $supplierProduct = $transaction->supplierProduct;
+        $netAmount = (float) $transaction->net_amount;
+        $currency  = $transaction->currency;
 
-        if (!$supplierProduct || $supplierProduct->currency_id === $purchaseOrder->currency_id) {
+        if (!$currency || $currency->id === $purchaseOrder->currency_id) {
             return $netAmount;
         }
 
-        $rate = GetHistoricCurrencyExchange::run($supplierProduct->currency, $purchaseOrder->currency, $purchaseOrder->date)
-            ?? GetCurrencyExchange::run($supplierProduct->currency, $purchaseOrder->currency);
+        $rate = GetHistoricCurrencyExchange::run($currency, $purchaseOrder->currency, $purchaseOrder->date)
+            ?? GetCurrencyExchange::run($currency, $purchaseOrder->currency);
 
         if ($rate === null) {
             throw new RuntimeException(
-                "No exchange rate found from {$supplierProduct->currency->code} to {$purchaseOrder->currency->code} for purchase order {$purchaseOrder->reference}"
+                "No exchange rate found from {$currency->code} to {$purchaseOrder->currency->code} for purchase order {$purchaseOrder->reference}"
             );
         }
 

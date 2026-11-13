@@ -273,6 +273,36 @@ class JobOrderItem extends Model
         return $this->hasMany(JobOrderItem::class, 'split_from_id');
     }
 
+    /**
+     * Pieces made that are not in a whole pack of the line: what a step made past a line closed
+     * short in whole packs, plus what a finished line holds past its last full pack. Derived from
+     * the steps, so a correction keeps it right. A line that shares packs has none of its own (HELP-4673).
+     */
+    public function loosePieces(): int
+    {
+        if ($this->sharesPacks()) {
+            return 0;
+        }
+
+        $made     = (int) $this->tasks->reject(fn (JobOrderItemTask $task) => $task->isRecordedInKg())->max(fn (JobOrderItemTask $task) => $task->artefactsIn());
+        $packedIn = $this->artefact->packedIn();
+        $inPacks  = $packedIn > 1 && $made >= $this->quantity ? $this->quantity % $packedIn : 0;
+
+        return max(0, $made - $this->quantity) + $inPacks;
+    }
+
+    /**
+     * Packed together with other lines of its order: carried on, carried from an earlier part, split
+     * between artisans or beside another line of the same artefact. Such a line is closed as made, its
+     * part pack joins the others' and its extra work is order surplus (HELP-4509), never loose pieces.
+     */
+    public function sharesPacks(): bool
+    {
+        return Arr::has($this->data ?? [], 'carried_to')
+            || Arr::has($this->jobOrder->data ?? [], 'carried_from')
+            || JobOrderItem::where('job_order_id', $this->job_order_id)->where('artefact_id', $this->artefact_id)->whereKeyNot($this->id)->exists();
+    }
+
     public function finalTask(): ?JobOrderItemTask
     {
         $recipeStepIds = $this->artefact->manufactureTasks->map(fn (ManufactureTask $manufactureTask) => $manufactureTask->pivot->id);

@@ -29,6 +29,8 @@ Mientras está en proceso:
 
 Cuando hayas añadido todo lo que quieres, pulsa **Submit**. Esto envía la orden y la pasa a **Submitted**.
 
+El total de una orden de compra es la mercancía pedida al proveedor. El envío, los aranceles y otros costes extra no están en la orden: se introducen en la entrega de stock, donde se calcula el coste de la mercancía.
+
 ## Proveedores que venden en otra unidad
 
 Algunos proveedores cotizan y facturan en una unidad que no es la nuestra - por ejemplo, incienso por **kg** que nosotros contamos en bolsas de 500 g. En la página **Edit** del producto del proveedor, indica **Supplier sells in** (kg, g, litro, metro, pack, set, docena o pieza) y **Our units in one supplier unit** (2 para una bolsa de 500 g vendida por kg, 0,2 para un pack de 5 kg vendido por kg). Si eliges kg o g y dejas el número vacío, aiku lo calcula a partir del peso de la unidad comercial (trade unit), y el texto de ayuda del campo te avisa cuando el número que escribiste no coincide con ese peso.
@@ -58,7 +60,7 @@ Una orden de compra pasa por una cadena corta y deliberada:
 
 A partir de aquí la orden se asienta sola según avanzan sus entregas de stock - no queda nada más que pulsar en la propia orden de compra. Termina **Settled** cuando todo ha llegado, o **Not Received**/**Cancelled** si la cosa no salió bien.
 
-Una orden cancelada se puede recuperar con **Undo cancel** en su página. La orden y sus líneas vuelven a Submitted o Confirmed, según estuvieran, con sus importes y los costes extra, de envío, aranceles e impuestos que tenían. Indicas un motivo y confirmas que el proveedor, agente o socio sabe que la orden sigue adelante; quién lo hizo, cuándo y por qué aparece en el **History** de la orden. Si los mismos productos ya están en una orden creada después de la cancelación, el diálogo enumera esas órdenes para no comprar dos veces. **Undo cancel** aparece en gris, con el motivo al pasar el cursor, cuando la orden se canceló porque sus líneas se movieron a otro proveedor o porque quedó vacía, cuando un producto de la orden está discontinuado o ya no está disponible, o cuando tiene una entrega de stock que no está cancelada. En las órdenes canceladas antes de que existiera **Undo cancel** no se guardaron los costes extra ni los impuestos: el diálogo muestra el total antiguo y te los pide, y entre los dos deben sumar lo que tenía la orden. Una orden antigua sin registro de lo que tenía antes de cancelarse no se puede recuperar.
+Una orden cancelada se puede recuperar con **Undo cancel** en su página. La orden y sus líneas vuelven a Submitted o Confirmed, según estuvieran, con los importes que tenían. Indicas un motivo y confirmas que el proveedor, agente o socio sabe que la orden sigue adelante; quién lo hizo, cuándo y por qué aparece en el **History** de la orden. Si los mismos productos ya están en una orden creada después de la cancelación, el diálogo enumera esas órdenes para no comprar dos veces. **Undo cancel** aparece en gris, con el motivo al pasar el cursor, cuando la orden se canceló porque sus líneas se movieron a otro proveedor o porque quedó vacía, cuando un producto de la orden está discontinuado o ya no está disponible, o cuando tiene una entrega de stock que no está cancelada. Una orden antigua sin registro de lo que tenía antes de cancelarse no se puede recuperar.
 
 ## La entrega de stock: registrar lo que llegó
 

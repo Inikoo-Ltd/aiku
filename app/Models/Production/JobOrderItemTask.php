@@ -240,6 +240,25 @@ class JobOrderItemTask extends Model
         return $this->isRecordedInKg() ? 'kg' : null;
     }
 
+    /**
+     * What the step counts, shown after its quantities (HELP-4672): null for kg, which the unit says.
+     */
+    public function unitName(): ?string
+    {
+        if ($this->isRecordedInKg()) {
+            return null;
+        }
+
+        return $this->recipeStep?->unit_name
+            ?: ($this->packSize() ? data_get($this->jobOrderItem?->artefact?->artefactFamily?->data, 'pack_name') : null)
+            ?: null;
+    }
+
+    public function pieceName(): ?string
+    {
+        return $this->isRecordedInKg() || $this->unitsPerArtefact() > 1 ? null : $this->jobOrderItem?->artefact?->unitName();
+    }
+
     public function packSize(): ?int
     {
         return $this->isRecordedInKg() ? null : ArtefactManufactureTask::packSize($this->unitsPerArtefact());

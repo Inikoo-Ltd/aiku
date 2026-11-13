@@ -60,6 +60,8 @@ use App\Actions\Procurement\OrgSupplier\StoreOrgSupplier;
 use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\AttachOrgSupplierProductToOrgStock;
 use App\Actions\Procurement\OrgSupplierProducts\StoreOrgSupplierProduct;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\CalculatePurchaseOrderTotalAmounts;
+use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\IndexPurchaseOrderOrgSupplierProducts;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrderStateToSubmitted;
 use App\Actions\Procurement\PurchaseOrderTransaction\StorePurchaseOrderTransaction;
@@ -75,6 +77,7 @@ use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Catalogue\Shop\UI\GetCatalogueOnItsWay;
 use App\Actions\Catalogue\UI\IndexCatalogueOnItsWay;
 use App\Actions\Maintenance\GoodsIn\RepairStockDeliveryPurchaseOrderLinks;
+use App\Actions\Maintenance\Procurement\RepairPurchaseOrderCosts;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Production\Production\StoreProduction;
 use App\Actions\HumanResources\Employee\StoreEmployee;
@@ -4742,4 +4745,170 @@ test('an agent opening a supplier sees its purchase orders and shipments for eve
     expect($draft->state)->toBe(PurchaseOrderStateEnum::IN_PROCESS);
 
     actingAs($this->adminGuest->getUser());
+});
+
+function pricedAgentPurchaseOrders(object $test, int $numberOfOrders): array
+{
+    $orgAgent = createFreshOrgAgent($test);
+
+    return collect(createAgentPurchaseOrders($test, $orgAgent, $numberOfOrders))->map(function (PurchaseOrder $order) {
+        $line = $order->purchaseOrderTransactions()->firstOrFail();
+        $line->update(['unit_cost' => 12.5, 'net_amount' => round(12.5 * (float) $line->quantity_ordered, 2)]);
+        CalculatePurchaseOrderTotalAmounts::run($order);
+
+        return $order->refresh();
+    })->prepend($orgAgent)->all();
+}
+
+test('a purchase order carries only what was ordered: its total is its items, and extras are neither shown nor taken (INI-237)', function () {
+    [, $order] = pricedAgentPurchaseOrders($this, 1);
+    $order->updateQuietly(['cost_extra' => 50, 'cost_shipping' => 30, 'cost_duties' => 4.5, 'cost_tax' => 2]);
+
+    CalculatePurchaseOrderTotalAmounts::run($order);
+    $order->refresh();
+
+    expect((float) $order->cost_items)->toBe(125.0)
+        ->and((float) $order->cost_total)->toBe(125.0);
+
+    UpdatePurchaseOrder::make()->action($order, ['cost_extra' => 99, 'cost_shipping' => 99, 'cost_duties' => 99, 'cost_tax' => 99], strict: false);
+
+    expect($order->refresh()->only(['cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax']))->toEqual(['cost_extra' => 50, 'cost_shipping' => 30, 'cost_duties' => 4.5, 'cost_tax' => 2]);
+
+    $costs = $this->get(route('grp.org.procurement.purchase_orders.show', [$order->organisation->slug, $order->slug]))->assertOk()->viewData('page')['props']['box_stats']['third_block'];
+
+    expect((float) $costs['items'])->toBe(125.0)
+        ->and((float) $costs['total'])->toBe(125.0)
+        ->and($costs)->not->toHaveKeys(['extra', 'shipping', 'duties', 'tax']);
+});
+
+test('the purchase order costs repair clears extras, puts items a costed delivery overwrote back to the order lines and keeps what each order carried, and writes nothing on a dry run (INI-236, INI-237)', function () {
+    [$orgAgent, $withExtras, $overwritten, $paid, $otherCurrency] = pricedAgentPurchaseOrders($this, 4);
+    $ids       = [$withExtras->id, $overwritten->id, $paid->id, $otherCurrency->id];
+    $ownItems  = fn (PurchaseOrder $order) => round((float) $order->purchaseOrderTransactions()->sum('net_amount'), 2);
+    $repair    = fn (bool $apply) => RepairPurchaseOrderCosts::run($apply, $ids)->keyBy('id');
+    $delivery  = StoreStockDelivery::make()->action($orgAgent, ['reference' => 'INI-237-'.uniqid(), 'date' => date('Y-m-d')], strict: false);
+    $delivery->purchaseOrders()->syncWithoutDetaching([$overwritten->id, $paid->id]);
+    $delivery->updateQuietly(['state' => StockDeliveryStateEnum::PLACED, 'placed_at' => now()]);
+
+    $withExtras->updateQuietly(['cost_extra' => 51, 'cost_shipping' => 30, 'cost_total' => $ownItems($withExtras) + 81, 'data' => []]);
+    $overwritten->updateQuietly(['cost_items' => 4743776, 'cost_shipping' => 885280.32, 'cost_total' => 5629056.32]);
+    $paid->updateQuietly(['cost_items' => 4743776, 'cost_total' => 4743776]);
+    $paid->depositPayments()->create([
+        'group_id'        => $paid->group_id,
+        'organisation_id' => $paid->organisation_id,
+        'currency_id'     => $paid->currency_id,
+        'amount'          => 10,
+        'date'            => now()->toDateString(),
+        'method'          => \App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum::CASH,
+    ]);
+
+    $otherCurrency->purchaseOrderTransactions()->firstOrFail()->updateQuietly(['currency_id' => Currency::where('id', '!=', $otherCurrency->currency_id)->value('id')]);
+    $itemsUnconverted = (float) $otherCurrency->cost_items;
+    $otherCurrency->updateQuietly(['cost_extra' => 10, 'cost_total' => $itemsUnconverted + 40 + 10]);
+
+    $dryRun = $repair(false);
+
+    expect($dryRun->keys()->all())->toEqualCanonicalizing($ids)
+        ->and($dryRun[$otherCurrency->id]['after'])->toEqual(['cost_items' => $itemsUnconverted, 'cost_total' => $itemsUnconverted + 40])
+        ->and($dryRun[$withExtras->id]['after'])->toEqual(['cost_items' => $ownItems($withExtras), 'cost_total' => $ownItems($withExtras)])
+        ->and($dryRun[$overwritten->id]['after'])->toEqual(['cost_items' => $ownItems($overwritten), 'cost_total' => $ownItems($overwritten)])
+        ->and($dryRun[$paid->id]['skipped'])->toBeTrue()
+        ->and((float) $withExtras->refresh()->cost_extra)->toBe(51.0)
+        ->and((float) $overwritten->refresh()->cost_items)->toBe(4743776.0)
+        ->and($withExtras->data)->not->toHaveKey(RepairPurchaseOrderCosts::SNAPSHOT_KEY);
+
+    $repair(true);
+    $withExtras->refresh();
+    $overwritten->refresh();
+    $paid->refresh();
+    $otherCurrency->refresh();
+
+    expect((float) $otherCurrency->cost_extra)->toBe(0.0)
+        ->and((float) $otherCurrency->cost_items)->toBe($itemsUnconverted)
+        ->and((float) $otherCurrency->cost_total)->toBe($itemsUnconverted + 40);
+
+    expect($withExtras->only(['cost_extra', 'cost_shipping', 'cost_duties', 'cost_tax']))->toEqual(['cost_extra' => 0, 'cost_shipping' => 0, 'cost_duties' => $withExtras->cost_duties, 'cost_tax' => 0])
+        ->and((float) $withExtras->cost_items)->toBe($ownItems($withExtras))
+        ->and((float) $withExtras->cost_total)->toBe($ownItems($withExtras))
+        ->and($withExtras->data[RepairPurchaseOrderCosts::SNAPSHOT_KEY]['cost_extra'])->toEqual(51)
+        ->and($withExtras->data[RepairPurchaseOrderCosts::SNAPSHOT_KEY]['cost_total'])->toEqual($ownItems($withExtras) + 81)
+        ->and((float) $overwritten->cost_items)->toBe($ownItems($overwritten))
+        ->and((float) $overwritten->cost_total)->toBe($ownItems($overwritten))
+        ->and((float) $overwritten->cost_shipping)->toBe(0.0)
+        ->and($overwritten->data[RepairPurchaseOrderCosts::SNAPSHOT_KEY]['cost_items'])->toEqual(4743776)
+        ->and((float) $paid->cost_items)->toBe(4743776.0)
+        ->and($paid->data)->not->toHaveKey(RepairPurchaseOrderCosts::SNAPSHOT_KEY)
+        ->and($repair(false)->keys()->all())->toBe([$paid->id]);
+});
+
+test('a purchase order line keeps the currency its amount is in, so the order items and total stay converted whatever happens to its product later (INI-247)', function () {
+    [, $order]  = pricedAgentPurchaseOrders($this, 1);
+    $firstLine  = $order->purchaseOrderTransactions()->firstOrFail();
+    $product    = $firstLine->supplierProduct;
+    $other      = Currency::where('id', '!=', $order->currency_id)->whereIn('code', ['USD', 'EUR', 'INR'])->firstOrFail();
+    $date       = '2019-04-11';
+    $hydrate    = fn () => \App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateTransactions::run($order->refresh());
+    $amounts    = fn () => array_map(fn ($amount) => round((float) $amount, 2), $order->refresh()->only(['cost_items', 'cost_total']));
+    $bothEqual  = fn (float $amount) => ['cost_items' => round($amount, 2), 'cost_total' => round($amount, 2)];
+
+    foreach ([$order->currency_id => 2.5, $other->id => 10] as $currencyId => $exchange) {
+        DB::table('currency_exchanges')->upsert(
+            ['currency_id' => $currencyId, 'date' => $date, 'exchange' => $exchange, 'source' => 'M', 'created_at' => now(), 'updated_at' => now()],
+            ['currency_id', 'date'],
+            ['exchange']
+        );
+    }
+    $rate = GetHistoricCurrencyExchange::run($other, $order->currency, Carbon::parse($date));
+    $order->updateQuietly(['date' => $date]);
+
+    expect($rate)->not->toBe(1.0)
+        ->and($firstLine->currency_id)->toBe($order->currency_id);
+
+    $product->updateQuietly(['currency_id' => $other->id, 'cost' => 12.5]);
+    $otherCurrencyLine = StorePurchaseOrderTransaction::make()->action(
+        $order->refresh(),
+        $product->historicSupplierProduct,
+        $this->orgStocks[1] ?? $this->orgStocks[0],
+        array_merge(PurchaseOrderTransaction::factory()->definition(), ['quantity_ordered' => 10])
+    );
+
+    expect($otherCurrencyLine->currency_id)->toBe($other->id)
+        ->and((float) $otherCurrencyLine->net_amount)->toBe(125.0)
+        ->and($firstLine->refresh()->currency_id)->toBe($order->currency_id)
+        ->and($amounts())->toBe($bothEqual(125 + 125 * $rate));
+
+    $hydrate();
+    expect($amounts())->toBe($bothEqual(125 + 125 * $rate));
+
+    $rewritten = [];
+    PurchaseOrder::updating(function (PurchaseOrder $updating) use (&$rewritten) {
+        $rewritten = array_merge($rewritten, array_keys($updating->getDirty()));
+    });
+    $hydrate();
+    expect($rewritten)->not->toContain('cost_items')->not->toContain('cost_total');
+
+    $product->updateQuietly(['currency_id' => $order->currency_id, 'deleted_at' => now()]);
+    CalculatePurchaseOrderTotalAmounts::run($order->refresh());
+    $hydrate();
+    expect($amounts())->toBe($bothEqual(125 + 125 * $rate));
+    $product->updateQuietly(['currency_id' => $other->id, 'deleted_at' => null]);
+
+    $fetchedLine = StorePurchaseOrderTransaction::make()->action(
+        $order->refresh(),
+        $product->historicSupplierProduct,
+        $this->orgStocks[0],
+        ['quantity_ordered' => 5, 'net_amount' => 50, 'currency_id' => $order->currency_id],
+        strict: false
+    );
+
+    expect($fetchedLine->currency_id)->toBe($order->currency_id);
+    $hydrate();
+    expect($amounts())->toBe($bothEqual(125 + 125 * $rate + 50));
+
+    $order->updateQuietly(['date' => '2019-04-12', 'cost_items' => 999, 'cost_total' => 999]);
+    \App\Actions\Helpers\CurrencyExchange\FetchCurrencyExchange::shouldRun()->andThrow(new Exception('provider down'));
+
+    $hydrate();
+    expect($amounts())->toBe($bothEqual(999))
+        ->and($order->number_purchase_order_transactions)->toBe(3);
 });

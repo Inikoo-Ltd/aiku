@@ -114,17 +114,13 @@ class StoreShopifyProduct extends RetinaAction
             return $this->storeVariant($portfolio, $logs, ['id' => $portfolio->platform_product_id]);
         }
 
-        if (blank($portfolio->sku)) {
-            $errorMessage = 'This product has no sku, so it can not be uploaded to Shopify';
-            UpdatePortfolio::run($portfolio, [
-                'errors_response' => $this->portfolioErrorResponse($errorMessage)
-            ]);
+        if (!$this->portfolioHasSkuOrRecordWhyNot($portfolio)) {
             UpdatePlatformPortfolioLog::run($logs, [
                 'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                'response' => $errorMessage
+                'response' => self::NO_SKU_MESSAGE
             ]);
 
-            return [false, $errorMessage];
+            return [false, self::NO_SKU_MESSAGE];
         }
 
         $listedWithSku = $this->unlinkedListingCarryingSku($client, $portfolio);

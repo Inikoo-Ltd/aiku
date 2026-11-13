@@ -418,3 +418,69 @@ test('scan ignores the unit_barcode and matches only the sko barcode', function 
     expect($matcher->match(collect([$deliveryNoteItem]), '5050000000079'))->toBeEmpty()
         ->and($matcher->match(collect([$deliveryNoteItem]), 'SKO-5050')->first())->toBe($deliveryNoteItem);
 });
+
+test('fill carton barcodes from the sko barcode or the agreed unit ean, never over a carton already set', function () {
+    $newStock = fn () => StoreStock::make()->action($this->group, array_merge(Stock::factory()->definition(), [
+        'state' => StockStateEnum::ACTIVE
+    ]));
+
+    $fromSko = $newStock();
+    $fromSko->update(['barcode' => 'CTN-SKO-0001']);
+
+    $fromUnit = $newStock();
+    StoreOrgStock::make()->action($this->organisation, $fromUnit)->updateQuietly(['unit_barcode' => '5050000000901']);
+
+    $alreadySet = $newStock();
+    $alreadySet->update(['barcode' => 'CTN-SKO-0002', 'carton_barcode' => 'HANDSET-C']);
+
+    $sharesUnitEan = $newStock();
+    StoreOrgStock::make()->action($this->organisation, $sharesUnitEan)->updateQuietly(['unit_barcode' => '5050000000901']);
+
+    $clashesWithSko = $newStock();
+    $clashesWithSko->update(['barcode' => 'CTN-SKO-0003']);
+    $newStock()->update(['barcode' => 'CTN-SKO-0003C']);
+
+    $orgData = \App\Models\SysAdmin\Organisation::factory()->definition();
+    data_set($orgData, 'code', 'acm2');
+    data_set($orgData, 'type', \App\Enums\SysAdmin\Organisation\OrganisationTypeEnum::SHOP);
+    $organisation2 = \App\Models\SysAdmin\Organisation::where('code', 'acm2')->first()
+        ?? \App\Actions\SysAdmin\Organisation\StoreOrganisation::make()->action($this->group, $orgData);
+    $disagrees = $newStock();
+    StoreOrgStock::make()->action($this->organisation, $disagrees)->updateQuietly(['unit_barcode' => '5050000000918']);
+    StoreOrgStock::make()->action($organisation2, $disagrees)->updateQuietly(['unit_barcode' => '5050000000925']);
+
+    $discontinued = $newStock();
+    $discontinued->update(['barcode' => 'CTN-SKO-0004', 'state' => StockStateEnum::DISCONTINUED]);
+
+    $olderBorrowsUnitEan = $newStock();
+    StoreOrgStock::make()->action($this->organisation, $olderBorrowsUnitEan)->updateQuietly(['unit_barcode' => '5050000000932']);
+    $newerOwnsSko = $newStock();
+    $newerOwnsSko->update(['barcode' => '5050000000932']);
+
+    $clashesWithOrgStock = $newStock();
+    $clashesWithOrgStock->update(['barcode' => 'CTN-SKO-0005']);
+    StoreOrgStock::make()->action($this->organisation, $newStock())->updateQuietly(['barcode' => 'CTN-SKO-0005C']);
+
+    $this->artisan('stocks:fill_carton_barcodes')->assertExitCode(0);
+    expect($fromSko->refresh()->carton_barcode)->toBeNull();
+
+    $this->artisan('stocks:fill_carton_barcodes --apply')->assertExitCode(0);
+
+    expect($fromSko->refresh()->carton_barcode)->toBe('CTN-SKO-0001C')
+        ->and($fromUnit->refresh()->carton_barcode)->toBe('5050000000901C')
+        ->and($alreadySet->refresh()->carton_barcode)->toBe('HANDSET-C')
+        ->and($sharesUnitEan->refresh()->carton_barcode)->toBeNull()
+        ->and($clashesWithSko->refresh()->carton_barcode)->toBeNull()
+        ->and($disagrees->refresh()->carton_barcode)->toBeNull()
+        ->and($discontinued->refresh()->carton_barcode)->toBeNull()
+        ->and($newerOwnsSko->refresh()->carton_barcode)->toBe('5050000000932C')
+        ->and($olderBorrowsUnitEan->refresh()->carton_barcode)->toBeNull()
+        ->and($clashesWithOrgStock->refresh()->carton_barcode)->toBeNull();
+
+    $orgStock = StoreOrgStock::make()->action($this->organisation, $fromSko);
+    UpdateOrgStock::make()->action($orgStock, ['carton_barcode' => 'EDITED-C']);
+    expect($fromSko->refresh()->carton_barcode)->toBe('EDITED-C');
+
+    UpdateOrgStock::make()->action($orgStock->refresh(), ['carton_barcode' => '']);
+    expect($fromSko->refresh()->carton_barcode)->toBeNull();
+});

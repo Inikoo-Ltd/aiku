@@ -150,7 +150,7 @@ return [
         'marketing' => [
             'mailshot*', 'outbox*', 'email_*', 'emails', 'dispatched_emails', 'ses_*', 'sender_emails', '*_has_dispatched_emails', '*_email_recipient*',
             'model_has_dispatched_emails', 'meta_tracking_events', 'whatsapp_*', 'traffic_source*', 'model_has_traffic_sources', 'seo_*', 'search_console_*', 'crux_records',
-            'crawl*', 'google_ads_media_assets', 'google_tag_manager_*', 'websites', 'website_*', 'webpages', 'webpage_*', 'web_block*', 'web_layout_templates',
+            'crawl*', 'google_ads_media_assets', 'google_tag_manager_*', 'websites', 'website_*', 'webpages', 'webpage_*', 'static_websites', 'static_website_*', 'static_webpages', 'web_block*', 'web_layout_templates',
             'model_has_web_blocks', 'model_has_contents', 'banners', 'slides', 'snapshots', 'redirects', 'external_links', 'announcement*',
             'marketing_*', 'customer_interests', 'customer_web_activities', 'customer_product_suggestions', 'ip_geolocations', 'search_logs', 'social_media_*',
         ],

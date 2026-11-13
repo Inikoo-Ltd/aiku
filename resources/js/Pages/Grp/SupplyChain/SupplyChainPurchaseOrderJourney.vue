@@ -9,7 +9,6 @@ import PurchaseOrderJourneyRibbon, { type JourneyRibbon, type JourneySegment } f
 import { capitalize } from "@/Composables/capitalize"
 import { ctrans } from "@/Composables/useTrans"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { useLocaleStore } from "@/Stores/locale"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from "@/types/route"
@@ -301,10 +300,8 @@ function toggleSelectAllOnPage(isSelected: boolean): void {
     selectedIds.value = isSelected ? new Set(deletableOnPage.value.map((ribbon) => ribbon.id)) : new Set()
 }
 
-const locale = useLocaleStore()
 const isDeleteDialogVisible = ref(false)
 const deleteCandidates = ref<JourneyRibbon[]>([])
-const candidatesWithExtraCosts = computed(() => deleteCandidates.value.filter((candidate) => candidate.extra_costs))
 const deleteError = ref<string | null>(null)
 const isDeleting = ref(false)
 
@@ -317,7 +314,12 @@ function previewDelete(candidates: JourneyRibbon[]): void {
 const stateLabels: Record<string, string> = {
     in_process: ctrans("In process"),
     submitted: ctrans("Submitted"),
-    confirmed: ctrans("Agreed")
+    confirmed: ctrans("Agreed"),
+    in_production: ctrans("Making It Happen"),
+    in_warehouse: ctrans("In warehouse"),
+    ready: ctrans("Ready to Roll"),
+    handed_over: ctrans("Clean Hand Over"),
+    arrived: ctrans("Homeward Bound")
 }
 
 function linesSummary(ribbon: JourneyRibbon): string {
@@ -657,7 +659,6 @@ function saveMark(date: string | null): void {
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("Placed by") }}</th>
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("Created") }}</th>
                             <th class="px-2 py-1.5 font-semibold">{{ ctrans("Items") }}</th>
-                            <th v-if="candidatesWithExtraCosts.length" class="px-2 py-1.5 text-right font-semibold">{{ ctrans("Extra costs") }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -669,20 +670,9 @@ function saveMark(date: string | null): void {
                             <td class="px-2 py-1.5 text-gray-700">{{ candidate.placed_by ?? ctrans("Unknown") }}</td>
                             <td class="whitespace-nowrap px-2 py-1.5 text-gray-700">{{ useFormatTime(candidate.created_at) }}</td>
                             <td class="whitespace-nowrap px-2 py-1.5 text-gray-700">{{ linesSummary(candidate) }}</td>
-                            <td v-if="candidatesWithExtraCosts.length" class="whitespace-nowrap px-2 py-1.5 text-right" :class="candidate.extra_costs ? 'font-medium text-red-600' : 'text-gray-400'">
-                                {{ candidate.extra_costs ? locale.currencyFormat(candidate.currency_code, candidate.extra_costs) : "—" }}
-                            </td>
                         </tr>
                     </tbody>
                 </table>
-            </div>
-            <div v-if="candidatesWithExtraCosts.length" class="flex gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="mt-0.5 shrink-0" fixed-width aria-hidden="true" />
-                <span>
-                    {{ candidatesWithExtraCosts.length === 1
-                        ? ctrans(":reference has extra costs (shipping, duties, tax or other). Deleting it deletes these costs too: they will be lost and can not be tracked anymore.", { reference: candidatesWithExtraCosts[0].reference })
-                        : ctrans(":count of these orders have extra costs (shipping, duties, tax or other). Deleting them deletes these costs too: they will be lost and can not be tracked anymore.", { count: candidatesWithExtraCosts.length }) }}
-                </span>
             </div>
             <p v-if="deleteCandidates.some((candidate) => candidate.state !== 'in_process')" class="text-xs text-amber-700">
                 {{ ctrans("Orders already submitted to the supplier are cancelled instead of deleted, so the supplier and the agent see them as cancelled.") }}

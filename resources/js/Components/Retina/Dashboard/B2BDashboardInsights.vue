@@ -108,6 +108,7 @@ interface Insights {
 const props = defineProps<{
     insights: Insights
     readOnly?: boolean
+    headingTarget?: string
 }>()
 
 const layout = inject("layout", {})
@@ -475,10 +476,12 @@ const overview = computed(() => {
 
 <template>
     <div class="space-y-6 text-gray-700">
-        <header>
-            <h2 class="text-2xl font-semibold tracking-tight text-gray-900">{{ heading.title }}</h2>
-            <p class="mt-1 text-gray-500">{{ heading.subtitle }}</p>
-        </header>
+        <Teleport defer :to="headingTarget" :disabled="!headingTarget">
+            <header>
+                <h2 class="text-2xl font-semibold tracking-tight text-gray-900">{{ heading.title }}</h2>
+                <p class="mt-1 text-gray-500">{{ heading.subtitle }}</p>
+            </header>
+        </Teleport>
 
         <div v-if="isLapsed && lastOrder" class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center">
             <p class="flex flex-1 items-center gap-3 text-sm font-medium text-gray-700">

@@ -6,6 +6,8 @@ use App\Actions\Chat\ChatSession\DownloadChatAttachment;
 use App\Actions\Chat\ChatSession\GetAgentChatNotifications;
 use App\Actions\Chat\ChatSession\GetAgentUnreadMessagesSummary;
 use App\Actions\Chat\ChatSession\GetChatActivity;
+use App\Actions\Chat\ChatSession\GetChatAssistantTranscript;
+use App\Actions\Chat\ChatSession\RateChatAssistantAnswer;
 use App\Actions\Chat\ChatSession\GetChatAgentByUserId;
 use App\Actions\Chat\ChatSession\GetChatAgents;
 use App\Actions\Chat\ChatSession\GetChatAgentSpecializations;
@@ -91,6 +93,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/meta/messages/{metaChatMessage}/reactions', SendWhatsappReaction::class)->name('meta.messages.reactions');
     Route::post('/meta/messages/{metaChatMessage}/translate', TranslateSingleMetaChatMessage::class)->name('meta.messages.translate');
     Route::get('/sessions/{chatSession:ulid}/activity', GetChatActivity::class)->name('sessions.activity')->withTrashed();
+    Route::get('/sessions/{chatSession:ulid}/assistant-transcript', GetChatAssistantTranscript::class)->name('sessions.assistant_transcript')->withTrashed();
+    Route::post('/sessions/{chatSession:ulid}/assistant-transcript/{message}/rating', RateChatAssistantAnswer::class)->name('sessions.assistant_transcript.rating')->withTrashed();
     Route::get('/sessions/{chatSession:ulid}/customer-profile', GetChatCustomerProfile::class)->name('sessions.customer_profile')->withTrashed();
     Route::get('/sessions/{chatSession:ulid}/customer-timeline', GetChatCustomerTimeline::class)->name('sessions.customer_timeline')->withTrashed();
     Route::get('/sessions/{chatSession:ulid}/tickets', GetChatSessionTickets::class)->name('sessions.tickets')->withTrashed();

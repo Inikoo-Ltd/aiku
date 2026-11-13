@@ -35,6 +35,12 @@ type Message = {
     body: string
     created_at: string
     follow_ups?: string[]
+    answer_kind_label?: string | null
+    sources?: { title: string; url: string | null }[]
+    hand_over_offer_label?: string | null
+    hand_over?: { route_label: string | null; in_hours: boolean | null; chat_route: RouteRef | null } | null
+    wrong?: { by: string | null; at: string | null } | null
+    feedback?: "up" | "down" | null
     flags?: string[]
     actions?: string[]
     latency_ms?: number | null
@@ -58,12 +64,15 @@ const props = defineProps<{
         language_code: string | null
         website: string | null
         customer: { name: string | null; reference: string | null; shop_type_label: string | null; country: string | null; route: RouteRef | null } | null
+        handed_over: boolean
         messages_count: number
         model_calls: number
         prompt_tokens: number
         completion_tokens: number
         cost: number | null
         model: string | null
+        wiped_at: string | null
+        challenges: { label: string; topic: string; quote: string | null }[]
     }
     messages: Message[]
 }>()
@@ -86,9 +95,14 @@ const summary = computed(() => [
     { label: ctrans("Started"), value: formatTime(props.conversation.created_at) },
     { label: ctrans("Status"), value: props.conversation.status_label },
     { label: ctrans("Messages"), value: String(props.conversation.messages_count ?? 0) },
+    { label: ctrans("Passed to a person"), value: props.conversation.handed_over ? ctrans("Yes") : ctrans("No") },
     { label: ctrans("AI cost"), value: locale.currencyFormatUnitCost(props.cost_currency, props.conversation.cost ?? 0) },
     { label: ctrans("Model"), value: props.conversation.model },
 ])
+
+const formatDate = (iso: string | null | undefined) => (iso ? useFormatTime(iso, { formatTime: "PP" }) : "")
+
+const visibleFlags = (message: Message) => (message.flags ?? []).filter((flag) => flag !== "handed_over")
 
 const detailLine = (message: Message) =>
     [
@@ -122,6 +136,15 @@ const detailLine = (message: Message) =>
                 <dd class="whitespace-nowrap text-gray-800" :class="item.value ? '' : 'text-gray-400'">{{ item.value || "—" }}</dd>
             </div>
         </dl>
+        <div v-if="conversation.challenges.length" class="mt-3 flex flex-wrap gap-2">
+            <span v-for="challenge in conversation.challenges" :key="`${challenge.label}-${challenge.topic}`" class="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800" :title="challenge.quote ?? undefined">
+                <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
+                {{ challenge.label }}: {{ challenge.topic }}
+            </span>
+        </div>
+        <p v-if="conversation.wiped_at" class="mt-2 text-xs text-gray-500">
+            {{ ctrans("The texts of this conversation were wiped on :date; only its figures are kept.", { date: formatDate(conversation.wiped_at) }) }}
+        </p>
     </div>
 
     <div class="mx-auto max-w-4xl space-y-4 p-4">
@@ -135,8 +158,23 @@ const detailLine = (message: Message) =>
 
             <div v-else class="w-full max-w-[90%]">
                 <div class="rounded-lg border border-gray-200 bg-white px-3 py-2">
-                    <div v-if="message.flags?.length" class="mb-1.5 flex flex-wrap gap-1">
-                        <span v-for="flag in message.flags" :key="flag" class="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">
+                    <div v-if="visibleFlags(message).length || message.answer_kind_label || message.hand_over_offer_label || message.hand_over || message.wrong || message.feedback" class="mb-1.5 flex flex-wrap gap-1">
+                        <span v-if="message.feedback === 'up'" class="inline-flex items-center gap-1 rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-800">{{ ctrans("Customer: helpful") }}</span>
+                        <span v-if="message.feedback === 'down'" class="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-800">{{ ctrans("Customer: not helpful") }}</span>
+                        <span v-if="message.answer_kind_label" class="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{{ message.answer_kind_label }}</span>
+                        <span v-if="message.hand_over_offer_label" class="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">
+                            <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
+                            {{ ctrans("Offered a person: :reason", { reason: message.hand_over_offer_label }) }}
+                        </span>
+                        <span v-if="message.hand_over" class="inline-flex items-center gap-1 rounded bg-green-50 px-1.5 py-0.5 text-xs text-green-800">
+                            <FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+                            {{ ctrans("Passed to a person: :route", { route: message.hand_over.route_label ?? "" }) }}<template v-if="message.hand_over.in_hours !== null"> · {{ message.hand_over.in_hours ? ctrans("in chat hours") : ctrans("outside chat hours") }}</template>
+                        </span>
+                        <span v-if="message.wrong" class="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-xs text-red-800">
+                            <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
+                            {{ ctrans("Marked as wrong by the chat team") }}<template v-if="message.wrong.by"> · {{ message.wrong.by }}</template><template v-if="message.wrong.at"> · {{ formatDate(message.wrong.at) }}</template>
+                        </span>
+                        <span v-for="flag in visibleFlags(message)" :key="flag" class="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-800">
                             <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width aria-hidden="true" />
                             {{ flag.replace(/_/g, " ") }}
                         </span>
@@ -150,6 +188,19 @@ const detailLine = (message: Message) =>
                     </div>
 
                     <div class="whitespace-pre-line text-sm text-gray-800">{{ message.body }}</div>
+
+                    <div v-if="message.sources?.length" class="mt-1.5 text-xs text-gray-500">
+                        {{ ctrans("Answered from:") }}
+                        <template v-for="(source, index) in message.sources" :key="index">
+                            <template v-if="index > 0">, </template>
+                            <a v-if="source.url" :href="source.url" target="_blank" rel="noopener" class="primaryLink">{{ source.title }}</a>
+                            <span v-else class="text-gray-700">{{ source.title }}</span>
+                        </template>
+                    </div>
+
+                    <div v-if="message.hand_over?.chat_route" class="mt-1.5 text-xs">
+                        <Link :href="routeHref(message.hand_over.chat_route) ?? ''" class="primaryLink">{{ ctrans("Open the chat") }}</Link>
+                    </div>
 
                     <div v-if="message.products?.length" class="mt-3 overflow-x-auto">
                         <table class="w-full text-xs">

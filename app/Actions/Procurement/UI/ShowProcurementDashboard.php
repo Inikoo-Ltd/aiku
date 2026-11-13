@@ -104,9 +104,10 @@ class ShowProcurementDashboard extends OrgAction
         }
 
         $stats = $organisation->procurementStats;
-        $openPurchaseOrders = $stats->number_purchase_orders_state_in_process
+        $agreedPurchaseOrders = collect(PurchaseOrderStateEnum::agreed())->sum(fn (PurchaseOrderStateEnum $state) => $stats->{'number_purchase_orders_state_'.$state->snake()});
+        $openPurchaseOrders   = $stats->number_purchase_orders_state_in_process
             + $stats->number_purchase_orders_state_submitted
-            + $stats->number_purchase_orders_state_confirmed;
+            + $agreedPurchaseOrders;
         $preparingDeliveries = $stats->number_stock_deliveries_state_in_process
             + $stats->number_stock_deliveries_state_confirmed
             + $stats->number_stock_deliveries_state_ready_to_ship;
@@ -123,7 +124,7 @@ class ShowProcurementDashboard extends OrgAction
         return array_filter([
             $this->dashboardCard(
                 __('Open purchase orders'),
-                __('Purchase orders in process, submitted or confirmed'),
+                __('Purchase orders in process, submitted or agreed and not booked in yet'),
                 'fal fa-clipboard-list',
                 $openPurchaseOrders,
                 'indigo',
@@ -131,9 +132,9 @@ class ShowProcurementDashboard extends OrgAction
                 [
                     $this->dashboardMetric(__('In process'), $stats->number_purchase_orders_state_in_process, 'grp.org.procurement.purchase_orders.index', ['elements[state]' => 'in_process']),
                     $this->dashboardMetric(__('Submitted'), $stats->number_purchase_orders_state_submitted, 'grp.org.procurement.purchase_orders.index', ['elements[state]' => 'submitted']),
-                    $this->dashboardMetric(__('Confirmed'), $stats->number_purchase_orders_state_confirmed, 'grp.org.procurement.purchase_orders.index', ['elements[state]' => 'confirmed']),
+                    $this->dashboardMetric(__('Agreed'), $agreedPurchaseOrders, 'grp.org.procurement.purchase_orders.index', ['elements[state]' => implode(',', PurchaseOrderStateEnum::agreedValues())]),
                 ],
-                ['elements[state]' => 'in_process,submitted,confirmed']
+                ['elements[state]' => implode(',', PurchaseOrderStateEnum::liveValues())]
             ),
             $this->dashboardCard(
                 __('Deliveries in progress'),
@@ -259,7 +260,7 @@ class ShowProcurementDashboard extends OrgAction
         }
 
         $toAnswer = PurchaseOrder::where('organisation_id', $this->organisation->id)
-            ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('state', PurchaseOrderStateEnum::open())
             ->whereExists(IndexPurchaseOrders::pendingLineAnswersQuery()->select(DB::raw(1)))
             ->count();
 

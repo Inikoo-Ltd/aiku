@@ -90,9 +90,14 @@ const askForListRememberedAt = (address: URL) => {
  * starts, so both answers travel together. Partial reloads and hover prefetches go nowhere. Back and
  * Forward restore the page from history without a visit, so they drop any answer asked for before
  * and ask for the list of the page they return to: its address as history keeps it, since the
- * inbox writes the open conversation into the address bar.
+ * inbox writes the open conversation into the address bar. A full load asks as the app starts, so
+ * the list travels while the inbox page's code downloads and draws; a page in a frame is not an inbox.
  */
 export const prefetchInboxListOnVisit = (router: typeof inertiaRouter) => {
+	if (window.self === window.top) {
+		askForListRememberedAt(new URL(window.location.href))
+	}
+
 	router.on("before", (event) => {
 		const visit = event.detail.visit
 

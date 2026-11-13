@@ -3051,6 +3051,12 @@ describe('partner shopping list', function () {
         $line(ShoppingListItemStateEnum::OPEN)->update(['preparing_at' => now()]);
         $tool([...$changeSent, 'accept' => ['change_submitted']])->assertOk()->assertSee('No sent line the hub has not started yet');
 
+        $line(ShoppingListItemStateEnum::OPEN)->update(['preparing_at' => null]);
+        $cancelSent = ['sent_lines' => [['sko' => $this->buyerOrgStock->code, 'quantity' => 0]]];
+        $tool($cancelSent)->assertHasErrors(['Dangerous']);
+        $tool([...$cancelSent, 'accept' => ['change_submitted']])->assertOk()->assertSee('"sent_lines_changed":1');
+        expect($line(ShoppingListItemStateEnum::OPEN))->toBeNull();
+
 
         $this->orgPartner->partner->update(['is_manufacturing_hub' => false]);
         $user->update(['can_use_mcp_place_orders' => false]);

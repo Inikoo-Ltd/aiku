@@ -255,7 +255,7 @@ const visitSearchPage = () => {
     }
 }
 
-const { assistant, askLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
+const { assistant, askLabel, buttonLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
 
 const askAssistant = () => {
     closeOverlay()
@@ -345,7 +345,7 @@ const askAssistant = () => {
                     />
                     <FontAwesomeIcon icon="far fa-search" class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fixed-width aria-hidden="true" />
                 </div>
-                <Button v-if="assistant" :label="askLabel" :title="askLabel" size="xs" class="iris-search-ask-mobile shrink-0 rounded-full" @click="askAssistant">
+                <Button v-if="assistant" :label="buttonLabel" :title="askLabel" :aria-label="askLabel" size="xs" class="iris-search-ask-mobile shrink-0 rounded-full" @click="askAssistant">
                     <template #icon>
                         <FontAwesomeIcon icon="far fa-sparkles" fixed-width aria-hidden="true" />
                     </template>

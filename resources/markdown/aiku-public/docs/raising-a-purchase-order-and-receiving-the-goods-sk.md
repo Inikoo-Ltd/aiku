@@ -29,6 +29,8 @@ Kým je v stave in process:
 
 Keď máte pridané všetko, čo chcete, stlačte **Submit**. Tým sa objednávka odošle ďalej a presunie sa do stavu **Submitted**.
 
+Súčet objednávky je tovar objednaný u dodávateľa. Doprava, clo a ďalšie doplnkové náklady na objednávke nie sú: zadávajú sa na stock delivery, kde sa tovar nacení.
+
 ## Dodávatelia, ktorí predávajú v inej jednotke
 
 Niektorí dodávatelia ponúkajú a fakturujú v jednotke, ktorá nie je naša - napríklad vonné tyčinky na **kg**, ktoré my počítame v 500 g vreckách. Na stránke **Edit** produktu dodávateľa nastavte **Supplier sells in** (kg, g, liter, meter, balenie, sada, tucet alebo kus) a **Our units in one supplier unit** (2 pre 500 g vrecko predávané na kg, 0,2 pre 5 kg balenie predávané na kg). Ak zvolíte kg alebo g a číslo necháte prázdne, aiku ho vypočíta z hmotnosti obchodnej jednotky a pomocný text poľa vás upozorní, keď sa zadané číslo s touto hmotnosťou nezhoduje.
@@ -58,7 +60,7 @@ Objednávka prechádza krátkym, premysleným reťazcom:
 
 Odtiaľto sa objednávka usadí sama, ako postupujú jej dodávky - na samotnej objednávke už nie je čo klikať. Nakoniec skončí v stave **Settled**, keď všetko dorazí, alebo **Not Received**/**Cancelled**, ak to nevyšlo.
 
-Zrušenú objednávku možno vrátiť späť tlačidlom **Undo cancel** na jej stránke. Objednávka a jej riadky sa vrátia do stavu Submitted alebo Confirmed, podľa toho, v akom boli, s ich sumami a doplnkovými nákladmi, nákladmi na dopravu, clom a daňou, ktoré mali. Uvediete dôvod a potvrdíte, že dodávateľ, agent alebo partner vie, že objednávka platí znova; kto to urobil, kedy a prečo, sa zobrazí v **History** objednávky. Ak sú rovnaké produkty už na objednávke vytvorenej po zrušení, dialóg tieto objednávky vypíše, aby sa nenakúpilo dvakrát. **Undo cancel** je sivé, s dôvodom po nabehnutí kurzorom, keď bola objednávka zrušená preto, že sa jej riadky presunuli k inému dodávateľovi alebo preto, že zostala prázdna, keď je produkt na nej vyradený alebo už nie je dostupný, alebo keď má stock delivery, ktorá nie je zrušená. Pri objednávkach zrušených skôr, ako existovalo **Undo cancel**, sa doplnkové náklady a daň neuložili: dialóg ukáže starý súčet a vypýta si ich, pričom spolu musia dať toľko, koľko objednávka mala. Staršiu objednávku bez záznamu o tom, čo mala pred zrušením, nemožno vrátiť späť.
+Zrušenú objednávku možno vrátiť späť tlačidlom **Undo cancel** na jej stránke. Objednávka a jej riadky sa vrátia do stavu Submitted alebo Confirmed, podľa toho, v akom boli, so sumami, ktoré mali. Uvediete dôvod a potvrdíte, že dodávateľ, agent alebo partner vie, že objednávka platí znova; kto to urobil, kedy a prečo, sa zobrazí v **History** objednávky. Ak sú rovnaké produkty už na objednávke vytvorenej po zrušení, dialóg tieto objednávky vypíše, aby sa nenakúpilo dvakrát. **Undo cancel** je sivé, s dôvodom po nabehnutí kurzorom, keď bola objednávka zrušená preto, že sa jej riadky presunuli k inému dodávateľovi alebo preto, že zostala prázdna, keď je produkt na nej vyradený alebo už nie je dostupný, alebo keď má stock delivery, ktorá nie je zrušená. Staršiu objednávku bez záznamu o tom, čo mala pred zrušením, nemožno vrátiť späť.
 
 ## Stock delivery: zaznamenanie toho, čo dorazilo
 

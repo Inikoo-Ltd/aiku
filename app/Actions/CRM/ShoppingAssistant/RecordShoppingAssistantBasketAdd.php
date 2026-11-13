@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\ShoppingAssistant;
 
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEntryPointEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantEventTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -18,7 +19,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
  * A product the assistant showed the customer in the last 24 hours and that they put in the basket
- * is recorded as `added` once per product per conversation, on the conversation that showed it last:
+ * is recorded as `added` once per product per conversation, on the conversation that showed it last
+ * (a chat before a Range Advisor panel day, as the report credits the chat):
  * from a card (single add) or as a new line of a bulk add. A quantity raised on such a line in the
  * basket is recorded as `increased`, once per product per conversation, and never counts as an add.
  * The storefront requests call afterResponse(): nothing is read while the website's switch is off,
@@ -69,6 +71,7 @@ class RecordShoppingAssistantBasketAdd
             ->whereIn('shopping_assistant_events.product_id', $lines->keys()->all())
             ->where('shopping_assistant_events.created_at', '>=', now()->subDay())
             ->orderBy('shopping_assistant_events.product_id')
+            ->orderByRaw('shopping_assistant_conversations.entry_point = ?', [ShoppingAssistantEntryPointEnum::PANEL->value])
             ->orderByDesc('shopping_assistant_events.id')
             ->selectRaw('distinct on (shopping_assistant_events.product_id) shopping_assistant_events.*')
             ->get();

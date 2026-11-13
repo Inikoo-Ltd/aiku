@@ -23,8 +23,7 @@ use App\Models\Comms\WhatsappSubscriber;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
-use App\Models\CRM\ShoppingAssistant\ShoppingAssistantEvent;
-use App\Models\CRM\ShoppingAssistant\ShoppingAssistantMessage;
+use App\Actions\CRM\ShoppingAssistant\WipeShoppingAssistantConversations;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Audit;
@@ -186,6 +185,7 @@ class AnonymiseCustomer extends OrgAction
             'warehouse_internal_notes' => null,
             'warehouse_public_notes'   => null,
             'rejected_notes'           => null,
+            'shop_profile'             => null,
             'accounting_reference'     => null,
             'contact_name_components'  => [],
             'location'                 => $location,
@@ -306,15 +306,7 @@ class AnonymiseCustomer extends OrgAction
     {
         DB::table('shopping_assistant_refusals')->where('customer_id', $customer->id)->update(['question' => null]);
 
-        $conversationIds = ShoppingAssistantConversation::where('customer_id', $customer->id)->pluck('id');
-        if ($conversationIds->isEmpty()) {
-            return;
-        }
-
-        ShoppingAssistantMessage::whereIn('shopping_assistant_conversation_id', $conversationIds)
-            ->update(['body' => null, 'tool_calls' => null, 'follow_ups' => null]);
-        ShoppingAssistantEvent::whereIn('shopping_assistant_conversation_id', $conversationIds)
-            ->update(['reason' => null]);
+        WipeShoppingAssistantConversations::run(ShoppingAssistantConversation::where('customer_id', $customer->id)->pluck('id')->all());
     }
 
     private function anonymiseDispatchedEmailRecipients(Customer $customer, array $webUserIds): void

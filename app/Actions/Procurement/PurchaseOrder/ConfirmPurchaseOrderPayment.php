@@ -13,12 +13,14 @@ use App\Actions\OrgAction;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderPaymentMethodEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
+use App\Models\Helpers\Currency;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\PurchaseOrderDepositPayment;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -55,10 +57,23 @@ class ConfirmPurchaseOrderPayment extends OrgAction
     }
 
     /**
-     * Records one deposit: a payment to the supplier towards the price of the products of the purchase order, without
-     * its extra costs, shipping and duties. Deposits add up until nothing is left to pay.
+     * The currencies a payment can be sent in: the purchase order's, then the organisation's, then US dollars and euros.
      *
-     * @param  array{ paid_at: string, amount: float|string, method: string, reference?: string|null, bank_statement?: UploadedFile|null, user_id?: int|null, reason?: string|null}  $modelData
+     * @return \Illuminate\Support\Collection<int, Currency>
+     */
+    public static function paymentCurrencies(PurchaseOrder $purchaseOrder): Collection
+    {
+        return collect([$purchaseOrder->currency, $purchaseOrder->organisation->currency])
+            ->merge(Currency::whereIn('code', ['USD', 'EUR'])->orderByDesc('code')->get())
+            ->filter()->unique('id')->values();
+    }
+
+    /**
+     * Records one deposit: a payment to the supplier towards the price of the products of the purchase order, without
+     * its extra costs, shipping and duties. Deposits add up until nothing is left to pay. The amount is always in the
+     * order's currency; money sent in another currency is kept beside it as the original amount.
+     *
+     * @param  array{ paid_at: string, amount: float|string, method: string, reference?: string|null, bank_statement?: UploadedFile|null, user_id?: int|null, reason?: string|null, original_amount?: float|string|null, original_currency_id?: int|null}  $modelData
      */
     public function handle(PurchaseOrder $purchaseOrder, array $modelData): PurchaseOrderDepositPayment
     {
@@ -74,12 +89,17 @@ class ConfirmPurchaseOrderPayment extends OrgAction
 
         $isBalance = SyncPurchaseOrderDepositPaid::paidAmount($purchaseOrder) > 0;
 
+        $originalCurrencyId = Arr::get($modelData, 'original_currency_id');
+        $originalAmount     = $originalCurrencyId && (int) $originalCurrencyId !== $purchaseOrder->currency_id ? Arr::get($modelData, 'original_amount') : null;
+
         $payment = $purchaseOrder->depositPayments()->create([
             'group_id'        => $purchaseOrder->group_id,
             'organisation_id' => $purchaseOrder->organisation_id,
             'currency_id'     => $purchaseOrder->currency_id,
             'date'            => $modelData['paid_at'],
             'amount'          => round((float) $modelData['amount'], 2),
+            'original_amount'      => $originalAmount ? round((float) $originalAmount, 2) : null,
+            'original_currency_id' => $originalAmount ? (int) $originalCurrencyId : null,
             'method'          => $modelData['method'],
             'reference'       => Arr::get($modelData, 'reference'),
             'media_id'        => $media?->id,
@@ -110,6 +130,8 @@ class ConfirmPurchaseOrderPayment extends OrgAction
             'bank_statement' => ['required_unless:method,cash', 'nullable', 'file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,webp,heic'],
             'user_id'        => ['sometimes', 'nullable', 'integer'],
             'reason'         => ['sometimes', 'nullable', 'string', 'max:500'],
+            'original_currency_id' => ['sometimes', 'nullable', 'integer', Rule::in(self::paymentCurrencies($this->purchaseOrder)->pluck('id')->all())],
+            'original_amount'      => ['nullable', 'numeric', 'gt:0', 'max:999999999999', Rule::requiredIf(fn () => $this->get('original_currency_id') && (int) $this->get('original_currency_id') !== $this->purchaseOrder->currency_id)],
         ];
     }
 

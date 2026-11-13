@@ -58,6 +58,7 @@ use App\Actions\Procurement\PurchaseOrder\ExportPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrder\PdfPackingInstructions;
 use App\Actions\Procurement\PurchaseOrder\OpenPurchaseOrderLabels;
 use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrder;
+use App\Actions\Procurement\PurchaseOrder\PdfPurchaseOrderProformaInvoice;
 use App\Actions\Procurement\PurchaseOrder\UI\EditPurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UI\GetAgentIncomingPurchaseOrdersCount;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderChasePanel;
@@ -148,6 +149,7 @@ Route::prefix('purchase-orders')->as('purchase_orders.')->group(function () {
     Route::get('{purchaseOrder}', ShowPurchaseOrder::class)->name('show');
     Route::get('{purchaseOrder}/edit', EditPurchaseOrder::class)->name('edit');
     Route::get('{purchaseOrder}/pdf/{filename?}', PdfPurchaseOrder::class)->name('pdf');
+    Route::get('{purchaseOrder}/proforma-invoice/{filename?}', PdfPurchaseOrderProformaInvoice::class)->name('proforma_invoice');
     Route::get('{purchaseOrder}/packing-instructions/{filename?}', PdfPackingInstructions::class)->name('packing_instructions');
     Route::get('{purchaseOrder}/labels', OpenPurchaseOrderLabels::class)->name('labels');
     Route::get('{purchaseOrder}/transactions-export', ExportPurchaseOrderTransactions::class)->name('transactions.export');

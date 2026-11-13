@@ -1963,3 +1963,69 @@ test('job orders from to-produce refuse ids beyond the integer range', function 
     expect(fn () => \App\Actions\Production\PartnerShippingList\StoreJobOrdersFromToProduceItems::make()->action($this->production, [1792585086231]))
         ->toThrow(\Illuminate\Validation\ValidationException::class);
 });
+
+test('an order line whose step is set to assign automatically goes straight to a job for that artisan, one job per order, and follows the order until started', function () {
+    createWarehouse();
+    [, , $shop] = createShop();
+    [, $product] = createProduct($shop);
+    $orgStock    = $product->orgStocks()->first();
+    $product->update(['code' => $orgStock->code.'-333ml']);
+    $step = stepTestManufactureTask($this->production, 'FILLH-'.uniqid(), 'Filling to order');
+    $fill = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => 'FILL-333ML-'.uniqid(), 'name' => 'Fill 333ml']);
+    $fill->update(['settings' => ['fills_size' => '333ml'], 'org_stock_id' => null]);
+    $fill->manufactureTasks()->sync([$step->id => ['position' => 1, 'units_per_artefact' => 1]]);
+
+    $filler = dayPlanOperator($this->organisation);
+    expect(fn () => \App\Actions\Production\ManufactureTask\UpdateManufactureTask::make()->action($step, ['auto_assign_to' => 'employee:999999999']))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+    \App\Actions\Production\ManufactureTask\UpdateManufactureTask::make()->action($step, ['auto_assign_to' => 'employee:'.$filler->id]);
+    expect($step->refresh()->data['auto_assign'])->toEqual(['type' => 'employee', 'id' => $filler->id]);
+
+    $customer = createCustomer($shop);
+    $order    = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, [
+        'reference'        => 'AUTO-'.uniqid(),
+        'date'             => date('Y-m-d'),
+        'customer_id'      => $customer->id,
+        'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+    ]);
+    $transaction = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order, $product->refresh()->historicAsset, array_merge(\App\Models\Ordering\Transaction::factory()->definition(), ['quantity_ordered' => 3]));
+    [$line] = \App\Actions\Production\PartnerShippingList\StoreToProduceItemsFromOrder::run($order->refresh());
+
+    $jobOrders = \App\Actions\Production\PartnerShippingList\AssignToProduceLinesAutomatically::run($order);
+    expect($jobOrders)->toHaveCount(1)
+        ->and($jobOrders[0]->employee_id)->toBe($filler->id)
+        ->and($jobOrders[0]->data['auto_assigned'])->toBeTrue()
+        ->and($line->refresh()->job_order_id)->toBe($jobOrders[0]->id)
+        ->and((int) $jobOrders[0]->jobOrderItems()->first()->quantity)->toBe(3)
+        ->and(\App\Actions\Production\PartnerShippingList\AssignToProduceLinesAutomatically::run($order))->toBeEmpty();
+
+    \App\Actions\Ordering\Transaction\UpdateTransaction::make()->action($transaction->fresh(), ['quantity_ordered' => 5]);
+    $newJob = \App\Models\Production\JobOrder::where('employee_id', $filler->id)->where('id', '>', $jobOrders[0]->id)->where('data->auto_assigned', true)->latest('id')->first();
+    expect($jobOrders[0]->refresh()->state)->toBe(\App\Enums\Production\JobOrder\JobOrderStateEnum::NOT_RECEIVED)
+        ->and($newJob)->not->toBeNull()
+        ->and((int) $newJob->jobOrderItems()->first()->quantity)->toBe(5)
+        ->and(\Illuminate\Support\Carbon::parse($newJob->date)->equalTo(\Illuminate\Support\Carbon::parse($jobOrders[0]->refresh()->date)))->toBeTrue();
+
+    ConfirmJobOrder::make()->action($newJob);
+    StartManufactureTaskSession::make()->action($this->guest->getUser(), $newJob->jobOrderItems()->first()->tasks()->first());
+    \App\Actions\Ordering\Transaction\UpdateTransaction::make()->action($transaction->fresh(), ['quantity_ordered' => 6]);
+    $extraLine = \App\Models\Procurement\PartnerShoppingListItem::where('transaction_id', $transaction->id)->where('id', '!=', $line->id)->first();
+    expect($newJob->refresh()->data)->not->toHaveKey('cancellation')
+        ->and((float) $extraLine->quantity)->toBe(1.0)
+        ->and($extraLine->job_order_id)->not->toBeNull()->not->toBe($newJob->id);
+
+    $extraJob = \App\Models\Production\JobOrder::find($extraLine->job_order_id);
+    \App\Actions\Production\JobOrder\CancelJobOrder::make()->action($extraJob, ['mode' => 'backlog', 'kind' => 'missing_label'], $this->guest->getUser());
+    \App\Actions\Ordering\Transaction\UpdateTransaction::make()->action($transaction->fresh(), ['quantity_ordered' => 7]);
+    expect((float) $extraLine->refresh()->quantity)->toBe(2.0)
+        ->and($extraLine->job_order_id)->toBeNull();
+
+    \App\Actions\Production\JobOrder\FillToOrder::make()->dismissForCancelledOrder($order->refresh());
+    expect($extraJob->refresh()->state)->toBe(\App\Enums\Production\JobOrder\JobOrderStateEnum::NOT_RECEIVED)
+        ->and($extraLine->refresh()->state)->toBe(\App\Enums\Procurement\ShoppingListItem\ShoppingListItemStateEnum::DISMISSED)
+        ->and($newJob->refresh()->data)->not->toHaveKey('cancellation');
+
+    \App\Actions\Production\ManufactureTask\UpdateManufactureTask::make()->action($step, ['auto_assign_to' => null]);
+    expect($step->refresh()->data)->not->toHaveKey('auto_assign');
+});

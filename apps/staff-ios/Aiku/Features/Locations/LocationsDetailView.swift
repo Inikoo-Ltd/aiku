@@ -62,7 +62,7 @@ struct LocationsDetailView: View {
                     .accessibilityIdentifier("locations.slot.\(slot.skoReference)")
                 }
                 SectionHeading("Location actions")
-                actions
+                actions(location)
             } else if store.isWaitingForSkos(in: location) {
                 HStack(spacing: 8) {
                     ProgressView()
@@ -81,9 +81,14 @@ struct LocationsDetailView: View {
                     ListRow("Pallets", subtitle: "None in this location", icon: .pallet, iconTone: .neutral)
                 } else {
                     ForEach(location.pallets) { pallet in
-                        ListRow(pallet.reference, subtitle: "\(pallet.customer) · Pallet · \(pallet.state)", icon: .pallet, iconTone: .neutral, showsChevron: true) {
-                            router.open(FulfilmentRoute.pallet(reference: pallet.reference))
-                        }
+                        ListRow(
+                            pallet.reference,
+                            subtitle: [pallet.customer, "Pallet", pallet.state].filter { !$0.isEmpty }.joined(separator: " · "),
+                            icon: .pallet,
+                            iconTone: .neutral,
+                            showsChevron: !store.isRemote,
+                            action: store.isRemote ? nil : { router.open(FulfilmentRoute.pallet(reference: pallet.reference)) }
+                        )
                         .accessibilityIdentifier("locations.pallet.\(pallet.reference)")
                         RowDivider()
                     }
@@ -91,9 +96,14 @@ struct LocationsDetailView: View {
                 if location.pallets.isEmpty {
                     RowDivider()
                 }
-                ListRow("Stock movements", subtitle: "History of this location", icon: .history, iconTone: .neutral) {
-                    router.open(InventoryRoute.stockHistory)
+                ListRow("Stock movements", subtitle: "History of this location", icon: .history, iconTone: .neutral, showsChevron: true) {
+                    if store.isRemote {
+                        router.open(LocationsRoute.movements(code: location.code))
+                    } else {
+                        router.open(InventoryRoute.stockHistory)
+                    }
                 }
+                .accessibilityIdentifier("locations.movements")
             }
             HelperText("Status is operational or broken. Moving and removing need location edit rights. SKOs are added to a location from the SKO page.")
         }
@@ -121,19 +131,28 @@ struct LocationsDetailView: View {
         .cardSurface()
     }
 
-    private var actions: some View {
-        VStack(spacing: 8) {
+    private func actions(_ location: LocationsLocation) -> some View {
+        let canAudit = store.canEditStocks(in: location.code)
+        let canMove = store.canEditLocations(in: location.code)
+        return VStack(spacing: 8) {
             HStack(spacing: 8) {
                 LocationsActionButton(title: "Audit", icon: .check) { sheet = .audit }
+                    .disabled(!canAudit)
                     .accessibilityIdentifier("locations.action.audit")
                 LocationsActionButton(title: "Move all SKOs", icon: .locations) { sheet = .moveAll }
+                    .disabled(!canMove)
                     .accessibilityIdentifier("locations.action.moveAll")
             }
             HStack(spacing: 8) {
                 LocationsActionButton(title: "Move some", icon: .locations) { sheet = .moveSome }
+                    .disabled(!canMove)
                     .accessibilityIdentifier("locations.action.moveSome")
                 LocationsActionButton(title: "Remove SKOs", kind: .danger) { sheet = .remove }
+                    .disabled(!canMove)
                     .accessibilityIdentifier("locations.action.remove")
+            }
+            if store.isRemote, !canAudit || !canMove {
+                HelperText(LocationsRightsText.detail(canAudit: canAudit, canMove: canMove))
             }
         }
     }
@@ -151,9 +170,11 @@ struct LocationsDetailView: View {
             LocationsMoveSheet(
                 source: location,
                 warehouse: store.warehouse,
-                startsWithSome: kind == .moveSome
-            ) { target, quantities, removeFromSource in
-                move(from: location.code, to: target, quantities: quantities, removeFromSource: removeFromSource)
+                startsWithSome: kind == .moveSome,
+                isRemote: store.isRemote,
+                searchTargets: { query in await store.searchMoveTargets(query, apiClient: apiClient) }
+            ) { target, quantities, removeFromSource, movesEverything in
+                move(from: location.code, to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: movesEverything)
             } onCancel: {
                 sheet = nil
             }
@@ -167,22 +188,65 @@ struct LocationsDetailView: View {
     }
 
     private func saveAudit(location: LocationsLocation, counts: [LocationsAuditCount]) {
-        let differences = store.audit(location: location.code, counts: counts)
         sheet = nil
-        toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+        guard store.isRemote else {
+            let differences = store.audit(location: location.code, counts: counts)
+            toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+            return
+        }
+        Task {
+            do {
+                let differences = try await store.auditRemotely(location: location.code, counts: counts, apiClient: apiClient)
+                toasts.show(LocationsToastText.audit(location: location.code, differences: differences))
+            } catch {
+                toasts.show("Audit not saved: \(error.localizedDescription)", tone: .danger)
+            }
+        }
     }
 
-    private func move(from source: String, to target: String, quantities: [String: Int], removeFromSource: Bool) {
-        let result = store.move(from: source, to: target, quantities: quantities, removeFromSource: removeFromSource)
+    private func move(from source: String, to target: String, quantities: [String: Int], removeFromSource: Bool, movesEverything: Bool) {
         sheet = nil
-        LocationsToastText.showMove(result, target: target, store: store, toasts: toasts)
+        guard store.isRemote else {
+            let result = store.move(from: source, to: target, quantities: quantities, removeFromSource: removeFromSource)
+            LocationsToastText.showMove(result, target: target, store: store, toasts: toasts)
+            return
+        }
+        Task {
+            do {
+                let moved = try await store.moveRemotely(from: source, to: target, quantities: quantities, removeFromSource: removeFromSource, movesEverything: movesEverything, apiClient: apiClient)
+                toasts.show(moved > 0 ? "\(LocationsFormat.units(moved)) moved to \(target)" : "Nothing to move", tone: moved > 0 ? .success : .warn)
+            } catch {
+                toasts.show("Move not saved: \(error.localizedDescription)", tone: .danger)
+            }
+        }
     }
 
     private func remove(_ references: Set<String>, from code: String) {
-        let result = store.remove(skos: references, from: code)
         sheet = nil
-        toasts.show("\(LocationsFormat.skos(result.removed)) removed from \(code)", actionTitle: "Undo") {
-            store.restore(result.snapshot)
+        guard store.isRemote else {
+            let result = store.remove(skos: references, from: code)
+            toasts.show("\(LocationsFormat.skos(result.removed)) removed from \(code)", actionTitle: "Undo") {
+                store.restore(result.snapshot)
+            }
+            return
+        }
+        Task {
+            do {
+                let removed = try await store.removeRemotely(skos: references, from: code, apiClient: apiClient)
+                toasts.show("\(LocationsFormat.skos(removed)) removed from \(code)")
+            } catch {
+                toasts.show("SKOs not removed: \(error.localizedDescription)", tone: .danger)
+            }
+        }
+    }
+}
+
+enum LocationsRightsText {
+    static func detail(canAudit: Bool, canMove: Bool) -> String {
+        switch (canAudit, canMove) {
+        case (false, false): "Auditing needs stock edit rights; moving and removing SKOs need location edit rights."
+        case (false, true): "Auditing needs stock edit rights."
+        default: "Moving and removing SKOs need location edit rights."
         }
     }
 }

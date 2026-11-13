@@ -86,6 +86,11 @@ class SendOutOfHoursReply implements ShouldBeUnique
         $details    = GetChatClaimDetails::run($chatSession, $this->lastAgentMessageAt($chatSession));
         $claimLines = $claimAsked ? null : $this->claimDetailsToAskFor($chatSession, $details);
 
+        if ($claimLines === []) {
+            SetChatSessionMetadata::run($chatSession, [self::CLAIM_KEY => now()->toISOString()]);
+            $claimLines = null;
+        }
+
         if ($replied && $claimLines === null) {
             return false;
         }
@@ -123,8 +128,10 @@ class SendOutOfHoursReply implements ShouldBeUnique
 
     /**
      * Null unless the customer is reporting a problem with goods: then the details the agent will
-     * need that they have not sent yet. Only Jev's cascade decides whether it is a claim (a chat
-     * model when Jev cannot be asked); what is missing is read from what they sent.
+     * need that they have not sent yet, none once they have sent it all. Only Jev's
+     * cascade decides whether it is a claim and whether they named the items and how many (a
+     * chat model when Jev cannot be asked); the order number and photos are read from what they
+     * sent.
      *
      * ponytail: every out of hours message re-reads the wait until a claim is found; store how far
      * it read if the model calls ever show up on the bill.
@@ -134,7 +141,13 @@ class SendOutOfHoursReply implements ShouldBeUnique
      */
     private function claimDetailsToAskFor(ChatSession|MetaChatSession $chatSession, array $details): ?array
     {
-        if (mb_strlen($details['text']) < 15 || !$this->isClaim($chatSession, $details['text'])) {
+        if (mb_strlen($details['text']) < 15) {
+            return null;
+        }
+
+        $claim = $this->readClaim($chatSession, $details['text']);
+
+        if (!$claim['claim']) {
             return null;
         }
 
@@ -142,17 +155,20 @@ class SendOutOfHoursReply implements ShouldBeUnique
 
         return array_values(array_filter([
             $details['order_reference'] ? null : __('your order number', [], $locale),
-            __('which items are affected and how many', [], $locale),
+            $claim['names_items'] ? null : __('which items are affected and how many', [], $locale),
             $details['photos'] ? null : __('photos of the items and of the box they came in', [], $locale),
         ]));
     }
 
-    private function isClaim(ChatSession|MetaChatSession $chatSession, string $text): bool
+    /**
+     * @return array{claim: bool, names_items: bool}
+     */
+    private function readClaim(ChatSession|MetaChatSession $chatSession, string $text): array
     {
         $turn = ClassifyChatTurn::forSession($chatSession);
 
         if ($turn) {
-            return $turn['claim'];
+            return ['claim' => $turn['claim'], 'names_items' => (bool) ($turn['names_items'] ?? false)];
         }
 
         $definitions = ChatTopicEnum::definitions();
@@ -168,22 +184,26 @@ class SendOutOfHoursReply implements ShouldBeUnique
         work in general, or following up on a claim we already agreed to, such as asking how or
         when a credit or refund will be paid.
 
+        "names_items" is true only when the customer says which products are affected and how
+        many of each, such as "2 of the 6 Moonstone candles arrived broken".
+
         Message:
         $excerpt
 
         Output JSON only, no code fence:
-        {"claim": false}
+        {"claim": false, "names_items": false}
         EOT;
 
         $response = AskToAi::run($prompt, config('chat.summary_model'));
 
         if (!is_string($response)) {
-            return false;
+            return ['claim' => false, 'names_items' => false];
         }
 
-        $data = json_decode(trim(preg_replace('/^```(?:json)?|```$/m', '', trim($response))), true);
+        $data  = json_decode(trim(preg_replace('/^```(?:json)?|```$/m', '', trim($response))), true);
+        $claim = is_array($data) && Arr::get($data, 'claim') === true;
 
-        return is_array($data) && Arr::get($data, 'claim') === true;
+        return ['claim' => $claim, 'names_items' => $claim && Arr::get($data, 'names_items') === true];
     }
 
     private function mayAnswerEmail(ChatSession $chatSession, ChatMessage $trigger): bool

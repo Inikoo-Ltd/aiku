@@ -2,7 +2,7 @@
 title: Práce s obrazovkou dílny
 summary: Průvodce pro řemeslníka - obrazovka Moje úkoly, seznam úkolů, který se sám aktualizuje, START a DONE, a co dělat, když vyrobíte míň, než bylo požadováno, a jak si dát pauzu.
 date: 2026-11-03
-source_date: 2026-11-03
+source_date: 2026-11-12
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -46,9 +46,15 @@ Každý řádek je jeden úkol na jednom výrobním příkazu:
 
 Vyrobili jste přesně tolik, kolik bylo požadováno? Tím je hotovo. Úkol se uzavře, výrobní příkaz je dokončen a sklad dostane informaci, že má co uložit - viz [Ukládání hotové výroby](/docs/putting-away-finished-production-cs).
 
+## Co čísla počítají
+
+Každé množství na obrazovce říká, co počítá: *0 / 120 bags*, *0 / 96 kg*. Název kusu pochází z produktu: manažer ho nastaví v poli **Unit name** (Název jednotky) na stránce úprav artefaktu, nebo jeho rodiny pro všechny produkty v ní. Bez názvu obrazovka říká *pieces*. Pole, do kterého píšete, je otázka se stejným slovem, **How many bags did you make?** (Kolik sáčků jste vyrobili?), takže číslo, které zadáte, odpovídá tomu, na co se obrazovka ptala. Produkt s názvem "Box of 3", jehož výroba se počítá v jednotlivých sáčcích, ukáže sáčky, ne krabice.
+
 ## Kroky počítané v baleních
 
-Některé kroky, hlavně balení, se počítají v baleních a ne v jednotlivých kusech: tácek s 8 koupelovými bombami se počítá jako 1. Obrazovka pak jantarově ukáže **Counted in PACKS of 8** (Počítá se v BALENÍCH po 8) a pole se jmenuje **Packs of 8 made** (Vyrobená balení po 8). Zadejte, kolik plných balení jste naplnili: u 56 bomb na 7 táccích zadejte 7, ne 56. Pod polem obrazovka ukáže, co vaše číslo znamená, *7 packs of 8 = 56 × ABB-06a*, a potvrzení to ukáže znovu. Přijímají se jen celá balení; jedinou výjimkou je přesný počet, který ještě zbývá, a ten vyplníte ťuknutím na velké číslo. Když musí manažer schválit nadvýrobu, okno před schválením ukáže přebytek v baleních i v kusech.
+Některé kroky, hlavně balení, se počítají v baleních a ne v jednotlivých kusech: tácek s 8 koupelovými bombami se počítá jako 1. Obrazovka pak ukáže obojí, *0 / 7 trays of 8 (56 bath bombs)*, jantarově napíše **Counted in trays of 8 (1 = 8 bath bombs of ABB-06a)** (Počítá se v táccích po 8) a zeptá se **How many trays of 8 did you make?** (Kolik táců po 8 jste vyrobili?). Zadejte, kolik plných balení jste naplnili: u 56 bomb na 7 táccích zadejte 7, ne 56. Pod polem obrazovka ukáže, co vaše číslo znamená, *7 trays of 8 = 56 bath bombs of ABB-06a*, a potvrzení to ukáže znovu. Přijímají se jen celá balení; jedinou výjimkou je přesný počet, který ještě zbývá, a ten vyplníte ťuknutím na velké číslo. Když musí manažer schválit nadvýrobu, okno před schválením ukáže přebytek v baleních i v kusech.
+
+Jak se balení jmenuje, nastavuje se v kroku receptury: **Counted in** (Počítá se v) v kroku receptury artefaktu (tácky, krabice). Když je prázdné, použije se **Pack name** (Název balení) na stránce úprav rodiny artefaktu, který platí pro všechny její produkty, a bez něj obrazovka řekne *packs*.
 
 ## Když vyrobíte míň, než bylo požadováno
 

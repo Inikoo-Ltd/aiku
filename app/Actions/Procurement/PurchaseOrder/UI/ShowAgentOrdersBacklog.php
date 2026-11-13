@@ -14,7 +14,6 @@ use App\Actions\Procurement\UI\ShowProcurementDashboard;
 use App\Actions\Procurement\WithAgentOrganisation;
 use App\Actions\Traits\Authorisations\WithProcurementAuthorisation;
 use App\Enums\GoodsIn\StockDelivery\StockDeliveryTypeEnum;
-use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStageEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\SupplyChain\Agent;
 use App\Models\SysAdmin\Organisation;
@@ -35,11 +34,11 @@ class ShowAgentOrdersBacklog extends OrgAction
     use WithProcurementAuthorisation;
 
     /**
-     * @var array<string, array{0: array<int, string>, 1: string, 2: string}> key => [progress buckets, label, icon]
+     * @var array<string, array{0: array<int, string>, 1: string, 2: string}> key => [purchase order states, label, icon]
      */
     public const array PURCHASE_ORDER_STAGES = [
         'po_submitted' => [['submitted'], 'To do', 'fal fa-paper-plane'],
-        'po_in_factory' => [['confirmed', 'at_factory'], 'In factory', 'fal fa-industry-alt'],
+        'po_in_factory' => [['confirmed', 'in_production', 'in_warehouse', 'ready', 'handed_over'], 'In factory', 'fal fa-industry-alt'],
     ];
 
     /**
@@ -60,31 +59,29 @@ class ShowAgentOrdersBacklog extends OrgAction
 
     public function handle(Agent $agent, Organisation $organisation): array
     {
-        $progress     = PurchaseOrderStageEnum::progressSql();
-        $factoryStage = PurchaseOrderStageEnum::factoryStageSql();
         $recentSince  = now()->subDays(self::RECENT_DAYS)->startOfDay();
         $inStock      = 'exists (select 1 from agent_warehouse_stocks where agent_warehouse_stocks.purchase_order_id = purchase_orders.id and agent_warehouse_stocks.quantity > 0 and '.AgentWarehouseStock::heldQuantitySql().' > 0)';
 
         $purchaseOrders = DB::table('purchase_orders')
             ->where('agent_id', $agent->id)
             ->whereNull('deleted_at')
-            ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED->value, PurchaseOrderStateEnum::CONFIRMED->value])
-            ->selectRaw("organisation_id, ($progress) as progress_stage, ($factoryStage) as factory_stage, count(*) as number, count(*) filter (where $inStock) as shared, count(*) filter (where submitted_at >= ?) as recent, coalesce(sum(number_current_purchase_order_transactions), 0) as lines", [$recentSince])
-            ->groupBy('organisation_id', 'progress_stage', 'factory_stage')
+            ->whereIn('state', self::purchaseOrderStates())
+            ->selectRaw("organisation_id, state, count(*) as number, count(*) filter (where $inStock) as shared, count(*) filter (where submitted_at >= ?) as recent, coalesce(sum(number_current_purchase_order_transactions), 0) as lines", [$recentSince])
+            ->groupBy('organisation_id', 'state')
             ->get();
 
         $factoryStages = [];
         $recent        = [];
         foreach ($purchaseOrders as $row) {
-            if (in_array($row->progress_stage, self::PURCHASE_ORDER_STAGES['po_submitted'][0])) {
+            if (in_array($row->state, self::PURCHASE_ORDER_STAGES['po_submitted'][0])) {
                 $recent[$row->organisation_id] = ($recent[$row->organisation_id] ?? 0) + (int) $row->recent;
             }
-            if (in_array($row->progress_stage, self::PURCHASE_ORDER_STAGES['po_in_factory'][0])) {
-                $factoryStages[$row->organisation_id][$row->factory_stage] = ($factoryStages[$row->organisation_id][$row->factory_stage] ?? 0) + (int) $row->number;
+            if (in_array($row->state, self::PURCHASE_ORDER_STAGES['po_in_factory'][0])) {
+                $factoryStages[$row->organisation_id][$row->state] = ($factoryStages[$row->organisation_id][$row->state] ?? 0) + (int) $row->number;
             }
         }
 
-        $purchaseOrders = $purchaseOrders->map(fn ($row) => [$row->organisation_id, collect(self::PURCHASE_ORDER_STAGES)->search(fn ($stage) => in_array($row->progress_stage, $stage[0])), (int) $row->number, (int) $row->lines, (int) $row->shared]);
+        $purchaseOrders = $purchaseOrders->map(fn ($row) => [$row->organisation_id, collect(self::PURCHASE_ORDER_STAGES)->search(fn ($stage) => in_array($row->state, $stage[0])), (int) $row->number, (int) $row->lines, (int) $row->shared]);
 
         $shipments = DB::table('stock_deliveries')
             ->where('agent_id', $agent->id)
@@ -95,7 +92,7 @@ class ShowAgentOrdersBacklog extends OrgAction
             ->get()
             ->map(fn ($row) => [$row->organisation_id, collect(self::SHIPMENT_STAGES)->search(fn ($stage) => in_array($row->state, $stage[0])), (int) $row->number, (int) $row->lines, 0]);
 
-        $openPurchaseOrder = "purchase_orders.deleted_at is null and purchase_orders.state in ('submitted', 'confirmed') and ($progress) in ('".implode("', '", collect(self::PURCHASE_ORDER_STAGES)->pluck(0)->flatten()->all())."')";
+        $openPurchaseOrder = "purchase_orders.deleted_at is null and purchase_orders.state in ('".implode("', '", self::purchaseOrderStates())."')";
         $warehouse         = DB::table('agent_warehouse_stocks')
             ->leftJoin('purchase_orders', 'purchase_orders.id', 'agent_warehouse_stocks.purchase_order_id')
             ->where('agent_warehouse_stocks.agent_id', $agent->id)
@@ -138,7 +135,7 @@ class ShowAgentOrdersBacklog extends OrgAction
                 ],
             ] : []),
             ...($key === 'po_in_factory' ? [
-                'breakdown' => collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn (string $label, string $stage) => [
+                'breakdown' => collect(self::factoryStateLabels())->map(fn (string $label, string $stage) => [
                     'value'        => $stages[$stage] ?? 0,
                     'tooltip'      => $label,
                     'route_target' => $this->drillDown($organisation, $key, $clientSlug, $stage),
@@ -173,10 +170,26 @@ class ShowAgentOrdersBacklog extends OrgAction
                 ])->all(),
             ])->all(),
             'totals'    => collect($keys)->mapWithKeys(fn (string $key) => [
-                $key => $cell($key, collect($counts)->sum(fn ($row) => $row[$key] ?? 0), collect($shared)->sum(fn ($row) => $row[$key] ?? 0), collect($lines)->sum(fn ($row) => $row[$key] ?? 0), null, collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn ($label, $stage) => collect($factoryStages)->sum(fn ($row) => $row[$stage] ?? 0))->all(), array_sum($recent)),
+                $key => $cell($key, collect($counts)->sum(fn ($row) => $row[$key] ?? 0), collect($shared)->sum(fn ($row) => $row[$key] ?? 0), collect($lines)->sum(fn ($row) => $row[$key] ?? 0), null, collect(self::factoryStateLabels())->map(fn ($label, $stage) => collect($factoryStages)->sum(fn ($row) => $row[$stage] ?? 0))->all(), array_sum($recent)),
             ])->all(),
             'row_totals' => [],
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function purchaseOrderStates(): array
+    {
+        return collect(self::PURCHASE_ORDER_STAGES)->pluck(0)->flatten()->all();
+    }
+
+    /**
+     * @return array<string, string> the states an order goes through while it counts as In factory, with their names
+     */
+    public static function factoryStateLabels(): array
+    {
+        return Arr::only(PurchaseOrderStateEnum::labels(), self::PURCHASE_ORDER_STAGES['po_in_factory'][0]);
     }
 
     private function metricGroup(string $key, string $label, array $stages): array
@@ -192,8 +205,8 @@ class ShowAgentOrdersBacklog extends OrgAction
                 'icon'    => $stage[2],
                 'tooltip' => $this->stageDescriptions()[$stageKey],
                 ...($stageKey === 'po_in_factory' ? [
-                    'breakdown_icons' => collect(PurchaseOrderStageEnum::factoryStageLabels())->map(fn (string $label, string $factoryStage) => [
-                        'icon'    => PurchaseOrderStageEnum::factoryStageIcons()[$factoryStage],
+                    'breakdown_icons' => collect(self::factoryStateLabels())->map(fn (string $label, string $factoryStage) => [
+                        'icon'    => PurchaseOrderStateEnum::stateIcon()[$factoryStage]['icon'],
                         'tooltip' => $label,
                     ])->values()->all(),
                 ] : []),
@@ -208,7 +221,7 @@ class ShowAgentOrdersBacklog extends OrgAction
     {
         return [
             'po_submitted'  => __('Purchase orders the client sent that you have not confirmed yet'),
-            'po_in_factory' => __('Purchase orders you confirmed, while the supplier makes the goods: not started, deposit paid, in production or made'),
+            'po_in_factory' => __('Purchase orders you agreed, until their container is on its way: agreed, being made, in your warehouse, ready to roll or handed over'),
             'wh_received'   => __('Purchase orders with goods in our warehouse, not in a shipment yet. When only part of an order arrived, it is also still counted at the supplier'),
             'sd_preparing'  => __('Shipments being put together'),
             'sd_ready'      => __('Shipments packed and waiting to leave'),
@@ -264,7 +277,7 @@ class ShowAgentOrdersBacklog extends OrgAction
                 'name'       => 'grp.org.agent.purchase_orders.index',
                 'parameters' => [
                     'organisation' => $organisation->slug,
-                    '_query'       => array_merge($query, $factoryStage ? ['elements[factory]' => $factoryStage] : ['elements[progress]' => implode(',', self::PURCHASE_ORDER_STAGES[$key][0])]),
+                    '_query'       => array_merge($query, ['elements[state]' => $factoryStage ?: implode(',', self::PURCHASE_ORDER_STAGES[$key][0])]),
                 ],
             ];
         }

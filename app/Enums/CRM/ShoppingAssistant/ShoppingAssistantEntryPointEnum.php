@@ -18,4 +18,5 @@ enum ShoppingAssistantEntryPointEnum: string
     case SEARCH = 'search';
     case CHAT = 'chat';
     case COMMAND = 'command';
+    case PANEL = 'panel';
 }

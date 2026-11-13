@@ -90,6 +90,8 @@ struct LocationsSlot: Identifiable, Hashable, Sendable {
     var unitWeightKg: Double
     var unitVolumeM3: Double
     var unitValue: Double
+    var remoteOrgStockID: Int? = nil
+    var remoteLinkID: Int? = nil
 
     var id: String { skoReference }
     var isEmpty: Bool { quantity <= 0 }
@@ -329,6 +331,10 @@ enum LocationsFormat {
 
     static func number(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(0...1)).locale(locale))
+    }
+
+    static func dateTime(_ date: Date) -> String {
+        date.formatted(.dateTime.day().month(.abbreviated).hour().minute().locale(locale))
     }
 
     static func shortDate(_ date: Date) -> String {

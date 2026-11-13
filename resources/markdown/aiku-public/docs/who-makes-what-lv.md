@@ -2,7 +2,7 @@
 title: Kurš ko izgatavo
 summary: Iemāci aiku, kuri amatnieki parasti izgatavo katru kategoriju vai artefaktu, lai saraksts To produce sakārtotos pats. Ieteikums, nekad ne slēdzene.
 date: 2026-09-08
-source_date: 2026-10-05
+source_date: 2026-11-12
 tags: production, crafts, hr
 category: production
 help_routes: grp.org.productions.show.crafts.artefact_departments, grp.org.productions.show.crafts.artefacts
@@ -46,6 +46,18 @@ Lielu rindu var dalīt. Darba uzdevumā blakus rindas daudzumam noklikšķini uz
 - Rindā redzams visu tās daļu kopējais progress un apakšdarbu tabula ar katra amatnieka mērķi, paveiktajām vienībām, statusu, laiku un atlīdzību.
 - Atver to pašu pogu vēlreiz, lai pārvietotu vienības vai nomainītu vārdus. Daļu, ko kāds jau sācis, nevar noņemt vai iestatīt zem jau izgatavotā daudzuma. Pirmā rinda vienmēr paliek.
 - Tiklīdz kaut kas no rindas ir pieņemts krājumos, to vairs nevar sadalīt.
+
+## Soļi, kas paši piešķir savus pasūtījuma darbus
+
+Dažu darbu pēc pasūtījuma veic viens cilvēks, piemēram, eļļu pildīšanu pēc pasūtījuma. Šādiem soļiem plānotāju var vispār izlaist. Atver soli sadaļā **Factory → Operations → Tasks** (Ražotne → Operācijas → Uzdevumi), nospied **edit** un laukā **Assign to order jobs automatically** (Automātiski piešķirt pasūtījuma darbiem) izvēlies vārdu vai darba zonu.
+
+- Kad pasūtījums ieliek sarakstā To produce produktu ar šo soli, aiku darbu izveido uzreiz: viens darbs uz pasūtījumu, ar visām šī pasūtījuma rindām šim solim.
+- Vārds saņem visus darbus. Darba zona katru darbu atdod zonas vismazāk noslogotajam amatniekam, kurš šodien ir pierakstījies darbā vai pēdējās nedēļas laikā ir bijis planšetē. Ja neviens neatbilst, rinda gaida sarakstā To produce kā parasti.
+- Planšetē darbi nāk no vecākā pasūtījuma uz jaunāko, un katra rinda rāda savu pasūtījumu, tāpēc amatnieks pabeidz vienu pasūtījumu pēc otra un tas var doties uz noliktavu.
+- Ja klients pasūtījumu izmaina vai atceļ, pirms kāds darbu ir sācis, darbs atgriežas un tiek izveidots no jauna pēc jaunā pasūtījuma. Kad kāds to ir sācis, tas paliek, kā ir.
+- Produkti, ko izgatavo partijās pa vairāk nekā vienai vienībai, paliek sarakstā To produce plānotājam, lai mazi pasūtījumi varētu dalīt partiju.
+- Krājumu papildināšanas rindas un partners rindas šādi nekad netiek piešķirtas.
+- Iztīri lauku, lai atgrieztos pie piešķiršanas ar roku. Rindas, kas jau ir darbā, paliek savā darbā.
 
 ## Kas tas nav
 

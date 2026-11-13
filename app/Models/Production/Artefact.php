@@ -91,6 +91,8 @@ class Artefact extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasAttachments;
 
+    public const UNIT_NAME_SQL = "coalesce(nullif(artefacts.settings->>'unit_name', ''), (select nullif(artefact_families.data->>'unit_name', '') from artefact_families where artefact_families.id = artefacts.artefact_family_id))";
+
     protected $casts = [
         'data'                   => 'array',
         'settings'               => 'array',
@@ -201,6 +203,14 @@ class Artefact extends Model implements Auditable, HasMedia
         return $this->hasOne(RawMaterial::class);
     }
 
+    /**
+     * What one artefact is called on the floor (bags, bars, bottles), set on the artefact or its family (HELP-4672).
+     */
+    public function unitName(): ?string
+    {
+        return data_get($this->settings, 'unit_name') ?: data_get($this->artefactFamily?->data, 'unit_name') ?: null;
+    }
+
     public function packedIn(): int
     {
         return max(1, (int) $this->orgStock?->packed_in);
@@ -226,7 +236,7 @@ class Artefact extends Model implements Auditable, HasMedia
     {
         return $this->belongsToMany(ManufactureTask::class, 'artefacts_manufacture_tasks')
             ->using(ArtefactManufactureTask::class)
-            ->withPivot('id', 'position', 'units_per_artefact', 'standard_rate', 'mix_batch_kg', 'blocks_later_steps', 'label', 'waits_for')
+            ->withPivot('id', 'position', 'units_per_artefact', 'standard_rate', 'mix_batch_kg', 'blocks_later_steps', 'label', 'waits_for', 'unit_name')
             ->orderByPivot('position')
             ->orderByPivot('id');
     }

@@ -2,7 +2,7 @@
 title: Darbs ar ražotnes ekrānu
 summary: Amatnieka rokasgrāmata - ekrāns Manu uzdevumi, darbu saraksts, kas atjaunojas pats, START un DONE, ko spiest, ja izgatavoji mazāk, nekā prasīts, un pārtraukuma ņemšana.
 date: 2026-11-03
-source_date: 2026-11-03
+source_date: 2026-11-12
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -46,9 +46,15 @@ Rinda ar zaļu ▶ un laiku ir tā, ar kuru strādā, un kad to sāki. Dzeltena 
 
 Izgatavoji visu, kas prasīts? Ar to viss. Uzdevums aizveras, darba uzdevums ir pabeigts, un noliktava saņem ziņu, ka ir kaut kas jāpieņem - skaties [Gatavās produkcijas pieņemšana noliktavā](/docs/putting-away-finished-production-lv).
 
+## Ko skaitļi skaita
+
+Katrs daudzums ekrānā norāda, ko tas skaita: *0 / 120 bags*, *0 / 96 kg*. Gabala nosaukums nāk no produkta: vadītājs to iestata laukā **Unit name** (Vienības nosaukums) artefakta rediģēšanas lapā vai tā saimes lapā visiem tajā esošajiem produktiem. Bez nosaukuma ekrāns rāda *pieces*. Lauks, kurā raksti, ir jautājums ar to pašu vārdu, **How many bags did you make?** (Cik maisiņu izgatavoji?), tāpēc ierakstītais skaitlis atbilst tam, ko ekrāns jautāja. Produkts ar nosaukumu "Box of 3", kura izgatavošanu skaita atsevišķos maisiņos, rāda maisiņus, nevis kastes.
+
 ## Soļi, ko skaita iepakojumos
 
-Dažus soļus, galvenokārt iepakošanu, skaita iepakojumos, nevis atsevišķos gabalos: paplāte ar 8 vannas bumbām skaitās kā 1. Ekrāns tad dzintara krāsā rāda **Counted in PACKS of 8** (Skaita IEPAKOJUMOS pa 8), un lauks saucas **Packs of 8 made** (Izgatavotie iepakojumi pa 8). Ieraksti, cik pilnus iepakojumus piepildīji: 56 vannas bumbām 7 paplātēs raksti 7, nevis 56. Zem lauka ekrāns rāda, ko tavs skaitlis nozīmē, *7 packs of 8 = 56 × ABB-06a*, un apstiprinājums to rāda vēlreiz. Pieņem tikai veselus iepakojumus; vienīgais izņēmums ir precīzs atlikušais skaits, ko ieraksti, pieskaroties lielajam skaitlim. Kad vadītājam jāapstiprina pārpalikums, logs pirms apstiprināšanas rāda to iepakojumos un gabalos.
+Dažus soļus, galvenokārt iepakošanu, skaita iepakojumos, nevis atsevišķos gabalos: paplāte ar 8 vannas bumbām skaitās kā 1. Ekrāns tad rāda abus, *0 / 7 trays of 8 (56 bath bombs)*, dzintara krāsā raksta **Counted in trays of 8 (1 = 8 bath bombs of ABB-06a)** (Skaita paplātēs pa 8) un jautā **How many trays of 8 did you make?** (Cik paplāšu pa 8 izgatavoji?). Ieraksti, cik pilnus iepakojumus piepildīji: 56 vannas bumbām 7 paplātēs raksti 7, nevis 56. Zem lauka ekrāns rāda, ko tavs skaitlis nozīmē, *7 trays of 8 = 56 bath bombs of ABB-06a*, un apstiprinājums to rāda vēlreiz. Pieņem tikai veselus iepakojumus; vienīgais izņēmums ir precīzs atlikušais skaits, ko ieraksti, pieskaroties lielajam skaitlim. Kad vadītājam jāapstiprina pārpalikums, logs pirms apstiprināšanas rāda to iepakojumos un gabalos.
+
+Kā iepakojumu sauc, nosaka receptes solī: **Counted in** (Skaita) artefakta receptes solī (paplātes, kastes). Ja tukšs, izmanto **Pack name** (Iepakojuma nosaukums) artefakta saimes rediģēšanas lapā, kas attiecas uz visiem tās produktiem, bet bez tā ekrāns rāda *packs*.
 
 ## Ja izgatavoji mazāk, nekā prasīts
 

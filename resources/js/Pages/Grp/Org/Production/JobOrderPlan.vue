@@ -17,6 +17,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
+import { progressLabel } from "@/Composables/packs"
 import { mixBatchesLabel } from "@/Composables/mixBatches"
 import { PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -32,6 +33,9 @@ type Step = {
     quantity_made: number
     quantity_required: number
     unit: string | null
+    pack_size: number | null
+    unit_name: string | null
+    piece_name: string | null
     mix_batch_kg: number | null
     employee_id: number | null
     only_for: number[]
@@ -165,7 +169,7 @@ function setPosition(item: PlanItem, position: number | null) {
                         fixed-width
                         aria-hidden="true" />
                     <span class="w-32 truncate" :title="step.name">{{ step.name }}</span>
-                    <span class="w-20 text-right tabular-nums text-gray-500" :title="mixBatchesLabel(step.quantity_required, step.mix_batch_kg) ?? undefined">{{ locale.number(step.quantity_made) }} / {{ locale.number(step.quantity_required) }}<template v-if="step.unit"> {{ step.unit }}</template></span>
+                    <span class="min-w-20 whitespace-nowrap text-right tabular-nums text-gray-500" :title="mixBatchesLabel(step.quantity_required, step.mix_batch_kg) ?? undefined">{{ progressLabel(step.quantity_made, step.quantity_required, step) }}</span>
                     <Select
                         v-if="can_edit && step.state !== 'done'"
                         :modelValue="step.employee_id"

@@ -6,6 +6,9 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
+use App\Actions\SupplyChain\SupplierAgreement\PublishSupplierAgreementVersion;
+use App\Actions\SupplyChain\SupplierAgreement\StoreSupplierAgreementVersion;
+use App\Actions\SupplyChain\SupplierAgreement\UpdateSupplierAgreementVersion;
 use App\Actions\Goods\ProductDevelopment\MoveProductDevelopmentToNextStage;
 use App\Actions\Goods\ProductDevelopment\StoreProductDevelopment;
 use App\Actions\Goods\ProductDevelopment\StoreProductDevelopmentComment;
@@ -614,6 +617,9 @@ use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderTransaction
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\MovePurchaseOrderTransactionsToSupplier;
 use App\Actions\Procurement\PurchaseOrderTransaction\UndoMovePurchaseOrderTransaction;
+use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderPullSources;
+use App\Actions\Procurement\PurchaseOrderTransaction\GetPurchaseOrderPullSourceLines;
+use App\Actions\Procurement\PurchaseOrderTransaction\PullPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrderTransaction\PackPurchaseOrderTransactions;
 use App\Actions\Procurement\PurchaseOrderTransaction\SetPurchaseOrderTransactionAgentUnitExpense;
@@ -1481,6 +1487,8 @@ Route::prefix('rental-agreement/{rentalAgreement:id}')->group(function () {
     Route::patch('', UpdateRentalAgreement::class)->name('rental-agreement.update');
 });
 
+Route::post('static-website-snapshot/{snapshot:id}/restore', App\Actions\Web\StaticWebsite\RestoreStaticWebsiteSnapshot::class)->name('static_website_snapshot.restore');
+
 Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
     Route::patch('publish', PublishBanner::class)->name('publish');
     Route::patch('layout', UpdateUnpublishedBannerSnapshot::class)->name('layout.update');
@@ -2004,6 +2012,9 @@ Route::post('supplier-product/{supplierProduct:id}/agreed-term', [StoreSupplierA
 Route::post('agent/{agent:id}/agreed-term', [StoreSupplierAgreedTerm::class, 'inAgent'])->name('agent.agreed_term.store');
 Route::patch('agent/{agent:id}/packing-spec-cut-off', UpdateAgentPackingSpecCutOff::class)->name('agent.packing_spec_cut_off.update');
 Route::patch('supplier-agreed-term/{supplierAgreedTerm:id}/withdraw', [WithdrawSupplierAgreedTerm::class, 'withdraw'])->name('supplier_agreed_term.withdraw');
+Route::post('supplier-agreement-versions', StoreSupplierAgreementVersion::class)->name('supplier_agreement_version.store');
+Route::patch('supplier-agreement-versions/{supplierAgreementVersion:id}', UpdateSupplierAgreementVersion::class)->name('supplier_agreement_version.update');
+Route::post('supplier-agreement-versions/{supplierAgreementVersion:id}/publish', PublishSupplierAgreementVersion::class)->name('supplier_agreement_version.publish');
 
 Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->group(function () {
     Route::post('note', [StoreProcurementNote::class, 'inStockDelivery'])->name('note.store');
@@ -2123,6 +2134,9 @@ Route::name('purchase-order.')->prefix('purchase-order/{purchaseOrder:id}')->gro
     Route::post('transactions/{purchaseOrderTransaction:id}/move', MovePurchaseOrderTransactionToSupplier::class)->name('transaction.move')->withoutScopedBindings();
     Route::post('transactions/move', MovePurchaseOrderTransactionsToSupplier::class)->name('transaction.move_many');
     Route::post('transactions/{purchaseOrderTransaction:id}/undo-move', UndoMovePurchaseOrderTransaction::class)->name('transaction.move.undo')->withoutScopedBindings();
+    Route::get('transactions/pull-sources', GetPurchaseOrderPullSources::class)->name('transaction.pull.sources');
+    Route::get('transactions/pull-lines', GetPurchaseOrderPullSourceLines::class)->name('transaction.pull.lines');
+    Route::post('transactions/pull', PullPurchaseOrderTransactions::class)->name('transaction.pull');
     Route::post('transactions/{purchaseOrderTransaction:id}/price-change', AskPurchaseOrderTransactionPriceChange::class)->name('transaction.price_change.ask')->withoutScopedBindings();
     Route::patch('transactions/{purchaseOrderTransaction:id}/price-change', AnswerPurchaseOrderTransactionPriceChange::class)->name('transaction.price_change.answer')->withoutScopedBindings();
     Route::post('transactions/{purchaseOrderTransaction:id}/quantity-change', AskPurchaseOrderTransactionQuantityChange::class)->name('transaction.quantity_change.ask')->withoutScopedBindings();

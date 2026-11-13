@@ -21,7 +21,7 @@ class SupplierPortalPurchaseOrdersResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $open = in_array($this->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true);
+        $open = in_array($this->state, PurchaseOrderStateEnum::open(), true);
 
         return [
             'id'                    => $this->id,

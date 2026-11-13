@@ -73,6 +73,7 @@ class GetChatSessions
             'carrier'         => ['sometimes', 'boolean'],
             'colleague'       => ['sometimes', 'boolean'],
             'ds_kind'         => ['sometimes', 'string', 'in:'.implode(',', FlagUrgentChatRequest::KINDS)],
+            'from_assistant'  => ['sometimes', 'boolean'],
             'unclaimed'       => ['sometimes', 'boolean'],
             'reply_state'     => ['sometimes', 'string', 'in:'.implode(',', self::REPLY_STATES)],
             'unread'          => ['sometimes', 'boolean'],
@@ -237,7 +238,8 @@ class GetChatSessions
                 ->orderByRaw(FlagUrgentChatRequest::waitingSql('chat_sessions'))
                 ->orderBy('waiting_since');
         } else {
-            $query->orderBy('last_message_at', self::ascending($filters) ? 'asc' : 'desc');
+            $direction = self::ascending($filters) ? 'asc' : 'desc';
+            $query->orderByRaw("last_message_at $direction nulls last")->orderBy('chat_sessions.id', $direction);
         }
 
 
@@ -302,6 +304,10 @@ class GetChatSessions
 
         if (!empty($filters['ds_kind'])) {
             $query->where('metadata->'.FlagUrgentChatRequest::KIND_KEY, $filters['ds_kind']);
+        }
+
+        if (!empty($filters['from_assistant'])) {
+            $query->whereNotNull('chat_sessions.shopping_assistant_conversation_id');
         }
 
         // Highlight view is additive: it keeps the normal status/assignment filters

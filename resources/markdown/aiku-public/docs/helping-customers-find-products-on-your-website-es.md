@@ -27,7 +27,7 @@ El asesor de gama es un asistente que sugiere qué productos debería tener en s
 En **AI shopping assistant** hay tres campos:
 
 - **AI shopping assistant** lo activa para esta web.
-- **Assistant name** (nombre del asistente) es el nombre que ven los clientes, de hasta 30 caracteres. Si se deja vacío, la web usa el nombre definido para todo el grupo, que es "Aura" salvo que alguien lo haya cambiado en **Sysadmin → Settings → AI shopping assistant**. Cámbialo allí para renombrar al asesor en todas las webs que no tengan nombre propio.
+- **Assistant name** (nombre del asistente) es el nombre que ven los clientes, de hasta 30 caracteres. Si se deja vacío, la web usa el nombre definido para todo el grupo, que es "Merlin" salvo que alguien lo haya cambiado en **Sysadmin → Settings → AI shopping assistant**. Cámbialo allí para renombrar al asesor en todas las webs que no tengan nombre propio.
 - **Monthly AI budget** (presupuesto mensual de IA) es lo máximo que la web puede gastar en respuestas en un mes natural, en dólares estadounidenses. Si se deja vacío, son US$30. La pequeña "i" junto al campo muestra lo gastado este mes.
 
 Antes de activarlo por primera vez en una tienda, pide al help desk que prepare el catálogo de esa tienda para ello. El asesor encuentra productos por su significado, no solo por las palabras del nombre, y eso requiere una preparación única de los productos de la tienda.
@@ -47,6 +47,19 @@ Antes de activarlo por primera vez en una tienda, pide al help desk que prepare 
 - Bajo la respuesta, botones con preguntas de seguimiento, un cuadro para escribir otra pregunta y **Start a new conversation** (empezar una conversación nueva).
 
 Las búsquedas normales por palabra o por código de producto no cambian y no se ralentizan.
+
+### El panel de sugerencias
+
+Los clientes con sesión iniciada también tienen el asesor dentro de su cuenta: una tarjeta **Preguntar a <nombre>** en el panel de la cuenta, junto a sus datos y las novedades por WhatsApp, para preguntar directamente, y su enlace a las sugerencias abre el asesor dentro de la cuenta, con la misma conversación, historial y panel que la página del asesor en la tienda. En la página del asesor, antes de preguntar nada, un panel titulado "Lo que <nombre> ha notado" muestra hasta cuatro pestañas de productos, todos en stock y a los precios del propio cliente:
+
+- **Le falta en su gama**: lo que más compran las tiendas como la suya y que nunca ha comprado, de las familias que ya compra. Un cliente sin pedidos ve en su lugar **Los más vendidos en tiendas como la suya**.
+- **Favoritos olvidados**: productos que pedía y que no ha pedido en un año.
+- **Packs de inicio**: hasta tres familias que nunca ha comprado, cada una con tres o cuatro de sus más vendidos y un botón **Añadir pack a la cesta**.
+- **Novedades para su tienda**: las novedades, primero las que ya compran las tiendas como la suya.
+
+Una pestaña vacía no se muestra. Cada lista tiene **Añadir todo a la cesta**. Si no sabemos el tipo de tienda del cliente, el panel le pide que se lo diga al asesor, que lo guarda. Se registra qué pestañas se miraron, los productos en los que se hizo clic y lo que se añadió a la cesta, un registro de panel por cliente y día.
+
+El asesor también recuerda los datos duraderos que el cliente le cuenta sobre su tienda, como que es una floristería, que también vende en línea o que no quiere incienso, y empieza cada conversación posterior sabiéndolos. Se muestran en el panel como "<nombre> recuerda" con un enlace **Olvidar esto** que los borra, y se eliminan cuando se anonimiza al cliente. Nunca guarda cifras. Puede empezar una conversación con un breve toque personal a partir de lo que sabe, como el nombre del cliente o la hora del día donde está; con las cuentas del personal, ese toque puede ser una broma ligera.
 
 ### Qué sabe y qué nunca dice
 
@@ -89,6 +102,23 @@ Para responder, escriba la respuesta para el cliente en la nota al marcar la tar
 
 Lo configuran los administradores del sistema en **Organisations**: se abre la organización, se pulsa **Edit** y se va a **Restock questions**. El interruptor **Ask purchasing when there is no reliable date** está activado por defecto; desactivado, el asesor solo responde con nuestros pedidos. **Restock questions go to** elige quién las recibe; si se deja vacío, van a los compradores de la organización.
 
+### Preguntas generales y paso a una persona
+
+Además de productos, el asistente responde preguntas sobre cómo comprar en la tienda: pago, entrega, devoluciones, pedidos y la cuenta del cliente. Responde a partir de las páginas de políticas de la propia tienda, los ajustes de la tienda y las notas de atención al cliente y los datos verificados que se guardan en los ajustes de chat de la tienda, y enlaza la página que ha usado. Nunca responde con conocimientos generales, y solo repite una cifra, como un plazo de entrega o una tarifa, cuando esa cifra está escrita en el texto que ha usado.
+
+Cuando no está seguro, o la pregunta trata del pedido, la factura o el reembolso del propio cliente, no adivina. Lo dice y ofrece preguntar al equipo, con un toque en un botón bajo la respuesta. En la página del asistente también hay siempre un enlace **Talk to a person** (hablar con una persona).
+
+Lo que ocurre al tocarlo depende del momento y de la web:
+
+- Dentro del horario de chat, con alguien disponible, se abre un chat en la ventana de chat de la web.
+- Si no, la pregunta llega como una conversación por correo. Al cliente se le dice cuándo vuelve el equipo y que la respuesta llegará por correo, y su respuesta a ese correo cae en la misma conversación.
+- Una tienda sin buzón de correo conectado recibe un chat web que se responde más tarde.
+- Una web sin chat y sin buzón de correo no ofrece ninguna persona.
+
+Para el equipo de chat: estos chats llegan a la bandeja y a las alertas de siempre, marcados con el nombre del asistente. Usa el filtro **From the AI assistant** (del asistente de IA) para ver solo esos. La conversación del asistente con el cliente está al principio del chat, así que ves lo que ya se dijo. Si una respuesta del asistente fue incorrecta, márcala como **Wrong answer** (respuesta incorrecta) ahí mismo. Estos chats no cuentan en las cifras de tiempo de respuesta ni de cobertura de IA del chat; se informan en el informe **AI Assistant**, que se explica más abajo.
+
+Para que el asistente responda más, abre el informe y mira **Questions the assistant could not answer** (preguntas que el asistente no supo responder). Añade en los ajustes de chat de la tienda una nota que responda a una de ellas, y el asistente la responderá la próxima vez, en aproximadamente una hora.
+
 ### Límites y qué se registra
 
 Cada cliente puede hacer 6 preguntas por minuto, 40 por hora y 120 al día. Una respuesta tarda unos segundos y la página espera. Cada respuesta es uso de IA de pago, así que activa el asesor donde quieras que los clientes lo usen.
@@ -127,7 +157,7 @@ Cada búsqueda registra qué sugerencias se ofrecieron y si el bloque llegó a v
 
 Ve a **Website** en el menú de la tienda, luego a **Analytics** en el menú superior y a **AI Assistant**. La página informa de una web. Quienes se ocupan de todas las webs del grupo también la encuentran en **WebOps → AI Assistant**, para todas las webs juntas y con un filtro de web.
 
-Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se abrió la conversación (cuadro de búsqueda, página de perfil o cuadro de chat), por tipo de tienda y por país. Cada cifra se compara con el periodo de la misma duración inmediatamente anterior, que nombra la línea bajo los filtros. Las conversaciones de las cuentas de personal quedan fuera.
+Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se abrió la conversación (cuadro de búsqueda, página de perfil, cuadro de chat o panel del asesor de gama; las cifras del panel solo se ven si lo eliges), por tipo de tienda y por país. Cada cifra se compara con el periodo de la misma duración inmediatamente anterior, que nombra la línea bajo los filtros. Las conversaciones de las cuentas de personal quedan fuera.
 
 ### La pestaña Overview
 
@@ -149,8 +179,36 @@ Arriba eliges las fechas y puedes acotar las cifras por idioma, por dónde se ab
 
 Las cifras principales y los pasos del embudo son enlaces: abren las conversaciones que hay detrás.
 
+**Answer ratings by customers** cuenta las respuestas que los clientes marcaron como útiles o no útiles con los pulgares que hay bajo cada respuesta, frente al periodo anterior. Las dos cifras son enlaces a las conversaciones que hay detrás.
+
+**Customer challenges to act on** es la lista de tareas para compras, producto y webmasters. Cada noche, la IA lee cada conversación que lleva dos horas sin mensajes y anota qué se interpuso entre el cliente y un pedido: un producto que no vendemos, algo agotado, el precio, el pedido mínimo o el tamaño de la caja, el envío o la entrega, un problema con la web, o cualquier otra cosa que el cliente describió. Una simple pregunta no es un obstáculo. Las etiquetas cuentan las conversaciones de cada tipo y las abren. La tabla muestra las 20 cosas más mencionadas, cada una con cuántas conversaciones, un ejemplo con las palabras del propio cliente y un enlace **Open** a la conversación más reciente. Las conversaciones sobre lo mismo en distintos idiomas se agrupan en una sola línea. Una conversación de hoy se lee esta noche; la línea sobre la tabla dice cuántas están esperando. Las búsquedas sin resultados están en **Search on the website**.
+
+### Preguntas generales y traspasos
+
+En la pestaña **Overview**, **General questions and passing to a person** (preguntas generales y paso a una persona) muestra cómo trata el asistente las preguntas sobre la tienda y los traspasos a una persona. Solo se cuentan las conversaciones posteriores a la llegada de esta función. Cada cifra se compara con el periodo anterior y cada una es un enlace a las conversaciones que hay detrás.
+
+- **General questions** (preguntas generales) cuenta las respuestas sobre la tienda (políticas, entrega, devoluciones, la cuenta) y **Answered by the assistant** (respondidas por el asistente) las que respondió él mismo, sin ofrecer una persona.
+- **Passed to a person** (pasadas a una persona) cuenta los clientes que tocaron la oferta de preguntar al equipo. **Hand-over rate** (tasa de traspaso) es ese número por pregunta general, con la proporción de conversaciones que acabaron en traspaso debajo.
+- **AI cost of these answers** (coste de IA de estas respuestas) es el coste solo de las respuestas generales. **Answers marked wrong** (respuestas marcadas como incorrectas) cuenta las respuestas que el equipo de chat marcó como incorrectas.
+- **Answered from** (respondido a partir de) muestra en qué se basaron las respuestas: páginas de políticas, ajustes de la tienda, guías, notas, datos verificados o reglas aprendidas, descripciones de familias, o nuestros propios datos.
+- **Why a person was offered** (por qué se ofreció una persona) compara, para cada motivo (no estaba seguro de la respuesta, una pregunta sobre su propio pedido, el cliente pidió una persona), cuántas veces se ofreció una persona y a cuántos clientes se les pasó.
+- **How it reached the team** (cómo llegó al equipo) reparte los traspasos entre chat en vivo, chat por correo respondido más tarde y chat web respondido más tarde.
+- **First reply from a person** (primera respuesta de una persona) muestra, dentro y fuera del horario de chat, cuántos traspasos hubo, a cuántos respondió una persona y la espera mediana hasta esa primera respuesta. Fuera del horario de chat la espera incluye la noche.
+- **After passing to a person** (tras pasar a una persona) muestra a cuántos se respondió, cuántos chats están cerrados y cuántos clientes hicieron un pedido en los 7 días siguientes al traspaso. Solo se pueden juzgar los traspasos de más de 7 días, y la cifra indica cuántos son.
+- **Questions the assistant could not answer** (preguntas que el asistente no supo responder) lista lo que preguntaron los clientes cuando el asistente no estaba seguro, con cuántas veces, los idiomas y la última vez, y un enlace **Open** (abrir) a la conversación más reciente. Las preguntas solo se agrupan cuando las palabras son las mismas, así que dos formas de preguntar lo mismo salen como dos líneas.
+
+En la pestaña **Conversations**, una columna muestra qué conversaciones se pasaron a una persona, y la transcripción muestra, bajo cada respuesta, de dónde salió, cuándo se ofreció una persona y el chat al que se pasó.
+
 ### La pestaña Conversations
 
 Una fila por conversación: cuándo empezó, el cliente, desde dónde se abrió, la primera pregunta, el número de mensajes, los productos mostrados, pulsados y añadidos, si siguió un pedido y por cuánto, y el coste de IA. Busca por cliente o por las palabras de una pregunta.
 
-Haz clic en la primera pregunta para leer la conversación. Bajo cada respuesta ves los productos que mostró con el motivo dado, cuáles pulsó, añadió y pidió el cliente, y las preguntas de seguimiento que se ofrecieron. Las conversaciones son solo para el personal: solo las personas que pueden ver la web en aiku pueden abrirlas.
+Haz clic en la primera pregunta para leer la conversación. Bajo cada respuesta ves los productos que mostró con el motivo dado, cuáles pulsó, añadió y pidió el cliente, las preguntas de seguimiento que se ofrecieron y la valoración del cliente. Arriba aparecen los obstáculos encontrados en la conversación. Las conversaciones son solo para el personal: solo las personas que pueden ver la web en aiku pueden abrirlas.
+
+## Resumen semanal y cuánto tiempo se guardan las conversaciones
+
+Cada lunes por la mañana (hora del Reino Unido) se envía un correo a las personas elegidas en **Sysadmin → Settings → AI shopping assistant → Weekly summary to**. Cubre de lunes a domingo de la semana anterior para todas las webs, comparado con la semana previa: conversaciones, clientes, pedidos e ingresos tras mostrar los productos, coste de IA, valoraciones de las respuestas, traspasos a una persona, los principales obstáculos de los clientes y las búsquedas sin resultados, con un enlace al informe. El correo no incluye citas de clientes; abre el informe para leerlas. Si no hay nadie elegido, no se envía ningún correo.
+
+Bajo la casilla donde escriben, los clientes ven que el asistente es una IA y puede equivocarse, que nuestro personal puede leer las conversaciones y que no deben compartir datos de pago.
+
+Lo que los clientes escribieron y lo que se les respondió se guarda durante 24 meses desde el último mensaje de la conversación, o durante los meses indicados en **Keep conversation texts for (months)** en los mismos ajustes. Después, cada noche se borran los textos, junto con las citas de ejemplo de los obstáculos y las preguntas rechazadas por los límites. Las cifras se mantienen, así que el informe sigue contando esas conversaciones, sus productos, pedidos y coste. Anonimizar a un cliente borra sus conversaciones al momento. Una conversación borrada lo indica en la parte superior de su página.

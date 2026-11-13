@@ -2,7 +2,7 @@
 title: Práca s obrazovkou dielne
 summary: Sprievodca pre remeselníka - obrazovka Moje úlohy, zoznam úloh, ktorý sa sám aktualizuje, START a DONE, a čo stlačiť, keď ste vyrobili menej, než sa žiadalo, a ako si dať prestávku.
 date: 2026-11-03
-source_date: 2026-11-03
+source_date: 2026-11-12
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -46,9 +46,15 @@ Riadok so zelenou šípkou ▶ a časom je ten, na ktorom práve pracujete, a ke
 
 Vyrobili ste všetko, čo sa žiadalo? Tým je to hotové. Úloha sa uzavrie, pracovný príkaz je dokončený a sklad dostane informáciu, že má niečo na uloženie - pozrite [Ukladanie hotovej výroby](/docs/putting-away-finished-production-sk).
 
+## Čo čísla počítajú
+
+Každé množstvo na obrazovke hovorí, čo počíta: <i>0 / 120 bags</i>, <i>0 / 96 kg</i>. Názov kusu pochádza z produktu: manažér ho nastaví v poli <b>Unit name</b> (Názov jednotky) na stránke úprav artefaktu, alebo jeho rodiny pre všetky produkty v nej. Bez názvu obrazovka hovorí <i>pieces</i>. Pole, do ktorého píšete, je otázka s rovnakým slovom, <b>How many bags did you make?</b> (Koľko vreciek ste vyrobili?), takže číslo, ktoré zadáte, zodpovedá tomu, na čo sa obrazovka pýtala. Produkt s názvom "Box of 3", ktorého výroba sa počíta v jednotlivých vreckách, ukáže vrecká, nie krabice.
+
 ## Kroky, ktoré sa počítajú v baleniach
 
-Niektoré kroky, najmä balenie, sa počítajú v baleniach a nie v jednotlivých kusoch: tácka s 8 bombami do kúpeľa sa počíta ako 1. Obrazovka vtedy jantárovou farbou ukáže <b>Counted in PACKS of 8</b> (Počíta sa v BALENIACH po 8) a pole sa volá <b>Packs of 8 made</b> (Vyrobené balenia po 8). Zadajte, koľko plných balení ste naplnili: pri 56 bombách na 7 táckach zadajte 7, nie 56. Pod poľom obrazovka ukáže, čo vaše číslo znamená, <i>7 packs of 8 = 56 × ABB-06a</i>, a potvrdenie to ukáže znova. Prijímajú sa len celé balenia; jedinou výnimkou je presný počet, ktorý ešte zostáva, a ten vyplníte ťuknutím na veľké číslo. Keď musí manažér schváliť nadvýrobu, okno ukáže nadbytok v baleniach aj v kusoch ešte pred schválením.
+Niektoré kroky, najmä balenie, sa počítajú v baleniach a nie v jednotlivých kusoch: tácka s 8 bombami do kúpeľa sa počíta ako 1. Obrazovka vtedy ukáže obe čísla, <i>0 / 7 trays of 8 (56 bath bombs)</i>, jantárovou farbou napíše <b>Counted in trays of 8 (1 = 8 bath bombs of ABB-06a)</b> (Počíta sa v táckach po 8) a opýta sa <b>How many trays of 8 did you make?</b> (Koľko tácok po 8 ste vyrobili?). Zadajte, koľko plných balení ste naplnili: pri 56 bombách na 7 táckach zadajte 7, nie 56. Pod poľom obrazovka ukáže, čo vaše číslo znamená, <i>7 trays of 8 = 56 bath bombs of ABB-06a</i>, a potvrdenie to ukáže znova. Prijímajú sa len celé balenia; jedinou výnimkou je presný počet, ktorý ešte zostáva, a ten vyplníte ťuknutím na veľké číslo. Keď musí manažér schváliť nadvýrobu, okno ukáže nadbytok v baleniach aj v kusoch ešte pred schválením.
+
+Ako sa balenie volá, sa nastavuje v kroku receptúry: <b>Counted in</b> (Počíta sa v) v kroku receptúry artefaktu (tácky, krabice). Ak je prázdne, použije sa <b>Pack name</b> (Názov balenia) na stránke úpravy rodiny artefaktu, ktorý platí pre všetky jej produkty, a bez neho obrazovka povie <i>packs</i>.
 
 ## Keď ste vyrobili menej, než sa žiadalo
 

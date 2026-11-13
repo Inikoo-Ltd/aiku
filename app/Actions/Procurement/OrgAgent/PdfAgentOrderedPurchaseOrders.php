@@ -57,7 +57,7 @@ class PdfAgentOrderedPurchaseOrders extends OrgAction
 
         $totals = $sections
             ->flatMap(fn (array $section) => $section['lines']->map(fn (PurchaseOrderTransaction $line) => [
-                'currency' => $line->supplierProduct?->currency?->code ?? $section['purchaseOrder']->currency->code,
+                'currency' => $line->currencyCodeIn($section['purchaseOrder']),
                 'amount'   => (float) $line->net_amount,
             ]))
             ->groupBy('currency')

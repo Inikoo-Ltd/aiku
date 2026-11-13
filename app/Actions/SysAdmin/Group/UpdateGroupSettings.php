@@ -57,6 +57,13 @@ class UpdateGroupSettings extends OrgAction
         if (Arr::has($modelData, 'shopping_assistant_name')) {
             data_set($modelData, 'settings.shopping_assistant.name', trim((string) Arr::pull($modelData, 'shopping_assistant_name')) ?: null);
         }
+        if (Arr::has($modelData, 'shopping_assistant_weekly_summary_user_ids')) {
+            data_set($modelData, 'settings.shopping_assistant.weekly_summary_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'shopping_assistant_weekly_summary_user_ids') ?? [])));
+        }
+        if (Arr::has($modelData, 'shopping_assistant_retention_months')) {
+            $months = Arr::pull($modelData, 'shopping_assistant_retention_months');
+            data_set($modelData, 'settings.shopping_assistant.retention_months', is_numeric($months) ? (int) $months : null);
+        }
         if (Arr::has($modelData, 'printnode_api_key')) {
             data_set($modelData, 'settings.printnode.apikey', Arr::pull($modelData, 'printnode_api_key'));
         }
@@ -125,6 +132,9 @@ class UpdateGroupSettings extends OrgAction
             ],
             'staff_chat_quick_replies'          => ['sometimes', 'nullable', 'string', 'max:1000'],
             'shopping_assistant_name'           => ['sometimes', 'nullable', 'string', 'max:30'],
+            'shopping_assistant_weekly_summary_user_ids'   => ['sometimes', 'nullable', 'array', 'max:20'],
+            'shopping_assistant_weekly_summary_user_ids.*' => ['integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)->where('status', true)],
+            'shopping_assistant_retention_months'          => ['sometimes', 'nullable', 'integer', 'min:1', 'max:120'],
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],

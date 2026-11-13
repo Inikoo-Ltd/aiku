@@ -36,10 +36,20 @@ class IndexBankTransactionsToReview extends OrgAction
 
     public const array SCOPES = ['review', 'unmatched', 'dismissed'];
 
+    public const array PERIODS = ['90d', '1y', 'all'];
+
     private string $scope = 'review';
 
-    public function handle(Organisation $organisation, string $scope = 'review', $prefix = null): LengthAwarePaginator
+    private string $period = '90d';
+
+    public function handle(Organisation $organisation, string $scope = 'review', string $period = '90d', $prefix = null): LengthAwarePaginator
     {
+        $since = match ($period) {
+            'all'   => null,
+            '1y'    => now()->subYear(),
+            default => now()->subDays(90),
+        };
+
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('bank_transactions.reference', $value)
@@ -57,6 +67,7 @@ class IndexBankTransactionsToReview extends OrgAction
             ->where('bank_transactions.direction', BankTransactionDirectionEnum::IN)
             ->where('bank_transactions.status', BankTransactionStatusEnum::BOOKED)
             ->whereNull('bank_transactions.payment_id')
+            ->when($since, fn ($query) => $query->where('bank_transactions.booked_at', '>=', $since))
             ->whereIn('bank_transactions.match_state', match ($scope) {
                 'unmatched' => [BankTransactionMatchStateEnum::UNMATCHED],
                 'dismissed' => [BankTransactionMatchStateEnum::DISMISSED],
@@ -90,9 +101,10 @@ class IndexBankTransactionsToReview extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($organisation, $request);
-        $this->scope = in_array($request->query('scope'), self::SCOPES, true) ? $request->query('scope') : 'review';
+        $this->scope  = in_array($request->query('scope'), self::SCOPES, true) ? $request->query('scope') : 'review';
+        $this->period = in_array($request->query('period'), self::PERIODS, true) ? $request->query('period') : '90d';
 
-        return $this->handle($organisation, $this->scope);
+        return $this->handle($organisation, $this->scope, $this->period);
     }
 
     public function htmlResponse(LengthAwarePaginator $bankTransactions, ActionRequest $request): Response
@@ -109,6 +121,7 @@ class IndexBankTransactionsToReview extends OrgAction
                 'canEdit'        => $request->user()->authTo("accounting.{$this->organisation->id}.edit"),
                 'organisationId' => $this->organisation->id,
                 'scope'          => $this->scope,
+                'period'         => $this->period,
                 'data'        => BankTransactionsToReviewResource::collection($bankTransactions),
             ]
         )->table($this->tableStructure());

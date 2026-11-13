@@ -62,6 +62,7 @@ class StoreJobOrdersFromToProduceItems extends OrgAction
                 'batch_code'  => $item->batch_code,
                 'expiry_date' => $item->expiry_date?->format('Y-m-d'),
                 'after'       => fn (JobOrder $jobOrder) => $item->update(['job_order_id' => $jobOrder->id]),
+                'order'       => $item->transaction?->order?->reference,
                 'fill'        => $artefact->org_stock_id ? null : [
                     'to_produce_id' => $item->id,
                     'oil'           => $item->orgStock->code,

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\UI\SysAdmin;
 
+use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Actions\RetinaAction;
 use App\Http\Resources\CRM\CustomerResource;
 use Inertia\Inertia;
@@ -33,7 +34,8 @@ class ShowRetinaEmailManagement extends RetinaAction
     public function handle(ActionRequest $request): Response
     {
 
-        $customer = $request->user()->customer;
+        $customer      = $request->user()->customer;
+        $whatsappOptIn = GetRetinaWhatsappOptInData::isOfferedIn($this->shop) ? GetRetinaWhatsappOptInData::run($customer, $this->website) : null;
 
         return Inertia::render(
             'EditModel',
@@ -62,7 +64,20 @@ class ShowRetinaEmailManagement extends RetinaAction
                                         'customer' => CustomerResource::make($customer)->getArray(),
                                     ],
                                 ]
-                        ]
+                        ],
+                        ...($whatsappOptIn ? [[
+                            'title'  => __('WhatsApp'),
+                            'label'  => __('WhatsApp'),
+                            'icon'   => 'fal fa-mobile-android-alt',
+                            'fields' => [
+                                'whatsapp_optin' => [
+                                    'type'         => 'whatsapp_optin',
+                                    'full'         => true,
+                                    'noSaveButton' => true,
+                                    'optin'        => $whatsappOptIn,
+                                ],
+                            ],
+                        ]] : []),
                     ],
                     "args"      => [
                         "updateRoute" => [

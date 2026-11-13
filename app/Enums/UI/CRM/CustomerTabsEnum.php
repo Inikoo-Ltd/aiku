@@ -22,6 +22,7 @@ enum CustomerTabsEnum: string
     case JOURNEY             = 'journey';
     case RETINA_DASHBOARD    = 'retina_dashboard';
     case REORDERS            = 'reorders';
+    case MERLIN              = 'merlin';
 
     case HISTORY             = 'history';
     case ATTACHMENTS         = 'attachments';
@@ -93,6 +94,10 @@ enum CustomerTabsEnum: string
             CustomerTabsEnum::REORDERS => [
                 'title' => __('Reorders'),
                 'icon'  => 'fal fa-repeat',
+            ],
+            CustomerTabsEnum::MERLIN => [
+                'title' => __('Merlin'),
+                'icon'  => 'fal fa-hat-wizard',
             ],
             CustomerTabsEnum::FAVOURITES => [
                 'title' => __('Favourites'),

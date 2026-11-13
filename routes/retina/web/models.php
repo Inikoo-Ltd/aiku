@@ -60,6 +60,7 @@ use App\Actions\Retina\CRM\StoreRetinaFavourite;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerComms;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
+use App\Actions\Retina\CRM\WhatsappOptIn\DismissRetinaWhatsappOptIn;
 use App\Actions\Retina\CRM\WhatsappOptIn\SubscribeRetinaCustomerToWhatsappNewsletter;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
@@ -228,6 +229,7 @@ Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->whe
 });
 
 Route::post('whatsapp-newsletter/subscribe', SubscribeRetinaCustomerToWhatsappNewsletter::class)->name('whatsapp_newsletter.subscribe')->middleware('throttle:10,1');
+Route::post('whatsapp-newsletter/dismiss', DismissRetinaWhatsappOptIn::class)->name('whatsapp_newsletter.dismiss')->middleware('throttle:10,1');
 
 
 Route::name('appointment.')->prefix('appointment/{appointment:id}')->whereNumber('appointment')->group(function () {

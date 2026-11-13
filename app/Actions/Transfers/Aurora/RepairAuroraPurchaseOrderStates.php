@@ -74,7 +74,7 @@ class RepairAuroraPurchaseOrderStates
         $fixed = 0;
 
         PurchaseOrder::where('organisation_id', $organisation->id)
-            ->whereIn('state', [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED])
+            ->whereIn('state', PurchaseOrderStateEnum::open())
             ->whereNotNull('source_id')
             ->chunkById(200, function ($purchaseOrders) use ($organisation, $auroraStates, $dryRun, &$fixed) {
                 foreach ($purchaseOrders as $purchaseOrder) {
@@ -88,7 +88,7 @@ class RepairAuroraPurchaseOrderStates
                     $expectedDeliveryState = $this->mapPurchaseOrderDeliveryState($auroraState);
 
                     $modelData = [];
-                    if ($expectedState !== $purchaseOrder->state) {
+                    if ($expectedState !== $purchaseOrder->state && !($expectedState === PurchaseOrderStateEnum::CONFIRMED && $purchaseOrder->state->isAgreed())) {
                         $modelData['state'] = $expectedState;
                     }
                     if ($expectedDeliveryState !== $purchaseOrder->delivery_state) {

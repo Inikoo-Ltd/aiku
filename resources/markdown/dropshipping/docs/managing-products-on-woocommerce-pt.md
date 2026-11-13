@@ -83,7 +83,7 @@ A tua <b>Pricing Policy</b> em <b>Manage Sales Channel</b> define o preço dos p
 Há três formas de remover um produto. Escolhe com cuidado, porque o botão de caveira também apaga o produto da tua loja WooCommerce.
 
 - O botão de caveira numa linha de produto pede-te confirmação, depois remove o produto da tua lista e, se estiver ligado, apaga-o permanentemente da tua loja WooCommerce. Não vai para o lixo do WooCommerce.
-- <b>Unlink & Delete</b> (depois de marcares produtos) remove os produtos marcados da tua lista, mas mantém-nos na tua loja WooCommerce. Deixam de estar ligados, por isso deixamos de atualizar o seu stock.
+- <b>Unlink & Delete</b> (depois de marcares produtos) remove os produtos marcados da tua lista e apaga também os ligados da tua loja WooCommerce. Para manteres um produto na tua loja WooCommerce, não o uses: os produtos não ligados mantêm-se na tua loja.
 - <b>Unlink</b> (depois de marcares produtos) mantém os produtos na tua lista e no WooCommerce, mas quebra a ligação. Deixamos de atualizar o seu stock. Podes associá-los de novo mais tarde.
 
 Se apagares um produto ligado no WooCommerce tu mesmo, também o removemos da tua lista.

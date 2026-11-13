@@ -71,6 +71,7 @@ class GetArtefactManufactureTasks
                 'code'               => $task->code,
                 'name'               => $task->name,
                 'label'              => $task->pivot->label,
+                'unit_name'          => $task->pivot->unit_name,
                 'step_name'          => ArtefactManufactureTask::stepName($task->name, $task->pivot->label),
                 'waits_for'          => $task->pivot->waits_for,
                 'task_standard_rate' => $task->standard_rate,

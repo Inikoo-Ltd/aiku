@@ -86,7 +86,7 @@ Non puoi modificare nome, descrizione o prezzo di un prodotto Wix da <b>My Produ
 Per scollegare o rimuovere prodotti, spuntali prima nell'elenco:
 
 - <b>Unlink (N)</b> mantiene il prodotto su Wix ma smette di collegarlo al nostro. Smettiamo di aggiornarne le scorte e i suoi ordini smettono di arrivarci.
-- <b>Unlink & Delete (N)</b> scollega i prodotti e li rimuove da <b>My Products</b>. I prodotti restano nel tuo negozio Wix; eliminali lì se non li vuoi più.
+- <b>Unlink & Delete (N)</b> rimuove i prodotti da <b>My Products</b> ed elimina anche quelli collegati dal tuo negozio Wix. Per tenere un prodotto nel tuo negozio Wix, non usarlo: i prodotti non collegati restano nel tuo negozio.
 
 Il cestino su una riga è diverso: rimuove quel prodotto da <b>My Products</b> e lo elimina anche dal tuo negozio Wix.
 

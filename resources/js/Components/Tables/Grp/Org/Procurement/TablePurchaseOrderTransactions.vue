@@ -820,8 +820,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
                         v-if="hasMovableRows"
                         :label="ctransChoice('Move :count item|Move :count items', rowsSelectedForMove.length)"
                         :tooltip="rowsSelectedForMove.length
-                            ? ctrans('The supplier can not make them: give the selected products to another supplier of the agent')
-                            : ctrans('Tick the products to give to another supplier of the agent')"
+                            ? ctrans('Move the selected products to another purchase order, of this supplier or another supplier of the agent')
+                            : ctrans('Tick the products to move to another purchase order')"
                         type="tertiary"
                         size="xs"
                         :disabled="!rowsSelectedForMove.length"
@@ -1224,8 +1224,8 @@ function orgStockRoute(item: { org_stock_id?: number }) {
 
                 <Button
                     v-if="canCancelItems && item.moveRoute"
-                    :label="ctrans('Move supplier')"
-                    :tooltip="ctrans('The supplier can not make it: give it to another supplier of the agent')"
+                    :label="ctrans('Move')"
+                    :tooltip="ctrans('Move it to another purchase order, of this supplier or another supplier of the agent')"
                     :icon="faExchange"
                     type="tertiary"
                     size="xs"

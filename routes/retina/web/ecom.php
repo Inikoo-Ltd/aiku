@@ -25,6 +25,7 @@ use App\Actions\Retina\Ecom\Orders\ShowRetinaEcomOrderReview;
 use App\Actions\Retina\Dropshipping\DeliveryNotes\UI\PdfRetinaDropshippingPackingList;
 use App\Actions\Retina\Ecom\Orders\ShowRetinaPreOrderPayment;
 use App\Actions\Retina\Ecom\PreviouslyOrdered\UI\IndexRetinaEcomPreviouslyOrdered;
+use App\Actions\Retina\Ecom\RangeAdvisor\UI\ShowRetinaEcomRangeAdvisor;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('basket')->as('basket.')->group(function () {
@@ -49,6 +50,8 @@ Route::prefix('orders')->name('orders.')->group(function () {
     Route::get('{order}/pay-balance', ShowRetinaPreOrderPayment::class)->name('pay_balance');
     Route::get('{order}/proforma-invoice', EcomPdfProformaInvoice::class)->name('proforma_invoice.download');
 });
+
+Route::get('range-advisor', ShowRetinaEcomRangeAdvisor::class)->name('range_advisor.show');
 
 Route::get('packing-lists/{deliveryNote}/pdf', PdfRetinaDropshippingPackingList::class)->name('packing_lists.pdf');
 

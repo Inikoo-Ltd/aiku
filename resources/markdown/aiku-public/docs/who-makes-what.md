@@ -1,7 +1,7 @@
 ---
 title: Who makes what
 summary: Teach aiku which artisans usually make each category or artefact, so the To produce list sorts itself into people's piles. A recommendation, never a lock.
-date: 2026-10-05
+date: 2026-11-12
 tags: production, crafts, hr
 category: production
 help_routes: grp.org.productions.show.crafts.artefact_departments, grp.org.productions.show.crafts.artefact_families, grp.org.productions.show.crafts.artefacts
@@ -45,6 +45,18 @@ A big line can be shared. On the job order, next to the quantity of a line, clic
 - The line shows the total progress of all its parts, and a table of sub-jobs with each artisan's target, units done, status, time and reward.
 - Open the same button again to move units or change names. A part someone already started cannot be removed or set below what is already made. The first row always stays.
 - Once anything from the line has been received into stock, it can no longer be split.
+
+## Steps that assign their order jobs automatically
+
+Some work is done to order by one person, such as filling oils to order. For those steps you can skip the planner altogether. Open the step under **Factory → Operations → Tasks**, press edit, and pick a name or a work area in **Assign to order jobs automatically**.
+
+- When an order puts a product with that step on To produce, aiku makes the job right away: one job per order, with all of that order's lines for the step.
+- A name gets every job. A work area gives each job to the least busy artisan of the area who is clocked in today or was on the tablet in the last week. If nobody qualifies, the line waits on To produce as usual.
+- On the tablet the jobs come oldest order first, and each line shows its order, so the artisan finishes one order at a time and it can go to the warehouse.
+- If the customer changes or cancels the order before anyone starts the job, the job goes back and is made again from the new order. Once someone has started it, it stays as it is.
+- Products made in batches of more than one stay on To produce for the planner, so small orders can share a batch.
+- Restock lines and lines from partners are never assigned this way.
+- Clear the field to go back to assigning by hand. Lines already on a job keep their job.
 
 ## What it is not
 

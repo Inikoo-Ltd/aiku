@@ -133,6 +133,14 @@ class EditArtefact extends OrgAction
                                     'information' => __('Shows the Maintenance button on the manufacture floor for its job orders, paid at band 2. Ticking the family covers every artefact in it.'),
                                     'value'       => (bool) data_get($artefact->settings, 'needs_machine_maintenance', false),
                                 ],
+                                'unit_name' => [
+                                    'type'        => 'input',
+                                    'label'       => __('Unit name'),
+                                    'information' => __('What one artefact is called on the manufacture floor, shown after every quantity (e.g. bags, bars, bottles). Empty uses the family\'s, else pieces.'),
+                                    'placeholder' => data_get($artefact->artefactFamily?->data, 'unit_name') ?: __('e.g. bags'),
+                                    'value'       => data_get($artefact->settings, 'unit_name'),
+                                    'required'    => false
+                                ],
                                 'shelf_life_days' => [
                                     'type'        => 'input',
                                     'label'       => __('Shelf life (days)'),

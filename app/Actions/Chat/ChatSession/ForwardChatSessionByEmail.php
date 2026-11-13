@@ -8,6 +8,8 @@
 namespace App\Actions\Chat\ChatSession;
 
 use App\Actions\Chat\WithChatAgentAuthorisation;
+use App\Actions\Comms\Mailbox\ImportPendingGmailAttachments;
+use App\Actions\Comms\Mailbox\SendChatMessageByGmail;
 use App\Enums\CRM\Livechat\ChatActorTypeEnum;
 use App\Enums\CRM\Livechat\ChatEventTypeEnum;
 use App\Enums\CRM\Livechat\ChatSenderTypeEnum;
@@ -15,18 +17,25 @@ use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\ChatMessage;
 use App\Models\Chat\ChatSession;
+use App\Models\Helpers\Media;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Symfony\Component\Mime\MimeTypes;
+use Throwable;
 
 /**
  * Sends the whole conversation, as text, to any address: a supplier, a courier, a colleague
  * outside Aiku. It goes out as a new email conversation from the shop's mailbox, so an answer
- * to it comes back to the inbox. Files are not carried, only named: they live in our storage
- * or still in Gmail, and fetching every one of them to attach again is not worth a forward.
+ * to it comes back to the inbox. The files go with it (HELP-4681): a courier's statement is the
+ * attachment, not the covering text. When an agent forwards, files still waiting in Gmail are
+ * brought in first; a file an email reply cannot carry is only named.
  */
 class ForwardChatSessionByEmail
 {
@@ -45,11 +54,36 @@ class ForwardChatSessionByEmail
         $note    = trim((string) Arr::get($modelData, 'note', ''));
         $subject = self::subject($chatSession);
 
-        $forwarded = StartCustomerEmailChat::make()->action($chatSession->shop, [
-            'email'   => $modelData['email'],
-            'subject' => $subject,
-            'message' => self::message($chatSession, $note),
-        ]);
+        if ($chatSession->shop instanceof Shop && $this->userCanActOnChatOnShop($user, $chatSession->shop)) {
+            try {
+                ImportPendingGmailAttachments::make()->handle($chatSession);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        $files = [];
+
+        try {
+            foreach (self::forwardedFiles($chatSession) as $mediaId => $media) {
+                $file = self::temporaryCopy($media);
+
+                if ($file) {
+                    $files[$mediaId] = $file;
+                }
+            }
+
+            $forwarded = StartCustomerEmailChat::make()->action($chatSession->shop, [
+                'email'       => $modelData['email'],
+                'subject'     => $subject,
+                'message'     => self::message($chatSession, $note, array_keys($files)),
+                'attachments' => array_values($files),
+            ]);
+        } finally {
+            foreach ($files as $file) {
+                @unlink($file->getPathname());
+            }
+        }
 
         $agent = $this->chatAgentProfileFor($user);
 
@@ -72,6 +106,36 @@ class ForwardChatSessionByEmail
         return $forwarded;
     }
 
+    /**
+     * A copy the email's own upload rule accepts, or null: a file gone from storage or from the
+     * archive, or one that rule refuses, is named in the text instead of failing the whole forward.
+     */
+    private static function temporaryCopy(Media $media): ?UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'forward-attachment-');
+
+        try {
+            file_put_contents($path, GetChatMediaContents::run($media));
+
+            $name = $media->name ?: $media->file_name;
+            if (pathinfo($name, PATHINFO_EXTENSION) === '') {
+                $name .= '.'.pathinfo($media->file_name, PATHINFO_EXTENSION);
+            }
+
+            $file = new UploadedFile($path, $name, $media->mime_type, null, true);
+
+            if (Validator::make(['file' => $file], ['file' => [File::types(SendChatMessage::ATTACHMENT_TYPES)->max(SendChatMessage::MAX_AGENT_FILE_KB)]])->passes()) {
+                return $file;
+            }
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        @unlink($path);
+
+        return null;
+    }
+
     public static function subject(ChatSession $chatSession): string
     {
         $subject = trim((string) Arr::get($chatSession->metadata ?? [], 'email_subject'))
@@ -80,14 +144,20 @@ class ForwardChatSessionByEmail
         return 'Fwd: '.$subject;
     }
 
-    public static function message(ChatSession $chatSession, string $note): string
+    /**
+     * @param  array<int, int>|null  $attached  ids of the files going with the forward; null = the ones that would
+     */
+    public static function message(ChatSession $chatSession, string $note, ?array $attached = null): string
     {
-        $forwarded = self::forwardedBlock($chatSession);
+        $forwarded = self::forwardedBlock($chatSession, $attached);
 
         return $note === '' ? $forwarded : $note."\n\n".$forwarded;
     }
 
-    public static function forwardedBlock(ChatSession $chatSession): string
+    /**
+     * @param  array<int, int>|null  $attached  ids of the files going with the forward; null = the ones that would
+     */
+    public static function forwardedBlock(ChatSession $chatSession, ?array $attached = null): string
     {
         $messages = $chatSession->messages()
             ->with('media')
@@ -101,9 +171,10 @@ class ForwardChatSessionByEmail
             ->get()
             ->keyBy('id');
         $timezone = $chatSession->shop?->timezoneName() ?? config('app.timezone');
+        $attached ??= self::forwardedFiles($chatSession)->keys()->all();
 
         $entries = $messages
-            ->map(fn (ChatMessage $message) => self::entry($chatSession, $message, $agents, $timezone))
+            ->map(fn (ChatMessage $message) => self::entry($chatSession, $message, $agents, $timezone, $attached))
             ->filter()
             ->all();
 
@@ -115,12 +186,49 @@ class ForwardChatSessionByEmail
     }
 
     /**
-     * @param  Collection<int, ChatAgent>  $agents
+     * The conversation's files an email can carry, keyed by media id, oldest first: as many as an
+     * email reply takes and no more than Gmail attaches (18MB), so a forward never reads, copies
+     * and stores files only to send them as links. Files of mail rescued from spam stay out, as
+     * its held files do.
+     *
+     * @return Collection<int, Media>
      */
-    private static function entry(ChatSession $chatSession, ChatMessage $message, Collection $agents, string $timezone): ?string
+    public static function forwardedFiles(ChatSession $chatSession): Collection
+    {
+        $types = [...SendChatMessage::ATTACHMENT_TYPES, 'jpg', 'jpeg'];
+        $bytes = 0;
+
+        return $chatSession->messages()
+            ->with('media')
+            ->where('sender_type', '!=', ChatSenderTypeEnum::SYSTEM->value)
+            ->where('is_rescued_from_spam', false)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get()
+            ->flatMap(fn (ChatMessage $message) => $message->attachedFiles())
+            ->filter(function (Media $media) use ($types, &$bytes) {
+                if ($media->size <= 0
+                    || $bytes + $media->size > SendChatMessageByGmail::MAX_ATTACHED_BYTES
+                    || ! in_array(MimeTypes::getDefault()->getExtensions((string) $media->mime_type)[0] ?? null, $types, true)) {
+                    return false;
+                }
+
+                $bytes += $media->size;
+
+                return true;
+            })
+            ->take(SendChatMessage::MAX_ATTACHMENTS)
+            ->keyBy('id');
+    }
+
+    /**
+     * @param  Collection<int, ChatAgent>  $agents
+     * @param  array<int, int>  $attached  ids of the files going with the forward
+     */
+    private static function entry(ChatSession $chatSession, ChatMessage $message, Collection $agents, string $timezone, array $attached): ?string
     {
         $text  = trim((string) ($message->original_text ?? $message->message_text));
-        $files = $message->attachedFiles()->map(fn ($file) => $file->name ?: $file->file_name)->filter()->values();
+        $files = $message->attachedFiles();
 
         if ($text === '' && $files->isEmpty()) {
             return null;
@@ -136,9 +244,18 @@ class ForwardChatSessionByEmail
             $lines[] = $text;
         }
 
-        if ($files->isNotEmpty()) {
+        [$sent, $notSent] = $files->partition(fn (Media $media) => in_array($media->id, $attached, true))
+            ->map(fn (Collection $group) => $group->map(fn (Media $media) => $media->name ?: $media->file_name)->filter()->values())
+            ->all();
+
+        if ($sent->isNotEmpty()) {
             $lines[] = '';
-            $lines[] = __('Attachments not forwarded: :files', ['files' => $files->join(', ')]);
+            $lines[] = __('Attachments: :files', ['files' => $sent->join(', ')]);
+        }
+
+        if ($notSent->isNotEmpty()) {
+            $lines[] = '';
+            $lines[] = __('Attachments not forwarded: :files', ['files' => $notSent->join(', ')]);
         }
 
         return implode("\n", $lines);

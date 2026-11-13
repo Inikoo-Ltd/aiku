@@ -20,11 +20,13 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Models\Accounting\Payment;
+use App\Models\Accounting\BankTransaction;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Comms\Outbox\ProcessInvoicePaidNotification;
 use Sentry;
@@ -112,10 +114,43 @@ class PayOrder extends OrgAction
     public function asController(Order $order, PaymentAccount $paymentAccount, ActionRequest $request): Payment
     {
         $this->initialisationFromShop($order->shop, $request);
+        $this->refuseBankPaymentRecordedAutomatically($order, (float)$this->validatedData['amount']);
 
         return $this->handle($order, $paymentAccount, $this->validatedData);
     }
 
+    /**
+     * A person recording by hand money the bank sync already recorded on this order (HELP-4642): once a bank payment is
+     * on the order, a manual payment that would take it past what is still owed is the same money again. Part payments,
+     * the rest of a deposit and corrections (zero or negative) go through.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function refuseBankPaymentRecordedAutomatically(Order $order, float $amount): void
+    {
+        $owed = $order->amountStillToPay();
+        if ($amount <= 0 || $amount <= $owed + 0.01) {
+            return;
+        }
+
+        $bankTransaction = BankTransaction::where('order_id', $order->id)
+            ->whereNotNull('payment_id')
+            ->whereHas('payment', fn ($query) => $query->where('status', PaymentStatusEnum::SUCCESS)->whereNot('state', PaymentStateEnum::CANCELLED))
+            ->with('payment')
+            ->latest('booked_at')
+            ->first();
+        if (!$bankTransaction) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'amount' => __('This order was already paid automatically from the bank on :date (:amount), and :owed is still owed. If the customer really paid twice, record the second payment from Accounting → Bank review.', [
+                'date'   => $bankTransaction->booked_at->toDateString(),
+                'amount' => number_format((float)$bankTransaction->payment->amount, 2).' '.$bankTransaction->currency->code,
+                'owed'   => number_format(max($owed, 0), 2),
+            ]),
+        ]);
+    }
 
     public function htmlResponse(): RedirectResponse
     {

@@ -1844,7 +1844,7 @@ test('UI agents purchase order states', function () {
 test('UI agents pending purchase orders list', function () {
     $this->withoutExceptionHandling();
     $response = $this->get(route('grp.supply-chain.agents.purchase_order_states.purchase_orders', [
-        'filter[stage]'   => 'submitted',
+        'filter[state]'   => 'submitted',
         'filter[deposit]' => 'no_deposit',
         'filter[sent]'    => '0_3,3_6',
         'filter[client]'  => $this->organisation->slug,

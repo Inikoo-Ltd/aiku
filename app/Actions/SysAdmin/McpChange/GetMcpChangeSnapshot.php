@@ -24,6 +24,8 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\UpcomingTransaction;
 use App\Models\Procurement\PartnerShoppingListItem;
+use App\Actions\Web\StaticWebsite\GetStaticWebsiteContentState;
+use App\Models\Web\StaticWebsite;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -75,11 +77,21 @@ class GetMcpChangeSnapshot
             McpChangeTypeEnum::PRODUCTION_SETUP => $this->productionSetup($target),
             McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS => $this->supplierProductLinks($target),
             McpChangeTypeEnum::ORG_STOCK_AUTO_ORDERING => $this->orgStockAutoOrdering($target),
+            McpChangeTypeEnum::PACKING_SPECS => $this->packingSpecs($target),
+            McpChangeTypeEnum::INFO_WEBSITE_CONTENT => GetStaticWebsiteContentState::run(
+                StaticWebsite::find($target['static_website_id']),
+                $target['pages'] ?? [],
+                $target['components'] ?? []
+            ),
         };
     }
 
     public function describe(McpChangeTypeEnum $type, array $target, array $snapshot): string
     {
+        if ($type === McpChangeTypeEnum::INFO_WEBSITE_CONTENT) {
+            return GetStaticWebsiteContentState::make()->describe($snapshot);
+        }
+
         if ($type === McpChangeTypeEnum::STOCK_LOCATIONS) {
             return collect($target['pairs'])
                 ->map(fn (array $pair) => $pair['sko'].' @ '.$pair['location'].': '.(isset($snapshot['pairs'][$pair['org_stock_id'].'-'.$pair['location_id']]) ? 'on location' : 'not on location'))
@@ -106,6 +118,13 @@ class GetMcpChangeSnapshot
             return collect($snapshot['org_stocks'])
                 ->map(fn (array $orgStock) => $orgStock['code'].': '.($orgStock['do_not_auto_order'] ? 'kept out of order suggestions' : 'suggested'))
                 ->implode(', ');
+        }
+
+        if ($type === McpChangeTypeEnum::PACKING_SPECS) {
+            return collect($snapshot['specs'])
+                ->groupBy('supplier_product')
+                ->map(fn ($specs, string $code) => $code.': '.$specs->map(fn (array $spec) => 'v'.$spec['version'].' '.$spec['status'])->implode(', '))
+                ->implode('; ') ?: 'no packing specs';
         }
 
         if ($type === McpChangeTypeEnum::SUPPLIER_PRODUCT_LINKS) {
@@ -479,6 +498,19 @@ class GetMcpChangeSnapshot
                         ])->values()->all(),
                     ])->values()->all(),
                 ])
+                ->all(),
+        ];
+    }
+
+    private function packingSpecs(array $target): array
+    {
+        return [
+            'specs' => DB::table('supplier_product_packing_specs')
+                ->join('supplier_products', 'supplier_products.id', '=', 'supplier_product_packing_specs.supplier_product_id')
+                ->whereIn('supplier_product_packing_specs.supplier_product_id', $target['supplier_product_ids'])
+                ->orderBy('supplier_product_packing_specs.id')
+                ->get(['supplier_product_packing_specs.id', 'supplier_products.code', 'supplier_product_packing_specs.version', 'supplier_product_packing_specs.status'])
+                ->mapWithKeys(fn ($row) => [$row->id => ['supplier_product' => $row->code, 'version' => $row->version, 'status' => $row->status]])
                 ->all(),
         ];
     }

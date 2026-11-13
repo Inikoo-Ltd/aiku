@@ -3019,6 +3019,38 @@ test('a line discounted after it was submitted is priced on its new factor', fun
     expect($totals['net_amount'])->toBe(55.75);
 });
 
+test('a line raised by staff after submission bills what it was quoted at, not the submitted unit net times the new quantity', function () {
+    $modelData = Order::factory()->definition();
+    data_set($modelData, 'billing_address', new Address(Address::factory()->definition()));
+    data_set($modelData, 'delivery_address', new Address(Address::factory()->definition()));
+
+    $order = StoreOrder::make()->action($this->customer, $modelData);
+
+    $historicAsset = $this->product->historicAsset;
+    $historicAsset->update(['price' => 8.48]);
+
+    $transaction = StoreTransaction::make()->action($order, $historicAsset, array_merge(
+        Transaction::factory()->definition(),
+        ['quantity_ordered' => 1]
+    ));
+    $transaction->update([
+        'gross_amount'            => 8.48,
+        'net_amount'              => 8.06,
+        'quantity_bonus'          => 0,
+        'current_discount_factor' => 0.95,
+    ]);
+
+    SubmitOrder::make()->action($order);
+    $deliveryNote = SendOrderToWarehouse::make()->action($order, []);
+    $deliveryNote->deliveryNoteItems()->delete();
+
+    $transaction->update(['quantity_ordered' => 6, 'gross_amount' => 50.88, 'net_amount' => 48.34]);
+
+    $totals = GenerateInvoiceFromOrder::make()->recalculateTransactionTotals($transaction->refresh(), $deliveryNote);
+
+    expect($totals['net_amount'])->toBe(48.34);
+});
+
 test('shipping zone with territories wins over a catch all zone placed above it', function () {
     $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, [
         'name' => 'catch all on top schema',
@@ -7629,4 +7661,32 @@ test('a line that breaks without a validation error fails on its own row while t
         ->and($result['lines'][0]['message'])->toBe(__('This product is not available for purchase.'))
         ->and($result['lines'][1]['status'])->toBe('added')
         ->and(Transaction::where('model_type', 'Product')->where('model_id', $broken->id)->count())->toBe(0);
+});
+
+test('the recharge sales channel is refused on orders of customers that are not partner organisations', function () {
+    $group    = $this->organisation->group;
+    $recharge = $group->salesChannels()->where('code', 'recharge')->first()
+        ?? \App\Actions\Ordering\SalesChannel\StoreSalesChannel::make()->action($group, [
+            'code' => 'recharge',
+            'name' => 'Recharge',
+            'type' => SalesChannelTypeEnum::MARKETPLACE,
+        ]);
+    SeedSalesChannels::run($group);
+    $other = SalesChannel::where('group_id', $group->id)->where('type', SalesChannelTypeEnum::OTHER)->first();
+
+    $customer = StoreCustomer::make()->action($this->shop, Customer::factory()->definition());
+
+    expect(fn () => StoreOrder::make()->action($customer, ['sales_channel_id' => $recharge->id]))->toThrow(ValidationException::class);
+
+    $order = StoreOrder::make()->action($customer, ['sales_channel_id' => $other->id]);
+    expect(fn () => UpdateOrder::make()->action($order, ['sales_channel_id' => $recharge->id]))->toThrow(ValidationException::class)
+        ->and($order->refresh()->sales_channel_id)->toBe($other->id);
+
+    DB::table('customers')->where('shop_id', $this->shop->id)->where('as_organisation_id', $this->organisation->id)->update(['as_organisation_id' => null]);
+    DB::table('customers')->where('id', $customer->id)->update(['as_organisation_id' => $this->organisation->id]);
+    $customer->refresh();
+    $order->refresh();
+
+    expect(UpdateOrder::make()->action($order, ['sales_channel_id' => $recharge->id])->sales_channel_id)->toBe($recharge->id)
+        ->and(StoreOrder::make()->action($customer, ['sales_channel_id' => $recharge->id])->sales_channel_id)->toBe($recharge->id);
 });

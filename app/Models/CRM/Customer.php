@@ -112,6 +112,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property CustomerTradeStateEnum $trade_state number of invoices
  * @property CustomerShopTypeEnum|null $shop_type
  * @property CustomerShopTypeSourceEnum|null $shop_type_source
+ * @property string|null $shop_profile
  * @property bool $is_fulfilment
  * @property bool $is_dropshipping
  * @property Carbon|null $last_submitted_order_at
@@ -252,7 +253,7 @@ class Customer extends Model implements HasMedia, Auditable
     use HasSearch;
     /* A recorded marketing touch is telemetry, not an edit someone made; auditing it would write an
        audit row for every tracked email click. */
-    protected array $auditExclude = ['traffic_sources'];
+    protected array $auditExclude = ['traffic_sources', 'shop_profile'];
 
     protected $casts = [
         'data'                        => 'array',

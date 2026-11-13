@@ -51,7 +51,7 @@ class ShowSupplierPortalPurchaseOrder
         $purchaseOrder = IndexSupplierPortalPurchaseOrders::make()->sent($supplier)->findOrFail($purchaseOrderId);
         $purchaseOrder->loadMissing(self::RELATIONS);
 
-        $open  = in_array($purchaseOrder->state, [PurchaseOrderStateEnum::SUBMITTED, PurchaseOrderStateEnum::CONFIRMED], true);
+        $open  = in_array($purchaseOrder->state, PurchaseOrderStateEnum::open(), true);
         $lines = PdfPurchaseOrder::make()->lines($purchaseOrder);
         $data  = $purchaseOrder->data ?? [];
 

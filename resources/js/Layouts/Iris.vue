@@ -449,6 +449,10 @@ iframe#launcher {
     bottom: 30px !important;
 }
 
+a.cta-button:hover {
+    filter: brightness(0.92);
+}
+
 .background-primary {
     background-color: var(--theme-color-4);
 }

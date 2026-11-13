@@ -8,6 +8,8 @@
 
 namespace App\Models\CRM\ShoppingAssistant;
 
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum;
+use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantHandOverReasonEnum;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +30,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $cost
  * @property int|null $latency_ms
  * @property string|null $feedback
+ * @property \Illuminate\Support\Carbon|null $feedback_at
+ * @property ShoppingAssistantAnswerKindEnum|null $answer_kind
+ * @property string|null $source_kind
+ * @property array<int, array{id: int, kind: string, source_type: string, source_id: ?string, title: string, url: ?string}>|null $sources
+ * @property ShoppingAssistantHandOverReasonEnum|null $hand_over_offer
+ * @property string|null $staff_rating
+ * @property int|null $staff_rated_by_user_id
+ * @property \Illuminate\Support\Carbon|null $staff_rated_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read ShoppingAssistantConversation $conversation
@@ -46,6 +56,11 @@ class ShoppingAssistantMessage extends Model
             'follow_ups' => 'array',
             'flags'      => 'array',
             'cost'       => 'decimal:6',
+            'answer_kind'     => ShoppingAssistantAnswerKindEnum::class,
+            'sources'         => 'array',
+            'hand_over_offer' => ShoppingAssistantHandOverReasonEnum::class,
+            'staff_rated_at'  => 'datetime',
+            'feedback_at'     => 'datetime',
         ];
     }
 

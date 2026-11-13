@@ -17,6 +17,7 @@ import Dialog from "primevue/dialog"
 import ToggleSwitch from "primevue/toggleswitch"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ctrans, ctransChoice } from "@/Composables/useTrans"
+import { unitWord } from "@/Composables/packs"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import SegmentedToggle from "@/Components/Utils/SegmentedToggle.vue"
 import { capitalize } from "@/Composables/capitalize"
@@ -73,6 +74,9 @@ interface ArtisanSession extends TimeEditFields {
     break_minutes: number
     quantity_made: number
     pack_size: number | null
+    unit: string | null
+    unit_name: string | null
+    piece_name: string | null
     correct_route: null | { name: string, parameters: object }
     move_targets_route: null | { name: string, parameters: object }
     quantity_rejected: number
@@ -1126,7 +1130,7 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
                                     </td>
                                     <td></td>
                                     <td class="py-1.5 px-3 text-right text-gray-500">{{ sessionHours(session) }}</td>
-                                    <td class="py-1.5 px-3 text-right">{{ quantityLabel(session.quantity_made) }}<span v-if="session.pack_size" class="text-xs text-gray-400"> × {{ session.pack_size }}</span></td>
+                                    <td class="py-1.5 px-3 text-right"><span class="whitespace-nowrap">{{ quantityLabel(session.quantity_made) }}<span class="text-xs text-gray-400"> {{ unitWord(session) }}</span></span></td>
                                     <td class="py-1.5 px-3 text-right text-red-500">{{ session.quantity_rejected ? quantityLabel(session.quantity_rejected) : '' }}</td>
                                     <td class="py-1.5 px-3 text-right whitespace-nowrap" :class="session.is_under_target ? 'text-amber-700' : 'text-gray-400'">
                                         <template v-if="session.standard_rate !== null">{{ session.units_per_hour ?? 0 }} / {{ session.standard_rate }}</template>

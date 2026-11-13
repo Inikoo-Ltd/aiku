@@ -3,6 +3,8 @@ import Foundation
 struct LocationsAuditCount: Hashable, Sendable {
     var skoReference: String
     var counted: Int
+    var reason: LocationsAuditReason? = nil
+    var note = ""
 }
 
 enum LocationsAuditReason: String, CaseIterable, Hashable, Sendable {
@@ -17,6 +19,16 @@ enum LocationsAuditReason: String, CaseIterable, Hashable, Sendable {
         case .countGain: "Count gain (stock found)"
         }
     }
+
+    var remoteValue: String {
+        switch self {
+        case .countShortage: "count_short"
+        case .damagedStock: "damaged"
+        case .countGain: "count_gain"
+        }
+    }
+
+    static let unchangedRemoteValue = "recount"
 
     static func options(forChange change: Int) -> [LocationsAuditReason] {
         if change < 0 {

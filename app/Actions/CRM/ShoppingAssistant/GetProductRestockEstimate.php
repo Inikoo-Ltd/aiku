@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\ShoppingAssistant;
 
+use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Catalogue\Product;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,6 @@ class GetProductRestockEstimate
 
     public const int RECENT_MONTHS = 9;
 
-    private const array OPEN_ORDER_STATES = ['submitted', 'confirmed'];
 
     private const array ON_ITS_WAY_DELIVERY_STATES = ['confirmed', 'ready_to_ship', 'dispatched'];
 
@@ -62,7 +62,7 @@ class GetProductRestockEstimate
             $order = DB::table('purchase_order_transactions')
                 ->join('purchase_orders', 'purchase_orders.id', '=', 'purchase_order_transactions.purchase_order_id')
                 ->where('purchase_order_transactions.org_stock_id', $orgStockId)
-                ->whereIn('purchase_orders.state', self::OPEN_ORDER_STATES)
+                ->whereIn('purchase_orders.state', PurchaseOrderStateEnum::openValues())
                 ->where('purchase_orders.submitted_at', '>=', now()->subMonths(self::RECENT_MONTHS))
                 ->whereNull('purchase_orders.deleted_at')
                 ->where(fn ($query) => $query->whereNull('purchase_order_transactions.delivery_state')->orWhereNotIn('purchase_order_transactions.delivery_state', self::FINISHED_LINE_DELIVERY_STATES))

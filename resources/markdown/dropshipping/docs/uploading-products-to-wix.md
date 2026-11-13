@@ -86,7 +86,7 @@ You cannot edit the name, description or price of a Wix product from <b>My Produ
 To unlink or remove products, tick them in the list first:
 
 - <b>Unlink (N)</b> keeps the product in Wix but stops linking it to ours. We stop updating its stock and its orders stop coming to us.
-- <b>Unlink & Delete (N)</b> unlinks the products and removes them from <b>My Products</b>. The products stay in your Wix store; delete them there if you no longer want them.
+- <b>Unlink & Delete (N)</b> removes the products from <b>My Products</b> and deletes the linked ones from your Wix store too. To keep a product in your Wix store, do not use it: products that are not linked stay in your store.
 
 The bin on a row is different: it removes that product from <b>My Products</b> and also deletes it from your Wix store.
 

@@ -83,7 +83,7 @@ La tua <b>Pricing Policy</b> in <b>Manage Sales Channel</b> imposta il prezzo de
 Ci sono tre modi per rimuovere un prodotto. Scegli con attenzione, perché il pulsante a teschio elimina anche il prodotto dal tuo negozio WooCommerce.
 
 - Il pulsante a teschio su una riga chiede conferma, poi rimuove il prodotto dal tuo elenco e, se è collegato, lo elimina definitivamente dal tuo negozio WooCommerce. Non finisce nel cestino di WooCommerce.
-- <b>Unlink & Delete</b> (dopo aver spuntato i prodotti) rimuove i prodotti spuntati dal tuo elenco, ma li mantiene nel tuo negozio WooCommerce. Non sono più collegati, quindi smettiamo di aggiornarne la scorta.
+- <b>Unlink & Delete</b> (dopo aver spuntato i prodotti) rimuove i prodotti spuntati dal tuo elenco ed elimina anche quelli collegati dal tuo negozio WooCommerce. Per tenere un prodotto nel tuo negozio WooCommerce, non usarlo: i prodotti non collegati restano nel tuo negozio.
 - <b>Unlink</b> (dopo aver spuntato i prodotti) mantiene i prodotti nel tuo elenco e su WooCommerce, ma interrompe il collegamento. Smettiamo di aggiornarne la scorta. Puoi abbinarli di nuovo più avanti.
 
 Se elimini tu stesso un prodotto collegato su WooCommerce, lo rimuoviamo anche dal tuo elenco.
