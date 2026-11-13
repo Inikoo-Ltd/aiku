@@ -9,14 +9,15 @@ import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faShoppingBasket, faCheck, faSparkles } from "@far"
+import { faShoppingBasket, faCheck } from "@far"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { ctrans } from "@/Composables/useTrans"
 import { getStyles } from "@/Composables/styles"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
 import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
 import { ProductResource } from "@/types/Iris/Products"
-library.add(faShoppingBasket, faCheck, faSparkles)
+library.add(faShoppingBasket, faCheck)
 
 type Card = ProductResource & { assistant_reason: string, quantity_ordered?: number }
 type Pack = { family: { id: number, name: string, url: string | null }, items: Card[] }
@@ -202,7 +203,7 @@ onMounted(async () => {
         <template v-else-if="panel">
             <div class="range-heading">
                 <h2 v-if="panel.lists.length" class="range-title">
-                    <FontAwesomeIcon icon="far fa-sparkles" class="range-title-icon" fixed-width aria-hidden="true" />
+                    <MerlinIcon class="range-title-icon" />
                     {{ ctrans(":name noticed", { name: assistantName }) }}
                 </h2>
                 <p v-if="panel.lists.length" class="range-subtitle">
@@ -331,7 +332,8 @@ onMounted(async () => {
 }
 
 .range-title-icon {
-    color: var(--theme-color-4, var(--app-accent));
+    width: 1.25em;
+    height: 1.25em;
 }
 
 .range-subtitle {

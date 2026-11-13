@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
 import { productNameWithPackAndSize } from "@/Composables/useBasketSizeSuffix"
 import { computed, inject } from 'vue'
 import Skeleton from 'primevue/skeleton'
@@ -9,14 +10,13 @@ import { ctrans } from '@/Composables/useTrans'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
-import { faSparkles } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useShoppingAssistant } from '@/Iris/Composables/useShoppingAssistant'
 import { Image as ImgTS } from '@/types/Image'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 
-library.add(faTimes, faSparkles)
+library.add(faTimes)
 
 // Desktop counterpart of SearchFeaturedMobile: what the shop merchandises, shown while the
 // search field is focused but still empty. The panel sizes to its content, since a handful
@@ -210,7 +210,7 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
                     @click="askAssistant"
                 >
                     <template #icon>
-                        <FontAwesomeIcon icon="far fa-sparkles" class="text-[var(--theme-color-0)]" fixed-width aria-hidden="true" />
+                        <MerlinIcon />
                     </template>
                 </Button>
             </div>

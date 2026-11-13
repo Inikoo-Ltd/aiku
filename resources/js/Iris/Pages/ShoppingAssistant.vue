@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import axios from "axios"
 import { router, usePage } from "@inertiajs/vue3"
@@ -11,7 +12,7 @@ import TabPanels from "primevue/tabpanels"
 import TabPanel from "primevue/tabpanel"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faSparkles, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset } from "@far"
+import { faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset } from "@far"
 import { faThumbsUp, faThumbsDown } from "@far"
 import { faThumbsUp as fasThumbsUp, faThumbsDown as fasThumbsDown } from "@fas"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
@@ -30,7 +31,7 @@ import {
     shoppingAssistantQuestionKey,
     useShoppingAssistant,
 } from "@/Iris/Composables/useShoppingAssistant"
-library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faSparkles, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
+library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, faCheck, faPlus, faHistory, faTimes, faBars, faColumns, faEdit, faHeadset, faThumbsUp, faThumbsDown, fasThumbsUp, fasThumbsDown)
 
 type Card = ProductResource & {
     assistant_reason: string
@@ -753,7 +754,8 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                     :disabled="!!assistant && !draft.trim()"
                                     @click="askFromLanding(draft)"
                                 >
-                                    <FontAwesomeIcon :icon="assistant ? 'far fa-sparkles' : 'far fa-sign-in-alt'" fixed-width aria-hidden="true" />
+                                    <MerlinIcon v-if="assistant" mono />
+                                    <FontAwesomeIcon v-else icon="far fa-sign-in-alt" fixed-width aria-hidden="true" />
                                     {{ assistant ? ctrans("Ask :name", { name: assistantName }) : ctrans("Log in to ask :name", { name: assistantName }) }}
                                 </button>
                             </div>
@@ -846,7 +848,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     <aside class="landing-hero-info">
                         <div class="landing-eyebrow-row">
                             <span class="landing-badge" aria-hidden="true">
-                                <FontAwesomeIcon icon="far fa-sparkles" fixed-width />
+                                <MerlinIcon />
                             </span>
                             <p class="landing-eyebrow">{{ ctrans("Meet :name · Ask us anything", { name: assistantName }) }}</p>
                             <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
@@ -899,7 +901,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
             <aside class="chat-sidebar" :class="{ 'chat-sidebar-open': isHistoryOpen }">
                 <div class="chat-sidebar-top">
                     <span class="chat-sidebar-brand">
-                        <FontAwesomeIcon icon="far fa-sparkles" class="chat-sidebar-brand-icon" fixed-width aria-hidden="true" />
+                        <MerlinIcon class="chat-sidebar-brand-icon" />
                         {{ assistantName }}
                     </span>
                     <button
@@ -953,7 +955,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     >
                         <FontAwesomeIcon :icon="isHistoryOpen ? 'far fa-times' : 'far fa-bars'" fixed-width aria-hidden="true" />
                     </button>
-                    <span class="assistant-avatar" aria-hidden="true"><FontAwesomeIcon icon="far fa-sparkles" fixed-width /></span>
+                    <span class="assistant-avatar" aria-hidden="true"><MerlinIcon /></span>
                     <div class="min-w-0 flex-1">
                         <p class="chat-header-name">
                             {{ assistantName }}
@@ -986,7 +988,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </div>
 
                         <div v-else class="flex gap-3">
-                            <div class="assistant-avatar" aria-hidden="true"><FontAwesomeIcon icon="far fa-sparkles" fixed-width /></div>
+                            <div class="assistant-avatar" aria-hidden="true"><MerlinIcon /></div>
                             <div class="min-w-0 flex-1">
                                 <p class="chat-text whitespace-pre-line">{{ message.body }}</p>
 
@@ -1101,7 +1103,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </template>
 
                     <div v-if="isPending" class="flex gap-3">
-                        <div class="assistant-avatar" aria-hidden="true"><FontAwesomeIcon icon="far fa-sparkles" fixed-width /></div>
+                        <div class="assistant-avatar" aria-hidden="true"><MerlinIcon /></div>
                         <div class="min-w-0 flex-1">
                             <p class="text-sm text-gray-600">
                                 <LoadingIcon />
@@ -1172,8 +1174,10 @@ const sendOnEnter = (event: KeyboardEvent) => {
                         </button>
                     </div>
                     <p v-if="errorMessage" class="mt-1 text-xs text-red-500">{{ errorMessage }}</p>
-                    <p v-else class="chat-composer-hint">{{ ctrans("Enter to send, Shift + Enter for a new line.") }}</p>
-                    <p class="chat-composer-hint">{{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}</p>
+                    <p class="chat-composer-hint">
+                        <span v-if="!errorMessage">{{ ctrans("Enter to send, Shift + Enter for a new line.") }}</span>
+                        {{ ctrans(":name is an AI assistant and can make mistakes. Our staff may read these conversations to improve our service; please do not share payment details.", { name: assistantName }) }}
+                    </p>
                 </div>
             </section>
         </div>
@@ -1203,8 +1207,20 @@ const sendOnEnter = (event: KeyboardEvent) => {
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    background-color: var(--theme-color-4);
-    color: var(--theme-color-5);
+    background-color: #fff;
+    border: 1px solid #ece6df;
+}
+
+.assistant-avatar .merlin-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    vertical-align: middle;
+}
+
+.landing-badge .merlin-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    vertical-align: middle;
 }
 
 .assistant-bubble {
@@ -1607,7 +1623,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .chat-composer {
-    padding: 0.75rem var(--chat-gutter) 1.25rem;
+    padding: 0.5rem var(--chat-gutter) 0.625rem;
     background-color: white;
 }
 
@@ -1615,7 +1631,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
     display: flex;
     align-items: flex-end;
     gap: 0.5rem;
-    padding: 0.625rem 0.625rem 0.625rem 1rem;
+    padding: 0.3125rem 0.3125rem 0.3125rem 0.75rem;
     border: 1px solid #e3ddd6;
     border-radius: 1rem;
     background-color: white;
@@ -1633,9 +1649,15 @@ const sendOnEnter = (event: KeyboardEvent) => {
     resize: none;
 }
 
+.chat-composer-box .chat-composer-input {
+    min-height: 2.25rem;
+    padding: 0.375rem 0.25rem;
+    font-size: 0.9375rem;
+}
+
 .chat-send {
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
     flex-shrink: 0;
     border-radius: 9999px;
     display: flex;
@@ -1655,9 +1677,10 @@ const sendOnEnter = (event: KeyboardEvent) => {
 }
 
 .chat-composer-hint {
-    margin-top: 0.5rem;
+    margin-top: 0.375rem;
     text-align: center;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
+    line-height: 1.4;
     color: #888;
 }
 

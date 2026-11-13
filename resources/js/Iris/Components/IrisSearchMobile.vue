@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
 import { ref, computed, inject, watch, onBeforeMount, onMounted, onBeforeUnmount, defineAsyncComponent, nextTick } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { router, usePage } from "@inertiajs/vue3"
@@ -7,7 +8,7 @@ import { useFloatingButtonsDrag } from "@/Iris/Composables/useFloatingButtonsDra
 import axios from "axios"
 import { debounce } from "lodash-es"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch, faChevronUp, faChevronDown, faSparkles } from "@far"
+import { faSearch, faChevronUp, faChevronDown } from "@far"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
@@ -15,7 +16,7 @@ import { useIrisSearchMobile } from "@/Iris/Composables/useIrisSearchMobile"
 import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
 import { useShoppingAssistant } from "@/Iris/Composables/useShoppingAssistant"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(faSearch, faTimes, faChevronUp, faChevronDown, faSparkles)
+library.add(faSearch, faTimes, faChevronUp, faChevronDown)
 
 const SearchResultCatalogueMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogueMobile.vue"))
 const SearchFeaturedMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchFeaturedMobile.vue"))
@@ -347,7 +348,7 @@ const askAssistant = () => {
                 </div>
                 <Button v-if="assistant" :label="buttonLabel" :title="askLabel" :aria-label="askLabel" size="xs" class="iris-search-ask-mobile shrink-0 rounded-full" @click="askAssistant">
                     <template #icon>
-                        <FontAwesomeIcon icon="far fa-sparkles" fixed-width aria-hidden="true" />
+                        <MerlinIcon mono />
                     </template>
                 </Button>
                 <button
@@ -366,7 +367,7 @@ const askAssistant = () => {
                 class="shrink-0 flex items-center gap-3 border-b border-gray-200 px-4 py-3 text-left text-sm"
                 @click="askAssistant"
             >
-                <FontAwesomeIcon icon="far fa-sparkles" class="text-[var(--theme-color-0)]" fixed-width aria-hidden="true" />
+                <MerlinIcon />
                 <span class="min-w-0 flex-1">
                     <span class="font-semibold">{{ offerLabel }}</span>
                     <span class="line-clamp-2 text-gray-500">&ldquo;{{ inputValue.trim() }}&rdquo;</span>

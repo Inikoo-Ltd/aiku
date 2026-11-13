@@ -4,12 +4,13 @@ import { Link, router } from "@inertiajs/vue3"
 import Textarea from "primevue/textarea"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faSparkles, faArrowRight } from "@far"
+import { faArrowRight } from "@far"
 import { ctrans } from "@/Composables/useTrans"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { shoppingAssistantQuestionKey } from "@/Iris/Composables/useShoppingAssistant"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(faSparkles, faArrowRight)
+import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
+library.add(faArrowRight)
 
 const layout: any = inject("layout", retinaLayoutStructure)
 
@@ -32,9 +33,7 @@ const ask = (question: string) => {
 <template>
     <section class="flex flex-col rounded-lg border border-gray-200 bg-white p-4 lg:self-stretch" aria-labelledby="range-advisor-card-heading">
         <div class="flex items-start gap-3">
-            <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--app-accent-soft)] text-[var(--app-accent)]" aria-hidden="true">
-                <FontAwesomeIcon icon="far fa-sparkles" fixed-width />
-            </span>
+            <MerlinIcon class="!size-8" />
             <div class="min-w-0">
                 <h2 id="range-advisor-card-heading" class="text-lg font-semibold text-gray-900">{{ ctrans("Ask :name", { name }) }}</h2>
                 <p class="mt-1 text-sm text-gray-700">{{ ctrans(":name finds what sells for shops like yours, from what is in stock now.", { name }) }}</p>

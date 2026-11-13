@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MerlinIcon from "@/Iris/Components/MerlinIcon.vue"
 import { ref, computed, watch, onBeforeMount, defineAsyncComponent, nextTick, inject } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { router } from "@inertiajs/vue3"
@@ -6,14 +7,14 @@ import axios from "axios"
 import { debounce } from "lodash-es"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch, faSparkles } from "@far"
+import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Popover from "primevue/popover"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
 import { useShoppingAssistant } from "@/Iris/Composables/useShoppingAssistant"
-library.add(faSearch, faSparkles)
+library.add(faSearch)
 
 const SearchResultCatalogue = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogue.vue"))
 const SearchFeatured = defineAsyncComponent(() => import("@/Iris/Components/SearchFeatured.vue"))
@@ -268,7 +269,7 @@ const visitSearchPage = () => {
             @click="askAssistant"
         >
             <template #icon>
-                <FontAwesomeIcon icon="far fa-sparkles" class="iris-search-ask-icon" fixed-width aria-hidden="true" />
+                <MerlinIcon class="iris-search-ask-icon" />
             </template>
         </Button>
 
@@ -296,7 +297,7 @@ const visitSearchPage = () => {
                     class="flex w-full items-center gap-3 border-b border-gray-200 px-4 pb-3 pt-4 text-left text-sm hover:bg-gray-50"
                     @click="askAssistant"
                 >
-                    <FontAwesomeIcon icon="far fa-sparkles" class="text-[var(--theme-color-0)]" fixed-width aria-hidden="true" />
+                    <MerlinIcon />
                     <span class="min-w-0 flex-1 truncate">
                         <span class="font-semibold">{{ offerLabel }}</span>
                         <span class="text-gray-500"> &ldquo;{{ inputValue.trim() }}&rdquo;</span>
