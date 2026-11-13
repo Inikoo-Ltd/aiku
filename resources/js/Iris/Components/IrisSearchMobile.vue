@@ -14,6 +14,7 @@ import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 import { useIrisSearchMobile } from "@/Iris/Composables/useIrisSearchMobile"
 import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
 import { useShoppingAssistant } from "@/Iris/Composables/useShoppingAssistant"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 library.add(faSearch, faTimes, faChevronUp, faChevronDown, faSparkles)
 
 const SearchResultCatalogueMobile = defineAsyncComponent(() => import("@/Iris/Components/SearchResultCatalogueMobile.vue"))
@@ -84,7 +85,6 @@ const floatingButtonsDrag = useFloatingButtonsDrag(layout)
 const fabStyle = computed(() => {
     const buttonsBelow = (isChatEnabled && !sidePanel?.isOpen.value ? 1 : 0)
         + (sidePanel?.isAvailable.value && sidePanel.canShowBasketPanel.value && !sidePanel.isOpen.value ? 1 : 0)
-        + (isFloatingButtonShown.value && !sidePanel?.isOpen.value ? 1 : 0)
     return {
         ...websiteThemeVariables(layout),
         bottom: `${24 + 64 * buttonsBelow + floatingButtonsDrag.offset.value}px`,
@@ -255,7 +255,7 @@ const visitSearchPage = () => {
     }
 }
 
-const { assistant, isFloatingButtonShown, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
+const { assistant, askLabel, buttonLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
 
 const askAssistant = () => {
     closeOverlay()
@@ -345,6 +345,11 @@ const askAssistant = () => {
                     />
                     <FontAwesomeIcon icon="far fa-search" class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fixed-width aria-hidden="true" />
                 </div>
+                <Button v-if="assistant" :label="buttonLabel" :title="askLabel" :aria-label="askLabel" size="xs" class="iris-search-ask-mobile shrink-0 rounded-full" @click="askAssistant">
+                    <template #icon>
+                        <FontAwesomeIcon icon="far fa-sparkles" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
                 <button
                     type="button"
                     class="shrink-0 w-11 h-11 flex items-center justify-center text-gray-500"
@@ -393,6 +398,13 @@ const askAssistant = () => {
 </template>
 
 <style scoped>
+.iris-search-ask-mobile :deep(span) {
+    max-width: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .dragHintArrowUp {
     animation: dragHintArrowUp 700ms ease-in-out infinite;
 }

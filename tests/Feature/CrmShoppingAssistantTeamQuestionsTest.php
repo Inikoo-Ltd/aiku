@@ -237,3 +237,29 @@ test('a question nobody answered within a day is closed in working hours and the
         ->and($conversation->messages()->latest('id')->first()->flags)->toBe(['team_unanswered'])
         ->and($task->conversation->messages()->pluck('body')->implode("\n"))->toContain('customer services was asked to send it');
 });
+
+test('the Merlin report counts the guru questions: answered, in time, not answered, by person with declines and passes, and the latest ones', function () {
+    $website = createWebsite($this->shop);
+    $filters = ['website_ids' => [$website->id], 'search_website_ids' => [$website->id], 'language' => null, 'entry_point' => null, 'shop_type' => null, 'country' => null];
+    $report  = App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport::make();
+    $before  = $report->gurus($filters, now()->subDay()->toImmutable(), now()->addDay()->toImmutable());
+
+    $answered = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Do you sell samples?', 'Do you sell samples?')['task'];
+    Carbon::setTestNow(now()->addMinutes(2));
+    AnswerShoppingAssistantTeamQuestion::run($answered, $this->person, 'Yes, 10ml ones.');
+
+    $declined = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Any discount code?', 'Any discount code?')['task'];
+    actingAs($this->person)->postJson(route('grp.tasks.assistant_decline', $declined->reference))->assertOk();
+    actingAs($this->backup)->postJson(route('grp.tasks.assistant_decline', $declined->reference))->assertOk();
+
+    $gurus = $report->gurus($filters, now()->subDay()->toImmutable(), now()->addDay()->toImmutable());
+    $me    = collect($gurus['people'])->firstWhere('name', $this->person->chatName());
+
+    expect($gurus['asked'])->toBe($before['asked'] + 2)
+        ->and($gurus['answered'])->toBe($before['answered'] + 1)
+        ->and($gurus['answered_live'])->toBe($before['answered_live'] + 1)
+        ->and($gurus['closed'])->toBe($before['closed'] + 1)
+        ->and($me['answered'])->toBeGreaterThanOrEqual(1)
+        ->and($me['declined'])->toBeGreaterThanOrEqual(1)
+        ->and(collect($gurus['latest'])->pluck('status', 'reference')->only([$answered->reference, $declined->reference])->all())->toBe([$declined->reference => 'closed', $answered->reference => 'answered']);
+});
