@@ -3661,3 +3661,32 @@ test('the AI budget panel projects the spend at the end of the month from the pa
         Carbon::setTestNow();
     }
 });
+
+test('a dropshipping customer adding a product Merlin showed to one of their sales channels is recorded as added, once, and not a product it did not show', function () {
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        $this->shop->dropshippingStats()->firstOrCreate([]);
+        $website  = shoppingAssistantStorefront($this);
+        $customer = shoppingAssistantCustomer($this->shop->refresh());
+        $webUser  = shoppingAssistantWebUser($customer);
+        $channel  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::MANUAL)->firstOrFail(), ['reference' => 'adds-'.Str::random(6)]);
+        $shown    = shoppingAssistantLiveProduct($this->product);
+        $notShown = shoppingAssistantLiveProduct($this->product);
+        $message  = shoppingAssistantShown($customer, [$shown->id]);
+        $url      = 'http://'.$website->domain.'/models/portfolio-multi-channels';
+        $payload  = ['customer_sales_channel_ids' => [$channel->id], 'item_id' => [$shown->id, $notShown->id]];
+
+        $this->actingAs($webUser, 'retina')->postJson($url, $payload)->assertSuccessful();
+        $this->actingAs($webUser, 'retina')->postJson($url, $payload)->assertSuccessful();
+
+        $added = ShoppingAssistantEvent::where('type', ShoppingAssistantEventTypeEnum::ADDED)->whereIn('product_id', [$shown->id, $notShown->id])->get();
+
+        expect(DB::table('portfolios')->where('customer_sales_channel_id', $channel->id)->whereIn('item_id', [$shown->id, $notShown->id])->count())->toBe(2)
+            ->and($added->map(fn ($event) => [$event->shopping_assistant_conversation_id, $event->shopping_assistant_message_id, $event->product_id, $event->transaction_id])->all())
+            ->toBe([[$message->shopping_assistant_conversation_id, $message->id, $shown->id, null]]);
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});

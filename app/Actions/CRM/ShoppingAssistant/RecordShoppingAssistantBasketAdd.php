@@ -23,6 +23,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * (a chat before a Range Advisor panel day, as the report credits the chat):
  * from a card (single add) or as a new line of a bulk add. A quantity raised on such a line in the
  * basket is recorded as `increased`, once per product per conversation, and never counts as an add.
+ * A dropshipping customer has no basket: for them `added` is a product they added to one of their
+ * sales channels from the storefront (StoreIrisPortfolioToMultiChannels and ...ToAllChannels), with
+ * no transaction, so the report's funnel and the review of what Merlin's answers led to work there too.
  * The storefront requests call afterResponse(): nothing is read while the website's switch is off,
  * and the gate, the lookups and the writes run after the response, where a failure is only reported.
  *
