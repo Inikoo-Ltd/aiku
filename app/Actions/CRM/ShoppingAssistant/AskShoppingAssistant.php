@@ -210,6 +210,7 @@ class AskShoppingAssistant
         $cited          = $turn['answer'] !== null ? $this->citedSources($turn['answer'], $turn['sources']) : [];
         $numberReplaced = false;
         $isFixed        = false;
+        $orderLooked    = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'order_status' && $toolCall['error'] === null);
         $declaredKind   = ShoppingAssistantAnswerKindEnum::tryFrom((string) ($turn['answer']['answer_kind'] ?? ''));
 
         if ($turn['answer'] !== null) {
@@ -278,7 +279,7 @@ class AskShoppingAssistant
             $groups    = ['must_haves' => collect(), 'add_ons' => collect()];
             $followUps = [];
         } elseif ($offerReason) {
-            $reply   = $this->offerSentence($conversation, $customer, $offerReason);
+            $reply   = $this->offerSentence($conversation, $customer, $offerReason, $orderLooked);
             $isFixed = true;
             if ($declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON) {
                 $groups = ['must_haves' => collect(), 'add_ons' => collect()];
@@ -287,7 +288,9 @@ class AskShoppingAssistant
             $reply = __('I have added the products to your basket.', [], $conversation->language_code);
         }
 
-        if ($turn['facts'] && !$turn['cleared'] && !($isFixed && $declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON)) {
+        if ($turn['facts'] && !$turn['cleared'] && $isFixed && $orderLooked) {
+            $reply = trim(implode("\n", array_unique($turn['facts']))."\n\n".$reply);
+        } elseif ($turn['facts'] && !$turn['cleared'] && !($isFixed && $declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON)) {
             $reply = trim($reply."\n\n".implode("\n", array_unique($turn['facts'])));
         }
 
@@ -847,12 +850,13 @@ class AskShoppingAssistant
             : __('I don\'t know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.', [], $conversation->language_code);
     }
 
-    private function offerSentence(ShoppingAssistantConversation $conversation, Customer $customer, ShoppingAssistantHandOverReasonEnum $reason): string
+    private function offerSentence(ShoppingAssistantConversation $conversation, Customer $customer, ShoppingAssistantHandOverReasonEnum $reason, bool $orderLooked = false): string
     {
         $locale  = $conversation->language_code;
         $offered = $conversation->website && GetShoppingAssistantHandOverRoute::isOffered($conversation->website, $customer);
 
         return match (true) {
+            $offered && $reason === ShoppingAssistantHandOverReasonEnum::ORDER_QUESTION && $orderLooked => __('Our team will need to help you with that. Would you like to ask them?', [], $locale),
             $offered && $reason === ShoppingAssistantHandOverReasonEnum::NOT_SURE       => __('I am not sure about that, and I would rather not guess. Would you like to ask our team?', [], $locale),
             $offered && $reason === ShoppingAssistantHandOverReasonEnum::ORDER_QUESTION => __('I cannot see your orders, so our team will need to answer that. Would you like to ask them?', [], $locale),
             $offered                                                                    => __('Of course. Our team can help you with that.', [], $locale),
@@ -1140,7 +1144,7 @@ $priceRule
 - Ask at most one short question when the request is too vague to search; otherwise search first.
 - When the customer asks a general question about buying from us (payment, delivery, returns, how to order, minimum order, their account, our terms, how the website works), call shop_information with their question and answer only from the texts it returns, with answer_kind shop_answer and the ids of the texts you used in sources. Never answer such a question from your own knowledge. If the texts do not answer it, do not guess: use answer_kind offer_person with offer_reason not_sure and write one short sentence; the system writes the reply. $shippingTools
 - When the customer reports something broken on our side (a bug on our website or in their account, an integration with their store that misbehaves, products or stock not syncing, orders not arriving, tracking not updating, records of ours that look wrong), first check shop_information for a known fix and give it. When they already tried it, or our texts have none, and the evidence says it is broken on our side, call report_to_engineers once with that evidence, so a real problem goes straight to our engineers without waiting for customer services. When it may be their own mistake, a setting or their own platform, do not report it: help them or offer a person. Never promise a fix or a time.
-- You cannot see the customer's orders, invoices, payments, refunds or deliveries. When they ask about one of their own, use answer_kind offer_person with offer_reason order_question.
+- When the customer asks where one of their own orders is, whether it was sent or for its tracking, call order_status and answer from it. You cannot see their invoices, payments or refunds, and you cannot change or cancel an order or chase a parcel: for those, and for a late, lost or damaged delivery, use answer_kind offer_person with offer_reason order_question, after order_status when knowing where the order is helps them.
 - When the customer asks for a person, a human or customer service, use answer_kind offer_person with offer_reason asked_for_person.
 - When the customer just chats, jokes or vents about something that has nothing to do with this shop, play along in one or two friendly sentences (answer_kind off_topic), then bring it lightly back to their shop. Never be rude back, and give no opinions on politics, religion or other people. Decline politely anything else that has nothing to do with this shop.
 - When they are back after a long time without ordering, they matter to us: in your first reply welcome them back in a few warm words, without saying how long it has been, and when it fits their question show what they used to order that still sells (products_they_stopped_ordering).

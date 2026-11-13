@@ -295,6 +295,11 @@ class GetShoppingAssistantTools
                 ['query']
             ),
             $this->tool(
+                'order_status',
+                'Where one of the customer\'s own orders is: placed, in the warehouse, being picked or packed, waiting for the courier, dispatched (with the carrier and tracking) or cancelled. Use it when they ask where their order is, whether it was sent, or for its tracking. Pass the order number they wrote as reference (ours or their own); without one you get their latest order. You get the state in words; the system adds a line under your reply with the order number, its date and the tracking. Returns no products.',
+                ['reference' => ['type' => 'string', 'description' => 'The order number the customer wrote, exactly as written. Leave it out when they gave none.']]
+            ),
+            $this->tool(
                 'products_not_in_store',
                 'The products the customer added to one of their sales channels that are not in their store yet: not sent to it, or not matched with a listing they already have there, so stock is not updated and orders for them cannot reach us. Use it when they ask which products are not linked, are missing from their store or do not sync, or why an order placed in their store did not arrive. The system adds the list under your reply; you get no names. Returns no products.',
                 []
@@ -443,6 +448,7 @@ class GetShoppingAssistantTools
                 'ask_purchasing_team'            => $this->askPurchasingTeam($conversation, $customer, $arguments),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'products_not_in_store'          => $this->productsNotInStore($customer, $conversation->language_code),
+                'order_status'                   => $this->orderStatus($customer, $arguments, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
@@ -1067,6 +1073,95 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => __('Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.', ['days' => $days], $locale),
         ];
+    }
+
+    /**
+     * Where one of the customer's own orders is, never anybody else's: the order whose number they
+     * wrote (ours, their own reference or their store's), else the last one they placed. The model
+     * gets the state in words and words it in the customer's language; the order number, its date
+     * and the carrier, tracking number and tracking link hold digits, so they go under the reply
+     * as one line written here.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function orderStatus(Customer $customer, array $arguments, string $locale): array
+    {
+        $reference = is_string($arguments['reference'] ?? null) ? trim($arguments['reference'], " \t\n\r#") : '';
+        $orders    = Order::where('customer_id', $customer->id);
+
+        $order = $reference !== ''
+            ? $orders->where(fn ($query) => $query->where('reference', $reference)->orWhere('customer_reference', $reference)->orWhere('platform_order_id', $reference))->latest('id')->first()
+            : $orders->where('state', '!=', OrderStateEnum::CREATING)->latest('submitted_at')->latest('id')->first();
+
+        if (!$order) {
+            return ['content' => ['found' => false, 'note' => $reference !== ''
+                ? 'No order with that number in their account. Say so and ask them to check the number; offer a person only when they are sure of it.'
+                : 'They have not placed an order yet. Say so; a basket is not an order until it is placed.'], 'products' => [], 'error' => null];
+        }
+
+        $state = match ($order->state) {
+            OrderStateEnum::CREATING                          => 'still a basket: it has not been placed yet',
+            OrderStateEnum::SUBMITTED                         => 'placed and received by us, not yet in the warehouse',
+            OrderStateEnum::IN_WAREHOUSE                      => 'in our warehouse, waiting to be picked',
+            OrderStateEnum::HANDLING                          => 'being picked in our warehouse',
+            OrderStateEnum::HANDLING_BLOCKED                  => 'in our warehouse but on hold, waiting on something on our side: our team can say what',
+            OrderStateEnum::PICKED                            => 'picked, waiting to be packed',
+            OrderStateEnum::PACKING                           => 'being packed',
+            OrderStateEnum::PACKED, OrderStateEnum::FINALISED => 'packed and ready, waiting for the courier to collect it',
+            OrderStateEnum::DISPATCHED                        => 'dispatched',
+            OrderStateEnum::CANCELLED                         => 'cancelled',
+        };
+
+        $date     = match ($order->state) {
+            OrderStateEnum::DISPATCHED => $order->dispatched_at,
+            OrderStateEnum::CANCELLED  => $order->cancelled_at,
+            default                    => $order->submitted_at,
+        } ?? $order->created_at;
+        $tracking = $order->state === OrderStateEnum::DISPATCHED
+            ? $this->trackingOf($order->deliveryNotes()->with('shipments.shipper')->get()->flatMap->shipments->unique('id'))
+            : collect();
+
+        $line = implode(' · ', array_filter([
+            $order->reference.(filled($order->customer_reference) && $order->customer_reference !== $order->reference ? ' ('.$order->customer_reference.')' : ''),
+            $date ? (Carbon::parse($date)->locale($locale)->isoFormat('LL') ?: Carbon::parse($date)->isoFormat('LL')) : null,
+            ...$tracking->all(),
+        ]));
+
+        return [
+            'content'  => [
+                'found'        => true,
+                'state'        => $state,
+                'has_tracking' => $tracking->isNotEmpty(),
+                'line_shows'   => match ($order->state) {
+                    OrderStateEnum::DISPATCHED => 'the order number, the date it was dispatched'.($tracking->isNotEmpty() ? ', the carrier with the tracking number and the tracking link' : ''),
+                    OrderStateEnum::CANCELLED  => 'the order number and the date it was cancelled',
+                    default                    => 'the order number and the date it was placed',
+                },
+                'note'         => 'A line with what line_shows says is added under your reply by the system. Tell the customer in one or two sentences where the order is, from state, and that the details are below; write no number, date or tracking yourself and never promise a delivery date. When it is dispatched without tracking, say there is no tracking number on it. When they need more than this (a late or lost parcel, a change, a cancellation, a payment, an invoice, a refund), or the order is on hold, also offer our team: answer_kind offer_person, offer_reason order_question.',
+            ],
+            'products' => [],
+            'error'    => null,
+            'fact'     => $line,
+        ];
+    }
+
+    /**
+     * One text per parcel: the carrier, the tracking number and its tracking link when there is one.
+     *
+     * @param  \Illuminate\Support\Collection<int, \App\Models\Dispatching\Shipment>  $shipments
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    public function trackingOf(\Illuminate\Support\Collection $shipments): \Illuminate\Support\Collection
+    {
+        return $shipments->flatMap(function ($shipment) {
+            $carrier = trim((string) ($shipment->shipper?->trade_as ?: $shipment->shipper?->name));
+            $numbers = array_filter((array) $shipment->trackings) ?: array_filter([$shipment->tracking]);
+
+            return collect($numbers)->map(fn ($number, $key) => trim($carrier.' '.$number.' '.Arr::get((array) $shipment->tracking_urls, $key)))->values();
+        })->filter()->unique()->values();
     }
 
     /**

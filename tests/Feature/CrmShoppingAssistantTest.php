@@ -3457,3 +3457,103 @@ test('on a dropshipping shop Merlin can list the products added to a store chann
         $this->shop->update(['type' => $originalType]);
     }
 });
+
+test('Merlin says where the customer\'s own order is, with the order number, date and tracking written by the system, and an offer of a person after it keeps that line', function () {
+    $website  = createWebsite($this->shop);
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $stranger = shoppingAssistantCustomer($this->shop);
+    $tools    = GetShoppingAssistantTools::make();
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $locale   = 'en';
+
+    expect($tools->execute($conversation, 'order_status', [])['content']['found'])->toBeFalse();
+
+    $newOrder = fn (Customer $owner) => \App\Actions\Ordering\Order\StoreOrder::make()->action($owner, ['reference' => 'CZ-'.Str::upper(Str::random(8)), 'date' => date('Y-m-d'), 'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()), 'billing_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition())]);
+    $order    = $newOrder($customer);
+    $order->update(['customer_reference' => 'MY-77', 'state' => \App\Enums\Ordering\Order\OrderStateEnum::HANDLING, 'submitted_at' => '2026-11-10 09:00:00']);
+    $theirs   = $newOrder($stranger);
+    $theirs->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::SUBMITTED, 'submitted_at' => '2026-11-11 09:00:00']);
+
+    $picking = $tools->execute($conversation, 'order_status', []);
+    $byTheirReference = $tools->execute($conversation, 'order_status', ['reference' => '#MY-77']);
+    $notTheirs = $tools->execute($conversation, 'order_status', ['reference' => $theirs->reference]);
+
+    $order->update(['state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED, 'dispatched_at' => '2026-11-12 15:00:00']);
+    $sent = $tools->execute($conversation, 'order_status', ['reference' => $order->reference]);
+
+    $shipment = new \App\Models\Dispatching\Shipment(['tracking' => 'ZZ1', 'trackings' => ['ZZ1', 'ZZ2'], 'tracking_urls' => ['https://track.example/ZZ1']]);
+    $shipment->setRelation('shipper', new \App\Models\Dispatching\Shipper(['name' => 'Royal Parcel', 'trade_as' => 'RP']));
+
+    expect($picking['error'])->toBeNull()
+        ->and($picking['content']['state'])->toBe('being picked in our warehouse')
+        ->and(json_encode($picking['content']))->not->toContain($order->reference)
+        ->and($picking['fact'])->toBe($order->reference.' (MY-77) · '.\Carbon\Carbon::parse('2026-11-10')->locale($locale)->isoFormat('LL'))
+        ->and($byTheirReference['fact'])->toBe($picking['fact'])
+        ->and($notTheirs['content']['found'])->toBeFalse()
+        ->and($sent['content']['state'])->toBe('dispatched')
+        ->and($sent['content']['has_tracking'])->toBeFalse()
+        ->and($sent['fact'])->toContain(\Carbon\Carbon::parse('2026-11-12')->locale($locale)->isoFormat('LL'))
+        ->and($tools->trackingOf(collect([$shipment]))->all())->toBe(['RP ZZ1 https://track.example/ZZ1', 'RP ZZ2']);
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('order_status', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => 'Your order has been dispatched; the details are below.', 'answer_kind' => 'products', 'language' => 'en']))
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('order_status', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => '', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'language' => 'en']))]);
+
+    $where = AskShoppingAssistant::run($conversation, 'Where is my order?');
+    $late  = AskShoppingAssistant::run($conversation->fresh(), 'It has not moved for days, I am worried');
+    $request = collect(Http::recorded())->first()[0];
+
+    expect($where['reply'])->toBe("Your order has been dispatched; the details are below.\n\n".$sent['fact'])
+        ->and($where['message']->flags)->toBeNull()
+        ->and($late['reply'])->toBe($sent['fact']."\n\n".__('Our team will need to help you with that. Would you like to ask them?', [], $locale))
+        ->and($late['message']->refresh()->hand_over_offer->value)->toBe('order_question')
+        ->and(collect($request['tools'])->pluck('function.name'))->toContain('order_status')
+        ->and($request['messages'][0]['content'])->toContain('call order_status and answer from it')
+        ->and($request['messages'][0]['content'])->not->toContain('You cannot see the customer\'s orders');
+});
+
+test('a customer nobody answered after a hand-over to the live chat or a question to our team is told once when the team is back', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
+    $answered     = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::SEARCH);
+    $fresh        = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::SEARCH);
+    $asked        = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::SEARCH);
+    $now          = CarbonImmutable::now();
+    $waited       = $now->subMinutes(\App\Actions\CRM\ShoppingAssistant\TellShoppingAssistantCustomersTeamIsAway::WAIT_MINUTES + 5);
+
+    [$waitingChat]  = shoppingAssistantChat($this->shop, $conversation, 'waiting');
+    [$answeredChat] = shoppingAssistantChat($this->shop, $answered, 'waiting', ['agent' => $now]);
+    [$freshChat]    = shoppingAssistantChat($this->shop, $fresh, 'waiting');
+    shoppingAssistantHandOver($conversation, $waited, 'not_sure', 'live_chat', true, $waitingChat);
+    shoppingAssistantHandOver($answered, $waited, 'not_sure', 'live_chat', true, $answeredChat);
+    shoppingAssistantHandOver($fresh, $now, 'not_sure', 'live_chat', true, $freshChat);
+
+    $task = \App\Actions\Tasks\StoreStaffTask::run(\App\Actions\Tasks\GetAikuAssistant::run($customer->group_id), [
+        'subject' => 'Question', 'assignee_id' => $this->user->id, 'notify' => false,
+        'data'    => ['kind' => \App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantTeamQuestion::TASK_KIND, 'conversation_id' => $asked->id, 'customer_id' => $asked->customer_id, 'question' => 'Samples?', 'wait_until' => $waited->addMinutes(5)->toIso8601String()],
+    ]);
+    DB::table('staff_tasks')->where('id', $task->id)->update(['created_at' => $waited]);
+
+    $teller = \App\Actions\CRM\ShoppingAssistant\TellShoppingAssistantCustomersTeamIsAway::make();
+    $first  = $teller->handle();
+    $second = $teller->handle();
+    $told   = fn (ShoppingAssistantConversation $one) => $one->messages()->whereJsonContains('flags', 'team_away')->get();
+    $chatSentences  = ['Our team is back on :day at :time and will reply in the chat on this website.', 'Nobody from our team is free right now. They will reply in the chat on this website.'];
+    $emailSentences = ['Our team is back on :day at :time and will reply by email, to the address on your account.', 'Nobody from our team is free right now. They will reply by email, to the address on your account.'];
+    $starts = fn (string $body, array $sentences) => collect($sentences)->contains(fn (string $sentence) => str_starts_with($body, Str::before(__($sentence, [], $conversation->language_code), ':day')));
+
+    expect($first['hand_overs'])->toBeGreaterThanOrEqual(1)
+        ->and($first['questions'])->toBeGreaterThanOrEqual(1)
+        ->and($second)->toBe(['hand_overs' => 0, 'questions' => 0])
+        ->and($told($conversation))->toHaveCount(1)
+        ->and($starts($told($conversation)->first()->body, $chatSentences))->toBeTrue()
+        ->and($told($answered))->toHaveCount(0)
+        ->and($told($fresh))->toHaveCount(0)
+        ->and($told($asked))->toHaveCount(1)
+        ->and($starts($told($asked)->first()->body, $emailSentences))->toBeTrue()
+        ->and(data_get($task->refresh()->data, 'away_told_at'))->not->toBeNull();
+});
