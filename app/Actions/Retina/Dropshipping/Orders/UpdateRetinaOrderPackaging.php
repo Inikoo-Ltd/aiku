@@ -10,12 +10,15 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UpdateOrderPackaging;
 use App\Actions\RetinaAction;
+use App\Actions\Retina\Traits\WithRetinaBasketOnlyOrder;
 use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaOrderPackaging extends RetinaAction
 {
+    use WithRetinaBasketOnlyOrder;
+
     public function handle(Order $order, array $modelData): Order
     {
         return UpdateOrderPackaging::make()->action($order, $modelData);

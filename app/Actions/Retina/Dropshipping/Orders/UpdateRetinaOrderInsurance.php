@@ -11,11 +11,14 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UpdateOrderInsurance;
 use App\Actions\RetinaAction;
+use App\Actions\Retina\Traits\WithRetinaBasketOnlyOrder;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaOrderInsurance extends RetinaAction
 {
+    use WithRetinaBasketOnlyOrder;
+
     public function handle(Order $order, array $modelData): void
     {
         UpdateOrderInsurance::run($order, $modelData);

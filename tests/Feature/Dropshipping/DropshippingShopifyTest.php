@@ -76,6 +76,7 @@ use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Transaction;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Models\Ordering\Order;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
@@ -1952,6 +1953,34 @@ test('retina order, basket, address, login and api token writes act on the custo
 
     $this->delete(route('retina.models.order.delete_basket', $ownOrder->id))->assertRedirect();
     expect(Order::find($ownOrder->id))->toBeNull();
+});
+
+test('retina basket charge toggles refuse an order that has left the basket', function () {
+    Queue::fake();
+    $channel = shopifyProductChannel($this, 'retina-basket-only-toggles')->customerSalesChannel;
+    $order   = StoreOrder::make()->action($channel->customer, [
+        'reference'                 => 'basket-only-'.$channel->id,
+        'date'                      => date('Y-m-d'),
+        'customer_id'               => $channel->customer_id,
+        'customer_sales_channel_id' => $channel->id,
+        'platform_id'               => $channel->platform_id,
+        'delivery_address'          => new Address(Address::factory()->definition()),
+        'billing_address'           => new Address(Address::factory()->definition()),
+    ]);
+
+    DetectWebsiteFromDomain::mock()->shouldReceive('handle')->andReturn(LaunchWebsite::make()->action(createWebsite($this->shop)));
+    actingAs(StoreWebUser::make()->action($channel->customer, ['username' => 'basket-only-'.$channel->id, 'email' => 'basket-only-'.$channel->id.'@testmail.com', 'password' => 'test']), 'retina');
+
+    $order->update(['state' => OrderStateEnum::IN_WAREHOUSE, 'is_premium_dispatch' => false, 'has_insurance' => false, 'has_extra_packing' => false]);
+    $this->patchJson(route('retina.models.order.update_premium_dispatch', $order->id), ['is_premium_dispatch' => true])->assertStatus(422);
+    $this->patchJson(route('retina.models.order.update_insurance', $order->id), ['has_insurance' => true])->assertStatus(422);
+    $this->patchJson(route('retina.models.order.update_extra_packing', $order->id), ['has_extra_packing' => true])->assertStatus(422);
+    $this->patchJson(route('retina.models.order.update_gift_message', $order->id), ['has_gift_message' => true])->assertStatus(422);
+    expect($order->fresh())->is_premium_dispatch->toBeFalse()->has_insurance->toBeFalse()->has_extra_packing->toBeFalse();
+
+    $order->update(['state' => OrderStateEnum::CREATING]);
+    $this->patchJson(route('retina.models.order.update_premium_dispatch', $order->id), ['is_premium_dispatch' => true])->assertSessionHasNoErrors();
+    expect($order->fresh()->is_premium_dispatch)->toBeTrue();
 });
 
 dataset('retina platform write routes', [
