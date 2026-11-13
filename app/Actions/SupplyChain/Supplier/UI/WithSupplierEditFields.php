@@ -305,6 +305,10 @@ trait WithSupplierEditFields
                     'label'       => __('Agent fee (%)'),
                     'placeholder' => __('Default agent fee'),
                     'information' => __("The fee charged on this supplier's goods when a container is invoiced. Leave it empty to use each organisation's default agent fee."),
+                    'help'        => [
+                        'title' => __('How the agent fee is calculated'),
+                        'items' => SyncAgentInvoiceChargesFromLedger::feeCalculationExplained(),
+                    ],
                     'notes_title' => __('Default agent fee per organisation'),
                     'notes'       => $clientFees,
                     'value'       => $supplier->agent_fee_percentage !== null ? (float) $supplier->agent_fee_percentage : null,

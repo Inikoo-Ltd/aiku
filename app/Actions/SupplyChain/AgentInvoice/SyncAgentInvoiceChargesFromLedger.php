@@ -149,6 +149,20 @@ class SyncAgentInvoiceChargesFromLedger
         ]);
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function feeCalculationExplained(): array
+    {
+        return [
+            __('The agent fee is worked out when the invoice of a container is issued, on the goods in that container.'),
+            __("The goods of each supplier take that supplier's agent fee. A supplier without one takes the client's agent fee, and a client without one takes :percentage%.", ['percentage' => self::DEFAULT_AGENT_FEE_PERCENTAGE]),
+            __('The fee is one Agent fee line per container in the ledger. With suppliers at different fees its note shows each part.'),
+            __('Changing a fee does not change invoices already issued. Issue the invoice again while the container is still at the agent to apply it; once the container is dispatched its fee stays.'),
+            __('An agent fee recorded by hand for a container replaces the one worked out.'),
+        ];
+    }
+
     public static function clientFeePercentage(int $agentId, int $organisationId): float
     {
         $percentage = OrgAgent::where('agent_id', $agentId)->where('organisation_id', $organisationId)->value('agent_fee_percentage');

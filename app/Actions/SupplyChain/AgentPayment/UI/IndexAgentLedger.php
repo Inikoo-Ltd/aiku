@@ -356,6 +356,7 @@ class IndexAgentLedger extends OrgAction
                     'title' => __('Ledger'),
                 ],
                 'wallets'     => $this->walletsWithSupplierFees($this->agent),
+                'agent_fee_explained' => SyncAgentInvoiceChargesFromLedger::feeCalculationExplained(),
                 'form'        => $canEdit ? [
                     'store_route'     => ['name' => 'grp.models.agent.ledger_entry.store', 'parameters' => ['agent' => $this->agent->id]],
                     'agent_fee_route_name' => 'grp.models.org_agent.agent_fee.update',

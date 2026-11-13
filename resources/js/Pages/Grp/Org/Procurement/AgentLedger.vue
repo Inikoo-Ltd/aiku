@@ -23,6 +23,7 @@ import { faCheckCircle as fasCheckCircle } from "@fas"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Table from "@/Components/Table/Table.vue"
+import AgentFeeCalculationInfo from "@/Components/Procurement/AgentFeeCalculationInfo.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { ctrans } from "@/Composables/useTrans"
@@ -95,6 +96,7 @@ const props = defineProps<{
 	title: string
 	pageHead: PageHeadingTypes
 	wallets: Wallet[]
+	agent_fee_explained: string[]
 	form: {
 		store_route: routeType
 		agent_fee_route_name: string
@@ -579,6 +581,7 @@ const confirmRemove = (row: EntryRow) =>
 			<span class="text-gray-600">{{ ctrans("Share of the goods of each container (empty is 2%)") }}</span>
 			<InputNumber v-model="feePercentage" :min="0" :max="100" :maxFractionDigits="2" suffix="%" class="mt-1 w-full" :class="fieldFocusClass" :pt="fullWidthInput" />
 		</label>
+		<AgentFeeCalculationInfo :items="agent_fee_explained" class="mt-3" />
 		<p v-if="feeError" class="mt-2 text-xs text-red-600">{{ feeError }}</p>
 		<template #footer>
 			<div class="flex w-full gap-2">
@@ -625,6 +628,7 @@ const confirmRemove = (row: EntryRow) =>
 			</li>
 		</ul>
 		<p v-else class="mt-3 text-sm text-gray-400">{{ ctrans("No supplier has a different agent fee.") }}</p>
+		<AgentFeeCalculationInfo :items="agent_fee_explained" class="mt-3" />
 
 		<div v-if="form" class="mt-5 border-t border-gray-100 pt-4">
 			<div class="text-sm font-medium text-gray-700">{{ ctrans("Set a supplier's agent fee") }}</div>
