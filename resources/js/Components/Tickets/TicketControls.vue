@@ -478,7 +478,8 @@ const saveDeployComment = () => {
                 <p class="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">{{ ctrans("Status") }}</p>
                 <div class="flex flex-wrap items-center gap-2">
                         <span class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium" :class="statusBadgeClasses[ticket.status_icon.color]">
-                            <FontAwesomeIcon :icon="ticket.status_icon.icon" fixed-width />
+                            <img v-if="ticket.status === 'in_progress'" src="/art/ticket-in-progress-icon.gif" alt="" class="-my-1 h-7 w-7 rounded-full" />
+                            <FontAwesomeIcon v-else :icon="ticket.status_icon.icon" fixed-width />
                             {{ ticket.status_label }}
                         </span>
                         <span v-if="ticket.status === 'waiting' && ticket.waiting_until" v-tooltip="ctrans('Cancelled if no reply by then')" class="text-xs text-gray-500">
