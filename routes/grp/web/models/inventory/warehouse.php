@@ -22,6 +22,9 @@ use App\Actions\Dispatching\PickingSession\UndoWaitingPickingSession;
 use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
+use App\Actions\Dispatching\PackingBench\DeletePackingBench;
+use App\Actions\Dispatching\PackingBench\StorePackingBench;
+use App\Actions\Dispatching\PackingBench\UpdatePackingBench;
 use App\Actions\Dispatching\Trolley\DeleteTrolley;
 use App\Actions\Dispatching\Trolley\StoreTrolley;
 use App\Actions\Fulfilment\PickingSession\StoreFulfilmentPickingSession;
@@ -67,10 +70,13 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
 
     Route::post('picked-bays', [StorePickedBay::class, 'inWarehouse'])->name('picked_bays.store');
     Route::patch('picked-bays/{pickedBay:id}', UpdatePickedBay::class)->name('picked_bays.update')->withoutScopedBindings();
+    Route::post('packing-benches', [StorePackingBench::class, 'inWarehouse'])->name('packing_benches.store');
+    Route::patch('packing-benches/{packingBench:id}', UpdatePackingBench::class)->name('packing_benches.update')->withoutScopedBindings();
 });
 
 Route::delete('picked-bays/{pickedBay:id}', DeletePickedBay::class)->name('picked_bays.delete');
 Route::delete('trolleys/{trolley:id}', DeleteTrolley::class)->name('trolleys.delete');
+Route::delete('packing-benches/{packingBench:id}', DeletePackingBench::class)->name('packing_benches.delete');
 
 Route::patch('picking-session/{pickingSession:id}', UpdatePickingSession::class)->name('picking_session.update')->withoutScopedBindings();
 Route::patch('picking-session/{pickingSession:id}/start-picking', StartPickPickingSession::class)->name('picking_session.start_picking')->withoutScopedBindings();

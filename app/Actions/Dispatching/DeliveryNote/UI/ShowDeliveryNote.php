@@ -396,11 +396,16 @@ class ShowDeliveryNote extends OrgAction
 
         return [
             [
-                'type'  => 'button',
-                'style' => 'save',
-                'label' => __('Start packing'),
-                'key'   => 'action',
-                'route' => [
+                'type'            => 'button',
+                'style'           => 'save',
+                'label'           => __('Start packing'),
+                'key'             => 'start-packing',
+                'packing_benches' => $deliveryNote->warehouse->packingBenches()
+                    ->where('status', true)
+                    ->orderBy('code')
+                    ->get(['id', 'code'])
+                    ->toArray(),
+                'route'           => [
                     'method'     => 'patch',
                     'name'       => 'grp.models.delivery_note.state.packing',
                     'parameters' => [
@@ -1065,6 +1070,7 @@ class ShowDeliveryNote extends OrgAction
             'picker'                       => $deliveryNote->pickerUser,
             'packer'                       => $deliveryNote->packerUser,
             'picked_bays'                  => $pickedBays,
+            'packing_bench'                => $deliveryNote->packingBench?->code,
             'trolleys'                     => $trolleys,
             'parcels'                      => $deliveryNote->parcels,
             'box_packing_list'             => $this->getBoxPackingList($deliveryNote),

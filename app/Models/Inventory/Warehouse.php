@@ -11,6 +11,7 @@ namespace App\Models\Inventory;
 use App\Enums\Inventory\Warehouse\WarehouseStateEnum;
 use App\Models\Analytics\AikuSection;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\PackingBench;
 use App\Models\Dispatching\PickingRoute;
 use App\Models\Dispatching\Trolley;
 use App\Models\Fulfilment\Fulfilment;
@@ -245,6 +246,11 @@ class Warehouse extends Model implements Auditable
     public function pickedBays(): HasMany
     {
         return $this->hasMany(PickedBay::class);
+    }
+
+    public function packingBenches(): HasMany
+    {
+        return $this->hasMany(PackingBench::class);
     }
 
     public function warehouseStockHistories(): HasMany
