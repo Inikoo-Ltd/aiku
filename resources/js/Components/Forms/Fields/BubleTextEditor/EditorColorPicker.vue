@@ -27,7 +27,7 @@ const isOpen = ref(false)
 const closePicker = (): void => overlayPanel.value?.hide()
 
 const bubbleElement = (): HTMLElement | null =>
-    (root.value?.closest('[data-tippy-root]') as HTMLElement | null) ?? root.value
+    (root.value?.closest('[data-bubble-menu]') as HTMLElement | null) ?? root.value
 
 const panelElement = (): Element | null => (overlayPanel.value as unknown as { container?: Element })?.container ?? null
 

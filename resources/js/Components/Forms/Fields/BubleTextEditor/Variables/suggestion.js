@@ -1,5 +1,5 @@
 import { VueRenderer } from "@tiptap/vue-3"
-import tippy from "tippy.js"
+import { computePosition, flip, offset, shift } from "@floating-ui/dom"
 
 import MentionList from "./MentionList.vue"
 
@@ -24,6 +24,21 @@ export default {
 		let component
 		let popup
 
+		const positionPopup = (clientRect) => {
+			const rect = clientRect?.()
+			if (!popup || !rect) {
+				return
+			}
+
+			computePosition({ getBoundingClientRect: () => rect }, popup, {
+				placement: "bottom-start",
+				strategy: "fixed",
+				middleware: [offset(8), flip(), shift({ padding: 8 })],
+			}).then(({ x, y }) => {
+				Object.assign(popup.style, { left: `${x}px`, top: `${y}px` })
+			})
+		}
+
 		return {
 			onStart: (props) => {
 				component = new VueRenderer(MentionList, {
@@ -35,32 +50,22 @@ export default {
 					return
 				}
 
-				popup = tippy("body", {
-					getReferenceClientRect: props.clientRect,
-					appendTo: () => document.body,
-					content: component.element,
-					showOnCreate: true,
-					interactive: true,
-					trigger: "manual",
-					placement: "bottom-start",
-				})
+				popup = document.createElement("div")
+				Object.assign(popup.style, { position: "fixed", top: "0", left: "0", zIndex: "9999" })
+				popup.appendChild(component.element)
+				document.body.appendChild(popup)
+				positionPopup(props.clientRect)
 			},
 
 			onUpdate(props) {
 				component.updateProps(props)
-
-				if (!props.clientRect) {
-					return
-				}
-
-				popup[0].setProps({
-					getReferenceClientRect: props.clientRect,
-				})
+				positionPopup(props.clientRect)
 			},
 
 			onKeyDown(props) {
 				if (props.event.key === "Escape") {
-					popup[0].hide()
+					popup?.remove()
+					popup = null
 					return true
 				}
 
@@ -68,7 +73,8 @@ export default {
 			},
 
 			onExit() {
-				popup[0].destroy()
+				popup?.remove()
+				popup = null
 				component.destroy()
 			},
 		}

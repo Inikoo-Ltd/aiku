@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, nextTick, watch, computed } from "vue"
-import { useEditor, EditorContent, BubbleMenu, isNodeSelection } from '@tiptap/vue-3'
+import { useEditor, EditorContent, isNodeSelection } from '@tiptap/vue-3'
+import { BubbleMenu } from '@tiptap/vue-3/menus'
 import Select from 'primevue/select'
 import { fontsForCurrentShop } from '@/Composables/useFont'
 import FontNotFor from "@/Components/Workshop/Properties/FontNotFor.vue"
@@ -11,38 +12,26 @@ import TiptapToolbarDropdown from "@/Components/Forms/Fields/BubleTextEditor/Tip
 import Paragraph from "@tiptap/extension-paragraph"
 import Document from "@tiptap/extension-document"
 import Text from "@tiptap/extension-text"
-import History from "@tiptap/extension-history"
 import Heading from "@tiptap/extension-heading"
 import Bold from "@tiptap/extension-bold"
 import Italic from "@tiptap/extension-italic"
 import Underline from "@tiptap/extension-underline"
 import Strike from "@tiptap/extension-strike"
-import ListItem from "@tiptap/extension-list-item"
-import BulletList from "@tiptap/extension-bullet-list"
-import OrderedList from "@tiptap/extension-ordered-list"
+import { ListItem, BulletList, OrderedList } from "@tiptap/extension-list"
 import TextAlign from '@tiptap/extension-text-align'
 import { Blockquote } from "@tiptap/extension-blockquote"
 import { HardBreak } from "@tiptap/extension-hard-break"
-import { CharacterCount } from "@tiptap/extension-character-count"
+import { CharacterCount, Dropcursor, Gapcursor, Placeholder, UndoRedo } from "@tiptap/extensions"
 import { Youtube } from "@tiptap/extension-youtube"
-import Dropcursor from "@tiptap/extension-dropcursor"
 import { HorizontalRule } from "@tiptap/extension-horizontal-rule"
-import { Table } from "@tiptap/extension-table"
-import { TableHeader } from "@tiptap/extension-table-header"
-import { TableRow } from "@tiptap/extension-table-row"
-import { TableCell } from "@tiptap/extension-table-cell"
-import Gapcursor from "@tiptap/extension-gapcursor"
-import TextStyle from '@tiptap/extension-text-style'
+import { Table, TableHeader, TableRow, TableCell } from "@tiptap/extension-table"
+import { TextStyle, Color, FontFamily, FontSize } from '@tiptap/extension-text-style'
 import customLink from '@/Components/Forms/Fields/BubleTextEditor/CustomLink/CustomLinkExtension.js'
-import { Color } from '@tiptap/extension-color'
-import FontSize from 'tiptap-extension-font-size'
-import FontFamily from '@tiptap/extension-font-family'
 import Highlight from '@tiptap/extension-highlight'
 import UtilsColorPicker from '@/Components/Utils/ColorPicker.vue'
 import EditorColorPicker from '@/Components/Forms/Fields/BubleTextEditor/EditorColorPicker.vue'
 import {CustomImage} from './CustomResizeImage/CustomImageSetting'
 import { IMAGE_WIDTH_PRESETS, ImageAlignment, imageWidthPercent, toImageWidth } from './CustomResizeImage/imageLayout'
-import Placeholder from "@tiptap/extension-placeholder"
 import Link from "@tiptap/extension-link"
 import Iframe from "@/Components/Forms/Fields/BubleTextEditor/Iframe/IframeExtension.js"
 import { CtaButton, CTA_BUTTON_NODE } from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/CtaButtonExtension"
@@ -85,7 +74,7 @@ import TiptapTableDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapT
 import TiptapImageDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapImageDialog.vue"
 import TiptapImageSettingsDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapImageSettingsDialog.vue"
 import TiptapVariableDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapVariableDialog.vue"
-import { Plugin } from "prosemirror-state"
+import { Plugin } from "@tiptap/pm/state"
 import Variabel from "./Variables/Variables"
 import suggestion from './Variables/suggestion'
 import { ctrans } from "@/Composables/useTrans"
@@ -121,7 +110,6 @@ const emits = defineEmits<{
     (e: 'blur'): void
 }>()
 
-const _bubbleMenu = ref(null)
 const showDialog = ref(false)
 const contentResult = ref<string>()
 const currentLinkInDialog = ref<string | undefined>()
@@ -142,20 +130,14 @@ const ctaButtonInDialog = ref<{ position: number | null, attributes: CtaButtonAt
 const showAddVariableDialog = ref<boolean>(false)
 const showMergeTagDialog = ref<boolean>(false)
 const showLinkDialog = ref<boolean>()
-const tippyOptions = {
-    theme: 'tiptap-bubble',
+const bubbleMenuOptions = {
     placement: 'bottom',
-    offset: [0, 8],
-    appendTo: () => document.body,
-    maxWidth: 'none',
-    popperOptions: {
-        strategy: 'fixed',
-        modifiers: [
-            { name: 'preventOverflow', options: { padding: 8 } },
-            { name: 'flip', options: { padding: 8 } },
-        ],
-    },
-}
+    strategy: 'fixed',
+    offset: 8,
+    flip: { padding: 8 },
+    shift: { padding: 8 },
+} as const
+const appendBubbleMenuToBody = () => document.body
 const key = ref(ulid())
 const isPickingColor = ref(false)
 const colorSelection = ref<{ from: number; to: number } | null>(null)
@@ -185,7 +167,7 @@ const editorInstance = useEditor({
         Document,
         Text,
         CustomImage,
-        History,
+        UndoRedo,
         Placeholder.configure({
             placeholder: props.placeholder || "Start typing...",
         }),
@@ -273,7 +255,7 @@ const editorInstance = useEditor({
         }),
         Dropcursor.configure({
             width: 2,
-            color: "#2563eb",
+            color: "var(--app-accent)",
         }),
         HorizontalRule,
         Table.configure({
@@ -960,11 +942,12 @@ onMounted(async () => {
             <BubbleMenu  
                 :key="key"
                 :shouldShow="shouldShowBubble"
-                :tippy-options="tippyOptions"
-                ref="_bubbleMenu"
+                :options="bubbleMenuOptions"
+                :append-to="appendBubbleMenuToBody"
                 :editor="editorInstance"
                 v-if="editorInstance && !showDialog"
-                class="w-max max-w-[92vw]"
+                data-bubble-menu
+                class="z-[9999] w-max max-w-[92vw]"
             >
 
                 <div class="rounded-lg border border-gray-200 bg-white p-1 shadow-lg isolate">
@@ -1011,7 +994,7 @@ onMounted(async () => {
                                         <button v-for="font in fontFamilies" :key="font.value" type="button"
                                             class="flex w-full items-center px-3 py-1.5 text-left text-sm transition-colors"
                                             :class="editorInstance?.getAttributes('textStyle').fontFamily === font.value
-                                                ? 'bg-blue-50 text-blue-800'
+                                                ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]'
                                                 : 'text-gray-700 hover:bg-gray-100'"
                                             :style="{ fontFamily: font.value }"
                                             @click="editorInstance?.chain().focus().setFontFamily(font.value).run(); close()">
@@ -1045,7 +1028,7 @@ onMounted(async () => {
                                         <button v-for="fontsize in fontSizeOptions" :key="fontsize" type="button"
                                             class="flex w-full items-center justify-between px-3 py-1.5 text-left text-sm transition-colors"
                                             :class="editorInstance?.getAttributes('textStyle').fontSize === toRemFontSize(fontsize)
-                                                ? 'bg-blue-50 text-blue-800'
+                                                ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]'
                                                 : 'text-gray-700 hover:bg-gray-100'"
                                             @click="editorInstance?.chain().focus().setFontSize(toRemFontSize(fontsize)).run(); close()">
                                             <span>{{ fontsize }}px</span>
@@ -1071,8 +1054,8 @@ onMounted(async () => {
                                             :aria-label="ctrans(option.label)"
                                             class="inline-flex h-7 w-7 items-center justify-center rounded transition-colors"
                                             :class="activeHeadingOption?.level === option.level
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : 'text-gray-600 hover:bg-blue-50'"
+                                                ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]'
+                                                : 'text-gray-600 hover:bg-[var(--app-accent-soft)]'"
                                             @click="editorInstance?.chain().focus().toggleHeading({ level: option.level }).run(); close()">
                                             <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" fixed-width />
                                         </button>
@@ -1096,8 +1079,8 @@ onMounted(async () => {
                                             :aria-label="ctrans(option.label)"
                                             class="inline-flex h-7 w-7 items-center justify-center rounded transition-colors"
                                             :class="activeListOption?.value === option.value
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : 'text-gray-600 hover:bg-blue-50'"
+                                                ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]'
+                                                : 'text-gray-600 hover:bg-[var(--app-accent-soft)]'"
                                             @click="toggleList(option.value); close()">
                                             <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" fixed-width />
                                         </button>
@@ -1176,8 +1159,8 @@ onMounted(async () => {
                                             :aria-label="ctrans(option.label)"
                                             class="inline-flex h-7 w-7 items-center justify-center rounded transition-colors"
                                             :class="activeAlignOption?.value === option.value
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : 'text-gray-600 hover:bg-blue-50'"
+                                                ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]'
+                                                : 'text-gray-600 hover:bg-[var(--app-accent-soft)]'"
                                             @click="editorInstance?.chain().focus().setTextAlign(option.value).run(); close()">
                                             <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" fixed-width />
                                         </button>
@@ -1264,7 +1247,7 @@ onMounted(async () => {
                                             <button v-if="toggle.includes('blockquote')" type="button"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors"
                                                 :class="editorInstance?.isActive('blockquote')
-                                                    ? 'bg-blue-50 text-blue-800'
+                                                    ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)]'
                                                     : 'text-gray-700 hover:bg-gray-100'"
                                                 @click="editorInstance?.chain().focus().toggleBlockquote().run(); close()">
                                                 <FontAwesomeIcon :icon="faQuoteLeft" class="h-4 w-4" fixed-width />
@@ -1324,8 +1307,8 @@ onMounted(async () => {
                             :aria-pressed="selectedImageWidthPercent === percent"
                             class="inline-flex h-7 shrink-0 items-center justify-center rounded px-1.5 text-xs font-medium tabular-nums transition-colors"
                             :class="selectedImageWidthPercent === percent
-                                ? 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                                : 'text-gray-600 hover:bg-blue-50'"
+                                ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent-deep)] hover:bg-[var(--app-accent-muted)]'
+                                : 'text-gray-600 hover:bg-[var(--app-accent-soft)]'"
                             @mousedown.prevent
                             @click="updateSelectedImage({ width: toImageWidth(percent) })">
                             {{ percent }}%
@@ -1590,18 +1573,6 @@ onMounted(async () => {
     </div>
 </template>
 
-
-<style>
-.tippy-box[data-theme~='tiptap-bubble'] {
-    background-color: transparent;
-    color: inherit;
-    border-radius: 0;
-}
-
-.tippy-box[data-theme~='tiptap-bubble'] > .tippy-content {
-    padding: 0;
-}
-</style>
 
 <style scoped>
 

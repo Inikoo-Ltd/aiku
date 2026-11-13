@@ -19,7 +19,6 @@ import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import ListItem from '@tiptap/extension-list-item'
 library.add(faLink, faExternalLinkAlt, faExclamationTriangle)
 
 const props = defineProps<{
@@ -200,7 +199,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     id="pages-all"
                     name="input-target"
                     type="radio"
-                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    class="h-4 w-4 border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                 />
                 <label for="pages-all" class="cursor-pointer block font-medium ">
                     {{ ctrans("All pages") }}
@@ -215,7 +214,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     id="pages-specific"
                     name="input-target"
                     type="radio"
-                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    class="h-4 w-4 border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                 />
                 <label for="pages-specific" class="cursor-pointer block font-medium ">
                     {{ ctrans("Specific page") }}
@@ -340,7 +339,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     id="top-bar"
                     name="position"
                     type="radio"
-                    class="h-4 w-4 border-gray-300 focus:ring-indigo-600"
+                    class="h-4 w-4 border-gray-300 focus:ring-[var(--app-accent)]"
                 />
                 <label for="top-bar" class="cursor-pointer block font-medium">
                     {{ ctrans('Top bar') }}
@@ -355,7 +354,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     id="bottom-menu"
                     name="position"
                     type="radio"
-                    class="h-4 w-4 border-gray-300 focus:ring-indigo-600"
+                    class="h-4 w-4 border-gray-300 focus:ring-[var(--app-accent)]"
                 />
                 <label for="bottom-menu" class="cursor-pointer block font-medium">
                     {{ ctrans('Bottom Menu') }}
@@ -370,7 +369,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     id="top-footer"
                     name="position"
                     type="radio"
-                    class="h-4 w-4 border-gray-300 focus:ring-indigo-600"
+                    class="h-4 w-4 border-gray-300 focus:ring-[var(--app-accent)]"
                 />
                 <label for="top-footer" class="cursor-pointer block font-medium">
                     {{ ctrans('Top footer') }}
@@ -394,7 +393,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     id="auth-both"
                     name="input-auth-state"
                     type="radio"
-                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    class="h-4 w-4 border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                 />
                 <label for="auth-both" class="cursor-pointer block font-medium ">
                     {{ ctrans("Both") }}
@@ -409,7 +408,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     id="auth-logged_in"
                     name="input-auth-state"
                     type="radio"
-                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    class="h-4 w-4 border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                 />
                 <label for="auth-logged_in" class="cursor-pointer block font-medium ">
                     {{ ctrans("Visitor logged in") }}
@@ -424,7 +423,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                     id="auth-logged_out"
                     name="input-auth-state"
                     type="radio"
-                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    class="h-4 w-4 border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                 />
                 <label for="auth-logged_out" class="cursor-pointer block font-medium ">
                     {{ ctrans("Visitor logged out") }}
@@ -453,7 +452,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                             id="inp-publish-now"
                             name="inp-publish-now"
                             type="radio"
-                            class="cursor-pointer h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                            class="cursor-pointer h-4 w-4 border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                         />
                         <label for="inp-publish-now" class="block text-sm/6 cursor-pointer ">Publish now</label>
                     </div>
@@ -466,7 +465,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                             id="inp-publish-schedule"
                             name="inp-publish-schedule"
                             type="radio"
-                            class="cursor-pointer h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                            class="cursor-pointer h-4 w-4 border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                         />
                         <!-- <label for="inp-publish-schedule" class="block text-sm/6 font-medium cursor-pointer ">Scheduled</label> -->
                         <VueDatePicker
@@ -500,7 +499,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                             id="inp-finish-unlimited"
                             name="inp-finish-unlimited"
                             type="radio"
-                            class="cursor-pointer h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                            class="cursor-pointer h-4 w-4 border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                         />
                         <label for="inp-finish-unlimited" class="block text-sm/6 font-medium cursor-pointer ">{{ ctrans("Until deactivated") }}</label>
                     </div>
@@ -513,7 +512,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                             id="inp-finish-scheduled"
                             name="inp-finish-scheduled"
                             type="radio"
-                            class="cursor-pointer h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                            class="cursor-pointer h-4 w-4 border-gray-300 text-[var(--app-accent)] focus:ring-[var(--app-accent)]"
                         />
                         <!-- <label for="inp-finish-scheduled" class="block text-sm/6 font-medium cursor-pointer ">Scheduled</label> -->
                         <VueDatePicker
