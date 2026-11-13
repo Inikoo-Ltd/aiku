@@ -257,7 +257,7 @@ watch(
                 <span class="inline-flex items-center"><Icon v-if="item.type_icon" :data="item.type_icon" class="mr-1 text-gray-400" /><Link :href="ticketRoute(item.reference)" class="primaryLink" :data-ticket-id="item.id">{{ item.reference }}</Link></span>
             </template>
             <template #cell(status)="{ item }">
-                <Icon v-if="ratedView" :data="item.status_icon" />
+                <template v-if="ratedView"><img v-if="item.status === 'in_progress'" src="/art/ticket-in-progress-icon.gif" alt="" class="-my-1 inline-block h-6 w-6 rounded-full align-middle" /><Icon v-else :data="item.status_icon" /></template>
                 <button
                     v-if="!ratedView && statusActionsFor(item).length"
                     type="button"
@@ -265,10 +265,10 @@ watch(
                     :title="ctrans('Change status')"
                     :disabled="isRowSaving(item)"
                     @click="openEditor('status', item, $event)">
-                    <Icon :data="item.status_icon" /> {{ item.status_label }}
+                    <img v-if="item.status === 'in_progress'" src="/art/ticket-in-progress-icon.gif" alt="" class="-my-1 inline-block h-6 w-6 rounded-full align-middle" /><Icon v-else :data="item.status_icon" /> {{ item.status_label }}
                     <LoadingIcon v-if="isSaving(item, 'status')" class="text-[10px] text-gray-400" /><FontAwesomeIcon v-else icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
                 </button>
-                <span v-else-if="!ratedView" :class="readOnlyCellClass"><Icon :data="item.status_icon" /> {{ item.status_label }}</span>
+                <span v-else-if="!ratedView" :class="readOnlyCellClass"><img v-if="item.status === 'in_progress'" src="/art/ticket-in-progress-icon.gif" alt="" class="-my-1 inline-block h-6 w-6 rounded-full align-middle" /><Icon v-else :data="item.status_icon" /> {{ item.status_label }}</span>
             </template>
             <template #cell(rating)="{ item }">
                 <span v-if="item.rating" class="block">
