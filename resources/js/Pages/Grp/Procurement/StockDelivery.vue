@@ -31,6 +31,7 @@ import StockDeliveryServiceInvoices from "@/Components/Procurement/StockDelivery
 import AgentContainerInvoicePanel from "@/Components/Procurement/AgentContainerInvoicePanel.vue"
 import AgreedTermDifferences from "@/Components/Procurement/AgreedTermDifferences.vue"
 import StockDeliveryAddItems from "@/Components/Procurement/StockDeliveryAddItems.vue"
+import StockDeliveryAddItemNotOnPurchaseOrder from "@/Components/Procurement/StockDeliveryAddItemNotOnPurchaseOrder.vue"
 import StockDeliveryImportItems from "@/Components/Procurement/StockDeliveryImportItems.vue"
 import ModalAcceptResponsibility from "@/Components/Procurement/ModalAcceptResponsibility.vue"
 import TableStockDeliveryItems from "@/Components/Tables/Grp/Org/Procurement/TableStockDeliveryItems.vue"
@@ -136,6 +137,8 @@ const props = defineProps<{
 		}[]
 	} | null
 	add_purchase_order_items?: InstanceType<typeof StockDeliveryAddItems>["$props"]["data"]
+	add_item_not_on_purchase_order?: routeType | null
+	products_not_on_purchase_order?: { id: number; code: string | null; name: string | null }[] | null
 	remove_purchase_orders: Record<number, {
 		reference: string
 		route: routeType
@@ -307,6 +310,13 @@ const addItemsOpen = ref(false)
 const openAddItems = () => {
 	addItemsOpen.value = true
 	router.reload({ only: ["add_purchase_order_items"] })
+}
+
+const addItemNotOnPurchaseOrderOpen = ref(false)
+
+const openAddItemNotOnPurchaseOrder = () => {
+	addItemNotOnPurchaseOrderOpen.value = true
+	router.reload({ only: ["products_not_on_purchase_order"] })
 }
 
 const importItemsOpen = ref(false)
@@ -893,6 +903,13 @@ const confirmDeleteStockDelivery = (action: any) => {
 	<PageHeading :data="pageHeadWithoutSettings">
 		<template #otherBefore>
 			<Action v-if="settingsAction" :action="settingsAction" />
+			<span v-if="add_item_not_on_purchase_order" v-tooltip="ctrans('The supplier sent a product that is on none of the purchase orders')">
+				<Button type="tertiary" :label="ctrans('Add item not ordered')" @click="openAddItemNotOnPurchaseOrder">
+					<template #icon>
+						<FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width aria-hidden="true" />
+					</template>
+				</Button>
+			</span>
 			<div v-if="add_purchase_orders" class="inline-flex divide-x divide-gray-300 overflow-hidden rounded-md border border-gray-300">
 				<span v-tooltip="add_purchase_orders.purchase_orders.length === 0 ? ctrans('No confirmed purchase orders of this agent are waiting for a container') : ctrans('Add whole purchase orders, or pick single items of them and how many of each')">
 					<Button
@@ -1577,6 +1594,12 @@ const confirmDeleteStockDelivery = (action: any) => {
 	</Dialog>
 
 	<Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+	<StockDeliveryAddItemNotOnPurchaseOrder
+		v-if="add_item_not_on_purchase_order"
+		v-model:visible="addItemNotOnPurchaseOrderOpen"
+		:addRoute="add_item_not_on_purchase_order"
+		:products="products_not_on_purchase_order"
+	/>
 	<StockDeliveryAddItems v-if="add_purchase_orders" v-model:visible="addItemsOpen" :data="add_purchase_order_items" :purchaseOrders="add_purchase_orders.purchase_orders" />
 	<StockDeliveryImportItems v-if="add_purchase_orders" v-model:visible="importItemsOpen" :previewRoute="add_purchase_orders.import.preview_route" :addRoute="add_purchase_orders.import.add_route" />
 	<component

@@ -21,6 +21,7 @@ use App\Actions\SupplyChain\AgentInvoice\ApplyAgentInvoiceCosting;
 use App\Actions\SupplyChain\AgentInvoice\ApproveAgentInvoiceCharges;
 use App\Actions\Procurement\SupplierAgreedTerm\CheckAgainstAgreedTerms;
 use App\Actions\Procurement\SupplierAgreedTerm\UI\GetAgreement;
+use App\Actions\GoodsIn\StockDelivery\AddItemNotOnPurchaseOrderToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrderItemsToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\AddPurchaseOrdersToStockDelivery;
 use App\Actions\GoodsIn\StockDelivery\DispatchStockDelivery;
@@ -239,6 +240,8 @@ class ShowStockDelivery extends OrgAction
             : [];
 
         $agentNamed = $this->viewedByAgent && $stockDelivery->agent_reference;
+
+        $canAddItemNotOnPurchaseOrder = $this->canBookIn && !$this->viewedByAgent && AddItemNotOnPurchaseOrderToStockDelivery::acceptsItems($stockDelivery);
         $title      = $agentNamed ? $stockDelivery->agent_reference : $stockDelivery->reference;
 
         return Inertia::render(
@@ -275,6 +278,12 @@ class ShowStockDelivery extends OrgAction
                 'add_purchase_orders' => $this->canAddPurchaseOrders ? $this->getAddPurchaseOrders($stockDelivery) : null,
                 'add_purchase_order_items' => $this->canAddPurchaseOrders ? Inertia::optional(fn () => $this->getAddPurchaseOrderItems($stockDelivery)) : null,
                 'remove_purchase_orders' => $this->canRemovePurchaseOrders ? $this->getRemovePurchaseOrders($stockDelivery) : null,
+                'add_item_not_on_purchase_order' => $canAddItemNotOnPurchaseOrder ? [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.stock-delivery.items_not_on_purchase_order.add',
+                    'parameters' => ['stockDelivery' => $stockDelivery->id],
+                ] : null,
+                'products_not_on_purchase_order' => $canAddItemNotOnPurchaseOrder ? Inertia::optional(fn () => $this->getProductsNotOnPurchaseOrder($stockDelivery)) : null,
                 'attachmentScopes' => PurchaseOrderAttachmentScopeEnum::options(),
                 'invoice_costing'  => $this->viewedByAgent || $this->goodsIn ? [] : GetStockDeliveryInvoiceCosting::run($stockDelivery),
                 'service_invoices' => $this->goodsIn ? null : $this->getServiceInvoices($stockDelivery),
@@ -1574,6 +1583,20 @@ class ShowStockDelivery extends OrgAction
                 ->values()
                 ->all(),
         ];
+    }
+
+    /**
+     * @return array<int, array{id: int, code: ?string, name: ?string}>
+     */
+    private function getProductsNotOnPurchaseOrder(StockDelivery $stockDelivery): array
+    {
+        return AddItemNotOnPurchaseOrderToStockDelivery::addableOrgSupplierProducts($stockDelivery)
+            ->join('supplier_products', 'supplier_products.id', 'org_supplier_products.supplier_product_id')
+            ->orderBy('supplier_products.code')
+            ->get(['org_supplier_products.id', 'supplier_products.code', 'supplier_products.name'])
+            ->map(fn ($row) => ['id' => $row->id, 'code' => $row->code, 'name' => $row->name])
+            ->values()
+            ->all();
     }
 
     private function getRemovePurchaseOrders(StockDelivery $stockDelivery): array

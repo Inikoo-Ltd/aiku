@@ -96,9 +96,11 @@ Stlačte **Resolve** pri riadku a vyberte, čo sa stalo:
 - **Recount** - sklad dostane úlohu riadok znova spočítať. Keď ju uzavrie, dostanete správu; potom sa vráťte a vyberte jeden z ostatných výsledkov.
 - **Unit error** - opravte, čo sa očakávalo (v našich jednotkách, alebo v jednotke dodávateľa, ak je nastavená), a hodnotu riadku. Spočítané množstvo sa nikdy nemení. Ak zostane skutočný rozdiel, riadok zostane označený, aby ste ho mohli reklamovať - riadok očakávaný ako 80 kg 500 g vreciek sa stane 160 očakávanými vreckami a 120 spočítaných sa zobrazí ako 40 chýbajúcich.
 - **Supplier claim** - len pre chýbajúci riadok. Zadajte reklamované kusy a hodnotu a pridajte fotografie z goods in; pridajú sa do príloh dodávky. Reklamácia začína ako **Open**: kliknutím na ňu v stĺpci **Outcome** ju označíte ako **Sent to supplier**, **Credit received** (s číslom dobropisu, sumou a dátumom) alebo **Rejected**. Reklamácia sa len sleduje - nemení kalkuláciu nákladov dodávky.
-- **Accept surplus** - len pre riadok navyše: ponechať prebytočné kusy.
+- **Accept surplus** - len pre riadok navyše: ponechať prebytočné kusy. Riadok potom očakáva to, čo prišlo, a jeho hodnota narastie pri rovnakej cene za kus, takže súčet dodávky aj kalkulácia nákladov rátajú aj kusy navyše.
 
-Oprava chyby jednotky na uloženej dodávke prepočíta cenu tovaru, ktorý sa z nej uložil, preto ju urobte pred dokončením kalkulácie nákladov; po dokončení treba kalkuláciu najprv znovu otvoriť.
+Ak dodávateľ poslal produkt, ktorý nie je na žiadnej objednávke dodávky, počas príjmu stlačte **Add item not ordered**: vyberte produkt dodávateľa a zadajte, koľko SKO prišlo. Pridá sa ako prijatý a spočítaný, za cenu dodávateľa, a uloží sa ako ostatné riadky. Objednávky sa nemenia.
+
+Prijatie prebytku alebo oprava chyby jednotky na uloženej dodávke prepočíta cenu tovaru, ktorý sa z nej uložil, preto ju urobte pred dokončením kalkulácie nákladov; po dokončení treba kalkuláciu najprv znovu otvoriť.
 
 ## Colné riadky a clo
 

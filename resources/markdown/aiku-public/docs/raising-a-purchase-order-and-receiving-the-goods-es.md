@@ -96,9 +96,11 @@ Pulsa **Resolve** en una línea y elige qué pasó:
 - **Recount** - el almacén recibe una tarea para volver a contar la línea. Se te avisa cuando la cierren; entonces vuelve y elige uno de los otros resultados.
 - **Unit error** - corrige lo esperado (en nuestras unidades, o en la unidad del proveedor cuando hay una) y el valor de la línea. Lo contado nunca se modifica. Si aún queda una diferencia real, la línea sigue señalada para que puedas reclamarla - una línea esperada como 80 kg de bolsas de 500 g pasa a ser 160 bolsas esperadas, y 120 contadas se muestran como 40 de menos.
 - **Supplier claim** - solo para una línea con faltante. Introduce las unidades y el valor reclamados y añade fotos desde goods in; van a los adjuntos de la entrega. La reclamación empieza **Open**: púlsala en la columna **Outcome** para marcarla **Sent to supplier**, **Credit received** (con el número, importe y fecha de la nota de crédito) o **Rejected**. Una reclamación solo se hace seguimiento - no cambia el costing de la entrega.
-- **Accept surplus** - solo para una línea con exceso: te quedas con las unidades extra.
+- **Accept surplus** - solo para una línea con exceso: te quedas con las unidades extra. La línea pasa a esperar lo que llegó y su valor sube al mismo precio por unidad, así que el total de la entrega y el costeo cuentan las unidades extra.
 
-Corregir un error de unidad en una entrega ya ubicada vuelve a valorar el stock que se ubicó a partir de ella, así que hazlo antes de terminar el costing; una vez calculado el costing, hay que reabrirlo primero.
+Si el proveedor envió un producto que no está en ninguna orden de compra de la entrega, pulsa **Add item not ordered** mientras se recibe la entrega: elige el producto del proveedor e indica los SKO que llegaron. Se añade como recibido y contado, al precio del proveedor, y se ubica como las demás líneas. Las órdenes de compra no cambian.
+
+Aceptar un exceso o corregir un error de unidad en una entrega ya ubicada vuelve a valorar el stock que se ubicó a partir de ella, así que hazlo antes de terminar el costing; una vez calculado el costing, hay que reabrirlo primero.
 
 ## Líneas de aduana y aranceles
 

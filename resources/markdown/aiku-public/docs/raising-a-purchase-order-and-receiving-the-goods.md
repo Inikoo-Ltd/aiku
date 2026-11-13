@@ -96,9 +96,11 @@ Press **Resolve** on a line and pick what happened:
 - **Recount** - the warehouse gets a task to count the line again. You are told when they close it; then come back and pick one of the other outcomes.
 - **Unit error** - correct what was expected (in our units, or in the supplier's unit when one is set) and the line's value. What was counted is never changed. If a real difference is still left, the line stays flagged so you can claim it - a line expected as 80 kg of 500 g bags becomes 160 bags expected, and 120 counted shows as 40 short.
 - **Supplier claim** - only for a short line. Enter the units and value claimed and add photos from goods in; they go on the delivery's attachments. The claim starts **Open**: click it in the **Outcome** column to mark it **Sent to supplier**, **Credit received** (with the credit note number, amount and date) or **Rejected**. A claim is tracked only - it does not change the delivery's costing.
-- **Accept surplus** - only for an over line: keep the extra units.
+- **Accept surplus** - only for an over line: keep the extra units. The line then expects what arrived and its value grows at the same price per unit, so the delivery total and the costing count the extra units.
 
-Correcting a unit error on a placed delivery re-prices the stock that was put away from it, so do it before the costing is finished; once costed, the costing has to be reopened first.
+If the supplier sent a product that is on none of the delivery's purchase orders, press **Add item not ordered** while the delivery is being booked in: pick the supplier's product and enter the SKOs that arrived. It is added as received and counted, at the supplier's price, and is put away like the other lines. The purchase orders are not changed.
+
+Accepting a surplus or correcting a unit error on a placed delivery re-prices the stock that was put away from it, so do it before the costing is finished; once costed, the costing has to be reopened first.
 
 ## Customs lines and duty
 

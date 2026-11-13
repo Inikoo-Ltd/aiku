@@ -365,7 +365,7 @@ function orgStockRoute(item: any) {
                 </template>
 
                 <p v-if="resolveForm.outcome === 'surplus_accepted'" class="text-gray-600">
-                    {{ ctrans('Keep the extra units. They are already in stock at the same cost per unit.') }}
+                    {{ ctrans('Keep the extra units. The line then expects what arrived, and its value grows to include them at the same price per unit.') }}
                 </p>
 
                 <label class="block space-y-1">
