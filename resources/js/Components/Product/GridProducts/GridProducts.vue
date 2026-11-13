@@ -31,7 +31,6 @@ import ProductRenderEcom from "@/Iris/Components/IrisBlocks/Products/Ecom/Produc
 
 // Types
 import type { Product, QueryBuilderData } from "./types"
-import ListItem from "@tiptap/extension-list-item"
 
 // ============================================================================
 // PROPS
@@ -518,7 +517,7 @@ watch(
 							:id="`grid-${name}-sort`"
 							:value="queryBuilderData.sort || selectedColumn || ''"
 							@change="onSortChange(($event.target as HTMLSelectElement).value)"
-							class="min-w-0 max-w-[45vw] sm:max-w-none rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+							class="min-w-0 max-w-[45vw] sm:max-w-none rounded-md border-gray-300 text-sm focus:border-[var(--app-accent)] focus:ring-[var(--app-accent)]">
 							<option v-if="!hideDefault" value="">{{ ctrans("Default") }}</option>
 							<template
 								v-for="column in queryBuilderProps.columns.filter(
