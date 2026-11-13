@@ -36,6 +36,7 @@ const props = defineProps<{
 		quantity_query: QuantityQuery | null
 		askQuantityRoute: routeType | null
 		answerQuantityRoute: routeType | null
+		quantity_changed_by_buyer?: boolean
 		units_per_carton?: number | string | null
 		units_per_pack?: number | string | null
 	}
@@ -44,7 +45,7 @@ const props = defineProps<{
 
 const locale = useLocaleStore()
 
-const fieldFocusClass = "[&.p-focus]:!border-[--app-accent] [&_input:focus]:!border-[--app-accent]"
+const fieldFocusClass = "[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]"
 
 const levels = getOrderingLevels()
 const levelOptions = levels.map((level) => ({ label: level.quantity, value: level.key, icon: level.icon }))
@@ -56,6 +57,7 @@ const quantity = (units: number | string | null, level: OrderingLevel = props.le
 
 const query = computed(() => props.item.quantity_query)
 const isPending = computed(() => query.value?.state === "pending")
+const isChangedByBuyer = computed(() => !!props.item.quantity_changed_by_buyer)
 
 const stateStyles: Record<QuantityQuery["state"], { icon: typeof faBoxes; iconClass: string; boxClass: string }> = {
 	pending: { icon: faBoxes, iconClass: "text-amber-600", boxClass: "border-amber-300 bg-amber-50 text-amber-800" },
@@ -167,13 +169,17 @@ function answer(answerValue: "accepted" | "rejected") {
 				/>
 				<div class="flex items-center gap-1.5 font-medium">
 					<FontAwesomeIcon :icon="stateStyle.icon" :class="stateStyle.iconClass" fixed-width aria-hidden="true" />
-					{{ query.label }}
+					{{ isChangedByBuyer ? ctrans("Changed after agreed") : query.label }}
 				</div>
 				<div class="tabular-nums">
-					{{ ctrans("The agent asks for :new, was :old", { new: quantity(query.quantity), old: quantity(query.previous_quantity) }) }}
+					{{ isChangedByBuyer
+						? ctrans("Now :new, was :old", { new: quantity(query.quantity), old: quantity(query.previous_quantity) })
+						: ctrans("The agent asks for :new, was :old", { new: quantity(query.quantity), old: quantity(query.previous_quantity) }) }}
 				</div>
 				<div v-if="query.note" class="italic opacity-60">{{ query.note }}</div>
-				<div v-if="query.asked_by" class="text-gray-500">{{ ctrans("Asked by :name", { name: query.asked_by }) }}</div>
+				<div v-if="query.asked_by" class="text-gray-500">
+					{{ isChangedByBuyer ? ctrans("Changed by :name", { name: query.asked_by }) : ctrans("Asked by :name", { name: query.asked_by }) }}
+				</div>
 			</div>
 
 			<div v-if="item.answerQuantityRoute" class="flex flex-wrap items-center gap-1.5">
@@ -208,8 +214,10 @@ function answer(answerValue: "accepted" | "rejected") {
 				v-if="item.askQuantityRoute"
 				type="tertiary"
 				size="xs"
-				:label="isPending ? ctrans('Change the asked quantity') : ctrans('Ask for another quantity')"
-				:tooltip="ctrans('Ask the organisation to accept or reject a new quantity for this line, possible until it is shipped')"
+				:label="isChangedByBuyer ? ctrans('Change quantity') : isPending ? ctrans('Change the asked quantity') : ctrans('Ask for another quantity')"
+				:tooltip="isChangedByBuyer
+					? ctrans('Set the quantity the supplier confirmed, possible until the line is shipped')
+					: ctrans('Ask the organisation to accept or reject a new quantity for this line, possible until it is shipped')"
 				@click="openDialog"
 			>
 				<template #icon>
@@ -239,11 +247,11 @@ function answer(answerValue: "accepted" | "rejected") {
 							<tr>
 								<th class="px-2 py-1 text-left font-medium">{{ ctrans("Preview") }}</th>
 								<th class="px-2 py-1 text-right font-medium">{{ ctrans("Ordered now") }}</th>
-								<th class="px-2 py-1 text-right font-medium">{{ ctrans("Asked") }}</th>
+								<th class="px-2 py-1 text-right font-medium">{{ isChangedByBuyer ? ctrans("New") : ctrans("Asked") }}</th>
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-100">
-							<tr v-for="row in preview" :key="row.key" :class="row.key === dialogLevel ? 'bg-[--app-accent-soft]' : ''">
+							<tr v-for="row in preview" :key="row.key" :class="row.key === dialogLevel ? 'bg-[var(--app-accent-soft)]' : ''">
 								<td class="px-2 py-1 text-gray-600">{{ row.label }}</td>
 								<td class="px-2 py-1 text-right text-gray-500">{{ locale.number(row.ordered) }}</td>
 								<td class="px-2 py-1 text-right font-medium" :class="row.isPartCarton ? 'text-amber-700' : 'text-gray-900'">
@@ -267,22 +275,31 @@ function answer(answerValue: "accepted" | "rejected") {
 					</p>
 				</div>
 				<label class="block space-y-1">
-					<span class="text-xs text-gray-500">{{ ctrans("Note for the organisation (optional)") }}</span>
+					<span class="text-xs text-gray-500">{{ isChangedByBuyer ? ctrans("Note (optional)") : ctrans("Note for the organisation (optional)") }}</span>
 					<Textarea v-model="form.note" rows="2" autoResize fluid :class="fieldFocusClass" />
 				</label>
 				<p v-if="formError" class="text-xs text-red-600">{{ formError }}</p>
 			</div>
 			<template #footer>
-				<Button type="tertiary" :label="ctrans('Cancel')" @click="isDialogOpen = false">
-					<template #icon>
-						<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
-				<Button type="tertiary" :label="ctrans('Ask the organisation')" :loading="form.processing" :disabled="!form.quantity" @click="ask">
-					<template #icon>
-						<FontAwesomeIcon :icon="faCheck" class="text-green-600" fixed-width aria-hidden="true" />
-					</template>
-				</Button>
+				<div class="flex w-full gap-2">
+					<Button type="tertiary" class="shrink-0" :label="ctrans('Cancel')" @click="isDialogOpen = false">
+						<template #icon>
+							<FontAwesomeIcon :icon="faTimes" class="text-red-500" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+					<Button
+						type="primary"
+						full
+						:label="isChangedByBuyer ? ctrans('Change quantity') : ctrans('Ask the organisation')"
+						:loading="form.processing"
+						:disabled="!form.quantity"
+						@click="ask"
+					>
+						<template #icon>
+							<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+						</template>
+					</Button>
+				</div>
 			</template>
 		</Dialog>
 	</div>

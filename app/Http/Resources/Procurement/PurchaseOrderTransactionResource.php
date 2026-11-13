@@ -142,7 +142,8 @@ class PurchaseOrderTransactionResource extends JsonResource
                 'asked_at'          => $transaction->quantity_queried_at,
                 'answered_at'       => $transaction->quantity_query_answered_at,
             ] : null,
-            'askQuantityRoute'     => $this->canAgentAskQuantity($transaction, $request) ? [
+            'quantity_changed_by_buyer' => $transaction->purchaseOrder !== null && AskPurchaseOrderTransactionQuantityChange::isChangedByBuyer($transaction->purchaseOrder),
+            'askQuantityRoute'     => $this->canAgentAskQuantity($transaction, $request) || $this->canBuyerChangeQuantity($transaction, $request) ? [
                 'name'       => 'grp.models.purchase-order.transaction.quantity_change.ask',
                 'parameters' => [
                     'purchaseOrder'            => $transaction->purchase_order_id,
@@ -227,6 +228,17 @@ class PurchaseOrderTransactionResource extends JsonResource
             && in_array($transaction->state, [PurchaseOrderTransactionStateEnum::SUBMITTED, PurchaseOrderTransactionStateEnum::CONFIRMED])
             && $request->user()?->authTo("procurement.$agentOrganisationId.edit")
             && !AskPurchaseOrderTransactionQuantityChange::isShipped($transaction);
+    }
+
+    private function canBuyerChangeQuantity(PurchaseOrderTransaction $transaction, $request): bool
+    {
+        $purchaseOrder = $transaction->purchaseOrder;
+
+        return $purchaseOrder !== null
+            && AskPurchaseOrderTransactionQuantityChange::isChangedByBuyer($purchaseOrder)
+            && $this->viewingOrganisationId($request) === $purchaseOrder->organisation_id
+            && $request->user()?->authTo("procurement.$purchaseOrder->organisation_id.edit")
+            && AskPurchaseOrderTransactionQuantityChange::isQuantityChangeable($transaction);
     }
 
     private function canOrganisationAnswerQuantity(PurchaseOrderTransaction $transaction, $request): bool

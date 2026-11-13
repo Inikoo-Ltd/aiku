@@ -4886,3 +4886,51 @@ test('a line goods-in counted as not received is marked not received once its de
         ->and($arrived->refresh()->state)->toBe(PurchaseOrderTransactionStateEnum::CONFIRMED)
         ->and($purchaseOrder->refresh()->state)->toBe(PurchaseOrderStateEnum::HANDED_OVER);
 });
+
+test('the buyer changes a quantity on an agreed order straight to a supplier and the old quantity is kept', function () {
+    [$orgSupplier, , $orgSupplierProduct] = independentOrgSupplierFixture($this);
+    $admin = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($admin, ["procurement.{$this->organisation->id}.view", "procurement.{$this->organisation->id}.edit"]);
+
+    $order = StorePurchaseOrder::make()->action($orgSupplier, []);
+    $line  = StorePurchaseOrderTransaction::make()->action($order, $orgSupplierProduct->supplierProduct->historicSupplierProduct, $this->orgStocks[0], [...PurchaseOrderTransaction::factory()->definition(), 'quantity_ordered' => 120]);
+    UpdatePurchaseOrderStateToSubmitted::make()->action($order->refresh());
+    $order = UpdatePurchaseOrderStateToConfirmed::make()->action($order->refresh());
+    expect($order->isAgentOrder())->toBeFalse()
+        ->and($order->state->isAgreed())->toBeTrue();
+
+    $unitCost  = (float) $line->refresh()->unit_cost;
+    $askRoute  = route('grp.models.purchase-order.transaction.quantity_change.ask', [$order->id, $line->id]);
+    $buyerLine = fn () => collect($this->get(route('grp.org.procurement.purchase_orders.show', [$order->organisation->slug, $order->slug, 'tab' => 'items']))->assertOk()->viewData('page')['props']['items']['data'])->firstWhere('id', $line->id);
+
+    actingAs($admin);
+    expect($buyerLine())
+        ->quantity_changed_by_buyer->toBeTrue()
+        ->askQuantityRoute->name->toBe('grp.models.purchase-order.transaction.quantity_change.ask')
+        ->answerQuantityRoute->toBeNull();
+
+    $this->patch(route('grp.models.purchase-order.transaction.update', [$order->id, $line->id]), ['quantity_ordered' => 240])->assertSessionHasErrors('purchase_order_transaction');
+    $this->post($askRoute, ['quantity_ordered' => 0])->assertSessionHasErrors('quantity_ordered');
+    $this->post($askRoute, ['quantity_ordered' => 240, 'note' => 'Final invoice 1109/26'])->assertSessionHasNoErrors();
+
+    $line->refresh();
+    expect((float) $line->quantity_ordered)->toEqual(240.0)
+        ->and((float) $line->unit_cost)->toEqual($unitCost)
+        ->and((float) $line->net_amount)->toEqual(round($unitCost * 240, 2))
+        ->and($line->quantity_query_state)->toBe(PurchaseOrderTransactionQuantityQueryStateEnum::ACCEPTED)
+        ->and((float) $line->quantity_query_previous_quantity)->toEqual(120.0)
+        ->and($line->quantity_query_note)->toBe('Final invoice 1109/26')
+        ->and($line->quantity_queried_by_id)->toBe($admin->id)
+        ->and((float) $order->refresh()->cost_items)->toEqual(round($unitCost * 240, 2));
+    expect($buyerLine()['quantity_query'])
+        ->state->toBe('accepted')
+        ->and((float) $buyerLine()['quantity_query']['previous_quantity'])->toEqual(120.0);
+
+    $viewer = User::factory()->create(['group_id' => $this->group->id, 'status' => true]);
+    actingAsUserWithOnlyPermissions($viewer, ["procurement.{$this->organisation->id}.view"]);
+    actingAs($viewer);
+    $this->post($askRoute, ['quantity_ordered' => 100])->assertForbidden();
+    expect((float) $line->refresh()->quantity_ordered)->toEqual(240.0);
+
+    actingAs($this->adminGuest->getUser());
+});
