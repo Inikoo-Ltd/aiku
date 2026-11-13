@@ -129,6 +129,27 @@ class UpdateEbayUserData extends OrgAction
             $response = $ebayUser->createInventoryLocation(['locationKey' => $locationKey] + $this->warehouseLocationData($shop));
         }
 
+        return $this->ebayAccepted($response);
+    }
+
+    /**
+     * The location is created only at connect, so a change to the shop's eBay warehouse address never reaches
+     * channels already connected (PRE-102: dssk said DE for a Slovak warehouse). This rewrites the address of
+     * the channel's existing location in place; the key and the offers pointing at it stay as they are.
+     */
+    public function updateLocationAddress(EbayUser $ebayUser): bool
+    {
+        $shop = $ebayUser->customer?->shop;
+
+        if (!$ebayUser->hasUsableLocationKey() || !$shop || !Country::find(Arr::get($shop->settings, 'ebay.warehouse_country'))) {
+            return false;
+        }
+
+        return $this->ebayAccepted($ebayUser->updateInventoryLocationAddress($ebayUser->location_key, $this->warehouseLocationData($shop)));
+    }
+
+    private function ebayAccepted(mixed $response): bool
+    {
         return blank($response) || (is_array($response) && !array_is_list($response) && !Arr::hasAny($response, ['error', 'errors']));
     }
 

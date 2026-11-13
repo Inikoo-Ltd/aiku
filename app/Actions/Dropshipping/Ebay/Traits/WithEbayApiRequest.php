@@ -2351,6 +2351,25 @@ trait WithEbayApiRequest
         }
     }
 
+    public function updateInventoryLocationAddress(string $locationKey, array $locationData)
+    {
+        try {
+            return $this->makeEbayRequest('post', "/sell/inventory/v1/location/$locationKey/update_location_details", [
+                'location' => [
+                    'address' => [
+                        'city'            => Arr::get($locationData, 'city'),
+                        'stateOrProvince' => Arr::get($locationData, 'state'),
+                        'country'         => Arr::get($locationData, 'country'),
+                    ]
+                ]
+            ]);
+        } catch (Exception $e) {
+            Log::error('Update Inventory Location Error: '.$e->getMessage());
+
+            return ['error' => $e->getMessage()];
+        }
+    }
+
     /**
      * Create a user's eBay inventory location
      */
