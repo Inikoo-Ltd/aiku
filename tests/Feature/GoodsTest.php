@@ -2108,6 +2108,29 @@ test('sizes sharing documents show the source trade unit IFRA, SDS and allergen 
         ->and($sizeMedia())->toBe(collect([$oldSds->id, $howToUse->id])->sort()->values()->all());
 });
 
+test('PRE-101 a replaced product document link in a store description leads to the document now holding its place', function () {
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, array_merge(TradeUnit::factory()->definition(), ['code' => 'PRE101-'.uniqid()]));
+    $pdf       = fn (string $name) => \Illuminate\Http\UploadedFile::fake()->createWithContent($name, "%PDF-1.4\n% ".uniqid()."\n%%EOF");
+
+    \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($tradeUnit, ['attachments' => [$pdf('old-ifra.pdf')], 'scope' => 'ifra']);
+    \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($tradeUnit, ['attachments' => [$pdf('sds.pdf')], 'scope' => 'sds']);
+    $oldIfra = $tradeUnit->attachments()->wherePivot('scope', 'ifra')->first();
+
+    \App\Actions\Helpers\Media\DetachAttachmentFromModel::make()->action($tradeUnit, $oldIfra);
+    expect($oldIfra->fresh()->getCustomProperty('detached_from'))->toBe([['model_type' => 'TradeUnit', 'model_id' => $tradeUnit->id, 'scope' => 'ifra']])
+        ->and(fn () => \App\Actions\Iris\Media\DownloadIrisAttachment::make()->asController($oldIfra->fresh()))->toThrow(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
+
+    \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($tradeUnit->fresh(), ['attachments' => [$pdf('new-ifra.pdf')], 'scope' => 'ifra']);
+    $newIfra = $tradeUnit->fresh()->attachments()->wherePivot('scope', 'ifra')->first();
+
+    $response = \App\Actions\Iris\Media\DownloadIrisAttachment::make()->asController($oldIfra->fresh());
+    expect($response)->toBeInstanceOf(\Illuminate\Http\RedirectResponse::class)
+        ->and($response->getTargetUrl())->toEndWith('/attachment/'.$newIfra->ulid.'/download');
+
+    \App\Actions\Helpers\Media\AttachAttachmentToModel::make()->action($tradeUnit->fresh(), ['attachments' => [$pdf('second-ifra.pdf')], 'scope' => 'ifra']);
+    expect(\App\Actions\Iris\Media\DownloadIrisAttachment::currentDocumentReplacing($oldIfra->fresh()))->toBeNull();
+});
+
 test('HELP-3997 a trade unit name is translated into every open shop language and a new English name retranslates only the machine ones', function () {
     $spanish = \App\Models\Helpers\Language::where('code', 'es')->firstOrFail();
     $shopBefore = $this->shop->only(['state', 'language_id']);
