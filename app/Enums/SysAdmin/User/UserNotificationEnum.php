@@ -39,6 +39,7 @@ enum UserNotificationEnum: string
     case MANUFACTURE_OVERTIME_REMINDER = 'manufacture_overtime_reminder';
     case SALES_LEAD = 'sales_lead';
     case RESTOCK_QUESTION = 'restock_question';
+    case DELIVERY_FEEDBACK = 'delivery_feedback';
 
     public const array PRODUCT_DEVELOPMENT_EVENTS = [
         self::PRODUCT_DEVELOPMENT_TASK,
@@ -61,6 +62,7 @@ enum UserNotificationEnum: string
         self::MONEY_REQUEST_REJECTED,
         self::MONEY_REQUEST_CANCELLED,
         self::SUPPLIER_PRODUCT_AVAILABILITY,
+        self::DELIVERY_FEEDBACK,
     ];
 
     public const array CHANNELS = ['email', 'slack', 'browser'];
@@ -94,6 +96,7 @@ enum UserNotificationEnum: string
             self::PURCHASE_ORDER_MINIMUM_POKE   => __('Another organisation asks me to add to my draft to reach a supplier minimum (email and Slack come grouped every 15 minutes)'),
             self::SALES_LEAD                    => __('A customer of my organisation asks the AI assistant for a call about a big order, and when nobody has taken it yet'),
             self::RESTOCK_QUESTION              => __('A customer of my organisation asks the AI assistant when a product will be back in stock and we have no reliable date, and when nobody has answered yet'),
+            self::DELIVERY_FEEDBACK             => __('Someone gives feedback on a delivery I bought'),
         };
     }
 
@@ -160,6 +163,7 @@ enum UserNotificationEnum: string
             self::MANUFACTURE_OVERTIME_REMINDER => 'fal fa-user-clock',
             self::SALES_LEAD                    => 'fal fa-phone-alt',
             self::RESTOCK_QUESTION              => 'fal fa-box-open',
+            self::DELIVERY_FEEDBACK             => 'fal fa-star',
         };
     }
 

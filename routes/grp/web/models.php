@@ -422,6 +422,9 @@ use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemCustomsLine;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryCustoms;
 use App\Actions\GoodsIn\StockDelivery\UpdateStockDeliveryImportFile;
 use App\Actions\GoodsIn\StockDeliveryClaim\UpdateStockDeliveryClaim;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\CreateSupplierInstructionFromFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\UpdateStockDeliveryFeedback;
 use App\Actions\GoodsIn\StockDeliveryItem\UpdateStateToConfirmedStockDeliveryItem;
 use App\Actions\GoodsIn\StockDeliveryItem\SetStockDeliveryItemBatches;
 use App\Actions\GoodsIn\StockDeliveryItem\UpsertStockDeliveryItemPlaced;
@@ -2045,6 +2048,7 @@ Route::name('stock-delivery.')->prefix('stock-delivery/{stockDelivery:id}')->gro
     Route::delete('unbacked-costs', RemoveStockDeliveryUnbackedCosts::class)->name('unbacked-costs.remove');
     Route::post('cost/invoice', AttachStockDeliveryCostInvoice::class)->name('cost.invoice.attach');
     Route::post('deposit/apply', ApplyStockDeliveryDeposit::class)->name('deposit.apply');
+    Route::post('feedback', StoreStockDeliveryFeedback::class)->name('feedback.store');
     Route::delete('', DeleteStockDelivery::class)->name('delete');
     Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inStockDelivery'])->name('attachment.attach');
     Route::post('invoice/{media:id}/read', ReadStockDeliveryInvoice::class)->name('invoice.read')->withoutScopedBindings();
@@ -2089,6 +2093,11 @@ Route::name('stock-delivery-item.')->prefix('stock-delivery-item/{stockDeliveryI
 });
 
 Route::post('stock-delivery-claim/{stockDeliveryClaim:id}/update', UpdateStockDeliveryClaim::class)->name('stock-delivery-claim.update');
+
+Route::name('stock-delivery-feedback.')->prefix('stock-delivery-feedback/{stockDeliveryFeedback:id}')->group(function () {
+    Route::patch('', UpdateStockDeliveryFeedback::class)->name('update');
+    Route::post('instruction', CreateSupplierInstructionFromFeedback::class)->name('instruction.store');
+});
 
 Route::name('org-supplier.')->prefix('org-supplier/{orgSupplier:id}')->group(function () {
     Route::post('purchase-order/store', [StorePurchaseOrder::class, 'inOrgSupplier'])->name('purchase-order.store');

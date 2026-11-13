@@ -98,6 +98,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\StoreStockDeliveryFeedback;
+use App\Actions\GoodsIn\StockDeliveryFollowUp\UI\GetStockDeliveryFeedbackForm;
 use Lorisleiva\Actions\ActionRequest;
 
 class ShowStockDelivery extends OrgAction
@@ -259,7 +261,7 @@ class ShowStockDelivery extends OrgAction
                             .($stockDelivery->isManagedByPartner() && $stockDelivery->state !== StockDeliveryStateEnum::DISPATCHED ? ' · '.__('Managed by :partner until dispatched', ['partner' => $stockDelivery->parent?->partner?->name]) : ''),
                     ],
                     'edit'       => $editRoute ? ['route' => $editRoute] : false,
-                    'actions'    => $this->arrangePageHeadActions(array_merge($this->getUpdateCostingActions($stockDelivery), $this->getBookInLinkAction($stockDelivery, $request), $this->getAllowedActions($stockDelivery), $editRoute ? [['type' => 'button', 'style' => 'edit', 'label' => __('Settings'), 'key' => 'settings', 'route' => $editRoute]] : [])),
+                    'actions'    => $this->arrangePageHeadActions(array_merge($this->getUpdateCostingActions($stockDelivery), $this->getBookInLinkAction($stockDelivery, $request), $this->getAllowedActions($stockDelivery), $this->getGiveFeedbackAction($stockDelivery), $editRoute ? [['type' => 'button', 'style' => 'edit', 'label' => __('Settings'), 'key' => 'settings', 'route' => $editRoute]] : [])),
                 ],
                 'stock_delivery'   => StockDeliveryResource::make($stockDelivery)->toArray($request),
                 'timelines'        => $this->getTimeline($stockDelivery),
@@ -351,6 +353,12 @@ class ShowStockDelivery extends OrgAction
                 StockDeliveryTabsEnum::NOTES->value => $this->tab == StockDeliveryTabsEnum::NOTES->value ?
                     fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($stockDelivery, StockDeliveryTabsEnum::NOTES->value, forAgent: $stockDelivery->organisation_id !== $this->organisation->id))
                     : Inertia::optional(fn () => ProcurementNoteResource::collection(IndexProcurementNotes::run($stockDelivery, StockDeliveryTabsEnum::NOTES->value, forAgent: $stockDelivery->organisation_id !== $this->organisation->id))),
+
+                'give_feedback' => $this->canGiveFeedback($stockDelivery) ? GetStockDeliveryFeedbackForm::run($stockDelivery) : null,
+
+                StockDeliveryTabsEnum::FEEDBACK->value => $this->tab == StockDeliveryTabsEnum::FEEDBACK->value ?
+                    fn () => $this->getFeedback($stockDelivery, $request)
+                    : Inertia::optional(fn () => $this->getFeedback($stockDelivery, $request)),
 
                 'note_form' => GetAgreement::make()->noteForm($request->user(), $stockDelivery->group, $stockDelivery->organisation_id !== $this->organisation->id, $stockDelivery->organisation_id),
 
@@ -1646,6 +1654,38 @@ class ShowStockDelivery extends OrgAction
         ];
     }
 
+    private function canGiveFeedback(StockDelivery $stockDelivery): bool
+    {
+        return !$this->viewedByAgent && $this->canBookIn
+            && $stockDelivery->organisation_id === $this->organisation->id
+            && in_array($stockDelivery->state, StoreStockDeliveryFeedback::STATES, true);
+    }
+
+    private function getGiveFeedbackAction(StockDelivery $stockDelivery): array
+    {
+        if (!$this->canGiveFeedback($stockDelivery)) {
+            return [];
+        }
+
+        return [[
+            'type'  => 'button',
+            'style' => 'secondary',
+            'icon'  => 'fal fa-star',
+            'label' => __('Give delivery feedback'),
+            'key'   => 'give_feedback',
+        ]];
+    }
+
+    /**
+     * @return array{cards: array<int, array<string, mixed>>}
+     */
+    private function getFeedback(StockDelivery $stockDelivery, ActionRequest $request): array
+    {
+        return [
+            'cards' => GetStockDeliveryFeedbackForm::cards($stockDelivery, $request->user(), !$this->goodsIn && $request->user()->authTo("procurement.$stockDelivery->organisation_id.edit")),
+        ];
+    }
+
     private function hasUnderOverDeliveredTab(StockDelivery $stockDelivery): bool
     {
         if ($this->goodsIn) {
@@ -1700,6 +1740,10 @@ class ShowStockDelivery extends OrgAction
 
         if ($this->viewedByAgent || !in_array($stockDelivery->state, StockDelivery::STATES_RECEIVED, true)) {
             $tabs = array_values(array_diff($tabs, [StockDeliveryTabsEnum::PACKING_CHECKS->value]));
+        }
+
+        if ($this->viewedByAgent || !in_array($stockDelivery->state, StoreStockDeliveryFeedback::STATES, true)) {
+            $tabs = array_values(array_diff($tabs, [StockDeliveryTabsEnum::FEEDBACK->value]));
         }
 
         if ($this->hasUnderOverDeliveredTab($stockDelivery)) {
