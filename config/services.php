@@ -84,6 +84,10 @@ return [
         'client_id'       => env('GOOGLE_CLIENT_ID'),
         'client_secret'   => env('GOOGLE_CLIENT_SECRET'),
     ],
+    'google_merchant' => [
+        'client_id'     => env('GOOGLE_MERCHANT_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_MERCHANT_CLIENT_SECRET'),
+    ],
     'gmail' => [
         'client_id'     => env('GMAIL_CLIENT_ID'),
         'client_secret' => env('GMAIL_CLIENT_SECRET'),
