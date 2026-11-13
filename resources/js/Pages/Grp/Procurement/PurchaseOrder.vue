@@ -1337,15 +1337,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<PingIcon class="!absolute -right-1 -top-1 text-[7px] text-amber-500" aria-hidden="true" />
 				</span>
 				<template v-for="action in actions" :key="action.key">
-					<a v-if="stageDocumentActionKeys.includes(action.key)" :href="route(action.route.name, action.route.parameters)" target="_blank">
-						<Button type="tertiary" size="xs" full :label="action.label" :tooltip="action.tooltip">
-							<template #icon>
-								<FontAwesomeIcon :icon="action.icon" class="text-red-500" fixed-width aria-hidden="true" />
-							</template>
-							<template #iconRight>
-								<FontAwesomeIcon :icon="faExternalLink" class="text-gray-400" fixed-width aria-hidden="true" />
-							</template>
-						</Button>
+					<a
+						v-if="stageDocumentActionKeys.includes(action.key)"
+						v-tooltip="action.tooltip"
+						:href="route(action.route.name, action.route.parameters)"
+						target="_blank"
+						class="inline-flex w-fit items-center gap-x-1 text-xs text-[var(--app-accent)] hover:underline focus-visible:underline focus-visible:outline-none"
+					>
+						<FontAwesomeIcon :icon="action.icon" class="text-red-500" fixed-width aria-hidden="true" />
+						{{ action.label }}
+						<FontAwesomeIcon :icon="faExternalLink" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" />
 					</a>
 					<span v-else v-tooltip="action.disabled_reason">
 						<Button
