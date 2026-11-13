@@ -1,11 +1,17 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import merlinLogo from "@/../art/merlin.png"
+import merlinLogoLarge from "@/../art/merlin-large.png"
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
     mono?: boolean
+    large?: boolean
 }>(), {
     mono: false,
+    large: false,
 })
+
+const logoSource = computed(() => props.large ? merlinLogoLarge : merlinLogo)
 
 const monoStyle = {
     WebkitMaskImage: `url("${merlinLogo}")`,
@@ -15,7 +21,7 @@ const monoStyle = {
 
 <template>
     <span v-if="mono" class="merlin-icon merlin-icon-mono" :style="monoStyle" aria-hidden="true" />
-    <img v-else :src="merlinLogo" alt="" aria-hidden="true" draggable="false" class="merlin-icon" />
+    <img v-else :src="logoSource" alt="" aria-hidden="true" draggable="false" class="merlin-icon" />
 </template>
 
 <style scoped>

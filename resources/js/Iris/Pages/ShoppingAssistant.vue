@@ -846,18 +846,20 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </div>
 
                     <aside class="landing-hero-info">
-                        <div class="landing-eyebrow-row">
-                            <span class="landing-badge" aria-hidden="true">
-                                <MerlinIcon />
-                            </span>
-                            <p class="landing-eyebrow">{{ ctrans("Meet :name · Ask us anything", { name: assistantName }) }}</p>
-                            <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
-                        </div>
+                        <div class="landing-hero-heading">
+                            <MerlinIcon large class="landing-hero-logo" />
+                            <div class="min-w-0">
+                                <div class="landing-eyebrow-row">
+                                    <p class="landing-eyebrow">{{ ctrans("Meet :name · Ask us anything", { name: assistantName }) }}</p>
+                                    <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
+                                </div>
 
-                        <h1 class="landing-title">
-                            {{ ctrans("Ask :name anything.", { name: assistantName }) }}<br>
-                            {{ ctrans("This is not just a search.") }}
-                        </h1>
+                                <h1 class="landing-title">
+                                    {{ ctrans("Ask :name anything.", { name: assistantName }) }}<br>
+                                    {{ ctrans("This is not just a search.") }}
+                                </h1>
+                            </div>
+                        </div>
 
                         <p class="landing-intro">
                             {{ knowsTheRange }}
@@ -1214,12 +1216,6 @@ const sendOnEnter = (event: KeyboardEvent) => {
 .assistant-avatar .merlin-icon {
     width: 1.75rem;
     height: 1.75rem;
-    vertical-align: middle;
-}
-
-.landing-badge .merlin-icon {
-    width: 1.5rem;
-    height: 1.5rem;
     vertical-align: middle;
 }
 
@@ -1790,17 +1786,44 @@ const sendOnEnter = (event: KeyboardEvent) => {
     gap: 0.75rem;
 }
 
-.landing-badge {
-    width: 2.5rem;
-    height: 2.5rem;
-    flex-shrink: 0;
-    border-radius: 9999px;
+.landing-hero-heading {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    background-color: #1f1f1f;
-    color: var(--theme-color-4);
+    gap: 1rem;
+}
+
+.landing-hero-heading .landing-hero-logo {
+    width: 3.75rem;
+    height: 3.75rem;
+    filter: drop-shadow(0 8px 16px rgba(234, 84, 14, 0.2));
+    animation: landing-hero-logo-float 4s ease-in-out infinite;
+}
+
+.landing-hero-info .landing-hero-heading .landing-title {
+    margin-top: 0.5rem;
+}
+
+@media (min-width: 640px) {
+    .landing-hero-heading .landing-hero-logo {
+        width: 4.75rem;
+        height: 4.75rem;
+    }
+}
+
+@keyframes landing-hero-logo-float {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-6px) rotate(-3deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .landing-hero-heading .landing-hero-logo {
+        animation: none;
+    }
 }
 
 .landing-eyebrow {
