@@ -747,6 +747,8 @@ const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
 				tableData.meta.total = Math.max(0, tableData.meta.total - 1)
 			}
 		}
+
+		router.replace({ preserveScroll: true, preserveState: true })
 	}
 }
 
