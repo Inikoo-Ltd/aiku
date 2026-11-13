@@ -231,6 +231,23 @@ class AskShoppingAssistant
             }
         }
 
+        if ($offerReason === ShoppingAssistantHandOverReasonEnum::NOT_SURE && $customer && !$turn['cleared']) {
+            $askedTeam = collect($turn['tool_calls'])->contains(fn (array $toolCall) => $toolCall['name'] === 'ask_our_team' && $toolCall['error'] === null);
+            $open      = $askedTeam ? StoreShoppingAssistantTeamQuestion::openFor($conversation) : null;
+            $team      = $askedTeam
+                ? ($open ? ['status' => 'already_asked', 'live' => StoreShoppingAssistantTeamQuestion::isAwaited($open)] : null)
+                : StoreShoppingAssistantTeamQuestion::run($conversation, $message, $message);
+
+            if ($team && in_array($team['status'], ['created', 'already_asked'], true)) {
+                $offerReason = null;
+                $flags[]     = 'asked_team';
+                $reply       = $this->teamSentence($conversation, $team['live']);
+                if ($declaredKind === ShoppingAssistantAnswerKindEnum::OFFER_PERSON) {
+                    $groups = ['must_haves' => collect(), 'add_ons' => collect()];
+                }
+            }
+        }
+
         if ($turn['cleared']) {
             $reply     = __('This conversation has been cleared and will not be shown to you again.', [], $conversation->language_code);
             $groups    = ['must_haves' => collect(), 'add_ons' => collect()];
@@ -686,6 +703,13 @@ class AskShoppingAssistant
      * The fixed sentence that replaces the model's words when a person is offered. Whether the
      * sentence asks the customer to tap is decided by what the website can offer.
      */
+    private function teamSentence(ShoppingAssistantConversation $conversation, bool $live): string
+    {
+        return $live
+            ? __('I don\'t know this one, so I have asked one of our experts. If someone is free in the next few minutes, their answer will appear here; otherwise we will get back to you as soon as we can.', [], $conversation->language_code)
+            : __('I don\'t know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.', [], $conversation->language_code);
+    }
+
     private function offerSentence(ShoppingAssistantConversation $conversation, Customer $customer, ShoppingAssistantHandOverReasonEnum $reason): string
     {
         $locale  = $conversation->language_code;
@@ -918,6 +942,7 @@ Rules:
 - When the customer asks about a range or a product instead of asking for products (what it is, why it is special, what makes it different, how it is used), find it with search_products, call family_information with its family_id and answer from that description. Show no products in that answer unless they asked to see them: the page links to the family page. You cannot explain or compare prices: say the price is on each product card.
 - When the customer asks why something costs what it does, say what the description shows they get for it (quality, size, what is included), never that it is the market price or cheaper or dearer than elsewhere, and offer to show lower-priced options of the same kind, which you find with search_products and sort cheapest.
 - When nothing we sell matches what the customer asked for, say so honestly: we do not have it. Show the closest products we do have, if any fit, and say you will pass their request on to our purchasing team. When the product they asked for is out of stock, say so and that you will let our purchasing team know.
+- When the customer asks something about buying from us that the texts shop_information returns do not answer (samples, a discount code, a document that is not online, a special request), call ask_our_team with their question in one English sentence and say honestly that you do not know and have asked one of our experts, never guess and never promise an answer. Not for their own orders, invoices or deliveries, or when they ask for a person.
 - When the customer asks for a product's safety data sheet (SDS), IFRA certificate, allergen declaration, declaration of conformity, CPSR, test report, how-to-use guide or manual, ingredients, CPNP number or country of origin, call product_documents, never shop_information.
 - When the customer asks what is on sale or on offer, or for the products of a sale they name (Black Friday...), call products_on_offer, not search_products or better_price_options.
 - When the customer asks for a better price, a discount or a deal, or says something is too expensive, call better_price_options, and search_products with sort cheapest when they named a kind of product. You cannot change prices or promise a discount: show the lower-priced options and ask how much they plan to order.

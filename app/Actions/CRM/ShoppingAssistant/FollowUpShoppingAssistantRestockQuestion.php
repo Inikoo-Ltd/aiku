@@ -74,6 +74,25 @@ class FollowUpShoppingAssistantRestockQuestion
             $conversation->increment('messages_count', 1, ['last_message_at' => now()]);
         }
 
+        [$channel, $log] = $this->deliver($conversation, $message, $translated, $answer, __('The purchasing team answered a restock question from this customer in :reference. The shop cannot email it automatically, so please send it to the customer.', ['reference' => $task->reference]), $task, $assistant);
+
+        $task->update(['data' => [...$task->data, 'answer' => $answer, 'answer_sent_at' => now()->toIso8601String(), 'answer_channel' => $channel, 'answered_by' => $actor->id]]);
+        if ($task->conversation) {
+            SendStaffMessage::run($task->conversation, $assistant, ['body' => $log]);
+        }
+
+        return $channel;
+    }
+
+    /**
+     * Emails the answer with the shop's "Chat notification to customer" email and a link to the
+     * conversation, or, where that email is off, asks customer services to pass it on.
+     *
+     * @return array{0: string, 1: string} the channel used and a line for the task thread
+     */
+    public function deliver(ShoppingAssistantConversation $conversation, string $message, string $translated, string $answer, string $relayReason, StaffTask $task, User $assistant): array
+    {
+        $customer  = $conversation->customer;
         $emailIsOn = $customer->shop->outboxes()
             ->where('code', OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER->value)
             ->where('state', OutboxStateEnum::ACTIVE->value)
@@ -84,33 +103,26 @@ class FollowUpShoppingAssistantRestockQuestion
                 'chat_link'    => $conversation->website ? $conversation->website->getUrl().'/assistant?conversation='.$conversation->ulid : null,
                 'chat_message' => $message,
             ]);
-            $channel = 'email';
-            $log     = __('Sent to the customer by email, in their language.');
-        } else {
-            $relay = StoreStaffTask::run($assistant, [
-                'subject'     => __('Pass on the purchasing team\'s answer to :customer', ['customer' => $customer->name]),
-                'description' => implode("\n", array_filter([
-                    __('The purchasing team answered a restock question from this customer in :reference. The shop cannot email it automatically, so please send it to the customer.', ['reference' => $task->reference]),
-                    __('Customer: :name (:reference), :email, :phone', ['name' => $customer->name, 'reference' => $customer->reference, 'email' => $customer->email ?: '—', 'phone' => $customer->phone ?: '—']),
-                    __('Answer in the customer\'s language:')."\n".$translated,
-                    $translated !== $answer ? __('Answer as written:')."\n".$answer : null,
-                ])),
-                'department'  => StoreShoppingAssistantSalesLead::DEPARTMENT,
-                'priority'    => ChatPriorityEnum::NORMAL->value,
-                'model_type'  => 'Customer',
-                'model_id'    => $customer->id,
-                'data'        => ['kind' => 'shopping_assistant_restock_answer_relay', 'organisation_id' => $customer->organisation_id, 'restock_task_id' => $task->id],
-            ]);
-            $channel = 'customer_services';
-            $log     = __('This shop cannot email it automatically, so customer services was asked to send it: :reference', ['reference' => $relay->reference]);
+
+            return ['email', __('Sent to the customer by email, in their language.')];
         }
 
-        $task->update(['data' => [...$task->data, 'answer' => $answer, 'answer_sent_at' => now()->toIso8601String(), 'answer_channel' => $channel, 'answered_by' => $actor->id]]);
-        if ($task->conversation) {
-            SendStaffMessage::run($task->conversation, $assistant, ['body' => $log]);
-        }
+        $relay = StoreStaffTask::run($assistant, [
+            'subject'     => __('Pass on our answer to :customer', ['customer' => $customer->name]),
+            'description' => implode("\n", array_filter([
+                $relayReason,
+                __('Customer: :name (:reference), :email, :phone', ['name' => $customer->name, 'reference' => $customer->reference, 'email' => $customer->email ?: '—', 'phone' => $customer->phone ?: '—']),
+                __('Answer in the customer\'s language:')."\n".$translated,
+                $translated !== $answer ? __('Answer as written:')."\n".$answer : null,
+            ])),
+            'department'  => StoreShoppingAssistantSalesLead::DEPARTMENT,
+            'priority'    => ChatPriorityEnum::NORMAL->value,
+            'model_type'  => 'Customer',
+            'model_id'    => $customer->id,
+            'data'        => ['kind' => 'shopping_assistant_restock_answer_relay', 'organisation_id' => $customer->organisation_id, 'restock_task_id' => $task->id],
+        ]);
 
-        return $channel;
+        return ['customer_services', __('This shop cannot email it automatically, so customer services was asked to send it: :reference', ['reference' => $relay->reference])];
     }
 
     private function lastAnswerInThread(StaffTask $task, User $assistant): string
@@ -126,9 +138,9 @@ class FollowUpShoppingAssistantRestockQuestion
             ->first(fn (string $body) => $body !== '' && !in_array($body, $statusLines, true) && !str_starts_with($body, $assigned)));
     }
 
-    private function translate(string $answer, ?string $locale): string
+    public function translate(string $answer, ?string $locale, ?Language $from = null): string
     {
-        $english = Language::where('code', 'en')->first();
+        $english = $from ?? Language::where('code', 'en')->first();
         $target  = $locale ? Language::where('code', $locale)->first() : null;
 
         if (!$english || !$target || $target->id === $english->id) {

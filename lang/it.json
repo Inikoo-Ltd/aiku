@@ -13008,5 +13008,9 @@
     ":name remembers:": ":name ricorda:",
     "Forget this": "Dimentica",
     "1 product = :count SKO": "1 prodotto = :count SKO",
-    ":count SKO": ":count SKO"
+    ":count SKO": ":count SKO",
+    "Our team answered your question:": "Il nostro team ha risposto alla sua domanda:",
+    "Our team could not answer this question. Please contact our customer service team.": "Il nostro team non è riuscito a rispondere a questa domanda. La preghiamo di contattare il nostro servizio clienti.",
+    "I don't know this one, so I have asked one of our experts. If someone is free in the next few minutes, their answer will appear here; otherwise we will get back to you as soon as we can.": "Questo non lo so, quindi l'ho chiesto a uno dei nostri esperti. Se qualcuno è disponibile nei prossimi minuti, la risposta apparirà qui; altrimenti la ricontatteremo il prima possibile.",
+    "I don't know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.": "Questo non lo so, quindi l'ho passato a uno dei nostri esperti. La ricontatteremo il prima possibile."
 }

@@ -13,6 +13,7 @@ import SupplierPortalLanguages from "@/Components/Procurement/SupplierPortalLang
 import SupplierPortalProfile, { type PortalProfile } from "@/Components/Procurement/SupplierPortalProfile.vue"
 import SupplierPortalSearch from "@/Components/Procurement/SupplierPortalSearch.vue"
 import SupplierPortalHome, { type PortalSummary } from "@/Components/Procurement/SupplierPortalHome.vue"
+import StockDeliveryFeedbackCards, { type FeedbackCard } from "@/Components/Procurement/StockDeliveryFeedbackCards.vue"
 import Image from "@common/Components/Image.vue"
 import type { Image as ImageProxy } from "@/types/Image"
 import { useColorTheme } from "@/Composables/useStockList"
@@ -26,9 +27,9 @@ import SupplierPortalPurchaseOrderDialog from "@/Components/Procurement/Supplier
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faHeart, faComputerClassic } from "@fas"
-import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye, faFileSignature } from "@fal"
+import { faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faEye, faFileSignature, faStar } from "@fal"
 
-library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye, faFileSignature)
+library.add(faLock, faEnvelope, faHome, faChartLine, faClipboard, faList, faBox, faHandshake, faSeedling, faTags, faHeart, faComputerClassic, faEye, faFileSignature, faStar)
 
 defineOptions({ layout: (_h: unknown, page: unknown) => page })
 
@@ -65,6 +66,7 @@ const props = defineProps<{
 	errors?: Record<string, string>
 	sales?: InstanceType<typeof SalesDashboard>["$props"]["sales"]
 	feedback?: InstanceType<typeof SalesDashboard>["$props"]["feedback"]
+	delivery_feedback?: FeedbackCard[]
 	labels_print?: InstanceType<typeof SupplierPortalDetails>["$props"]["labelsPrint"]
 	products_route?: string
 	product_websites_route?: string
@@ -119,7 +121,7 @@ const initials = (name: string) =>
 		.join("")
 		.toUpperCase()
 
-type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "products" | "price_changes" | "agreement" | "grow"
+type Tab = "home" | "sales" | "purchase_orders" | "purchase_order_list" | "products" | "price_changes" | "feedback" | "agreement" | "grow"
 
 const fullWidthTabs: Tab[] = ["purchase_orders", "purchase_order_list"]
 
@@ -130,6 +132,7 @@ const menu = computed<{ key: Tab; label: string; icon: string; shortcut?: boolea
 	{ key: "purchase_order_list", label: ctrans("Purchase order list"), icon: "fal fa-list", shortcut: true },
 	{ key: "products", label: ctrans("Products"), icon: "fal fa-box" },
 	{ key: "price_changes", label: ctrans("Price changes"), icon: "fal fa-tags" },
+	{ key: "feedback", label: ctrans("Delivery feedback"), icon: "fal fa-star" },
 	{ key: "agreement", label: ctrans("Agreement"), icon: "fal fa-handshake" },
 	{ key: "grow", label: ctrans("Grow together"), icon: "fal fa-seedling" },
 ])
@@ -301,6 +304,13 @@ onMounted(() => {
 					tab="price_changes"
 					:forms="forms"
 					:currency="details?.currency ?? company?.currency ?? null" />
+
+				<template v-else-if="tab === 'feedback'">
+					<StockDeliveryFeedbackCards v-if="delivery_feedback" :cards="delivery_feedback" portal />
+					<div v-else class="space-y-3">
+						<div v-for="index in 3" :key="index" class="skeleton h-28 rounded-lg" />
+					</div>
+				</template>
 
 				<template v-else>
 					<SupplierPortalAgreement v-if="tab === 'agreement' && agreement" :agreement="agreement" :preview="preview" />

@@ -19,8 +19,10 @@ use App\Actions\SupplyChain\SupplierSubmission\StoreSupplierPortalSubmission;
 use App\Enums\SupplyChain\SupplierPortalContact\SupplierPortalContactDesignationEnum;
 use App\Enums\SupplyChain\SupplierSubmission\SupplierSubmissionTypeEnum;
 use App\Enums\SupplyChain\SupplyChainAttachmentScopeEnum;
+use App\Http\Resources\GoodsIn\StockDeliveryFeedbackResource;
 use App\Http\Resources\SupplyChain\SupplierPortalPriceChangesResource;
 use App\Http\Resources\SupplyChain\SupplierPortalPurchaseOrdersResource;
+use App\Models\GoodsIn\StockDeliveryFeedback;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SupplyChain\SupplierPortalContact;
 use App\Models\SupplyChain\SupplierShareLink;
@@ -140,6 +142,11 @@ class ShowSupplierShare
                 ->additional(IndexSupplierPortalPriceChanges::make()->facets($supplier, 'price_changes')),
             'sales'                => Inertia::defer(fn () => ShowAgentSales::make()->handle($supplier, null, $valuation)),
             'feedback'             => Inertia::defer(fn () => GetAgentSalesFeedback::run($supplier), 'feedback'),
+            'delivery_feedback'    => Inertia::defer(fn () => StockDeliveryFeedbackResource::collection(
+                StockDeliveryFeedback::where('supplier_id', $supplier->id)->where('created_at', '>=', now()->subYear())
+                    ->with(['supplier', 'agent', 'author', 'organisation', 'procurementNote', 'stockDelivery'])
+                    ->latest('id')->get()
+            )->resolve(), 'delivery_feedback'),
             'agreement'            => GetSupplierPortalAgreement::make()->handle(
                 $supplier,
                 $token === null ? route('grp.supply-chain.suppliers.portal_preview.blocked', [$supplier, 'agreement']) : route('grp.supplier_share.agreement.accept', $token)

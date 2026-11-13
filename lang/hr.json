@@ -9062,5 +9062,9 @@
     ":name remembers:": ":name pamti:",
     "Forget this": "Zaboravi",
     "1 product = :count SKO": "1 proizvod = :count SKO",
-    ":count SKO": ":count SKO"
+    ":count SKO": ":count SKO",
+    "Our team answered your question:": "Naš je tim odgovorio na vaše pitanje:",
+    "Our team could not answer this question. Please contact our customer service team.": "Naš tim nije mogao odgovoriti na ovo pitanje. Molimo obratite se našoj službi za korisnike.",
+    "I don't know this one, so I have asked one of our experts. If someone is free in the next few minutes, their answer will appear here; otherwise we will get back to you as soon as we can.": "To ne znam, pa sam pitao jednog od naših stručnjaka. Ako netko bude slobodan u sljedećih nekoliko minuta, odgovor će se pojaviti ovdje; inače ćemo vam se javiti što prije.",
+    "I don't know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.": "To ne znam, pa sam to proslijedio jednom od naših stručnjaka. Javit ćemo vam se što prije."
 }

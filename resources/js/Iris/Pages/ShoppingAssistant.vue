@@ -180,11 +180,36 @@ const POLL_LIMIT_MS = 150_000
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 let generation = 0
 
+const TEAM_POLL_INTERVAL_MS = 8000
+let teamTimer: ReturnType<typeof setTimeout> | null = null
+
 const stopPolling = () => {
     if (pollTimer !== null) {
         clearTimeout(pollTimer)
         pollTimer = null
     }
+    if (teamTimer !== null) {
+        clearTimeout(teamTimer)
+        teamTimer = null
+    }
+}
+
+const waitForTeam = () => {
+    if (teamTimer !== null) {
+        return
+    }
+    const teamGeneration = generation
+    teamTimer = setTimeout(async () => {
+        teamTimer = null
+        if (teamGeneration !== generation) {
+            return
+        }
+        if (pollTimer === null) {
+            await fetchConversation(lastMessageId()).catch(() => null)
+        } else {
+            waitForTeam()
+        }
+    }, TEAM_POLL_INTERVAL_MS)
 }
 
 const forgetConversation = () => {
@@ -218,6 +243,10 @@ const fetchConversation = async (after?: number): Promise<{ pending: boolean, ha
     messages.value = [...messages.value, ...incoming].sort((first, second) => first.id - second.id)
     if (after && incoming.some((message) => message.role === "assistant" && message.basket_added?.length)) {
         await refreshBasket()
+    }
+
+    if (data.awaiting_team) {
+        waitForTeam()
     }
 
     return { pending: !!data.pending, hasNewAnswer: incoming.some((message) => message.role === "assistant") }

@@ -125,6 +125,13 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, 'settings.restock_questions.enabled', (bool) Arr::pull($modelData, 'restock_questions_enabled'));
         }
 
+        foreach (['assistant_questions_user_id' => 'user_id', 'assistant_questions_backup_user_id' => 'backup_user_id'] as $field => $key) {
+            if (Arr::has($modelData, $field)) {
+                $userId = Arr::pull($modelData, $field);
+                data_set($modelData, 'settings.assistant_questions.'.$key, $userId ? (int) $userId : null);
+            }
+        }
+
         if (Arr::has($modelData, 'restock_questions_user_ids')) {
             data_set($modelData, 'settings.restock_questions.user_ids', array_values(array_map('intval', Arr::pull($modelData, 'restock_questions_user_ids') ?? [])));
         }
@@ -443,6 +450,8 @@ class UpdateOrganisation extends OrgAction
             'sales_leads_manager_user_ids.*'         => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)->where('status', true)],
             'sales_leads_threshold_eur'             => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000000'],
             'sales_leads_slack_channel'             => ['sometimes', 'nullable', 'string', 'max:100'],
+            'assistant_questions_user_id'           => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)->where('status', true)],
+            'assistant_questions_backup_user_id'    => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)->where('status', true)],
             'restock_questions_enabled'             => ['sometimes', 'boolean'],
             'restock_questions_user_ids'            => ['sometimes', 'nullable', 'array', 'max:10'],
             'restock_questions_user_ids.*'          => ['integer', Rule::exists('users', 'id')->where('group_id', $this->organisation->group_id)->where('status', true)],
