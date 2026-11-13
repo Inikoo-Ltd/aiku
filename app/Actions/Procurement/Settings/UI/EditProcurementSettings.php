@@ -137,6 +137,18 @@ class EditProcurementSettings extends OrgAction
                                     'type'        => 'textarea',
                                     'label'       => __('Purchase order delivery address'),
                                     'information' => __('The address suppliers ship purchase orders to, printed as Deliver to. Add a contact phone on its own line. Leave empty to use the address of this organisation\'s warehouse, or only the organisation name when it has no warehouse.'),
+                                    'help'        => [
+                                        'title' => __('Where this address shows'),
+                                        'items' => [
+                                            __('The purchase order page, in the delivery address box. An order going to this address shows "To our warehouse".'),
+                                            __('The purchase order PDF sent to the supplier or agent by email or WhatsApp, under Deliver to.'),
+                                            __('The proforma invoice PDF of a purchase order.'),
+                                            __('The PDF of the orders placed with an agent.'),
+                                            __('New containers an agent creates for this organisation, as their Deliver to.'),
+                                            __('The pencil on a purchase order\'s delivery address, as the organisation default.'),
+                                        ],
+                                        'note'  => __('Draft purchase orders follow this address until they are submitted, then keep the address they went out with: change a submitted order with the pencil on its page, and an existing container from its edit page. The company name and address at the top of the purchase order PDF come from the organisation settings, not from here.'),
+                                    ],
                                     'value'       => Arr::get($organisation->settings, 'procurement.delivery_address'),
                                 ],
                                 ...($organisation->type === OrganisationTypeEnum::AGENT ? [
