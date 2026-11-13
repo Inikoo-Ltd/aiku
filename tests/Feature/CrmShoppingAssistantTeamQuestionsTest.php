@@ -6,6 +6,7 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\ShoppingAssistant\AlertShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
@@ -219,6 +220,36 @@ test('a question goes to the guru when online, else to the backup online, and wi
         ->and($routed === 'customer_services' || ($nobody['task']->assignee_id === $this->person->id && $nobody['live'] === false))->toBeTrue();
 
     Illuminate\Support\Facades\Cache::forget(StoreShoppingAssistantTeamQuestion::ONLINE_CACHE_KEY);
+});
+
+test('a shop guru is asked first and the organisation guru and backup are its backups, in that order', function () {
+    $shopGuru = teamQuestionStaff($this);
+    UpdateShop::make()->action($this->shop, ['assistant_questions_user_id' => $shopGuru->id]);
+
+    $task = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Do you sell samples?', 'Do you sell samples?')['task'];
+
+    expect($task->assignee_id)->toBe($shopGuru->id)
+        ->and(StoreShoppingAssistantTeamQuestion::canAnswer($task, $this->person))->toBeTrue()
+        ->and(StoreShoppingAssistantTeamQuestion::canAnswer($task, $this->backup))->toBeTrue();
+    AlertShoppingAssistantTeamQuestion::assertPushed(fn ($action, array $arguments, $job) => $arguments[1]->id === $shopGuru->id && $job->delay === null);
+    AlertShoppingAssistantTeamQuestion::assertPushed(fn ($action, array $arguments, $job) => $arguments[1]->id === $this->person->id && $job->delay !== null);
+    AlertShoppingAssistantTeamQuestion::assertPushed(fn ($action, array $arguments, $job) => $arguments[1]->id === $this->backup->id && $job->delay !== null);
+
+    actingAs($shopGuru)->postJson(route('grp.tasks.assistant_decline', $task->reference))->assertOk()->assertJson(['result' => 'to_backup']);
+    expect($task->refresh()->assignee_id)->toBe($this->person->id);
+
+    actingAs($this->person)->postJson(route('grp.tasks.assistant_decline', $task->reference))->assertOk()->assertJson(['result' => 'to_backup']);
+    expect($task->refresh()->assignee_id)->toBe($this->backup->id);
+
+    $held = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Any discount code?', 'Any discount code?')['task'];
+    actingAs($this->backup)->postJson(route('grp.tasks.assistant_decline', $held->reference))->assertOk()->assertJson(['result' => 'kept']);
+    expect($held->refresh()->assignee_id)->toBe($shopGuru->id)
+        ->and(data_get($held->data, 'answered_at'))->toBeNull();
+
+    UpdateOrganisation::make()->action($this->organisation, ['assistant_questions_user_id' => null]);
+    expect(StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Q', 'Q')['task']->assignee_id)->toBe($shopGuru->id);
+
+    UpdateShop::make()->action($this->shop->refresh(), ['assistant_questions_user_id' => null]);
 });
 
 test('a question nobody answered within a day is closed in working hours and the customer is told to contact customer services', function () {

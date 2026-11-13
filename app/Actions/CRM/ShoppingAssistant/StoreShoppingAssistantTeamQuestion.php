@@ -11,6 +11,7 @@ namespace App\Actions\CRM\ShoppingAssistant;
 use App\Actions\Tasks\GetAikuAssistant;
 use App\Actions\Tasks\StoreStaffTask;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Chat\ChatAgent;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\SysAdmin\Organisation;
@@ -26,14 +27,15 @@ use Throwable;
 /**
  * A question the AI shopping assistant could not answer from our texts (samples, discount codes, a
  * document that is not online...) goes to the organisation's question person, set in its settings
- * (assistant_questions.user_id), as a staff task and a pop-up with an answer box in aiku: to the
- * guru when they have aiku open, else the backup, else a customer services agent online for the
- * shop, else the guru anyway (route()). The guru not answering within BACKUP_AFTER_MINUTES: the
- * backup person gets it too, and the first answer wins
+ * (assistant_questions.user_id), as a staff task and a pop-up with an answer box in aiku. A shop
+ * may set its own guru (shop settings assistant_questions.user_id), asked before the organisation's
+ * guru and backup (gurusOf()). It goes to the first guru in that order with aiku open, else a
+ * customer services agent online for the shop, else the first guru anyway (route()). Not answered
+ * within BACKUP_AFTER_MINUTES: the gurus after them get it too, and the first answer wins
  * (AnswerShoppingAssistantTeamQuestion). In working hours the customer's page waits WAIT_MINUTES
  * for it; a later answer reaches them through the conversation and by email or customer services.
  * One open question per conversation and MAX_PER_DAY per customer, as a customer's words put a
- * pop-up on a named person's screen. Off when the organisation has no question person.
+ * pop-up on a named person's screen. Off when neither the shop nor the organisation has a guru.
  */
 class StoreShoppingAssistantTeamQuestion
 {
@@ -57,7 +59,9 @@ class StoreShoppingAssistantTeamQuestion
         $customer     = $conversation->customer;
         $organisation = $customer?->organisation;
 
-        if (!$organisation || !self::personOf($organisation)) {
+        $gurus        = $organisation ? self::gurusOf($organisation, $customer->shop_id) : [];
+
+        if (!$gurus) {
             return ['status' => 'off', 'task' => null, 'live' => false];
         }
 
@@ -74,9 +78,7 @@ class StoreShoppingAssistantTeamQuestion
         $question  = mb_substr(trim($questionInEnglish), 0, 500);
         $words     = mb_substr(trim($customerWords), 0, 1000);
         $language  = DB::table('languages')->where('code', $conversation->language_code)->value('name') ?: $conversation->language_code;
-        $person    = self::personOf($organisation);
-        $backup    = self::backupOf($organisation);
-        [$first, $routedTo] = self::route($person, $backup, $customer->shop_id);
+        [$first, $routedTo] = self::route($gurus, $customer->shop_id);
         $live      = $routedTo !== 'nobody_online' && RemindShoppingAssistantSalesLeads::make()->isWorkingTime($organisation);
         $assistant = GetAikuAssistant::run($customer->group_id);
 
@@ -90,7 +92,7 @@ class StoreShoppingAssistantTeamQuestion
                 $conversation->website ? __('Conversation on :website:', ['website' => $conversation->website->domain]).' '.route('grp.org.shops.show.web.analytics.shopping_assistant.conversations.show', [$organisation->slug, $customer->shop->slug, $conversation->website->slug, $conversation->ulid]) : null,
             ])),
             'assignee_id'      => $first->id,
-            'collaborator_ids' => array_values(array_filter([$backup?->id, $person->id !== $first->id ? $person->id : null])),
+            'collaborator_ids' => array_values(array_filter(array_map(fn (User $guru) => $guru->id !== $first->id ? $guru->id : null, $gurus))),
             'priority'         => ChatPriorityEnum::NORMAL->value,
             'model_type'       => 'Customer',
             'model_id'         => $customer->id,
@@ -113,36 +115,38 @@ class StoreShoppingAssistantTeamQuestion
         ]);
 
         AlertShoppingAssistantTeamQuestion::dispatch($task, $first);
-        if ($first->id === $person->id && $backup && $backup->id !== $person->id) {
-            AlertShoppingAssistantTeamQuestion::dispatch($task, $backup)->delay(now()->addMinutes(self::BACKUP_AFTER_MINUTES));
+        $firstIndex = array_search($first->id, array_map(fn (User $guru) => $guru->id, $gurus), true);
+        if ($firstIndex !== false) {
+            foreach (array_slice($gurus, $firstIndex + 1) as $backup) {
+                AlertShoppingAssistantTeamQuestion::dispatch($task, $backup)->delay(now()->addMinutes(self::BACKUP_AFTER_MINUTES));
+            }
         }
 
         return ['status' => 'created', 'task' => $task, 'live' => $live];
     }
 
     /**
-     * Who gets the question first, by who has aiku open now: the guru, else the backup, else a
-     * customer services agent online for the shop, else the guru anyway (it waits as a task).
+     * Who gets the question first, by who has aiku open now: the first guru in order, else a
+     * customer services agent online for the shop, else the first guru anyway (it waits as a task).
      *
+     * @param  array<int, User>  $gurus
      * @return array{0: User, 1: 'guru'|'backup'|'customer_services'|'nobody_online'}
      */
-    public static function route(User $person, ?User $backup, int $shopId): array
+    public static function route(array $gurus, int $shopId): array
     {
         $online = self::onlineUserIds();
-        $isOn   = fn (?User $user) => $user && ($online === null || in_array($user->id, $online, true));
 
-        if ($isOn($person)) {
-            return [$person, 'guru'];
-        }
-        if ($isOn($backup)) {
-            return [$backup, 'backup'];
+        foreach ($gurus as $index => $guru) {
+            if ($online === null || in_array($guru->id, $online, true)) {
+                return [$guru, $index === 0 ? 'guru' : 'backup'];
+            }
         }
         $agent = ChatAgent::findAvailableAgent(null, $shopId)?->user;
         if ($agent && $agent->status) {
             return [$agent, 'customer_services'];
         }
 
-        return [$person, 'nobody_online'];
+        return [$gurus[0], 'nobody_online'];
     }
 
     /**
@@ -164,14 +168,31 @@ class StoreShoppingAssistantTeamQuestion
         });
     }
 
-    public static function personOf(Organisation $organisation): ?User
+    /**
+     * Who answers a question from this shop, in the order they are asked: the shop's guru, then the
+     * organisation's guru and its backup (the backup only counts with an organisation guru).
+     *
+     * @return array<int, User>
+     */
+    public static function gurusOf(Organisation $organisation, ?int $shopId): array
     {
-        return self::userOf($organisation, 'user_id');
+        $shopGuruId         = (int) ($shopId ? Arr::get(Shop::find($shopId)?->settings, 'assistant_questions.user_id') : 0);
+        $organisationGuruId = (int) Arr::get($organisation->settings, 'assistant_questions.user_id');
+        $backupId           = (int) Arr::get($organisation->settings, 'assistant_questions.backup_user_id');
+        $users              = User::whereIn('id', array_filter([$shopGuruId, $organisationGuruId, $backupId]))->where('status', true)->get()->keyBy('id');
+        $ids                = array_unique(array_filter([$shopGuruId, $organisationGuruId, $users->has($organisationGuruId) ? $backupId : 0]));
+
+        return array_values(array_filter(array_map(fn (int $id) => $users->get($id), $ids)));
     }
 
-    public static function backupOf(Organisation $organisation): ?User
+    /**
+     * @return array<int, User>
+     */
+    public static function gurusOfTask(StaffTask $task): array
     {
-        return self::userOf($organisation, 'backup_user_id');
+        $organisation = Organisation::find(data_get($task->data, 'organisation_id'));
+
+        return $organisation ? self::gurusOf($organisation, data_get($task->data, 'shop_id')) : [];
     }
 
     public static function openFor(ShoppingAssistantConversation $conversation): ?StaffTask
@@ -222,22 +243,25 @@ class StoreShoppingAssistantTeamQuestion
      */
     public static function waitingFor(User $user): \Illuminate\Support\Collection
     {
+        $backupIdsByShop = [];
+
         return StaffTask::where('data->kind', self::TASK_KIND)
             ->whereNull('data->answered_at')
             ->where('created_at', '>=', now()->subDays(7))
             ->latest('id')
             ->limit(20)
             ->get()
-            ->filter(function (StaffTask $task) use ($user) {
+            ->filter(function (StaffTask $task) use ($user, &$backupIdsByShop) {
                 if (in_array($user->id, data_get($task->data, 'declined_by', []), true)) {
                     return false;
                 }
                 if ($task->assignee_id === $user->id) {
                     return true;
                 }
-                $organisation = Organisation::find(data_get($task->data, 'organisation_id'));
+                $shopKey   = data_get($task->data, 'organisation_id').'-'.data_get($task->data, 'shop_id');
+                $backupIds = $backupIdsByShop[$shopKey] ??= array_map(fn (User $guru) => $guru->id, array_slice(self::gurusOfTask($task), 1));
 
-                return $organisation && self::backupOf($organisation)?->id === $user->id
+                return in_array($user->id, $backupIds, true)
                     && ($task->created_at->lte(now()->subMinutes(self::BACKUP_AFTER_MINUTES)) || in_array($task->assignee_id, data_get($task->data, 'declined_by', []), true));
             })
             ->values();
@@ -245,16 +269,7 @@ class StoreShoppingAssistantTeamQuestion
 
     public static function canAnswer(StaffTask $task, User $user): bool
     {
-        $organisation = Organisation::find(data_get($task->data, 'organisation_id'));
-
         return data_get($task->data, 'kind') === self::TASK_KIND
-            && ($task->assignee_id === $user->id || ($organisation && in_array($user->id, [self::personOf($organisation)?->id, self::backupOf($organisation)?->id], true)));
-    }
-
-    private static function userOf(Organisation $organisation, string $key): ?User
-    {
-        $id = Arr::get($organisation->settings, 'assistant_questions.'.$key);
-
-        return $id ? User::where('id', $id)->where('status', true)->first() : null;
+            && ($task->assignee_id === $user->id || in_array($user->id, array_map(fn (User $guru) => $guru->id, self::gurusOfTask($task)), true));
     }
 }

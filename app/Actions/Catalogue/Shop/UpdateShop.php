@@ -357,6 +357,11 @@ class UpdateShop extends OrgAction
             data_set($modelData, 'settings.catalog.related_product_follow_master', Arr::pull($modelData, 'related_product_follow_master'));
         }
 
+        if (Arr::has($modelData, 'assistant_questions_user_id')) {
+            $guruId = Arr::pull($modelData, 'assistant_questions_user_id');
+            data_set($modelData, 'settings.assistant_questions.user_id', $guruId ? (int) $guruId : null);
+        }
+
         if (Arr::has($modelData, 'shopkeeper_in_charge_id')) {
             data_set($modelData, 'settings.catalog.shopkeeper_in_charge_id', Arr::pull($modelData, 'shopkeeper_in_charge_id'));
         }
@@ -1208,6 +1213,7 @@ class UpdateShop extends OrgAction
             'product_follow_master'                                   => ['sometimes', 'boolean'],
             'related_product_follow_master'                           => ['sometimes', 'boolean'],
             'shopkeeper_in_charge_id'                                 => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
+            'assistant_questions_user_id'                             => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->shop->group_id)->where('status', true)],
             'related_product_categories_follow_master'                => ['sometimes', 'boolean'],
             'family_indexing_follow_master'                           => ['sometimes', 'boolean'],
             'family_order_follow_master'                              => ['sometimes', 'boolean'],

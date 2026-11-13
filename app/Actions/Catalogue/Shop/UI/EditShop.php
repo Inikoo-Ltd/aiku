@@ -298,6 +298,16 @@ class EditShop extends OrgAction
                             'valueProp' => 'id',
                             'value' => Arr::get($shop->settings, 'staff_chat.warehouse_backup_user_ids', []),
                         ],
+                        'assistant_questions_user_id' => [
+                            'type'        => 'select',
+                            'label'       => __('Guru'),
+                            'information' => __('Gets first the questions customers of this shop ask the AI shopping assistant that our texts do not answer. The organisation\'s guru and backup guru are the backups. Empty sends them straight to the organisation\'s gurus.'),
+                            'options'     => User::where('group_id', $shop->group_id)->where('status', true)->orderBy('contact_name')->get(['id', 'contact_name', 'username'])->map(fn ($user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                            'labelProp'   => 'name',
+                            'valueProp'   => 'id',
+                            'searchable'  => true,
+                            'value'       => Arr::get($shop->settings, 'assistant_questions.user_id'),
+                        ],
                     ],
                 ],
                 [
