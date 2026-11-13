@@ -185,7 +185,7 @@ class Agent extends Model implements HasMedia, Auditable
 
     public const array CHO_MODES = ['next_container', 'forwarder'];
 
-    public const array READY_CHECKS = ['balance', 'packing', 'qc', 'compliance'];
+    public const array READY_CHECKS = ['balance', 'qc', 'packing', 'compliance'];
 
     /**
      * How this agent's purchase orders move through the PO journey, from settings.po_journey with defaults applied.

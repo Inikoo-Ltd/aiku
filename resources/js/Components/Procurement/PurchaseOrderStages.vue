@@ -132,6 +132,7 @@ const groupGridClass = (count: number): string => {
 
 const isComplete = (stage: Stage): boolean => stage.reached || !!stage.not_required
 
+const stageMarks = (stage: Stage) => stage.marks.filter((mark) => !(mark.field === "compliance_complete_at" && stage.checks?.some((check) => check.key === "compliance")))
 const isRequiredSkip = (check: Check) => check.skipped && check.required !== false
 const checkMark = (stage: Stage, check: Check) => check.key === "compliance" ? stage.marks.find((mark) => mark.field === "compliance_complete_at") ?? null : null
 const hasCheckDetail = (check: Check, stage?: Stage) => !!slots[`check-${check.key}`] || (!!stage && (!!checkMark(stage, check) || (!!props.skipRoute && !!stage.skips?.some((skip) => skip.key === check.key && skip.skipped))))
@@ -507,8 +508,8 @@ function save() {
                 <p v-if="uploadError && stage.evidence.some((evidence) => evidence.scope === uploadError?.scope)" class="text-red-600">{{ uploadError.message }}</p>
             </div>
 
-            <div v-if="stage.marks.length" class="mt-2 flex flex-col gap-1">
-                <template v-for="mark in stage.marks" :key="mark.field">
+            <div v-if="stageMarks(stage).length" class="mt-2 flex flex-col gap-1">
+                <template v-for="mark in stageMarks(stage)" :key="mark.field">
                     <span v-if="mark.blocked" class="block" v-tooltip="mark.blocked">
                         <Button type="tertiary" size="xs" full disabled :label="markLabel(mark)">
                             <template #icon>

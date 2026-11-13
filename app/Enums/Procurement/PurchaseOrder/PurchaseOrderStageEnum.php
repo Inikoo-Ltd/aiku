@@ -111,8 +111,8 @@ enum PurchaseOrderStageEnum: string
 
     public const array READY_CHECK_FIELDS = [
         'balance'    => 'balance_paid_at',
-        'packing'    => 'produced_at',
         'qc'         => 'qc_passed_at',
+        'packing'    => 'produced_at',
         'compliance' => 'compliance_complete_at',
     ];
 
@@ -125,8 +125,8 @@ enum PurchaseOrderStageEnum: string
     {
         return [
             'balance'    => __('Balance'),
-            'packing'    => __('Packing'),
             'qc'         => __('QC'),
+            'packing'    => __('Packing'),
             'compliance' => __('Compliance'),
         ];
     }
