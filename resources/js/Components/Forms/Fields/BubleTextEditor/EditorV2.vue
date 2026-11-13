@@ -45,6 +45,10 @@ import { IMAGE_WIDTH_PRESETS, ImageAlignment, imageWidthPercent, toImageWidth } 
 import Placeholder from "@tiptap/extension-placeholder"
 import Link from "@tiptap/extension-link"
 import Iframe from "@/Components/Forms/Fields/BubleTextEditor/Iframe/IframeExtension.js"
+import { CtaButton, CTA_BUTTON_NODE } from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/CtaButtonExtension"
+import TiptapCtaButtonDialog from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/TiptapCtaButtonDialog.vue"
+import { type CtaButtonAlignment, type CtaButtonAttributes, defaultCtaButtonAttributes } from "@/Components/Forms/Fields/BubleTextEditor/CtaButton/ctaButtonLayout"
+import { DEFAULT_EDITOR_TOOLS } from "@/Components/Forms/Fields/BubleTextEditor/editorTools"
 
 import {
     faUndo,
@@ -69,7 +73,7 @@ import {
     faPaintBrushAlt,
     faTextSize,
 } from "@far"
-import { faTable, faPalette, faUnlink, faTimes, faEllipsisH, faChevronDown, faFont, faHeading, faBracketsCurly, faSlidersH, faExchange, faTrashAlt } from "@fal"
+import { faTable, faPalette, faUnlink, faTimes, faEllipsisH, faChevronDown, faFont, faHeading, faBracketsCurly, faSlidersH, faExchange, faTrashAlt, faHandPointer } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -107,11 +111,7 @@ const props = withDefaults(defineProps<{
 }>(), {
     editable: true,
     type: 'Bubble',
-    toggle: () => [
-        'heading1', 'heading2', 'heading3', 'fontSize', 'bold', 'italic', 'underline', 'bulletList', 'query', "fontFamily",
-        'orderedList', 'blockquote', 'divider', 'alignLeft', 'alignRight', "customLink",
-        'alignCenter', 'undo', 'redo', 'highlight', 'color', 'clear', "image", "video", "table"
-    ]
+    toggle: () => [...DEFAULT_EDITOR_TOOLS]
 })
 
 const emits = defineEmits<{
@@ -137,6 +137,8 @@ const showAddImageDialog = ref<boolean>(false)
 const showImageSettingsDialog = ref<boolean>(false)
 const imageInSettingsDialog = ref<{ position: number, attributes: Record<string, any> } | null>(null)
 const positionOfImageToReplace = ref<number | null>(null)
+const showCtaButtonDialog = ref<boolean>(false)
+const ctaButtonInDialog = ref<{ position: number | null, attributes: CtaButtonAttributes } | null>(null)
 const showAddVariableDialog = ref<boolean>(false)
 const showMergeTagDialog = ref<boolean>(false)
 const showLinkDialog = ref<boolean>()
@@ -262,6 +264,9 @@ const editorInstance = useEditor({
         Blockquote,
         CharacterCount,
         Iframe,
+        CtaButton.configure({
+            onEdit: (position: number) => openCtaButtonDialog(position),
+        }),
         Youtube,
         Highlight.configure({
             multicolor: true
@@ -577,6 +582,75 @@ function saveImageSettings(settings: { alt: string, width: string, float: ImageA
     }
 }
 
+function selectedCtaButton(): { position: number, attributes: CtaButtonAttributes } | null {
+    const selection = editorInstance.value?.state.selection
+    if (!selection || !isNodeSelection(selection) || selection.node.type.name !== CTA_BUTTON_NODE) {
+        return null
+    }
+
+    return { position: selection.from, attributes: selection.node.attrs as CtaButtonAttributes }
+}
+
+function openCtaButtonDialog(position: number | null = null) {
+    const button = position === null ? null : editorInstance.value?.state.doc.nodeAt(position)
+    ctaButtonInDialog.value = button?.type.name === CTA_BUTTON_NODE
+        ? { position, attributes: button.attrs as CtaButtonAttributes }
+        : { position: null, attributes: defaultCtaButtonAttributes() }
+    showCtaButtonDialog.value = true
+    showDialog.value = true
+}
+
+function closeCtaButtonDialog() {
+    showCtaButtonDialog.value = false
+    showDialog.value = false
+    ctaButtonInDialog.value = null
+}
+
+function updateCtaButton(position: number, attributes: Partial<CtaButtonAttributes>) {
+    const editor = editorInstance.value
+    const button = editor?.state.doc.nodeAt(position)
+    if (!editor || button?.type.name !== CTA_BUTTON_NODE) {
+        return
+    }
+
+    editor
+        .chain()
+        .focus()
+        .command(({ tr }) => {
+            tr.setNodeMarkup(position, undefined, { ...button.attrs, ...attributes })
+            return true
+        })
+        .setNodeSelection(position)
+        .run()
+}
+
+function saveCtaButton(attributes: CtaButtonAttributes) {
+    const position = ctaButtonInDialog.value?.position ?? null
+    if (position === null) {
+        editorInstance.value?.chain().focus().insertCtaButton(attributes).run()
+        return
+    }
+
+    updateCtaButton(position, attributes)
+}
+
+function alignSelectedCtaButton(alignment: CtaButtonAlignment) {
+    const button = selectedCtaButton()
+    if (button) {
+        updateCtaButton(button.position, { alignment })
+    }
+}
+
+const selectedCtaButtonAttributes = computed(() =>
+    editorInstance.value?.isActive(CTA_BUTTON_NODE) ? editorInstance.value.getAttributes(CTA_BUTTON_NODE) as CtaButtonAttributes : null
+)
+
+const ctaButtonAlignmentOptions: Array<{ value: CtaButtonAlignment, label: string, icon: any }> = [
+    { value: 'left', label: 'Align Left', icon: faAlignLeft },
+    { value: 'center', label: 'Align Center', icon: faAlignCenter },
+    { value: 'right', label: 'Align Right', icon: faAlignRight },
+]
+
 function openReplaceImageDialog() {
     const image = selectedImage()
     if (!image) {
@@ -745,7 +819,7 @@ const toggleList = (value: string) => {
 }
 
 const hasMoreMenuItems = computed(() =>
-    ['blockquote', 'divider', 'image', 'video', 'table', 'query']
+    ['blockquote', 'divider', 'image', 'video', 'table', 'query', 'ctaButton']
         .some(key => props.toggle.includes(key))
 )
 
@@ -1158,7 +1232,7 @@ onMounted(async () => {
                                 <template #menu="{ close }">
                                     <div class="max-h-80 w-52 overflow-y-auto">
                                         <template
-                                            v-if="toggle.includes('image') || toggle.includes('video') || toggle.includes('table') || toggle.includes('blockquote') || toggle.includes('divider')">
+                                            v-if="toggle.includes('image') || toggle.includes('video') || toggle.includes('table') || toggle.includes('blockquote') || toggle.includes('divider') || toggle.includes('ctaButton')">
                                             <div class="my-1 h-px bg-gray-200" aria-hidden="true" />
                                             <div class="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
                                                 {{ ctrans('Insert') }}
@@ -1168,6 +1242,12 @@ onMounted(async () => {
                                                 @click="showAddImageDialog = true; showDialog = true; close()">
                                                 <FontAwesomeIcon :icon="faImage" class="h-4 w-4" fixed-width />
                                                 {{ ctrans('Image') }}
+                                            </button>
+                                            <button v-if="toggle.includes('ctaButton')" type="button"
+                                                class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                                                @click="openCtaButtonDialog(); close()">
+                                                <FontAwesomeIcon :icon="faHandPointer" class="h-4 w-4" fixed-width />
+                                                {{ ctrans('Button') }}
                                             </button>
                                             <button v-if="toggle.includes('video')" type="button"
                                                 class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100"
@@ -1261,6 +1341,31 @@ onMounted(async () => {
                             <FontAwesomeIcon :icon="faExchange" class="h-4 w-4" fixed-width />
                         </TiptapToolbarButton>
                         <TiptapToolbarButton :label="ctrans('Remove image')"
+                            @click="editorInstance?.chain().focus().deleteSelection().run()">
+                            <FontAwesomeIcon :icon="faTrashAlt" class="h-4 w-4 text-red-500" fixed-width />
+                        </TiptapToolbarButton>
+                    </section>
+
+                    <section v-if="selectedCtaButtonAttributes"
+                        class="mt-1 flex flex-nowrap items-center gap-0.5 overflow-x-auto border-t border-gray-200 pt-1">
+                        <span class="shrink-0 pr-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                            {{ ctrans('Button') }}
+                        </span>
+
+                        <TiptapToolbarButton v-for="option in ctaButtonAlignmentOptions" :key="option.value"
+                            :label="ctrans(option.label)"
+                            :is-active="selectedCtaButtonAttributes.alignment === option.value"
+                            @click="alignSelectedCtaButton(option.value)">
+                            <FontAwesomeIcon :icon="option.icon" class="h-4 w-4" fixed-width />
+                        </TiptapToolbarButton>
+
+                        <span class="mx-0.5 h-5 w-px shrink-0 bg-gray-200" aria-hidden="true" />
+
+                        <TiptapToolbarButton :label="ctrans('Edit button')"
+                            @click="openCtaButtonDialog(selectedCtaButton()?.position ?? null)">
+                            <FontAwesomeIcon :icon="faSlidersH" class="h-4 w-4" fixed-width />
+                        </TiptapToolbarButton>
+                        <TiptapToolbarButton :label="ctrans('Remove button')"
                             @click="editorInstance?.chain().focus().deleteSelection().run()">
                             <FontAwesomeIcon :icon="faTrashAlt" class="h-4 w-4 text-red-500" fixed-width />
                         </TiptapToolbarButton>
@@ -1433,6 +1538,15 @@ onMounted(async () => {
             @close="closeImageSettingsDialog"
             @update="saveImageSettings"
         />
+        <TiptapCtaButtonDialog
+            v-if="showCtaButtonDialog && ctaButtonInDialog"
+            :show="showCtaButtonDialog"
+            :button="ctaButtonInDialog.attributes"
+            :isNew="ctaButtonInDialog.position === null"
+            :routeGetInternalLink="routeGetInternalLink"
+            @close="closeCtaButtonDialog"
+            @update="saveCtaButton"
+        />
         <TiptapLinkDialog
             v-if="showLinkDialog"
             :show="showLinkDialog"
@@ -1510,6 +1624,11 @@ onMounted(async () => {
     margin-inline-start: 0px;
     margin-inline-end: 0px;
     unicode-bidi: isolate;
+}
+
+:deep([data-cta-button].ProseMirror-selectednode a) {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
 }
 
 :deep(.ProseMirror) {

@@ -4,6 +4,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, onMounted, computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import { BLOG_EDITOR_TOOLS } from "@/Components/Forms/Fields/BubleTextEditor/editorTools"
 import Image from "@common/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { getStyles } from "@/Composables/styles"
@@ -96,7 +97,7 @@ const displayDate = computed(() => {
     <!-- Content Editor -->
     <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(modelValue?.properties, screenType)}" >
       <Editor v-model="modelValue.content" @update:modelValue="() => emits('autoSave')" class="mb-6"
-        placeholder="Blog content" :uploadImageRoute="{
+        placeholder="Blog content" :toggle="BLOG_EDITOR_TOOLS" :uploadImageRoute="{
           name: webpageData.images_upload_route.name,
           parameters: {
             ...webpageData.images_upload_route.parameters,

@@ -9,6 +9,7 @@ import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
 import { set } from "lodash-es"
 import { Panel } from "primevue"
 import { ctrans } from "@/Composables/useTrans"
+import { resolveInternalLinkRoute } from "@/Components/Forms/Fields/BubleTextEditor/internalLinkRoute"
 
 const props = defineProps<{
   show: boolean
@@ -65,30 +66,7 @@ watch(
 )
 
 function resolveRoute() {
-  return props.routeGetInternalLink?.name
-    ? route(props.routeGetInternalLink.name, props.routeGetInternalLink.parameters ?? {})
-    : getRoute()
-}
-
-function getRoute() {
-  if (!route().params.website) {
-    return null
-  }
-
-  const params = {
-    organisation: route().params.organisation,
-    website: route().params.website,
-  }
-
-  return route().params.fulfilment
-    ? route("grp.org.fulfilments.show.web.webpages.index", {
-      ...params,
-      fulfilment: route().params.fulfilment,
-    })
-    : route("grp.org.shops.show.web.webpages.index", {
-      ...params,
-      shop: route().params.shop,
-    })
+  return resolveInternalLinkRoute(props.routeGetInternalLink)
 }
 
 function handleSelect(e: any) {
