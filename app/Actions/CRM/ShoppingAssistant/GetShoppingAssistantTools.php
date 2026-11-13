@@ -76,6 +76,10 @@ use Throwable;
  * organisation's customer services team (StoreShoppingAssistantSalesLead); the model never sees the
  * threshold and never promises a discount.
  *
+ * products_on_offer lists the products whose card discount is a sale running now (a category-offers
+ * campaign such as Black Friday, never member prices), optionally of one kind; the model never gets a
+ * sale name or a percentage.
+ *
  * restock_information says when an out of stock product the customer names is expected back, from
  * what is on order (GetProductRestockEstimate), as a sentence written here with a half-month window,
  * only when the date is reliable. ask_purchasing_team, after the customer said yes, passes a
@@ -235,8 +239,13 @@ class GetShoppingAssistantTools
                 []
             ),
             $this->tool(
+                'products_on_offer',
+                'Products on a sale or promotion running now (Black Friday, a monthly offer...), in stock; the discount shows on each product card. Use it whenever the customer asks what is on sale, on offer or in a promotion, or for the products of a sale they name, which are all of them; with kind when they want one kind of product on sale. Returns products with id, name, family and why.',
+                ['kind' => ['type' => 'string', 'description' => 'Only when the customer wants one kind of product on sale ("candles"), in their words; never the name of the sale.'], 'limit' => $limit]
+            ),
+            $this->tool(
                 'better_price_options',
-                'What can lower the price for this customer. Use it whenever the customer asks for a better price, a discount, a deal or a special price, or says something is too expensive. Sentences about their Gold Reward membership, any member-price offer running now, and the order size from which our team calls to discuss better terms are added under your reply by the system; you get no figures or dates. Returns no products.',
+                'What can lower the price for this customer. Use it whenever the customer asks for a better price, a discount code, a deal or a special price, or says something is too expensive; not when they only want to see what is on sale, which is products_on_offer. Sentences about their Gold Reward membership, any member-price offer running now, and the order size from which our team calls to discuss better terms are added under your reply by the system; you get no figures or dates. Returns no products.',
                 []
             ),
             $this->tool(
@@ -331,6 +340,7 @@ class GetShoppingAssistantTools
                 'add_to_basket'                  => $this->addToBasket($conversation, $customer, $arguments, $foundProductIds),
                 'clear_conversation'             => $this->clearConversation($conversation),
                 'better_price_options'           => $this->betterPriceOptions($customer, $conversation->language_code),
+                'products_on_offer'              => $this->productsOnOffer($customer, $arguments, $conversation->language_code),
                 'big_order_lead'                 => $this->bigOrderLead($conversation, $arguments),
                 'restock_information'            => $this->restockInformation($customer, $arguments, $conversation->language_code),
                 'ask_purchasing_team'            => $this->askPurchasingTeam($conversation, $customer, $arguments),
@@ -980,6 +990,52 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => implode(' ', $facts),
         ];
+    }
+
+    /**
+     * Products whose best discount on the card (products.offers_data best_percentage_off, what the
+     * storefront shows) is a sale running now: a category-offers campaign, never the volume / Gold
+     * Reward member prices. Optionally only one kind of product, matched by meaning. Sale names are
+     * internal labels with percentages ("50BF26", "Black Friday - 50% RABATT"), so the model gets none.
+     *
+     * ponytail: the first `limit` by family; rank by sales when shops run more sales than fit one answer.
+     *
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array<int, array{id: int, reason_code: string, reason: ?string}>, error: ?string}
+     */
+    private function productsOnOffer(Customer $customer, array $arguments, string $locale): array
+    {
+        $kind   = $this->kindOf($arguments);
+        $onSale = $this->recommendableProducts($customer->shop, $customer)
+            ->join('offers', 'offers.id', '=', DB::raw("(products.offers_data::jsonb->'best_percentage_off'->>'offer_id')::bigint"))
+            ->join('offer_campaigns', 'offer_campaigns.id', '=', 'offers.offer_campaign_id')
+            ->where('offer_campaigns.type', 'category-offers')
+            ->where('offers.state', 'active')
+            ->where('offers.status', true)
+            ->where(fn ($query) => $query->whereNull('offers.end_at')->orWhere('offers.end_at', '>', now()))
+            ->whereRaw("(products.offers_data::jsonb->'best_percentage_off'->>'percentage_off')::numeric > 0")
+            ->select('products.*');
+
+        if ($kind !== '') {
+            $ofKind = $this->productIdsOfKind($customer, $kind);
+            if ($ofKind === null) {
+                return $this->error('The search is not available right now, try again.');
+            }
+            $onSale->whereIn('products.id', $ofKind);
+        }
+
+        $limit    = $this->limit($arguments);
+        $products = $onSale->orderBy('products.family_id')->orderBy('products.id')->limit($limit + 1)->get();
+        $result   = $this->productsResult($customer, $products->take($limit), fn () => 'matches_request', $locale);
+
+        $result['content']['note'] = match (true) {
+            $products->isEmpty()          => 'Nothing'.($kind !== '' ? ' of that kind' : '').' is on sale right now. Say so plainly and offer to show the products they asked for with search_products.',
+            $products->count() > $limit   => 'These are on sale now, a selection of more: say so. Call it "our sale" or "on offer now", never a percentage; the discount shows on each product card.',
+            default                       => 'These are all the products on sale now. Call it "our sale" or "on offer now", never a percentage; the discount shows on each product card.',
+        };
+
+        return $result;
     }
 
     /**

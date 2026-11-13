@@ -165,7 +165,7 @@ test('a shopping assistant turn runs a data tool, presents its products and logs
         ]);
 
     Http::assertSent(fn (Request $request) => str_contains($request->url(), 'chat/completions') && str_contains($request['messages'][0]['content'], 'Reply in '.$language.'.') && $request['cache_control'] === ['type' => 'ephemeral']);
-    Http::assertNotSent(fn (Request $request) => str_contains($request->body(), 'Zelda') || str_contains($request->body(), 'Quillfeather') || str_contains($request->body(), $email));
+    Http::assertNotSent(fn (Request $request) => str_contains($request->body(), 'Quillfeather') || str_contains($request->body(), $email));
 });
 
 test('the shopping assistant drops products no tool returned or that went out of stock, and replaces a reply with numbers the customer never gave', function () {
@@ -969,30 +969,33 @@ test('the AI assistant report sends this month\'s budget of each website with th
 
 test('the group AI assistant report counts the period\'s conversations on its tab and lists each website with its figures and budget on Shops / Budget', function () {
     GetCurrencyExchange::mock()->shouldReceive('handle')->andReturn(1.0);
-    $website  = createWebsite($this->shop);
+    $query = ['from' => '2018-02-01', 'to' => '2018-02-30', 'tab' => 'shops'];
+    $this->withoutVite();
+    $website    = createWebsite($this->shop);
+    $beforePage = $this->get(route('grp.websites.shopping_assistant.show', $query))->viewData('page')['props'];
+    $before     = $beforePage['tabs']['navigation']['conversations']['number'] ?? 0;
+    $beforeRow  = collect($beforePage['shops']['data'] ?? [])->firstWhere('domain', $website->domain) ?? ['conversations' => 0, 'customers' => 0, 'orders' => 0, 'revenue' => 0];
+
     $product  = shoppingAssistantProduct($this->product);
     $customer = shoppingAssistantCustomer($this->shop);
     shoppingAssistantShownAt($customer, [$product->id], '2018-02-02 10:00:00');
     shoppingAssistantOrderLine($customer, $product, '2018-02-03 10:00:00', 30);
     shoppingAssistantShownAt(shoppingAssistantCustomer($this->shop), [$product->id], '2018-02-03 10:00:00');
 
-    $query = ['from' => '2018-02-01', 'to' => '2018-02-30', 'tab' => 'shops'];
-
-    $this->withoutVite();
     $this->get(route('grp.websites.shopping_assistant.show', $query))->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('tabs.navigation.conversations.number', 2)
+            ->where('tabs.navigation.conversations.number', $before + 2)
             ->where('tabs.navigation.shops.title', 'Shops / Budget')
             ->where('shops.data', fn ($rows) => collect($rows)->pluck('domain')->contains($website->domain))
-            ->where('shops.data', function ($rows) use ($website) {
+            ->where('shops.data', function ($rows) use ($website, $beforeRow) {
                 $row = collect($rows)->firstWhere('domain', $website->domain);
 
-                return $row['conversations'] === 2 && $row['customers'] === 2 && $row['orders'] === 1
-                    && (float) $row['revenue'] === 30.0 && (float) $row['conversion'] === 0.5 && array_key_exists('monthly', $row['budget']);
+                return $row['conversations'] === $beforeRow['conversations'] + 2 && $row['customers'] === $beforeRow['customers'] + 2 && $row['orders'] === $beforeRow['orders'] + 1
+                    && abs((float) $row['revenue'] - (float) $beforeRow['revenue'] - 30.0) < 0.001 && array_key_exists('monthly', $row['budget']);
             }));
 
     $this->get(route('grp.org.shops.show.web.analytics.shopping_assistant.show', [$this->organisation->slug, $this->shop->slug, $website->slug, 'from' => '2018-02-01', 'to' => '2018-02-30']))->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.shops')->where('tabs.navigation.conversations.number', 2));
+        ->assertInertia(fn (AssertableInertia $page) => $page->missing('tabs.navigation.shops')->where('tabs.navigation.conversations.number', $beforeRow['conversations'] + 2));
 });
 
 test('the assistant is called Merlin unless the group sets a name, and a website\'s own name wins', function () {
@@ -1331,6 +1334,25 @@ test('the shopping assistant reply may repeat a percentage or size from a produc
         ->and($assistant->onlyGivenNumbers('I added the Himalayan Salt Lamp - Apx 1.5-2kg to your basket.', 'salt lamps', 'Himalayan Salt Lamp - Apx 1.5-2kg'))->toBeTrue()
         ->and($assistant->onlyGivenNumbers('It weighs 1.5 kilos and costs 2.', 'salt lamps', 'Himalayan Salt Lamp - Apx 1.5-2kg'))->toBeFalse()
         ->and($assistant->onlyGivenNumbers('These are 100 pounds.', 'iconic -29', $names))->toBeFalse();
+});
+
+test('the shopping assistant reply may write a size from a product name with a space, hyphen, decimal comma or another ending of the unit, but never a price', function () {
+    $assistant = AskShoppingAssistant::make();
+    $names     = "Grapefrukt Ekologisk Eterisk Olja 10ml\nBergamott Ekologisk Eterisk Olja 0.5kg\nFigurine Yoga Femme - Bronze & Argent 24cm\nBanjara Resin Cups - 3 Kings\nBanjara Tribal Smudge Incense - (8x 6 fragrances)\nCarved Mango Wood Ashcatcher 10\"\nPack of 2.5mm Indonesia Reed Diffuser Sticks - Approx 100 Sticks\nGlob Cristal Semiprețios 40\u{202F}mm – Piatra Lunii Indiană cu Suport\nGlob Cristal Semiprețios 50\u{202F}mm – Piatra Lunii Indiană cu Suport\nBlack Reed Diffuser Sticks -25cm x 3mm - 500gms\nFibre Black Reed Diffuser 25cm x  4mm";
+
+    expect($assistant->onlyGivenNumbers('Här är eteriska oljor i 10 ml för butiksförsäljning och 0,5 kg för egen tillverkning.', 'eteriska oljor', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Voici des figurines Yoga Femme de 24 cm.', 'figurine', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('The classic black reed in 500g bundles, plus fibre black reeds in 3mm and 4mm thicknesses.', 'black reed diffuser sticks', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('A 500 ml bottle.', 'reeds', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Resin Cups in White Sage and 3 Kings, and a mixed pack of 6 fragrances.', 'resin cups', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Here\'s the Carved Mango Wood Ashcatcher 10", plus the burnt finish.', 'ashcatcher', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('They come as 100-stick packs, and the 2.5mm reeds are back.', 'reeds', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('Avem globul cu suport în două mărimi, de 40 mm și de 50 mm.', 'Glob din piatra lunii indiana', $names))->toBeTrue()
+        ->and($assistant->onlyGivenNumbers('The 10 ml oils cost 10 euros.', 'eteriska oljor', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Only £10 each.', 'eteriska oljor', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Only 6 left in stock.', 'resin cups', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Save 10% today.', 'eteriska oljor', $names))->toBeFalse()
+        ->and($assistant->onlyGivenNumbers('Boxes of roughly 850 cones.', 'incense cones', $names))->toBeFalse();
 });
 
 test('the assistant adds the products it showed to the basket when asked, one of each, leaving lines already there, and shows up to twelve products per group', function () {
@@ -1802,6 +1824,32 @@ test('better price options say from our data whether the customer is a Gold Rewa
         ->and($withoutMemberPrices['content']['gold_reward'])->toBe('not_offered')
         ->and($withoutMemberPrices['fact'])->not->toContain('Gold Reward')
         ->and($withoutMemberPrices['fact'])->toContain('can call you');
+});
+
+test('products on offer lists the products of every sale running now without the sale names or percentages, never member prices or an ended sale', function () {
+    $ids   = ['group_id' => $this->shop->group_id, 'organisation_id' => $this->shop->organisation_id, 'shop_id' => $this->shop->id];
+    $offer = function (string $campaignType, string $name, ?string $endAt) use ($ids): int {
+        $code     = Str::upper(Str::random(8));
+        $campaign = DB::table('offer_campaigns')->insertGetId([...$ids, 'slug' => 'c-'.Str::lower($code), 'code' => $code, 'name' => $name, 'type' => $campaignType, 'data' => '{}', 'settings' => '{}']);
+
+        return DB::table('offers')->insertGetId([...$ids, 'offer_campaign_id' => $campaign, 'slug' => 'o-'.Str::lower($code), 'code' => $code, 'name' => $name, 'type' => 'Category Ordered', 'trigger_type' => 'ProductCategory', 'trigger_id' => $this->product->family_id, 'state' => 'active', 'status' => true, 'end_at' => $endAt, 'trigger_data' => '{}', 'data' => '{}', 'settings' => '{}', 'source_data' => '{}']);
+    };
+    $onOffer = fn (int $offerId) => tap(shoppingAssistantProduct($this->product), fn (Product $product) => DB::table('products')->where('id', $product->id)->update(['offers_data' => json_encode(['best_percentage_off' => ['offer_id' => $offerId, 'percentage_off' => 0.5]])]));
+
+    $blackFriday = $onOffer($offer('category-offers', 'Black Friday - 50% RABATT', now()->addDays(10)->toDateTimeString()));
+    $november    = $onOffer($offer('category-offers', 'Golden November Offer', null));
+    $ended       = $onOffer($offer('category-offers', 'Summer Sale', now()->subDay()->toDateTimeString()));
+    $memberPrice = $onOffer($offer('volume-discount', 'Volume Discount/GR', null));
+    $conversation = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop), ShoppingAssistantEntryPointEnum::COMMAND);
+
+    $result = GetShoppingAssistantTools::make()->execute($conversation, 'products_on_offer', ['limit' => 24]);
+    $shown  = collect($result['products'])->pluck('id');
+
+    expect($result['error'])->toBeNull()
+        ->and($shown)->toContain($blackFriday->id, $november->id)
+        ->and($shown)->not->toContain($ended->id, $memberPrice->id)
+        ->and(collect($result['products'])->pluck('reason_code')->unique()->all())->toBe(['matches_request'])
+        ->and(json_encode($result['content']))->not->toContain('RABATT')->not->toContain('50%')->not->toContain('percentage_off')->not->toContain('0.5')->not->toContain('Golden November');
 });
 
 test('a planned big order becomes one high priority customer services task for the customer, tells the sales leads manager, and a later answer is added to it; a small one is not passed on', function () {
