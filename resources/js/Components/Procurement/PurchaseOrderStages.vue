@@ -392,7 +392,7 @@ function save() {
         <div
             v-for="stage in group.stages"
             :key="stage.key"
-            class="row-span-2 grid grid-rows-subgrid gap-0 p-3 text-sm"
+            class="row-span-2 grid min-w-0 grid-cols-1 grid-rows-subgrid gap-0 p-3 text-sm"
             :class="stage.unpaid ? 'bg-amber-50' : isComplete(stage) ? 'bg-green-50' : 'bg-white'"
         >
             <div class="min-h-9">
