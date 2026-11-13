@@ -11,13 +11,18 @@ use App\Enums\CRM\Livechat\WhatsappTemplateTagEnum;
 use App\Models\CRM\Customer;
 use App\Models\Chat\ChatAgent;
 use App\Models\Chat\MetaChatSession;
+use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
+use App\Actions\Comms\Email\SendPreOrderUpdateEmail;
+use App\Models\Accounting\CreditTransaction;
 use App\Models\Catalogue\Product;
+use App\Models\Ordering\PreOrder;
 use App\Models\Dispatching\Shipment;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsObject;
+use Throwable;
 
 /**
  * Fills the merge tags a template was written with, in the order they were compiled into
@@ -30,7 +35,7 @@ class ResolveWhatsappTemplateTags
 
     /**
      * @param  array<int, string>  $tags
-     * @param  array{product_ids?: array<int, int>, order_ids?: array<int, int>}  $context
+     * @param  array{product_ids?: array<int, int>, order_ids?: array<int, int>, pre_order_id?: int, pre_order_update?: string, credit_transaction_id?: int, chat_url?: string|null}  $context
      * @return array{values: array<int, string>, missing: array<int, string>}
      */
     public function handle(MetaChatSession $metaChatSession, array $tags, ?ChatAgent $agent = null, ?Order $order = null, array $context = []): array
@@ -77,12 +82,27 @@ class ResolveWhatsappTemplateTags
             WhatsappTemplateTagEnum::SHOP_URL   => $this->shopUrl($metaChatSession),
             WhatsappTemplateTagEnum::SHOP_EMAIL => $shop?->email,
             WhatsappTemplateTagEnum::SHOP_PHONE => $shop?->phone,
+            WhatsappTemplateTagEnum::SHOP_BANK_DETAILS => $this->bankDetails($shop),
 
             WhatsappTemplateTagEnum::ORDER_NUMBER      => $this->orderReferences($context) ?? $order?->reference,
             WhatsappTemplateTagEnum::ORDER_TOTAL       => $this->money($order?->total_amount, $shop),
             WhatsappTemplateTagEnum::ORDER_DATE        => $order?->date?->format('j M Y'),
             WhatsappTemplateTagEnum::ORDER_STATE       => Str::headline((string) $order?->state?->value),
             WhatsappTemplateTagEnum::ORDER_ITEMS_COUNT => $order?->number_item_transactions,
+            WhatsappTemplateTagEnum::ORDER_TIME        => $this->localTime($order?->submitted_at ?? $order?->created_at, $shop),
+            WhatsappTemplateTagEnum::ORDER_URL         => $this->orderUrl($order),
+            WhatsappTemplateTagEnum::ORDER_AMOUNT_DUE  => $order ? $this->money(max(0, round((float) $order->total_amount - (float) $order->payment_amount, 2)), $shop) : null,
+            WhatsappTemplateTagEnum::ORDER_PAYMENT_DEADLINE => $this->paymentDeadline($order),
+            WhatsappTemplateTagEnum::ORDER_DISPATCH_DATE    => $order?->dispatched_at?->format('j M Y'),
+
+            WhatsappTemplateTagEnum::PRE_ORDER_UPDATE           => $this->preOrderUpdate($context, $shop),
+            WhatsappTemplateTagEnum::PRE_ORDER_BALANCE_DUE_DATE => $this->preOrder($context)?->balance_due_at?->format('j M Y'),
+            WhatsappTemplateTagEnum::PRE_ORDER_DISPATCH_DATES   => $this->preOrderDispatchDates($this->preOrder($context)),
+
+            WhatsappTemplateTagEnum::CREDIT_AMOUNT => $this->creditTransaction($context) ? $this->money(abs((float) $this->creditTransaction($context)->amount), $shop) : null,
+            WhatsappTemplateTagEnum::CREDIT_REASON => $this->creditTransaction($context)?->reason?->label() ?? $this->creditTransaction($context)?->notes,
+
+            WhatsappTemplateTagEnum::CHAT_URL => Arr::get($context, 'chat_url'),
 
             WhatsappTemplateTagEnum::INVOICE_NUMBER => $this->lastInvoice($customer)?->reference,
             WhatsappTemplateTagEnum::INVOICE_TOTAL  => $this->money($this->lastInvoice($customer)?->total_amount, $shop),
@@ -93,9 +113,9 @@ class ResolveWhatsappTemplateTags
             WhatsappTemplateTagEnum::DELIVERY_POSTCODE => $customer?->deliveryAddress?->postal_code,
             WhatsappTemplateTagEnum::DELIVERY_COUNTRY  => $customer?->deliveryAddress?->country?->name,
 
-            WhatsappTemplateTagEnum::PRODUCT_NAMES => $this->productNames($context),
-            WhatsappTemplateTagEnum::PRODUCT_COUNT => $this->products($context)->count() ?: null,
-            WhatsappTemplateTagEnum::PRODUCT_URL   => $this->products($context)->first()?->webpage?->getCanonicalUrl(),
+            WhatsappTemplateTagEnum::PRODUCT_NAMES => $this->productNames($context, $order),
+            WhatsappTemplateTagEnum::PRODUCT_COUNT => $this->products($context, $order)->count() ?: null,
+            WhatsappTemplateTagEnum::PRODUCT_URL   => $this->products($context, $order)->first()?->webpage?->getCanonicalUrl(),
 
             WhatsappTemplateTagEnum::TRACKING_CARRIER => $this->carrierNames($order),
             WhatsappTemplateTagEnum::TRACKING_NUMBER  => $this->trackingNumbers($order),
@@ -109,12 +129,25 @@ class ResolveWhatsappTemplateTags
     public const PRODUCT_NAMES_MAX_LENGTH = 400;
 
     /**
-     * @param  array{product_ids?: array<int, int>}  $context
+     * The products the notification is about: the ones it was given, or for a pre-order the
+     * products on its order.
+     *
+     * @param  array{product_ids?: array<int, int>, pre_order_id?: int}  $context
      * @return Collection<int, Product>
      */
-    protected function products(array $context): Collection
+    protected function products(array $context, ?Order $order = null): Collection
     {
         $productIds = array_values(array_unique(array_map('intval', Arr::get($context, 'product_ids', []))));
+
+        if (!$productIds && $order && Arr::has($context, 'pre_order_id')) {
+            $productIds = $order->transactions()
+                ->where('model_type', class_basename(Product::class))
+                ->orderBy('id')
+                ->pluck('model_id')
+                ->unique()
+                ->values()
+                ->all();
+        }
 
         if (!$productIds) {
             return collect();
@@ -129,11 +162,11 @@ class ResolveWhatsappTemplateTags
      * A long list is cut on a whole name and closed with how many were left out, so the
      * parameter stays well inside what WhatsApp accepts and never ends mid word.
      *
-     * @param  array{product_ids?: array<int, int>}  $context
+     * @param  array{product_ids?: array<int, int>, pre_order_id?: int}  $context
      */
-    protected function productNames(array $context): ?string
+    protected function productNames(array $context, ?Order $order = null): ?string
     {
-        $names = $this->products($context)->pluck('name')->filter()->values();
+        $names = $this->products($context, $order)->pluck('name')->filter()->values();
 
         if ($names->isEmpty()) {
             return null;
@@ -150,6 +183,104 @@ class ResolveWhatsappTemplateTags
         $left = $names->count() - count($shown);
 
         return implode(', ', $shown).($left ? ' '.__('and :count more', ['count' => $left]) : '');
+    }
+
+    /**
+     * The shop's bank transfer instructions, the same text the order confirmation email shows,
+     * flattened to one line because WhatsApp refuses newlines and long runs of spaces.
+     */
+    protected function bankDetails($shop): ?string
+    {
+        $instructions = (string) Arr::get($shop?->settings ?? [], 'bank_transfer_instructions_for_email', '');
+
+        $text = html_entity_decode(strip_tags(preg_replace('/<(br|\/p|\/div|\/li)\b[^>]*>/i', ', ', $instructions)), ENT_QUOTES | ENT_HTML5);
+        $text = preg_replace('/\s*,\s*(,\s*)+/', ', ', preg_replace('/\s+/u', ' ', $text));
+
+        return trim((string) $text, " ,") ?: null;
+    }
+
+    protected function localTime($moment, $shop): ?string
+    {
+        return $moment?->copy()->setTimezone($shop?->timezoneName() ?? config('app.timezone'))->format('H:i');
+    }
+
+    /**
+     * The day before an unpaid bank transfer order is cancelled, the date the final payment
+     * reminder email gives.
+     */
+    protected function paymentDeadline(?Order $order): ?string
+    {
+        if (!$order?->submitted_at || !$order->shop) {
+            return null;
+        }
+
+        return $order->submitted_at->copy()
+            ->addDays((int) $order->shop->unpaidBankOrderSetting('cancel_after_days') - 1)
+            ->format('j M Y');
+    }
+
+    /**
+     * @param  array{pre_order_id?: int}  $context
+     */
+    protected function preOrder(array $context): ?PreOrder
+    {
+        $preOrderId = Arr::get($context, 'pre_order_id');
+
+        return $preOrderId ? PreOrder::find($preOrderId) : null;
+    }
+
+    protected function preOrderDispatchDates(?PreOrder $preOrder): ?string
+    {
+        $from = $preOrder?->estimated_dispatch_from?->format('j M Y');
+        $to   = $preOrder?->estimated_dispatch_to?->format('j M Y');
+
+        return match (true) {
+            $from && $to && $from !== $to => __(':from to :to', ['from' => $from, 'to' => $to]),
+            default                       => $from ?? $to,
+        };
+    }
+
+    /**
+     * One pre-order outbox carries four kinds of update, so what changed is a short factual
+     * phrase the template places in its sentence.
+     *
+     * @param  array{pre_order_id?: int, pre_order_update?: string}  $context
+     */
+    protected function preOrderUpdate(array $context, $shop): ?string
+    {
+        $preOrder = $this->preOrder($context);
+
+        if (!$preOrder) {
+            return null;
+        }
+
+        $order     = $preOrder->order;
+        $amountDue = $this->money(max(0, round((float) $order?->total_amount - (float) $order?->payment_amount, 2)), $shop);
+        $dueDate   = $preOrder->balance_due_at?->format('j M Y');
+
+        return match (Arr::get($context, 'pre_order_update')) {
+            SendPreOrderUpdateEmail::BALANCE_REQUEST       => $dueDate
+                ? __('the balance of :amount is due by :date', ['amount' => $amountDue, 'date' => $dueDate])
+                : __('the balance of :amount is now due', ['amount' => $amountDue]),
+            SendPreOrderUpdateEmail::BALANCE_REMINDER      => $dueDate
+                ? __('the balance of :amount is still due, by :date', ['amount' => $amountDue, 'date' => $dueDate])
+                : __('the balance of :amount is still due', ['amount' => $amountDue]),
+            SendPreOrderUpdateEmail::DISPATCH_DATE_CHANGED => $this->preOrderDispatchDates($preOrder)
+                ? __('the estimated dispatch date is now :dates', ['dates' => $this->preOrderDispatchDates($preOrder)])
+                : null,
+            SendPreOrderUpdateEmail::CANCELLED             => __('the pre-order has been cancelled'),
+            default                                        => null,
+        };
+    }
+
+    /**
+     * @param  array{credit_transaction_id?: int}  $context
+     */
+    protected function creditTransaction(array $context): ?CreditTransaction
+    {
+        $creditTransactionId = Arr::get($context, 'credit_transaction_id');
+
+        return $creditTransactionId ? CreditTransaction::find($creditTransactionId) : null;
     }
 
     /**
@@ -257,17 +388,65 @@ class ResolveWhatsappTemplateTags
             ->implode(', ') ?: null;
     }
 
+    public const TRACKING_NUMBER_PLACEHOLDER = '{tracking}';
+
     /**
-     * WhatsApp refuses newlines in a parameter, so an order shipped in several parcels
-     * carries every link on one line.
+     * Most carrier integrations store no link per parcel, so the link is built from the
+     * shipper's tracking url when it holds the {tracking} placeholder, and an order nobody can
+     * build a link for points to the order page, which shows its tracking. WhatsApp refuses
+     * newlines in a parameter, so an order shipped in several parcels carries every link on
+     * one line.
      */
     protected function trackingUrls(?Order $order): ?string
     {
-        return $this->shipments($order)
-            ->flatMap(fn (Shipment $shipment) => Arr::wrap($shipment->tracking_urls))
+        $links = $this->shipments($order)
+            ->flatMap(fn (Shipment $shipment) => $this->shipmentTrackingUrls($shipment))
             ->filter()
             ->unique()
-            ->implode(' ') ?: null;
+            ->implode(' ');
+
+        return $links ?: $this->orderUrl($order);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function shipmentTrackingUrls(Shipment $shipment): array
+    {
+        $stored = array_values(array_filter(Arr::wrap($shipment->tracking_urls)));
+
+        if ($stored) {
+            return $stored;
+        }
+
+        $pattern = (string) $shipment->shipper?->tracking_url;
+
+        if (!str_contains($pattern, self::TRACKING_NUMBER_PLACEHOLDER)) {
+            return [];
+        }
+
+        return collect($shipment->trackings ?: [$shipment->tracking])
+            ->filter()
+            ->map(fn (string $tracking) => str_replace(self::TRACKING_NUMBER_PLACEHOLDER, rawurlencode($tracking), $pattern))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The customer's own page for the order. A shop without a website, or an order the link
+     * cannot be built for, has none.
+     */
+    protected function orderUrl(?Order $order): ?string
+    {
+        if (!$order?->shop?->website) {
+            return null;
+        }
+
+        try {
+            return SendNewOrderEmailToCustomer::make()->getOrderLink($order) ?: null;
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     protected function lastOrder(?Customer $customer)

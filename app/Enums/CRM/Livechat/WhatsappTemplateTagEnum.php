@@ -38,12 +38,27 @@ enum WhatsappTemplateTagEnum: string
     case SHOP_URL = 'Shop Url';
     case SHOP_EMAIL = 'Shop Email';
     case SHOP_PHONE = 'Shop Phone';
+    case SHOP_BANK_DETAILS = 'Shop Bank Details';
 
     case ORDER_NUMBER = 'Order Number';
     case ORDER_TOTAL = 'Order Total';
     case ORDER_DATE = 'Order Date';
     case ORDER_STATE = 'Order State';
     case ORDER_ITEMS_COUNT = 'Order Items Count';
+    case ORDER_TIME = 'Order Time';
+    case ORDER_URL = 'Order Url';
+    case ORDER_AMOUNT_DUE = 'Order Amount Due';
+    case ORDER_PAYMENT_DEADLINE = 'Order Payment Deadline';
+    case ORDER_DISPATCH_DATE = 'Order Dispatch Date';
+
+    case PRE_ORDER_UPDATE = 'Pre-order Update';
+    case PRE_ORDER_BALANCE_DUE_DATE = 'Pre-order Balance Due Date';
+    case PRE_ORDER_DISPATCH_DATES = 'Pre-order Dispatch Dates';
+
+    case CREDIT_AMOUNT = 'Credit Amount';
+    case CREDIT_REASON = 'Credit Reason';
+
+    case CHAT_URL = 'Chat Url';
 
     case INVOICE_NUMBER = 'Invoice Number';
     case INVOICE_TOTAL = 'Invoice Total';
@@ -97,12 +112,27 @@ enum WhatsappTemplateTagEnum: string
             self::SHOP_URL   => 'https://www.ancientwisdom.biz',
             self::SHOP_EMAIL => 'sales@ancientwisdom.biz',
             self::SHOP_PHONE => '+44 1246 264590',
+            self::SHOP_BANK_DETAILS => 'Ancient Wisdom Ltd, Sort code 00-00-00, Account 00000000',
 
             self::ORDER_NUMBER      => 'GB585956',
             self::ORDER_TOTAL       => '£125.00',
             self::ORDER_DATE        => '12 Aug 2026',
             self::ORDER_STATE       => 'Submitted',
             self::ORDER_ITEMS_COUNT => '7',
+            self::ORDER_TIME        => '14:35',
+            self::ORDER_URL         => 'https://www.ancientwisdom.biz/app/orders/gb585956',
+            self::ORDER_AMOUNT_DUE  => '£125.00',
+            self::ORDER_PAYMENT_DEADLINE => '19 Aug 2026',
+            self::ORDER_DISPATCH_DATE    => '13 Aug 2026',
+
+            self::PRE_ORDER_UPDATE           => 'the balance of £80.00 is due by 20 Aug 2026',
+            self::PRE_ORDER_BALANCE_DUE_DATE => '20 Aug 2026',
+            self::PRE_ORDER_DISPATCH_DATES   => '1 Sep 2026 to 15 Sep 2026',
+
+            self::CREDIT_AMOUNT => '£25.00',
+            self::CREDIT_REASON => 'Refund',
+
+            self::CHAT_URL => 'https://www.ancientwisdom.biz/?chat_session=01JC0000000000000000000000',
 
             self::INVOICE_NUMBER => 'AWP26i2481',
             self::INVOICE_TOTAL  => '£63.56',
@@ -136,6 +166,9 @@ enum WhatsappTemplateTagEnum: string
             str_starts_with($this->value, 'Delivery') => __('Delivery'),
             str_starts_with($this->value, 'Tracking') => __('Tracking'),
             str_starts_with($this->value, 'Product')  => __('Product'),
+            str_starts_with($this->value, 'Pre-order') => __('Pre-order'),
+            str_starts_with($this->value, 'Credit')   => __('Credit'),
+            str_starts_with($this->value, 'Chat')     => __('Chat'),
             default                                   => __('Agent'),
         };
     }

@@ -27,6 +27,8 @@ use App\Models\Chat\MetaMessageTemplate;
 use App\Models\Comms\WhatsappOutbox;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\PreOrder;
+use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
@@ -56,7 +58,10 @@ class SendCustomerNotificationWhatsapp
 
     public string $jobQueue = 'whatsapp-send';
 
-    public function handle(Customer $customer, OutboxCodeEnum $outboxCode, ?Order $order = null): ?MetaChatMessage
+    /**
+     * @param  array{product_ids?: array<int, int>, order_ids?: array<int, int>, pre_order_id?: int, pre_order_update?: string, credit_transaction_id?: int, chat_url?: string|null}  $context
+     */
+    public function handle(Customer $customer, OutboxCodeEnum $outboxCode, ?Order $order = null, array $context = []): ?MetaChatMessage
     {
         $shop = $customer->shop;
 
@@ -70,14 +75,28 @@ class SendCustomerNotificationWhatsapp
             return null;
         }
 
-        return $this->send($whatsappOutbox, $customer, $order);
+        return $this->send($whatsappOutbox, $customer, $order, $context);
+    }
+
+    /**
+     * One pre-order outbox carries every pre-order update, so the update it is about travels
+     * with it for the Pre-order Update tag.
+     */
+    public static function dispatchPreOrderUpdate(PreOrder $preOrder, string $preOrderUpdate): PendingDispatch
+    {
+        return static::dispatch(
+            $preOrder->order->customer,
+            OutboxCodeEnum::PRE_ORDER_UPDATE,
+            $preOrder->order,
+            ['pre_order_id' => $preOrder->id, 'pre_order_update' => $preOrderUpdate]
+        );
     }
 
     /**
      * Sends without checking the outbox state or the opt-in again, for callers that already
      * did: a bulk run checks them once when it picks its recipients.
      *
-     * @param  array{product_ids?: array<int, int>, order_ids?: array<int, int>}  $context
+     * @param  array{product_ids?: array<int, int>, order_ids?: array<int, int>, pre_order_id?: int, pre_order_update?: string, credit_transaction_id?: int, chat_url?: string|null}  $context
      */
     public function send(WhatsappOutbox $whatsappOutbox, Customer $customer, ?Order $order = null, array $context = [], bool $throttleAll = false): ?MetaChatMessage
     {

@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\PreOrder;
 
 use App\Actions\Comms\Email\SendPreOrderUpdateEmail;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Actions\Ordering\Order\UpdateState\CancelOrder;
 use App\Enums\Ordering\Order\OrderCancellationReasonEnum;
 use App\Enums\Ordering\PreOrder\PreOrderCancellationReasonEnum;
@@ -71,6 +72,7 @@ class CancelPreOrder
                 'reason'        => $reason->label(),
                 'refund_amount' => $refundAmount,
             ])->afterCommit();
+            SendCustomerNotificationWhatsapp::dispatchPreOrderUpdate($preOrder, SendPreOrderUpdateEmail::CANCELLED)->afterCommit();
 
             return $preOrder;
         });

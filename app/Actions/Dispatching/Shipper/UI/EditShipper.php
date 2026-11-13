@@ -67,7 +67,7 @@ class EditShipper extends OrgAction
                                 ],
                                 'tracking_url' => [
                                     'type'  => 'input',
-                                    'label' => __('Tracking url'),
+                                    'label' => __('Tracking url (put {tracking} where the tracking number goes)'),
                                     'value' => $shipper->tracking_url,
                                 ],
                             ]

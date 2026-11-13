@@ -13,6 +13,8 @@ use App\Actions\Chat\WithChatAgentAuthorisation;
 use App\Actions\Comms\ChatEmailRecipient\StoreChatEmailRecipient;
 use App\Actions\Comms\Email\SendChatNotificationToCustomer;
 use App\Actions\Comms\Email\SendChatNotificationToExternal;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Actions\Comms\Mailbox\ImportPendingGmailAttachments;
 use App\Actions\Comms\Mailbox\SendChatMessageByGmail;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
@@ -338,6 +340,12 @@ class SendChatMessage
             SendChatNotificationToCustomer::dispatch($chatSession->webUser->customer, ['chat_link' => $chatLink,
             'chat_message' => $chatSession->messages()?->latest()?->first()?->message_text ?? null,
             ]);
+            SendCustomerNotificationWhatsapp::dispatch(
+                $chatSession->webUser->customer,
+                OutboxCodeEnum::CHAT_NOTIFICATION_TO_CUSTOMER,
+                null,
+                ['chat_url' => $chatLink]
+            );
 
             return;
         }

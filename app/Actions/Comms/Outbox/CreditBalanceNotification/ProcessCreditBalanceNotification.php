@@ -11,7 +11,9 @@ namespace App\Actions\Comms\Outbox\CreditBalanceNotification;
 use App\Actions\OrgAction;
 use App\Actions\Comms\Email\SendCreditBalanceEmailToCustomer;
 use App\Actions\Comms\Email\SendCreditBalanceEmailToUser;
+use App\Actions\Comms\WhatsappOutbox\SendCustomerNotificationWhatsapp;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\CRM\Customer;
 
 class ProcessCreditBalanceNotification extends OrgAction
@@ -116,6 +118,12 @@ class ProcessCreditBalanceNotification extends OrgAction
 
         if ($notifyCustomer && ($currentCreditBalance->reason || $currentCreditBalance->notes)) {
             SendCreditBalanceEmailToCustomer::dispatch($customer, $additionalDataForCustomer);
+            SendCustomerNotificationWhatsapp::dispatch(
+                $customer,
+                OutboxCodeEnum::CREDIT_BALANCE_NOTIFICATION_FOR_CUSTOMER,
+                null,
+                ['credit_transaction_id' => $currentCreditBalance->id]
+            );
         }
         SendCreditBalanceEmailToUser::dispatch($customer, $additionalDataForUser);
     }

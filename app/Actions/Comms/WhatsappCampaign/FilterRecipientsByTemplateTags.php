@@ -118,7 +118,19 @@ class FilterRecipientsByTemplateTags
             WhatsappTemplateTagEnum::TRACKING_URL,
             WhatsappTemplateTagEnum::PRODUCT_NAMES,
             WhatsappTemplateTagEnum::PRODUCT_COUNT,
-            WhatsappTemplateTagEnum::PRODUCT_URL => $recipients->whereRaw('1 = 0'),
+            WhatsappTemplateTagEnum::PRODUCT_URL,
+            WhatsappTemplateTagEnum::SHOP_BANK_DETAILS,
+            WhatsappTemplateTagEnum::ORDER_TIME,
+            WhatsappTemplateTagEnum::ORDER_URL,
+            WhatsappTemplateTagEnum::ORDER_AMOUNT_DUE,
+            WhatsappTemplateTagEnum::ORDER_PAYMENT_DEADLINE,
+            WhatsappTemplateTagEnum::ORDER_DISPATCH_DATE,
+            WhatsappTemplateTagEnum::PRE_ORDER_UPDATE,
+            WhatsappTemplateTagEnum::PRE_ORDER_BALANCE_DUE_DATE,
+            WhatsappTemplateTagEnum::PRE_ORDER_DISPATCH_DATES,
+            WhatsappTemplateTagEnum::CREDIT_AMOUNT,
+            WhatsappTemplateTagEnum::CREDIT_REASON,
+            WhatsappTemplateTagEnum::CHAT_URL => $recipients->whereRaw('1 = 0'),
         };
     }
 
