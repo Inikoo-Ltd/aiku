@@ -344,6 +344,7 @@ class GetPurchaseOrderStages
                 'note'  => $this->stepNote($step, $steps[$stage->value] ?? []),
                 'expected' => $step['key'] === 'approved_ready_at' && $step['date'] === null ? ($expected[Stage::HANDED_OVER->value]['date'] ?? null) : null,
                 'expected_note' => $step['key'] === 'approved_ready_at' && $step['date'] === null ? ($expected[Stage::HANDED_OVER->value]['note'] ?? null) : null,
+                'days_to_cho' => $step['key'] === 'approved_ready_at' ? $this->daysToHandOver($step['date'] ?? ($expected[Stage::HANDED_OVER->value]['date'] ?? null), $stages, $today) : null,
             ])->all(),
             'evidence'    => collect($stage->evidence())->map(fn (PurchaseOrderAttachmentScopeEnum $scope) => [
                 'scope' => $scope->value,
@@ -383,6 +384,18 @@ class GetPurchaseOrderStages
                     'blocked'     => $this->blockedReason($purchaseOrder, $stage, $stages),
                 ])->values()->all(),
         ])->all();
+    }
+
+    /**
+     * Days left until the Clean Hand Over date, negative once it has gone by; null when the order was handed over or has no date for it.
+     */
+    private function daysToHandOver(Carbon|string|null $handOverDate, array $stages, Carbon $today): ?int
+    {
+        if (!$handOverDate || ($stages[Stage::HANDED_OVER->value]['reached'] ?? false)) {
+            return null;
+        }
+
+        return (int) $today->diffInDays(Carbon::parse($handOverDate)->startOfDay(), false);
     }
 
     /**

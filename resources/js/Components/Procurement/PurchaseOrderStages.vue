@@ -24,6 +24,7 @@ interface Step {
     note?: string | null
     expected?: string | null
     expected_note?: string | null
+    days_to_cho?: number | null
 }
 
 interface Mark {
@@ -409,6 +410,13 @@ function save() {
                         <template v-if="!step.date && step.expected">{{ ctrans("Expected :date", { date: formatDate(step.expected) as string }) }}</template>
                         <template v-else>{{ formatDate(step.date) ?? "-" }}</template>
                         <div v-if="step.note" class="text-gray-500">{{ step.note }}</div>
+                        <div v-if="step.days_to_cho != null" :class="step.days_to_cho < 0 ? 'text-red-600' : step.days_to_cho <= 7 ? 'text-amber-700' : 'text-gray-500'">
+                            <template v-if="step.days_to_cho > 1">{{ ctrans(":days days to CHO", { days: step.days_to_cho }) }}</template>
+                            <template v-else-if="step.days_to_cho === 1">{{ ctrans("1 day to CHO") }}</template>
+                            <template v-else-if="step.days_to_cho === 0">{{ ctrans("CHO today") }}</template>
+                            <template v-else-if="step.days_to_cho === -1">{{ ctrans("CHO 1 day late") }}</template>
+                            <template v-else>{{ ctrans("CHO :days days late", { days: -step.days_to_cho }) }}</template>
+                        </div>
                     </dd>
                 </div>
             </dl>
