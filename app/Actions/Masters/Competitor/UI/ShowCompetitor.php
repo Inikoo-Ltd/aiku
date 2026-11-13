@@ -126,13 +126,13 @@ class ShowCompetitor extends OrgAction
 
     /**
      * A competitor checked by hand has nothing crawled, so no dossier, products read or policies; one
-     * read by itself has no price checks.
+     * read by itself also takes price checks for what the reading misses (HELP-4691).
      */
     private static function tabs(Competitor $competitor): array
     {
         return $competitor->prices_by_hand
             ? CompetitorTabsEnum::navigationOnly([CompetitorTabsEnum::PRICE_CHECKS->value, CompetitorTabsEnum::MATCHES->value])
-            : CompetitorTabsEnum::navigationExcept([CompetitorTabsEnum::PRICE_CHECKS]);
+            : CompetitorTabsEnum::navigation();
     }
 
     /**

@@ -150,17 +150,15 @@ const refreshDossier = () => {
                     </div>
                 </div>
             </div>
-            <div v-if="can_edit && competitor.prices_by_hand" class="shrink-0">
+            <div v-if="can_edit" class="flex shrink-0 flex-col items-end gap-y-1">
                 <Button type="tertiary" :label="ctrans('Add price check')" @click="isAddingPriceCheck = true">
                     <template #icon><FontAwesomeIcon icon="fal fa-plus" class="text-green-600" fixed-width /></template>
                 </Button>
-            </div>
-            <div v-else-if="can_edit" class="shrink-0">
-                <Button type="tertiary" :label="ctrans('Refresh dossier')" :loading="isRefreshing" :disabled="refreshQueued" @click="refreshDossier">
+                <Button v-if="!competitor.prices_by_hand" type="tertiary" :label="ctrans('Refresh dossier')" :loading="isRefreshing" :disabled="refreshQueued" @click="refreshDossier">
                     <template #icon><FontAwesomeIcon icon="fal fa-sync" class="text-gray-500" fixed-width /></template>
                 </Button>
-                <div v-if="refreshQueued" class="mt-1 text-xs text-gray-500">{{ ctrans("Queued: come back in a few minutes") }}</div>
-                <div v-if="refreshError" class="mt-1 text-xs text-red-600">{{ refreshError }}</div>
+                <div v-if="!competitor.prices_by_hand && refreshQueued" class="mt-1 text-xs text-gray-500">{{ ctrans("Queued: come back in a few minutes") }}</div>
+                <div v-if="!competitor.prices_by_hand && refreshError" class="mt-1 text-xs text-red-600">{{ refreshError }}</div>
             </div>
         </div>
     </div>
@@ -171,5 +169,5 @@ const refreshDossier = () => {
     <TableMasterAssetCompetitorProducts v-else-if="currentTab === 'matches'" tab="matches" :data="matches" :canEdit="can_edit" :currencyCode="competitor.currency_code" />
     <TableCompetitorProducts v-else-if="currentTab === 'products'" tab="products" :data="products" :currencyCode="competitor.currency_code" />
     <CompetitorPolicies v-else-if="currentTab === 'policies'" :pages="policies ?? []" />
-    <CompetitorPriceCheckDialog v-if="competitor.prices_by_hand" v-model:visible="isAddingPriceCheck" :route="price_check_route" :competitorName="competitor.name" :currencyCode="competitor.currency_code" />
+    <CompetitorPriceCheckDialog v-model:visible="isAddingPriceCheck" :route="price_check_route" :competitorName="competitor.name" :currencyCode="competitor.currency_code" />
 </template>
