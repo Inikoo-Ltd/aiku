@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { computed, onMounted, ref } from "vue"
 import axios from "axios"
 import { useForm, router } from "@inertiajs/vue3"
@@ -20,10 +21,10 @@ import TicketUserHoverCard from "@/Components/Tickets/TicketUserHoverCard.vue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPencil, faTrashAlt, faUser, faShieldCheck, faShieldAlt, faForward, faSpinner } from "@fal"
+import { faPencil, faTrashAlt, faUser, faShieldCheck, faShieldAlt, faForward } from "@fal"
 import { faSlack } from "@fortawesome/free-brands-svg-icons"
 
-library.add(faPencil, faTrashAlt, faUser, faShieldCheck, faShieldAlt, faForward, faSpinner)
+library.add(faPencil, faTrashAlt, faUser, faShieldCheck, faShieldAlt, faForward)
 
 const qaVerdictBadgeClass: Record<string, string> = {
     passed: "bg-green-200 text-green-900",
@@ -333,7 +334,7 @@ const submit = () => {
                     <span class="ml-auto flex items-center gap-1">
                         <Button v-if="comment.can_toggle_visibility" type="tertiary" size="xs" :disabled="isCommentBusy(comment.id)" :label="comment.is_lead_only ? ctrans('Unhide') : ctrans('Hide')" @click="toggleVisibility(comment.id)" />
                         <button v-if="comment.can_edit" v-tooltip="ctrans('Edit')" type="button" class="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-40 disabled:hover:text-gray-500" :disabled="isCommentBusy(comment.id)" @click="startEdit(comment)">
-                            <FontAwesomeIcon :icon="savingEditId === comment.id ? 'fal fa-spinner' : 'fal fa-pencil'" :spin="savingEditId === comment.id" fixed-width />
+                            <LoadingIcon v-if="savingEditId === comment.id" /><FontAwesomeIcon v-else icon="fal fa-pencil" fixed-width />
                         </button>
                         <ModalConfirmation
                             v-if="comment.can_delete"
@@ -341,7 +342,7 @@ const submit = () => {
                             :description="comment.can_edit ? ctrans('The comment will be removed from the ticket.') : ctrans('This is not your comment. It will be removed for everyone, including its images and files, and cannot be undone. The ticket history will note that you removed it.')">
                             <template #default="{ changeModel }">
                                 <button v-tooltip="ctrans('Delete')" type="button" class="p-1 text-gray-500 hover:text-red-600 disabled:opacity-40 disabled:hover:text-gray-500" :disabled="isCommentBusy(comment.id)" @click="changeModel">
-                                    <FontAwesomeIcon :icon="deletingId === comment.id ? 'fal fa-spinner' : 'fal fa-trash-alt'" :spin="deletingId === comment.id" fixed-width />
+                                    <LoadingIcon v-if="deletingId === comment.id" /><FontAwesomeIcon v-else icon="fal fa-trash-alt" fixed-width />
                                 </button>
                             </template>
                             <template #btn-yes="{ closeModal }">

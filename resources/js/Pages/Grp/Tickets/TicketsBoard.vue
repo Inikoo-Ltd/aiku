@@ -5,6 +5,7 @@
   -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ticketRoute, ticketsRoute } from "@/Composables/useTicketsRoute"
 import { ticketKindIcons } from "@/Composables/useTicketKindIcons"
 import { Head, Link, router, usePage } from "@inertiajs/vue3"
@@ -773,7 +774,7 @@ const cancelAssign = () => {
 							:class="canDragTicket(element) ? 'cursor-grab active:cursor-grabbing' : 'ticket-card-locked cursor-pointer'"
 							:data-ticket-id="element.id"
 							@click="openQuickLook(element, $event)">
-							<FontAwesomeIcon v-if="savingTicketIds.includes(element.id)" icon="fal fa-spinner" spin fixed-width class="absolute right-1.5 top-1.5 text-xs text-gray-400" />
+							<LoadingIcon v-if="savingTicketIds.includes(element.id)" class="absolute right-1.5 top-1.5 text-xs text-gray-400" />
 
 							<div class="flex items-start justify-between gap-2 text-xs">
 								<span class="flex min-w-0 flex-col gap-0.5">

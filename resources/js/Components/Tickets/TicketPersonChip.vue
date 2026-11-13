@@ -5,12 +5,13 @@
   -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ctrans } from "@/Composables/useTrans"
 import TicketUserAvatar from "@/Components/Tickets/TicketUserAvatar.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTimes, faSpinner } from "@fal"
-library.add(faTimes, faSpinner)
+import { faTimes } from "@fal"
+library.add(faTimes)
 
 withDefaults(defineProps<{
     name: string
@@ -37,7 +38,7 @@ const emit = defineEmits<{
                 class="absolute inset-0 flex items-center justify-center rounded-full bg-red-500/90 text-[10px] text-white opacity-0 transition duration-200 focus:opacity-100 group-hover/chip:opacity-100 disabled:cursor-wait [@media(hover:none)]:opacity-100"
                 :class="removing && '!opacity-100'"
                 @click.stop="emit('remove')">
-                <FontAwesomeIcon :icon="removing ? 'fal fa-spinner' : 'fal fa-times'" :spin="removing" fixed-width aria-hidden="true" />
+                <LoadingIcon v-if="removing" /><FontAwesomeIcon v-else icon="fal fa-times" fixed-width aria-hidden="true" />
             </button>
         </span>
         {{ short ?? name.split(" ")[0] }}

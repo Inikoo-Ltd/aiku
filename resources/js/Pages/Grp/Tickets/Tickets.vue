@@ -266,7 +266,7 @@ watch(
                     :disabled="isRowSaving(item)"
                     @click="openEditor('status', item, $event)">
                     <Icon :data="item.status_icon" /> {{ item.status_label }}
-                    <FontAwesomeIcon :icon="isSaving(item, 'status') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'status')" class="text-[10px] text-gray-400" fixed-width />
+                    <LoadingIcon v-if="isSaving(item, 'status')" class="text-[10px] text-gray-400" /><FontAwesomeIcon v-else icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
                 </button>
                 <span v-else-if="!ratedView" :class="readOnlyCellClass"><Icon :data="item.status_icon" /> {{ item.status_label }}</span>
             </template>
@@ -297,7 +297,7 @@ watch(
                     :title="ctrans('Change priority')"
                     :disabled="isRowSaving(item)"
                     @click="openEditor('priority', item, $event)">
-                    <FontAwesomeIcon v-if="isSaving(item, 'priority')" icon="fal fa-spinner" spin class="text-gray-400" fixed-width />
+                    <LoadingIcon v-if="isSaving(item, 'priority')" class="text-gray-400" />
                     <Icon v-else :data="item.priority_icon" />
                 </button>
                 <span v-else :class="[readOnlyCellClass, 'min-w-9 justify-center']"><Icon :data="item.priority_icon" /></span>
@@ -311,7 +311,7 @@ watch(
                     :aria-label="ctrans('Change kind')"
                     :disabled="isRowSaving(item)"
                     @click="openEditor('kind', item, $event)">
-                    <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : ticketKindIcon(item.kind)" :spin="isSaving(item, 'kind')" fixed-width />
+                    <LoadingIcon v-if="isSaving(item, 'kind')" /><FontAwesomeIcon v-else :icon="ticketKindIcon(item.kind)" fixed-width />
                     <FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
                 </button>
                 <span v-else v-tooltip="item.kind_label || ctrans('No kind')" :class="[readOnlyCellClass, item.kind ? 'text-gray-600' : 'text-gray-300']">
@@ -327,7 +327,7 @@ watch(
                     :disabled="isRowSaving(item)"
                     @click="openEditor('module', item, $event)">
                     {{ item.module_label || ctrans("No module") }}
-                    <FontAwesomeIcon :icon="isSaving(item, 'module') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'module')" class="text-[10px] text-gray-400" fixed-width />
+                    <LoadingIcon v-if="isSaving(item, 'module')" class="text-[10px] text-gray-400" /><FontAwesomeIcon v-else icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
                 </button>
                 <span v-else :class="[readOnlyCellClass, 'text-gray-600']">{{ item.module_label || "-" }}</span>
             </template>
@@ -340,7 +340,7 @@ watch(
                         :title="ctrans('Change kind')"
                         :disabled="isRowSaving(item)"
                         @click="openEditor('kind', item, $event)">
-                        <FontAwesomeIcon :icon="isSaving(item, 'kind') ? 'fal fa-spinner' : ticketKindIcon(item.kind)" :spin="isSaving(item, 'kind')" :class="!item.kind && 'text-gray-300'" fixed-width />
+                        <LoadingIcon v-if="isSaving(item, 'kind')" :class="!item.kind && 'text-gray-300'" /><FontAwesomeIcon v-else :icon="ticketKindIcon(item.kind)" :class="!item.kind && 'text-gray-300'" fixed-width />
                         {{ item.kind_label || ctrans("No kind") }}
                         <FontAwesomeIcon icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
                     </button>
@@ -356,7 +356,7 @@ watch(
                         :disabled="isRowSaving(item)"
                         @click="openEditor('module', item, $event)">
                         {{ item.module_label || ctrans("No module") }}
-                        <FontAwesomeIcon :icon="isSaving(item, 'module') ? 'fal fa-spinner' : 'fal fa-chevron-down'" :spin="isSaving(item, 'module')" class="text-[10px] text-gray-400" fixed-width />
+                        <LoadingIcon v-if="isSaving(item, 'module')" class="text-[10px] text-gray-400" /><FontAwesomeIcon v-else icon="fal fa-chevron-down" class="text-[10px] text-gray-400" fixed-width />
                     </button>
                     <span v-else :class="[readOnlyCellClass, 'text-xs text-gray-500']">{{ item.module_label || "-" }}</span>
                 </div>
@@ -382,7 +382,7 @@ watch(
                     <span v-if="item.collaborators?.length" class="text-[10px] leading-tight text-[--app-accent-strong]" :title="item.collaborators.map((collaborator) => collaborator.name).join(', ')">
                         <FontAwesomeIcon icon="fal fa-users" class="mr-0.5" fixed-width />{{ item.collaborators.length }}
                     </span>
-                    <FontAwesomeIcon v-if="isSaving(item, 'assignee_id')" icon="fal fa-spinner" spin class="absolute right-1 top-1 text-[10px] text-gray-400" fixed-width />
+                    <LoadingIcon v-if="isSaving(item, 'assignee_id')" class="absolute right-1 top-1 text-[10px] text-gray-400" />
                 </component>
             </template>
             <template #cell(created_at)="{ item }">

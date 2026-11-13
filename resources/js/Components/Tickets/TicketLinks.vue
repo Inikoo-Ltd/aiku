@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { computed, ref } from "vue"
 import axios from "axios"
 import { Link, router } from "@inertiajs/vue3"
@@ -200,7 +201,7 @@ const removeLink = (link: TicketLinkRow) => {
                                 :disabled="removingId === link.id"
                                 class="shrink-0 rounded p-0.5 text-gray-300 opacity-0 transition duration-200 hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover/link:opacity-100"
                                 @click.stop="removeLink(link)">
-                                <FontAwesomeIcon :icon="removingId === link.id ? 'fal fa-spinner' : 'fal fa-times'" :spin="removingId === link.id" fixed-width />
+                                <LoadingIcon v-if="removingId === link.id" /><FontAwesomeIcon v-else icon="fal fa-times" fixed-width />
                             </button>
                         </div>
                     </li>

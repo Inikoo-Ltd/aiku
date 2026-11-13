@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ticketRoute } from "@/Composables/useTicketsRoute"
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { Link, router } from "@inertiajs/vue3"
@@ -261,7 +262,7 @@ const close = () => {
                             </TicketControls>
                         </TicketControlPanel>
                         <p v-else-if="isControlsUnavailable" class="text-sm text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
-                        <p v-else class="text-sm text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" fixed-width />{{ ctrans("Loading") }}</p>
+                        <p v-else class="text-sm text-gray-400"><LoadingIcon class="mr-1" />{{ ctrans("Loading") }}</p>
                     </template>
                         </div>
                         <div class="min-w-0 break-words pr-1 pt-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto [scrollbar-width:thin] [scrollbar-color:theme(colors.gray.300)_transparent]">
@@ -309,7 +310,7 @@ const close = () => {
                             </template>
                         </TicketControls>
                         <p v-else-if="isControlsUnavailable" class="text-gray-500">{{ ctrans("Controls are unavailable") }}</p>
-                        <p v-else class="text-gray-400"><FontAwesomeIcon icon="fal fa-spinner" spin class="mr-1" fixed-width />{{ ctrans("Loading") }}</p>
+                        <p v-else class="text-gray-400"><LoadingIcon class="mr-1" />{{ ctrans("Loading") }}</p>
                         <TicketLinks
                             v-if="controls"
                             flat

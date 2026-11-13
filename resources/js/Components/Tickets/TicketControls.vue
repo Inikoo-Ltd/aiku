@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { computed, onBeforeUnmount, ref, watch } from "vue"
 import { ticketKindIcons } from "@/Composables/useTicketKindIcons"
 import { router } from "@inertiajs/vue3"
@@ -407,7 +408,7 @@ const saveDeployComment = () => {
                         <FontAwesomeIcon icon="fal fa-user" fixed-width />
                     </span>
                     <span :class="ticket.assignee ? 'text-gray-800' : 'text-gray-400'">{{ ticket.assignee_short || ctrans("Unassigned") }}</span>
-                    <FontAwesomeIcon v-if="isPending('assignee_id')" :icon="'fal fa-spinner'" spin fixed-width class="text-gray-400" />
+                    <LoadingIcon v-if="isPending('assignee_id')" class="text-gray-400" />
                 </component>
                 <Popover v-if="can_assign" ref="assigneePopover" @show="isAssigneePickerOpen = true" @hide="isAssigneePickerOpen = false">
                     <button
@@ -454,7 +455,7 @@ const saveDeployComment = () => {
                         class="flex h-8 w-8 items-center justify-center rounded-full border border-dashed text-sm border-gray-300 text-gray-500 transition duration-200 hover:border-[--app-accent] hover:text-[--app-accent-strong] active:!border-[--app-accent] active:!text-[--app-accent-strong]"
                         :class="isCollaboratorPickerOpen && '!border-[--app-accent] !bg-[--app-accent-soft] !text-[--app-accent-strong]'"
                         @click="collaboratorPopover.toggle($event)">
-                        <FontAwesomeIcon :icon="isPending('collaborators') ? 'fal fa-spinner' : 'fal fa-user-plus'" :spin="isPending('collaborators')" fixed-width />
+                        <LoadingIcon v-if="isPending('collaborators')" /><FontAwesomeIcon v-else icon="fal fa-user-plus" fixed-width />
                     </button>
                 </div>
                 <Popover v-if="canEditCollaborators" ref="collaboratorPopover" @show="isCollaboratorPickerOpen = true" @hide="onCollaboratorPickerHide">
@@ -494,7 +495,7 @@ const saveDeployComment = () => {
                             class="rounded-md p-1.5 hover:bg-gray-100 active:!bg-gray-200 transition duration-200"
                             :class="action.class"
                             @click="runStatusAction(action.status)">
-                            <FontAwesomeIcon :icon="isPending(`status:${action.status}`) ? 'fal fa-spinner' : action.icon" :spin="isPending(`status:${action.status}`)" fixed-width />
+                            <LoadingIcon v-if="isPending(`status:${action.status}`)" /><FontAwesomeIcon v-else :icon="action.icon" fixed-width />
                         </button>
                 </div>
                 </div>
@@ -508,8 +509,8 @@ const saveDeployComment = () => {
                             </span>
                             <TicketQaTarget v-if="showQaTarget" class="-ml-3" :name="ticket.qa_user" :avatar="ticket.qa_user_avatar" size="sm" />
                         </span>
-                        <button v-if="canAskQa" v-tooltip="ticket.qa_status ? ctrans('Ask QA to check again') : ctrans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaRequest"><FontAwesomeIcon :icon="isPending('qa:request') ? 'fal fa-spinner' : 'fal fa-vial'" :spin="isPending('qa:request')" fixed-width /></button>
-                        <button v-if="isReadyForQa && can_request_qa && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><FontAwesomeIcon :icon="isPending('qa:withdraw') ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending('qa:withdraw')" fixed-width /></button>
+                        <button v-if="canAskQa" v-tooltip="ticket.qa_status ? ctrans('Ask QA to check again') : ctrans('Ask QA to check')" type="button" class="rounded-md p-1.5 text-amber-600 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="openQaRequest"><LoadingIcon v-if="isPending('qa:request')" /><FontAwesomeIcon v-else icon="fal fa-vial" fixed-width /></button>
+                        <button v-if="isReadyForQa && can_request_qa && ticket.qa_status === 'requested'" v-tooltip="ctrans('Withdraw QA request')" type="button" class="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 active:!bg-gray-200 transition duration-200" @click="update('qa_status', null, 'qa:withdraw')"><LoadingIcon v-if="isPending('qa:withdraw')" /><FontAwesomeIcon v-else icon="fal fa-times" fixed-width /></button>
                         <span v-if="canGiveQaVerdict && (canAskQa || (isReadyForQa && can_request_qa && ticket.qa_status === 'requested'))" class="mx-1 h-5 w-px bg-gray-200" aria-hidden="true" />
                         <Button
                             v-if="isReadyForQa && can_claim_qa"
@@ -562,7 +563,7 @@ const saveDeployComment = () => {
                                 {{ ctrans("Cancel") }}
                             </button>
                             <button type="button" class="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-60" :disabled="isPending('deploy_comment')" @click="saveDeployComment">
-                                <FontAwesomeIcon v-if="isPending('deploy_comment')" icon="fal fa-spinner" spin fixed-width aria-hidden="true" />
+                                <LoadingIcon v-if="isPending('deploy_comment')" />
                                 {{ ctrans("Save") }}
                             </button>
                         </div>
@@ -595,7 +596,7 @@ const saveDeployComment = () => {
                         @click="can_change_project && projectPopover.toggle($event)"
                         :tabindex="can_change_project ? 0 : undefined"
                         @keydown.enter.prevent="can_change_project && projectPopover.toggle($event)">
-                        <FontAwesomeIcon :icon="isPending('ticket_project_id') ? 'fal fa-spinner' : 'fal fa-project-diagram'" :spin="isPending('ticket_project_id')" fixed-width />
+                        <LoadingIcon v-if="isPending('ticket_project_id')" /><FontAwesomeIcon v-else icon="fal fa-project-diagram" fixed-width />
                         {{ ticket.project?.name ?? ctrans("No project") }}
                     </span>
                     <span
@@ -606,7 +607,7 @@ const saveDeployComment = () => {
                         @click="can_change_project && milestonePopover.toggle($event)"
                         :tabindex="can_change_project ? 0 : undefined"
                         @keydown.enter.prevent="can_change_project && milestonePopover.toggle($event)">
-                        <FontAwesomeIcon :icon="isPending('ticket_project_milestone_id') ? 'fal fa-spinner' : 'fal fa-flag'" :spin="isPending('ticket_project_milestone_id')" fixed-width />
+                        <LoadingIcon v-if="isPending('ticket_project_milestone_id')" /><FontAwesomeIcon v-else icon="fal fa-flag" fixed-width />
                         {{ optionLabel(options.milestones, ticket.ticket_project_milestone_id) ?? ctrans("No milestone") }}
                     </span>
                     <a v-if="ticket.project" :href="route('grp.projects.show', ticket.project.slug)" class="text-xs text-gray-500 underline hover:text-gray-700">{{ ctrans("Open project") }}</a>
@@ -629,7 +630,7 @@ const saveDeployComment = () => {
                     @click="canChangeKind && kindPopover.toggle($event)"
                     :tabindex="canChangeKind ? 0 : undefined"
                     @keydown.enter.prevent="canChangeKind && kindPopover.toggle($event)">
-                    <FontAwesomeIcon :icon="isPending('kind') ? 'fal fa-spinner' : kindIcons[ticket.kind] ?? 'fal fa-question-circle'" :spin="isPending('kind')" fixed-width />
+                    <LoadingIcon v-if="isPending('kind')" /><FontAwesomeIcon v-else :icon="kindIcons[ticket.kind] ?? 'fal fa-question-circle'" fixed-width />
                     {{ optionLabel(options.kinds, ticket.kind) ?? ctrans("No kind") }}
                 </span>
                 <span
@@ -639,7 +640,7 @@ const saveDeployComment = () => {
                     @click="can_change_kind_module && modulePopover.toggle($event)"
                     :tabindex="can_change_kind_module ? 0 : undefined"
                     @keydown.enter.prevent="can_change_kind_module && modulePopover.toggle($event)">
-                    <FontAwesomeIcon :icon="isPending('module') ? 'fal fa-spinner' : 'fal fa-cube'" :spin="isPending('module')" fixed-width />
+                    <LoadingIcon v-if="isPending('module')" /><FontAwesomeIcon v-else icon="fal fa-cube" fixed-width />
                     {{ optionLabel(options.modules, ticket.module) ?? ctrans("No module") }}
                 </span>
                 <Popover v-if="canChangeKind" ref="kindPopover" @show="isKindPickerOpen = true" @hide="isKindPickerOpen = false">
@@ -660,11 +661,11 @@ const saveDeployComment = () => {
                     <span v-for="tag in ticket.tags" :key="tag" class="inline-flex items-center gap-1 rounded-full bg-[--app-accent-soft] px-2.5 py-0.5 text-xs text-[--app-accent-strong]">
                         {{ tag }}
                         <button v-if="can_contribute" v-tooltip="ctrans('Remove')" type="button" class="text-[--app-accent-strong] hover:text-[--app-accent-strong] active:!text-[--app-accent-strong] transition duration-200" @click="update('tags', ticket.tags.filter((t: string) => t !== tag), `tags:remove:${tag}`)">
-                            <FontAwesomeIcon :icon="isPending(`tags:remove:${tag}`) ? 'fal fa-spinner' : 'fal fa-times'" :spin="isPending(`tags:remove:${tag}`)" fixed-width />
+                            <LoadingIcon v-if="isPending(`tags:remove:${tag}`)" /><FontAwesomeIcon v-else icon="fal fa-times" fixed-width />
                         </button>
                     </span>
                     <button v-if="can_contribute" v-tooltip="ctrans('Add tag')" type="button" class="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-500 hover:border-[--app-accent] active:!border-[--app-accent] hover:text-[--app-accent-strong] active:!text-[--app-accent-strong] transition duration-200" :class="isTagPickerOpen && '!border-[--app-accent] !text-[--app-accent-strong] !bg-[--app-accent-soft]'" @click="tagPopover.toggle($event)">
-                        <FontAwesomeIcon :icon="isPending('tags:add') ? 'fal fa-spinner' : 'fal fa-plus'" :spin="isPending('tags:add')" fixed-width />
+                        <LoadingIcon v-if="isPending('tags:add')" /><FontAwesomeIcon v-else icon="fal fa-plus" fixed-width />
                     </button>
                 </div>
                 <Popover ref="tagPopover" @show="isTagPickerOpen = true" @hide="isTagPickerOpen = false">
@@ -697,13 +698,13 @@ const saveDeployComment = () => {
             <label v-if="can_flag_confidential && !hideConfidential" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <input type="checkbox" :checked="ticket.is_confidential" :disabled="isBusy" class="rounded border-gray-300 cursor-pointer disabled:cursor-wait" @change="update('is_confidential', ($event.target as HTMLInputElement).checked, 'confidential')" />
                 {{ ctrans("Confidential") }} <span class="text-xs text-gray-400">({{ ctrans("only reporter and lead engineers") }})</span>
-                <FontAwesomeIcon v-if="isPending('confidential')" :icon="'fal fa-spinner'" spin fixed-width class="text-gray-400" />
+                <LoadingIcon v-if="isPending('confidential')" class="text-gray-400" />
             </label>
             <label v-if="is_reporter" v-tooltip="ctrans('No sound, mini-modal or email when this ticket changes')" class="flex items-center gap-x-2 text-gray-600 cursor-pointer">
                 <FontAwesomeIcon icon="fal fa-bell-slash" fixed-width :class="ticket.reporter_muted ? 'text-gray-500' : 'text-gray-300'" />
                 <input type="checkbox" :checked="ticket.reporter_muted" :disabled="isBusy" class="rounded border-gray-300 cursor-pointer disabled:cursor-wait" @change="update('reporter_muted', ($event.target as HTMLInputElement).checked, 'reporter_muted')" />
                 {{ ctrans("Mute this ticket for me") }}
-                <FontAwesomeIcon v-if="isPending('reporter_muted')" :icon="'fal fa-spinner'" spin fixed-width class="text-gray-400" />
+                <LoadingIcon v-if="isPending('reporter_muted')" class="text-gray-400" />
             </label>
             </template>
     <Dialog v-model:visible="isQaRequestOpen" modal :header="ctrans('Ask QA to check')" :style="{ width: '32rem' }">

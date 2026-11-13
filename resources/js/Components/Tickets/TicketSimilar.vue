@@ -6,6 +6,7 @@
 -->
 
 <script setup lang="ts">
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { ref, watch } from "vue"
 import axios from "axios"
 import { Link } from "@inertiajs/vue3"
@@ -112,7 +113,7 @@ const shown = () => (props.limit ? similarTickets.value.slice(0, props.limit) : 
                     class="rounded p-0.5 text-gray-400 transition duration-200 hover:bg-gray-100 hover:text-gray-700 disabled:cursor-wait"
                     @click.stop="refresh"
                     @keydown.enter.stop>
-                    <FontAwesomeIcon icon="fal fa-sync-alt" fixed-width :spin="isLoading" />
+                    <LoadingIcon v-if="isLoading" /><FontAwesomeIcon v-else icon="fal fa-sync-alt" fixed-width />
                 </button>
                 <FontAwesomeIcon v-if="collapsible" icon="fal fa-chevron-down" fixed-width class="text-gray-400 transition-transform duration-200" :class="!isOpen && '-rotate-90'" />
             </span>
@@ -120,7 +121,7 @@ const shown = () => (props.limit ? similarTickets.value.slice(0, props.limit) : 
 
         <div v-show="isOpen" :class="flat ? '-mx-2 pt-1' : 'px-2 pb-3 pt-2'">
             <div v-if="isLoading" class="space-y-2 px-2">
-                <div v-for="placeholder in 3" :key="placeholder" class="h-7 animate-pulse rounded bg-gray-100" />
+                <div v-for="placeholder in 3" :key="placeholder" class="h-7 skeleton rounded" />
             </div>
             <p v-else-if="hasFailed" class="px-2 text-xs text-gray-400">{{ ctrans("Similar tickets could not be loaded") }}</p>
             <p v-else-if="!similarTickets.length" class="px-2 text-xs text-gray-400">{{ ctrans("No similar tickets found") }}</p>
