@@ -43,6 +43,7 @@ class GetMetaMessageTemplates
 
         return MetaMessageTemplate::where('shop_id', $shopId)
             ->where('status', 'APPROVED')
+            ->withoutWhatsappOutboxTemplates()
             ->orderBy('name')
             ->get()
             ->map(function (MetaMessageTemplate $template) use ($metaChatSession, $agent) {

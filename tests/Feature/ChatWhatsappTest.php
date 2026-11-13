@@ -1617,3 +1617,34 @@ test('an out of stock in order WhatsApp outbox cannot be activated without hours
     expect($updated->state)->toBe(\App\Enums\Comms\Outbox\OutboxStateEnum::ACTIVE)
         ->and($updated->interval)->toBe(6);
 });
+
+test('a template chosen for a WhatsApp outbox is not offered in a chat and cannot be sent from one', function () {
+    [, , $shop] = createOwnShop('whatsapp-outbox-templates');
+    [$whatsappOutbox, $outboxTemplate, $customer] = whatsappOutboxTestSetup($shop);
+
+    $freeTemplate = $outboxTemplate->replicate()->fill([
+        'template_id' => 'free-'.Str::random(10),
+        'name'        => 'free_template_'.Str::lower(Str::random(6)),
+    ]);
+    $freeTemplate->save();
+
+    $offered = \App\Actions\Chat\MetaChatSession\GetMetaMessageTemplates::make()->handle($shop->id)->pluck('id');
+
+    expect($offered)->toContain($freeTemplate->id)
+        ->and($offered)->not->toContain($outboxTemplate->id);
+
+    $agent   = ChatAgent::where('user_id', $this->user->id)->first() ?? StoreChatAgent::make()->handle(['user_id' => $this->user->id]);
+    $session = StoreMetaChatSession::run(['shop_id' => $shop->id, 'customer_id' => $customer->id]);
+
+    Http::fake();
+
+    $result = \App\Actions\Chat\MetaChatSession\SendMetaChatMessage::make()->handle($session, $agent, ['template_id' => $outboxTemplate->id]);
+
+    expect($result['ok'])->toBeFalse()
+        ->and($result['code'])->toBe(422);
+    Http::assertNothingSent();
+
+    $whatsappOutbox->update(['meta_message_template_id' => null]);
+
+    expect(\App\Actions\Chat\MetaChatSession\GetMetaMessageTemplates::make()->handle($shop->id)->pluck('id'))->toContain($outboxTemplate->id);
+});

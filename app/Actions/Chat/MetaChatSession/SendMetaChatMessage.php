@@ -179,6 +179,14 @@ class SendMetaChatMessage
             ];
         }
 
+        if ($template?->isUsedByWhatsappOutbox()) {
+            return [
+                'ok'      => false,
+                'message' => __('This template is used by a WhatsApp customer notification and cannot be sent from a chat.'),
+                'code'    => 422,
+            ];
+        }
+
         if (!$templateName && !$metaChatSession->can_send_non_template_message) {
             return [
                 'ok'      => false,

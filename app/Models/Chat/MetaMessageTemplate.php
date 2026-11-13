@@ -8,7 +8,10 @@
 namespace App\Models\Chat;
 
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\WhatsappOutbox;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 use App\Models\Helpers\Media;
 use App\Models\Traits\HasImage;
@@ -37,6 +40,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $delete_comment
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, WhatsappOutbox> $whatsappOutboxes
+ * @method static Builder<static>|MetaMessageTemplate withoutWhatsappOutboxTemplates()
  */
 class MetaMessageTemplate extends Model implements HasMedia
 {
@@ -80,5 +85,25 @@ class MetaMessageTemplate extends Model implements HasMedia
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
+    }
+
+    public function whatsappOutboxes(): HasMany
+    {
+        return $this->hasMany(WhatsappOutbox::class);
+    }
+
+    /**
+     * A template chosen for a WhatsApp outbox is the wording of that notification. Sent by
+     * hand from a chat it would tell the customer an order was confirmed or dispatched when
+     * nothing happened, so the chat leaves it out.
+     */
+    public function isUsedByWhatsappOutbox(): bool
+    {
+        return $this->whatsappOutboxes()->exists();
+    }
+
+    public function scopeWithoutWhatsappOutboxTemplates(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('whatsappOutboxes');
     }
 }
