@@ -6,6 +6,8 @@ import { faShoppingCart, faComments, faChevronRight } from '@fal'
 import { ctrans } from '@/Composables/useTrans'
 import { useSidePanel, websiteThemeVariables } from '@/Iris/Composables/useSidePanel'
 import { useFloatingButtonsDrag } from '@/Iris/Composables/useFloatingButtonsDrag'
+import { useShoppingAssistant } from '@/Iris/Composables/useShoppingAssistant'
+import { faSparkles } from '@far'
 
 const IrisRightSideBasket = defineAsyncComponent(() => import('@iris/Components/IrisRightSideBasket.vue'))
 const ChatButton = defineAsyncComponent(() => import('@/Components/Chat/Customer/ChatButton.vue'))
@@ -57,6 +59,19 @@ const onFloatingChatClick = () => {
     sidePanel.toggle('chat')
 }
 
+const { isFloatingButtonShown: isAssistantButtonShown, askLabel, openAssistant } = useShoppingAssistant()
+
+const isAssistantFloating = computed(() => isAssistantButtonShown.value && !sidePanel.isOpen.value)
+const assistantButtonBottom = computed(() => !sidePanel.isAvailable.value && props.isChatEnabled ? 88 : 24)
+const spaceTakenByAssistant = computed(() => isAssistantFloating.value && sidePanel.isAvailable.value ? 64 : 0)
+
+const onFloatingAssistantClick = () => {
+    if (floatingButtonsDrag.wasJustDragged()) {
+        return
+    }
+    openAssistant()
+}
+
 const onFloatingBasketClick = () => {
     if (floatingButtonsDrag.wasJustDragged()) {
         return
@@ -67,6 +82,22 @@ const onFloatingBasketClick = () => {
 
 <template>
     <div :style="websiteColorVariables">
+        <button
+            v-if="isAssistantFloating"
+            type="button"
+            :aria-label="askLabel"
+            class="side-action-button side-action-floating side-action-assistant"
+            :style="{ bottom: `${assistantButtonBottom + floatingButtonsDrag.offset.value}px` }"
+            @pointerdown="floatingButtonsDrag.onPointerDown"
+            @pointermove="floatingButtonsDrag.onPointerMove"
+            @pointerup="floatingButtonsDrag.onPointerUp"
+            @pointercancel="floatingButtonsDrag.onPointerUp"
+            @click="onFloatingAssistantClick"
+        >
+            <FontAwesomeIcon :icon="faSparkles" class="text-base" fixed-width aria-hidden="true" />
+            <span class="side-action-assistant-label" aria-hidden="true">{{ askLabel }}</span>
+        </button>
+
         <div v-if="sidePanel.isAvailable.value">
             <button
                 v-if="!sidePanel.isOpen.value && sidePanel.canShowBasketPanel.value"
@@ -74,7 +105,7 @@ const onFloatingBasketClick = () => {
                 :aria-label="ctrans('Basket')"
                 v-tooltip="{ value: ctrans('Drag up or down to move'), position: 'left' }"
                 class="side-action-button side-action-floating"
-                :style="{ bottom: `${(sidePanel.canShowChatPanel.value ? 88 : 24) + floatingButtonsDrag.offset.value}px` }"
+                :style="{ bottom: `${(sidePanel.canShowChatPanel.value ? 88 : 24) + spaceTakenByAssistant + floatingButtonsDrag.offset.value}px` }"
                 @pointerdown="floatingButtonsDrag.onPointerDown"
                 @pointermove="floatingButtonsDrag.onPointerMove"
                 @pointerup="floatingButtonsDrag.onPointerUp"
@@ -93,7 +124,7 @@ const onFloatingBasketClick = () => {
                 :aria-label="isChatOnline ? ctrans('Live chat') : ctrans('Help')"
                 v-tooltip="{ value: ctrans('Drag up or down to move'), position: 'left' }"
                 class="side-action-button side-action-floating"
-                :style="{ bottom: `${24 + floatingButtonsDrag.offset.value}px` }"
+                :style="{ bottom: `${24 + spaceTakenByAssistant + floatingButtonsDrag.offset.value}px` }"
                 @pointerdown="floatingButtonsDrag.onPointerDown"
                 @pointermove="floatingButtonsDrag.onPointerMove"
                 @pointerup="floatingButtonsDrag.onPointerUp"
@@ -196,6 +227,30 @@ const onFloatingBasketClick = () => {
     border-radius: 9999px;
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     touch-action: none;
+}
+
+.side-action-assistant {
+    width: auto;
+    min-width: 3rem;
+    padding: 0 0.9375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.side-action-assistant-label {
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: max-width 200ms ease, opacity 150ms ease, margin-left 200ms ease;
+}
+
+.side-action-assistant:hover .side-action-assistant-label,
+.side-action-assistant:focus-visible .side-action-assistant-label {
+    max-width: 12rem;
+    margin-left: 0.5rem;
+    opacity: 1;
 }
 
 .side-action-tab {
