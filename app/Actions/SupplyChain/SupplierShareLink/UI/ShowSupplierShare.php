@@ -105,6 +105,16 @@ class ShowSupplierShare
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    public function ancientWisdomLogo(Supplier $supplier): ?array
+    {
+        $ancientWisdom = $supplier->group->organisations()->where('slug', 'aw')->first();
+
+        return $ancientWisdom?->imageSources(96, 96) ?? $supplier->group->imageSources(96, 96);
+    }
+
+    /**
      * Everything the supplier sees once in, the same whether the supplier or staff previewing it is looking.
      *
      * @return array<string, mixed>
@@ -115,6 +125,7 @@ class ShowSupplierShare
 
         return [
             'needs_code'           => false,
+            'group_logo'           => $this->ancientWisdomLogo($supplier),
             'company'              => $this->company($supplier),
             'agent'                => $this->agent($supplier),
             'owner'                => GetSupplierPortalDetails::make()->owner($supplier),
