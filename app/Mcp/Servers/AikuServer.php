@@ -62,7 +62,7 @@ use App\Mcp\Tools\InfoWebsitePreviewTool;
 use App\Mcp\Tools\InfoWebsiteWriteTool;
 use App\Mcp\Tools\SupplierProductAvailabilityTool;
 use App\Mcp\Tools\SupplierProductLinkTool;
-use App\Mcp\Tools\PackingSpecTool;
+use App\Mcp\Tools\ProductPackagingTool;
 use App\Mcp\Tools\OrgStockSalesTool;
 use App\Mcp\Tools\PartnerRescueOrderTool;
 use App\Mcp\Tools\SupplierPurchaseOrderTool;
@@ -148,7 +148,7 @@ class AikuServer extends Server
         OrgStockDiscontinueTool::class,
         SupplierProductAvailabilityTool::class,
         SupplierProductLinkTool::class,
-        PackingSpecTool::class,
+        ProductPackagingTool::class,
         FamilyRelatedProductsTool::class,
         WebsiteRedirectsPreviewTool::class,
         WebsiteRedirectsTool::class,
