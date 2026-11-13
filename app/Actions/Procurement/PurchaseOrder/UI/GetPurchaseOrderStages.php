@@ -323,6 +323,8 @@ class GetPurchaseOrderStages
             'by'          => $names->get($stages[$stage->value]['user_id']),
             'expected'    => $expected[$stage->value]['date'] ?? null,
             'expected_note' => $expected[$stage->value]['note'] ?? null,
+            'planned'     => $expected[$stage->value]['planned'] ?? null,
+            'planned_note' => $expected[$stage->value]['planned_note'] ?? null,
             'days_late'   => !$stages[$stage->value]['reached'] && isset($expected[$stage->value]) && Carbon::parse($expected[$stage->value]['date'])->lt($today)
                 ? (int) Carbon::parse($expected[$stage->value]['date'])->diffInDays($today)
                 : 0,
@@ -409,7 +411,7 @@ class GetPurchaseOrderStages
      * shipping date back from the arrival estimate, so a stage is never expected before the one ahead of it.
      * Each date carries a note saying where it came from, so a buyer can tell a plan from a promise.
      *
-     * @return array<string, array{date: string, note: string}>
+     * @return array<string, array{date: string, note: string, planned?: string, planned_note?: string}>
      */
     public function expectedDates(PurchaseOrder $purchaseOrder): array
     {
@@ -431,15 +433,19 @@ class GetPurchaseOrderStages
 
             if ($previous && $previous['date'] > $date) {
                 $expected[$stage->value] = [
-                    'date' => $previous['date'],
-                    'note' => __('The plan puts it before :stage, so it takes that stage\'s date.', ['stage' => Stage::labels()[$previous['stage']]]),
+                    'date'         => $previous['date'],
+                    'note'         => __('The plan puts it before :stage, so it takes that stage\'s date.', ['stage' => Stage::labels()[$previous['stage']]]),
+                    'planned'      => max($segment['planned_at'], $previous['date']),
+                    'planned_note' => $this->expectedNote($segment['planned_from'], $ribbon),
                 ];
                 continue;
             }
 
             $expected[$stage->value] = [
-                'date' => $date,
-                'note' => $segment['done_at'] ? __('The date the PO journey board recorded for this stage.') : $this->expectedNote($segment['planned_from'], $ribbon),
+                'date'         => $date,
+                'note'         => $segment['done_at'] ? __('The date the PO journey board recorded for this stage.') : $this->expectedNote($segment['planned_from'], $ribbon),
+                'planned'      => $segment['planned_at'],
+                'planned_note' => $this->expectedNote($segment['planned_from'], $ribbon),
             ];
             $previous = ['stage' => $stage->value, 'date' => $date];
         }

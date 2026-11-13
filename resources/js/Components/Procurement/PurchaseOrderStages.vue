@@ -74,6 +74,8 @@ interface Stage {
     expected: string | null
     expected_note: string | null
     days_late: number
+    planned?: string | null
+    planned_note?: string | null
     deliveries: { reached: number, total: number } | null
     not_required?: boolean
     unpaid?: boolean
@@ -157,6 +159,44 @@ const markFromCheck = (mark: Mark) => {
 const choStage = ref<Stage | null>(null)
 const choChecks = computed(() => props.stages.find((stage) => stage.key === "ready")?.checks ?? [])
 const choMark = computed(() => choStage.value?.marks.find((mark) => mark.field === "handed_over_at") ?? null)
+const startOfDay = (date: string | Date): Date => {
+    const day = new Date(date)
+    day.setHours(0, 0, 0, 0)
+    return day
+}
+const daysBetween = (from: string | Date, to: string | Date): number => Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / 86400000)
+const expectedCho = computed<{ date: string, note: string | null } | null>(() => {
+    if (!choStage.value) {
+        return null
+    }
+    const approvedReady = props.stages.flatMap((stage) => stage.steps).find((step) => step.key === "approved_ready_at")
+    if (approvedReady?.date) {
+        return { date: approvedReady.date, note: ctrans("Expected Clean Hand Over date, set by the buyer's procurement team.") }
+    }
+    if (!choStage.value.reached && choStage.value.expected) {
+        return { date: choStage.value.expected, note: choStage.value.expected_note ?? null }
+    }
+    if (choStage.value.planned) {
+        return { date: choStage.value.planned, note: choStage.value.planned_note ?? null }
+    }
+    return null
+})
+const choLateness = computed<{ days: number, since: Date } | null>(() => {
+    if (!expectedCho.value || !choStage.value) {
+        return null
+    }
+    const until = choStage.value.reached ? choStage.value.date : new Date()
+    if (!until) {
+        return null
+    }
+    const days = daysBetween(expectedCho.value.date, until)
+    if (days <= 0) {
+        return null
+    }
+    const since = startOfDay(expectedCho.value.date)
+    since.setDate(since.getDate() + 1)
+    return { days, since }
+})
 const markFromCho = (mark: Mark, clearing = false) => {
     choStage.value = null
     clearing ? openClear(mark) : openMark(mark)
@@ -239,7 +279,7 @@ async function upload(evidence: Evidence, event: Event) {
     }
 }
 
-const formatDate = (date: string | null) => date ? useFormatTime(date, { formatTime: "d MMM yyyy" }) : null
+const formatDate = (date: string | Date | null) => date ? useFormatTime(date, { formatTime: "d MMM yyyy" }) : null
 
 const toIso = (date: Date | null) => date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}` : null
 
@@ -652,6 +692,30 @@ function save() {
                 <template v-else-if="choStage.reached">{{ ctrans("Handed over") }}</template>
                 <template v-else>{{ ctrans("Not handed over yet") }}</template>
             </p>
+
+            <div v-if="expectedCho" class="rounded px-2 py-1.5 text-xs" :class="choLateness ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600'">
+                <div class="w-fit cursor-help tabular-nums" v-tooltip="expectedCho.note">
+                    {{ ctrans("Expected CHO :date", { date: formatDate(expectedCho.date) as string }) }}
+                </div>
+                <div v-if="choLateness" class="font-medium tabular-nums">
+                    <template v-if="choStage.reached">
+                        {{ choLateness.days === 1 ? ctrans("Handed over 1 day late") : ctrans("Handed over :days days late", { days: choLateness.days }) }}
+                    </template>
+                    <template v-else>
+                        {{ choLateness.days === 1 ? ctrans("1 day late") : ctrans(":days days late", { days: choLateness.days }) }}
+                    </template>
+                    · {{ ctrans("late since :date", { date: formatDate(choLateness.since) as string }) }}
+                </div>
+                <div v-else-if="!choStage.reached" class="tabular-nums">
+                    <template v-if="daysBetween(new Date(), expectedCho.date) === 0">{{ ctrans("CHO today") }}</template>
+                    <template v-else-if="daysBetween(new Date(), expectedCho.date) === 1">{{ ctrans("1 day to CHO") }}</template>
+                    <template v-else>{{ ctrans(":days days to CHO", { days: daysBetween(new Date(), expectedCho.date) }) }}</template>
+                </div>
+                <div v-else class="tabular-nums text-green-700">
+                    <template v-if="choStage.date && daysBetween(choStage.date, expectedCho.date) > 0">{{ ctrans("Handed over on time, :days days early", { days: daysBetween(choStage.date, expectedCho.date) }) }}</template>
+                    <template v-else>{{ ctrans("Handed over on time") }}</template>
+                </div>
+            </div>
 
             <div v-if="choChecks.length">
                 <div class="mb-1 text-xs font-medium text-gray-500">{{ ctrans("Ready to Roll") }}</div>
