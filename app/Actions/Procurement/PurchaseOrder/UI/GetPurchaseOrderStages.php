@@ -123,6 +123,34 @@ class GetPurchaseOrderStages
     }
 
     /**
+     * When the goods were handed over against the Clean Hand Over date expected for them: the buyer's approved ready
+     * date, or else the plan the PO journey board draws. Null until the goods are handed over or while no date is expected.
+     *
+     * @return array{handed_over_at: Carbon, expected_at: Carbon, days_late: int}|null
+     */
+    public function handOverTiming(PurchaseOrder $purchaseOrder): ?array
+    {
+        $handedOver = $this->handedOverStage($purchaseOrder, $this->liveDeliveries($purchaseOrder));
+        if (!$handedOver['recorded'] || !$handedOver['date']) {
+            return null;
+        }
+
+        $expectedAt = $purchaseOrder->approved_ready_at ?? ($this->expectedDates($purchaseOrder)[Stage::HANDED_OVER->value]['planned'] ?? null);
+        if (!$expectedAt) {
+            return null;
+        }
+
+        $handedOverAt = Carbon::parse($handedOver['date'])->startOfDay();
+        $expectedAt   = Carbon::parse($expectedAt)->startOfDay();
+
+        return [
+            'handed_over_at' => $handedOverAt,
+            'expected_at'    => $expectedAt,
+            'days_late'      => max(0, (int) $expectedAt->diffInDays($handedOverAt, false)),
+        ];
+    }
+
+    /**
      * @return array{recorded: bool, date: ?Carbon, user_id: ?int, deliveries: null}
      */
     private function handedOverStage(PurchaseOrder $purchaseOrder, Collection $deliveries): array
