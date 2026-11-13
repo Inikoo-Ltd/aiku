@@ -46,7 +46,9 @@ object HrResponses {
 
     fun parseDownloadFailure(statusCode: Int, body: String): AttachmentDownload = when (statusCode) {
         HTTP_UNAUTHORISED -> AttachmentDownload.SessionExpired
-        HTTP_FORBIDDEN, HTTP_NOT_FOUND -> AttachmentDownload.Refused(decode<HrRefusal>(body)?.message.orEmpty())
+        HTTP_FORBIDDEN, HTTP_NOT_FOUND, HTTP_UNPROCESSABLE -> AttachmentDownload.Refused(
+            decode<HrRefusal>(body)?.let { refusal -> refusal.fieldErrors.values.firstOrNull() ?: refusal.message }.orEmpty(),
+        )
         else -> AttachmentDownload.ServerError(statusCode)
     }
 

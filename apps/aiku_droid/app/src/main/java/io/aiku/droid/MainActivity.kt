@@ -13,6 +13,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import io.aiku.droid.ui.app.SignedInApp
 import io.aiku.droid.ui.login.LoginScreen
 import io.aiku.droid.ui.login.LoginViewModel
+import io.aiku.droid.ui.scan.HardwareScanKeys
+import io.aiku.droid.ui.scan.HardwareScanWindowCallback
 import io.aiku.droid.ui.theme.AikuDroidTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,6 +22,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val container = (application as AikuDroidApplication).container
+        window.callback = HardwareScanWindowCallback(
+            delegate = window.callback,
+            keys = HardwareScanKeys(container.scans),
+            isTextFieldFocused = { currentFocus?.onCheckIsTextEditor() == true },
+        )
         setContent {
             val appearance by container.settings.appearance.collectAsStateWithLifecycle()
             AikuDroidTheme(appearance = appearance) {

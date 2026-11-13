@@ -2,6 +2,7 @@ package io.aiku.droid.ui.search
 
 import androidx.annotation.StringRes
 import io.aiku.droid.R
+import io.aiku.droid.ui.goodsout.GoodsOutSamples
 import io.aiku.droid.ui.navigation.DeliveryNotePickingRoute
 import io.aiku.droid.ui.navigation.LocationRoute
 import io.aiku.droid.ui.navigation.SkuFamilyRoute
@@ -41,7 +42,7 @@ internal object SearchSamples {
             SearchGroup(
                 R.string.section_delivery_notes,
                 SearchScope.DeliveryNotes,
-                listOf(SearchResult("AR24817", "Wholesale · 6 items · Picking", null, false, DeliveryNotePickingRoute("AR24817"))),
+                listOf(SearchResult("AR24817", "Wholesale · 6 items · Picking", null, false, DeliveryNotePickingRoute(id = GoodsOutSamples.SAMPLE_DELIVERY_NOTE_ID, reference = "AR24817"))),
             ),
         )
 }

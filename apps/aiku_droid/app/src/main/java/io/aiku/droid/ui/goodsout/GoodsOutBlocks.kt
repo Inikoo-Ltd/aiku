@@ -8,13 +8,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -37,68 +34,65 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.aiku.droid.R
+import io.aiku.droid.data.api.DeliveryNoteAction
 import io.aiku.droid.ui.components.AppHeader
 import io.aiku.droid.ui.components.CardShape
 import io.aiku.droid.ui.components.ChipShape
-import io.aiku.droid.ui.components.DetailCard
-import io.aiku.droid.ui.components.DetailLine
 import io.aiku.droid.ui.components.HeaderIconButton
-import io.aiku.droid.ui.components.ItemRow
-import io.aiku.droid.ui.components.ListGroup
 import io.aiku.droid.ui.components.QuickAction
 import io.aiku.droid.ui.components.QuickActions
-import io.aiku.droid.ui.components.RowDivider
-import io.aiku.droid.ui.components.StateTimeline
 import io.aiku.droid.ui.components.StatusBadge
-import io.aiku.droid.ui.components.TimelineEntry
 import io.aiku.droid.ui.components.Tone
-import io.aiku.droid.ui.components.fakeData
 import io.aiku.droid.ui.components.tone
 import io.aiku.droid.ui.goodsout.extra.DeliveryNoteMoreSheet
-import io.aiku.droid.ui.navigation.AskCrmRoute
-import io.aiku.droid.ui.navigation.LocalAppNavigator
 import io.aiku.droid.ui.theme.LocalAikuColors
 
 private val IconTileShape = RoundedCornerShape(10.dp)
 
 @Composable
-internal fun DeliveryNoteHeader(reference: String, kicker: String) {
-    var showMore by remember { mutableStateOf(false) }
+internal fun DeliveryNoteHeader(
+    reference: String,
+    kicker: String,
+    menuActions: List<DeliveryNoteAction>,
+    onMenuAction: (DeliveryNoteAction) -> Unit,
+    onAskCrm: () -> Unit,
+    onDocuments: () -> Unit,
+) {
+    var showMoreSheet by remember { mutableStateOf(false) }
 
     AppHeader(
-        isSample = true,
         title = reference,
         kicker = kicker,
         actions = {
             HeaderIconButton(
                 icon = R.drawable.ic_ui_more,
                 description = stringResource(R.string.more_actions),
-                onClick = { showMore = true },
+                onClick = { showMoreSheet = true },
                 filled = true,
             )
         },
     )
-    if (showMore) {
-        DeliveryNoteMoreSheet(reference = reference, onDismiss = { showMore = false })
+    if (showMoreSheet) {
+        DeliveryNoteMoreSheet(
+            reference = reference,
+            actions = menuActions,
+            onAction = onMenuAction,
+            onAskCrm = onAskCrm,
+            onDocuments = onDocuments,
+            onDismiss = { showMoreSheet = false },
+        )
     }
 }
 
 @Composable
-internal fun DeliveryNoteQuickActions(reference: String, modifier: Modifier = Modifier) {
-    val navigator = LocalAppNavigator.current
-    var showPrint by remember { mutableStateOf(false) }
-
+internal fun DeliveryNoteQuickActions(onDocuments: () -> Unit, onAskCrm: () -> Unit, modifier: Modifier = Modifier) {
     QuickActions(
         actions = listOf(
-            QuickAction(label = stringResource(R.string.goodsout_quick_packing_list), icon = R.drawable.ic_ui_print, onClick = { showPrint = true }),
-            QuickAction(label = stringResource(R.string.goodsout_quick_task), icon = R.drawable.ic_ui_check, onClick = { navigator.open(AskCrmRoute(reference = reference)) }),
-            QuickAction(label = stringResource(R.string.goodsout_quick_ask_crm), icon = R.drawable.ic_ui_chat, onClick = { navigator.open(AskCrmRoute(reference = reference)) }),
+            QuickAction(label = stringResource(R.string.goodsout_documents), icon = R.drawable.ic_ui_document, onClick = onDocuments),
+            QuickAction(label = stringResource(R.string.goodsout_quick_ask_crm), icon = R.drawable.ic_ui_chat, onClick = onAskCrm),
         ),
         modifier = modifier,
     )
-    if (showPrint) {
-        PrintDeliveryNoteSheet(reference = reference, onDismiss = { showPrint = false })
-    }
 }
 
 @Composable
@@ -113,7 +107,7 @@ internal fun FooterHint(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun GoodsOutHeading(title: String, modifier: Modifier = Modifier, trailing: String? = null, isTrailingSample: Boolean = false) {
+internal fun GoodsOutHeading(title: String, modifier: Modifier = Modifier, trailing: String? = null) {
     val colors = LocalAikuColors.current
 
     Row(
@@ -129,12 +123,7 @@ internal fun GoodsOutHeading(title: String, modifier: Modifier = Modifier, trail
             modifier = Modifier.weight(1f),
         )
         if (trailing != null) {
-            Text(
-                text = trailing,
-                fontSize = 12.sp,
-                color = colors.textTertiary,
-                modifier = if (isTrailingSample) Modifier.fakeData(cornerRadius = 4.dp).padding(horizontal = 4.dp, vertical = 2.dp) else Modifier,
-            )
+            Text(text = trailing, fontSize = 12.sp, color = colors.textTertiary)
         }
     }
 }
@@ -173,6 +162,7 @@ internal fun IconInfoRow(
     chipTone: Tone = Tone.Success,
     actionLabel: String? = null,
     actionColor: Color? = null,
+    actionModifier: Modifier = Modifier,
     onAction: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -214,7 +204,7 @@ internal fun IconInfoRow(
                 fontWeight = FontWeight.SemiBold,
                 color = actionColor ?: colors.link,
                 modifier = if (onAction != null) {
-                    Modifier
+                    actionModifier
                         .heightIn(min = 44.dp)
                         .clip(ChipShape)
                         .clickable(role = Role.Button, onClick = onAction)
@@ -275,14 +265,6 @@ internal fun SummaryCard(title: String, body: String, modifier: Modifier = Modif
     }
 }
 
-@Composable
-internal fun lineChip(line: SampleLine): String? = when (line.status) {
-    LineStatus.Picked -> stringResource(R.string.goodsout_line_picked)
-    LineStatus.Packed -> stringResource(R.string.goodsout_line_packed)
-    LineStatus.Waiting, LineStatus.NotPicked -> line.reason
-    LineStatus.ToHandle, LineStatus.Partial -> null
-}
-
 internal fun lineChipTone(status: LineStatus): Tone = when (status) {
     LineStatus.Picked, LineStatus.Packed -> Tone.Success
     LineStatus.Waiting -> Tone.Warn
@@ -299,112 +281,9 @@ internal fun lineQuantityTone(status: LineStatus): Tone? = when (status) {
 }
 
 @Composable
-internal fun DeliveryNoteLines(lines: List<SampleLine>, modifier: Modifier = Modifier, onLineClick: ((SampleLine) -> Unit)? = null) {
-    ListGroup(modifier = modifier.fakeData()) {
-        lines.forEachIndexed { index, line ->
-            if (index > 0) {
-                RowDivider()
-            }
-            ItemRow(
-                code = line.skuCode,
-                subtitle = line.subtitle,
-                chip = lineChip(line),
-                chipTone = lineChipTone(line.status),
-                done = line.done.toString(),
-                required = line.required.toString(),
-                quantityTone = lineQuantityTone(line.status),
-                onClick = onLineClick?.let { open -> { open(line) } },
-            )
-        }
-    }
-}
-
-@Composable
-internal fun SampleTimeline(entries: List<SampleTimelineEntry>, modifier: Modifier = Modifier) {
-    StateTimeline(
-        entries = entries.map { TimelineEntry(label = stringResource(it.label), date = it.date) },
-        modifier = modifier.fakeData(),
-    )
-}
-
-@Composable
-internal fun SampleDetailCard(
-    title: String,
-    lines: List<SampleDetailLine>,
-    modifier: Modifier = Modifier,
-    actionLabel: String? = null,
-    onAction: (() -> Unit)? = null,
-) {
-    DetailCard(
-        title = title,
-        lines = lines.map { DetailLine(icon = it.icon, text = it.text) },
-        modifier = modifier.fakeData(),
-        actionLabel = actionLabel,
-        onAction = onAction,
-    )
-}
-
-@Composable
-internal fun SampleInfoGroup(
-    rows: List<SampleChoice>,
-    @DrawableRes icon: Int,
-    modifier: Modifier = Modifier,
-    tone: Tone = Tone.Primary,
-    chip: String? = null,
-) {
-    ListGroup(modifier = modifier.fakeData()) {
-        rows.forEachIndexed { index, row ->
-            if (index > 0) {
-                RowDivider()
-            }
-            IconInfoRow(icon = icon, title = row.title, subtitle = row.subtitle, tone = tone, chip = chip)
-        }
-    }
-}
-
-@Composable
-internal fun RadioCardRow(
-    title: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-) {
-    val colors = LocalAikuColors.current
-    val shape = RoundedCornerShape(10.dp)
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .clip(shape)
-            .background(if (selected) colors.soft else colors.surface)
-            .border(if (selected) 2.dp else 1.dp, if (selected) colors.primary else colors.borderStrong, shape)
-            .clickable(role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(20.dp)
-                .clip(CircleShape)
-                .background(colors.surface)
-                .border(if (selected) 6.dp else 2.dp, if (selected) colors.primary else colors.borderStrong, CircleShape),
-        )
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
-            if (!subtitle.isNullOrBlank()) {
-                Text(text = subtitle, fontSize = 13.sp, color = colors.textTertiary)
-            }
-        }
-    }
-}
-
-@Composable
 internal fun BadgeChoiceRow(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     badge: String,
     selected: Boolean,
     onClick: () -> Unit,
@@ -430,7 +309,9 @@ internal fun BadgeChoiceRow(
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(text = title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = colors.text)
-            Text(text = subtitle, fontSize = 12.sp, color = colors.textTertiary)
+            if (!subtitle.isNullOrBlank()) {
+                Text(text = subtitle, fontSize = 12.sp, color = colors.textTertiary)
+            }
         }
         if (selected) {
             Icon(painter = painterResource(R.drawable.ic_ui_check), contentDescription = null, tint = colors.link, modifier = Modifier.size(20.dp))
@@ -444,57 +325,5 @@ internal fun BadgeChoiceRow(
                     .padding(horizontal = 6.dp, vertical = 2.dp),
             )
         }
-    }
-}
-
-@Composable
-internal fun SwipeProgressHeader(kicker: String, title: String, done: Int, total: Int) {
-    val colors = LocalAikuColors.current
-    val fraction = if (total > 0) done.toFloat() / total else 0f
-    val pill = RoundedCornerShape(999.dp)
-
-    AppHeader(
-        isSample = true,
-        title = title,
-        kicker = kicker,
-        actions = {
-            Text(
-                text = stringResource(R.string.goodsout_progress_of, done, total),
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = colors.onNav,
-                modifier = Modifier.fakeData(cornerRadius = 6.dp).padding(horizontal = 6.dp, vertical = 4.dp),
-            )
-        },
-        below = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .fakeData(cornerRadius = 3.dp)
-                    .clip(pill)
-                    .background(Color.White.copy(alpha = 0.2f)),
-            ) {
-                Box(modifier = Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).fillMaxHeight().background(colors.navAccent))
-            }
-        },
-    )
-}
-
-@Composable
-internal fun SwipeTip(text: String, modifier: Modifier = Modifier) {
-    val colors = LocalAikuColors.current
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(colors.soft)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-    ) {
-        Icon(painter = painterResource(R.drawable.ic_ui_swipe), contentDescription = null, tint = colors.link, modifier = Modifier.size(22.dp))
-        Text(text = text, fontSize = 13.sp, lineHeight = 18.sp, color = colors.link, modifier = Modifier.weight(1f))
     }
 }

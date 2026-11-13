@@ -205,10 +205,6 @@
     <string name="clocking_attachments_too_big">Each file must be 5 MB or smaller.</string>
     <string name="clocking_attachments_remove">Remove %1$s</string>
     <string name="clocking_attachment_open">Open %1$s</string>
-    <string name="clocking_attachment_no_app">No app on this phone can open this file.</string>
-    <string name="clocking_attachment_offline">No connection. The file was not downloaded.</string>
-    <string name="clocking_attachment_failed">The file could not be downloaded. Try again in a moment.</string>
-    <string name="clocking_attachment_refused">You can’t open this file.</string>
 
     <string name="clocking_leave_annual">Annual Leave</string>
     <string name="clocking_leave_medical">Medical Leave</string>
