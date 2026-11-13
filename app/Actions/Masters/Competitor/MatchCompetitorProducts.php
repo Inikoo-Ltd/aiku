@@ -345,6 +345,97 @@ class MatchCompetitorProducts
     }
 
     /**
+     * Our other sizes of a matched product get the competitor's same size of the same product (HELP-4691): only main
+     * products are matched, so our 50ml, 100ml and 500ml fragrance oils, named alike and without their size, were
+     * never compared. Their sizes of one product share its link but for the size (?variant= on Shopify, attribute_pa_size
+     * on WooCommerce, whose link can be ?p=<id> on the homepage) and its name but for the size; ours share a master variant.
+     * Each of our sizes (from its code, else its name) takes their nearest size, from half to double ours (ml and g alike,
+     * as oils are sold by either), only from a main matched as the same item, with that match's status. Their pack counts
+     * as their size over ours in our units (their 125g against our 100ml is 1.25 of our packs), so prices compare per ml
+     * or g, times their own pack count; worked out from both sizes, those units are verified. A size of ours already
+     * matched to this competitor (not rejected) is left as it is, so a nearer size added later never gives it two prices.
+     *
+     * ponytail: the competitor's catalogue is held in memory once a run (a few thousand rows); fine at feed sizes.
+     */
+    public static function matchOtherSizes(Competitor $competitor): int
+    {
+        $created = 0;
+        $size    = fn (string ...$texts) => collect($texts)->map(fn (string $text) => collect(static::sizesInName($text))->flatten()->first())->filter()->first();
+        $product = fn (CompetitorProduct $theirs) => static::pageWithoutSize((string) $theirs->url).'|'.trim(preg_replace([self::SIZES, '/\b(size|tester)\b/i', '/[^\p{L}\p{N}]+/u'], ' ', mb_strtolower($theirs->name)));
+        $catalogue = $competitor->products()->whereNotNull('url')->get(['id', 'name', 'url', 'units'])->groupBy($product);
+        $matched   = MasterAssetCompetitorProduct::whereHas('competitorProduct', fn ($query) => $query->where('competitor_id', $competitor->id))
+            ->where('status', '!=', MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->pluck('master_asset_id')
+            ->flip();
+
+        MasterAssetCompetitorProduct::query()
+            ->select('master_asset_competitor_products.*')
+            ->join('master_assets', 'master_assets.id', '=', 'master_asset_competitor_products.master_asset_id')
+            ->join('competitor_products', 'competitor_products.id', '=', 'master_asset_competitor_products.competitor_product_id')
+            ->where('competitor_products.competitor_id', $competitor->id)
+            ->whereNotNull('competitor_products.url')
+            ->where('master_assets.is_main', true)
+            ->whereNotNull('master_assets.master_variant_id')
+            ->where('master_asset_competitor_products.status', '!=', MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->where('master_asset_competitor_products.is_same_item', true)
+            ->with(['masterAsset', 'competitorProduct'])
+            ->chunkById(500, function (Collection $matches) use ($size, $product, $catalogue, &$matched, &$created) {
+                foreach ($matches as $match) {
+                    $theirRows  = $catalogue->get($product($match->competitorProduct), collect())->keyBy('id');
+                    $theirSizes = $theirRows
+                        ->mapWithKeys(fn (CompetitorProduct $theirs) => [$theirs->id => $size($theirs->name)])
+                        ->filter();
+
+                    $ourSizes = MasterAsset::where('master_variant_id', $match->masterAsset->master_variant_id)
+                        ->where('id', '!=', $match->master_asset_id)
+                        ->where('status', true)
+                        ->get();
+
+                    foreach ($ourSizes as $ours) {
+                        if ($matched->has($ours->id)) {
+                            continue;
+                        }
+                        $ourSize = $size($ours->code, $ours->name);
+                        $nearest = $ourSize ? $theirSizes->filter(fn (float $theirSize) => $theirSize >= $ourSize / 2 && $theirSize <= $ourSize * 2)
+                            ->sortBy(fn (float $theirSize) => abs(log($theirSize / $ourSize))) : collect();
+                        if ($nearest->isEmpty()) {
+                            continue;
+                        }
+                        $theirId = $nearest->keys()->first();
+
+                        $sized = MasterAssetCompetitorProduct::firstOrCreate([
+                            'master_asset_id'       => $ours->id,
+                            'competitor_product_id' => $theirId,
+                        ], [
+                            'master_shop_id' => $ours->master_shop_id,
+                            'is_same_item'   => $match->is_same_item,
+                            'confidence'     => $match->confidence,
+                            'status'           => $match->status,
+                            'competitor_units' => round($nearest->first() / $ourSize * max((float) $ours->units, 1) * max((float) $theirRows[$theirId]->units, 1), 3),
+                            'units_verified'   => true,
+                        ]);
+                        $created += $sized->wasRecentlyCreated ? 1 : 0;
+                        $matched[$ours->id] = true;
+                    }
+                }
+            }, 'master_asset_competitor_products.id', 'id');
+
+        return $created;
+    }
+
+    /**
+     * A competitor product's link without the size it was picked in: Shopify's variant and WooCommerce's attribute_pa_* go.
+     */
+    public static function pageWithoutSize(string $url): string
+    {
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $parameters);
+        $parameters = array_filter($parameters, fn ($key) => $key !== 'variant' && !str_starts_with((string) $key, 'attribute_pa_'), ARRAY_FILTER_USE_KEY);
+        ksort($parameters);
+
+        return rtrim(strtok($url, '?'), '/').($parameters ? '?'.http_build_query($parameters) : '');
+    }
+
+    /**
      * Every product of the competitor's master shop with a name close to one in the feed and not
      * looked at yet, in chunks of 50.
      */

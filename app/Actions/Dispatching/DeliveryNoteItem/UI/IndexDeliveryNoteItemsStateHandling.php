@@ -20,6 +20,9 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class IndexDeliveryNoteItemsStateHandling extends OrgAction
@@ -34,15 +37,45 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
      */
     public function handle(DeliveryNote $parent, $prefix = null, bool $ignoreParentPagination = false, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null, ?bool $isHandled = null): LengthAwarePaginator
     {
-        $globalSearch = $this->getGlobalSearchFilter();
-
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $query = QueryBuilder::for(DeliveryNoteItem::class);
+        return $this->itemsQuery($parent->organisation->slug, $stateFilter, $deliveryNoteItemId, $isHandled)
+            ->where('delivery_note_items.delivery_note_id', $parent->id)
+            ->withPaginator($ignoreParentPagination ? 'deliveryNoteItems' : $prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
 
-        $query->where('delivery_note_items.delivery_note_id', $parent->id);
+    /**
+     * The items of several delivery notes of one organisation in a single query, keyed by delivery
+     * note, each list being what handle() gives for that note with $ignoreParentPagination.
+     *
+     * @param  EloquentCollection<int, DeliveryNote>  $deliveryNotes
+     * @return Collection<int, Collection<int, DeliveryNoteItem>>
+     */
+    public function forDeliveryNotes(EloquentCollection $deliveryNotes): Collection
+    {
+        if ($deliveryNotes->isEmpty()) {
+            return collect();
+        }
+
+        $perPage = QueryBuilder::recordsPerPage('deliveryNoteItems', tableName: request()->route()->getName());
+        $page    = Paginator::resolveCurrentPage('deliveryNoteItemsPage');
+
+        return $this->itemsQuery($deliveryNotes->first()->organisation->slug)
+            ->whereIn('delivery_note_items.delivery_note_id', $deliveryNotes->modelKeys())
+            ->addSelect('delivery_note_items.delivery_note_id')
+            ->get()
+            ->groupBy('delivery_note_id')
+            ->map(fn (EloquentCollection $items) => $items->forPage($page, $perPage)->values());
+    }
+
+    private function itemsQuery(string $organisationSlug, array|DeliveryNoteItemStateEnum|null $stateFilter = null, ?int $deliveryNoteItemId = null, ?bool $isHandled = null): QueryBuilder
+    {
+        $globalSearch = $this->getGlobalSearchFilter();
+
+        $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         if ($deliveryNoteItemId) {
             $query->where('delivery_note_items.id', $deliveryNoteItemId);
@@ -86,7 +119,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                     'transactions.quantity_ordered as transaction_quantity_ordered',
                     'shops.slug as shop_slug',
                     'shops.type as shop_type',
-                    DB::raw("'{$parent->organisation->slug}' as organisation_slug"),
+                    DB::raw("'$organisationSlug' as organisation_slug"),
                 ]
             ))
             ->addSelect([
@@ -133,9 +166,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
             ->allowedSorts(array_merge($this->getDeliveryNoteItemBaseSorts(), ['picking_position']))
             ->orderBy('org_stocks.code')
             ->orderBy('delivery_note_items.id')
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($ignoreParentPagination ? 'deliveryNoteItems' : $prefix, tableName: request()->route()->getName())
-            ->withQueryString();
+            ->allowedFilters([$globalSearch]);
     }
 
     /**
