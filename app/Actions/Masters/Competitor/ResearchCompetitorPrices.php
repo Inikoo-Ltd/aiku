@@ -65,12 +65,12 @@ class ResearchCompetitorPrices
         $search       = fn () => $this->browse($competitor, array_map(fn (string $words) => static::searchUrl($competitor, $words), $searchWords));
 
         $result       = $search();
-        $searchBroken = static::searchIsBroken($result['pages'] ?? [], $searchWords);
+        $searchBroken = static::searchIsBroken($result['pages'] ?? [], array_map(static::searchQuery(...), $searchWords));
         $publishedUrl = $searchBroken ? $this->publishedSearchUrl($competitor, $result['pages'] ?? []) : null;
         if ($publishedUrl && $publishedUrl !== $competitor->search_url) {
             $competitor->update(['search_url' => $publishedUrl]);
             $result       = $search();
-            $searchBroken = static::searchIsBroken($result['pages'] ?? [], $searchWords);
+            $searchBroken = static::searchIsBroken($result['pages'] ?? [], array_map(static::searchQuery(...), $searchWords));
         }
 
         $pages     = $result['pages'] ?? [];
@@ -167,7 +167,7 @@ class ResearchCompetitorPrices
         }
 
         parse_str($query, $parameters);
-        $parameters = array_filter($parameters, fn ($value, $key) => $value !== $searchWords && !in_array($key, self::SEARCH_TRACKING, true), ARRAY_FILTER_USE_BOTH);
+        $parameters = array_filter($parameters, fn ($value, $key) => !in_array($value, [$searchWords, static::searchQuery($searchWords)], true) && !in_array($key, self::SEARCH_TRACKING, true), ARRAY_FILTER_USE_BOTH);
 
         return strtok($url, '?').($parameters ? '?'.http_build_query($parameters) : '');
     }
@@ -268,7 +268,27 @@ class ResearchCompetitorPrices
      */
     public static function searchUrl(Competitor $competitor, string $searchWords): string
     {
-        return str_replace('{query}', urlencode($searchWords), $competitor->search_url);
+        return str_replace('{query}', urlencode(static::searchQuery($searchWords)), $competitor->search_url);
+    }
+
+    /**
+     * What a person would type in their search box (HELP-4686): our name without its size, pack, label
+     * or codes. A search needing every word found nothing for "10ml Basil Essential Oil White Label"; the
+     * AI still gets the whole name to pick the right item and size.
+     */
+    public static function searchQuery(string $name): string
+    {
+        $query = preg_replace([
+            '/\([^)]*\)/u',
+            '/\b(white|special)\s+label\b/iu',
+            '/\b\d+\s*x\b|\bx\s*\d+\b|\b(box|pack|set|case)\s+of\s+\d+\b/iu',
+            '/\b\d+(?:[.,]\d+)?\s*(?:ml|l|ltr|litres?|liters?|g|gr|kg|cl|oz|cm|mm)\b/iu',
+            '/\b[A-Z]{2,}-?\d{3,}\b/u',
+            '/\s+[-–]\s+|[,:;]/u',
+        ], ' ', $name);
+        $query = trim(preg_replace('/\s+/u', ' ', $query), " -–");
+
+        return mb_strlen($query) >= 3 ? $query : $name;
     }
 
     /**
