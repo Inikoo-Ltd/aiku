@@ -46,6 +46,8 @@ class EditOrganisation extends OrgAction
             ->get(['id', 'contact_name', 'username', 'nickname'])
             ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName()]);
 
+        $staffSelectOptions = $staffOptions->mapWithKeys(fn (array $user) => [$user['id'] => ['id' => $user['id'], 'label' => $user['name']]]);
+
         $shopOptions = $organisation->shops()
             ->orderBy('name')
             ->get(['id', 'name'])
@@ -268,6 +270,30 @@ class EditOrganisation extends OrgAction
                                 "labelProp"   => "name",
                                 "valueProp"   => "id",
                                 "value"       => Arr::get($organisation->settings, "restock_questions.user_ids", []),
+                            ],
+                        ],
+                    ],
+                    [
+                        "label"  => __("Questions for our team"),
+                        "icon"   => "fal fa-head-side-brain",
+                        "fields" => [
+                            "assistant_questions_user_id" => [
+                                "type"        => "select",
+                                "label"       => __("Guru"),
+                                "information" => __("When a customer asks the AI shopping assistant something our texts do not answer (samples, discount codes, a document that is not online), this person, our guru, gets a pop-up in aiku to answer it, pass it to a colleague who knows, or say they do not want to answer. In working hours the customer waits a few minutes for the answer; later answers are sent to them. Leave empty to switch this off."),
+                                "placeholder" => __("Select a person"),
+                                "options"     => $staffSelectOptions,
+                                "searchable"  => true,
+                                "value"       => Arr::get($organisation->settings, "assistant_questions.user_id"),
+                            ],
+                            "assistant_questions_backup_user_id" => [
+                                "type"        => "select",
+                                "label"       => __("Backup guru"),
+                                "information" => __("Gets the question too when nobody has answered it within three minutes, or at once when the guru does not want to answer. The first answer is the one sent."),
+                                "placeholder" => __("Select a person"),
+                                "options"     => $staffSelectOptions,
+                                "searchable"  => true,
+                                "value"       => Arr::get($organisation->settings, "assistant_questions.backup_user_id"),
                             ],
                         ],
                     ],

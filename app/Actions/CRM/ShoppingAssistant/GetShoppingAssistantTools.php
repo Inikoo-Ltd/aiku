@@ -235,6 +235,14 @@ class GetShoppingAssistantTools
                 ['family_id']
             ),
             $this->tool(
+                'ask_our_team',
+                'Pass a question about buying from us that the shop_information texts and the other tools do not answer (samples, a discount code, a document that is not online, a special request) to the person in our team who answers them. Not for the customer\'s own orders, invoices or deliveries, and not when they ask for a person. Returns whether it was passed on and whether the answer can still appear in this conversation within minutes. Returns no products.',
+                [
+                    'question' => ['type' => 'string', 'description' => 'The customer\'s question in one sentence, in English.'],
+                ],
+                ['question']
+            ),
+            $this->tool(
                 'product_documents',
                 'The public documents of one product and its compliance details: SDS (safety data sheet), IFRA certificate, allergen declaration, declaration of conformity, CPSR, test reports and how-to-use guides, plus its CPNP number, ingredients and countries of origin. Use it whenever the customer asks for any of these, for a product or a kind of product. The download links, the CPNP number and the ingredients are added under your reply by the system; you get only which documents exist. Returns no products.',
                 [
@@ -361,6 +369,7 @@ class GetShoppingAssistantTools
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
+                'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
                 default                          => $this->error("Unknown tool $name."),
@@ -1005,6 +1014,34 @@ class GetShoppingAssistantTools
             'error'    => null,
             'fact'     => implode(' ', $facts),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string}
+     */
+    private function askOurTeam(ShoppingAssistantConversation $conversation, array $arguments): array
+    {
+        $question = is_string($arguments['question'] ?? null) ? trim($arguments['question']) : '';
+        if ($question === '') {
+            return $this->error('question must be the customer\'s question in one English sentence.');
+        }
+
+        $words  = (string) $conversation->messages()->where('role', 'customer')->latest('id')->value('body');
+        $result = StoreShoppingAssistantTeamQuestion::run($conversation, $question, $words ?: $question);
+
+        $note = match (true) {
+            $result['status'] === 'off', $result['status'] === 'limit' => 'Our team cannot be asked now: say you are not sure and offer a person (answer_kind offer_person, offer_reason not_sure).',
+            $result['live']                                            => 'Passed on to a person. Say honestly, in one or two sentences, that you do not know and have asked one of our experts; if someone is free in the next few minutes their answer will appear here, otherwise we will get back to them as soon as we can. Never promise an answer or a time, and never guess the answer.',
+            default                                                    => 'Passed on to a person. Say honestly, in one sentence, that you do not know and have passed it to one of our experts, who will get back to them as soon as they can. Never promise an answer or a time, and never guess the answer.',
+        };
+
+        if (in_array($result['status'], ['off', 'limit'], true)) {
+            return ['content' => ['passed_on' => false, 'note' => $note], 'products' => [], 'error' => 'not passed on'];
+        }
+
+        return ['content' => ['passed_on' => true, 'answer_may_come_here' => $result['live'], 'note' => $note], 'products' => [], 'error' => null];
     }
 
     /**

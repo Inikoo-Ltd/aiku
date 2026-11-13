@@ -26754,5 +26754,9 @@
     "Not interested, thanks": "Nemám záujem, ďakujem",
     ":name remembers:": ":name si pamätá:",
     "Forget this": "Zabudnúť",
-    "1 product = :count SKO": "1 produkt = :count SKO"
+    "1 product = :count SKO": "1 produkt = :count SKO",
+    "Our team answered your question:": "Náš tím odpovedal na vašu otázku:",
+    "Our team could not answer this question. Please contact our customer service team.": "Náš tím nevedel na túto otázku odpovedať. Obráťte sa, prosím, na náš zákaznícky servis.",
+    "I don't know this one, so I have asked one of our experts. If someone is free in the next few minutes, their answer will appear here; otherwise we will get back to you as soon as we can.": "Toto neviem, preto som sa opýtal jedného z našich odborníkov. Ak bude mať niekto v najbližších minútach čas, odpoveď sa zobrazí tu; inak sa vám ozveme čo najskôr.",
+    "I don't know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.": "Toto neviem, preto som to odovzdal jednému z našich odborníkov. Ozveme sa vám čo najskôr."
 }

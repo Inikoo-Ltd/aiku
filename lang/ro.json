@@ -25918,5 +25918,9 @@
     "Not interested, thanks": "Nu mă interesează, mulțumesc",
     ":name remembers:": ":name își amintește:",
     "Forget this": "Uită",
-    "1 product = :count SKO": "1 produs = :count SKO"
+    "1 product = :count SKO": "1 produs = :count SKO",
+    "Our team answered your question:": "Echipa noastră a răspuns la întrebarea dumneavoastră:",
+    "Our team could not answer this question. Please contact our customer service team.": "Echipa noastră nu a putut răspunde la această întrebare. Vă rugăm să contactați echipa noastră de asistență clienți.",
+    "I don't know this one, so I have asked one of our experts. If someone is free in the next few minutes, their answer will appear here; otherwise we will get back to you as soon as we can.": "Nu știu asta, așa că am întrebat pe unul dintre experții noștri. Dacă cineva este disponibil în următoarele minute, răspunsul va apărea aici; altfel, vă vom contacta cât mai curând posibil.",
+    "I don't know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.": "Nu știu asta, așa că am transmis întrebarea unuia dintre experții noștri. Vă vom contacta cât mai curând posibil."
 }
