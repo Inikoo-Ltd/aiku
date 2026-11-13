@@ -2351,6 +2351,95 @@ test('a staging test order is dispatched with a test tracking on a shipper witho
     }
 });
 
+test('a staging test order can come back partly dispatched or cancelled, CUS-1831', function () {
+    $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+    StoreShipper::make()->action($this->organisation, ['code' => 'TS'.Str::random(4), 'name' => 'Test manual', 'trade_as' => 'tm']);
+    $channel = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action(
+        $this->customer,
+        \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::MANUAL)->first(),
+        []
+    );
+    \Laravel\Sanctum\Sanctum::actingAs($channel, ['retina', 'retina:read', 'retina:write']);
+
+    $testOrder = function (int $lines) use ($channel) {
+        $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($this->customer, [
+            'reference'        => 'O'.Str::random(8),
+            'date'             => date('Y-m-d'),
+            'customer_id'      => $this->customer->id,
+            'delivery_address' => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+            'billing_address'  => new \App\Models\Helpers\Address(\App\Models\Helpers\Address::factory()->definition()),
+        ]);
+        $orgStocks = [];
+        foreach (array_slice([$this->product, $this->product2], 0, $lines) as $product) {
+            $orgStocks[$product->id] = makeOrgStock($this);
+            $product->orgStocks()->syncWithoutDetaching([$orgStocks[$product->id]->id => ['quantity' => 1]]);
+            StoreTransaction::make()->action($order, $product->historicAsset, Transaction::factory()->definition());
+        }
+        $order        = SubmitOrder::make()->action($order);
+        $deliveryNote = SendOrderToWarehouse::make()->action($order, ['warehouse_id' => $this->warehouse->id]);
+        $deliveryNote->deliveryNoteItems()->delete();
+        foreach ($order->transactions()->where('model_type', 'Product')->orderBy('id')->get() as $transaction) {
+            $orgStock = $orgStocks[$transaction->model_id];
+            StoreDeliveryNoteItem::make()->action($deliveryNote, [
+                'delivery_note_id'  => $deliveryNote->id,
+                'org_stock_id'      => $orgStock->id,
+                'transaction_id'    => $transaction->id,
+                'quantity_required' => 3,
+            ]);
+            StoreLocationOrgStock::make()->action(
+                orgStock: $orgStock,
+                location: StoreLocation::make()->action($this->warehouse, Location::factory()->definition()),
+                modelData: ['quantity' => 5, 'type' => LocationStockTypeEnum::PICKING, 'fetched_at' => now()],
+                strict: false
+            );
+        }
+        $order->update([
+            'pay_status'                => \App\Enums\Ordering\Order\OrderPayStatusEnum::PAID,
+            'payment_amount'            => $order->total_amount,
+            'customer_sales_channel_id' => $channel->id,
+        ]);
+
+        return [$order, $deliveryNote];
+    };
+
+    [$order, $deliveryNote] = $testOrder(1);
+    \Pest\Laravel\patchJson(route('retina.api.dropshipping.order.dispatch_test', $order), ['outcome' => 'partial'])
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'A partial dispatch needs an order with at least two lines left to pick');
+    \Pest\Laravel\patchJson(route('retina.api.dropshipping.order.dispatch_test', $order), ['outcome' => 'lost'])
+        ->assertUnprocessable();
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::UNASSIGNED);
+
+    $balanceBefore = (float)$this->customer->refresh()->balance;
+    \Pest\Laravel\patchJson(route('retina.api.dropshipping.order.dispatch_test', $order), ['outcome' => 'cancelled'])
+        ->assertOk()
+        ->assertJsonPath('data.state', OrderStateEnum::CANCELLED->value)
+        ->assertJsonPath('data.transactions.0.state', \App\Enums\Ordering\Transaction\TransactionStateEnum::CANCELLED->value);
+    expect($order->refresh()->state)->toBe(OrderStateEnum::CANCELLED)
+        ->and((float)$order->total_amount)->toBeGreaterThan(0.0)
+        ->and((float)$this->customer->refresh()->balance)->toBe(round($balanceBefore + (float)$order->total_amount, 2))
+        ->and($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::CANCELLED)
+        ->and((float)$order->transactions()->first()->quantity_cancelled)->toBe((float)$order->transactions()->first()->quantity_ordered);
+
+    [$order, $deliveryNote] = $testOrder(2);
+    $response = \Pest\Laravel\patchJson(route('retina.api.dropshipping.order.dispatch_test', $order), ['outcome' => 'partial'])
+        ->assertOk()
+        ->assertJsonPath('data.state', OrderStateEnum::DISPATCHED->value)
+        ->assertJsonPath('data.shipments.0.tracking_number', 'TEST-'.$order->reference);
+    $lines = collect($response->json('data.transactions'))->sortBy('id')->values();
+    expect($lines)->toHaveCount(2)
+        ->and($lines[0]['state'])->toBe('dispatched')
+        ->and($lines[0]['quantity_dispatched'])->toBe(0)
+        ->and($lines[0]['quantity_fail'])->toBe(0)
+        ->and($lines[1]['quantity_dispatched'])->toBe($lines[1]['quantity_ordered']);
+    [$notPicked, $picked] = $deliveryNote->deliveryNoteItems()->orderBy('id')->get()->all();
+
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::DISPATCHED)
+        ->and((float)$notPicked->quantity_not_picked)->toBe(3.0)
+        ->and((float)$notPicked->quantity_picked)->toBe(0.0)
+        ->and((float)$picked->quantity_picked)->toBe(3.0);
+});
+
 test('a shipping update the sales channel keeps refusing is noted on the order and given to customer services', function () {
     $order = freshSubmittedOrder($this);
     $order->update(['shipping_notes' => 'Leave at the back door']);

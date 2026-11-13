@@ -98,6 +98,15 @@ The <b>Overview</b> tab also has <b>Open staging mirror</b>. Staging is a separa
 
 Orders on staging are not picked or sent by the warehouse. To test how the API returns a dispatched order with its tracking, pay a staging order, wait until it shows <b>In Warehouse</b>, then send <code>PATCH dropshipping/order/{id}/dispatch-test</code> to the staging base address with your staging token. The order goes through picking and packing and comes back <b>Dispatched</b> with the test tracking number <code>TEST-</code> followed by the order number. Nothing is shipped, no carrier is called, nothing on the real site changes, and this call only works on staging. Test it before the next reset, which erases it. Tell us in the chat on our website what worked and what was missing: the chat is on the real site, so your feedback is kept after the reset.
 
+To test the other endings, send <code>{"outcome": "partial"}</code> or <code>{"outcome": "cancelled"}</code> in the body of the same call. <code>partial</code> marks the first line out of stock and dispatches the rest, so the order needs at least two lines. <code>cancelled</code> cancels the order and puts what you paid back on your staging balance. Without <code>outcome</code> the whole order is dispatched.
+
+What the API returns for an order:
+
+- <code>state</code>: <code>creating</code> (not submitted yet), <code>submitted</code>, <code>in_warehouse</code> (waiting to be picked), <code>handling</code> (being picked), <code>handling_blocked</code> (picking stopped because an item is missing: our team contacts you or replaces it, then picking goes on), <code>picked</code>, <code>packing</code>, <code>packed</code>, <code>finalised</code> (invoiced, ready to go), <code>dispatched</code> or <code>cancelled</code>. There is no separate on hold state: <code>handling_blocked</code> is the nearest, and an unpaid order stays <code>submitted</code>.
+- <code>pay_status</code>: <code>unpaid</code>, <code>paid</code>, <code>no_need</code> (nothing to pay) or <code>unknown</code>.
+- Each line in <code>transactions</code>: <code>quantity_ordered</code>, then <code>quantity_dispatched</code> once the order is dispatched. A line we could not send is dispatched with less than was ordered: the difference is what was out of stock. <code>quantity_cancelled</code> is set when the whole order is cancelled. If we change a line after you submit the order, <code>quantity_ordered</code> shows the new quantity. <code>quantity_fail</code> is 0 on orders placed through the API.
+- <code>shipments</code>: one entry per shipment, with <code>shipper_label</code> (the carrier), <code>tracking_number</code>, <code>trackings</code> and <code>tracking_urls</code>. An order is dispatched once, so there is no second shipment for a later part.
+
 ### How API orders are paid
 
 When your system submits an order, we pay it first from your account balance, then from your saved cards. Add a card before you start. Once you have a token, the menu shows <b>Saved Cards</b>. While no card is saved, the API page shows <b>You have no cards saved yet.</b> with an <b>Add card</b> button.
