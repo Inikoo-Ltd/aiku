@@ -297,6 +297,7 @@ test('the dropshipping dashboard carries the WhatsApp card and a dismissed custo
     $customer->update(['status' => CustomerStatusEnum::APPROVED]);
     $webUser = createWebUser($customer);
 
+    DetectWebsiteFromDomain::clearFake();
     DetectWebsiteFromDomain::mock()
         ->shouldReceive('handle')
         ->with('localhost')
@@ -312,7 +313,7 @@ test('the dropshipping dashboard carries the WhatsApp card and a dismissed custo
             ->where('whatsapp_optin.anchor_id', 'whatsapp-updates')
             ->where('whatsapp_optin.dismiss_route.name', 'retina.models.whatsapp_newsletter.dismiss'));
 
-    $customer->comms->update(['whatsapp_newsletter_opt_in_dismissed_at' => now(), 'is_subscribed_to_whatsapp_newsletter' => false]);
+    $webUser->customer->comms->update(['whatsapp_newsletter_opt_in_dismissed_at' => now(), 'is_subscribed_to_whatsapp_newsletter' => false]);
 
     $this->get('/app/dashboard?utm_campaign=whatsapp_optin&utm_source=newsletter')
         ->assertRedirect(route('retina.sysadmin.email.edit', ['utm_campaign' => 'whatsapp_optin', 'utm_source' => 'newsletter']));

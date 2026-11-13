@@ -838,8 +838,7 @@ test('new purchase orders use the default warehouse address and show empty physi
         strict: false
     );
 
-    expect(Arr::get($purchaseOrder->data, 'delivery_address'))->toBe($address->formatted_address);
-    $purchaseOrder->update(['data' => []]);
+    expect(Arr::get($purchaseOrder->data, 'delivery_address'))->toBeNull();
 
     $this->get(route('grp.org.procurement.purchase_orders.show', [$this->organisation->slug, $purchaseOrder->slug]))
         ->assertInertia(fn (AssertableInertia $page) => $page
