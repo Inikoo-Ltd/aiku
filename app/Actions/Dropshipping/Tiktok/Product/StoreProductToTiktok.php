@@ -57,6 +57,10 @@ class StoreProductToTiktok extends RetinaAction
             foreach ($product->orderedImages() as $image) {
                 $productImage = UploadProductImageToTiktok::run($tiktokUser, $image);
 
+                if (Arr::get($productImage, 'error')) {
+                    throw new \Exception(Arr::get($productImage, 'data'));
+                }
+
                 $productImages[] = [
                     'uri' => Arr::get($productImage, 'data.uri')
                 ];

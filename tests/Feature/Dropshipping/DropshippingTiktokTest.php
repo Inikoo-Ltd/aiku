@@ -989,9 +989,15 @@ test('an expired access token is refreshed before the call and a failed refresh 
         ->and($tiktokUser->access_token)->toBe('renewed-access')
         ->and($tiktokUser->refresh_token)->toBe('renewed-refresh');
 
+    expect($tiktokUser->customerSalesChannel->refresh()->platform_status)->toBeTrue();
+
     $tiktokUser->update(['refresh_token_expire_in' => (string) now()->subMinute()->timestamp]);
-    $tiktokUser->getAuthorizedShop();
-    expect(Http::recorded(fn (Request $request) => str_contains($request->url(), '/api/v2/token/refresh'))->count())->toBe(2);
+    $shops = $tiktokUser->getAuthorizedShop();
+    expect(Http::recorded(fn (Request $request) => str_contains($request->url(), '/api/v2/token/refresh'))->count())->toBe(2)
+        ->and(Arr::get($shops, 'error'))->toBeTrue()
+        ->and(Arr::get($shops, 'data'))->toContain('authorisation of this channel has expired')
+        ->and($tiktokUser->customerSalesChannel->refresh()->platform_status)->toBeFalse()
+        ->and(fn () => GetTiktokOrdersApi::make()->handle($tiktokUser))->toThrow(\Exception::class, 'authorisation of this channel has expired');
 });
 
 test('closing the channel soft deletes the tiktok user and stops the webhook from finding the shop', function () {

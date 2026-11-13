@@ -23,6 +23,9 @@ class GetTiktokOrdersApi extends RetinaAction
 
     public string $commandSignature = 'tiktok:get-order {customerSalesChannel?}';
 
+    /**
+     * @throws \Exception when TikTok refuses the call, so a failure is never read as "no orders"
+     */
     public function handle(TiktokUser $tiktokUser): void
     {
         $tiktokOrders = $tiktokUser->getOrders([
@@ -30,6 +33,10 @@ class GetTiktokOrdersApi extends RetinaAction
         ], [
             'order_status' => 'AWAITING_SHIPMENT'
         ]);
+
+        if (Arr::get($tiktokOrders, 'error')) {
+            throw new \Exception(Arr::get($tiktokOrders, 'data'));
+        }
 
         foreach (Arr::get($tiktokOrders, 'data.orders', []) as $order) {
             ValidateIncomingTiktokOrder::run($tiktokUser, $order);

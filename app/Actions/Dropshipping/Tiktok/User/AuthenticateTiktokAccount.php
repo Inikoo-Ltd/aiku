@@ -142,7 +142,9 @@ class AuthenticateTiktokAccount extends OrgAction
     }
     public function getAccessTokenViaRefreshToken(TiktokUser $tiktokUser): void
     {
-        if ($tiktokUser->refresh_token_expire_in && now()->timestamp >= (int) $tiktokUser->refresh_token_expire_in) {
+        if ($this->isAuthorisationExpired($tiktokUser)) {
+            $this->markChannelDisconnected($tiktokUser);
+
             return;
         }
 
@@ -171,6 +173,32 @@ class AuthenticateTiktokAccount extends OrgAction
             'refresh_token' => Arr::get($response->json(), 'data.refresh_token'),
             'refresh_token_expire_in' => Arr::get($response->json(), 'data.refresh_token_expire_in')
         ]);
+    }
+
+    /**
+     * The seller chooses how long the authorisation lasts when they connect (from a day to years):
+     * refresh_token_expire_in is that deadline, and refreshing does not extend it. After it only a
+     * new authorisation from the seller works.
+     */
+    public function isAuthorisationExpired(TiktokUser $tiktokUser): bool
+    {
+        return $tiktokUser->refresh_token_expire_in && now()->timestamp >= (int) $tiktokUser->refresh_token_expire_in;
+    }
+
+    private function markChannelDisconnected(TiktokUser $tiktokUser): void
+    {
+        $customerSalesChannel = $tiktokUser->customerSalesChannel;
+
+        if (!$customerSalesChannel?->platform_status) {
+            return;
+        }
+
+        Log::warning('TikTok authorisation expired, channel marked disconnected', [
+            'tiktok_user_id'            => $tiktokUser->id,
+            'customer_sales_channel_id' => $customerSalesChannel->id,
+        ]);
+
+        $customerSalesChannel->update(['platform_status' => false]);
     }
 
     public string $commandSignature = 'getAccessTokenViaRefreshToken {tiktokUser}';

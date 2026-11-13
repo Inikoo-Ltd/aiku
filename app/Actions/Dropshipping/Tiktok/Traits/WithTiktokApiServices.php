@@ -88,7 +88,12 @@ trait WithTiktokApiServices
                 $expiredTokenAt = now()->greaterThanOrEqualTo(Carbon::createFromTimestamp($this->access_token_expire_in));
 
                 if ($expiredTokenAt) {
-                    AuthenticateTiktokAccount::make()->getAccessTokenViaRefreshToken($this);
+                    $authenticator = AuthenticateTiktokAccount::make();
+                    $authenticator->getAccessTokenViaRefreshToken($this);
+
+                    if ($authenticator->isAuthorisationExpired($this)) {
+                        throw new \Exception(__('The TikTok authorisation of this channel has expired. Reconnect the channel to TikTok.'));
+                    }
                 }
             }
 
