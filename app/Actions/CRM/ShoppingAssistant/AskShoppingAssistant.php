@@ -905,17 +905,7 @@ class AskShoppingAssistant
             return null;
         }
 
-        $kind   = AskJev::make()->choice(
-            ['customer_message' => $query],
-            'A trade customer typed this into the search box of a wholesaler of gifts, crystals, incense and aromatherapy products. The box is also where they ask the shop\'s assistant questions. What is it?',
-            [
-                'product_search' => 'It only names what they want to see: a kind of product, a range, a brand, a theme, a scent, a material, a colour or an occasion. A list of matching products fully answers it.',
-                'question'       => 'It asks or needs something a list of products does not answer: how the shop works (samples, delivery, prices, discounts, payment, minimum order, their account or orders), advice, a greeting, a complaint or anything else.',
-            ]
-        );
-        $choice = (string) ($kind['choice'] ?? '');
-
-        if ($choice !== 'product_search' || (float) ($kind['probabilities'][$choice] ?? 0) < (float) config('services.shopping_assistant.routing_confidence')) {
+        if (!$this->readsAsPlainSearch($query)) {
             return null;
         }
 
@@ -939,6 +929,27 @@ class AskShoppingAssistant
         $turn['tool_calls'][] = ['name' => GetShoppingAssistantTools::PRESENT_PRODUCTS, 'arguments' => $turn['answer'], 'product_ids' => [], 'error' => null, 'ms' => 0];
 
         return $turn;
+    }
+
+    /**
+     * Jev's reading of a short message, sure enough to skip the model: it names a thing and nothing
+     * else. Words that also say how to choose ("show the cheapest minerals", "best sellers", "new
+     * candles", "more") are not a plain search: the search has no such order, the model does.
+     */
+    public function readsAsPlainSearch(string $query): bool
+    {
+        $kind   = AskJev::make()->choice(
+            ['customer_message' => $query],
+            'A trade customer typed this into the search box of a wholesaler of gifts, crystals, incense and aromatherapy products. The box is also where they ask the shop\'s assistant questions and give it instructions. What is it?',
+            [
+                'product_search'      => 'Nothing but the name of what they want to see: a kind of product, a range, a brand, a theme, a scent, a material, a colour, an occasion or a product name. No verb, no instruction, no condition. A plain list of matching products fully answers it.',
+                'search_with_request' => 'It names products but also says how to choose or order them, or tells the assistant to do something: cheapest, most expensive, best selling, popular, new, on offer, under a price, for a kind of shop or customer, more, others, similar, show me, find me, add, compare.',
+                'question'            => 'It asks or needs something a list of products does not answer: how the shop works (samples, delivery, prices, discounts, payment, minimum order, their account, their store or their orders), advice, a greeting, a thank you, a yes or no, a complaint or anything else.',
+            ]
+        );
+        $choice = (string) ($kind['choice'] ?? '');
+
+        return $choice === 'product_search' && (float) ($kind['probabilities'][$choice] ?? 0) >= (float) config('services.shopping_assistant.routing_confidence');
     }
 
     /**
