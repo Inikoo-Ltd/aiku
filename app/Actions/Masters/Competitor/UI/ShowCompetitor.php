@@ -107,8 +107,8 @@ class ShowCompetitor extends OrgAction
                     : Inertia::optional(fn () => $this->dossier($competitor)),
 
                 CompetitorTabsEnum::MATCHES->value => $this->tab == CompetitorTabsEnum::MATCHES->value
-                    ? fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($competitor, 'all', CompetitorTabsEnum::MATCHES->value))
-                    : Inertia::optional(fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($competitor, 'all', CompetitorTabsEnum::MATCHES->value))),
+                    ? fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($competitor, 'not_rejected_by_staff', CompetitorTabsEnum::MATCHES->value))
+                    : Inertia::optional(fn () => MasterAssetCompetitorProductsResource::collection(IndexMasterAssetCompetitorProducts::run($competitor, 'not_rejected_by_staff', CompetitorTabsEnum::MATCHES->value))),
 
                 CompetitorTabsEnum::PRODUCTS->value => $this->tab == CompetitorTabsEnum::PRODUCTS->value
                     ? fn () => CompetitorProductsResource::collection(IndexCompetitorProducts::run($competitor, CompetitorTabsEnum::PRODUCTS->value))

@@ -4742,10 +4742,20 @@ describe('competitor prices, HELP-3605', function () {
         \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'rejected'])->assertRedirect();
         expect($match->refresh()->is_same_item)->toBeFalse()
             ->and($prices())->toBeNull();
+        $matchesTab = fn () => get(route('grp.masters.competitors.show', [$this->competitor->slug, 'tab' => 'matches']))->assertOk()->viewData('page')['props']['matches']['data'];
+        $productTab = fn () => get(route('grp.masters.master_shops.show.master_products.show', [$this->competitorMasterShop->slug, $this->competitorMasterAsset->slug, 'tab' => 'competitors']))->assertOk()->viewData('page')['props']['competitors']['data'];
+        expect($matchesTab())->toHaveCount(0)
+            ->and($productTab())->toHaveCount(0);
 
         \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'confirmed'])->assertRedirect();
         expect($match->refresh()->is_same_item)->toBeTrue()
             ->and($prices())->toHaveCount(1);
+        expect($matchesTab())->toHaveCount(1)
+            ->and($productTab())->toHaveCount(1);
+
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['status' => 'rejected'])->assertRedirect();
+        expect($match->refresh()->is_same_item)->toBeFalse()
+            ->and($prices())->toBeNull();
     });
 
     test('a search keeps only links that were on the page and staff confirm the match', function () use ($fakeBrowserAndAi) {
