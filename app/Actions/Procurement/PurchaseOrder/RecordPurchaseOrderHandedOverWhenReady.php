@@ -46,7 +46,7 @@ class RecordPurchaseOrderHandedOverWhenReady
             return $purchaseOrder;
         }
 
-        $checks = collect(GetPurchaseOrderStages::make()->readyChecks($purchaseOrder) ?? []);
+        $checks = collect(GetPurchaseOrderStages::make()->readyChecks($purchaseOrder) ?? [])->filter(fn (array $check) => $check['required']);
         if ($checks->isEmpty() || $checks->contains(fn (array $check) => !$check['done'])) {
             return $purchaseOrder;
         }

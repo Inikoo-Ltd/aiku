@@ -9,6 +9,7 @@
 namespace App\Actions\SupplyChain\Agent\UI;
 
 use App\Actions\Procurement\AgentGoodsReceipt\StoreAgentGoodsReceipt;
+use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Models\Procurement\AgentGoodsReceipt;
 use App\Models\Procurement\PurchaseOrder;
@@ -110,36 +111,24 @@ class GetAgentCleanHandoverScore
     }
 
     /**
-     * Why an order missed clean hand over (empty when it made it), or null when it is left out of the score or cannot
-     * be judged yet: not approved as ready, or not handed over.
+     * The Ready to Roll checks of an agent order still not done (empty when every one is done or skipped), or null
+     * when the order is left out of the score or its agent asks for no checks. Compliance never counts: it is skipped
+     * unless completed, as not every item needs it.
      *
      * @return list<string>|null
      */
     public function cleanHandoverMisses(PurchaseOrder $purchaseOrder): ?array
     {
-        $handedOverAt = $this->handedOverAt($purchaseOrder);
-        if ($purchaseOrder->chs_excluded || !$handedOverAt || !$purchaseOrder->approved_ready_at) {
+        $checks = $purchaseOrder->chs_excluded ? null : GetPurchaseOrderStages::make()->readyChecks($purchaseOrder);
+        if (!$checks) {
             return null;
         }
 
-        $deadline = $purchaseOrder->approved_ready_at->copy()->addDays(self::HANDOVER_TOLERANCE_DAYS);
-        $misses   = [];
-
-        if ($handedOverAt->gt($deadline)) {
-            $daysLate = max(1, (int) ceil($deadline->diffInDays($handedOverAt)));
-            $misses[] = trans_choice('handed over :count day late|handed over :count days late', $daysLate, ['count' => $daysLate]);
-        }
-        if ($purchaseOrder->qc_passed_at === null) {
-            $misses[] = __('QC not passed');
-        }
-        if ($purchaseOrder->compliance_complete_at === null) {
-            $misses[] = __('compliance not complete');
-        }
-        if ($purchaseOrder->not_received_at !== null) {
-            $misses[] = __('goods not received');
-        }
-
-        return $misses;
+        return collect($checks)
+            ->reject(fn (array $check) => $check['done'] || !$check['required'])
+            ->map(fn (array $check) => __(':check not done', ['check' => $check['label']]))
+            ->values()
+            ->all();
     }
 
     /**

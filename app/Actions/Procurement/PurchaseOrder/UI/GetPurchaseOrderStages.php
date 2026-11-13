@@ -257,7 +257,7 @@ class GetPurchaseOrderStages
             'sample'       => $purchaseOrder->sample_approved_at !== null,
             'in_warehouse' => (bool) ($stages['in_warehouse']['recorded'] ?? false),
             'qc'           => (bool) ($stages['ready']['recorded'] ?? false),
-            'compliance'   => $purchaseOrder->compliance_complete_at !== null,
+            'compliance'   => true,
             'handed_over'  => (bool) ($stages['handed_over']['recorded'] ?? false),
             default        => false,
         };
@@ -514,7 +514,7 @@ class GetPurchaseOrderStages
             ->pluck('reference')
             ->implode(', ');
         $missing = collect($this->readyChecks($purchaseOrder) ?? [])
-            ->reject(fn (array $check) => $check['done'])
+            ->reject(fn (array $check) => $check['done'] || !$check['required'])
             ->pluck('label')
             ->implode(', ');
 
@@ -536,9 +536,10 @@ class GetPurchaseOrderStages
      * packing for an agent warehouse, otherwise the production done date. With an agent warehouse QC is also done once
      * every item received is checked, when nobody recorded the QC itself.
      *
-     * A QC or compliance check a person skipped counts as done, dated by the skip.
+     * A QC check a person skipped counts as done, dated by the skip. Compliance is done only once completed and shows
+     * as skipped until then; it is not required, as not every item needs it, so it never holds anything up.
      *
-     * @return array<int, array{key: string, label: string, done: bool, date: ?Carbon, skipped: bool}>|null
+     * @return array<int, array{key: string, label: string, done: bool, date: ?Carbon, skipped: bool, required: bool}>|null
      */
     public function readyChecks(PurchaseOrder $purchaseOrder): ?array
     {
@@ -555,14 +556,26 @@ class GetPurchaseOrderStages
                 default                                                         => $purchaseOrder->{Stage::READY_CHECK_FIELDS[$key]},
             };
 
-            $skip = in_array($key, ['qc', 'compliance']) && $date === null ? $purchaseOrder->stageSkip($key) : null;
+            if ($key === 'compliance') {
+                return [
+                    'key'      => $key,
+                    'label'    => $labels[$key],
+                    'done'     => $date !== null,
+                    'date'     => $date,
+                    'skipped'  => $date === null,
+                    'required' => false,
+                ];
+            }
+
+            $skip = $key === 'qc' && $date === null ? $purchaseOrder->stageSkip($key) : null;
 
             return [
-                'key'     => $key,
-                'label'   => $labels[$key],
-                'done'    => $date !== null || $skip !== null,
-                'date'    => $date ?? ($skip ? Carbon::parse($skip['at']) : null),
-                'skipped' => $skip !== null,
+                'key'      => $key,
+                'label'    => $labels[$key],
+                'done'     => $date !== null || $skip !== null,
+                'date'     => $date ?? ($skip ? Carbon::parse($skip['at']) : null),
+                'skipped'  => $skip !== null,
+                'required' => true,
             ];
         })->all();
     }
