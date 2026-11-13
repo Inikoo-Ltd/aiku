@@ -511,6 +511,74 @@ test('a second transfer of the same amount for an order already paid from the ba
         ->and($second->match_data['reason'])->toBe('a second transfer of the same amount, the first one already paid this order');
 });
 
+test('bank lines for orders staff already paid by hand leave the review queue, and a review line is never promoted to matched', function () {
+    $bankConnection = bankMatchingConnection($this->organisation);
+    $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
+        $this->organisation,
+        PaymentServiceProvider::where('code', 'bank')->firstOrFail(),
+        ['code' => 'hand'.random_int(1000, 9999), 'name' => 'Hand paid test']
+    );
+
+    $payByHand = function (\App\Models\Ordering\Order $order, float $amount) use ($bankAccount) {
+        $payment = \App\Actions\Accounting\Payment\StorePayment::make()->action($order->customer, $bankAccount, [
+            'amount' => $amount,
+            'status' => \App\Enums\Accounting\Payment\PaymentStatusEnum::SUCCESS,
+            'state'  => \App\Enums\Accounting\Payment\PaymentStateEnum::COMPLETED,
+        ]);
+        \App\Actions\Ordering\Order\AttachPaymentToOrder::make()->action($order, $payment, []);
+    };
+
+    $line = fn (string $id, string $reference, float $amount, ?int $currencyId = null) => BankTransaction::create([
+        'group_id'                => $bankConnection->group_id,
+        'organisation_id'         => $bankConnection->organisation_id,
+        'bank_connection_id'      => $bankConnection->id,
+        'provider_transaction_id' => $id,
+        'provider_type'           => 'TRANSFER',
+        'direction'               => BankTransactionDirectionEnum::IN,
+        'amount'                  => $amount,
+        'currency_id'             => $currencyId ?? $this->shop->currency_id,
+        'status'                  => BankTransactionStatusEnum::BOOKED,
+        'reference'               => $reference,
+        'booked_at'               => now(),
+    ]);
+
+    $later     = bankMatchingOrder(createCustomer($this->shop), 100.78);
+    $currency  = bankMatchingOrder(createCustomer($this->shop), 300);
+    $cancelled = bankMatchingOrder(createCustomer($this->shop), 95.50);
+    $first     = bankMatchingOrder(createCustomer($this->shop), 40);
+    $second    = bankMatchingOrder(createCustomer($this->shop), 60);
+    $unpaid    = bankMatchingOrder(createCustomer($this->shop), 80);
+
+    $payByHand($currency, 300);
+    $payByHand($cancelled, 55);
+    $cancelled->updateQuietly(['state' => OrderStateEnum::CANCELLED]);
+    $payByHand($first, 40);
+    $payByHand($second, 60);
+
+    $lines = [
+        'later'     => $line('h1', $later->reference, 101),
+        'currency'  => $line('h2', $currency->reference, 26.50, Currency::where('id', '!=', $this->shop->currency_id)->value('id')),
+        'cancelled' => $line('h3', $cancelled->reference, 55),
+        'several'   => $line('h4', $first->reference.' '.$second->reference, 100),
+        'unpaid'    => $line('h5', $unpaid->reference, 80),
+    ];
+    MatchBankTransactions::run($bankConnection);
+
+    expect($lines['later']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($lines['currency']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['cancelled']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['several']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['unpaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED);
+
+    $lines['unpaid']->update(['match_state' => BankTransactionMatchStateEnum::REVIEW]);
+    $payByHand($later, 100.78);
+
+    expect(MatchBankTransactions::run($bankConnection))->toBe(['already_paid' => 1])
+        ->and($lines['later']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['later']->match_data['reason'])->toBe('order already settled')
+        ->and($lines['unpaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW);
+});
+
 test('invoicing an order paid with an absorbed bank fee leaves its stored pay status true to its payments', function () {
     GetCurrencyExchange::shouldRun()->andReturn(1.0);
 

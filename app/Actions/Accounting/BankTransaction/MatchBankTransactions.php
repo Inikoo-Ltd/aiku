@@ -74,7 +74,46 @@ class MatchBankTransactions
                 }
             });
 
+        BankTransaction::where('bank_connection_id', $bankConnection->id)
+            ->where('match_state', BankTransactionMatchStateEnum::REVIEW)
+            ->whereNull('payment_id')
+            ->chunkById(500, function ($bankTransactions) use (&$counts) {
+                foreach ($bankTransactions as $bankTransaction) {
+                    if ($this->paidByHandSinceReview($bankTransaction)) {
+                        $counts[BankTransactionMatchStateEnum::ALREADY_PAID->value] = ($counts[BankTransactionMatchStateEnum::ALREADY_PAID->value] ?? 0) + 1;
+                    }
+                }
+            });
+
         return $counts;
+    }
+
+    /**
+     * A line waiting in review whose order staff have since paid by hand leaves the queue. A review line only ever
+     * becomes already paid here, never matched: a person may have pulled it back from auto-pay on purpose.
+     */
+    private function paidByHandSinceReview(BankTransaction $bankTransaction): bool
+    {
+        try {
+            [$state, $order, $matchData] = $this->decide($bankTransaction);
+        } catch (Throwable $exception) {
+            Sentry::captureException($exception);
+
+            return false;
+        }
+
+        if ($state !== BankTransactionMatchStateEnum::ALREADY_PAID) {
+            return false;
+        }
+
+        $bankTransaction->update([
+            'match_state' => $state,
+            'order_id'    => $order?->id ?? $bankTransaction->order_id,
+            'match_data'  => $matchData,
+            'matched_at'  => now(),
+        ]);
+
+        return true;
     }
 
     /**
@@ -92,41 +131,48 @@ class MatchBankTransactions
             return [BankTransactionMatchStateEnum::UNMATCHED, null, ['reason' => 'order number not found', 'tokens' => $tokens]];
         }
         if ($orders->count() > 1) {
-            return [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'several orders named', 'order_ids' => $orders->pluck('id')->all()]];
+            $orderIds = $orders->pluck('id')->all();
+
+            return $orders->every(fn (Order $order) => $this->settledWithPayment($order))
+                ? [BankTransactionMatchStateEnum::ALREADY_PAID, null, ['reason' => 'every order named is already paid', 'order_ids' => $orderIds]]
+                : [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'several orders named', 'order_ids' => $orderIds]];
         }
 
         $order = $orders->first();
-
-        if ($order->currency_id !== $bankTransaction->currency_id) {
-            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'currency differs from the order']];
-        }
-        if ($order->state === OrderStateEnum::CANCELLED) {
-            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'order cancelled']];
-        }
-        if ($order->state === OrderStateEnum::CREATING) {
-            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'order still in the basket']];
-        }
-
-        $owed       = $order->amountStillToPay();
-        $received   = round((float)$bankTransaction->amount, 2);
-        $difference = round($received - $owed, 2);
-        $matchData  = ['owed' => $owed, 'received' => $received, 'difference' => $difference];
-
-        $successfulPayments = $order->payments()
-            ->where('payments.status', PaymentStatusEnum::SUCCESS)
-            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
-            ->whereHas('paymentAccount', fn ($query) => $query->whereNot('type', PaymentAccountTypeEnum::BANK_FEE));
 
         $releasedFromThisOrder = $order->payments()
             ->where('payments.state', PaymentStateEnum::CANCELLED)
             ->where('payments.data->bank_transaction_id', $bankTransaction->id)
             ->exists();
         if ($releasedFromThisOrder) {
-            return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'a payment from this line on this order was cancelled'])];
+            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'a payment from this line on this order was cancelled']];
         }
 
+        if ($order->currency_id !== $bankTransaction->currency_id) {
+            return $this->settledWithPayment($order)
+                ? [BankTransactionMatchStateEnum::ALREADY_PAID, $order, ['reason' => 'order already settled']]
+                : [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'currency differs from the order']];
+        }
+
+        $received            = round((float)$bankTransaction->amount, 2);
+        $successfulPayments  = $this->successfulPayments($order);
         $sameAmountPaymentId = (clone $successfulPayments)->whereBetween('payments.amount', [$received - 0.01, $received + 0.01])->value('payments.id');
-        if ($sameAmountPaymentId && BankTransaction::where('payment_id', $sameAmountPaymentId)->where('id', '!=', $bankTransaction->id)->exists()) {
+        $secondTransfer      = $sameAmountPaymentId && BankTransaction::where('payment_id', $sameAmountPaymentId)->where('id', '!=', $bankTransaction->id)->exists();
+
+        if ($order->state === OrderStateEnum::CANCELLED) {
+            return $sameAmountPaymentId && !$secondTransfer
+                ? [BankTransactionMatchStateEnum::ALREADY_PAID, $order, ['reason' => 'a payment of this amount is already on the order']]
+                : [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'order cancelled']];
+        }
+        if ($order->state === OrderStateEnum::CREATING) {
+            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'order still in the basket']];
+        }
+
+        $owed       = $order->amountStillToPay();
+        $difference = round($received - $owed, 2);
+        $matchData  = ['owed' => $owed, 'received' => $received, 'difference' => $difference];
+
+        if ($secondTransfer) {
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'a second transfer of the same amount, the first one already paid this order'])];
         }
         if ($sameAmountPaymentId) {
@@ -161,6 +207,22 @@ class MatchBankTransactions
         }
 
         return [BankTransactionMatchStateEnum::MATCHED, $order, $matchData];
+    }
+
+    private function successfulPayments(Order $order): \Illuminate\Database\Eloquent\Relations\MorphToMany
+    {
+        return $order->payments()
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->whereHas('paymentAccount', fn ($query) => $query->whereNot('type', PaymentAccountTypeEnum::BANK_FEE));
+    }
+
+    private function settledWithPayment(Order $order): bool
+    {
+        return $order->state !== OrderStateEnum::CANCELLED
+            && $order->amountStillToPay() <= 0.01
+            && $order->absorbedBankFees() <= 0
+            && $this->successfulPayments($order)->exists();
     }
 
     public const float DEFAULT_FEE_CEILING_EUR = 15;
