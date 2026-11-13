@@ -18,10 +18,13 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\BankConnection;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Models\Accounting\BankTransaction;
+use App\Models\Accounting\Payment;
 use App\Models\Helpers\Currency;
 use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
@@ -89,31 +92,67 @@ class MatchBankTransactions
     }
 
     /**
-     * A line waiting in review whose order staff have since paid by hand leaves the queue. A review line only ever
-     * becomes already paid here, never matched: a person may have pulled it back from auto-pay on purpose.
+     * A line waiting in review leaves the queue only when staff have since recorded, by hand, bank payments of this
+     * amount on the orders it names. An order settled by other money (a card, the customer's balance) leaves the line
+     * where it is. A review line only ever becomes already paid here, never matched: a person may have pulled it back
+     * from auto-pay on purpose.
      */
     private function paidByHandSinceReview(BankTransaction $bankTransaction): bool
     {
         try {
-            [$state, $order, $matchData] = $this->decide($bankTransaction);
+            return DB::transaction(function () use ($bankTransaction) {
+                $bankTransaction = BankTransaction::lockForUpdate()->find($bankTransaction->id);
+                if (!$bankTransaction || $bankTransaction->payment_id || $bankTransaction->match_state !== BankTransactionMatchStateEnum::REVIEW) {
+                    return false;
+                }
+
+                [$state, $order, $matchData] = $this->decide($bankTransaction);
+                if ($state !== BankTransactionMatchStateEnum::ALREADY_PAID) {
+                    return false;
+                }
+
+                $orders = $order ? collect([$order]) : Order::whereIn('id', $matchData['order_ids'] ?? [])->get();
+                if (!$this->explainedByHandBankPayments($orders, $bankTransaction)) {
+                    return false;
+                }
+
+                $bankTransaction->update([
+                    'match_state' => $state,
+                    'order_id'    => $order?->id ?? $bankTransaction->order_id,
+                    'match_data'  => $matchData,
+                    'matched_at'  => now(),
+                ]);
+
+                return true;
+            });
         } catch (Throwable $exception) {
             Sentry::captureException($exception);
 
             return false;
         }
+    }
 
-        if ($state !== BankTransactionMatchStateEnum::ALREADY_PAID) {
+    /**
+     * Bank payments recorded on these orders that no other bank line already accounts for add up to what this line
+     * received, within the bank fee tolerance.
+     */
+    private function explainedByHandBankPayments(Collection $orders, BankTransaction $bankTransaction): bool
+    {
+        if ($orders->isEmpty()) {
             return false;
         }
 
-        $bankTransaction->update([
-            'match_state' => $state,
-            'order_id'    => $order?->id ?? $bankTransaction->order_id,
-            'match_data'  => $matchData,
-            'matched_at'  => now(),
-        ]);
+        $received = round((float)$bankTransaction->amount, 2);
+        $recorded = (float)Payment::query()
+            ->whereIn('payments.id', DB::table('model_has_payments')->where('model_type', 'Order')->whereIn('model_id', $orders->pluck('id'))->select('payment_id'))
+            ->where('payments.currency_id', $bankTransaction->currency_id)
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->whereHas('paymentAccount', fn ($query) => $query->where('type', PaymentAccountTypeEnum::BANK))
+            ->whereNotIn('payments.id', BankTransaction::whereNotNull('payment_id')->where('id', '!=', $bankTransaction->id)->select('payment_id'))
+            ->sum('payments.amount');
 
-        return true;
+        return $recorded > 0 && abs(round($recorded - $received, 2)) <= max(0.01, $this->feeTolerance($received, $bankTransaction));
     }
 
     /**
@@ -130,28 +169,28 @@ class MatchBankTransactions
         if ($orders->isEmpty()) {
             return [BankTransactionMatchStateEnum::UNMATCHED, null, ['reason' => 'order number not found', 'tokens' => $tokens]];
         }
+        $releasedFromThisLine = Payment::query()
+            ->whereIn('payments.id', DB::table('model_has_payments')->where('model_type', 'Order')->whereIn('model_id', $orders->pluck('id'))->select('payment_id'))
+            ->where('payments.state', PaymentStateEnum::CANCELLED)
+            ->where('payments.data->bank_transaction_id', $bankTransaction->id)
+            ->exists();
+
         if ($orders->count() > 1) {
             $orderIds = $orders->pluck('id')->all();
 
-            return $orders->every(fn (Order $order) => $this->settledWithPayment($order))
-                ? [BankTransactionMatchStateEnum::ALREADY_PAID, null, ['reason' => 'every order named is already paid', 'order_ids' => $orderIds]]
+            return !$releasedFromThisLine && $this->explainedByHandBankPayments($orders, $bankTransaction)
+                ? [BankTransactionMatchStateEnum::ALREADY_PAID, null, ['reason' => 'the orders named carry bank payments of this amount', 'order_ids' => $orderIds]]
                 : [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'several orders named', 'order_ids' => $orderIds]];
         }
 
         $order = $orders->first();
 
-        $releasedFromThisOrder = $order->payments()
-            ->where('payments.state', PaymentStateEnum::CANCELLED)
-            ->where('payments.data->bank_transaction_id', $bankTransaction->id)
-            ->exists();
-        if ($releasedFromThisOrder) {
+        if ($releasedFromThisLine) {
             return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'a payment from this line on this order was cancelled']];
         }
 
         if ($order->currency_id !== $bankTransaction->currency_id) {
-            return $this->settledWithPayment($order)
-                ? [BankTransactionMatchStateEnum::ALREADY_PAID, $order, ['reason' => 'order already settled']]
-                : [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'currency differs from the order']];
+            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'currency differs from the order']];
         }
 
         $received            = round((float)$bankTransaction->amount, 2);
@@ -160,8 +199,8 @@ class MatchBankTransactions
         $secondTransfer      = $sameAmountPaymentId && BankTransaction::where('payment_id', $sameAmountPaymentId)->where('id', '!=', $bankTransaction->id)->exists();
 
         if ($order->state === OrderStateEnum::CANCELLED) {
-            return $sameAmountPaymentId && !$secondTransfer
-                ? [BankTransactionMatchStateEnum::ALREADY_PAID, $order, ['reason' => 'a payment of this amount is already on the order']]
+            return $this->explainedByHandBankPayments($orders, $bankTransaction)
+                ? [BankTransactionMatchStateEnum::ALREADY_PAID, $order, ['reason' => 'a bank payment of this amount is already on the order']]
                 : [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'order cancelled']];
         }
         if ($order->state === OrderStateEnum::CREATING) {
@@ -215,14 +254,6 @@ class MatchBankTransactions
             ->where('payments.status', PaymentStatusEnum::SUCCESS)
             ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
             ->whereHas('paymentAccount', fn ($query) => $query->whereNot('type', PaymentAccountTypeEnum::BANK_FEE));
-    }
-
-    private function settledWithPayment(Order $order): bool
-    {
-        return $order->state !== OrderStateEnum::CANCELLED
-            && $order->amountStillToPay() <= 0.01
-            && $order->absorbedBankFees() <= 0
-            && $this->successfulPayments($order)->exists();
     }
 
     public const float DEFAULT_FEE_CEILING_EUR = 10;
