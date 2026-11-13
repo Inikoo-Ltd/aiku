@@ -43,7 +43,7 @@ class SyncPurchaseOrderDepositPaid
             $purchaseOrder->update(['confirmed_at' => $firstPayment->date->min(now())]);
         }
 
-        return $isPaid ? RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder) : $purchaseOrder;
+        return RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder);
     }
 
     public static function totalToPay(PurchaseOrder $purchaseOrder): float

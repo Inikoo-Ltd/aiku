@@ -10,6 +10,7 @@
 namespace App\Actions\Procurement\AgentWarehouseStock;
 
 use App\Actions\OrgAction;
+use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
 use App\Models\Procurement\AgentWarehouseStock;
 use App\Models\SysAdmin\Organisation;
@@ -31,6 +32,15 @@ class UnpackAgentWarehouseStock extends OrgAction
     public string $commandSignature = 'agent_warehouse_stock:unpack {ids* : ids of the agent warehouse stock rows}';
 
     public function handle(AgentWarehouseStock $agentWarehouseStock): AgentWarehouseStock
+    {
+        $unpacked = $this->unpack($agentWarehouseStock);
+
+        RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds([$unpacked->purchase_order_id]);
+
+        return $unpacked;
+    }
+
+    private function unpack(AgentWarehouseStock $agentWarehouseStock): AgentWarehouseStock
     {
         return DB::transaction(function () use ($agentWarehouseStock) {
             $stock = AgentWarehouseStock::whereKey($agentWarehouseStock->id)->lockForUpdate()->firstOrFail();

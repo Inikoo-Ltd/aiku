@@ -11,16 +11,18 @@ namespace App\Actions\Procurement\PurchaseOrder;
 
 use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
 use App\Actions\Procurement\PurchaseOrder\UI\GetPurchaseOrderStages;
+use App\Enums\GoodsIn\StockDelivery\StockDeliveryStateEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderStateEnum;
 use App\Models\Procurement\PurchaseOrder;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * Clean Hand Over means the order is ready to be put on a shipment: once every Ready to Roll check of the agent
- * (balance, packing, QC, compliance) is done, the hand over is recorded, dated by the last of them. An order whose
- * hand over is already recorded, waiting for its sample, or with an agent sending on the next container (where the
- * containers complete it) is left alone.
+ * Clean Hand Over means the order is ready to be put on a shipment: once every required Ready to Roll check of the
+ * agent (balance, QC, packing) is done, the hand over is recorded, dated by the last of them. When one of them is undone
+ * the hand over recorded this way is cleared again, until the goods are dispatched. A hand over marked by a person, an
+ * order waiting for its sample, or an agent sending on the next container (where the containers complete it) is left
+ * alone.
  */
 class RecordPurchaseOrderHandedOverWhenReady
 {
@@ -38,16 +40,22 @@ class RecordPurchaseOrderHandedOverWhenReady
     {
         $purchaseOrder->refresh();
 
-        if ($purchaseOrder->handed_over_at !== null
-            || !$purchaseOrder->isAgentOrder()
+        if (!$purchaseOrder->isAgentOrder()
             || $purchaseOrder->choMode() === 'next_container'
-            || $purchaseOrder->isWaitingForSample()
             || in_array($purchaseOrder->state, [PurchaseOrderStateEnum::IN_PROCESS, PurchaseOrderStateEnum::CANCELLED, PurchaseOrderStateEnum::NOT_RECEIVED])) {
             return $purchaseOrder;
         }
 
-        $checks = collect(GetPurchaseOrderStages::make()->readyChecks($purchaseOrder) ?? [])->filter(fn (array $check) => $check['required']);
-        if ($checks->isEmpty() || $checks->contains(fn (array $check) => !$check['done'])) {
+        $checks  = collect(GetPurchaseOrderStages::make()->readyChecks($purchaseOrder) ?? [])->filter(fn (array $check) => $check['required']);
+        $isReady = $checks->isNotEmpty() && !$checks->contains(fn (array $check) => !$check['done']);
+
+        if ($purchaseOrder->handed_over_at !== null) {
+            return !$isReady && self::wasRecordedAutomatically($purchaseOrder) && !$this->isDispatched($purchaseOrder)
+                ? $this->clearHandOver($purchaseOrder)
+                : $purchaseOrder;
+        }
+
+        if (!$isReady || $purchaseOrder->isWaitingForSample()) {
             return $purchaseOrder;
         }
 
@@ -61,6 +69,26 @@ class RecordPurchaseOrderHandedOverWhenReady
 
             return $purchaseOrder;
         });
+    }
+
+    private function clearHandOver(PurchaseOrder $purchaseOrder): PurchaseOrder
+    {
+        return DB::transaction(function () use ($purchaseOrder) {
+            $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, ['handed_over_at' => null]);
+
+            $marks = $purchaseOrder->stage_marks ?? [];
+            unset($marks['handed_over_at']);
+            $purchaseOrder->stage_marks = $marks;
+            $purchaseOrder->saveQuietly();
+
+            return $purchaseOrder;
+        });
+    }
+
+    private function isDispatched(PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->stockDeliveries()->whereIn('stock_deliveries.state', GetPurchaseOrderStages::SHIPPED_STATES)->exists()
+            || in_array(StockDeliveryStateEnum::tryFrom((string) $purchaseOrder->delivery_state?->value), GetPurchaseOrderStages::SHIPPED_STATES);
     }
 
     /**

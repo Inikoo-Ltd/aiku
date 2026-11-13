@@ -10,7 +10,7 @@
 namespace App\Actions\Procurement\AgentGoodsReceipt;
 
 use App\Actions\OrgAction;
-use App\Actions\Procurement\PurchaseOrder\Hydrators\PurchaseOrderHydrateState;
+use App\Actions\Procurement\PurchaseOrder\RecordPurchaseOrderHandedOverWhenReady;
 use App\Enums\Procurement\AgentGoodsReceipt\AgentGoodsReceiptStateEnum;
 use App\Enums\Procurement\AgentWarehouseStock\AgentWarehouseStockStateEnum;
 use App\Models\Procurement\AgentGoodsReceipt;
@@ -58,7 +58,7 @@ class CancelAgentGoodsReceipt extends OrgAction
             return $receipt;
         });
 
-        PurchaseOrderHydrateState::make()->forPurchaseOrderIds($receipt->items()->pluck('purchase_order_id'));
+        RecordPurchaseOrderHandedOverWhenReady::make()->forPurchaseOrderIds($receipt->items()->pluck('purchase_order_id'));
 
         return $receipt;
     }

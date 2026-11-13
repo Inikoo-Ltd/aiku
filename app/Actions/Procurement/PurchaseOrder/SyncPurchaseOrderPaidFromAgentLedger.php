@@ -59,7 +59,7 @@ class SyncPurchaseOrderPaidFromAgentLedger
 
         $purchaseOrder = UpdatePurchaseOrder::make()->action($purchaseOrder, $changes);
 
-        if (($changes['balance_paid_at'] ?? null) !== null) {
+        if (array_key_exists('balance_paid_at', $changes)) {
             $purchaseOrder = RecordPurchaseOrderHandedOverWhenReady::run($purchaseOrder);
         }
 
