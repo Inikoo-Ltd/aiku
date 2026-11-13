@@ -225,7 +225,7 @@ class MatchBankTransactions
             && $this->successfulPayments($order)->exists();
     }
 
-    public const float DEFAULT_FEE_CEILING_EUR = 15;
+    public const float DEFAULT_FEE_CEILING_EUR = 10;
 
     public const float OVERPAY_CEILING_EUR = 5;
 
@@ -234,7 +234,7 @@ class MatchBankTransactions
 
     /**
      * Banks take small fees off incoming transfers (0.2-0.8% seen on Wise): accept up to 1% short, never more than the
-     * connection's ceiling (15 EUR by default) in the line's currency. A line short by more goes to review.
+     * connection's ceiling (10 EUR by default, the largest fee seen was 9.95) in the line's currency. A line short by more goes to review.
      */
     public function feeTolerance(float $owed, BankTransaction $bankTransaction): float
     {
