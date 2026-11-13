@@ -76,6 +76,10 @@ class UpdatePurchaseOrder extends OrgAction
             $modelData['estimated_received_at']    = $modelData['estimated_receiving_date'];
         }
 
+        if (array_key_exists('delivery_address', $modelData)) {
+            $modelData['delivery_address'] = $this->deliveryAddress($purchaseOrder, $modelData['delivery_address']);
+        }
+
         foreach (self::DATA_FIELDS as $field) {
             if (array_key_exists($field, $modelData)) {
                 $modelData['data'][$field] = Arr::pull($modelData, $field);
@@ -97,6 +101,21 @@ class UpdatePurchaseOrder extends OrgAction
         }
 
         return $purchaseOrder;
+    }
+
+    /**
+     * An emptied address puts a draft back on the organisation's address. A submitted order already went out with an
+     * address, so it takes the organisation's current one instead of following later changes.
+     */
+    private function deliveryAddress(PurchaseOrder $purchaseOrder, ?string $deliveryAddress): ?string
+    {
+        $deliveryAddress = filled($deliveryAddress) ? trim($deliveryAddress) : null;
+
+        if ($deliveryAddress !== null || $purchaseOrder->state === PurchaseOrderStateEnum::IN_PROCESS) {
+            return $deliveryAddress;
+        }
+
+        return ResolvePurchaseOrderDeliveryAddress::run($purchaseOrder->organisation);
     }
 
     /**

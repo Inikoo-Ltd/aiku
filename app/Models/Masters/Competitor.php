@@ -35,6 +35,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property CompetitorSellsToEnum $sells_to
  * @property int $currency_id
  * @property string|null $feed_url
+ * @property string|null $price_feed_url
  * @property string|null $search_url link with {query} where the search words go
  * @property string|null $login_url
  * @property string|null $username
@@ -81,7 +82,7 @@ class Competitor extends Model implements HasMedia
         return 'slug';
     }
 
-    protected $hidden = ['feed_url', 'username', 'password', 'cookies'];
+    protected $hidden = ['feed_url', 'price_feed_url', 'username', 'password', 'cookies'];
 
     protected function casts(): array
     {
@@ -89,6 +90,7 @@ class Competitor extends Model implements HasMedia
             'sells_to'   => CompetitorSellsToEnum::class,
             'status'     => CompetitorStatusEnum::class,
             'feed_url'   => 'encrypted',
+            'price_feed_url' => 'encrypted',
             'username'   => 'encrypted',
             'password'   => 'encrypted',
             'cookies'    => 'encrypted:array',

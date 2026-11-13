@@ -235,7 +235,7 @@ const needsSaveConfirmation = computed(() => {
                     <div v-if="fieldData.information" v-tooltip="fieldData.information" class="opacity-50 hover:opacity-100 cursor-pointer ml-1">
                         <FontAwesomeIcon icon="fal fa-info-circle" class="text-gray-500" fixed-width aria-hidden="true" />
                     </div>
-                    <button v-if="fieldData.help" type="button" @click="isHelpOpen = true" :aria-label="ctrans('What it can do')" class="ml-0.5 text-gray-400 hover:text-gray-700">
+                    <button v-if="fieldData.help" v-tooltip="ctrans('Click to open the details')" type="button" @click="isHelpOpen = true" :aria-label="ctrans('What it can do')" class="ml-0.5 text-gray-400 hover:text-gray-700">
                         <FontAwesomeIcon icon="fal fa-question-circle" fixed-width aria-hidden="true" />
                     </button>
                 </div>
@@ -343,7 +343,7 @@ const needsSaveConfirmation = computed(() => {
                             :id="`${field}-reason`"
                             v-model="form[reasonField]"
                             rows="3"
-                            class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                            class="mt-1 w-full rounded-md border-gray-300 text-sm focus:border-[var(--app-accent)] focus:ring-[var(--app-accent)]" />
                         <p v-if="form.errors[reasonField]" class="mt-1 text-sm text-red-600">{{ form.errors[reasonField] }}</p>
                     </div>
 
@@ -352,8 +352,8 @@ const needsSaveConfirmation = computed(() => {
                             v-for="choice in fieldData.saveConfirmation?.choices"
                             :key="choice.value"
                             class="flex cursor-pointer gap-3 rounded-md border p-3 text-sm"
-                            :class="form[choiceField] === choice.value ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200'">
-                            <input v-model="form[choiceField]" type="radio" :name="`${field}-${choiceField}`" :value="choice.value" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
+                            :class="form[choiceField] === choice.value ? 'border-[var(--app-accent)] bg-[var(--app-accent-soft)]' : 'border-gray-200'">
+                            <input v-model="form[choiceField]" type="radio" :name="`${field}-${choiceField}`" :value="choice.value" class="mt-0.5 text-[var(--app-accent)] focus:ring-[var(--app-accent)]" />
                             <span>
                                 <span class="block font-medium text-gray-900">{{ choice.label }}</span>
                                 <span v-if="choice.description" class="block text-gray-500">{{ choice.description }}</span>

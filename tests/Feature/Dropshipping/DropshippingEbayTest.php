@@ -380,6 +380,44 @@ test('a second order from the same buyer reuses the customer client', function (
         ->and($ebayUser->customer->clients()->count())->toBe(1);
 });
 
+test('a second order from the same buyer to another recipient gets its own client, so the label carries the new name', function () {
+    $ebayUser = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+
+    $first  = ebayOrder();
+    $repeat = ebayOrder(['fulfillmentStartInstructions' => [['shippingStep' => ['shipTo' => ['fullName' => '  jane   BUYER ']]]]]);
+    $gift   = ebayOrder(['fulfillmentStartInstructions' => [['shippingStep' => ['shipTo' => ['fullName' => 'Annie Gift']]]]]);
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$first, $repeat, $gift], 'total' => 3],
+    ]);
+
+    FetchEbayUserOrders::run($ebayUser);
+
+    $clientOf = fn (array $ebayOrder) => Order::where('platform_order_id', $ebayOrder['orderId'])->firstOrFail()->customerClient;
+
+    expect($clientOf($repeat)->id)->toBe($clientOf($first)->id)
+        ->and($clientOf($gift)->id)->not->toBe($clientOf($first)->id)
+        ->and($clientOf($gift)->contact_name)->toBe('Annie Gift')
+        ->and($clientOf($first)->contact_name)->toBe('Jane Buyer');
+});
+
+test('an eBay order without a recipient email never reuses a client that has no email', function () {
+    $ebayUser = ebayChannel($this);
+    listedEbayPortfolio($this, $ebayUser);
+
+    $noEmail = fn (string $name) => ebayOrder(['fulfillmentStartInstructions' => [['shippingStep' => ['shipTo' => ['fullName' => $name, 'email' => null]]]]]);
+    $first   = $noEmail('Alex Old');
+    $second  = $noEmail('Ian New');
+    fakeEbay($this, [
+        '/sell/fulfillment/v1/order' => ['orders' => [$first, $second], 'total' => 2],
+    ]);
+
+    FetchEbayUserOrders::run($ebayUser);
+
+    expect(Order::where('platform_order_id', $second['orderId'])->firstOrFail()->customerClient->contact_name)->toBe('Ian New')
+        ->and($ebayUser->customer->clients()->count())->toBe(2);
+});
+
 test('cancelled eBay orders are never imported nor logged', function () {
     $ebayUser = ebayChannel($this);
     listedEbayPortfolio($this, $ebayUser);

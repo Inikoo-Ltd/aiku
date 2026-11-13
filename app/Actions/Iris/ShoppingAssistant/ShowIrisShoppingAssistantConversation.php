@@ -96,6 +96,7 @@ class ShowIrisShoppingAssistantConversation extends IrisAction
                     $data['basket_added'] = collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['added_product_ids'] ?? [])->values()->all();
                     $data['links']        = collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['family_ids'] ?? [])->unique()->map(fn ($familyId) => $familyLinks->get($familyId))->filter()
                         ->merge(collect($message->sources)->filter(fn ($source) => filled(Arr::get($source, 'url')))->unique('url')->map(fn ($source) => ['label' => Str::before((string) Arr::get($source, 'title'), ' · '), 'url' => $source['url']]))
+                        ->merge(collect($message->tool_calls)->flatMap(fn ($toolCall) => $toolCall['documents'] ?? [])->map(fn ($document) => ['label' => $document['label'], 'url' => route('iris.iris_attachment', ['media' => $document['media']])]))
                         ->unique('url')->values()->all();
                     $data['hand_over_offer'] = $message->hand_over_offer?->value;
                     $data['handed_over']     = $handedOverOfferIds->has($message->id);

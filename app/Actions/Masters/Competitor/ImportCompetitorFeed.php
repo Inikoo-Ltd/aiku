@@ -77,6 +77,9 @@ class ImportCompetitorFeed
                 static::isWooCommerceFeed($competitor->feed_url) => static::wooCommerceRows($competitor->feed_url),
                 default                                          => [static::parse(Http::timeout(120)->get($competitor->feed_url)->throw()->body()), true],
             };
+            if ($competitor->price_feed_url) {
+                $rows = static::withPrices($rows, static::parsePrices(Http::timeout(120)->get($competitor->price_feed_url)->throw()->body()));
+            }
         } catch (Throwable $exception) {
             $competitor->update(['status' => CompetitorStatusEnum::ERROR, 'last_error' => mb_substr($exception->getMessage(), 0, 500), 'fetched_at' => now()]);
 
@@ -146,6 +149,51 @@ class ImportCompetitorFeed
     public static function writeDailyStats(Competitor $competitor, string $date): void
     {
         $competitor->dailyStats()->updateOrCreate(['date' => $date], static::saleNumbers($competitor));
+    }
+
+    /**
+     * A price list published apart from the products (HELP-4686: Something Different gives its EU prices as item code
+     * and "EU Price" only): its price replaces the feed's, and a product it does not list is left out, as it is not sold there.
+     *
+     * @param  array<int|string, array>  $rows
+     * @param  array<string, float>  $prices
+     * @return array<int, array>
+     */
+    public static function withPrices(array $rows, array $prices): array
+    {
+        return array_values(array_filter(
+            array_map(fn (array $row) => isset($prices[$row['code']]) ? ['price' => $prices[$row['code']]] + $row : null, $rows)
+        ));
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public static function parsePrices(string $content): array
+    {
+        $lines = preg_split('/\r\n|\n|\r/', trim(preg_replace('/^\xEF\xBB\xBF/', '', $content)));
+        if (count($lines) < 2) {
+            return [];
+        }
+
+        $delimiter = collect(["\t", ';', ','])->sortByDesc(fn ($candidate) => substr_count($lines[0], $candidate))->first();
+        $header    = array_map('trim', str_getcsv(array_shift($lines), $delimiter, '"', ''));
+        $code      = collect($header)->search(fn ($title) => preg_match(self::COLUMNS['code'], $title));
+        $price     = collect($header)->search(fn ($title) => preg_match('/^([a-z]{2,3} ?)?(price|trade ?price|wholesale ?price|unit ?price)$/i', $title));
+        if ($code === false || $price === false) {
+            return [];
+        }
+
+        $prices = [];
+        foreach ($lines as $line) {
+            $cells = str_getcsv($line, $delimiter, '"', '');
+            $value = (float) str_replace(',', '.', trim($cells[$price] ?? ''));
+            if (trim($cells[$code] ?? '') !== '' && $value > 0) {
+                $prices[trim($cells[$code])] = $value;
+            }
+        }
+
+        return $prices;
     }
 
     /**

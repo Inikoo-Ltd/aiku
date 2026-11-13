@@ -176,6 +176,26 @@ class EditGroupSettings extends OrgAction
                                 'valueProp'   => 'id',
                                 'value'       => Arr::get($group->settings, 'shopping_assistant.weekly_summary_user_ids', []),
                             ],
+                            'shopping_assistant_unmet_needs_user_ids' => [
+                                'type'        => 'multiselect-tags',
+                                'label'       => __('Products customers asked for, to'),
+                                'information' => __('Emailed every Monday: what customers asked the assistant for last week that we do not sell or had out of stock, with how often and in which shops. For the purchasing team. Left empty: nobody.'),
+                                'options'     => User::where('group_id', $group->id)
+                                    ->where('status', true)
+                                    ->orderBy('contact_name')
+                                    ->get(['id', 'contact_name', 'username', 'nickname'])
+                                    ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->chatName()]),
+                                'labelProp'   => 'name',
+                                'valueProp'   => 'id',
+                                'value'       => Arr::get($group->settings, 'shopping_assistant.unmet_needs_user_ids', []),
+                            ],
+                            'shopping_assistant_unmet_needs_slack_channel' => [
+                                'type'        => 'input',
+                                'label'       => __('Products customers asked for, Slack channel'),
+                                'information' => __('The same list is posted every Monday to this Slack channel (its id, e.g. C02TCK849NG). The aiku bot must be a member. Left empty: no Slack post.'),
+                                'value'       => Arr::get($group->settings, 'shopping_assistant.unmet_needs_slack_channel'),
+                                'required'    => false,
+                            ],
                             'shopping_assistant_retention_months' => [
                                 'type'        => 'input',
                                 'label'       => __('Keep conversation texts for (months)'),

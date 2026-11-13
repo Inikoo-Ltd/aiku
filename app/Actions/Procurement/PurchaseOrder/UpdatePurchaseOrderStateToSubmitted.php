@@ -114,8 +114,18 @@ class UpdatePurchaseOrderStateToSubmitted extends OrgAction
             'submitted_at' => now(),
         ];
 
+        $data = $purchaseOrder->data ?? [];
+
         if ($this->sentWithoutWaiting && $this->sentWithoutWaiting['organisations']) {
-            $updateData['data'] = array_merge($purchaseOrder->data ?? [], ['sent_without_waiting' => $this->sentWithoutWaiting]);
+            $data['sent_without_waiting'] = $this->sentWithoutWaiting;
+        }
+
+        if (blank(Arr::get($data, 'delivery_address')) && $deliveryAddress = ResolvePurchaseOrderDeliveryAddress::run($purchaseOrder->organisation)) {
+            $data['delivery_address'] = $deliveryAddress;
+        }
+
+        if ($data !== ($purchaseOrder->data ?? [])) {
+            $updateData['data'] = $data;
         }
 
         if ($purchaseOrder->estimated_delivery_days === null) {

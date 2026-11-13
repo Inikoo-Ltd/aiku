@@ -53,12 +53,8 @@ class StorePurchaseOrder extends OrgAction
     public function handle(OrgSupplier|OrgPartner $parent, array $modelData): PurchaseOrder
     {
         $modelData = $this->prepareDeliveryStoreFields($parent, $modelData);
-        $deliveryAddress = ResolvePurchaseOrderDeliveryAddress::run(
-            $parent->organisation,
-            Arr::get($modelData, 'data.delivery_address')
-        );
 
-        if ($deliveryAddress) {
+        if ($this->isStoredPastDraft($modelData) && $deliveryAddress = ResolvePurchaseOrderDeliveryAddress::run($parent->organisation, Arr::get($modelData, 'data.delivery_address'))) {
             data_set($modelData, 'data.delivery_address', $deliveryAddress);
         }
 
@@ -99,6 +95,17 @@ class StorePurchaseOrder extends OrgAction
         GroupHydratePurchaseOrders::dispatch($purchaseOrder->group)->delay($this->hydratorsDelay)->afterCommit();
 
         return $purchaseOrder;
+    }
+
+    /**
+     * A draft follows the organisation's delivery address until it is submitted, which keeps the address it went out with.
+     */
+    private function isStoredPastDraft(array $modelData): bool
+    {
+        $state = Arr::get($modelData, 'state', PurchaseOrderStateEnum::IN_PROCESS);
+        $state = $state instanceof PurchaseOrderStateEnum ? $state : PurchaseOrderStateEnum::tryFrom((string) $state);
+
+        return $state !== null && $state !== PurchaseOrderStateEnum::IN_PROCESS;
     }
 
     public function rules(): array

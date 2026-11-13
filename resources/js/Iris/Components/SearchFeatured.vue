@@ -9,17 +9,27 @@ import { ctrans } from '@/Composables/useTrans'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
+import { faSparkles } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { useShoppingAssistant } from '@/Iris/Composables/useShoppingAssistant'
 import { Image as ImgTS } from '@/types/Image'
 import DiscountByType from '@/Components/Utils/Label/DiscountByType.vue'
 
-library.add(faTimes)
+library.add(faTimes, faSparkles)
 
 // Desktop counterpart of SearchFeaturedMobile: what the shop merchandises, shown while the
 // search field is focused but still empty. The panel sizes to its content, since a handful
 // of featured items would look abandoned in the full-height results layout.
 
 const model = defineModel<boolean>('open')
+
+const { assistant, askLabel, openAssistant } = useShoppingAssistant()
+
+const askAssistant = () => {
+    model.value = false
+    openAssistant()
+}
 
 const props = defineProps<{
     results: {
@@ -188,9 +198,22 @@ const getPricePerUnit = (product: { price_per_unit?: number | null; discounted_p
                 </div>
             </template>
 
-            <p class="mt-5 text-xs text-gray-400">
-                {{ ctrans('Start typing to search the catalogue') }}
-            </p>
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
+                <p class="text-xs text-gray-400">
+                    {{ ctrans('Start typing to search the catalogue') }}
+                </p>
+                <Button
+                    v-if="assistant"
+                    type="tertiary"
+                    :label="askLabel"
+                    class="!rounded-full"
+                    @click="askAssistant"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="far fa-sparkles" class="text-[var(--theme-color-0)]" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </div>
         </div>
     </div>
 </template>

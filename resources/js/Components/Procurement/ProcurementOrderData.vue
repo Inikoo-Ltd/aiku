@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import { ctrans } from "@/Composables/useTrans"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faTruck, faShip, faFileContract, faCreditCard, faHashtag, faCalendarAlt, faInfoCircle } from "@fal"
+import { faTruck, faShip, faFileContract, faCreditCard, faHashtag, faCalendarAlt, faInfoCircle, faPencil } from "@fal"
+import PurchaseOrderDeliveryAddressDialog from "@/Components/Procurement/PurchaseOrderDeliveryAddressDialog.vue"
+import { routeType } from "@/types/route"
 
-library.add(faTruck, faShip, faFileContract, faCreditCard, faHashtag, faCalendarAlt, faInfoCircle)
+library.add(faTruck, faShip, faFileContract, faCreditCard, faHashtag, faCalendarAlt, faInfoCircle, faPencil)
 
 defineOptions({ inheritAttrs: false })
 
@@ -28,7 +30,12 @@ const props = defineProps<{
 		blueprint: Section[]
 	}
 	isOwnWarehouse?: boolean
+	defaultDeliveryAddress?: string | null
+	followsDefault?: boolean
+	deliveryAddressRoute?: routeType | null
 }>()
+
+const isEditingDeliveryAddress = ref(false)
 
 const visibleFields = (section: Section) =>
 	Object.entries(section.fields).filter(([, field]) => !field.hidden)
@@ -101,8 +108,24 @@ const isEmpty = (field: FieldData) =>
 					<div v-else-if="deliveryAddress" class="whitespace-pre-line">{{ deliveryAddress }}</div>
 					<div v-else class="italic text-gray-400">{{ ctrans("Delivery address not set") }}</div>
 				</div>
+				<button
+					v-if="deliveryAddressRoute"
+					v-tooltip="ctrans('Change delivery address')"
+					type="button"
+					class="mt-0.5 shrink-0 rounded px-1 text-gray-400 hover:text-[var(--app-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-accent)]"
+					:aria-label="ctrans('Change delivery address')"
+					@click="isEditingDeliveryAddress = true">
+					<FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+				</button>
 			</div>
 		</div>
 
+		<PurchaseOrderDeliveryAddressDialog
+			v-if="deliveryAddressRoute"
+			v-model:visible="isEditingDeliveryAddress"
+			:deliveryAddress="deliveryAddress || null"
+			:defaultDeliveryAddress="defaultDeliveryAddress ?? null"
+			:followsDefault="followsDefault ?? false"
+			:updateRoute="deliveryAddressRoute" />
 	</div>
 </template>

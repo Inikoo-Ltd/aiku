@@ -90,7 +90,7 @@ class EditPurchaseOrder extends OrgAction
                                     'type'        => 'textarea',
                                     'label'       => __('Deliver to'),
                                     'information' => __('The address the supplier ships the goods to, printed on the purchase order.'),
-                                    'placeholder' => __('Leave empty to use the warehouse address'),
+                                    'placeholder' => __('Leave empty to use the organisation\'s delivery address from the procurement settings, or its warehouse address when that is not set'),
                                     'value'       => Arr::get($purchaseOrder->data, 'delivery_address'),
                                 ],
                             ]

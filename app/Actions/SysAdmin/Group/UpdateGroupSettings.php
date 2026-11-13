@@ -60,6 +60,12 @@ class UpdateGroupSettings extends OrgAction
         if (Arr::has($modelData, 'shopping_assistant_weekly_summary_user_ids')) {
             data_set($modelData, 'settings.shopping_assistant.weekly_summary_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'shopping_assistant_weekly_summary_user_ids') ?? [])));
         }
+        if (Arr::has($modelData, 'shopping_assistant_unmet_needs_user_ids')) {
+            data_set($modelData, 'settings.shopping_assistant.unmet_needs_user_ids', array_values(array_map('intval', Arr::pull($modelData, 'shopping_assistant_unmet_needs_user_ids') ?? [])));
+        }
+        if (Arr::has($modelData, 'shopping_assistant_unmet_needs_slack_channel')) {
+            data_set($modelData, 'settings.shopping_assistant.unmet_needs_slack_channel', trim((string) Arr::pull($modelData, 'shopping_assistant_unmet_needs_slack_channel')) ?: null);
+        }
         if (Arr::has($modelData, 'shopping_assistant_retention_months')) {
             $months = Arr::pull($modelData, 'shopping_assistant_retention_months');
             data_set($modelData, 'settings.shopping_assistant.retention_months', is_numeric($months) ? (int) $months : null);
@@ -134,6 +140,9 @@ class UpdateGroupSettings extends OrgAction
             'shopping_assistant_name'           => ['sometimes', 'nullable', 'string', 'max:30'],
             'shopping_assistant_weekly_summary_user_ids'   => ['sometimes', 'nullable', 'array', 'max:20'],
             'shopping_assistant_weekly_summary_user_ids.*' => ['integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)->where('status', true)],
+            'shopping_assistant_unmet_needs_user_ids'      => ['sometimes', 'nullable', 'array', 'max:30'],
+            'shopping_assistant_unmet_needs_user_ids.*'    => ['integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)->where('status', true)],
+            'shopping_assistant_unmet_needs_slack_channel' => ['sometimes', 'nullable', 'string', 'max:30', 'regex:/^[A-Z0-9]+$/'],
             'shopping_assistant_retention_months'          => ['sometimes', 'nullable', 'integer', 'min:1', 'max:120'],
             'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],

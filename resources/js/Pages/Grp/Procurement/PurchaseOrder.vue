@@ -205,6 +205,9 @@ const props = defineProps < {
     			port_of_import: string | null
     			delivery_address: string | null
     			is_own_warehouse?: boolean
+    			default_delivery_address?: string | null
+    			follows_default?: boolean
+    			update_route?: routeType | null
     		}
     		seller_order?: { reference: string; url: string | null } | null
     		clean_handover?: {
@@ -1334,15 +1337,16 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<PingIcon class="!absolute -right-1 -top-1 text-[7px] text-amber-500" aria-hidden="true" />
 				</span>
 				<template v-for="action in actions" :key="action.key">
-					<a v-if="stageDocumentActionKeys.includes(action.key)" :href="route(action.route.name, action.route.parameters)" target="_blank">
-						<Button type="tertiary" size="xs" full :label="action.label" :tooltip="action.tooltip">
-							<template #icon>
-								<FontAwesomeIcon :icon="action.icon" class="text-red-500" fixed-width aria-hidden="true" />
-							</template>
-							<template #iconRight>
-								<FontAwesomeIcon :icon="faExternalLink" class="text-gray-400" fixed-width aria-hidden="true" />
-							</template>
-						</Button>
+					<a
+						v-if="stageDocumentActionKeys.includes(action.key)"
+						v-tooltip="action.tooltip"
+						:href="route(action.route.name, action.route.parameters)"
+						target="_blank"
+						class="inline-flex w-fit items-center gap-x-1 text-xs text-[var(--app-accent)] hover:underline focus-visible:underline focus-visible:outline-none"
+					>
+						<FontAwesomeIcon :icon="action.icon" class="text-red-500" fixed-width aria-hidden="true" />
+						{{ action.label }}
+						<FontAwesomeIcon :icon="faExternalLink" class="text-[10px] text-gray-400" fixed-width aria-hidden="true" />
 					</a>
 					<span v-else v-tooltip="action.disabled_reason">
 						<Button
@@ -1471,7 +1475,13 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 					<span class="shrink-0 text-xs text-gray-400">{{ development.stage }}</span>
 				</div>
 				<PurchaseOrderSampleRequired v-if="sampleRequirement" :sample="sampleRequirement" />
-				<ProcurementOrderData v-if="showcase" :data="showcase" :isOwnWarehouse="box_stats.first_block.delivery.is_own_warehouse" />
+				<ProcurementOrderData
+					v-if="showcase"
+					:data="showcase"
+					:isOwnWarehouse="box_stats.first_block.delivery.is_own_warehouse"
+					:defaultDeliveryAddress="box_stats.first_block.delivery.default_delivery_address"
+					:followsDefault="box_stats.first_block.delivery.follows_default"
+					:deliveryAddressRoute="box_stats.first_block.delivery.update_route" />
 			</div>
 		</BoxStatPallet>
 
