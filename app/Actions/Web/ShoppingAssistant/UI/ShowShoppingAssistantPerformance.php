@@ -469,6 +469,23 @@ class ShowShoppingAssistantPerformance extends OrgAction
     }
 
     /**
+     * This month's AI budget of each website that has the assistant on, with what it will have
+     * spent by the end of the month at the pace of the last days.
+     *
+     * @param  Collection<int, Website>  $websites
+     *
+     * @return array<int, array{website: string, monthly: float, spent: float, paused: bool, resumes_on: string, projected: float}>
+     */
+    private function budgets(Collection $websites): array
+    {
+        $projected = GetShoppingAssistantBudget::projections($websites->pluck('id')->all());
+
+        return $websites
+            ->map(fn (Website $website) => ['website' => $website->domain, ...GetShoppingAssistantBudget::run($website), 'projected' => $projected[$website->id] ?? 0.0])
+            ->values()->all();
+    }
+
+    /**
      * What the assistant passed on to the team in the period, open ones first, so one nobody has
      * taken stays in sight until it is done: big order leads (customer services) and restock
      * questions (purchasing), with how the restock answer reached the customer.
@@ -563,10 +580,7 @@ class ShowShoppingAssistantPerformance extends OrgAction
                 'currency'         => $currencyCode,
                 'cost_currency'    => $usdRate === null ? 'USD' : $currencyCode,
                 'attribution_days' => $report->attributionDays(),
-                'budgets'          => $websites
-                    ->filter(fn (Website $website) => data_get($website->settings, 'shopping_assistant.enabled'))
-                    ->map(fn (Website $website) => ['website' => $website->domain, ...GetShoppingAssistantBudget::run($website)])
-                    ->values()->all(),
+                'budgets'          => $this->budgets($websites->filter(fn (Website $website) => data_get($website->settings, 'shopping_assistant.enabled'))),
                 'sales_leads'      => $this->salesLeads($filters),
                 'routes'           => [
                     'page'         => ['name' => $routePrefix.'show', 'parameters' => $routeParameters],

@@ -10,6 +10,7 @@ namespace App\Actions\CRM\ShoppingAssistant;
 
 use App\Models\CRM\Customer;
 use App\Models\Web\Website;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -28,6 +29,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class GetShoppingAssistantBudget
 {
     use AsAction;
+
+    public const int PROJECTION_DAYS = 7;
 
     /**
      * @return array{monthly: float, spent: float, paused: bool, resumes_on: string}
@@ -52,6 +55,37 @@ class GetShoppingAssistantBudget
                 'resumes_on' => now()->startOfMonth()->addMonth()->toDateString(),
             ];
         });
+    }
+
+    /**
+     * What each website will have spent by the end of this calendar month if it goes on as in the
+     * last PROJECTION_DAYS days: this month's spend plus the daily average of those days (of the
+     * days since its first answer when it started later, never less than one day) for the days
+     * left. For the report only: it is not cached and not read when a question is asked.
+     *
+     * @param  array<int, int>  $websiteIds
+     *
+     * @return array<int, float> by website id; a website with no spend yet is left out
+     */
+    public static function projections(array $websiteIds): array
+    {
+        $monthStart = now()->startOfMonth();
+        $recentFrom = now()->subDays(self::PROJECTION_DAYS);
+        $daysLeft   = abs(now()->diffInSeconds(now()->endOfMonth())) / 86400;
+
+        return DB::table('shopping_assistant_model_calls')
+            ->join('shopping_assistant_conversations', 'shopping_assistant_conversations.id', '=', 'shopping_assistant_model_calls.shopping_assistant_conversation_id')
+            ->whereIn('shopping_assistant_conversations.website_id', $websiteIds)
+            ->groupBy('shopping_assistant_conversations.website_id')
+            ->selectRaw('shopping_assistant_conversations.website_id, min(shopping_assistant_model_calls.created_at) as first_call_at, coalesce(sum(shopping_assistant_model_calls.cost) filter (where shopping_assistant_model_calls.created_at >= ?), 0) as spent, coalesce(sum(shopping_assistant_model_calls.cost) filter (where shopping_assistant_model_calls.created_at >= ?), 0) as recent', [$monthStart, $recentFrom])
+            ->get()
+            ->mapWithKeys(function ($row) use ($recentFrom, $daysLeft) {
+                $from = Carbon::parse($row->first_call_at)->max($recentFrom);
+                $days = max(1, abs($from->diffInSeconds(now())) / 86400);
+
+                return [(int) $row->website_id => round((float) $row->spent + (float) $row->recent / $days * $daysLeft, 2)];
+            })
+            ->all();
     }
 
     /**

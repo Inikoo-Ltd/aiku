@@ -41,7 +41,7 @@ beforeAll(function () {
 beforeEach(function () {
     [$this->organisation, $this->user, $this->shop] = createShop();
 
-    config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.light_model' => null]);
+    config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.light_model' => null, 'services.shopping_assistant.plain_search' => false]);
     $this->notAnAnswerProbability = null;
     Http::fake(['*alpha/decisions' => fn () => Http::response(['answers' => ['answer' => ['noul' => $this->notAnAnswerProbability]]])]);
     actingAs($this->user);

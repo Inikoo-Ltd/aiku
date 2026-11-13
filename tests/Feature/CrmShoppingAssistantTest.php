@@ -71,7 +71,7 @@ beforeEach(function () {
     [$this->organisation, $this->user, $this->shop] = createShop();
     [, $this->product] = createProduct($this->shop);
 
-    config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.light_model' => null, 'services.shopping_assistant.premium_model' => null]);
+    config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.plain_search' => false, 'services.shopping_assistant.light_model' => null, 'services.shopping_assistant.premium_model' => null]);
     actingAs($this->user);
 });
 
@@ -3556,4 +3556,108 @@ test('a customer nobody answered after a hand-over to the live chat or a questio
         ->and($told($asked))->toHaveCount(1)
         ->and($starts($told($asked)->first()->body, $emailSentences))->toBeTrue()
         ->and(data_get($task->refresh()->data, 'away_told_at'))->not->toBeNull();
+});
+
+test('a message that is only the code of a product in stock is answered from the search without a model call, and any other code still goes to the model', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    $suffix   = Str::lower(Str::random(5));
+    $product  = shoppingAssistantProduct($this->product);
+    $soldOut  = shoppingAssistantProduct($this->product);
+    $product->update(['code' => 'Lk'.$suffix.'-07', 'name' => 'Lookup Lamp '.$suffix.' - The Top 12']);
+    $soldOut->update(['code' => 'Lk'.$suffix.'-08', 'available_quantity' => 0]);
+    DB::table('products')->whereIn('id', [$product->id, $soldOut->id])->update(['is_in_website' => true]);
+
+    Http::fake([
+        '*chat/completions' => Http::sequence()->push(shoppingAssistantPresent(['reply' => 'That one is out of stock right now.', 'answer_kind' => 'products'])),
+        '*'                 => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => array_replace(array_fill(0, 1024, 0.0), [1 => 1.0])])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'fr']);
+    $modelCalls   = fn () => collect(Http::recorded())->filter(fn (array $pair) => str_contains($pair[0]->url(), 'chat/completions'))->count();
+
+    $found = AskShoppingAssistant::run($conversation, ' lk'.$suffix.'-07 ');
+
+    expect($modelCalls())->toBe(0)
+        ->and($found['message']->model)->toBe(AskShoppingAssistant::PRODUCT_CODE_MODEL)
+        ->and($found['message']->flags)->toBe(['product_code'])
+        ->and($found['message']->model_calls)->toBe(0)
+        ->and((float) $found['message']->cost)->toBe(0.0)
+        ->and($found['message']->answer_kind->value)->toBe('products')
+        ->and($found['reply'])->toStartWith(__('Here is :code: :name.', ['code' => $product->code, 'name' => $product->name], 'fr'))
+        ->and($found['reply'])->toContain('Voici')
+        ->and($found['groups']['must_haves']->pluck('id')->all())->toBe([$product->id])
+        ->and($conversation->events()->where('type', ShoppingAssistantEventTypeEnum::SHOWN)->where('product_id', $product->id)->exists())->toBeTrue();
+
+    $missing = AskShoppingAssistant::run($conversation->fresh(), 'Lk'.$suffix.'-08');
+
+    expect($modelCalls())->toBe(1)
+        ->and($missing['message']->model)->not->toBe(AskShoppingAssistant::PRODUCT_CODE_MODEL)
+        ->and($missing['reply'])->toBe('That one is out of stock right now.');
+});
+
+test('one to three words that only name what the customer wants to see are answered with the search list and no model call; a question, an unsure reading or an answer to Merlin\'s own question still go to the model', function () {
+    config(['services.shopping_assistant.plain_search' => true]);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $word     = 'vexo'.Str::lower(Str::random(5));
+    $products = collect(range(1, 3))->map(function (int $number) use ($word) {
+        $product = shoppingAssistantProduct($this->product);
+        $product->update(['name' => ucfirst($word).' Candle '.Str::random(4)]);
+
+        return $product;
+    });
+    DB::table('products')->whereIn('id', $products->pluck('id'))->update(['is_in_website' => true]);
+
+    $vector = fn (string $text) => array_replace(array_fill(0, 1024, 0.0), [str_contains(mb_strtolower($text), $word) ? 0 : 1 => 1.0]);
+    Http::fake([
+        '*chat/completions' => Http::sequence()
+            ->push(shoppingAssistantPresent(['reply' => 'We do send samples on request.', 'answer_kind' => 'question']))
+            ->push(shoppingAssistantPresent(['reply' => 'Not sure what you mean, which one?', 'answer_kind' => 'question']))
+            ->push(shoppingAssistantPresent(['reply' => 'Thank you, noted.', 'answer_kind' => 'question'])),
+        '*' => fn ($request) => Http::response(['data' => collect($request['input'] ?? [])->map(fn ($text, $index) => ['index' => $index, 'embedding' => $vector($text)])->all()]),
+    ]);
+    \App\Actions\Catalogue\Search\HydrateCatalogueSearchEmbeddings::run($this->shop);
+
+    $verdict = fn (string $choice, float $probability) => ['choice' => $choice, 'probabilities' => [$choice => $probability]];
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('choice')->times(3)->andReturn($verdict('product_search', 0.95), $verdict('question', 0.9), $verdict('product_search', 0.5));
+    $modelCalls = fn () => collect(Http::recorded())->filter(fn (array $pair) => str_contains($pair[0]->url(), 'chat/completions'))->count();
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $listed = AskShoppingAssistant::run($conversation, $word.' candles');
+
+    expect($modelCalls())->toBe(0)
+        ->and($listed['message']->model)->toBe(AskShoppingAssistant::PLAIN_SEARCH_MODEL)
+        ->and($listed['message']->flags)->toBe(['plain_search'])
+        ->and((float) $listed['message']->cost)->toBe(0.0)
+        ->and($listed['reply'])->toBe('Here is what we have for "'.$word.' candles".')
+        ->and($listed['groups']['must_haves']->pluck('id')->intersect($products->pluck('id'))->count())->toBe(3);
+
+    $question = AskShoppingAssistant::run($conversation->fresh(), 'samples');
+    $unsure   = AskShoppingAssistant::run($conversation->fresh(), $word.' thing');
+    $answer   = AskShoppingAssistant::run($conversation->fresh(), $word.' shop');
+
+    expect($modelCalls())->toBe(3)
+        ->and($question['reply'])->toBe('We do send samples on request.')
+        ->and($unsure['reply'])->toBe('Not sure what you mean, which one?')
+        ->and($answer['reply'])->toBe('Thank you, noted.')
+        ->and($answer['message']->model)->not->toBe(AskShoppingAssistant::PLAIN_SEARCH_MODEL);
+});
+
+test('the AI budget panel projects the spend at the end of the month from the pace of the last seven days', function () {
+    $website = shoppingAssistantStorefront($this);
+    Carbon::setTestNow(CarbonImmutable::parse('2030-03-11 00:00:00'));
+
+    try {
+        shoppingAssistantSpend($website, 7.0, '2030-03-05 12:00:00');
+        shoppingAssistantSpend($website, 3.0, '2030-03-02 12:00:00');
+
+        $projected = \App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget::projections([$website->id, 0]);
+
+        expect($projected)->toHaveCount(1)
+            ->and($projected[$website->id])->toBe(31.0);
+    } finally {
+        Carbon::setTestNow();
+    }
 });

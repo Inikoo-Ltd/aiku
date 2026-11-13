@@ -119,7 +119,7 @@ const props = defineProps<{
     currency: string
     cost_currency?: string
     attribution_days: number
-    budgets: { website: string; monthly: number; spent: number; paused: boolean; resumes_on: string }[]
+    budgets: { website: string; monthly: number; spent: number; paused: boolean; resumes_on: string; projected: number }[]
     sales_leads?: {
         reference: string
         kind: "big_order" | "restock"
@@ -273,12 +273,22 @@ const generalFilterLabel = (value: string | null): string => {
     return value
 }
 
-const budgetRows = computed(() =>
-    (props.budgets ?? []).map((budget) => {
-        const used = budget.monthly > 0 ? budget.spent / budget.monthly : 1
-        return { ...budget, width: Math.min(100, used * 100), warning: !budget.paused && used >= 0.8 }
-    })
-)
+const budgetRow = (budget: { website: string; monthly: number; spent: number; paused: boolean; resumes_on: string; projected: number }, isTotal = false) => {
+    const used = budget.monthly > 0 ? budget.spent / budget.monthly : 1
+    return { ...budget, isTotal, width: Math.min(100, used * 100), warning: !budget.paused && used >= 0.8, over: !budget.paused && budget.projected > budget.monthly }
+}
+
+const allBudgetRows = computed(() => (props.budgets ?? []).map((budget) => budgetRow(budget)))
+
+const budgetRows = computed(() => {
+    if (props.filters.website_locked || allBudgetRows.value.length < 2) {
+        return allBudgetRows.value
+    }
+    const sum = (key: "monthly" | "spent" | "projected") => allBudgetRows.value.reduce((total, budget) => total + budget[key], 0)
+    const total = budgetRow({ website: ctrans("All websites"), monthly: sum("monthly"), spent: sum("spent"), projected: sum("projected"), paused: false, resumes_on: "" }, true)
+
+    return [total, ...allBudgetRows.value.filter((budget) => budget.paused || budget.warning || budget.over)]
+})
 
 const salesLeads = computed(() => props.sales_leads ?? [])
 const leadContact = (lead: { kind: string; agreed_to_call: boolean; answer_channel: string | null }) =>
@@ -718,7 +728,7 @@ const conversationsTable = computed(() => props.conversations)
                         <p v-for="line in card.lines" :key="line" class="mt-0.5 truncate text-xs text-gray-500" :title="line">{{ line }}</p>
                     </div>
                 </div>
-                <div v-if="budgetRows.length && filters.website_locked" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
+                <div v-if="budgetRows.length" class="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
                     <h3 class="mb-2 text-sm font-semibold text-gray-700">{{ ctrans("AI budget this month") }}</h3>
                     <table class="w-full text-sm">
                         <thead class="whitespace-nowrap text-xs text-gray-400">
@@ -726,22 +736,25 @@ const conversationsTable = computed(() => props.conversations)
                                 <th v-if="!(budgetRows.length === 1 && filters.website_locked)" class="pb-1 pr-3 text-left font-medium">{{ ctrans("Website") }}</th>
                                 <th class="pb-1 font-medium" />
                                 <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Spent") }}</th>
+                                <th class="pb-1 pl-4 text-right font-medium" :title="ctrans('What will be spent by the end of the month at the pace of the last 7 days')">{{ ctrans("Projected") }}</th>
                                 <th class="pb-1 pl-4 text-right font-medium">{{ ctrans("Budget") }}</th>
                                 <th class="pb-1 pl-4 text-left font-medium" />
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="budget in budgetRows" :key="budget.website">
-                                <td v-if="!(budgetRows.length === 1 && filters.website_locked)" class="whitespace-nowrap py-1 pr-3 text-gray-700">{{ budget.website }}</td>
+                                <td v-if="!(budgetRows.length === 1 && filters.website_locked)" class="whitespace-nowrap py-1 pr-3 text-gray-700" :class="{ 'font-semibold': budget.isTotal }">{{ budget.website }}</td>
                                 <td class="w-full py-1">
                                     <div class="h-2 rounded-sm bg-gray-100">
                                         <div class="h-2 rounded-sm" :class="budget.paused ? 'bg-red-500' : budget.warning ? 'bg-amber-500' : 'bg-[var(--app-accent)]'" :style="{ width: budget.width + '%' }" />
                                     </div>
                                 </td>
                                 <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-900">{{ money(budget.spent, "USD") }}</td>
+                                <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums" :class="budget.over ? 'font-semibold text-amber-700' : 'text-gray-900'">{{ money(budget.projected, "USD") }}</td>
                                 <td class="whitespace-nowrap py-1 pl-4 text-right tabular-nums text-gray-500">{{ money(budget.monthly, "USD") }}</td>
                                 <td class="whitespace-nowrap py-1 pl-4 text-xs">
                                     <span v-if="budget.paused" class="text-red-600">{{ ctrans("Paused until :date", { date: shortDate(budget.resumes_on) }) }}</span>
+                                    <span v-else-if="budget.over" class="text-amber-700">{{ ctrans("Over budget before the month ends") }}</span>
                                     <span v-else-if="budget.warning" class="text-amber-700">{{ ctrans("80% used") }}</span>
                                 </td>
                             </tr>

@@ -151,6 +151,14 @@ class AskShoppingAssistant
      * A number with its unit, each size of a compound one on its own ("6 fragrances" in "(8x 6 fragrances)"),
      * so "10 ml", "0,5 kg", "100-stick" and 10" match the "10ml", "0.5kg", "100 Sticks" and 10" of a name.
      */
+    public const string PRODUCT_CODE_MODEL = 'product-code';
+
+    public const string PLAIN_SEARCH_MODEL = 'plain-search';
+
+    public const int PLAIN_SEARCH_MAX_WORDS = 3;
+
+    public const int PLAIN_SEARCH_MIN_PRODUCTS = 3;
+
     private const string SIZE_PATTERN = '/(?<![\d.,£€$\p{L}])(\d+(?:[.,]\d+)?)[\s\x{00A0}\x{202F}\-]?(\p{L}+|%|")/u';
 
     private const string AMOUNT_PATTERN = '/\d{1,3}(?:[.,\x{00A0}\x{202F} ]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?/u';
@@ -184,9 +192,14 @@ class AskShoppingAssistant
         $customer  = $conversation->customer;
         $mainModel = (string) config('services.shopping_assistant.model');
         $premium   = config('services.shopping_assistant.premium_model') ?: null;
-        $model     = $unsure ? $premium : $this->modelFor($conversation, $customer, $message);
+        $lookup    = $unsure ? null : ($this->productCodeTurn($conversation, $customer, $message) ?? $this->plainSearchTurn($conversation, $customer, $message));
+        $model     = match (true) {
+            $lookup !== null => in_array('plain_search', $lookup['flags'], true) ? self::PLAIN_SEARCH_MODEL : self::PRODUCT_CODE_MODEL,
+            (bool) $unsure   => $premium,
+            default          => $this->modelFor($conversation, $customer, $message),
+        };
 
-        $turn = $this->runModel($conversation, $customer, $customerMessage, $message, $model);
+        $turn = $lookup ?? $this->runModel($conversation, $customer, $customerMessage, $message, $model);
 
         if ($model !== $mainModel && $turn['answer'] === null && !$this->hasActed($turn)) {
             $failed = $turn;
@@ -227,7 +240,7 @@ class AskShoppingAssistant
                 $shown     = $this->numbers($message) ? array_map(fn (Collection $products) => $products->count(), $groups) : [];
                 $replyText = $cited ? $customerText."\n".implode("\n", array_column($cited, 'body')) : $customerText;
                 $counts    = $shown ? [...array_values($shown), array_sum($shown)] : [];
-                if (!$this->onlyGivenNumbers($reply, $replyText, $productNames, $counts)) {
+                if ($lookup === null && !$this->onlyGivenNumbers($reply, $replyText, $productNames, $counts)) {
                     $reply          = $cited ? '' : $this->sentencesWithGivenNumbers($reply, $replyText, $productNames, $counts);
                     $flags[]        = $reply === '' ? 'reply_replaced_number' : 'reply_trimmed_number';
                     $numberReplaced = $cited !== [];
@@ -815,6 +828,130 @@ class AskShoppingAssistant
             ->unique();
 
         return $ids->filter(fn (int $id) => isset($returned[$id]))->map(fn (int $id) => $returned[$id])->values()->all();
+    }
+
+    /**
+     * A message that is nothing but a product code ("BinC-18", "eo-01") is a look-up, not a
+     * question: about one first message in ten, each of which cost a full model turn and several
+     * seconds to say what the search already knew. The search tool is run as the model would run
+     * it, and when it finds that exact code, in stock and for this customer, the answer is written
+     * here: the product, with the others the search returned next to it, and no model call. Any
+     * other outcome (unknown code, out of stock, discontinued, made for another customer) returns
+     * null and goes to the model, which explains it as before.
+     *
+     * @return ?array<string, mixed>
+     */
+    private function productCodeTurn(ShoppingAssistantConversation $conversation, ?Customer $customer, string $message): ?array
+    {
+        $code = trim($message);
+        if (!$customer || !preg_match('/^[\p{L}\d][\p{L}\d._\/-]{1,29}$/u', $code) || !preg_match('/\d/', $code) || !preg_match('/\p{L}/u', $code)) {
+            return null;
+        }
+
+        [$turn, $result] = $this->searchWithoutModel($conversation, $code);
+        $products        = collect($result['content']['products'] ?? []);
+        $exact           = $products->filter(fn (array $product) => !empty($product['exact_code_match']));
+
+        if ($result['error'] !== null || $exact->count() !== 1) {
+            return null;
+        }
+
+        $product = Product::find($exact->first()['id']);
+        if (!$product || mb_strtolower((string) $product->code) !== mb_strtolower($code)) {
+            return null;
+        }
+
+        $others = $products->pluck('id')->reject(fn (int $id) => $id === $product->id)->take(GetShoppingAssistantTools::USUAL_PER_GROUP - 1)->values()->all();
+        $locale = $conversation->language_code;
+
+        $turn['answer'] = [
+            'reply'       => trim(__('Here is :code: :name.', ['code' => $product->code, 'name' => $product->name], $locale).($others ? ' '.__('Similar products are below.', [], $locale) : '')),
+            'answer_kind' => ShoppingAssistantAnswerKindEnum::PRODUCTS->value,
+            'language'    => $locale,
+            'must_haves'  => [$product->id],
+            'add_ons'     => $others,
+            'follow_ups'  => [],
+        ];
+        $turn['flags'][]      = 'product_code';
+        $turn['tool_calls'][] = ['name' => GetShoppingAssistantTools::PRESENT_PRODUCTS, 'arguments' => $turn['answer'], 'product_ids' => [], 'error' => null, 'ms' => 0];
+
+        return $turn;
+    }
+
+    /**
+     * One to three words with no question mark ("sleep", "velas", "chakra bracelets") were close to
+     * half of all turns in the first days and over half the cost, and in the turns the model
+     * answered with one search every product it showed came from that search. When Jev is sure the
+     * words only name what the customer wants to see, the same search is run and its first products
+     * are shown with one fixed sentence, with no model call. It stays with the model when Jev reads
+     * a question ("samples", "delivery") or is not sure, when Merlin had just asked the customer
+     * something (their words are then an answer, which it may have to remember), when the search
+     * finds few products, or names one out of stock or discontinued, which needs explaining. Off
+     * with services.shopping_assistant.plain_search.
+     *
+     * @return ?array<string, mixed>
+     */
+    private function plainSearchTurn(ShoppingAssistantConversation $conversation, ?Customer $customer, string $message): ?array
+    {
+        $query = trim($message);
+        $words = preg_split('/\s+/u', $query, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if (!$customer || !config('services.shopping_assistant.plain_search') || !$words || count($words) > self::PLAIN_SEARCH_MAX_WORDS || mb_strlen($query) < 3 || preg_match('/[?？؟¿]/u', $query)) {
+            return null;
+        }
+
+        $asked = (string) $conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->latest('id')->value('body');
+        if (preg_match('/[?？؟]/u', $asked)) {
+            return null;
+        }
+
+        $kind   = AskJev::make()->choice(
+            ['customer_message' => $query],
+            'A trade customer typed this into the search box of a wholesaler of gifts, crystals, incense and aromatherapy products. The box is also where they ask the shop\'s assistant questions. What is it?',
+            [
+                'product_search' => 'It only names what they want to see: a kind of product, a range, a brand, a theme, a scent, a material, a colour or an occasion. A list of matching products fully answers it.',
+                'question'       => 'It asks or needs something a list of products does not answer: how the shop works (samples, delivery, prices, discounts, payment, minimum order, their account or orders), advice, a greeting, a complaint or anything else.',
+            ]
+        );
+        $choice = (string) ($kind['choice'] ?? '');
+
+        if ($choice !== 'product_search' || (float) ($kind['probabilities'][$choice] ?? 0) < (float) config('services.shopping_assistant.routing_confidence')) {
+            return null;
+        }
+
+        [$turn, $result] = $this->searchWithoutModel($conversation, $query);
+        $ids             = array_column($result['content']['products'] ?? [], 'id');
+
+        if ($result['error'] !== null || count($ids) < self::PLAIN_SEARCH_MIN_PRODUCTS || !empty($result['content']['out_of_stock']) || !empty($result['content']['discontinued'])) {
+            return null;
+        }
+
+        $locale         = $conversation->language_code;
+        $turn['answer'] = [
+            'reply'       => __('Here is what we have for ":query".', ['query' => $query], $locale),
+            'answer_kind' => ShoppingAssistantAnswerKindEnum::PRODUCTS->value,
+            'language'    => $locale,
+            'must_haves'  => array_slice($ids, 0, GetShoppingAssistantTools::USUAL_PER_GROUP),
+            'add_ons'     => array_slice($ids, GetShoppingAssistantTools::USUAL_PER_GROUP, GetShoppingAssistantTools::MAX_PER_GROUP - GetShoppingAssistantTools::USUAL_PER_GROUP),
+            'follow_ups'  => [],
+        ];
+        $turn['flags'][]      = 'plain_search';
+        $turn['tool_calls'][] = ['name' => GetShoppingAssistantTools::PRESENT_PRODUCTS, 'arguments' => $turn['answer'], 'product_ids' => [], 'error' => null, 'ms' => 0];
+
+        return $turn;
+    }
+
+    /**
+     * The search tool run as the model would run it, recorded in a turn that made no model call.
+     *
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    private function searchWithoutModel(ShoppingAssistantConversation $conversation, string $query): array
+    {
+        $turn       = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'families' => [], 'sources' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => [], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
+        [, $result] = $this->runToolCall(GetShoppingAssistantTools::make(), $conversation, ['id' => 'direct_search', 'function' => ['name' => 'search_products', 'arguments' => json_encode(['query' => $query])]], $turn);
+
+        return [$turn, $result];
     }
 
     /**
