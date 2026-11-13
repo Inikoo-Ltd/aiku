@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\RangeAdvisor;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Database\Query\Builder;
@@ -20,7 +21,9 @@ use Lorisleiva\Actions\Concerns\AsAction;
  * and what they bought more than 12 months ago but not since (forgotten). Forgotten reads the 36
  * months customer_product_purchases keeps first, then the customer's older orders for whatever
  * room is left, so a customer back after years still sees what they used to order. It is the
- * customer's own history, so it ignores the segment and the minimum group size.
+ * customer's own history, so it ignores the segment and the minimum group size. A dropshipper's range
+ * is what they list in their stores, so on a dropshipping shop missing also leaves out every product
+ * in their portfolios, ordered or not.
  */
 class GetCustomerRangeGaps
 {
@@ -48,7 +51,7 @@ class GetCustomerRangeGaps
                 'customer'            => $customer,
                 'area'                => $area,
                 'limit'               => $limit,
-                'exclude_product_ids' => $boughtProductIds,
+                'exclude_product_ids' => $shop->type === ShopTypeEnum::DROPSHIPPING ? array_merge($boughtProductIds, self::listedProductIds($customer)) : $boughtProductIds,
             ]
         );
 
@@ -92,6 +95,20 @@ class GetCustomerRangeGaps
             'missing'   => $bestSellers['items'],
             'forgotten' => $forgotten,
         ];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public static function listedProductIds(Customer $customer): array
+    {
+        return DB::table('portfolios')
+            ->where('customer_id', $customer->id)
+            ->where('item_type', 'Product')
+            ->where('status', true)
+            ->distinct()
+            ->pluck('item_id')
+            ->all();
     }
 
     /**
