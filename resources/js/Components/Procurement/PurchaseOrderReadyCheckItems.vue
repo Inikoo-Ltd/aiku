@@ -29,6 +29,8 @@ export type ReadyCheckItem = {
 	is_checked?: boolean
 	checked_at?: string | null
 	quantity_rejected?: number
+	received_quantity?: number
+	is_packed?: boolean
 }
 
 export type ReadyCheckItems = {
@@ -50,9 +52,11 @@ const locale = useLocaleStore()
 
 const isPacking = computed(() => props.check === "packing")
 
-const actionableIds = computed(() => props.data.items.filter((item) => isPacking.value || item.is_checkable).map((item) => item.id))
+const actionableIds = computed(() => props.data.items.filter((item) => (isPacking.value ? !item.is_packed : item.is_checkable)).map((item) => item.id))
 
-const totalUnits = computed(() => props.data.items.reduce((total, item) => total + item.quantity, 0))
+const totalUnits = computed(() => props.data.items.reduce((total, item) => total + (isPacking.value ? item.received_quantity ?? item.quantity : item.quantity), 0))
+
+const packedCount = computed(() => props.data.items.filter((item) => item.is_packed).length)
 
 const checkedCount = computed(() => props.data.items.filter((item) => item.is_checked).length)
 
@@ -92,7 +96,7 @@ function runAll() {
 	<div class="space-y-3 text-sm">
 		<template v-if="data.items.length">
 			<p class="text-gray-600">
-				<template v-if="isPacking">{{ ctrans("These items are received at the warehouse and not packed yet:") }}</template>
+				<template v-if="isPacking">{{ ctrans(":packed of :total items received are packed:", { packed: packedCount, total: data.items.length }) }}</template>
 				<template v-else>{{ ctrans(":checked of :total goods receipt lines are checked:", { checked: checkedCount, total: data.items.length }) }}</template>
 			</p>
 
@@ -105,7 +109,15 @@ function runAll() {
 							<span v-if="item.reference" class="whitespace-nowrap text-xs text-gray-400">{{ item.reference }}</span>
 						</div>
 						<div v-if="item.name" class="text-xs text-gray-500">{{ item.name }}</div>
-						<div v-if="isPacking && item.has_unchecked" class="text-xs text-amber-600">{{ ctrans("Not checked yet") }}</div>
+						<template v-if="isPacking">
+							<div v-if="item.is_packed" class="flex items-center gap-1 text-xs text-green-700">
+								<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
+								{{ ctrans("Packed") }}
+							</div>
+							<div v-else class="text-xs text-amber-600">
+								{{ ctrans(":units units not packed yet", { units: locale.number(item.quantity) }) }}<template v-if="item.has_unchecked"> · {{ ctrans("Not checked yet") }}</template>
+							</div>
+						</template>
 						<template v-if="!isPacking">
 							<div v-if="item.is_checked" class="flex items-center gap-1 text-xs text-green-700">
 								<FontAwesomeIcon :icon="faCheck" fixed-width aria-hidden="true" />
@@ -116,19 +128,20 @@ function runAll() {
 							<div v-else class="text-xs text-amber-600">{{ ctrans("Not checked yet") }}</div>
 						</template>
 					</div>
-					<span class="shrink-0 whitespace-nowrap tabular-nums text-gray-700">{{ ctrans(":units units", { units: locale.number(item.quantity) }) }}</span>
+					<span class="shrink-0 whitespace-nowrap tabular-nums text-gray-700">{{ ctrans(":units units", { units: locale.number(isPacking ? item.received_quantity ?? item.quantity : item.quantity) }) }}</span>
 				</li>
 			</ul>
 
 			<p class="text-right text-xs tabular-nums text-gray-600">
-				{{ ctrans("Total: :count items, :units units", { count: data.items.length, units: locale.number(totalUnits) }) }}
+				{{ isPacking ? ctrans("Total received: :count items, :units units", { count: data.items.length, units: locale.number(totalUnits) }) : ctrans("Total: :count items, :units units", { count: data.items.length, units: locale.number(totalUnits) }) }}
 			</p>
 		</template>
 		<p v-else class="text-gray-500">
-			{{ isPacking ? ctrans("Nothing received is waiting to be packed") : ctrans("Nothing received yet to check") }}
+			{{ isPacking ? ctrans("Nothing received yet to pack") : ctrans("Nothing received yet to check") }}
 		</p>
 
 		<p v-if="!isPacking && data.items.length && !hasUncheckedQc" class="text-xs text-green-700">{{ ctrans("Every goods receipt line is checked") }}</p>
+		<p v-if="isPacking && data.items.length && packedCount === data.items.length" class="text-xs text-green-700">{{ ctrans("Every item received is packed") }}</p>
 
 		<p v-if="hasUncheckedToPack" class="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
 			<FontAwesomeIcon :icon="faExclamationTriangle" class="mt-0.5" fixed-width aria-hidden="true" />

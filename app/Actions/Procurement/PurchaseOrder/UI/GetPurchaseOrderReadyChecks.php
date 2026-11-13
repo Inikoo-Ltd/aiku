@@ -20,9 +20,9 @@ use Illuminate\Support\Collection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 /**
- * What still keeps the Packing and QC checks of Ready to Roll open on an order through an agent warehouse: the lines
- * received and not packed yet, and every goods receipt line with whether it is checked, with the routes that pack or
- * check them all.
+ * The Packing and QC checks of Ready to Roll on an order through an agent warehouse: every line received with what of it
+ * is still to pack, and every goods receipt line with whether it is checked, with the routes that pack or check the
+ * rest.
  */
 class GetPurchaseOrderReadyChecks
 {
@@ -55,7 +55,7 @@ class GetPurchaseOrderReadyChecks
         return [
             'packing' => [
                 'received_in_full' => $isReceivedInFull,
-                'items'            => $this->itemsToPack($receiptItems, $transactions),
+                'items'            => $this->itemsForPacking($receiptItems, $transactions),
                 'route'            => $agentCanEdit ? [
                     'name'       => 'grp.models.purchase-order.transaction.pack_many',
                     'parameters' => ['purchaseOrder' => $purchaseOrder->id],
@@ -78,18 +78,26 @@ class GetPurchaseOrderReadyChecks
      *
      * @return array<int, array<string, mixed>>
      */
-    private function itemsToPack(Collection $receiptItems, Collection $transactions): array
+    private function itemsForPacking(Collection $receiptItems, Collection $transactions): array
     {
+        $isToPack = fn (AgentGoodsReceiptItem $item) => $item->agentWarehouseStock?->state === AgentWarehouseStockStateEnum::RECEIVED && (float) $item->agentWarehouseStock->quantity > 0;
+
         return $receiptItems
-            ->filter(fn (AgentGoodsReceiptItem $item) => $item->agentWarehouseStock?->state === AgentWarehouseStockStateEnum::RECEIVED && (float) $item->agentWarehouseStock->quantity > 0)
+            ->filter(fn (AgentGoodsReceiptItem $item) => $item->purchase_order_transaction_id !== null)
             ->groupBy('purchase_order_transaction_id')
-            ->map(fn (Collection $items, int $transactionId) => [
-                ...$this->product($transactions->get($transactionId)),
-                'id'            => $transactionId,
-                'quantity'      => (float) $items->sum(fn (AgentGoodsReceiptItem $item) => (float) $item->agentWarehouseStock->quantity),
-                'has_unchecked' => $items->contains(fn (AgentGoodsReceiptItem $item) => !$item->isChecked()),
-            ])
-            ->sortBy('code')
+            ->map(function (Collection $items, int $transactionId) use ($isToPack, $transactions) {
+                $toPack = $items->filter($isToPack);
+
+                return [
+                    ...$this->product($transactions->get($transactionId)),
+                    'id'                => $transactionId,
+                    'quantity'          => (float) $toPack->sum(fn (AgentGoodsReceiptItem $item) => (float) $item->agentWarehouseStock->quantity),
+                    'received_quantity' => (float) $items->sum(fn (AgentGoodsReceiptItem $item) => $item->quantityAccepted()),
+                    'is_packed'         => $toPack->isEmpty(),
+                    'has_unchecked'     => $toPack->contains(fn (AgentGoodsReceiptItem $item) => !$item->isChecked()),
+                ];
+            })
+            ->sortBy(fn (array $item) => [$item['is_packed'], $item['code']])
             ->values()
             ->all();
     }
