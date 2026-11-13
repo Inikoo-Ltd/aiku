@@ -450,6 +450,7 @@ class ImportCompetitorFeed
             $command->info("$competitor->name: ".$this->handle($competitor).' products in the feed');
 
             if (!$command->option('no-match') && $competitor->status === CompetitorStatusEnum::OK) {
+                $command->info("$competitor->name: ".MatchCompetitorProducts::matchOtherSizes($competitor).' of our other sizes matched');
                 $command->info("$competitor->name: ".MatchCompetitorProducts::make()->queue($competitor, sync: (bool) $command->option('sync')).' products to match');
             }
         }

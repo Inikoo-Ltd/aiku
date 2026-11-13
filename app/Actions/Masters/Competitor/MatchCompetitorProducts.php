@@ -345,6 +345,82 @@ class MatchCompetitorProducts
     }
 
     /**
+     * Our other sizes of a matched product get the competitor's same size of the same product (HELP-4691): only main
+     * products are matched, so our 50ml, 100ml and 500ml fragrance oils, named alike and without their size, were
+     * never compared. Their sizes of one product share its link but for the size (?variant= on Shopify, attribute_pa_size
+     * on WooCommerce, whose link can be ?p=<id> on the homepage) and its name but for the size; ours share a master variant.
+     * Each of our sizes (from its code, else its name) takes their row of that size (within 5%, ml and g alike, as oils
+     * are sold by either), only from a main matched as the same item, with that match's status. A pair already looked
+     * at is left as it is.
+     *
+     * ponytail: the competitor's catalogue is held in memory once a run (a few thousand rows); fine at feed sizes.
+     */
+    public static function matchOtherSizes(Competitor $competitor): int
+    {
+        $created = 0;
+        $size    = fn (string ...$texts) => collect($texts)->map(fn (string $text) => collect(static::sizesInName($text))->flatten()->first())->filter()->first();
+        $product = fn (CompetitorProduct $theirs) => static::pageWithoutSize((string) $theirs->url).'|'.trim(preg_replace([self::SIZES, '/\b(size|tester)\b/i', '/[^\p{L}\p{N}]+/u'], ' ', mb_strtolower($theirs->name)));
+        $catalogue = $competitor->products()->whereNotNull('url')->get(['id', 'name', 'url'])->groupBy($product);
+
+        MasterAssetCompetitorProduct::query()
+            ->select('master_asset_competitor_products.*')
+            ->join('master_assets', 'master_assets.id', '=', 'master_asset_competitor_products.master_asset_id')
+            ->join('competitor_products', 'competitor_products.id', '=', 'master_asset_competitor_products.competitor_product_id')
+            ->where('competitor_products.competitor_id', $competitor->id)
+            ->whereNotNull('competitor_products.url')
+            ->where('master_assets.is_main', true)
+            ->whereNotNull('master_assets.master_variant_id')
+            ->where('master_asset_competitor_products.status', '!=', MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->where('master_asset_competitor_products.is_same_item', true)
+            ->with(['masterAsset', 'competitorProduct'])
+            ->chunkById(500, function (Collection $matches) use ($size, $product, $catalogue, &$created) {
+                foreach ($matches as $match) {
+                    $theirSizes = $catalogue->get($product($match->competitorProduct), collect())
+                        ->mapWithKeys(fn (CompetitorProduct $theirs) => [$theirs->id => $size($theirs->name)])
+                        ->filter();
+
+                    $ourSizes = MasterAsset::where('master_variant_id', $match->masterAsset->master_variant_id)
+                        ->where('id', '!=', $match->master_asset_id)
+                        ->where('status', true)
+                        ->get();
+
+                    foreach ($ourSizes as $ours) {
+                        $ourSize = $size($ours->code, $ours->name);
+                        $theirId = $ourSize ? $theirSizes->search(fn (float $theirSize) => abs($theirSize - $ourSize) <= 0.05 * max($theirSize, $ourSize)) : false;
+                        if ($theirId === false) {
+                            continue;
+                        }
+
+                        $sized = MasterAssetCompetitorProduct::firstOrCreate([
+                            'master_asset_id'       => $ours->id,
+                            'competitor_product_id' => $theirId,
+                        ], [
+                            'master_shop_id' => $ours->master_shop_id,
+                            'is_same_item'   => $match->is_same_item,
+                            'confidence'     => $match->confidence,
+                            'status'         => $match->status,
+                        ]);
+                        $created += $sized->wasRecentlyCreated ? 1 : 0;
+                    }
+                }
+            }, 'master_asset_competitor_products.id', 'id');
+
+        return $created;
+    }
+
+    /**
+     * A competitor product's link without the size it was picked in: Shopify's variant and WooCommerce's attribute_pa_* go.
+     */
+    public static function pageWithoutSize(string $url): string
+    {
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $parameters);
+        $parameters = array_filter($parameters, fn ($key) => $key !== 'variant' && !str_starts_with((string) $key, 'attribute_pa_'), ARRAY_FILTER_USE_KEY);
+        ksort($parameters);
+
+        return rtrim(strtok($url, '?'), '/').($parameters ? '?'.http_build_query($parameters) : '');
+    }
+
+    /**
      * Every product of the competitor's master shop with a name close to one in the feed and not
      * looked at yet, in chunks of 50.
      */
