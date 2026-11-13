@@ -137,7 +137,7 @@ class IndexBankTransactionsToReview extends OrgAction
             $table->withGlobalSearch()
                 ->withEmptyState([
                     'title'       => __('Nothing to review'),
-                    'description' => __('Every payment the banks received is placed on an order or set aside.'),
+                    'description' => __('Every payment the banks received is placed on an order, marked already paid or marked not for an order.'),
                 ]);
 
             $table->column(key: 'booked_at', label: __('Date'), sortable: true);
