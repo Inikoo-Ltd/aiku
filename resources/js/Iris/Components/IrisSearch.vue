@@ -9,7 +9,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faSparkles } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Popover from "primevue/popover"
-import Button from "@/Components/Elements/Buttons/Button.vue"
 import { searchRoute } from "@/Iris/Composables/useSearchRoute"
 import { useSearchFeaturedItems } from "@/Iris/Composables/useSearchFeaturedItems"
 import { useShoppingAssistant } from "@/Iris/Composables/useShoppingAssistant"
@@ -29,7 +28,7 @@ const layout = inject('layout', retinaLayoutStructure)
 
 const inputValue = ref('')
 
-const { assistant, askLabel, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
+const { assistant, offerLabel, looksLikeANeed, openAssistant } = useShoppingAssistant()
 
 const askAssistant = () => {
     closePopover()
@@ -242,7 +241,7 @@ const visitSearchPage = () => {
 </script>
 
 <template>
-    <div class="iris-search-box group relative flex h-12 w-full min-w-28 items-center rounded-full border border-[#d1d5db] bg-white focus-within:border-transparent focus-within:ring-2 focus-within:ring-gray-700 md:min-w-0">
+    <div class="iris-search-box w-full relative group">
         <input
             ref="inputRef"
             :value="inputValue"
@@ -250,27 +249,12 @@ const visitSearchPage = () => {
             @focus="onFocus"
             @mouseup="onMouseUp"
             @blur="onBlur"
-            class="h-full min-w-0 flex-1 rounded-full border-0 bg-transparent pl-10 pr-3 focus:border-0 focus:ring-0 disabled:cursor-not-allowed disabled:bg-gray-200"
+            class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
             :id="id || 'inputIrisSearch'"
             :placeholder="fieldValueSearch?.placeholder ?? ctrans('Search')"
             @keydown.enter="() => visitSearchPage()"
         />
         <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
-        <template v-if="assistant">
-            <span class="h-6 w-px shrink-0 bg-gray-300" aria-hidden="true"></span>
-            <Button
-                :label="askLabel"
-                :title="askLabel"
-                :aria-label="askLabel"
-                size="s"
-                class="iris-search-ask mx-1.5 h-9 shrink-0 !rounded-full !px-4 font-semibold"
-                @click="askAssistant"
-            >
-                <template #icon>
-                    <FontAwesomeIcon icon="far fa-sparkles" fixed-width aria-hidden="true" />
-                </template>
-            </Button>
-        </template>
 
         <!-- Catalogue results in a centered popover with an arrow to the input -->
         <Popover
@@ -317,29 +301,6 @@ const visitSearchPage = () => {
 </template>
 
 <style lang="scss">
-.iris-search-box {
-    container-type: inline-size;
-}
-
-.iris-search-box .iris-search-ask > span {
-    max-width: 10rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-@container (max-width: 26rem) {
-    .iris-search-box .iris-search-ask > span {
-        display: none;
-    }
-
-    .iris-search-box .iris-search-ask {
-        width: 2.25rem;
-        justify-content: center;
-        padding-inline: 0 !important;
-    }
-}
-
 /* Search popover: full-width panel pinned to the viewport */
 .iris-search-popover.p-popover {
     max-width: none !important;
