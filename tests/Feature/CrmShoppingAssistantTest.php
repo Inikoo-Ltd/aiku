@@ -1280,8 +1280,9 @@ test('the assistant report counts what Keep exploring offered, was seen and clic
             'asked'     => ['value' => 1, 'previous' => 0],
         ])
         ->and($report['refusals'])->toBe([
-            'rate_limit' => ['value' => 2, 'previous' => 0],
-            'budget'     => ['value' => 0, 'previous' => 1],
+            'rate_limit'   => ['value' => 2, 'previous' => 0],
+            'budget'       => ['value' => 0, 'previous' => 1],
+            'customer_cap' => ['value' => 0, 'previous' => 0],
         ]);
 });
 
