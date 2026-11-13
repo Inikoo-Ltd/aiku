@@ -87,9 +87,9 @@ class IndexBuyerDeliveryDiscrepancies extends OrgAction
         $within   = "($expected > 0"
             .($percentage > 0 ? " and abs($received - $expected) * 100 / $expected <= $percentage" : '')
             .($amount > 0 ? " and abs($received - $expected) * coalesce(stock_delivery_items.org_net_amount, stock_delivery_items.net_amount) / $expected <= $amount" : '')
-            .')';
+            .')'.($percentage <= 0 || $percentage >= 100 ? " or $expected = 0" : '');
 
-        return "($mismatch or not $within)";
+        return "($mismatch or not ($within))";
     }
 
     public static function baseQuery(Organisation $organisation, string $owner, ?User $user): Builder

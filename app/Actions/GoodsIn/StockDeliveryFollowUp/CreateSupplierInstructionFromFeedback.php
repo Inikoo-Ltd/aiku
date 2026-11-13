@@ -17,6 +17,7 @@ use App\Models\GoodsIn\StockDeliveryFeedback;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -30,6 +31,11 @@ class CreateSupplierInstructionFromFeedback extends OrgAction
     private StockDeliveryFeedback $feedback;
 
     public function handle(StockDeliveryFeedback $feedback, User $user, array $modelData): StockDeliveryFeedback
+    {
+        return DB::transaction(fn () => $this->createInstruction(StockDeliveryFeedback::lockForUpdate()->findOrFail($feedback->id), $user, $modelData));
+    }
+
+    private function createInstruction(StockDeliveryFeedback $feedback, User $user, array $modelData): StockDeliveryFeedback
     {
         if ($feedback->procurement_note_id) {
             return $feedback;

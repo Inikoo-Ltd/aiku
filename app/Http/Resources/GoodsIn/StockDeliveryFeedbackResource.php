@@ -13,6 +13,8 @@ use App\Enums\GoodsIn\StockDeliveryFollowUp\StockDeliveryFeedbackTopicEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemDiscrepancyOutcomeEnum;
 use App\Enums\GoodsIn\StockDeliveryItem\StockDeliveryItemStateEnum;
+use App\Enums\Procurement\ProcurementNote\ProcurementNoteStateEnum;
+use App\Enums\Procurement\ProcurementNote\ProcurementNoteVisibilityEnum;
 use App\Enums\Procurement\PurchaseOrder\PurchaseOrderAttachmentScopeEnum;
 use App\Enums\Procurement\PurchaseOrderTransaction\PurchaseOrderTransactionStateEnum;
 use App\Models\GoodsIn\StockDeliveryFeedback;
@@ -31,6 +33,11 @@ class StockDeliveryFeedbackResource extends JsonResource
         /** @var StockDeliveryFeedback $feedback */
         $feedback      = $this->resource;
         $stockDelivery = $feedback->stockDelivery;
+        $forSupplier   = $request->routeIs('grp.supplier_share.*');
+        $note          = $feedback->procurementNote;
+        if ($forSupplier && $note && ($note->visibility !== ProcurementNoteVisibilityEnum::SUPPLIER || $note->state !== ProcurementNoteStateEnum::ACTIVE)) {
+            $note = null;
+        }
 
         return [
             'id'                 => $feedback->id,
@@ -46,14 +53,14 @@ class StockDeliveryFeedbackResource extends JsonResource
             'supplier'           => $feedback->supplier ? ['id' => $feedback->supplier->id, 'code' => $feedback->supplier->code, 'name' => $feedback->supplier->name] : null,
             'agent'              => $feedback->agent ? ['code' => $feedback->agent->code, 'name' => $feedback->agent->name] : null,
             'purchase_orders'    => self::purchaseOrders($feedback),
-            'author'             => $feedback->author?->contact_name ?? $feedback->author?->username,
-            'author_id'          => $feedback->author_id,
+            'author'             => $forSupplier ? null : ($feedback->author?->contact_name ?? $feedback->author?->username),
+            'author_id'          => $forSupplier ? null : $feedback->author_id,
             'created_at'         => $feedback->created_at,
-            'photos'             => $request->routeIs('grp.supplier_share.*') ? [] : self::photos($feedback),
-            'instruction'        => $feedback->procurementNote ? [
-                'id'    => $feedback->procurementNote->id,
-                'body'  => $feedback->procurementNote->body,
-                'state' => $feedback->procurementNote->state->value,
+            'photos'             => $forSupplier ? [] : self::photos($feedback),
+            'instruction'        => $note ? [
+                'id'    => $note->id,
+                'body'  => $note->body,
+                'state' => $forSupplier ? null : $note->state->value,
             ] : null,
         ];
     }

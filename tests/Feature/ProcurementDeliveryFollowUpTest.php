@@ -213,6 +213,8 @@ test('a five-star feedback is stored and reaches the buyer notification and the 
             ->where('delivery_feedback.0.id', $feedback->id)
             ->where('delivery_feedback.0.comment', $thanks)
             ->where('delivery_feedback.0.photos', [])
+            ->where('delivery_feedback.0.author', null)
+            ->where('delivery_feedback.0.author_id', null)
             ->etc()));
 });
 
