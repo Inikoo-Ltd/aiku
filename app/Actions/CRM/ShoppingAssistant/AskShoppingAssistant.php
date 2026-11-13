@@ -155,6 +155,36 @@ class AskShoppingAssistant
 
     public const string PLAIN_SEARCH_MODEL = 'plain-search';
 
+    public const string GREETING_MODEL = 'greeting';
+
+    /**
+     * Greetings, formal and informal, in the storefront languages and the ones customers write in,
+     * kept without accents: isGreeting compares them with the message stripped the same way.
+     */
+    private const array GREETINGS = [
+        'hi', 'hey', 'hello', 'hiya', 'howdy', 'yo', 'sup', 'hullo', 'greetings', 'good morning', 'good afternoon', 'good evening', 'good day', 'morning', 'afternoon', 'evening', 'how are you', 'how are you doing', 'how r u', 'whats up', 'what s up',
+        'hola', 'holi', 'buenas', 'buenos dias', 'buen dia', 'buenas tardes', 'buenas noches', 'que tal', 'como estas', 'como esta', 'saludos',
+        'bonjour', 'bonsoir', 'salut', 'coucou', 'bonjour a tous', 'ca va', 'comment ca va', 'comment allez vous',
+        'hallo', 'guten tag', 'guten morgen', 'guten abend', 'servus', 'moin', 'gruss gott', 'gruezi', 'wie gehts', 'wie geht es ihnen',
+        'ciao', 'salve', 'buongiorno', 'buonasera', 'buon pomeriggio', 'come stai', 'come sta',
+        'ola', 'oi', 'bom dia', 'boa tarde', 'boa noite', 'tudo bem',
+        'hoi', 'goedemorgen', 'goedemiddag', 'goedenavond', 'goedendag', 'dag',
+        'dzien dobry', 'czesc', 'witam', 'witaj', 'dobry wieczor', 'siema',
+        'dobry den', 'dobry vecer', 'dobre rano', 'ahoj', 'cau', 'zdravim', 'nazdar',
+        'jo napot', 'jo napot kivanok', 'jo reggelt', 'jo estet', 'szia', 'sziasztok', 'szervusz', 'hello bello',
+        'buna', 'buna ziua', 'buna dimineata', 'buna seara',
+        'zdravo', 'bok', 'dobar dan', 'dobro jutro', 'dobra vecer', 'pozdrav',
+        'hej', 'halla', 'god morgon', 'god dag', 'god kvall', 'tjena', 'tja', 'hejsan',
+        'здравеите', 'здравеи', 'здрасти', 'добър ден', 'добро утро', 'добър вечер',
+        'привiт', 'привіт', 'вiтаю', 'вітаю', 'добрии день', 'доброго дня', 'добрии вечір', 'добрии вечiр', 'доброго ранку',
+        'привет', 'здравствуите', 'добрыи день', 'доброе утро', 'добрыи вечер',
+        'γεια', 'γεια σας', 'γεια σου', 'καλημερα', 'καλησπερα',
+        'salam', 'salaam', 'salam alaykum', 'salam alaikum', 'assalamu alaikum', 'as salamu alaykum', 'marhaba', 'ahlan', 'labas', 'سلام', 'السلام عليكم', 'مرحبا', 'اهلا',
+        'merhaba', 'selam', 'namaste', 'shalom',
+    ];
+
+    private const array GREETING_ADDRESSEES = ['merlin', 'there', 'team', 'all', 'everyone', 'everybody', 'guys', 'friend', 'sir', 'madam', 'amigo', 'amiga', 'amigos', 'a todos', 'tout le monde', 'zusammen', 'a tutti', 'pessoal', 'allemaal'];
+
     public const int PLAIN_SEARCH_MAX_WORDS = 3;
 
     public const int PLAIN_SEARCH_MIN_PRODUCTS = 3;
@@ -192,9 +222,13 @@ class AskShoppingAssistant
         $customer  = $conversation->customer;
         $mainModel = (string) config('services.shopping_assistant.model');
         $premium   = config('services.shopping_assistant.premium_model') ?: null;
-        $lookup    = $unsure ? null : ($this->productCodeTurn($conversation, $customer, $message) ?? $this->plainSearchTurn($conversation, $customer, $message));
+        $lookup    = $unsure ? null : ($this->greetingTurn($conversation, $customer, $message) ?? $this->productCodeTurn($conversation, $customer, $message) ?? $this->plainSearchTurn($conversation, $customer, $message));
         $model     = match (true) {
-            $lookup !== null => in_array('plain_search', $lookup['flags'], true) ? self::PLAIN_SEARCH_MODEL : self::PRODUCT_CODE_MODEL,
+            $lookup !== null => match (true) {
+                in_array('greeting', $lookup['flags'], true)     => self::GREETING_MODEL,
+                in_array('plain_search', $lookup['flags'], true) => self::PLAIN_SEARCH_MODEL,
+                default                                          => self::PRODUCT_CODE_MODEL,
+            },
             (bool) $unsure   => $premium,
             default          => $this->modelFor($conversation, $customer, $message),
         };
@@ -876,6 +910,44 @@ class AskShoppingAssistant
         $turn['tool_calls'][] = ['name' => GetShoppingAssistantTools::PRESENT_PRODUCTS, 'arguments' => $turn['answer'], 'product_ids' => [], 'error' => null, 'ms' => 0];
 
         return $turn;
+    }
+
+    /**
+     * A message that is only a greeting ("Hey", "Buenas tardes", "Hi Merlin") read as a search showed
+     * products nobody asked for. It is answered with a fixed greeting and no model call.
+     *
+     * @return ?array<string, mixed>
+     */
+    private function greetingTurn(ShoppingAssistantConversation $conversation, ?Customer $customer, string $message): ?array
+    {
+        if (!$this->isGreeting($message)) {
+            return null;
+        }
+
+        $locale = $conversation->language_code;
+        $name   = $customer ? $this->firstName($customer) : null;
+
+        $turn           = ['answer' => null, 'found' => [], 'names' => [], 'basket' => [], 'facts' => [], 'families' => [], 'sources' => [], 'cleared' => false, 'tool_calls' => [], 'flags' => ['greeting'], 'model_calls' => 0, 'prompt_tokens' => 0, 'completion_tokens' => 0, 'cost' => 0.0, 'call_ids' => []];
+        $turn['answer'] = [
+            'reply'       => $name ? __('Hello :name! What can I help you find today?', ['name' => $name], $locale) : __('Hello! What can I help you find today?', [], $locale),
+            'answer_kind' => ShoppingAssistantAnswerKindEnum::QUESTION->value,
+            'language'    => $locale,
+            'must_haves'  => [],
+            'add_ons'     => [],
+            'follow_ups'  => [],
+        ];
+        $turn['tool_calls'][] = ['name' => GetShoppingAssistantTools::PRESENT_PRODUCTS, 'arguments' => $turn['answer'], 'product_ids' => [], 'error' => null, 'ms' => 0];
+
+        return $turn;
+    }
+
+    public function isGreeting(string $message): bool
+    {
+        $plain = fn (string $text) => trim(preg_replace(['/(\p{L})\1{2,}/u', '/[^\p{L}\s]+/u', '/\s+/u'], ['$1', ' ', ' '], preg_replace('/\p{Mn}+/u', '', \Normalizer::normalize(mb_strtolower($text), \Normalizer::FORM_D))));
+        $words = fn (array $phrases) => implode('|', array_map(fn (string $phrase) => preg_quote($plain($phrase), '/'), $phrases));
+        $text  = $plain($message);
+
+        return $text !== '' && preg_match('/^(?:'.$words(self::GREETINGS).')(?: (?:'.$words(self::GREETINGS).'|'.$words(self::GREETING_ADDRESSEES).'))*$/u', $text) === 1;
     }
 
     /**

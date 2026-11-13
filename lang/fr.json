@@ -26710,6 +26710,8 @@
     "I cannot see your orders, so our team will need to answer that. Would you like to ask them?": "Je n'ai pas accès à vos commandes, notre équipe devra donc vous répondre. Souhaitez-vous le leur demander ?",
     "Our team will need to help you with that. Would you like to ask them?": "Notre équipe devra vous aider pour cela. Souhaitez-vous le leur demander ?",
     "Here is what we have for \":query\".": "Voici ce que nous avons pour « :query ».",
+    "Hello :name! What can I help you find today?": "Bonjour :name ! Que puis-je vous aider à trouver aujourd'hui ?",
+    "Hello! What can I help you find today?": "Bonjour ! Que puis-je vous aider à trouver aujourd'hui ?",
     "Here is :code: :name.": "Voici :code : :name.",
     "Similar products are below.": "Des produits similaires se trouvent ci-dessous.",
     "Of course. Our team can help you with that.": "Bien sûr. Notre équipe peut vous aider à ce sujet.",

@@ -26616,6 +26616,8 @@
     "I cannot see your orders, so our team will need to answer that. Would you like to ask them?": "Vaše objednávky nevidím, preto bude odpoveď musieť poskytnúť náš tím. Chcete sa ho opýtať?",
     "Our team will need to help you with that. Would you like to ask them?": "S tým vám musí pomôcť náš tím. Chcete sa ho opýtať?",
     "Here is what we have for \":query\".": "Toto máme pre „:query“.",
+    "Hello :name! What can I help you find today?": "Dobrý deň, :name! S čím vám dnes môžem pomôcť?",
+    "Hello! What can I help you find today?": "Dobrý deň! S čím vám dnes môžem pomôcť?",
     "Here is :code: :name.": "Toto je :code: :name.",
     "Similar products are below.": "Podobné produkty nájdete nižšie.",
     "Of course. Our team can help you with that.": "Samozrejme. S tým vám môže pomôcť náš tím.",

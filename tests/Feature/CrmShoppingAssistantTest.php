@@ -3690,3 +3690,27 @@ test('a dropshipping customer adding a product Merlin showed to one of their sal
         $this->shop->update(['type' => $originalType]);
     }
 });
+
+test('a message that is only a greeting, formal or informal in any storefront language, is greeted back with no model call and no products', function () {
+    $assistant = AskShoppingAssistant::make();
+    foreach (['hey', 'Heyyy!!', 'Hi Merlin 👋', 'hello there', 'Good morning', 'Buenas tardes', 'hola buenas', 'Bonjour à tous', 'Guten Tag', 'buongiorno', 'Olá', 'Dzień dobry', 'Dobrý deň', 'Jó napot kívánok', 'Bună ziua', 'Здравейте', 'Привіт', 'hej', 'Salam alaikum', 'السلام عليكم'] as $greeting) {
+        expect($assistant->isGreeting($greeting))->toBeTrue($greeting);
+    }
+    foreach (['hey candles', 'hi do you have samples', 'sage', 'morning star crystal', '👋', ''] as $other) {
+        expect($assistant->isGreeting($other))->toBeFalse($other);
+    }
+
+    Http::fake();
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'es']);
+    $customer->update(['contact_name' => 'Achraf Test']);
+
+    $greeted = AskShoppingAssistant::run($conversation, 'hey');
+
+    expect(collect(Http::recorded())->filter(fn (array $pair) => str_contains($pair[0]->url(), 'chat/completions')))->toBeEmpty()
+        ->and($greeted['message']->model)->toBe(AskShoppingAssistant::GREETING_MODEL)
+        ->and($greeted['message']->flags)->toBe(['greeting'])
+        ->and($greeted['reply'])->toBe('¡Hola, Achraf! ¿Qué está buscando hoy?')
+        ->and($greeted['groups']['must_haves'])->toBeEmpty();
+});
