@@ -25,6 +25,7 @@ trait WithCompetitorRules
             'language_id' => ['sometimes', 'nullable', 'integer', 'exists:languages,id'],
             'search_url'  => ['sometimes', 'nullable', 'starts_with:http', 'max:2000', 'regex:/\{query\}/'],
             'feed_url'    => ['sometimes', 'nullable', 'url:http,https', 'max:2000'],
+            'price_feed_url' => ['sometimes', 'nullable', 'url:http,https', 'max:2000'],
             'login_url'   => ['sometimes', 'nullable', 'url:http,https', 'max:2000'],
             'username'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'password'    => ['sometimes', 'nullable', 'string', 'max:255'],

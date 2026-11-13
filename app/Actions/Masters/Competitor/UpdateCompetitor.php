@@ -24,7 +24,7 @@ class UpdateCompetitor extends OrgAction
 
     public function handle(Competitor $competitor, array $modelData): Competitor
     {
-        foreach (['password', 'feed_url'] as $secret) {
+        foreach (['password', 'feed_url', 'price_feed_url'] as $secret) {
             if (array_key_exists($secret, $modelData) && blank($modelData[$secret])) {
                 unset($modelData[$secret]);
             }

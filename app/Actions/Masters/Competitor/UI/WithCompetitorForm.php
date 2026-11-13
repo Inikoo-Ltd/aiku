@@ -94,6 +94,12 @@ trait WithCompetitorForm
                         'information' => $competitor?->feed_url ? __('Saved. Leave it empty to keep it') : __('Best option: the link to the CSV or text file with all their products and prices that they give their trade customers. Read every day. Not needed for a Shopify shop: its catalogue is found by itself'),
                         'value'       => '',
                     ],
+                    'price_feed_url' => [
+                        'type'        => 'input',
+                        'label'       => __('Price list link'),
+                        'information' => $competitor?->price_feed_url ? __('Saved. Leave it empty to keep it') : __('Only when their prices come in a separate file from their products, e.g. a list of item codes with the price for your country: its prices replace the ones in the product feed, and products missing from it are left out'),
+                        'value'       => '',
+                    ],
                     'search_url' => [
                         'type'        => 'input',
                         'label'       => __('Search link'),

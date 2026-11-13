@@ -5760,6 +5760,31 @@ describe('competitor prices, HELP-3605', function () {
             ->and(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::withoutSearchWords($link, 'Brass'))->toBe('https://rival.example.com/products/brass-bowl');
     });
 
+    test('a competitor whose prices come in a separate price list takes them from it, and leaves out the products it does not list, HELP-4686', function () {
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake([
+            'feeds.example.com/trade.txt' => \Illuminate\Support\Facades\Http::response("Item No\tItem Name\tPrice\tBarcode\n230-TL1\tHimalayan Salt Tealight Holder\t2.49\t23416048\nAB_291\tBrass Singing Bowl\t40.00\t\n"),
+            'feeds.example.com/eu.csv'    => \Illuminate\Support\Facades\Http::response("\xEF\xBB\xBFItem Code,Stock Level,EU Price\n230-TL1,328,3.11\n"),
+        ]);
+        $europe = \App\Actions\Masters\Competitor\StoreCompetitor::make()->action($this->competitorMasterShop, [
+            'name'        => 'Rival Europe',
+            'website'     => 'https://feeds.example.com',
+            'sells_to'    => 'wholesale',
+            'currency_id' => group()->currency_id,
+            'feed_url'    => 'https://feeds.example.com/trade.txt',
+        ]);
+        \App\Actions\Masters\Competitor\UpdateCompetitor::make()->action($europe, ['price_feed_url' => 'https://feeds.example.com/eu.csv']);
+        \App\Actions\Masters\Competitor\UpdateCompetitor::make()->action($europe, ['price_feed_url' => '']);
+
+        $this->artisan('masters:competitor-feeds', ['--competitor' => $europe->id, '--no-match' => true])->assertSuccessful();
+
+        $product = $europe->products()->sole();
+        expect($europe->refresh()->price_feed_url)->toBe('https://feeds.example.com/eu.csv')
+            ->and($product->code)->toBe('230-TL1')
+            ->and((float) $product->price)->toBe(3.11)
+            ->and($product->barcode)->toBe('23416048');
+    });
+
     test('a competitor is searched with our name without its size, pack, label or codes, HELP-4686', function () {
         $query = fn (string $name) => \App\Actions\Masters\Competitor\ResearchCompetitorPrices::searchQuery($name);
 
