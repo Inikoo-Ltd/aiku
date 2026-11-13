@@ -7,7 +7,7 @@
 
 namespace App\Enums\Comms\Mailshot;
 
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\Retina\CRM\WhatsappOptIn\GetRetinaWhatsappOptInData;
 use App\Enums\EnumHelperTrait;
 use App\Models\Catalogue\Shop;
 
@@ -48,7 +48,7 @@ enum MailshotReadyMadeLinkEnum: string
     public function isAvailableIn(Shop $shop): bool
     {
         return match ($this) {
-            self::WHATSAPP_OPT_IN => $shop->type === ShopTypeEnum::B2B,
+            self::WHATSAPP_OPT_IN => GetRetinaWhatsappOptInData::isOfferedIn($shop),
         };
     }
 }

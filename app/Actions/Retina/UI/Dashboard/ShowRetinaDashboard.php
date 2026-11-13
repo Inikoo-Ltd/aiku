@@ -51,7 +51,10 @@ class ShowRetinaDashboard extends RetinaAction
         if ($this->shop->type === ShopTypeEnum::B2B && !$this->asPupil) {
             $customer          = $this->customer;
             $props['insights'] = Inertia::defer(fn () => GetRetinaB2BDashboardInsights::run($customer));
-            $props['whatsapp_optin'] = GetRetinaWhatsappOptInData::run($customer, $this->website, dismissible: true);
+        }
+
+        if (!$this->asPupil && $this->customer && GetRetinaWhatsappOptInData::isOfferedIn($this->shop)) {
+            $props['whatsapp_optin'] = GetRetinaWhatsappOptInData::run($this->customer, $this->website, dismissible: true);
         }
 
         return Inertia::render($inertiaPage, $props);
@@ -78,7 +81,7 @@ class ShowRetinaDashboard extends RetinaAction
         $comms = $this->customer?->comms;
 
         return $request->query('utm_campaign') === MailshotReadyMadeLinkEnum::WHATSAPP_OPT_IN->campaign()
-            && $this->shop?->type === ShopTypeEnum::B2B
+            && GetRetinaWhatsappOptInData::isOfferedIn($this->shop)
             && $comms?->whatsapp_newsletter_opt_in_dismissed_at
             && !$comms->is_subscribed_to_whatsapp_newsletter;
     }
