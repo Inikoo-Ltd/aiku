@@ -14,6 +14,8 @@ use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\ManufactureTaskSessionShare;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +39,8 @@ class ShareMixPool
     private const string MAKING = 'make:';
 
     private const string OF_MIX = "\u{241E}";
+
+    private const string LABEL_SQL = "lower(trim(coalesce(job_order_item_tasks.label, '')))";
 
     public static function poolKey(JobOrderItemTask $task): ?string
     {
@@ -350,15 +354,64 @@ class ShareMixPool
      */
     public function tasksNeeding(int $productionId, string $poolKey): Collection
     {
+        [$manufactureTaskId, $label] = self::stepOf($poolKey);
+
+        return $this->openLines($productionId)
+            ->where('job_order_item_tasks.manufacture_task_id', $manufactureTaskId)
+            ->whereRaw(self::LABEL_SQL.' = ?', [$label])
+            ->get()
+            ->filter(fn (JobOrderItemTask $task) => self::poolKey($task) === $poolKey)
+            ->values();
+    }
+
+    /**
+     * The same lines as tasksNeeding() for several pools read at once, for screens that only show them:
+     * anything that shares out, fills or settles a pool reads its own lines inside its lock.
+     *
+     * @param  array<int, string>  $poolKeys
+     * @param  array<int, string>  $with  relations the screen needs on each line
+     * @return Collection<string, EloquentCollection<int, JobOrderItemTask>> keyed by pool key, a pool no line needs included
+     */
+    public function tasksNeedingByPool(int $productionId, array $poolKeys, array $with = []): Collection
+    {
+        $steps = collect($poolKeys)->unique()->mapWithKeys(fn (string $poolKey) => [$poolKey => self::stepOf($poolKey)]);
+        if ($steps->isEmpty()) {
+            return collect();
+        }
+
+        $lines = $this->openLines($productionId)
+            ->selectRaw(self::LABEL_SQL.' as pool_label')
+            ->whereIn('job_order_item_tasks.manufacture_task_id', $steps->map(fn (array $step) => $step[0])->unique()->values())
+            ->with($with)
+            ->get()
+            ->filter(fn (JobOrderItemTask $task) => $steps->contains(fn (array $step) => $task->manufacture_task_id == $step[0] && $task->pool_label === $step[1]))
+            ->groupBy(fn (JobOrderItemTask $task) => self::poolKey($task) ?? '');
+
+        return $steps->map(fn (array $step, string $poolKey) => ($lines->get($poolKey) ?? new EloquentCollection())
+            ->filter(fn (JobOrderItemTask $task) => $task->manufacture_task_id == $step[0] && $task->pool_label === $step[1])
+            ->values());
+    }
+
+    /**
+     * @return array{0: string, 1: string} the manufacture task and the label of the steps a pool key is for
+     */
+    private static function stepOf(string $poolKey): array
+    {
         [$manufactureTaskId, $label] = explode('|', self::isMakingKey($poolKey) ? substr($poolKey, strlen(self::MAKING)) : $poolKey);
 
+        return [$manufactureTaskId, $label];
+    }
+
+    /**
+     * @return Builder<JobOrderItemTask>
+     */
+    private function openLines(int $productionId): Builder
+    {
         return JobOrderItemTask::query()
             ->select('job_order_item_tasks.*')
             ->join('job_orders', 'job_orders.id', 'job_order_item_tasks.job_order_id')
             ->join('job_order_items', 'job_order_items.id', 'job_order_item_tasks.job_order_item_id')
             ->where('job_order_item_tasks.production_id', $productionId)
-            ->where('job_order_item_tasks.manufacture_task_id', $manufactureTaskId)
-            ->whereRaw("lower(trim(coalesce(job_order_item_tasks.label, ''))) = ?", [$label])
             ->whereNotNull('job_order_item_tasks.artefact_manufacture_task_id')
             ->where('job_order_item_tasks.state', '!=', JobOrderItemTaskStateEnum::DONE->value)
             ->whereColumn('job_order_item_tasks.quantity_required', '>', 'job_order_item_tasks.quantity_made')
@@ -368,10 +421,7 @@ class ShareMixPool
             ->orderByRaw('job_orders.planned_for asc nulls last, job_orders.plan_position asc nulls last')
             ->orderBy('job_order_item_tasks.job_order_id')
             ->orderBy('job_order_item_tasks.id')
-            ->with(['recipeStep.rawMaterials', 'recipeStep.artefact.recipeSteps.manufactureTask', 'recipeStep.artefact.recipeSteps.rawMaterials', 'manufactureTask'])
-            ->get()
-            ->filter(fn (JobOrderItemTask $task) => self::poolKey($task) === $poolKey)
-            ->values();
+            ->with(['recipeStep.rawMaterials', 'recipeStep.artefact.recipeSteps.manufactureTask', 'recipeStep.artefact.recipeSteps.rawMaterials', 'manufactureTask']);
     }
 
     private function stillNeeds(JobOrderItemTask $task): float

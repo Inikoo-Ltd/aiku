@@ -62,6 +62,9 @@ class ShowManufactureFloor extends OrgAction
     /** @var array<string, array<string, mixed>|null> what each mix covers, by mix pool key */
     private array $mixPools = [];
 
+    /** @var Collection<string, Collection<int, JobOrderItemTask>> open lines of this production's pools, by mix pool key */
+    private Collection $mixPoolLines;
+
     private ?Collection $packSizes = null;
 
     private bool $canCombine = false;
@@ -168,6 +171,14 @@ class ShowManufactureFloor extends OrgAction
         $this->trialRunsNeedingFormulation = RecordTrialRunFormulation::jobOrdersNeedingFormulation($openTasks->pluck('jobOrder')->push($openSession?->jobOrderItemTask?->jobOrder)->filter());
 
         $openTasks = $this->collapseSharedMixes($this->collapseCombined($openTasks), $openTasksByJobOrderItem);
+
+        $this->mixPoolLines = ShareMixPool::make()->tasksNeedingByPool(
+            $production->id,
+            $openTasks->concat([$openSession?->jobOrderItemTask])->filter()
+                ->filter(fn (JobOrderItemTask $task) => $task->production_id == $production->id)
+                ->map(fn (JobOrderItemTask $task) => ShareMixPool::poolKey($task))->filter()->unique()->values()->all(),
+            ['jobOrder', 'jobOrderItem.artefact']
+        );
 
         $stepsByJobOrderItem = JobOrderItemTask::whereIn('job_order_item_id', $openTasksByJobOrderItem->keys())
             ->with([
@@ -597,7 +608,9 @@ class ShowManufactureFloor extends OrgAction
 
         return $this->mixPools[$poolKey] ??= (function () use ($task, $poolKey) {
             $pool     = ShareMixPool::make();
-            $lines    = $pool->tasksNeeding($task->production_id, $poolKey)->load(['jobOrder', 'jobOrderItem.artefact']);
+            $lines    = $task->production_id == $this->production->id && isset($this->mixPoolLines[$poolKey])
+                ? $this->mixPoolLines[$poolKey]
+                : $pool->tasksNeeding($task->production_id, $poolKey)->load(['jobOrder', 'jobOrderItem.artefact']);
             $needed   = round($lines->sum(fn (JobOrderItemTask $line) => (float) $line->quantity_required - (float) $line->quantity_made), 3);
             $isMaking = ShareMixPool::isMakingKey($poolKey);
             $batchKg  = $isMaking ? null : $task->mixBatchKg();
