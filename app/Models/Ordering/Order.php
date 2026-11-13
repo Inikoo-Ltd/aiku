@@ -696,6 +696,11 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(ShippingZone::class);
     }
 
+    public function packagingTransaction(): HasOne
+    {
+        return $this->hasOne(Transaction::class)->where('model_type', 'Packaging');
+    }
+
     public function packaging(): BelongsTo
     {
         return $this->belongsTo(Packaging::class);

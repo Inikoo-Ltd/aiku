@@ -12,6 +12,9 @@ use App\Enums\Catalogue\Packaging\PackagingStateEnum;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Billables\Packaging;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -28,7 +31,27 @@ trait WithDeliveryNotePackaging
             return null;
         }
 
-        return $deliveryNote->packaging ?? $deliveryNote->orders()->first()?->packaging;
+        return $deliveryNote->packaging ?? $this->firstOrder($deliveryNote)?->packaging;
+    }
+
+    protected function firstOrder(DeliveryNote $deliveryNote): ?Order
+    {
+        return $deliveryNote->orders()->first();
+    }
+
+    protected function packagingTransaction(Order $order): ?Transaction
+    {
+        return $order->transactions()->where('model_type', 'Packaging')->first();
+    }
+
+    /**
+     * A screen that lists many delivery notes asks for the same packagings again and again; it
+     * overrides this, and the two lookups above, to answer from what it has already fetched.
+     * Anything else just runs the lookup.
+     */
+    protected function rememberPackaging(string $key, Closure $resolve): mixed
+    {
+        return $resolve();
     }
 
     /**
@@ -38,7 +61,7 @@ trait WithDeliveryNotePackaging
      */
     protected function orderedPackaging(DeliveryNote $deliveryNote): ?Packaging
     {
-        $order = $deliveryNote->orders()->first();
+        $order = $this->firstOrder($deliveryNote);
 
         if (!$order) {
             return null;
@@ -47,7 +70,10 @@ trait WithDeliveryNotePackaging
         $orderedId = Arr::get($order->data ?? [], 'ordered_packaging_id');
 
         return $orderedId
-            ? Packaging::where('id', $orderedId)->where('shop_id', $deliveryNote->shop_id)->first()
+            ? $this->rememberPackaging(
+                "ordered:$deliveryNote->shop_id:$orderedId",
+                fn () => Packaging::where('id', $orderedId)->where('shop_id', $deliveryNote->shop_id)->first()
+            )
             : $order->packaging;
     }
 
@@ -68,13 +94,13 @@ trait WithDeliveryNotePackaging
 
     protected function paidPackagingPrice(DeliveryNote $deliveryNote): ?float
     {
-        $order = $deliveryNote->orders()->first();
+        $order = $this->firstOrder($deliveryNote);
 
         if (!$order) {
             return null;
         }
 
-        $transaction = $order->transactions()->where('model_type', 'Packaging')->first();
+        $transaction = $this->packagingTransaction($order);
 
         if ($transaction && (float) $transaction->quantity_ordered > 0) {
             return round((float) $transaction->net_amount / (float) $transaction->quantity_ordered, 2);
@@ -91,7 +117,10 @@ trait WithDeliveryNotePackaging
         }
 
         $orderedPackaging = $this->orderedPackaging($deliveryNote);
-        $defaultPackaging = $deliveryNote->shop->defaultPackaging();
+        $defaultPackaging = $this->rememberPackaging(
+            "default:$deliveryNote->shop_id",
+            fn () => $deliveryNote->shop->defaultPackaging()
+        );
 
         /* The warehouse packs what the customer paid for, so only that family is on offer,
            with the shop default kept beside it for the items that do not fit. The ordered
@@ -108,21 +137,26 @@ trait WithDeliveryNotePackaging
             return [];
         }
 
-        $options = Packaging::where('shop_id', $deliveryNote->shop_id)
-            ->where('state', PackagingStateEnum::ACTIVE)
-            ->where(function (Builder $query) use ($anchorFamily, $pinnedIds) {
-                if ($anchorFamily) {
-                    $query->where('family_code', $anchorFamily);
-                }
+        $pinnedKey = collect($pinnedIds)->unique()->sort()->implode(',');
 
-                if ($pinnedIds) {
-                    $query->orWhereIn('id', $pinnedIds);
-                }
-            })
-            ->with('image')
-            ->orderBy('position')
-            ->orderBy('price')
-            ->get();
+        $options = $this->rememberPackaging(
+            "options:$deliveryNote->shop_id:".json_encode($anchorFamily).":$pinnedKey",
+            fn () => Packaging::where('shop_id', $deliveryNote->shop_id)
+                ->where('state', PackagingStateEnum::ACTIVE)
+                ->where(function (Builder $query) use ($anchorFamily, $pinnedIds) {
+                    if ($anchorFamily) {
+                        $query->where('family_code', $anchorFamily);
+                    }
+
+                    if ($pinnedIds) {
+                        $query->orWhereIn('id', $pinnedIds);
+                    }
+                })
+                ->with('image')
+                ->orderBy('position')
+                ->orderBy('price')
+                ->get()
+        );
 
         // A single option is the one already on the delivery note: nothing to offer, so the
         // warehouse is not shown a picker that cannot change anything.

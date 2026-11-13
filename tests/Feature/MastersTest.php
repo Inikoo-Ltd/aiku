@@ -12,6 +12,8 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
 use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateEffectiveCost;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
+use App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum;
+use App\Models\Masters\MasterAssetCompetitorProduct;
 use App\Actions\Masters\MasterAsset\GenerateMasterAssetPriceTips;
 use App\Enums\Masters\MasterAsset\MasterAssetPriceTipKindEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetPriceTipStatusEnum;
@@ -5303,6 +5305,7 @@ describe('competitor prices, HELP-3605', function () {
 
         \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['competitor_units' => 0])->assertSessionHasErrors('competitor_units');
         \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), [])->assertSessionHasErrors(['status', 'competitor_units']);
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['competitor_units' => 0.5])->assertSessionHasNoErrors();
         \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['competitor_units' => 6])->assertRedirect();
 
         expect((float) $match->refresh()->competitor_units)->toBe(6.0)
@@ -5830,6 +5833,73 @@ describe('competitor prices, HELP-3605', function () {
         $this->travel(1)->days();
         $this->artisan('masters:competitor-prices', ['--competitor' => $this->competitor->id])->assertSuccessful();
         \App\Actions\Masters\Competitor\ResearchCompetitorPrices::assertNotPushed();
+    });
+
+    test('our other sizes of a matched product get the competitor same size of that product, HELP-4691', function () {
+        $leader = $this->competitorMasterAsset;
+        $leader->updateQuietly(['name' => 'Amber Fragrance Oil - 1 Litre', 'code' => 'FOKG-'.uniqid()]);
+        $sizes = collect(['50ml', '100ml', '0.5kg', '250ml', '2.5L'])->mapWithKeys(fn (string $size) => [$size => StoreMasterAsset::make()->action($leader->masterFamily, [
+            'code'    => $leader->code.'-'.$size,
+            'name'    => 'Amber Fragrance Oil',
+            'is_main' => false,
+            'type'    => MasterAssetTypeEnum::PRODUCT,
+            'price'   => 5,
+            'stocks'  => [],
+        ])]);
+        $masterVariant = \App\Models\Masters\MasterVariant::create([
+            'group_id'         => $leader->group_id,
+            'master_shop_id'   => $leader->master_shop_id,
+            'master_family_id' => $leader->master_family_id,
+            'code'             => $leader->code,
+            'leader_id'        => $leader->id,
+            'data'             => ['products' => []],
+        ]);
+        \App\Models\Masters\MasterAsset::whereIn('id', [$leader->id, ...$sizes->pluck('id')])->update(['master_variant_id' => $masterVariant->id]);
+
+        $page  = 'https://rival.example.com/products/amber-fragrance-oil';
+        $their = collect(['1kg' => 52.49, '50g' => 6.86, '100g' => 10.11, '500g' => 49.99, '10g Tester' => 1.92])->mapWithKeys(fn (float $price, string $size) => [$size => $this->competitor->products()->create([
+            'code' => uniqid(), 'name' => "Amber Fragrance Oil $size", 'url' => "$page?variant=".uniqid(), 'price' => $price, 'units' => 1, 'fetched_at' => now(),
+        ])]);
+        $this->competitor->products()->create(['code' => uniqid(), 'name' => 'Fresh Amber Fragrance Oil 50g', 'url' => 'https://rival.example.com/products/fresh-amber?variant=1', 'price' => 1, 'units' => 1, 'fetched_at' => now()]);
+        $this->competitor->products()->create(['code' => uniqid(), 'name' => 'Amber Fragrance Oil Size: 500g', 'url' => 'https://rival.example.com/?post_type=product&p=2&attribute_pa_size=500-g', 'price' => 1, 'units' => 1, 'fetched_at' => now()]);
+
+        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::pageWithoutSize('https://rival.example.com/?post_type=product&p=1&attribute_pa_size=50-g'))
+            ->toBe('https://rival.example.com?p=1&post_type=product')
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::pageWithoutSize("$page?variant=9"))->toBe($page);
+
+        $similarLeader = StoreMasterAsset::make()->action($leader->masterFamily, ['code' => 'FOKS-'.uniqid(), 'name' => 'Jungle Fragrance Oil - 1 Litre', 'is_main' => true, 'type' => MasterAssetTypeEnum::PRODUCT, 'price' => 40, 'stocks' => []]);
+        $similarSize   = StoreMasterAsset::make()->action($leader->masterFamily, ['code' => $similarLeader->code.'-50ml', 'name' => 'Jungle Fragrance Oil', 'is_main' => false, 'type' => MasterAssetTypeEnum::PRODUCT, 'price' => 4, 'stocks' => []]);
+        $similarVariant = \App\Models\Masters\MasterVariant::create(['group_id' => $leader->group_id, 'master_shop_id' => $leader->master_shop_id, 'master_family_id' => $leader->master_family_id, 'code' => $similarLeader->code, 'leader_id' => $similarLeader->id, 'data' => ['products' => []]]);
+        \App\Models\Masters\MasterAsset::whereIn('id', [$similarLeader->id, $similarSize->id])->update(['master_variant_id' => $similarVariant->id]);
+        MasterAssetCompetitorProduct::create([
+            'master_shop_id' => $leader->master_shop_id, 'master_asset_id' => $similarLeader->id, 'competitor_product_id' => $their['1kg']->id,
+            'is_same_item'   => false, 'confidence' => 0.5, 'status' => MasterAssetCompetitorProductStatusEnum::SUGGESTED,
+        ]);
+
+        MasterAssetCompetitorProduct::create([
+            'master_shop_id' => $leader->master_shop_id, 'master_asset_id' => $leader->id, 'competitor_product_id' => $their['1kg']->id,
+            'is_same_item'   => true, 'confidence' => 0.95, 'status' => MasterAssetCompetitorProductStatusEnum::CONFIRMED,
+        ]);
+        MasterAssetCompetitorProduct::create([
+            'master_shop_id' => $leader->master_shop_id, 'master_asset_id' => $sizes['100ml']->id, 'competitor_product_id' => $their['100g']->id,
+            'is_same_item'   => false, 'status' => MasterAssetCompetitorProductStatusEnum::REJECTED,
+        ]);
+
+        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::matchOtherSizes($this->competitor))->toBe(3)
+            ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::matchOtherSizes($this->competitor))->toBe(0);
+
+        $matched = fn (\App\Models\Masters\MasterAsset $ours) => MasterAssetCompetitorProduct::where('master_asset_id', $ours->id)->get();
+        expect($matched($sizes['50ml']))->toHaveCount(1)
+            ->and($matched($sizes['50ml'])->first()->competitor_product_id)->toBe($their['50g']->id)
+            ->and($matched($sizes['50ml'])->first()->status)->toBe(MasterAssetCompetitorProductStatusEnum::CONFIRMED)
+            ->and($matched($sizes['0.5kg'])->first()->competitor_product_id)->toBe($their['500g']->id)
+            ->and($matched($sizes['100ml'])->first()->status)->toBe(MasterAssetCompetitorProductStatusEnum::REJECTED)
+            ->and($matched($sizes['50ml'])->first()->competitor_units)->toEqual(1)
+            ->and($matched($sizes['250ml'])->first()->competitor_product_id)->toBe($their['500g']->id)
+            ->and($matched($sizes['250ml'])->first()->competitor_units)->toEqual(2)
+            ->and($matched($sizes['250ml'])->first()->units_verified)->toBeTrue()
+            ->and($matched($sizes['2.5L']))->toBeEmpty()
+            ->and($matched($similarSize))->toBeEmpty();
     });
 });
 

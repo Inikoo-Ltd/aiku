@@ -74,7 +74,46 @@ class MatchBankTransactions
                 }
             });
 
+        BankTransaction::where('bank_connection_id', $bankConnection->id)
+            ->where('match_state', BankTransactionMatchStateEnum::REVIEW)
+            ->whereNull('payment_id')
+            ->chunkById(500, function ($bankTransactions) use (&$counts) {
+                foreach ($bankTransactions as $bankTransaction) {
+                    if ($this->paidByHandSinceReview($bankTransaction)) {
+                        $counts[BankTransactionMatchStateEnum::ALREADY_PAID->value] = ($counts[BankTransactionMatchStateEnum::ALREADY_PAID->value] ?? 0) + 1;
+                    }
+                }
+            });
+
         return $counts;
+    }
+
+    /**
+     * A line waiting in review whose order staff have since paid by hand leaves the queue. A review line only ever
+     * becomes already paid here, never matched: a person may have pulled it back from auto-pay on purpose.
+     */
+    private function paidByHandSinceReview(BankTransaction $bankTransaction): bool
+    {
+        try {
+            [$state, $order, $matchData] = $this->decide($bankTransaction);
+        } catch (Throwable $exception) {
+            Sentry::captureException($exception);
+
+            return false;
+        }
+
+        if ($state !== BankTransactionMatchStateEnum::ALREADY_PAID) {
+            return false;
+        }
+
+        $bankTransaction->update([
+            'match_state' => $state,
+            'order_id'    => $order?->id ?? $bankTransaction->order_id,
+            'match_data'  => $matchData,
+            'matched_at'  => now(),
+        ]);
+
+        return true;
     }
 
     /**
@@ -92,41 +131,48 @@ class MatchBankTransactions
             return [BankTransactionMatchStateEnum::UNMATCHED, null, ['reason' => 'order number not found', 'tokens' => $tokens]];
         }
         if ($orders->count() > 1) {
-            return [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'several orders named', 'order_ids' => $orders->pluck('id')->all()]];
+            $orderIds = $orders->pluck('id')->all();
+
+            return $orders->every(fn (Order $order) => $this->settledWithPayment($order))
+                ? [BankTransactionMatchStateEnum::ALREADY_PAID, null, ['reason' => 'every order named is already paid', 'order_ids' => $orderIds]]
+                : [BankTransactionMatchStateEnum::REVIEW, null, ['reason' => 'several orders named', 'order_ids' => $orderIds]];
         }
 
         $order = $orders->first();
-
-        if ($order->currency_id !== $bankTransaction->currency_id) {
-            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'currency differs from the order']];
-        }
-        if ($order->state === OrderStateEnum::CANCELLED) {
-            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'order cancelled']];
-        }
-        if ($order->state === OrderStateEnum::CREATING) {
-            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'order still in the basket']];
-        }
-
-        $owed       = $order->amountStillToPay();
-        $received   = round((float)$bankTransaction->amount, 2);
-        $difference = round($received - $owed, 2);
-        $matchData  = ['owed' => $owed, 'received' => $received, 'difference' => $difference];
-
-        $successfulPayments = $order->payments()
-            ->where('payments.status', PaymentStatusEnum::SUCCESS)
-            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
-            ->whereHas('paymentAccount', fn ($query) => $query->whereNot('type', PaymentAccountTypeEnum::BANK_FEE));
 
         $releasedFromThisOrder = $order->payments()
             ->where('payments.state', PaymentStateEnum::CANCELLED)
             ->where('payments.data->bank_transaction_id', $bankTransaction->id)
             ->exists();
         if ($releasedFromThisOrder) {
-            return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'a payment from this line on this order was cancelled'])];
+            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'a payment from this line on this order was cancelled']];
         }
 
+        if ($order->currency_id !== $bankTransaction->currency_id) {
+            return $this->settledWithPayment($order)
+                ? [BankTransactionMatchStateEnum::ALREADY_PAID, $order, ['reason' => 'order already settled']]
+                : [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'currency differs from the order']];
+        }
+
+        $received            = round((float)$bankTransaction->amount, 2);
+        $successfulPayments  = $this->successfulPayments($order);
         $sameAmountPaymentId = (clone $successfulPayments)->whereBetween('payments.amount', [$received - 0.01, $received + 0.01])->value('payments.id');
-        if ($sameAmountPaymentId && BankTransaction::where('payment_id', $sameAmountPaymentId)->where('id', '!=', $bankTransaction->id)->exists()) {
+        $secondTransfer      = $sameAmountPaymentId && BankTransaction::where('payment_id', $sameAmountPaymentId)->where('id', '!=', $bankTransaction->id)->exists();
+
+        if ($order->state === OrderStateEnum::CANCELLED) {
+            return $sameAmountPaymentId && !$secondTransfer
+                ? [BankTransactionMatchStateEnum::ALREADY_PAID, $order, ['reason' => 'a payment of this amount is already on the order']]
+                : [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'order cancelled']];
+        }
+        if ($order->state === OrderStateEnum::CREATING) {
+            return [BankTransactionMatchStateEnum::REVIEW, $order, ['reason' => 'order still in the basket']];
+        }
+
+        $owed       = $order->amountStillToPay();
+        $difference = round($received - $owed, 2);
+        $matchData  = ['owed' => $owed, 'received' => $received, 'difference' => $difference];
+
+        if ($secondTransfer) {
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'a second transfer of the same amount, the first one already paid this order'])];
         }
         if ($sameAmountPaymentId) {
@@ -153,7 +199,7 @@ class MatchBankTransactions
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'another bank line is already matched to this order'])];
         }
 
-        if ($difference > 0.01) {
+        if ($difference > $this->overpayTolerance($owed, $bankTransaction)) {
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'pays more than owed'])];
         }
         if (-$difference > $this->feeTolerance($owed, $bankTransaction)) {
@@ -163,30 +209,55 @@ class MatchBankTransactions
         return [BankTransactionMatchStateEnum::MATCHED, $order, $matchData];
     }
 
-    public const float DEFAULT_FEE_CEILING_EUR = 15;
+    private function successfulPayments(Order $order): \Illuminate\Database\Eloquent\Relations\MorphToMany
+    {
+        return $order->payments()
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->whereNot('payments.state', PaymentStateEnum::CANCELLED)
+            ->whereHas('paymentAccount', fn ($query) => $query->whereNot('type', PaymentAccountTypeEnum::BANK_FEE));
+    }
 
-    /** @var array<string, float> */
-    private array $feeCeilings = [];
+    private function settledWithPayment(Order $order): bool
+    {
+        return $order->state !== OrderStateEnum::CANCELLED
+            && $order->amountStillToPay() <= 0.01
+            && $order->absorbedBankFees() <= 0
+            && $this->successfulPayments($order)->exists();
+    }
+
+    public const float DEFAULT_FEE_CEILING_EUR = 10;
+
+    public const float OVERPAY_CEILING_EUR = 5;
+
+    /** @var array<int, float> */
+    private array $euroRates = [];
 
     /**
      * Banks take small fees off incoming transfers (0.2-0.8% seen on Wise): accept up to 1% short, never more than the
-     * connection's ceiling (15 EUR by default) in the line's currency. A line short by more goes to review.
+     * connection's ceiling (10 EUR by default, the largest fee seen was 9.95) in the line's currency. A line short by more goes to review.
      */
     public function feeTolerance(float $owed, BankTransaction $bankTransaction): float
     {
-        return round(min($owed * 0.01, $this->feeCeiling($bankTransaction)), 2);
+        $ceilingEur = (float)($bankTransaction->bankConnection->settings['fee_ceiling_eur'] ?? self::DEFAULT_FEE_CEILING_EUR);
+
+        return round(min($owed * 0.01, $ceilingEur * $this->euroRate($bankTransaction)), 2);
     }
 
-    private function feeCeiling(BankTransaction $bankTransaction): float
+    /**
+     * A transfer rounded up (whole forints) pays the order on its own when it is over by at most 0.5%, never more
+     * than 5 EUR in the line's currency; the extra stays on the order. A bigger overpayment goes to review.
+     */
+    public function overpayTolerance(float $owed, BankTransaction $bankTransaction): float
     {
-        $key = $bankTransaction->bank_connection_id.':'.$bankTransaction->currency_id;
+        return round(min($owed * 0.005, self::OVERPAY_CEILING_EUR * $this->euroRate($bankTransaction)), 2);
+    }
 
-        return $this->feeCeilings[$key] ??= (function () use ($bankTransaction) {
-            $ceilingEur = (float)($bankTransaction->bankConnection->settings['fee_ceiling_eur'] ?? self::DEFAULT_FEE_CEILING_EUR);
-            $euro       = Currency::where('code', 'EUR')->firstOrFail();
-            $rate       = $bankTransaction->currency_id === $euro->id ? 1.0 : GetCurrencyExchange::run($euro, $bankTransaction->currency);
+    private function euroRate(BankTransaction $bankTransaction): float
+    {
+        return $this->euroRates[$bankTransaction->currency_id] ??= (function () use ($bankTransaction) {
+            $euro = Currency::where('code', 'EUR')->firstOrFail();
 
-            return $rate ? $ceilingEur * $rate : 0.0;
+            return (float)($bankTransaction->currency_id === $euro->id ? 1.0 : GetCurrencyExchange::run($euro, $bankTransaction->currency));
         })();
     }
 

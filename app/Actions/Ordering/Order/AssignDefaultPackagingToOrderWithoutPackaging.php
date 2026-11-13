@@ -48,13 +48,13 @@ class AssignDefaultPackagingToOrderWithoutPackaging
         });
     }
 
-    public function forDeliveryNote(DeliveryNote $deliveryNote): bool
+    public function forDeliveryNote(DeliveryNote $deliveryNote, ?Order $order = null): bool
     {
         if ($deliveryNote->type !== DeliveryNoteTypeEnum::ORDER) {
             return false;
         }
 
-        $order = $deliveryNote->orders()->first();
+        $order ??= $deliveryNote->orders()->first();
 
         return $order && $this->handle($order);
     }

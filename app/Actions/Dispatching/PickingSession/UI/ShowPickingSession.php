@@ -45,8 +45,8 @@ class ShowPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
-        $pickingSession->deliveryNotes()->get()->each(
-            fn ($deliveryNote) => AssignDefaultPackagingToOrderWithoutPackaging::make()->forDeliveryNote($deliveryNote)
+        $pickingSession->deliveryNotes()->with('orders.shop')->get()->each(
+            fn (DeliveryNote $deliveryNote) => AssignDefaultPackagingToOrderWithoutPackaging::make()->forDeliveryNote($deliveryNote, $deliveryNote->orders->first())
         );
 
         return $pickingSession;

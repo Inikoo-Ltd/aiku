@@ -8434,3 +8434,150 @@ test('customer service can change the delivery address of a delivery note before
 
     actingAsUserWithRoles($user, $originalRoles);
 });
+
+test('the grouped tab of a picking session loads every delivery note in one go and shows each row exactly as its single row fetch does, INI-254', function () {
+    $originalOrganisationSettings = $this->organisation->settings;
+    $originalIsIndivisible        = $this->product->is_indivisible;
+    $settings                     = $originalOrganisationSettings;
+    data_set($settings, 'orders.allow_waiting', true);
+
+    try {
+        $this->organisation->update(['settings' => $settings]);
+
+        [, , $dropshippingShop] = createOwnShop('ini-254-dropshipping');
+        $dropshippingShop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        [, $dropshippingProduct] = createProduct($dropshippingShop);
+        $dropshippingContext     = (object) [
+            'group'        => $this->group,
+            'organisation' => $this->organisation,
+            'warehouse'    => $this->warehouse,
+            'user'         => $this->user,
+            'customer'     => createOwnCustomer($dropshippingShop, 'ini-254-dropshipping'),
+            'product'      => $dropshippingProduct,
+        ];
+
+        $suffix         = strtoupper(Str::random(6));
+        $storePackaging = fn (string $code, string $family, float $price) => \App\Actions\Billables\Packaging\StorePackaging::make()->action($dropshippingShop, [
+            'code'        => $code.'-'.$suffix,
+            'family_code' => $family.$suffix,
+            'name'        => $code.' box',
+            'type'        => \App\Enums\Catalogue\Packaging\PackagingTypeEnum::STANDARD->value,
+            'price'       => $price,
+            'state'       => \App\Enums\Catalogue\Packaging\PackagingStateEnum::ACTIVE->value,
+        ]);
+        $smallPackaging   = $storePackaging('SMALL', 'GIFT', 1);
+        $largePackaging   = $storePackaging('LARGE', 'GIFT', 3);
+        $defaultPackaging = $storePackaging('PLAIN', 'PLAIN', 0);
+        $dropshippingShop->update(['settings' => array_replace_recursive($dropshippingShop->settings ?? [], [
+            'packaging_and_inserts' => ['enabled' => true, 'default_packaging_id' => $defaultPackaging->id],
+        ])]);
+
+        [$plainNote, $plainItem]             = handlingDeliveryNoteWithPicking($this, 6);
+        [$waitingNote, $waitingItem]         = handlingDeliveryNoteWithPicking($this, 6);
+        [$blockedNote, $blockedItem]         = handlingDeliveryNoteWithPicking($this);
+        [$longNote, $longItem]               = handlingDeliveryNoteWithPicking($this, 6);
+        [$packagedNote, $packagedItem]       = handlingDeliveryNoteWithPicking($dropshippingContext, 6);
+        [$orderPackagedNote, $orderPackaged] = handlingDeliveryNoteWithPicking($dropshippingContext, 6);
+
+        $notes = collect([$plainNote, $waitingNote, $blockedNote, $longNote, $packagedNote, $orderPackagedNote]);
+        $notes->each(fn (DeliveryNote $deliveryNote) => $deliveryNote->update(['state' => DeliveryNoteStateEnum::UNASSIGNED]));
+
+        $pickingSession = StorePickingSession::make()->handle($this->warehouse, [
+            'delivery_notes' => $notes->pluck('id')->all(),
+            'user_id'        => $this->user->id,
+        ]);
+        $pickingSession = StartPickPickingSession::run($pickingSession, []);
+
+        foreach ([[$plainNote, $plainItem], [$waitingNote, $waitingItem], [$blockedNote, $blockedItem], [$longNote, $longItem], [$packagedNote, $packagedItem], [$orderPackagedNote, $orderPackaged]] as [$deliveryNote, $item]) {
+            $deliveryNote->deliveryNoteItems()->whereKeyNot($item->id)->delete();
+        }
+
+        SetAsWaitingWarehouse::make()->action($waitingItem->refresh(), $this->user, ['quantity' => 4]);
+
+        StoreDeliveryNoteItem::make()->action($blockedNote, [
+            'delivery_note_id'  => $blockedNote->id,
+            'org_stock_id'      => makeOrgStock($this)->id,
+            'transaction_id'    => $blockedItem->transaction_id,
+            'quantity_required' => 10,
+        ]);
+        $blockedNote->deliveryNoteItems()
+            ->whereKeyNot($blockedItem->id)
+            ->update(['is_handled' => true, 'is_dirty' => false, 'quantity_picked' => 0, 'quantity_not_picked' => 10]);
+        expect($blockedItem->transaction->model->id)->toBe($this->product->id);
+        $this->product->update(['is_indivisible' => true]);
+        $blockedNote->refresh()->update(['state' => DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+
+        foreach (range(1, 11) as $ignored) {
+            StoreDeliveryNoteItem::make()->action($longNote, [
+                'delivery_note_id'  => $longNote->id,
+                'org_stock_id'      => makeOrgStock($this)->id,
+                'transaction_id'    => $longItem->transaction_id,
+                'quantity_required' => 2,
+            ]);
+        }
+
+        $packagedOrder = \App\Actions\Ordering\Order\UpdateOrderPackaging::make()->action($packagedNote->orders()->first(), ['packaging_id' => $smallPackaging->id]);
+        $packagedOrder->transactions()->where('model_type', 'Packaging')->update(['net_amount' => 2]);
+        $packagedOrder->update(['data' => ['ordered_packaging_id' => $largePackaging->id]]);
+        $packagedNote->update(['packaging_id' => $smallPackaging->id]);
+        $orderPackagedNote->orders()->first()->transactions()->where('model_type', 'Packaging')->delete();
+        $orderPackagedNote->orders()->first()->update(['packaging_id' => $largePackaging->id]);
+        $orderPackagedNote->update(['packaging_id' => null]);
+
+        $storeLeaflet = fn (DeliveryNote $deliveryNote, ?string $message) => \App\Models\Dispatching\DeliveryNoteLeaflet::create([
+            'group_id'         => $deliveryNote->group_id,
+            'organisation_id'  => $deliveryNote->organisation_id,
+            'shop_id'          => $deliveryNote->shop_id,
+            'delivery_note_id' => $deliveryNote->id,
+            'type'             => \App\Enums\Catalogue\Leaflet\LeafletTypeEnum::PERSONALISED_MESSAGE,
+            'name'             => 'Personalised message',
+            'message'          => $message,
+            'data'             => [],
+        ]);
+        $storeLeaflet($packagedNote, 'Thank you for your order');
+        $storeLeaflet($packagedNote, null);
+        $storeLeaflet($orderPackagedNote, 'Enjoy');
+
+        $pickingSession->refresh();
+        $parameters = ['tab' => 'grouped', 'deliveryNoteItems_perPage' => 10];
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $response = get(route('grp.org.warehouses.show.dispatching.picking_sessions.show', [
+            $this->organisation->slug,
+            $this->warehouse->slug,
+            $pickingSession->slug,
+            ...$parameters,
+        ]))->assertOk();
+        $queries = collect(DB::getQueryLog())->pluck('query');
+        DB::disableQueryLog();
+
+        $rows = collect($response->inertiaProps('grouped.data'))->keyBy('id');
+
+        expect($rows->keys()->sort()->values()->all())->toBe($notes->pluck('id')->sort()->values()->all())
+            ->and($rows[$waitingNote->id]['delivery_note_has_waiting_items'])->toBeTrue()
+            ->and($rows[$plainNote->id]['delivery_note_has_waiting_items'])->toBeFalse()
+            ->and($rows[$blockedNote->id]['put_back_incomplete_sets'])->not->toBeNull()
+            ->and($rows[$plainNote->id]['put_back_incomplete_sets'])->toBeNull()
+            ->and($rows[$longNote->id]['items'])->toHaveCount(10)
+            ->and($rows[$packagedNote->id]['packaging']['id'])->toBe($smallPackaging->id)
+            ->and(collect($rows[$packagedNote->id]['packaging_options'])->pluck('id')->sort()->values()->all())->toBe(collect([$smallPackaging->id, $largePackaging->id, $defaultPackaging->id])->sort()->values()->all())
+            ->and($rows[$orderPackagedNote->id]['packaging']['id'])->toBe($largePackaging->id)
+            ->and($rows[$packagedNote->id]['leaflets'])->toHaveCount(2)
+            ->and($rows[$packagedNote->id]['print_status']['total'])->toBe(1)
+            ->and(collect($rows[$packagedNote->id]['packaging_options'])->where('is_downgrade', true)->pluck('id')->sort()->values()->all())->toBe(collect([$smallPackaging->id, $defaultPackaging->id])->sort()->values()->all())
+            ->and(collect($rows[$orderPackagedNote->id]['packaging_options'])->where('is_downgrade', true)->pluck('id')->sort()->values()->all())->toBe(collect([$smallPackaging->id, $defaultPackaging->id])->sort()->values()->all())
+            ->and($rows[$plainNote->id]['packaging_options'])->toBe([])
+            ->and($queries->filter(fn (string $query) => str_contains($query, 'jsonb_agg') && str_contains($query, 'from "delivery_note_items"'))->count())->toBe(1)
+            ->and($queries->filter(fn (string $query) => str_starts_with($query, 'select * from "delivery_notes" where "delivery_notes"."id" = ?'))->count())->toBe(0);
+
+        foreach ($rows as $deliveryNoteId => $row) {
+            $singleRow = getJson(route('grp.json.picking_session_item_row', [$pickingSession->id, ...$parameters, 'row_id' => $deliveryNoteId]))->assertOk()->json('data');
+
+            expect(json_encode($row))->toBe(json_encode($singleRow));
+        }
+    } finally {
+        $this->product->update(['is_indivisible' => $originalIsIndivisible]);
+        $this->organisation->update(['settings' => $originalOrganisationSettings]);
+    }
+});
