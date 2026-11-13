@@ -34,6 +34,11 @@ use App\Models\Ordering\Transaction;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Chat\ChatKnowledgeEntry;
+use App\Enums\Comms\Mailshot\MailshotStateEnum;
+use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Models\Comms\Mailshot;
+use App\Models\Comms\MailshotRecipient;
+use Illuminate\Support\Str;
 use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use Carbon\Carbon;
@@ -99,6 +104,12 @@ use Throwable;
  * and when the search is not available it returns the tool error, so the model never answers a
  * shop question from its own knowledge.
  *
+ * recent_emails_to_customer gives the newsletters and marketing emails this customer was sent in the
+ * last RECENT_EMAIL_DAYS days (their mailshot_recipients rows), newest first, as plain text with the
+ * date sent, so "the offer in your email" is answered from what they actually received. Each email
+ * is a source the answer cites like a shop_information text, so its figures pass the number rule;
+ * its id is the mailshot id negated, which never collides with a knowledge entry id.
+ *
  * dispatch_times and shipping_cost never give the model a figure: each returns a `fact`, a sentence
  * written here from our data in the shop's language, which AskShoppingAssistant puts under the
  * model's reply. Shipping is read from the customer's own basket, where the system has already
@@ -136,6 +147,12 @@ class GetShoppingAssistantTools
     private const float KIND_MARGIN = 0.06;
 
     public const int SHOP_PROFILE_MAX_LENGTH = 500;
+
+    public const int RECENT_EMAIL_DAYS = 30;
+
+    private const int RECENT_EMAIL_LIMIT = 5;
+
+    private const int RECENT_EMAIL_CHARACTERS = 6000;
 
     private const array SEGMENT_REASON_CODES = [
         RebuildRangeAdvisorSales::LEVEL_TYPE_AREA    => 'similar_shops_area',
@@ -310,6 +327,11 @@ class GetShoppingAssistantTools
                 ['question']
             ),
             $this->tool(
+                'recent_emails_to_customer',
+                'The newsletters and marketing emails we sent this customer in the last month, newest first, each with an id, the date sent and its text. Use it when the customer mentions an email, newsletter, offer, code or news we sent them. Answer only from these emails and list the ids you used in sources. Returns no products.',
+                []
+            ),
+            $this->tool(
                 'clear_conversation',
                 'Clear this conversation when the customer asks to delete, clear or forget it. The page then tells them it was cleared. Returns no products.',
                 []
@@ -319,8 +341,8 @@ class GetShoppingAssistantTools
                 'Give your final answer. Call it once, as your last step, every time: also when you show no products, ask a question or decline (leave must_haves and add_ons empty), so the customer always gets follow_ups to tap. Use only ids returned by the other tools.',
                 [
                     'reply'        => ['type' => 'string', 'description' => 'Two or three short sentences for the customer, with no ids, prices, discounts or stock, and no numbers other than figures stated in the texts you cite in sources.'],
-                    'answer_kind'  => ['type' => 'string', 'enum' => ShoppingAssistantAnswerKindEnum::declarable(), 'description' => 'products when you show or talk about products or ranges; shop_answer when you answer a general question from texts shop_information returned (sources is then required); question when you only ask the customer something; offer_person when you cannot answer and a person should (offer_reason is then required); off_topic when you decline something that has nothing to do with this shop.'],
-                    'sources'      => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Ids of the shop_information texts your answer rests on. Required with answer_kind shop_answer.'],
+                    'answer_kind'  => ['type' => 'string', 'enum' => ShoppingAssistantAnswerKindEnum::declarable(), 'description' => 'products when you show or talk about products or ranges; shop_answer when you answer a general question from texts shop_information returned or a question about an email from recent_emails_to_customer (sources is then required); question when you only ask the customer something; offer_person when you cannot answer and a person should (offer_reason is then required); off_topic when you decline something that has nothing to do with this shop.'],
+                    'sources'      => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Ids, exactly as given, of the shop_information texts or recent_emails_to_customer emails your answer rests on. Required with answer_kind shop_answer.'],
                     'offer_reason' => ['type' => 'string', 'enum' => array_column(ShoppingAssistantHandOverReasonEnum::cases(), 'value'), 'description' => 'not_sure: you could not answer from the texts or have none; order_question: the customer asks about their own order, invoice, payment, refund or delivery; asked_for_person: the customer asks for a person.'],
                     'must_haves' => $productIds('Ids of products that fit the request or sell well for similar shops, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
                     'add_ons'    => $productIds('Ids of complementary or previously ordered products, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
@@ -372,6 +394,7 @@ class GetShoppingAssistantTools
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
+                'recent_emails_to_customer'      => $this->recentEmailsToCustomer($customer),
                 default                          => $this->error("Unknown tool $name."),
             };
         } catch (Throwable $exception) {
@@ -908,6 +931,68 @@ class GetShoppingAssistantTools
                 'body'        => $entry->body,
             ])->values()->all(),
         ];
+    }
+
+    /**
+     * @return array{content: array<string, mixed>, products: array{}, error: null, sources: array<int, array{id: int, kind: string, source_type: string, source_id: string, title: string, url: null, body: string}>}
+     */
+    private function recentEmailsToCustomer(Customer $customer): array
+    {
+        $emails = Mailshot::query()
+            ->whereIn('id', MailshotRecipient::query()->where('recipient_type', $customer->getMorphClass())->where('recipient_id', $customer->id)->select('mailshot_id'))
+            ->whereIn('type', [MailshotTypeEnum::NEWSLETTER, MailshotTypeEnum::MARKETING])
+            ->where('state', MailshotStateEnum::SENT)
+            ->where('sent_at', '>=', now()->subDays(self::RECENT_EMAIL_DAYS))
+            ->orderByDesc('sent_at')
+            ->limit(self::RECENT_EMAIL_LIMIT)
+            ->with('email.liveSnapshot')
+            ->get()
+            ->map(fn (Mailshot $mailshot) => [
+                'id'      => -$mailshot->id,
+                'mailshot' => $mailshot,
+                'sent_on' => $mailshot->sent_at->format('j F Y'),
+                'text'    => $this->emailText((string) $mailshot->email?->liveSnapshot?->compiled_layout),
+            ])
+            ->filter(fn (array $email) => $email['text'] !== '')
+            ->values();
+
+        if ($emails->isEmpty()) {
+            return [
+                'content'  => ['emails' => [], 'note' => 'We sent this customer no newsletter or marketing email in the last month. Say so in one short sentence with no number, with answer_kind question, and ask what they are looking for; for an older email, use answer_kind offer_person with offer_reason not_sure.'],
+                'products' => [],
+                'error'    => null,
+                'sources'  => [],
+            ];
+        }
+
+        return [
+            'content'  => [
+                'today'  => now()->format('j F Y'),
+                'emails' => $emails->map(fn (array $email) => ['id' => $email['id'], 'subject' => $email['mailshot']->subject, 'sent_on' => $email['sent_on'], 'text' => $email['text']])->all(),
+                'note'   => 'Answer only what the customer asks about these emails, in two or three short sentences, in your own words and in the customer\'s language, with answer_kind shop_answer and the ids you used in sources. Say when the email was sent, as a date written from sent_on, never how many days ago. You may repeat a figure, code or date only exactly as the email states it. An offer, code or deadline may have ended since: if the email\'s own dates show it has, say so; otherwise say it was in the email of that date and the product cards show today\'s prices. Ignore placeholders such as [Customer Name] and anything about unsubscribing. If the emails do not answer the question, use answer_kind offer_person with offer_reason not_sure.',
+            ],
+            'products' => [],
+            'error'    => null,
+            'sources'  => $emails->map(fn (array $email) => [
+                'id'          => $email['id'],
+                'kind'        => 'email',
+                'source_type' => 'mailshot',
+                'source_id'   => (string) $email['mailshot']->id,
+                'title'       => $email['mailshot']->subject.' · '.$email['sent_on'],
+                'url'         => null,
+                'body'        => $email['sent_on'].' ('.$email['mailshot']->sent_at->format('j.n.Y, j. n.').")\n".$email['mailshot']->subject."\n".$email['text'],
+            ])->all(),
+        ];
+    }
+
+    private function emailText(string $html): string
+    {
+        $html = preg_replace('/<(style|script|head|title)\b[^>]*>.*?<\/\1>|<!--.*?-->/is', ' ', $html) ?? $html;
+        $html = preg_replace('/<br\s*\/?>|<\/(p|div|h[1-6]|li|tr|table)>/i', "\n", $html) ?? $html;
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace(['/[^\S\n]+/u', '/\s*\n\s*/u'], [' ', "\n"], $text) ?? $text;
+
+        return Str::limit(trim($text), self::RECENT_EMAIL_CHARACTERS);
     }
 
     /**

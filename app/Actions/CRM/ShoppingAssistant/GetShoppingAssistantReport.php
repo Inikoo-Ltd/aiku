@@ -828,7 +828,7 @@ class GetShoppingAssistantReport
     }
 
     /**
-     * Questions refused by the rate limit or a spent monthly budget, staff customers left out. Only
+     * Questions refused by the rate limit, a spent monthly budget or a new customer's spent allowance, staff customers left out. Only
      * the dates, the website and the language (of the website's shop) apply; the entry point, shop
      * type and country filters are not applied.
      *
@@ -849,7 +849,7 @@ class GetShoppingAssistantReport
         $current  = $counts($from, $to);
         $previous = $counts($previousFrom, $previousTo);
 
-        return collect([StoreShoppingAssistantRefusal::RATE_LIMIT, StoreShoppingAssistantRefusal::BUDGET])
+        return collect([StoreShoppingAssistantRefusal::RATE_LIMIT, StoreShoppingAssistantRefusal::BUDGET, StoreShoppingAssistantRefusal::CUSTOMER_CAP])
             ->mapWithKeys(fn (string $reason) => [$reason => ['value' => (int) ($current[$reason] ?? 0), 'previous' => (int) ($previous[$reason] ?? 0)]])
             ->all();
     }
@@ -872,6 +872,7 @@ class GetShoppingAssistantReport
             'note'      => __('Staff notes'),
             'verified'  => __('Verified facts'),
             'learned'   => __('Learned rules'),
+            'email'     => __('Our emails'),
         ];
     }
 

@@ -166,6 +166,8 @@ return [
         'timeout'         => 90,
         'attribution_days' => 7,
         'monthly_budget'   => 30,
+        'non_buyer_monthly_budget' => 1,
+        'heavy_customer_share'     => 0.2,
         'sales_lead_threshold_eur'  => 2000,
         'sales_lead_reminder_hours' => 4,
         'retention_months'          => 24,

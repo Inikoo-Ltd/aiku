@@ -10,6 +10,7 @@ namespace App\Actions\Iris\ShoppingAssistant;
 
 use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantMessage;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantBudget;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantRefusal;
@@ -62,7 +63,8 @@ class AskIrisShoppingAssistant extends IrisAction
         abort_unless($customer, 404);
         if (!GetShoppingAssistantSettings::run($this->website, $customer, true)) {
             if (GetShoppingAssistantSettings::run($this->website, $customer)) {
-                StoreShoppingAssistantRefusal::afterResponse($this->website, $customer->id, StoreShoppingAssistantRefusal::BUDGET, $request->input('message'));
+                $reason = GetShoppingAssistantBudget::run($this->website)['paused'] ? StoreShoppingAssistantRefusal::BUDGET : StoreShoppingAssistantRefusal::CUSTOMER_CAP;
+                StoreShoppingAssistantRefusal::afterResponse($this->website, $customer->id, $reason, $request->input('message'));
             }
             abort(404);
         }

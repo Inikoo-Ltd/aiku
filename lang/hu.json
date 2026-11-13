@@ -9069,5 +9069,15 @@
     "Our team answered your question:": "Csapatunk válaszolt a kérdésére:",
     "Our team could not answer this question. Please contact our customer service team.": "Csapatunk nem tudott válaszolni erre a kérdésre. Kérjük, forduljon ügyfélszolgálatunkhoz.",
     "I don't know this one, so I have asked one of our experts. If someone is free in the next few minutes, their answer will appear here; otherwise we will get back to you as soon as we can.": "Ezt nem tudom, ezért megkérdeztem az egyik szakértőnket. Ha a következő percekben valaki ráér, a válasz itt jelenik meg; különben a lehető leghamarabb jelentkezünk.",
-    "I don't know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.": "Ezt nem tudom, ezért továbbítottam az egyik szakértőnknek. A lehető leghamarabb jelentkezünk."
+    "I don't know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.": "Ezt nem tudom, ezért továbbítottam az egyik szakértőnknek. A lehető leghamarabb jelentkezünk.",
+    "Meet :name · Ask us anything": "Ismerje meg :name-t · Kérdezzen tőlünk bármit",
+    "Ask :name anything.": "Kérdezzen :name-től bármit.",
+    "This is not just a search.": "Ez nem csak egy keresés.",
+    ":name is a new way to work with us. Ask in your own words and your own language: what sells for shops like yours, a product, offers, delivery, samples or product documents. When :name is not sure, one of our experts answers.": ":name egy új módja annak, hogy velünk dolgozzon. Kérdezzen a saját szavaival és a saját nyelvén: mi fogy az Önéhez hasonló üzletekben, egy termékről, ajánlatokról, szállításról, mintákról vagy termékdokumentumokról. Ha :name nem biztos a válaszban, valamelyik szakértőnk válaszol.",
+    "e.g. We’re a small crystal shop in York. What Christmas gifts should we stock, and do you send samples?": "pl. Egy kis kristálybolt vagyunk Debrecenben. Milyen karácsonyi ajándékokat érdemes tartanunk, és küldenek mintát?",
+    "Ask anything": "Kérdezzen bármit",
+    "A question, your shop, what you need – the more :name knows, the better the answer.": "Egy kérdés, az üzlete, amire szüksége van – minél többet tud :name, annál jobb a válasz.",
+    "A question, your shop or what you need – in your own words.": "Egy kérdés, az üzlete vagy amire szüksége van – a saját szavaival.",
+    "Do you send samples?": "Küldenek mintát?",
+    "How fast do you deliver?": "Milyen gyorsan szállítanak?"
 }

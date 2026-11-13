@@ -51,7 +51,7 @@ type Overview = {
         top_zero_queries?: { query: string; searches: number; rescued: number }[]
     }
     assistant_reach?: { available?: Metric; offered?: Metric; asked?: Metric }
-    refusals?: { rate_limit?: Metric; budget?: Metric }
+    refusals?: { rate_limit?: Metric; budget?: Metric; customer_cap?: Metric }
     general?: {
         questions: Metric
         answered: Metric
@@ -633,6 +633,7 @@ const challenges = computed(() => props.overview?.challenges ?? null)
 const refusals = computed(() => ({
     rateLimit: props.overview?.refusals?.rate_limit?.value ?? 0,
     budget: props.overview?.refusals?.budget?.value ?? 0,
+    customerCap: props.overview?.refusals?.customer_cap?.value ?? 0,
 }))
 
 const conversationsTable = computed(() => props.conversations)
@@ -997,8 +998,8 @@ const conversationsTable = computed(() => props.conversations)
                             </tr>
                         </tbody>
                     </table>
-                    <p v-if="refusals.rateLimit > 0 || refusals.budget > 0" class="mt-2 text-xs text-gray-500">
-                        {{ ctrans("Questions refused: :rate_limit by the rate limit, :budget by the budget", { rate_limit: locale.number(refusals.rateLimit), budget: locale.number(refusals.budget) }) }}
+                    <p v-if="refusals.rateLimit > 0 || refusals.budget > 0 || refusals.customerCap > 0" class="mt-2 text-xs text-gray-500">
+                        {{ ctrans("Questions refused: :rate_limit by the rate limit, :budget by the budget, :customer_cap by the new customer allowance", { rate_limit: locale.number(refusals.rateLimit), budget: locale.number(refusals.budget), customer_cap: locale.number(refusals.customerCap) }) }}
                     </p>
                 </div>
 
