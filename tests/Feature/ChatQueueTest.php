@@ -2236,3 +2236,24 @@ test('a second tap on an offer whose chat never got the question sends it then',
 
     outOfHoursTestCleanUp($schedule, [$session]);
 });
+
+test('outside chat hours the website chat is in Merlin mode until an agent of the shop comes online, then a person is there', function () {
+    [, , , $shop] = handOverTestStorefront(true, false);
+    $schedule = outOfHoursTestSchedule($shop);
+    \Illuminate\Support\Carbon::setTestNow(\Illuminate\Support\Carbon::parse('2026-09-24 09:00', 'Europe/London'));
+
+    expect(\App\Actions\Chat\ChatSession\IsChatStaffed::run($shop))->toBeFalse()
+        ->and(\App\Actions\HumanResources\WorkSchedule\GetChatConfig::make()->forShop($shop, true)['is_online'])->toBeFalse();
+
+    $agent = handOverTestAvailableAgent($shop);
+
+    expect(\App\Actions\Chat\ChatSession\IsChatStaffed::run($shop))->toBeTrue()
+        ->and(\App\Actions\HumanResources\WorkSchedule\GetChatConfig::make()->forShop($shop, true)['is_online'])->toBeTrue();
+
+    $agent->update(['is_available' => false]);
+
+    expect(\App\Actions\Chat\ChatSession\IsChatStaffed::run($shop))->toBeFalse();
+
+    $agent->delete();
+    outOfHoursTestCleanUp($schedule);
+});

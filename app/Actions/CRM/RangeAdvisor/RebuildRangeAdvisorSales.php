@@ -94,7 +94,7 @@ class RebuildRangeAdvisorSales
         )
         SQL;
 
-    public string $commandSignature = 'range-advisor:rebuild-sales {--shop= : shop slug, default every open B2B shop}';
+    public string $commandSignature = 'range-advisor:rebuild-sales {--shop= : shop slug, default every open B2B and dropshipping shop}';
 
     public string $commandDescription = 'Rebuild what each customer bought and the best sellers per customer segment, per shop';
 
@@ -340,7 +340,7 @@ class RebuildRangeAdvisorSales
             ->when(
                 $command->option('shop'),
                 fn ($query, string $slug) => $query->where('slug', $slug),
-                fn ($query) => $query->where('type', ShopTypeEnum::B2B)->where('state', ShopStateEnum::OPEN)
+                fn ($query) => $query->whereIn('type', [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING])->where('state', ShopStateEnum::OPEN)
             )
             ->orderBy('id')
             ->get();

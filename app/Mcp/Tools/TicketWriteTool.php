@@ -89,7 +89,7 @@ class TicketWriteTool extends Tool
         }
 
         if (!$request->filled('reference')) {
-            if (in_array($request->get('type'), [TicketTypeEnum::ENGINEER->value, TicketTypeEnum::PREMONITION->value], true) && !Ticket::canChooseType($user)) {
+            if (in_array($request->get('type'), [TicketTypeEnum::ENGINEER->value, TicketTypeEnum::PREMONITION->value, TicketTypeEnum::MERLIN->value], true) && !Ticket::canChooseType($user)) {
                 return Response::error('Only the help desk and QA can raise engineer (INI) or premonition (PRE) tickets.');
             }
 

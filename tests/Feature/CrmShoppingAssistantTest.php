@@ -3068,3 +3068,126 @@ test('a question about an email we sent is answered from the newsletters this cu
         ->and($none['message']->answer_kind->value)->toBe('question')
         ->and($none['message']->sources)->toBeNull();
 });
+
+test('on a dropshipping shop the assistant is on, coaches and sells with the customer\'s sales channels in words, and has no basket, shipping cost or big order tools', function () {
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        $website  = shoppingAssistantStorefront($this);
+        $customer = shoppingAssistantCustomer($this->shop->refresh());
+        $channel  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY)->firstOrFail(), ['reference' => 'merlin-'.Str::random(6)]);
+        $channel->update(['name' => 'Moon Gifts', 'number_portfolios' => 3, 'number_orders' => 0, 'connection_status' => \App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum::ERROR]);
+
+        expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
+
+        Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantPresent(['reply' => 'Dropshipping means your buyers order from your store and we send the parcel for you.', 'answer_kind' => 'coaching', 'follow_ups' => ['Best sellers for my store']]))]);
+        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+        AskShoppingAssistant::run($conversation, 'what is dropshipping?');
+
+        $request   = Http::recorded()->first()[0];
+        $prompt    = $request['messages'][0]['content'];
+        $toolNames = collect($request['tools'])->pluck('function.name');
+
+        expect($prompt)->toContain('dropshipping advisor and salesperson')
+            ->and($prompt)->toContain('Their sales channels with us: Shopify store "Moon Gifts", has our products, no orders yet, connection problem')
+            ->and($prompt)->toContain('Dropshipping coaching and selling:')
+            ->and($prompt)->not->toContain('call add_to_basket')
+            ->and($prompt)->not->toContain('big_order_lead')
+            ->and($toolNames)->not->toContain('add_to_basket')
+            ->and($toolNames)->not->toContain('shipping_cost')
+            ->and($toolNames)->not->toContain('big_order_lead')
+            ->and($toolNames)->toContain('shop_information')
+            ->and($conversation->messages()->where('role', ShoppingAssistantMessageRoleEnum::ASSISTANT)->first()->answer_kind)->toBe(\App\Enums\CRM\ShoppingAssistant\ShoppingAssistantAnswerKindEnum::COACHING)
+            ->and(GetShoppingAssistantTools::make()->execute($conversation, 'add_to_basket', [])['error'])->toContain('not available on a dropshipping shop');
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});
+
+test('on a B2B shop the assistant prompt keeps the range advisor and the basket tools', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+
+    Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantModelReply(['content' => 'Hello.'], 'stop'))]);
+    AskShoppingAssistant::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND), 'hello');
+
+    $request = Http::recorded()->first()[0];
+
+    expect($request['messages'][0]['content'])->toContain('You are the range advisor for trade customers')
+        ->and($request['messages'][0]['content'])->not->toContain('Their sales channels with us')
+        ->and(collect($request['tools'])->pluck('function.name'))->toContain('add_to_basket', 'shipping_cost', 'big_order_lead');
+});
+
+test('Merlin sends a confirmed problem straight to the engineers as a MER ticket with the channel diagnostics, and a second report while it is open goes to the same ticket', function () {
+    $originalType = $this->shop->type;
+
+    try {
+        \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('noul')->andReturn(0.93);
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        $customer = shoppingAssistantCustomer($this->shop->refresh());
+        $channel  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY)->firstOrFail(), ['reference' => 'mer-'.Str::random(6)]);
+        $channel->update(['name' => 'Moon Gifts', 'number_portfolios' => 12, 'number_portfolio_broken' => 2]);
+
+        $reportCall = fn (string $summary) => shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('report_to_engineers', ['summary' => $summary, 'details' => 'Orders from the Shopify store Moon Gifts have not arrived since Monday; reconnecting did not help.', 'kind' => 'support', 'tried_fix' => true, 'why_only_us' => 'The store shows connected and was reconnected, yet no orders reach us.'])]], 'tool_calls');
+        $presented  = shoppingAssistantPresent(['reply' => 'Our engineers will look into it.', 'answer_kind' => 'products', 'follow_ups' => ['Best sellers for my store']]);
+
+        Http::fake(['*chat/completions' => Http::sequence()->push($reportCall('Shopify orders stopped arriving'))->push($presented)->push($reportCall('Shopify orders still missing'))->push($presented)]);
+        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+        $answer       = AskShoppingAssistant::run($conversation, 'my shopify orders are not coming through since monday');
+
+        $ticket = \App\Models\Helpers\Ticket::where('customer_id', $customer->id)->where('type', \App\Enums\Helpers\Ticket\TicketTypeEnum::MERLIN)->sole();
+
+        expect($ticket->reference)->toStartWith('MER-')
+            ->and($ticket->subject)->toBe('Shopify orders stopped arriving')
+            ->and($ticket->kind->value)->toBe('support')
+            ->and($ticket->shop_id)->toBe($this->shop->id)
+            ->and($ticket->source_type)->toBe('ShoppingAssistantConversation')
+            ->and($ticket->source_id)->toBe($conversation->id)
+            ->and($ticket->description)->toContain('my shopify orders are not coming through since monday')
+            ->and($ticket->description)->toContain('Shopify Moon Gifts')
+            ->and($ticket->description)->toContain('products 12 (2 broken)')
+            ->and($ticket->description)->toContain($conversation->ulid)
+            ->and($answer['reply'])->toContain('I have passed this to our engineers as '.$ticket->reference.'.');
+
+        $again = AskShoppingAssistant::run($conversation, 'still nothing arriving');
+
+        expect(\App\Models\Helpers\Ticket::where('customer_id', $customer->id)->where('type', \App\Enums\Helpers\Ticket\TicketTypeEnum::MERLIN)->count())->toBe(1)
+            ->and($again['reply'])->toContain('I have added this to '.$ticket->reference);
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
+});
+
+test('Merlin raises no ticket for a problem it cannot show is ours, or that the independent check doubts, and offers a person instead', function () {
+    \App\Actions\Helpers\AI\AskJev::mock()->shouldReceive('noul')->once()->andReturn(0.4);
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $tools        = GetShoppingAssistantTools::make();
+    $arguments    = ['summary' => 'Cannot log in', 'details' => 'The customer cannot log in.', 'kind' => 'bug'];
+
+    $untried = $tools->execute($conversation, 'report_to_engineers', [...$arguments, 'tried_fix' => false, 'why_only_us' => 'Login fails']);
+    $noWhy   = $tools->execute($conversation, 'report_to_engineers', [...$arguments, 'tried_fix' => true, 'why_only_us' => '']);
+    $doubted = $tools->execute($conversation, 'report_to_engineers', [...$arguments, 'tried_fix' => true, 'why_only_us' => 'Login fails after a password reset']);
+
+    expect($untried['content']['reported'])->toBeFalse()
+        ->and($noWhy['content']['reported'])->toBeFalse()
+        ->and($doubted['content']['reported'])->toBeFalse()
+        ->and($doubted['content']['note'])->toContain('offer_person')
+        ->and($doubted)->not->toHaveKey('fact')
+        ->and(\App\Models\Helpers\Ticket::where('customer_id', $customer->id)->count())->toBe(0);
+});
+
+test('a question asked in the website chat window starts a chat conversation, and an unknown entry point is refused', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $url      = 'http://'.$website->domain.'/json/shopping-assistant/ask';
+    Queue::fake();
+
+    $response = $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'Are you open?', 'entry_point' => 'chat'])->assertStatus(202);
+
+    expect(ShoppingAssistantConversation::where('ulid', $response->json('conversation'))->sole()->entry_point)->toBe(ShoppingAssistantEntryPointEnum::CHAT);
+
+    $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'Hello', 'entry_point' => 'command'])->assertStatus(422);
+});
+
