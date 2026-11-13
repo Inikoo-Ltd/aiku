@@ -512,6 +512,8 @@ test('a second transfer of the same amount for an order already paid from the ba
 });
 
 test('bank lines for orders staff already paid by hand leave the review queue, and a review line is never promoted to matched', function () {
+    GetCurrencyExchange::shouldRun()->andReturn(1.0);
+
     $bankConnection = bankMatchingConnection($this->organisation);
     $bankAccount    = StoreOrgPaymentServiceProviderAccount::make()->action(
         $this->organisation,
@@ -548,6 +550,7 @@ test('bank lines for orders staff already paid by hand leave the review queue, a
     $first     = bankMatchingOrder(createCustomer($this->shop), 40);
     $second    = bankMatchingOrder(createCustomer($this->shop), 60);
     $unpaid    = bankMatchingOrder(createCustomer($this->shop), 80);
+    $rounded   = bankMatchingOrder(createCustomer($this->shop), 100.78);
 
     $payByHand($currency, 300);
     $payByHand($cancelled, 55);
@@ -556,11 +559,12 @@ test('bank lines for orders staff already paid by hand leave the review queue, a
     $payByHand($second, 60);
 
     $lines = [
-        'later'     => $line('h1', $later->reference, 101),
+        'later'     => $line('h1', $later->reference, 120),
         'currency'  => $line('h2', $currency->reference, 26.50, Currency::where('id', '!=', $this->shop->currency_id)->value('id')),
         'cancelled' => $line('h3', $cancelled->reference, 55),
         'several'   => $line('h4', $first->reference.' '.$second->reference, 100),
         'unpaid'    => $line('h5', $unpaid->reference, 80),
+        'rounded'   => $line('h6', $rounded->reference, 101),
     ];
     MatchBankTransactions::run($bankConnection);
 
@@ -568,7 +572,9 @@ test('bank lines for orders staff already paid by hand leave the review queue, a
         ->and($lines['currency']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
         ->and($lines['cancelled']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
         ->and($lines['several']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
-        ->and($lines['unpaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED);
+        ->and($lines['unpaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($lines['rounded']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
+        ->and($lines['rounded']->match_data['difference'])->toBe(0.22);
 
     $lines['unpaid']->update(['match_state' => BankTransactionMatchStateEnum::REVIEW]);
     $payByHand($later, 100.78);

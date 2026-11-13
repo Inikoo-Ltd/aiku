@@ -199,7 +199,7 @@ class MatchBankTransactions
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'another bank line is already matched to this order'])];
         }
 
-        if ($difference > 0.01) {
+        if ($difference > $this->feeTolerance($owed, $bankTransaction)) {
             return [BankTransactionMatchStateEnum::REVIEW, $order, array_merge($matchData, ['reason' => 'pays more than owed'])];
         }
         if (-$difference > $this->feeTolerance($owed, $bankTransaction)) {
@@ -232,7 +232,8 @@ class MatchBankTransactions
 
     /**
      * Banks take small fees off incoming transfers (0.2-0.8% seen on Wise): accept up to 1% short, never more than the
-     * connection's ceiling (15 EUR by default) in the line's currency. A line short by more goes to review.
+     * connection's ceiling (15 EUR by default) in the line's currency. A line short by more goes to review. The same
+     * tolerance lets a transfer rounded up (whole forints) pay the order on its own; the few cents extra stay on it.
      */
     public function feeTolerance(float $owed, BankTransaction $bankTransaction): float
     {
