@@ -38,8 +38,9 @@ use Lorisleiva\Actions\Concerns\AsObject;
  * Handed over (Clean Hand Over) means the order is ready to be put on a shipment. It is done when the agent marked it,
  * when every Ready to Roll check is done (RecordPurchaseOrderHandedOverWhenReady records it), when a delivery is
  * dispatched (noting the checks it went without) and, for an agent that sends goods on the next container (cho_mode),
- * when every item is in a container, so that mode does not offer the mark: agents read it as the supplier handing the
- * goods to them (HELP-4292). A date already marked can still be cleared.
+ * when every line is received in full and packed in the agent warehouse, or every item is in a container, so that
+ * mode does not offer the mark: agents read it as the supplier handing the goods to them (HELP-4292). A date already
+ * marked can still be cleared.
  * On an order through an agent, Ready is also reached once every line is in a container, packed first or not: the QC
  * mark is then optional. With the agent warehouse, production done is filled by the goods receipts, so it shows under
  * In warehouse and is never marked by hand.
@@ -131,14 +132,16 @@ class GetPurchaseOrderStages
             ? in_array(StockDeliveryStateEnum::tryFrom((string) $purchaseOrder->delivery_state?->value), self::SHIPPED_STATES)
             : $dispatched->isNotEmpty();
         $dispatchedAt = $dispatched->pluck('dispatched_at')->filter()->min();
-        $onContainers = $purchaseOrder->choMode() === 'next_container' ? $this->allOnContainersAt($purchaseOrder) : null;
+        $sendsOnNextContainer = $purchaseOrder->choMode() === 'next_container';
+        $onContainers         = $sendsOnNextContainer ? $this->allOnContainersAt($purchaseOrder) : null;
+        $packedAt             = $sendsOnNextContainer ? $this->warehouseDates($purchaseOrder)['warehouse_packed_at'] : null;
 
-        $date = $onContainers
-            ? collect([$purchaseOrder->handed_over_at, $onContainers, $dispatchedAt])->filter()->min()
+        $date = $onContainers || $packedAt
+            ? collect([$purchaseOrder->handed_over_at, $onContainers, $packedAt, $dispatchedAt])->filter()->min()
             : ($purchaseOrder->handed_over_at ?? $dispatchedAt);
 
         return [
-            'recorded'   => $purchaseOrder->handed_over_at !== null || $isDispatched || $onContainers !== null,
+            'recorded'   => $purchaseOrder->handed_over_at !== null || $isDispatched || $onContainers !== null || $packedAt !== null,
             'date'       => $date,
             'user_id'    => $purchaseOrder->stageMarkUserId('handed_over_at'),
             'deliveries' => null,
@@ -328,9 +331,11 @@ class GetPurchaseOrderStages
                 $stage === Stage::SUBMITTED && (bool) $purchaseOrder->agent_reference => __('Agent\'s number: :number', ['number' => $purchaseOrder->agent_reference]),
                 $stage === Stage::READY && $purchaseOrder->qc_passed_at === null && $this->allOnContainersAt($purchaseOrder) !== null => __('Every item is in a container, QC not recorded'),
                 $stage === Stage::HANDED_OVER && RecordPurchaseOrderHandedOverWhenReady::wasRecordedAutomatically($purchaseOrder) => __('Recorded when every Ready to Roll check was done'),
-                $stage === Stage::HANDED_OVER && $purchaseOrder->handed_over_at === null && $stages[$stage->value]['recorded'] => $purchaseOrder->choMode() === 'next_container'
-                    ? __('Every item is in a container')
-                    : $this->dispatchedWithoutHandOverNote($purchaseOrder, $deliveries),
+                $stage === Stage::HANDED_OVER && $purchaseOrder->handed_over_at === null && $stages[$stage->value]['recorded'] => match (true) {
+                    $purchaseOrder->choMode() !== 'next_container'    => $this->dispatchedWithoutHandOverNote($purchaseOrder, $deliveries),
+                    $this->allOnContainersAt($purchaseOrder) !== null => __('Every item is in a container'),
+                    default                                           => __('Received in full and packed in the agent warehouse'),
+                },
                 default => null,
             },
             'checks'      => $stage === Stage::READY ? $this->readyChecks($purchaseOrder) : null,
