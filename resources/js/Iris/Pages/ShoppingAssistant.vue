@@ -123,10 +123,12 @@ const starterQuestions = computed(() => [
     ctrans("Low-priced Christmas gifts that sell well"),
     ctrans("Help me start bath & body"),
     ctrans("What did I use to order that still sells?"),
+    ctrans("Do you send samples?"),
+    ctrans("How fast do you deliver?"),
 ])
 
 const steps = computed(() => [
-    { title: ctrans("Tell us about your shop"), body: ctrans("What you sell, where you are, your customers and what you’d like to try.") },
+    { title: ctrans("Ask anything"), body: ctrans("A question, your shop or what you need – in your own words.") },
     { title: ctrans("Get picks with a reason"), body: ctrans("Must-haves and add-ons to your range, each with a one-line reason – all live and in stock.") },
     { title: ctrans("Add to basket or keep chatting"), body: ctrans("Add them all in one click, ask a follow-up question or start a new conversation.") },
 ])
@@ -678,12 +680,12 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                 auto-resize
                                 maxlength="1000"
                                 class="landing-textarea"
-                                :aria-label="ctrans('Describe your shop')"
-                                :placeholder="ctrans('e.g. We’re a small crystal and gift shop in York. I’d like Christmas gifts and to try bath & body.')"
+                                :aria-label="ctrans('Ask anything')"
+                                :placeholder="ctrans('e.g. We’re a small crystal shop in York. What Christmas gifts should we stock, and do you send samples?')"
                                 @keydown.enter="sendOnEnter"
                             />
                             <div class="landing-ask-footer">
-                                <p class="landing-hint">{{ ctrans("Write as much as you like – the more :name knows, the better the picks.", { name: assistantName }) }}</p>
+                                <p class="landing-hint">{{ ctrans("A question, your shop, what you need – the more :name knows, the better the answer.", { name: assistantName }) }}</p>
                                 <button
                                     type="button"
                                     class="landing-ask-button"
@@ -765,17 +767,17 @@ const sendOnEnter = (event: KeyboardEvent) => {
                             <span class="landing-badge" aria-hidden="true">
                                 <FontAwesomeIcon icon="far fa-sparkles" fixed-width />
                             </span>
-                            <p class="landing-eyebrow">{{ ctrans("Meet :name · Your range advisor", { name: assistantName }) }}</p>
+                            <p class="landing-eyebrow">{{ ctrans("Meet :name · Ask us anything", { name: assistantName }) }}</p>
                         </div>
 
                         <h1 class="landing-title">
-                            {{ ctrans("Tell :name about your shop.", { name: assistantName }) }}<br>
-                            {{ ctrans(":name will find what sells.", { name: assistantName }) }}
+                            {{ ctrans("Ask :name anything.", { name: assistantName }) }}<br>
+                            {{ ctrans("This is not just a search.") }}
                         </h1>
 
                         <p class="landing-intro">
                             {{ knowsTheRange }}
-                            {{ ctrans("Describe your shop – what you sell, where you are, who your customers are and what you’d like to try – and :name will suggest must-haves and add-ons from what is in stock now, each with a reason why.", { name: assistantName }) }}
+                            {{ ctrans(":name is a new way to work with us. Ask in your own words and your own language: what sells for shops like yours, a product, offers, delivery, samples or product documents. When :name is not sure, one of our experts answers.", { name: assistantName }) }}
                         </p>
 
                         <p v-if="isMerlin" class="landing-legend">
