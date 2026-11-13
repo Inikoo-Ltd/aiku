@@ -206,13 +206,15 @@ test('iris reads the cached website as it is written today and deflated, and get
     });
 
     Cache::put($key, $websiteData, 3600);
-    $fromArrayEntry = $middleware->getCachedWebsiteData($domain);
+    $fromArrayEntry      = $middleware->getCachedWebsiteData($domain);
+    $arrayEntryAfterRead = Cache::get($key);
 
     $deflated = $middleware->compressWebsiteData($websiteData);
     Cache::put($key, $deflated, 3600);
     $fromDeflatedEntry = $middleware->getCachedWebsiteData($domain);
 
     expect($fromArrayEntry['website'])->not->toBe($websiteData['website'])
+        ->and($arrayEntryAfterRead)->toBeArray()
         ->and(serialize($fromArrayEntry))->toBe($servedOnAHit)
         ->and(serialize($fromDeflatedEntry))->toBe($servedOnAHit)
         ->and($fromDeflatedEntry)->toEqual($websiteData)
@@ -245,7 +247,7 @@ test('iris reads the cached website as it is written today and deflated, and get
     Cache::forget($key);
 });
 
-test('iris rebuilds a cached website it cannot read, writes it as an array and caches nothing for an unknown domain', function () {
+test('iris rebuilds a cached website it cannot read, writes it deflated and caches nothing for an unknown domain', function () {
     config(['iris.cache.website.ttl' => 3600]);
     $middleware = new DetectIrisWebsite();
     $domain     = $this->website->domain;
@@ -265,11 +267,13 @@ test('iris rebuilds a cached website it cannot read, writes it as an array and c
     $fromTruncatedEntry = $middleware->getCachedWebsiteData($domain);
 
     expect($onAMiss)->toEqual($websiteData)
-        ->and($writtenOnAMiss)->toBeArray()->toEqual($websiteData)
+        ->and($writtenOnAMiss)->toBeString()
+        ->and($middleware->decompressWebsiteData($writtenOnAMiss))->toEqual($websiteData)
         ->and($fromUnreadableEntry)->toEqual($websiteData)
-        ->and($writtenOverUnreadableEntry)->toBeArray()->toEqual($websiteData)
+        ->and($writtenOverUnreadableEntry)->toBeString()
+        ->and($middleware->decompressWebsiteData($writtenOverUnreadableEntry))->toEqual($websiteData)
         ->and($fromTruncatedEntry)->toEqual($websiteData)
-        ->and(Cache::get($key))->toBeArray()
+        ->and($middleware->decompressWebsiteData(Cache::get($key)))->toEqual($websiteData)
         ->and($middleware->decompressWebsiteData('not a deflated website'))->toBeNull()
         ->and($middleware->decompressWebsiteData(gzcompress(serialize('not an array'))))->toBeNull();
 

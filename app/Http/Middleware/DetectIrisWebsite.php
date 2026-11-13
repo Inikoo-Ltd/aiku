@@ -50,8 +50,8 @@ class DetectIrisWebsite
 
     /**
      * The cached website is about 340KB, read on every storefront request from a Redis on another
-     * host. An array is the entry as it is written today; a string is the deflated entry the next
-     * release writes, already read here so that no running worker meets an entry it cannot read.
+     * host, so it is stored deflated, about a fifth of the size. An array is an entry written
+     * before this was introduced.
      */
     public function getCachedWebsiteData(string $domain): array
     {
@@ -70,7 +70,7 @@ class DetectIrisWebsite
         }
 
         $websiteData = $this->getWebsiteData($domain);
-        Cache::put($key, $websiteData, config('iris.cache.website.ttl'));
+        Cache::put($key, $this->compressWebsiteData($websiteData), config('iris.cache.website.ttl'));
 
         return $websiteData;
     }
