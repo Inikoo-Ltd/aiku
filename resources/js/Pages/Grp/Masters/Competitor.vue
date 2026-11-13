@@ -169,5 +169,5 @@ const refreshDossier = () => {
     <TableMasterAssetCompetitorProducts v-else-if="currentTab === 'matches'" tab="matches" :data="matches" :canEdit="can_edit" :currencyCode="competitor.currency_code" />
     <TableCompetitorProducts v-else-if="currentTab === 'products'" tab="products" :data="products" :currencyCode="competitor.currency_code" />
     <CompetitorPolicies v-else-if="currentTab === 'policies'" :pages="policies ?? []" />
-    <CompetitorPriceCheckDialog v-model:visible="isAddingPriceCheck" :route="price_check_route" :competitorName="competitor.name" :currencyCode="competitor.currency_code" />
+    <CompetitorPriceCheckDialog v-model:visible="isAddingPriceCheck" :route="price_check_route" :competitorName="competitor.name" :currencyCode="competitor.currency_code" :pricesByHand="competitor.prices_by_hand" />
 </template>
