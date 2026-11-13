@@ -181,6 +181,7 @@ type Props = {
     preparation_reason: string | null
     preparation_reasons: { id: number, name: string, is_other: boolean }[]
     preparation_reasons_route: null | { name: string, parameters: object }
+    raw_material_batches: null | { enabled: boolean, route: { name: string, parameters: object } }
     retired_preparation_reasons: { id: number, name: string }[]
     activity_totals: null | {
         total: ActivityTotal
@@ -268,6 +269,22 @@ function moveReason(index: number, offset: number) {
     const reasons = editingReasons.value
     if (!reasons || index + offset < 0 || index + offset >= reasons.length) return
     reasons.splice(index + offset, 0, reasons.splice(index, 1)[0])
+}
+
+const rawMaterialBatchesError = ref<string | null>(null)
+function toggleRawMaterialBatches() {
+    if (!props.raw_material_batches) return
+    processing.value = true
+    rawMaterialBatchesError.value = null
+    router.patch(
+        route(props.raw_material_batches.route.name, props.raw_material_batches.route.parameters),
+        { enabled: !props.raw_material_batches.enabled },
+        {
+            preserveScroll: true,
+            onError: (errors) => rawMaterialBatchesError.value = Object.values(errors)[0] ?? null,
+            onFinish: () => processing.value = false,
+        }
+    )
 }
 
 function saveReasons() {
@@ -857,10 +874,17 @@ const quantityLabel = (quantity: number | string) => Number(quantity).toLocaleSt
             <Button v-if="development_time" v-tooltip="ctrans('Development work kept on paper instead of on the tablet, paid at the Development rate')" type="tertiary" :label="ctrans('Add development time')" @click="openDevelopment">
                 <template #icon><FontAwesomeIcon :icon="['fal', 'plus']" fixed-width aria-hidden="true" /></template>
             </Button>
-            <Button v-if="preparation_reasons_route" type="tertiary" :label="ctrans('Preparation reasons')" class="ml-auto" @click="openReasons">
+            <div v-if="raw_material_batches" class="ml-auto flex flex-col items-end">
+                <Button v-tooltip="ctrans('When on, the tablet asks for the batch code and expiry date of each raw material of the step')" type="tertiary"
+                    :label="raw_material_batches.enabled ? ctrans('Raw material batches: on') : ctrans('Raw material batches: off')" :disabled="processing" @click="toggleRawMaterialBatches">
+                    <template #icon><FontAwesomeIcon :icon="raw_material_batches.enabled ? ['fal', 'check'] : ['fal', 'times']" :class="raw_material_batches.enabled ? 'text-green-600' : 'text-gray-400'" fixed-width aria-hidden="true" /></template>
+                </Button>
+                <span v-if="rawMaterialBatchesError" class="text-xs text-red-600">{{ rawMaterialBatchesError }}</span>
+            </div>
+            <Button v-if="preparation_reasons_route" type="tertiary" :label="ctrans('Preparation reasons')" :class="raw_material_batches ? '' : 'ml-auto'" @click="openReasons">
                 <template #icon><FontAwesomeIcon :icon="['fal', 'cog']" fixed-width aria-hidden="true" /></template>
             </Button>
-            <Button v-if="short_preparation_route" type="tertiary" :label="ctrans('Short preparation: :minutes min', { minutes: short_preparation_minutes })" :class="preparation_reasons_route ? '' : 'ml-auto'" @click="openShortPreparation">
+            <Button v-if="short_preparation_route" type="tertiary" :label="ctrans('Short preparation: :minutes min', { minutes: short_preparation_minutes })" :class="preparation_reasons_route || raw_material_batches ? '' : 'ml-auto'" @click="openShortPreparation">
                 <template #icon><FontAwesomeIcon :icon="['fal', 'cog']" fixed-width aria-hidden="true" /></template>
             </Button>
         </div>

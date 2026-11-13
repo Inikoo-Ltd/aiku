@@ -187,6 +187,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read User|null $packerUser
  * @property-read Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read Collection<int, PickedBay> $pickedBays
+ * @property int|null $packing_bench_id
+ * @property-read \App\Models\Dispatching\PackingBench|null $packingBench
  * @property-read Employee|null $picker
  * @property-read User|null $pickerUser
  * @property-read Collection<int, PickingSession> $pickingSessions
@@ -322,7 +324,8 @@ class DeliveryNote extends Model implements Auditable
         'shipping_notes',
         'customer_notes',
         'internal_notes',
-        'private_warehouse_note'
+        'private_warehouse_note',
+        'packing_bench_id'
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -622,6 +625,11 @@ class DeliveryNote extends Model implements Auditable
     public function pickedBays(): BelongsToMany
     {
         return $this->belongsToMany(PickedBay::class, 'picked_bay_has_delivery_notes');
+    }
+
+    public function packingBench(): BelongsTo
+    {
+        return $this->belongsTo(PackingBench::class)->withTrashed();
     }
 
     public function getBestWeight(): string

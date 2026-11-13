@@ -105,6 +105,14 @@ class Production extends Model implements Auditable
         return array_map('floatval', $this->settings['mix_batch_sizes_kg'] ?? self::DEFAULT_MIX_BATCH_SIZES_KG);
     }
 
+    /**
+     * Artisans type the batch code and expiry date of each raw material when they finish a step (HELP-4699).
+     */
+    public function recordsRawMaterialBatches(): bool
+    {
+        return (bool) ($this->settings['records_raw_material_batches'] ?? false);
+    }
+
     public const array DEFAULT_DEVELOPMENT_REVIEW = [
         'min_sessions'        => 5,
         'min_artisans'        => 2,

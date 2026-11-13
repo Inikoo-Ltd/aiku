@@ -26,6 +26,7 @@ use App\Models\Production\JobOrderItem;
 use Illuminate\Support\Arr;
 use App\Models\Production\JobOrderItemTask;
 use App\Models\Production\ManufactureTaskSession;
+use App\Models\Production\ManufactureTaskSessionShare;
 use App\Enums\Production\JobOrderItemTask\JobOrderItemTaskStateEnum;
 use App\Enums\Production\ManufactureTaskSession\ManufactureTaskSessionStateEnum;
 use Illuminate\Support\Collection;
@@ -174,6 +175,7 @@ class ShowJobOrder extends OrgAction
                     'overproductions' => $jobOrder->data['overproductions'] ?? [],
                     'corrections'     => $jobOrder->data['corrections'] ?? [],
                     'non_productive'  => $this->nonProductive($jobOrder, $currencySymbol),
+                    'raw_material_batches' => $this->rawMaterialBatches($jobOrder),
                     'hold'            => $this->holdWithLabel($jobOrder->data['hold'] ?? null),
                     'holds'           => array_map(fn (array $hold) => $this->holdWithLabel($hold), $jobOrder->data['holds'] ?? []),
                     'cancellation'    => $this->cancellationWithLabel($jobOrder->data['cancellation'] ?? null),
@@ -312,6 +314,38 @@ class ShowJobOrder extends OrgAction
             ->map(fn (JobOrderItemTask $member) => $member->jobOrderItem->artefact->code.' ('.$member->jobOrder->reference.')');
 
         return $others->isEmpty() ? null : $others->implode(', ');
+    }
+
+    /**
+     * The raw material batch codes and expiry dates artisans recorded on this job order's steps (HELP-4699).
+     *
+     * @return array<int, array{artefact_code: string|null, step: string, code: string, name: string, batch_code: string|null, expiry_date: string|null, artisan: string|null, recorded_at: mixed}>
+     */
+    private function rawMaterialBatches(JobOrder $jobOrder): array
+    {
+        $jobSteps   = JobOrderItemTask::where('job_order_id', $jobOrder->id)->pluck('id');
+        $sessionIds = ManufactureTaskSession::whereIn('job_order_item_task_id', $jobSteps)->pluck('id')
+            ->merge(ManufactureTaskSessionShare::whereIn('job_order_item_task_id', $jobSteps)->pluck('manufacture_task_session_id'))
+            ->unique();
+
+        return ManufactureTaskSession::whereIn('id', $sessionIds)
+            ->where('state', ManufactureTaskSessionStateEnum::CLOSED)
+            ->whereNotNull('raw_material_batches')
+            ->with(['user', 'jobOrderItemTask.recipeStep', 'jobOrderItemTask.manufactureTask', 'jobOrderItemTask.jobOrderItem.artefact'])
+            ->orderBy('ended_at')
+            ->get()
+            ->flatMap(fn (ManufactureTaskSession $session) => array_map(fn (array $batch) => [
+                'artefact_code' => $session->jobOrderItemTask?->jobOrderItem?->artefact?->code,
+                'step'          => $session->stepName(),
+                'code'          => $batch['code'],
+                'name'          => $batch['name'],
+                'batch_code'    => $batch['batch_code'],
+                'expiry_date'   => $batch['expiry_date'],
+                'artisan'       => $session->user?->contact_name,
+                'recorded_at'   => $session->ended_at,
+            ], $session->raw_material_batches))
+            ->values()
+            ->all();
     }
 
     /**

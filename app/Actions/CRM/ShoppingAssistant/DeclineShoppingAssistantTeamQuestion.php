@@ -14,7 +14,6 @@ use App\Actions\Tasks\UpdateStaffTask;
 use App\Enums\CRM\ShoppingAssistant\ShoppingAssistantMessageRoleEnum;
 use App\Enums\Tasks\StaffTaskStatusEnum;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
-use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\User;
 use App\Models\Tasks\StaffTask;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +31,10 @@ class DeclineShoppingAssistantTeamQuestion
     use AsAction;
 
     /**
-     * @return 'to_backup'|'closed'|'ignored'
+     * A guru who does not hold the question only steps aside: the holder keeps it. The holder
+     * declining passes it to the next guru in order who has not declined, else it is closed.
+     *
+     * @return 'to_backup'|'closed'|'kept'|'ignored'
      */
     public function handle(StaffTask $task, User $user): string
     {
@@ -42,15 +44,22 @@ class DeclineShoppingAssistantTeamQuestion
 
         $declined     = [...data_get($task->data, 'declined_by', []), $user->id];
         $assistant    = GetAikuAssistant::run($task->group_id);
-        $organisation = Organisation::find(data_get($task->data, 'organisation_id'));
-        $guru         = $organisation ? StoreShoppingAssistantTeamQuestion::personOf($organisation) : null;
-        $backup       = $organisation ? StoreShoppingAssistantTeamQuestion::backupOf($organisation) : null;
-        $toBackup     = $guru?->id === $user->id && $backup && $backup->id !== $user->id && !in_array($backup->id, $declined, true);
+        $gurus        = StoreShoppingAssistantTeamQuestion::gurusOfTask($task);
+        $position     = array_search($user->id, array_map(fn (User $guru) => $guru->id, $gurus), true);
+        $holderKeeps  = $task->assignee_id && $task->assignee_id !== $user->id && !in_array($task->assignee_id, $declined, true);
+        $backup       = !$holderKeeps && $position !== false
+            ? collect([...array_slice($gurus, $position + 1), ...array_slice($gurus, 0, $position)])->first(fn (User $guru) => !in_array($guru->id, $declined, true))
+            : null;
+        $toBackup     = $backup !== null;
 
         $task->update(['data' => [...$task->data, 'declined_by' => $declined]] + ($toBackup ? ['assignee_id' => $backup->id, 'assigned_at' => now()] : []));
 
         if ($task->conversation) {
             SendStaffMessage::run($task->conversation, $assistant, ['body' => __(':name did not want to answer this question.', ['name' => $user->contact_name ?: $user->username])]);
+        }
+
+        if ($holderKeeps) {
+            return 'kept';
         }
 
         if ($toBackup) {

@@ -655,6 +655,7 @@ use App\Actions\Production\Artefact\CancelArtefactDevelopment;
 use App\Actions\Production\Artefact\DecideArtefactDevelopmentReview;
 use App\Actions\Production\Artefact\StoreArtefactDevelopmentFeedback;
 use App\Actions\Production\Production\SetDevelopmentReviewSettings;
+use App\Actions\Production\Production\SetProductionRawMaterialBatches;
 use App\Actions\Production\JobOrder\StoreTrialRunJobOrder;
 use App\Actions\Production\Artefact\SetArtefactsBatchSize;
 use App\Actions\Production\Artefact\SetArtefactsShelfLife;
@@ -1921,6 +1922,7 @@ Route::post('/production/{production:id}/development-time', AddManufactureDevelo
 Route::patch('/production/{production:id}/artisan/{employee:id}/development-on-tablet', SetArtisanDevelopmentOnTablet::class)->name('production.artisan.development_on_tablet.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/preparation-reasons', UpdateManufacturePreparationReasons::class)->name('production.preparation_reasons.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/mix-batch-sizes', UpdateProductionMixBatchSizes::class)->name('production.mix_batch_sizes.update')->withoutScopedBindings();
+Route::patch('/production/{production:id}/raw-material-batches', SetProductionRawMaterialBatches::class)->name('production.raw_material_batches.update')->withoutScopedBindings();
 Route::patch('/production/{production:id}/development-review-settings', SetDevelopmentReviewSettings::class)->name('production.development_review_settings.update')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/development-review', DecideArtefactDevelopmentReview::class)->name('artefact.development_review.decide')->withoutScopedBindings();
 Route::post('/artefact/{artefact:id}/development-feedback', StoreArtefactDevelopmentFeedback::class)->name('artefact.development_feedback.store')->withoutScopedBindings();

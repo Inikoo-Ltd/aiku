@@ -19,6 +19,7 @@ use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Models\HumanResources\Employee;
 use App\Actions\Production\JobOrder\ConfirmJobOrder;
 use App\Actions\Production\JobOrder\StoreJobOrder;
+use App\Actions\Production\Production\SetProductionRawMaterialBatches;
 use App\Actions\Production\ManufactureTask\StoreManufactureTask;
 use App\Actions\Production\Artefact\AttachManufactureTaskToArtefact;
 use App\Actions\Production\Artefact\AttachRawMaterialToRecipeStep;
@@ -1776,4 +1777,181 @@ test('a job finished short is closed in whole packs and the floor is warned of t
     $this->artefact->orgStock->update(['packed_in' => $packedIn]);
     $this->artefact->update(['org_stock_id' => $orgStockId]);
     $this->artefact->manufactureTasks()->sync([$this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1]]);
+});
+
+test('INI-255 the floor reads the lines of every mix pool at once and shows what each pool shows on its own', function () {
+    $suffix  = rand(10000, 99999);
+    $mixing  = StoreManufactureTask::make()->action($this->production, ['code' => 'PMX'.$suffix, 'name' => 'Mixing', 'is_piece_rate' => true, 'is_recorded_in_kg' => true]);
+    $making  = StoreManufactureTask::make()->action($this->production, ['code' => 'PMK'.$suffix, 'name' => 'Making', 'is_piece_rate' => true]);
+    $packing = StoreManufactureTask::make()->action($this->production, ['code' => 'PPK'.$suffix, 'name' => 'Packing', 'is_piece_rate' => true]);
+    $user    = $this->guest->getUser();
+    $pool    = \App\Actions\Production\JobOrderItemTask\ShareMixPool::make();
+
+    $artefact = function (string $code, ?string $strand, float $powderPerKg) use ($suffix, $mixing, $making, $packing) {
+        $artefact = StoreArtefact::make()->action($this->production, ['state' => \App\Enums\Production\Artefact\ArtefactStateEnum::ACTIVE->value, 'code' => $code.$suffix, 'name' => $code]);
+        \App\Actions\Production\Artefact\SetArtefactsRecipe::make()->action($this->production, ['artefacts' => [$artefact->id], 'steps' => [
+            ['manufacture_task_id' => $mixing->id, 'label' => $strand, 'position' => 1, 'units_per_artefact' => 0.1, 'mix_batch_kg' => 2, 'waits_for' => [], 'raw_materials' => [['raw_material_id' => $this->rawMaterial->id, 'quantity_per_unit' => 0.1 * $powderPerKg]]],
+            ['manufacture_task_id' => $making->id, 'label' => $strand, 'position' => 2, 'units_per_artefact' => 1, 'waits_for' => [0]],
+            ['manufacture_task_id' => $packing->id, 'position' => 3, 'units_per_artefact' => 1, 'waits_for' => [1]],
+        ]]);
+
+        return $artefact;
+    };
+    $line = function (Artefact $artefact, int $quantity, ?int $planPosition = null) {
+        $jobOrder = StoreJobOrder::make()->action($this->production, []);
+        $item     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $artefact->id, 'quantity' => $quantity]);
+        ConfirmJobOrder::make()->action($jobOrder);
+        if ($planPosition) {
+            $jobOrder->update(['planned_for' => now()->toDateString(), 'plan_position' => $planPosition]);
+        }
+
+        return $item->refresh();
+    };
+    $stepOf = fn (JobOrderItem $item, ManufactureTask $task) => $item->tasks()->where('manufacture_task_id', $task->id)->first();
+    $make   = fn (JobOrderItem $item, ManufactureTask $task, float $quantity) => CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $stepOf($item, $task)), ['quantity_made' => $quantity]);
+
+    $floor = function () use ($suffix) {
+        \DB::flushQueryLog();
+        \DB::enableQueryLog();
+        $props = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->assertOk()->viewData('page')['props'];
+        $log   = \DB::getQueryLog();
+        \DB::disableQueryLog();
+
+        return [
+            collect($props['tasks'])->filter(fn (array $card) => str_contains($card['artefact_code'], (string) $suffix))->values(),
+            collect($log)->pluck('query')->reject(fn (string $sql) => str_contains($sql, '"mix_pool_key" = '))->count(),
+        ];
+    };
+
+    $expectEveryPoolAsOnItsOwn = function (\Illuminate\Support\Collection $cards) use ($pool) {
+        $pools = [];
+        foreach ($cards as $card) {
+            $poolKey = \App\Actions\Production\JobOrderItemTask\ShareMixPool::poolKey(JobOrderItemTask::find($card['id']));
+            if (!$poolKey) {
+                expect($card['mix_pool'])->toBeNull();
+
+                continue;
+            }
+            $lines = $pool->tasksNeeding($this->production->id, $poolKey)->load(['jobOrder', 'jobOrderItem.artefact']);
+            expect($card['mix_pool']['lines'])->toBe($lines->map(fn (JobOrderItemTask $line) => [
+                'artefact_code'       => $line->jobOrderItem->artefact->code,
+                'job_order_reference' => $line->jobOrder->reference,
+                'quantity'            => round((float) $line->quantity_required - (float) $line->quantity_made, 3),
+                'units'               => floor(round(((float) $line->quantity_required - (float) $line->quantity_made) / $line->unitsPerArtefact(), 3)),
+            ])->values()->all())
+                ->and($card['mix_pool']['needed'])->toBe(round($lines->sum(fn (JobOrderItemTask $line) => (float) $line->quantity_required - (float) $line->quantity_made), 3));
+            $pools[$poolKey] = true;
+        }
+
+        return count($pools);
+    };
+
+    $redOne  = $line($artefact('PRA', 'Red '.$suffix, 0.5), 20, 2);
+    $redTwo  = $line($artefact('PRB', 'Red '.$suffix, 0.5), 30, 1);
+    $make($redOne, $mixing, 6);
+    $make($redTwo, $making, 12);
+    $redThree = $line($redOne->artefact, 10);
+
+    $floor();
+    [$cards, $queriesWithOneStrand] = $floor();
+    $redMix    = $cards->firstWhere('id', $stepOf($redThree, $mixing)->id);
+    $redMaking = $cards->first(fn (array $card) => $card['is_shared_mix'] && $card['manufacture_task_id'] == $making->id);
+    expect($expectEveryPoolAsOnItsOwn($cards))->toBe(2)
+        ->and($redMix['mix_pool'])->toMatchArray(['unit' => 'kg', 'needed' => 1.0, 'in_stock' => null, 'mixes' => 1, 'batch_kg' => 2.0, 'left_after_kg' => 1.0])
+        ->and(array_column($redMaking['mix_pool']['lines'], 'job_order_reference'))->toBe([$redTwo->jobOrder->reference, $redOne->jobOrder->reference, $redThree->jobOrder->reference])
+        ->and(array_column($redMaking['mix_pool']['lines'], 'quantity'))->toBe([18.0, 20.0, 10.0])
+        ->and($redMaking['mix_pool'])->toMatchArray(['unit' => null, 'needed' => 48.0, 'in_stock' => 0.0, 'mixes' => null, 'batch_kg' => null, 'left_after_kg' => null]);
+
+    $blueOne = $line($artefact('PBA', 'Blue '.$suffix, 0.5), 10);
+    $blueTwo = $line($artefact('PBB', 'Blue '.$suffix, 0.5), 40, 3);
+    $make($blueOne, $mixing, 2);
+    $otherBlue = $line($artefact('PBC', 'Blue '.$suffix, 0.8), 20);
+    $plain     = $artefact('PPL', null, 0.5);
+    $plainOne  = $line($plain, 20);
+    $plainTwo  = $line($plain, 10, 4);
+    $make($otherBlue, $mixing, 2);
+    $make($otherBlue, $making, 5);
+
+    [$cards, $queriesWithFourStrands] = $floor();
+    $blueMix  = $cards->first(fn (array $card) => $card['manufacture_task_id'] == $mixing->id && str_contains($card['artefact_code'], 'PBB'.$suffix));
+    $plainMix = $cards->first(fn (array $card) => $card['manufacture_task_id'] == $mixing->id && str_contains($card['artefact_code'], 'PPL'.$suffix));
+    expect($expectEveryPoolAsOnItsOwn($cards))->toBe(6)
+        ->and(array_column($blueMix['mix_pool']['lines'], 'job_order_reference'))->toBe([$blueTwo->jobOrder->reference])
+        ->and($blueMix['mix_pool'])->toMatchArray(['needed' => 3.0, 'mixes' => 2, 'left_after_kg' => 1.0])
+        ->and(array_column($plainMix['mix_pool']['lines'], 'job_order_reference'))->toBe([$plainTwo->jobOrder->reference, $plainOne->jobOrder->reference])
+        ->and($plainMix['mix_pool'])->toMatchArray(['needed' => 3.0, 'mixes' => 2, 'left_after_kg' => 1.0])
+        ->and($queriesWithFourStrands)->toBe($queriesWithOneStrand);
+});
+
+test('a production that asks for them records the raw material batch codes and expiry dates typed when a step is closed', function () {
+    $this->artefact->manufactureTasks()->sync([
+        $this->manufactureTask->id => ['position' => 1, 'units_per_artefact' => 1],
+    ]);
+    $step = ArtefactManufactureTask::where('artefact_id', $this->artefact->id)
+        ->where('manufacture_task_id', $this->manufactureTask->id)
+        ->first();
+    AttachRawMaterialToRecipeStep::make()->action($step, [
+        'raw_material_id'   => $this->rawMaterial->id,
+        'quantity_per_unit' => 0.05,
+    ]);
+    $notOnRecipe = StoreRawMaterial::make()->action($this->production, [
+        'type'        => RawMaterialTypeEnum::CONSUMABLE->value,
+        'state'       => RawMaterialStateEnum::ORPHAN->value,
+        'code'        => 'RMB'.uniqid(),
+        'description' => 'Not on the recipe',
+        'unit'        => RawMaterialUnitEnum::KILOGRAM->value,
+        'unit_cost'   => 1,
+    ]);
+
+    $jobOrder = StoreJobOrder::make()->action($this->production, []);
+    $task     = StoreJobOrderItem::make()->action($jobOrder, ['artefact_id' => $this->artefact->id, 'quantity' => 10])->tasks()->first();
+    ConfirmJobOrder::make()->action($jobOrder);
+    $user  = $this->guest->getUser();
+    $typed = [['raw_material_id' => $this->rawMaterial->id, 'batch_code' => ' L2611-07 ', 'expiry_date' => '2027-05-31']];
+
+    SetProductionRawMaterialBatches::make()->action($this->production, ['enabled' => false]);
+    $ignored = CloseManufactureTaskSession::make()->action(StartManufactureTaskSession::make()->action($user, $task), [
+        'quantity_made'        => 2,
+        'raw_material_batches' => $typed,
+    ]);
+    expect($this->production->refresh()->settings)->toHaveKey('records_raw_material_batches', false)
+        ->and($ignored->refresh()->raw_material_batches)->toBeNull();
+
+    SetProductionRawMaterialBatches::make()->action($this->production, ['enabled' => true]);
+    expect($this->production->refresh()->recordsRawMaterialBatches())->toBeTrue();
+
+    $refused = StartManufactureTaskSession::make()->action($user, $task);
+    expect(fn () => CloseManufactureTaskSession::make()->action($refused, [
+        'quantity_made'        => 2,
+        'raw_material_batches' => [['raw_material_id' => $notOnRecipe->id, 'batch_code' => 'X1']],
+    ]))->toThrow(ValidationException::class);
+
+    $recorded = CloseManufactureTaskSession::make()->action($refused->refresh(), [
+        'quantity_made'        => 3,
+        'raw_material_batches' => [...$typed, ['raw_material_id' => $this->rawMaterial->id, 'batch_code' => '', 'expiry_date' => null]],
+    ]);
+    expect($recorded->refresh()->raw_material_batches)->toEqualCanonicalizing([[
+        'raw_material_id' => $this->rawMaterial->id,
+        'code'            => $this->rawMaterial->code,
+        'name'            => $this->rawMaterial->description,
+        'batch_code'      => 'L2611-07',
+        'expiry_date'     => '2027-05-31',
+    ]]);
+
+    $next      = StartManufactureTaskSession::make()->action($user, $task);
+    $floor     = get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->viewData('page')['props'];
+    $prefilled = collect($floor['open_session']['raw_material_batches'])->keyBy('raw_material_id');
+    expect($floor['open_session']['id'])->toBe($next->id)
+        ->and($prefilled->get($this->rawMaterial->id))->toMatchArray(['code' => $this->rawMaterial->code, 'batch_code' => null, 'expiry_date' => null])
+        ->and($prefilled->has($notOnRecipe->id))->toBeFalse();
+    CloseManufactureTaskSession::make()->action($next, ['quantity_made' => 1]);
+
+    $jobOrderBatches = get(route('grp.org.productions.show.operations.job-orders.show', [$this->organisation->slug, $this->production->slug, $jobOrder->slug]))
+        ->viewData('page')['props']['job_order']['raw_material_batches'];
+    expect($jobOrderBatches)->toHaveCount(1)
+        ->and($jobOrderBatches[0])->toMatchArray(['artefact_code' => $this->artefact->code, 'code' => $this->rawMaterial->code, 'batch_code' => 'L2611-07', 'expiry_date' => '2027-05-31']);
+
+    SetProductionRawMaterialBatches::make()->action($this->production, ['enabled' => false]);
+    expect($this->production->refresh()->recordsRawMaterialBatches())->toBeFalse()
+        ->and(get(route('grp.org.productions.show.floor', [$this->organisation->slug, $this->production->slug]))->viewData('page')['props']['open_session'])->toBeNull();
 });

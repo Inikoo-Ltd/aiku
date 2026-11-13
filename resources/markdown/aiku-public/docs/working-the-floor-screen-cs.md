@@ -2,7 +2,7 @@
 title: Práce s obrazovkou dílny
 summary: Průvodce pro řemeslníka - obrazovka Moje úkoly, seznam úkolů, který se sám aktualizuje, START a DONE, a co dělat, když vyrobíte míň, než bylo požadováno, a jak si dát pauzu.
 date: 2026-11-03
-source_date: 2026-11-12
+source_date: 2026-11-13
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -45,6 +45,10 @@ Každý řádek je jeden úkol na jednom výrobním příkazu:
 5. Stiskněte **DONE**.
 
 Vyrobili jste přesně tolik, kolik bylo požadováno? Tím je hotovo. Úkol se uzavře, výrobní příkaz je dokončen a sklad dostane informaci, že má co uložit - viz [Ukládání hotové výroby](/docs/putting-away-finished-production-cs).
+
+## Kódy šarží surovin
+
+Některé výrobní místnosti vedou záznam o tom, které balení každé suroviny skončilo ve vyrobeném zboží. Tam, kde to vedoucí výroby zapnul (**Raw material batches** (Šarže surovin) na stránce **Performance** (Výkon)), úkol, na kterém pracujete, uvádí suroviny svého kroku pod **Raw materials used** (Použité suroviny), každou s polem **Batch code** (Kód šarže) a kalendářem **Expiry date** (Datum expirace). Opište je z obalu před stisknutím **DONE**. Pole jsou pokaždé prázdná, proto je opište z balení, které právě používáte. Jsou nepovinné: nechte řádek prázdný a DONE stále funguje. Co zadáte, se zobrazí ve výrobním příkazu pod **Raw material batches** spolu s tím, kdo to zaznamenal a kdy. Krok, jehož recept neuvádí žádné suroviny, žádná pole nezobrazí; požádejte vedoucího výroby, aby je do receptu přidal.
 
 ## Co čísla počítají
 

@@ -2,7 +2,7 @@
 title: Práca s obrazovkou dielne
 summary: Sprievodca pre remeselníka - obrazovka Moje úlohy, zoznam úloh, ktorý sa sám aktualizuje, START a DONE, a čo stlačiť, keď ste vyrobili menej, než sa žiadalo, a ako si dať prestávku.
 date: 2026-11-03
-source_date: 2026-11-12
+source_date: 2026-11-13
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -45,6 +45,10 @@ Riadok so zelenou šípkou ▶ a časom je ten, na ktorom práve pracujete, a ke
 5. Stlačte <b>DONE</b> (Hotovo).
 
 Vyrobili ste všetko, čo sa žiadalo? Tým je to hotové. Úloha sa uzavrie, pracovný príkaz je dokončený a sklad dostane informáciu, že má niečo na uloženie - pozrite [Ukladanie hotovej výroby](/docs/putting-away-finished-production-sk).
+
+## Kódy šarží surovín
+
+Niektoré výrobné miestnosti vedú záznam o tom, ktoré balenie každej suroviny sa dostalo do vyrobeného tovaru. Tam, kde to vedúci výroby zapol (<b>Raw material batches</b> (Šarže surovín) na stránke <b>Performance</b> (Výkon)), úloha, na ktorej pracujete, uvádza suroviny svojho kroku pod <b>Raw materials used</b> (Použité suroviny), každú s poľom <b>Batch code</b> (Kód šarže) a kalendárom <b>Expiry date</b> (Dátum exspirácie). Prepíšte ich z obalu pred stlačením <b>DONE</b>. Polia sú zakaždým prázdne, preto ich prepíšte z balenia, ktoré práve používate. Sú nepovinné: nechajte riadok prázdny a DONE stále funguje. To, čo zadáte, sa zobrazí v pracovnom príkaze pod <b>Raw material batches</b> spolu s tým, kto to zaznamenal a kedy. Krok, ktorého receptúra neuvádza žiadne suroviny, žiadne polia nezobrazí; požiadajte vedúceho výroby, aby ich do receptúry pridal.
 
 ## Čo čísla počítajú
 

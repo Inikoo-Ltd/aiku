@@ -351,6 +351,7 @@ class AppServiceProvider extends ServiceProvider
                 // Inventory
                 'OrgStockAudit'                    => 'App\Models\Inventory\OrgStockAudit',
                 'PickedBay'                        => 'App\Models\Inventory\PickedBay',
+                'PackingBench'                     => 'App\Models\Dispatching\PackingBench',
                 'Warehouse'                        => 'App\Models\Inventory\Warehouse',
                 'WarehouseArea'                    => 'App\Models\Inventory\WarehouseArea',
                 'Location'                         => 'App\Models\Inventory\Location',

@@ -26781,5 +26781,16 @@
     "Should I start selling on :platform too?": "¿Debería empezar a vender también en :platform?",
     "e.g. What should I add to my :platform store for Christmas, and how do I get more sales?": "p. ej. ¿Qué debería añadir a mi tienda de :platform para Navidad y cómo consigo más ventas?",
     "Your dropshipping coach": "Tu asesor de dropshipping",
-    "A question, your store, what you need – the more :name knows, the better the answer.": "Una pregunta, tu tienda, lo que necesitas: cuanto más sepa :name, mejor será la respuesta."
+    "A question, your store, what you need – the more :name knows, the better the answer.": "Una pregunta, tu tienda, lo que necesitas: cuanto más sepa :name, mejor será la respuesta.",
+    "Raw materials used": "Materias primas usadas",
+    "(optional) batch code and expiry date on the packaging": "(opcional) código de lote y fecha de caducidad del envase",
+    "Batch code of :code": "Código de lote de :code",
+    "Expiry date of :code": "Fecha de caducidad de :code",
+    "When on, the tablet asks for the batch code and expiry date of each raw material of the step": "Si está activado, la tablet pide el código de lote y la fecha de caducidad de cada materia prima del paso",
+    "Raw material batches: on": "Lotes de materias primas: activado",
+    "Raw material batches: off": "Lotes de materias primas: desactivado",
+    "Raw material batches": "Lotes de materias primas",
+    "This raw material is not on the recipe of this step": "Esta materia prima no está en la receta de este paso",
+    "A batch code can have up to 64 characters": "Un código de lote puede tener hasta 64 caracteres",
+    "Pick the expiry date from the calendar": "Elige la fecha de caducidad en el calendario"
 }

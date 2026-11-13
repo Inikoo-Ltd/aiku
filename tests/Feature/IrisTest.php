@@ -190,6 +190,96 @@ test('iris caches the website with its organisation and group so a request does 
         ->and($queries)->toBe(0);
 });
 
+test('iris reads the cached website as it is written today and deflated, and gets the same website either way', function () {
+    config(['iris.cache.website.ttl' => 3600, 'cache.stores.array.serialize' => true]);
+    Cache::purge();
+    $middleware = new DetectIrisWebsite();
+    $domain     = $this->website->domain;
+    $key        = config('iris.cache.website.prefix').'_domain:'.$domain;
+
+    $websiteData  = $middleware->getWebsiteData($domain);
+    $servedOnAHit = serialize(unserialize(serialize($websiteData)));
+
+    $queries = 0;
+    DB::listen(function () use (&$queries) {
+        $queries++;
+    });
+
+    Cache::put($key, $websiteData, 3600);
+    $fromArrayEntry = $middleware->getCachedWebsiteData($domain);
+
+    $deflated = $middleware->compressWebsiteData($websiteData);
+    Cache::put($key, $deflated, 3600);
+    $fromDeflatedEntry = $middleware->getCachedWebsiteData($domain);
+
+    expect($fromArrayEntry['website'])->not->toBe($websiteData['website'])
+        ->and(serialize($fromArrayEntry))->toBe($servedOnAHit)
+        ->and(serialize($fromDeflatedEntry))->toBe($servedOnAHit)
+        ->and($fromDeflatedEntry)->toEqual($websiteData)
+        ->and($middleware->decompressWebsiteData($deflated))->toEqual($websiteData)
+        ->and(strlen($deflated))->toBeLessThan(strlen(serialize($websiteData)))
+        ->and($fromDeflatedEntry['website']->organisation->id)->toBe($this->website->organisation_id)
+        ->and($fromDeflatedEntry['website']->group->id)->toBe($this->website->group_id)
+        ->and($fromDeflatedEntry['website']->shop->id)->toBe($this->website->shop_id)
+        ->and(Cache::get($key))->toBe($deflated)
+        ->and($queries)->toBe(0);
+
+    DetectWebsiteFromDomain::mock()
+        ->shouldReceive('parseDomain')
+        ->andReturn($domain);
+
+    $response = $middleware->handle(Request::create('http://'.$domain), function ($request) use ($websiteData) {
+        expect($request->input('website'))->toEqual($websiteData['website'])
+            ->and($request->input('domain'))->toBe($websiteData['domain'])
+            ->and($request->input('currency_data'))->toBe($websiteData['currency_data'])
+            ->and($request->input('locale'))->toBe($websiteData['locale'])
+            ->and($request->input('favicons'))->toBe($websiteData['favicons']);
+
+        return response('OK');
+    });
+
+    expect($response->getStatusCode())->toBe(200)
+        ->and($response->headers->get('Cache-Tag'))->toBe('aiku-website-'.$this->website->id)
+        ->and($queries)->toBe(0);
+
+    Cache::forget($key);
+});
+
+test('iris rebuilds a cached website it cannot read, writes it as an array and caches nothing for an unknown domain', function () {
+    config(['iris.cache.website.ttl' => 3600]);
+    $middleware = new DetectIrisWebsite();
+    $domain     = $this->website->domain;
+    $key        = config('iris.cache.website.prefix').'_domain:'.$domain;
+
+    $websiteData = $middleware->getWebsiteData($domain);
+
+    Cache::forget($key);
+    $onAMiss        = $middleware->getCachedWebsiteData($domain);
+    $writtenOnAMiss = Cache::get($key);
+
+    Cache::put($key, 'not a deflated website', 3600);
+    $fromUnreadableEntry        = $middleware->getCachedWebsiteData($domain);
+    $writtenOverUnreadableEntry = Cache::get($key);
+
+    Cache::put($key, substr($middleware->compressWebsiteData($websiteData), 0, -40), 3600);
+    $fromTruncatedEntry = $middleware->getCachedWebsiteData($domain);
+
+    expect($onAMiss)->toEqual($websiteData)
+        ->and($writtenOnAMiss)->toBeArray()->toEqual($websiteData)
+        ->and($fromUnreadableEntry)->toEqual($websiteData)
+        ->and($writtenOverUnreadableEntry)->toBeArray()->toEqual($websiteData)
+        ->and($fromTruncatedEntry)->toEqual($websiteData)
+        ->and(Cache::get($key))->toBeArray()
+        ->and($middleware->decompressWebsiteData('not a deflated website'))->toBeNull()
+        ->and($middleware->decompressWebsiteData(gzcompress(serialize('not an array'))))->toBeNull();
+
+    $unknownDomain = 'unknown-'.Str::random(8).'.test';
+    expect(fn () => $middleware->getCachedWebsiteData($unknownDomain))->toThrow(NotFoundHttpException::class)
+        ->and(Cache::has(config('iris.cache.website.prefix').'_domain:'.$unknownDomain))->toBeFalse();
+
+    Cache::forget($key);
+});
+
 test('webpage stats are indexed by webpage', function () {
     $indexes = collect(DB::select('SELECT indexdef FROM pg_indexes WHERE tablename = ?', ['webpage_stats']))->pluck('indexdef')->implode("\n");
 

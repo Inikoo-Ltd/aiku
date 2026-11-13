@@ -1619,6 +1619,36 @@ test('delivery note lifecycle to picked and packing and finalise dispatch', func
     expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKING);
 });
 
+test('packer records the bench they pack on and it stays on the delivery note', function () {
+    [$deliveryNote] = handlingDeliveryNoteWithPicking($this);
+    $deliveryNote   = \App\Actions\Dispatching\DeliveryNote\UpdateState\UpdateDeliveryNoteStateToPicked::run($deliveryNote);
+
+    $code  = 'B'.uniqid();
+    $bench = \App\Actions\Dispatching\PackingBench\StorePackingBench::make()->action($deliveryNote->warehouse, ['code' => $code]);
+
+    $otherWarehouse = \App\Actions\Inventory\Warehouse\StoreWarehouse::make()->action($this->organisation, [
+        'code' => 'W'.substr(uniqid(), -6),
+        'name' => 'Other packing bench warehouse',
+    ]);
+    $otherBench = \App\Actions\Dispatching\PackingBench\StorePackingBench::make()->action($otherWarehouse, ['code' => $code]);
+
+    expect(fn () => \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote, $this->user, ['packing_bench' => $otherBench->id]))
+        ->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $this->patch(route('grp.models.delivery_note.state.packing', $deliveryNote->id), [])->assertSessionHasErrors('packing_bench');
+    expect($deliveryNote->refresh()->state)->toBe(DeliveryNoteStateEnum::PICKED);
+
+    $startPacking = collect(\App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote::make()->getPickedActions($deliveryNote->refresh()))->firstWhere('key', 'start-packing');
+    expect(collect($startPacking['packing_benches'])->pluck('id'))->toContain($bench->id)->not->toContain($otherBench->id);
+
+    $deliveryNote = \App\Actions\Dispatching\DeliveryNote\UpdateState\StartPackingDeliveryNote::make()->action($deliveryNote->refresh(), $this->user, ['packing_bench' => $bench->id]);
+    expect($deliveryNote->state)->toBe(DeliveryNoteStateEnum::PACKING)
+        ->and($deliveryNote->packing_bench_id)->toBe($bench->id);
+
+    \App\Actions\Dispatching\PackingBench\DeletePackingBench::make()->handle($bench);
+    expect($deliveryNote->refresh()->packingBench?->code)->toBe($code);
+});
+
 test('delivery note undo picked and undo packing', function () {
     [$deliveryNote, $item] = handlingDeliveryNoteWithPicking($this);
 

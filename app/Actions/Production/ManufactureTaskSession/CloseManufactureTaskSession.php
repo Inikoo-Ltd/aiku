@@ -33,6 +33,7 @@ use App\Models\Production\ManufactureBreak;
 use App\Models\Production\ManufacturePreparationReason;
 use App\Models\Production\ManufactureTaskSession;
 use App\Models\Production\ManufactureTaskSessionShare;
+use App\Models\Production\RecipeStepRawMaterial;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -148,6 +149,7 @@ class CloseManufactureTaskSession extends OrgAction
                 'activity_type'                   => $modelData['activity_type'] ?? $session->activity_type ?? ManufactureTaskSessionActivityTypeEnum::PRODUCTION,
                 'non_productive_reason'           => $modelData['non_productive_reason'] ?? null,
                 'standard_rate'                   => $session->recipeStandardRate(),
+                'raw_material_batches'            => $this->rawMaterialBatches($session, $members, $modelData),
             ]);
             if ($session->activity_type == ManufactureTaskSessionActivityTypeEnum::PRODUCTION && $task->jobOrderItem->artefact->isPaidAsDevelopment()) {
                 $session->activity_type = ManufactureTaskSessionActivityTypeEnum::DEVELOPMENT;
@@ -656,6 +658,52 @@ class CloseManufactureTaskSession extends OrgAction
         return (float) $session->quantity_made / $hours < (float) $session->standard_rate;
     }
 
+    /**
+     * The batch code and expiry date the artisan read on each raw material's packaging (HELP-4699), only in a
+     * production that asks for them, and only for raw materials on the recipe of the step being closed.
+     *
+     * @param  Collection<int, JobOrderItemTask>  $members
+     * @return array<int, array{raw_material_id: int, code: string, name: string, batch_code: string|null, expiry_date: string|null}>|null
+     */
+    private function rawMaterialBatches(ManufactureTaskSession $session, Collection $members, array $modelData): ?array
+    {
+        $entered = $modelData['raw_material_batches'] ?? null;
+        if (!$entered || !$session->production->recordsRawMaterialBatches()) {
+            return null;
+        }
+
+        $onRecipe = $members->flatMap(fn (JobOrderItemTask $member) => $member->recipeStep?->rawMaterials ?? collect())
+            ->map(fn (RecipeStepRawMaterial $line) => $line->rawMaterial)
+            ->filter()
+            ->keyBy('id');
+
+        $batches = [];
+        foreach ($entered as $row) {
+            $batchCode  = trim((string) ($row['batch_code'] ?? ''));
+            $expiryDate = $row['expiry_date'] ?? null;
+            if ($batchCode === '' && !$expiryDate) {
+                continue;
+            }
+
+            $rawMaterial = $onRecipe->get((int) $row['raw_material_id']);
+            if (!$rawMaterial) {
+                throw ValidationException::withMessages([
+                    'raw_material_batches' => __('This raw material is not on the recipe of this step'),
+                ]);
+            }
+
+            $batches[] = [
+                'raw_material_id' => $rawMaterial->id,
+                'code'            => $rawMaterial->code,
+                'name'            => $rawMaterial->description,
+                'batch_code'      => $batchCode === '' ? null : $batchCode,
+                'expiry_date'     => $expiryDate,
+            ];
+        }
+
+        return $batches ?: null;
+    }
+
     public function rules(): array
     {
         return [
@@ -663,6 +711,10 @@ class CloseManufactureTaskSession extends OrgAction
             'quantity_rejected'      => ['sometimes', 'numeric', 'min:0'],
             'outcome'                => ['sometimes', 'nullable', Rule::in(['complete', 'carry_over'])],
             'loose_confirmed'        => ['sometimes', 'boolean'],
+            'raw_material_batches'                   => ['sometimes', 'nullable', 'array', 'max:50'],
+            'raw_material_batches.*.raw_material_id' => ['required', 'integer'],
+            'raw_material_batches.*.batch_code'      => ['nullable', 'string', 'max:64'],
+            'raw_material_batches.*.expiry_date'     => ['nullable', 'date_format:Y-m-d'],
             'manager_code'           => ['sometimes', 'nullable', 'string', 'max:64'],
             'manager_method'         => ['sometimes', 'nullable', Rule::in(['qr', 'pin'])],
             'finished_before_shift_end' => ['sometimes', 'boolean'],
@@ -700,6 +752,8 @@ class CloseManufactureTaskSession extends OrgAction
             'preparation_reason_id.required'   => __('Choose why you needed preparation'),
             'preparation_reason_id.exists'     => __('This reason is no longer on the list, choose another'),
             'preparation_reason_note.required' => __('Type the reason'),
+            'raw_material_batches.*.batch_code.max'          => __('A batch code can have up to 64 characters'),
+            'raw_material_batches.*.expiry_date.date_format' => __('Pick the expiry date from the calendar'),
         ];
     }
 

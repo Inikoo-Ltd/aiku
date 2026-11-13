@@ -68,6 +68,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import TableDispatchedEmailsInOrder from "@/Pages/Grp/Org/Ordering/TableDispatchedEmailsInOrder.vue";
 import ButtonSelectTrolleys from "@/Components/DeliveryNote/ButtonSelectTrolleys.vue"
 import ButtonSelectBays from "@/Components/DeliveryNote/ButtonSelectBays.vue"
+import ButtonStartPacking from "@/Components/DeliveryNote/ButtonStartPacking.vue"
 import ButtonPutBackIncompleteSets from "@/Components/DeliveryNote/ButtonPutBackIncompleteSets.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -747,6 +748,8 @@ const patchRowScannedBy = (outcome: ScanOutcome, successStatus: string) => {
 				tableData.meta.total = Math.max(0, tableData.meta.total - 1)
 			}
 		}
+
+		router.replace({ preserveScroll: true, preserveState: true })
 	}
 }
 
@@ -1068,6 +1071,10 @@ const stopSocketListener = () => {
 						class="whitespace-nowrap" />
 				</template>
 			</ModalConfirmation>
+		</template>
+
+		<template #button-start-packing="{ action }">
+			<ButtonStartPacking :action="action" />
 		</template>
 
 		<template #button-put-back-incomplete-sets="{ action }">
