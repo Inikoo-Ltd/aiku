@@ -20,7 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 /**
  * Checks a new reference while it is typed in the purchase order heading: whether another order of the organisation
  * already uses it, the slug (URL) it would give, free variants when it is taken, and orders with a similar reference.
- * An agent sees only the orders placed through it.
+ * An agent sees only the orders placed through it, linked to its own purchase order pages; the agent's page
+ * sends as_agent, so a person who also buys for the client organisation still gets the agent links there.
  */
 class GetPurchaseOrderReferenceAvailability extends OrgAction
 {
@@ -129,7 +130,7 @@ class GetPurchaseOrderReferenceAvailability extends OrgAction
     {
         $this->purchaseOrder = $purchaseOrder;
 
-        if (!$request->user()->authTo("procurement.{$purchaseOrder->organisation_id}.edit")) {
+        if ($request->boolean('as_agent') || !$request->user()->authTo("procurement.{$purchaseOrder->organisation_id}.edit")) {
             $this->agentOrganisation = Organisation::find(UpdatePurchaseOrderReference::agentOrganisationId($purchaseOrder));
         }
 

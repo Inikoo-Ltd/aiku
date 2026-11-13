@@ -314,7 +314,10 @@ class ShowPurchaseOrder extends OrgAction
                 'rename_reference'         => $this->canEdit || $this->agentCanEdit ? [
                     'availability_route' => [
                         'name'       => 'grp.json.purchase_order.reference_availability',
-                        'parameters' => ['purchaseOrder' => $purchaseOrder->id],
+                        'parameters' => [
+                            'purchaseOrder' => $purchaseOrder->id,
+                            ...($this->isAgentViewingOwnOrder($purchaseOrder) ? ['as_agent' => 1] : []),
+                        ],
                     ],
                     'update_route'       => [
                         'method'     => 'patch',
