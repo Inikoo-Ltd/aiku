@@ -163,10 +163,19 @@ watch(supplierFeeSupplierId, (supplierId) => {
 	const supplier = supplierFeeWallet.value?.suppliers.find((option) => option.id === supplierId)
 	supplierFeePercentage.value = supplier?.agent_fee_percentage ?? null
 })
+const removingSupplierFeeId = ref<number | null>(null)
 const saveSupplierFee = () => {
-	if (!props.form || !supplierFeeSupplierId.value) return
+	if (!supplierFeeSupplierId.value) return
 	supplierFeeSaving.value = true
-	router.patch(route(props.form.supplier_agent_fee_route_name, { supplier: supplierFeeSupplierId.value }), { agent_fee_percentage: supplierFeePercentage.value }, {
+	patchSupplierFee(supplierFeeSupplierId.value, supplierFeePercentage.value, () => (supplierFeeSaving.value = false))
+}
+const removeSupplierFee = (supplier: SupplierFee) => {
+	removingSupplierFeeId.value = supplier.id
+	patchSupplierFee(supplier.id, null, () => (removingSupplierFeeId.value = null))
+}
+const patchSupplierFee = (supplierId: number, percentage: number | null, onFinish: () => void) => {
+	if (!props.form) return
+	router.patch(route(props.form.supplier_agent_fee_route_name, { supplier: supplierId }), { agent_fee_percentage: percentage }, {
 		preserveScroll: true,
 		onSuccess: () => {
 			const organisationId = supplierFeeWallet.value?.organisation_id
@@ -177,7 +186,7 @@ const saveSupplierFee = () => {
 			supplierFeeError.value = null
 		},
 		onError: (errors) => (supplierFeeError.value = firstError(errors)),
-		onFinish: () => (supplierFeeSaving.value = false),
+		onFinish,
 	})
 }
 
@@ -601,6 +610,16 @@ const confirmRemove = (row: EntryRow) =>
 					<span class="font-medium text-gray-800">{{ supplier.agent_fee_percentage }}%</span>
 					<button v-if="form" type="button" class="text-gray-400 hover:text-gray-700" :title="ctrans('Edit')" :aria-label="ctrans('Edit')" @click="pickSupplierFee(supplier)">
 						<FontAwesomeIcon icon="fal fa-pencil" fixed-width aria-hidden="true" />
+					</button>
+					<button
+						v-if="form"
+						type="button"
+						class="text-gray-400 hover:text-red-600 disabled:opacity-50"
+						:disabled="removingSupplierFeeId === supplier.id"
+						:title="ctrans('Remove agent fee')"
+						:aria-label="ctrans('Remove agent fee')"
+						@click="removeSupplierFee(supplier)">
+						<FontAwesomeIcon icon="fal fa-trash-alt" fixed-width aria-hidden="true" />
 					</button>
 				</span>
 			</li>
