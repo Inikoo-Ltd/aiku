@@ -134,15 +134,20 @@ test('iris footer json includes app version', function () {
 test('iris shares the out of stock notification outbox only when a page renders, never on json calls', function () {
     DetectWebsiteFromDomain::mock()->shouldReceive('parseDomain')->andReturn($this->website->domain);
 
-    $outboxQueries = 0;
-    DB::listen(function ($query) use (&$outboxQueries) {
+    $outboxQueries          = 0;
+    $appointmentTypeQueries = 0;
+    DB::listen(function ($query) use (&$outboxQueries, &$appointmentTypeQueries) {
         if (str_contains($query->sql, 'from "outboxes"')) {
             $outboxQueries++;
+        }
+        if (str_contains($query->sql, 'from "appointment_types"')) {
+            $appointmentTypeQueries++;
         }
     });
 
     $this->getJson('http://'.$this->website->domain.'/json/footer')->assertOk();
-    expect($outboxQueries)->toBe(0);
+    expect($outboxQueries)->toBe(0)
+        ->and($appointmentTypeQueries)->toBe(0);
 
     $request = Request::create('http://'.$this->website->domain);
     $request->merge(['website' => $this->website]);
@@ -158,7 +163,16 @@ test('iris shares the out of stock notification outbox only when a page renders,
 
     expect($outboxQueriesWhileSharing)->toBe(0)
         ->and($props['outboxes'])->toBeInstanceOf(\Closure::class)
-        ->and($props['outboxes']())->toBe($expected);
+        ->and($props['iris'])->toBeInstanceOf(\Closure::class)
+        ->and($props['outboxes']())->toBe($expected)
+        ->and($appointmentTypeQueries)->toBe(0)
+        ->and($props['appointment_types']())->toBe(
+            $this->shop->appointmentTypes()->where('is_active', true)->orderBy('name')->get()
+                ->map(fn ($appointmentType) => ['id' => $appointmentType->id, 'name' => $appointmentType->name, 'meeting_mode' => $appointmentType->meeting_mode->value])
+                ->all()
+        )
+        ->and($props['announcements']())->toBe(\App\Actions\Web\Announcement\UI\GetIrisAnnouncements::run($this->website))
+        ->and($props['website_dialogs']())->toBe(\App\Actions\Web\WebsiteDialog\UI\GetIrisWebsiteDialogs::run($this->website));
 });
 
 test('iris caches the website with its organisation and group so a request does not query them again', function () {
@@ -746,6 +760,49 @@ test('saving a dropshipping shop queues a purge of its docs from the website cac
     PurgeIrisDocsFromVarnish::assertPushed();
 });
 
+test('iris pages still receive announcements, dialogs and appointment types on full loads and inertia visits', function () {
+    [, $product] = createProduct($this->shop);
+    $url         = 'http://'.$this->website->domain.'/catalogue/family/'.$product->family->slug;
+
+    $appointmentType = StoreAppointmentType::make()->action($this->shop, [
+        'name'             => 'Showroom visit '.Str::random(6),
+        'meeting_mode'     => AppointmentTypeMeetingModeEnum::STORE_VISIT->value,
+        'duration_minutes' => 60,
+    ]);
+
+    $middleware = new HandleIrisInertiaRequests();
+    $expected   = [
+        'appointment_types' => $middleware->getAppointmentTypes($this->website->fresh()),
+        'announcements'     => \App\Actions\Web\Announcement\UI\GetIrisAnnouncements::run($this->website),
+        'website_dialogs'   => \App\Actions\Web\WebsiteDialog\UI\GetIrisWebsiteDialogs::run($this->website),
+    ];
+
+    $response = $this->withoutVite()->get($url)->assertOk();
+    preg_match('/<script data-page="app" type="application\/json">(.*?)<\/script>/s', $response->getContent(), $matches);
+    $fullLoadProps = json_decode($matches[1], true)['props'];
+
+    \Inertia\Inertia::flushShared();
+    $inertiaProps = $this->withoutVite()
+        ->get($url, ['X-Inertia' => 'true', 'X-Inertia-Version' => (string) $middleware->version(request())])
+        ->assertOk()
+        ->json('props');
+
+    $expectedIris = array_merge($middleware->getIrisData($this->website->fresh(), $fullLoadProps['iris']['locale']), [
+        'google' => ['client_id' => config('services.google.client_id')],
+    ]);
+
+    expect(collect($expected['appointment_types'])->pluck('id'))->toContain($appointmentType->id)
+        ->and($fullLoadProps['iris'])->toEqual(json_decode(json_encode($expectedIris), true))
+        ->and($fullLoadProps['iris']['locale'])->toBe($this->shop->language->code)
+        ->and($fullLoadProps['layout'])->toBe(['app_theme' => \Illuminate\Support\Arr::get($this->website->fresh()->published_layout, 'theme.color')])
+        ->and($inertiaProps)->not->toHaveKey('iris');
+
+    foreach ($expected as $prop => $value) {
+        expect($fullLoadProps[$prop])->toEqual(json_decode(json_encode($value), true))
+            ->and($inertiaProps[$prop])->toEqual(json_decode(json_encode($value), true));
+    }
+});
+
 test('iris family page does not ship the family products twice', function () {
     [, $product] = createProduct($this->shop);
     $family      = $product->family;
@@ -816,7 +873,7 @@ test('iris layout lists the shop active appointment types for the help panel', f
         $request = Request::create('http://'.$this->website->domain.'/', 'GET');
         $request->merge(['website' => $this->website->fresh()]);
 
-        return (new HandleIrisInertiaRequests())->share($request)['appointment_types'];
+        return value((new HandleIrisInertiaRequests())->share($request)['appointment_types']);
     };
 
     $this->shop->appointmentTypes()->update(['is_active' => false]);
