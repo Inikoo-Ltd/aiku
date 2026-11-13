@@ -178,6 +178,42 @@ trait WithOrgSupplierSubNavigation
                     ],
                 ],
             ] : []),
+            ...$this->supplyChainSupplierNavigation($parent),
+        ];
+    }
+
+    /**
+     * The supplier's sales and portal access live in supply chain, so they are shown only to those allowed to open supply chain supplier pages.
+     */
+    protected function supplyChainSupplierNavigation(OrgSupplier $orgSupplier): array
+    {
+        if (!request()->user()?->authTo(['supply-chain.view', 'compliance.view'])) {
+            return [];
+        }
+
+        return [
+            [
+                'label'    => __('Sales'),
+                'route'    => [
+                    'name'       => 'grp.supply-chain.suppliers.sales',
+                    'parameters' => [$orgSupplier->supplier->slug],
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-chart-line'],
+                    'tooltip' => __('Sales'),
+                ],
+            ],
+            [
+                'label'    => __('Supplier portal'),
+                'route'    => [
+                    'name'       => 'grp.supply-chain.suppliers.share',
+                    'parameters' => [$orgSupplier->supplier->slug],
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-share-alt'],
+                    'tooltip' => __('Supplier portal'),
+                ],
+            ],
         ];
     }
 }
