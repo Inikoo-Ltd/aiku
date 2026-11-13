@@ -6,6 +6,10 @@
  * Copyright (c) 2026, Raul A Perusquia Flores
  */
 
+use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
+use App\Actions\CRM\ShoppingAssistant\DeclineShoppingAssistantTeamQuestion;
+use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTeamQuestionsForUser;
+use App\Actions\CRM\ShoppingAssistant\PassShoppingAssistantTeamQuestion;
 use App\Actions\Tasks\Json\GetStaffTask;
 use App\Actions\Tasks\Json\GetStaffTaskConversation;
 use App\Actions\Tasks\Json\GetStaffTaskOptions;
@@ -42,6 +46,7 @@ Route::get('/eta-map', ShowStaffTasksEtaMap::class)->name('eta_map');
 Route::get('/covering', ShowStaffTasksCovering::class)->name('covering');
 Route::get('/list', GetStaffTasks::class)->name('list');
 Route::get('/options', GetStaffTaskOptions::class)->name('options');
+Route::get('/assistant-questions', GetShoppingAssistantTeamQuestionsForUser::class)->name('assistant_questions');
 Route::post('/', StoreStaffTask::class)->name('store');
 Route::post('/import', StoreStaffTasksFromList::class)->name('import');
 Route::patch('/{staffTask}', UpdateStaffTask::class)->name('update');
@@ -58,4 +63,7 @@ Route::post('/{staffTask}/eta-proposal/decision', DecideStaffTaskEta::class)->na
 Route::post('/{staffTask}/help', RequestStaffTaskHelp::class)->name('help.store');
 Route::post('/{staffTask}/subscription', ToggleStaffTaskSubscription::class)->name('subscription.toggle');
 Route::get('/{staffTask}/quick-look', GetStaffTaskQuickLook::class)->name('quick_look');
+Route::post('/{staffTask}/assistant-answer', AnswerShoppingAssistantTeamQuestion::class)->name('assistant_answer');
+Route::post('/{staffTask}/assistant-decline', DeclineShoppingAssistantTeamQuestion::class)->name('assistant_decline');
+Route::post('/{staffTask}/assistant-pass', PassShoppingAssistantTeamQuestion::class)->name('assistant_pass');
 Route::get('/{staffTask}', ShowStaffTask::class)->name('show');

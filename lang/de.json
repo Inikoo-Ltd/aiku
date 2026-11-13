@@ -26691,5 +26691,9 @@
     "Not interested, thanks": "Kein Interesse, danke",
     ":name remembers:": ":name merkt sich:",
     "Forget this": "Vergessen",
-    "1 product = :count SKO": "1 Produkt = :count SKO"
+    "1 product = :count SKO": "1 Produkt = :count SKO",
+    "Our team answered your question:": "Unser Team hat Ihre Frage beantwortet:",
+    "Our team could not answer this question. Please contact our customer service team.": "Unser Team konnte diese Frage nicht beantworten. Bitte wenden Sie sich an unseren Kundenservice.",
+    "I don't know this one, so I have asked one of our experts. If someone is free in the next few minutes, their answer will appear here; otherwise we will get back to you as soon as we can.": "Das weiß ich leider nicht, deshalb habe ich einen unserer Experten gefragt. Wenn in den nächsten Minuten jemand Zeit hat, erscheint die Antwort hier; sonst melden wir uns so bald wie möglich bei Ihnen.",
+    "I don't know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.": "Das weiß ich leider nicht, deshalb habe ich es an einen unserer Experten weitergegeben. Wir melden uns so bald wie möglich bei Ihnen."
 }

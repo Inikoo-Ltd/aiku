@@ -9456,5 +9456,9 @@
     ":name remembers:": ":name помни:",
     "Forget this": "Забрави това",
     "1 product = :count SKO": "1 продукт = :count SKO",
-    ":count SKO": ":count SKO"
+    ":count SKO": ":count SKO",
+    "Our team answered your question:": "Нашият екип отговори на въпроса ви:",
+    "Our team could not answer this question. Please contact our customer service team.": "Нашият екип не успя да отговори на този въпрос. Моля, свържете се с нашия отдел за обслужване на клиенти.",
+    "I don't know this one, so I have asked one of our experts. If someone is free in the next few minutes, their answer will appear here; otherwise we will get back to you as soon as we can.": "Това не го знам, затова попитах един от нашите експерти. Ако някой е свободен в следващите минути, отговорът ще се появи тук; иначе ще се свържем с вас възможно най-скоро.",
+    "I don't know this one, so I have passed it to one of our experts. They will get back to you as soon as they can.": "Това не го знам, затова го предадох на един от нашите експерти. Ще се свържем с вас възможно най-скоро."
 }

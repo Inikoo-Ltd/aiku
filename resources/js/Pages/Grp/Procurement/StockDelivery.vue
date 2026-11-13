@@ -40,6 +40,8 @@ import StockDeliveryImportFile from "@/Components/Procurement/StockDeliveryImpor
 import StockDeliveryTariffCodes from "@/Components/Procurement/StockDeliveryTariffCodes.vue"
 import StockDeliveryGoodsInChecklist from "@/Components/Procurement/StockDeliveryGoodsInChecklist.vue"
 import StockDeliveryPackingChecks from "@/Components/Procurement/StockDeliveryPackingChecks.vue"
+import StockDeliveryFeedbackCards from "@/Components/Procurement/StockDeliveryFeedbackCards.vue"
+import StockDeliveryFeedbackDialog, { type FeedbackOptions } from "@/Components/Procurement/StockDeliveryFeedbackDialog.vue"
 import TablePurchaseOrders from "@/Components/Tables/Grp/Org/Procurement/TablePurchaseOrders.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import TableProcurementNotes from '@/Components/Tables/Grp/Org/Procurement/TableProcurementNotes.vue'
@@ -60,10 +62,11 @@ import { Timeline as TSTimeline } from "@/types/Timeline"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSpinnerThird } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast, faFileExcel, faFolderOpen } from "@fal"
+import { faInventory, faWarehouse, faPersonDolly, faBoxUsd, faTruck, faTerminal, faCameraRetro, faPaperclip, faInfoCircle, faHandHoldingBox, faPeopleArrows, faExclamationTriangle, faBoxOpen, faClipboardList, faBalanceScale, faPassport, faCheckCircle, faTimes, faCheck, faSquare, faChevronRight, faChevronDown, faShip, faHashtag, faTrashAlt, faPlus, faContainerStorage, faUpload, faTasks, faTruckContainer, faFileCsv, faWeight, faShippingFast, faFileExcel, faFolderOpen, faStar } from "@fal"
 import { faBars, faBoxCheck, faInventory as fasInventory, faShare, faArrowCircleRight, faArrowCircleLeft, faExclamationCircle, faBoxFull, faCheckSquare } from "@fas"
 
 library.add(
+	faStar,
 	faWeight,
 	faFolderOpen,
 	faFileCsv,
@@ -258,6 +261,8 @@ const props = defineProps<{
 	agentInvoice?: InstanceType<typeof AgentContainerInvoicePanel>["$props"]["data"] | null
 	service_invoices: InstanceType<typeof StockDeliveryServiceInvoices>["$props"]["data"] | null
 	agreed_term_differences?: InstanceType<typeof AgreedTermDifferences>["$props"]["differences"] | null
+	give_feedback?: FeedbackOptions | null
+	feedback?: InstanceType<typeof StockDeliveryFeedbackCards>["$props"]["data"]
 	notes?: {}
 	note_store_route?: routeType
 	note_form?: object
@@ -287,12 +292,15 @@ const component = computed(() => {
 		import_file: StockDeliveryImportFile,
 		purchase_orders: TablePurchaseOrders,
 		attachments: TableAttachments,
+		feedback: StockDeliveryFeedbackCards,
 		notes: TableProcurementNotes,
 		history: TableHistories,
 	}
 
 	return components[currentTab.value]
 })
+
+const giveFeedbackOpen = ref(false)
 
 const addItemsOpen = ref(false)
 
@@ -1045,6 +1053,16 @@ const confirmDeleteStockDelivery = (action: any) => {
 			/>
 		</template>
 
+		<template #button-give-feedback="{ action }">
+			<Button
+				v-if="give_feedback?.suppliers?.length"
+				:style="action.style"
+				:label="action.label"
+				:icon="action.icon"
+				@click="giveFeedbackOpen = true"
+			/>
+		</template>
+
 		<template #button-delete-stock-delivery="{ action }">
 			<Button
 				:style="action.style"
@@ -1571,6 +1589,7 @@ const confirmDeleteStockDelivery = (action: any) => {
 		:updateRoute="currentTab === 'attachments' ? attachmentRoutes.updateRoute : undefined"
 		:scopeOptions="currentTab === 'attachments' ? attachmentScopes : undefined"
 		:readonly="currentTab === 'attachments' ? !attachmentRoutes.canChange : undefined"
+		:options="currentTab === 'feedback' ? give_feedback : undefined"
 		:storeRoute="currentTab === 'notes' && note_form?.can_write !== false ? note_store_route : undefined"
 			:agreement="currentTab === 'notes' ? note_form : undefined"
 		:removablePurchaseOrderIds="currentTab === 'purchase_orders' ? removablePurchaseOrderIds : undefined"
@@ -1732,6 +1751,8 @@ const confirmDeleteStockDelivery = (action: any) => {
 			</Button>
 		</template>
 	</Dialog>
+
+	<StockDeliveryFeedbackDialog v-if="give_feedback" v-model:visible="giveFeedbackOpen" :options="give_feedback" @saved="handleTabUpdate('feedback')" />
 
 	<ConfirmDialog group="stock-delivery" :style="{ width: '28rem', maxWidth: 'calc(100vw - 2rem)' }">
 		<template #container="{ message, acceptCallback, rejectCallback }">
