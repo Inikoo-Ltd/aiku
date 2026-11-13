@@ -329,6 +329,7 @@ class ShowManufactureFloor extends OrgAction
                         'parameters' => ['manufactureTaskSession' => $openSession->id],
                         'method'     => 'patch',
                     ],
+                    'raw_material_batches' => $this->rawMaterialBatches($openSession),
                     'band_feedback' => $this->bandFeedback($openSession),
                     'break_minutes' => (int) $openSession->break_minutes,
                     'left_open_after_shift_at' => $openSession->left_open_after_shift_at,
@@ -491,6 +492,37 @@ class ShowManufactureFloor extends OrgAction
                 'quantity_made' => (float)($session->quantity_made ?? 0),
             ],
         ];
+    }
+
+    /**
+     * The raw materials of the step being worked, for the artisan to type the batch code and expiry date read on each
+     * pack (HELP-4699). They start empty every time: a value carried over would be saved as if read off the pack.
+     *
+     * @return array<int, array{raw_material_id: int, code: string, name: string, batch_code: string|null, expiry_date: string|null}>|null
+     */
+    protected function rawMaterialBatches(ManufactureTaskSession $session): ?array
+    {
+        if ($session->production_id != $this->production->id || !$this->production->recordsRawMaterialBatches()) {
+            return null;
+        }
+
+        $members      = $session->is_combined ? $session->jobOrderItemTask->combinedGroup() : collect([$session->jobOrderItemTask]);
+        $rawMaterials = $members->flatMap(fn (JobOrderItemTask $member) => $member->recipeStep?->rawMaterials()->with('rawMaterial')->get() ?? collect())
+            ->map(fn ($line) => $line->rawMaterial)
+            ->filter()
+            ->unique('id')
+            ->values();
+        if ($rawMaterials->isEmpty()) {
+            return null;
+        }
+
+        return $rawMaterials->map(fn ($rawMaterial) => [
+            'raw_material_id' => $rawMaterial->id,
+            'code'            => $rawMaterial->code,
+            'name'            => $rawMaterial->description,
+            'batch_code'      => null,
+            'expiry_date'     => null,
+        ])->all();
     }
 
     /**

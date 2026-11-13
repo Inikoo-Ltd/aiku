@@ -85,6 +85,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $shift_end_acknowledged_by
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property array<int, array{raw_material_id: int, code: string, name: string, batch_code: string|null, expiry_date: string|null}>|null $raw_material_batches
  * @property-read Employee|null $employee
  * @property-read Group|null $group
  * @property-read \App\Models\Production\JobOrderItemTask|null $jobOrderItemTask
@@ -159,6 +160,7 @@ class ManufactureTaskSession extends Model implements Auditable
         'shift_end_resolved_at'    => 'datetime',
         'shift_end_acknowledged_at' => 'datetime',
         'tier_thresholds'          => 'array',
+        'raw_material_batches'     => 'array',
     ];
 
     /**

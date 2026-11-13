@@ -12,12 +12,15 @@ import { countLabel, packCount, pieceWord, unitWord } from '@/Composables/packs'
 import Dialog from 'primevue/dialog'
 import Password from 'primevue/password'
 import InputText from 'primevue/inputtext'
+import DatePicker from 'primevue/datepicker'
 import Image from '@common/Components/Image.vue'
 import { QrcodeStream } from 'vue-qrcode-reader'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faPause, faShare, faCheck, faTimes, faExclamationTriangle, faPlay } from '@fal'
 library.add(faPause, faShare, faCheck, faTimes, faExclamationTriangle, faPlay)
+
+type RawMaterialBatch = { raw_material_id: number, code: string, name: string, batch_code: string | null, expiry_date: string | null }
 
 const props = defineProps<{
     session: {
@@ -45,6 +48,7 @@ const props = defineProps<{
             is_quantity_only?: boolean
         }
         carry?: null | { reference: string, units_per_artefact: number, quantity: number }
+        raw_material_batches?: null | RawMaterialBatch[]
         close_route: { name: string, parameters: object }
         break_minutes: number
         left_open_after_shift_at?: string | null
@@ -69,7 +73,20 @@ const page = usePage()
 const closeError = computed(() => {
     const errors = page.props.errors as Record<string, string> | undefined
     return errors?.quantity_made ?? errors?.state ?? errors?.quantity_rejected ?? errors?.non_productive_reason ?? errors?.preparation_reason_id ?? errors?.preparation_reason_note
+        ?? Object.entries(errors ?? {}).find(([key]) => key.startsWith('raw_material_batches'))?.[1]
 })
+
+const rawMaterialBatches = ref<RawMaterialBatch[]>([])
+watch(() => props.session.id, () => {
+    rawMaterialBatches.value = (props.session.raw_material_batches ?? []).map((batch) => ({ ...batch }))
+}, { immediate: true })
+const fromIsoDate = (iso: string | null): Date | null => {
+    if (!iso) return null
+    const [year, month, day] = iso.split('-').map(Number)
+    return new Date(year, month - 1, day)
+}
+const toIsoDate = (date: Date | null): string | null => date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : null
+const fieldFocusClass = '[&.p-focus]:!border-[var(--app-accent)] [&_input:focus]:!border-[var(--app-accent)]'
 const managerError = computed(() => (page.props.errors as Record<string, string> | undefined)?.manager_code)
 
 const processing = ref(false)
@@ -250,6 +267,7 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
             quantity_rejected: quantityRejected.value || 0,
             outcome,
             ...(looseConfirmed.value ? { loose_confirmed: true } : {}),
+            ...(rawMaterialBatches.value.length ? { raw_material_batches: rawMaterialBatches.value.map((batch) => ({ raw_material_id: batch.raw_material_id, batch_code: batch.batch_code?.trim() || null, expiry_date: batch.expiry_date })) } : {}),
             ...(finishedBeforeShiftEnd.value ? { finished_before_shift_end: true } : {}),
             ...(manager ?? {}),
         },
@@ -457,6 +475,16 @@ function closeSession(outcome: 'complete' | 'carry_over' | null = null, manager:
             >
                 {{ ctrans('DONE') }}
             </button>
+        </div>
+
+        <div v-if="rawMaterialBatches.length && !confirming && !askOutcome && !shiftEndQuestion" class="mt-6 rounded-lg border border-gray-300 bg-white p-4">
+            <div class="text-xl font-semibold">{{ ctrans('Raw materials used') }} <span class="text-base font-normal text-gray-500">{{ ctrans('(optional) batch code and expiry date on the packaging') }}</span></div>
+            <div v-for="batch in rawMaterialBatches" :key="batch.raw_material_id" class="mt-3 grid items-center gap-3 sm:grid-cols-[1fr_14rem_12rem]">
+                <div class="text-lg"><span class="whitespace-nowrap font-medium">{{ batch.code }}</span> <span class="text-gray-600">{{ batch.name }}</span></div>
+                <InputText v-model="batch.batch_code" :placeholder="ctrans('Batch code')" :aria-label="ctrans('Batch code of :code', { code: batch.code })" maxlength="64" class="text-lg" :class="fieldFocusClass" />
+                <DatePicker :modelValue="fromIsoDate(batch.expiry_date)" @update:modelValue="(value) => batch.expiry_date = toIsoDate(value as Date | null)"
+                    dateFormat="dd/mm/yy" :manualInput="false" showIcon iconDisplay="input" showClear :placeholder="ctrans('Expiry date')" :aria-label="ctrans('Expiry date of :code', { code: batch.code })" :class="fieldFocusClass" />
+            </div>
         </div>
 
         <div v-if="packSize && quantityMade !== null && !confirming && !askOutcome" class="mt-4 text-2xl" :class="notWholePacks ? 'text-red-700' : 'text-gray-700'">

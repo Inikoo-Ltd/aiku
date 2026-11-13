@@ -138,6 +138,7 @@ const props = defineProps<{
         overproductions: { step: string, artefact_code: string, quantity: number, pack_size?: number | null, made_by: string, manager: string, method: 'qr' | 'pin', at: string }[]
         corrections: { step: string, artefact_code: string, pack_size: number | null, from: number, to: number, by: string | null, at: string, from_step?: string, from_artefact_code?: string, from_job?: string, to_job?: string, line_from?: number, line_to?: number, reason?: string | null }[]
         non_productive: { activity: string, hours: number, pay: string | null }[]
+        raw_material_batches?: { artefact_code: string | null, step: string, code: string, name: string, batch_code: string | null, expiry_date: string | null, artisan: string | null, recorded_at: string }[]
         hold: Hold | null
         holds: Hold[]
         cancellation: Cancellation | null
@@ -593,6 +594,31 @@ function receiveIntoStock() {
                 <span>{{ entry.hours }} h</span>
                 <span v-if="can_see_pay">{{ entry.pay ?? '—' }}</span>
             </div>
+        </div>
+        <div v-if="job_order.raw_material_batches?.length" class="mb-6 rounded border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
+            <div class="font-semibold mb-1">{{ ctrans('Raw material batches') }}</div>
+            <table class="w-auto tabular-nums">
+                <thead class="whitespace-nowrap text-left text-xs text-gray-500">
+                    <tr>
+                        <th class="pr-6 font-medium">{{ ctrans('Product') }}</th>
+                        <th class="pr-6 font-medium">{{ ctrans('Step') }}</th>
+                        <th class="pr-6 font-medium">{{ ctrans('Raw material') }}</th>
+                        <th class="pr-6 font-medium">{{ ctrans('Batch code') }}</th>
+                        <th class="pr-6 font-medium">{{ ctrans('Expiry date') }}</th>
+                        <th class="pr-6 font-medium">{{ ctrans('Recorded by') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(batch, index) in job_order.raw_material_batches" :key="index">
+                        <td class="pr-6 whitespace-nowrap">{{ batch.artefact_code ?? '—' }}</td>
+                        <td class="pr-6">{{ batch.step }}</td>
+                        <td class="pr-6"><span class="whitespace-nowrap font-medium">{{ batch.code }}</span> {{ batch.name }}</td>
+                        <td class="pr-6 whitespace-nowrap">{{ batch.batch_code ?? '—' }}</td>
+                        <td class="pr-6 whitespace-nowrap">{{ batch.expiry_date ? useFormatTime(batch.expiry_date) : '—' }}</td>
+                        <td class="pr-6 whitespace-nowrap">{{ batch.artisan ?? '—' }} · {{ useFormatTime(batch.recorded_at, { formatTime: 'hm' }) }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
         <div v-if="confirm_route" class="mb-6 -mt-3 text-sm text-amber-600">
             {{ ctrans('Draft — workers cannot see these tasks until the order is released to the floor') }}

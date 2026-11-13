@@ -2,7 +2,7 @@
 title: Praca z ekranem hali
 summary: Przewodnik dla rzemieślnika - ekran Moje zadania, lista zadań, która sama się aktualizuje, START i DONE, co nacisnąć, gdy zrobiłeś mniej niż było trzeba, oraz robienie przerwy.
 date: 2026-11-03
-source_date: 2026-11-12
+source_date: 2026-11-13
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -45,6 +45,10 @@ Wiersz z zieloną strzałką ▶ i godziną to ten, nad którym pracujesz, oraz 
 5. Naciśnij **DONE**.
 
 Zrobiłeś wszystko, co było zamówione? To tyle. Zadanie się zamyka, zlecenie produkcyjne jest zakończone, a magazyn dostaje informację, że jest coś do odłożenia - zobacz [Odkładanie gotowej produkcji](/docs/putting-away-finished-production-pl).
+
+## Kody partii surowców
+
+Niektóre sale produkcyjne prowadzą rejestr tego, które opakowanie każdego surowca trafiło do wykonanego produktu. Tam, gdzie kierownik produkcji to włączył (**Raw material batches** (Partie surowców) na stronie **Performance** (Wydajność)), zadanie, nad którym pracujesz, wymienia surowce swojego kroku pod **Raw materials used** (Użyte surowce), każdy z polem **Batch code** (Kod partii) i kalendarzem **Expiry date** (Data ważności). Przepisz je z opakowania przed naciśnięciem **DONE**. Pola za każdym razem są puste, więc przepisz je z opakowania, którego używasz. Są opcjonalne: zostaw wiersz pusty, a DONE nadal działa. To, co wpiszesz, pokazuje się w zleceniu produkcyjnym pod **Raw material batches**, razem z informacją, kto to zapisał i kiedy. Krok, którego receptura nie wymienia surowców, nie pokazuje pól; poproś kierownika produkcji o dodanie ich do receptury.
 
 ## Co liczą liczby
 

@@ -2,7 +2,7 @@
 title: Darbs ar ražotnes ekrānu
 summary: Amatnieka rokasgrāmata - ekrāns Manu uzdevumi, darbu saraksts, kas atjaunojas pats, START un DONE, ko spiest, ja izgatavoji mazāk, nekā prasīts, un pārtraukuma ņemšana.
 date: 2026-11-03
-source_date: 2026-11-12
+source_date: 2026-11-13
 tags: production, floor, artisan
 category: production
 series: Ordering from partners
@@ -45,6 +45,10 @@ Rinda ar zaļu ▶ un laiku ir tā, ar kuru strādā, un kad to sāki. Dzeltena 
 5. Spied **DONE** (Pabeigts).
 
 Izgatavoji visu, kas prasīts? Ar to viss. Uzdevums aizveras, darba uzdevums ir pabeigts, un noliktava saņem ziņu, ka ir kaut kas jāpieņem - skaties [Gatavās produkcijas pieņemšana noliktavā](/docs/putting-away-finished-production-lv).
+
+## Izejvielu partiju kodi
+
+Dažās ražošanas telpās ved uzskaiti, kura katras izejvielas iepakojums nonāca izgatavotajā produktā. Kur ražošanas vadītājs to ir ieslēdzis (**Raw material batches** (Izejvielu partijas) lapā **Performance** (Veiktspēja)), darbs, pie kura strādā, sava soļa izejvielas uzskaita sadaļā **Raw materials used** (Izmantotās izejvielas), katrai ar lauku **Batch code** (Partijas kods) un kalendāru **Expiry date** (Derīguma termiņš). Pārraksti tos no iepakojuma, pirms spied **DONE**. Lauki katru reizi ir tukši, tāpēc pārraksti tos no iepakojuma, kuru izmanto. Tie nav obligāti: atstāj rindu tukšu, un DONE joprojām darbojas. Ierakstītais redzams darba uzdevumā sadaļā **Raw material batches**, kopā ar to, kas to ierakstīja un kad. Solim, kura recepte neuzskaita izejvielas, lauku nav; palūdz ražošanas vadītājam tās pievienot receptei.
 
 ## Ko skaitļi skaita
 
