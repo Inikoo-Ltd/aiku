@@ -348,6 +348,8 @@ const isHistoryOpen = ref(false)
 const isSidebarCollapsed = ref(false)
 const sidebarCollapsedKey = "shopping_assistant_sidebar_collapsed"
 
+const landingHistory = computed(() => history.value.slice(0, 5))
+
 const toggleHistory = () => {
     if (window.matchMedia("(min-width: 1024px)").matches) {
         isSidebarCollapsed.value = !isSidebarCollapsed.value
@@ -759,6 +761,26 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                     </Button>
                                 </div>
                             </div>
+                        </div>
+
+                        <div v-if="isHistoryLoading || history.length" class="landing-history">
+                            <p class="landing-history-title">{{ ctrans("Recent conversations") }}</p>
+                            <div v-if="isHistoryLoading && !history.length" class="flex flex-col gap-1.5">
+                                <div v-for="index in 3" :key="index" class="skeleton h-6 rounded" />
+                            </div>
+                            <nav v-else class="landing-history-list" :aria-label="ctrans('Recent conversations')">
+                                <button
+                                    v-for="item in landingHistory"
+                                    :key="item.conversation"
+                                    type="button"
+                                    class="landing-history-item"
+                                    @click="openConversation(item.conversation)"
+                                >
+                                    <FontAwesomeIcon icon="far fa-comment-alt" class="landing-history-icon" fixed-width aria-hidden="true" />
+                                    <span class="landing-history-text">{{ item.title }}</span>
+                                    <span class="landing-history-date">{{ historyDate(item.last_message_at) }}</span>
+                                </button>
+                            </nav>
                         </div>
                     </div>
 
@@ -1385,6 +1407,79 @@ const sendOnEnter = (event: KeyboardEvent) => {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
+}
+
+.landing-history {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e3ddd6;
+}
+
+.landing-history-title {
+    margin-bottom: 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8a7f74;
+}
+
+.landing-history-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.landing-history-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: calc(100% + 1rem);
+    margin: 0 -0.5rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.5rem;
+    text-align: left;
+    transition: background-color 0.15s;
+}
+
+.landing-history-item:hover {
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+.landing-history-item:focus-visible {
+    outline: 2px solid var(--theme-color-4);
+    outline-offset: 1px;
+}
+
+.landing-history-icon {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: #b3a89c;
+    transition: color 0.15s;
+}
+
+.landing-history-item:hover .landing-history-icon {
+    color: var(--theme-color-4);
+}
+
+.landing-history-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    color: #1f1f1f;
+}
+
+.landing-history-item:hover .landing-history-text {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.landing-history-date {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    color: #8a7f74;
 }
 
 .landing-talk-box {

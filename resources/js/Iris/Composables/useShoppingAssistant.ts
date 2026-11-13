@@ -1,5 +1,5 @@
 import { computed, inject, onMounted, ref } from "vue"
-import { router, usePage } from "@inertiajs/vue3"
+import { router } from "@inertiajs/vue3"
 import { ctrans } from "@/Composables/useTrans"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
@@ -23,9 +23,6 @@ export const useShoppingAssistant = () => {
     })
 
     const assistant = computed<ShoppingAssistant | null>(() => isMounted.value ? layout?.iris?.shopping_assistant ?? null : null)
-
-    const page = usePage()
-    const isFloatingButtonShown = computed(() => !!assistant.value && !/^\/assistant(\/|\?|$)/.test(page.url ?? ""))
 
     const isOfferedNow = (): boolean => {
         if (layout?.iris?.shopping_assistant) {
@@ -60,5 +57,5 @@ export const useShoppingAssistant = () => {
 
     const buttonLabel = computed(() => assistant.value?.name || ctrans("Ask"))
 
-    return { assistant, isFloatingButtonShown, isOfferedNow, askLabel, buttonLabel, offerLabel, looksLikeANeed, openAssistant }
+    return { assistant, isOfferedNow, askLabel, buttonLabel, offerLabel, looksLikeANeed, openAssistant }
 }
