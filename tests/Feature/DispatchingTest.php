@@ -2873,6 +2873,42 @@ function waitingDeliveryNoteWithItemWaitingForWarehouse($ctx): array
     return [$deliveryNote->refresh(), $item->refresh()];
 }
 
+test('a line lowered by the marketplace keeps no more waiting than is left to pick, and a note with nothing left is released', function () {
+    $syncer = new class () {
+        use \App\Actions\Dispatching\DeliveryNote\WithDeliveryNoteQuantitySync;
+
+        public int $hydratorsDelay = 0;
+
+        public function sync($deliveryNote, $transaction, $orgStocks): void
+        {
+            $this->syncDeliveryNote($deliveryNote, $transaction, $orgStocks, null);
+        }
+    };
+    $lowerTo = function (float $quantity) use ($syncer): array {
+        [$deliveryNote, $item] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
+        SetAsWaitingCrm::make()->action($item, $this->user, ['quantity' => 1]);
+
+        $transaction = $item->transaction;
+        $product     = $transaction->model;
+        $product->orgStocks()->syncWithoutDetaching([$item->org_stock_id => ['quantity' => 1]]);
+        $transaction->update(['quantity_ordered' => $quantity, 'quantity_bonus' => 0]);
+        $syncer->sync($deliveryNote->refresh(), $transaction->refresh(), $product->fresh()->orgStocks->keyBy('id'));
+
+        return [$deliveryNote->refresh(), $item->refresh()];
+    };
+
+    [, $item] = $lowerTo(8);
+    expect((float)$item->quantity_waiting_warehouse)->toBe(1.0)
+        ->and((float)$item->quantity_waiting_crm)->toBe(1.0);
+
+    [$deliveryNote, $item] = $lowerTo(6);
+    expect((float)$item->quantity_waiting_warehouse)->toBe(0.0)
+        ->and((float)$item->quantity_waiting_crm)->toBe(0.0)
+        ->and($item->is_handled)->toBeTrue()
+        ->and($deliveryNote->fresh()->number_items_waiting_crm)->toBe(0)
+        ->and($deliveryNote->fresh()->state)->toBe(DeliveryNoteStateEnum::PICKED);
+});
+
 test('a waiting delivery note steps back to picking with its items waiting for the warehouse given back to the picker', function () {
     [$deliveryNote, $item] = waitingDeliveryNoteWithItemWaitingForWarehouse($this);
     $order                 = $deliveryNote->orders->first();

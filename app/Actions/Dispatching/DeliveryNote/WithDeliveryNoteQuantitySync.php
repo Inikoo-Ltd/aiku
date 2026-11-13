@@ -8,6 +8,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
+use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateWaitingItems;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\AutoFinishWaitingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoPackingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateState\UndoSetAsPickedDeliveryNote;
@@ -42,6 +43,7 @@ trait WithDeliveryNoteQuantitySync
     protected function syncDeliveryNote(DeliveryNote $deliveryNote, Transaction $transaction, Collection $orgStocks, ?User $user): void
     {
         $goBackToPicking = false;
+        $waitingChanged  = false;
 
         $deliveryNoteItems = $transaction
             ->deliveryNoteItems()
@@ -71,13 +73,18 @@ trait WithDeliveryNoteQuantitySync
                 $dataToBeUpdated['original_quantity_required'] = $oldRequiredQuantity;
             }
 
-            $deliveryNoteItem->update($dataToBeUpdated);
+            $deliveryNoteItem->update(array_merge($dataToBeUpdated, $this->waitingTrimmedTo($deliveryNoteItem, $quantity)));
+            $waitingChanged = $waitingChanged || $deliveryNoteItem->wasChanged(['quantity_waiting_warehouse', 'quantity_waiting_crm']);
 
             if (abs($quantity - (float)$deliveryNoteItem->quantity_picked) > 0.000001) {
                 $goBackToPicking = true;
             }
 
             CalculateDeliveryNoteItemTotalPicked::make()->action($deliveryNoteItem);
+        }
+
+        if ($waitingChanged) {
+            DeliveryNoteHydrateWaitingItems::run($deliveryNote->id);
         }
 
         $this->walkDeliveryNoteBackToPicking($deliveryNote, $goBackToPicking, $user);
@@ -91,6 +98,33 @@ trait WithDeliveryNoteQuantitySync
          * blocked note stays blocked with no work left on it.
          */
         AutoFinishWaitingDeliveryNote::run($deliveryNote->refresh());
+    }
+
+    /**
+     * What is parked as waiting can never be more than is still to pick. Faire took UC8GYESCFD's
+     * GemPic-03 from 3 down to the 1 already in the tote while the other 2 sat waiting for customer
+     * service; they stayed parked, were sent back to the warehouse, and blocked a note with nothing
+     * left on it until a packer wrote them off by hand (HELP-4710). Warehouse waiting goes first.
+     *
+     * @return array{quantity_waiting_warehouse?: float, quantity_waiting_crm?: float}
+     */
+    protected function waitingTrimmedTo(DeliveryNoteItem $deliveryNoteItem, float $quantityRequired): array
+    {
+        $waitingWarehouse = max((float)$deliveryNoteItem->quantity_waiting_warehouse, 0);
+        $waitingCrm       = max((float)$deliveryNoteItem->quantity_waiting_crm, 0);
+        $leftToPick       = max($quantityRequired - (float)$deliveryNoteItem->quantity_picked - (float)$deliveryNoteItem->quantity_not_picked, 0);
+        $excess           = $waitingWarehouse + $waitingCrm - $leftToPick;
+
+        if ($excess <= 0.000001) {
+            return [];
+        }
+
+        $warehouseTrim = min($waitingWarehouse, $excess);
+
+        return [
+            'quantity_waiting_warehouse' => $waitingWarehouse - $warehouseTrim,
+            'quantity_waiting_crm'       => max($waitingCrm - ($excess - $warehouseTrim), 0),
+        ];
     }
 
     /**
