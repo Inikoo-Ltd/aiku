@@ -1702,6 +1702,10 @@ trait WithEbayApiRequest
                 data_set($data, 'merchantLocationKey', $this->location_key);
             }
 
+            if (filled(Arr::get($offerData, 'merchant_location_key'))) {
+                data_set($data, 'merchantLocationKey', Arr::get($offerData, 'merchant_location_key'));
+            }
+
             if ($useChannelPolicies || blank(Arr::get($data, 'listingPolicies'))) {
                 data_set($data, 'listingPolicies', $this->channelListingPolicies());
             }
@@ -2346,25 +2350,6 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', "/sell/inventory/v1/location/$locationKey/enable");
         } catch (Exception $e) {
             Log::error('Enable Inventory Location Error: '.$e->getMessage());
-
-            return ['error' => $e->getMessage()];
-        }
-    }
-
-    public function updateInventoryLocationAddress(string $locationKey, array $locationData)
-    {
-        try {
-            return $this->makeEbayRequest('post', "/sell/inventory/v1/location/$locationKey/update_location_details", [
-                'location' => [
-                    'address' => [
-                        'city'            => Arr::get($locationData, 'city'),
-                        'stateOrProvince' => Arr::get($locationData, 'state'),
-                        'country'         => Arr::get($locationData, 'country'),
-                    ]
-                ]
-            ]);
-        } catch (Exception $e) {
-            Log::error('Update Inventory Location Error: '.$e->getMessage());
 
             return ['error' => $e->getMessage()];
         }

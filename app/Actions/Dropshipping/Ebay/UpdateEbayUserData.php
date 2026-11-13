@@ -133,19 +133,55 @@ class UpdateEbayUserData extends OrgAction
     }
 
     /**
-     * The location is created only at connect, so a change to the shop's eBay warehouse address never reaches
-     * channels already connected (PRE-102: dssk said DE for a Slovak warehouse). This rewrites the address of
-     * the channel's existing location in place; the key and the offers pointing at it stay as they are.
+     * The location is created only at connect, and a live listing keeps the location its offer points at: changing
+     * that location's address does not reach the listing, and neither does a price or quantity revise (PRE-102,
+     * dssk said DE for a Slovak warehouse). So the shop's current warehouse location is provisioned, every offer of
+     * the channel is moved onto it with nothing else changed, and the channel keeps it for new uploads.
+     *
+     * @return array{location_key: ?string, moved: int, already: int, failed: array<string, string>}
      */
-    public function updateLocationAddress(EbayUser $ebayUser): bool
+    public function moveToWarehouseLocation(EbayUser $ebayUser): array
     {
-        $shop = $ebayUser->customer?->shop;
+        $shop   = $ebayUser->customer?->shop;
+        $result = ['location_key' => null, 'moved' => 0, 'already' => 0, 'failed' => []];
 
-        if (!$ebayUser->hasUsableLocationKey() || !$shop || !Country::find(Arr::get($shop->settings, 'ebay.warehouse_country'))) {
-            return false;
+        if (!$shop || !Country::find(Arr::get($shop->settings, 'ebay.warehouse_country'))) {
+            return $result;
         }
 
-        return $this->ebayAccepted($ebayUser->updateInventoryLocationAddress($ebayUser->location_key, $this->warehouseLocationData($shop)));
+        $locationData = $this->warehouseLocationData($shop);
+        $locationKey  = Arr::get($locationData, 'locationKey');
+
+        if ($ebayUser->location_key !== $locationKey && !$this->ebayAccepted($ebayUser->createInventoryLocation($locationData)) && !$this->hasLocationOnEbay($ebayUser, $locationKey)) {
+            return $result;
+        }
+
+        $result['location_key'] = $locationKey;
+
+        $offerIds = $ebayUser->customerSalesChannel->portfolios()->whereNotNull('platform_product_id')->pluck('platform_product_id')->unique();
+
+        foreach ($offerIds as $offerId) {
+            $offer = $ebayUser->getOffer($offerId);
+
+            if (Arr::get($offer, 'merchantLocationKey') === $locationKey) {
+                $result['already']++;
+                continue;
+            }
+
+            $error = Arr::get($offer, 'offerId')
+                ? EbayUser::ebayResponseError($ebayUser->updateOffer($offerId, ['merchant_location_key' => $locationKey]))
+                : (EbayUser::ebayResponseError($offer) ?? 'offer not found');
+
+            if ($error) {
+                $result['failed'][$offerId] = $error;
+            } else {
+                $result['moved']++;
+            }
+        }
+
+        UpdateEbayUser::run($ebayUser, ['location_key' => $locationKey]);
+
+        return $result;
     }
 
     private function ebayAccepted(mixed $response): bool

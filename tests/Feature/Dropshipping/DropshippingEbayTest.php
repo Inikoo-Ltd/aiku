@@ -2823,14 +2823,35 @@ test('a supervisor-only shipper is hidden from and refused to dispatch clerks (P
     actingAsUserWithRoles($user, $originalRoles);
 });
 
-test('repairing a channel location rewrites its address on eBay from the shop warehouse settings, keeping the key', function () {
+test('repairing a channel location moves its offers onto the shop warehouse location and keeps the rest of each offer', function () {
     $ebayUser = ebayChannel($this, ['location_key' => 'dssk-warehouse-DE']);
+    listedEbayPortfolio($this, $ebayUser, '111', 'offer-old');
+    $locationKey = $this->shop->slug.'-warehouse-GB';
 
-    fakeEbay($this, ['/sell/inventory/v1/location/dssk-warehouse-DE/update_location_details' => fn () => Http::response(null, 204)]);
+    $offer = fn (string $offerId, string $key) => [
+        'offerId'             => $offerId,
+        'sku'                 => 'sku-'.$offerId,
+        'merchantLocationKey' => $key,
+        'listingDescription'  => 'Seller text',
+        'pricingSummary'      => ['price' => ['value' => '28.56', 'currency' => 'EUR']],
+        'listingPolicies'     => ['fulfillmentPolicyId' => 'fp-seller'],
+        'categoryId'          => '123',
+        'format'              => 'FIXED_PRICE',
+    ];
+
+    fakeEbay($this, [
+        '/sell/inventory/v1/location/'.$locationKey => fn () => Http::response(null, 204),
+        '/sell/inventory/v1/offer/offer-old'        => fn (Request $request) => $request->method() === 'PUT' ? Http::response([]) : Http::response($offer('offer-old', 'dssk-warehouse-DE')),
+    ]);
 
     $this->artisan('repair:ebay_location_address', ['customerSalesChannel' => $ebayUser->customerSalesChannel->slug])->assertSuccessful();
 
-    expect(sentEbayRequest('POST', '/sell/inventory/v1/location/dssk-warehouse-DE/update_location_details')->data())
-        ->toBe(['location' => ['address' => ['city' => 'Sheffield', 'stateOrProvince' => 'South Yorkshire', 'country' => 'GB']]])
-        ->and($ebayUser->refresh()->location_key)->toBe('dssk-warehouse-DE');
+    $put = sentEbayRequest('PUT', '/sell/inventory/v1/offer/offer-old')->data();
+
+    expect(sentEbayRequest('POST', '/sell/inventory/v1/location/'.$locationKey)->data()['location']['address']['country'])->toBe('GB')
+        ->and($put['merchantLocationKey'])->toBe($locationKey)
+        ->and($put['listingDescription'])->toBe('Seller text')
+        ->and($put['pricingSummary']['price']['value'])->toBe('28.56')
+        ->and($put['listingPolicies'])->toBe(['fulfillmentPolicyId' => 'fp-seller'])
+        ->and($ebayUser->refresh()->location_key)->toBe($locationKey);
 });

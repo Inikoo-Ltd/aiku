@@ -20,9 +20,12 @@ class RepairEbayLocationAddress
 
     public string $commandSignature = 'repair:ebay_location_address {customerSalesChannel}';
 
-    public function handle(CustomerSalesChannel $customerSalesChannel): bool
+    /**
+     * @return array{location_key: ?string, moved: int, already: int, failed: array<string, string>}
+     */
+    public function handle(CustomerSalesChannel $customerSalesChannel): array
     {
-        return $customerSalesChannel->user && UpdateEbayUserData::make()->updateLocationAddress($customerSalesChannel->user);
+        return UpdateEbayUserData::make()->moveToWarehouseLocation($customerSalesChannel->user);
     }
 
     public function asCommand(Command $command): int
@@ -31,14 +34,20 @@ class RepairEbayLocationAddress
 
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
 
-        if (!$this->handle($customerSalesChannel)) {
-            $command->error('eBay did not accept the address update for '.$customerSalesChannel->slug);
+        $result = $this->handle($customerSalesChannel);
+
+        if (!$result['location_key']) {
+            $command->error('No warehouse location on eBay for '.$customerSalesChannel->slug);
 
             return 1;
         }
 
-        $command->info('Location '.$customerSalesChannel->user->location_key.' now has the shop warehouse address');
+        $command->info($result['location_key'].': '.$result['moved'].' moved, '.$result['already'].' already there, '.count($result['failed']).' failed');
 
-        return 0;
+        foreach ($result['failed'] as $offerId => $error) {
+            $command->warn($offerId.' '.$error);
+        }
+
+        return $result['failed'] ? 1 : 0;
     }
 }
