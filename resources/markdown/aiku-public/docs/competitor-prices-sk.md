@@ -43,6 +43,8 @@ Raz za mesiac otvorte ich stránku ako kupujúci v EÚ, vyhľadajte naše ohroze
 
 Ponuka sa stane potvrdeným párom, takže sa počíta na prehľade, v porovnaní cien **Confirmed** a v cenových tipoch ako každý iný. Každá kontrola sa navyše uchová: karta **Price checks** ich zobrazuje od najnovšej, s ich cenou za jednotku, vašou, rozdielom, zmenou od predchádzajúcej kontroly tej istej ponuky, dňami doručenia, kto kontroloval a snímkou obrazovky (kliknutím ju zväčšíte). Pridanie toho istého odkazu o mesiac pridá nový riadok, takže história ukáže, či zlacňujú.
 
+Kontroly cien nie sú len pre trhoviská: každý konkurent, ktorého web sa číta, má rovnaké tlačidlo **Add price check**, pre veľkosť alebo produkt, ktorý ich katalóg alebo vyhľadávanie nenájde alebo prečíta zle. Produkt s kontrolou ceny sa zachová, keď sa ich katalóg prečíta znova.
+
 ## Čo ukazuje dashboard
 
 **Masters › Competitors** sa otvorí na dashboarde:
@@ -62,6 +64,8 @@ Kým nepridáte prvého konkurenta, dashboard vysvetlí, čo robiť.
 Po každom čítaní AI porovná každý ich produkt s vašimi. Pár, v ktorom si je istá, sa **potvrdí sám** (označený *auto*); ostatné čakajú v **Prices to review**. Každý riadok ukazuje váš produkt, vašu cenu za jednotku, ich produkt s odkazom, ich cenu za jednotku a rozdiel: červený, keď sú lacnejší, zelený, keď sú drahší. Obe ceny sú v ich mene, vaša podľa vašej ceny v tej mene (cena AW class v eurách pre konkurenta v eurách); iba keď v ich mene cenu nemáte, prepočítajú sa obe na menu skupiny.
 
 **Units in their pack** (kusy v ich balení) pod ich produktom je číslo, ktorým sa delí ich cena. Balenia sa na oboch stranách nie vždy počítajú rovnako: vaša krabica s 12 balíčkami môže byť vedená ako 1 jednotka, kým ich je zadaná ako 12, alebo sa ich krabica s 12 kusmi prečíta ako 1. Keď by tým ich cena za jednotku vyšla pod 40 % alebo nad 250 % vašej, kým balenie oproti baleniu sú obe ceny blízko, aiku berie balenia ako rovnaké a porovná ich balenie oproti baleniu; riadok to označí textom *Compared pack against pack*. Rozdiel, ktorý je aj potom veľmi veľký, je skutočný rozdiel alebo nesprávny pár: otvorte ich odkaz a skontrolujte to.
+
+**Ďalšie veľkosti.** AI páruje len váš hlavný produkt; vaše ďalšie veľkosti (napríklad 50 ml, 100 ml a 500 ml vonného oleja) sa každé ráno spárujú s veľkosťami toho istého produktu u konkurenta, keď je váš hlavný produkt s ním spárovaný ako rovnaká položka, s rovnakým stavom. Každá veľkosť dostane ich rovnakú veľkosť alebo najbližšiu od polovice po dvojnásobok vašej a porovnáva sa na ml alebo g: ich 125 g oproti vašim 100 ml sa počíta ako 1,25 vášho balenia (zobrazené ako *units verified*). Veľkosť, ku ktorej u nich v tomto rozsahu nič nie je, sa vynechá.
 
 Páry navyše podľa rozvrhu prechádza **kontrola AI**, najprv tie pochybné: prečíta ich ponuku, povie, či ide o rovnakú položku, a spočíta, koľko vašich jednotiek je v ich balení. Čo zistí, použije sa hneď a zobrazí sa pod ich produktom ako *AI check* s dôvodom; *units verified* znamená, že počet prečítala v ich ponuke, a tieto kusy sa potom porovnávajú tak, ako sú. Nikdy nemení pár, ktorý človek potvrdil, zamietol alebo mu zadal kusy: tam nechá iba poznámku. Páry, ktoré zamietne, sú v **Rejected by AI** s dôvodom a fajka ich tam vráti späť. Zmeňte kusy alebo kliknite na fajku či krížik a platí vaša odpoveď.
 

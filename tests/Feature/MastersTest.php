@@ -5697,7 +5697,6 @@ describe('competitor prices, HELP-3605', function () {
         ]);
 
         $check(['master_asset_code' => 'NOT-OURS', 'price' => 30])->assertSessionHasErrors('master_asset_code');
-        post(route('grp.models.competitor.price_check.store', $this->competitor->id), ['price' => 30])->assertNotFound();
         $check(['price' => 30, 'screenshot' => null])->assertSessionHasErrors('screenshot');
         $check(['price' => 30])->assertSessionHasNoErrors()->assertRedirect();
         $check(['price' => 24])->assertSessionHasNoErrors()->assertRedirect();
@@ -5726,7 +5725,25 @@ describe('competitor prices, HELP-3605', function () {
             ->and($props['price_checks']['data'][0]['screenshot']['original'])->not->toBeEmpty()
             ->and($props['price_checks']['data'][1]['change'])->toBeNull();
 
-        expect(array_keys(get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->slug]))->viewData('page')['props']['tabs']['navigation']))->not->toContain('price_checks');
+        expect(array_keys(get(route('grp.masters.competitors.show', ['competitor' => $this->competitor->slug]))->viewData('page')['props']['tabs']['navigation']))->toContain('price_checks', 'products');
+
+        $this->competitor->update(['feed_url' => 'https://feeds.example.com/rival.csv']);
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
+        \Illuminate\Support\Facades\Http::fake(['feeds.example.com/*' => \Illuminate\Support\Facades\Http::response("sku,name,price\nMUG-1,White Mug,2.00\n")]);
+        post(route('grp.models.competitor.price_check.store', $this->competitor->id), [
+            'master_asset_code' => $this->competitorMasterAsset->code,
+            'url'               => 'https://rival.example.com/products/brass-bowl?variant=7',
+            'name'              => 'Brass bowl 10cm',
+            'price'             => 9,
+            'screenshot'        => \Illuminate\Http\UploadedFile::fake()->image('listing.png', 800, 600),
+        ])->assertSessionHasNoErrors()->assertRedirect();
+        $this->travel(1)->minutes();
+
+        expect(\App\Actions\Masters\Competitor\ImportCompetitorFeed::make()->handle($this->competitor))->toBe(1)
+            ->and($this->competitor->products()->pluck('name')->sort()->values()->all())->toBe(['Brass bowl 10cm', 'White Mug'])
+            ->and($this->competitor->priceChecks()->count())->toBe(1)
+            ->and(\App\Models\Masters\MasterAssetCompetitorProduct::where('master_asset_id', $this->competitorMasterAsset->id)->whereHas('competitorProduct', fn ($query) => $query->where('competitor_id', $this->competitor->id))->value('status'))
+            ->toBe(\App\Enums\Masters\Competitor\MasterAssetCompetitorProductStatusEnum::CONFIRMED);
     });
 
     test('a Shopify product sold in sizes takes the price of the size closest to ours, and the search tracking comes off its link, HELP-4686', function () {

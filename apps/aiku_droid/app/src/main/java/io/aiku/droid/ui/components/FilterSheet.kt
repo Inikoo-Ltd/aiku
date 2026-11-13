@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -44,14 +45,21 @@ data class FilterSheetSection(
     val label: String,
     val options: List<FilterSheetOption>,
     val isSingleChoice: Boolean = false,
+    val isAtMostOne: Boolean = false,
     val isSort: Boolean = false,
     val initiallySelected: Set<Int> = emptySet(),
     val isSample: Boolean = false,
-)
+) {
+    fun toggled(current: Set<Int>, optionIndex: Int): Set<Int> = when {
+        isSingleChoice -> setOf(optionIndex)
+        optionIndex in current -> current - optionIndex
+        isAtMostOne -> setOf(optionIndex)
+        else -> current + optionIndex
+    }
+}
 
 private const val RESULT_SHRINK_PER_FILTER = 0.9f
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FilterSheet(
     title: String,
@@ -60,13 +68,41 @@ fun FilterSheet(
     @PluralsRes showLabel: Int,
     onDismiss: () -> Unit,
 ) {
-    val colors = LocalAikuColors.current
     var selection by remember(sections) { mutableStateOf(sections.map { it.initiallySelected }) }
     val filterCount = selection.zip(sections).sumOf { (selected, section) -> if (section.isSingleChoice) 0 else selected.size }
     val results = maxOf(1, (sampleTotal / (1 + filterCount * RESULT_SHRINK_PER_FILTER)).roundToInt())
+
+    FilterSheet(
+        title = title,
+        sections = sections,
+        selection = selection,
+        onSelectionChange = { selection = it },
+        activeFilterCount = filterCount,
+        showText = pluralStringResource(showLabel, results, results),
+        onShow = onDismiss,
+        onReset = { selection = sections.map { if (it.isSingleChoice) setOf(0) else emptySet() } },
+        onDismiss = onDismiss,
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun FilterSheet(
+    title: String,
+    sections: List<FilterSheetSection>,
+    selection: List<Set<Int>>,
+    onSelectionChange: (List<Set<Int>>) -> Unit,
+    activeFilterCount: Int,
+    showText: String,
+    onShow: () -> Unit,
+    onReset: () -> Unit,
+    onDismiss: () -> Unit,
+    header: (@Composable ColumnScope.() -> Unit)? = null,
+) {
+    val colors = LocalAikuColors.current
     val sortIndex = sections.indexOfFirst { it.isSort }
-    val sortLabel = sortIndex.takeIf { it >= 0 }?.let { index -> selection[index].firstOrNull()?.let { sections[index].options[it].label } }
-    val filtersText = if (filterCount == 0) stringResource(R.string.filter_none) else pluralStringResource(R.plurals.filter_count, filterCount, filterCount)
+    val sortLabel = sortIndex.takeIf { it >= 0 }?.let { index -> selection.getOrNull(index)?.firstOrNull()?.let { sections[index].options[it].label } }
+    val filtersText = if (activeFilterCount == 0) stringResource(R.string.filter_none) else pluralStringResource(R.plurals.filter_count, activeFilterCount, activeFilterCount)
     val summary = if (sortLabel != null) stringResource(R.string.filter_summary_sorted, filtersText, sortLabel.lowercase()) else filtersText
 
     AikuBottomSheet(
@@ -81,14 +117,15 @@ fun FilterSheet(
                 color = colors.link,
                 modifier = Modifier
                     .clip(ChipShape)
-                    .clickable(role = Role.Button) { selection = sections.map { if (it.isSingleChoice) setOf(0) else emptySet() } }
+                    .clickable(role = Role.Button, onClick = onReset)
                     .padding(horizontal = 8.dp, vertical = 10.dp),
             )
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            header?.invoke(this)
             sections.forEachIndexed { sectionIndex, section ->
-                val selected = selection[sectionIndex]
+                val selected = selection.getOrElse(sectionIndex) { emptySet() }
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
@@ -119,14 +156,9 @@ fun FilterSheet(
                                 option = option,
                                 isOn = optionIndex in selected,
                                 onToggle = {
-                                    selection = selection.mapIndexed { index, current ->
-                                        when {
-                                            index != sectionIndex -> current
-                                            section.isSingleChoice -> setOf(optionIndex)
-                                            optionIndex in current -> current - optionIndex
-                                            else -> current + optionIndex
-                                        }
-                                    }
+                                    onSelectionChange(
+                                        selection.mapIndexed { index, current -> if (index == sectionIndex) section.toggled(current, optionIndex) else current },
+                                    )
                                 },
                             )
                         }
@@ -136,8 +168,8 @@ fun FilterSheet(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(text = summary, fontSize = 12.sp, color = colors.textTertiary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 AikuButton(
-                    text = pluralStringResource(showLabel, results, results),
-                    onClick = onDismiss,
+                    text = showText,
+                    onClick = onShow,
                     height = 52.dp,
                     modifier = Modifier.fillMaxWidth(),
                 )

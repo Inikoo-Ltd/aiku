@@ -4,7 +4,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object HomeRoute
 @Serializable data object MyWorkRoute
-@Serializable data object ScanResultRoute
+@Serializable data object ScanRoute
+@Serializable data class ScanResultRoute(val code: String)
 @Serializable data object InboxRoute
 @Serializable data object MenuRoute
 @Serializable data object SearchRoute
@@ -46,36 +47,22 @@ import kotlinx.serialization.Serializable
 @Serializable data object GoodsInReturnsRoute
 @Serializable data class GoodsInReturnRoute(val reference: String)
 @Serializable data object GoodsOutBacklogRoute
-@Serializable data object DeliveryNotesRoute
-@Serializable data class DeliveryNoteToDoRoute(val reference: String)
-@Serializable data class DeliveryNotePickingRoute(val reference: String)
-@Serializable data class ScanToPickRoute(val reference: String)
-@Serializable data class FastPickingRoute(val reference: String)
-@Serializable data class DeliveryNoteAllPickedRoute(val reference: String)
-@Serializable data class DeliveryNotePickedRoute(val reference: String)
-@Serializable data class DeliveryNotePackingRoute(val reference: String)
-@Serializable data object PackingQueueRoute
-@Serializable data class AddShipmentRoute(val reference: String)
-@Serializable data class ManualShipmentRoute(val reference: String)
-@Serializable data class ShipmentsRoute(val reference: String)
-@Serializable data class DeliveryNoteCollectionRoute(val reference: String)
-@Serializable data class DeliveryNoteCollectedRoute(val reference: String)
-@Serializable data class DeliveryNoteFinalisedRoute(val reference: String)
-@Serializable data class DeliveryNoteDispatchedRoute(val reference: String)
-@Serializable data class DeliveryNoteWaitingRoute(val reference: String)
-@Serializable data class DeliveryNoteCancelledRoute(val reference: String)
-@Serializable data class DeliveryNoteIncompleteSetRoute(val reference: String)
-@Serializable data class DeliveryNoteTakeOverRoute(val reference: String)
-@Serializable data class AskCrmRoute(val reference: String)
-@Serializable data class ExternalShipmentRoute(val reference: String)
-@Serializable data class TariffCodesRoute(val reference: String)
-@Serializable data class CustomsFileRoute(val reference: String)
-@Serializable data class DispatchedEmailsRoute(val reference: String)
-@Serializable data object ShippersRoute
+@Serializable data class DeliveryNotesRoute(val bucket: String? = null, val channel: String? = null, val sessionId: Long? = null, val sessionReference: String? = null)
+@Serializable data class DeliveryNoteToDoRoute(val id: Long, val reference: String)
+@Serializable data class DeliveryNotePickingRoute(val id: Long, val reference: String)
+@Serializable data class ScanToPickRoute(val reference: String, val id: Long? = null)
+@Serializable data class DeliveryNotePickedRoute(val id: Long, val reference: String)
+@Serializable data class DeliveryNotePackingRoute(val id: Long, val reference: String)
+@Serializable data class AddShipmentRoute(val id: Long, val reference: String)
+@Serializable data class DeliveryNoteFinalisedRoute(val id: Long, val reference: String)
+@Serializable data class DeliveryNoteDispatchedRoute(val id: Long, val reference: String)
+@Serializable data class DeliveryNoteCancelledRoute(val id: Long, val reference: String)
+@Serializable data class AskCrmRoute(val context: String, val id: Long, val reference: String)
+@Serializable data class ExternalShipmentRoute(val id: Long, val reference: String)
 @Serializable data object PickingSessionsRoute
-@Serializable data class PickingSessionRoute(val reference: String)
-@Serializable data class PickByLocationRoute(val reference: String)
-@Serializable data class PackByScanRoute(val reference: String)
+@Serializable data class PickingSessionRoute(val id: Long, val reference: String)
+@Serializable data class PickByLocationRoute(val id: Long, val reference: String)
+@Serializable data class PackByScanRoute(val id: Long, val reference: String)
 @Serializable data object TrolleysRoute
 @Serializable data object PickedBaysRoute
 @Serializable data object FulfilmentDeliveriesRoute

@@ -168,14 +168,7 @@ class ShowPickingSession extends OrgAction
          * session holding nothing but dropshipping notes has nothing scannable in it either.
          */
         $scanToPack = null;
-        if (
-            (bool)data_get($this->organisation->settings, 'orders.allow_scan_to_pack', false)
-            && $pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED
-            && $pickingSession->type != PickingSessionTypeEnum::FULFILMENT
-            && $pickingSession->deliveryNotes()
-                ->whereRelation('shop', 'type', '!=', ShopTypeEnum::DROPSHIPPING)
-                ->exists()
-        ) {
+        if (static::offersScanToPack($pickingSession)) {
             $scanToPack = [
                 'scan_route' => [
                     'name'       => 'grp.json.picking_session.pack_by_scan',
@@ -285,6 +278,16 @@ class ShowPickingSession extends OrgAction
         }
 
         return $inertiaResponse;
+    }
+
+    public static function offersScanToPack(PickingSession $pickingSession): bool
+    {
+        return (bool)data_get($pickingSession->organisation->settings, 'orders.allow_scan_to_pack', false)
+            && $pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED
+            && $pickingSession->type != PickingSessionTypeEnum::FULFILMENT
+            && $pickingSession->deliveryNotes()
+                ->whereRelation('shop', 'type', '!=', ShopTypeEnum::DROPSHIPPING)
+                ->exists();
     }
 
     /**

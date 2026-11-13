@@ -849,6 +849,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                 <FontAwesomeIcon icon="far fa-sparkles" fixed-width />
                             </span>
                             <p class="landing-eyebrow">{{ ctrans("Meet :name · Ask us anything", { name: assistantName }) }}</p>
+                            <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
                         </div>
 
                         <h1 class="landing-title">
@@ -954,7 +955,10 @@ const sendOnEnter = (event: KeyboardEvent) => {
                     </button>
                     <span class="assistant-avatar" aria-hidden="true"><FontAwesomeIcon icon="far fa-sparkles" fixed-width /></span>
                     <div class="min-w-0 flex-1">
-                        <p class="chat-header-name">{{ assistantName }}</p>
+                        <p class="chat-header-name">
+                            {{ assistantName }}
+                            <span class="beta-tag" :title="ctrans(':name is new and still learning', { name: assistantName })">{{ ctrans("Beta") }}</span>
+                        </p>
                         <p class="chat-header-role">{{ isDropshipping ? ctrans("Your dropshipping coach") : ctrans("Your range advisor") }}</p>
                     </div>
                     <button
@@ -1378,6 +1382,22 @@ const sendOnEnter = (event: KeyboardEvent) => {
     font-size: 1.125rem;
     font-weight: 800;
     line-height: 1.2;
+}
+
+.beta-tag {
+    display: inline-block;
+    margin-left: 0.375rem;
+    padding: 0.0625rem 0.375rem;
+    border: 1px solid #d1d5db;
+    border-radius: 9999px;
+    color: #6b7280;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    line-height: 1.4;
+    text-transform: uppercase;
+    vertical-align: middle;
+    white-space: nowrap;
 }
 
 .chat-header-role {

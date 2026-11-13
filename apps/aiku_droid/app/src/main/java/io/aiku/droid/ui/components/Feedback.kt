@@ -145,7 +145,16 @@ fun OfflineBar(
     }
 }
 
-enum class ToastKind { Success, Error, Offline, Info }
+enum class ToastKind {
+    Success,
+    Error,
+    Warning,
+    Offline,
+    Info,
+    ;
+
+    val staysUntilReplaced: Boolean get() = this == Error || this == Warning
+}
 
 @Immutable
 data class ToastMessage(
@@ -179,7 +188,7 @@ fun ToastHost(state: ToastState, modifier: Modifier = Modifier) {
     val message = state.current ?: return
 
     LaunchedEffect(message.id) {
-        if (message.kind != ToastKind.Error) {
+        if (!message.kind.staysUntilReplaced) {
             delay(TOAST_DURATION_MILLIS)
             state.dismiss(message)
         }
@@ -201,6 +210,7 @@ fun AikuToast(message: ToastMessage, onAction: () -> Unit, modifier: Modifier = 
     val (badge, icon) = when (message.kind) {
         ToastKind.Success -> colors.success to R.drawable.ic_feedback_check
         ToastKind.Error -> colors.danger to R.drawable.ic_feedback_close
+        ToastKind.Warning -> colors.warn to R.drawable.ic_feedback_warn
         ToastKind.Offline -> colors.textQuaternary to R.drawable.ic_feedback_cloud
         ToastKind.Info -> colors.link to R.drawable.ic_feedback_bell
     }
@@ -213,7 +223,7 @@ fun AikuToast(message: ToastMessage, onAction: () -> Unit, modifier: Modifier = 
             .shadow(elevation = 10.dp, shape = shape, ambientColor = colors.shadow, spotColor = colors.shadow)
             .clip(shape)
             .background(colors.toast)
-            .semantics { liveRegion = if (message.kind == ToastKind.Error) LiveRegionMode.Assertive else LiveRegionMode.Polite }
+            .semantics { liveRegion = if (message.kind.staysUntilReplaced) LiveRegionMode.Assertive else LiveRegionMode.Polite }
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(26.dp).clip(CircleShape).background(badge)) {

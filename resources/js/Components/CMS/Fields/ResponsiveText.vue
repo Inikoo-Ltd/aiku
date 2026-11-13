@@ -160,7 +160,7 @@ watch(
 
     const current = editor.getHTML()
     if (current !== val) {
-      editor.commands.setContent(val || '')
+      editor.commands.setContent(val || '', { emitUpdate: false })
     }
   },
   { immediate: true }
@@ -195,7 +195,7 @@ watch(
       <Editor ref="editorRef" v-model="activeText" :uploadImageRoute="props.uploadRoutes">
         <template #editor-content="{ editor, onEditorClick }">
           <div
-            class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm transition-all duration-200 focus-within:border-blue-400"
+            class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm transition-all duration-200 focus-within:border-[var(--app-accent)]"
             :style="{ minHeight: `${props.rows * 24}px` }">
             <EditorContent :editor="editor"  @click.stop="onEditorClick" class="editor-content" />
           </div>

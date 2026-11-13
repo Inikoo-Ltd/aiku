@@ -32,13 +32,13 @@ class GoogleMerchantClient
         $encryptedToken = Arr::get($shop->settings, 'google_merchant.refresh_token');
         $merchantId     = self::merchantId($shop);
 
-        if (blank($encryptedToken) || $merchantId === '' || blank(config('services.google.client_id'))) {
+        if (blank($encryptedToken) || $merchantId === '' || blank(config('services.google_merchant.client_id'))) {
             return null;
         }
 
         $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
-            'client_id'     => config('services.google.client_id'),
-            'client_secret' => config('services.google.client_secret'),
+            'client_id'     => config('services.google_merchant.client_id'),
+            'client_secret' => config('services.google_merchant.client_secret'),
             'refresh_token' => Crypt::decryptString($encryptedToken),
             'grant_type'    => 'refresh_token',
         ]);
@@ -62,7 +62,7 @@ class GoogleMerchantClient
 
     public static function authUrl(Shop $shop): string
     {
-        if (blank(config('services.google.client_id'))) {
+        if (blank(config('services.google_merchant.client_id'))) {
             return '';
         }
 
@@ -155,8 +155,8 @@ class GoogleMerchantClient
     {
         $client = new Client();
         $client->setApplicationName('Aiku Google Merchant Center');
-        $client->setClientId((string) config('services.google.client_id'));
-        $client->setClientSecret((string) config('services.google.client_secret'));
+        $client->setClientId((string) config('services.google_merchant.client_id'));
+        $client->setClientSecret((string) config('services.google_merchant.client_secret'));
         $client->addScope(self::SCOPE);
 
         return $client;

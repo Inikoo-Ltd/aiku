@@ -50,10 +50,52 @@ fun QuantityStepper(
     helper: String? = null,
     isError: Boolean = false,
 ) {
+    StepperLayout(
+        shownValue = if (showMax && max != null) "$value / $max" else value.toString(),
+        canDecrease = value > min,
+        canIncrease = max == null || value < max,
+        onDecrease = { onValueChange(value - 1) },
+        onIncrease = { onValueChange(value + 1) },
+        modifier = modifier,
+        helper = helper,
+        isError = isError,
+    )
+}
+
+@Composable
+fun QuantityStepper(
+    value: Double,
+    valueText: String,
+    onValueChange: (Double) -> Unit,
+    min: Double,
+    max: Double,
+    modifier: Modifier = Modifier,
+    helper: String? = null,
+) {
+    StepperLayout(
+        shownValue = valueText,
+        canDecrease = value > min,
+        canIncrease = value < max,
+        onDecrease = { onValueChange((value - 1).coerceIn(min, max)) },
+        onIncrease = { onValueChange((value + 1).coerceIn(min, max)) },
+        modifier = modifier,
+        helper = helper,
+        isError = false,
+    )
+}
+
+@Composable
+private fun StepperLayout(
+    shownValue: String,
+    canDecrease: Boolean,
+    canIncrease: Boolean,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+    modifier: Modifier,
+    helper: String?,
+    isError: Boolean,
+) {
     val colors = LocalAikuColors.current
-    val canDecrease = value > min
-    val canIncrease = max == null || value < max
-    val shownValue = if (showMax && max != null) "$value / $max" else value.toString()
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(
@@ -70,7 +112,7 @@ fun QuantityStepper(
                 symbol = "−",
                 description = stringResource(R.string.stepper_decrease),
                 isEnabled = canDecrease,
-                onClick = { onValueChange(value - 1) },
+                onClick = onDecrease,
             )
             Box(modifier = Modifier.width(1.dp).fillMaxHeight().background(colors.border))
             Text(
@@ -86,7 +128,7 @@ fun QuantityStepper(
                 symbol = "+",
                 description = stringResource(R.string.stepper_increase),
                 isEnabled = canIncrease,
-                onClick = { onValueChange(value + 1) },
+                onClick = onIncrease,
             )
         }
         if (helper != null) {

@@ -26,6 +26,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -251,6 +252,8 @@ fun AikuBottomSheet(
     @DrawableRes icon: Int? = null,
     context: String? = null,
     headerAction: (@Composable () -> Unit)? = null,
+    pinnedTop: (@Composable ColumnScope.() -> Unit)? = null,
+    footer: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = LocalAikuColors.current
@@ -272,29 +275,45 @@ fun AikuBottomSheet(
             )
         },
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (icon != null) {
-                    Icon(painter = painterResource(icon), contentDescription = null, tint = colors.link, modifier = Modifier.size(22.dp))
-                }
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.text)
-                    if (subtitle != null) {
-                        Text(text = subtitle, fontSize = 14.sp, color = colors.textTertiary)
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (icon != null) {
+                        Icon(painter = painterResource(icon), contentDescription = null, tint = colors.link, modifier = Modifier.size(22.dp))
                     }
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = colors.text)
+                        if (subtitle != null) {
+                            Text(text = subtitle, fontSize = 14.sp, color = colors.textTertiary)
+                        }
+                    }
+                    if (context != null) {
+                        Text(text = context, fontSize = 13.sp, color = colors.textTertiary, maxLines = 1)
+                    }
+                    headerAction?.invoke()
                 }
-                if (context != null) {
-                    Text(text = context, fontSize = 13.sp, color = colors.textTertiary, maxLines = 1)
-                }
-                headerAction?.invoke()
+                pinnedTop?.invoke(this)
             }
-            content()
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = if (footer == null) 20.dp else 14.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                content = content,
+            )
+            if (footer != null) {
+                HorizontalDivider(thickness = 1.dp, color = colors.border)
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    content = footer,
+                )
+            }
         }
     }
 }

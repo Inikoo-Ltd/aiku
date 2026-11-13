@@ -57,7 +57,7 @@ class OpenStaffContextConversation
         ];
     }
 
-    private function contextCanBeViewedBy(DeliveryNote|Order|PickingSession $context, User $user): bool
+    public function contextCanBeViewedBy(DeliveryNote|Order|PickingSession $context, User $user): bool
     {
         if ($context instanceof DeliveryNote) {
             return $context->canBeViewedBy($user);

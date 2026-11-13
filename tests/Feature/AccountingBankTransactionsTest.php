@@ -551,6 +551,7 @@ test('bank lines for orders staff already paid by hand leave the review queue, a
     $second    = bankMatchingOrder(createCustomer($this->shop), 60);
     $unpaid    = bankMatchingOrder(createCustomer($this->shop), 80);
     $rounded   = bankMatchingOrder(createCustomer($this->shop), 100.78);
+    $partly    = bankMatchingOrder(createCustomer($this->shop), 100);
 
     $payByHand($currency, 300);
     $payByHand($cancelled, 55);
@@ -559,17 +560,18 @@ test('bank lines for orders staff already paid by hand leave the review queue, a
     $payByHand($second, 60);
 
     $lines = [
-        'later'     => $line('h1', $later->reference, 120),
+        'later'     => $line('h1', $later->reference, 101.50),
         'currency'  => $line('h2', $currency->reference, 26.50, Currency::where('id', '!=', $this->shop->currency_id)->value('id')),
         'cancelled' => $line('h3', $cancelled->reference, 55),
         'several'   => $line('h4', $first->reference.' '.$second->reference, 100),
         'unpaid'    => $line('h5', $unpaid->reference, 80),
         'rounded'   => $line('h6', $rounded->reference, 101),
+        'short'     => $line('h7', $partly->reference, 50),
     ];
     MatchBankTransactions::run($bankConnection);
 
     expect($lines['later']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
-        ->and($lines['currency']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
+        ->and($lines['currency']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
         ->and($lines['cancelled']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
         ->and($lines['several']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
         ->and($lines['unpaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::MATCHED)
@@ -578,11 +580,13 @@ test('bank lines for orders staff already paid by hand leave the review queue, a
 
     $lines['unpaid']->update(['match_state' => BankTransactionMatchStateEnum::REVIEW]);
     $payByHand($later, 100.78);
+    $payByHand($partly, 100);
 
     expect(MatchBankTransactions::run($bankConnection))->toBe(['already_paid' => 1])
         ->and($lines['later']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::ALREADY_PAID)
         ->and($lines['later']->match_data['reason'])->toBe('order already settled')
-        ->and($lines['unpaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW);
+        ->and($lines['unpaid']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW)
+        ->and($lines['short']->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::REVIEW);
 });
 
 test('invoicing an order paid with an absorbed bank fee leaves its stored pay status true to its payments', function () {
@@ -708,6 +712,9 @@ test('staff record a bank payment from the review queue on the order they name, 
     $suggested->update(['order_id' => $twinOther->id]);
     PayBankTransactionToOrder::make()->handle($suggested, ['order_reference' => $twin->reference]);
     expect($suggested->refresh()->order_id)->toBe($twinOther->id);
+    $picked = $line('q10', 20);
+    PayBankTransactionToOrder::make()->handle($picked, ['order_id' => $twin->id, 'order_reference' => $twin->reference]);
+    expect($picked->refresh()->order_id)->toBe($twin->id);
 
     $payout = $line('q2', 900);
     actingAs(createAdminGuest($this->organisation->group)->getUser());
@@ -721,6 +728,29 @@ test('staff record a bank payment from the review queue on the order they name, 
     post(route('grp.models.org.bank_transaction.restore', [$this->organisation->id, $payout->id]))->assertRedirect();
     expect($payout->refresh()->match_state)->toBe(BankTransactionMatchStateEnum::UNMATCHED);
     $payout->update(['match_state' => BankTransactionMatchStateEnum::DISMISSED]);
+
+    $owing = bankMatchingOrder(createCustomer($this->shop), 70);
+    $owing->customer->updateQuietly(['name' => 'Natursens Quokka d.o.o.']);
+    $settledOrder = bankMatchingOrder($owing->customer, 40);
+    $settledOrder->updateQuietly(['payment_amount' => 40]);
+    $cancelledOrder = bankMatchingOrder($owing->customer, 40);
+    $cancelledOrder->updateQuietly(['state' => OrderStateEnum::CANCELLED]);
+
+    $candidates = fn (string $search) => get(route('grp.json.bank_transaction.order_candidates', [$this->organisation->id, $payout->id, 'search' => $search]))
+        ->assertOk()
+        ->json();
+
+    $byName = collect($candidates('NATURSENS QUOKKA D.O.O.'))->pluck('id');
+    expect($byName)->toContain($owing->id)
+        ->and($byName)->not->toContain($settledOrder->id)
+        ->and($byName)->not->toContain($cancelledOrder->id)
+        ->and(collect($candidates($owing->reference))->pluck('id')->all())->toBe([$owing->id])
+        ->and($candidates('Zzqx Nobody'))->toBe([])
+        ->and($candidates($owing->reference)[0]['owed'])->toBe(70)
+        ->and($candidates('N'))->toBe([]);
+
+    $otherCurrencyLine = $line('q11', 70, Currency::where('id', '!=', $order->currency_id)->value('id'));
+    expect(get(route('grp.json.bank_transaction.order_candidates', [$this->organisation->id, $otherCurrencyLine->id, 'search' => $owing->reference]))->json())->toBe([]);
 
     $toReview = $line('q3', 12);
     $this->artisan('bank-transactions:match', ['bankConnection' => $bankConnection->id])->run();

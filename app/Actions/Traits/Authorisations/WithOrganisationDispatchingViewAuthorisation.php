@@ -9,6 +9,8 @@
 namespace App\Actions\Traits\Authorisations;
 
 use App\Enums\SysAdmin\Authorisation\WarehousePermissionsEnum;
+use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithOrganisationDispatchingViewAuthorisation
@@ -19,6 +21,11 @@ trait WithOrganisationDispatchingViewAuthorisation
             return true;
         }
 
-        return $request->user()->authTo(WarehousePermissionsEnum::getDispatchingViewPermissionNames($this->organisation));
+        return self::canViewOrganisationDispatching($request->user(), $this->organisation);
+    }
+
+    public static function canViewOrganisationDispatching(User $user, Organisation $organisation): bool
+    {
+        return $user->authTo(WarehousePermissionsEnum::getDispatchingViewPermissionNames($organisation));
     }
 }

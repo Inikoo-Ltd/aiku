@@ -70,6 +70,7 @@ use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -334,9 +335,7 @@ class ShowDeliveryNote extends OrgAction
             return $this->getTakeOverActions($deliveryNote);
         }
 
-        $hasUnHandledItems = DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
-            ->where('is_handled', false)
-            ->exists();
+        $hasUnHandledItems = static::hasUnhandledItems($deliveryNote);
 
         if ($deliveryNote->hasIncompleteSets()) {
             return [$this->getPutBackIncompleteSetsAction($deliveryNote)];
@@ -368,6 +367,13 @@ class ShowDeliveryNote extends OrgAction
 
 
         return $actions;
+    }
+
+    public static function hasUnhandledItems(DeliveryNote $deliveryNote): bool
+    {
+        return DeliveryNoteItem::where('delivery_note_id', $deliveryNote->id)
+            ->where('is_handled', false)
+            ->exists();
     }
 
     /**
@@ -419,6 +425,24 @@ class ShowDeliveryNote extends OrgAction
         ]);
     }
 
+    public static function canBeCancelledInWarehouse(DeliveryNote $deliveryNote, User $user): bool
+    {
+        if (!$deliveryNote->canBeCancelledBy($user)) {
+            return false;
+        }
+
+        if (in_array($deliveryNote->state, [
+            DeliveryNoteStateEnum::CANCELLED,
+            DeliveryNoteStateEnum::DISPATCHED,
+            DeliveryNoteStateEnum::FINALISED
+        ])) {
+            return false;
+        }
+
+        // Disable Faire Cancel if Order. Allow if Replacement (INI:1503)
+        return !($deliveryNote->shop->engine == ShopEngineEnum::FAIRE && $deliveryNote->type === DeliveryNoteTypeEnum::ORDER);
+    }
+
     public function wrappedActions(DeliveryNote $deliveryNote): array
     {
         $isEditable = false;
@@ -427,22 +451,7 @@ class ShowDeliveryNote extends OrgAction
         }
 
 
-        $showCancel = $deliveryNote->canBeCancelledBy(request()->user());
-
-        if (in_array($deliveryNote->state, [
-            DeliveryNoteStateEnum::CANCELLED,
-            DeliveryNoteStateEnum::DISPATCHED,
-            DeliveryNoteStateEnum::FINALISED
-        ])) {
-            $showCancel = false;
-        }
-
-        if ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE) {
-            // Disable Faire Cancel if Order. Allow if Replacement (INI:1503)
-            if ($deliveryNote->type === DeliveryNoteTypeEnum::ORDER) {
-                $showCancel = false;
-            }
-        }
+        $showCancel = static::canBeCancelledInWarehouse($deliveryNote, request()->user());
 
         $actions = [];
         if ($showCancel && $isEditable) {
@@ -542,12 +551,17 @@ class ShowDeliveryNote extends OrgAction
         return $actions;
     }
 
-    public function getBackToPickingAction(DeliveryNote $deliveryNote): ?array
+    public static function canGoBackToPicking(DeliveryNote $deliveryNote, ?User $user): bool
     {
-        if (!request()->user()?->authTo([
+        return (bool)$user?->authTo([
             "supervisor-dispatching.$deliveryNote->warehouse_id",
             "org-admin.$deliveryNote->organisation_id",
-        ])) {
+        ]);
+    }
+
+    public function getBackToPickingAction(DeliveryNote $deliveryNote): ?array
+    {
+        if (!static::canGoBackToPicking($deliveryNote, request()->user())) {
             return null;
         }
 
@@ -758,25 +772,14 @@ class ShowDeliveryNote extends OrgAction
      */
     private function disableBlockedActions(DeliveryNote $deliveryNote, array $actions): array
     {
-        if ($deliveryNote->hasUnprintedLeaflets()) {
-            $blocked = [
-                'grp.models.delivery_note.state.packing',
-                'grp.models.delivery_note.state.packed',
-                'grp.models.delivery_note.state.dispatched',
-                'grp.models.delivery_note.state.finalise_and_dispatch',
-            ];
-            $reason = __('Print every insert before continuing');
-        } elseif ($deliveryNote->hasNothingPicked()) {
-            $blocked = [
-                'grp.models.delivery_note.state.packing',
-                'grp.models.delivery_note.state.finalised',
-                'grp.models.delivery_note.state.finalise_and_dispatch',
-                'grp.models.order.generate_invoice',
-            ];
-            $reason = DeliveryNote::nothingPickedMessage();
-        } else {
+        $blockedActions = static::getBlockedActions($deliveryNote);
+
+        if ($blockedActions === null) {
             return $actions;
         }
+
+        $blocked = $blockedActions['routes'];
+        $reason  = $blockedActions['reason'];
 
         return array_map(function ($action) use ($blocked, $reason) {
             if (!is_array($action) || !in_array(Arr::get($action, 'route.name'), $blocked, true)) {
@@ -785,6 +788,38 @@ class ShowDeliveryNote extends OrgAction
 
             return array_merge($action, ['disabled' => true, 'tooltip' => $reason]);
         }, $actions);
+    }
+
+    /**
+     * @return array{routes: array<int, string>, reason: string}|null
+     */
+    public static function getBlockedActions(DeliveryNote $deliveryNote): ?array
+    {
+        if ($deliveryNote->hasUnprintedLeaflets()) {
+            return [
+                'routes' => [
+                    'grp.models.delivery_note.state.packing',
+                    'grp.models.delivery_note.state.packed',
+                    'grp.models.delivery_note.state.dispatched',
+                    'grp.models.delivery_note.state.finalise_and_dispatch',
+                ],
+                'reason' => __('Print every insert before continuing'),
+            ];
+        }
+
+        if ($deliveryNote->hasNothingPicked()) {
+            return [
+                'routes' => [
+                    'grp.models.delivery_note.state.packing',
+                    'grp.models.delivery_note.state.finalised',
+                    'grp.models.delivery_note.state.finalise_and_dispatch',
+                    'grp.models.order.generate_invoice',
+                ],
+                'reason' => DeliveryNote::nothingPickedMessage(),
+            ];
+        }
+
+        return null;
     }
 
     public function getPackedActions(DeliveryNote $deliveryNote): array
@@ -945,6 +980,40 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    /**
+     * @return array{label: string, name: string, parameters: array{deliveryNote: int}}|null
+     */
+    public function getExternalShipmentRoute(DeliveryNote $deliveryNote): ?array
+    {
+        if (!$deliveryNote->is_shipping_by_external) {
+            return null;
+        }
+
+        $order = $deliveryNote->orders->first();
+
+        if ($order->shop->engine == ShopEngineEnum::FAIRE) {
+            return [
+                'label'      => __('Get shipment from Faire'),
+                'name'       => 'grp.models.delivery_note.shipment.store_faire',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ];
+        }
+
+        if ($order->platform?->type == PlatformTypeEnum::TIKTOK) {
+            return [
+                'label'      => __('Get shipment from Tiktok'),
+                'name'       => 'grp.models.delivery_note.shipment.store_tiktok',
+                'parameters' => [
+                    'deliveryNote' => $deliveryNote->id
+                ]
+            ];
+        }
+
+        return null;
+    }
+
     public function getBoxStats(DeliveryNote $deliveryNote): array
     {
         $estWeight     = ($deliveryNote->estimated_weight ?? 0) / 1000;
@@ -952,28 +1021,10 @@ class ShowDeliveryNote extends OrgAction
         $pickingTotals = $this->getPickingTotals($deliveryNote);
 
         $additionalShipmentRoutes = [];
-        if ($deliveryNote->is_shipping_by_external) {
-            if ($order->shop->engine == ShopEngineEnum::FAIRE) {
-                $additionalShipmentRoutes = [
-                    'get_external_shipment_route' => [
-                        'label'      => __('Get shipment from Faire'),
-                        'name'       => 'grp.models.delivery_note.shipment.store_faire',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-                ];
-            } elseif ($order->platform?->type == PlatformTypeEnum::TIKTOK) {
-                $additionalShipmentRoutes = [
-                    'get_external_shipment_route' => [
-                        'label'      => __('Get shipment from Tiktok'),
-                        'name'       => 'grp.models.delivery_note.shipment.store_tiktok',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ]
-                ];
-            }
+        if ($externalShipmentRoute = $this->getExternalShipmentRoute($deliveryNote)) {
+            $additionalShipmentRoutes = [
+                'get_external_shipment_route' => $externalShipmentRoute,
+            ];
         }
 
         if (!$additionalShipmentRoutes) {
@@ -1216,20 +1267,30 @@ class ShowDeliveryNote extends OrgAction
         ], array_keys($definitions));
     }
 
-    public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
+    public function isEditableInWarehouse(DeliveryNote $deliveryNote, User $user): bool
     {
-        $isEditable = false;
-        if ($this->parent instanceof Warehouse && !$deliveryNote->isLockedInAurora() && $deliveryNote->canBeWorkedOnBy($request->user())) {
-            $isEditable = true;
-        }
+        return !$deliveryNote->isLockedInAurora() && $deliveryNote->canBeWorkedOnBy($user);
+    }
 
-        $allowAction = $isEditable && $this->canHandleDeliveryNote($deliveryNote);
+    public function getAuroraNotice(DeliveryNote $deliveryNote): ?string
+    {
+        return $deliveryNote->isLockedInAurora() ? __('This delivery note belongs to an order submitted in Aurora. Pick, pack and dispatch it in Aurora, not here.') : null;
+    }
 
-        $this->allowAction = $allowAction;
+    public function getReadOnlyNotice(DeliveryNote $deliveryNote, bool $isEditable): ?string
+    {
+        return !$deliveryNote->isLockedInAurora()
+            && !$isEditable
+            && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED], true)
+            ? __('You can see this delivery note but not pick, pack or dispatch it: that needs a dispatching, fulfilment or returns position in this warehouse.')
+            : null;
+    }
 
-        $lockedInAurora = $deliveryNote->isLockedInAurora();
-        $actions        = $lockedInAurora ? [] : $this->getActions($deliveryNote, $request);
-
+    /**
+     * @return array{text: string, picking_sessions?: array}|null
+     */
+    public function getWarning(DeliveryNote $deliveryNote): ?array
+    {
         $warning = null;
 
         if ($deliveryNote->pickingSessions && $deliveryNote->pickingSessions->isNotEmpty()) {
@@ -1268,6 +1329,22 @@ class ShowDeliveryNote extends OrgAction
                 'text' => __('Shipped by the sales channel: waiting for customer service to add the carrier label before this can be dispatched.'),
             ];
         }
+
+        return $warning;
+    }
+
+    public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
+    {
+        $isEditable = $this->parent instanceof Warehouse && $this->isEditableInWarehouse($deliveryNote, $request->user());
+
+        $allowAction = $isEditable && $this->canHandleDeliveryNote($deliveryNote);
+
+        $this->allowAction = $allowAction;
+
+        $lockedInAurora = $deliveryNote->isLockedInAurora();
+        $actions        = $lockedInAurora ? [] : $this->getActions($deliveryNote, $request);
+
+        $warning = $this->getWarning($deliveryNote);
 
         $model = __('Delivery Note');
         if ($deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT) {
@@ -1414,13 +1491,8 @@ class ShowDeliveryNote extends OrgAction
                 'wrapped_actions' => $lockedInAurora ? [] : $this->wrappedActions($deliveryNote),
             ],
             'warning'       => $warning,
-            'aurora_notice' => $lockedInAurora ? __('This delivery note belongs to an order submitted in Aurora. Pick, pack and dispatch it in Aurora, not here.') : null,
-            'read_only_notice' => $this->parent instanceof Warehouse
-                && !$lockedInAurora
-                && !$isEditable
-                && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::DISPATCHED, DeliveryNoteStateEnum::CANCELLED], true)
-                ? __('You can see this delivery note but not pick, pack or dispatch it: that needs a dispatching, fulfilment or returns position in this warehouse.')
-                : null,
+            'aurora_notice' => $this->getAuroraNotice($deliveryNote),
+            'read_only_notice' => $this->parent instanceof Warehouse ? $this->getReadOnlyNotice($deliveryNote, $isEditable) : null,
             'is_editable'   => $isEditable,
             'packaging'     => $this->getDeliveryNotePackagingProp($deliveryNote),
             'inserts'       => $this->getDeliveryNoteInsertsProp($deliveryNote),
@@ -1519,7 +1591,7 @@ class ShowDeliveryNote extends OrgAction
             'is_faire_order' => ($deliveryNote->shop->engine == ShopEngineEnum::FAIRE),
 
             'allow_waiting'               => $allowWaiting,
-            'allow_picker_set_not_picked' => !$allowWaiting || (data_get($this->organisation->settings, 'orders.allow_picker_set_not_picked', false)),
+            'allow_picker_set_not_picked' => static::allowsPickerToSetNotPicked($this->organisation),
             'can_cancel_items'            => request()->user() instanceof \App\Models\SysAdmin\User && $deliveryNote->itemsCanBeCancelledBy(request()->user())
                 && $deliveryNote->deliveryNoteItems()->whereRaw('COALESCE(quantity_not_picked, 0) < quantity_required')->count() > 1,
             'showChangePickerPacker'      => $showChangePickerPacker,
@@ -1606,6 +1678,11 @@ class ShowDeliveryNote extends OrgAction
         $inertiaResponse->table(IndexDispatchedEmailsInOrder::make()->tableStructure(DeliveryNoteTabsEnum::DISPATCHED_EMAILS->value));
 
         return $inertiaResponse;
+    }
+
+    public static function allowsPickerToSetNotPicked(Organisation $organisation): bool
+    {
+        return !data_get($organisation->settings, 'orders.allow_waiting', false) || data_get($organisation->settings, 'orders.allow_picker_set_not_picked', false);
     }
 
     public function getItems(DeliveryNote $deliveryNote): array

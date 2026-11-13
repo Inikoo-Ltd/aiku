@@ -24,7 +24,7 @@ class OkHttpMobileApi(
     private val client: OkHttpClient,
     baseUrl: String,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : AuthApi, WarehouseApi, ClockingApi, HrApi {
+) : AuthApi, WarehouseApi, ClockingApi, HrApi, GoodsOutApi, PickingSessionApi, StaffChatApi {
 
     private val apiBaseUrl = baseUrl.trimEnd('/')
     private val mobileApiUrl = "$apiBaseUrl/app/api/mobile"
@@ -213,11 +213,141 @@ class OkHttpMobileApi(
             ?: ClockingResult.Unreachable
     }
 
+    override suspend fun deliveryNotes(token: String, warehouseId: Long, query: DeliveryNoteQuery): GoodsOutResult<DeliveryNotePage> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/delivery-notes", GoodsOutResponses.deliveryNotesParameters(query)), token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseDeliveryNotes(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun deliveryNoteCounts(token: String, warehouseId: Long, picker: PickerFilter?): GoodsOutResult<DeliveryNoteCounts> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/delivery-notes/counts", GoodsOutResponses.countsParameters(picker)), token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseCounts(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun deliveryNote(token: String, deliveryNoteId: Long): GoodsOutResult<DeliveryNote> =
+        execute(get("$mobileApiUrl/delivery-notes/$deliveryNoteId", token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseDeliveryNote(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun scan(token: String, warehouseId: Long, code: String): GoodsOutResult<ScanLookup> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/scan", listOf("code" to code)), token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseScan(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun write(token: String, deliveryNoteId: Long, write: DeliveryNoteWrite): GoodsOutResult<NoteActionOutcome> =
+        execute(writeRequest("$mobileApiUrl/delivery-notes/$deliveryNoteId", GoodsOutResponses.writeRequest(write), token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseWrite(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    private fun writeRequest(baseUrl: String, request: WriteRequest, token: String): Request {
+        val builder = Request.Builder()
+            .url("$baseUrl/${request.path}")
+            .header("Authorization", "Bearer $token")
+        return when (request.method) {
+            WriteMethod.Post -> builder.post((request.body?.toString() ?: "{}").toRequestBody(jsonMediaType))
+            WriteMethod.Delete -> builder.delete()
+        }.build()
+    }
+
+    override suspend fun pickingSessions(token: String, warehouseId: Long, state: PickingSessionState?, page: Int): GoodsOutResult<PickingSessionPage> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/picking-sessions", PickingSessionResponses.listParameters(state, page)), token))
+            ?.let { (statusCode, responseBody) -> PickingSessionResponses.parseList(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun pickingSession(token: String, sessionId: Long): GoodsOutResult<PickingSession> =
+        execute(get("$mobileApiUrl/picking-sessions/$sessionId", token))
+            ?.let { (statusCode, responseBody) -> PickingSessionResponses.parseSession(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun createPickingSession(token: String, warehouseId: Long, deliveryNoteIds: List<Long>): GoodsOutResult<PickingSession> =
+        execute(post("$mobileApiUrl/warehouses/$warehouseId/picking-sessions", PickingSessionResponses.createBody(deliveryNoteIds).toString(), bearerToken = token))
+            ?.let { (statusCode, responseBody) -> PickingSessionResponses.parseSession(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun writeSession(token: String, sessionId: Long, write: PickingSessionWrite): GoodsOutResult<SessionActionOutcome> =
+        execute(writeRequest("$mobileApiUrl/picking-sessions/$sessionId", PickingSessionResponses.writeRequest(write), token))
+            ?.let { (statusCode, responseBody) -> PickingSessionResponses.parseWrite(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun sessionScanPick(token: String, sessionId: Long, request: ScanPickRequest): GoodsOutResult<SessionScanPickOutcome> =
+        execute(post("$mobileApiUrl/picking-sessions/$sessionId/scan-pick", PickingSessionResponses.scanPickBody(request).toString(), bearerToken = token))
+            ?.let { (statusCode, responseBody) -> PickingSessionResponses.parseScanPick(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun sessionScanPack(token: String, sessionId: Long, request: ScanPackRequest): GoodsOutResult<SessionScanPackOutcome> =
+        execute(post("$mobileApiUrl/picking-sessions/$sessionId/scan-pack", PickingSessionResponses.scanPackBody(request).toString(), bearerToken = token))
+            ?.let { (statusCode, responseBody) -> PickingSessionResponses.parseScanPack(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun dispatchPersonnel(token: String, warehouseId: Long, role: DispatchRole): GoodsOutResult<List<DispatchPerson>> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/dispatch-personnel", PickingSessionResponses.personnelParameters(role)), token))
+            ?.let { (statusCode, responseBody) -> PickingSessionResponses.parsePersonnel(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun openChat(token: String, kind: ChatContextKind, contextId: Long): GoodsOutResult<ChatConversation> =
+        execute(post("$mobileApiUrl/${StaffChatResponses.openPath(kind, contextId)}", body = "{}", bearerToken = token))
+            ?.let { (statusCode, responseBody) -> StaffChatResponses.parseConversation(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun chatMessages(token: String, ulid: String, query: ChatPageQuery): GoodsOutResult<ChatMessagePage> =
+        execute(get(urlWith("$mobileApiUrl/chat/$ulid/messages", StaffChatResponses.messagesParameters(query)), token))
+            ?.let { (statusCode, responseBody) -> StaffChatResponses.parseMessages(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun sendChatMessage(token: String, ulid: String, body: String): GoodsOutResult<ChatMessage> =
+        execute(post("$mobileApiUrl/chat/$ulid/messages", StaffChatResponses.sendBody(body).toString(), bearerToken = token))
+            ?.let { (statusCode, responseBody) -> StaffChatResponses.parseSent(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun scanPick(token: String, deliveryNoteId: Long, request: ScanPickRequest): GoodsOutResult<ScanPickOutcome> =
+        execute(post("$mobileApiUrl/delivery-notes/$deliveryNoteId/scan-pick", GoodsOutResponses.scanPickBody(request).toString(), bearerToken = token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseScanPick(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun trolleys(token: String, warehouseId: Long, availableOnly: Boolean): GoodsOutResult<List<Trolley>> =
+        execute(get(urlWith("$mobileApiUrl/warehouses/$warehouseId/trolleys", GoodsOutResponses.trolleysParameters(availableOnly)), token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseTrolleys(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun pickedBays(token: String, warehouseId: Long): GoodsOutResult<List<PickedBay>> =
+        execute(get("$mobileApiUrl/warehouses/$warehouseId/picked-bays", token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parsePickedBays(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun pickers(token: String, warehouseId: Long): GoodsOutResult<List<Picker>> =
+        execute(get("$mobileApiUrl/warehouses/$warehouseId/pickers", token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parsePickers(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun scanPack(token: String, deliveryNoteId: Long, request: ScanPackRequest): GoodsOutResult<ScanPackOutcome> =
+        execute(post("$mobileApiUrl/delivery-notes/$deliveryNoteId/scan-pack", GoodsOutResponses.scanPackBody(request).toString(), bearerToken = token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseScanPack(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun shippers(token: String, deliveryNoteId: Long): GoodsOutResult<ShipperList> =
+        execute(get("$mobileApiUrl/delivery-notes/$deliveryNoteId/shippers", token))
+            ?.let { (statusCode, responseBody) -> GoodsOutResponses.parseShippers(statusCode, responseBody) }
+            ?: GoodsOutResult.Unreachable
+
+    override suspend fun downloadDocument(token: String, url: String, target: File): AttachmentDownload {
+        val documentUrl = onApiHost(url) ?: return AttachmentDownload.Refused(message = "")
+        return downloadTo(get(documentUrl, token), target)
+    }
+
+    override suspend fun downloadInsertPdf(token: String, deliveryNoteId: Long, leafletId: Long, target: File): AttachmentDownload =
+        downloadTo(post("$mobileApiUrl/delivery-notes/$deliveryNoteId/${GoodsOutResponses.insertPdfPath(leafletId)}", body = "{}", bearerToken = token), target)
+
+    private fun urlWith(path: String, parameters: List<Pair<String, String>>): String = path.toHttpUrl().newBuilder()
+        .apply { parameters.forEach { (name, value) -> addQueryParameter(name, value) } }
+        .build()
+        .toString()
+
     override suspend fun downloadAttachment(token: String, url: String, target: File): AttachmentDownload {
         val attachmentUrl = onApiHost(url) ?: return AttachmentDownload.Refused(message = "")
-        val request = get(attachmentUrl, token)
+        return downloadTo(get(attachmentUrl, token), target)
+    }
 
-        return withContext(ioDispatcher) {
+    private suspend fun downloadTo(request: Request, target: File): AttachmentDownload =
+        withContext(ioDispatcher) {
             try {
                 client.newCall(request).execute().use { response ->
                     if (response.code == HTTP_OK) {
@@ -229,11 +359,10 @@ class OkHttpMobileApi(
                     }
                 }
             } catch (exception: IOException) {
-                Log.w(LOG_TAG, "GET ${request.url} failed", exception)
+                Log.w(LOG_TAG, "${request.method} ${request.url} failed", exception)
                 AttachmentDownload.Unreachable
             }
         }
-    }
 
     private fun pagedUrl(path: String, page: Int, perPage: Int): String = "$hrApiUrl/$path".toHttpUrl().newBuilder()
         .addQueryParameter("page", page.toString())
