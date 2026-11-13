@@ -747,6 +747,7 @@ use App\Actions\SupplyChain\DepositRequest\UnapproveAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\RejectAgentMoneyRequest;
 use App\Actions\SupplyChain\DepositRequest\PayAgentMoneyRequest;
 use App\Actions\SupplyChain\Supplier\UpdateSupplierAdvancePercentage;
+use App\Actions\SupplyChain\Supplier\UpdateSupplierAgentFeePercentage;
 use App\Actions\GoodsIn\StockDelivery\AcknowledgeStockDeliveriesCostingReminder;
 use App\Actions\GoodsIn\StockDelivery\ApplyStockDeliveryDeposit;
 use App\Actions\GoodsIn\StockDelivery\DeleteStockDeliveryDepositApplication;
@@ -2003,6 +2004,7 @@ Route::patch('deposit-request/{depositRequest:id}/reject', RejectAgentMoneyReque
 Route::post('deposit-request/{depositRequest:id}/pay', PayAgentMoneyRequest::class)->name('deposit_request.pay');
 Route::post('deposit-request/{depositRequest:id}/remind', RemindAgentMoneyRequest::class)->name('deposit_request.remind');
 Route::patch('supplier/{supplier:id}/advance-percentage', UpdateSupplierAdvancePercentage::class)->name('supplier.advance_percentage.update');
+Route::patch('supplier/{supplier:id}/agent-fee', UpdateSupplierAgentFeePercentage::class)->name('supplier.agent_fee.update');
 Route::patch('procurement-note/{procurementNote:id}', [UpdateProcurementNote::class, 'update'])->name('procurement_note.update');
 Route::post('supplier/{supplier:id}/agreed-term', [StoreSupplierAgreedTerm::class, 'inSupplier'])->name('supplier.agreed_term.store');
 Route::post('supplier-product/{supplierProduct:id}/agreed-term', [StoreSupplierAgreedTerm::class, 'inSupplierProduct'])->name('supplier-product.agreed_term.store');

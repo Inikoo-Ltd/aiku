@@ -48,6 +48,8 @@ const props = defineProps<{
         revisit_after_save?: boolean
         information?: string  // Tooltip on an info icon beside the label
         help?: { title: string, items: string[], note?: string }  // (?) beside the label opening a dialog
+        notes_title?: string
+        notes?: string[]
         warning?: string      // Amber box under the label, for caveats the label cannot carry
         link?: { label: string, route: routeType }  // Link under the field, to where its value is changed
         information_warning?: { description: string }[]
@@ -265,6 +267,13 @@ const needsSaveConfirmation = computed(() => {
                     <Link v-if="fieldData.link" :href="route(fieldData.link.route.name, fieldData.link.route.parameters)" class="mt-1 inline-block text-xs text-gray-500 underline hover:text-gray-700">
                         {{ fieldData.link.label }}
                     </Link>
+
+                    <div v-if="fieldData.notes?.length" class="mt-2 text-xs text-gray-500">
+                        <div v-if="fieldData.notes_title" class="font-medium text-gray-600">{{ fieldData.notes_title }}</div>
+                        <ul class="mt-0.5 space-y-0.5">
+                            <li v-for="(note, index) in fieldData.notes" :key="index">{{ note }}</li>
+                        </ul>
+                    </div>
 
                     <!-- Information Warning -->
                     <div v-if="fieldData.information_warning?.length" class="mt-4 flex flex-col gap-1">

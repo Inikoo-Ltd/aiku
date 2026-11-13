@@ -6,6 +6,8 @@ use App\Actions\SupplyChain\Supplier\WithSupplierPacking;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Actions\SupplyChain\AgentInvoice\SyncAgentInvoiceChargesFromLedger;
+use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
@@ -276,6 +278,43 @@ trait WithSupplierEditFields
                     ],
                 ] : []),
             ]
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function supplierAgentFeeSection(Supplier $supplier): array
+    {
+        $clientFees = OrgAgent::where('agent_id', $supplier->agent_id)
+            ->join('organisations', 'organisations.id', '=', 'org_agents.organisation_id')
+            ->orderBy('organisations.name')
+            ->get(['organisations.name', 'org_agents.agent_fee_percentage'])
+            ->map(fn (OrgAgent $orgAgent) => $orgAgent->agent_fee_percentage !== null
+                ? __(':organisation: :percentage%', ['organisation' => $orgAgent->name, 'percentage' => rtrim(rtrim(number_format((float) $orgAgent->agent_fee_percentage, 2), '0'), '.')])
+                : __(':organisation: :percentage% (not set)', ['organisation' => $orgAgent->name, 'percentage' => SyncAgentInvoiceChargesFromLedger::DEFAULT_AGENT_FEE_PERCENTAGE]))
+            ->all();
+
+        return [
+            'label'  => __('Agent fee'),
+            'title'  => __('Agent fee'),
+            'icon'   => 'fal fa-percent',
+            'fields' => [
+                'agent_fee_percentage' => [
+                    'type'        => 'input',
+                    'label'       => __('Agent fee (%)'),
+                    'placeholder' => __('Default agent fee'),
+                    'information' => __("The fee charged on this supplier's goods when a container is invoiced. Leave it empty to use each organisation's default agent fee."),
+                    'notes_title' => __('Default agent fee per organisation'),
+                    'notes'       => $clientFees,
+                    'value'       => $supplier->agent_fee_percentage !== null ? (float) $supplier->agent_fee_percentage : null,
+                    'options'     => ['inputType' => 'number'],
+                    'updateRoute' => [
+                        'name'       => 'grp.models.supplier.agent_fee.update',
+                        'parameters' => $supplier->id,
+                    ],
+                ],
+            ],
         ];
     }
 

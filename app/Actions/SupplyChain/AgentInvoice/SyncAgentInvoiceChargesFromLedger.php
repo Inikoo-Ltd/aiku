@@ -16,6 +16,7 @@ use App\Models\Procurement\OrgAgent;
 use App\Models\SupplyChain\AgentInvoice;
 use App\Models\SupplyChain\AgentPayment;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -99,7 +100,7 @@ class SyncAgentInvoiceChargesFromLedger
     }
 
     /**
-     * The agent fee of a container, its client's fee percentage (2 unless set) of the goods, written to the ledger
+     * The agent fee of a container, each supplier's own fee percentage of its goods, else the client's (2 unless set), written to the ledger
      * when the invoice is issued and kept in step when it is issued again. A fee the agent recorded by hand for
      * this container stands instead.
      */
@@ -120,12 +121,11 @@ class SyncAgentInvoiceChargesFromLedger
             return;
         }
 
-        $percentage = OrgAgent::where('agent_id', $agent->id)->where('organisation_id', $stockDelivery->organisation_id)->value('agent_fee_percentage');
-        $percentage = $percentage !== null ? (float) $percentage : self::DEFAULT_AGENT_FEE_PERCENTAGE;
-        $amount     = round((float) $agentInvoice->goods_amount * $percentage / 100, 2);
+        $goodsByPercentage = self::goodsByFeePercentage($agentInvoice);
+        $amount            = round(array_sum(array_map(fn (array $goods) => $goods['amount'] * $goods['percentage'] / 100, $goodsByPercentage)), 2);
 
         if ($autoFee) {
-            $autoFee->update(['amount' => $amount, 'notes' => self::feeNote($percentage, $agentInvoice)]);
+            $autoFee->update(['amount' => $amount, 'notes' => self::feeNote($goodsByPercentage, $agentInvoice)]);
 
             return;
         }
@@ -144,14 +144,64 @@ class SyncAgentInvoiceChargesFromLedger
             'amount'            => $amount,
             'currency_id'       => $agentInvoice->currency_id,
             'reference'         => $agentInvoice->reference,
-            'notes'             => self::feeNote($percentage, $agentInvoice),
+            'notes'             => self::feeNote($goodsByPercentage, $agentInvoice),
             'data'              => ['agent_fee_of_invoice' => $agentInvoice->id],
         ]);
     }
 
-    private static function feeNote(float $percentage, AgentInvoice $agentInvoice): string
+    public static function clientFeePercentage(int $agentId, int $organisationId): float
     {
-        return __(':percentage% of the goods of :reference', ['percentage' => rtrim(rtrim(number_format($percentage, 2), '0'), '.'), 'reference' => $agentInvoice->reference]);
+        $percentage = OrgAgent::where('agent_id', $agentId)->where('organisation_id', $organisationId)->value('agent_fee_percentage');
+
+        return $percentage !== null ? (float) $percentage : self::DEFAULT_AGENT_FEE_PERCENTAGE;
+    }
+
+    /**
+     * The invoice's goods grouped by the fee charged on them: a supplier's own agent fee, else the client's.
+     *
+     * @return list<array{percentage: float, amount: float}>
+     */
+    private static function goodsByFeePercentage(AgentInvoice $agentInvoice): array
+    {
+        $clientPercentage = self::clientFeePercentage($agentInvoice->agent_id, $agentInvoice->organisation_id);
+        $lines            = collect($agentInvoice->lines ?? []);
+
+        $supplierPercentages = DB::table('stock_delivery_items')
+            ->join('supplier_products', 'supplier_products.id', '=', 'stock_delivery_items.supplier_product_id')
+            ->join('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id')
+            ->whereIn('stock_delivery_items.id', $lines->pluck('stock_delivery_item_id')->filter()->all())
+            ->whereNotNull('suppliers.agent_fee_percentage')
+            ->pluck('suppliers.agent_fee_percentage', 'stock_delivery_items.id');
+
+        return $lines
+            ->groupBy(fn (array $line) => (string) (float) ($supplierPercentages->get(Arr::get($line, 'stock_delivery_item_id')) ?? $clientPercentage))
+            ->map(fn ($group, string $percentage) => ['percentage' => (float) $percentage, 'amount' => (float) $group->sum('amount')])
+            ->sortByDesc('amount')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<array{percentage: float, amount: float}>  $goodsByPercentage
+     */
+    private static function feeNote(array $goodsByPercentage, AgentInvoice $agentInvoice): string
+    {
+        $formatPercentage = fn (float $percentage) => rtrim(rtrim(number_format($percentage, 2), '0'), '.');
+
+        if (count($goodsByPercentage) <= 1) {
+            return __(':percentage% of the goods of :reference', [
+                'percentage' => $formatPercentage($goodsByPercentage[0]['percentage'] ?? self::clientFeePercentage($agentInvoice->agent_id, $agentInvoice->organisation_id)),
+                'reference'  => $agentInvoice->reference,
+            ]);
+        }
+
+        return __(':parts of the goods of :reference', [
+            'parts'     => implode(', ', array_map(
+                fn (array $goods) => __(':percentage% of :amount', ['percentage' => $formatPercentage($goods['percentage']), 'amount' => number_format($goods['amount'], 2)]),
+                $goodsByPercentage
+            )),
+            'reference' => $agentInvoice->reference,
+        ]);
     }
 
     /**
