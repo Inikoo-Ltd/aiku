@@ -5044,7 +5044,7 @@ describe('competitor prices, HELP-3605', function () {
 
         $fakeBrowserAndAi(['login_error' => null, 'cookies' => [], 'pages' => []], []);
         \App\Actions\Masters\Competitor\ResearchCompetitorPrices::make()->handle($this->competitor, [$this->competitorMasterAsset->id]);
-        \Illuminate\Support\Facades\Process::assertRan(fn (\Illuminate\Process\PendingProcess $process) => in_array('https://rival.example.com/search?q='.urlencode('Cuenco cantor de latón 10cm'), json_decode($process->input, true)['urls'] ?? [], true));
+        \Illuminate\Support\Facades\Process::assertRan(fn (\Illuminate\Process\PendingProcess $process) => in_array('https://rival.example.com/search?q='.urlencode('Cuenco cantor de latón'), json_decode($process->input, true)['urls'] ?? [], true));
 
         $this->competitor->update(['language_id' => \App\Models\Helpers\Language::where('code', 'en')->value('id')]);
         expect($ourName())->toBe('Brass singing bowl 10cm')
@@ -5758,6 +5758,18 @@ describe('competitor prices, HELP-3605', function () {
             ->and((float) $product->price)->toBe(16.0)
             ->and((float) $product->units)->toBe(2.0)
             ->and(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::withoutSearchWords($link, 'Brass'))->toBe('https://rival.example.com/products/brass-bowl');
+    });
+
+    test('a competitor is searched with our name without its size, pack, label or codes, HELP-4686', function () {
+        $query = fn (string $name) => \App\Actions\Masters\Competitor\ResearchCompetitorPrices::searchQuery($name);
+
+        expect($query('10ml Basil Essential Oil White Label'))->toBe('Basil Essential Oil')
+            ->and($query('Banana Fragrance Oil 10ml - White Label'))->toBe('Banana Fragrance Oil')
+            ->and($query('12x Boxed Citronella Eden Essential Oil - 10ml'))->toBe('Boxed Citronella Eden Essential Oil')
+            ->and($query('Lily of the Valley   FOI-126550'))->toBe('Lily of the Valley')
+            ->and($query('Citronella Essential Oil (KG)'))->toBe('Citronella Essential Oil')
+            ->and($query('1kg'))->toBe('1kg')
+            ->and(\App\Actions\Masters\Competitor\ResearchCompetitorPrices::withoutSearchWords('https://rival.example.com/p/oil?q=Basil+Essential+Oil', '10ml Basil Essential Oil White Label'))->toBe('https://rival.example.com/p/oil');
     });
 
     test('a master shop left out of price tips has every product read once a week, a seventh each day, HELP-4686', function () {
