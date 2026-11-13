@@ -22,6 +22,7 @@ import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import RenderProduct from "@/Iris/Components/IrisBlocks/Products/Ecom/RenderProduct.vue"
+import RenderProductDropshiping from "@/Iris/Components/IrisBlocks/Products/ds/RenderProductDropshiping.vue"
 import RangeAdvisorPanel from "@/Iris/Components/RangeAdvisorPanel.vue"
 import { ProductResource } from "@/types/Iris/Products"
 import {
@@ -34,6 +35,7 @@ library.add(faPaperPlane, faSignInAlt, faCommentAlt, faRedo, faShoppingBasket, f
 type Card = ProductResource & {
     assistant_reason: string
     assistant_message_id: number
+    portfolio_channels?: number[]
 }
 
 type Message =
@@ -67,6 +69,7 @@ const fieldValue = computed(() => props.web_block_family?.fieldValue)
 const productCardCode = computed(() => props.web_block_family_code || "products-1")
 
 const layout: any = inject("layout", retinaLayoutStructure)
+const isDropshipping = computed(() => layout?.retina?.type === "dropshipping")
 const screenType = inject("screenType", ref<"mobile" | "tablet" | "desktop">("desktop"))
 
 const { assistant } = useShoppingAssistant()
@@ -118,7 +121,14 @@ const knowsTheRange = computed(() => props.products_in_range
     })
     : ctrans(":name knows every product in our range and what shops like yours buy most.", { name: assistantName.value }))
 
-const starterQuestions = computed(() => [
+const starterQuestions = computed(() => isDropshipping.value ? [
+    ctrans("I am new to dropshipping – how do I start?"),
+    ctrans("How do I connect my Shopify store?"),
+    ctrans("Best sellers to list on eBay"),
+    ctrans("How should I set my selling prices?"),
+    ctrans("What sells well for a crystal store?"),
+    ctrans("How fast do you send orders to my buyers?"),
+] : [
     ctrans("I run a crystal shop – what am I missing?"),
     ctrans("Low-priced Christmas gifts that sell well"),
     ctrans("Help me start bath & body"),
@@ -130,7 +140,9 @@ const starterQuestions = computed(() => [
 const steps = computed(() => [
     { title: ctrans("Ask anything"), body: ctrans("A question, your shop or what you need – in your own words.") },
     { title: ctrans("Get picks with a reason"), body: ctrans("Must-haves and add-ons to your range, each with a one-line reason – all live and in stock.") },
-    { title: ctrans("Add to basket or keep chatting"), body: ctrans("Add them all in one click, ask a follow-up question or start a new conversation.") },
+    isDropshipping.value
+        ? { title: ctrans("Add to your store or keep chatting"), body: ctrans("Send products to your sales channels from each card, ask how to set up your store or start a new conversation.") }
+        : { title: ctrans("Add to basket or keep chatting"), body: ctrans("Add them all in one click, ask a follow-up question or start a new conversation.") },
 ])
 
 const promises = computed(() => [
@@ -803,7 +815,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
             </section>
 
             <RangeAdvisorPanel
-                v-if="isLayoutReady && layout.iris?.is_logged_in"
+                v-if="isLayoutReady && layout.iris?.is_logged_in && !isDropshipping"
                 :assistantName
                 :fieldValue
                 :productCardCode
@@ -920,7 +932,12 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                                     <div v-for="card in tab.cards" :key="`${card.id}-${cardsVersion}`" @click.capture="(event) => recordClick(event, card)">
                                                         <p class="mb-1 text-xs text-gray-600">{{ card.assistant_reason }}</p>
                                                         <div :style="getStyles(fieldValue?.card_product?.properties, screenType)" class="relative flex justify-center rounded">
-                                                            <RenderProduct :code="productCardCode" :product="card"
+                                                            <RenderProductDropshiping v-if="isDropshipping" :code="productCardCode" :product="card"
+                                                                :productHasPortfolio="card.portfolio_channels ?? []"
+                                                                :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
+                                                                :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
+                                                                :bestSeller="fieldValue?.bestseller" :screenType />
+                                                            <RenderProduct v-else :code="productCardCode" :product="card"
                                                                 :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false) ?? undefined"
                                                                 :buttonStyleLogin="getStyles(fieldValue?.buttonLogin?.properties, screenType) ?? undefined"
                                                                 :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"
@@ -933,7 +950,7 @@ const sendOnEnter = (event: KeyboardEvent) => {
                                             </TabPanel>
                                         </TabPanels>
                                     </Tabs>
-                                    <div v-if="tabs.length" class="mt-3 flex flex-wrap items-center gap-2">
+                                    <div v-if="tabs.length && !isDropshipping" class="mt-3 flex flex-wrap items-center gap-2">
                                         <Button
                                             type="tertiary"
                                             size="xs"

@@ -15,6 +15,8 @@ use App\Actions\CRM\RangeAdvisor\GetCustomerRangeGaps;
 use App\Actions\CRM\RangeAdvisor\GetSegmentBestSellers;
 use App\Actions\CRM\RangeAdvisor\RebuildRangeAdvisorSales;
 use App\Actions\CRM\RangeAdvisor\WithRecommendableProducts;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Helpers\Ticket\TicketKindEnum;
 use App\Enums\CRM\Customer\CustomerShopTypeEnum;
 use App\Actions\Iris\Basket\StoreEcomBasketTransactions;
 use App\Actions\Tasks\GetAikuAssistant;
@@ -120,6 +122,14 @@ class GetShoppingAssistantTools
     use AsAction;
     use WithRecommendableProducts;
 
+    /**
+     * Dropshipping customers have no basket to fill or ship: they add products to the portfolios of
+     * their sales channels on the product cards, and each order is one of their own customers'.
+     */
+    public const array NOT_FOR_DROPSHIPPING = ['add_to_basket', 'shipping_cost', 'big_order_lead'];
+
+    public const array ENGINEER_TICKET_KINDS = ['bug', 'support', 'data_integrity'];
+
     public const string PRESENT_PRODUCTS = 'present_products';
 
     public const int MAX_LIMIT = 24;
@@ -168,8 +178,12 @@ class GetShoppingAssistantTools
     /**
      * @return array<int, array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}>
      */
-    public function definitions(): array
+    public function definitions(bool $dropshipping = false): array
     {
+        if ($dropshipping) {
+            return array_values(array_filter($this->definitions(), fn (array $tool) => !in_array($tool['function']['name'], self::NOT_FOR_DROPSHIPPING, true)));
+        }
+
         $limit = [
             'type'        => 'integer',
             'minimum'     => 1,
@@ -319,6 +333,18 @@ class GetShoppingAssistantTools
                 ['question', 'customer_agreed']
             ),
             $this->tool(
+                'report_to_engineers',
+                'Send a real problem straight to our engineers as a ticket, skipping customer services: something broken on our side that only our engineers can fix (a bug on our website or in their account, an integration with their store or marketplace that misbehaves on our side, products or stock not syncing, orders not arriving, records of ours that look wrong), after the customer tried the fix shop_information gives. The system checks it independently and only raises the ticket when it is sure; otherwise it tells you to offer a person. Not for how-to questions, product questions, user mistakes, settings the customer can change, problems on their own store or platform, the customer\'s own order status or delivery, or complaints about a product. Call it once per problem. The system writes the ticket reference under your reply. Returns no products.',
+                [
+                    'tried_fix'   => ['type' => 'boolean', 'description' => 'True only when the customer said they already followed the fix our texts give for this problem, or our texts have none and they followed your steps.'],
+                    'why_only_us' => ['type' => 'string', 'maxLength' => 500, 'description' => 'In English, the evidence that only our engineers can fix it (e.g. "orders stopped for a store that shows connected and was reconnected"). Empty when you are not sure; never guess.'],
+                    'summary' => ['type' => 'string', 'maxLength' => 200, 'description' => 'One English sentence naming the problem for an engineer, e.g. "Shopify orders stopped arriving since Monday".'],
+                    'details' => ['type' => 'string', 'maxLength' => 2000, 'description' => 'In English: what the customer reported, which platform, store and products, since when, what they already tried and what you checked.'],
+                    'kind'    => ['type' => 'string', 'enum' => self::ENGINEER_TICKET_KINDS, 'description' => 'bug: something on our side does not work; support: their integration or account needs an engineer to look at it; data_integrity: our records look wrong and need checking.'],
+                ],
+                ['tried_fix', 'why_only_us', 'summary', 'details', 'kind']
+            ),
+            $this->tool(
                 'shop_information',
                 'What our own pages, shop settings and customer service notes say about buying from this shop: payment, delivery and its cost rules, returns, ordering, minimum order, the customer\'s account, our terms. Use it for every general question about the shop that is not a request for products. Returns up to 4 texts, each with an id. Answer only from these texts and list the ids you used in sources. Returns no products.',
                 [
@@ -341,7 +367,7 @@ class GetShoppingAssistantTools
                 'Give your final answer. Call it once, as your last step, every time: also when you show no products, ask a question or decline (leave must_haves and add_ons empty), so the customer always gets follow_ups to tap. Use only ids returned by the other tools.',
                 [
                     'reply'        => ['type' => 'string', 'description' => 'Two or three short sentences for the customer, with no ids, prices, discounts or stock, and no numbers other than figures stated in the texts you cite in sources.'],
-                    'answer_kind'  => ['type' => 'string', 'enum' => ShoppingAssistantAnswerKindEnum::declarable(), 'description' => 'products when you show or talk about products or ranges; shop_answer when you answer a general question from texts shop_information returned or a question about an email from recent_emails_to_customer (sources is then required); question when you only ask the customer something; offer_person when you cannot answer and a person should (offer_reason is then required); off_topic when you decline something that has nothing to do with this shop.'],
+                    'answer_kind'  => ['type' => 'string', 'enum' => ShoppingAssistantAnswerKindEnum::declarable(), 'description' => 'products when you show or talk about products or ranges; shop_answer when you answer a general question from texts shop_information returned or a question about an email from recent_emails_to_customer (sources is then required); question when you only ask the customer something; offer_person when you cannot answer and a person should (offer_reason is then required); off_topic when you decline something that has nothing to do with this shop; coaching when, on a dropshipping shop, you explain a general dropshipping or online selling idea from your own knowledge.'],
                     'sources'      => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Ids, exactly as given, of the shop_information texts or recent_emails_to_customer emails your answer rests on. Required with answer_kind shop_answer.'],
                     'offer_reason' => ['type' => 'string', 'enum' => array_column(ShoppingAssistantHandOverReasonEnum::cases(), 'value'), 'description' => 'not_sure: you could not answer from the texts or have none; order_question: the customer asks about their own order, invoice, payment, refund or delivery; asked_for_person: the customer asks for a person.'],
                     'must_haves' => $productIds('Ids of products that fit the request or sell well for similar shops, usually up to '.self::USUAL_PER_GROUP.', at most '.self::MAX_PER_GROUP.' when the customer asks for more.'),
@@ -372,6 +398,10 @@ class GetShoppingAssistantTools
             return $this->error('This conversation has no customer.');
         }
 
+        if (in_array($name, self::NOT_FOR_DROPSHIPPING, true) && self::isDropshipping($customer)) {
+            return $this->error("$name is not available on a dropshipping shop.");
+        }
+
         try {
             return match ($name) {
                 'search_products'                => $this->searchProducts($customer, $arguments, $conversation->language_code),
@@ -392,6 +422,7 @@ class GetShoppingAssistantTools
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
+                'report_to_engineers'            => $this->reportToEngineers($conversation, $arguments),
                 'shipping_cost'                  => $this->shippingCost($customer, $conversation->language_code),
                 'shop_information'               => $this->shopInformation($customer, $arguments),
                 'recent_emails_to_customer'      => $this->recentEmailsToCustomer($customer),
@@ -1106,6 +1137,50 @@ class GetShoppingAssistantTools
      *
      * @return array{content: array<string, mixed>, products: array{}, error: ?string}
      */
+    /**
+     * @param  array<string, mixed>  $arguments
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function reportToEngineers(ShoppingAssistantConversation $conversation, array $arguments): array
+    {
+        $summary = is_string($arguments['summary'] ?? null) ? trim($arguments['summary']) : '';
+        $details = is_string($arguments['details'] ?? null) ? trim($arguments['details']) : '';
+        $kind    = in_array($arguments['kind'] ?? null, self::ENGINEER_TICKET_KINDS, true) ? TicketKindEnum::from($arguments['kind']) : null;
+
+        if ($summary === '' || $details === '' || !$kind) {
+            return $this->error('summary, details and kind (one of '.implode(', ', self::ENGINEER_TICKET_KINDS).') are required.');
+        }
+
+        $whyOnlyUs = is_string($arguments['why_only_us'] ?? null) ? mb_substr(trim($arguments['why_only_us']), 0, 500) : '';
+        $result    = StoreShoppingAssistantEngineerTicket::run($conversation, $summary, mb_substr($details, 0, 2000), $kind, $whyOnlyUs, ($arguments['tried_fix'] ?? false) === true);
+
+        if (!$result['ticket']) {
+            return [
+                'content'  => ['reported' => false, 'note' => 'Not raised: it is not certain this is a problem only our engineers can fix. If the customer has not tried the fix from shop_information, give it; otherwise answer with answer_kind offer_person and offer_reason not_sure so a person in customer services helps them. Never mention tickets or engineers.'],
+                'products' => [],
+                'error'    => null,
+            ];
+        }
+
+        $reference = $result['ticket']->reference;
+        $canFollow = $conversation->web_user_id && self::isDropshipping($conversation->customer);
+        $locale    = $conversation->language_code;
+
+        $fact = match (true) {
+            $result['status'] === 'already_reported' => __('I have added this to :reference, which our engineers are already looking into.', ['reference' => $reference], $locale),
+            $canFollow                                => __('I have passed this to our engineers as :reference. You can follow it under Tickets in your account.', ['reference' => $reference], $locale),
+            default                                   => __('I have passed this to our engineers as :reference.', ['reference' => $reference], $locale),
+        };
+
+        return [
+            'content' => ['reported' => true, 'already_open' => $result['status'] === 'already_reported', 'note' => 'The ticket reference is added under your reply. Say in one or two sentences that our engineers will look into it, without promising a time or a fix, and offer to help with anything else meanwhile.'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => $fact,
+        ];
+    }
+
     private function askOurTeam(ShoppingAssistantConversation $conversation, array $arguments): array
     {
         $question = is_string($arguments['question'] ?? null) ? trim($arguments['question']) : '';
@@ -1455,5 +1530,10 @@ class GetShoppingAssistantTools
         }
 
         return ['type' => 'function', 'function' => ['name' => $name, 'description' => $description, 'parameters' => $parameters]];
+    }
+
+    public static function isDropshipping(Customer $customer): bool
+    {
+        return $customer->shop->type === ShopTypeEnum::DROPSHIPPING;
     }
 }

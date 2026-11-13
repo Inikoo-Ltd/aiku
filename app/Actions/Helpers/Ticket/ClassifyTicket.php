@@ -106,7 +106,7 @@ class ClassifyTicket
      */
     private function kinds(Ticket $ticket): array
     {
-        return in_array($ticket->type, [TicketTypeEnum::ENGINEER, TicketTypeEnum::PREMONITION], true) ? self::KINDS : Arr::except(self::KINDS, TicketKindEnum::internalValues());
+        return in_array($ticket->type, [TicketTypeEnum::ENGINEER, TicketTypeEnum::PREMONITION, TicketTypeEnum::MERLIN], true) ? self::KINDS : Arr::except(self::KINDS, TicketKindEnum::internalValues());
     }
 
     private function confidentChoice(?array $answers, string $question, bool $isEmpty): ?string

@@ -21,6 +21,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 /**
@@ -28,13 +29,13 @@ use Lorisleiva\Actions\ActionRequest;
  */
 class AskIrisShoppingAssistant extends IrisAction
 {
-    public function handle(Customer $customer, ?ShoppingAssistantConversation $conversation, string $message, int $webUserId): JsonResponse
+    public function handle(Customer $customer, ?ShoppingAssistantConversation $conversation, string $message, int $webUserId, ShoppingAssistantEntryPointEnum $entryPoint = ShoppingAssistantEntryPointEnum::SEARCH): JsonResponse
     {
         if ($conversation?->isPending()) {
             return response()->json(['pending' => true], 409);
         }
 
-        $conversation ??= StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH, ['web_user_id' => $webUserId]);
+        $conversation ??= StartShoppingAssistantConversation::run($customer, $entryPoint, ['web_user_id' => $webUserId]);
 
         $customerMessage = AskShoppingAssistant::make()->storeCustomerMessage($conversation, $message);
         AnswerShoppingAssistantMessage::dispatch($customerMessage);
@@ -51,6 +52,7 @@ class AskIrisShoppingAssistant extends IrisAction
         return [
             'message'      => ['required', 'string', 'max:1000'],
             'conversation' => ['sometimes', 'nullable', 'string', 'ulid'],
+            'entry_point'  => ['sometimes', 'nullable', Rule::in([ShoppingAssistantEntryPointEnum::SEARCH->value, ShoppingAssistantEntryPointEnum::CHAT->value])],
         ];
     }
 
@@ -80,6 +82,6 @@ class AskIrisShoppingAssistant extends IrisAction
             abort_unless($conversation, 404);
         }
 
-        return $this->handle($customer, $conversation, $this->validatedData['message'], $request->user()->id);
+        return $this->handle($customer, $conversation, $this->validatedData['message'], $request->user()->id, ShoppingAssistantEntryPointEnum::tryFrom((string) Arr::get($this->validatedData, 'entry_point')) ?? ShoppingAssistantEntryPointEnum::SEARCH);
     }
 }

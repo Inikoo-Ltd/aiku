@@ -8,6 +8,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\Chat\ChatSession\IsChatStaffed;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantSettings;
 use App\Actions\Retina\UI\GetRetinaFirstLoadProps;
 use App\Http\Resources\UI\LoggedWebUserResource;
@@ -129,7 +130,8 @@ class HandleRetinaInertiaRequests extends Middleware
                     'google' => [
                         'client_id' => config('services.google.client_id'),
                     ],
-                    'shopping_assistant' => $website && $webUser ? GetShoppingAssistantSettings::run($website, $webUser->customer, true) : null,
+                    'shopping_assistant' => $assistant = $website && $webUser ? GetShoppingAssistantSettings::run($website, $webUser->customer, true) : null,
+                    'merlin_mode'        => $assistant !== null && !IsChatStaffed::run($website->shop),
                 ]),
                 'use_chat'    => $website->settings['enable_chat'] ?? false,
                 'outboxes' => $outBoxes

@@ -572,7 +572,7 @@ class GetShopNavigation
                 }
             }
 
-            if ($shop->website && $shop->type === ShopTypeEnum::B2B && $user->hasAnyPermission(["websites-view.{$shop->organisation_id}", "web.$shop->id.view", "group-webmaster.view"])) {
+            if ($shop->website && in_array($shop->type, [ShopTypeEnum::B2B, ShopTypeEnum::DROPSHIPPING], true) && $user->hasAnyPermission(["websites-view.{$shop->organisation_id}", "web.$shop->id.view", "group-webmaster.view"])) {
                 $navigation["ai_salesman"] = [
                     "root"    => "grp.org.shops.show.ai_salesman.",
                     "icon"    => ["fal", "fa-hat-wizard"],

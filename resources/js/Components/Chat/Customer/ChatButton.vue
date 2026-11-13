@@ -22,11 +22,12 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from "@headlessui/vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { playNotificationSoundFile, buildStorageUrl } from "@/Composables/useNotificationSound"
+import { useShoppingAssistant } from "@/Iris/Composables/useShoppingAssistant"
 import { ctrans } from "@/Composables/useTrans"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { router, usePage } from "@inertiajs/vue3"
-import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck, faVideo, faStoreAlt } from "@fal"
+import { faSpinner, faComments, faEnvelope, faPhone, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck, faVideo, faStoreAlt, faHatWizard } from "@fal"
 import { useWindowSize } from "@vueuse/core"
 import { useBundle } from "../../../Composables/useBundle"
 import { useFloatingButtonsDrag } from "@/Iris/Composables/useFloatingButtonsDrag"
@@ -36,12 +37,13 @@ const MessageArea = defineAsyncComponent(() => import("@/Components/Chat/Custome
 const MessageHistory = defineAsyncComponent(() => import("@/Components/Chat/MessageHistory.vue"))
 const HistoryChatList = defineAsyncComponent(() => import("@/Components/Chat/HistoryChatList.vue"))
 const OfflineChatForm = defineAsyncComponent(() => import("../OfflineChatForm.vue"))
+const MerlinChat = defineAsyncComponent(() => import("@/Components/Chat/Customer/MerlinChat.vue"))
 const AppointmentDialog = defineAsyncComponent(() => import("@/Iris/Components/AppointmentDialog.vue"))
 
 library.add(
     faWhatsapp, faFacebookF, faFacebookMessenger, faInstagram, faXTwitter, faTelegram, faTiktok,
     faYoutube, faLinkedinIn, faLine, faWeixin, faPinterest, faSnapchat, faDiscord,
-    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck, faVideo, faStoreAlt
+    faEnvelope, faPhone, faComments, faGlobe, faMapMarkerAlt, faLightbulb, faQuestionCircle, faTruck, faVideo, faStoreAlt, faHatWizard
 )
 
 interface ChatMessage {
@@ -90,6 +92,7 @@ interface ContactOption {
     label: string
     url: string
     appointmentTypeId?: number
+    isMerlin?: boolean
 }
 
 /*
@@ -118,6 +121,9 @@ const emit = defineEmits<{
 }>()
 
 const layout: any = inject("layout", {})
+const { assistant } = useShoppingAssistant()
+const isMerlinShown = ref(true)
+const isMerlinDirect = ref(false)
 const baseUrl = layout?.appUrl ?? ""
 const isStorefrontWidget = layout?.app?.name === "chat-widget"
 const panelGapAboveButton = isStorefrontWidget ? 96 : 88
@@ -210,17 +216,22 @@ const configuredContactOptions = computed<ContactOption[]>(() =>
         (option) => !isAtlassianContactOption(option) && !isBrokenContactOption(option)
     )
 )
-const isLiveChatOption = (option: ContactOption) => !option.appointmentTypeId && !option.url?.trim()
+const isLiveChatOption = (option: ContactOption) => option.isMerlin || (!option.appointmentTypeId && !option.url?.trim())
 
 const appointmentTypes = computed(() => (page.props?.appointment_types as { id: number, name: string, meeting_mode: string }[]) ?? [])
 const hasAppointments = computed(() => appointmentTypes.value.length > 0)
 const isAppointmentDialogVisible = ref(false)
 const selectedAppointmentTypeId = ref<number | null>(null)
 
+const merlinOption = computed<ContactOption | null>(() => layout?.iris?.merlin_mode && layout?.iris?.shopping_assistant
+    ? { icon: ["fal", "hat-wizard"], label: ctrans(":name, our AI assistant (answers now)", { name: layout.iris.shopping_assistant.name || "Merlin" }), url: "", isMerlin: true }
+    : null)
+
 const contactOptions = computed<ContactOption[]>(() => {
-    const options = configuredContactOptions.value.some(isLiveChatOption)
+    const humanOptions = configuredContactOptions.value.some(isLiveChatOption)
         ? configuredContactOptions.value
         : [{ icon: ["fal", "comments"], label: ctrans("Livechat"), url: "" }, ...configuredContactOptions.value]
+    const options = merlinOption.value ? [merlinOption.value, ...humanOptions] : humanOptions
 
     if (!hasAppointments.value) {
         return options
@@ -707,6 +718,14 @@ const startChat = async () => {
 }
 
 const selectContactOption = async (option: ContactOption) => {
+    if (option.isMerlin) {
+        isMerlinShown.value = true
+        isMerlinDirect.value = true
+        activeView.value = "chat"
+        hasOpenedLiveChat.value = true
+        return
+    }
+
     if (option.appointmentTypeId) {
         selectedAppointmentTypeId.value = option.appointmentTypeId
         isAppointmentDialogVisible.value = true
@@ -723,8 +742,17 @@ const selectContactOption = async (option: ContactOption) => {
     await startChat()
 }
 
+const leaveMessageInsteadOfMerlin = async () => {
+    isMerlinShown.value = false
+    if (isMerlinDirect.value) {
+        isMerlinDirect.value = false
+        await startChat()
+    }
+}
+
 const backToContactOptions = () => {
     activeView.value = "show_contact_options_panel"
+    isMerlinDirect.value = false
     hasOpenedLiveChat.value = false
 }
 
@@ -1171,15 +1199,18 @@ if (isClient) {
                         <span class="text-sm">{{ ctrans("Connecting...") }}</span>
                     </div>
 
-                    <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat"
+                    <MessageArea v-if="activeMenu == 'chat' && !isCheckingStatus && statusChat && !isMerlinDirect"
                         :messages="messagesLocal" :session="chatSession" :loading="loading" :isRating="isRating"
                         :rating="rating" :isUser="isUser" :isLoggedIn="isLoggedIn" :fullHeight="isFullHeight" @send-message="sendMessage"
                         @reload="(loadMore: any) => getMessages(loadMore)" @mounted="forceScrollBottom"
                         @new-session="startNewSession" :assignedAgent="assignedAgent" />
 
+                    <MerlinChat v-if="activeMenu == 'chat' && assistant && isMerlinShown && (isMerlinDirect || (!isCheckingStatus && !statusChat))"
+                        class="flex-1 min-h-0" @leave-message="leaveMessageInsteadOfMerlin" />
+
                     <OfflineChatForm v-else-if="activeMenu == 'chat' && !isCheckingStatus && !statusChat"
                         :hours="chatHours" :offlineInfo="chatOfflineInfo" :session="chatSession" :isLoggedIn="isLoggedIn"
-                        :shopId="shopId" @session-created="handleOfflineSession" />
+                        :shopId="shopId" @session-created="handleOfflineSession" @ask-merlin="isMerlinShown = true" />
 
                     <div v-if="activeMenu === 'history'" :class="isFullHeight
                         ? 'flex-1 min-h-0 bg-gray-50 scroll-smooth flex flex-col'

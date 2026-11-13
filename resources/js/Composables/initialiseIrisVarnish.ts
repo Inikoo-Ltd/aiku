@@ -150,6 +150,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
     if (!isAppRoute || "shopping_assistant" in varnish) {
       layout.iris.shopping_assistant = varnish.shopping_assistant ?? null
+      layout.iris.merlin_mode = !!varnish.merlin_mode
     }
 
     localStorage.setItem("iris", JSON.stringify({
