@@ -2,15 +2,19 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import type { AssistantQuestion } from "@/Components/Utils/AssistantQuestionPopup.vue"
 
-const shown = new Set<string>()
+const shown = new Map<string, string>()
 let colleagues: Promise<{ id: number, name: string }[]> | null = null
 
 export const showAssistantQuestion = (question: AssistantQuestion) => {
-    if (shown.has(question.task)) {
+    if (shown.get(question.task) === question.question) {
         return
     }
-    shown.add(question.task)
+    if (shown.has(question.task)) {
+        notify.close(question.task)
+    }
+    shown.set(question.task, question.question)
     notify({
+        id: question.task,
         group: "assistant-questions",
         title: question.customer,
         text: question.question,

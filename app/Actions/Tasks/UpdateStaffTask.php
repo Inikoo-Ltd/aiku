@@ -90,7 +90,9 @@ class UpdateStaffTask
                 FollowUpShoppingAssistantRestockQuestion::dispatch($task, $actor, $note);
             }
             if (data_get($task->data, 'kind') === StoreShoppingAssistantTeamQuestion::TASK_KIND && $task->status === StaffTaskStatusEnum::DONE && $note && !data_get($task->data, 'answered_at')) {
-                AnswerShoppingAssistantTeamQuestion::run($task, $actor, $note);
+                if (AnswerShoppingAssistantTeamQuestion::run($task, $actor, $note) === 'not_an_answer' && $task->conversation) {
+                    SendStaffMessage::run($task->conversation, GetAikuAssistant::run($task->group_id), ['body' => AnswerShoppingAssistantTeamQuestion::notAnAnswerMessage()]);
+                }
             }
         }
 

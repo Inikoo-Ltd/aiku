@@ -96,8 +96,8 @@ const pass = () => {
                 </div>
                 <div class="min-w-0 flex-1 leading-snug">
                     <div class="text-xs text-gray-500">{{ ctrans("Merlin needs a guru for :customer (:shop)", { customer: question.customer, shop: question.shop }) }}</div>
-                    <div class="mt-0.5 text-sm font-semibold text-gray-900">{{ question.question }}</div>
-                    <div v-if="question.customer_words && question.customer_words !== question.question" class="mt-1 text-xs text-gray-500">
+                    <div class="mt-0.5 whitespace-pre-line text-sm font-semibold text-gray-900">{{ question.question }}</div>
+                    <div v-if="question.customer_words && question.customer_words !== question.question" class="mt-1 whitespace-pre-line text-xs text-gray-500">
                         {{ question.language }}: “{{ question.customer_words }}”
                     </div>
                 </div>

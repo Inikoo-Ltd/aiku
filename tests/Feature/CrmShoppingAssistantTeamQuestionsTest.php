@@ -12,6 +12,7 @@ use App\Actions\CRM\ShoppingAssistant\AlertShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\AnswerShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
 use App\Actions\CRM\ShoppingAssistant\CloseUnansweredShoppingAssistantTeamQuestions;
+use App\Actions\CRM\ShoppingAssistant\DeclineShoppingAssistantTeamQuestion;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantTools;
 use App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation;
 use App\Actions\CRM\ShoppingAssistant\StoreShoppingAssistantTeamQuestion;
@@ -25,6 +26,7 @@ use App\Models\CRM\Customer;
 use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\SysAdmin\Guest;
 use App\Models\SysAdmin\User;
+use App\Models\Tasks\StaffTask;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -39,7 +41,9 @@ beforeAll(function () {
 beforeEach(function () {
     [$this->organisation, $this->user, $this->shop] = createShop();
 
-    config(['services.openrouter.api_key' => 'test']);
+    config(['services.openrouter.api_key' => 'test', 'services.shopping_assistant.light_model' => null]);
+    $this->notAnAnswerProbability = null;
+    Http::fake(['*alpha/decisions' => fn () => Http::response(['answers' => ['answer' => ['noul' => $this->notAnAnswerProbability]]])]);
     actingAs($this->user);
     $tz = $this->organisation->timezone?->name ?? 'UTC';
     Carbon::setTestNow(CarbonImmutable::parse('next wednesday 10:00', $tz));
@@ -68,7 +72,7 @@ function teamQuestionConversation(object $test): ShoppingAssistantConversation
     return StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
 }
 
-test('a question our texts do not answer goes to the question person now and to the backup later, once per conversation and at most three a day per customer', function () {
+test('a question our texts do not answer goes to the question person now and to the backup later, with one waiting task per customer and at most three tasks a day', function () {
     $conversation = teamQuestionConversation($this);
 
     $first  = StoreShoppingAssistantTeamQuestion::run($conversation, 'Can I order samples of the fragrance oils?', 'samples of fragrance oils?');
@@ -85,8 +89,11 @@ test('a question our texts do not answer goes to the question person now and to 
     AlertShoppingAssistantTeamQuestion::assertPushed(fn ($action, array $arguments, $job) => $arguments[1]->id === $this->backup->id && $job->delay !== null);
 
     $customer = $conversation->customer;
+    AnswerShoppingAssistantTeamQuestion::run($first['task'], $this->person, 'A', false);
     foreach (range(1, 2) as $ignored) {
-        AnswerShoppingAssistantTeamQuestion::run(StoreShoppingAssistantTeamQuestion::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH), 'Q', 'Q')['task'], $this->person, 'A', false);
+        $next = StoreShoppingAssistantTeamQuestion::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH), 'Q', 'Q');
+        expect($next['status'])->toBe('created');
+        AnswerShoppingAssistantTeamQuestion::run($next['task'], $this->person, 'A', false);
     }
     expect(StoreShoppingAssistantTeamQuestion::run(StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH), 'Q', 'Q')['status'])->toBe('limit');
 
@@ -210,7 +217,11 @@ test('a question goes to the guru when online, else to the backup online, and wi
         ->and(data_get($toBackup['task']->data, 'routed_to'))->toBe('backup')
         ->and($toBackup['live'])->toBeTrue();
     AlertShoppingAssistantTeamQuestion::assertPushed(fn ($action, array $arguments, $job) => $arguments[0]->is($toBackup['task']) && $arguments[1]->id === $this->backup->id && $job->delay === null);
-    AlertShoppingAssistantTeamQuestion::assertPushed(1, fn ($action, array $arguments) => $arguments[0]->is($toBackup['task']));
+    AlertShoppingAssistantTeamQuestion::assertPushed(fn ($action, array $arguments, $job) => $arguments[0]->is($toBackup['task']) && $arguments[1]->id === $this->person->id && $job->delay !== null);
+    AlertShoppingAssistantTeamQuestion::assertPushed(2, fn ($action, array $arguments) => $arguments[0]->is($toBackup['task']));
+    expect(StoreShoppingAssistantTeamQuestion::waitingFor($this->person)->pluck('id'))->not->toContain($toBackup['task']->id);
+    Carbon::setTestNow(now()->addMinutes(StoreShoppingAssistantTeamQuestion::BACKUP_AFTER_MINUTES + 1));
+    expect(StoreShoppingAssistantTeamQuestion::waitingFor($this->person)->pluck('id'))->toContain($toBackup['task']->id);
 
     Illuminate\Support\Facades\Cache::put(StoreShoppingAssistantTeamQuestion::ONLINE_CACHE_KEY, [], 30);
     $nobody = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'Do you sell samples?', 'Do you sell samples?');
@@ -293,4 +304,108 @@ test('the Merlin report counts the guru questions: answered, in time, not answer
         ->and($me['answered'])->toBeGreaterThanOrEqual(1)
         ->and($me['declined'])->toBeGreaterThanOrEqual(1)
         ->and(collect($gurus['latest'])->pluck('status', 'reference')->only([$answered->reference, $declined->reference])->all())->toBe([$declined->reference => 'closed', $answered->reference => 'answered']);
+});
+
+test('a customer with a question waiting gets no second task: a different question from another conversation joins it, and the answer lands in the conversation they asked from last', function () {
+    $conversation = teamQuestionConversation($this);
+    $customer     = $conversation->customer;
+    $first        = StoreShoppingAssistantTeamQuestion::run($conversation, 'Who is the legal manufacturer of the hemp backpack?', 'fabricant légal du sac ?');
+    $tasksBefore  = StaffTask::where('data->kind', StoreShoppingAssistantTeamQuestion::TASK_KIND)->where('data->customer_id', $customer->id)->count();
+
+    $later  = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::SEARCH);
+    $joined = StoreShoppingAssistantTeamQuestion::run($later, 'Is there a list of products with complete compliance documents?', 'liste des produits conformes ?');
+    $again  = StoreShoppingAssistantTeamQuestion::run($later, 'Is there a list of products with complete compliance documents?', 'liste des produits conformes ?');
+    $task   = $first['task']->refresh();
+    $popup  = StoreShoppingAssistantTeamQuestion::popup($task);
+
+    expect($joined['status'])->toBe('already_asked')
+        ->and($joined['task']->id)->toBe($task->id)
+        ->and($again['status'])->toBe('already_asked')
+        ->and(StaffTask::where('data->kind', StoreShoppingAssistantTeamQuestion::TASK_KIND)->where('data->customer_id', $customer->id)->count())->toBe($tasksBefore)
+        ->and(data_get($task->data, 'more_questions'))->toHaveCount(1)
+        ->and(data_get($task->data, 'conversation_id'))->toBe($later->id)
+        ->and($popup['question'])->toBe("1. Who is the legal manufacturer of the hemp backpack?\n2. Is there a list of products with complete compliance documents?")
+        ->and($popup['customer_words'])->toBe("1. fabricant légal du sac ?\n2. liste des produits conformes ?")
+        ->and($task->description)->toContain('The customer also asked: Is there a list of products with complete compliance documents?')
+        ->and(StoreShoppingAssistantTeamQuestion::openFor($later)?->id)->toBe($task->id);
+
+    AlertShoppingAssistantTeamQuestion::assertPushed(3);
+
+    foreach (range(3, StoreShoppingAssistantTeamQuestion::MAX_QUESTIONS_PER_TASK) as $number) {
+        expect(StoreShoppingAssistantTeamQuestion::run($later, "Question $number", "Question $number")['status'])->toBe('already_asked');
+    }
+    expect(StoreShoppingAssistantTeamQuestion::run($later, 'One too many', 'One too many')['status'])->toBe('limit');
+
+    $notesBefore = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count();
+    AnswerShoppingAssistantTeamQuestion::run($task->refresh(), $this->person, 'Ancient Wisdom is the importer; there is no such list.');
+
+    expect($later->messages()->latest('id')->first()->body)->toContain('Ancient Wisdom is the importer; there is no such list.')
+        ->and($conversation->messages()->count())->toBe(0)
+        ->and(ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count())->toBe($notesBefore + 1)
+        ->and(ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->latest('id')->first()->title)->toStartWith('1. Who is the legal manufacturer of the hemp backpack? 2. Is there a list');
+});
+
+test('a reply that is a question back to us is refused: nothing reaches the customer or the shop notes, from the pop-up and from the done note', function () {
+    $conversation = teamQuestionConversation($this);
+    $task         = StoreShoppingAssistantTeamQuestion::run($conversation, 'How can a customer change the quantity inside a bundle?', 'how to change the quantity of a bundle i create')['task'];
+    $notesBefore  = ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count();
+
+    $this->notAnAnswerProbability = 0.97;
+
+    actingAs($this->person)->postJson(route('grp.tasks.assistant_answer', $task->reference), ['answer' => 'which customer is this? Can I have a link to the bundle.'])
+        ->assertStatus(422)
+        ->assertJson(['result' => 'not_an_answer', 'message' => AnswerShoppingAssistantTeamQuestion::notAnAnswerMessage()]);
+
+    $task->refresh();
+    expect(data_get($task->data, 'answered_at'))->toBeNull()
+        ->and($task->status->isOpen())->toBeTrue()
+        ->and($conversation->messages()->count())->toBe(0)
+        ->and(ChatKnowledgeEntry::where('shop_id', $this->shop->id)->where('is_manual', true)->count())->toBe($notesBefore);
+
+    UpdateStaffTask::run($task, $this->person, ['status' => StaffTaskStatusEnum::DONE->value, 'note' => 'which customer is this?']);
+    $task->refresh();
+
+    expect(data_get($task->data, 'answered_at'))->toBeNull()
+        ->and($conversation->messages()->count())->toBe(0)
+        ->and($task->conversation->messages()->pluck('body')->implode("\n"))->toContain(AnswerShoppingAssistantTeamQuestion::notAnAnswerMessage());
+
+    $this->notAnAnswerProbability = 0.4;
+    expect(AnswerShoppingAssistantTeamQuestion::run($task, $this->person, 'Open the bundle on the My Bundles tab and edit its products.', false))->toBe('answered')
+        ->and($conversation->messages()->latest('id')->first()->body)->toContain('Open the bundle on the My Bundles tab');
+});
+
+test('an answer written about the customer is reworded to speak to them, and goes as written when the rewording loses a figure or a link', function () {
+    config(['services.shopping_assistant.light_model' => 'light-model']);
+    $reworded = fn (string $text) => ['choices' => [['finish_reason' => 'stop', 'message' => ['role' => 'assistant', 'content' => $text]]], 'usage' => ['prompt_tokens' => 50, 'completion_tokens' => 20, 'cost' => 0.0001]];
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push($reworded('Yes, you will need to create another channel in Channels management.'))
+        ->push($reworded('Delivery is about three pounds, see our shipping page.'))]);
+
+    $first = teamQuestionConversation($this);
+    AnswerShoppingAssistantTeamQuestion::run(StoreShoppingAssistantTeamQuestion::run($first, 'Can a customer connect several stores?', 'several stores?')['task'], $this->person, 'Yes, they will need to create another channel in Channels management.', false);
+
+    $second  = teamQuestionConversation($this);
+    $written = 'It is £2.99 + vat up to 2 kg, see https://www.aw-dropship.com/shipping';
+    AnswerShoppingAssistantTeamQuestion::run(StoreShoppingAssistantTeamQuestion::run($second, 'What is the delivery charge?', 'delivery charge?')['task'], $this->person, $written, false);
+
+    expect($first->messages()->latest('id')->first()->body)->toContain('Yes, you will need to create another channel')
+        ->and($first->messages()->latest('id')->first()->body)->not->toContain('they will need')
+        ->and($second->messages()->latest('id')->first()->body)->toContain($written);
+});
+
+test('a question that went to customer services still reaches the gurus: they see it once the backups are due, and the agent declining passes it to the first guru instead of closing it', function () {
+    $agent = teamQuestionStaff($this);
+    $task  = StoreShoppingAssistantTeamQuestion::run(teamQuestionConversation($this), 'What are outers?', 'what are outers')['task'];
+    $task->update(['assignee_id' => $agent->id, 'data' => [...$task->data, 'routed_to' => 'customer_services']]);
+
+    expect(StoreShoppingAssistantTeamQuestion::waitingFor($agent)->pluck('id'))->toContain($task->id)
+        ->and(StoreShoppingAssistantTeamQuestion::waitingFor($this->person)->pluck('id'))->not->toContain($task->id);
+
+    Carbon::setTestNow(now()->addMinutes(StoreShoppingAssistantTeamQuestion::BACKUP_AFTER_MINUTES + 1));
+
+    expect(StoreShoppingAssistantTeamQuestion::waitingFor($this->person)->pluck('id'))->toContain($task->id)
+        ->and(StoreShoppingAssistantTeamQuestion::waitingFor($this->backup)->pluck('id'))->toContain($task->id)
+        ->and(DeclineShoppingAssistantTeamQuestion::run($task->refresh(), $agent))->toBe('to_backup')
+        ->and($task->refresh()->assignee_id)->toBe($this->person->id)
+        ->and(data_get($task->data, 'answered_at'))->toBeNull();
 });

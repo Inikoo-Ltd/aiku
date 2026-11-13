@@ -106,7 +106,9 @@ const send = async (text: string) => {
         const { data } = await axios.post(askUrl(), { message, conversation: conversation.value, entry_point: "chat" })
         conversation.value = data.conversation
         sessionStorage.setItem(shoppingAssistantConversationKey, data.conversation)
-        messages.value.push({ id: data.message_id, role: "customer", body: message })
+        if (!messages.value.some((held) => held.id === data.message_id)) {
+            messages.value.push({ id: data.message_id, role: "customer", body: message })
+        }
         draft.value = ""
         startPolling()
     } catch (error: any) {

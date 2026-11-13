@@ -42,7 +42,7 @@ class AlertShoppingAssistantTeamQuestion
                 'id'    => null,
                 'kind'  => 'assistant_question',
                 'title' => $notification->title(),
-                'body'  => (string) data_get($task->data, 'question'),
+                'body'  => StoreShoppingAssistantTeamQuestion::questionText($task),
                 'route' => $notification->url(),
                 'question' => StoreShoppingAssistantTeamQuestion::popup($task),
             ]);

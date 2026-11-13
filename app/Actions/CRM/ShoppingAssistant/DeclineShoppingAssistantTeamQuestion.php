@@ -32,7 +32,9 @@ class DeclineShoppingAssistantTeamQuestion
 
     /**
      * A guru who does not hold the question only steps aside: the holder keeps it. The holder
-     * declining passes it to the next guru in order who has not declined, else it is closed.
+     * declining passes it to the next guru in order who has not declined or passed it on, else it
+     * is closed. A holder who is not a guru (the customer services agent it was routed to) hands
+     * it to the first such guru, so a question never closes before a guru has seen it.
      *
      * @return 'to_backup'|'closed'|'kept'|'ignored'
      */
@@ -47,9 +49,9 @@ class DeclineShoppingAssistantTeamQuestion
         $gurus        = StoreShoppingAssistantTeamQuestion::gurusOfTask($task);
         $position     = array_search($user->id, array_map(fn (User $guru) => $guru->id, $gurus), true);
         $holderKeeps  = $task->assignee_id && $task->assignee_id !== $user->id && !in_array($task->assignee_id, $declined, true);
-        $backup       = !$holderKeeps && $position !== false
-            ? collect([...array_slice($gurus, $position + 1), ...array_slice($gurus, 0, $position)])->first(fn (User $guru) => !in_array($guru->id, $declined, true))
-            : null;
+        $next         = $position !== false ? [...array_slice($gurus, $position + 1), ...array_slice($gurus, 0, $position)] : $gurus;
+        $steppedAside = [...$declined, ...array_column(data_get($task->data, 'passed', []), 'from')];
+        $backup       = !$holderKeeps ? collect($next)->first(fn (User $guru) => !in_array($guru->id, $steppedAside, true)) : null;
         $toBackup     = $backup !== null;
 
         $task->update(['data' => [...$task->data, 'declined_by' => $declined]] + ($toBackup ? ['assignee_id' => $backup->id, 'assigned_at' => now()] : []));

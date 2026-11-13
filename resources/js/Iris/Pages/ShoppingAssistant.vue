@@ -499,8 +499,14 @@ const send = async (text: string) => {
     isPending.value = true
     const requestGeneration = generation
     try {
-        const { data } = await axios.post(askUrl(), { message, conversation: conversation.value })
+        const { data } = await axios.post(askUrl(), { message, conversation: conversation.value, can_hand_over: true })
         if (requestGeneration !== generation) {
+            return
+        }
+        if (data.accept_offer) {
+            isPending.value = false
+            draft.value = ""
+            await handOver(data.accept_offer)
             return
         }
         const isNewConversation = conversation.value !== data.conversation

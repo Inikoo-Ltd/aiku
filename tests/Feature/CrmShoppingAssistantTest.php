@@ -3016,7 +3016,7 @@ test('a basket add of a product both a chat and a later panel day showed is reco
         ->toBe([$message->shopping_assistant_conversation_id]);
 });
 
-test('on a dropshipping shop the assistant is on, coaches and sells with the customer\'s sales channels in words, and has no basket, shipping cost or big order tools', function () {
+test('on a dropshipping shop the assistant is on, coaches and sells with the customer\'s sales channels in words, and has no basket, shipping cost, big order or better price tools', function () {
     $originalType = $this->shop->type;
 
     try {
@@ -3026,6 +3026,7 @@ test('on a dropshipping shop the assistant is on, coaches and sells with the cus
         $channel  = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, \App\Models\Dropshipping\Platform::where('type', \App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY)->firstOrFail(), ['reference' => 'merlin-'.Str::random(6)]);
         $channel->update(['name' => 'Moon Gifts', 'number_portfolios' => 3, 'number_orders' => 0, 'connection_status' => \App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum::ERROR]);
 
+        $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => false])]);
         expect(GetShoppingAssistantSettings::run($website->refresh(), $customer))->toBe(['name' => 'Ava', 'hand_over' => false]);
 
         Http::fake(['*chat/completions' => Http::sequence()->push(shoppingAssistantPresent(['reply' => 'Dropshipping means your buyers order from your store and we send the parcel for you.', 'answer_kind' => 'coaching', 'follow_ups' => ['Best sellers for my store']]))]);
@@ -3043,6 +3044,10 @@ test('on a dropshipping shop the assistant is on, coaches and sells with the cus
             ->and($prompt)->toContain('suggest opening another they do not have yet')
             ->and($prompt)->not->toContain('call add_to_basket')
             ->and($prompt)->not->toContain('big_order_lead')
+            ->and($prompt)->not->toContain('better_price_options')
+            ->and($prompt)->toContain('Never ask how much they plan to order and never offer a call from our team')
+            ->and($toolNames)->not->toContain('better_price_options')
+            ->and(GetShoppingAssistantTools::make()->execute($conversation, 'better_price_options', [])['error'])->toContain('not available on a dropshipping shop')
             ->and($toolNames)->not->toContain('add_to_basket')
             ->and($toolNames)->not->toContain('shipping_cost')
             ->and($toolNames)->not->toContain('big_order_lead')
@@ -3314,4 +3319,141 @@ test('a customer back after years still sees what they used to order, from order
     expect($forgotten->pluck('id')->all())->toBe([$old->id])
         ->and($forgotten->first()->customer_last_ordered_at->year)->toBe(now()->subYears(5)->year)
         ->and(Http::recorded()->first()[0]['messages'][0]['content'])->toContain('Back after a long time without ordering: yes');
+});
+
+test('the conversation follows the language Merlin answers in, so the sentences written by the system reach a French customer of an English shop in French', function () {
+    $customer     = shoppingAssistantCustomer($this->shop);
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $conversation->update(['language_code' => 'en']);
+    $sentences    = ['Please contact our customer service team, who will be glad to help.', 'I cannot see your orders, so our team will need to answer that. Would you like to ask them?'];
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantPresent(['reply' => '', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'language' => 'fr']))
+        ->push(shoppingAssistantPresent(['reply' => '', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'language' => 'zz']))
+        ->push(shoppingAssistantPresent(['reply' => '', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question', 'language' => 'PT-BR']))
+        ->push(shoppingAssistantPresent(['reply' => '', 'answer_kind' => 'offer_person', 'offer_reason' => 'order_question']))]);
+
+    $french = AskShoppingAssistant::run($conversation, 'Où est ma commande ?');
+
+    expect($conversation->refresh()->language_code)->toBe('fr')
+        ->and($french['reply'])->toBeIn(array_map(fn (string $sentence) => __($sentence, [], 'fr'), $sentences))
+        ->and($french['reply'])->not->toBeIn($sentences);
+
+    AskShoppingAssistant::run($conversation, 'et alors ?');
+    expect($conversation->refresh()->language_code)->toBe('fr');
+
+    AskShoppingAssistant::run($conversation, 'onde está a minha encomenda?');
+    expect($conversation->refresh()->language_code)->toBe('pt-br');
+
+    AskShoppingAssistant::run($conversation, 'e agora?');
+    $request = collect(Http::recorded())->last()[0];
+
+    expect($conversation->refresh()->language_code)->toBe('pt-br')
+        ->and(collect($request['tools'])->firstWhere('function.name', 'present_products')['function']['parameters']['required'])->toContain('language')
+        ->and($request['messages'][0]['content'])->toContain('Always give the code of the language your reply is in as language in present_products');
+});
+
+test('a reply with a number nobody gave loses only the sentences that carry it, and a fact line is not added under the sentence that offers a person', function () {
+    $customer = shoppingAssistantCustomer($this->shop);
+    \App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantDispatchDays::mock()->shouldReceive('handle')->andReturn(3);
+
+    Http::fake(['*chat/completions' => Http::sequence()
+        ->push(shoppingAssistantPresent(['reply' => 'Here are our zodiac candles. All 12 signs are covered! Add the ones you like with the button.', 'answer_kind' => 'products']))
+        ->push(shoppingAssistantModelReply(['tool_calls' => [shoppingAssistantToolCall('dispatch_times', [])]], 'tool_calls'))
+        ->push(shoppingAssistantPresent(['reply' => '', 'answer_kind' => 'offer_person', 'offer_reason' => 'asked_for_person']))]);
+
+    $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+    $trimmed      = AskShoppingAssistant::run($conversation, 'zodiac candles');
+    $offer        = AskShoppingAssistant::run($conversation->fresh(), 'I want a person to tell me how fast you send');
+
+    expect($trimmed['reply'])->toBe('Here are our zodiac candles. Add the ones you like with the button.')
+        ->and($trimmed['message']->flags)->toBe(['reply_trimmed_number'])
+        ->and($offer['message']->refresh()->hand_over_offer->value)->toBe('asked_for_person')
+        ->and($offer['reply'])->not->toContain('dispatched')
+        ->and($offer['reply'])->not->toContain("\n");
+});
+
+test('the question just answered is not answered again when it is sent a second time, and a typed yes to an offer of a person hands over instead of asking the model', function () {
+    $website  = shoppingAssistantStorefront($this);
+    $website->update(['settings' => array_merge($website->settings ?? [], ['enable_chat' => true])]);
+    $customer = shoppingAssistantCustomer($this->shop);
+    $webUser  = shoppingAssistantWebUser($customer);
+    $url      = 'http://'.$website->domain.'/json/shopping-assistant/ask';
+    Queue::fake();
+
+    $first        = $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'Angel hanging decoration with bell'])->assertStatus(202);
+    $conversation = ShoppingAssistantConversation::where('ulid', $first->json('conversation'))->first();
+    $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'The closest we have is the angel chime.']);
+
+    $this->actingAs($webUser, 'retina')->postJson($url, ['message' => ' angel hanging decoration with BELL ', 'conversation' => $conversation->ulid])
+        ->assertOk()
+        ->assertExactJson(['conversation' => $conversation->ulid, 'message_id' => $first->json('message_id'), 'pending' => false, 'repeated' => true]);
+    $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'Angel hanging decoration with bell'])
+        ->assertOk()
+        ->assertJson(['conversation' => $conversation->ulid, 'repeated' => true]);
+
+    expect($conversation->messages()->count())->toBe(2);
+    AnswerShoppingAssistantMessage::assertPushed(1);
+
+    $this->travel(\App\Actions\Iris\ShoppingAssistant\AskIrisShoppingAssistant::SAME_QUESTION_SECONDS + 5)->seconds();
+    $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'Angel hanging decoration with bell', 'conversation' => $conversation->ulid])->assertStatus(202);
+    $offer = $conversation->messages()->create(['role' => ShoppingAssistantMessageRoleEnum::ASSISTANT, 'body' => 'I cannot see your orders. Would you like to ask our team?', 'hand_over_offer' => 'order_question']);
+    $jev   = \App\Actions\Helpers\AI\AskJev::mock();
+    $jev->shouldReceive('noul')->andReturn(0.95, 0.1);
+
+    $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'Ano, chci se zeptat týmu.', 'conversation' => $conversation->ulid, 'can_hand_over' => true])
+        ->assertOk()
+        ->assertJson(['conversation' => $conversation->ulid, 'pending' => false, 'accept_offer' => $offer->id]);
+    expect($conversation->messages()->count())->toBe(4);
+
+    $this->actingAs($webUser, 'retina')->postJson($url, ['message' => 'I forgot to add the order number', 'conversation' => $conversation->ulid, 'can_hand_over' => true])->assertStatus(202);
+    expect($conversation->messages()->count())->toBe(5);
+    $jev->shouldHaveReceived('noul')->twice();
+});
+
+test('on a dropshipping shop Merlin can list the products added to a store channel that are not in the store yet, never those of the manual channel', function () {
+    $originalType = $this->shop->type;
+
+    try {
+        $this->shop->update(['type' => \App\Enums\Catalogue\Shop\ShopTypeEnum::DROPSHIPPING]);
+        shoppingAssistantStorefront($this);
+        $customer     = shoppingAssistantCustomer($this->shop->refresh());
+        $conversation = StartShoppingAssistantConversation::run($customer, ShoppingAssistantEntryPointEnum::COMMAND);
+        $tools        = GetShoppingAssistantTools::make();
+        $platform     = fn (\App\Enums\Ordering\Platform\PlatformTypeEnum $type) => \App\Models\Dropshipping\Platform::where('type', $type)->firstOrFail();
+        $store        = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, $platform(\App\Enums\Ordering\Platform\PlatformTypeEnum::SHOPIFY), ['reference' => 'store-'.Str::random(6)]);
+        $manual       = \App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel::make()->action($customer, $platform(\App\Enums\Ordering\Platform\PlatformTypeEnum::MANUAL), ['reference' => 'manual-'.Str::random(6)]);
+        $store->update(['name' => 'Moon Gifts']);
+        $portfolio    = fn ($channel, string $code, string $name, bool $inStore, bool $active = true) => DB::table('portfolios')->insert([
+            'group_id' => $customer->group_id, 'organisation_id' => $customer->organisation_id, 'shop_id' => $customer->shop_id, 'customer_id' => $customer->id,
+            'customer_sales_channel_id' => $channel->id, 'item_type' => 'Product', 'item_id' => shoppingAssistantLiveProduct($this->product)->id, 'item_code' => $code, 'item_name' => $name,
+            'status' => $active, 'platform_status' => $inStore, 'data' => '{}', 'settings' => '{}',
+        ]);
+
+        expect($tools->execute($conversation, 'products_not_in_store', [])['content']['found'])->toBeFalse();
+
+        $portfolio($store, 'HSBB-02', 'Clarity Bath Bomb', false);
+        $portfolio($store, 'HSBB-03', 'Calm Bath Bomb', true);
+        $portfolio($store, 'HSBB-04', 'Removed Bath Bomb', false, false);
+        $portfolio($manual, 'HSBB-05', 'Manual Bath Bomb', false);
+
+        $result = $tools->execute($conversation, 'products_not_in_store', []);
+
+        expect($result['error'])->toBeNull()
+            ->and($result['content']['found'])->toBeTrue()
+            ->and(json_encode($result['content']))->not->toContain('HSBB')
+            ->and($result['fact'])->toContain('"Moon Gifts"')
+            ->and($result['fact'])->toContain('Clarity Bath Bomb (HSBB-02)')
+            ->and($result['fact'])->not->toContain('HSBB-03')
+            ->and($result['fact'])->not->toContain('HSBB-04')
+            ->and($result['fact'])->not->toContain('HSBB-05')
+            ->and(collect($tools->definitions(true))->pluck('function.name'))->toContain('products_not_in_store')
+            ->and(collect($tools->definitions())->pluck('function.name'))->not->toContain('products_not_in_store');
+
+        $this->shop->update(['type' => $originalType]);
+        $wholesale = StartShoppingAssistantConversation::run(shoppingAssistantCustomer($this->shop->refresh()), ShoppingAssistantEntryPointEnum::COMMAND);
+        expect($tools->execute($wholesale, 'products_not_in_store', [])['error'])->toContain('only available on a dropshipping shop');
+    } finally {
+        $this->shop->update(['type' => $originalType]);
+    }
 });

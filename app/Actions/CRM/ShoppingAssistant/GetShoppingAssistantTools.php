@@ -38,6 +38,8 @@ use App\Models\Catalogue\ProductCategory;
 use App\Models\Chat\ChatKnowledgeEntry;
 use App\Enums\Comms\Mailshot\MailshotStateEnum;
 use App\Enums\Comms\Mailshot\MailshotTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\MailshotRecipient;
 use Illuminate\Support\Str;
@@ -124,9 +126,14 @@ class GetShoppingAssistantTools
 
     /**
      * Dropshipping customers have no basket to fill or ship: they add products to the portfolios of
-     * their sales channels on the product cards, and each order is one of their own customers'.
+     * their sales channels on the product cards, and each order is one of their own customers', so
+     * there is no order size to talk terms about and no call from our team to offer.
      */
-    public const array NOT_FOR_DROPSHIPPING = ['add_to_basket', 'shipping_cost', 'big_order_lead'];
+    public const array NOT_FOR_DROPSHIPPING = ['add_to_basket', 'shipping_cost', 'big_order_lead', 'better_price_options'];
+
+    public const array ONLY_FOR_DROPSHIPPING = ['products_not_in_store'];
+
+    private const int MAX_NOT_IN_STORE = 10;
 
     public const array ENGINEER_TICKET_KINDS = ['bug', 'support', 'data_integrity'];
 
@@ -180,10 +187,16 @@ class GetShoppingAssistantTools
      */
     public function definitions(bool $dropshipping = false): array
     {
-        if ($dropshipping) {
-            return array_values(array_filter($this->definitions(), fn (array $tool) => !in_array($tool['function']['name'], self::NOT_FOR_DROPSHIPPING, true)));
-        }
+        $excluded = $dropshipping ? self::NOT_FOR_DROPSHIPPING : self::ONLY_FOR_DROPSHIPPING;
 
+        return array_values(array_filter($this->everyDefinition(), fn (array $tool) => !in_array($tool['function']['name'], $excluded, true)));
+    }
+
+    /**
+     * @return array<int, array{type: string, function: array{name: string, description: string, parameters: array<string, mixed>}}>
+     */
+    private function everyDefinition(): array
+    {
         $limit = [
             'type'        => 'integer',
             'minimum'     => 1,
@@ -282,6 +295,11 @@ class GetShoppingAssistantTools
                 ['query']
             ),
             $this->tool(
+                'products_not_in_store',
+                'The products the customer added to one of their sales channels that are not in their store yet: not sent to it, or not matched with a listing they already have there, so stock is not updated and orders for them cannot reach us. Use it when they ask which products are not linked, are missing from their store or do not sync, or why an order placed in their store did not arrive. The system adds the list under your reply; you get no names. Returns no products.',
+                []
+            ),
+            $this->tool(
                 'dispatch_times',
                 'How quickly this shop dispatches orders, from the last 30 days. Use it when the customer asks how fast orders are sent, dispatched or shipped out. The sentence with the figure is added under your reply by the system; you get no figure. Returns no products.',
                 []
@@ -367,6 +385,7 @@ class GetShoppingAssistantTools
                 'Give your final answer. Call it once, as your last step, every time: also when you show no products, ask a question or decline (leave must_haves and add_ons empty), so the customer always gets follow_ups to tap. Use only ids returned by the other tools.',
                 [
                     'reply'        => ['type' => 'string', 'description' => 'Two or three short sentences for the customer, with no ids, prices, discounts or stock, and no numbers other than figures stated in the texts you cite in sources.'],
+                    'language'     => ['type' => 'string', 'description' => 'The two-letter ISO 639-1 code of the language your reply is written in (en, fr, ro, lv...): the customer\'s own language when they write in another one than the shop\'s. The system writes its own sentences to the customer in it.'],
                     'answer_kind'  => ['type' => 'string', 'enum' => ShoppingAssistantAnswerKindEnum::declarable(), 'description' => 'products when you show or talk about products or ranges; shop_answer when you answer a general question from texts shop_information returned or a question about an email from recent_emails_to_customer (sources is then required); question when you only ask the customer something; offer_person when you cannot answer and a person should (offer_reason is then required); off_topic when you decline something that has nothing to do with this shop; coaching when, on a dropshipping shop, you explain a general dropshipping or online selling idea from your own knowledge.'],
                     'sources'      => ['type' => 'array', 'items' => ['type' => 'integer'], 'description' => 'Ids, exactly as given, of the shop_information texts or recent_emails_to_customer emails your answer rests on. Required with answer_kind shop_answer.'],
                     'offer_reason' => ['type' => 'string', 'enum' => array_column(ShoppingAssistantHandOverReasonEnum::cases(), 'value'), 'description' => 'not_sure: you could not answer from the texts or have none; order_question: the customer asks about their own order, invoice, payment, refund or delivery; asked_for_person: the customer asks for a person.'],
@@ -379,7 +398,7 @@ class GetShoppingAssistantTools
                         'description' => 'Two or three short questions the customer could ask next, about products you can find for them. Always give them, also when you decline or show nothing.',
                     ],
                 ],
-                ['reply', 'answer_kind']
+                ['reply', 'answer_kind', 'language']
             ),
         ];
     }
@@ -402,6 +421,10 @@ class GetShoppingAssistantTools
             return $this->error("$name is not available on a dropshipping shop.");
         }
 
+        if (in_array($name, self::ONLY_FOR_DROPSHIPPING, true) && !self::isDropshipping($customer)) {
+            return $this->error("$name is only available on a dropshipping shop.");
+        }
+
         try {
             return match ($name) {
                 'search_products'                => $this->searchProducts($customer, $arguments, $conversation->language_code),
@@ -419,6 +442,7 @@ class GetShoppingAssistantTools
                 'restock_information'            => $this->restockInformation($customer, $arguments, $conversation->language_code),
                 'ask_purchasing_team'            => $this->askPurchasingTeam($conversation, $customer, $arguments),
                 'dispatch_times'                 => $this->dispatchTimes($customer, $conversation->language_code),
+                'products_not_in_store'          => $this->productsNotInStore($customer, $conversation->language_code),
                 'family_information'             => $this->familyInformation($customer, $arguments),
                 'product_documents'              => $this->productDocuments($customer, $arguments, $conversation->language_code),
                 'ask_our_team'                   => $this->askOurTeam($conversation, $arguments),
@@ -1042,6 +1066,58 @@ class GetShoppingAssistantTools
             'products' => [],
             'error'    => null,
             'fact'     => __('Over the last 30 days, 9 out of 10 orders were dispatched within :days days of being placed. This is dispatch from our warehouse, not delivery to you.', ['days' => $days], $locale),
+        ];
+    }
+
+    /**
+     * What "some products are not in the store yet" means, by name: the active products of each
+     * open store channel (never the manual one, which has no store) that were not sent to the
+     * store or matched with a listing there, newest first, at most MAX_NOT_IN_STORE a channel with
+     * how many more. Product codes hold digits, so the list goes under the reply as written here.
+     *
+     * @return array{content: array<string, mixed>, products: array{}, error: ?string, fact?: string}
+     */
+    private function productsNotInStore(Customer $customer, string $locale): array
+    {
+        $channels = DB::table('customer_sales_channels')
+            ->join('platforms', 'platforms.id', '=', 'customer_sales_channels.platform_id')
+            ->where('customer_sales_channels.customer_id', $customer->id)
+            ->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)
+            ->where('platforms.type', '!=', PlatformTypeEnum::MANUAL->value)
+            ->orderByDesc('customer_sales_channels.number_orders')
+            ->limit(6)
+            ->get(['customer_sales_channels.id', 'customer_sales_channels.name', 'platforms.name as platform']);
+
+        $facts = [];
+        foreach ($channels as $channel) {
+            $missing = fn () => DB::table('portfolios')
+                ->where('customer_sales_channel_id', $channel->id)
+                ->where('item_type', 'Product')
+                ->where('status', true)
+                ->where('platform_status', false);
+            $count = $missing()->count();
+            if ($count === 0) {
+                continue;
+            }
+
+            $names = $missing()->orderByDesc('id')->limit(self::MAX_NOT_IN_STORE)->get(['item_name', 'item_code'])
+                ->map(fn ($item) => trim($item->item_name.' ('.$item->item_code.')'))
+                ->implode(', ');
+            $store = filled($channel->name) ? $channel->platform.' "'.$channel->name.'"' : $channel->platform;
+
+            $facts[] = __(':store, in My Products but not in your store yet: :products.', ['store' => $store, 'products' => $names], $locale)
+                .($count > self::MAX_NOT_IN_STORE ? ' '.__('And :count more.', ['count' => Number::format($count - self::MAX_NOT_IN_STORE, locale: $locale)], $locale) : '');
+        }
+
+        if (!$facts) {
+            return ['content' => ['found' => false, 'note' => 'Every product in their sales channels is in their store. Say so; when an order still did not arrive, look for the fix with shop_information.'], 'products' => [], 'error' => null];
+        }
+
+        return [
+            'content'  => ['found' => true, 'note' => 'The products are listed under your reply by the system. In one or two sentences, with no names or counts: these were added to the sales channel but are not in the store yet, so their stock is not updated and orders for them cannot reach us; under My Products of that channel they can send them to the store or match them with listings they already have (shop_information has the guide for their platform).'],
+            'products' => [],
+            'error'    => null,
+            'fact'     => implode("\n", $facts),
         ];
     }
 

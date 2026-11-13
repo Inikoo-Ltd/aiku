@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\ShoppingAssistant;
 
+use App\Actions\Chat\Staff\SendStaffMessage;
 use App\Actions\Tasks\GetAikuAssistant;
 use App\Actions\Tasks\StoreStaffTask;
 use App\Enums\CRM\Livechat\ChatPriorityEnum;
@@ -31,11 +32,13 @@ use Throwable;
  * may set its own guru (shop settings assistant_questions.user_id), asked before the organisation's
  * guru and backup (gurusOf()). It goes to the first guru in that order with aiku open, else a
  * customer services agent online for the shop, else the first guru anyway (route()). Not answered
- * within BACKUP_AFTER_MINUTES: the gurus after them get it too, and the first answer wins
+ * within BACKUP_AFTER_MINUTES: every other guru gets it too, also the ones who were not online and
+ * all of them when it went to customer services, who rarely know the answer, and the first answer wins
  * (AnswerShoppingAssistantTeamQuestion). In working hours the customer's page waits WAIT_MINUTES
  * for it; a later answer reaches them through the conversation and by email or customer services.
- * One open question per conversation and MAX_PER_DAY per customer, as a customer's words put a
- * pop-up on a named person's screen. Off when neither the shop nor the organisation has a guru.
+ * One waiting task per customer, which their further questions join (join()), and MAX_PER_DAY
+ * tasks per customer, as a customer's words put a pop-up on a named person's screen. Off when
+ * neither the shop nor the organisation has a guru.
  */
 class StoreShoppingAssistantTeamQuestion
 {
@@ -48,6 +51,8 @@ class StoreShoppingAssistantTeamQuestion
     public const int WAIT_MINUTES = 5;
 
     public const int MAX_PER_DAY = 3;
+
+    public const int MAX_QUESTIONS_PER_TASK = 5;
 
     public const string ONLINE_CACHE_KEY = 'shopping_assistant:online_user_ids';
 
@@ -65,9 +70,15 @@ class StoreShoppingAssistantTeamQuestion
             return ['status' => 'off', 'task' => null, 'live' => false];
         }
 
-        $open = self::openFor($conversation);
+        $question = mb_substr(trim($questionInEnglish), 0, 500);
+        $words    = mb_substr(trim($customerWords), 0, 1000);
+        $language = DB::table('languages')->where('code', $conversation->language_code)->value('name') ?: $conversation->language_code;
+
+        $open = self::openFor($conversation) ?? self::openForCustomer($customer->id);
         if ($open) {
-            return ['status' => 'already_asked', 'task' => $open, 'live' => self::isAwaited($open)];
+            return $this->join($open, $conversation, $question, $words, $language)
+                ? ['status' => 'already_asked', 'task' => $open, 'live' => self::isAwaited($open)]
+                : ['status' => 'limit', 'task' => null, 'live' => false];
         }
 
         $today = StaffTask::where('data->kind', self::TASK_KIND)->where('data->customer_id', $customer->id)->where('created_at', '>=', now()->subDay())->count();
@@ -75,9 +86,6 @@ class StoreShoppingAssistantTeamQuestion
             return ['status' => 'limit', 'task' => null, 'live' => false];
         }
 
-        $question  = mb_substr(trim($questionInEnglish), 0, 500);
-        $words     = mb_substr(trim($customerWords), 0, 1000);
-        $language  = DB::table('languages')->where('code', $conversation->language_code)->value('name') ?: $conversation->language_code;
         [$first, $routedTo] = self::route($gurus, $customer->shop_id);
         $live      = $routedTo !== 'nobody_online' && RemindShoppingAssistantSalesLeads::make()->isWorkingTime($organisation);
         $assistant = GetAikuAssistant::run($customer->group_id);
@@ -115,14 +123,83 @@ class StoreShoppingAssistantTeamQuestion
         ]);
 
         AlertShoppingAssistantTeamQuestion::dispatch($task, $first);
-        $firstIndex = array_search($first->id, array_map(fn (User $guru) => $guru->id, $gurus), true);
-        if ($firstIndex !== false) {
-            foreach (array_slice($gurus, $firstIndex + 1) as $backup) {
+        foreach ($gurus as $backup) {
+            if ($backup->id !== $first->id) {
                 AlertShoppingAssistantTeamQuestion::dispatch($task, $backup)->delay(now()->addMinutes(self::BACKUP_AFTER_MINUTES));
             }
         }
 
         return ['status' => 'created', 'task' => $task, 'live' => $live];
+    }
+
+    /**
+     * A customer who already has a question waiting gets no second task: every question typed in the
+     * search box starts a conversation of its own, so three questions in a row used the day's three
+     * tasks and the fourth was refused. A different question joins the waiting task instead, up to
+     * MAX_QUESTIONS_PER_TASK, shown to the person in the pop-up and in the task's thread; the same
+     * question again adds nothing. The task follows the conversation the customer asked from last,
+     * so the answer appears where they are now. False when the task is full.
+     */
+    private function join(StaffTask $task, ShoppingAssistantConversation $conversation, string $question, string $words, string $language): bool
+    {
+        $asked  = self::questionsOf($task);
+        $isNew  = !collect($asked)->contains(fn (array $one) => mb_strtolower($one['question']) === mb_strtolower($question) || mb_strtolower($one['customer_words']) === mb_strtolower($words));
+        $data   = $task->data;
+
+        if ($isNew && count($asked) >= self::MAX_QUESTIONS_PER_TASK) {
+            return false;
+        }
+
+        if ($isNew) {
+            $data['more_questions'] = [...data_get($data, 'more_questions', []), ['question' => $question, 'customer_words' => $words, 'language' => $language, 'asked_at' => now()->toIso8601String()]];
+        }
+
+        $also = implode("\n", array_filter([
+            __('The customer also asked: :question', ['question' => $question]),
+            $words !== $question ? __('Their words (:language): :words', ['language' => $language, 'words' => $words]) : null,
+        ]));
+
+        $task->update(array_filter([
+            'data'        => [...$data, 'conversation_id' => $conversation->id, 'conversation_ulid' => $conversation->ulid],
+            'description' => $isNew ? trim($task->description."\n".$also) : null,
+        ]));
+
+        if ($isNew) {
+            if ($task->conversation) {
+                SendStaffMessage::run($task->conversation, GetAikuAssistant::run($task->group_id), ['body' => $also]);
+            }
+            if ($task->assignee) {
+                AlertShoppingAssistantTeamQuestion::dispatch($task, $task->assignee);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Every question waiting on the task, the first one and the ones that joined it.
+     *
+     * @return array<int, array{question: string, customer_words: string}>
+     */
+    public static function questionsOf(StaffTask $task): array
+    {
+        return array_map(
+            fn (array $one) => ['question' => (string) ($one['question'] ?? ''), 'customer_words' => (string) ($one['customer_words'] ?? '')],
+            [['question' => data_get($task->data, 'question'), 'customer_words' => data_get($task->data, 'customer_words')], ...data_get($task->data, 'more_questions', [])]
+        );
+    }
+
+    /**
+     * The questions as one text for the person answering and for the note kept for the shop:
+     * the question itself when there is one, a numbered list when more joined it.
+     */
+    public static function questionText(StaffTask $task, string $field = 'question'): string
+    {
+        $texts = array_values(array_filter(array_column(self::questionsOf($task), $field)));
+
+        return count($texts) > 1
+            ? implode("\n", array_map(fn (string $text, int $index) => ($index + 1).'. '.$text, $texts, array_keys($texts)))
+            : ($texts[0] ?? '');
     }
 
     /**
@@ -204,6 +281,15 @@ class StoreShoppingAssistantTeamQuestion
             ->first();
     }
 
+    public static function openForCustomer(int $customerId): ?StaffTask
+    {
+        return StaffTask::where('data->kind', self::TASK_KIND)
+            ->where('data->customer_id', $customerId)
+            ->whereNull('data->answered_at')
+            ->latest('id')
+            ->first();
+    }
+
     /**
      * The customer's page keeps checking for the answer while this is true.
      */
@@ -223,8 +309,8 @@ class StoreShoppingAssistantTeamQuestion
     {
         return [
             'task'           => $task->reference,
-            'question'       => (string) data_get($task->data, 'question'),
-            'customer_words' => (string) data_get($task->data, 'customer_words'),
+            'question'       => self::questionText($task),
+            'customer_words' => self::questionText($task, 'customer_words'),
             'language'       => (string) data_get($task->data, 'language'),
             'customer'       => (string) data_get($task->data, 'customer_name'),
             'shop'           => (string) data_get($task->data, 'shop_code'),
@@ -236,8 +322,8 @@ class StoreShoppingAssistantTeamQuestion
     }
 
     /**
-     * The open questions waiting for this person: theirs (the assignee), or as the backup once the
-     * backup is due, never one they said they do not want to answer.
+     * The open questions waiting for this person: theirs (the assignee), or as one of the other
+     * gurus once the backups are due, never one they said they do not want to answer.
      *
      * @return \Illuminate\Support\Collection<int, StaffTask>
      */
@@ -259,9 +345,9 @@ class StoreShoppingAssistantTeamQuestion
                     return true;
                 }
                 $shopKey   = data_get($task->data, 'organisation_id').'-'.data_get($task->data, 'shop_id');
-                $backupIds = $backupIdsByShop[$shopKey] ??= array_map(fn (User $guru) => $guru->id, array_slice(self::gurusOfTask($task), 1));
+                $guruIds   = $backupIdsByShop[$shopKey] ??= array_map(fn (User $guru) => $guru->id, self::gurusOfTask($task));
 
-                return in_array($user->id, $backupIds, true)
+                return in_array($user->id, $guruIds, true)
                     && ($task->created_at->lte(now()->subMinutes(self::BACKUP_AFTER_MINUTES)) || in_array($task->assignee_id, data_get($task->data, 'declined_by', []), true));
             })
             ->values();
