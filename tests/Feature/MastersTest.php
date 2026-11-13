@@ -5305,6 +5305,7 @@ describe('competitor prices, HELP-3605', function () {
 
         \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['competitor_units' => 0])->assertSessionHasErrors('competitor_units');
         \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), [])->assertSessionHasErrors(['status', 'competitor_units']);
+        \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['competitor_units' => 0.5])->assertSessionHasNoErrors();
         \Pest\Laravel\patch(route('grp.models.master_asset_competitor_product.review', $match->id), ['competitor_units' => 6])->assertRedirect();
 
         expect((float) $match->refresh()->competitor_units)->toBe(6.0)
@@ -5837,7 +5838,7 @@ describe('competitor prices, HELP-3605', function () {
     test('our other sizes of a matched product get the competitor same size of that product, HELP-4691', function () {
         $leader = $this->competitorMasterAsset;
         $leader->updateQuietly(['name' => 'Amber Fragrance Oil - 1 Litre', 'code' => 'FOKG-'.uniqid()]);
-        $sizes = collect(['50ml', '100ml', '0.5kg', '250ml'])->mapWithKeys(fn (string $size) => [$size => StoreMasterAsset::make()->action($leader->masterFamily, [
+        $sizes = collect(['50ml', '100ml', '0.5kg', '250ml', '2.5L'])->mapWithKeys(fn (string $size) => [$size => StoreMasterAsset::make()->action($leader->masterFamily, [
             'code'    => $leader->code.'-'.$size,
             'name'    => 'Amber Fragrance Oil',
             'is_main' => false,
@@ -5884,7 +5885,7 @@ describe('competitor prices, HELP-3605', function () {
             'is_same_item'   => false, 'status' => MasterAssetCompetitorProductStatusEnum::REJECTED,
         ]);
 
-        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::matchOtherSizes($this->competitor))->toBe(2)
+        expect(\App\Actions\Masters\Competitor\MatchCompetitorProducts::matchOtherSizes($this->competitor))->toBe(3)
             ->and(\App\Actions\Masters\Competitor\MatchCompetitorProducts::matchOtherSizes($this->competitor))->toBe(0);
 
         $matched = fn (\App\Models\Masters\MasterAsset $ours) => MasterAssetCompetitorProduct::where('master_asset_id', $ours->id)->get();
@@ -5893,7 +5894,11 @@ describe('competitor prices, HELP-3605', function () {
             ->and($matched($sizes['50ml'])->first()->status)->toBe(MasterAssetCompetitorProductStatusEnum::CONFIRMED)
             ->and($matched($sizes['0.5kg'])->first()->competitor_product_id)->toBe($their['500g']->id)
             ->and($matched($sizes['100ml'])->first()->status)->toBe(MasterAssetCompetitorProductStatusEnum::REJECTED)
-            ->and($matched($sizes['250ml']))->toBeEmpty()
+            ->and($matched($sizes['50ml'])->first()->competitor_units)->toEqual(1)
+            ->and($matched($sizes['250ml'])->first()->competitor_product_id)->toBe($their['500g']->id)
+            ->and($matched($sizes['250ml'])->first()->competitor_units)->toEqual(2)
+            ->and($matched($sizes['250ml'])->first()->units_verified)->toBeTrue()
+            ->and($matched($sizes['2.5L']))->toBeEmpty()
             ->and($matched($similarSize))->toBeEmpty();
     });
 });

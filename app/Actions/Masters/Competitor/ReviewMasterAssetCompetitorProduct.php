@@ -48,7 +48,7 @@ class ReviewMasterAssetCompetitorProduct extends OrgAction
     {
         return [
             'status'           => ['required_without:competitor_units', Rule::enum(MasterAssetCompetitorProductStatusEnum::class)],
-            'competitor_units' => ['required_without:status', 'numeric', 'min:1', 'max:100000'],
+            'competitor_units' => ['required_without:status', 'numeric', 'min:0.001', 'max:100000'],
         ];
     }
 

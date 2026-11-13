@@ -101,7 +101,7 @@ const money = (value: number | null, currencyCode: string) => value === null ? "
             </div>
             <div class="mt-1 flex items-center gap-x-1 text-xs text-gray-500">
                 <span class="whitespace-nowrap" v-tooltip="ctrans('How many units the price is for. The price per unit divides by this.')">{{ ctrans("Units in their pack") }}</span>
-                <InputNumber :modelValue="item.competitor_units" :min="1" :maxFractionDigits="3" size="small" inputClass="!w-10 !h-6 !px-1.5 !py-0 !text-xs !rounded text-right"
+                <InputNumber :modelValue="item.competitor_units" :min="0.001" :maxFractionDigits="3" size="small" inputClass="!w-10 !h-6 !px-1.5 !py-0 !text-xs !rounded text-right"
                     :disabled="!canEdit || savingUnits === item.id" @input="unitsDraft[item.id] = $event.value" @blur="saveUnits(item)" />
             </div>
             <div v-if="item.compared_as_units !== null" class="mt-1 text-xs text-amber-600"
