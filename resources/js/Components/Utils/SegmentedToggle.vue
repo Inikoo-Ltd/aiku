@@ -15,13 +15,14 @@ defineProps<{
 	ariaLabel?: string
 	iconOnly?: boolean
 	soft?: boolean
+	multiple?: boolean
 }>()
 
-const model = defineModel<T>()
+const model = defineModel<T | T[]>()
 </script>
 
 <template>
-	<SelectButton v-model="model" :options="options" optionLabel="label" optionValue="value" optionDisabled="disabled" dataKey="value" :allowEmpty="false" class="segmented-toggle" :class="{ 'segmented-toggle-soft': soft }" :aria-label="ariaLabel">
+	<SelectButton v-model="model" :options="options" optionLabel="label" optionValue="value" optionDisabled="disabled" dataKey="value" :multiple="multiple" :allowEmpty="!!multiple" class="segmented-toggle" :class="{ 'segmented-toggle-soft': soft }" :aria-label="ariaLabel">
 		<template #option="{ option }">
 			<span v-tooltip="iconOnly ? option.label : undefined" :data-tone="option.tone" class="flex items-center gap-1.5">
 				<FontAwesomeIcon v-if="option.icon" :icon="option.icon" fixed-width aria-hidden="true" />

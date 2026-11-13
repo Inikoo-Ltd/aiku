@@ -172,6 +172,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('shopping-assistant:tag-challenges')->dailyAt('00:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('shopping-assistant:wipe-old')->dailyAt('03:40')->timezone('UTC')->onOneServer()->withoutOverlapping(60);
         $schedule->command('shopping-assistant:weekly-summary')->weeklyOn(1, '07:00')->timezone('Europe/London')->onOneServer();
+        $schedule->command('shopping-assistant:unmet-needs')->weeklyOn(1, '07:05')->timezone('Europe/London')->onOneServer();
         $schedule->command('catalogue:embed-search')->dailyAt('02:30')->timezone('UTC')->onOneServer()->withoutOverlapping(120)->runInBackground();
         $schedule->command('nightowl:prune')->dailyAt('04:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);
         $schedule->command('nightowl:freeze-cold-partitions')->dailyAt('05:00')->timezone('UTC')->onOneServer()->withoutOverlapping(180);

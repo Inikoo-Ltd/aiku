@@ -5,7 +5,11 @@
   -->
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, inject } from "vue"
+import { ref, computed, watch, onMounted, onBeforeUnmount, inject } from "vue"
+import IconField from "primevue/iconfield"
+import InputIcon from "primevue/inputicon"
+import InputText from "primevue/inputtext"
+import { ctrans } from "@/Composables/useTrans"
 import Action from "@/Components/Forms/Fields/Action.vue"
 import FieldForm from "@/Components/Forms/FieldForm.vue"
 import { get as getLodash } from "lodash-es"
@@ -89,7 +93,7 @@ import {
     faGem,
     faHashtag,
     faPrint,
-    faVolumeUp, faComments, faBooks, faCoins, faSignOut, faVideo, faCalendarAlt, faUser, faColumns, faBoxOpen, faStar
+    faVolumeUp, faComments, faBooks, faCoins, faSignOut, faVideo, faCalendarAlt, faUser, faColumns, faBoxOpen, faStar, faSearch, faTimesCircle
 } from "@fal"
 import { faOctopusDeploy, faMeta } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle, faBrowser as faBrowserSolid } from "@fas"
@@ -183,7 +187,7 @@ library.add(
     faCameraRetro,
     faBalanceScale,
     faCamera,
-    faStamp, faComments, faBooks, faCoins, faSignOut, faVideo, faCalendarAlt, faUser, faColumns, faBoxOpen, faStar
+    faStamp, faComments, faBooks, faCoins, faSignOut, faVideo, faCalendarAlt, faUser, faColumns, faBoxOpen, faStar, faSearch, faTimesCircle
 )
 
 const props = defineProps<{
@@ -396,12 +400,208 @@ const severityMap: Record<string, string> = {
 const getSeverity = (type?: string) => {
   return type ? severityMap[type.toLowerCase()] || "info" : "info"
 }
+
+const searchQuery = ref("")
+const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLowerCase())
+const isSearching = computed(() => normalizedSearchQuery.value.length > 0)
+
+const collectSearchableTexts = (value: unknown, depth = 0): string[] => {
+    if (value === null || value === undefined || typeof value === "boolean" || depth > 4) {
+        return []
+    }
+
+    if (typeof value === "string" || typeof value === "number") {
+        return [String(value).replace(/<[^>]*>/g, " ")]
+    }
+
+    if (typeof value === "object") {
+        return Object.values(value as Record<string, unknown>).flatMap((nestedValue) => collectSearchableTexts(nestedValue, depth + 1))
+    }
+
+    return []
+}
+
+const selectedOptionTexts = (fieldData: any): string[] => {
+    const options = fieldData?.options
+    if (!options || typeof options !== "object") {
+        return []
+    }
+
+    const valueProp = fieldData.valueProp ?? "value"
+    const labelProp = fieldData.labelProp ?? "label"
+    const selectedValues = Array.isArray(fieldData.value) ? fieldData.value : [fieldData.value]
+
+    return selectedValues.flatMap((selectedValue: unknown) => {
+        if (selectedValue === null || selectedValue === undefined || typeof selectedValue === "object") {
+            return []
+        }
+
+        const selectedOption = Array.isArray(options)
+            ? options.find((option: any) => String(option?.[valueProp] ?? option?.id ?? option) === String(selectedValue))
+            : options[String(selectedValue)]
+
+        if (selectedOption === null || selectedOption === undefined) {
+            return []
+        }
+
+        return typeof selectedOption === "object"
+            ? collectSearchableTexts(selectedOption[labelProp] ?? selectedOption.label ?? selectedOption.name)
+            : collectSearchableTexts(selectedOption)
+    })
+}
+
+const textsMatchSearch = (texts: string[]) =>
+    texts.some((text) => text.toLowerCase().includes(normalizedSearchQuery.value))
+
+const isSectionVisible = (sectionData: any) =>
+    !Object.values(sectionData?.fields || {}).every((field: any) => field.hidden)
+
+const fieldMatchesSearch = (fieldData: any) => {
+    if (!fieldData || fieldData.hidden || !isShownByCondition(fieldData)) {
+        return false
+    }
+
+    return textsMatchSearch([
+        ...collectSearchableTexts(fieldData.label),
+        ...collectSearchableTexts(fieldData.value),
+        ...selectedOptionTexts(fieldData),
+    ])
+}
+
+const searchResults = computed(() => {
+    const results: Record<string, { isSectionMatched: boolean, matchedFieldNames: string[] }> = {}
+
+    if (!isSearching.value) {
+        return results
+    }
+
+    Object.entries(props.formData?.blueprint ?? {}).forEach(([sectionKey, sectionData]: [string, any]) => {
+        if (!isSectionVisible(sectionData)) {
+            return
+        }
+
+        const isSectionMatched = textsMatchSearch(collectSearchableTexts([sectionData.label, sectionData.title, sectionData.subtitle]))
+        const matchedFieldNames = Object.entries(sectionData.fields || {})
+            .filter(([, fieldData]) => fieldMatchesSearch(fieldData))
+            .map(([fieldName]) => fieldName)
+
+        if (isSectionMatched || matchedFieldNames.length) {
+            results[sectionKey] = { isSectionMatched, matchedFieldNames }
+        }
+    })
+
+    return results
+})
+
+const matchedSectionKeys = computed(() => Object.keys(searchResults.value))
+
+const sectionSearchResult = (sectionKey: string | number) => searchResults.value[String(sectionKey)]
+
+const isFieldHighlighted = (sectionKey: string | number, fieldName: string | number) =>
+    sectionSearchResult(sectionKey)?.matchedFieldNames.includes(String(fieldName)) ?? false
+
+watch(matchedSectionKeys, (sectionKeys) => {
+    if (!isSearching.value || !sectionKeys.length) {
+        return
+    }
+
+    if (!sectionKeys.includes(String(currentTab.value))) {
+        currentTab.value = sectionKeys[0]
+    }
+
+    collapsedMobileSections.value = Object.keys(props.formData?.blueprint ?? {}).filter((sectionKey) => !sectionKeys.includes(sectionKey))
+})
+
+const searchHighlightName = "edit-model-search"
+const _searchableArea = ref<HTMLElement | null>(null)
+
+const supportsSearchHighlight = () => typeof CSS !== "undefined" && "highlights" in CSS
+
+const rangesMatchingSearch = (root: Node): Range[] => {
+    const ranges: Range[] = []
+    const query = normalizedSearchQuery.value
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+
+    for (let textNode = walker.nextNode(); textNode; textNode = walker.nextNode()) {
+        const text = textNode.textContent?.toLowerCase() ?? ""
+        let matchStart = text.indexOf(query)
+
+        while (matchStart !== -1) {
+            const range = new Range()
+            range.setStart(textNode, matchStart)
+            range.setEnd(textNode, matchStart + query.length)
+            ranges.push(range)
+            matchStart = text.indexOf(query, matchStart + query.length)
+        }
+    }
+
+    return ranges
+}
+
+const rangesForLabelsMatchedByContent = (root: HTMLElement): Range[] =>
+    Array.from(root.querySelectorAll("[data-search-label], [data-search-field-matched] dt"))
+        .filter((labelElement) => !(labelElement.textContent ?? "").toLowerCase().includes(normalizedSearchQuery.value))
+        .map((labelElement) => {
+            const range = new Range()
+            range.selectNodeContents(labelElement)
+            return range
+        })
+
+const applySearchHighlight = () => {
+    if (!supportsSearchHighlight()) {
+        return
+    }
+
+    CSS.highlights.delete(searchHighlightName)
+
+    if (!isSearching.value || !_searchableArea.value) {
+        return
+    }
+
+    CSS.highlights.set(
+        searchHighlightName,
+        new Highlight(...rangesMatchingSearch(_searchableArea.value), ...rangesForLabelsMatchedByContent(_searchableArea.value))
+    )
+}
+
+watch([normalizedSearchQuery, currentTab, collapsedMobileSections, isMobile], applySearchHighlight, { flush: "post" })
+
+onBeforeUnmount(() => {
+    if (supportsSearchHighlight()) {
+        CSS.highlights.delete(searchHighlightName)
+    }
+})
 </script>
 
 
 <template>
     <Head v-if="!embedded" :title="capitalize(title)" />
     <PageHeading v-if="!embedded" :data="pageHead" />
+
+    <div v-if="!embedded" class="px-2 py-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <IconField class="w-full sm:w-80">
+            <InputIcon>
+                <FontAwesomeIcon icon="fal fa-search" class="text-gray-400" fixed-width aria-hidden="true" />
+            </InputIcon>
+            <InputText
+                v-model="searchQuery"
+                size="small"
+                fluid
+                :placeholder="ctrans('Search settings or values')"
+                :aria-label="ctrans('Search settings or values')"
+                class="focus:!border-[var(--app-accent)]"
+                @keydown.esc="searchQuery = ''" />
+            <InputIcon v-if="searchQuery">
+                <button type="button" :aria-label="ctrans('Clear search')" class="text-gray-400 hover:text-gray-600"
+                    @click="searchQuery = ''">
+                    <FontAwesomeIcon icon="fal fa-times-circle" fixed-width aria-hidden="true" />
+                </button>
+            </InputIcon>
+        </IconField>
+        <span v-if="isSearching && !matchedSectionKeys.length" class="text-xs text-gray-500">
+            {{ ctrans("No matching settings") }}
+        </span>
+    </div>
 
     <div v-if="warning && showWarningMessage">
         <Message v-if="warning && showWarningMessage" :severity="getSeverity(warning.type)" xclosable="true"
@@ -433,7 +633,7 @@ const getSeverity = (type?: string) => {
         </Message>
     </div>
     <!-- If overflow-hidden, affect to Multiselect on Address -->
-    <div :class="embedded ? 'lg:h-full lg:min-h-0' : (isMobile ? '' : 'rounded-lg shadow')">
+    <div ref="_searchableArea" :class="embedded ? 'lg:h-full lg:min-h-0' : (isMobile ? '' : 'rounded-lg shadow')">
         <div v-if="!isMobile"
             class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x"
             :class="embedded ? 'lg:h-full lg:min-h-0' : ''">
@@ -462,14 +662,13 @@ const getSeverity = (type?: string) => {
 										? 'text-gray-400 group-hover:text-gray-500'
 										: 'text-gray-400',
 								]" :icon="sectionData.icon" />
-                            <span class="truncate">{{ sectionData.label }}</span>
+                            <span class="truncate" :data-search-label="sectionSearchResult(key) ? '' : undefined">{{ sectionData.label }}</span>
                             <FontAwesomeIcon v-if="sectionData.information" v-tooltip="sectionData.information"
                                 icon="fal fa-info-circle" class="ml-1 text-gray-400 hover:text-gray-700" fixed-width
                                 aria-hidden="true" />
                             <FontAwesomeIcon v-if="sectionData.warning" v-tooltip="sectionData.warning"
                                 icon="fas fa-exclamation-triangle" class="ml-1 text-amber-500 hover:text-amber-600" fixed-width
                                 aria-hidden="true" />
-                            <!-- {{ tabActive }} -- {{ key == currentTab }} -->
                         </div>
                     </template>
                 </div>
@@ -527,7 +726,8 @@ const getSeverity = (type?: string) => {
 
                                     <div v-if="fieldData && !fieldData?.hidden && isShownByCondition(fieldData) && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
                                         class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0"
-                                        :class="boxedRowClass(sectionData.fields, fieldName)">
+                                        :class="boxedRowClass(sectionData.fields, fieldName)"
+                                        :data-search-field-matched="isFieldHighlighted(sectionIdx, fieldName) ? '' : undefined">
 
                                         <Action v-if="fieldData.type === 'action'" :action="fieldData.action"
                                             :dataToSubmit="fieldData.action?.data" />
@@ -578,7 +778,7 @@ const getSeverity = (type?: string) => {
                             }">
                         <FontAwesomeIcon v-if="sectionData.icon" fixed-width aria-hidden="true" :icon="sectionData.icon"
                             class="flex-shrink-0 -ml-1 mr-2 h-4 w-4 text-gray-400" />
-                        <span class="capitalize truncate">{{ sectionData.label }}</span>
+                        <span class="capitalize truncate" :data-search-label="sectionSearchResult(key) ? '' : undefined">{{ sectionData.label }}</span>
                         <FontAwesomeIcon icon="fal fa-chevron-down" fixed-width aria-hidden="true"
                             class="ml-auto h-3 w-3 text-gray-400 transition-transform duration-200"
                             :class="isMobileSectionCollapsed(key) ? '' : 'rotate-180'" />
@@ -587,7 +787,8 @@ const getSeverity = (type?: string) => {
                         <template v-for="(fieldData, fieldName, index) in formData.blueprint[key].fields">
                             <!-- Field: is not hidden and skip price when TBC -->
                             <div v-if="!fieldData?.hidden && isShownByCondition(fieldData) && !(['price', 'territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
-                                class="py-4">
+                                class="py-4"
+                                :data-search-field-matched="isFieldHighlighted(key, fieldName) ? '' : undefined">
                                 <Action v-if="fieldData.type === 'action'" :action="fieldData.action"
                                     :dataToSubmit="fieldData.action?.data" />
                                 <FieldForm v-else :key="index" :field="fieldName" :fieldData="fieldData"
@@ -600,3 +801,9 @@ const getSeverity = (type?: string) => {
         </ul>
     </div>
 </template>
+
+<style>
+::highlight(edit-model-search) {
+    background-color: var(--app-accent-muted);
+}
+</style>

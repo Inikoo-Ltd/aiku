@@ -17,9 +17,11 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedEbayAddress;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Helpers\Address;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -88,16 +90,10 @@ class StoreOrderFromEbay extends OrgAction
         $deliveryAddress    = Arr::get($deliveryAttributes, 'address');
         $billingAddress     = $ebayUser->customer->address->getFields();
 
-        $customerEmail  = Arr::get($deliveryAttributes, 'email');
-        $customerClient = $ebayUser->customer->clients()->where('email', $customerEmail)->first();
-        if (!$customerClient) {
-            $customerClient = StoreCustomerClient::make()->action($ebayUser->customerSalesChannel, $deliveryAttributes);
-        }
+        $customerClient = $this->findRecipientClient($ebayUser, $deliveryAttributes)
+            ?? StoreCustomerClient::make()->action($ebayUser->customerSalesChannel, $deliveryAttributes);
 
-
-
-
-        $orderedProducts   = [];
+        $orderedProducts  = [];
         $unmatchedLineItems = [];
 
         foreach (Arr::get($ebayOrderData, 'lineItems', []) as $lineItem) {
@@ -124,6 +120,32 @@ class StoreOrderFromEbay extends OrgAction
             'ordered_products'     => $orderedProducts,
             'unmatched_line_items' => $unmatchedLineItems
         ];
+    }
+
+    /**
+     * The buyer's anonymised email is the same on every order they place, while the recipient can change
+     * (a gift, a reseller shipping to its own customers). The label name is read off the client, so a client
+     * is reused only for the same email and the same recipient name, and never for an order without an email.
+     */
+    public function findRecipientClient(EbayUser $ebayUser, array $deliveryAttributes): ?CustomerClient
+    {
+        $email = Arr::get($deliveryAttributes, 'email');
+        if (blank($email)) {
+            return null;
+        }
+
+        $recipientName = $this->normalisedRecipientName(Arr::get($deliveryAttributes, 'contact_name'));
+
+        return $ebayUser->customer->clients()
+            ->where('customer_sales_channel_id', $ebayUser->customer_sales_channel_id)
+            ->where('email', $email)
+            ->get()
+            ->first(fn (CustomerClient $client) => $this->normalisedRecipientName($client->contact_name) === $recipientName);
+    }
+
+    private function normalisedRecipientName(?string $name): string
+    {
+        return Str::lower(Str::squish((string) $name));
     }
 
     /**
