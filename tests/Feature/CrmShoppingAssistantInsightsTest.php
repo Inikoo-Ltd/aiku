@@ -12,6 +12,7 @@ use App\Actions\CRM\Customer\AnonymiseCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\ShoppingAssistant\AskShoppingAssistant;
 use App\Actions\CRM\ShoppingAssistant\GetShoppingAssistantReport;
+use App\Actions\CRM\ShoppingAssistant\SendShoppingAssistantUnmetNeeds;
 use App\Actions\CRM\ShoppingAssistant\SendShoppingAssistantWeeklySummary;
 use App\Actions\CRM\ShoppingAssistant\StartShoppingAssistantConversation;
 use App\Actions\CRM\ShoppingAssistant\TagShoppingAssistantConversationChallenges;
@@ -27,12 +28,14 @@ use App\Models\CRM\ShoppingAssistant\ShoppingAssistantConversation;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\User;
 use App\Models\Web\Website;
+use App\Notifications\ShoppingAssistantUnmetNeedsNotification;
 use App\Notifications\ShoppingAssistantWeeklySummaryNotification;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 use function Pest\Laravel\actingAs;
 
@@ -48,7 +51,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    UpdateGroupSettings::make()->action($this->organisation->group->refresh(), ['shopping_assistant_weekly_summary_user_ids' => [], 'shopping_assistant_retention_months' => null]);
+    UpdateGroupSettings::make()->action($this->organisation->group->refresh(), ['shopping_assistant_weekly_summary_user_ids' => [], 'shopping_assistant_retention_months' => null, 'shopping_assistant_unmet_needs_user_ids' => [], 'shopping_assistant_unmet_needs_slack_channel' => null]);
 });
 
 function insightsCustomer(object $test): Customer
@@ -300,6 +303,39 @@ test('the weekly summary goes only to the users picked in the group settings, co
         ->not->toContain('](')
         ->not->toContain('://')
         ->toContain('\\[win\\]');
+});
+
+test('purchasing gets every Monday what customers asked for last week that we do not have or had out of stock, by topic and shop, with no quotes', function () {
+    Notification::fake();
+    insightsWebsite($this);
+    $customer = insightsCustomer($this);
+    $lastWeek = CarbonImmutable::today()->startOfWeek()->subWeek()->addDays(2);
+    $topic    = 'dried orange peel '.Str::lower(Str::random(5));
+    foreach ([['unmet_need', $topic, 'Dried orange peel please'], ['out_of_stock', 'raised incense holders', 'have they come back?'], ['price', 'too dear', 'too dear']] as [$type, $challengeTopic, $quote]) {
+        $conversation = insightsConversation($customer, [['customer', $quote]], $lastWeek->setTime(10, 0)->toIso8601String());
+        DB::table('shopping_assistant_challenges')->insert(['shopping_assistant_conversation_id' => $conversation->id, 'type' => $type, 'topic' => $challengeTopic, 'quote' => $quote, 'created_at' => $lastWeek]);
+    }
+    $old = insightsConversation($customer, [['customer', 'old ask']], $lastWeek->subWeeks(2)->toIso8601String());
+    DB::table('shopping_assistant_challenges')->insert(['shopping_assistant_conversation_id' => $old->id, 'type' => 'unmet_need', 'topic' => 'old topic '.$topic, 'quote' => 'old ask', 'created_at' => $lastWeek->subWeeks(2)]);
+
+    $group = $this->organisation->group;
+    expect(SendShoppingAssistantUnmetNeeds::run($group->refresh()))->toBe(['emailed' => 0, 'slack' => false]);
+    Notification::assertNothingSent();
+
+    UpdateGroupSettings::make()->action($group, ['shopping_assistant_unmet_needs_user_ids' => [$this->user->id]]);
+    expect(SendShoppingAssistantUnmetNeeds::run($group->refresh()))->toBe(['emailed' => 1, 'slack' => false]);
+
+    Notification::assertSentTo($this->user, ShoppingAssistantUnmetNeedsNotification::class, function (ShoppingAssistantUnmetNeedsNotification $notification) use ($topic) {
+        $mail  = implode("\n", $notification->toMail($this->user)->introLines);
+        $slack = json_encode($notification->toSlackMessage()->toArray());
+
+        return str_contains($mail, $topic) && str_contains($mail, 'raised incense holders') && str_contains($mail, $this->shop->name)
+            && str_contains($slack, $topic)
+            && !str_contains($mail, 'too dear') && !str_contains($mail, 'old topic') && !str_contains($mail, 'please') && !str_contains($mail, 'come back');
+    });
+
+    expect((new ShoppingAssistantUnmetNeedsNotification(['from' => '', 'to' => '', 'needs' => []]))->plain('<https://evil.example|*win*>'))
+        ->not->toContain('://')->not->toContain('<')->not->toContain('*');
 });
 
 test('the group settings page offers the weekly summary recipients and the retention period, and saves them', function () {
