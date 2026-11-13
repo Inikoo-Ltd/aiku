@@ -2250,6 +2250,68 @@ test('remodelling a seeder product sends its faire copies to case size review', 
     expect($faireCopy->refresh()->units_review)->toBe(\App\Actions\Maintenance\Catalogue\FlagFaireCaseSizeMismatch::BUCKET);
 });
 
+/** HELP-4696: Faire added a brand new product to an order being picked, its stock was linked after packing and the order shipped without the line ever reaching the delivery note. */
+test('linking stock to an external product puts its lines still in the warehouse on the delivery note', function () {
+    $faireShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), [
+        'type'   => ShopTypeEnum::EXTERNAL->value,
+        'engine' => \App\Enums\Catalogue\Shop\ShopEngineEnum::FAIRE->value,
+    ]));
+    $customer  = createCustomer($faireShop);
+
+    $pickable = StoreProduct::make()->action($faireShop, array_merge(Product::factory()->definition(), ['price' => 10]));
+    $pickable->orgStocks()->attach($this->orgStock1->id, ['quantity' => 1]);
+    $newOnFaire = StoreProduct::make()->action($faireShop, array_merge(Product::factory()->definition(), ['price' => 10]));
+
+    $tradeUnit = \App\Actions\Goods\TradeUnit\StoreTradeUnit::make()->action($this->group, \App\Models\Goods\TradeUnit::factory()->definition());
+    $tradeUnit->orgStocks()->attach($this->orgStock2->id, ['quantity' => 1]);
+
+    $ordersInWarehouse = [];
+    foreach (['picked', 'blocked', 'dispatched'] as $key) {
+        $order = \App\Actions\Ordering\Order\StoreOrder::make()->action($customer, []);
+        \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order->refresh(), $pickable->historicAsset, ['quantity_ordered' => 1]);
+        \App\Actions\Ordering\Order\UpdateState\SubmitOrder::make()->action($order->refresh());
+        $deliveryNote = \App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse::make()->action($order->refresh(), []);
+        $line         = \App\Actions\Ordering\Transaction\StoreTransaction::make()->action($order->refresh(), $newOnFaire->historicAsset, ['quantity_ordered' => 2]);
+
+        $ordersInWarehouse[$key] = [$order, $deliveryNote, $line];
+    }
+
+    [$pickedOrder, $pickedNote, $pickedLine]             = $ordersInWarehouse['picked'];
+    [$blockedOrder, $blockedNote, $blockedLine]          = $ordersInWarehouse['blocked'];
+    [$dispatchedOrder, $dispatchedNote, $dispatchedLine] = $ordersInWarehouse['dispatched'];
+
+    $pickedNote->deliveryNoteItems()->update(['quantity_picked' => \Illuminate\Support\Facades\DB::raw('quantity_required')]);
+    $pickedNote->updateQuietly(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::PICKED]);
+    $pickedOrder->updateQuietly(['state' => \App\Enums\Ordering\Order\OrderStateEnum::PICKED]);
+    $blockedNote->updateQuietly(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::HANDLING_BLOCKED]);
+    $blockedOrder->updateQuietly(['state' => \App\Enums\Ordering\Order\OrderStateEnum::HANDLING_BLOCKED]);
+    $dispatchedNote->updateQuietly(['state' => \App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::DISPATCHED]);
+    $dispatchedOrder->updateQuietly(['state' => \App\Enums\Ordering\Order\OrderStateEnum::DISPATCHED]);
+
+    expect($pickedLine->deliveryNoteItems()->count())->toBe(0)
+        ->and(\App\Actions\Dispatching\DeliveryNoteItem\StoreMissingDeliveryNoteItemsOfProduct::run($newOnFaire))->toBe(0);
+
+    \App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct::make()->action($newOnFaire, ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]);
+
+    $item = $pickedLine->deliveryNoteItems()->first();
+    expect($item)->not->toBeNull()
+        ->and($item->delivery_note_id)->toBe($pickedNote->id)
+        ->and($item->org_stock_id)->toBe($this->orgStock2->id)
+        ->and((float) $item->quantity_required)->toBe(2.0)
+        ->and($pickedNote->refresh()->state)->toBe(\App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::HANDLING)
+        ->and($pickedOrder->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::HANDLING)
+        ->and($blockedLine->deliveryNoteItems()->count())->toBe(1)
+        ->and($blockedNote->refresh()->state)->toBe(\App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::HANDLING)
+        ->and($blockedOrder->refresh()->state)->toBe(\App\Enums\Ordering\Order\OrderStateEnum::HANDLING)
+        ->and($dispatchedLine->deliveryNoteItems()->count())->toBe(0)
+        ->and($dispatchedNote->refresh()->state)->toBe(\App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum::DISPATCHED);
+
+    \App\Actions\Catalogue\Product\UpdateTradeUnitsForExternalProduct::make()->action($newOnFaire->refresh(), ['trade_units' => [['id' => $tradeUnit->id, 'quantity' => 1]]]);
+    expect($pickedLine->deliveryNoteItems()->count())->toBe(1);
+
+    $tradeUnit->orgStocks()->detach($this->orgStock2->id);
+});
+
 test('a product faire no longer returns is discontinued and comes back when republished', function () {
     $faireShop = StoreShop::make()->action($this->organisation, array_merge(Shop::factory()->definition(), [
         'type'   => ShopTypeEnum::EXTERNAL->value,
